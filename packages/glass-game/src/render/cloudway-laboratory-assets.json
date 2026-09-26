@@ -1,0 +1,455 @@
+{
+  "schema": 1,
+  "runtimeDirectory": "cloudway-laboratory-v1",
+  "metadataKey": "cloudway_lab_asset_json",
+  "assets": [
+    {
+      "id": "frost-lily-step",
+      "bundleId": "cloudway-lab-frost-lily-step-v1",
+      "rootNode": "CloudwayLab_FrostLilyStep",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.58,
+          "roughness": 0.2,
+          "thickness": 0.09,
+          "ior": 1.45
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 1.65,
+        "depth": 2.2,
+        "topY": 0,
+        "height": 0.3
+      }
+    },
+    {
+      "id": "pearl-marble-long",
+      "bundleId": "cloudway-lab-pearl-marble-long-v1",
+      "rootNode": "CloudwayLab_PearlMarbleLong",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 3.2,
+        "depth": 0.72,
+        "topY": 0,
+        "height": 0.34
+      }
+    },
+    {
+      "id": "emerald-square-turn",
+      "bundleId": "cloudway-lab-emerald-square-turn-v1",
+      "rootNode": "CloudwayLab_EmeraldSquareTurn",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 2.72,
+        "depth": 2.72,
+        "topY": 0,
+        "height": 0.36
+      }
+    },
+    {
+      "id": "moonstone-cross-landing",
+      "bundleId": "cloudway-lab-moonstone-cross-landing-v1",
+      "rootNode": "CloudwayLab_MoonstoneCrossLanding",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "rectangles",
+        "topY": 0,
+        "height": 0.36,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 0.95,
+            "depth": 2.72
+          },
+          {
+            "x": 0,
+            "z": 0,
+            "width": 2.72,
+            "depth": 0.95
+          }
+        ]
+      }
+    },
+    {
+      "id": "aurora-glide-raft",
+      "bundleId": "cloudway-lab-aurora-glide-raft-v1",
+      "rootNode": "CloudwayLab_AuroraGlideRaft",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.54,
+          "roughness": 0.16,
+          "thickness": 0.08,
+          "ior": 1.42
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 2.55,
+        "depth": 1.4,
+        "topY": 0,
+        "height": 0.28
+      }
+    },
+    {
+      "id": "ivory-stair-terrace",
+      "bundleId": "cloudway-lab-ivory-stair-terrace-v1",
+      "rootNode": "CloudwayLab_IvoryStairTerrace",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "stairs",
+        "height": 0.28,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0.98,
+            "width": 2.35,
+            "depth": 0.42,
+            "topY": -0.565
+          },
+          {
+            "x": 0,
+            "z": 0.48,
+            "width": 2.35,
+            "depth": 0.42,
+            "topY": -0.29
+          },
+          {
+            "x": 0,
+            "z": -0.62,
+            "width": 2.35,
+            "depth": 0.92,
+            "topY": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "opal-glass-long-bridge",
+      "bundleId": "cloudway-lab-opal-glass-long-bridge-v1",
+      "rootNode": "CloudwayLab_OpalGlassLongBridge",
+      "kind": "platform",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.62,
+          "roughness": 0.14,
+          "thickness": 0.07,
+          "ior": 1.46
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 3.8,
+        "depth": 0.64,
+        "topY": 0,
+        "height": 0.36
+      }
+    },
+    {
+      "id": "frosted-scroll-wall",
+      "bundleId": "cloudway-lab-frosted-scroll-wall-v1",
+      "rootNode": "CloudwayLab_FrostedScrollWall",
+      "kind": "architecture",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.34,
+          "roughness": 0.38,
+          "thickness": 0.05,
+          "ior": 1.42
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "camellia-singing-vase",
+      "bundleId": "cloudway-lab-camellia-singing-vase-v1",
+      "rootNode": "CloudwayLab_CamelliaSingingVase",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.52,
+          "roughness": 0.2,
+          "thickness": 0.04,
+          "ior": 1.46
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "celadon-harp-urn",
+      "bundleId": "cloudway-lab-celadon-harp-urn-v1",
+      "rootNode": "CloudwayLab_CeladonHarpUrn",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.36,
+          "roughness": 0.24,
+          "thickness": 0.06,
+          "ior": 1.45
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "amethyst-hourglass",
+      "bundleId": "cloudway-lab-amethyst-hourglass-v1",
+      "rootNode": "CloudwayLab_AmethystHourglass",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.48,
+          "roughness": 0.18,
+          "thickness": 0.04,
+          "ior": 1.47
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "crystal-lotus-goblet",
+      "bundleId": "cloudway-lab-crystal-lotus-goblet-v1",
+      "rootNode": "CloudwayLab_CrystalLotusGoblet",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.7,
+          "roughness": 0.12,
+          "thickness": 0.025,
+          "ior": 1.48
+        }
+      },
+      "textures": {
+        "color": 1024,
+        "data": 512,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "pearl-ribbon-lantern",
+      "bundleId": "cloudway-lab-pearl-ribbon-lantern-v1",
+      "rootNode": "CloudwayLab_PearlRibbonLantern",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "needs-material-region-separation",
+        "intendedAppearance": "transmissive-glass-with-opaque-trim",
+        "targetGlass": {
+          "transmission": 0.42,
+          "roughness": 0.22,
+          "thickness": 0.05,
+          "ior": 1.45
+        }
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 88
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "gilded-music-stand",
+      "bundleId": "cloudway-lab-gilded-music-stand-v1",
+      "rootNode": "CloudwayLab_GildedMusicStand",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "vine-marble-balustrade",
+      "bundleId": "cloudway-lab-vine-marble-balustrade-v1",
+      "rootNode": "CloudwayLab_VineMarbleBalustrade",
+      "kind": "architecture",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "rose-mirror-panel",
+      "bundleId": "cloudway-lab-rose-mirror-panel-v1",
+      "rootNode": "CloudwayLab_RoseMirrorPanel",
+      "kind": "architecture",
+      "material": {
+        "kind": "mirror",
+        "surfaceMaterial": "CloudwayLab_RoseMirrorPanel__mirror",
+        "appearanceStatus": "surface-adapter-pending-live-acceptance",
+        "providerShell": "provider-pbr-opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    },
+    {
+      "id": "singing-fountain-basin",
+      "bundleId": "cloudway-lab-singing-fountain-basin-v1",
+      "rootNode": "CloudwayLab_SingingFountainBasin",
+      "kind": "prop",
+      "material": {
+        "kind": "provider-pbr",
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque"
+      },
+      "textures": {
+        "color": 2048,
+        "data": 1024,
+        "quality": 90
+      },
+      "contact": {
+        "kind": "resting-base",
+        "topY": 0
+      }
+    }
+  ]
+}

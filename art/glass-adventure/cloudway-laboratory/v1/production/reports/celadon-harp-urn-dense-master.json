@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "assetId": "celadon-harp-urn",
+  "label": "Celadon Harp Urn",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/celadon-harp-urn/dense-donor.glb",
+    "bytes": 68421772,
+    "sha256": "1b7e062fc46c50a68750e0d3a9ace3d66744faaccac27b7dddc7ceb98fe1489d",
+    "taskId": "01a0d8a1-9814-7000-8b96-8f5b8f81a22e",
+    "receipt": {
+      "file": "source-assets/meshy/celadon-harp-urn/receipt.json",
+      "bytes": 6495,
+      "sha256": "61d3da1b1f6388f642949e5bffda639612b4e4acacbc69152b9acc3b51d57a91"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 433200,
+    "triangles": 816580,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "e8d0544a3f129b91759ce9b1e114f6b6996d0d992350a9de872ef02d4744d7cd",
+    "triangleIndicesInt32Sha256": "60de74508787fd757e21309c4964d7c9a1b21f4bd3594f6ea0847e6271db2252",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 594,
+      "largestVertexCounts": [
+        5460,
+        4660,
+        4022,
+        3957,
+        3892,
+        3669,
+        3507,
+        3424,
+        3368,
+        3305,
+        3291,
+        3274
+      ],
+      "largestVertexFractions": [
+        0.012603878,
+        0.010757156,
+        0.009284395,
+        0.009134349,
+        0.008984303,
+        0.008469529,
+        0.008095568,
+        0.00790397,
+        0.0077747,
+        0.007629271,
+        0.007596953,
+        0.00755771
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.52520596981,
+        0.0,
+        0.0,
+        0.000288081646
+      ],
+      [
+        0.0,
+        0.52520596981,
+        0.0,
+        -0.000464280223
+      ],
+      [
+        0.0,
+        0.0,
+        0.52520596981,
+        0.5001116395
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.52520596981,
+        0.0,
+        0.0,
+        0.000288081646
+      ],
+      [
+        0.0,
+        0.52520596981,
+        0.0,
+        -0.000464280223
+      ],
+      [
+        0.0,
+        0.0,
+        0.52520596981,
+        0.5001116395
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.331285483,
+        -0.304452975,
+        -1e-09
+      ],
+      "max": [
+        0.331285483,
+        0.304452975,
+        1.000000046
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      0.662570966,
+      0.60890595,
+      1.000000047
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 1.0,
+      "sourceRawUnits": 1.9040150046348572,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.631321013,
+        -0.578799009,
+        -0.952220023
+      ],
+      "max": [
+        0.630223989,
+        0.580567002,
+        0.951794982
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.261545002,
+      1.159366012,
+      1.904015005
+    ],
+    "baseRawZ": -0.952220023,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "jade vessel",
+      "harp handles",
+      "hollow mouth",
+      "gold fern inlays",
+      "stable foot"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Vessel, handles, mouth, inlays, foot, and break regions are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/celadon-harp-urn/textures/set-0-base_color.png",
+        "bytes": 67653628,
+        "sha256": "96393da92989c44b7abe95fd80282366619159e54aa9844128411e87fa8443fa",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/celadon-harp-urn/textures/set-0-normal.png",
+        "bytes": 13348863,
+        "sha256": "8673adc571dcbb04dac2ec2d44480f90fc1211b0aede97f9046f81230e455418",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/celadon-harp-urn/textures/set-0-metallic.png",
+        "bytes": 7625384,
+        "sha256": "4da58cf99715f705c5cabee5cb3d6ef24f54384cf6d0650cb56992edff75d8de",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/celadon-harp-urn/textures/set-0-roughness.png",
+        "bytes": 5499993,
+        "sha256": "bdc704e41161c40051055bb4c79731094acda2bb82b592d557e18fa322af073e",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-three-quarter.png",
+          "bytes": 453605,
+          "sha256": "e96a0b5e1cb9360dec1eecdfc98be6ae025dfb964d166b4f3c2ad2f3156ef397",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-top.png",
+          "bytes": 947457,
+          "sha256": "78ed7cf1657e1ec6a69ba7a8d0ece52bffc1fa8b6a53301562c676d973bb85be",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-side.png",
+          "bytes": 438289,
+          "sha256": "af9afe2dd7c4b4bbc539e9bfaf7c8b509a40c59b8e63ca414fa08056c294cac8",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-three-quarter.png",
+          "bytes": 503632,
+          "sha256": "80bd92fe959af9cb2550cc38fec562e3bbd627ed2cba2540235d299d3357f41a",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-top.png",
+          "bytes": 1390480,
+          "sha256": "1069b810e50e69a2d6dc77cd7e5918c48b0d4cd587884340322e2ba220699ec1",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-side.png",
+          "bytes": 493047,
+          "sha256": "964806fcdadca69f637fe2b0b1b673cb064c3112d1e6c40759c70f3c90a7c42a",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/celadon-harp-urn/celadon-harp-urn-dense-master.blend",
+    "bytes": 133063459,
+    "sha256": "fc8fa0bc7601a51438f195d44307ad42a17d2afbf9511c028d6061aff140c8f9",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset celadon-harp-urn"
+}

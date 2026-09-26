@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gilt scroll bridge runtime proof</title>
+    <style>
+      :root {
+        color: #f8f4ea;
+        background: #07141d;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-synthesis: none;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      body {
+        background: radial-gradient(
+          circle at 70% 15%,
+          #174b5a 0,
+          #081923 46%,
+          #03090e 100%
+        );
+      }
+      #stage {
+        position: fixed;
+        inset: 0;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .proof-card {
+        position: fixed;
+        left: 28px;
+        top: 26px;
+        width: min(390px, calc(100vw - 56px));
+        padding: 18px 20px;
+        border: 1px solid rgba(255, 246, 214, 0.24);
+        border-radius: 16px;
+        background: rgba(4, 14, 21, 0.78);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+        backdrop-filter: blur(14px);
+      }
+      .eyebrow {
+        color: #c8aa61;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 7px 0 13px;
+        font-family: Georgia, serif;
+        font-size: 27px;
+        font-weight: 500;
+        line-height: 1.08;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 20px;
+        margin: 0;
+        font-size: 12px;
+      }
+      dt {
+        color: #9eb5bd;
+      }
+      dd {
+        margin: 0;
+        color: #fff9e9;
+        font-variant-numeric: tabular-nums;
+      }
+      #status[data-kind='error'] {
+        color: #ff9e91;
+      }
+      .legend {
+        display: flex;
+        gap: 9px;
+        margin-top: 14px;
+        color: #b7c8cd;
+        font-size: 11px;
+      }
+      .swatch {
+        width: 34px;
+        height: 5px;
+        margin-top: 5px;
+        border-radius: 6px;
+      }
+      .blue {
+        background: #1c8fbd;
+      }
+      .coral {
+        background: #ef735e;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="stage" aria-label="Real renderer proof"></main>
+    <aside class="proof-card">
+      <div class="eyebrow">Actual GLB · actual scroll adapter</div>
+      <h1>Gilt Scroll Bridge</h1>
+      <dl>
+        <dt>Load state</dt>
+        <dd id="status">Loading bounded runtime bundle…</dd>
+        <dt>Length ratio</dt>
+        <dd id="ratio">—</dd>
+        <dt>Live bounds X × Y × Z</dt>
+        <dd id="bounds">—</dd>
+        <dt>Renderer triangles</dt>
+        <dd id="triangles">—</dd>
+        <dt>View</dt>
+        <dd id="view">Normal play</dd>
+      </dl>
+      <div class="legend">
+        <span><i class="swatch blue"></i>Blue witness</span
+        ><span><i class="swatch coral"></i>Coral witness</span>
+      </div>
+    </aside>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

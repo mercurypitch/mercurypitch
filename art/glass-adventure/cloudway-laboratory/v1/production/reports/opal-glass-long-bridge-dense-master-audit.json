@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "opal-glass-long-bridge",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/opal-glass-long-bridge/opal-glass-long-bridge-dense-master.blend",
+    "bytes": 70682525,
+    "sha256": "d3965b5a8e7582ee067273848e6e6103111baa0076179d307c3a979dffff4561",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "cf75128f20a01e1c2aec183bce384e42e0a811eceb7c350e22adac6b9996fd16",
+  "topology": {
+    "vertices": 125293,
+    "triangles": 210848,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "a4393edec5c7be4f3cdddf79d13f2ef03d2dfd83901005609089181ebc9cc11b",
+    "triangleIndicesInt32Sha256": "aeb6b89eac96ff02126396eb23e7d342768387c14ef9e80e89811a2923ae9bb9"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_OpalGlassLongBridge_DenseMaster",
+    "rawObject": "opal-glass-long-bridge__raw_import",
+    "reviewObject": "opal-glass-long-bridge__normalized_review",
+    "meshData": "opal-glass-long-bridge__dense_mesh",
+    "material": "opal-glass-long-bridge__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "opal-glass-long-bridge__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "ac34d7f3c0aadc29d298b2681a7081868e2e1f32dc7d0ac37d011ef862c4293d",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "opal-glass-long-bridge__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "f701377dc13b0cf9bdf2d8affe13337a759506391686abfb8e36cfcb8d8ba193",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "opal-glass-long-bridge__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "3a5f56f12ec4a8463c6cabd134eb66f89f2978c086980ef95ff50233fca47203",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "opal-glass-long-bridge__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "5cb27394005c8caa2f72e60c868811c18006f69318917c0e2229eb927aa3bdc4",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-three-quarter.png",
+      "bytes": 346075,
+      "sha256": "329fdd6bccb71210e3d8bad54f4b29b37d9b6110a710c4320700f9b1082e3391",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-top.png",
+      "bytes": 457842,
+      "sha256": "7a46f25c2ad2a056825b9ebd1cc7997b76ce6fb8cd776012f365c42ac68124aa",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-side.png",
+      "bytes": 292389,
+      "sha256": "6c597b90add1fb8d0eadd1c69185fcee42a3807277f9eda44c7396b5557920ec",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-three-quarter.png",
+      "bytes": 389100,
+      "sha256": "683943de22f3a85c6f675871df3c8b9f6779a453f3a5934f3f44fcb7af2f20cf",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-top.png",
+      "bytes": 621498,
+      "sha256": "95d36225d3039bd16e092e34141a405c28282af238e90de5ca8f44adaafd4259",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-side.png",
+      "bytes": 314366,
+      "sha256": "60e86ae3dead1ab2470988b5dfaabf53f164eabcd568817b8d81258a926c7e6e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset opal-glass-long-bridge",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

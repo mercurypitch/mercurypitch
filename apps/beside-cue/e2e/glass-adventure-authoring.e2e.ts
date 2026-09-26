@@ -11,7 +11,7 @@ test.use({
 })
 test.setTimeout(180_000)
 
-test('the main app CSP permits embedded GLTF texture blobs @smoke', async ({
+test('the main app CSP permits embedded GLTF textures and Meshopt decoding @smoke', async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -28,34 +28,46 @@ test('the main app CSP permits embedded GLTF texture blobs @smoke', async ({
   const response = await page.goto('/?devSeed')
   expect(response?.status()).toBe(200)
 
-  const texturePixels = await page.evaluate(async () => {
+  const decoded = await page.evaluate(async () => {
     // Vite's stable dependency resolver works on a cold CI cache too; avoid
     // naming the optimizer's generated file.
-    const modulePath = '/@id/three/addons/loaders/GLTFLoader.js'
-    const { GLTFLoader } = (await import(/* @vite-ignore */ modulePath)) as {
-      GLTFLoader: new () => {
-        loadAsync(url: string): Promise<{
-          scene: {
-            traverse: (
-              visit: (node: {
-                material?:
-                  | { map?: { image?: { width?: number; height?: number } } }
-                  | readonly {
-                      map?: {
-                        image?: { width?: number; height?: number }
-                      }
-                    }[]
-              }) => void,
-            ) => void
-          }
-        }>
-      }
+    const loaderModulePath = '/@id/three/addons/loaders/GLTFLoader.js'
+    const decoderModulePath = '/@id/three/addons/libs/meshopt_decoder.module.js'
+    type BrowserLoader = {
+      loadAsync(url: string): Promise<{
+        scene: {
+          traverse: (
+            visit: (node: {
+              isMesh?: boolean
+              material?:
+                | { map?: { image?: { width?: number; height?: number } } }
+                | readonly {
+                    map?: { image?: { width?: number; height?: number } }
+                  }[]
+            }) => void,
+          ) => void
+        }
+      }>
+      setMeshoptDecoder(decoder: unknown): BrowserLoader
     }
-    const asset = await new GLTFLoader().loadAsync(
+    const [{ GLTFLoader }, { MeshoptDecoder }] = (await Promise.all([
+      import(/* @vite-ignore */ loaderModulePath),
+      import(/* @vite-ignore */ decoderModulePath),
+    ])) as [
+      {
+        GLTFLoader: new () => {
+          loadAsync: BrowserLoader['loadAsync']
+          setMeshoptDecoder: BrowserLoader['setMeshoptDecoder']
+        }
+      },
+      { MeshoptDecoder: unknown },
+    ]
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
+    const texturedAsset = await loader.loadAsync(
       '/games/adventure/platform-kit-qa-v2.glb',
     )
     let pixels = 0
-    asset.scene.traverse((node) => {
+    texturedAsset.scene.traverse((node) => {
       const materials = Array.isArray(node.material)
         ? node.material
         : node.material === undefined
@@ -67,10 +79,18 @@ test('the main app CSP permits embedded GLTF texture blobs @smoke', async ({
         if (width > 0 && height > 0) pixels += width * height
       }
     })
-    return pixels
+    const compressedAsset = await loader.loadAsync(
+      '/games/cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
+    )
+    let meshes = 0
+    compressedAsset.scene.traverse((node) => {
+      if (node.isMesh === true) meshes += 1
+    })
+    return { meshes, pixels }
   })
 
-  expect(texturePixels).toBeGreaterThan(0)
+  expect(decoded.pixels).toBeGreaterThan(0)
+  expect(decoded.meshes).toBeGreaterThan(0)
   expect(
     await page.evaluate(
       () =>
@@ -84,6 +104,8 @@ test('the main app CSP permits embedded GLTF texture blobs @smoke', async ({
   const policy = await page
     .locator('meta[http-equiv="Content-Security-Policy"]')
     .getAttribute('content')
+  expect(policy).toMatch(/script-src [^;]*'wasm-unsafe-eval'/u)
+  expect(policy).not.toMatch(/script-src [^;]*'unsafe-eval'/u)
   expect(policy).toMatch(/connect-src [^;]*blob:/u)
   expect(policy).toMatch(/img-src [^;]*blob:/u)
 })

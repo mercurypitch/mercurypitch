@@ -1,0 +1,391 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "rejected-chart-component-split",
+  "conclusion": "The provider mesh has 3,083 disconnected index islands but only one connected surface after exact equal-position welding. Those islands are UV/hard-normal charts, not mechanically separable deck and roller shells. Moving them independently tears the visible surface.",
+  "scope": "Read-only source audit plus disposable colored diagnostics. The dense master and raw GLB are unchanged. No candidate Blend, GLB, adapter metadata, collider, or accepted material split is written.",
+  "source": {
+    "denseMaster": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-dense-master.blend",
+      "bytes": 110514860,
+      "sha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d"
+    },
+    "modelSha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+    "fingerprints": {
+      "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+      "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+      "cornerUvsFloat32Sha256": "8182be9e866c107d655cde099cc46d7ae05023cbca1014f9b5eff73194131566",
+      "customCornerNormalsInt16Sha256": "512702910fb25d5d28f808e10c5d748f54ccf8e81de611452475a9d4821b1d51",
+      "evaluatedCornerNormalsFloat32Sha256": "13f53393a9606ca57d1a365c3dc46e11079a6fc9825dd23843f75fbce05286fb"
+    },
+    "uvLayer": "UVMap",
+    "hasCustomCornerNormals": true
+  },
+  "authoredAxes": {
+    "source": {
+      "extension": "+Y, short direction between roller assemblies",
+      "roller": "+X, long roller direction",
+      "up": "+Z",
+      "bounds": {
+        "min": [
+          -0.95085901,
+          -0.493717015,
+          -0.103312999
+        ],
+        "max": [
+          0.950146019,
+          0.491912007,
+          0.103556
+        ]
+      },
+      "pca": {
+        "eigenvalues": [
+          0.526066177405,
+          0.147434551526,
+          0.002796656505
+        ],
+        "unitAxesSourceXyz": [
+          [
+            -0.999610561475,
+            0.02788220079,
+            0.001143794913
+          ],
+          [
+            0.027883689905,
+            0.999610319478,
+            0.001307299157
+          ],
+          [
+            0.001106898821,
+            -0.001338683267,
+            0.99999849135
+          ]
+        ]
+      }
+    },
+    "futureDerivative": {
+      "blenderExtension": "+X",
+      "blenderRoller": "-Y",
+      "blenderUp": "+Z",
+      "sourceToCanonicalRotationZDegrees": -90.0,
+      "runtimeExtension": "local +X",
+      "runtimeUp": "+Y"
+    }
+  },
+  "rejectedIndexedComponentPartition": {
+    "rule": "Assign every complete indexed component by source-space centroid Y: negative below -0.30, deck through +/-0.30, positive above +0.30.",
+    "sourceCutY": 0.3,
+    "indexedComponentCount": 3083,
+    "regions": {
+      "negativeRoller": {
+        "indexedComponentCount": 1165,
+        "indexedVertices": 150048,
+        "triangles": 262677,
+        "sourceBounds": {
+          "min": [
+            -0.95085901,
+            -0.493717015,
+            -0.103312999
+          ],
+          "max": [
+            0.950093985,
+            -0.289837003,
+            0.102513
+          ]
+        }
+      },
+      "deck": {
+        "indexedComponentCount": 839,
+        "indexedVertices": 24530,
+        "triangles": 37050,
+        "sourceBounds": {
+          "min": [
+            -0.910493016,
+            -0.322701007,
+            -0.046720002
+          ],
+          "max": [
+            0.895892978,
+            0.308669001,
+            0.051961999
+          ]
+        }
+      },
+      "positiveRoller": {
+        "indexedComponentCount": 1079,
+        "indexedVertices": 143557,
+        "triangles": 252379,
+        "sourceBounds": {
+          "min": [
+            -0.950851977,
+            0.291121989,
+            -0.103256002
+          ],
+          "max": [
+            0.950146019,
+            0.491912007,
+            0.103556
+          ]
+        }
+      }
+    },
+    "planeCrossings": {
+      "negative": {
+        "sourcePlaneY": -0.3,
+        "indexedComponentsCrossingPlane": 89,
+        "trianglesCrossingPlane": 1169
+      },
+      "positive": {
+        "sourcePlaneY": 0.3,
+        "indexedComponentsCrossingPlane": 96,
+        "trianglesCrossingPlane": 1506
+      }
+    },
+    "sourceChannelReassembly": {
+      "purpose": "Rejected chart-component motion diagnostic only",
+      "positionsCoveredExactlyOnce": 318135,
+      "trianglesCoveredExactlyOnce": 552106,
+      "cornersCoveredExactlyOnce": 1656318,
+      "fingerprints": {
+        "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+        "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+        "cornerUvsFloat32Sha256": "8182be9e866c107d655cde099cc46d7ae05023cbca1014f9b5eff73194131566",
+        "customCornerNormalsInt16Sha256": "512702910fb25d5d28f808e10c5d748f54ccf8e81de611452475a9d4821b1d51",
+        "evaluatedCornerNormalsFloat32Sha256": "13f53393a9606ca57d1a365c3dc46e11079a6fc9825dd23843f75fbce05286fb"
+      },
+      "byteExactReassembly": true
+    },
+    "whyReassemblyIsInsufficient": "Exact static reassembly proves byte preservation only. It does not prove that duplicated seam vertices may move independently."
+  },
+  "weldedSurfaceEvidence": {
+    "uniquePositionCount": 275827,
+    "indexedVertexCount": 318135,
+    "duplicateIndexedVerticesAtExactPositions": 42308,
+    "componentCountAfterExactPositionWeld": 1,
+    "largestWeldedComponentPositions": 275827,
+    "componentCountAtAnyNonnegativeTolerance": 1,
+    "toleranceInference": "Exact equal-position welding is already one connected component; allowing any positive positional tolerance can only add connections.",
+    "positionRoleMaskCounts": {
+      "negativeRoller": 130986,
+      "deck": 18082,
+      "negativeRoller+deck": 450,
+      "positiveRoller": 125871,
+      "deck+positiveRoller": 438
+    },
+    "edgeRoleMaskCounts": {
+      "negativeRoller": 393789,
+      "deck": 55129,
+      "negativeRoller+deck": 453,
+      "positiveRoller": 378349,
+      "deck+positiveRoller": 439
+    },
+    "weldedEdges": 828159,
+    "weldedEdgeIncidentTriangleCounts": {
+      "one": 0,
+      "two": 828159,
+      "moreThanTwo": 0
+    },
+    "crossRoleBoundaryGraphs": {
+      "negativeRoller+deck": {
+        "edges": 453,
+        "vertices": 450,
+        "connectedNetworks": 2,
+        "closedLoops": 1,
+        "openChains": 0,
+        "branchedNetworks": 1,
+        "endpoints": 0,
+        "branchVertices": 3,
+        "maximumEdgesInOneNetwork": 399,
+        "totalRawEdgeLength": 6.465825081,
+        "sourceBounds": {
+          "min": [
+            -0.910493016,
+            -0.322701007,
+            -0.046720002
+          ],
+          "max": [
+            0.855359972,
+            -0.289837003,
+            0.051961999
+          ]
+        },
+        "distanceFromNominalPlaneRaw": {
+          "count": 450,
+          "min": 1.0997e-05,
+          "median": 0.001836985,
+          "p95": 0.007272251,
+          "max": 0.022700995
+        },
+        "verticesWithin1e-4RawOfPlane": 7
+      },
+      "deck+positiveRoller": {
+        "edges": 439,
+        "vertices": 438,
+        "connectedNetworks": 2,
+        "closedLoops": 1,
+        "openChains": 0,
+        "branchedNetworks": 1,
+        "endpoints": 0,
+        "branchVertices": 1,
+        "maximumEdgesInOneNetwork": 402,
+        "totalRawEdgeLength": 5.426546097,
+        "sourceBounds": {
+          "min": [
+            -0.862792015,
+            0.291121989,
+            -0.036012001
+          ],
+          "max": [
+            0.895892978,
+            0.308669001,
+            0.049217999
+          ]
+        },
+        "distanceFromNominalPlaneRaw": {
+          "count": 438,
+          "min": 1.3977e-05,
+          "median": 0.002391487,
+          "p95": 0.007497002,
+          "max": 0.008878022
+        },
+        "verticesWithin1e-4RawOfPlane": 10
+      },
+      "negativeRoller+positiveRoller": {
+        "edges": 0,
+        "vertices": 0,
+        "connectedNetworks": 0,
+        "closedLoops": 0,
+        "openChains": 0,
+        "branchedNetworks": 0
+      }
+    },
+    "minimumRetractionSharedPositionGaps": {
+      "negativeRoller+deck": {
+        "count": 450,
+        "min": 1.0424e-05,
+        "median": 0.001739393,
+        "p95": 0.006885859,
+        "max": 0.021494846,
+        "units": "metres",
+        "coincidentWithin0.1Millimetre": 7,
+        "separatedBeyond1Centimetre": 8
+      },
+      "deck+positiveRoller": {
+        "count": 438,
+        "min": 1.3246e-05,
+        "median": 0.002264433,
+        "p95": 0.00709866,
+        "max": 0.0084063,
+        "units": "metres",
+        "coincidentWithin0.1Millimetre": 11,
+        "separatedBeyond1Centimetre": 0
+      },
+      "negativeRoller+positiveRoller": {
+        "count": 0,
+        "min": null,
+        "median": null,
+        "p95": null,
+        "max": null,
+        "units": "metres",
+        "coincidentWithin0.1Millimetre": 0,
+        "separatedBeyond1Centimetre": 0
+      }
+    },
+    "cutPlaneEvidence": {
+      "negative": {
+        "sourcePlaneY": -0.3,
+        "weldedEdgesStrictlyCrossingPlane": 1169
+      },
+      "positive": {
+        "sourcePlaneY": 0.3,
+        "weldedEdgesStrictlyCrossingPlane": 1506
+      }
+    }
+  },
+  "diagnosticMotion": {
+    "minLengthRatio": 0.25,
+    "rule": "For the rejected diagnostic, only the center region scales along canonical X and both side regions translate to the nominal cut planes. Shared welded positions away from those planes separate.",
+    "proofs": {
+      "legend": {
+        "negativeRoller": "orange",
+        "deck": "blue",
+        "positiveRoller": "magenta"
+      },
+      "fullExtensionViews": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/separation-feasibility/rejected-chart-partition-regions-three-quarter.png",
+          "bytes": 450996,
+          "sha256": "2d01f08d2d9080e39dd5787ee9c035acece22c1380c330cb1ae24dd31df1c885",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/separation-feasibility/rejected-chart-partition-regions-top.png",
+          "bytes": 590623,
+          "sha256": "c053e670add495a22ac9617e4d08e36c3835c00ad4dbca2ec76e8fb631dd94a4",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "end": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/separation-feasibility/rejected-chart-partition-regions-end.png",
+          "bytes": 347732,
+          "sha256": "9f1c15bbd6fa0f8b466f0ab5ab1704de8ad12fc1c0fb8b0e9f8806d5f4ef11f0",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "invalidMotionViews": {
+        "000": {
+          "progress": 0.0,
+          "lengthRatio": 0.25,
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/separation-feasibility/rejected-chart-partition-motion-000.png",
+          "bytes": 432678,
+          "sha256": "ab4c432c844119aaeb39d8a0492d93678ba2918707bf6268e3c5cbbba63bdf81",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "025": {
+          "progress": 0.25,
+          "lengthRatio": 0.4375,
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/separation-feasibility/rejected-chart-partition-motion-025.png",
+          "bytes": 437955,
+          "sha256": "83ce1092094feb28a325152e2bd59ff91c6bb452b86e7877ec2c6c4cfc171fcf",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "warning": "The moving proofs intentionally expose why the chart-component split is rejected. They are not motion approval or a runtime candidate."
+    }
+  },
+  "decision": {
+    "candidateBlendWritten": false,
+    "runtimeGlbWritten": false,
+    "platformAdapterJsonWritten": false,
+    "runtimeReady": false,
+    "acceptedRoleNodes": [],
+    "acceptedMaterialSlots": [],
+    "requiredRefinement": [
+      "Bisect a derivative at reviewed deck/roller planes while leaving the dense master immutable.",
+      "Retain every unaffected source triangle, UV corner, custom normal, and provider PBR assignment.",
+      "Create new closed cap faces at both cut planes with explicit provenance and a separate cap material slot.",
+      "Name the three disjoint derivative roots ScrollDeck, ScrollRollerNegative, and ScrollRollerPositive only after reopen and motion proof.",
+      "Render full, quarter, and minimum extension states and audit boundary closure before any platform_adapter_json or runtime export.",
+      "Treat clear glass/gold replacement and gameplay collision as later acceptance gates; the source remains opaque provider PBR."
+    ]
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_scroll_separation_feasibility.py"
+}

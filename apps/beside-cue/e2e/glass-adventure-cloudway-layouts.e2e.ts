@@ -54,6 +54,33 @@ async function metric(page: Page, name: string): Promise<number> {
   )
 }
 
+async function lowerCanvasThumbOrigin(
+  page: Page,
+): Promise<{ x: number; y: number }> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>(
+      'canvas[aria-label="Floating glass museum"]',
+    )
+    const stick = document.querySelector<HTMLElement>(
+      '[role="group"][aria-label="Move Merc"]',
+    )
+    if (canvas === null || stick === null)
+      throw new Error('Missing the Cloudway canvas or touch-stick region.')
+
+    const canvasBox = canvas.getBoundingClientRect()
+    const stickBox = stick.getBoundingClientRect()
+    const left = Math.max(canvasBox.left, stickBox.left) + 24
+    const right = Math.min(canvasBox.right, stickBox.right) - 24
+    const top = Math.max(canvasBox.top, stickBox.top) + 24
+    const bottom = Math.min(canvasBox.bottom, stickBox.bottom) - 24
+    for (let y = bottom; y >= top; y -= 16)
+      for (let x = left; x <= right; x += 16)
+        if (document.elementFromPoint(x, y) === canvas) return { x, y }
+
+    throw new Error('The touch-stick region has no canvas-backed origin.')
+  })
+}
+
 async function suspendRasterOutput(page: Page): Promise<void> {
   await page
     .getByLabel('Floating glass museum')
@@ -326,19 +353,12 @@ test.describe('touch route input', () => {
   }) => {
     const audition = CLOUDWAY_LAYOUT_AUDITIONS.crescent
     await openAudition(page, audition)
-    const stick = await page
-      .getByRole('group', { name: 'Move Merc' })
-      .boundingBox()
     const jump = await page
       .getByRole('button', { name: 'Jump', exact: true })
       .boundingBox()
-    expect(stick).not.toBeNull()
     expect(jump).not.toBeNull()
-    const centre = {
-      x: stick!.x + stick!.width / 2,
-      y: stick!.y + stick!.height / 2,
-    }
-    const movement = { id: 1, x: centre.x, y: centre.y - 28 }
+    const centre = await lowerCanvasThumbOrigin(page)
+    const movement = { id: 1, x: centre.x, y: centre.y - 44 }
     const jumpPoint = {
       id: 2,
       x: jump!.x + jump!.width / 2,
@@ -349,10 +369,15 @@ test.describe('touch route input', () => {
       type: 'touchStart',
       touchPoints: [{ id: 1, ...centre }],
     })
+    const floatingPad = page.getByTestId('floating-stick-base')
+    await expect(floatingPad).toHaveAttribute('data-active', 'true')
+    const startZ = await metric(page, 'player-z')
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [movement],
     })
+    await page.clock.runFor(64)
+    expect(await metric(page, 'player-z')).toBeGreaterThan(startZ)
     for (let frame = 0; frame < 160; frame++) {
       await page.clock.runFor(32)
       if ((await metric(page, 'player-z')) >= 3.08) break
@@ -371,6 +396,7 @@ test.describe('touch route input', () => {
       type: 'touchCancel',
       touchPoints: [],
     })
+    await expect(floatingPad).toHaveAttribute('data-active', 'false')
     await cdp.detach()
     expect(await metric(page, 'player-z')).toBeGreaterThan(4.3)
     expect(await metric(page, 'player-y')).toBeGreaterThanOrEqual(0)

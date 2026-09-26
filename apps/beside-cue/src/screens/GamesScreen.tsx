@@ -1,3 +1,4 @@
+import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '@irchiinnuss/glass-game/promenade'
 import { preloadF0Detector, releasePreloadedDetector, } from '@irchiinnuss/pitch-engine'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import './games.css'
@@ -33,6 +34,7 @@ type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
 
 type PlayPick =
   | 'adventure'
+  | 'promenade'
   | 'journey'
   | 'trials'
   | 'cabinet3d'
@@ -183,6 +185,12 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'adventure'}>
             <AdventureScreen campaign onExit={() => setPlaying(null)} />
           </Show>
+          <Show when={playing() === 'promenade'}>
+            <AdventureScreen
+              level={CLOUDWAY_CRYSTAL_PROMENADE_STUDY}
+              onExit={() => setPlaying(null)}
+            />
+          </Show>
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />
           </Show>
@@ -217,6 +225,7 @@ export function GamesScreen(props: GamesScreenProps) {
             when={
               playing() !== 'cabinet3d' &&
               playing() !== 'adventure' &&
+              playing() !== 'promenade' &&
               playing() !== 'hallway3d' &&
               playing() !== 'chambers' &&
               playing() !== 'line' &&
@@ -274,6 +283,32 @@ export function GamesScreen(props: GamesScreenProps) {
             <span class="game-card__blurb">
               Wander a floating glass museum. Move and jump with controls; hold
               a note to break its beautiful treasures.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('promenade')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              Crystal Promenade<span class="game-card__chip">Preview</span>
+            </span>
+            <span class="game-card__blurb">
+              Time your jumps across crystal platforms. Sing on the resting
+              islands to open the way home.
             </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">

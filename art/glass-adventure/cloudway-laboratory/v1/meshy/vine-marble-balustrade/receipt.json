@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "vine-marble-balustrade",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/vine-marble-balustrade.png",
+    "sha256": "c8d94a4c31fa8c88335260c02d89b234e2601cc8785be05228f1d0999608cf62",
+    "bytes": 1981691,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One short modular ivory marble museum balustrade section with two square end posts, three beautifully shaped balusters, a smooth top rail, thin gold accents and a small restrained green ivy sprig tucked on the outer side. Clean architectural stone, width 2 height .85, flat base. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T13:04:36.939108+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3045,
+  "submissionStartedAtUtc": "2026-09-25T13:04:36.939120+00:00",
+  "taskId": "01a0d8aa-f424-7661-aa3b-67e4a699441e",
+  "submittedAtUtc": "2026-09-25T13:04:40.753458+00:00",
+  "balanceAfterSubmit": 3005,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8aa-f424-7661-aa3b-67e4a699441e",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341480585,
+    "started_at": 1790341480591,
+    "finished_at": 1790341677849,
+    "expires_at": 1790600877849,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T13:08:01.449313+00:00",
+  "finalStatus": {
+    "id": "01a0d8aa-f424-7661-aa3b-67e4a699441e",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341480585,
+    "started_at": 1790341480591,
+    "finished_at": 1790341677849,
+    "expires_at": 1790600877849,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/vine-marble-balustrade/dense-donor.glb",
+      "bytes": 60679192,
+      "sha256": "452d2ac9efc2a6f11706e949c6a166da4276bf31fb15826a580a28de166a484c",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 174749,
+      "triangles": 300086
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-base_color.png",
+        "bytes": 66613834,
+        "sha256": "5ab8d20868a6216ce37cbb57c950e835fe91b7cfce5c85799f86b2b359ee1145",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-metallic.png",
+        "bytes": 4611815,
+        "sha256": "b21f24a336b7c71e0f032ca1af6e597b88a4998459e194be93f37b47dbfe94f3",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-normal.png",
+        "bytes": 14938755,
+        "sha256": "53cbac56f0b81050efab033fc1cb5f8af444d13edb263c804bc51c2bd1cfec87",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-roughness.png",
+        "bytes": 4541888,
+        "sha256": "da7439b6c23df07859ff83af97245742440e4ef2c2d8e8771d37c0be8660159b",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/vine-marble-balustrade/preview.png",
+      "bytes": 103071,
+      "sha256": "5b63455b588216979524d685e437e70873689f1e7bd473e6b7ece99281005d51",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T13:08:10.081496+00:00",
+  "balanceAfterArchive": 3005,
+  "observedBalanceDeltaFinal": 40,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T13:08:11.064146+00:00"
+}

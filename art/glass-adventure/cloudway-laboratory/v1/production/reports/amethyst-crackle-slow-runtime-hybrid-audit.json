@@ -1,0 +1,1207 @@
+{
+  "schema": "cloudway-amethyst-crackle-runtime-hybrid-audit/v1",
+  "assetId": "amethyst-crackle-slow",
+  "status": "fresh-open candidate audit passed; runtime acceptance tracked separately",
+  "candidate": {
+    "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-runtime-hybrid-candidate.blend",
+    "bytes": 290113013,
+    "sha256": "183597d8fcf8df58547391edbeaa909747e65e215850c29c702160c3bc1cf662"
+  },
+  "denseMasterSha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+  "metadata": {
+    "version": 1,
+    "coordinates": {
+      "upAxis": "+Y",
+      "units": "metres",
+      "origin": "top-centre-of-fully-extended-support"
+    },
+    "support": {
+      "state": "intact",
+      "topY": 0,
+      "width": 1.64,
+      "depth": 1.1
+    },
+    "motion": {
+      "kind": "crackle",
+      "roles": {
+        "persistent": [
+          "CloudwayLab_AmethystCrackleSlow__persistent"
+        ],
+        "intactGlass": "CloudwayLab_AmethystCrackleSlow__intact",
+        "contact": "CloudwayLab_AmethystCrackleSlow__contact",
+        "shards": [
+          "CloudwayLab_AmethystCrackleSlow__shard_000",
+          "CloudwayLab_AmethystCrackleSlow__shard_001",
+          "CloudwayLab_AmethystCrackleSlow__shard_002",
+          "CloudwayLab_AmethystCrackleSlow__shard_003",
+          "CloudwayLab_AmethystCrackleSlow__shard_004",
+          "CloudwayLab_AmethystCrackleSlow__shard_005",
+          "CloudwayLab_AmethystCrackleSlow__shard_006",
+          "CloudwayLab_AmethystCrackleSlow__shard_007",
+          "CloudwayLab_AmethystCrackleSlow__shard_008",
+          "CloudwayLab_AmethystCrackleSlow__shard_009",
+          "CloudwayLab_AmethystCrackleSlow__shard_010",
+          "CloudwayLab_AmethystCrackleSlow__shard_011",
+          "CloudwayLab_AmethystCrackleSlow__shard_012",
+          "CloudwayLab_AmethystCrackleSlow__shard_013",
+          "CloudwayLab_AmethystCrackleSlow__shard_014",
+          "CloudwayLab_AmethystCrackleSlow__shard_015",
+          "CloudwayLab_AmethystCrackleSlow__shard_016",
+          "CloudwayLab_AmethystCrackleSlow__shard_017"
+        ]
+      },
+      "materials": {
+        "glass": "CloudwayLab_Amethyst__glass",
+        "framework": "CloudwayLab_Amethyst__framework",
+        "internalDetail": "CloudwayLab_Amethyst__internal_detail",
+        "cornerDetail": "CloudwayLab_Amethyst__corner_provider_pbr",
+        "accent": "CloudwayLab_Amethyst__luminous_accent"
+      }
+    }
+  },
+  "collider": {
+    "shape": "box",
+    "width": 1.64,
+    "depth": 1.1,
+    "height": 0.25,
+    "topY": 0,
+    "center": [
+      0,
+      -0.125,
+      0
+    ]
+  },
+  "contact": {
+    "vertices": [
+      [
+        -0.82,
+        -0.55,
+        0.0
+      ],
+      [
+        -0.82,
+        0.55,
+        0.0
+      ],
+      [
+        0.82,
+        -0.55,
+        0.0
+      ],
+      [
+        0.82,
+        0.55,
+        0.0
+      ]
+    ],
+    "rendered": false
+  },
+  "materials": {
+    "persistent": [
+      "CloudwayLab_Amethyst__corner_provider_pbr",
+      "CloudwayLab_Amethyst__framework"
+    ],
+    "intact": [
+      "CloudwayLab_Amethyst__glass",
+      "CloudwayLab_Amethyst__internal_detail",
+      "CloudwayLab_Amethyst__luminous_accent"
+    ]
+  },
+  "geometry": {
+    "shell": {
+      "vertices": 216,
+      "polygons": 218,
+      "triangles": 428,
+      "uniqueEdges": 432,
+      "boundaryEdges": 0,
+      "nonTwoFaceEdges": 0,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.359402808304,
+      "closedOriented": true,
+      "bounds": {
+        "min": [
+          -0.819999993,
+          -0.550000012,
+          -0.100000001
+        ],
+        "max": [
+          0.819999993,
+          0.550000012,
+          0.100000001
+        ]
+      }
+    },
+    "internalDetail": {
+      "vertices": 628763,
+      "polygons": 1149701,
+      "triangles": 1149701,
+      "uniqueEdges": 1775761,
+      "boundaryEdges": 102419,
+      "nonTwoFaceEdges": 102419,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.402919916874,
+      "closedOriented": false,
+      "bounds": {
+        "min": [
+          -0.846827686,
+          -0.584139585,
+          -0.266088784
+        ],
+        "max": [
+          0.846755326,
+          0.583669007,
+          0.018035762
+        ]
+      }
+    },
+    "sourceCornerDetail": {
+      "vertices": 160114,
+      "polygons": 283887,
+      "triangles": 283887,
+      "uniqueEdges": 443347,
+      "boundaryEdges": 35033,
+      "nonTwoFaceEdges": 35033,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.072389377435,
+      "closedOriented": false,
+      "bounds": {
+        "min": [
+          -0.849999964,
+          -0.589013696,
+          -0.26758787
+        ],
+        "max": [
+          0.850000024,
+          0.589013636,
+          0.018793799
+        ]
+      }
+    },
+    "shards": [
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_000",
+        "geometry": "AmethystRuntimeShardGlass_000",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_000",
+        "assembledTranslationBlenderZUp": [
+          -0.678645849,
+          -0.420415372,
+          -0.140230283
+        ],
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.015310342271,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.141354159,
+              -0.12958461,
+              -0.109769717
+            ],
+            "max": [
+              0.141354159,
+              0.12958461,
+              0.109769717
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 21625,
+          "polygons": 39204,
+          "triangles": 39204,
+          "uniqueEdges": 60722,
+          "boundaryEdges": 3832,
+          "nonTwoFaceEdges": 3832,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.008797088855,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.167734504,
+              -0.163466185,
+              -0.125580832
+            ],
+            "max": [
+              0.179174334,
+              0.194705099,
+              0.158079445
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_001",
+        "geometry": "AmethystRuntimeShardGlass_001",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_001",
+        "assembledTranslationBlenderZUp": [
+          -0.377084225,
+          -0.412170768,
+          -0.139418125
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.01688223404,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.175370157,
+              -0.137829214,
+              -0.110581875
+            ],
+            "max": [
+              0.175370157,
+              0.137829214,
+              0.110581875
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 34433,
+          "polygons": 61750,
+          "triangles": 61750,
+          "uniqueEdges": 96005,
+          "boundaryEdges": 6760,
+          "nonTwoFaceEdges": 6760,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012459053424,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.224253446,
+              -0.171696544,
+              -0.119909108
+            ],
+            "max": [
+              0.211973459,
+              0.140350163,
+              0.152025372
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_002",
+        "geometry": "AmethystRuntimeShardGlass_002",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_002",
+        "assembledTranslationBlenderZUp": [
+          -0.05541116,
+          -0.38643834,
+          -0.13882421
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.018671197154,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.181186706,
+              -0.163561657,
+              -0.11117579
+            ],
+            "max": [
+              0.181186706,
+              0.163561657,
+              0.11117579
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 34460,
+          "polygons": 61318,
+          "triangles": 61318,
+          "uniqueEdges": 95567,
+          "boundaryEdges": 7180,
+          "nonTwoFaceEdges": 7180,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012353463864,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.189140037,
+              -0.196532577,
+              -0.120524451
+            ],
+            "max": [
+              0.191235527,
+              0.179129705,
+              0.151431441
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_003",
+        "geometry": "AmethystRuntimeShardGlass_003",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_003",
+        "assembledTranslationBlenderZUp": [
+          0.303076237,
+          -0.400052398,
+          -0.140031606
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.019464827231,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.206920713,
+              -0.149947584,
+              -0.109968401
+            ],
+            "max": [
+              0.206920713,
+              0.149947584,
+              0.109968401
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 35021,
+          "polygons": 62282,
+          "triangles": 62282,
+          "uniqueEdges": 97086,
+          "boundaryEdges": 7326,
+          "nonTwoFaceEdges": 7326,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014589801478,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.227744251,
+              -0.180257767,
+              -0.119316161
+            ],
+            "max": [
+              0.255989462,
+              0.157965466,
+              0.152571857
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_004",
+        "geometry": "AmethystRuntimeShardGlass_004",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_004",
+        "assembledTranslationBlenderZUp": [
+          0.640898526,
+          -0.331528872,
+          -0.139822036
+        ],
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.024567473057,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.179101437,
+              -0.21847111,
+              -0.110177971
+            ],
+            "max": [
+              0.179101437,
+              0.21847111,
+              0.110177971
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 37344,
+          "polygons": 68014,
+          "triangles": 68014,
+          "uniqueEdges": 105201,
+          "boundaryEdges": 6360,
+          "nonTwoFaceEdges": 6360,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.017800378357,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.182258844,
+              -0.252610713,
+              -0.126266748
+            ],
+            "max": [
+              0.205205977,
+              0.251333535,
+              0.157857805
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_005",
+        "geometry": "AmethystRuntimeShardGlass_005",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_005",
+        "assembledTranslationBlenderZUp": [
+          -0.655093312,
+          -0.124304853,
+          -0.1387541
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.021796090889,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.16490671,
+              -0.170740604,
+              -0.1112459
+            ],
+            "max": [
+              0.16490671,
+              0.170740604,
+              0.1112459
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 26489,
+          "polygons": 49343,
+          "triangles": 49343,
+          "uniqueEdges": 75734,
+          "boundaryEdges": 3439,
+          "nonTwoFaceEdges": 3439,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014149064225,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.183261216,
+              -0.213349164,
+              -0.120608836
+            ],
+            "max": [
+              0.19881162,
+              0.212278724,
+              0.151369363
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_006",
+        "geometry": "AmethystRuntimeShardGlass_006",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_006",
+        "assembledTranslationBlenderZUp": [
+          -0.301307172,
+          -0.160600603,
+          -0.139674351
+        ],
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.02550110418,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.211707219,
+              -0.187134087,
+              -0.110325649
+            ],
+            "max": [
+              0.211707219,
+              0.187134087,
+              0.110325649
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 32268,
+          "polygons": 57446,
+          "triangles": 57446,
+          "uniqueEdges": 89510,
+          "boundaryEdges": 6682,
+          "nonTwoFaceEdges": 6682,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.009587539336,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.235866696,
+              -0.188888162,
+              -0.109617248
+            ],
+            "max": [
+              0.213357419,
+              0.202025726,
+              0.141726315
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_007",
+        "geometry": "AmethystRuntimeShardGlass_007",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_007",
+        "assembledTranslationBlenderZUp": [
+          0.109993927,
+          -0.186995178,
+          -0.140129879
+        ],
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.023778392323,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.215581864,
+              -0.196671456,
+              -0.109870121
+            ],
+            "max": [
+              0.215581864,
+              0.196671456,
+              0.109870121
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 41989,
+          "polygons": 74195,
+          "triangles": 74195,
+          "uniqueEdges": 115884,
+          "boundaryEdges": 9183,
+          "nonTwoFaceEdges": 9183,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.008984108062,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.217243537,
+              -0.233868003,
+              -0.109535828
+            ],
+            "max": [
+              0.221630692,
+              0.19877857,
+              0.143505037
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_008",
+        "geometry": "AmethystRuntimeShardGlass_008",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_008",
+        "assembledTranslationBlenderZUp": [
+          0.555138171,
+          -0.093355678,
+          -0.138906479
+        ],
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.03017404823,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.264861822,
+              -0.231582642,
+              -0.111093514
+            ],
+            "max": [
+              0.264861822,
+              0.231582642,
+              0.111093514
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 47741,
+          "polygons": 84980,
+          "triangles": 84980,
+          "uniqueEdges": 132377,
+          "boundaryEdges": 9814,
+          "nonTwoFaceEdges": 9814,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.011795353442,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.28827554,
+              -0.233587712,
+              -0.120441288
+            ],
+            "max": [
+              0.282362819,
+              0.269630641,
+              0.151487827
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_009",
+        "geometry": "AmethystRuntimeShardGlass_009",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_009",
+        "assembledTranslationBlenderZUp": [
+          -0.629742742,
+          0.17461203,
+          -0.13926509
+        ],
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.023595197838,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.190257251,
+              -0.174081177,
+              -0.11073491
+            ],
+            "max": [
+              0.190257251,
+              0.174081177,
+              0.11073491
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 21082,
+          "polygons": 39368,
+          "triangles": 39368,
+          "uniqueEdges": 60365,
+          "boundaryEdges": 2626,
+          "nonTwoFaceEdges": 2626,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.013470127146,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.208606422,
+              -0.175035685,
+              -0.120063037
+            ],
+            "max": [
+              0.191101998,
+              0.175469592,
+              0.151894629
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_010",
+        "geometry": "AmethystRuntimeShardGlass_010",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_010",
+        "assembledTranslationBlenderZUp": [
+          -0.234911397,
+          0.139001369,
+          -0.140249848
+        ],
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.028055437517,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.227665126,
+              -0.191680819,
+              -0.109750159
+            ],
+            "max": [
+              0.227665126,
+              0.191680819,
+              0.109750159
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 40959,
+          "polygons": 73673,
+          "triangles": 73673,
+          "uniqueEdges": 114401,
+          "boundaryEdges": 7783,
+          "nonTwoFaceEdges": 7783,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.010608389168,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.233343378,
+              -0.206256628,
+              -0.109415859
+            ],
+            "max": [
+              0.256218821,
+              0.198673218,
+              0.143155366
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_011",
+        "geometry": "AmethystRuntimeShardGlass_011",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_011",
+        "assembledTranslationBlenderZUp": [
+          0.213881388,
+          0.111341104,
+          -0.139255375
+        ],
+        "topology": {
+          "vertices": 42,
+          "polygons": 45,
+          "triangles": 80,
+          "uniqueEdges": 85,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.027748895339,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.236172765,
+              -0.210051745,
+              -0.110744625
+            ],
+            "max": [
+              0.236172765,
+              0.210051745,
+              0.110744625
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 49842,
+          "polygons": 89029,
+          "triangles": 89029,
+          "uniqueEdges": 138552,
+          "boundaryEdges": 10017,
+          "nonTwoFaceEdges": 10017,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.01038052394,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.266631424,
+              -0.225336194,
+              -0.110937089
+            ],
+            "max": [
+              0.224578992,
+              0.214595184,
+              0.142247498
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_012",
+        "geometry": "AmethystRuntimeShardGlass_012",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_012",
+        "assembledTranslationBlenderZUp": [
+          0.635027051,
+          0.138893992,
+          -0.138957664
+        ],
+        "topology": {
+          "vertices": 34,
+          "polygons": 38,
+          "triangles": 64,
+          "uniqueEdges": 70,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.022340245423,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.184972927,
+              -0.215273082,
+              -0.111042336
+            ],
+            "max": [
+              0.184972927,
+              0.215273082,
+              0.111042336
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 36099,
+          "polygons": 66452,
+          "triangles": 66452,
+          "uniqueEdges": 102398,
+          "boundaryEdges": 5440,
+          "nonTwoFaceEdges": 5440,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.016106397006,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.208474606,
+              -0.249761418,
+              -0.120390102
+            ],
+            "max": [
+              0.204148948,
+              0.219316155,
+              0.151632756
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_013",
+        "geometry": "AmethystRuntimeShardGlass_013",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_013",
+        "assembledTranslationBlenderZUp": [
+          -0.666611552,
+          0.422909707,
+          -0.140146136
+        ],
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014726801869,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.15338847,
+              -0.127090305,
+              -0.109853864
+            ],
+            "max": [
+              0.15338847,
+              0.127090305,
+              0.109853864
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 24237,
+          "polygons": 44622,
+          "triangles": 44622,
+          "uniqueEdges": 68767,
+          "boundaryEdges": 3668,
+          "nonTwoFaceEdges": 3668,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.009555006782,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.180216134,
+              -0.148654252,
+              -0.125904262
+            ],
+            "max": [
+              0.184599698,
+              0.1607593,
+              0.158088148
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_014",
+        "geometry": "AmethystRuntimeShardGlass_014",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_014",
+        "assembledTranslationBlenderZUp": [
+          -0.327569336,
+          0.391814262,
+          -0.139644116
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.021849962939,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.198226005,
+              -0.15818575,
+              -0.110355884
+            ],
+            "max": [
+              0.198226005,
+              0.15818575,
+              0.110355884
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 38630,
+          "polygons": 69295,
+          "triangles": 69295,
+          "uniqueEdges": 107736,
+          "boundaryEdges": 7587,
+          "nonTwoFaceEdges": 7587,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014054668958,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.215848297,
+              -0.176476225,
+              -0.11981526
+            ],
+            "max": [
+              0.226177722,
+              0.187469095,
+              0.152192414
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_015",
+        "geometry": "AmethystRuntimeShardGlass_015",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_015",
+        "assembledTranslationBlenderZUp": [
+          0.041483738,
+          0.394922227,
+          -0.138757959
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.0203810053,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.202326089,
+              -0.155077785,
+              -0.111242041
+            ],
+            "max": [
+              0.202326089,
+              0.155077785,
+              0.111242041
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 38686,
+          "polygons": 71408,
+          "triangles": 71408,
+          "uniqueEdges": 109936,
+          "boundaryEdges": 5648,
+          "nonTwoFaceEdges": 5648,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014746716363,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.260187835,
+              -0.158056676,
+              -0.120721057
+            ],
+            "max": [
+              0.231586903,
+              0.183602184,
+              0.151329488
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_016",
+        "geometry": "AmethystRuntimeShardGlass_016",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_016",
+        "assembledTranslationBlenderZUp": [
+          0.378187835,
+          0.348468602,
+          -0.139849693
+        ],
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.02388183829,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.196253121,
+              -0.20153141,
+              -0.110150307
+            ],
+            "max": [
+              0.196253121,
+              0.20153141,
+              0.110150307
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 48407,
+          "polygons": 88888,
+          "triangles": 88888,
+          "uniqueEdges": 137103,
+          "boundaryEdges": 7542,
+          "nonTwoFaceEdges": 7542,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014269824459,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.198326319,
+              -0.232875317,
+              -0.119652539
+            ],
+            "max": [
+              0.199517906,
+              0.229646027,
+              0.152367651
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_017",
+        "geometry": "AmethystRuntimeShardGlass_017",
+        "surfaceDetail": "AmethystRuntimeShardSurfaceDetail_017",
+        "assembledTranslationBlenderZUp": [
+          0.671794176,
+          0.438887179,
+          -0.140009329
+        ],
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012155079919,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.148205847,
+              -0.111112811,
+              -0.109990671
+            ],
+            "max": [
+              0.148205847,
+              0.111112811,
+              0.109990671
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 26601,
+          "polygons": 48434,
+          "triangles": 48434,
+          "uniqueEdges": 74907,
+          "boundaryEdges": 4512,
+          "nonTwoFaceEdges": 4512,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.007616985453,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.179347605,
+              -0.136609614,
+              -0.125966057
+            ],
+            "max": [
+              0.17496115,
+              0.144306839,
+              0.157964736
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "proofHashesVerified": 9,
+  "checks": [
+    "authoritative platform_adapter_json only",
+    "strict collider_json box schema",
+    "exact direct role roots and contiguous 18 shard names",
+    "closed oriented inner shell and shard glass volumes",
+    "exact dense provider intact exterior preserves archived UVs and remains non-collision",
+    "open provider-PBR shard details partition every intact exterior face exactly once",
+    "intact body and persistent corner cutout partition every original donor face",
+    "open non-collision source corner cutout preserves provider UVs under persistent",
+    "provider top lattice hides atomically with the intact exterior",
+    "each shard root at its local assembled AABB centre",
+    "explicit glass, internal detail, framework, corner detail, and accent material bindings",
+    "exact 1.64 x 1.10m non-rendered contact rectangle with no ornament",
+    "dense master and proof hashes unchanged"
+  ]
+}

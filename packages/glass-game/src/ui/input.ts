@@ -1,5 +1,5 @@
 // Adventure input — independently owned movement, camera and jump contacts.
-import type { MovementInput } from '../contracts'
+import type { MovementInput, MovementReferenceKind } from '../contracts'
 
 const MOVEMENT_INTENT_THRESHOLD = 0.001
 
@@ -39,7 +39,7 @@ export interface AdventureInput {
   /** World-space heading requested by the current contact, before acceleration. */
   desiredTravelYaw(yaw: number): number | null
   hasMovementIntent(): boolean
-  consumeMovementReferenceChange(): boolean
+  consumeMovementReferenceChange(): MovementReferenceKind | null
   setStick(x: number, y: number): void
   setJump(down: boolean): void
   clear(): void
@@ -51,7 +51,7 @@ export function createAdventureInput(): AdventureInput {
   let stickY = 0
   let stickActive = false
   let touchJump = false
-  let referenceChange: 'keyboard' | 'stick' | null = null
+  let referenceChange: MovementReferenceKind | null = null
   const movementAxes = () => ({
     x:
       stickX +
@@ -131,7 +131,7 @@ export function createAdventureInput(): AdventureInput {
       return hasMovementIntent(movementAxes())
     },
     consumeMovementReferenceChange() {
-      const changed = referenceChange !== null
+      const changed = referenceChange
       referenceChange = null
       return changed
     },

@@ -12,7 +12,8 @@
     "./campaign": "./src/ui/GlassCampaign.tsx",
     "./browser": "./src/browser/browser-host.ts",
     "./assets": "./src/browser/assets.ts",
-    "./encore-examples": "./src/content/encore-examples.ts"
+    "./encore-examples": "./src/content/encore-examples.ts",
+    "./promenade": "./src/content/cloudway-laboratory.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

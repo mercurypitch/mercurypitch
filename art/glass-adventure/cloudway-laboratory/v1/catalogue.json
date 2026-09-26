@@ -1,0 +1,232 @@
+{
+  "schema": 1,
+  "source": "owner reference and authorized 2026-09-25 task",
+  "assets": [
+    {
+      "id": "gilt-scroll-bridge",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A rectangular pale aquamarine glass walking bridge, fully extended flat glass deck with TWO parallel polished warm gold scroll rollers along its left and right sides. Elegant rolled manuscript finials, restrained celestial engravings. End faces open for jumping. No legs, no rail across the ends. Clear mechanically distinct roller housings and center glass deck. Width 2.0 depth 3.0 thickness .25.",
+      "texturePrompt": "A rectangular pale aquamarine glass walking bridge, fully extended flat glass deck with TWO parallel polished warm gold scroll rollers along its left and right sides. Elegant rolled manuscript finials, restrained celestial engravings. End faces open for jumping. No legs, no rail across the ends. Clear mechanically distinct roller housings and center glass deck. Width 2.0 depth 3.0 thickness .25. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/gilt-scroll-bridge.png",
+      "referenceSha256": "1f29ae707d1170293d37cda5e5981153ea6098b96ee5e8840d6d509e5960b8e5",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/gilt-scroll-bridge.webp"
+    },
+    {
+      "id": "rose-quartz-crackle-fast",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One broad rectangular thick rose-pink crystal glass platform with fine golden diamond lattice within translucent glass, beautiful fine luminous rose fissure veins contained within the solid, delicate gold corner clasps, jewel-cut lower facets and a smooth perfectly flat top. Width 2.4 depth 1.9 thickness .4. No broken loose shards, spikes or pedestal. This is the beautiful delicate two-second breakaway platform.",
+      "texturePrompt": "One broad rectangular thick rose-pink crystal glass platform with fine golden diamond lattice within translucent glass, beautiful fine luminous rose fissure veins contained within the solid, delicate gold corner clasps, jewel-cut lower facets and a smooth perfectly flat top. Width 2.4 depth 1.9 thickness .4. No broken loose shards, spikes or pedestal. This is the beautiful delicate two-second breakaway platform. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/rose-quartz-crackle-fast.png",
+      "referenceSha256": "7d8f0b7d89fdd85266996efe8420542f686955e355ec4699375d22365c6a2cdf",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/rose-quartz-crackle-fast.webp"
+    },
+    {
+      "id": "amethyst-crackle-slow",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One broad rectangular lavender-purple crystal glass platform, opalescent pink reflections, silver-gold fine geometric triangular lattice contained inside the thick translucent glass, delicate gold rounded corner clasps, faceted solid underside, perfectly flat top. Width 2.4 depth 1.9 thickness .5. No debris, spikes or pedestal. This is the strong four-second breakaway platform.",
+      "texturePrompt": "One broad rectangular lavender-purple crystal glass platform, opalescent pink reflections, silver-gold fine geometric triangular lattice contained inside the thick translucent glass, delicate gold rounded corner clasps, faceted solid underside, perfectly flat top. Width 2.4 depth 1.9 thickness .5. No debris, spikes or pedestal. This is the strong four-second breakaway platform. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/amethyst-crackle-slow.png",
+      "referenceSha256": "1316c16bf53f7b88adfae55d25cce726456a9d3791a0b7abaf4f9e4a77f6fd66",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/amethyst-crackle-slow.webp"
+    },
+    {
+      "id": "frost-lily-step",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A rectangular glacier-blue crystal ice stepping platform with a subtle deeply etched lily snowflake on its perfectly flat top, beautiful internal bubbles and translucent icy depth, frosted round bevels and gold corner clasps. Shallow solid slab, width 2.4 depth 1.8 thickness .5, no long spikes.",
+      "texturePrompt": "A rectangular glacier-blue crystal ice stepping platform with a subtle deeply etched lily snowflake on its perfectly flat top, beautiful internal bubbles and translucent icy depth, frosted round bevels and gold corner clasps. Shallow solid slab, width 2.4 depth 1.8 thickness .5, no long spikes. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/frost-lily-step.png",
+      "referenceSha256": "f4faa77644dfd73656d5a2cd67bc9500f18bc58111dc5c86d750c68d8ddfedf5",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/frost-lily-step.webp"
+    },
+    {
+      "id": "pearl-marble-long",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: An elongated rectangular ivory Carrara marble walking platform with very delicate grey veins, two parallel gold border inlays, one small teal sun medallion at each end, shallow elegant curved fascia underneath, smooth broad flat safe walkway. Width 1.8 depth 3.5 thickness .45. No vegetation or rails.",
+      "texturePrompt": "An elongated rectangular ivory Carrara marble walking platform with very delicate grey veins, two parallel gold border inlays, one small teal sun medallion at each end, shallow elegant curved fascia underneath, smooth broad flat safe walkway. Width 1.8 depth 3.5 thickness .45. No vegetation or rails. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/pearl-marble-long.png",
+      "referenceSha256": "9778846007db620a09ac376fdb5491762d47f274733ef8787f3d0272def1be29",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/pearl-marble-long.webp"
+    },
+    {
+      "id": "emerald-square-turn",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A broad square ivory marble landing pad, emerald and gold compass mosaic inlaid flush into its flat walkable top, scalloped shallow fascia, fine gold corner rosettes. Flat square silhouette width 3 depth 3 thickness .4, no central raised objects or rails.",
+      "texturePrompt": "A broad square ivory marble landing pad, emerald and gold compass mosaic inlaid flush into its flat walkable top, scalloped shallow fascia, fine gold corner rosettes. Flat square silhouette width 3 depth 3 thickness .4, no central raised objects or rails. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/emerald-square-turn.png",
+      "referenceSha256": "857de350e8d813b4df602bb93176527e73613981603a74a351efd5044fd2bf26",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/emerald-square-turn.webp"
+    },
+    {
+      "id": "moonstone-cross-landing",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A square moonstone and opal marble resting platform, flat wide ivory surface inlaid with an elegant four-way golden musical sun pattern and pale pearl crescents. Rounded corners but square support slab, shallow carved underside, width 3 depth 3 thickness .5. No raised middle or ornaments blocking exits.",
+      "texturePrompt": "A square moonstone and opal marble resting platform, flat wide ivory surface inlaid with an elegant four-way golden musical sun pattern and pale pearl crescents. Rounded corners but square support slab, shallow carved underside, width 3 depth 3 thickness .5. No raised middle or ornaments blocking exits. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/moonstone-cross-landing.png",
+      "referenceSha256": "5b96c94e2feb2923023e7f5d8fcaf57e624a311ce52f944cb482e465ceaf558f",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/moonstone-cross-landing.webp"
+    },
+    {
+      "id": "aurora-glide-raft",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One elongated rectangular teal and sapphire opal glass floating raft, smooth flat surface with subtle golden wave lines and pearly iridescent edges, compact gold corner fittings, softly faceted shallow bottom. Width 1.8 depth 2.7 thickness .35. No ropes, wheels, rails or legs.",
+      "texturePrompt": "One elongated rectangular teal and sapphire opal glass floating raft, smooth flat surface with subtle golden wave lines and pearly iridescent edges, compact gold corner fittings, softly faceted shallow bottom. Width 1.8 depth 2.7 thickness .35. No ropes, wheels, rails or legs. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/aurora-glide-raft.png",
+      "referenceSha256": "7df25bf505963e877680c82f5520905f883765be51ebaa1dc38e6112a2f4a622",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/aurora-glide-raft.webp"
+    },
+    {
+      "id": "ivory-stair-terrace",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One standalone short elegant ivory marble stair module with THREE wide deep flat steps, subtle grey veins, thin gold nosing and beautifully carved side panels with restrained art nouveau leaves. Width 3 depth 3 total height .75, each tread flat, open top landing, no handrail or plants.",
+      "texturePrompt": "One standalone short elegant ivory marble stair module with THREE wide deep flat steps, subtle grey veins, thin gold nosing and beautifully carved side panels with restrained art nouveau leaves. Width 3 depth 3 total height .75, each tread flat, open top landing, no handrail or plants. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/ivory-stair-terrace.png",
+      "referenceSha256": "8202aa62460140fa1237d9b80e681470a4eda13bc5ba787caef10ca9530a6977",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/ivory-stair-terrace.webp"
+    },
+    {
+      "id": "opal-glass-long-bridge",
+      "category": "platform",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One long narrow rectangular opal glass bridge with a thick transparent pale peach center deck and two warm gold perimeter strips, tiny elegant diamond ornaments only underneath, a faint straight gold musical staff inlaid flush inside the glass top. Width 1.5 depth 4 thickness .3, no rails, no columns.",
+      "texturePrompt": "One long narrow rectangular opal glass bridge with a thick transparent pale peach center deck and two warm gold perimeter strips, tiny elegant diamond ornaments only underneath, a faint straight gold musical staff inlaid flush inside the glass top. Width 1.5 depth 4 thickness .3, no rails, no columns. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/opal-glass-long-bridge.png",
+      "referenceSha256": "f728aea8099295155427f2e254d5abf1d3014619acd7520a6228b942641a57bc",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/opal-glass-long-bridge.webp"
+    },
+    {
+      "id": "frosted-scroll-wall",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A freestanding rectangular ivory-and-gold museum doorway frame surrounding a single thick pale cyan frosted glass pane. Frost etched in a delicate curling music-wave motif, distinct removable pane inset into the arch, stable broad foot at each side. Frame approximately width 2.8 height 3 depth .35. No doorway opening yet, no masonry wall or backdrop.",
+      "texturePrompt": "A freestanding rectangular ivory-and-gold museum doorway frame surrounding a single thick pale cyan frosted glass pane. Frost etched in a delicate curling music-wave motif, distinct removable pane inset into the arch, stable broad foot at each side. Frame approximately width 2.8 height 3 depth .35. No doorway opening yet, no masonry wall or backdrop. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/frosted-scroll-wall.png",
+      "referenceSha256": "d0ea1f452003b09065c86675cf260cd37f73559625c64117abef6ce7a1926f53",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/frosted-scroll-wall.webp"
+    },
+    {
+      "id": "camellia-singing-vase",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: An exquisite rose-pink translucent crystal vase with a rounded generous belly, narrow neck and gracefully flared lip, fine gold camellia petals etched into the crystal, two subtle gold foot rings. Hollow vessel with visible mouth, flat stable foot. No flowers inside, no pedestal.",
+      "texturePrompt": "An exquisite rose-pink translucent crystal vase with a rounded generous belly, narrow neck and gracefully flared lip, fine gold camellia petals etched into the crystal, two subtle gold foot rings. Hollow vessel with visible mouth, flat stable foot. No flowers inside, no pedestal. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/camellia-singing-vase.png",
+      "referenceSha256": "5440ffba8979e11dc2a859971e2df99c5724b841b55e33b92e1059a97c7c93df",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/camellia-singing-vase.webp"
+    },
+    {
+      "id": "celadon-harp-urn",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One elegant celadon and jade-green translucent glass urn with two graceful harp-shaped golden handles and a small hollow open mouth, fine art nouveau gold fern inlays, smoothly rounded belly and stable low foot. Rich museum quality, no plants, no pedestal.",
+      "texturePrompt": "One elegant celadon and jade-green translucent glass urn with two graceful harp-shaped golden handles and a small hollow open mouth, fine art nouveau gold fern inlays, smoothly rounded belly and stable low foot. Rich museum quality, no plants, no pedestal. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/celadon-harp-urn.png",
+      "referenceSha256": "16c30fb686f3177d105f1c99ab08bfb4ba68de43f79b1d73d4ab4ee9ce34f2a7",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/celadon-harp-urn.webp"
+    },
+    {
+      "id": "amethyst-hourglass",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: A freestanding luxurious amethyst hourglass within a warm gilt three-column frame, two distinct purple crystal bulbs with pale rosy sand, broad ivory top and base discs with tiny gold stars, clean polished surfaces. All parts mechanically sensible, no background or pedestal.",
+      "texturePrompt": "A freestanding luxurious amethyst hourglass within a warm gilt three-column frame, two distinct purple crystal bulbs with pale rosy sand, broad ivory top and base discs with tiny gold stars, clean polished surfaces. All parts mechanically sensible, no background or pedestal. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/amethyst-hourglass.png",
+      "referenceSha256": "d5a1e296d1cb2c95a62cb230c04b9c76055967681fe4693a4a9162dcb9613e27",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/amethyst-hourglass.webp"
+    },
+    {
+      "id": "crystal-lotus-goblet",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: An exquisite tall wine goblet with a wide clear sky-blue crystal bowl cut like overlapping lotus petals, slim warm gold stem, round flat crystalline foot with gold ring, delicately etched star pattern around lip. Hollow open drinking bowl, no liquid, no plinth.",
+      "texturePrompt": "An exquisite tall wine goblet with a wide clear sky-blue crystal bowl cut like overlapping lotus petals, slim warm gold stem, round flat crystalline foot with gold ring, delicately etched star pattern around lip. Hollow open drinking bowl, no liquid, no plinth. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/crystal-lotus-goblet.png",
+      "referenceSha256": "2f3b53f25eeb2dd0e07a102ba784769e5099fa0348b2ee2fa51463070ed27ec4",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/crystal-lotus-goblet.webp"
+    },
+    {
+      "id": "pearl-ribbon-lantern",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One freestanding museum lantern of pale pearl glass inside gracefully looping warm gold ribbon ribs, short sturdy stem and broad round ivory marble foot, soft unlit frosted inner glass, delicate lotus finial. No actual emitted glow, no flame, no background.",
+      "texturePrompt": "One freestanding museum lantern of pale pearl glass inside gracefully looping warm gold ribbon ribs, short sturdy stem and broad round ivory marble foot, soft unlit frosted inner glass, delicate lotus finial. No actual emitted glow, no flame, no background. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/pearl-ribbon-lantern.png",
+      "referenceSha256": "362f8b1d73f6a792c32e41b9df23736ccf107ba7600e59e196b3a1887071c025",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/pearl-ribbon-lantern.webp"
+    },
+    {
+      "id": "gilded-music-stand",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One elegant art nouveau sheet music stand, warm satin gold curved tripod legs, ivory-and-gold openwork music rest with a subtle sun medallion, blank single ivory score board, broad stable feet. No printed text, no notes, no instrument.",
+      "texturePrompt": "One elegant art nouveau sheet music stand, warm satin gold curved tripod legs, ivory-and-gold openwork music rest with a subtle sun medallion, blank single ivory score board, broad stable feet. No printed text, no notes, no instrument. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/gilded-music-stand.png",
+      "referenceSha256": "947f19df7bf8f3fd497928989d6066fa9502cdfc260f507f23fb1c295558d555",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/gilded-music-stand.webp"
+    },
+    {
+      "id": "vine-marble-balustrade",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One short modular ivory marble museum balustrade section with two square end posts, three beautifully shaped balusters, a smooth top rail, thin gold accents and a small restrained green ivy sprig tucked on the outer side. Clean architectural stone, width 2 height .85, flat base.",
+      "texturePrompt": "One short modular ivory marble museum balustrade section with two square end posts, three beautifully shaped balusters, a smooth top rail, thin gold accents and a small restrained green ivy sprig tucked on the outer side. Clean architectural stone, width 2 height .85, flat base. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/vine-marble-balustrade.png",
+      "referenceSha256": "c8d94a4c31fa8c88335260c02d89b234e2601cc8785be05228f1d0999608cf62",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/vine-marble-balustrade.webp"
+    },
+    {
+      "id": "rose-mirror-panel",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One upright ornate rectangular art nouveau mirror frame in warm antique gold and rose glass petal inlays, flat blank desaturated pale silver inner mirror panel with no reflected scene. Two short elegant stable feet. Beautiful controlled ornamental curves, no text, no person.",
+      "texturePrompt": "One upright ornate rectangular art nouveau mirror frame in warm antique gold and rose glass petal inlays, flat blank desaturated pale silver inner mirror panel with no reflected scene. Two short elegant stable feet. Beautiful controlled ornamental curves, no text, no person. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/rose-mirror-panel.png",
+      "referenceSha256": "9f4da9225f9c203a3c1e7b3ff931dcee37a05d1b56bfdec6e3fa3ad02295332f",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/rose-mirror-panel.webp"
+    },
+    {
+      "id": "singing-fountain-basin",
+      "category": "object",
+      "referencePrompt": "Use case: stylized-concept. Asset type: single-object 3D modeling reference for MercuryPitch Glassworks floating museum. Create a high quality detailed studio product render of exactly ONE complete isolated object, three-quarter perspective viewed slightly from above so top, front, right side and thickness are readable. Elegant fantasy museum, ivory marble, warm restrained gold, opal and jewel glass; craftsmanship, clean deliberate silhouette and realistic material depth. Neutral light grey seamless background, soft studio light, very faint contact shadow. Entire object in frame with margin, centered, sharp. No labels, letters, watermarks, characters, scenery, additional objects, wireframes or collage. Subject: One shallow circular ivory marble fountain basin with a scalloped gold rim, a low central lotus bowl, pale teal mosaic inside the empty basin, small sculpted shell spouts integrated into rim, broad stable base. NO water, liquid, splash, vapor, plants or surrounding ground; reusable polished dry architectural object.",
+      "texturePrompt": "One shallow circular ivory marble fountain basin with a scalloped gold rim, a low central lotus bowl, pale teal mosaic inside the empty basin, small sculpted shell spouts integrated into rim, broad stable base. NO water, liquid, splash, vapor, plants or surrounding ground; reusable polished dry architectural object. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+      "state": "reference-reviewed",
+      "reference": "references/singing-fountain-basin.png",
+      "referenceSha256": "026d8cdde40e50dc079bedaab3c7f79570be67a96bdaac3e34b097ab15da4468",
+      "generator": "built-in ChatGPT image generation",
+      "preview": "previews/singing-fountain-basin.webp"
+    }
+  ],
+  "productionStatus": "Meshy blocked: Proton Pass CLI session expired; no paid jobs submitted.",
+  "sourceStorage": {
+    "privateAlias": "<user-dotfiles>/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
+    "syncRelative": "5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
+    "note": "Large originals, meshes, PBR, Blender masters and renders belong here. Git keeps metadata and small preview derivatives. Local presence is verified; remote sync completion is not asserted."
+  }
+}

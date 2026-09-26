@@ -130,6 +130,10 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   expect(Math.abs(strafe.x * expected.z - strafe.z * expected.x)).toBeLessThan(
     0.08,
   )
+  const releasedTurn = Math.abs((await value(page, 'camera-yaw')) - draggedYaw)
+  expect(releasedTurn).toBeGreaterThan(0.05)
+  expect(releasedTurn).toBeLessThan(0.3)
+  await page.clock.runFor(900)
   expect(
     Math.abs((await value(page, 'camera-yaw')) - draggedYaw),
   ).toBeGreaterThan(0.4)
@@ -159,16 +163,18 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('wheel zoom preserves brief side steps and follows sustained turns @smoke', async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 640, height: 480 })
-  await openMuseum(page)
-  await page.mouse.move(320, 250)
+// Each zoom starts at spawn so repeated travel cannot turn a wall collision
+// into a false camera-intent result.
+for (const wheel of [-1_100, 2_350, -1_250]) {
+  test(`wheel zoom ${wheel} preserves brief side steps and follows a sustained turn @smoke`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 640, height: 480 })
+    await openMuseum(page)
+    await page.mouse.move(320, 250)
 
-  // Real wheel input exercises the UI-to-rig path at near, far and middle zoom.
-  // Derive Merc's heading from actual travel, independently of the camera API.
-  for (const wheel of [-1_100, 2_350, -1_250]) {
+    // Derive Merc's heading from actual travel, independently of the camera
+    // API, at near, far and middle zoom across the parameterized cases.
     await page.mouse.wheel(0, wheel)
     await page.clock.runFor(32)
     const beforeTap = await value(page, 'camera-yaw')
@@ -194,7 +200,7 @@ test('wheel zoom preserves brief side steps and follows sustained turns @smoke',
     await page.keyboard.down('KeyA')
     await page.clock.runFor(450)
     await page.keyboard.up('KeyA')
-    await page.clock.runFor(1_200)
+    await page.clock.runFor(1_500)
     const dx = (await value(page, 'player-x')) - start[0]
     const dz = (await value(page, 'player-z')) - start[1]
     expect(Math.hypot(dx, dz)).toBeGreaterThan(0.15)
@@ -202,8 +208,15 @@ test('wheel zoom preserves brief side steps and follows sustained turns @smoke',
     const view = await value(page, 'camera-yaw')
     const error = Math.atan2(Math.sin(heading - view), Math.cos(heading - view))
     expect(Math.abs(error)).toBeLessThan(0.04)
-  }
+  })
+}
 
+test('a sustained turn after a fresh manual look finishes after the quiet window @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  await page.mouse.move(320, 250)
   await page.mouse.down()
   await page.mouse.move(410, 250, { steps: 5 })
   await page.mouse.up()
@@ -211,8 +224,9 @@ test('wheel zoom preserves brief side steps and follows sustained turns @smoke',
   const manualYaw = await value(page, 'camera-yaw')
   await page.clock.runFor(1_200)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(manualYaw, 5)
-  // Move immediately after a second look gesture, without waiting out a long
-  // quiet timer. Sustained intent must still leave a turn to finish.
+  // Move immediately after a second look gesture. The 1.15s manual quiet
+  // window overlaps the held contact, then the bounded 80-degree/s response
+  // still has enough time to finish the committed turn.
   await page.mouse.down()
   await page.mouse.move(430, 250, { steps: 3 })
   await page.mouse.up()
@@ -221,7 +235,7 @@ test('wheel zoom preserves brief side steps and follows sustained turns @smoke',
   await page.keyboard.down('KeyA')
   await page.clock.runFor(450)
   await page.keyboard.up('KeyA')
-  await page.clock.runFor(1_200)
+  await page.clock.runFor(2_200)
   const heading = Math.atan2(
     start[0] - (await value(page, 'player-x')),
     start[1] - (await value(page, 'player-z')),
@@ -384,7 +398,7 @@ test.describe('phone', () => {
   test('three fingers move, orbit and jump independently; cancellation releases the controls @smoke', async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     await openMuseum(page)
     const cdp = await context.newCDPSession(page)
     const stick = await page
@@ -395,15 +409,29 @@ test.describe('phone', () => {
       .boundingBox()
     expect(stick).not.toBeNull()
     expect(jump).not.toBeNull()
-    const centre = {
-      x: stick!.x + stick!.width / 2,
-      y: stick!.y + stick!.height / 2,
+    const origin = {
+      x: stick!.x + Math.min(60, stick!.width * 0.36),
+      y: stick!.y + stick!.height - 64,
     }
-    const movement = { id: 1, x: centre.x + 20, y: centre.y - 8 }
+    const beforeContact = [
+      await value(page, 'player-x'),
+      await value(page, 'player-z'),
+    ]
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 1, ...centre }],
+      touchPoints: [{ id: 1, ...origin }],
     })
+    await page.clock.runFor(120)
+    expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
+    expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 1, x: origin.x + 4, y: origin.y - 2 }],
+    })
+    await page.clock.runFor(120)
+    expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
+    expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
+    const movement = { id: 1, x: origin.x + 30, y: origin.y - 16 }
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [movement],
@@ -417,6 +445,10 @@ test.describe('phone', () => {
         (await value(page, 'player-z')) - z,
       ),
     ).toBeGreaterThan(0.03)
+    if (process.env.GLASS_CONTROLS_PROOF === '1')
+      await page.screenshot({
+        path: testInfo.outputPath('floating-stick-active.png'),
+      })
     const yaw = await value(page, 'camera-yaw')
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',

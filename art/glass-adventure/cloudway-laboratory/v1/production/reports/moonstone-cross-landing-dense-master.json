@@ -1,0 +1,442 @@
+{
+  "schema": 1,
+  "assetId": "moonstone-cross-landing",
+  "label": "Moonstone Cross Landing",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/moonstone-cross-landing/dense-donor.glb",
+    "bytes": 55442288,
+    "sha256": "b7059f9901012e28d3aa99ef0ab5753b65553eb295055c4aefccb5cd7f4581ca",
+    "taskId": "01a0d893-968f-7465-9a38-688510ad6f0c",
+    "receipt": {
+      "file": "source-assets/meshy/moonstone-cross-landing/receipt.json",
+      "bytes": 6599,
+      "sha256": "292d7650969e57bdc40cfcd28bdba23722d35114c537153983be80ca2dc9c5f6"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 203885,
+    "triangles": 373820,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "b627c9c1e694883fa132c364bdf999db2a8a9cc3617333c91748e4c3a1c5805c",
+    "triangleIndicesInt32Sha256": "be0257fb2fe545abd19358413f3df35931123a3a95b121ff03f0a9338de8355e",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1005,
+      "largestVertexCounts": [
+        2942,
+        2111,
+        1985,
+        1895,
+        1785,
+        1756,
+        1748,
+        1677,
+        1673,
+        1590,
+        1583,
+        1530
+      ],
+      "largestVertexFractions": [
+        0.014429703,
+        0.010353876,
+        0.009735881,
+        0.009294455,
+        0.008754935,
+        0.008612698,
+        0.008573461,
+        0.008225225,
+        0.008205606,
+        0.007798514,
+        0.007764181,
+        0.00750423
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.576728343964,
+        0.0,
+        0.0,
+        0.001293686219
+      ],
+      [
+        0.0,
+        1.576728343964,
+        0.0,
+        -0.000220712813
+      ],
+      [
+        0.0,
+        0.0,
+        1.576728343964,
+        -0.223348602653
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.576728343964,
+        0.0,
+        0.0,
+        0.001293686219
+      ],
+      [
+        0.0,
+        1.576728343964,
+        0.0,
+        -0.000220712813
+      ],
+      [
+        0.0,
+        0.0,
+        1.576728343964,
+        -0.223348602653
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.498651128,
+        -1.500000028,
+        -0.451007689
+      ],
+      "max": [
+        1.498651128,
+        1.500000028,
+        0.02063435
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.997302256,
+      3.000000056,
+      0.471642039
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 3.0,
+      "sourceRawUnits": 1.9026740193367004,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951301992,
+        -0.951197028,
+        -0.144387007
+      ],
+      "max": [
+        0.949661016,
+        0.951476991,
+        0.154740006
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.900963008,
+      1.902674019,
+      0.299127012
+    ],
+    "landingRawZ": 0.141653199,
+    "heightToleranceRaw": 0.00233693,
+    "patchTriangles": 109338,
+    "patchAreaRawSquareUnits": 3.103569151,
+    "patchBoundsRaw": {
+      "min": [
+        -0.931079984,
+        -0.927848995,
+        0.138908997
+      ],
+      "max": [
+        0.929944992,
+        0.928484976,
+        0.146188006
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.861024976,
+      1.856333971,
+      0.007279009
+    ],
+    "horizontalCoverage": [
+      0.978990631,
+      0.975644778
+    ],
+    "relativePatchHeightSpread": 0.024334174,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "moonstone slab",
+      "gold sun inlay",
+      "pearl crescent inlays",
+      "carved underside"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Slab, inlays, and underside ornament are not authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/moonstone-cross-landing/textures/set-0-base_color.png",
+        "bytes": 66858408,
+        "sha256": "d18cc920837892cf27030d253bbc4c9af005b03b09e365ff81c32a53034bd103",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/moonstone-cross-landing/textures/set-0-normal.png",
+        "bytes": 12764617,
+        "sha256": "a3e8ede426bc494dcb920a10374e07c4e7158ce0352962be3bc65e479c67129d",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/moonstone-cross-landing/textures/set-0-metallic.png",
+        "bytes": 6861856,
+        "sha256": "6f6a78a102e5268c89baa770bf9add32ed5afc2316b8b679c9dbb23340e9695b",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/moonstone-cross-landing/textures/set-0-roughness.png",
+        "bytes": 6688800,
+        "sha256": "b40ec6b837ec686ae1990c2235b8d06e46e4e3c50ab65d4ec2cb923016872fd4",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-three-quarter.png",
+          "bytes": 477754,
+          "sha256": "b364455af94e406ba7cb707c0c73c6d7f167168252571edf5b8fb75491673ab9",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-top.png",
+          "bytes": 498757,
+          "sha256": "3d0e0db5b06e4d29b12f8dfd195211aaf8cb85ffeca4926008710147d82ee2de",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-side.png",
+          "bytes": 339747,
+          "sha256": "afe46473c401adc5bd55b6e3423964baea982f9c029c8fd6552ce14948b83e7e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-three-quarter.png",
+          "bytes": 653860,
+          "sha256": "0e635d24e369fd2cd8a4bbbbb59555c5a4efea41252eac719c7461d75c66089d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-top.png",
+          "bytes": 1256168,
+          "sha256": "6a7598dd14751e5cc7d513d2496a0e7ca70e1d9f56b5dfe7fd7f0263e964887c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-side.png",
+          "bytes": 479818,
+          "sha256": "4c6e21f552d7e5c9a0349ff0614d45db6b47765935f672f7dd1189f8e150abba",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/moonstone-cross-landing/moonstone-cross-landing-dense-master.blend",
+    "bytes": 110764084,
+    "sha256": "40b86274f6e9129a95f6af045da37924d6fb0b0f2f960ae87a8ad5f31dcf1628",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset moonstone-cross-landing",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951301992,
+        -0.951197028,
+        -0.144387007
+      ],
+      "max": [
+        0.949661016,
+        0.951476991,
+        0.154740006
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.900963008,
+      1.902674019,
+      0.299127012
+    ],
+    "landingRawZ": 0.141653199,
+    "heightToleranceRaw": 0.00233693,
+    "patchTriangles": 109338,
+    "patchAreaRawSquareUnits": 3.103569151,
+    "patchBoundsRaw": {
+      "min": [
+        -0.931079984,
+        -0.927848995,
+        0.138908997
+      ],
+      "max": [
+        0.929944992,
+        0.928484976,
+        0.146188006
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.861024976,
+      1.856333971,
+      0.007279009
+    ],
+    "horizontalCoverage": [
+      0.978990631,
+      0.975644778
+    ],
+    "relativePatchHeightSpread": 0.024334174,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

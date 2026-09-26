@@ -1395,6 +1395,13 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 If local and CI counts differ, compare the exact tested merge revision with the feature head: newly landed main tests are included by CI even before a local rebase. An absence query can assert its null result explicitly instead of being mislabeled by the collector as a presence-only document-membership assertion.
 **See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
 
+### Isolate every renderable mesh in Blender comparison proofs
+
+**Symptom:** both the original crystal and its replacement showed polygonal holes, while intact glass looked rough and opaque.
+**Cause:** hiding fracture parent empties left their assembled mesh children visible through source and intact comparison renders.
+**Rule:** apply an explicit renderable-mesh allowlist for each view and save that inventory with the proof. Do not infer child visibility from a hidden parent or change materials until the isolated source comparison is clean.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/rose_crackle_runtime_visuals.py`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
@@ -1444,11 +1451,11 @@ Prove the fix at the same pose before changing geometry or renderer quality.
 **See:** `packages/glass-game/src/render/planar-reflections.ts`,
 `art/glass-adventure/v5/proofs/mirror-backing-sept20/`.
 
-### Separate mirror raster cost from microphone interaction tests
+### Separate rendering cost from input and microphone interaction tests
 
 **Symptom:** a restored player appeared blocked after moving only 0.6–0.8 metres in eight test seconds.
 **Cause:** shrinking the main canvas left the planar reflection target expensive under SwiftShader; slow RAF plus the bounded physics timestep meant slow simulated travel, not a collider.
-**Rule:** inspect position/frame progress before changing world geometry. In behavior-only cases, suppress all draw calls while retaining real loaders, input, clocks and audio. Keep separate actual-render proofs; never claim these tests measure GPU performance.
+**Rule:** inspect position/frame progress before changing world geometry or touch coordinates. In behavior-only cases, suppress draw calls while retaining real loaders and input. For input-only tests, advance controlled simulation time and assert acquisition, travel, braking and stale-contact rejection; wall-clock seconds are not simulated travel time under software rendering. Keep real audio timing in microphone tests and separate actual-render proofs; never claim these tests measure GPU performance.
 **See:** `apps/beside-cue/e2e/glass-adventure-voice.e2e.ts`, `art/glass-adventure/v6-level2/proofs/twin-galleries/`.
 
 ### Never add Claude attribution
@@ -1512,3 +1519,31 @@ named import inside the one-line-import plugin's output without restoring its sp
 that scoped formatting and lint both pass. Do not rerun every local gate.
 **See:** `scripts/pr-prepare.mjs`, `.prettierrc.json`,
 `packages/glass-game/src/content/cloudway-layouts.ts`.
+
+### Measure evaluated glass clearance beneath source detail
+
+**Symptom:** a beautiful provider crystal became a dark slab or developed triangular dark patches after adding an optical interior; material changes did not restore its source appearance.
+**Cause:** the new glass shell or shard cap occupied the same depth as the retained provider surface. A nominal inset was insufficient when bevel evaluation raised the cap back into the source relief.
+**Rule:** compare source-only, interior-only and combined views with explicit mesh allowlists. Measure clearance after modifiers against the full range of retained surface relief; keep the closed interior inside that envelope. Preserve the original exterior vertices, UVs and split normals when they already provide the approved appearance. Repeat the comparison through the actual GLTFLoader and production adapter before accepting a material change.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/prepare_amethyst_crackle_runtime_candidate.py`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`.
+
+### Dispose specialized scene owners before generic traversal
+
+**Symptom:** an adapter's isolated resource tests passed, but full renderer teardown disposed its material and shared textures twice.
+**Cause:** a material clone owned by the adapter still referenced textures owned by the material library. Generic scene disposal ran first and treated that unlisted clone as owning its textures; the adapter and library then performed their own cleanup.
+**Rule:** specialized owners must detach and dispose their scene objects before generic traversal, while shared material ownership remains available. Dispose the library last. Test the complete teardown path with a real shared texture and repeated disposal, rather than only testing an adapter with texture-free fixture materials.
+**See:** `packages/glass-game/src/render/glass-renderer.ts`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`, `packages/glass-game/src/render/dispose.ts`.
+
+### Meshopt's decoder needs lazy loading and a WebAssembly CSP permission
+
+**Symptom:** unrelated legacy Glass3D browser cases reported CSP page errors after a compressed museum asset was added.
+**Cause:** a static Meshopt decoder import immediately initializes WebAssembly, even when the current level never uses compressed geometry. Beside Cue's `script-src 'self'` forbade that initialization.
+**Rule:** initialize the decoder on the first compressed-buffer request and permit the narrow `wasm-unsafe-eval` source in the application's CSP. Do not add JavaScript `unsafe-eval`. Verify a real compressed GLB under the actual app policy as well as the unaffected legacy route. Preserve concurrent asset downloads and retry a failed dynamic-import request without masking decoder failures.
+**See:** `apps/beside-cue/index.html`, `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
+
+### Inspect runtime asset bytes before changing a 3D model
+
+**Symptom:** a locally served museum failed with `Unexpected token v, version ht... is not valid JSON`.
+**Cause:** required GLB paths contained Git LFS pointer text after a worktree checkout, not model bytes.
+**Rule:** inspect the failing response and hydrate the exact runtime inventory before regenerating art; private source symlinks do not supply public runtime deliveries. The gallery guard names unresolved pointers, while native builds verify their inventory.
+**See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/scripts/native-games.ts`.

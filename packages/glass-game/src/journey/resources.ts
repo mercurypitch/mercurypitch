@@ -15,6 +15,16 @@ interface ParsedJourneyGltf {
   animations: AnimationClip[]
 }
 
+const GIT_LFS_POINTER_HEADER = 'version https://git-lfs.github.com/spec/v1'
+
+function isGitLfsPointer(bytes: ArrayBuffer): boolean {
+  if (bytes.byteLength < GIT_LFS_POINTER_HEADER.length) return false
+  const prefix = new Uint8Array(bytes, 0, GIT_LFS_POINTER_HEADER.length)
+  for (let index = 0; index < GIT_LFS_POINTER_HEADER.length; index++)
+    if (prefix[index] !== GIT_LFS_POINTER_HEADER.charCodeAt(index)) return false
+  return true
+}
+
 export interface JourneyGltfLoadOptions {
   fetch?: typeof fetch
   parse?: (
@@ -37,13 +47,32 @@ export async function loadJourneyGltf(
   options: JourneyGltfLoadOptions = {},
 ): Promise<JourneyGltfDocument> {
   const response = await (options.fetch ?? fetch)(url, { signal })
-  if (!response.ok) throw new Error(`Journey asset unavailable: ${url}`)
+  // Capacitor's iOS asset handler can return bundled media with status 0 and
+  // the complete body. Other failed statuses are real HTTP failures; status 0
+  // is accepted only after proving that readable bytes arrived.
+  if (!response.ok && response.status !== 0)
+    throw new Error(`Journey asset unavailable: ${url}`)
   const bytes = await response.arrayBuffer()
   if (signal.aborted) throw abortError()
+  if (!response.ok && bytes.byteLength === 0)
+    throw new Error(`Journey asset unavailable: ${url}`)
+  if (isGitLfsPointer(bytes))
+    throw new Error(
+      `Journey asset is an unresolved Git LFS pointer: ${url}. Hydrate the runtime game assets with Git LFS, then reload the museum.`,
+    )
   const resourcePath = url.slice(0, Math.max(0, url.lastIndexOf('/') + 1))
-  const parsed = await (
-    options.parse ?? ((data, path) => new GLTFLoader().parseAsync(data, path))
-  )(bytes, resourcePath)
+  let parsed: ParsedJourneyGltf
+  try {
+    parsed = await (
+      options.parse ?? ((data, path) => new GLTFLoader().parseAsync(data, path))
+    )(bytes, resourcePath)
+  } catch (error) {
+    if (signal.aborted) throw abortError()
+    const detail = error instanceof Error ? ` ${error.message}` : ''
+    throw new Error(`Journey asset could not be parsed: ${url}.${detail}`, {
+      cause: error,
+    })
+  }
   if (signal.aborted) {
     disposeObject(parsed.scene)
     throw abortError()

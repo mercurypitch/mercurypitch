@@ -555,7 +555,7 @@ export function useAdventure(
         const movementReferenceChanged = input.consumeMovementReferenceChange()
         renderer?.setMovementActive(movementActive)
         if (movementActive && movementReferenceChanged)
-          renderer?.rebaseMovement()
+          renderer?.rebaseMovement(movementReferenceChanged)
         events(
           game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )

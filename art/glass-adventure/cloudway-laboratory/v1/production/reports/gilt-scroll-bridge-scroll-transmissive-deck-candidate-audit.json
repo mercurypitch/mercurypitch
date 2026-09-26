@@ -1,0 +1,247 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "reopen-audit-passed",
+  "scope": "Fresh-process audit of the separate transmissive-deck review candidate; no runtime acceptance is conferred.",
+  "candidateBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-transmissive-deck-candidate.blend",
+    "bytes": 143714431,
+    "sha256": "34e919c1bfe1da286c525fc6c413463abbb9702ecfe537553baf50abad3a669b"
+  },
+  "sourceCheckpoint": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-semantic-derivative.blend",
+    "bytes": 143606834,
+    "sha256": "721eb36a482a13f9f57509c0623f3c30c17aa644eabb5182629bad046838174b"
+  },
+  "hierarchy": {
+    "root": "Cloudway_GiltScrollBridge_TransmissiveDeckCandidate",
+    "roleRootsDirectChildren": true,
+    "detailLayersMoveWithDeck": true,
+    "platformAdapterJsonPresent": false
+  },
+  "geometry": {
+    "rollerFingerprintsMatchReport": true,
+    "sourceDeckReferenceFingerprintMatchesReport": true,
+    "sourceDeckReferenceHidden": true,
+    "planarInset": {
+      "fingerprint": {
+        "vertices": 96,
+        "triangles": 188,
+        "positionsFloat32Sha256": "e7dc5a0f580129c868fc5fd0ebcffb6f3cc44b7983a9e39fe2cddc131abcbca3",
+        "trianglesInt32Sha256": "678209de7677551d3cdad546413805d6aa01b5a54e23f0a2d3884bbb5ea950e0"
+      },
+      "closure": {
+        "indexedVertices": 96,
+        "triangles": 188,
+        "exactWeldedPositions": 96,
+        "exactWeldedEdges": 282,
+        "weldedEdgesWithOneIncidentTriangle": 0,
+        "weldedEdgesWithTwoIncidentTriangles": 282,
+        "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+        "weldedConnectedComponents": 1,
+        "closedTwoManifoldAfterExactPositionWeld": true
+      },
+      "canonicalBoundsMetres": {
+        "min": [
+          -0.384747028,
+          -1.115944676,
+          -0.100000001
+        ],
+        "max": [
+          0.384747028,
+          1.114019341,
+          0.0
+        ]
+      },
+      "flatTopTriangles": 2,
+      "flatTopZSpanMetres": 0.0,
+      "flatTopGeometricNormalMaxTiltDegrees": 0.0,
+      "authoredClosedPlanarOpticalSurface": true
+    },
+    "deckCanonicalZRangeMetres": [
+      -0.100000001,
+      0.0
+    ],
+    "deckClosedThicknessMetres": 0.100000001,
+    "detailLayers": {
+      "gold": {
+        "object": "ScrollDeckGoldStarDetailLayer",
+        "vertices": 480,
+        "triangles": 960,
+        "positionsFloat32Sha256": "edea4d4b2fcaaab21446e67784f50fbc8070929f4b51707b66349e0936c85239",
+        "trianglesInt32Sha256": "659302dcf4813f1ca6847515ad53516947033fd9df126ce877a210fe6f77dba9",
+        "material": "GiltScrollDeck_GoldStarDetail_Candidate",
+        "parent": "ScrollDeck"
+      },
+      "etch": {
+        "object": "ScrollDeckFrostEtchDetailLayer",
+        "vertices": 3240,
+        "triangles": 6240,
+        "positionsFloat32Sha256": "4b9f7a5a7bdbf785fb6e71e472aa006f9c287a63bceb0178a1f15668b868f42a",
+        "trianglesInt32Sha256": "fa7435c23c490fe7927e26499748f810756695b8d98d5b0a42794664a12b1e1c",
+        "material": "GiltScrollDeck_FrostEtchDetail_Candidate",
+        "parent": "ScrollDeck"
+      }
+    }
+  },
+  "materials": {
+    "rollerRows": {
+      "ScrollRollerNegativeGeometry": {
+        "materialSlots": [
+          "gilt-scroll-bridge__provider_full_pbr",
+          "GiltScrollCutCap_Diagnostic"
+        ],
+        "fingerprint": {
+          "vertices": 151261,
+          "triangles": 265104,
+          "loops": 795312,
+          "positionsFloat32Sha256": "a716774f883bdf49d7d62267b9957f1ee079e2ea303105e956d02d3eeeefb02e",
+          "trianglesInt32Sha256": "36834cc673fd6544679012db39e3974952a7d39dee9ecac0552d284d7f33c755",
+          "cornerUvsFloat32Sha256": "657bdc5f63ae9f36c568fe9a82e0622eddc7278e69c381fd2a3ad22e45ee896a",
+          "sourceVertexIdsInt32Sha256": "51041b4a978b40b3e15aac867725045d290dab7de3016a2d8a35467da045ef33",
+          "sourcePolygonIdsInt32Sha256": "0a48b6945148c9ded0da998a7461f8d84a4dd1b2eb7844b9f79d5f866c338473",
+          "sourceLoopIdsInt32Sha256": "c5c203e637076b6a6bd5fd41c64d5dc08de5ea35d2590ae6c68515d60fdb7300",
+          "faceKindsInt32Sha256": "8ccc88f66832d72636757f02775867f3539d37a9c9816cb4bcd42f1c8efc2143"
+        },
+        "providerPbrPreserved": true
+      },
+      "ScrollRollerPositiveGeometry": {
+        "materialSlots": [
+          "gilt-scroll-bridge__provider_full_pbr",
+          "GiltScrollCutCap_Diagnostic"
+        ],
+        "fingerprint": {
+          "vertices": 144812,
+          "triangles": 254876,
+          "loops": 764628,
+          "positionsFloat32Sha256": "398569f2d2c8314f80898961374f77ccf5645344cb274fd28148e93d46331463",
+          "trianglesInt32Sha256": "db390aca279ed9c6ee5bf3d738a98fe3e04789808276f90f12c8f2d855ef801f",
+          "cornerUvsFloat32Sha256": "2496755fae9042ab491b45b5ac74f8372b53324d5f1f104c86d75061167adba6",
+          "sourceVertexIdsInt32Sha256": "10d28dfbbad0b5d1231b6d3421f185e57c54c0ec70978a9d2d958aea39cb7eb0",
+          "sourcePolygonIdsInt32Sha256": "23eff57ed9c69b7e14da710c40b4bf0ebb5c96cb476ab648dee68ba3b8f67af5",
+          "sourceLoopIdsInt32Sha256": "70e94ff4f126d9b436f8473f1199dcac110874cbd8781546bd24ccab98673c71",
+          "faceKindsInt32Sha256": "930cccea95601de11aae34c0707d787cbe48158a7883a462c3f9387868ac7f91"
+        },
+        "providerPbrPreserved": true
+      }
+    },
+    "rollerProviderPbrPreserved": true,
+    "deckGlassMaterial": "GiltScrollDeck_TransmissiveGlass_Candidate",
+    "transmissionWeight": 0.9850000143051147,
+    "ior": 1.4600000381469727,
+    "roughness": 0.07500000298023224,
+    "providerImageNodesOnDeckGlass": [],
+    "providerNormalConnected": false,
+    "unpackedFileImages": [],
+    "semanticPixelClassificationUsed": false
+  },
+  "proofs": {
+    "source": {
+      "three-quarter": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-source-three-quarter.png",
+        "bytes": 526493,
+        "sha256": "e97aaa6c3e292744b3d0ba888f9e3610e1f110912f94d358886e378bd872c675",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "top": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-source-top.png",
+        "bytes": 728862,
+        "sha256": "7e442273819af28155c6c03329a5dea05b20c1a775b87030f1fdf38f6b5ff7b5",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "side": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-source-side.png",
+        "bytes": 380033,
+        "sha256": "c9290587cd9d55d49dca09af2fbe1ebe85031efeb39cd9975ac43a820f2693ae",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "central-detail-closeup": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-source-central-detail-closeup.png",
+        "bytes": 877236,
+        "sha256": "6a190576a9564ea6c075f01da50710fff470f73f6769ff3bab2c684e059ea812",
+        "dimensions": [
+          1100,
+          820
+        ]
+      }
+    },
+    "candidate": {
+      "three-quarter": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-candidate-three-quarter.png",
+        "bytes": 525133,
+        "sha256": "9569471ec44884c3be6643070ed69717c89ea1dc90072b40ca536cc01f0ff7ac",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "top": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-candidate-top.png",
+        "bytes": 626938,
+        "sha256": "af995ead1870a0dd443ee128c1da916677aaf01eaefe4d1582f008ce63e159d5",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "side": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-candidate-side.png",
+        "bytes": 387744,
+        "sha256": "6b3d82da6684744b00621fd1043a7a37a0a7bd9c0c2fae71ad268518969c5f3b",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "central-detail-closeup": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/matched-candidate-central-detail-closeup.png",
+        "bytes": 706152,
+        "sha256": "f61743ba17addbe80a8a4e98d20dbcc9277dfc34a378ff16f94b4531d20310e8",
+        "dimensions": [
+          1100,
+          820
+        ]
+      }
+    },
+    "transmissionWitness": {
+      "source": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/transmission-witness-source-top.png",
+        "bytes": 731296,
+        "sha256": "29a265eec42a4c64790febfd72045672a44c85ff033590332b1e816b117ea2a0",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "candidate": {
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/transmission-witness-candidate-top.png",
+        "bytes": 710134,
+        "sha256": "58e8407b9855d1cbb43a340d09b9a022deb1a21144c00ca9ed67dece9c12a182",
+        "dimensions": [
+          1100,
+          820
+        ]
+      }
+    }
+  },
+  "gates": {
+    "runtimeReady": false,
+    "materialCandidateAccepted": false,
+    "supportColliderCertified": false,
+    "runtimeGlbProduced": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "rerun": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_scroll_transmissive_candidate.py"
+}

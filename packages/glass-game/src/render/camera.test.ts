@@ -50,6 +50,26 @@ const OPEN_ROOM: LevelDefinition = {
   fallBelow: -2,
 }
 
+const ROUTE_ROOM: LevelDefinition = {
+  ...OPEN_ROOM,
+  id: 'camera-route-room',
+  title: 'Camera route room',
+  camera: {
+    kind: 'route-sections',
+    initialSectionId: 'arrival',
+    landingDwellSeconds: 0.6,
+    sections: [
+      { id: 'arrival', platformIds: ['room'], yaw: Math.PI },
+      {
+        id: 'crossing',
+        platformIds: ['crossing'],
+        yaw: 0,
+        targetOffset: { x: 0.6, y: 0.1, z: 0.8 },
+      },
+    ],
+  },
+}
+
 const ENCLOSED_CORNER_ROOM: LevelDefinition = {
   ...OPEN_ROOM,
   id: 'camera-enclosed-corner',
@@ -323,6 +343,66 @@ function createTestMaterials(): MuseumMaterials {
 }
 
 describe('camera-relative traversal', () => {
+  it('holds an authored route shot in flight and blends after a stable landing', () => {
+    const rig = createAdventureCamera(ROUTE_ROOM)
+    const state = createGlassGame(ROUTE_ROOM).snapshot()
+    const airborne: GameSnapshot = {
+      ...state,
+      player: {
+        ...state.player,
+        grounded: false,
+        supportPlatformId: null,
+        velocity: { x: 1, y: 1, z: 0 },
+      },
+    }
+
+    updateFor(rig, airborne, 1.2)
+    expect(rig.yaw()).toBeCloseTo(Math.PI)
+
+    const landed: GameSnapshot = {
+      ...state,
+      player: {
+        ...state.player,
+        grounded: true,
+        supportPlatformId: 'crossing',
+        velocity: { x: 0, y: 0, z: 0 },
+      },
+    }
+    updateFor(rig, landed, 0.55)
+    expect(rig.yaw()).toBeCloseTo(Math.PI)
+    updateFor(rig, landed, 0.5)
+    const interruptedBlend = rig.yaw()
+    expect(Math.abs(angleError(Math.PI, interruptedBlend))).toBeGreaterThan(0.1)
+
+    updateFor(rig, airborne, 1.2)
+    expect(rig.yaw()).toBeCloseTo(interruptedBlend)
+
+    updateFor(rig, landed, 2.5)
+    expect(Math.abs(angleError(rig.yaw(), 0))).toBeLessThan(0.03)
+
+    const composedTarget = new Vector3(
+      landed.player.position.x + 0.6,
+      landed.player.position.y + 0.52,
+      landed.player.position.z + 0.8,
+    )
+    expect(rig.camera.position.distanceTo(composedTarget)).toBeCloseTo(4, 2)
+  })
+
+  it('keeps a route manual orbit until a new movement contact', () => {
+    const rig = createAdventureCamera(ROUTE_ROOM)
+    const state = createGlassGame(ROUTE_ROOM).snapshot()
+    rig.orbit(0.7, 0)
+    const chosenYaw = rig.yaw()
+
+    updateFor(rig, state, 2)
+    expect(rig.yaw()).toBeCloseTo(chosenYaw)
+
+    rig.setMovementActive(true)
+    rig.rebaseMovement('keyboard')
+    updateFor(rig, withMotion(state, state.player.facingYaw), 2)
+    expect(Math.abs(angleError(rig.yaw(), Math.PI))).toBeLessThan(0.03)
+  })
+
   it('moves away from the camera at all cardinal headings', () => {
     for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
       const forward = cameraRelativeMovement(0, 1, yaw)
@@ -424,7 +504,7 @@ describe('camera-relative traversal', () => {
       Math.abs(angleError(gentleEarlyYaw, -Math.PI / 2)),
     )
   })
-  it('keeps manual orbit until its quiet window expires and movement resumes', () => {
+  it('keeps manual orbit until a fresh deliberate direction requests follow', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const moving = withMotion(createGlassGame(GLASSWORKS).snapshot(), 0)
     rig.setMovementActive(true)
@@ -434,24 +514,17 @@ describe('camera-relative traversal', () => {
 
     updateFor(rig, moving, 2.5)
     expect(rig.yaw()).toBeCloseTo(chosenYaw)
-    expect(rig.movementYaw()).toBeCloseTo(chosenYaw)
+    expect(rig.movementYaw()).toBeCloseTo(GLASSWORKS.spawn.facingYaw)
     rig.setOrbitActive(false)
-    updateFor(rig, moving, 0.15)
+    updateFor(rig, moving, 2.5)
     expect(rig.yaw()).toBeCloseTo(chosenYaw)
-    updateFor(rig, moving, 0.15)
-    expect(
-      Math.abs(angleError(rig.yaw(), moving.player.facingYaw)),
-    ).toBeLessThan(Math.abs(angleError(chosenYaw, moving.player.facingYaw)))
 
-    rig.orbit(0.35, 0)
-    expect(rig.movementYaw()).toBeCloseTo(rig.yaw())
-    const secondOrbit = rig.yaw()
-    updateFor(rig, moving, 0.15)
-    expect(rig.yaw()).toBeCloseTo(secondOrbit)
-    updateFor(rig, moving, 0.15)
-    expect(
-      Math.abs(angleError(rig.yaw(), moving.player.facingYaw)),
-    ).toBeLessThan(Math.abs(angleError(secondOrbit, moving.player.facingYaw)))
+    rig.rebaseMovement('keyboard')
+    const deliberateHeading = chosenYaw + Math.PI / 2
+    updateFor(rig, withMotion(moving, deliberateHeading), 2.5)
+    expect(Math.abs(angleError(rig.yaw(), deliberateHeading))).toBeLessThan(
+      0.03,
+    )
   })
   it.each([false, true])(
     'finishes a short side-step heading after movement stops with zoom=%s',
@@ -628,6 +701,27 @@ describe('camera-relative traversal', () => {
       expect(rig.yaw()).toBe(GLASSWORKS.spawn.facingYaw)
     }
   })
+  it.each([
+    ['pause', { paused: true }],
+    ['encounter', { phase: 'listening' as const }],
+  ])(
+    'discards a held-stick heading when %s interrupts it',
+    (_, interruption) => {
+      const rig = createAdventureCamera(GLASSWORKS)
+      const state = createGlassGame(GLASSWORKS).snapshot()
+      const moving = withMotion(state, Math.PI / 2)
+      const start = rig.yaw()
+      rig.setMovementActive(true)
+      rig.rebaseMovement('stick')
+      updateFor(rig, moving, 0.6)
+      expect(rig.yaw()).toBe(start)
+
+      rig.update(withMotion(state, Math.PI / 2, interruption), FRAME)
+      rig.setMovementActive(false)
+      updateFor(rig, withMotion(state, Math.PI / 2, { speed: 0 }), 2)
+      expect(rig.yaw()).toBe(start)
+    },
+  )
   it('leaves automatic rotation off for reduced motion while retaining manual camera control', () => {
     const rig = createAdventureCamera(GLASSWORKS, { reducedMotion: true })
     const moving = withMotion(createGlassGame(GLASSWORKS).snapshot(), 0)
@@ -636,6 +730,9 @@ describe('camera-relative traversal', () => {
     expect(rig.yaw()).toBe(GLASSWORKS.spawn.facingYaw)
     rig.orbit(0.4, 0)
     expect(rig.yaw()).toBeCloseTo(GLASSWORKS.spawn.facingYaw + 0.4)
+    expect(rig.movementYaw()).toBeCloseTo(GLASSWORKS.spawn.facingYaw)
+    rig.setMovementActive(false)
+    rig.orbit(0.1, 0)
     expect(rig.movementYaw()).toBeCloseTo(rig.yaw())
   })
   it('bounds a long resume frame and a teleported target without snapping heading', () => {
@@ -658,8 +755,12 @@ describe('camera-relative traversal', () => {
     expect(rig.yaw()).toBe(start)
     rig.update(teleported, 30)
     // A delayed frame is clamped to 50ms, then ramps from rest under the
-    // default 14rad/s² acceleration budget rather than jumping to 2.8rad/s.
-    expect(Math.abs(rig.yaw() - start)).toBeCloseTo((14 * 0.05 ** 2) / 2)
+    // default 4.36rad/s² acceleration budget rather than jumping to the
+    // 80-degree/s cap.
+    const acceleration = (80 * Math.PI) / 180 / 0.32
+    expect(Math.abs(rig.yaw() - start)).toBeCloseTo(
+      (acceleration * 0.05 ** 2) / 2,
+    )
     const target = new Vector3(12, 0.42, -9)
     expect(rig.camera.position.distanceTo(target)).toBeCloseTo(4)
   })

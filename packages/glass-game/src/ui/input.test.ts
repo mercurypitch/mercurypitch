@@ -34,49 +34,49 @@ describe('adventure movement reference intent', () => {
     const input = createAdventureInput()
 
     input.key(keyboardEvent('KeyA'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.key(keyboardEvent('KeyA'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.key(keyboardEvent('KeyW'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.key(keyboardEvent('KeyA'), false)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
   })
 
   it('ignores key aliases that leave the normalized net direction unchanged', () => {
     const input = createAdventureInput()
 
     input.key(keyboardEvent('KeyW'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
     input.key(keyboardEvent('ArrowUp'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
     input.key(keyboardEvent('KeyW'), false)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.key(keyboardEvent('ArrowUp'), false)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
     input.key(keyboardEvent('KeyW'), true)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
   })
 
   it('rebases a newly engaged stick but keeps a continuous sweep on one basis', () => {
     const input = createAdventureInput()
 
     input.setStick(-1, 0)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('stick')
     input.setStick(-0.5, -0.866)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
     input.setStick(0, -0.7)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.setStick(0, 0)
     input.setStick(0.6, 0)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('stick')
   })
 
   it('reports keyboard and continuous-stick headings on the stable movement basis', () => {
@@ -105,13 +105,13 @@ describe('adventure movement reference intent', () => {
     input.setStick(0.0005, 0)
     expect(input.hasMovementIntent()).toBe(false)
     expect(input.read(0)).toMatchObject({ moveX: 0, moveZ: 0 })
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
 
     input.setStick(0.5, 0)
-    expect(input.consumeMovementReferenceChange()).toBe(true)
+    expect(input.consumeMovementReferenceChange()).toBe('stick')
     input.clear()
     expect(input.hasMovementIntent()).toBe(false)
-    expect(input.consumeMovementReferenceChange()).toBe(false)
+    expect(input.consumeMovementReferenceChange()).toBeNull()
   })
 
   it.each(['select', 'contenteditable'] as const)(

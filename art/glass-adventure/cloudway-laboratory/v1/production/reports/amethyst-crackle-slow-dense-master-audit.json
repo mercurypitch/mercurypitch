@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "assetId": "amethyst-crackle-slow",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-dense-master.blend",
+    "bytes": 171247689,
+    "sha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "886548878242005d9e7c39c72f5b1ddc6f62803aa61afaa8f43114c33250f489",
+  "topology": {
+    "vertices": 787132,
+    "triangles": 1433588,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "6c910acef22fff723c30779aa20ae67e1ed9ec84669265a6e6042df368c4e7a3",
+    "triangleIndicesInt32Sha256": "d067276c1f3139978d0b7198dc6aad9ebdd226657bfdbc244e662abcb3f1c955"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_AmethystCrackleSlow_DenseMaster",
+    "rawObject": "amethyst-crackle-slow__raw_import",
+    "reviewObject": "amethyst-crackle-slow__normalized_review",
+    "meshData": "amethyst-crackle-slow__dense_mesh",
+    "material": "amethyst-crackle-slow__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "amethyst-crackle-slow__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "934761365e9323abb9873f123f647277e7629e72d5bd8492a731e2ec612e8664",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "amethyst-crackle-slow__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "8064853e626ff45b5f54e31491df974205f6b91ef79fe091dfaf2a5cf3ed36f1",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "amethyst-crackle-slow__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "5c8252caa4f993855f6b6b25854de7ca0b8dc2b85471ff8e39b67d85bdfc49c9",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "amethyst-crackle-slow__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "ab14a8fca0cb181ebb1a5a76e9e4afa6607f669175e858b14827b085c6024468",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-three-quarter.png",
+      "bytes": 489124,
+      "sha256": "551133ba801feb462ca5f83507cec36c141451aa5ec15dab95f3b38264ebba6d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-top.png",
+      "bytes": 775086,
+      "sha256": "745181e4a283ee7e0bbebe04607867ffd07da161b5d51ad7339e802be65c1379",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-side.png",
+      "bytes": 394461,
+      "sha256": "a5e9122044cd96ceff92be60d14db2323de152069dffb4f9d78b8a61cf41728c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-three-quarter.png",
+      "bytes": 662063,
+      "sha256": "cb6d1d4aad2627c756dc935cb853403c66f042aee76704da903479fe86ab5552",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-top.png",
+      "bytes": 1421579,
+      "sha256": "c0e053063b53f2b5ef7d925485f54f65d606990cdb8548ef5cb6d938cd78f64b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-side.png",
+      "bytes": 518959,
+      "sha256": "d946047623699b540936f93a5d7a0a4b19b4db7e69064f2f2d7449e6331816ac",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset amethyst-crackle-slow"
+}

@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "rose-mirror-panel",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/rose-mirror-panel/rose-mirror-panel-dense-master.blend",
+    "bytes": 119343893,
+    "sha256": "1aec0f9ddddb769803b0f1f903ae7ab0fa7bee70f0441b91ac9ea12edc7bc90f",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "8d228e17d6626b99885cc34f362378e8a7d296037f21bf4d9c1765b51546bf3a",
+  "topology": {
+    "vertices": 337023,
+    "triangles": 607238,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "085a3275fdbd94d863cbb63bb528553668bdb2938debfc392a326db295dbdcf6",
+    "triangleIndicesInt32Sha256": "e0f7bde786469054910de8094a960d913b98f55d218bbf0adc1fccf89e425c90"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_RoseMirrorPanel_DenseMaster",
+    "rawObject": "rose-mirror-panel__raw_import",
+    "reviewObject": "rose-mirror-panel__normalized_review",
+    "meshData": "rose-mirror-panel__dense_mesh",
+    "material": "rose-mirror-panel__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "rose-mirror-panel__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "87fff70317f30b10d793b397e11fd12e2b0da65205fb8d163f196ae5508507ee",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "rose-mirror-panel__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "00021c777b785e2710e33a77432053ff2549a6c61d2a7b797456e96ab64f177c",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "rose-mirror-panel__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "cd17aae460474bbeee739e9921407f2fe537bf036dafc29747ba6a96567da0f4",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "rose-mirror-panel__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "bd5551f8d6036bd5e1c305ab22bde150d6a5a12c3d48f2a25a02cf130c05a333",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-clay-three-quarter.png",
+      "bytes": 392200,
+      "sha256": "fa0748f8f5eb1f63b0513301ac4a8961c6a0456201c2d8fb6dc66fe49052386e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-clay-top.png",
+      "bytes": 710584,
+      "sha256": "2081565325ec83f3da0825c483e339438095aa6bbb57efec85ba09ee0f6704cb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-clay-side.png",
+      "bytes": 403186,
+      "sha256": "8156af1e0abc9d6f49ff9665a1f1b5323cbf5304c9f02dad761bb372872538a6",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-pbr-three-quarter.png",
+      "bytes": 400305,
+      "sha256": "c985243da49b5a1ca9b879d15237e837ef5a20e7a8e327917cdb67b9c8b4d34b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-pbr-top.png",
+      "bytes": 779655,
+      "sha256": "7a9e11f56ccb809311839d26216e3434eb791149cf1060824f3a514e64d91e0c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/rose-mirror-panel/matched-pbr-side.png",
+      "bytes": 415794,
+      "sha256": "d7917fd7308ad3b307770d76c295186d5da2580d1f34e20e0e1f67244b15f4bb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset rose-mirror-panel",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

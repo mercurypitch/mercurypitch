@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "assetId": "gilded-music-stand",
+  "label": "Gilded Music Stand",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/gilded-music-stand/dense-donor.glb",
+    "bytes": 71510292,
+    "sha256": "4339c901dc5fe9f77ffdfcda21842972f07907467d40a5a231bfa44f1c81cf73",
+    "taskId": "01a0d8aa-c529-70f7-a0df-fd967c79c65a",
+    "receipt": {
+      "file": "source-assets/meshy/gilded-music-stand/receipt.json",
+      "bytes": 6490,
+      "sha256": "b035cb01c9c9da4cd7cde67571b48f20529924a972e2c6e2492888904f6e0094"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 435572,
+    "triangles": 799980,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "94d2af2c91811d146c479cccdb204b79c26d79c55d2e7c7ef86cb0386fd7c034",
+    "triangleIndicesInt32Sha256": "645503d64201632b327ba96105ef6470d7d5c6e22536b46789f3e10a83baa0bc",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1046,
+      "largestVertexCounts": [
+        3283,
+        3266,
+        3146,
+        3064,
+        2956,
+        2774,
+        2671,
+        2641,
+        2586,
+        2437,
+        2411,
+        2379
+      ],
+      "largestVertexFractions": [
+        0.007537215,
+        0.007498186,
+        0.007222686,
+        0.007034428,
+        0.006786478,
+        0.006368637,
+        0.006132166,
+        0.006063291,
+        0.005937021,
+        0.005594942,
+        0.00553525,
+        0.005461784
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.710049450397,
+        0.0,
+        0.0,
+        0.000354681571
+      ],
+      [
+        0.0,
+        0.710049450397,
+        0.0,
+        -0.000259170862
+      ],
+      [
+        0.0,
+        0.0,
+        0.710049450397,
+        0.676041603088
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.710049450397,
+        0.0,
+        0.0,
+        0.000354681571
+      ],
+      [
+        0.0,
+        0.710049450397,
+        0.0,
+        -0.000259170862
+      ],
+      [
+        0.0,
+        0.0,
+        0.710049450397,
+        0.676041603088
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.520378563,
+        -0.328903425,
+        -1.9e-08
+      ],
+      "max": [
+        0.520378563,
+        0.328903425,
+        1.349999955
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      1.040757125,
+      0.65780685,
+      1.349999973
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 1.35,
+      "sourceRawUnits": 1.9012759923934937,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.733376026,
+        -0.462846994,
+        -0.952104986
+      ],
+      "max": [
+        0.732376993,
+        0.463577002,
+        0.949171007
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.465753019,
+      0.926423997,
+      1.901275992
+    ],
+    "baseRawZ": -0.952104986,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "blank score board",
+      "openwork music rest",
+      "sun medallion",
+      "tripod legs",
+      "stable feet"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Board, rest, medallion, legs, feet, and any adjustment joints are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-base_color.png",
+        "bytes": 69393110,
+        "sha256": "359c7a1db4656d51e629608cbf6a524e1f16b428e8bc5e57f8231e23c0262c3f",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-normal.png",
+        "bytes": 14878152,
+        "sha256": "a1479580ff19927d8f3d1b8acb6398ec1db46505052d1ad345e4fa94c2b4aafe",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-metallic.png",
+        "bytes": 6757866,
+        "sha256": "f80f205fd680899902c9f0ba8353252bd48cf221e968b431fbae7fb1fa485da2",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-roughness.png",
+        "bytes": 5363255,
+        "sha256": "344f91d64cfaae39ca525888d6a5ecf5ae12f6d9f727e41c6a148ae15ecfb848",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-three-quarter.png",
+          "bytes": 438112,
+          "sha256": "d61c04d71c79045354b240a0eee5ce9753088cdf0d73d7b293797971dbccb080",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-top.png",
+          "bytes": 813055,
+          "sha256": "beeb6042065870fbf3e23831ed415273a3ad61a2b6c88b69e0d619b867083eec",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-side.png",
+          "bytes": 420848,
+          "sha256": "b332783e3e3877eedac8d16b2522cc13d66e8ec4c4f60313e869cbc39da8e173",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-three-quarter.png",
+          "bytes": 460128,
+          "sha256": "1131b643e4a027efc3660f318c48113e60e0e4306ede12ac220b69bfd70f8a5d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-top.png",
+          "bytes": 1018930,
+          "sha256": "1f6fd82c9a62f479e036564b89c0ece6fdb6aa99d872ecefded7160599515990",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-side.png",
+          "bytes": 441773,
+          "sha256": "6b36b8de97f90f844b1db47141ec4f3834267de59cd7862eac18820e5b9791fb",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/gilded-music-stand/gilded-music-stand-dense-master.blend",
+    "bytes": 134637272,
+    "sha256": "dbd39144ad4364f24cd6c5d8edc7fd5b439e005e5f7f829bd3bde71afc3bd6d1",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset gilded-music-stand"
+}

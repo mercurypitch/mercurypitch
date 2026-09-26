@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "rose-quartz-crackle-fast",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/rose-quartz-crackle-fast.png",
+    "sha256": "7d8f0b7d89fdd85266996efe8420542f686955e355ec4699375d22365c6a2cdf",
+    "bytes": 2041088,
+    "dimensions": [
+      1412,
+      1114
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One broad rectangular thick rose-pink crystal glass platform with fine golden diamond lattice within translucent glass, beautiful fine luminous rose fissure veins contained within the solid, delicate gold corner clasps, jewel-cut lower facets and a smooth perfectly flat top. Width 2.4 depth 1.9 thickness .4. No broken loose shards, spikes or pedestal. This is the beautiful delicate two-second breakaway platform. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:21:35.197263+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3645,
+  "submissionStartedAtUtc": "2026-09-25T12:21:35.197282+00:00",
+  "taskId": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+  "submittedAtUtc": "2026-09-25T12:21:40.538925+00:00",
+  "balanceAfterSubmit": 3605,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790338900321,
+    "started_at": 1790338900329,
+    "finished_at": 1790339193776,
+    "expires_at": 1790598393776,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:27:05.177556+00:00",
+  "finalStatus": {
+    "id": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790338900321,
+    "started_at": 1790338900329,
+    "finished_at": 1790339193776,
+    "expires_at": 1790598393776,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/rose-quartz-crackle-fast/dense-donor.glb",
+      "bytes": 62781520,
+      "sha256": "832d0624ba0e95ced733822f82ff58c96ecd479c4bb3ef6db540e4f4f32a6255",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 277628,
+      "triangles": 518742
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-base_color.png",
+        "bytes": 68444424,
+        "sha256": "c887dbe9d154df63360357af6ef9a84762e501cfff4ad0eef18493a841292187",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-metallic.png",
+        "bytes": 8017562,
+        "sha256": "ef50939b6b7e6907796ff3dd71165b22d21d0ab866b9a12c4bdaf4a0526b4738",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-normal.png",
+        "bytes": 13747606,
+        "sha256": "ca6742f8497b4059173fc94a58a4fe97da0886e5350ae7bac90426ab0b80c5ec",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-roughness.png",
+        "bytes": 6389429,
+        "sha256": "1af2372ee0fca5a2bd32c7d01102cb16ddcaec9604440f06c60974c3db56f606",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/rose-quartz-crackle-fast/preview.png",
+      "bytes": 130120,
+      "sha256": "a2642527b8feaa58824ef59f7ceb1315ff3a69b52598e8abf4780942bfd9b8e0",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:27:14.237381+00:00",
+  "balanceAfterArchive": 3565,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:27:15.084794+00:00"
+}

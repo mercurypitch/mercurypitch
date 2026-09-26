@@ -493,6 +493,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         >
           <TouchControls
             input={adventure.input}
+            activationSurface={() => canvas}
             onActivity={adventure.gameplayGesture}
             disabled={
               adventure.voiceMode() !== 'off' ||

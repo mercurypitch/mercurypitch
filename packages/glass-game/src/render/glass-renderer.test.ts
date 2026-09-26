@@ -1,7 +1,7 @@
 // Renderer readiness — an optional reflection failure never hides a playable museum.
 import type * as ThreeTypes from 'three'
 import type { PerspectiveCamera, Scene } from 'three'
-import { DirectionalLight, Group } from 'three'
+import { BoxGeometry, DirectionalLight, Group, Mesh, MeshStandardMaterial, Texture, } from 'three'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
@@ -22,6 +22,14 @@ const state = vi.hoisted(() => {
     assetCompletions: [] as string[],
     assetInstalled: null as ((taskId: string) => void) | null,
     museumFailure: null as Error | null,
+    museumOwnershipFixture: false,
+    museumDispose: vi.fn(),
+    museumLibraryDispose: vi.fn(),
+    museumGeometryDispose: vi.fn(),
+    museumWarningMaterialDispose: vi.fn(),
+    museumLibraryMaterialDispose: vi.fn(),
+    museumSharedTextureDispose: vi.fn(),
+    warningSharesLibraryTexture: false,
     environmentLoadFailure: null as Error | null,
     rendererDispose: vi.fn(),
     forceContextLoss: vi.fn(),
@@ -116,8 +124,43 @@ vi.mock('./contact-shadow', () => ({
 vi.mock('./museum', () => ({
   createMuseum: () => {
     if (state.museumFailure) throw state.museumFailure
+    const root = new Group()
+    const libraryMaterials = new Set<MeshStandardMaterial>()
+    let disposeMuseum = vi.fn()
+    let disposeLibrary = vi.fn()
+    if (state.museumOwnershipFixture) {
+      const sharedTexture = new Texture()
+      sharedTexture.dispose = state.museumSharedTextureDispose
+      const libraryMaterial = new MeshStandardMaterial({ map: sharedTexture })
+      libraryMaterial.dispose = state.museumLibraryMaterialDispose
+      libraryMaterials.add(libraryMaterial)
+      const warningMaterial = libraryMaterial.clone()
+      warningMaterial.dispose = state.museumWarningMaterialDispose
+      state.warningSharesLibraryTexture = warningMaterial.map === sharedTexture
+      const geometry = new BoxGeometry()
+      geometry.dispose = state.museumGeometryDispose
+      const adapterRoot = new Group()
+      adapterRoot.add(new Mesh(geometry, warningMaterial))
+      root.add(adapterRoot)
+      let adapterDisposed = false
+      disposeMuseum = state.museumDispose.mockImplementation(() => {
+        if (adapterDisposed) return
+        adapterDisposed = true
+        geometry.dispose()
+        warningMaterial.dispose()
+        adapterRoot.removeFromParent()
+      })
+      let libraryDisposed = false
+      disposeLibrary = state.museumLibraryDispose.mockImplementation(() => {
+        if (libraryDisposed) return
+        libraryDisposed = true
+        libraryMaterial.dispose()
+        sharedTexture.dispose()
+        libraryMaterials.clear()
+      })
+    }
     return {
-      root: new Group(),
+      root,
       update: vi.fn(),
       cameraOccluders: () => [],
       cullCloudwayPlatforms: state.cullCloudwayPlatforms,
@@ -129,8 +172,8 @@ vi.mock('./museum', () => ({
         targetWidth: 160,
         targetHeight: 256,
       },
-      dispose: vi.fn(),
-      materialLibrary: { materials: new Set(), dispose: vi.fn() },
+      dispose: disposeMuseum,
+      materialLibrary: { materials: libraryMaterials, dispose: disposeLibrary },
     }
   },
 }))
@@ -164,6 +207,14 @@ afterEach(() => {
   state.assetCompletions = []
   state.assetInstalled = null
   state.museumFailure = null
+  state.museumOwnershipFixture = false
+  state.museumDispose.mockReset()
+  state.museumLibraryDispose.mockReset()
+  state.museumGeometryDispose.mockReset()
+  state.museumWarningMaterialDispose.mockReset()
+  state.museumLibraryMaterialDispose.mockReset()
+  state.museumSharedTextureDispose.mockReset()
+  state.warningSharesLibraryTexture = false
   state.environmentLoadFailure = null
   state.render.mockClear()
   state.setSize.mockClear()
@@ -527,6 +578,23 @@ it('releases a partial renderer and its canvas when scene construction throws', 
   expect(state.rendererDispose).toHaveBeenCalledTimes(1)
   expect(state.forceContextLoss).toHaveBeenCalledTimes(1)
   expect(state.canvasRemove).toHaveBeenCalledTimes(1)
+})
+
+it('disposes museum adapter resources before shared library textures exactly once', async () => {
+  state.museumOwnershipFixture = true
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+
+  expect(state.warningSharesLibraryTexture).toBe(true)
+  renderer.dispose()
+  renderer.dispose()
+
+  expect(state.museumDispose).toHaveBeenCalledOnce()
+  expect(state.museumGeometryDispose).toHaveBeenCalledOnce()
+  expect(state.museumWarningMaterialDispose).toHaveBeenCalledOnce()
+  expect(state.museumLibraryDispose).toHaveBeenCalledOnce()
+  expect(state.museumLibraryMaterialDispose).toHaveBeenCalledOnce()
+  expect(state.museumSharedTextureDispose).toHaveBeenCalledOnce()
 })
 
 it('marks a partial scene unavailable before a late Merc resolves', async () => {

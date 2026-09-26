@@ -270,6 +270,7 @@
 }
 .encounterOffer {
   position: absolute;
+  z-index: 4;
   bottom: max(84px, calc(env(safe-area-inset-bottom) + 66px));
   left: 50%;
   transform: translateX(-50%);
@@ -416,25 +417,37 @@
   -webkit-touch-callout: none;
 }
 .stick {
-  width: 118px;
-  height: 118px;
   position: absolute;
-  left: max(28px, env(safe-area-inset-left));
-  bottom: max(42px, calc(env(safe-area-inset-bottom) + 22px));
-  border: 1px solid #fff8;
-  border-radius: 50%;
-  background: #daeae027;
-  box-shadow:
-    inset 0 0 0 15px #fff1,
-    0 5px 25px #133a4318;
+  left: max(62px, calc(env(safe-area-inset-left) + 58px));
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 58px));
+  width: min(42vw, 340px);
+  height: min(52vh, 360px);
   touch-action: none;
-  pointer-events: auto;
-  display: grid;
-  place-items: center;
+  pointer-events: none;
 }
 .stick[aria-disabled='true'] {
   opacity: 0.25;
   pointer-events: none;
+}
+.stickBase {
+  width: 108px;
+  height: 108px;
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fff8;
+  border-radius: 50%;
+  background: #daeae03d;
+  box-shadow:
+    inset 0 0 0 14px #fff1,
+    0 5px 25px #133a4328;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.stickBase[data-active='true'] {
+  opacity: 1;
 }
 .stickKnob {
   display: block;
@@ -457,13 +470,16 @@
 }
 .controlCaption {
   position: absolute;
-  top: calc(100% + 8px);
+  bottom: -30px;
   left: 0;
-  width: 100%;
-  text-align: center;
+  padding: 5px 10px;
+  border: 1px solid #fff4;
+  border-radius: 999px;
+  background: #153d4848;
   color: #fff8e4;
   font-size: 12px;
   text-shadow: 0 1px 4px #153d48;
+  pointer-events: none;
 }
 .jump {
   position: absolute;
@@ -699,14 +715,14 @@
     gap: 6px;
   }
   .messageStackWithOffer {
-    bottom: max(272px, calc(env(safe-area-inset-bottom) + 260px));
+    bottom: max(280px, calc(env(safe-area-inset-bottom) + 276px));
   }
   .narrationCaption {
     padding: 8px 12px;
     font-size: 12px;
   }
   .encounterOffer {
-    bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));
+    bottom: max(188px, calc(env(safe-area-inset-bottom) + 181px));
   }
   .progressGuidance {
     width: 100%;

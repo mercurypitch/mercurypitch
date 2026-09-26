@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "assetId": "amethyst-hourglass",
+  "label": "Amethyst Hourglass",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/amethyst-hourglass/dense-donor.glb",
+    "bytes": 51698892,
+    "sha256": "1742ebe03267bd4c142bf7da537894cf7b24d9f297981b3c53a7dfa449dfb662",
+    "taskId": "01a0d8b9-7e68-7748-bb74-e2a4c00b3fd9",
+    "receipt": {
+      "file": "source-assets/meshy/amethyst-hourglass/receipt.json",
+      "bytes": 7363,
+      "sha256": "501d8b1eb8570462126ed956e472db7e6701099aab6f4f4617744348138f6187"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 218634,
+    "triangles": 392452,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "f3c7bbe465cd469f193397238d0d4049ac55c0d70e49a7f19cdb84fcbe5679a5",
+    "triangleIndicesInt32Sha256": "561128687d50d305af704d7e7110134253d5804da5d4bb65a2a753c4a6a80e42",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1779,
+      "largestVertexCounts": [
+        3143,
+        3024,
+        2780,
+        2550,
+        2549,
+        2382,
+        2307,
+        2165,
+        2085,
+        1860,
+        1811,
+        1807
+      ],
+      "largestVertexFractions": [
+        0.014375623,
+        0.013831335,
+        0.012715314,
+        0.011663328,
+        0.011658754,
+        0.01089492,
+        0.010551881,
+        0.009902394,
+        0.009536486,
+        0.008507368,
+        0.00828325,
+        0.008264954
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.630460381508,
+        0.0,
+        0.0,
+        0.000230449339
+      ],
+      [
+        0.0,
+        0.630460381508,
+        0.0,
+        -0.000376704353
+      ],
+      [
+        0.0,
+        0.0,
+        0.630460381508,
+        0.600548803806
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.630460381508,
+        0.0,
+        0.0,
+        0.000230449339
+      ],
+      [
+        0.0,
+        0.630460381508,
+        0.0,
+        -0.000376704353
+      ],
+      [
+        0.0,
+        0.0,
+        0.630460381508,
+        0.600548803806
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.3472932,
+        -0.325785672,
+        -2.4e-08
+      ],
+      "max": [
+        0.3472932,
+        0.325785672,
+        1.200000005
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      0.694586399,
+      0.651571344,
+      1.20000003
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 1.2,
+      "sourceRawUnits": 1.9033710360527039,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.551222026,
+        -0.516144991,
+        -0.952556014
+      ],
+      "max": [
+        0.550490975,
+        0.517340004,
+        0.950815022
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.101713002,
+      1.033484995,
+      1.903371036
+    ],
+    "baseRawZ": -0.952556014,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "crystal bulbs",
+      "gilt columns",
+      "ivory top and base discs",
+      "sand volume"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Bulbs, sand, columns, discs, and timing parts are not authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-base_color.png",
+        "bytes": 58274155,
+        "sha256": "da8daae98d564e81dddcd969ce6dc6ffcd7310a829017d101e890fce2421d9e1",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-normal.png",
+        "bytes": 11680104,
+        "sha256": "59609fe2deb940caa6520b8b12378a3712a0b836ec61fba0db10f19eeb36cc13",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-metallic.png",
+        "bytes": 6564764,
+        "sha256": "84a40b3a9e82ea668e68e0aaaf77b328fceb33b04f0968d93cdfc97f767a392c",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-roughness.png",
+        "bytes": 3506428,
+        "sha256": "51734b3bc4b5f8c8d82d89ef97e9b0c122fca78f7b7878696ef73891e97b59e0",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-three-quarter.png",
+          "bytes": 446976,
+          "sha256": "f0200df5c3daea6638124dc6d5907e3ae246426b066ede46fdca2214ef56521e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-top.png",
+          "bytes": 698395,
+          "sha256": "4197d4040bc83312718d602edbeed696e16446472d9d923e6cf5472e30590462",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-side.png",
+          "bytes": 436120,
+          "sha256": "91422bf648be3cbbf211bfba7b14ceeac208bf0e74daba25990908f08f5fad12",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-three-quarter.png",
+          "bytes": 484127,
+          "sha256": "28c5a3e1c1db9c1072d9100dc4d0d8192a8ca5b4209567ef1c036e18952b3b8c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-top.png",
+          "bytes": 1214307,
+          "sha256": "5224e03bf87ef668223cf529df8e691617aac18b9906cd2041827a05e9928012",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-side.png",
+          "bytes": 472376,
+          "sha256": "b1d19f3ac6de6fc6b09df2e2615337a26dcdf6105bca78cea9447479d4aaeed6",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/amethyst-hourglass/amethyst-hourglass-dense-master.blend",
+    "bytes": 98884033,
+    "sha256": "a8149d8bda1c86e21e440a42360298b1def5d879da2879e6855edb37fd5e93d4",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset amethyst-hourglass"
+}

@@ -1,0 +1,442 @@
+{
+  "schema": 1,
+  "assetId": "ivory-stair-terrace",
+  "label": "Ivory Stair Terrace",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/ivory-stair-terrace/dense-donor.glb",
+    "bytes": 61710620,
+    "sha256": "3599382711d8fc7625ad66a03169db547b80466322ce1f1d0599fb9de0057ce1",
+    "taskId": "01a0d893-f7d3-732a-98dc-c59c4e09c540",
+    "receipt": {
+      "file": "source-assets/meshy/ivory-stair-terrace/receipt.json",
+      "bytes": 6549,
+      "sha256": "2c260a2a56d553f0e72e7da61145915294fa866e57b230254a4968a2a99f5308"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 223394,
+    "triangles": 407456,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "723c00679df48d5b39732d19960670cdfd6edd2dd3972766f775616e1647a6bd",
+    "triangleIndicesInt32Sha256": "c0db2d4ad6f95539059649f57cde4ac71504c5775f56f2ea6196c92422096ae7",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1042,
+      "largestVertexCounts": [
+        2997,
+        2469,
+        2352,
+        2132,
+        2072,
+        2003,
+        1912,
+        1900,
+        1874,
+        1855,
+        1799,
+        1795
+      ],
+      "largestVertexFractions": [
+        0.013415759,
+        0.011052222,
+        0.010528483,
+        0.009543676,
+        0.009275092,
+        0.008966221,
+        0.008558869,
+        0.008505152,
+        0.008388766,
+        0.008303715,
+        0.008053036,
+        0.008035131
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.57782959938,
+        0.0,
+        0.0,
+        -0.000964065257
+      ],
+      [
+        0.0,
+        1.57782959938,
+        0.0,
+        -0.00535276765
+      ],
+      [
+        0.0,
+        0.0,
+        1.57782959938,
+        -0.323037594557
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.57782959938,
+        0.0,
+        0.0,
+        -0.000964065257
+      ],
+      [
+        0.0,
+        1.57782959938,
+        0.0,
+        -0.00535276765
+      ],
+      [
+        0.0,
+        0.0,
+        1.57782959938,
+        -0.323037594557
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.499999974,
+        -1.269620304,
+        -0.817841812
+      ],
+      "max": [
+        1.499999974,
+        1.269620303,
+        0.181048961
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.999999947,
+      2.539240607,
+      0.998890773
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 3.0,
+      "sourceRawUnits": 1.90134596824646,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.950061977,
+        -0.801270008,
+        -0.313598007
+      ],
+      "max": [
+        0.951283991,
+        0.808054984,
+        0.319480985
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.901345968,
+      1.609324992,
+      0.633078992
+    ],
+    "landingRawZ": 0.204735418,
+    "heightToleranceRaw": 0.00494593,
+    "patchTriangles": 23974,
+    "patchAreaRawSquareUnits": 1.212867745,
+    "patchBoundsRaw": {
+      "min": [
+        -0.934590995,
+        -0.092275999,
+        0.198544994
+      ],
+      "max": [
+        0.924724996,
+        0.800059021,
+        0.207987994
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.859315991,
+      0.89233502,
+      0.009443
+    ],
+    "horizontalCoverage": [
+      0.977894619,
+      0.554477824
+    ],
+    "relativePatchHeightSpread": 0.01491599,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "three stair treads",
+      "gold nosing",
+      "carved side panels",
+      "top landing"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Individual treads, nosing, panels, and collision steps are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/ivory-stair-terrace/textures/set-0-base_color.png",
+        "bytes": 73165126,
+        "sha256": "de0e1c575dfd884fe1686039131eae1885a34c19c67d3896623e28ac11ade4bf",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/ivory-stair-terrace/textures/set-0-normal.png",
+        "bytes": 14927776,
+        "sha256": "7022aeaf2cbda1ddd68a789b3704e3ac1dee4d4591fdc29b0b6d311bfb96b18f",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/ivory-stair-terrace/textures/set-0-metallic.png",
+        "bytes": 6810550,
+        "sha256": "f77c0b5f777543cab0fcfd07cd72d168206e1b4a79439df370b36a3565748952",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/ivory-stair-terrace/textures/set-0-roughness.png",
+        "bytes": 6376938,
+        "sha256": "656fcb76e0129705115631264a05929c064a2ce112404b9833a7165c073bd2fb",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-three-quarter.png",
+          "bytes": 559383,
+          "sha256": "241e07d027444fd9be17b98cbe4b6345a8c64cc97a41673cf1f2f027c063b664",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-top.png",
+          "bytes": 646246,
+          "sha256": "550a4d1aa481cb1e22ed25b7bca1d9d09100ba704a061d58e41f3f80ac3ec79d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-side.png",
+          "bytes": 444926,
+          "sha256": "c9d781806bbd92498fafe3ddfeca085f8742565678769a7e2fa22bac149daee9",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-three-quarter.png",
+          "bytes": 671096,
+          "sha256": "5eadebd7a145d19d7f327c02c3800ad7e29053a912c7e400ad744aa7b99282ff",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-top.png",
+          "bytes": 1033556,
+          "sha256": "022ec9785af95df94cccad59b9826767ba600307cc69135b16feb8ca7277ba94",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-side.png",
+          "bytes": 540972,
+          "sha256": "99e16d4fc5b6b145684d156058d9a27407c4b1cb571831ed37a16c2a7997f721",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/ivory-stair-terrace/ivory-stair-terrace-dense-master.blend",
+    "bytes": 120741482,
+    "sha256": "6f9720dc4b14f164a8c21e91c63a75806c806b207fffc60b070ade54828e696b",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset ivory-stair-terrace",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.950061977,
+        -0.801270008,
+        -0.313598007
+      ],
+      "max": [
+        0.951283991,
+        0.808054984,
+        0.319480985
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.901345968,
+      1.609324992,
+      0.633078992
+    ],
+    "landingRawZ": 0.204735418,
+    "heightToleranceRaw": 0.00494593,
+    "patchTriangles": 23974,
+    "patchAreaRawSquareUnits": 1.212867745,
+    "patchBoundsRaw": {
+      "min": [
+        -0.934590995,
+        -0.092275999,
+        0.198544994
+      ],
+      "max": [
+        0.924724996,
+        0.800059021,
+        0.207987994
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.859315991,
+      0.89233502,
+      0.009443
+    ],
+    "horizontalCoverage": [
+      0.977894619,
+      0.554477824
+    ],
+    "relativePatchHeightSpread": 0.01491599,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

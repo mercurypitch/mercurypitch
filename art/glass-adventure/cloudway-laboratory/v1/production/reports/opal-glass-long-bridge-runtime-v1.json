@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "assetId": "opal-glass-long-bridge",
+  "status": "runtime export prepared; live-render acceptance pending",
+  "scope": "Dense topology is preserved. Runtime textures are bounded derivatives; archived full maps and packed master remain unchanged.",
+  "source": {
+    "denseMaster": "source-assets/blender/opal-glass-long-bridge/opal-glass-long-bridge-dense-master.blend",
+    "denseMasterSha256": "d3965b5a8e7582ee067273848e6e6103111baa0076179d307c3a979dffff4561",
+    "donorSha256": "cf75128f20a01e1c2aec183bce384e42e0a811eceb7c350e22adac6b9996fd16"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/opal-glass-long-bridge/opal-glass-long-bridge-runtime-v1.glb",
+    "bytes": 1918832,
+    "sha256": "5d1108b633219b4b70171b81a77f2f1dda9f98bf16846bbe4e7611464b12acd2",
+    "bundleId": "cloudway-lab-opal-glass-long-bridge-v1",
+    "rootNode": "CloudwayLab_OpalGlassLongBridge",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materialNames": [
+      "CloudwayLab_OpalGlassLongBridge__provider_pbr"
+    ],
+    "resourceBudget": {
+      "embeddedImageBytes": 411766,
+      "meshoptDecodedBufferBytes": 5037336,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432,
+      "scope": "Texture estimates include base color, normal and packed metallic/roughness. Browser residency is measured separately."
+    }
+  },
+  "geometry": {
+    "vertices": 125293,
+    "triangles": 210848,
+    "polygons": 210848,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -1.999999881,
+        -0.495540142,
+        -0.459569156
+      ],
+      "maximum": [
+        2.0,
+        0.004689664,
+        0.459569156
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 6.1036e-05,
+    "decimated": false,
+    "remeshed": false
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 88
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "compression": {
+    "method": "EXT_meshopt_compression",
+    "level": "high",
+    "quantizationVolume": "mesh",
+    "positionBits": 16,
+    "normalBits": 12,
+    "texcoordBits": 14,
+    "triangleCountPreserved": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 3.8,
+      "depth": 0.64,
+      "topY": 0,
+      "height": 0.36
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.000944883,
+      "minimumUpNormal": 0.932862401,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.000944883,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_runtime.py -- --asset opal-glass-long-bridge"
+}

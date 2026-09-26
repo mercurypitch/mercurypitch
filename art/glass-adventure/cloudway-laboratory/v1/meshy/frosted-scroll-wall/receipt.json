@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "frosted-scroll-wall",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/frosted-scroll-wall.png",
+    "sha256": "d0ea1f452003b09065c86675cf260cd37f73559625c64117abef6ce7a1926f53",
+    "bytes": 1965794,
+    "dimensions": [
+      1214,
+      1295
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "A freestanding rectangular ivory-and-gold museum doorway frame surrounding a single thick pale cyan frosted glass pane. Frost etched in a delicate curling music-wave motif, distinct removable pane inset into the arch, stable broad foot at each side. Frame approximately width 2.8 height 3 depth .35. No doorway opening yet, no masonry wall or backdrop. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:46:45.789982+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3285,
+  "submissionStartedAtUtc": "2026-09-25T12:46:45.789996+00:00",
+  "taskId": "01a0d89a-9c5b-71b5-907f-45bd5a6f801b",
+  "submittedAtUtc": "2026-09-25T12:46:49.355725+00:00",
+  "balanceAfterSubmit": 3245,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d89a-9c5b-71b5-907f-45bd5a6f801b",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340409160,
+    "started_at": 1790340409171,
+    "finished_at": 1790340650541,
+    "expires_at": 1790599850541,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:51:24.698899+00:00",
+  "finalStatus": {
+    "id": "01a0d89a-9c5b-71b5-907f-45bd5a6f801b",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340409160,
+    "started_at": 1790340409171,
+    "finished_at": 1790340650541,
+    "expires_at": 1790599850541,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/frosted-scroll-wall/dense-donor.glb",
+      "bytes": 83156144,
+      "sha256": "7cfb07546a0f42880029b52ca17baa5001b04a3455b221a173e8a88fc28df855",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 410265,
+      "triangles": 701756
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-base_color.png",
+        "bytes": 71126467,
+        "sha256": "85f96252008814b40de7fe7f633b5ba10c36aeebd4d07861ae51478e98ef4d01",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-metallic.png",
+        "bytes": 8094832,
+        "sha256": "561376db1db1187e2c33ee7b111f6203e789220ccf31cff7d8a3030e181d7aa9",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-normal.png",
+        "bytes": 16295835,
+        "sha256": "38e5ed82b51e210850921bff6c28bbbbd03936dcf3272d8a633a6a5e2821abe3",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-roughness.png",
+        "bytes": 7419053,
+        "sha256": "cb7341982d5d6bfcdabc7884b3d009e7502234a432c4a03746dcc19370ad4eb6",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/frosted-scroll-wall/preview.png",
+      "bytes": 194950,
+      "sha256": "9b550d625fe69090af3734072f8dc8076858ecc3e159a351a92c1fb3abf8821f",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:51:33.601727+00:00",
+  "balanceAfterArchive": 3205,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:51:34.419358+00:00"
+}

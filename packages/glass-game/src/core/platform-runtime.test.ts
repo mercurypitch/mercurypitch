@@ -171,6 +171,207 @@ describe('authored platform runtime', () => {
     expect(runtime.snapshots()[0]?.offset.x).toBeLessThan(2)
   })
 
+  it('retracts a scroll about its fixed centre and reaches both authored endpoints', () => {
+    const scroll = platform('scroll', {
+      minX: -4,
+      maxX: 4,
+      minZ: -2,
+      maxZ: 2,
+      top: 1.25,
+      behavior: {
+        kind: 'scroll',
+        axis: 'x',
+        minLengthRatio: 0.25,
+        extendedSeconds: 0.25,
+        retractedSeconds: 0.5,
+        transitionSeconds: 0.25,
+        initialState: 'extended',
+      },
+    })
+    const runtime = createPlatformRuntime([scroll])
+    const active = new Set(['scroll'])
+    const materialized = () =>
+      runtime.materialize([scroll])[0] as PlatformDefinition
+
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'extended',
+      phaseProgress: 0,
+      lengthRatio: 1,
+    })
+    expect(materialized()).toMatchObject({
+      minX: -4,
+      maxX: 4,
+      minZ: -2,
+      maxZ: 2,
+      top: 1.25,
+    })
+
+    runtime.advance(0.25, active)
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'retracting',
+      phaseProgress: 0,
+      lengthRatio: 1,
+    })
+    runtime.advance(0.125, active)
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'retracting',
+      phaseProgress: 0.5,
+      lengthRatio: 0.625,
+    })
+    expect(materialized()).toMatchObject({
+      minX: -2.5,
+      maxX: 2.5,
+      minZ: -2,
+      maxZ: 2,
+      top: 1.25,
+    })
+
+    runtime.advance(0.125, active)
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'retracted',
+      phaseProgress: 0,
+      lengthRatio: 0.25,
+    })
+    expect(materialized()).toMatchObject({ minX: -1, maxX: 1 })
+    runtime.advance(0.5, active)
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'extending',
+      phaseProgress: 0,
+      lengthRatio: 0.25,
+    })
+    runtime.advance(0.25, active)
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'extended',
+      phaseProgress: 0,
+      lengthRatio: 1,
+    })
+  })
+
+  it('starts a retracted scroll on its chosen world axis and freezes at dt zero', () => {
+    const scroll = platform('turned-scroll', {
+      minX: -3,
+      maxX: 3,
+      minZ: -4,
+      maxZ: 4,
+      behavior: {
+        kind: 'scroll',
+        axis: 'z',
+        minLengthRatio: 0.25,
+        extendedSeconds: 1,
+        retractedSeconds: 1,
+        transitionSeconds: 1,
+        initialState: 'retracted',
+      },
+    })
+    const runtime = createPlatformRuntime([scroll])
+    const active = new Set(['turned-scroll'])
+    const initial = runtime.materialize([scroll])[0] as PlatformDefinition
+    expect(initial).toMatchObject({
+      minX: -3,
+      maxX: 3,
+      minZ: -1,
+      maxZ: 1,
+    })
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'retracted',
+      lengthRatio: 0.25,
+    })
+
+    runtime.advance(1.5, active)
+    const beforePause = runtime.snapshots()[0]
+    const beforeBounds = runtime.materialize([scroll])[0]
+    runtime.advance(0, active)
+    expect(runtime.snapshots()[0]).toEqual(beforePause)
+    expect(runtime.materialize([scroll])[0]).toEqual(beforeBounds)
+  })
+
+  it('bounds scroll ratios and timings and keeps large-step phase progress clamped', () => {
+    const behavior = {
+      kind: 'scroll',
+      axis: 'x',
+      minLengthRatio: 0.1,
+      extendedSeconds: 0.25,
+      retractedSeconds: 60,
+      transitionSeconds: 30,
+      initialState: 'extended',
+    } as const
+    expect(
+      platformRuntimeDefinitionError(platform('bounded-scroll', { behavior })),
+    ).toBeUndefined()
+    for (const invalid of [
+      { ...behavior, minLengthRatio: 0.099 },
+      { ...behavior, minLengthRatio: 0.951 },
+      { ...behavior, extendedSeconds: 0.249 },
+      { ...behavior, retractedSeconds: 60.001 },
+      { ...behavior, transitionSeconds: 0.249 },
+      { ...behavior, transitionSeconds: 30.001 },
+    ])
+      expect(
+        platformRuntimeDefinitionError(
+          platform('invalid-scroll', { behavior: invalid }),
+        ),
+      ).toContain('scroll')
+
+    const cyclic = platform('cyclic-scroll', {
+      behavior: {
+        ...behavior,
+        minLengthRatio: 0.4,
+        extendedSeconds: 0.5,
+        retractedSeconds: 0.5,
+        transitionSeconds: 0.5,
+      },
+    })
+    const runtime = createPlatformRuntime([cyclic])
+    runtime.advance(20_000.75, new Set(['cyclic-scroll']))
+    expect(runtime.snapshots()[0]).toMatchObject({
+      phase: 'retracting',
+      phaseProgress: 0.5,
+    })
+    expect(runtime.snapshots()[0]?.lengthRatio).toBeCloseTo(0.7, 12)
+    expect(runtime.snapshots()[0]?.phaseProgress).toBeGreaterThanOrEqual(0)
+    expect(runtime.snapshots()[0]?.phaseProgress).toBeLessThanOrEqual(1)
+  })
+
+  it('drops an edge rider as collision retracts while retaining centre support', () => {
+    const scroll = platform('scroll', {
+      minX: -2,
+      maxX: 2,
+      behavior: {
+        kind: 'scroll',
+        axis: 'x',
+        minLengthRatio: 0.25,
+        extendedSeconds: 0.25,
+        retractedSeconds: 0.25,
+        transitionSeconds: 0.25,
+        initialState: 'extended',
+      },
+    })
+    const edgeLevel = level([scroll], -100)
+    edgeLevel.spawn.position.x = 1.2
+    edgeLevel.checkpoints[0]!.position.x = 1.2
+    const edge = createGlassGame(edgeLevel)
+    fixedSteps(edge, 60)
+    expect(stateFor(edge, 'scroll')).toMatchObject({
+      phase: 'retracted',
+      lengthRatio: 0.25,
+      collisionEnabled: true,
+    })
+    expect(edge.snapshot().activeSolidIds).toContain('scroll')
+    expect(edge.snapshot().player.supportPlatformId).toBeNull()
+    expect(edge.snapshot().player.grounded).toBe(false)
+    expect(edge.snapshot().player.position.y).toBeLessThan(0)
+
+    const centre = createGlassGame(level([scroll], -100))
+    fixedSteps(centre, 120)
+    expect(centre.snapshot().player.supportPlatformId).toBe('scroll')
+    expect(centre.snapshot().player.grounded).toBe(true)
+    expect(centre.snapshot().player.position).toMatchObject({
+      x: 0,
+      y: 0,
+      z: 0,
+    })
+  })
+
   it('bounds the cosine glide peak and rejects malformed behavior before any NaN reaches simulation', () => {
     const boundaryDistance = (2 * LEVEL_MOVEMENT_LIMITS.maximumSpeed) / Math.PI
     expect(

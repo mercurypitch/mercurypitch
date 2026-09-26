@@ -351,6 +351,31 @@ async function expectPlayerMovement(
     .toBeGreaterThan(minimumDistance)
 }
 
+interface ClockedMovementSample {
+  distance: number
+  elapsedMilliseconds: number
+  x: number
+  z: number
+}
+
+async function traceClockedMovement(
+  page: Page,
+  before: { x: number; z: number },
+  frameCount: number,
+): Promise<ClockedMovementSample[]> {
+  const trace: ClockedMovementSample[] = []
+  for (let frame = 1; frame <= frameCount; frame++) {
+    await page.clock.runFor(32)
+    const current = await playerPosition(page)
+    trace.push({
+      distance: Math.hypot(current.x - before.x, current.z - before.z),
+      elapsedMilliseconds: frame * 32,
+      ...current,
+    })
+  }
+  return trace
+}
+
 async function minimizeMuseumRaster(page: Page): Promise<void> {
   // Selected behavior-only cases use this after genuine scene initialization.
   // Keep real RAF, controls, audio and CSS hit targets while avoiding costly
@@ -693,6 +718,23 @@ async function settledPlayerPosition(
     previous = current
   }
   throw new Error('Player movement did not settle after input release.')
+}
+
+async function settledClockedPlayerPosition(
+  page: Page,
+): Promise<{ x: number; z: number }> {
+  let previous = await playerPosition(page)
+  const trace = [previous]
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await page.clock.runFor(48)
+    const current = await playerPosition(page)
+    trace.push(current)
+    if (current.x === previous.x && current.z === previous.z) return current
+    previous = current
+  }
+  throw new Error(
+    `Player movement did not settle with controlled time: ${JSON.stringify(trace)}`,
+  )
 }
 
 function expectNormalBrakingDistance(
@@ -1329,50 +1371,69 @@ test.describe('phone blur input', () => {
     page,
     context,
   }) => {
+    await omitMuseumRasterOutput(page)
     await openMuseum(page)
-    await minimizeMuseumRaster(page)
+    await page.clock.install()
+    await page.clock.pauseAt(
+      (await page.evaluate(() => Date.now())) + 3_600_000,
+    )
     const cdp = await context.newCDPSession(page)
     const stick = page.getByRole('group', { name: 'Move Merc' })
-    const knob = stick.locator('span').nth(1)
+    const base = page.getByTestId('floating-stick-base')
+    const knob = page.getByTestId('floating-stick-knob')
     const box = await stick.boundingBox()
     expect(box).not.toBeNull()
-    const centre = {
-      x: box!.x + box!.width / 2,
-      y: box!.y + box!.height / 2,
+    const origin = {
+      x: box!.x + Math.min(60, box!.width * 0.36),
+      y: box!.y + box!.height - 64,
     }
-    const held = { id: 1, x: centre.x + 20, y: centre.y - 8 }
+    const activationHit = await page.evaluate(({ x, y }) => {
+      const surface = document.querySelector(
+        '[aria-label="Glass museum; drag to look around"]',
+      )
+      const target = document.elementFromPoint(x, y)
+      return {
+        target: target?.tagName ?? null,
+        withinSurface: target !== null && surface?.contains(target) === true,
+      }
+    }, origin)
+    expect(
+      activationHit,
+      `Stick activation hit: ${JSON.stringify(activationHit)}`,
+    ).toMatchObject({ withinSurface: true })
+    const held = { id: 1, x: origin.x + 30, y: origin.y - 16 }
     const before = await playerPosition(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 1, ...centre }],
+      touchPoints: [{ id: 1, ...origin }],
     })
+    await expect(base).toHaveAttribute('data-active', 'true')
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [held],
     })
-    await expectPlayerMovement(page, before, 0.03)
-    await expect
-      .poll(() =>
-        knob.evaluate((element) => getComputedStyle(element).transform),
-      )
-      .not.toBe('matrix(1, 0, 0, 1, 0, 0)')
+    const heldTrace = await traceClockedMovement(page, before, 4)
+    expect(
+      heldTrace.at(-1)!.distance,
+      `Held touch movement trace: ${JSON.stringify(heldTrace)}`,
+    ).toBeGreaterThan(0.03)
+    await expect(knob).not.toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)')
 
     const positionAtBlur = await blurAtPlayerPosition(page)
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect
-      .poll(() =>
-        knob.evaluate((element) => getComputedStyle(element).transform),
-      )
-      .toBe('matrix(1, 0, 0, 1, 0, 0)')
-    const released = await settledPlayerPosition(page)
+    await expect(base).toHaveAttribute('data-active', 'false')
+    await expect(knob).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)')
+    const released = await settledClockedPlayerPosition(page)
     expectNormalBrakingDistance(positionAtBlur, released)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ id: 1, x: centre.x + 28, y: centre.y - 12 }],
+      touchPoints: [{ id: 1, x: origin.x + 38, y: origin.y - 20 }],
     })
-    await animationFrames(page, 6)
-    expect((await playerPosition(page)).x).toBeCloseTo(released.x, 4)
-    expect((await playerPosition(page)).z).toBeCloseTo(released.z, 4)
+    const staleTrace = await traceClockedMovement(page, released, 6)
+    expect(
+      staleTrace.at(-1)!.distance,
+      `Retired touch movement trace: ${JSON.stringify(staleTrace)}`,
+    ).toBeLessThan(0.0001)
 
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
@@ -1381,16 +1442,23 @@ test.describe('phone blur input', () => {
     const beforeFreshContact = await playerPosition(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 2, ...centre }],
+      touchPoints: [{ id: 2, ...origin }],
     })
+    await expect(base).toHaveAttribute('data-active', 'true')
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ id: 2, x: centre.x - 20, y: centre.y + 8 }],
+      touchPoints: [{ id: 2, x: origin.x - 30, y: origin.y + 16 }],
     })
-    await expectPlayerMovement(page, beforeFreshContact, 0.03)
+    const freshTrace = await traceClockedMovement(page, beforeFreshContact, 4)
+    expect(
+      freshTrace.at(-1)!.distance,
+      `Fresh touch movement trace: ${JSON.stringify(freshTrace)}`,
+    ).toBeGreaterThan(0.03)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
     })
+    await expect(base).toHaveAttribute('data-active', 'false')
+    await cdp.detach()
   })
 })
