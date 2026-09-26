@@ -14,8 +14,7 @@ import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } f
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { initialAdventureNotice } from './adventure-notice'
 import { createAdventureTransientMessages } from './adventure-transient-messages'
-import type { CameraComfortSettings } from './camera-comfort'
-import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
+import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
 import { createCameraModePreference } from './camera-mode-preference'
 import { createAdventureInput, isAdventureEditableTarget } from './input'
@@ -47,8 +46,9 @@ export function useAdventure(
   const initialSnapshot = game.snapshot()
   const input = createAdventureInput()
   let renderer: GlassRenderer | null = null
-  const [cameraComfort, setCameraComfort] = createSignal(
-    parseCameraComfort(host.readPreference(CAMERA_COMFORT_PREFERENCE)),
+  const { cameraComfort, changeCameraComfort } = createCameraComfortPreference(
+    host,
+    () => renderer,
   )
   const { cameraMode, changeCameraMode } = createCameraModePreference(
     host,
@@ -396,16 +396,6 @@ export function useAdventure(
     narration.setEnabled(enabled)
     if (!enabled) transientMessages.clearNarrationCaption()
     setNarrationPreferences(narration.preferences())
-  }
-
-  function changeCameraComfort(next: CameraComfortSettings): void {
-    const normalized = normalizeCameraComfort(next)
-    setCameraComfort(normalized)
-    host.writePreference(
-      CAMERA_COMFORT_PREFERENCE,
-      serializeCameraComfort(normalized),
-    )
-    renderer?.setFollowSmoothness(normalized.followSmoothnessSeconds)
   }
 
   function changeRenderQuality(next: GlassRenderQualityPreference): void {
