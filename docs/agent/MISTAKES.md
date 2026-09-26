@@ -1451,11 +1451,11 @@ Prove the fix at the same pose before changing geometry or renderer quality.
 **See:** `packages/glass-game/src/render/planar-reflections.ts`,
 `art/glass-adventure/v5/proofs/mirror-backing-sept20/`.
 
-### Separate mirror raster cost from microphone interaction tests
+### Separate rendering cost from input and microphone interaction tests
 
 **Symptom:** a restored player appeared blocked after moving only 0.6–0.8 metres in eight test seconds.
 **Cause:** shrinking the main canvas left the planar reflection target expensive under SwiftShader; slow RAF plus the bounded physics timestep meant slow simulated travel, not a collider.
-**Rule:** inspect position/frame progress before changing world geometry. In behavior-only cases, suppress all draw calls while retaining real loaders, input, clocks and audio. Keep separate actual-render proofs; never claim these tests measure GPU performance.
+**Rule:** inspect position/frame progress before changing world geometry or touch coordinates. In behavior-only cases, suppress draw calls while retaining real loaders and input. For input-only tests, advance controlled simulation time and assert acquisition, travel, braking and stale-contact rejection; wall-clock seconds are not simulated travel time under software rendering. Keep real audio timing in microphone tests and separate actual-render proofs; never claim these tests measure GPU performance.
 **See:** `apps/beside-cue/e2e/glass-adventure-voice.e2e.ts`, `art/glass-adventure/v6-level2/proofs/twin-galleries/`.
 
 ### Never add Claude attribution
