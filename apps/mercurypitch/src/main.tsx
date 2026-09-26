@@ -163,6 +163,12 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // And whether the web view was ever turned: a line in the same record at
+  // launch and for every change after it, so the copied report says so even
+  // when the Developer screen was opened long after the turn.
+  void import('./shell/viewport-diagnostics').then((module) => {
+    module.installViewportDiagnostics()
+  })
 }
 armDeveloperConsole()
 

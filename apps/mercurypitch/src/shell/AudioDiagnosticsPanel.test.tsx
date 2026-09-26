@@ -247,6 +247,28 @@ describe('the Audio section', () => {
     ).toEqual(['context', 'activated', 'started', 'stopped'])
   })
 
+  it('shows which way the screen is turned, and copies it with the rest', async () => {
+    vi.stubGlobal('innerWidth', 844)
+    vi.stubGlobal('innerHeight', 390)
+    vi.stubGlobal('screen', { orientation: { type: 'landscape-primary' } })
+    document.documentElement.style.setProperty('--safe-right', '47px')
+    const writeText = vi.fn(async () => undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    try {
+      await openPanel()
+      expect(row('Orientation')).toBe('landscape-primary · 844 x 390')
+      expect(row('Safe insets')).toMatch(/^unset 47px unset unset · in use /u)
+
+      button('dev-audio-copy').click()
+      await settle()
+      const report = el('[data-testid="dev-audio-report"]').textContent ?? ''
+      expect(report).toContain('Orientation: landscape-primary · 844 x 390')
+      expect(report).toMatch(/Safe insets: unset 47px unset unset/u)
+    } finally {
+      document.documentElement.removeAttribute('style')
+    }
+  })
+
   it('stops an ambient it started when the screen goes', async () => {
     stubFetch({ ok: false, status: 0 })
     await openPanel()

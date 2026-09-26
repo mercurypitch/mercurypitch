@@ -528,6 +528,28 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await more('developer')
     await visible('[data-testid="shell-developer"]')
     await settle()
+    // The Audio section says which way the screen is turned and what the
+    // insets resolve to, as a phone's copied report will (device round 5).
+    at = 'reading the Orientation rows'
+    const rows = await page.evaluate(() => {
+      const read = (label) =>
+        document
+          .querySelector(`[data-audio-row="${label}"] dd`)
+          ?.textContent?.trim() ?? null
+      return { orientation: read('Orientation'), insets: read('Safe insets') }
+    })
+    const size = `${frame.width} x ${frame.height}`
+    const inUse = `in use 0 ${frame.side} ${frame.bottom} ${frame.side}`
+    if (
+      rows.orientation !== `landscape-primary · ${size}` ||
+      !rows.insets?.endsWith(inUse)
+    ) {
+      failures.push(`developer rows: ${JSON.stringify(rows)}`)
+    } else {
+      steps.push(
+        `landscape developer: Orientation "${rows.orientation}", Safe insets "${rows.insets}"`,
+      )
+    }
     await measure('developer', '[data-testid="shell-developer"]', { end: true })
     await back('[data-testid="shell-developer"]')
 
