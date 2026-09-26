@@ -17,6 +17,11 @@
 // The buttons: a test tone on a context of its own (test-tone.ts), the Sing
 // ambient through the alley's own loader, and the report to the clipboard.
 //
+// Two rows are not about sound: which way the screen is turned and the
+// safe-area insets (viewport-diagnostics.ts). They are here because this
+// report is what comes back from a device round, and its record already
+// carries a line for every turn the web view was told about.
+//
 // Registered by the native entry alone, behind VITE_PORTABLE_CONSOLE and
 // through a dynamic import (main.tsx), so a store build carries none of it.
 
@@ -26,6 +31,7 @@ import type { AudioDiagnosticEntry } from '@/lib/audio-diagnostics'
 import { describeAudioError, formatAudioDiagnostics, lastAudioDiagnostic, onAudioDiagnostic, } from '@/lib/audio-diagnostics'
 import { ambient } from '../alley/RoomsAlley'
 import { playTestTone } from './test-tone'
+import { orientationRow, safeInsetsRow } from './viewport-diagnostics'
 
 /** How often the rows are read while the screen is open. */
 export const POLL_MS = 250
@@ -138,6 +144,8 @@ export const AudioDiagnosticsPanel: Component = () => {
       { label: 'Last error', value: errorRow() },
       { label: 'Audio session', value: audioSessionType() },
       { label: 'Page', value: document.visibilityState },
+      { label: 'Orientation', value: orientationRow() },
+      { label: 'Safe insets', value: safeInsetsRow() },
     ]
   }
 

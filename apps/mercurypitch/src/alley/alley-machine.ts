@@ -12,6 +12,7 @@
 //    └────tap-plate──────┘  └──tap-door──────┘ (another door)                     │
 //    └──────────settled──── settling ◀───────────────returned─────────────────────┘
 //    └──────────────────────────────────cancel─── opening (Back, a rail tab)
+//    └──────────────────────────────────left───── open (another tab before the room showed)
 //
 // A locked door selects and stops there: no wake, no enter. Tapping the
 // selected door again is Enter for a room that is open and nothing for one
@@ -52,6 +53,13 @@ export type AlleyEvent =
    * the alley unmounted under it. The door goes back into the plate.
    */
   | { type: 'cancel' }
+  /**
+   * Covered, and gone to another tab before the room was shown: a rail tab
+   * in the wait for the room's picture. Nobody saw the room, so it ends as
+   * an open called off, the door back in the plate, not settling on the
+   * next visit as if back from a room (PR 859 final review, NB6).
+   */
+  | { type: 'left' }
 
 export const ALLEY_REST: AlleyState = { phase: 'rest', door: null }
 
@@ -107,6 +115,8 @@ export function alleyReducer(
         : state
     case 'cancel':
       return state.phase === 'opening' ? ALLEY_REST : state
+    case 'left':
+      return state.phase === 'open' ? ALLEY_REST : state
   }
 }
 

@@ -299,6 +299,14 @@ export const RoomsAlley: Component = () => {
     on(shellCovered, (covered) => {
       if (!covered) return
       const phase = untrack(alley).phase
+      // And an open still growing is called off, as a press outside the
+      // alley calls it off: More from the keyboard sends no press, and at
+      // the cover goToTab would close it again and land in the room (PR 859
+      // final review, NB7).
+      if (phase === 'opening') {
+        cancelOpen()
+        return
+      }
       if (phase !== 'selected' && phase !== 'alive') return
       dispatch({ type: 'leave' })
       void quiet(reduced() ? REDUCED_MS : CLEAR_MS)
@@ -378,7 +386,9 @@ export const RoomsAlley: Component = () => {
         height: size().h,
         reduced: reduced(),
         video: clip,
-        room: room?.source() ?? null,
+        // The accessor, not what it answers now: a rotation mid-open changes
+        // the file the room will draw, and the open follows it.
+        room: room?.source ?? null,
         plateSrc: plate(),
         plateBox: {
           x: -fit().ox,
@@ -390,15 +400,22 @@ export const RoomsAlley: Component = () => {
         onCovered: () => {
           finishOpen()
           dispatch({ type: 'covered' })
-          // The welcome is over when a room is reached, not when Enter is
-          // pressed: an open called off leaves it to be seen again.
-          markWelcomeSeen()
           goToTab(tab)
           arrivedHash = window.location.hash
         },
         away: () =>
           untrack(shellCovered) ||
           (untrack(currentTab) !== tab && window.location.hash !== arrivedHash),
+        onReveal: (shown) => {
+          // The welcome is over when a room is reached, not when Enter is
+          // pressed: an open called off leaves it to be seen again. Nor at
+          // the cover: the room is reached once it is shown, or when it is
+          // still the tab under More, a pushed screen or the chip's column.
+          // Gone to another tab before it showed, nobody saw it: the open
+          // ends as one called off (PR 859 final review, NB6).
+          if (shown || untrack(currentTab) === tab) markWelcomeSeen()
+          else dispatch({ type: 'left' })
+        },
         holdArrival: holdRoomArrival,
       })
     } catch (error) {
@@ -443,7 +460,7 @@ export const RoomsAlley: Component = () => {
   // Where the card sits: measured, so a card with no Enter sits lower, and
   // kept above whatever the dock is drawing (the rail, or the pill over it).
   createEffect(
-    on([cardDoor, doors], ([key]) => {
+    on([cardDoor, doors, safeRight], ([key, , insetRight]) => {
       if (key === null || panel === undefined) return
       const dock = document.querySelector('.mp-dock')
       const floor = dock?.getBoundingClientRect().top ?? size().h
@@ -452,6 +469,7 @@ export const RoomsAlley: Component = () => {
         size().w,
         floor,
         panel.offsetHeight,
+        insetRight,
       )
       panel.style.left = `${spot.x}px`
       panel.style.top = `${spot.y}px`

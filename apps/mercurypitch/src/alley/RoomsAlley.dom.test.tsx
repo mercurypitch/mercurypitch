@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 import { TAB_PROGRESS, TAB_SINGING } from '@/features/tabs/constants'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
@@ -145,10 +145,16 @@ describe('entering a room from the alley', () => {
     expect(store.roomArrivalHeld()).toBe(true)
     expect(welcome.welcomeSeen()).toBe(false)
 
+    // Covered: the room is mounted under the clone, and not yet shown.
     await vi.advanceTimersByTimeAsync(700)
     expect(nav.goToTab).toHaveBeenCalledWith(TAB_SINGING)
-    expect(welcome.welcomeSeen()).toBe(true)
+    expect(welcome.welcomeSeen()).toBe(false)
     expect(store.roomArrivalHeld()).toBe(true)
+
+    // The clone goes to show it (here after waiting out a picture jsdom
+    // never draws).
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(welcome.welcomeSeen()).toBe(true)
   })
 
   it('leaves the welcome unseen when the open is called off', async () => {
@@ -212,6 +218,33 @@ describe('somewhere else, after the clone has covered', () => {
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
   })
 
+  it('a rail tab before the room showed: as an open called off', async () => {
+    // PR 859 final review, NB6: the welcome was marked seen at the cover and
+    // the alley stayed 'open', so the next visit settled the door as if
+    // back from a room nobody saw, and the welcome was gone.
+    // Not the hash an earlier case left: the open takes it as the room's.
+    window.location.hash = '#/home'
+    const { el, welcome } = await mountAlley()
+    const ui = await import('@/stores/ui-store')
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    window.location.hash = '#/progress'
+    ui.setActiveTab(TAB_PROGRESS)
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(welcome.welcomeSeen()).toBe(false)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+
+    // The next visit: the door in the plate, and the welcome still due.
+    view?.unmount()
+    const again = await mountAlley()
+    expect(again.el('rooms-alley').dataset.phase).toBe('rest')
+    expect(again.el('rooms-alley').dataset.first).toBe('on')
+  })
+
   it('More over the room: the clone is gone within 120 ms', async () => {
     const { el, shell } = await mountAlley()
     el('alley-door-sing').click()
@@ -222,6 +255,25 @@ describe('somewhere else, after the clone has covered', () => {
     shell.openMore()
     await vi.advanceTimersByTimeAsync(120)
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+  })
+
+  it('More over the room: the room was reached, and the welcome is over', async () => {
+    const { el, shell, welcome } = await mountAlley()
+    const ui = await import('@/stores/ui-store')
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    // What goToTab(TAB_SINGING) and the router did at the cover.
+    window.location.hash = '#/singing'
+    ui.setActiveTab(TAB_SINGING)
+
+    shell.openMore()
+    onTestFinished(() => shell.closeMore())
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(welcome.welcomeSeen()).toBe(true)
+    // Back from the room, later, the door settles as after any room.
+    expect(el('rooms-alley').dataset.phase).toBe('open')
   })
 })
 
@@ -243,6 +295,30 @@ describe('an open called off without Back or a rail tab', () => {
     expect(store.roomArrivalHeld()).toBe(false)
     await vi.advanceTimersByTimeAsync(2000)
     expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+
+  it('stops for More opened from the keyboard, which sends no press', async () => {
+    // PR 859 final review, NB7: Enter on the rail's More is a click with no
+    // pointerdown before it, so nothing called the open off. At the cover
+    // goToTab closed More again and landed in the room.
+    const { el, store, nav, shell } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    // What the rail's onPick does for More, and all a keyboard sends it.
+    shell.openMore()
+    // The shell's navigation is mocked, and a mocked module outlives the
+    // reset: left open, More would answer the next case's Back.
+    onTestFinished(() => shell.closeMore())
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(store.roomArrivalHeld()).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(nav.goToTab).not.toHaveBeenCalled()
+    expect(shell.moreOpen()).toBe(true)
   })
 
   it('ignores a press inside the alley while it grows', async () => {
@@ -520,6 +596,80 @@ describe('the right safe-area inset', () => {
     expect(Math.max(...keys.map(right))).toBeLessThanOrEqual(852 - 400)
     const band = el('alley-hit')
     expect(right(band)).toBeLessThanOrEqual(852 - 400)
+  })
+})
+
+describe('the right safe-area inset, and the card', () => {
+  it('keeps the card under the door nearest it clear of it too', async () => {
+    // PR 859 final review, NB3: the doors and the band kept out of the
+    // inset, and the card centred under the door nearest it did not.
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    const { el } = await mountAlley()
+    const root = el('rooms-alley')
+    root.style.setProperty('--safe-right', '400px')
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    observer.callback([], observer as unknown as ResizeObserver)
+
+    const right = (key: HTMLElement): number =>
+      Number.parseFloat(key.style.left) + Number.parseFloat(key.style.width)
+    const keys = [...root.querySelectorAll<HTMLElement>('.mp-alley__key')]
+    const nearest = keys.reduce((a, b) => (right(a) >= right(b) ? a : b))
+    el(`alley-door-${nearest.dataset.door ?? ''}`).click()
+    const panel = el('alley-panel')
+    expect(Number.parseFloat(panel.style.left) + 236).toBeLessThanOrEqual(
+      852 - 400,
+    )
+  })
+})
+
+describe('the door lifted out of the plate', () => {
+  // alley.css draws the lift and the settle from these two classes, and no
+  // case asserted either (PR 859 final review, the coverage gap): a door that
+  // stayed flat when picked, or snapped back from a room instead of settling
+  // into place, passed every test.
+  const doorEl = (key: string): HTMLElement => {
+    const found = document.querySelector<HTMLElement>(
+      `.mp-alley__door[data-door="${key}"]`,
+    )
+    if (found === null) throw new Error(`no ${key} door`)
+    return found
+  }
+  const lifted = (): string[] =>
+    [
+      ...document.querySelectorAll<HTMLElement>('.mp-alley__door.is-lifted'),
+    ].map((door) => door.dataset.door ?? '')
+
+  it('lifts the picked door and no other, and lays it back when put back', async () => {
+    const { el } = await mountAlley()
+    expect(lifted()).toEqual([])
+    el('alley-door-ear').click()
+    expect(lifted()).toEqual(['ear'])
+    el('alley-door-guitar').click()
+    expect(lifted()).toEqual(['guitar'])
+    el('alley-plate').click()
+    expect(lifted()).toEqual([])
+  })
+
+  it('settles the door a room was opened from when the alley comes back, then rests', async () => {
+    const opened = await mountAlley()
+    opened.el('alley-door-ear').click()
+    opened.el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(opened.el('rooms-alley').dataset.phase).toBe('open')
+    view?.unmount()
+    view = null
+
+    // Back from the room: the same alley, mounted again.
+    const { el } = await mountAlley()
+    expect(el('rooms-alley').dataset.phase).toBe('settling')
+    expect(doorEl('ear').classList.contains('is-settling')).toBe(true)
+    expect(lifted()).toEqual(['ear'])
+    await vi.advanceTimersByTimeAsync(360)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(doorEl('ear').classList.contains('is-settling')).toBe(false)
+    expect(lifted()).toEqual([])
   })
 })
 

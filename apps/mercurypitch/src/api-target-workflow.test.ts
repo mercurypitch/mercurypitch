@@ -47,6 +47,13 @@ function step(text: string, name: string): number {
   return at
 }
 
+/** A step's own text, by its name: up to the next step. */
+function stepText(text: string, name: string): string {
+  const start = step(text, name)
+  const next = text.indexOf('\n      - name: ', start + 1)
+  return text.slice(start, next < 0 ? undefined : next)
+}
+
 const STORE_EXPORT = "Export the caller's store build environment"
 
 describe('the caller', () => {
@@ -97,5 +104,55 @@ describe('the reusable workflow', () => {
   it('the simulator app and the ad-hoc IPA never see them', () => {
     expect(job('ios')).not.toContain('store-build-env')
     expect(job('ios')).not.toContain('STORE_BUILD_ENV')
+  })
+})
+
+describe('every iOS web build is checked, as the Android ones are', () => {
+  // PR 859 final review, NB1. The Android job runs the caller's
+  // verify-assets (assert-bundle, for Mercury Pitch) after each web build;
+  // the iOS jobs built the TestFlight, simulator and release bundles and
+  // checked none of them. A bundle that fetched the runtime from a CDN, or
+  // carried the wrong worker, went to a phone unasserted.
+  const checked = (text: string, name: string, when: string): void => {
+    const verify = stepText(text, name)
+    expect(verify).toContain(`if: ${when}`)
+    expect(verify).toContain('STAGE: dist')
+    expect(verify).toContain('export DIST_DIR="$APP_DIR/dist"')
+    expect(verify).toContain('bash -euo pipefail -c "$VERIFY_ASSETS"')
+  }
+
+  it('the TestFlight archive checks the bundle it is about to archive', () => {
+    const release = job('ios-testflight')
+    expect(release).toContain('VERIFY_ASSETS: ${{ inputs.verify-assets }}')
+    const verify = step(release, 'Verify the TestFlight bundle')
+    expect(verify).toBeGreaterThan(step(release, 'Build web assets'))
+    expect(verify).toBeLessThan(
+      step(release, 'Archive, and upload from main and tags'),
+    )
+    checked(
+      release,
+      'Verify the TestFlight bundle',
+      "env.HAS_ASC == 'true' && inputs.verify-assets != ''",
+    )
+  })
+
+  it('the simulator app and the release IPA check theirs, each after its build', () => {
+    const ios = job('ios')
+    expect(ios).toContain('VERIFY_ASSETS: ${{ inputs.verify-assets }}')
+    const simulator = step(ios, 'Verify the simulator bundle')
+    expect(simulator).toBeGreaterThan(
+      step(ios, 'Build web assets for the simulator'),
+    )
+    expect(simulator).toBeLessThan(step(ios, 'Build for simulator'))
+    checked(ios, 'Verify the simulator bundle', "inputs.verify-assets != ''")
+
+    const release = step(ios, 'Verify the release bundle')
+    expect(release).toBeGreaterThan(step(ios, 'Rebuild web assets for release'))
+    expect(release).toBeLessThan(step(ios, 'Archive and export IPA'))
+    checked(
+      ios,
+      'Verify the release bundle',
+      "env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true' && inputs.verify-assets != ''",
+    )
   })
 })

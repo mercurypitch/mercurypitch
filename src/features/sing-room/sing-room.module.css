@@ -488,12 +488,25 @@
 
 /* ── The one coach mark ──────────────────────────────────── */
 
+/* The pitch pill and the mark that points at it, in one box (device round 5).
+   The mark was placed from the top of the room, 108px down: a measurement of
+   a HUD that has since grown a row, so its arrow landed on the key chip and,
+   upright, the mark covered most of the pill it described. Hung from the
+   pill's own box it points at the pill wherever the row puts it. */
+.noteAnchor {
+  position: relative;
+  display: flex;
+}
+
+/* Upright: under the pill, its arrow up at the pill's middle. */
 .coach {
   position: absolute;
   z-index: 12;
-  top: calc(var(--safe-top, 0px) + 108px);
-  left: max(20px, var(--safe-left, 0px));
+  top: calc(100% + 10px);
+  left: 50%;
+  width: max-content;
   max-width: 230px;
+  transform: translateX(-50%);
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--bg-tertiary, #21262d);
@@ -507,12 +520,30 @@
   content: '';
   position: absolute;
   top: -7px;
-  left: 40px;
+  left: calc(50% - 6px);
   width: 12px;
   height: 12px;
   background: inherit;
   transform: rotate(45deg);
   box-shadow: -1px -1px 0 rgb(230 237 243 / 16%);
+}
+
+/* On its side the stage under the pill is about 117px tall, and the mark
+   would sit on the line itself. Beside the pill instead, in the row's empty
+   right half (the chips above it keep to the left), its arrow pointing left
+   at the pill. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .coach {
+    top: 50%;
+    left: calc(100% + 12px);
+    transform: translateY(-50%);
+  }
+
+  .coach::before {
+    top: calc(50% - 6px);
+    left: -7px;
+    box-shadow: -1px 1px 0 rgb(230 237 243 / 16%);
+  }
 }
 
 .coachTitle {

@@ -355,6 +355,37 @@ describe('through the alley', () => {
     )
   })
 
+  it('a rotation mid-open ends on the file the room draws on its side', async () => {
+    // PR 859 final review, A1: the open was handed the picture as it stood at
+    // Enter. Turned mid-grow, the room draws its landscape file, and the open
+    // ended on the portrait one cropped to a screen it was not made for.
+    const { el, clone } = await mountAlley()
+    el('alley-door-ear').click()
+    decodes[0].succeed()
+    await settle()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    window.dispatchEvent(new Event('resize'))
+    // The held room follows the room's choice: its landscape file decodes.
+    // (By file, not by count: an open an earlier case left in flight still
+    // holds a controller of its own, listening to the same window.)
+    const landscape = decodes.filter(
+      (d) => d.src === '/ear-lab/regulator-room-landscape.webp',
+    )
+    expect(landscape.length).toBeGreaterThan(0)
+    for (const decode of landscape) decode.succeed()
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(clone()?.dataset.phase).toBe('covered')
+    const shown = [
+      ...(clone()?.querySelectorAll('[data-testid="alley-morph-room"]') ?? []),
+    ].map((image) => image.getAttribute('src'))
+    expect(shown).toEqual(['/ear-lab/regulator-room-landscape.webp'])
+  })
+
   it('a locked door holds no room', async () => {
     const { el, retain } = await mountAlley()
     el('alley-door-karaoke').click()

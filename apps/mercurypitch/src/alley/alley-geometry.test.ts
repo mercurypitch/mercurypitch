@@ -321,6 +321,16 @@ describe('the card under a door', () => {
     )
   })
 
+  it('keeps clear of the right safe-area inset, on a screen on its side', () => {
+    // PR 859 final review, NB3: the doors and the tap band kept out of the
+    // inset, and the card under the door nearest it did not.
+    const near = { ...door(at393, 'guitar'), cx: 760 }
+    expect(placePanel(near, 852, 372, 90, 59).x).toBe(852 - 59 - 236)
+    // No inset, or one narrower than the 16 px margin: the margin, as before.
+    expect(placePanel(near, 852, 372, 90).x).toBe(852 - 16 - 236)
+    expect(placePanel(near, 852, 372, 90, 8).x).toBe(852 - 16 - 236)
+  })
+
   it('sits under the sill and never on the dock', () => {
     const sing = door(at393, 'sing')
     // Room enough: 14 px under the sill.

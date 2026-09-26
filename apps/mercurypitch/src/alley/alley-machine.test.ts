@@ -34,6 +34,20 @@ describe('the alley reducer', () => {
     expect(alleyReducer(alive, { type: 'cancel' }, isEnterable)).toBe(alive)
   })
 
+  it('puts an open door back in the plate when it was left before the room showed', () => {
+    const open: AlleyState = { phase: 'open', door: 'sing' }
+    expect(alleyReducer(open, { type: 'left' }, isEnterable)).toBe(ALLEY_REST)
+    // Anything else was not an open waiting on its room.
+    for (const state of [
+      { phase: 'opening', door: 'sing' },
+      { phase: 'settling', door: 'sing' },
+      { phase: 'alive', door: 'sing' },
+      ALLEY_REST,
+    ] as AlleyState[]) {
+      expect(alleyReducer(state, { type: 'left' }, isEnterable)).toBe(state)
+    }
+  })
+
   it('walks rest, selected, alive, opening, open, back, settled', () => {
     const phases = run([
       tap('sing'),

@@ -86,10 +86,12 @@ export interface DoorOpenPlan {
     readonly h: number
   }
   /**
-   * The room's own picture (alley-room.ts): decoded by Enter, or on its way.
-   * Null when there is none to end on; the door's content grows alone.
+   * The room's own picture (alley-room.ts) as its preload has it now:
+   * decoded by Enter, or on its way. Read again on a rotation, when the room
+   * will draw the other orientation's file. Null when there is none to end
+   * on; the door's content grows alone.
    */
-  readonly room: RoomPictureSource | null
+  readonly room: (() => RoomPictureSource) | null
   /** Resolves once the door's ambient has faded out and stopped. */
   readonly ambientSilent: Promise<void>
   /** The clone covers the screen: mount the room under it. */
@@ -101,6 +103,13 @@ export interface DoorOpenPlan {
    * no longer coming.
    */
   readonly away: () => boolean
+  /**
+   * The clone starts to go, once covered: `shown` when it goes to show the
+   * room (its picture drawn, or waited on to the deadline), not when the
+   * user went elsewhere first or the room unmounted under it. Never called
+   * for an open called off before it covered.
+   */
+  readonly onReveal: (shown: boolean) => void
   /** Hold the room's own arrival; the returned function lets it start. */
   readonly holdArrival: () => () => void
 }
@@ -364,10 +373,12 @@ function startOpen(
   let vw = plan.width
   let vh = plan.height
   const art = artBox(plan.door)
+  // The room's picture as its preload has it now.
+  const roomSource = (): RoomPictureSource | null => plan.room?.() ?? null
   // The room's picture, if it decoded by Enter: in the clone from its first
   // frame, at opacity 0 until the grow starts (under reduced motion, in
   // place and whole — the clone's own fade is the crossfade).
-  const early = plan.room?.now ?? null
+  const early = roomSource()?.now ?? null
   let room: RoomLayer | null = null
   let clone: HTMLDivElement
   try {
@@ -427,6 +438,8 @@ function startOpen(
       cropAt(1)
     }
     if (covered || plan.reduced) room?.place(1, vw, vh)
+    // The room draws this orientation's file now; the open ends on it too.
+    follow()
   }
   window.addEventListener('resize', retarget)
 
@@ -490,21 +503,57 @@ function startOpen(
     if (opacity >= 1) hideDoor()
   }
   if (plan.reduced && early !== null) hideDoor()
-  // Decoded after Enter: in when it is ready, over whatever the door's
-  // content has grown to by then — never before, so never half-loaded.
-  if (plan.room !== null && early === null) {
-    void plan.room.later.then((picture) => {
+  // The picture a swap is fading in over, taken out once the new one is whole.
+  let fading: RoomLayer | null = null
+  /**
+   * `picture` into the clone, over whatever it shows: faded in, at the grow's
+   * crop, and the door (or the picture it replaces) goes once it is whole.
+   */
+  const swapIn = (picture: RoomPicture): void => {
+    window.clearTimeout(lateTimer)
+    fading?.picture.image.remove()
+    fading = room
+    room = roomLayer(clone, picture, art, !plan.reduced)
+    room.place(covered || plan.reduced ? 1 : progress, vw, vh)
+    clone.dataset.room = 'in'
+    const fade = plan.reduced ? REDUCED_MS : ROOM_LATE_MS
+    fadeOpacity(picture.image, 0, 1, fade)
+    lateTimer = window.setTimeout(() => {
+      fading?.picture.image.remove()
+      fading = null
+      hideDoor()
+    }, fade)
+  }
+  let awaiting: Promise<RoomPicture | null> | null = null
+  /**
+   * The clone follows the room's picture until the reveal. Decoded after
+   * Enter: in when it is ready, over whatever the door's content has grown to
+   * by then — never before, so never half-loaded. And a rotation changes the
+   * file the room will draw (PR 859 final review, A1): the open swaps to that
+   * one, rather than ending on the old picture cropped to a screen it was not
+   * made for. A decode a later rotation has superseded shows nowhere.
+   */
+  const follow = (): void => {
+    const next = roomSource()
+    if (next === null || cancelled || revealing) return
+    if (next.now !== null) {
+      awaiting = null
+      if (next.now !== room?.picture) swapIn(next.now)
+      return
+    }
+    if (awaiting === next.later) return
+    const wanted = next.later
+    awaiting = wanted
+    void wanted.then((picture) => {
+      if (awaiting !== wanted) return
+      awaiting = null
       if (picture === null || cancelled || revealing || !clone.isConnected) {
         return
       }
-      room = roomLayer(clone, picture, art, !plan.reduced)
-      room.place(covered || plan.reduced ? 1 : progress, vw, vh)
-      clone.dataset.room = 'in'
-      const fade = plan.reduced ? REDUCED_MS : ROOM_LATE_MS
-      fadeOpacity(picture.image, 0, 1, fade)
-      lateTimer = window.setTimeout(hideDoor, fade)
+      if (picture !== room?.picture) swapIn(picture)
     })
   }
+  if (early === null) follow()
 
   const cover = (): void => {
     if (covered || cancelled) return
@@ -515,6 +564,7 @@ function startOpen(
     if (!plan.reduced) cropAt(1)
     progress = 1
     roomAt(1)
+    follow()
     clone.style.opacity = '1'
     clone.dataset.phase = 'covered'
     plan.onCovered()
@@ -527,6 +577,7 @@ function startOpen(
     const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
     revealing = true
     clone.dataset.phase = 'revealing'
+    plan.onReveal(drawn)
     fadeOpacity(clone, 1, 0, fade)
     await wait(fade + 20)
     if (plan.video !== null) {

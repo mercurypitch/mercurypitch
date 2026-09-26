@@ -574,17 +574,23 @@ export const PANEL_WIDTH = 236
 /**
  * The card under a selected door: centred on it, 14 px below its sill, kept
  * 16 px inside the screen and clear of whatever the dock draws (`floor` is
- * the dock's top edge, `height` the card's own measured height).
+ * the dock's top edge, `height` the card's own measured height). On the
+ * right it also keeps out of the safe-area inset, as the doors and the tap
+ * band do (PR 859 final review, NB3): a cutout on its side.
  */
 export function placePanel(
   door: DoorLayout,
   w: number,
   floor: number,
   height: number,
+  insetRight = 0,
 ): { x: number; y: number } {
   const x = Math.max(
     16,
-    Math.min(w - 16 - PANEL_WIDTH, Math.round(door.cx - PANEL_WIDTH / 2)),
+    Math.min(
+      w - Math.max(16, insetRight) - PANEL_WIDTH,
+      Math.round(door.cx - PANEL_WIDTH / 2),
+    ),
   )
   const y = Math.max(
     16,

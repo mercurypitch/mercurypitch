@@ -292,6 +292,83 @@ const toEnd = (scope) => {
 }
 
 /**
+ * The fake voice sings A4 and then C5: three semitones.
+ *
+ * Device round 5: on its side the Sing room drew the line as one flat row.
+ * The canvas is 117 px tall there, and the stage's bands (34 px above the
+ * view, 78 under it) left five of them for the whole range. A step that did
+ * not read how far apart the line draws two notes would pass that picture.
+ */
+const TRACE_SEMITONES = 3
+/** Upright the line moves about 10 px a semitone, and 2.4 on its side. */
+const TRACE_MIN_PX_PER_SEMITONE = 1.5
+/** Left of this the canvas draws the live marker, its pill and the row labels. */
+const TRACE_LEFT_PX = 30
+
+/**
+ * In the page: how far apart the Sing trace draws its notes, in CSS px.
+ *
+ * Only the line itself is opaque and saturated there: its glow, the head's
+ * halo, the grid and the labels are translucent, and the cores are white. So
+ * each column right of the marker gives the line's centre, and the 5th and
+ * 95th percentiles of those are the two notes. A detection glitch at an onset
+ * is a few columns, and moves neither.
+ */
+const readTrace = (left) => {
+  const canvas = document.querySelector('[data-testid="sing-stage"] canvas')
+  if (!(canvas instanceof HTMLCanvasElement)) return null
+  const { width, height } = canvas
+  const data = canvas.getContext('2d').getImageData(0, 0, width, height).data
+  const scale = height / canvas.clientHeight
+  const centres = []
+  for (let x = Math.ceil(left * scale); x < width; x += 1) {
+    let sum = 0
+    let count = 0
+    for (let y = 0; y < height; y += 1) {
+      const i = (y * width + x) * 4
+      const hi = Math.max(data[i], data[i + 1], data[i + 2])
+      const lo = Math.min(data[i], data[i + 1], data[i + 2])
+      if (data[i + 3] < 200 || hi - lo < 60) continue
+      sum += y
+      count += 1
+    }
+    if (count > 0) centres.push(sum / count / scale)
+  }
+  centres.sort((a, b) => a - b)
+  const at = (q) =>
+    centres[Math.min(centres.length - 1, Math.floor(q * centres.length))]
+  return {
+    height: Math.round(canvas.clientHeight),
+    columns: centres.length,
+    spread: centres.length === 0 ? 0 : at(0.95) - at(0.05),
+  }
+}
+
+/**
+ * In the page: the coach mark, the pill it points at, and what it must not
+ * cover on its side (device round 5): the key chip and the stage's line.
+ */
+const readCoachMark = () => {
+  const box = (selector) => {
+    const el = document.querySelector(selector)
+    if (el === null) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+  }
+  return {
+    coach: box('[data-testid="sing-coach-mark"]'),
+    pill: box('[data-testid="sing-note-chip"]'),
+    key: box('[data-testid="sing-key-chip"]'),
+    stage: box('[data-testid="sing-stage"]'),
+  }
+}
+
+/** Whether two boxes share more than half a pixel each way. */
+const overlaps = (a, b) =>
+  Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 &&
+  Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5
+
+/**
  * One frame: every surface the brief names, each measured where it opens and
  * scrolled to its end.
  */
@@ -424,6 +501,58 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     // Past the three seconds of voice a take needs to earn its card.
     await settle(4000)
     await measure('sing-live', null)
+    // The first live run shows the coach mark. Under the pill it would sit on
+    // the line, so on its side it goes beside the pill, arrow pointing left.
+    at = 'reading the coach mark'
+    const mark = await page.evaluate(readCoachMark)
+    if (mark.coach === null || mark.pill === null) {
+      throw new Error('no coach mark or no pitch pill on the first live run')
+    }
+    const markMiddle = (mark.coach.top + mark.coach.bottom) / 2
+    const markGap = mark.coach.left - mark.pill.right
+    // Near enough for its arrow to reach across the gap.
+    const beside =
+      markGap >= 4 &&
+      markGap <= 20 &&
+      markMiddle >= mark.pill.top &&
+      markMiddle <= mark.pill.bottom
+    const clear = [mark.pill, mark.key, mark.stage].every(
+      (box) => box === null || !overlaps(mark.coach, box),
+    )
+    if (!beside || !clear) {
+      failures.push(
+        `coach mark: not beside the pill and clear of it, the key chip and the stage: ${JSON.stringify(mark)}`,
+      )
+    } else {
+      steps.push(
+        `coach mark: beside the pitch pill, ${Math.round(markGap)} px right of it, clear of the key chip and the stage`,
+      )
+    }
+    at = 'reading the Sing trace'
+    await page
+      .waitForFunction(
+        () =>
+          (
+            document
+              .querySelector('[data-testid="sing-note-chip"]')
+              ?.getAttribute('aria-label') ?? ''
+          ).startsWith('C5'),
+        undefined,
+        { timeout: runTimeoutMs },
+      )
+      .catch(() => {
+        throw new Error('the note chip never said C5')
+      })
+    await settle(800)
+    const trace = await page.evaluate(readTrace, TRACE_LEFT_PX)
+    if (trace === null) throw new Error('no canvas in the Sing stage')
+    const perSemitone = trace.spread / TRACE_SEMITONES
+    const read = `A4 and C5 drawn ${trace.spread.toFixed(1)} px apart on a ${trace.height} px canvas, ${perSemitone.toFixed(2)} px a semitone over ${trace.columns} columns`
+    if (perSemitone < TRACE_MIN_PX_PER_SEMITONE) {
+      failures.push(
+        `sing trace: ${read}, under ${TRACE_MIN_PX_PER_SEMITONE}; the line is one flat row`,
+      )
+    } else steps.push(`sing trace: ${read}`)
     await page
       .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
       .click()
@@ -528,6 +657,28 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await more('developer')
     await visible('[data-testid="shell-developer"]')
     await settle()
+    // The Audio section says which way the screen is turned and what the
+    // insets resolve to, as a phone's copied report will (device round 5).
+    at = 'reading the Orientation rows'
+    const rows = await page.evaluate(() => {
+      const read = (label) =>
+        document
+          .querySelector(`[data-audio-row="${label}"] dd`)
+          ?.textContent?.trim() ?? null
+      return { orientation: read('Orientation'), insets: read('Safe insets') }
+    })
+    const size = `${frame.width} x ${frame.height}`
+    const inUse = `in use 0 ${frame.side} ${frame.bottom} ${frame.side}`
+    if (
+      rows.orientation !== `landscape-primary · ${size}` ||
+      !rows.insets?.endsWith(inUse)
+    ) {
+      failures.push(`developer rows: ${JSON.stringify(rows)}`)
+    } else {
+      steps.push(
+        `landscape developer: Orientation "${rows.orientation}", Safe insets "${rows.insets}"`,
+      )
+    }
     await measure('developer', '[data-testid="shell-developer"]', { end: true })
     await back('[data-testid="shell-developer"]')
 

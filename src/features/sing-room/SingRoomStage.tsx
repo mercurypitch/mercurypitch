@@ -769,6 +769,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             haptics.tapLight()
             setTakesOpen(true)
           }}
+          coachMark={
+            // One coach mark, dismissed by use, about the pitch pill: the
+            // HUD hangs it from that pill.
+            <Show when={!singCoachMarkSeen() && state() === 'live'}>
+              <div class={styles.coach} data-testid="sing-coach-mark">
+                <b class={styles.coachTitle}>{SING_COACH_MARK.title}</b>
+                {SING_COACH_MARK.body}
+              </div>
+            </Show>
+          }
         />
 
         {/* THE ROOM'S OWN VISUALLY-HIDDEN CLASS, not `sr-only`: that class is
@@ -869,14 +879,6 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           </div>
         </Show>
       </div>
-
-      {/* One coach mark, dismissed by use. */}
-      <Show when={!singCoachMarkSeen() && state() === 'live'}>
-        <div class={styles.coach} data-testid="sing-coach-mark">
-          <b class={styles.coachTitle}>{SING_COACH_MARK.title}</b>
-          {SING_COACH_MARK.body}
-        </div>
-      </Show>
 
       {/* 3b — one screen, then the system alert. Full-screen rather than a
           sheet: it is a door, and a door with a stage behind it invites a tap
