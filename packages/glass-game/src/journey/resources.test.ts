@@ -5,6 +5,74 @@ import { describe, expect, it, vi } from 'vitest'
 import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, } from './resources'
 
 describe('journey glTF loading', () => {
+  it('loads an ordinary glTF document through the real parser and default fetch', async () => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({
+        asset: { version: '2.0' },
+        scene: 0,
+        scenes: [{ nodes: [0] }],
+        nodes: [{ name: 'museum-root' }],
+      }),
+    )
+    const fetchAsset = vi.fn().mockResolvedValue(new Response(bytes))
+    vi.stubGlobal('fetch', fetchAsset)
+    try {
+      const controller = new AbortController()
+      const document = await loadJourneyGltf('/map.gltf', controller.signal)
+      expect(fetchAsset).toHaveBeenCalledExactlyOnceWith('/map.gltf', {
+        signal: controller.signal,
+      })
+      expect(document.scene.getObjectByName('museum-root')).toBeDefined()
+      document.dispose()
+      document.dispose()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('rejects a real HTTP failure without reading or parsing an error page', async () => {
+    const arrayBuffer = vi.fn()
+    const parse = vi.fn()
+    await expect(
+      loadJourneyGltf('/missing.glb', new AbortController().signal, {
+        fetch: vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          arrayBuffer,
+        }) as unknown as typeof fetch,
+        parse,
+      }),
+    ).rejects.toThrow('Journey asset unavailable: /missing.glb')
+    expect(arrayBuffer).not.toHaveBeenCalled()
+    expect(parse).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])(
+    'cancels before parsing after navigation, with DOMException available: %s',
+    async (hasDOMException) => {
+      if (!hasDOMException) vi.stubGlobal('DOMException', undefined)
+      try {
+        const controller = new AbortController()
+        const parse = vi.fn()
+        await expect(
+          loadJourneyGltf('/map.glb', controller.signal, {
+            fetch: vi.fn().mockResolvedValue({
+              ok: true,
+              arrayBuffer: async () => {
+                controller.abort()
+                return new ArrayBuffer(8)
+              },
+            }) as unknown as typeof fetch,
+            parse,
+          }),
+        ).rejects.toMatchObject({ name: 'AbortError' })
+        expect(parse).not.toHaveBeenCalled()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    },
+  )
+
   it('accepts a non-empty status-0 body from the native bundled asset handler', async () => {
     const scene = new Group()
     const bytes = new Uint8Array([0x67, 0x6c, 0x54, 0x46]).buffer
@@ -125,6 +193,19 @@ describe('journey glTF loading', () => {
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })
 
+  it('preserves context when a decoder rejects with a non-Error cause', async () => {
+    const cause = { code: 'decoder-unavailable' }
+    await expect(
+      loadJourneyGltf('/map.glb', new AbortController().signal, {
+        fetch: vi.fn().mockResolvedValue(new Response(new Uint8Array(64))),
+        parse: vi.fn().mockRejectedValue(cause),
+      }),
+    ).rejects.toMatchObject({
+      message: 'Journey asset could not be parsed: /map.glb.',
+      cause,
+    })
+  })
+
   it('disposes a parse that finishes after cancellation', async () => {
     let finishParse:
       | ((value: { scene: Group; animations: [] }) => void)
@@ -156,6 +237,37 @@ describe('journey glTF loading', () => {
 })
 
 describe('journey frame loop', () => {
+  it('ignores an already queued hidden frame and stops when disposed inside its browser callback', () => {
+    const callbacks: FrameRequestCallback[] = []
+    const cancel = vi.fn()
+    const request = vi.fn((callback: FrameRequestCallback) => {
+      callbacks.push(callback)
+      return callbacks.length
+    })
+    vi.stubGlobal('requestAnimationFrame', request)
+    vi.stubGlobal('cancelAnimationFrame', cancel)
+    const update = vi.fn(() => loop.dispose())
+    const loop = createJourneyFrameLoop(update)
+    try {
+      loop.setForeground(true)
+      loop.setForeground(false)
+      expect(cancel).toHaveBeenCalledExactlyOnceWith(1)
+      callbacks[0]!(100)
+      expect(update).not.toHaveBeenCalled()
+      loop.setForeground(true)
+      callbacks[1]!(500)
+      expect(update).toHaveBeenCalledExactlyOnceWith(0, 0)
+      loop.setForeground(true)
+      loop.dispose()
+      callbacks[1]!(600)
+      expect(request).toHaveBeenCalledTimes(2)
+      expect(update).toHaveBeenCalledOnce()
+    } finally {
+      loop.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('owns one frame and excludes hidden time after resume', () => {
     let nextId = 0
     const callbacks = new Map<number, FrameRequestCallback>()
@@ -195,6 +307,27 @@ describe('journey frame loop', () => {
 })
 
 describe('journey late resource acceptance', () => {
+  it('installs into a live museum and retires a resource arriving after normal exit', async () => {
+    const resource = { dispose: vi.fn() }
+    const install = vi.fn()
+    await acceptJourneyResource(
+      Promise.resolve(resource),
+      () => 'active',
+      install,
+    )
+    expect(install).toHaveBeenCalledExactlyOnceWith(resource)
+    expect(resource.dispose).not.toHaveBeenCalled()
+
+    const retired = { dispose: vi.fn() }
+    await acceptJourneyResource(
+      Promise.resolve(retired),
+      () => 'disposed',
+      install,
+    )
+    expect(retired.dispose).toHaveBeenCalledOnce()
+    expect(install).toHaveBeenCalledOnce()
+  })
+
   it('keeps a context-loss failure after deferred models finish', async () => {
     let resolve!: (value: { dispose(): void }) => void
     const dispose = vi.fn()
