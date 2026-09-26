@@ -4119,9 +4119,19 @@ async function walkAlleyLandscape(browser, args, frame) {
       const clone = document.querySelector('[data-testid="alley-morph"]')
       if (clone === null) return null
       const b = clone.getBoundingClientRect()
+      // The top picture is what the clone shows as it hands over; a swap
+      // still fading has the old one under it.
+      const pictures = clone.querySelectorAll(
+        '[data-testid="alley-morph-room"]',
+      )
+      const top = pictures[pictures.length - 1]
       return {
         phase: clone.dataset.phase,
         box: [b.left, b.top, b.width, b.height].map((n) => Math.round(n)),
+        picture:
+          top === undefined
+            ? null
+            : new URL(top.getAttribute('src') ?? '', location.href).pathname,
       }
     })
     await page
@@ -4143,8 +4153,25 @@ async function walkAlleyLandscape(browser, args, frame) {
         `rotation mid-open: the clone was ${JSON.stringify(covered)}`,
       )
     }
+    // PR 859 final review, A1: the clone ends on the file the room draws on
+    // the new screen, not on the one it had at Enter cropped to fit it.
+    const drawn = await page.evaluate(() => {
+      const el = document.querySelector(
+        '[data-testid="sing-room"] [data-room-background]',
+      )
+      if (el === null) return null
+      const match = /url\(\s*(['"]?)(.*?)\1\s*\)/u.exec(
+        getComputedStyle(el).backgroundImage,
+      )
+      return match === null ? null : new URL(match[2], location.href).pathname
+    })
+    if (covered !== null && covered.picture !== drawn) {
+      throw new Error(
+        `rotation mid-open: the clone ended on ${covered.picture}, the room draws ${drawn}`,
+      )
+    }
     steps.push(
-      `alley rotation mid-open: clone ${covered === null ? 'already gone' : `${covered.phase} at ${covered.box.join(',')}`} on the ${upright.width}x${upright.height} screen, then the Sing room, no clone left`,
+      `alley rotation mid-open: clone ${covered === null ? 'already gone' : `${covered.phase} at ${covered.box.join(',')}, showing ${covered.picture}`} on the ${upright.width}x${upright.height} screen, then the Sing room drawing ${drawn}, no clone left`,
     )
   } catch (error) {
     failures.push(error.message)

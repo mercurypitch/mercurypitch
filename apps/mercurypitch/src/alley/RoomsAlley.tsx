@@ -378,7 +378,9 @@ export const RoomsAlley: Component = () => {
         height: size().h,
         reduced: reduced(),
         video: clip,
-        room: room?.source() ?? null,
+        // The accessor, not what it answers now: a rotation mid-open changes
+        // the file the room will draw, and the open follows it.
+        room: room?.source ?? null,
         plateSrc: plate(),
         plateBox: {
           x: -fit().ox,

@@ -409,20 +409,22 @@ describe("the room's own picture", () => {
       ...over,
     }
   }
-  const ready = (p: RoomPicture): RoomPictureSource => ({
-    now: p,
-    later: Promise.resolve(p),
-  })
+  /** The plan's accessor for a picture decoded by Enter. */
+  const ready = (p: RoomPicture): (() => RoomPictureSource) => {
+    const source: RoomPictureSource = { now: p, later: Promise.resolve(p) }
+    return () => source
+  }
 
   function pending(): {
-    source: RoomPictureSource
+    source: () => RoomPictureSource
     arrive: (p: RoomPicture | null) => void
   } {
     let arrive: (p: RoomPicture | null) => void = () => undefined
     const later = new Promise<RoomPicture | null>((resolve) => {
       arrive = resolve
     })
-    return { source: { now: null, later }, arrive: (p) => arrive(p) }
+    const source: RoomPictureSource = { now: null, later }
+    return { source: () => source, arrive: (p) => arrive(p) }
   }
   const earPlan = (over: Partial<DoorOpenPlan> = {}): DoorOpenPlan => {
     if (ear === undefined) throw new Error('no Ear Lab door')
@@ -699,24 +701,93 @@ describe("the room's own picture", () => {
     expect(roomArrivalHeld()).toBe(false)
   })
 
-  it('a rotation mid-open ends on the room as drawn on the new screen', async () => {
-    const p = picture()
-    const open = openDoor(earPlan({ room: ready(p) }))
-    await vi.advanceTimersByTimeAsync(150)
-    vi.stubGlobal('innerWidth', 852)
-    vi.stubGlobal('innerHeight', 393)
+  /** The Ear Lab's landscape file, decoded. */
+  const landscapeFile = (): RoomPicture => {
+    const image = new Image()
+    image.src = '/ear-lab/regulator-room-landscape.webp'
+    return picture({ image, src: image.src, width: 2048, height: 1152 })
+  }
+  const pictures = (clone: HTMLElement): Element[] => [
+    ...clone.querySelectorAll('[data-testid="alley-morph-room"]'),
+  ]
+  const turn = (w: number, h: number): void => {
+    vi.stubGlobal('innerWidth', w)
+    vi.stubGlobal('innerHeight', h)
     window.dispatchEvent(new Event('resize'))
-    await vi.advanceTimersByTimeAsync(600)
+  }
 
+  it('a rotation mid-open ends on the file the room draws on the new screen', async () => {
+    // PR 859 final review, A1: the open kept the picture it had at Enter and
+    // cropped it to the new screen, while the room drew its landscape file.
+    const portrait = picture()
+    const landscape = landscapeFile()
+    let now = ready(portrait)
+    const open = openDoor(earPlan({ room: () => now() }))
+    await vi.advanceTimersByTimeAsync(150)
+    // The preload follows the room's choice before the open hears the resize
+    // (its controller's listener is the older one); it is still decoding.
+    const turned = pending()
+    now = turned.source
+    turn(852, 393)
+    // Nothing swaps before the new file has decoded.
+    expect(pictures(open.clone)).toEqual([portrait.image])
+
+    turned.arrive(landscape)
+    await vi.advanceTimersByTimeAsync(0)
+    // In as soon as it is ready, mid-grow, fading in over the old one.
+    expect(open.clone.dataset.phase).toBeUndefined()
+    expect(pictures(open.clone)).toEqual([portrait.image, landscape.image])
+
+    await vi.advanceTimersByTimeAsync(600)
     expect(open.clone.dataset.phase).toBe('covered')
-    const [kx, , , ky, tx, ty] = p.image.style.transform
+    // The old one gone: one picture, the new file, where the room draws it.
+    expect(pictures(open.clone)).toEqual([landscape.image])
+    const [kx, , , ky, tx, ty] = landscape.image.style.transform
       .replace(/^matrix\(|\)$/gu, '')
       .split(',')
       .map(Number)
     closeTo(
       { x: -tx / kx, y: -ty / ky, w: 852 / kx, h: 393 / ky },
-      theRoom(p, 852, 393),
+      theRoom(landscape, 852, 393),
     )
+    vi.unstubAllGlobals()
+  })
+
+  it('a decode a second rotation superseded shows nowhere', async () => {
+    const portrait = picture()
+    let now = ready(portrait)
+    const open = openDoor(earPlan({ room: () => now() }))
+    await vi.advanceTimersByTimeAsync(100)
+    // On its side, then back upright before the landscape file decoded.
+    const turned = pending()
+    now = turned.source
+    turn(852, 393)
+    now = ready(portrait)
+    turn(W, H)
+    turned.arrive(landscapeFile())
+    await vi.advanceTimersByTimeAsync(0)
+    expect(pictures(open.clone)).toEqual([portrait.image])
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(open.clone.dataset.phase).toBe('covered')
+    expect(pictures(open.clone)).toEqual([portrait.image])
+    closeTo(shown(portrait.image), theRoom(portrait))
+    vi.unstubAllGlobals()
+  })
+
+  it('a turn the preload hears after the open does is still the one it ends on', async () => {
+    const portrait = picture()
+    const landscape = landscapeFile()
+    let now = ready(portrait)
+    const open = openDoor(earPlan({ room: () => now() }))
+    await vi.advanceTimersByTimeAsync(150)
+    turn(852, 393)
+    // Only now does the room's choice move: the cover reads it again.
+    now = ready(landscape)
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(open.clone.dataset.phase).toBe('covered')
+    expect(pictures(open.clone)).toEqual([landscape.image])
     vi.unstubAllGlobals()
   })
 })
