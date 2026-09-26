@@ -70,7 +70,7 @@ Platform data can set `renderId` to a `PLATFORM_RENDER_CATALOG` recipe, leaving 
 
 Imported meshes need a tested intact-to-fracture correspondence, consistent UV/material mapping, bounded fragment counts and resource disposal. Procedural fallbacks support a playable course while assets load; they are not evidence that art or physical-device performance has passed review.
 
-The Meshy-derived fluted carafe, amphora, coupe and decanter each declare 23 matching fragments. The adapter prepares the entire set before replacing a vessel, retains indexed geometry, UV channels and material groups, and owns imported material/texture copies through disposal. Marble, limestone and brass use separate color, normal and roughness channels with explicit color-space and scale recipes. See `art/glass-adventure/STORAGE.md` for restoring the image masters, provider archives and editable Blender sources through Git LFS. Runtime assets remain ordinary Git files.
+The Meshy-derived fluted carafe, amphora, coupe and decanter each declare 23 matching fragments. The adapter prepares the entire set before replacing a vessel, retains indexed geometry, UV channels and material groups, and owns imported material/texture copies through disposal. Marble, limestone and brass use separate color, normal and roughness channels with explicit color-space and scale recipes. See `art/glass-adventure/STORAGE.md` for restoring the image masters, provider archives and editable Blender sources through Git LFS. Some delivery files also use Git LFS; hydrate only the runtime allowlist documented in `apps/beside-cue/docs/games/mini-games.md` before a local games build or playtest.
 
 ## Voice and lifecycle contract
 

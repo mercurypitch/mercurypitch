@@ -5,6 +5,126 @@ import { describe, expect, it, vi } from 'vitest'
 import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, } from './resources'
 
 describe('journey glTF loading', () => {
+  it('accepts a non-empty status-0 body from the native bundled asset handler', async () => {
+    const scene = new Group()
+    const bytes = new Uint8Array([0x67, 0x6c, 0x54, 0x46]).buffer
+    const parse = vi.fn().mockResolvedValue({ scene, animations: [] })
+
+    const document = await loadJourneyGltf(
+      '/games/journey-map-v1/map.glb',
+      new AbortController().signal,
+      {
+        fetch: vi.fn().mockResolvedValue({
+          ok: false,
+          status: 0,
+          arrayBuffer: () => Promise.resolve(bytes),
+        }) as unknown as typeof fetch,
+        parse,
+      },
+    )
+
+    expect(parse).toHaveBeenCalledExactlyOnceWith(
+      bytes,
+      '/games/journey-map-v1/',
+    )
+    document.dispose()
+  })
+
+  it('rejects an empty status-0 body before parsing', async () => {
+    const parse = vi.fn()
+
+    await expect(
+      loadJourneyGltf(
+        '/games/journey-map-v1/map.glb',
+        new AbortController().signal,
+        {
+          fetch: vi.fn().mockResolvedValue({
+            ok: false,
+            status: 0,
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+          }) as unknown as typeof fetch,
+          parse,
+        },
+      ),
+    ).rejects.toThrow(
+      'Journey asset unavailable: /games/journey-map-v1/map.glb',
+    )
+    expect(parse).not.toHaveBeenCalled()
+  })
+
+  it('reports an unresolved Git LFS asset before asking Three to parse it', async () => {
+    const parse = vi.fn()
+    const pointer = new TextEncoder().encode(
+      'version https://git-lfs.github.com/spec/v1\n' +
+        'oid sha256:17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709\n' +
+        'size 6831200\n',
+    )
+
+    await expect(
+      loadJourneyGltf(
+        '/games/journey-map-v1/map.glb',
+        new AbortController().signal,
+        {
+          fetch: vi.fn().mockResolvedValue({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(pointer.buffer),
+          }) as unknown as typeof fetch,
+          parse,
+        },
+      ),
+    ).rejects.toThrow(
+      'Journey asset is an unresolved Git LFS pointer: /games/journey-map-v1/map.glb. Hydrate the runtime game assets with Git LFS, then reload the museum.',
+    )
+    expect(parse).not.toHaveBeenCalled()
+  })
+
+  it('keeps the asset URL and parser cause when glTF parsing fails', async () => {
+    const parseFailure = new SyntaxError('Unexpected token v')
+    let received: unknown
+    try {
+      await loadJourneyGltf(
+        '/games/journey-map-v1/map.glb',
+        new AbortController().signal,
+        {
+          fetch: vi.fn().mockResolvedValue({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+          }) as unknown as typeof fetch,
+          parse: vi.fn().mockRejectedValue(parseFailure),
+        },
+      )
+    } catch (error) {
+      received = error
+    }
+
+    expect(received).toBeInstanceOf(Error)
+    expect((received as Error).message).toBe(
+      'Journey asset could not be parsed: /games/journey-map-v1/map.glb. Unexpected token v',
+    )
+    expect((received as Error).cause).toBe(parseFailure)
+  })
+
+  it('keeps cancellation semantics when parsing rejects after an abort', async () => {
+    let rejectParse: ((reason?: unknown) => void) | undefined
+    const controller = new AbortController()
+    const pending = loadJourneyGltf('/map.glb', controller.signal, {
+      fetch: vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+      }) as unknown as typeof fetch,
+      parse: () =>
+        new Promise((_, reject) => {
+          rejectParse = reject
+        }),
+    })
+
+    await vi.waitFor(() => expect(rejectParse).toBeTypeOf('function'))
+    controller.abort()
+    rejectParse?.(new Error('Parser stopped'))
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('disposes a parse that finishes after cancellation', async () => {
     let finishParse:
       | ((value: { scene: Group; animations: [] }) => void)

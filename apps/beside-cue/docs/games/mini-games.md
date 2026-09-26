@@ -64,12 +64,32 @@ the original scaffold and docs.
   in the Capacitor webview. Package lifecycle hooks are not required.
 - `src/screens/GamesScreen.tsx` — the paper-world list; entering a game flips
   the record: the stage keeps its own dark world, the chrome (Coiny title,
-  custard button, paper text) stays Beside Cue.
+  custard button, paper text) stays Beside Cue. Games-enabled owner and native
+  builds expose the Crystal Promenade through its **Preview** card here. The
+  standalone `?layout=cloudway-laboratory` override remains development-only.
 - Entry: a discreet card on Home (`.games-entry`), rendered only in a build
   with the games. The hardware permissions are `RECORD_AUDIO` (Android) and
   `NSMicrophoneUsageDescription` (iOS), both removed while the games are out
   (see Not in v1); the mic is acquired only while a game is open and released
   on leave.
+
+## Local runtime asset hydration
+
+Some game delivery files use Git LFS. Hydrate only the runtime paths before
+starting a games-enabled dev server or build:
+
+```bash
+git lfs pull \
+  --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**" \
+  --exclude=""
+```
+
+If the museum reports an unresolved Git LFS pointer, run that command and
+reload the page. The source contract can be checked directly with:
+
+```bash
+pnpm --dir apps/beside-cue exec vitest run scripts/native-games.test.ts
+```
 
 ## Native test profile
 
