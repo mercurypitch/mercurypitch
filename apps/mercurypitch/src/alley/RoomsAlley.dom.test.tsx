@@ -548,6 +548,55 @@ describe('the right safe-area inset, and the card', () => {
   })
 })
 
+describe('the door lifted out of the plate', () => {
+  // alley.css draws the lift and the settle from these two classes, and no
+  // case asserted either (PR 859 final review, the coverage gap): a door that
+  // stayed flat when picked, or snapped back from a room instead of settling
+  // into place, passed every test.
+  const doorEl = (key: string): HTMLElement => {
+    const found = document.querySelector<HTMLElement>(
+      `.mp-alley__door[data-door="${key}"]`,
+    )
+    if (found === null) throw new Error(`no ${key} door`)
+    return found
+  }
+  const lifted = (): string[] =>
+    [
+      ...document.querySelectorAll<HTMLElement>('.mp-alley__door.is-lifted'),
+    ].map((door) => door.dataset.door ?? '')
+
+  it('lifts the picked door and no other, and lays it back when put back', async () => {
+    const { el } = await mountAlley()
+    expect(lifted()).toEqual([])
+    el('alley-door-ear').click()
+    expect(lifted()).toEqual(['ear'])
+    el('alley-door-guitar').click()
+    expect(lifted()).toEqual(['guitar'])
+    el('alley-plate').click()
+    expect(lifted()).toEqual([])
+  })
+
+  it('settles the door a room was opened from when the alley comes back, then rests', async () => {
+    const opened = await mountAlley()
+    opened.el('alley-door-ear').click()
+    opened.el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(opened.el('rooms-alley').dataset.phase).toBe('open')
+    view?.unmount()
+    view = null
+
+    // Back from the room: the same alley, mounted again.
+    const { el } = await mountAlley()
+    expect(el('rooms-alley').dataset.phase).toBe('settling')
+    expect(doorEl('ear').classList.contains('is-settling')).toBe(true)
+    expect(lifted()).toEqual(['ear'])
+    await vi.advanceTimersByTimeAsync(360)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(doorEl('ear').classList.contains('is-settling')).toBe(false)
+    expect(lifted()).toEqual([])
+  })
+})
+
 describe('the Sing door clip', () => {
   it('has a source only while Sing is picked', async () => {
     // A src'd <video>, even paused, is a media pipeline and a metadata read
