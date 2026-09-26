@@ -13,6 +13,7 @@ import { renderScale } from '@/lib/device-tier'
 import { drawChordShape, drawEffectBadge, drawSlideProgress, drawSlideShape, drawStaccatoShape, drawTremoloShape, drawTrillProgress, drawTrillShape, drawVibratoShape, } from '@/lib/effect-renderer'
 import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
+import { labelledRows, plotBand } from '@/lib/pitch-plot-band'
 import { freqToNote, gridRowsForBounds, melodyIndexAtBeat, } from '@/lib/scale-data'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
@@ -970,13 +971,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     const midi = 69 + 12 * Math.log2(freq / 440)
     const pct =
       (midi - bounds.minMidi) / Math.max(1, bounds.maxMidi - bounds.minMidi)
-    // Reserve vertical insets so notes clear the corner overlays: more at the
+    // Reserve vertical bands so notes clear the stage's overlays: more at the
     // bottom for the control bar / bar-counter, a little at the top for the
-    // (now compact) status chip + accuracy HUD.
-    const TOP_INSET = 34
-    const BOTTOM_INSET = 78
-    const usableH = Math.max(1, h - TOP_INSET - BOTTOM_INSET)
-    const y = h - BOTTOM_INSET - pct * usableH
+    // (now compact) status chip + accuracy HUD. Over a room neither is on the
+    // canvas, and a short one (a phone on its side) gives the view the height.
+    const band = plotBand(h, props.transparent?.() === true)
+    const usableH = Math.max(1, h - band.top - band.bottom)
+    const y = h - band.bottom - pct * usableH
     return Number.isFinite(y) ? y : h / 2
   }
 
@@ -1268,12 +1269,13 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
       }
     }
 
-    // Wide views (large imports) produce more rows than labels fit; thin the
-    // labels, never the lines.
-    const labelStep = gridRows.length > 30 ? 2 : 1
+    // Wide views (large imports) and short room canvases produce more rows
+    // than labels fit; thin the labels, never the lines.
+    const rowYs = gridRows.map((note) => freqToY(note.freq, h))
+    const labelled = labelledRows(rowYs, plotBand(h, overRoom))
     for (let i = 0; i < gridRows.length; i++) {
       const note = gridRows[i]
-      const y = freqToY(note.freq, h)
+      const y = rowYs[i]
 
       if (gridLinesVisible()) {
         // The kit's own grid value over a room; the stage's own otherwise.
@@ -1287,7 +1289,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         ctx.stroke()
       }
 
-      if (i % labelStep === 0) {
+      if (labelled[i]) {
         if (overRoom) {
           // Left, as every trace in the mock has them: the newest pixels of
           // the line are on the right, and that is where the shell's corner

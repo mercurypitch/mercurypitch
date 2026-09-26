@@ -292,6 +292,59 @@ const toEnd = (scope) => {
 }
 
 /**
+ * The fake voice sings A4 and then C5: three semitones.
+ *
+ * Device round 5: on its side the Sing room drew the line as one flat row.
+ * The canvas is 117 px tall there, and the stage's bands (34 px above the
+ * view, 78 under it) left five of them for the whole range. A step that did
+ * not read how far apart the line draws two notes would pass that picture.
+ */
+const TRACE_SEMITONES = 3
+/** Upright the line moves about 10 px a semitone, and 2.4 on its side. */
+const TRACE_MIN_PX_PER_SEMITONE = 1.5
+/** Left of this the canvas draws the live marker, its pill and the row labels. */
+const TRACE_LEFT_PX = 30
+
+/**
+ * In the page: how far apart the Sing trace draws its notes, in CSS px.
+ *
+ * Only the line itself is opaque and saturated there: its glow, the head's
+ * halo, the grid and the labels are translucent, and the cores are white. So
+ * each column right of the marker gives the line's centre, and the 5th and
+ * 95th percentiles of those are the two notes. A detection glitch at an onset
+ * is a few columns, and moves neither.
+ */
+const readTrace = (left) => {
+  const canvas = document.querySelector('[data-testid="sing-stage"] canvas')
+  if (!(canvas instanceof HTMLCanvasElement)) return null
+  const { width, height } = canvas
+  const data = canvas.getContext('2d').getImageData(0, 0, width, height).data
+  const scale = height / canvas.clientHeight
+  const centres = []
+  for (let x = Math.ceil(left * scale); x < width; x += 1) {
+    let sum = 0
+    let count = 0
+    for (let y = 0; y < height; y += 1) {
+      const i = (y * width + x) * 4
+      const hi = Math.max(data[i], data[i + 1], data[i + 2])
+      const lo = Math.min(data[i], data[i + 1], data[i + 2])
+      if (data[i + 3] < 200 || hi - lo < 60) continue
+      sum += y
+      count += 1
+    }
+    if (count > 0) centres.push(sum / count / scale)
+  }
+  centres.sort((a, b) => a - b)
+  const at = (q) =>
+    centres[Math.min(centres.length - 1, Math.floor(q * centres.length))]
+  return {
+    height: Math.round(canvas.clientHeight),
+    columns: centres.length,
+    spread: centres.length === 0 ? 0 : at(0.95) - at(0.05),
+  }
+}
+
+/**
  * One frame: every surface the brief names, each measured where it opens and
  * scrolled to its end.
  */
@@ -424,6 +477,31 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     // Past the three seconds of voice a take needs to earn its card.
     await settle(4000)
     await measure('sing-live', null)
+    at = 'reading the Sing trace'
+    await page
+      .waitForFunction(
+        () =>
+          (
+            document
+              .querySelector('[data-testid="sing-note-chip"]')
+              ?.getAttribute('aria-label') ?? ''
+          ).startsWith('C5'),
+        undefined,
+        { timeout: runTimeoutMs },
+      )
+      .catch(() => {
+        throw new Error('the note chip never said C5')
+      })
+    await settle(800)
+    const trace = await page.evaluate(readTrace, TRACE_LEFT_PX)
+    if (trace === null) throw new Error('no canvas in the Sing stage')
+    const perSemitone = trace.spread / TRACE_SEMITONES
+    const read = `A4 and C5 drawn ${trace.spread.toFixed(1)} px apart on a ${trace.height} px canvas, ${perSemitone.toFixed(2)} px a semitone over ${trace.columns} columns`
+    if (perSemitone < TRACE_MIN_PX_PER_SEMITONE) {
+      failures.push(
+        `sing trace: ${read}, under ${TRACE_MIN_PX_PER_SEMITONE}; the line is one flat row`,
+      )
+    } else steps.push(`sing trace: ${read}`)
     await page
       .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
       .click()
