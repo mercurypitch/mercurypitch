@@ -1,5 +1,5 @@
 // Camera movement regression — heading follow stays smooth without steering the player.
-import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Vector3, } from 'three'
+import { Box3, BoxGeometry, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASS_FOUNDATION_STRAIGHT } from '../content/foundation-routes'
@@ -294,6 +294,89 @@ const ENCLOSED_GATE_ROOM: LevelDefinition = {
   ],
 }
 
+const PASSAGE_ROOM: LevelDefinition = {
+  ...OPEN_ROOM,
+  id: 'camera-passage-room',
+  title: 'Camera passage room',
+  spawn: { position: { x: 0, y: 0, z: 5 }, facingYaw: 0 },
+  solids: [
+    {
+      id: 'passage-left-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: -1.1,
+      maxX: -0.8,
+      minZ: -3,
+      maxZ: 3,
+      top: 2.8,
+      thickness: 2.8,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+    {
+      id: 'passage-right-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: 0.8,
+      maxX: 1.1,
+      minZ: -3,
+      maxZ: 3,
+      top: 2.8,
+      thickness: 2.8,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+  ],
+  checkpoints: [
+    {
+      id: 'passage-start',
+      position: { x: 0, y: 0, z: 5 },
+      radius: 1,
+      facingYaw: 0,
+    },
+  ],
+  presentation: {
+    worldBounds: {
+      minX: -12,
+      maxX: 12,
+      minY: -1,
+      maxY: 4,
+      minZ: -12,
+      maxZ: 12,
+    },
+    lightBounds: {
+      minX: -12,
+      maxX: 12,
+      minY: -1,
+      maxY: 4,
+      minZ: -12,
+      maxZ: 12,
+    },
+    rooms: [
+      {
+        id: 'passage-room',
+        bounds: {
+          minX: -12,
+          maxX: 12,
+          minY: -0.4,
+          maxY: 4,
+          minZ: -12,
+          maxZ: 12,
+        },
+        cameraBounds: {
+          minX: -12,
+          maxX: 12,
+          minY: 0,
+          maxY: 3.6,
+          minZ: -12,
+          maxZ: 12,
+        },
+      },
+    ],
+    audioRegions: [],
+    visuals: [],
+    assetRecipeIds: [],
+  },
+}
+
 function withMotion(
   snapshot: GameSnapshot,
   facingYaw: number,
@@ -331,6 +414,31 @@ function updateFor(
 
 function angleError(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+}
+
+function passageSnapshot(
+  base: GameSnapshot,
+  z: number,
+  facingYaw: number,
+): GameSnapshot {
+  return {
+    ...base,
+    player: {
+      ...base.player,
+      position: { ...base.player.position, z },
+      facingYaw,
+      velocity: { x: 0, y: 0, z: -Math.cos(facingYaw) },
+    },
+  }
+}
+
+function cameraBoomDistance(
+  rig: ReturnType<typeof createAdventureCamera>,
+): number {
+  const framedTarget = rig.getChallengeMetrics().target
+  return rig.camera.position.distanceTo(
+    new Vector3(framedTarget.x, framedTarget.y, framedTarget.z),
+  )
 }
 
 function createTestMaterials(): MuseumMaterials {
@@ -504,7 +612,7 @@ describe('camera-relative traversal', () => {
       Math.abs(angleError(gentleEarlyYaw, -Math.PI / 2)),
     )
   })
-  it('keeps manual orbit until a fresh deliberate direction requests follow', () => {
+  it('keeps active manual orbit, then returns behind sustained travel', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const moving = withMotion(createGlassGame(GLASSWORKS).snapshot(), 0)
     rig.setMovementActive(true)
@@ -517,10 +625,13 @@ describe('camera-relative traversal', () => {
     expect(rig.movementYaw()).toBeCloseTo(GLASSWORKS.spawn.facingYaw)
     rig.setOrbitActive(false)
     updateFor(rig, moving, 2.5)
-    expect(rig.yaw()).toBeCloseTo(chosenYaw)
+    expect(Math.abs(angleError(rig.yaw(), 0))).toBeLessThan(
+      Math.abs(angleError(chosenYaw, 0)),
+    )
+    expect(rig.movementYaw()).toBeCloseTo(GLASSWORKS.spawn.facingYaw)
 
     rig.rebaseMovement('keyboard')
-    const deliberateHeading = chosenYaw + Math.PI / 2
+    const deliberateHeading = rig.yaw() + Math.PI / 2
     updateFor(rig, withMotion(moving, deliberateHeading), 2.5)
     expect(Math.abs(angleError(rig.yaw(), deliberateHeading))).toBeLessThan(
       0.03,
@@ -834,6 +945,60 @@ describe('camera-relative traversal', () => {
     decoration.geometry.dispose()
     decoration.material.dispose()
   })
+  it('uses direct first-person target aim and leaves no stale side shot', () => {
+    const rig = createAdventureCamera(OPEN_ROOM)
+    rig.camera.aspect = 320 / 720
+    rig.camera.updateProjectionMatrix()
+    const state = createGlassGame(OPEN_ROOM).snapshot()
+    const encounterId = 'first-person-target'
+    rig.update(state, FRAME)
+    rig.setChallengeEncounter(encounterId)
+    rig.setChallengeSafeBottomFraction(0.42)
+    rig.setChallengeSubjects({
+      encounterId,
+      merc: new Box3(
+        new Vector3(-0.34, 0, -0.26),
+        new Vector3(0.34, 1.35, 0.26),
+      ),
+      target: new Box3(
+        new Vector3(-0.42, 0.05, -3.1),
+        new Vector3(0.42, 1.65, -3),
+      ),
+      targetFacing: new Vector3(0, 0, 1),
+    })
+    updateFor(rig, state, 2)
+    expect(rig.getChallengeMetrics().side).not.toBeNull()
+
+    rig.setMode('first-person')
+    updateFor(rig, state, 2)
+    const firstPersonMetrics = rig.getChallengeMetrics()
+    expect(firstPersonMetrics).toMatchObject({
+      mode: 'holding',
+      encounterId,
+      mercFrame: null,
+      side: null,
+      occluded: false,
+      settled: true,
+    })
+    expect(firstPersonMetrics.targetFrame!.minY).toBeGreaterThan(
+      firstPersonMetrics.safeBottomNdc!,
+    )
+    expect(firstPersonMetrics.targetFrame!.maxY).toBeLessThan(0.9)
+
+    rig.setChallengeEncounter(null)
+    updateFor(rig, state, 2)
+    expect(rig.getChallengeMetrics()).toMatchObject({
+      mode: 'exploration',
+      side: null,
+    })
+    rig.setMode('third-person')
+    rig.update(state, FRAME)
+    expect(rig.getChallengeMetrics()).toMatchObject({
+      mode: 'exploration',
+      side: null,
+    })
+    expect(rig.camera.fov).toBe(48)
+  })
   it('lifts a wall-compressed boom while preserving the chosen pitch', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const state = createGlassGame(GLASSWORKS).snapshot()
@@ -1000,6 +1165,75 @@ describe('camera-relative traversal', () => {
       expect(landing.y).toBeGreaterThan(head.y)
     },
   )
+  it.each([
+    ['phone portrait', 320 / 720],
+    ['tablet landscape', 1180 / 820],
+  ])(
+    'eases the boom through a passage in both travel directions at %s',
+    (_label, aspect) => {
+      for (const reverse of [false, true]) {
+        const facingYaw = reverse ? Math.PI : 0
+        const startZ = reverse ? -5 : 5
+        const endZ = -startZ
+        const level: LevelDefinition = reverse
+          ? {
+              ...PASSAGE_ROOM,
+              id: 'camera-passage-room-reverse',
+              spawn: {
+                position: { x: 0, y: 0, z: startZ },
+                facingYaw,
+              },
+              checkpoints: [
+                {
+                  id: 'passage-reverse-start',
+                  position: { x: 0, y: 0, z: startZ },
+                  radius: 1,
+                  facingYaw,
+                },
+              ],
+            }
+          : PASSAGE_ROOM
+        const rig = createAdventureCamera(level)
+        rig.camera.aspect = aspect
+        rig.camera.updateProjectionMatrix()
+        const base = createGlassGame(level).snapshot()
+        rig.setMovementActive(true)
+        rig.rebaseMovement('keyboard')
+        updateFor(rig, passageSnapshot(base, startZ, facingYaw), 1)
+        const stableMovementBasis = rig.movementYaw()
+        const openDistance = cameraBoomDistance(rig)
+        let minimumDistance = openDistance
+        let maximumFrameChange = 0
+        let maximumFrame = 0
+        let previousDistance = openDistance
+
+        for (let frame = 1; frame <= 240; frame++) {
+          const progress = frame / 240
+          const z = startZ + (endZ - startZ) * progress
+          rig.update(passageSnapshot(base, z, facingYaw), FRAME)
+          const distance = cameraBoomDistance(rig)
+          minimumDistance = Math.min(minimumDistance, distance)
+          const frameChange = Math.abs(distance - previousDistance)
+          if (frameChange > maximumFrameChange) {
+            maximumFrameChange = frameChange
+            maximumFrame = frame
+          }
+          previousDistance = distance
+          expect(rig.movementYaw()).toBeCloseTo(stableMovementBasis)
+        }
+        updateFor(rig, passageSnapshot(base, endZ, facingYaw), 1.5)
+        const recoveredDistance = cameraBoomDistance(rig)
+
+        expect(minimumDistance).toBeLessThan(openDistance - 0.45)
+        expect(recoveredDistance).toBeGreaterThan(minimumDistance + 0.45)
+        expect(recoveredDistance).toBeCloseTo(openDistance, 1)
+        expect(
+          maximumFrameChange,
+          `largest boom step occurred at travel frame ${maximumFrame}`,
+        ).toBeLessThan(0.16)
+      }
+    },
+  )
   it('keeps a wall-pressed manual orbit at the last camera-safe centre', () => {
     const rig = createAdventureCamera(PRESSED_EAST_WALL_ROOM)
     const snapshot = createGlassGame(PRESSED_EAST_WALL_ROOM).snapshot()
@@ -1048,7 +1282,8 @@ describe('camera-relative traversal', () => {
         expect(nextDistance).toBeGreaterThanOrEqual(previousDistance - 0.001)
         previousDistance = nextDistance
       }
-      expect(previousDistance).toBeCloseTo(4, 2)
+      expect(previousDistance).toBeGreaterThan(3.9)
+      expect(previousDistance).toBeLessThanOrEqual(4)
     },
   )
 })

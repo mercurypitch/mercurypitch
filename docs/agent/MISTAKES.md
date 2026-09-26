@@ -798,6 +798,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** prime manual shadows before any scene render, including startup probes. Test cold startup in each automatic profile with real pixels; a High-to-Balanced switch or no-raster input test misses this boundary.
 **See:** `packages/glass-game/src/render/glass-renderer.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
 
+### Keep decorative platform triangles out of camera collision queries
+
+**Symptom:** entering a singing challenge freezes the whole game, resembling a microphone startup delay.
+**Cause:** the cinematic candidate search included dense instanced platform donors in hundreds of ray queries. In a matched loaded-scene/no-raster profile, 235 donor rays consumed 4,785.5 ms; excluding only those donors left 237 proxy/scene rays at 42.4 ms. Bounds traversal took 10.1 ms and synthetic microphone acquisition took 1.2 ms, so neither explained the reproduced main-thread stall.
+**Rule:** mark decorative platform meshes `excludeFromCameraCollision` and use cheap physical proxies updated from current simulation state. Measure microphone acquisition, bounds traversal and real rasterization separately; do not add audio delays or reduce accepted artwork. Desktop CPU isolation does not establish physical-device frame time.
+**See:** `packages/glass-game/src/render/cloudway-platforms.ts`, `packages/glass-game/src/render/camera-platform-occlusion.ts`, `art/glass-adventure/cloudway-laboratory/v1/source-assets/proofs/runtime/cloudway-sing-stall-2026-09-27/`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

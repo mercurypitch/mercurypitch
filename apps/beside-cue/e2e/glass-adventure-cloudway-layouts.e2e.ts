@@ -74,10 +74,12 @@ async function lowerCanvasThumbOrigin(
     const top = Math.max(canvasBox.top, stickBox.top) + 24
     const bottom = Math.min(canvasBox.bottom, stickBox.bottom) - 24
     for (let y = bottom; y >= top; y -= 16)
-      for (let x = left; x <= right; x += 16)
-        if (document.elementFromPoint(x, y) === canvas) return { x, y }
+      for (let x = left; x <= right; x += 16) {
+        const target = document.elementFromPoint(x, y)
+        if (target !== null && stick.contains(target)) return { x, y }
+      }
 
-    throw new Error('The touch-stick region has no canvas-backed origin.')
+    throw new Error('The visible touch-stick region has no active origin.')
   })
 }
 

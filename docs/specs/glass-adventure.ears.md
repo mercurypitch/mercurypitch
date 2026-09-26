@@ -8,6 +8,8 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 - GA-02: While Merc moves, the camera shall smoothly follow his heading. Deliberate camera input shall temporarily override automatic heading alignment. When the player releases or cancels a camera contact, the camera shall stop responding to that contact; automatic alignment shall resume gradually after a quiet interval and movement. Automatic camera motion shall not continuously steer a held movement direction in a circle.
 - GA-02a: When the normalized keyboard movement direction changes, including a changed chord without full release, movement shall use the current view as its new reference. Repeated keydown and equivalent direction aliases shall not reset that reference. A continuously held stick shall retain its reference until neutral or manual camera input.
 - GA-03: While movement, camera and jump contacts are simultaneous, each control shall retain its own pointer identity.
+- GA-03a: When the player begins a touch movement gesture, the visible lower-left movement surface shall acquire only that contact and start at neutral input. Releasing, cancelling or losing that contact shall release its movement ownership. It shall not make unrelated screen contacts move Merc.
+- GA-03b: While a movement contact is held, a separate look contact shall remain usable, regardless of which contact began first. Releasing either contact shall not cancel the other or cause an unintended view or movement jump.
 - GA-04: When the player falls or lands on a catch shelf, the game shall restore a safe checkpoint and retain earned exhibit completion.
 - GA-05: While an exhibit gate is closed, its bridge shall provide neither visible passage nor floor collision.
 - GA-06: The first gallery shall have three required exhibits, continuous same-height floor joins, one raised teaching jump and three optional panorama exhibits. Optional exhibits shall not be required to reach the exit.
@@ -43,6 +45,15 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 - GA-27: Room sound regions and scene/light bounds for authored routes shall be declared as data. Adding another supported route shall not require route-ID branches in rendering, movement or audio lifecycle logic.
 - GA-28: Camera obstruction, input release, earned gates and microphone cancellation shall remain correct in both original and authored routes. Physical phone/tablet performance and camera usability require device acceptance in addition to automated tests.
 - GA-29: When the main app loads GLB assets with embedded texture images, its Content Security Policy shall allow the local blob fetch/image paths used by the loader while retaining existing script and remote-network restrictions. A missing embedded texture shall not count as a successful texture-loading regression check.
+
+## Tablet navigation and physical platform support
+
+- GA-30: When Merc travels through an enclosed narrow passage in third-person, the camera shall smoothly frame the path ahead from behind his facing and shorten its follow distance as needed to avoid walls and ceilings. Returning to open space shall restore distance gradually. This framing shall not continuously rotate held movement input.
+- GA-31: When the player selects first-person or third-person in the pause/settings controls, the game shall persist the preference separately from campaign progress. V shall invoke the same selection only when gameplay owns keyboard focus. The initial preference shall be third-person.
+- GA-32: While first-person is selected, the exploration view shall use a stable eye-height pivot without animated-head bob or self-occlusion. Starting a voice encounter shall frame its target without forcing the third-person side shot. Returning to third-person shall restore usable exploration framing.
+- GA-32a: While first-person is selected, lateral movement shall strafe without turning the view. Deliberate look input shall update camera-relative movement; automatic third-person heading changes shall still not steer a held movement direction.
+- GA-33: While a scroll platform extends or retracts, its visible deck and physical roller contacts shall use the same platform transform and motion state. Merc shall collide with solid roller sides and be supported by their upper surfaces. Decorative details shall not create invisible support across an authored gap.
+- GA-34: When a platform's dimensions or course placement change, the game shall validate saved checkpoint safety against the revised content while preserving earned encounter completion. Simulation traversal and contact probes shall cover full extension, retraction and rotated placement; loaded visual comparison shall establish contact alignment.
 
 ## Evidence
 

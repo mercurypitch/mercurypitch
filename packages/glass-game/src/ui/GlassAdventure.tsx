@@ -282,6 +282,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       data-travel-yaw={adventure.desiredTravelYaw() ?? undefined}
       data-look-sensitivity={adventure.cameraComfort().lookSensitivity}
       data-follow-smoothness={adventure.cameraComfort().followSmoothnessSeconds}
+      data-camera-mode={adventure.cameraMode()}
       data-render-quality-preference={adventure.renderQualityPreference()}
       data-render-quality-profile={adventure.renderQualityProfile()}
       data-challenge-camera-mode={
@@ -493,7 +494,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         >
           <TouchControls
             input={adventure.input}
-            activationSurface={() => canvas}
             onActivity={adventure.gameplayGesture}
             disabled={
               adventure.voiceMode() !== 'off' ||
@@ -689,6 +689,46 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                   </Show>
                 </fieldset>
               </Show>
+              <fieldset class={styles.cameraModeSettings}>
+                <legend>Camera view</legend>
+                <div class={styles.cameraModeOptions}>
+                  <label
+                    classList={{
+                      [styles.cameraModeSelected]:
+                        adventure.cameraMode() === 'third-person',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="glass-camera-mode"
+                      value="third-person"
+                      checked={adventure.cameraMode() === 'third-person'}
+                      onChange={() =>
+                        adventure.changeCameraMode('third-person')
+                      }
+                    />
+                    <span>Third person</span>
+                  </label>
+                  <label
+                    classList={{
+                      [styles.cameraModeSelected]:
+                        adventure.cameraMode() === 'first-person',
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="glass-camera-mode"
+                      value="first-person"
+                      checked={adventure.cameraMode() === 'first-person'}
+                      onChange={() =>
+                        adventure.changeCameraMode('first-person')
+                      }
+                    />
+                    <span>First person</span>
+                  </label>
+                </div>
+                <small>Press V during play to switch views.</small>
+              </fieldset>
               <button
                 class={styles.primary}
                 type="button"

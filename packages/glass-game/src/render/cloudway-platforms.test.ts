@@ -11,6 +11,7 @@ import { createCloudwayPlatformRenderer } from './cloudway-platforms'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import { createMuseum } from './museum'
 
 function materials(): MuseumMaterials {
   return Object.fromEntries(
@@ -141,7 +142,7 @@ describe('Cloudway platform renderer', () => {
     expect(plan.taskIds).toContain('sky:floating-museum-cloudscape-v3')
   })
 
-  it('batches repeated donors and applies the authoritative glide offset', () => {
+  it('batches repeated donors outside camera rays and applies the authoritative glide offset', () => {
     const palette = materials()
     const library = createMaterialLibrary()
     const sceneRoot = new Group()
@@ -167,6 +168,13 @@ describe('Cloudway platform renderer', () => {
     expect(marble.count).toBe(6)
     expect(frost.count).toBe(2)
     expect(glide.count).toBe(1)
+    const donorBatches: InstancedMeshType[] = []
+    sceneRoot.traverse((object) => {
+      if (object instanceof InstancedMesh) donorBatches.push(object)
+    })
+    expect(donorBatches).not.toHaveLength(0)
+    for (const batch of donorBatches)
+      expect(batch.userData.excludeFromCameraCollision).toBe(true)
 
     const matrix = new Matrix4()
     const position = new Vector3()
@@ -183,7 +191,34 @@ describe('Cloudway platform renderer', () => {
     disposeMaterials(Object.values(palette))
   })
 
-  it('culls only fully fogged bounds and restores every blocker for the next camera prepass', () => {
+  it('keeps every installed donor batch out of museum camera occluders', () => {
+    const palette = materials()
+    const museum = createMuseum(CLOUDWAY_GLASS_RIBBON, palette)
+    const source = donorScene()
+
+    museum.setKit(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+    museum.update(snapshot(platformStates()))
+
+    const donorBatches: InstancedMeshType[] = []
+    museum.root.traverse((object) => {
+      if (
+        object instanceof InstancedMesh &&
+        object.name.startsWith('cloudway-')
+      )
+        donorBatches.push(object)
+    })
+    expect(donorBatches).not.toHaveLength(0)
+    const occluders = museum.cameraOccluders()
+    for (const batch of donorBatches) expect(occluders).not.toContain(batch)
+
+    museum.dispose()
+    disposeObject(museum.root, museum.materialLibrary.materials)
+    disposeObject(source)
+    museum.materialLibrary.dispose()
+    disposeMaterials(Object.values(palette))
+  })
+
+  it('culls only fully fogged bounds and restores every donor for the next view prepass', () => {
     const palette = materials()
     const library = createMaterialLibrary()
     const sceneRoot = new Group()
@@ -225,7 +260,7 @@ describe('Cloudway platform renderer', () => {
     expect(marble.count).toBe(6)
     expect(renderer.cullForView(undefined)).toBe(false)
 
-    // The following frame also restores all transforms before camera collision.
+    // The following frame also restores all transforms before view culling.
     renderer.update(current)
     sceneRoot.updateMatrixWorld(true)
     expect(marble.count).toBe(6)

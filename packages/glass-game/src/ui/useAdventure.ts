@@ -16,6 +16,8 @@ import { initialAdventureNotice } from './adventure-notice'
 import { createAdventureTransientMessages } from './adventure-transient-messages'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
+import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
+import { createCameraModePreference } from './camera-mode-preference'
 import { createAdventureInput, isAdventureEditableTarget } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
@@ -44,8 +46,14 @@ export function useAdventure(
   const game = createGlassGame(level, host.loadProgress(level.id))
   const initialSnapshot = game.snapshot()
   const input = createAdventureInput()
+  let renderer: GlassRenderer | null = null
   const [cameraComfort, setCameraComfort] = createSignal(
     parseCameraComfort(host.readPreference(CAMERA_COMFORT_PREFERENCE)),
+  )
+  const { cameraMode, changeCameraMode } = createCameraModePreference(
+    host,
+    input,
+    () => renderer,
   )
   const [renderQualityPreference, setRenderQualityPreference] = createSignal(
     parseGlassRenderQualityPreference(
@@ -108,7 +116,6 @@ export function useAdventure(
   const [narrationPreferences, setNarrationPreferences] = createSignal(
     narration.preferences(),
   )
-  let renderer: GlassRenderer | null = null
   let rendererGeneration = 0
   let frameId = 0
   let lastTime = 0
@@ -318,6 +325,10 @@ export function useAdventure(
     lastTime = 0
     refresh()
     soundscape.activate()
+    const viewport = ready() && !tutorial() ? mount() : null
+    queueMicrotask(() => {
+      if (alive) viewport?.focus({ preventScroll: true })
+    })
   }
 
   function inspectArtwork(recipeId: string | null): void {
@@ -456,6 +467,7 @@ export function useAdventure(
       attempt = createGlassRenderer(mount(), level, host.assetUrl, {
         reducedMotion,
         followSmoothnessSeconds: cameraComfort().followSmoothnessSeconds,
+        cameraMode: cameraMode(),
         renderQuality: renderQualityPreference(),
         onLoadingProgress: (progress) => {
           loading.reportProgress(generation, progress)
@@ -617,6 +629,15 @@ export function useAdventure(
         else pause()
         return
       }
+      if (
+        handleCameraModeShortcut(
+          event,
+          viewport,
+          tutorial() || paused() || voiceMode() !== 'off',
+          () => changeCameraMode(toggleCameraMode(cameraMode())),
+        )
+      )
+        return
       if (tutorial() || paused()) return
       if (input.key(event, true)) {
         gameplayGesture()
@@ -729,6 +750,8 @@ export function useAdventure(
     changeNarration,
     cameraComfort,
     changeCameraComfort,
+    cameraMode,
+    changeCameraMode,
     renderQualityPreference,
     renderQualityProfile,
     changeRenderQuality,

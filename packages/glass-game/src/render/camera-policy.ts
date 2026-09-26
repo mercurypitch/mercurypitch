@@ -31,11 +31,15 @@ export const CAMERA_FOLLOW_SMOOTHNESS = {
   default: 0.32,
 } as const
 
+export type AdventureCameraMode = 'third-person' | 'first-person'
+
 export interface AdventureCameraOptions {
   /** Avoid unsolicited view rotation for vestibular-sensitive players. */
   reducedMotion?: boolean
   /** Seconds for automatic follow to accelerate from rest to its turn cap. */
   followSmoothnessSeconds?: number
+  /** Player-selected exploration perspective. */
+  mode?: AdventureCameraMode
 }
 
 export interface ChallengeCameraMetrics {

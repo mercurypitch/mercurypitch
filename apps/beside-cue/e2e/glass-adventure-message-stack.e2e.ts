@@ -126,7 +126,7 @@ async function messageLayout(page: Page) {
       {
         name: 'move',
         element: document.querySelector<HTMLElement>(
-          '[data-testid="floating-stick-base"][data-active="true"]',
+          '[role="group"][aria-label="Move Merc"]',
         ),
       },
       {

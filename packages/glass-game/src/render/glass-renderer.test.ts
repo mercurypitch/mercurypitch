@@ -15,6 +15,7 @@ const state = vi.hoisted(() => {
     reflectionProbeRender: Symbol('reflection-probe-render'),
     shadowNeedsUpdateAtProbeRender: [] as boolean[],
     shadowNeedsUpdateAtRender: [] as boolean[],
+    mercVisibleAtRender: [] as boolean[],
     getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
     loseContext: false,
@@ -79,6 +80,10 @@ vi.mock('three', async (original) => ({
         return
       }
       state.shadowNeedsUpdateAtRender.push(this.shadowMap.needsUpdate)
+      state.mercVisibleAtRender.push(
+        (args[0] as Scene).getObjectByName('test-adventure-merc')?.visible ??
+          false,
+      )
       return state.render(...args)
     }
     dispose = state.rendererDispose
@@ -109,11 +114,11 @@ vi.mock('./asset-kit', () => ({
 }))
 vi.mock('./materials', () => ({ createMuseumMaterials: () => ({}) }))
 vi.mock('./merc', () => ({
-  loadAdventureMerc: async () => ({
-    root: new Group(),
-    update: vi.fn(),
-    dispose: state.mercDispose,
-  }),
+  loadAdventureMerc: async () => {
+    const root = new Group()
+    root.name = 'test-adventure-merc'
+    return { root, update: vi.fn(), dispose: state.mercDispose }
+  },
 }))
 vi.mock('./atmosphere', () => ({
   createAtmosphere: () => ({ root: new Group(), setSky: vi.fn() }),
@@ -221,6 +226,7 @@ afterEach(() => {
   state.setPixelRatio.mockClear()
   state.shadowNeedsUpdateAtProbeRender.length = 0
   state.shadowNeedsUpdateAtRender.length = 0
+  state.mercVisibleAtRender.length = 0
   state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
   state.forceContextLoss.mockClear()
@@ -237,6 +243,25 @@ afterEach(() => {
   state.cullCloudwayPlatforms.mockReturnValue(false)
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
+})
+
+it('hides Merc only for the primary first-person render', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { cameraMode: 'first-person' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  expect(renderer.getCameraMode()).toBe('first-person')
+  renderer.render(snapshot, 0.016)
+  renderer.setCameraMode('third-person')
+  renderer.render(snapshot, 0.016)
+
+  expect(state.mercVisibleAtRender).toEqual([false, true])
+  renderer.dispose()
 })
 
 it.each([1, 0.5])(

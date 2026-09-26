@@ -373,18 +373,15 @@ test('phone tuner fits and a held thumb turns Merc without autocircling the came
     .getByRole('group', { name: 'Move Merc' })
     .boundingBox()
   expect(stick).not.toBeNull()
-  // Exercise the exposed lower part of the broad activation region. The
-  // encounter card can legitimately sit over its centre and should keep
-  // receiving its own touches.
+  // Start inside the bounded visible control; the rest of the viewport stays
+  // available for a concurrent look contact.
   const origin = {
     x: stick!.x + Math.min(60, stick!.width * 0.36),
     y: stick!.y + stick!.height - 64,
   }
   expect(
     await page.evaluate(({ x, y }) => {
-      const surface = document.querySelector(
-        '[aria-label="Glass museum; drag to look around"]',
-      )
+      const surface = document.querySelector('[aria-label="Move Merc"]')
       const target = document.elementFromPoint(x, y)
       return target !== null && surface?.contains(target) === true
     }, origin),

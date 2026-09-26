@@ -290,13 +290,66 @@ test('changing a held key chord steers from the current view @smoke', async ({
   await page.keyboard.up('KeyW')
 })
 
+test('camera mode validates, guards the V shortcut and persists the pause setting @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const seeded = 'beside-cue:e2e:invalid-camera-mode-seeded'
+    if (sessionStorage.getItem(seeded) !== null) return
+    localStorage.setItem(
+      'beside-cue:glass-adventure:camera-mode:v1',
+      'unknown-camera',
+    )
+    sessionStorage.setItem(seeded, 'true')
+  })
+  await openMuseum(page)
+  const adventure = page.getByTestId('glass-adventure')
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await viewport.focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+
+  await page.keyboard.down('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await page.keyboard.down('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await page.keyboard.up('KeyV')
+  await page.keyboard.press('Control+KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await page.getByRole('button', { name: 'Pause game' }).focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await viewport.focus()
+  await page.keyboard.press('Escape')
+  const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+  await pause.getByRole('slider').first().focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await pause.getByRole('radio', { name: 'First person' }).check()
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+  await pause.getByRole('button', { name: 'Back to the museum' }).click()
+
+  await page.clock.resume()
+  await page.reload()
+  await expect(adventure).toHaveAttribute('data-ready', 'true', {
+    timeout: 30_000,
+  })
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+})
+
 test.describe('phone', () => {
   test.use({
     viewport: { width: 390, height: 844 },
     hasTouch: true,
     isMobile: true,
   })
-  test('Tune clears Help and movement labels cannot be selected @smoke', async ({
+  test('Tune clears Help and movement controls cannot be selected @smoke', async ({
     page,
     context,
   }, testInfo) => {
@@ -343,11 +396,10 @@ test.describe('phone', () => {
 
     const jump = page.getByRole('button', { name: 'Jump', exact: true })
     await expect(jump.locator('span')).toHaveCSS('user-select', 'none')
-    await expect(
-      page
-        .getByRole('group', { name: 'Move Merc' })
-        .getByText('Move', { exact: true }),
-    ).toHaveCSS('user-select', 'none')
+    await expect(page.getByRole('group', { name: 'Move Merc' })).toHaveCSS(
+      'user-select',
+      'none',
+    )
     const label = await jump.locator('span').boundingBox()
     expect(label).not.toBeNull()
     await page.mouse.move(label!.x, label!.y + label!.height / 2)
@@ -492,6 +544,273 @@ test.describe('phone', () => {
         height: document.documentElement.scrollHeight,
       })),
     ).toEqual({ width: 390, height: 844 })
+  })
+
+  test('look can begin first while movement releases and reacquires independently @smoke', async ({
+    page,
+    context,
+  }) => {
+    await openMuseum(page)
+    await page.evaluate(() => {
+      const trace: {
+        pointerId: number
+        target: string
+        type: string
+      }[] = []
+      const record = (event: Event) => {
+        const pointer = event as PointerEvent
+        const element = pointer.target as Element | null
+        trace.push({
+          pointerId: pointer.pointerId,
+          target:
+            element?.closest('[aria-label]')?.getAttribute('aria-label') ??
+            element?.tagName ??
+            'unknown',
+          type: pointer.type,
+        })
+        document.documentElement.dataset.pointerOwnershipTrace =
+          JSON.stringify(trace)
+      }
+      for (const type of [
+        'pointerdown',
+        'pointerup',
+        'pointercancel',
+        'lostpointercapture',
+      ])
+        document.addEventListener(type, record, true)
+    })
+    const cdp = await context.newCDPSession(page)
+    const stick = await page
+      .getByRole('group', { name: 'Move Merc' })
+      .boundingBox()
+    expect(stick).not.toBeNull()
+    const look = { id: 1, x: 310, y: 380 }
+    const lookMoved = { id: 1, x: 345, y: 390 }
+    const origin = {
+      x: stick!.x + Math.min(60, stick!.width * 0.36),
+      y: stick!.y + stick!.height - 64,
+    }
+    const movement = { id: 2, x: origin.x + 30, y: origin.y - 20 }
+
+    const initialYaw = await value(page, 'camera-yaw')
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [look],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [lookMoved],
+    })
+    await page.clock.runFor(32)
+    expect(
+      Math.abs((await value(page, 'camera-yaw')) - initialYaw),
+    ).toBeGreaterThan(0.1)
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [lookMoved, { id: 2, ...origin }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [lookMoved, movement],
+    })
+    const firstStart = {
+      x: await value(page, 'player-x'),
+      z: await value(page, 'player-z'),
+    }
+    await page.clock.runFor(140)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - firstStart.x,
+        (await value(page, 'player-z')) - firstStart.z,
+      ),
+    ).toBeGreaterThan(0.03)
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [movement],
+    })
+    await page.clock.runFor(300)
+    const released = {
+      x: await value(page, 'player-x'),
+      z: await value(page, 'player-z'),
+    }
+    await page.clock.runFor(200)
+    expect(await value(page, 'player-x')).toBeCloseTo(released.x, 4)
+    expect(await value(page, 'player-z')).toBeCloseTo(released.z, 4)
+    const releaseTrace = JSON.parse(
+      (await page
+        .locator('html')
+        .getAttribute('data-pointer-ownership-trace')) ?? '[]',
+    ) as { pointerId: number; target: string; type: string }[]
+    const firstDowns = releaseTrace.filter(
+      (event) => event.type === 'pointerdown',
+    )
+    const lookPointer = firstDowns.find((event) => event.target !== 'Move Merc')
+    const firstMovementPointer = firstDowns.find(
+      (event) => event.target === 'Move Merc',
+    )
+    expect(lookPointer).toBeDefined()
+    expect(firstMovementPointer).toBeDefined()
+    expect(releaseTrace).toContainEqual({
+      pointerId: firstMovementPointer!.pointerId,
+      target: 'Move Merc',
+      type: 'pointerup',
+    })
+    expect(
+      releaseTrace.some(
+        (event) =>
+          event.pointerId === lookPointer!.pointerId &&
+          (event.type === 'pointerup' || event.type === 'pointercancel'),
+      ),
+    ).toBe(false)
+
+    const secondMovement = { id: 3, x: origin.x - 26, y: origin.y - 24 }
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [lookMoved, { id: 3, ...origin }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [lookMoved, secondMovement],
+    })
+    const secondStart = {
+      x: await value(page, 'player-x'),
+      z: await value(page, 'player-z'),
+    }
+    await page.clock.runFor(140)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - secondStart.x,
+        (await value(page, 'player-z')) - secondStart.z,
+      ),
+    ).toBeGreaterThan(0.03)
+    const reacquiredTrace = JSON.parse(
+      (await page
+        .locator('html')
+        .getAttribute('data-pointer-ownership-trace')) ?? '[]',
+    ) as { pointerId: number; target: string; type: string }[]
+    const reacquiredDowns = reacquiredTrace.filter(
+      (event) => event.type === 'pointerdown',
+    )
+    expect(reacquiredDowns).toHaveLength(3)
+    expect(
+      reacquiredDowns.filter(
+        (event) => event.pointerId === lookPointer!.pointerId,
+      ),
+    ).toHaveLength(1)
+    const secondMovementPointer = reacquiredDowns.at(-1)!
+    expect(secondMovementPointer.target).toBe('Move Merc')
+    expect(secondMovementPointer.pointerId).not.toBe(
+      firstMovementPointer!.pointerId,
+    )
+
+    const yawBeforeConcurrentLook = await value(page, 'camera-yaw')
+    const positionBeforeConcurrentLook = {
+      x: await value(page, 'player-x'),
+      z: await value(page, 'player-z'),
+    }
+    const lookAfterReacquire = { ...lookMoved, x: lookMoved.x - 38 }
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [lookAfterReacquire, secondMovement],
+    })
+    await page.clock.runFor(140)
+    expect(
+      Math.abs((await value(page, 'camera-yaw')) - yawBeforeConcurrentLook),
+    ).toBeGreaterThan(0.1)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - positionBeforeConcurrentLook.x,
+        (await value(page, 'player-z')) - positionBeforeConcurrentLook.z,
+      ),
+    ).toBeGreaterThan(0.03)
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchCancel',
+      touchPoints: [],
+    })
+  })
+
+  test('tablet movement owns only its visible lower-left pad @smoke', async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 1180, height: 820 })
+    await openMuseum(page)
+    const pad = page.getByRole('group', { name: 'Move Merc' })
+    const base = page.getByTestId('floating-stick-base')
+    const padBox = await pad.boundingBox()
+    expect(padBox).not.toBeNull()
+    expect(padBox!.width).toBeLessThanOrEqual(160)
+    expect(padBox!.height).toBeLessThanOrEqual(160)
+    await expect(base).toHaveCSS('opacity', '0.62')
+
+    const cdp = await context.newCDPSession(page)
+    const lookStart = { id: 11, x: 330, y: 500 }
+    const initialYaw = await value(page, 'camera-yaw')
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [lookStart],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ ...lookStart, x: lookStart.x + 44 }],
+    })
+    await page.clock.runFor(32)
+    expect(
+      Math.abs((await value(page, 'camera-yaw')) - initialYaw),
+    ).toBeGreaterThan(0.1)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [{ ...lookStart, x: lookStart.x + 44 }],
+    })
+  })
+
+  test('narrow pause settings scroll by native touch to the camera choice and resume @smoke', async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 })
+    await openMuseum(page)
+    await page.keyboard.press('Escape')
+    const adventure = page.getByTestId('glass-adventure')
+    const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+    const firstPerson = pause.getByRole('radio', { name: 'First person' })
+    const resume = pause.getByRole('button', { name: 'Back to the museum' })
+    await expect(pause).toBeVisible()
+    await expect(resume).not.toBeInViewport()
+    const beforeScroll = await pause.evaluate(
+      (dialog) => dialog.parentElement?.scrollTop ?? -1,
+    )
+
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 61, x: 10, y: 500 }],
+    })
+    for (const y of [420, 330, 240, 150, 80])
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ id: 61, x: 10, y }],
+      })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
+
+    await expect
+      .poll(() =>
+        pause.evaluate((dialog) => dialog.parentElement?.scrollTop ?? -1),
+      )
+      .toBeGreaterThan(beforeScroll)
+    await expect(firstPerson).toBeInViewport()
+    await expect(resume).toBeInViewport()
+    await firstPerson.check()
+    await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+    await resume.click()
+    await expect(pause).toBeHidden()
+    await cdp.detach()
   })
 })
 
