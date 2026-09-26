@@ -82,7 +82,9 @@ export function createGlassGame(
     state.grounded = support !== null
     state.supportSolidId = support?.id ?? null
     state.supportPlatformId =
-      support === null || support.kind === 'prop' ? null : support.id
+      support === null || support.kind === 'prop'
+        ? null
+        : (support.parentPlatformId ?? support.id)
     return state
   }
   let player = movementAt(
@@ -260,7 +262,8 @@ export function createGlassGame(
         platformRuntime.advance(MOVEMENT.fixedStep, enabledPlatforms)
         const activeSolids = platformRuntime.materialize(activeBase)
         const previousPosition = { ...player.position }
-        const previousSupportId = player.supportPlatformId
+        const previousSupportSolidId = player.supportSolidId
+        const previousSupportPlatformId = player.supportPlatformId
         const step = stepMovement(
           player,
           input,
@@ -269,8 +272,8 @@ export function createGlassGame(
           collider,
           level.movement,
           {
-            supportDelta: platformRuntime.supportDelta(previousSupportId),
-            surface: platformRuntime.surface(previousSupportId),
+            supportDelta: platformRuntime.supportDelta(previousSupportSolidId),
+            surface: platformRuntime.surface(previousSupportPlatformId),
             intentionalGaps: level.intentionalGaps,
             platformMotions: platformRuntime.motions(enabledPlatforms),
           },
@@ -293,7 +296,9 @@ export function createGlassGame(
           break
         }
         if (step.support !== null && step.support.kind !== 'prop')
-          platformRuntime.armCrackle(step.support.id)
+          platformRuntime.armCrackle(
+            step.support.parentPlatformId ?? step.support.id,
+          )
         if (step.jumped) events.push({ type: 'jumped' })
         if (step.landed) events.push({ type: 'landed' })
         if (
@@ -351,7 +356,15 @@ export function createGlassGame(
       return events
     },
     snapshot(): GameSnapshot {
-      const activeSolidIds = activeCourseSolids().map((solid) => solid.id)
+      const activeSolidIds = [
+        ...new Set(
+          activeCourseSolids().map((solid) =>
+            solid.kind === 'prop'
+              ? solid.id
+              : (solid.parentPlatformId ?? solid.id),
+          ),
+        ),
+      ]
       return {
         player: {
           position: { ...player.position },

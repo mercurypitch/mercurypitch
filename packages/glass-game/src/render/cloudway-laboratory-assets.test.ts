@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import type { Mesh as MeshType, Object3D } from 'three'
 import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, } from 'three'
 import { describe, expect, it } from 'vitest'
-import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '../content/cloudway-laboratory'
+import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
 import type { PlatformRuntimeSnapshot } from '../contracts'
 import type { CloudwayCrackleMaterialBinding } from './cloudway-crackle-adapter'
 import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
@@ -273,11 +273,22 @@ describe('accepted Cloudway contact footprints', () => {
       expect(platforms.length).toBeGreaterThan(0)
       for (const platform of platforms) {
         const turns = platform.renderQuarterTurns ?? 0
-        const worldWidth = turns % 2 === 0 ? width : depth
-        const worldDepth = turns % 2 === 0 ? depth : width
+        const localExtension =
+          asset.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll
+            ? CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.scroll.extensionLength
+            : width
+        const worldWidth = turns % 2 === 0 ? localExtension : depth
+        const worldDepth = turns % 2 === 0 ? depth : localExtension
         expect(platform.maxX - platform.minX).toBeCloseTo(worldWidth, 8)
         expect(platform.maxZ - platform.minZ).toBeCloseTo(worldDepth, 8)
         expect(platform.thickness).toBeCloseTo(height, 8)
+        if (asset.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll) {
+          expect(platform.behavior).toMatchObject({
+            kind: 'scroll',
+            edgeSupports:
+              CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.scroll.edgeSupports,
+          })
+        }
       }
 
       if (asset.supportKey !== 'platform_adapter_json') return

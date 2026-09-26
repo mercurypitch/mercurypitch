@@ -48,6 +48,24 @@ export type PlatformSurfaceDefinition = FrostSurfaceDefinition
 
 export type PlatformScrollAxis = 'x' | 'z'
 
+/**
+ * A visible roller band attached to one end of a retractable scroll.
+ * Horizontal values are world-space offsets from the scroll centre after the
+ * platform's cardinal render turn. The contact plane may sit above the deck to
+ * match the visible crown of the roller barrel.
+ */
+export interface PlatformScrollEdgeSupportDefinition {
+  /** Distance from the live glass edge to the roller's outer visible edge. */
+  outwardLength: number
+  /** Ordered offsets on the axis perpendicular to scroll extension. */
+  minCrossAxis: number
+  maxCrossAxis: number
+  /** Contact plane relative to the scroll deck top. */
+  topOffset: number
+  /** Depth of the continuous solid contact band below the landing plane. */
+  thickness: number
+}
+
 export const PLATFORM_RENDER_QUARTER_TURNS = [0, 1, 2, 3] as const
 export type PlatformRenderQuarterTurns =
   (typeof PLATFORM_RENDER_QUARTER_TURNS)[number]
@@ -70,6 +88,11 @@ export type PlatformBehaviorDefinition =
       kind: 'scroll'
       /** World axis after any authoring-space quarter turn is applied. */
       axis: PlatformScrollAxis
+      /** Optional visible roller support which follows each live deck edge. */
+      edgeSupports?: {
+        readonly negative: PlatformScrollEdgeSupportDefinition
+        readonly positive: PlatformScrollEdgeSupportDefinition
+      }
       minLengthRatio: number
       extendedSeconds: number
       retractedSeconds: number
@@ -103,6 +126,8 @@ export interface PlatformDefinition extends BoundsXZ {
   thickness: number
   kind: 'deck' | 'bridge' | 'catch'
   material: 'stone' | 'brass'
+  /** Runtime compound parts retain one public platform identity. */
+  parentPlatformId?: string
   /** Optional renderer catalog recipe; has no effect on this solid proxy. */
   renderId?: string
   /**

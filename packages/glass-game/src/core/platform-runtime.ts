@@ -2,13 +2,15 @@
 // Platform runtime — deterministic transforms and breakaway lifecycles for authored floors.
 // ============================================================
 
-import type { CourseSolid, PlatformBehaviorDefinition, PlatformDefinition, PlatformPhase, PlatformRuntimeSnapshot, PlatformSurfaceDefinition, Vec3, } from '../contracts'
+import type { Bounds3, CourseSolid, PlatformBehaviorDefinition, PlatformDefinition, PlatformPhase, PlatformRuntimeSnapshot, PlatformSurfaceDefinition, Vec3, } from '../contracts'
 import { LEVEL_MOVEMENT_LIMITS, PLATFORM_BEHAVIOR_LIMITS } from '../contracts'
 import type { MovingPlatformCollision } from './collision'
 
 const ZERO: Readonly<Vec3> = { x: 0, y: 0, z: 0 }
 const NO_MOTIONS: readonly MovingPlatformCollision[] = []
 const EPSILON = 1e-10
+const SCROLL_NEGATIVE_SUFFIX = '::scroll-negative'
+const SCROLL_POSITIVE_SUFFIX = '::scroll-positive'
 
 type ScrollBehavior = Extract<PlatformBehaviorDefinition, { kind: 'scroll' }>
 type ScrollPhase = Extract<
@@ -30,6 +32,27 @@ interface RuntimePlatformState {
   phase: PlatformPhase
   phaseElapsed: number
   lengthRatio: number
+  previousLengthRatio: number
+}
+
+type ScrollComponent = {
+  readonly parentId: string
+  readonly side: 'negative' | 'positive'
+}
+
+function scrollComponentId(
+  parentId: string,
+  side: ScrollComponent['side'],
+): string {
+  return `${parentId}${
+    side === 'negative' ? SCROLL_NEGATIVE_SUFFIX : SCROLL_POSITIVE_SUFFIX
+  }`
+}
+
+function usesReservedScrollComponentSuffix(id: string): boolean {
+  return (
+    id.endsWith(SCROLL_NEGATIVE_SUFFIX) || id.endsWith(SCROLL_POSITIVE_SUFFIX)
+  )
 }
 
 export interface PlatformRuntime {
@@ -61,6 +84,8 @@ function finiteInRange(
 export function platformRuntimeDefinitionError(
   platform: PlatformDefinition,
 ): string | undefined {
+  if (usesReservedScrollComponentSuffix(platform.id))
+    return 'platform id uses a reserved runtime scroll component suffix'
   const surface = platform.surface
   if (
     surface !== undefined &&
@@ -137,6 +162,42 @@ export function platformRuntimeDefinitionError(
       )
     )
       return 'scroll rest and transition durations must be finite and within runtime limits'
+    const edges: unknown = behavior.edgeSupports
+    if (edges !== undefined) {
+      if (edges === null || typeof edges !== 'object' || Array.isArray(edges))
+        return 'scroll edge supports must declare negative and positive contact bounds'
+      const edgeRecord = edges as Record<string, unknown>
+      for (const edgeValue of [edgeRecord.negative, edgeRecord.positive]) {
+        if (
+          edgeValue === null ||
+          typeof edgeValue !== 'object' ||
+          Array.isArray(edgeValue)
+        )
+          return 'scroll edge supports must declare negative and positive contact bounds'
+        const edge = edgeValue as Record<string, unknown>
+        if (
+          !finitePositive(
+            edge.outwardLength as number,
+            PLATFORM_BEHAVIOR_LIMITS.maximumTranslation,
+          ) ||
+          !Number.isFinite(edge.minCrossAxis as number) ||
+          !Number.isFinite(edge.maxCrossAxis as number) ||
+          (edge.minCrossAxis as number) >= (edge.maxCrossAxis as number) ||
+          Math.abs(edge.minCrossAxis as number) >
+            PLATFORM_BEHAVIOR_LIMITS.maximumTranslation ||
+          Math.abs(edge.maxCrossAxis as number) >
+            PLATFORM_BEHAVIOR_LIMITS.maximumTranslation ||
+          !Number.isFinite(edge.topOffset as number) ||
+          Math.abs(edge.topOffset as number) >
+            PLATFORM_BEHAVIOR_LIMITS.maximumTranslation ||
+          !finitePositive(
+            edge.thickness as number,
+            PLATFORM_BEHAVIOR_LIMITS.maximumTranslation,
+          )
+        )
+          return 'scroll edge supports must use finite ordered visible contact bounds'
+      }
+    }
     return undefined
   }
   if (
@@ -336,14 +397,101 @@ function resizedScrollPlatform(
   }
 }
 
-function materializedPlatform(
+function scrollEdgeParts(
+  platform: PlatformDefinition,
+  behavior: ScrollBehavior,
+  lengthRatio: number,
+): readonly PlatformDefinition[] {
+  const deck = resizedScrollPlatform(platform, behavior, lengthRatio)
+  const edges = behavior.edgeSupports
+  if (edges === undefined) return [deck]
+  const parts: PlatformDefinition[] = [deck]
+  const centreX = (platform.minX + platform.maxX) / 2
+  const centreZ = (platform.minZ + platform.maxZ) / 2
+
+  for (const [side, edge] of [
+    ['negative', edges.negative],
+    ['positive', edges.positive],
+  ] as const) {
+    const support: PlatformDefinition = {
+      ...platform,
+      id: scrollComponentId(platform.id, side),
+      parentPlatformId: platform.id,
+      behavior: undefined,
+      renderId: undefined,
+      renderQuarterTurns: undefined,
+      surface: undefined,
+      top: platform.top + edge.topOffset,
+      thickness: edge.thickness,
+    }
+    if (behavior.axis === 'x') {
+      support.minZ = centreZ + edge.minCrossAxis
+      support.maxZ = centreZ + edge.maxCrossAxis
+      if (side === 'negative') {
+        support.maxX = deck.minX
+        support.minX = support.maxX - edge.outwardLength
+      } else {
+        support.minX = deck.maxX
+        support.maxX = support.minX + edge.outwardLength
+      }
+    } else {
+      support.minX = centreX + edge.minCrossAxis
+      support.maxX = centreX + edge.maxCrossAxis
+      if (side === 'negative') {
+        support.maxZ = deck.minZ
+        support.minZ = support.maxZ - edge.outwardLength
+      } else {
+        support.minZ = deck.maxZ
+        support.maxZ = support.minZ + edge.outwardLength
+      }
+    }
+    parts.push(support)
+  }
+  return parts
+}
+
+function materializedPlatforms(
   platform: PlatformDefinition,
   state: RuntimePlatformState,
-): PlatformDefinition {
+): readonly PlatformDefinition[] {
   const behavior = state.definition.behavior
   if (behavior?.kind === 'scroll')
-    return resizedScrollPlatform(platform, behavior, state.lengthRatio)
-  return translatedPlatform(platform, state.offset)
+    return scrollEdgeParts(platform, behavior, state.lengthRatio)
+  return [translatedPlatform(platform, state.offset)]
+}
+
+/**
+ * Returns the same live physical envelope used by platform collision.
+ * Renderer and camera proxies can consume this without reproducing behavior
+ * transforms or importing donor geometry.
+ */
+export function platformBoundsAtRuntime(
+  platform: PlatformDefinition,
+  runtime: Pick<PlatformRuntimeSnapshot, 'offset' | 'lengthRatio'> | undefined,
+): Bounds3 {
+  const behavior = platform.behavior
+  const parts =
+    behavior?.kind === 'scroll'
+      ? scrollEdgeParts(platform, behavior, runtime?.lengthRatio ?? 1)
+      : [translatedPlatform(platform, runtime?.offset ?? ZERO)]
+  return parts.reduce<Bounds3>(
+    (bounds, part) => ({
+      minX: Math.min(bounds.minX, part.minX),
+      maxX: Math.max(bounds.maxX, part.maxX),
+      minY: Math.min(bounds.minY, part.top - part.thickness),
+      maxY: Math.max(bounds.maxY, part.top),
+      minZ: Math.min(bounds.minZ, part.minZ),
+      maxZ: Math.max(bounds.maxZ, part.maxZ),
+    }),
+    {
+      minX: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+      minZ: Number.POSITIVE_INFINITY,
+      maxZ: Number.NEGATIVE_INFINITY,
+    },
+  )
 }
 
 function initialPhase(platform: PlatformDefinition): PlatformPhase {
@@ -365,6 +513,7 @@ export function createPlatformRuntime(
   platforms: readonly PlatformDefinition[],
 ): PlatformRuntime {
   const states = new Map<string, RuntimePlatformState>()
+  const scrollComponents = new Map<string, ScrollComponent>()
   for (const definition of platforms) {
     const error = platformRuntimeDefinitionError(definition)
     if (error !== undefined)
@@ -377,7 +526,21 @@ export function createPlatformRuntime(
       phase: initialPhase(definition),
       phaseElapsed: 0,
       lengthRatio: initialLengthRatio(definition),
+      previousLengthRatio: initialLengthRatio(definition),
     })
+    if (
+      definition.behavior?.kind === 'scroll' &&
+      definition.behavior.edgeSupports !== undefined
+    ) {
+      for (const side of ['negative', 'positive'] as const) {
+        const id = scrollComponentId(definition.id, side)
+        if (states.has(id) || scrollComponents.has(id))
+          throw new Error(
+            `Invalid platform "${definition.id}": runtime scroll component id "${id}" collides with an authored platform id.`,
+          )
+        scrollComponents.set(id, { parentId: definition.id, side })
+      }
+    }
   }
   const clockedStates = [...states.values()].filter(
     (state) => state.definition.behavior !== undefined,
@@ -388,6 +551,7 @@ export function createPlatformRuntime(
     state.phase = initialPhase(state.definition)
     state.phaseElapsed = 0
     state.lengthRatio = initialLengthRatio(state.definition)
+    state.previousLengthRatio = state.lengthRatio
     state.offset = { ...ZERO }
     state.previousOffset = { ...ZERO }
   }
@@ -397,6 +561,7 @@ export function createPlatformRuntime(
       if (!Number.isFinite(dt) || dt <= 0) return
       for (const state of clockedStates) {
         state.previousOffset = { ...state.offset }
+        state.previousLengthRatio = state.lengthRatio
         if (!activePlatformIds.has(state.definition.id)) continue
         const behavior = state.definition.behavior
         if (behavior?.kind === 'glide') {
@@ -427,13 +592,17 @@ export function createPlatformRuntime(
       if (clockedStates.length === 0) return solids
       const result: CourseSolid[] = []
       for (const solid of solids) {
+        if (scrollComponents.has(solid.id))
+          throw new Error(
+            `Invalid solid "${solid.id}": id is reserved by a runtime scroll component.`,
+          )
         // platformId on props controls progression visibility; it has never
         // meant transform parenting. The first pilot keeps all props/perches static.
         const state = solid.kind === 'prop' ? undefined : states.get(solid.id)
         if (state !== undefined && !collisionEnabled(state)) continue
         if (state === undefined) result.push(solid)
         else if (solid.kind !== 'prop')
-          result.push(materializedPlatform(solid, state))
+          result.push(...materializedPlatforms(solid, state))
       }
       return result
     },
@@ -441,12 +610,43 @@ export function createPlatformRuntime(
       if (clockedStates.length === 0) return NO_MOTIONS
       const motions: MovingPlatformCollision[] = []
       for (const state of clockedStates) {
+        const behavior = state.definition.behavior
         if (
-          state.definition.behavior?.kind !== 'glide' ||
           !activePlatformIds.has(state.definition.id) ||
           !collisionEnabled(state)
         )
           continue
+        if (
+          behavior?.kind === 'scroll' &&
+          behavior.edgeSupports !== undefined
+        ) {
+          const previous = scrollEdgeParts(
+            state.definition,
+            behavior,
+            state.previousLengthRatio,
+          )
+          const current = scrollEdgeParts(
+            state.definition,
+            behavior,
+            state.lengthRatio,
+          )
+          for (let index = 1; index < current.length; index++) {
+            const before = previous[index]!
+            const after = current[index]!
+            motions.push({
+              id: after.id,
+              previous: before,
+              current: after,
+              displacement: {
+                x: after.minX - before.minX,
+                y: after.top - before.top,
+                z: after.minZ - before.minZ,
+              },
+            })
+          }
+          continue
+        }
+        if (behavior?.kind !== 'glide') continue
         const displacement = {
           x: state.offset.x - state.previousOffset.x,
           y: state.offset.y - state.previousOffset.y,
@@ -468,8 +668,29 @@ export function createPlatformRuntime(
       return motions
     },
     supportDelta(id) {
-      const state = id === null ? undefined : states.get(id)
+      const component = id === null ? undefined : scrollComponents.get(id)
+      const state =
+        id === null ? undefined : states.get(component?.parentId ?? id)
       if (state === undefined || !collisionEnabled(state)) return { ...ZERO }
+      if (
+        component !== undefined &&
+        state.definition.behavior?.kind === 'scroll'
+      ) {
+        const behavior = state.definition.behavior
+        const fullLength =
+          behavior.axis === 'x'
+            ? state.definition.maxX - state.definition.minX
+            : state.definition.maxZ - state.definition.minZ
+        const direction = component.side === 'negative' ? -1 : 1
+        const delta =
+          (direction *
+            fullLength *
+            (state.lengthRatio - state.previousLengthRatio)) /
+          2
+        return behavior.axis === 'x'
+          ? { x: delta, y: 0, z: 0 }
+          : { x: 0, y: 0, z: delta }
+      }
       return {
         x: state.offset.x - state.previousOffset.x,
         y: state.offset.y - state.previousOffset.y,

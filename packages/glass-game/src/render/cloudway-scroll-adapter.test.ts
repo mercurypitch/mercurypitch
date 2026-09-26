@@ -3,7 +3,7 @@
 import type { Mesh as MeshType, Object3D } from 'three'
 import { BoxGeometry, BufferGeometry, Group, Line, LineBasicMaterial, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Texture, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
-import type { PlatformDefinition, PlatformRuntimeSnapshot } from '../contracts'
+import type { PlatformDefinition, PlatformRenderQuarterTurns, PlatformRuntimeSnapshot, } from '../contracts'
 import { CLOUDWAY_SCROLL_ROLE_NAMES, createCloudwayScrollAdapter, } from './cloudway-scroll-adapter'
 import { disposeMaterials, disposeObject } from './dispose'
 
@@ -98,7 +98,8 @@ function donor(
       providerMaterial,
     )
     rollerMesh.name = `${name}Gold`
-    rollerMesh.position.y = -0.15
+    rollerMesh.position.x = x < 0 ? -0.125 : 0.125
+    rollerMesh.position.y = -0.1
     roller.add(rollerMesh)
     carrier.add(roller)
   }
@@ -132,6 +133,53 @@ function platform(renderQuarterTurns: 0 | 1 = 0): PlatformDefinition {
     behavior: {
       kind: 'scroll',
       axis: turned ? 'z' : 'x',
+      minLengthRatio: 0.25,
+      extendedSeconds: 4,
+      retractedSeconds: 3,
+      transitionSeconds: 1.5,
+      initialState: 'extended',
+    },
+  }
+}
+
+function extensionIsWorldX(turns: PlatformRenderQuarterTurns): boolean {
+  return turns % 2 === 0
+}
+
+function extendedPlatform(
+  renderQuarterTurns: PlatformRenderQuarterTurns,
+): PlatformDefinition {
+  const extensionIsX = renderQuarterTurns % 2 === 0
+  return {
+    id: `extended-scroll-${renderQuarterTurns}`,
+    minX: extensionIsX ? 6 : 9,
+    maxX: extensionIsX ? 14 : 11,
+    minZ: extensionIsX ? 19 : 16,
+    maxZ: extensionIsX ? 21 : 24,
+    top: 3,
+    thickness: 0.3,
+    kind: 'bridge',
+    material: 'brass',
+    renderQuarterTurns,
+    behavior: {
+      kind: 'scroll',
+      axis: extensionIsX ? 'x' : 'z',
+      edgeSupports: {
+        negative: {
+          outwardLength: 0.2,
+          minCrossAxis: -0.9,
+          maxCrossAxis: 0.9,
+          topOffset: 0.05,
+          thickness: 0.05,
+        },
+        positive: {
+          outwardLength: 0.2,
+          minCrossAxis: -0.9,
+          maxCrossAxis: 0.9,
+          topOffset: 0.05,
+          thickness: 0.05,
+        },
+      },
       minLengthRatio: 0.25,
       extendedSeconds: 4,
       retractedSeconds: 3,
@@ -304,8 +352,8 @@ describe('Cloudway semantic scroll adapter', () => {
     persistent.getWorldPosition(position)
     expect(position.toArray()).toEqual([10, 3, 20])
     const fullSize = adapter.getLiveBounds().getSize(new Vector3())
-    expect(fullSize.x).toBeCloseTo(4.25)
-    expect(fullSize.y).toBeCloseTo(0.3)
+    expect(fullSize.x).toBeCloseTo(4.5)
+    expect(fullSize.y).toBeCloseTo(0.35)
     expect(fullSize.z).toBeCloseTo(2.2)
 
     adapter.update(snapshot(target, 0.625))
@@ -330,15 +378,15 @@ describe('Cloudway semantic scroll adapter', () => {
     persistent.getWorldPosition(position)
     expect(position.toArray()).toEqual([10, 3, 20])
     const minimumSize = adapter.getLiveBounds().getSize(new Vector3())
-    expect(minimumSize.x).toBeCloseTo(1.25)
-    expect(minimumSize.y).toBeCloseTo(0.3)
+    expect(minimumSize.x).toBeCloseTo(1.5)
+    expect(minimumSize.y).toBeCloseTo(0.35)
     expect(minimumSize.z).toBeCloseTo(2.2)
 
     const unchanged = negative.matrixWorld.clone()
     adapter.update(snapshot(target, 0.25))
     expect(negative.matrixWorld.equals(unchanged)).toBe(true)
     adapter.update(snapshot(target, 1))
-    expect(adapter.getLiveBounds().getSize(new Vector3()).x).toBeCloseTo(4.25)
+    expect(adapter.getLiveBounds().getSize(new Vector3()).x).toBeCloseTo(4.5)
 
     expect(firstMesh(deck).material).toBe(materials.glass)
     expect(firstMesh(negative).material).toBe(materials.gold)
@@ -378,11 +426,74 @@ describe('Cloudway semantic scroll adapter', () => {
     expect(position.z).toBeCloseTo(19.5)
     const size = adapter.getLiveBounds().getSize(new Vector3())
     expect(size.x).toBeCloseTo(2.2)
-    expect(size.z).toBeCloseTo(1.25)
+    expect(size.z).toBeCloseTo(1.5)
 
     adapter.dispose()
     disposeFixture(fixture, materials)
   })
+
+  it.each([
+    [0, [6, 3, 20], [14, 3, 20]],
+    [1, [10, 3, 24], [10, 3, 16]],
+    [2, [14, 3, 20], [6, 3, 20]],
+    [3, [10, 3, 16], [10, 3, 24]],
+  ] as const)(
+    'extends only the glass support and maps roller anchors for quarter turn %s',
+    (turns, expectedNegative, expectedPositive) => {
+      const fixture = donor({ persistent: false })
+      const target = extendedPlatform(turns)
+      const materials = semanticMaterials()
+      const adapter = createCloudwayScrollAdapter({
+        source: fixture.source,
+        platform: target,
+        materials: materialBindings(fixture.source, materials),
+      })
+      const deck = role(adapter.root, CLOUDWAY_SCROLL_ROLE_NAMES.deck)
+      const support = firstMesh(deck)
+      const negative = role(
+        adapter.root,
+        CLOUDWAY_SCROLL_ROLE_NAMES.negativeRoller,
+      )
+      const positive = role(
+        adapter.root,
+        CLOUDWAY_SCROLL_ROLE_NAMES.positiveRoller,
+      )
+      const position = new Vector3()
+      const scale = new Vector3()
+
+      adapter.update(snapshot(target, 1))
+      deck.getWorldScale(scale)
+      expect(scale.toArray()).toEqual([1, 1, 1])
+      support.getWorldScale(scale)
+      expect(scale.x).toBeCloseTo(2)
+      negative.getWorldPosition(position)
+      position
+        .toArray()
+        .forEach((value, index) =>
+          expect(value).toBeCloseTo(expectedNegative[index]!, 8),
+        )
+      positive.getWorldPosition(position)
+      position
+        .toArray()
+        .forEach((value, index) =>
+          expect(value).toBeCloseTo(expectedPositive[index]!, 8),
+        )
+      const full = adapter.getLiveBounds().getSize(new Vector3())
+      expect(extensionIsWorldX(turns) ? full.x : full.z).toBeCloseTo(8.5)
+      expect(extensionIsWorldX(turns) ? full.z : full.x).toBeCloseTo(2.2)
+
+      adapter.update(snapshot(target, 0.25))
+      deck.getWorldScale(scale)
+      expect(scale.x).toBeCloseTo(0.5)
+      support.getWorldScale(scale)
+      expect(scale.x).toBeCloseTo(0.5)
+      const minimum = adapter.getLiveBounds().getSize(new Vector3())
+      expect(extensionIsWorldX(turns) ? minimum.x : minimum.z).toBeCloseTo(2.5)
+
+      adapter.dispose()
+      disposeFixture(fixture, materials)
+    },
+  )
 
   it('preserves authored child transforms and geometry while applying cardinal yaw once', () => {
     const fixture = donor({ deckYaw: 0.31, persistent: false })
@@ -473,7 +584,7 @@ describe('Cloudway semantic scroll adapter', () => {
     badDeckMesh.geometry.getAttribute('position').setX(0, Number.NaN)
     cases.push({
       fixture: badGeometry,
-      message: 'finite geometry bounds',
+      message: 'non-finite geometry',
       sourceGeometry: badDeckMesh.geometry,
     })
 
@@ -524,7 +635,7 @@ describe('Cloudway semantic scroll adapter', () => {
         platform: { ...platform(), maxX: 11.5 },
         materials: materialBindings(fixture.source, materials),
       }),
-    ).toThrow('support dimensions')
+    ).toThrow('visible edge supports')
 
     opaque.dispose()
     disposeFixture(fixture, materials)
