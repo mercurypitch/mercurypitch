@@ -15,6 +15,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { SING_COACH_MARK } from './sing-room-settings'
 
 /** Repo-relative: vitest runs from the workspace root in either project. */
 const ROOM = 'src/features/sing-room'
@@ -53,5 +54,18 @@ describe('the native copy after R6', () => {
   it('says where a kept take goes, on the end card', () => {
     const card = readFileSync(`${ROOM}/SingTakeSheet.tsx`, 'utf8')
     expect(card).toContain('Keep stores it on this phone.')
+  })
+})
+
+describe('the coach mark, device round 5', () => {
+  // It hung under the key chip with its arrow on it, said "the pill says the
+  // note", and went on about the key chip and the gear: the owner read it as a
+  // claim about the key. It hangs from the pitch pill now (SingRoomHud), so
+  // it says what that pill shows and what a tap on it does, and no more.
+  it('says what the pitch pill shows and what a tap on it does', () => {
+    expect(SING_COACH_MARK).toEqual({
+      title: 'Your note',
+      body: 'How far off you are, in cents. Tap it for your takes.',
+    })
   })
 })

@@ -89,12 +89,19 @@ export const [singCoachMarkSeen, setSingCoachMarkSeen] = lazyFlag(
 /**
  * The coach mark's copy. One string, written once.
  *
- * It now says what a tap DOES (device round 2, R4). The first version
- * described three chips and promised nothing about touching them, while the
- * pill — the thing the mark points at — did nothing at all when pressed. The
- * pill opens "Your takes"; the sentence says so.
+ * It says what a tap DOES (device round 2, R4). The first version described
+ * three chips and promised nothing about touching them, while the pill — the
+ * thing the mark points at — did nothing at all when pressed. The pill opens
+ * "Your takes"; the sentence says so.
+ *
+ * AND ONLY WHAT THE PILL IS (device round 5). The mark's arrow had drifted
+ * onto the key chip, so "the pill says the note" read as a claim about the
+ * key, and the sentence about the key chip and the gear made it longer
+ * still. The mark hangs from the pitch pill now (SingRoomHud), and its words
+ * are about that pill alone: the title is the note, the body is the cents
+ * and the tap.
  */
 export const SING_COACH_MARK = {
   title: 'Your note',
-  body: 'The pill says the note and how far from it you are, in cents. Tap it for your takes. The key chip changes the key; range and what you hear live under the gear.',
+  body: 'How far off you are, in cents. Tap it for your takes.',
 } as const

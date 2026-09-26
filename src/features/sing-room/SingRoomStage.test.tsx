@@ -20,7 +20,7 @@ import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
 import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
-import { setSingCoachMarkSeen, singCoachMarkSeen } from './sing-room-settings'
+import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
 import { SingRoomStage } from './SingRoomStage'
@@ -274,6 +274,25 @@ describe('Stop, then the next melody run', () => {
     await Promise.resolve()
 
     expect(singRoomContext().state).toBe('live')
+  })
+})
+
+describe('the coach mark', () => {
+  // Device round 5: it sat under the key chip with its arrow on it, described
+  // the pitch pill, and covered most of that pill upright. It is the pill's
+  // now: one anchor holds both, so the arrow points where the words do,
+  // wherever the HUD puts the pill.
+  it('hangs from the pitch pill it describes', async () => {
+    setSingCoachMarkSeen(false)
+    const room = mountRoom()
+    startMelodyRun(room)
+    await Promise.resolve()
+    const coach = screen.getByTestId('sing-coach-mark')
+    const anchor = coach.closest('[data-testid="sing-note-anchor"]')
+    expect(anchor?.contains(screen.getByTestId('sing-note-chip'))).toBe(true)
+    expect(coach.textContent).toBe(
+      `${SING_COACH_MARK.title}${SING_COACH_MARK.body}`,
+    )
   })
 })
 

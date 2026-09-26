@@ -345,6 +345,30 @@ const readTrace = (left) => {
 }
 
 /**
+ * In the page: the coach mark, the pill it points at, and what it must not
+ * cover on its side (device round 5): the key chip and the stage's line.
+ */
+const readCoachMark = () => {
+  const box = (selector) => {
+    const el = document.querySelector(selector)
+    if (el === null) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+  }
+  return {
+    coach: box('[data-testid="sing-coach-mark"]'),
+    pill: box('[data-testid="sing-note-chip"]'),
+    key: box('[data-testid="sing-key-chip"]'),
+    stage: box('[data-testid="sing-stage"]'),
+  }
+}
+
+/** Whether two boxes share more than half a pixel each way. */
+const overlaps = (a, b) =>
+  Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 &&
+  Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5
+
+/**
  * One frame: every surface the brief names, each measured where it opens and
  * scrolled to its end.
  */
@@ -477,6 +501,33 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     // Past the three seconds of voice a take needs to earn its card.
     await settle(4000)
     await measure('sing-live', null)
+    // The first live run shows the coach mark. Under the pill it would sit on
+    // the line, so on its side it goes beside the pill, arrow pointing left.
+    at = 'reading the coach mark'
+    const mark = await page.evaluate(readCoachMark)
+    if (mark.coach === null || mark.pill === null) {
+      throw new Error('no coach mark or no pitch pill on the first live run')
+    }
+    const markMiddle = (mark.coach.top + mark.coach.bottom) / 2
+    const markGap = mark.coach.left - mark.pill.right
+    // Near enough for its arrow to reach across the gap.
+    const beside =
+      markGap >= 4 &&
+      markGap <= 20 &&
+      markMiddle >= mark.pill.top &&
+      markMiddle <= mark.pill.bottom
+    const clear = [mark.pill, mark.key, mark.stage].every(
+      (box) => box === null || !overlaps(mark.coach, box),
+    )
+    if (!beside || !clear) {
+      failures.push(
+        `coach mark: not beside the pill and clear of it, the key chip and the stage: ${JSON.stringify(mark)}`,
+      )
+    } else {
+      steps.push(
+        `coach mark: beside the pitch pill, ${Math.round(markGap)} px right of it, clear of the key chip and the stage`,
+      )
+    }
     at = 'reading the Sing trace'
     await page
       .waitForFunction(

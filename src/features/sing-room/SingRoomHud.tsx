@@ -22,10 +22,16 @@
 // THE PILL IS A BUTTON, and its tap opens "Your takes" (R4). The coach mark
 // promised a tap that did nothing; this is what it now promises instead.
 //
+// AND THE COACH MARK HANGS FROM IT (device round 5). The room placed the mark
+// from its own top edge, a measurement of a HUD that has since grown a row:
+// its arrow landed on the key chip, and upright it covered most of the pill
+// it described. The room hands the mark in, and it shares one box with the
+// pill, so it points at the pill wherever this row puts it.
+//
 // Every one of these is a thin reading of `hud-signals.ts`. Nothing here
 // decides anything.
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import { MicIcon, PauseIcon } from '@/components/mobile/icons'
 import type { MicChipState, NoteChipSignal } from './hud-signals'
@@ -108,6 +114,8 @@ interface SingRoomHudProps {
   onToggleMic: () => void
   onOpenSong: () => void
   onOpenTakes: () => void
+  /** The first-run coach mark, hung from the pitch pill it describes. */
+  coachMark?: JSX.Element
 }
 
 /** What the state chip promises a tap will do. Null is not a promise. */
@@ -199,7 +207,10 @@ export const SingRoomHud: Component<SingRoomHudProps> = (props) => (
     </div>
 
     <div class={styles.pillRow} data-testid="sing-hud-pill-row">
-      <NoteChip signal={props.note()} onOpenTakes={props.onOpenTakes} />
+      <div class={styles.noteAnchor} data-testid="sing-note-anchor">
+        <NoteChip signal={props.note()} onOpenTakes={props.onOpenTakes} />
+        {props.coachMark}
+      </div>
     </div>
   </>
 )

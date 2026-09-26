@@ -1108,6 +1108,31 @@ async function walkRun(page, ctx, steps) {
     `room: the trace draws in the spectrum on a transparent plate (${trace.spectrum} px lit, ${trace.flatGreen} green)`,
   )
 
+  // ── Device round 5: the coach mark hangs from the pill it describes ──
+  // It was placed 108px down the room, its arrow on the key chip, covering
+  // most of the pill upright. The first live run shows it: just under the
+  // pill (its arrow reaches up the gap), its middle (where the arrow is)
+  // inside the pill's width, none of it on the pill.
+  const coach = await boxOf(page, '[data-testid="sing-coach-mark"]')
+  const livePill = await boxOf(page, '[data-testid="sing-note-chip"]')
+  if (coach === null) throw new Error('no coach mark on the first live run')
+  if (livePill === null) throw new Error('no pitch pill on the live run')
+  const coachMiddle = coach.x + coach.width / 2
+  const coachGap = coach.y - livePill.bottom
+  if (
+    coachGap < 4 ||
+    coachGap > 16 ||
+    coachMiddle < livePill.x ||
+    coachMiddle > livePill.right
+  ) {
+    throw new Error(
+      `the coach mark is not under the pill: mark ${JSON.stringify(coach)}, pill ${JSON.stringify(livePill)}`,
+    )
+  }
+  steps.push(
+    `room: the coach mark hangs ${Math.round(coachGap)}px under the pitch pill, its arrow at the pill's middle, none of it on the pill`,
+  )
+
   // The shell took the band the moment the run started.
   await expectShellOwnsBand(page)
   await page.waitForFunction(
