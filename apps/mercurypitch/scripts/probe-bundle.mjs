@@ -3017,6 +3017,19 @@ async function walkOpen(page, ctx, name, room = '[data-testid="sing-room"]') {
   return { ...mid, handOver: await assertHandOver(page, name) }
 }
 
+/**
+ * Progress after the cover (PR 859 review, items 21 and 29; the final
+ * review's NB4). The tap lands within this many ms of the cover, so the
+ * clone is at most that far into its 1500 ms wait for the room ...
+ */
+const PROGRESS_TAP_WITHIN_MS = 400
+/**
+ * ... and has to be gone within this many ms of the tap: over five times what
+ * the open's own watch needs (a 20 ms poll and an 80 ms fade), and still
+ * 400 ms short of the earliest the clone could go by itself.
+ */
+const PROGRESS_GONE_MS = 700
+
 async function walkAlley(browser, args, frame) {
   const ctx = { ...args, frame }
   const context = await isolate(
@@ -3593,35 +3606,71 @@ async function walkAlley(browser, args, frame) {
       'Progress after the cover: select Sing',
     )
     await page.locator('[data-testid="alley-enter"]').tap()
-    await page.waitForTimeout(600)
-    const coveredAt = await page.evaluate(() => ({
+    // PR 859 final review, NB4: fixed waits (600 ms to the cover, 200 ms to
+    // the clone's going) failed a slow machine for nothing, and a late enough
+    // tap would pass without the fix: the clone goes by itself once it has
+    // waited ROOM_WAIT_MS (1500) for a background that never comes. So: the
+    // cover is waited for, the tap has to land early in that wait, and the
+    // clone has to be gone well before it could have gone by itself.
+    const covered = await page
+      .waitForFunction(
+        () => {
+          const clone = document.querySelector('[data-testid="alley-morph"]')
+          if (clone?.dataset.phase !== 'covered') return false
+          window.__mpCoveredAt ??= performance.now()
+          return true
+        },
+        undefined,
+        // Polled on a timer, not on frames: a starved frame loop is what
+        // made the fixed waits thin in the first place.
+        { timeout: 3000, polling: 20 },
+      )
+      .then(() => true)
+      .catch(() => false)
+    const before = await page.evaluate(() => ({
       clone:
         document.querySelector('[data-testid="alley-morph"]')?.dataset.phase ??
         null,
-      alley: window.mpAlley?.().phase ?? null,
+      sinceCover: performance.now() - (window.__mpCoveredAt ?? Infinity),
+      tapAt: performance.now(),
     }))
     await page.locator('[data-rail-item="progress"]').click()
-    await page.waitForTimeout(200)
+    const goneAt = await page
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="alley-morph"]') === null
+            ? performance.now()
+            : false,
+        undefined,
+        { timeout: PROGRESS_GONE_MS, polling: 20 },
+      )
+      .then((handle) => handle.jsonValue())
+      .catch(() => null)
     const progressAfter = await page.evaluate(() => ({
       hash: window.location.hash,
       clone: document.querySelector('[data-testid="alley-morph"]') !== null,
     }))
     await page.evaluate(() => {
       window.__mpUnmark.disconnect()
+      delete window.__mpCoveredAt
     })
+    const goneMs = goneAt === null ? null : Math.round(goneAt - before.tapAt)
     if (
-      coveredAt.clone !== 'covered' ||
+      !covered ||
+      before.clone !== 'covered' ||
+      before.sinceCover > PROGRESS_TAP_WITHIN_MS ||
+      goneMs === null ||
       !progressAfter.hash.includes('progress') ||
       progressAfter.clone
     ) {
       throw new Error(
-        `Progress after the cover: ${JSON.stringify({ coveredAt, ...progressAfter })}`,
+        `Progress after the cover: ${JSON.stringify({ covered, before, goneMs, ...progressAfter })}`,
       )
     }
     await page.locator('[data-rail-item="rooms"]').click()
     await waitPhase(page, 'rest', null, 'Progress after the cover: Rooms again')
     steps.push(
-      `alley Enter, room not drawn, rail Progress at +600 ms (clone ${coveredAt.clone}): on ${progressAfter.hash}, no clone 200 ms later`,
+      `alley Enter, room not drawn, rail Progress ${Math.round(before.sinceCover)} ms into the covered wait: on ${progressAfter.hash}, the clone gone ${goneMs} ms after the tap (it would wait out 1500 ms by itself)`,
     )
 
     // ── Reduced motion ────────────────────────────────────────
