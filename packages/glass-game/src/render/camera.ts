@@ -8,8 +8,8 @@ import type { GameSnapshot, LevelDefinition, MovementReferenceKind, } from '../c
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
 import { createCameraHeadingIntent } from './camera-heading-intent'
 import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
-import type {AdventureCameraOptions, ChallengeCameraMetrics} from './camera-policy';
-import { addFiniteOffset,  createFallbackChallengeSubjects, ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, frameUnion, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_PITCHES, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw  } from './camera-policy'
+import type { AdventureCameraOptions, ChallengeCameraMetrics, } from './camera-policy'
+import { addFiniteOffset, createFallbackChallengeSubjects, ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, frameUnion, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_PITCHES, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw, } from './camera-policy'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
