@@ -65,9 +65,25 @@ vi.mock('@/games/glass3d/render/ChamberStage', () => ({
 }))
 vi.mock('@/games/glass3d/render/LineStage', () => ({ LineStage: () => null }))
 vi.mock('@/games/glass/JourneyPrototype', () => ({
-  JourneyPrototype: () => null,
+  JourneyPrototype: () => <div data-testid="legacy-journey" />,
 }))
 vi.mock('./TapTuner', () => ({ TapTuner: () => null }))
+vi.mock('@/games/adventure/AdventureScreen', () => ({
+  AdventureScreen: (props: {
+    campaign?: boolean
+    level?: { id: string }
+    onExit(): void
+  }) => (
+    <button
+      data-testid="adventure-host"
+      data-level={props.level?.id}
+      data-campaign={String(props.campaign === true)}
+      onClick={() => props.onExit()}
+    >
+      Leave adventure
+    </button>
+  ),
+}))
 
 import { GamesScreen } from './GamesScreen'
 
@@ -103,5 +119,37 @@ describe('the games list warming the detector (P7)', () => {
     // The Hallway tapped now adopts a warm detector, not a cold one.
     expect(detector.spare).not.toBeNull()
     expect(detector.spawned).toBe(2)
+  })
+})
+
+describe('owner-build adventure entries', () => {
+  it('opens the bounded Promenade directly and returns to the list', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Crystal Promenade/u }))
+    const host = screen.getByTestId('adventure-host')
+    expect(host).toHaveAttribute(
+      'data-level',
+      'cloudway-crystal-promenade-first-slice',
+    )
+    expect(host).toHaveAttribute('data-campaign', 'false')
+    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
+    fireEvent.click(host)
+    expect(
+      screen.getByRole('button', { name: /Crystal Promenade/u }),
+    ).toBeVisible()
+    expect(screen.queryByTestId('adventure-host')).not.toBeInTheDocument()
+  })
+
+  it('keeps Glassworks opening the museum campaign', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Glassworks/u }))
+    expect(screen.getByTestId('adventure-host')).toHaveAttribute(
+      'data-campaign',
+      'true',
+    )
+    expect(screen.getByTestId('adventure-host')).not.toHaveAttribute(
+      'data-level',
+    )
+    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
   })
 })

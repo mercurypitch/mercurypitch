@@ -364,3 +364,46 @@ test('a zero-break finale restore explains the locked portrait and blocks touch 
   expect(z).toBeLessThan(30.75)
   await expect(guidance).toHaveAttribute('data-guidance-kind', 'locked')
 })
+
+test('B-side list opens the Promenade without a developer URL and returns @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+  })
+  await page.goto('/?devSeed')
+  await page.getByRole('button', { name: /B-side games/u }).tap()
+  const entry = page.getByRole('button', { name: /Crystal Promenade/u })
+  await expect(entry).toBeVisible()
+  const bounds = await entry.boundingBox()
+  expect(bounds).not.toBeNull()
+  expect(bounds!.x).toBeGreaterThanOrEqual(0)
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
+  await entry.tap()
+  const game = page.getByTestId('glass-adventure')
+  await expect(game).toHaveAttribute(
+    'data-level-id',
+    'cloudway-crystal-promenade-first-slice',
+  )
+  await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 90_000 })
+  await expect(page.locator('.games-stage canvas')).toHaveCount(1)
+  const leave = page.getByRole('button', { name: 'Leave museum', exact: true })
+  await expect(leave).toBeVisible()
+  const leaveBounds = await leave.boundingBox()
+  expect(leaveBounds).not.toBeNull()
+  const tapPoint = {
+    x: leaveBounds!.x + leaveBounds!.width / 2,
+    y: leaveBounds!.y + leaveBounds!.height / 2,
+  }
+  expect(
+    await leave.evaluate(
+      (element, point) =>
+        element.contains(document.elementFromPoint(point.x, point.y)),
+      tapPoint,
+    ),
+  ).toBe(true)
+  await page.touchscreen.tap(tapPoint.x, tapPoint.y)
+  await expect(entry).toBeVisible()
+  await expect(game).toHaveCount(0)
+})
