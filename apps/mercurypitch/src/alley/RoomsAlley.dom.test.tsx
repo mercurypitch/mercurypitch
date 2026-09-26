@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 import { TAB_PROGRESS, TAB_SINGING } from '@/features/tabs/constants'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
@@ -243,6 +243,30 @@ describe('an open called off without Back or a rail tab', () => {
     expect(store.roomArrivalHeld()).toBe(false)
     await vi.advanceTimersByTimeAsync(2000)
     expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+
+  it('stops for More opened from the keyboard, which sends no press', async () => {
+    // PR 859 final review, NB7: Enter on the rail's More is a click with no
+    // pointerdown before it, so nothing called the open off. At the cover
+    // goToTab closed More again and landed in the room.
+    const { el, store, nav, shell } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    // What the rail's onPick does for More, and all a keyboard sends it.
+    shell.openMore()
+    // The shell's navigation is mocked, and a mocked module outlives the
+    // reset: left open, More would answer the next case's Back.
+    onTestFinished(() => shell.closeMore())
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(store.roomArrivalHeld()).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(nav.goToTab).not.toHaveBeenCalled()
+    expect(shell.moreOpen()).toBe(true)
   })
 
   it('ignores a press inside the alley while it grows', async () => {

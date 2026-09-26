@@ -299,6 +299,14 @@ export const RoomsAlley: Component = () => {
     on(shellCovered, (covered) => {
       if (!covered) return
       const phase = untrack(alley).phase
+      // And an open still growing is called off, as a press outside the
+      // alley calls it off: More from the keyboard sends no press, and at
+      // the cover goToTab would close it again and land in the room (PR 859
+      // final review, NB7).
+      if (phase === 'opening') {
+        cancelOpen()
+        return
+      }
       if (phase !== 'selected' && phase !== 'alive') return
       dispatch({ type: 'leave' })
       void quiet(reduced() ? REDUCED_MS : CLEAR_MS)
