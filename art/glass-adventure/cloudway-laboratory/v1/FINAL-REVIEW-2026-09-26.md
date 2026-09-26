@@ -14,7 +14,9 @@ This pass responds to the owner's camera, platform spacing and floating-museum l
 
 Final local shared-game verification after the main rebase and camera extraction passed **121 files / 869 tests**. V8 coverage of exercised source: **92.30% lines, 90.57% statements, 83.60% branches and 91.58% functions**. This is not a whole-application 100% claim. `pnpm pr:prepare`, the shared package check and Beside Cue typecheck passed. Remote checks on PR #863 remain the authoritative full gate before its authorized merge.
 
-- Real browser interaction: camera 5/5, controls 9/9 and explicit phone voice-blur 1/1. Controls include actual mouse orbit in the enlarged touch area and simultaneous movement, look and jump.
+- Real browser interaction: camera 5/5, controls 9/9, explicit phone voice-blur 1/1 and the complete mobile flow 7/7 (short/narrow portrait, landscape, tablet, desktop, locked exit and native Preview entry). Controls include actual mouse orbit in the enlarged touch area and simultaneous movement, look and jump.
+- The mobile flow now verifies a canvas-backed touch origin, active-pad acquisition, actual travel in both directions and visible-control separation. It caught a real 2 px Sing/thumb-pad overlap on narrow phones; lifting the offer resolves it without relaxing the overlap assertion. Independent review also caught the related caption clearance under an iPhone bottom safe area. Moving the stack with the offer leaves 9.52 px at zero inset and 12.52 px at a 34 px inset, measured against the full offer wrapper on 320 × 740 and 390 × 844 viewports with the browser safe-area override.
+- CI includes all 23 automatic adventure spec files, including the previously omitted cloudway-layouts and message-stack files. Two additional actual-render proof specs remain explicitly opt-in.
 - Pure helper coverage: floating-stick, route-camera and camera-heading-intent each reached 100% lines/statements/branches/functions. Museum resources reached 100% lines/statements/functions and 96.66% branches across 15 cases, including the real Three parser. The bundled-audio response helper added in PR861 reached 100% in all four metrics with six cases.
 - Independent review found and resolved held-stick turn intent surviving pause/encounter. It also verified asset ownership/disposal, repeated-platform instancing, native inventories, Preview entry and camera/manual-input semantics. PR861 review additionally fixed iOS status-0 bundled Encore audio.
 - After the main rebase, all 180 required local runtime game files were nonempty real deliveries; no unresolved LFS pointer remained in the required inventory.
@@ -28,6 +30,8 @@ Heavy evidence lives under the Proton-linked `source-assets/proofs/runtime/` dir
 - `2026-09-26-final-review/mercurypitch-museum-5301-20260926.png`: actual loaded Glassworks room.
 - `2026-09-26-final-review/after-normal-arrival-scroll.png`: actual 1600 × 900 Promenade normal-play view, SHA-256 `8c7d81ccd3e8e58625069ebe4e7273469ac7ac5445e26b8ce870583b27138349`.
 - `2026-09-26-final-review/floating-stick-active-overlay.png`: phone control-layout proof only; its flat background is not accepted as scene-art proof. SHA-256 `034622a527cb673170b2d020d0ac782a642be1dcf23c9fe15b2b3b5af08e7c5d`.
+- `crystal-promenade-first-slice/2026-09-26-final-review/after-elevated-scroll-gaps.png`: actual 1280 × 960 view of both clear scroll gaps, SHA-256 `ba1b85a770d615d0963f6d4d735e4e8d2b2e1df20c1e8936be6d7d4ec750e2b3`.
+- `crystal-promenade-first-slice/2026-09-26-final-review/after-elevated-crystal-duet.png`: actual 1280 × 960 view of the separated timed landings and final court, SHA-256 `6c984dd7a299a0fdac676e34d36d60065ff9a81feb65c3c1f08b03c13b409bd5`. Existing orbit/zoom inputs and version-2 checkpoint restores produced these views; they are not a recorded full playthrough.
 - Historical before and fresh after images are separately labelled in `crystal-promenade-first-slice/2026-09-26-final-review/`.
 
 ## Device acceptance

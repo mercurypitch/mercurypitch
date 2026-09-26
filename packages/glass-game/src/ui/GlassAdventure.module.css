@@ -715,14 +715,14 @@
     gap: 6px;
   }
   .messageStackWithOffer {
-    bottom: max(272px, calc(env(safe-area-inset-bottom) + 260px));
+    bottom: max(280px, calc(env(safe-area-inset-bottom) + 276px));
   }
   .narrationCaption {
     padding: 8px 12px;
     font-size: 12px;
   }
   .encounterOffer {
-    bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));
+    bottom: max(188px, calc(env(safe-area-inset-bottom) + 181px));
   }
   .progressGuidance {
     width: 100%;

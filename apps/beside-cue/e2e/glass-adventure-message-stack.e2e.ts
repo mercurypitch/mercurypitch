@@ -14,9 +14,28 @@ test.use({
 test.setTimeout(180_000)
 
 const VIEWPORTS = [
-  { label: 'phone', width: 390, height: 844, touch: true },
-  { label: 'tablet', width: 768, height: 1_024, touch: true },
-  { label: 'desktop', width: 1_180, height: 800, touch: false },
+  { label: 'phone', width: 390, height: 844, touch: true, safeAreaBottom: 0 },
+  {
+    label: 'phone-safe-area-34',
+    width: 390,
+    height: 844,
+    touch: true,
+    safeAreaBottom: 34,
+  },
+  {
+    label: 'tablet',
+    width: 768,
+    height: 1_024,
+    touch: true,
+    safeAreaBottom: 0,
+  },
+  {
+    label: 'desktop',
+    width: 1_180,
+    height: 800,
+    touch: false,
+    safeAreaBottom: 0,
+  },
 ] as const
 
 const tutorialPreference = `beside-cue:glass-adventure:tutorial:${CLOUDWAY_CURRENT_TRIAL.id}:cloudway-first-crossing:v2`
@@ -88,11 +107,26 @@ async function messageLayout(page: Page) {
         top: box.top,
       }
     })
+    const sing = document.querySelector<HTMLElement>(
+      '[data-testid="glass-sing-action"]',
+    )
+    const encounterOffer = sing?.parentElement ?? null
+    if (
+      sing !== null &&
+      (encounterOffer === null ||
+        encounterOffer.children.length !== 2 ||
+        encounterOffer.firstElementChild?.tagName !== 'SPAN' ||
+        encounterOffer.lastElementChild !== sing)
+    )
+      throw new Error(
+        'The Sing action is not inside its complete offer wrapper.',
+      )
+    const encounterOfferBox = encounterOffer?.getBoundingClientRect()
     const controls = [
       {
         name: 'move',
         element: document.querySelector<HTMLElement>(
-          '[role="group"][aria-label="Move Merc"]',
+          '[data-testid="floating-stick-base"][data-active="true"]',
         ),
       },
       {
@@ -102,10 +136,8 @@ async function messageLayout(page: Page) {
         ),
       },
       {
-        name: 'sing',
-        element: document.querySelector<HTMLElement>(
-          '[data-testid="glass-sing-action"]',
-        ),
+        name: 'encounter-offer',
+        element: encounterOffer,
       },
     ]
       .filter(
@@ -126,6 +158,13 @@ async function messageLayout(page: Page) {
     return {
       count: rows.length,
       display: style.display,
+      encounterOffer:
+        encounterOfferBox === undefined
+          ? null
+          : {
+              bottomClearance: window.innerHeight - encounterOfferBox.bottom,
+              verticalGap: encounterOfferBox.top - stackBox.bottom,
+            },
       insideViewport:
         stackBox.left >= 0 &&
         stackBox.right <= window.innerWidth &&
@@ -140,6 +179,7 @@ async function messageLayout(page: Page) {
       overlappingControls: controls
         .filter((control) => overlaps(stackBox, control.box))
         .map((control) => control.name),
+      stackBottomClearance: window.innerHeight - stackBox.bottom,
     }
   })
 }
@@ -150,6 +190,7 @@ test('stacks two current messages and clears them for the voice challenge @smoke
   const proofDirectory = process.env.GLASS_MESSAGE_STACK_PROOF_DIR
   if (proofDirectory !== undefined)
     await mkdir(resolve(proofDirectory), { recursive: true })
+  let phoneClearance: { offer: number; stack: number } | null = null
 
   for (const viewport of VIEWPORTS) {
     const context = await browser.newContext({
@@ -158,7 +199,16 @@ test('stacks two current messages and clears them for the voice challenge @smoke
       viewport: { width: viewport.width, height: viewport.height },
     })
     const page = await context.newPage()
+    const cdp = await context.newCDPSession(page)
     try {
+      await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+        insets: {
+          top: 0,
+          right: 0,
+          bottom: viewport.safeAreaBottom,
+          left: 0,
+        },
+      })
       await openVisit(page)
 
       const sing = page.getByRole('button', { name: /Sing to the glass/ })
@@ -176,13 +226,33 @@ test('stacks two current messages and clears them for the voice challenge @smoke
         await page.screenshot({
           path: resolve(proofDirectory, `nearby-${viewport.label}.png`),
         })
-      expect(await messageLayout(page)).toMatchObject({
+      const nearbyLayout = await messageLayout(page)
+      expect(nearbyLayout).toMatchObject({
         count: 1,
         display: 'grid',
         insideViewport: true,
         overlappingControls: [],
         rowOverlap: false,
       })
+      expect(nearbyLayout.encounterOffer).not.toBeNull()
+      const encounterOfferLayout = nearbyLayout.encounterOffer!
+      if (viewport.label === 'phone' || viewport.label === 'phone-safe-area-34')
+        expect(encounterOfferLayout.verticalGap).toBeGreaterThanOrEqual(8)
+      else expect(encounterOfferLayout.verticalGap).toBeGreaterThanOrEqual(0)
+      if (viewport.label === 'phone')
+        phoneClearance = {
+          offer: encounterOfferLayout.bottomClearance,
+          stack: nearbyLayout.stackBottomClearance,
+        }
+      if (viewport.safeAreaBottom > 0) {
+        expect(phoneClearance).not.toBeNull()
+        expect(
+          encounterOfferLayout.bottomClearance - phoneClearance!.offer,
+        ).toBeGreaterThanOrEqual(viewport.safeAreaBottom - 8)
+        expect(
+          nearbyLayout.stackBottomClearance - phoneClearance!.stack,
+        ).toBeGreaterThanOrEqual(viewport.safeAreaBottom - 8)
+      }
 
       await sing.click()
       await expect(
@@ -216,6 +286,7 @@ test('stacks two current messages and clears them for the voice challenge @smoke
         })
     } finally {
       await page.keyboard.up('KeyS').catch(() => undefined)
+      await cdp.detach().catch(() => undefined)
       await context.close()
     }
   }

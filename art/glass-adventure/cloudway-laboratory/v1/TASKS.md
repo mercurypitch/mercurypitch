@@ -16,7 +16,8 @@ status.
 - [x] Floating touch control and calmer gallery / authored route camera integration, regression checks: camera 5/5, controls 9/9 and phone voice-blur 1/1 browser cases; three pure helpers each reach 100% scoped coverage.
 - [x] Clear timed gaps around scroll and crackle islands; safe voice courts, measured contact and 30/60 Hz traversal. Scroll gaps remain 0.70 m on both sides when fully extended; other challenge gaps are 0.50–0.55 m. Twenty-four focused cases pass.
 - [x] Final focused coverage and independent code review: all 121 shared-game files / 869 tests pass; actual coverage and reviewed scenarios are recorded in [FINAL-REVIEW-2026-09-26.md](FINAL-REVIEW-2026-09-26.md).
-- [ ] Final actual loaded-scene overview, affected remote CI and PR863 merge; PR861 is already merged.
+- [x] Final actual loaded-scene overview: independently inspected both extended-scroll gaps and separated crystal landings; exact image hashes and capture method recorded in the final review.
+- [ ] Final changed-head remote CI and authorized squash merge of PR863; PR861 is already merged. Private handoff tracks the live merge/build status.
 
 The earlier first-crossing handoff below predates the owner's spacing feedback.
 It is retained as historical evidence and is superseded by this final pass.
@@ -99,7 +100,7 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 
 ## Remote checkpoint
 
-Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains scroll simulation, reference catalogue, production recipes and receipt mirrors. The editor was moved into private dotfiles at the owner's request. PR #861 merged on 26 September as main commit `6b2d3783`; the owner authorized final review and merge of both PRs after the camera, spacing and gallery-load fixes. PR #863 has been rebased onto that merged main. Final local shared-game coverage passes 121 files / 869 tests; remote checks are the final CI gate. The separate laboratory route loads its four accepted deliveries. Existing campaign art remains unchanged; the remaining sixteen sources are not exposed as finished runtime artwork.
+PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains scroll simulation, reference catalogue, production recipes and receipt mirrors. The editor was moved into private dotfiles at the owner's request. PR #861 merged on 26 September as main commit `6b2d3783`; the owner authorized final review and merge of both PRs after the camera, spacing and gallery-load fixes. PR #863 has been rebased onto that merged main. Final local shared-game coverage passes 121 files / 869 tests; remote checks are the final CI gate. The separate laboratory route loads its four accepted deliveries. Existing campaign art remains unchanged; the remaining sixteen sources are not exposed as finished runtime artwork.
 
 ## Source-quality checkpoint
 

@@ -63,15 +63,30 @@ async function beginStick(
     .getByRole('group', { name: 'Move Merc' })
     .boundingBox()
   expect(stick).not.toBeNull()
+  // Use the exposed lower part of the broad activation region. Its centre can
+  // legitimately sit behind guidance or encounter UI, which must keep touch.
   const center = {
-    x: stick!.x + stick!.width / 2,
-    y: stick!.y + stick!.height / 2,
+    x: stick!.x + Math.min(60, stick!.width * 0.36),
+    y: stick!.y + stick!.height - 64,
   }
+  expect(
+    await page.evaluate(({ x, y }) => {
+      const surface = document.querySelector(
+        '[aria-label="Glass museum; drag to look around"]',
+      )
+      const target = document.elementFromPoint(x, y)
+      return target !== null && surface?.contains(target) === true
+    }, center),
+  ).toBe(true)
   const cdp = await context.newCDPSession(page)
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
     touchPoints: [{ id: 1, ...center }],
   })
+  await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+    'data-active',
+    'true',
+  )
   return { cdp, center }
 }
 
@@ -86,11 +101,14 @@ async function moveStick(
   })
 }
 
-async function releaseStick(cdp: CDPSession): Promise<void> {
+async function releaseStick(page: Page, cdp: CDPSession): Promise<void> {
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
   })
+  const base = page.getByTestId('floating-stick-base')
+  await expect(base).toHaveAttribute('data-active', 'false')
+  await expect(base).toHaveCSS('opacity', '0')
 }
 
 interface TouchTraceSample {
@@ -154,23 +172,30 @@ async function driveFreshTouchUntilAction(
   context: BrowserContext,
   target: { x: number; z: number },
   actionVisible: boolean,
-): Promise<TouchTraceSample[]> {
+): Promise<{
+  cdp: CDPSession
+  trace: TouchTraceSample[]
+}> {
   // Ended contacts reset the movement reference to the visible camera.
   await page.clock.runFor(32)
   const { cdp, center } = await beginStick(page, context)
   const movementYaw = (await touchSample(page)).cameraYaw
   try {
-    return await driveStickUntilAction(
-      page,
+    return {
       cdp,
-      center,
-      target,
-      actionVisible,
-      movementYaw,
-    )
-  } finally {
-    await releaseStick(cdp)
+      trace: await driveStickUntilAction(
+        page,
+        cdp,
+        center,
+        target,
+        actionVisible,
+        movementYaw,
+      ),
+    }
+  } catch (error) {
+    await releaseStick(page, cdp)
     await page.clock.runFor(32)
+    throw error
   }
 }
 
@@ -191,7 +216,7 @@ async function driveFixedTouchUntilAction(
       if (sample.actionVisible === actionVisible) return trace
     }
   } finally {
-    await releaseStick(cdp)
+    await releaseStick(page, cdp)
     await page.clock.runFor(32)
   }
   throw new Error(
@@ -221,14 +246,21 @@ for (const viewport of VIEWPORTS) {
       'Follow its glowing circle, then tap Sing.',
     )
 
-    const returnTrace = await driveFreshTouchUntilAction(
+    const returnTouch = await driveFreshTouchUntilAction(
       page,
       context,
       { x: 0.3, z: 1.75 },
       true,
     )
     await expect(sing).toBeVisible()
-    const touchTrace = [...awayTrace, ...returnTrace]
+    for (const trace of [awayTrace, returnTouch.trace]) {
+      const first = trace[0]!
+      const last = trace.at(-1)!
+      expect(Math.hypot(last.x - first.x, last.z - first.z)).toBeGreaterThan(
+        0.08,
+      )
+    }
+    const touchTrace = [...awayTrace, ...returnTouch.trace]
     expect(touchTrace.every((sample) => sample.y >= -0.01)).toBe(true)
     expect(
       touchTrace.every(
@@ -245,14 +277,14 @@ for (const viewport of VIEWPORTS) {
       const sing = document.querySelector<HTMLButtonElement>(
         '[data-testid="glass-sing-action"]',
       )
-      const stick = document.querySelector<HTMLElement>(
-        '[role="group"][aria-label="Move Merc"]',
+      const activeStick = document.querySelector<HTMLElement>(
+        '[data-testid="floating-stick-base"][data-active="true"]',
       )
       const jump = document.querySelector<HTMLButtonElement>(
         'button[aria-label="Jump"]',
       )
       const action = sing?.getBoundingClientRect()
-      const stickBox = stick?.getBoundingClientRect()
+      const activeStickBox = activeStick?.getBoundingClientRect()
       const jumpBox = jump?.getBoundingClientRect()
       const counter = document.querySelector<HTMLElement>(
         '[aria-label$="main exhibits opened"] > span:first-child',
@@ -289,7 +321,16 @@ for (const viewport of VIEWPORTS) {
                   Math.round(rect.top),
                 ),
               ).size,
-        overlapsStick: overlaps(action, stickBox),
+        activeStick:
+          activeStickBox === undefined
+            ? null
+            : {
+                left: activeStickBox.left,
+                right: activeStickBox.right,
+                top: activeStickBox.top,
+                bottom: activeStickBox.bottom,
+              },
+        overlapsActiveStick: overlaps(action, activeStickBox),
         overlapsJump: overlaps(action, jumpBox),
       }
     })
@@ -302,8 +343,15 @@ for (const viewport of VIEWPORTS) {
     expect(geometry.overflow).toBeLessThanOrEqual(0)
     expect(geometry.visibleKeyboardHints).toBe(0)
     expect(geometry.counterLines).toBe(1)
-    expect(geometry.overlapsStick).toBe(false)
+    expect(geometry.activeStick).not.toBeNull()
+    expect(
+      geometry.overlapsActiveStick,
+      `Sing and active stick geometry: ${JSON.stringify(geometry)}`,
+    ).toBe(false)
     expect(geometry.overlapsJump).toBe(false)
+
+    await releaseStick(page, returnTouch.cdp)
+    await page.clock.runFor(32)
 
     if (process.env.GLASS_MOBILE_FLOW_PROOF === '1')
       await page.screenshot({
@@ -356,7 +404,7 @@ test('a zero-break finale restore explains the locked portrait and blocks touch 
     await moveStick(cdp, center, { x: 0, y: -44 })
     await page.clock.runFor(1_400)
   } finally {
-    await releaseStick(cdp)
+    await releaseStick(page, cdp)
   }
   const z = Number(
     await page.getByTestId('glass-adventure').getAttribute('data-player-z'),
