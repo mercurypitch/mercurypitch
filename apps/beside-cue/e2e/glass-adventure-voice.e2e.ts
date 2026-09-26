@@ -1388,9 +1388,7 @@ test.describe('phone blur input', () => {
       y: box!.y + box!.height - 64,
     }
     const activationHit = await page.evaluate(({ x, y }) => {
-      const surface = document.querySelector(
-        '[aria-label="Glass museum; drag to look around"]',
-      )
+      const surface = document.querySelector('[aria-label="Move Merc"]')
       const target = document.elementFromPoint(x, y)
       return {
         target: target?.tagName ?? null,

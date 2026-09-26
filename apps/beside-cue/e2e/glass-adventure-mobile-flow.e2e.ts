@@ -63,17 +63,15 @@ async function beginStick(
     .getByRole('group', { name: 'Move Merc' })
     .boundingBox()
   expect(stick).not.toBeNull()
-  // Use the exposed lower part of the broad activation region. Its centre can
-  // legitimately sit behind guidance or encounter UI, which must keep touch.
+  // Begin inside the bounded visible pad; nearby guidance and the encounter
+  // action retain the rest of the screen.
   const center = {
     x: stick!.x + Math.min(60, stick!.width * 0.36),
     y: stick!.y + stick!.height - 64,
   }
   expect(
     await page.evaluate(({ x, y }) => {
-      const surface = document.querySelector(
-        '[aria-label="Glass museum; drag to look around"]',
-      )
+      const surface = document.querySelector('[aria-label="Move Merc"]')
       const target = document.elementFromPoint(x, y)
       return target !== null && surface?.contains(target) === true
     }, center),
@@ -108,7 +106,7 @@ async function releaseStick(page: Page, cdp: CDPSession): Promise<void> {
   })
   const base = page.getByTestId('floating-stick-base')
   await expect(base).toHaveAttribute('data-active', 'false')
-  await expect(base).toHaveCSS('opacity', '0')
+  await expect(base).toHaveCSS('opacity', '0.62')
 }
 
 interface TouchTraceSample {
@@ -277,14 +275,14 @@ for (const viewport of VIEWPORTS) {
       const sing = document.querySelector<HTMLButtonElement>(
         '[data-testid="glass-sing-action"]',
       )
-      const activeStick = document.querySelector<HTMLElement>(
-        '[data-testid="floating-stick-base"][data-active="true"]',
+      const movementPad = document.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Move Merc"]',
       )
       const jump = document.querySelector<HTMLButtonElement>(
         'button[aria-label="Jump"]',
       )
       const action = sing?.getBoundingClientRect()
-      const activeStickBox = activeStick?.getBoundingClientRect()
+      const movementPadBox = movementPad?.getBoundingClientRect()
       const jumpBox = jump?.getBoundingClientRect()
       const counter = document.querySelector<HTMLElement>(
         '[aria-label$="main exhibits opened"] > span:first-child',
@@ -321,16 +319,16 @@ for (const viewport of VIEWPORTS) {
                   Math.round(rect.top),
                 ),
               ).size,
-        activeStick:
-          activeStickBox === undefined
+        movementPad:
+          movementPadBox === undefined
             ? null
             : {
-                left: activeStickBox.left,
-                right: activeStickBox.right,
-                top: activeStickBox.top,
-                bottom: activeStickBox.bottom,
+                left: movementPadBox.left,
+                right: movementPadBox.right,
+                top: movementPadBox.top,
+                bottom: movementPadBox.bottom,
               },
-        overlapsActiveStick: overlaps(action, activeStickBox),
+        overlapsMovementPad: overlaps(action, movementPadBox),
         overlapsJump: overlaps(action, jumpBox),
       }
     })
@@ -343,10 +341,10 @@ for (const viewport of VIEWPORTS) {
     expect(geometry.overflow).toBeLessThanOrEqual(0)
     expect(geometry.visibleKeyboardHints).toBe(0)
     expect(geometry.counterLines).toBe(1)
-    expect(geometry.activeStick).not.toBeNull()
+    expect(geometry.movementPad).not.toBeNull()
     expect(
-      geometry.overlapsActiveStick,
-      `Sing and active stick geometry: ${JSON.stringify(geometry)}`,
+      geometry.overlapsMovementPad,
+      `Sing and movement-pad geometry: ${JSON.stringify(geometry)}`,
     ).toBe(false)
     expect(geometry.overlapsJump).toBe(false)
 

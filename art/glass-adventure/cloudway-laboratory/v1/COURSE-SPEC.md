@@ -19,11 +19,14 @@ The 20 designs are an asset library, not a requirement to make every view busy. 
 
 ## Timing and collision contract
 
-- The scroll deck has a fixed center and configured local extension axis. Separate gold roller and deck nodes allow meaningful motion without stretching the engraved gold. Its walkable extent follows the visible glass on every simulation update. Stepping beyond the shrinking edge causes a normal fall. The pause state stops its clock.
+- The scroll deck has a fixed center and configured local extension axis. Separate gold roller and deck nodes allow meaningful motion without stretching the engraved gold. The accepted donor's glass support shell alone stretches to the authored extension length; its gold stars, frost etching and rollers retain their donor proportions. Its walkable extent follows the visible glass on every simulation update. Stepping beyond the moving rollers causes a normal fall. The pause state stops its clock.
+- The continuous gold barrel at each live glass edge is physical. Each barrel uses an ordinary thin solid contact band with a +0.05 metre top, matching the measured 0.0494 metre crown, and a 0.05 metre depth down to the glass landing datum. At the playable quarter turn the bands span X -1.05 to +1.05 metres. Their travel-axis lengths are 0.189 metres on the negative side and 0.1885 metres on the positive side. Decorative descending spikes beyond those bands remain non-supporting.
+- The barrel render mesh begins at the certified glass-edge anchor rather than projecting over the deck: the negative inner boundary is -0.378751248 versus anchor -0.378747028 metres, and the positive boundary is +0.378744235 versus anchor +0.378747028 metres. The glass shell overlaps that seam by about 0.006 metres. No inward padding or invisible gap closure is authored. A bounded 0.08 metre connected-floor step lets Merc cross the measured 0.05 metre crown rise; it does not apply across a real gap or to a taller ledge.
+- The deck and both roller bands share the public `scroll-deck` identity for checkpoints, surfaces and snapshots. Each roller keeps a private runtime solid identity so its signed edge displacement carries a rider through retraction and extension. Art anchors, physical bands and camera proxy bounds consume the same authoritative length ratio.
 - Begin with 4 seconds extended, 3 retracted, and 1.5 seconds for each transition, minimum extent 25 percent. These are editable trial values, not difficulty grades. Validate the entire crossing at the slowest supported movement preset before accepting them.
 - The crackle 2/4 seconds measure **first contact to loss of support**, including the warning. Visible intact-to-shard swap and collider removal happen together. Authored checkpoint recovery restores their initial state deterministically.
 - Use simple independent support/obstacle geometry. Dense ornament is never a movement collider or per-frame triangle-query requirement. Three stair treads need three contact regions. Cross-shaped landings must not acquire invisible support in the notches.
-- Use actual visible deck bounds, excluding decorative fins and roller housings. Landings beyond moving platforms are static. Voice targets, exits, spawns and checkpoints always have static support and enough room for Merc's complete footprint.
+- Use actual visible support bounds. The continuous roller barrels are support; decorative fins, descending spikes and non-contact housings are not. Landings beyond moving platforms are static. Voice targets, exits, spawns and checkpoints always have static support and enough room for Merc's complete footprint.
 - Measure jump range, diagonal control, air correction and moving-platform velocity using the current engine. First trials use a generous margin below maximum jump range; geometry is not accepted based on the top-down editor alone.
 
 ## Music and progression
@@ -47,7 +50,9 @@ All full images, dense models, texture masters, Blender projects, turntables and
 
 The 20 image references and 20 dense Meshy originals are complete. Packed Blender source preparation and semantic material/part authoring remain in progress. Four source-preserving runtime assets have passed the bounded first-slice contract: pearl marble long, gilt scroll bridge, rose quartz crackle fast and amethyst crackle slow. Acceptance applies only to those frozen GLBs and their declared contact surfaces; it does not imply that the remaining full-course library is playable.
 
-## Editable study review
+## Historical editable study review
+
+This section records the earlier 27-piece full-course drawing. Its provisional scroll dimensions and non-physical decorative rollers are historical inputs, not the current playable first-slice contract below.
 
 The 27-piece study passes the studio schema and top-view checks with zero warnings. One informational separation describes the raft crossing: the authored moving platform spans it during its travel. This was a top-view check; the subsequent simulation result is recorded below. A desktop import/fit screenshot is archived in `source-assets/proofs/course-design-2026-09-25/crystal-promenade-top-view.png`.
 
@@ -58,7 +63,7 @@ The 27-piece study passes the studio schema and top-view checks with zero warnin
 - The raft's static drawing is its near position; it travels 1.8 metres toward the terrace dock. The future runtime adapter needs explicit endpoint dwell rather than treating the editor's total duration as an unspecified easing curve.
 - The final exit requires all three named voice targets. The schema records target order but does not implement exit or composite-asset behavior itself.
 
-## Simulation checkpoint — 25 September 2026
+## Historical simulation checkpoint — 25 September 2026
 
 `packages/glass-game/src/content/cloudway-laboratory.ts` holds the unregistered mechanical study. Its scoped traversal test completes the bent route at both 30 and 60 updates per second with zero respawns and measured pitch input at all three safe targets. It visits frost, scroll, both timed crystal steps, raft, and all three terrace treads. The reverse journey from an explored finale to the first unbroken vase also passes at both update rates. Recovery from an explored garden preserves the checkpoint without granting unbroken targets or completion. All five focused cases pass.
 
@@ -66,11 +71,13 @@ Every authored void is explicit, including the half-metre crystal-pair gap. The 
 
 All three study encounters deliberately use a comfortable held note. The editor's configurable 0/4/7 melody remains a musical design proposal; this study does not pretend that relative melody targets or a final sung phrase are integrated. Existing playable courses and campaign progression are unchanged.
 
-## First-slice spacing checkpoint — 26 September 2026
+## First-slice contact and spacing checkpoint — 27 September 2026
 
-The playable first slice keeps the stable `cloudway-crystal-promenade-first-slice` level and layout namespace and advances `contentRevision` to 2 for the topology change. Each wait or singing court joins two unscaled pearl donors into a 3.2 × 1.44 metre rest. Those joins are confined to the four static courts; challenge islands never touch. This replaces the earlier continuous stack of shallow pearl rows while preserving the accepted 3.2 × 0.72 × 0.34 metre contact declaration on every instance.
+The playable first slice keeps the stable `cloudway-crystal-promenade-first-slice` level and layout namespace and advances `contentRevision` to 3 for the longer scroll and physical roller contacts. Each wait or singing court joins two unscaled pearl donors into a 3.2 × 1.44 metre rest. Those joins are confined to the four static courts; challenge islands never touch. This preserves the accepted 3.2 × 0.72 × 0.34 metre contact declaration on every pearl instance.
 
-The full-extension scroll contact is 2.205964088 metres wide across X and 0.757494056 metres deep along travel after its certified quarter turn. It has a 0.70 metre edge gap before and after it. At 25 percent extension its travel-axis depth is 0.189373514 metres, so the normal walking jump that lands on the full deck misses the retracted landing window. The static training gap is 0.55 metres. The scroll catch to rose, rose to amethyst and amethyst to final catch gaps are each 0.50 metres; the measured 2-second rose versus 4-second amethyst separation therefore remains the half-metre gap specified by the full study.
+The glass support is 2.205964088 metres across X and 2.205964088 metres along travel after its certified quarter turn. The adapter derives that longer travel dimension from the same frozen donor metadata and length ratio: it stretches only `ScrollDeckGeometry`, leaves the detail layers at donor scale while space permits, and moves each unscaled roller to the resulting live edge. Including the measured barrel bands, full physical support spans 2.583464088 metres along travel. At 25 percent extension the glass is 0.551491022 metres and the physical glass-plus-barrel span is 0.928991022 metres.
+
+The approach and catch are each 0.70 metres from the nearest **physical barrel edge**, not from the glass rectangle. This keeps both jumps real while making the visible gold landing honest. The static training gap is 0.55 metres. The scroll catch to rose, rose to amethyst and amethyst to final catch gaps are each 0.50 metres; the measured 2-second rose versus 4-second amethyst separation therefore remains the half-metre gap specified by the full study.
 
 | Platform centre       | X (m) |      Z (m) | Role                                     |
 | --------------------- | ----: | ---------: | ---------------------------------------- |
@@ -78,14 +85,16 @@ The full-extension scroll contact is 2.205964088 metres wide across X and 0.7574
 | Arrival               | -0.85 | -10.440000 | First voice rest                         |
 | Scroll approach entry |  0.15 |  -9.170000 | Landing row after the training jump      |
 | Scroll approach       |  0.15 |  -8.450000 | Saved timing wait                        |
-| Scroll deck           |  0.15 |  -7.011253 | Timed moving support                     |
-| Scroll catch          |  0.15 |  -5.572506 | Landing row after the second scroll jump |
-| Scroll court          |  0.15 |  -4.852506 | Second voice rest                        |
-| Rose                  | -0.25 |  -3.172506 | 2-second crackle                         |
-| Amethyst              |  0.25 |  -1.302506 | 4-second crackle                         |
-| Final catch           |  0.85 |   0.107494 | Saved landing and final voice rest       |
-| Final terrace         |  0.85 |   0.827494 | Joined exit row                          |
+| Scroll deck           |  0.15 |  -6.098018 | Timed moving support                     |
+| Scroll catch          |  0.15 |  -3.746536 | Landing row after the second scroll jump |
+| Scroll court          |  0.15 |  -3.026536 | Second voice rest                        |
+| Rose                  | -0.25 |  -1.346536 | 2-second crackle                         |
+| Amethyst              |  0.25 |   0.523464 | 4-second crackle                         |
+| Final catch           |  0.85 |   1.933464 | Saved landing and final voice rest       |
+| Final terrace         |  0.85 |   2.653464 | Joined exit row                          |
 
 `CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS` is the code-facing source for these centres, certified dimensions and edge gaps. Checkpoints, voice anchors, the exit and presentation bounds derive from the same coordinates.
 
-The focused traversal proof passes at both 30 and 60 updates per second. It requires jumps across every authored void, lands on the actual scroll support, remains grounded while the centred scroll retracts, and completes the whole route without a respawn when timing is correct. Separate regressions prove that walking cannot cross either 0.70 metre scroll gap, the normal jump fails during the retracted window, and the miss returns to `scroll-save` before the next successful full-extension attempt. The accepted-asset proof freezes all four GLB hashes and checks root identity, contact or support metadata, collider dimensions, scroll roller anchors and every rotated world-space platform footprint without scaling the art.
+The focused traversal proof passes at both 30 and 60 updates per second. It requires jumps across every authored void, lands first on the actual negative roller crown, walks across the deck and positive crown, and completes the whole route without a respawn when timing is correct. Both roller sides retain grounded public `scroll-deck` support through a complete retract/extend cycle at both rates. Separate regressions prove that walking cannot cross either 0.70 metre scroll gap, the normal jump fails during the retracted window, walking off a barrel or its cross-axis corner falls normally, a taller connected ledge and ordinary prop remain blocking, and a shallow platform across an authored gap is never auto-stepped.
+
+The accepted-asset proof freezes all four GLB hashes and checks root identity, contact metadata, collider dimensions, source-local roller render bounds, anchor adjacency and all four cardinal rotations. Runtime rendering stretches only the glass support shell to the 2.205964088 metre extension length. Dense deck detail and rollers remain undistorted, and the live render bounds move with the same length ratio as the compound collision and camera proxy.

@@ -3,23 +3,27 @@
 // ============================================================
 
 import type { Object3D } from 'three'
-import { MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3 } from 'three'
+import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import type { GameSnapshot, LevelDefinition, MovementReferenceKind, } from '../contracts'
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
 import { createCameraHeadingIntent } from './camera-heading-intent'
-import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
-import type { AdventureCameraOptions, ChallengeCameraMetrics, } from './camera-policy'
-import { addFiniteOffset, createFallbackChallengeSubjects, ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, frameUnion, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_PITCHES, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw, } from './camera-policy'
-import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
-import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
+import { measureChallengeCamera } from './camera-metrics'
+import { createCameraObstruction } from './camera-obstruction'
+import type { AdventureCameraMode, AdventureCameraOptions, ChallengeCameraMetrics, } from './camera-policy'
+import { addFiniteOffset, createFallbackChallengeSubjects, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw, } from './camera-policy'
+import type { ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
+import { createChallengeCameraDirector, planChallengeCameraShot, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
+import { createFirstPersonCamera } from './first-person-camera'
 import { createRouteCameraDirector } from './route-camera'
+import { contextualThirdPersonReach, createThirdPersonFraming, sampleThirdPersonClearance, } from './third-person-framing'
 
 export {
   CAMERA_FOLLOW_SMOOTHNESS,
   cameraRelativeMovement,
 } from './camera-policy'
 export type {
+  AdventureCameraMode,
   AdventureCameraOptions,
   ChallengeCameraMetrics,
 } from './camera-policy'
@@ -41,17 +45,17 @@ export function createAdventureCamera(
   const direction = new Vector3()
   const retainedDirection = new Vector3()
   const retainedPosition = new Vector3()
-  const hit = new Vector3()
-  const ray = new Ray()
-  const raycaster = new Raycaster()
   const challengeDirection = new Vector3()
   const challengePosition = new Vector3()
   const challengeReturnOffset = new Vector3()
-  let occluders: Object3D[] = []
   let yaw =
     options.reducedMotion === true
       ? level.spawn.facingYaw
       : (validRouteYaw(activeRouteSection) ?? level.spawn.facingYaw)
+  let cameraMode: AdventureCameraMode =
+    options.mode === 'first-person' ? 'first-person' : 'third-person'
+  const firstPerson = createFirstPersonCamera(yaw)
+  const thirdPersonFraming = createThirdPersonFraming()
   const followResponse = { angle: yaw, velocity: 0 }
   const headingIntent = createCameraHeadingIntent()
   let followSmoothnessSeconds = validFollowSmoothness(
@@ -71,8 +75,6 @@ export function createAdventureCamera(
   let orbitActive = false
   let manualOrbitOverride = false
   let obstructionLifted = false
-  let enclosureDistance: number | null = null
-  let recoveringEnclosureDistance = false
   let zoomChanged = false
   let hasRetainedPosition = false
   let firstFrame = true
@@ -84,124 +86,12 @@ export function createAdventureCamera(
   let challengePlanningPosition: Vector3 | null = null
   let challengePlayerOrigin: Vector3 | null = null
   let renderedChallengeYaw = yaw
+  let firstPersonChallengeId: string | null = null
   const challengeDirector = createChallengeCameraDirector({
     reducedMotion: options.reducedMotion === true,
   })
   const enclosure = createEnclosureFraming(level)
-  const { obstacles, useMeshOccludersAt } = createCameraPlatformOcclusion(level)
-
-  function pointBoom(atPitch: number): void {
-    direction.set(
-      Math.sin(yaw) * Math.cos(atPitch),
-      Math.sin(atPitch),
-      Math.cos(yaw) * Math.cos(atPitch),
-    )
-  }
-
-  function safeRayDistance(
-    origin: Vector3,
-    rayDirection: Vector3,
-    reach: number,
-    enabledPlatformIds: readonly string[],
-    activeSolidIds: readonly string[],
-    constrainToEnclosure: boolean,
-    useMeshOccluders = true,
-  ): number {
-    ray.set(origin, rayDirection)
-    let safeDistance = reach
-    for (const obstacle of obstacles) {
-      if (!enabledPlatformIds.includes(obstacle.id)) continue
-      if (ray.intersectBox(obstacle.box, hit))
-        safeDistance = Math.min(
-          safeDistance,
-          Math.max(0.35, origin.distanceTo(hit) - 0.1),
-        )
-    }
-    if (enclosure !== null) {
-      safeDistance = Math.min(
-        safeDistance,
-        enclosure.solidDistance(origin, rayDirection, reach, activeSolidIds),
-      )
-      if (constrainToEnclosure) {
-        const volumeDistance = enclosure.volumeDistance(
-          origin,
-          rayDirection,
-          reach,
-        )
-        if (volumeDistance !== null)
-          safeDistance = Math.min(safeDistance, volumeDistance)
-      }
-    }
-    if (useMeshOccluders) {
-      raycaster.set(origin, rayDirection)
-      raycaster.far = safeDistance
-      const obstruction = raycaster.intersectObjects(occluders, false)[0]
-      if (obstruction !== undefined) {
-        const meshDistance = Math.max(0.35, obstruction.distance - 0.1)
-        safeDistance =
-          enclosure === null
-            ? meshDistance
-            : Math.min(safeDistance, meshDistance)
-      }
-    }
-    return safeDistance
-  }
-
-  function safeBoomDistance(
-    atPitch: number,
-    reach: number,
-    enabledPlatformIds: readonly string[],
-    activeSolidIds: readonly string[],
-    constrainToEnclosure: boolean,
-    useMeshOccluders: boolean,
-  ): number {
-    pointBoom(atPitch)
-    return safeRayDistance(
-      target,
-      direction,
-      reach,
-      enabledPlatformIds,
-      activeSolidIds,
-      constrainToEnclosure,
-      useMeshOccluders,
-    )
-  }
-
-  function chooseLiftedPitch(
-    reach: number,
-    enabledPlatformIds: readonly string[],
-    activeSolidIds: readonly string[],
-    constrainToEnclosure: boolean,
-    normalDistance: number,
-    useMeshOccluders: boolean,
-  ): number {
-    let bestPitch = pitch
-    let bestDistance = normalDistance
-    for (const candidate of OBSTRUCTION_LIFT_PITCHES) {
-      if (candidate <= pitch) continue
-      const candidateDistance = safeBoomDistance(
-        candidate,
-        reach,
-        enabledPlatformIds,
-        activeSolidIds,
-        constrainToEnclosure,
-        useMeshOccluders,
-      )
-      if (candidateDistance > bestDistance) {
-        bestPitch = candidate
-        bestDistance = candidateDistance
-      }
-      // A bounded room needs enough boom for Merc and the landing, but taking
-      // the absolute longest ray makes ordinary corridors read as top-down.
-      // Keep the first modest lift that restores useful third-person framing.
-      if (
-        constrainToEnclosure &&
-        candidateDistance >= ENCLOSURE_READABLE_BOOM_DISTANCE
-      )
-        return candidate
-    }
-    return bestPitch
-  }
+  const obstruction = createCameraObstruction(level, enclosure)
 
   const focusedChallengeId = (snapshot: GameSnapshot): string | null =>
     selectFocusedChallengeId(requestedChallengeId, snapshot)
@@ -217,7 +107,7 @@ export function createAdventureCamera(
     challengeDirection.multiplyScalar(1 / reach)
     const activeSolidIds =
       snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
-    const safeDistance = safeRayDistance(
+    const safeDistance = obstruction.safeRayDistance(
       focus,
       challengeDirection,
       reach,
@@ -242,27 +132,24 @@ export function createAdventureCamera(
     const activeSolidIds =
       snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
     if (
-      enclosure !== null &&
-      enclosure.solidDistance(
+      obstruction.safeRayDistance(
         position,
         challengeDirection,
         reach,
+        snapshot.enabledPlatformIds,
         activeSolidIds,
+        true,
+        false,
       ) <
-        reach - 0.08
+      reach - 0.08
     )
       return true
-    ray.set(position, challengeDirection)
-    for (const obstacle of obstacles) {
-      if (!snapshot.enabledPlatformIds.includes(obstacle.id)) continue
-      if (ray.intersectBox(obstacle.box, hit)) {
-        const distance = position.distanceTo(hit)
-        if (distance < reach - 0.08) return true
-      }
-    }
-    raycaster.set(position, challengeDirection)
-    raycaster.far = Math.max(0, reach - 0.08)
-    return raycaster.intersectObjects(occluders, false).length > 0
+    return !obstruction.meshPathClear(
+      position,
+      challengeDirection,
+      Math.max(0, reach - 0.08),
+      true,
+    )
   }
 
   function updateChallengePlan(
@@ -309,50 +196,51 @@ export function createAdventureCamera(
   }
 
   function metrics(): ChallengeCameraMetrics {
-    const state = challengeDirector.snapshot()
-    const presenting = state.mode !== 'exploration'
-    const settled =
-      state.mode === 'holding' &&
-      challengeShot !== null &&
-      camera.position.distanceTo(challengeShot.pose.position) < 0.005 &&
-      renderedTarget.distanceTo(challengeShot.pose.target) < 0.005 &&
-      Math.abs(camera.fov - challengeShot.pose.fovDegrees) < 0.01
-    let mercFrame: ChallengeCameraScreenFrame | null = null
-    let targetFrame: ChallengeCameraScreenFrame | null = null
-    let combinedFrame: ChallengeCameraScreenFrame | null = null
-    if (presenting && challengeSubjects !== null) {
-      mercFrame = projectChallengeBounds(challengeSubjects.merc, camera)
-      targetFrame = projectChallengeBounds(challengeSubjects.target, camera)
-      combinedFrame = frameUnion(mercFrame, targetFrame)
-    }
-    return {
-      ...state,
-      settled,
+    return measureChallengeCamera({
+      cameraMode,
+      firstPersonEncounterId: firstPersonChallengeId,
+      firstPersonSettled: firstPerson.settled(),
+      director: challengeDirector.snapshot(),
+      shot: challengeShot,
+      subjects: challengeSubjects,
+      camera,
+      renderedTarget,
       safeBottomFraction: challengeSafeBottomFraction,
-      position: {
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z,
-      },
-      target: {
-        x: renderedTarget.x,
-        y: renderedTarget.y,
-        z: renderedTarget.z,
-      },
-      mercFrame,
-      targetFrame,
-      combinedFrame,
-      safeBottomNdc: presenting ? (challengeShot?.safeBottomNdc ?? null) : null,
-      side: presenting ? (challengeShot?.side ?? null) : null,
-      clearance: presenting ? (challengeShot?.clearance ?? null) : null,
-      occluded: presenting ? (challengeShot?.occluded ?? null) : null,
-    }
+    })
   }
 
   return {
     camera,
+    mode: () => cameraMode,
+    setMode(mode: AdventureCameraMode) {
+      if (mode === cameraMode) return
+      if (mode === 'first-person')
+        firstPerson.enter(camera.position, renderedTarget, camera.fov)
+      else {
+        yaw = firstPerson.yaw()
+        pitch = MathUtils.clamp(-firstPerson.pitch(), 0.14, 1.1)
+        renderedPitch = pitch
+        if (camera.fov !== EXPLORATION_FOV_DEGREES) {
+          camera.fov = EXPLORATION_FOV_DEGREES
+          camera.updateProjectionMatrix()
+        }
+        firstFrame = true
+        thirdPersonFraming.reset()
+      }
+      cameraMode = mode
+      firstPersonChallengeId = null
+      yaw = firstPerson.yaw()
+      movementReferenceYaw = yaw
+      manualOrbitOverride = false
+      committedHeading = null
+      headingIntent.reset()
+      challengeDirector.clear()
+      challengeShot = null
+      challengePlanKey = ''
+      stopAngularResponse(followResponse, yaw)
+    },
     setOccluders(objects: Object3D[]) {
-      occluders = objects
+      obstruction.setOccluders(objects)
     },
     setChallengeEncounter(encounterId: string | null) {
       if (
@@ -407,17 +295,26 @@ export function createAdventureCamera(
       challengePlayerOrigin = null
       challengeSafeBottomFraction = 0
       challengeDirector.clear()
+      firstPersonChallengeId = null
       orbitActive = false
       stopAngularResponse(followResponse, yaw)
     },
-    yaw: () => (challengeDirector.active() ? renderedChallengeYaw : yaw),
+    yaw: () =>
+      cameraMode === 'first-person'
+        ? firstPerson.renderedYaw()
+        : challengeDirector.active()
+          ? renderedChallengeYaw
+          : yaw,
     movementYaw: () => movementReferenceYaw,
     setMovementActive(active: boolean) {
       movementActive = active
-      if (!active) movementReferenceYaw = yaw
+      if (!active)
+        movementReferenceYaw =
+          cameraMode === 'first-person' ? firstPerson.yaw() : yaw
     },
     rebaseMovement(kind: MovementReferenceKind = 'keyboard') {
-      movementReferenceYaw = yaw
+      movementReferenceYaw =
+        cameraMode === 'first-person' ? firstPerson.yaw() : yaw
       committedHeading = null
       manualOrbitOverride = false
       headingIntent.rebase(kind)
@@ -428,7 +325,8 @@ export function createAdventureCamera(
     cancelHeadingFollow() {
       committedHeading = null
       movementActive = false
-      movementReferenceYaw = yaw
+      movementReferenceYaw =
+        cameraMode === 'first-person' ? firstPerson.yaw() : yaw
       manualOrbitOverride = false
       headingIntent.reset()
       stopAngularResponse(followResponse, yaw)
@@ -452,6 +350,12 @@ export function createAdventureCamera(
       if (challengeInputLocked()) return
       const safeX = Number.isFinite(dx) ? dx : 0
       const safeY = Number.isFinite(dy) ? dy : 0
+      if (cameraMode === 'first-person') {
+        firstPerson.orbit(safeX, safeY)
+        movementReferenceYaw = firstPerson.yaw()
+        orbitQuietSeconds = 0
+        return
+      }
       yaw += safeX
       const nextPitch = MathUtils.clamp(pitch + safeY, 0.14, 1.1)
       renderedPitch = MathUtils.clamp(
@@ -470,7 +374,7 @@ export function createAdventureCamera(
       }
     },
     zoom(delta: number) {
-      if (challengeInputLocked()) return
+      if (challengeInputLocked() || cameraMode === 'first-person') return
       if (Number.isFinite(delta) && delta !== 0) {
         distance = MathUtils.clamp(distance + delta, 1.8, 6.5)
         zoomChanged = true
@@ -479,6 +383,11 @@ export function createAdventureCamera(
     recenter() {
       if (challengeInputLocked()) return
       const recenterYaw = validRouteYaw(activeRouteSection) ?? facing
+      if (cameraMode === 'first-person') {
+        firstPerson.recenter(recenterYaw)
+        movementReferenceYaw = firstPerson.yaw()
+        return
+      }
       yaw += shortestAngleDelta(yaw, recenterYaw)
       movementReferenceYaw = yaw
       orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
@@ -488,6 +397,7 @@ export function createAdventureCamera(
       stopAngularResponse(followResponse, yaw)
     },
     update(snapshot: GameSnapshot, dt: number, presentationPaused = false) {
+      obstruction.updatePlatformStates(snapshot.platformStates)
       const safeDt =
         !presentationPaused && Number.isFinite(dt)
           ? MathUtils.clamp(dt, 0, 0.05)
@@ -507,6 +417,38 @@ export function createAdventureCamera(
         committedHeading = null
         headingIntent.reset()
         stopAngularResponse(followResponse, yaw)
+      }
+      const routeAvailable =
+        !presentationPaused &&
+        !snapshot.paused &&
+        snapshot.phase === 'idle' &&
+        snapshot.activeEncounter === null
+      const routeSample = routeAvailable
+        ? snapshot.player
+        : { grounded: false, supportPlatformId: null }
+      if (cameraMode === 'first-person') {
+        activeRouteSection = routeDirector.update(routeSample, safeDt).section
+        firstPersonChallengeId = challengeId
+        if (
+          challengeId !== null &&
+          challengeSubjects?.encounterId !== challengeId
+        )
+          challengeSubjects = createFallbackChallengeSubjects(
+            level,
+            challengeId,
+            snapshot,
+          )
+        firstPerson.frame(camera, renderedTarget, {
+          playerPosition: snapshot.player.position,
+          challengeTarget:
+            challengeId === null ? null : challengeSubjects?.target,
+          safeBottomFraction: challengeSafeBottomFraction,
+          deltaSeconds: safeDt,
+          reducedMotion: options.reducedMotion === true,
+        })
+        renderedChallengeYaw = firstPerson.renderedYaw()
+        if (challengeId === null) challengeSubjects = null
+        return
       }
       if (challengeId !== null) updateChallengePlan(challengeId, snapshot)
       const cinematicPose = challengeDirector.update({
@@ -548,18 +490,10 @@ export function createAdventureCamera(
       }
       const activeSolidIds =
         snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
-      const useMeshOccluders = useMeshOccludersAt(snapshot.player.position.y)
-      const routeAvailable =
-        !presentationPaused &&
-        !snapshot.paused &&
-        snapshot.phase === 'idle' &&
-        snapshot.activeEncounter === null
-      const routeUpdate = routeDirector.update(
-        routeAvailable
-          ? snapshot.player
-          : { grounded: false, supportPlatformId: null },
-        safeDt,
+      const useMeshOccluders = obstruction.useMeshOccludersAt(
+        snapshot.player.position.y,
       )
+      const routeUpdate = routeDirector.update(routeSample, safeDt)
       activeRouteSection = routeUpdate.section
       bodyTarget.copy(snapshot.player.position)
       bodyTarget.y += 0.42
@@ -601,6 +535,14 @@ export function createAdventureCamera(
       const moving =
         Math.hypot(snapshot.player.velocity.x, snapshot.player.velocity.z) >
         MOVING_SPEED
+      if (
+        manualOrbitOverride &&
+        movementActive &&
+        moving &&
+        !orbitActive &&
+        orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
+      )
+        manualOrbitOverride = false
       const followsHeading =
         options.reducedMotion !== true &&
         !snapshot.paused &&
@@ -658,13 +600,35 @@ export function createAdventureCamera(
       }
       const portrait = camera.aspect < 1 ? 1.15 : 1
       const reach = distance * portrait
-      const normalDistance = safeBoomDistance(
+      const contextualReach = framedTarget
+        ? contextualThirdPersonReach({
+            requestedReach: reach,
+            aspect: camera.aspect,
+            fovDegrees: camera.fov,
+            pitch,
+            clearance: sampleThirdPersonClearance(facing, (probe, length) =>
+              obstruction.safeRayDistance(
+                bodyTarget,
+                probe,
+                length,
+                snapshot.enabledPlatformIds,
+                activeSolidIds,
+                false,
+                false,
+              ),
+            ),
+          })
+        : reach
+      const normalDistance = obstruction.safeBoomDistance(
+        target,
+        yaw,
         pitch,
         reach,
         snapshot.enabledPlatformIds,
         activeSolidIds,
         framedTarget,
         useMeshOccluders,
+        direction,
       )
       const obstructionTrigger = framedTarget
         ? ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE
@@ -678,14 +642,18 @@ export function createAdventureCamera(
       else if (obstructionLifted && normalDistance > obstructionRelease)
         obstructionLifted = false
       const targetPitch = obstructionLifted
-        ? chooseLiftedPitch(
+        ? obstruction.chooseLiftedPitch({
+            basePitch: pitch,
+            origin: target,
+            yaw,
             reach,
-            snapshot.enabledPlatformIds,
+            enabledPlatformIds: snapshot.enabledPlatformIds,
             activeSolidIds,
-            framedTarget,
+            constrainToEnclosure: framedTarget,
             normalDistance,
             useMeshOccluders,
-          )
+            boomDirection: direction,
+          })
         : pitch
       renderedPitch = snapPitch
         ? targetPitch
@@ -694,38 +662,28 @@ export function createAdventureCamera(
             targetPitch,
             1 - Math.exp(-OBSTRUCTION_LIFT_RESPONSE * safeDt),
           )
-      const safeDistance = safeBoomDistance(
+      const safeDistance = obstruction.safeBoomDistance(
+        target,
+        yaw,
         renderedPitch,
         reach,
         snapshot.enabledPlatformIds,
         activeSolidIds,
         framedTarget,
         useMeshOccluders,
+        direction,
       )
       let renderedDistance = safeDistance
       if (framedTarget) {
-        const constrained = safeDistance < reach - 0.01
-        if (snapPitch || enclosureDistance === null || zoomChanged) {
-          enclosureDistance = safeDistance
-          recoveringEnclosureDistance = constrained
-        } else if (safeDistance < enclosureDistance) {
-          enclosureDistance = safeDistance
-          recoveringEnclosureDistance = true
-        } else if (constrained || recoveringEnclosureDistance) {
-          enclosureDistance = MathUtils.lerp(
-            enclosureDistance,
-            safeDistance,
-            1 - Math.exp(-ENCLOSURE_DISTANCE_RECOVERY_RESPONSE * safeDt),
-          )
-          recoveringEnclosureDistance =
-            constrained || Math.abs(enclosureDistance - safeDistance) > 0.01
-        } else {
-          enclosureDistance = safeDistance
-        }
-        renderedDistance = Math.min(safeDistance, enclosureDistance)
+        renderedDistance = thirdPersonFraming.update({
+          requestedReach: reach,
+          contextualReach,
+          safeReach: safeDistance,
+          deltaSeconds: safeDt,
+          snap: snapPitch || zoomChanged,
+        })
       } else {
-        enclosureDistance = null
-        recoveringEnclosureDistance = false
+        thirdPersonFraming.reset()
         hasRetainedPosition = false
       }
       zoomChanged = false
@@ -739,11 +697,13 @@ export function createAdventureCamera(
         retainedDirection.copy(retainedPosition).sub(target)
         const retainedDistance = retainedDirection.length()
         retainedDirection.multiplyScalar(1 / retainedDistance)
-        raycaster.set(target, retainedDirection)
-        raycaster.far = retainedDistance
         if (
-          !useMeshOccluders ||
-          raycaster.intersectObjects(occluders, false).length === 0
+          obstruction.meshPathClear(
+            target,
+            retainedDirection,
+            retainedDistance,
+            useMeshOccluders,
+          )
         ) {
           camera.position.copy(retainedPosition)
           retained = true

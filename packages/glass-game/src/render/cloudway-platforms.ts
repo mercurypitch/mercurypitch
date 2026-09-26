@@ -119,6 +119,9 @@ function createInstancedDonor(
       platforms.length,
     )
     instance.name = `cloudway-${spec.state}-${mesh.name || spec.node}`
+    // Camera planning already uses the level's authored platform bounds.
+    // Raycasting these visual donors scales with every triangle and instance.
+    instance.userData.excludeFromCameraCollision = true
     instance.castShadow = mesh.castShadow
     instance.receiveShadow = mesh.receiveShadow
     instance.frustumCulled = false
@@ -301,8 +304,8 @@ export function createCloudwayPlatformRenderer(
       part.mesh.instanceMatrix.needsUpdate = true
       if (part.mesh.instanceColor !== null)
         part.mesh.instanceColor.needsUpdate = true
-      // Raycasting uses the cached sphere even with frustum culling disabled.
-      // Refresh it so the moving raft and falling shards remain camera blockers.
+      // Direct InstancedMesh raycasts use this cached sphere even with frustum
+      // culling disabled. Keep diagnostics aligned with runtime transforms.
       part.mesh.computeBoundingSphere()
     }
   }

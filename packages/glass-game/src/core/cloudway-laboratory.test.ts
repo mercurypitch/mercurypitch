@@ -201,22 +201,43 @@ function crossScroll(v: ReturnType<typeof visit>) {
       v.platform('scroll-deck')?.phase === 'extended' &&
       (v.platform('scroll-deck')?.phaseProgress ?? 1) < 0.05,
   )
-  v.reach(P.scroll, { supportId: 'scroll-deck' })
+  const scroll = platform('scroll-deck')
+  const negativeRoller = {
+    x: P.scroll.x,
+    z:
+      scroll.minZ - MEASUREMENTS.scroll.edgeSupports.negative.outwardLength / 2,
+  }
+  const positiveRoller = {
+    x: P.scroll.x,
+    z:
+      scroll.maxZ + MEASUREMENTS.scroll.edgeSupports.positive.outwardLength / 2,
+  }
+  v.reach(negativeRoller, { settle: false, supportId: 'scroll-deck' })
+  expect(v.game.snapshot().player.position.y).toBeCloseTo(
+    MEASUREMENTS.scroll.edgeSupports.negative.topOffset,
+    8,
+  )
+  v.reach(P.scroll, { settle: false, supportId: 'scroll-deck' })
   expect(v.game.snapshot().player).toMatchObject({
     grounded: true,
     supportPlatformId: 'scroll-deck',
   })
+  v.reach(positiveRoller, { settle: false, supportId: 'scroll-deck' })
+  expect(v.game.snapshot().player.position.y).toBeCloseTo(
+    MEASUREMENTS.scroll.edgeSupports.positive.topOffset,
+    8,
+  )
   v.rest(0.12)
   expect(v.game.snapshot().player.supportPlatformId).toBe('scroll-deck')
   v.reach(P.scrollCatch, { supportId: 'scroll-catch' })
 }
 
 describe('Crystal Promenade first playable slice', () => {
-  it('keeps the first-slice namespace while publishing measured edge gaps as revision 2', () => {
+  it('keeps the first-slice namespace while publishing physical roller gaps as revision 3', () => {
     expect(LEVEL.id).toBe('cloudway-crystal-promenade-first-slice')
     expect(LEVEL.authored).toMatchObject({
       layoutId: 'crystal-promenade-first-slice',
-      contentRevision: 2,
+      contentRevision: 3,
     })
     expect(LEVEL.platforms.map((item) => item.id)).toEqual([
       'arrival-entry',
@@ -235,12 +256,21 @@ describe('Crystal Promenade first playable slice', () => {
       MEASUREMENTS.gaps.arrivalApproach,
       12,
     )
-    expect(forwardGap('scroll-approach', 'scroll-deck')).toBeCloseTo(
+    const scroll = platform('scroll-deck')
+    const physicalScrollMinZ =
+      scroll.minZ - MEASUREMENTS.scroll.edgeSupports.negative.outwardLength
+    const physicalScrollMaxZ =
+      scroll.maxZ + MEASUREMENTS.scroll.edgeSupports.positive.outwardLength
+    expect(physicalScrollMinZ - platform('scroll-approach').maxZ).toBeCloseTo(
       MEASUREMENTS.gaps.scrollEntry,
       12,
     )
-    expect(forwardGap('scroll-deck', 'scroll-catch')).toBeCloseTo(
+    expect(platform('scroll-catch').minZ - physicalScrollMaxZ).toBeCloseTo(
       MEASUREMENTS.gaps.scrollExit,
+      12,
+    )
+    expect(scroll.maxZ - scroll.minZ).toBeCloseTo(
+      MEASUREMENTS.scroll.extensionLength,
       12,
     )
     expect(forwardGap('scroll-court', 'rose-step')).toBeCloseTo(
@@ -282,6 +312,27 @@ describe('Crystal Promenade first playable slice', () => {
             containsBody(position, MOVEMENT, candidate),
         ),
       ).toBe(true)
+  })
+
+  it('restores a revision 2 completion at the moved revision 3 checkpoint', () => {
+    const revision2FinalCatchZ = 0.107494056
+    const earnedEncounterIds = ['voice-home', 'voice-third', 'voice-fifth']
+    const legacy = {
+      ...savedAt('final-save', earnedEncounterIds),
+      finished: true,
+    }
+
+    const snapshot = createGlassGame(LEVEL, legacy).snapshot()
+
+    expect(snapshot.player.position).toEqual({
+      x: P.finalCatch.x,
+      y: 0,
+      z: P.finalCatch.z,
+    })
+    expect(snapshot.player.position.z).not.toBeCloseTo(revision2FinalCatchZ, 8)
+    expect(snapshot.player.supportPlatformId).toBe('final-catch')
+    expect(snapshot.completedBreakableIds).toEqual(earnedEncounterIds)
+    expect(snapshot.complete).toBe(true)
   })
 
   it.each([1 / 60, 1 / 30])(
@@ -423,13 +474,87 @@ describe('Crystal Promenade first playable slice', () => {
     expect(v.respawns()).toBe(0)
   })
 
-  it.each([
-    { id: 'rose-step', point: P.rose, warningSeconds: 2 },
-    { id: 'amethyst-step', point: P.amethyst, warningSeconds: 4 },
-  ] as const)(
-    '$id removes support after $warningSeconds seconds, then restores on checkpoint recovery',
-    ({ id, point, warningSeconds }) => {
-      const dt = 1 / 60
+  it.each([1 / 60, 1 / 30])(
+    'carries each visible roller rider through a full retract/extend cycle at %s seconds/frame',
+    (dt) => {
+      for (const side of ['negative', 'positive'] as const) {
+        const v = visit(dt, savedAt('scroll-save', ['voice-home']))
+        v.waitFor(
+          () =>
+            v.platform('scroll-deck')?.phase === 'extended' &&
+            (v.platform('scroll-deck')?.phaseProgress ?? 1) < 0.05,
+        )
+        const scroll = platform('scroll-deck')
+        const edge = MEASUREMENTS.scroll.edgeSupports[side]
+        const direction = side === 'negative' ? -1 : 1
+        v.reach(
+          {
+            x: P.scroll.x,
+            z:
+              P.scroll.z +
+              direction *
+                (MEASUREMENTS.scroll.extensionLength / 2 +
+                  edge.outwardLength / 2),
+          },
+          { settle: false, supportId: 'scroll-deck' },
+        )
+        const initialRatio = v.platform(scroll.id)?.lengthRatio ?? 1
+        const riderOffset =
+          v.game.snapshot().player.position.z -
+          (P.scroll.z +
+            direction *
+              ((MEASUREMENTS.scroll.extensionLength * initialRatio) / 2 +
+                edge.outwardLength / 2))
+        const phases = new Set<string>()
+        let completedCycle = false
+        for (let frame = 0; frame < Math.ceil(12 / dt); frame++) {
+          v.step()
+          const state = v.platform(scroll.id)!
+          phases.add(state.phase)
+          const player = v.game.snapshot().player
+          expect(player).toMatchObject({
+            grounded: true,
+            supportPlatformId: scroll.id,
+          })
+          expect(player.position.y).toBeCloseTo(edge.topOffset, 8)
+          const expectedRiderZ =
+            P.scroll.z +
+            direction *
+              ((MEASUREMENTS.scroll.extensionLength *
+                (state.lengthRatio ?? 1)) /
+                2 +
+                edge.outwardLength / 2) +
+            riderOffset
+          expect(Math.abs(player.position.z - expectedRiderZ)).toBeLessThan(
+            0.003,
+          )
+          if (
+            phases.has('retracting') &&
+            phases.has('retracted') &&
+            phases.has('extending') &&
+            state.phase === 'extended'
+          ) {
+            completedCycle = true
+            break
+          }
+        }
+        expect(completedCycle).toBe(true)
+        expect(v.respawns()).toBe(0)
+      }
+    },
+  )
+
+  it.each(
+    ([1 / 60, 1 / 30] as const).flatMap(
+      (dt) =>
+        [
+          { dt, id: 'rose-step', point: P.rose, warningSeconds: 2 },
+          { dt, id: 'amethyst-step', point: P.amethyst, warningSeconds: 4 },
+        ] as const,
+    ),
+  )(
+    '$id removes support after $warningSeconds seconds at $dt seconds/frame, then restores on checkpoint recovery',
+    ({ dt, id, point, warningSeconds }) => {
       const v = visit(dt, savedAt('final-save', ['voice-home', 'voice-third']))
       v.reach(P.amethyst, { settle: false, supportId: 'amethyst-step' })
       if (id === 'rose-step')

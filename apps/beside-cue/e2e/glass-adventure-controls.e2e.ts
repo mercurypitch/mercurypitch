@@ -1,5 +1,6 @@
 // Museum controls — real mouse, keyboard and simultaneous touch through the shared surface.
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { omitRasterOutput, openMuseum, value, verifyLookFirstMovementReacquisition, } from './helpers/glass-adventure-controls'
 
 test.use({
   launchOptions: {
@@ -11,62 +12,6 @@ test.use({
 // On CI head 413d9580, the SwiftShader phone and replay journeys exceeded 120s
 // before passing on retry; this is an allowance, not a hardware performance gate.
 test.setTimeout(180_000)
-
-const RASTER_METHODS = [
-  'clear',
-  'drawArrays',
-  'drawArraysInstanced',
-  'drawElements',
-  'drawElementsInstanced',
-] as const
-
-async function omitRasterOutput(page: Page): Promise<void> {
-  // This spec asserts controller state and accessible UI. Keep the real scene
-  // graph, input, RAF and physics paths, while omitting only SwiftShader pixel
-  // output that can turn a few virtual frames into a minute of CI work.
-  await page.addInitScript((methods) => {
-    for (const name of methods)
-      Object.defineProperty(WebGL2RenderingContext.prototype, name, {
-        configurable: true,
-        value: () => undefined,
-      })
-  }, RASTER_METHODS)
-}
-
-async function openMuseum(page: Page, renderPixels = false): Promise<void> {
-  const errors: string[] = []
-  page.on('pageerror', (error) => errors.push(error.message))
-  page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text())
-  })
-  page.on('requestfailed', (request) =>
-    errors.push(`${request.url()} ${request.failure()?.errorText}`),
-  )
-  if (!renderPixels) await omitRasterOutput(page)
-  await page.addInitScript(() =>
-    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen'),
-  )
-  const response = await page.goto('/glass-game/')
-  expect(response?.status()).toBe(200)
-  try {
-    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-      'data-ready',
-      'true',
-      { timeout: 30_000 },
-    )
-  } catch (error) {
-    throw new Error(`Museum did not open: ${errors.join('; ')}`, {
-      cause: error,
-    })
-  }
-  await page.clock.install()
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
-}
-async function value(page: Page, key: string): Promise<number> {
-  return Number(
-    await page.getByTestId('glass-adventure').getAttribute(`data-${key}`),
-  )
-}
 
 test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops @smoke', async ({
   page,
@@ -290,13 +235,66 @@ test('changing a held key chord steers from the current view @smoke', async ({
   await page.keyboard.up('KeyW')
 })
 
+test('camera mode validates, guards the V shortcut and persists the pause setting @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const seeded = 'beside-cue:e2e:invalid-camera-mode-seeded'
+    if (sessionStorage.getItem(seeded) !== null) return
+    localStorage.setItem(
+      'beside-cue:glass-adventure:camera-mode:v1',
+      'unknown-camera',
+    )
+    sessionStorage.setItem(seeded, 'true')
+  })
+  await openMuseum(page)
+  const adventure = page.getByTestId('glass-adventure')
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await viewport.focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+
+  await page.keyboard.down('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await page.keyboard.down('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await page.keyboard.up('KeyV')
+  await page.keyboard.press('Control+KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await page.getByRole('button', { name: 'Pause game' }).focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await viewport.focus()
+  await page.keyboard.press('Escape')
+  const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+  await pause.getByRole('slider').first().focus()
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await pause.getByRole('radio', { name: 'First person' }).check()
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+  await page.keyboard.press('KeyV')
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+  await pause.getByRole('button', { name: 'Back to the museum' }).click()
+
+  await page.clock.resume()
+  await page.reload()
+  await expect(adventure).toHaveAttribute('data-ready', 'true', {
+    timeout: 30_000,
+  })
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+})
+
 test.describe('phone', () => {
   test.use({
     viewport: { width: 390, height: 844 },
     hasTouch: true,
     isMobile: true,
   })
-  test('Tune clears Help and movement labels cannot be selected @smoke', async ({
+  test('Tune clears Help and movement controls cannot be selected @smoke', async ({
     page,
     context,
   }, testInfo) => {
@@ -343,11 +341,10 @@ test.describe('phone', () => {
 
     const jump = page.getByRole('button', { name: 'Jump', exact: true })
     await expect(jump.locator('span')).toHaveCSS('user-select', 'none')
-    await expect(
-      page
-        .getByRole('group', { name: 'Move Merc' })
-        .getByText('Move', { exact: true }),
-    ).toHaveCSS('user-select', 'none')
+    await expect(page.getByRole('group', { name: 'Move Merc' })).toHaveCSS(
+      'user-select',
+      'none',
+    )
     const label = await jump.locator('span').boundingBox()
     expect(label).not.toBeNull()
     await page.mouse.move(label!.x, label!.y + label!.height / 2)
@@ -492,6 +489,94 @@ test.describe('phone', () => {
         height: document.documentElement.scrollHeight,
       })),
     ).toEqual({ width: 390, height: 844 })
+  })
+
+  test('look can begin first while movement releases and reacquires independently @smoke', async ({
+    page,
+    context,
+  }) => {
+    await verifyLookFirstMovementReacquisition(page, context)
+  })
+
+  test('tablet movement owns only its visible lower-left pad @smoke', async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 1180, height: 820 })
+    await openMuseum(page)
+    const pad = page.getByRole('group', { name: 'Move Merc' })
+    const base = page.getByTestId('floating-stick-base')
+    const padBox = await pad.boundingBox()
+    expect(padBox).not.toBeNull()
+    expect(padBox!.width).toBeLessThanOrEqual(160)
+    expect(padBox!.height).toBeLessThanOrEqual(160)
+    await expect(base).toHaveCSS('opacity', '0.62')
+
+    const cdp = await context.newCDPSession(page)
+    const lookStart = { id: 11, x: 330, y: 500 }
+    const initialYaw = await value(page, 'camera-yaw')
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [lookStart],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ ...lookStart, x: lookStart.x + 44 }],
+    })
+    await page.clock.runFor(32)
+    expect(
+      Math.abs((await value(page, 'camera-yaw')) - initialYaw),
+    ).toBeGreaterThan(0.1)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [{ ...lookStart, x: lookStart.x + 44 }],
+    })
+  })
+
+  test('narrow pause settings scroll by native touch to the camera choice and resume @smoke', async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 })
+    await openMuseum(page)
+    await page.keyboard.press('Escape')
+    const adventure = page.getByTestId('glass-adventure')
+    const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+    const firstPerson = pause.getByRole('radio', { name: 'First person' })
+    const resume = pause.getByRole('button', { name: 'Back to the museum' })
+    await expect(pause).toBeVisible()
+    await expect(resume).not.toBeInViewport()
+    const beforeScroll = await pause.evaluate(
+      (dialog) => dialog.parentElement?.scrollTop ?? -1,
+    )
+
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 61, x: 10, y: 500 }],
+    })
+    for (const y of [420, 330, 240, 150, 80])
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ id: 61, x: 10, y }],
+      })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
+
+    await expect
+      .poll(() =>
+        pause.evaluate((dialog) => dialog.parentElement?.scrollTop ?? -1),
+      )
+      .toBeGreaterThan(beforeScroll)
+    await expect(firstPerson).toBeInViewport()
+    await expect(resume).toBeInViewport()
+    await firstPerson.check()
+    await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
+    await resume.click()
+    await expect(pause).toBeHidden()
+    await cdp.detach()
   })
 })
 

@@ -418,12 +418,13 @@
 }
 .stick {
   position: absolute;
-  left: max(62px, calc(env(safe-area-inset-left) + 58px));
-  bottom: max(64px, calc(env(safe-area-inset-bottom) + 58px));
-  width: min(42vw, 340px);
-  height: min(52vh, 360px);
+  left: max(20px, calc(env(safe-area-inset-left) + 16px));
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 20px));
+  width: 108px;
+  height: 108px;
   touch-action: none;
-  pointer-events: none;
+  pointer-events: auto;
+  border-radius: 50%;
 }
 .stick[aria-disabled='true'] {
   opacity: 0.25;
@@ -433,6 +434,8 @@
   width: 108px;
   height: 108px;
   position: absolute;
+  left: 50%;
+  top: 50%;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -442,7 +445,7 @@
   box-shadow:
     inset 0 0 0 14px #fff1,
     0 5px 25px #133a4328;
-  opacity: 0;
+  opacity: 0.62;
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
@@ -466,19 +469,6 @@
   font-weight: 100;
   opacity: 0.25;
   color: white;
-  pointer-events: none;
-}
-.controlCaption {
-  position: absolute;
-  bottom: -30px;
-  left: 0;
-  padding: 5px 10px;
-  border: 1px solid #fff4;
-  border-radius: 999px;
-  background: #153d4848;
-  color: #fff8e4;
-  font-size: 12px;
-  text-shadow: 0 1px 4px #153d48;
   pointer-events: none;
 }
 .jump {
@@ -652,6 +642,58 @@
   font-size: 12px;
   line-height: 1.5;
   margin-top: 5px;
+}
+.cameraModeSettings {
+  min-width: 0;
+  margin: 16px 0 4px;
+  padding: 12px 14px 14px;
+  border: 1px solid #9bad9b;
+  border-radius: 16px;
+  color: #244c43;
+  text-align: left;
+}
+.cameraModeSettings legend {
+  padding: 0 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cameraModeSettings small {
+  display: block;
+  margin-top: 8px;
+  color: #526e5e;
+  font-size: 12px;
+}
+.cameraModeOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cameraModeOptions label {
+  position: relative;
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid #9bad9b;
+  border-radius: 12px;
+  background: #fff7;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.cameraModeOptions input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.cameraModeOptions label:has(input:focus-visible) {
+  outline: 2px solid #396d5a;
+  outline-offset: 2px;
+}
+.cameraModeSelected {
+  border-color: #396d5a !important;
+  background: #dce8d8 !important;
+  box-shadow: inset 0 0 0 1px #396d5a;
 }
 .completionMark {
   color: #af852c;

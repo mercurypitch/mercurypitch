@@ -152,11 +152,11 @@ function scrollDonor(): Group {
     role.name = roleName
     role.position.x = x
     const mesh = new Mesh(
-      new BoxGeometry(0.12, 0.12, depth),
+      new BoxGeometry(0.25, 0.25, 2.4),
       new MeshStandardMaterial({ metalness: 0.6 }),
     )
     mesh.name = meshName
-    mesh.position.y = -0.06
+    mesh.position.set(x < 0 ? -0.125 : 0.125, -0.075, 0)
     role.add(mesh)
     source.add(role)
   }

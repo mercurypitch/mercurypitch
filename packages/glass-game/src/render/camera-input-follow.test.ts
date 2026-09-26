@@ -6,6 +6,7 @@ import { createGlassGame } from '../core/game'
 import { createAdventureInput } from '../ui/input'
 import { shortestAngleDelta } from './angular-response'
 import { createAdventureCamera } from './camera'
+import type { AdventureCameraMode } from './camera-policy'
 
 const FRAME = 1 / 60
 const OPEN_ROOM: LevelDefinition = {
@@ -57,9 +58,9 @@ function keyboardEvent(code: string): KeyboardEvent {
   } as unknown as KeyboardEvent
 }
 
-function createHarness(zoom = 0) {
+function createHarness(zoom = 0, mode: AdventureCameraMode = 'third-person') {
   const game = createGlassGame(OPEN_ROOM)
-  const camera = createAdventureCamera(OPEN_ROOM)
+  const camera = createAdventureCamera(OPEN_ROOM, { mode })
   const input = createAdventureInput()
   camera.zoom(zoom)
   const key = (code: string, down: boolean) =>
@@ -158,7 +159,7 @@ describe('camera follow from real movement contacts', () => {
     expect(yawDistance(harness.camera.yaw(), Math.PI / 2)).toBeLessThan(0.03)
   })
 
-  it('preserves held-thumb world travel while a separate pointer orbits', () => {
+  it('preserves held-thumb world travel while the third-person view recenters', () => {
     const harness = createHarness()
     harness.input.setStick(0, -1)
     harness.step(0.5)
@@ -176,7 +177,48 @@ describe('camera follow from real movement contacts', () => {
     })
     const chosenView = harness.camera.yaw()
     harness.step(1.5)
-    expect(harness.camera.yaw()).toBeCloseTo(chosenView)
+    expect(yawDistance(harness.camera.yaw(), stableBasis)).toBeLessThan(
+      yawDistance(chosenView, stableBasis),
+    )
     expect(harness.camera.movementYaw()).toBeCloseTo(stableBasis)
+  })
+
+  it('keeps first-person view yaw player-owned while strafe changes body facing', () => {
+    const harness = createHarness(0, 'first-person')
+    const viewYaw = harness.camera.yaw()
+    harness.key('KeyD', true)
+
+    harness.step(1.2)
+
+    expect(harness.game.snapshot().player.position.x).toBeGreaterThan(0.5)
+    expect(yawDistance(viewYaw, harness.camera.yaw())).toBeLessThan(0.001)
+    expect(
+      yawDistance(viewYaw, harness.game.snapshot().player.facingYaw),
+    ).toBeGreaterThan(1)
+  })
+
+  it('updates first-person held travel only after deliberate manual look', () => {
+    const harness = createHarness(0, 'first-person')
+    harness.key('KeyW', true)
+    harness.step(0.25)
+    const originalBasis = harness.camera.movementYaw()
+    const originalInput = harness.input.read(originalBasis)
+
+    harness.camera.setOrbitActive(true)
+    harness.camera.orbit(0.6, 0)
+    harness.camera.setOrbitActive(false)
+
+    const lookedBasis = harness.camera.movementYaw()
+    const lookedInput = harness.input.read(lookedBasis)
+    expect(yawDistance(originalBasis, lookedBasis)).toBeCloseTo(0.6)
+    expect(lookedInput.moveX).not.toBeCloseTo(originalInput.moveX)
+    expect(lookedInput.moveZ).not.toBeCloseTo(originalInput.moveZ)
+
+    const before = harness.game.snapshot().player.position
+    harness.step(0.5)
+    const after = harness.game.snapshot().player.position
+    expect(after.x).toBeLessThan(before.x - 0.1)
+    expect(after.z).toBeLessThan(before.z - 0.1)
+    expect(yawDistance(harness.camera.yaw(), lookedBasis)).toBeLessThan(0.001)
   })
 })

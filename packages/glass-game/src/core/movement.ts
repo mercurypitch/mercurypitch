@@ -5,6 +5,12 @@ import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
 import type { CourseCollider, MovingPlatformCollision } from './collision'
 import { findSupport, FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes, } from './collision'
 
+function publicPlatformId(solid: CourseSolid | null): string | null {
+  return solid === null || solid.kind === 'prop'
+    ? null
+    : (solid.parentPlatformId ?? solid.id)
+}
+
 export const MOVEMENT = {
   speed: 1.15,
   accelerationSeconds: 0.14,
@@ -142,7 +148,7 @@ export function stepMovement(
       platformMotions,
       platforms,
       collider,
-      state.supportPlatformId,
+      state.supportSolidId,
       runtime.intentionalGaps,
     )
     state.position = platformPush.position
@@ -165,7 +171,7 @@ export function stepMovement(
     state.supportSolidId = null
   } else {
     state.supportSolidId = standing.id
-    state.supportPlatformId = standing.kind === 'prop' ? null : standing.id
+    state.supportPlatformId = publicPlatformId(standing)
   }
   const supportDelta = runtime.supportDelta ?? { x: 0, y: 0, z: 0 }
   if (
@@ -191,8 +197,7 @@ export function stepMovement(
     standing = findSupport(state.position, MOVEMENT, platforms)
     state.grounded = standing !== null
     state.supportSolidId = standing?.id ?? null
-    state.supportPlatformId =
-      standing === null ? null : standing.kind === 'prop' ? null : standing.id
+    state.supportPlatformId = publicPlatformId(standing)
   }
   const surface = state.grounded ? runtime.surface : undefined
   let x = Number.isFinite(input.moveX) ? input.moveX : 0
@@ -316,12 +321,7 @@ export function stepMovement(
   }
   state.grounded = collision.support !== null
   state.supportSolidId = collision.support?.id ?? null
-  state.supportPlatformId =
-    collision.support === null
-      ? null
-      : collision.support.kind === 'prop'
-        ? null
-        : collision.support.id
+  state.supportPlatformId = publicPlatformId(collision.support)
   state.coyoteLeft = state.grounded
     ? MOVEMENT.coyoteSeconds
     : Math.max(0, state.coyoteLeft - dt)

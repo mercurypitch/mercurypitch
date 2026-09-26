@@ -38,6 +38,7 @@ export interface CourseCollider {
 }
 
 const EPSILON = 1e-7
+const MAXIMUM_CONNECTED_STEP_HEIGHT = 0.08
 
 export function intentionalGapDefinitionError(
   gap: IntentionalGapDefinition,
@@ -183,6 +184,53 @@ export function findSupport(
     if (support === null || solid.top > support.top) support = solid
   }
   return support
+}
+
+function orderedOverlap(
+  firstMin: number,
+  firstMax: number,
+  secondMin: number,
+  secondMax: number,
+): boolean {
+  return firstMax >= secondMin - EPSILON && secondMax >= firstMin - EPSILON
+}
+
+function sharesHorizontalEdge(
+  first: PlatformDefinition,
+  second: PlatformDefinition,
+): boolean {
+  const touchesX =
+    Math.abs(first.maxX - second.minX) <= EPSILON ||
+    Math.abs(second.maxX - first.minX) <= EPSILON
+  const touchesZ =
+    Math.abs(first.maxZ - second.minZ) <= EPSILON ||
+    Math.abs(second.maxZ - first.minZ) <= EPSILON
+  return (
+    (touchesX &&
+      orderedOverlap(first.minZ, first.maxZ, second.minZ, second.maxZ)) ||
+    (touchesZ &&
+      orderedOverlap(first.minX, first.maxX, second.minX, second.maxX))
+  )
+}
+
+/** Allows a shallow visible crown at a physically connected floor seam. */
+function isConnectedWalkableStep(
+  position: Vec3,
+  shape: BodyShape,
+  target: CourseSolid,
+  solids: readonly CourseSolid[],
+): boolean {
+  if (target.kind === 'prop') return false
+  const rise = target.top - position.y
+  if (rise <= EPSILON || rise > MAXIMUM_CONNECTED_STEP_HEIGHT + EPSILON)
+    return false
+  const source = findSupport(position, shape, solids)
+  return (
+    source !== null &&
+    source.kind !== 'prop' &&
+    source.id !== target.id &&
+    sharesHorizontalEdge(source, target)
+  )
 }
 
 function segmentIntersectsGap(
@@ -375,6 +423,7 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
       for (const p of platforms) {
         if (!overlap(next.y, next.y + shape.height, p.top - p.thickness, p.top))
           continue
+        if (isConnectedWalkableStep(position, shape, p, platforms)) continue
         let low: number
         let high: number
         if (isRound(p)) {
@@ -427,7 +476,8 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
       if (
         displacement.y <= 0 &&
         supportsFeet(next, p) &&
-        position.y >= p.top - EPSILON &&
+        (position.y >= p.top - EPSILON ||
+          isConnectedWalkableStep(position, shape, p, platforms)) &&
         next.y <= p.top &&
         !crossesIntentionalGap(position, next, p.top, intentionalGaps)
       ) {

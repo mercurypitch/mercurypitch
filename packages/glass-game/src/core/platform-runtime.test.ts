@@ -6,7 +6,7 @@ import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
 import { FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes } from './collision'
 import { createGlassGame } from './game'
 import { createMovement, MOVEMENT, stepMovement } from './movement'
-import { createPlatformRuntime, platformRuntimeDefinitionError, } from './platform-runtime'
+import { createPlatformRuntime, platformBoundsAtRuntime, platformRuntimeDefinitionError, } from './platform-runtime'
 import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
@@ -247,6 +247,272 @@ describe('authored platform runtime', () => {
     })
   })
 
+  it('materializes ordinary roller solids at the live scroll edges and reports their combined bounds', () => {
+    const scroll = platform('compound-scroll', {
+      minX: -4,
+      maxX: 4,
+      minZ: -2,
+      maxZ: 2,
+      top: 1.25,
+      behavior: {
+        kind: 'scroll',
+        axis: 'x',
+        edgeSupports: {
+          negative: {
+            outwardLength: 0.2,
+            minCrossAxis: -1.5,
+            maxCrossAxis: 1.5,
+            topOffset: 0.05,
+            thickness: 0.05,
+          },
+          positive: {
+            outwardLength: 0.3,
+            minCrossAxis: -1.5,
+            maxCrossAxis: 1.5,
+            topOffset: 0.05,
+            thickness: 0.05,
+          },
+        },
+        minLengthRatio: 0.25,
+        extendedSeconds: 0.25,
+        retractedSeconds: 0.5,
+        transitionSeconds: 0.25,
+        initialState: 'extended',
+      },
+    })
+    const runtime = createPlatformRuntime([scroll])
+    const active = new Set([scroll.id])
+    const full = runtime.materialize([scroll]) as readonly PlatformDefinition[]
+
+    expect(full).toHaveLength(3)
+    expect(full[1]).toMatchObject({
+      id: 'compound-scroll::scroll-negative',
+      parentPlatformId: scroll.id,
+      minX: -4.2,
+      maxX: -4,
+      minZ: -1.5,
+      maxZ: 1.5,
+      top: 1.3,
+      thickness: 0.05,
+      behavior: undefined,
+      renderId: undefined,
+    })
+    expect(full[2]).toMatchObject({
+      id: 'compound-scroll::scroll-positive',
+      parentPlatformId: scroll.id,
+      minX: 4,
+      maxX: 4.3,
+      top: 1.3,
+    })
+    expect(platformBoundsAtRuntime(scroll, runtime.snapshots()[0])).toEqual({
+      minX: -4.2,
+      maxX: 4.3,
+      minY: 1.05,
+      maxY: 1.3,
+      minZ: -2,
+      maxZ: 2,
+    })
+
+    runtime.advance(0.375, active)
+    const half = runtime.materialize([scroll]) as readonly PlatformDefinition[]
+    expect(half[0]).toMatchObject({ minX: -2.5, maxX: 2.5 })
+    expect(half[1]).toMatchObject({ minX: -2.7, maxX: -2.5 })
+    expect(half[2]).toMatchObject({ minX: 2.5, maxX: 2.8 })
+    expect(
+      platformBoundsAtRuntime(scroll, runtime.snapshots()[0]),
+    ).toMatchObject({ minX: -2.7, maxX: 2.8, maxY: 1.3 })
+  })
+
+  it.each([1 / 30, 1 / 60])(
+    'keeps riders on both roller components through retract and extend at %s seconds/frame',
+    (dt) => {
+      for (const side of [-1, 1] as const) {
+        const scroll = platform('rider-scroll', {
+          minX: -2,
+          maxX: 2,
+          minZ: -1,
+          maxZ: 1,
+          behavior: {
+            kind: 'scroll',
+            axis: 'x',
+            edgeSupports: {
+              negative: {
+                outwardLength: 0.2,
+                minCrossAxis: -0.8,
+                maxCrossAxis: 0.8,
+                topOffset: 0.05,
+                thickness: 0.05,
+              },
+              positive: {
+                outwardLength: 0.2,
+                minCrossAxis: -0.8,
+                maxCrossAxis: 0.8,
+                topOffset: 0.05,
+                thickness: 0.05,
+              },
+            },
+            minLengthRatio: 0.25,
+            extendedSeconds: 0.25,
+            retractedSeconds: 0.25,
+            transitionSeconds: 0.25,
+            initialState: 'extended',
+          },
+        })
+        const riderLevel = level([scroll], -100)
+        riderLevel.spawn.position = { x: side * 2.1, y: 0.05, z: 0 }
+        riderLevel.checkpoints[0]!.position = { ...riderLevel.spawn.position }
+        const game = createGlassGame(riderLevel)
+
+        expect(game.snapshot().player).toMatchObject({
+          grounded: true,
+          supportPlatformId: scroll.id,
+          position: { y: 0.05 },
+        })
+        for (let frame = 0; frame < Math.ceil(1.5 / dt); frame++) {
+          game.step(idle, dt)
+          const snapshot = game.snapshot()
+          const ratio = stateFor(game, scroll.id)?.lengthRatio ?? 1
+          expect(snapshot.player).toMatchObject({
+            grounded: true,
+            supportPlatformId: scroll.id,
+          })
+          expect(snapshot.player.position.x).toBeCloseTo(
+            side * (2 * ratio + 0.1),
+            7,
+          )
+          expect(snapshot.player.position.y).toBeCloseTo(0.05, 8)
+          expect(snapshot.activeSolidIds).toEqual([scroll.id])
+        }
+      }
+    },
+  )
+
+  it('walks from the deck onto the raised roller crown and falls only beyond its outer edge', () => {
+    const scroll = platform('walkable-scroll', {
+      minX: -2,
+      maxX: 2,
+      behavior: {
+        kind: 'scroll',
+        axis: 'x',
+        edgeSupports: {
+          negative: {
+            outwardLength: 0.25,
+            minCrossAxis: -0.8,
+            maxCrossAxis: 0.8,
+            topOffset: 0.05,
+            thickness: 0.05,
+          },
+          positive: {
+            outwardLength: 0.25,
+            minCrossAxis: -0.8,
+            maxCrossAxis: 0.8,
+            topOffset: 0.05,
+            thickness: 0.05,
+          },
+        },
+        minLengthRatio: 0.25,
+        extendedSeconds: 1,
+        retractedSeconds: 1,
+        transitionSeconds: 1,
+        initialState: 'extended',
+      },
+    })
+    const walkLevel = level([scroll], -100)
+    walkLevel.spawn.position.x = -1.7
+    walkLevel.checkpoints[0]!.position.x = -1.7
+    const game = createGlassGame(walkLevel)
+
+    for (let step = 0; step < 44; step++)
+      game.step({ ...idle, moveX: -1 }, MOVEMENT.fixedStep)
+    expect(game.snapshot().player.position.x).toBeLessThan(-2)
+    expect(game.snapshot().player).toMatchObject({
+      grounded: true,
+      supportPlatformId: scroll.id,
+      position: { y: 0.05 },
+    })
+
+    for (let step = 0; step < 40; step++)
+      game.step({ ...idle, moveX: -1 }, MOVEMENT.fixedStep)
+    expect(game.snapshot().player.position.x).toBeLessThan(-2.25)
+    expect(game.snapshot().player.grounded).toBe(false)
+    expect(game.snapshot().player.position.y).toBeLessThan(0.05)
+
+    const cornerLevel = level([scroll], -100)
+    cornerLevel.spawn.position = { x: -2.1, y: 0.05, z: 0.65 }
+    cornerLevel.checkpoints[0]!.position = { ...cornerLevel.spawn.position }
+    const corner = createGlassGame(cornerLevel)
+    for (let step = 0; step < 40; step++)
+      corner.step({ ...idle, moveZ: 1 }, MOVEMENT.fixedStep)
+    expect(corner.snapshot().player.position.z).toBeGreaterThan(0.8)
+    expect(corner.snapshot().player.grounded).toBe(false)
+    expect(corner.snapshot().player.position.y).toBeLessThan(0.05)
+  })
+
+  it('keeps taller ledges blocking and never treats a shallow platform across an authored gap as a step', () => {
+    const blockedAt = (
+      targetMinX: number,
+      targetTop: number,
+      withGap: boolean,
+    ) => {
+      const proof = level([
+        platform('floor', { minX: -1, maxX: 0 }),
+        platform('target', {
+          minX: targetMinX,
+          maxX: 1,
+          top: targetTop,
+        }),
+      ])
+      proof.spawn.position.x = -0.3
+      proof.checkpoints[0]!.position.x = -0.3
+      if (withGap)
+        proof.intentionalGaps = [
+          {
+            id: 'true-gap',
+            minX: 0,
+            maxX: targetMinX,
+            minZ: -1,
+            maxZ: 1,
+            top: 0,
+          },
+        ]
+      const game = createGlassGame(proof)
+      for (let step = 0; step < 80; step++)
+        game.step({ ...idle, moveX: 1 }, MOVEMENT.fixedStep)
+      expect(game.snapshot().player).toMatchObject({
+        grounded: true,
+        supportPlatformId: 'floor',
+        position: { y: 0 },
+      })
+      return game.snapshot().player.position.x
+    }
+
+    expect(blockedAt(0, 0.2, false)).toBeCloseTo(-MOVEMENT.radius, 8)
+    expect(blockedAt(0.05, 0.05, true)).toBeCloseTo(0.05 - MOVEMENT.radius, 8)
+
+    const propProof = level([platform('floor', { minX: -1, maxX: 0 })])
+    propProof.spawn.position.x = -0.3
+    propProof.checkpoints[0]!.position.x = -0.3
+    propProof.solids = [
+      {
+        id: 'tall-prop',
+        kind: 'prop',
+        shape: 'box',
+        minX: 0,
+        maxX: 0.4,
+        minZ: -0.5,
+        maxZ: 0.5,
+        top: 0.2,
+        thickness: 0.2,
+      },
+    ]
+    const propGame = createGlassGame(propProof)
+    fixedSteps(propGame, 80, { ...idle, moveX: 1 })
+    expect(propGame.snapshot().player.position.x).toBeCloseTo(
+      -MOVEMENT.radius,
+      8,
+    )
+  })
+
   it('starts a retracted scroll on its chosen world axis and freezes at dt zero', () => {
     const scroll = platform('turned-scroll', {
       minX: -3,
@@ -330,6 +596,71 @@ describe('authored platform runtime', () => {
     expect(runtime.snapshots()[0]?.lengthRatio).toBeCloseTo(0.7, 12)
     expect(runtime.snapshots()[0]?.phaseProgress).toBeGreaterThanOrEqual(0)
     expect(runtime.snapshots()[0]?.phaseProgress).toBeLessThanOrEqual(1)
+  })
+
+  it('rejects malformed roller contacts and authored ids in the internal component namespace', () => {
+    const validEdge = {
+      outwardLength: 0.2,
+      minCrossAxis: -0.8,
+      maxCrossAxis: 0.8,
+      topOffset: 0.05,
+      thickness: 0.05,
+    }
+    const base = {
+      kind: 'scroll',
+      axis: 'x',
+      minLengthRatio: 0.25,
+      extendedSeconds: 1,
+      retractedSeconds: 1,
+      transitionSeconds: 1,
+      initialState: 'extended',
+    } as const
+    for (const edgeSupports of [
+      null,
+      {},
+      { negative: null },
+      { negative: validEdge },
+    ])
+      expect(
+        platformRuntimeDefinitionError(
+          platform('malformed-edges', {
+            behavior: {
+              ...base,
+              edgeSupports,
+            } as PlatformDefinition['behavior'],
+          }),
+        ),
+      ).toContain('negative and positive')
+    expect(
+      platformRuntimeDefinitionError(
+        platform('authored::scroll-negative', { behavior: base }),
+      ),
+    ).toContain('reserved')
+
+    const runtime = createPlatformRuntime([
+      platform('scroll', {
+        behavior: {
+          ...base,
+          edgeSupports: { negative: validEdge, positive: validEdge },
+        },
+      }),
+    ])
+    expect(() =>
+      runtime.materialize([
+        platform('scroll'),
+        {
+          id: 'scroll::scroll-positive',
+          kind: 'prop',
+          shape: 'box',
+          minX: 10,
+          maxX: 11,
+          minZ: 10,
+          maxZ: 11,
+          top: 1,
+          thickness: 1,
+        },
+      ]),
+    ).toThrow('reserved by a runtime scroll component')
   })
 
   it('drops an edge rider as collision retracts while retaining centre support', () => {

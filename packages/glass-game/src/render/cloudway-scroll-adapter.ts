@@ -2,7 +2,7 @@
 
 import type { Material, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, } from 'three'
 import { Box3, Group, Vector3 } from 'three'
-import type { PlatformDefinition, PlatformRenderQuarterTurns, PlatformRuntimeSnapshot, } from '../contracts'
+import type { PlatformDefinition, PlatformRenderQuarterTurns, PlatformRuntimeSnapshot, PlatformScrollEdgeSupportDefinition, } from '../contracts'
 import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
 import type { ValidatedCloudwayScrollDonor } from './cloudway-scroll-contract'
 import { validateCloudwayScrollDonor } from './cloudway-scroll-contract'
@@ -46,6 +46,7 @@ interface InstalledRole {
 }
 
 interface ValidatedPlatform {
+  readonly extensionScale: number
   readonly minimumLengthRatio: number
   readonly turns: PlatformRenderQuarterTurns
 }
@@ -160,6 +161,43 @@ function worldAxisFor(turns: PlatformRenderQuarterTurns): 'x' | 'z' {
   return turns % 2 === 0 ? 'x' : 'z'
 }
 
+function validateVisibleEdgeSupport(
+  source: Object3D,
+  platform: PlatformDefinition,
+  edge: PlatformScrollEdgeSupportDefinition,
+  worldSide: 'negative' | 'positive',
+  localSide: 'negative' | 'positive',
+  localCrossPositive: boolean,
+  validated: ValidatedCloudwayScrollDonor,
+): void {
+  const bounds =
+    localSide === 'negative'
+      ? validated.roleBounds.negativeRoller
+      : validated.roleBounds.positiveRoller
+  const anchor = validated.metadata.motion.rollerEdgeAnchors[localSide][0]
+  const availableOutward =
+    localSide === 'negative' ? anchor - bounds.minX : bounds.maxX - anchor
+  const localCrossMin = localCrossPositive
+    ? edge.minCrossAxis
+    : -edge.maxCrossAxis
+  const localCrossMax = localCrossPositive
+    ? edge.maxCrossAxis
+    : -edge.minCrossAxis
+  if (
+    !Number.isFinite(edge.outwardLength) ||
+    edge.outwardLength <= 0 ||
+    edge.outwardLength > availableOutward + EPSILON ||
+    localCrossMin < bounds.minZ - EPSILON ||
+    localCrossMax > bounds.maxZ + EPSILON ||
+    edge.topOffset > bounds.maxY + EPSILON ||
+    edge.topOffset - edge.thickness < bounds.minY - EPSILON
+  )
+    fail(
+      source,
+      `platform "${platform.id}" ${worldSide} edge support must stay inside the visible ${localSide} roller bounds.`,
+    )
+}
+
 function validatePlatform(
   source: Object3D,
   platform: PlatformDefinition,
@@ -187,22 +225,46 @@ function validatePlatform(
     )
   const worldWidth = platform.maxX - platform.minX
   const worldDepth = platform.maxZ - platform.minZ
-  const expectedWidth =
-    turns % 2 === 0
-      ? validated.metadata.support.width
-      : validated.metadata.support.depth
-  const expectedDepth =
-    turns % 2 === 0
-      ? validated.metadata.support.depth
-      : validated.metadata.support.width
+  const extensionLength = expectedAxis === 'x' ? worldWidth : worldDepth
+  const crossLength = expectedAxis === 'x' ? worldDepth : worldWidth
+  const extensionScale = extensionLength / validated.metadata.support.width
   if (
-    !nearlyEqual(worldWidth, expectedWidth) ||
-    !nearlyEqual(worldDepth, expectedDepth)
+    !Number.isFinite(extensionScale) ||
+    extensionScale <= 0 ||
+    !nearlyEqual(crossLength, validated.metadata.support.depth)
   )
     fail(
       source,
-      `platform "${platform.id}" support dimensions must be ${expectedWidth} x ${expectedDepth} after rotation.`,
+      `platform "${platform.id}" cross-axis support must be ${validated.metadata.support.depth} metres after rotation.`,
     )
+  const edges = platform.behavior.edgeSupports
+  if (edges === undefined && !nearlyEqual(extensionScale, 1))
+    fail(
+      source,
+      `platform "${platform.id}" needs visible edge supports before extending beyond the certified donor length.`,
+    )
+  if (edges !== undefined) {
+    const localPositiveIsWorldPositive = turns === 0 || turns === 3
+    const localCrossPositive = turns === 0 || turns === 1
+    validateVisibleEdgeSupport(
+      source,
+      platform,
+      edges.negative,
+      'negative',
+      localPositiveIsWorldPositive ? 'negative' : 'positive',
+      localCrossPositive,
+      validated,
+    )
+    validateVisibleEdgeSupport(
+      source,
+      platform,
+      edges.positive,
+      'positive',
+      localPositiveIsWorldPositive ? 'positive' : 'negative',
+      localCrossPositive,
+      validated,
+    )
+  }
   if (!nearlyEqual(platform.thickness, validated.collider.height))
     fail(
       source,
@@ -219,6 +281,7 @@ function validatePlatform(
   )
     fail(source, `platform "${platform.id}" bounds and top must be finite.`)
   return {
+    extensionScale,
     minimumLengthRatio: platform.behavior.minLengthRatio,
     turns,
   }
@@ -307,6 +370,8 @@ export function createCloudwayScrollAdapter(
   const ownedMeshes: Mesh[] = []
   const borrowedMaterials = new Set<Material>(reviewedMaterials.values())
   let deck: InstalledRole
+  let deckSupport: Mesh
+  let deckSupportScaleX: number
   let negativeRoller: InstalledRole
   let positiveRoller: InstalledRole
   try {
@@ -320,6 +385,16 @@ export function createCloudwayScrollAdapter(
       reviewedMaterials,
       ownedMeshes,
     )
+    deckSupport = exactNamedDescendant(
+      deck.role,
+      validated.deckSupportMeshName,
+    ) as Mesh
+    if (!deckSupport.isMesh || Math.abs(deckSupport.scale.x) <= EPSILON)
+      fail(
+        source,
+        `${validated.deckSupportMeshName} must retain a non-zero local extension scale.`,
+      )
+    deckSupportScaleX = deckSupport.scale.x
     root.add(deck.motion)
     negativeRoller = cloneRole(
       sourceClone,
@@ -397,13 +472,16 @@ export function createCloudwayScrollAdapter(
           source,
           `snapshot lengthRatio must stay between ${validatedPlatform.minimumLengthRatio} and 1.`,
         )
-      deck.motion.scale.set(ratio, 1, 1)
+      const targetScale = validatedPlatform.extensionScale * ratio
+      const detailScale = Math.min(1, targetScale)
+      deck.motion.scale.set(detailScale, 1, 1)
+      deckSupport.scale.x = deckSupportScaleX * (targetScale / detailScale)
       const negativeAnchor =
         validated.metadata.motion.rollerEdgeAnchors.negative[0]
       const positiveAnchor =
         validated.metadata.motion.rollerEdgeAnchors.positive[0]
-      negativeRoller.motion.position.x = negativeAnchor * (ratio - 1)
-      positiveRoller.motion.position.x = positiveAnchor * (ratio - 1)
+      negativeRoller.motion.position.x = negativeAnchor * (targetScale - 1)
+      positiveRoller.motion.position.x = positiveAnchor * (targetScale - 1)
       root.visible = true
       refreshBounds()
     },

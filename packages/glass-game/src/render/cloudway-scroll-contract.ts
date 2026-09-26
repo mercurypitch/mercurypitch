@@ -1,7 +1,8 @@
 // Cloudway scroll donor contract — parse and validate certified contact metadata and semantic role trees without mutating source art.
 
 import type { Mesh, Object3D } from 'three'
-import { Matrix4, Vector3 } from 'three'
+import { Box3, Matrix4, Vector3 } from 'three'
+import type { Bounds3 } from '../contracts'
 
 export const CLOUDWAY_SCROLL_METADATA_KEY = 'platform_adapter_json'
 export const CLOUDWAY_SCROLL_COLLIDER_KEY = 'collider_json'
@@ -53,9 +54,18 @@ export interface CloudwayScrollColliderMetadataV1 {
 export interface ValidatedCloudwayScrollDonor {
   readonly collider: CloudwayScrollColliderMetadataV1
   readonly metadata: CloudwayScrollAdapterMetadataV1
+  /** Thickest deck mesh covering the certified support footprint. */
+  readonly deckSupportMeshName: string
+  /** Source-local render envelopes measured without mutating geometry. */
+  readonly roleBounds: {
+    readonly deck: Bounds3
+    readonly negativeRoller: Bounds3
+    readonly positiveRoller: Bounds3
+  }
 }
 
 const EPSILON = 1e-6
+const GEOMETRY_EPSILON = 1e-4
 
 function donorLabel(source: Object3D): string {
   return source.name || '<unnamed>'
@@ -398,7 +408,7 @@ function validateIdentityRoot(source: Object3D): void {
 function validateRoleTree(
   source: Object3D,
   metadata: CloudwayScrollAdapterMetadataV1,
-): readonly string[] {
+): readonly Object3D[] {
   const roleNames = [
     metadata.motion.roles.deck,
     metadata.motion.roles.negativeRoller,
@@ -470,7 +480,109 @@ function validateRoleTree(
     !nearlyEqual(positivePosition.z, positiveAnchor[2])
   )
     fail(source, 'Roller role origins must match their certified edge anchors.')
-  return roleNames
+  return roleRoots
+}
+
+function boundsRecord(bounds: Box3): Bounds3 {
+  return {
+    minX: bounds.min.x,
+    maxX: bounds.max.x,
+    minY: bounds.min.y,
+    maxY: bounds.max.y,
+    minZ: bounds.min.z,
+    maxZ: bounds.max.z,
+  }
+}
+
+/** Measures a role in donor-root coordinates without populating geometry caches. */
+function roleBounds(source: Object3D, role: Object3D): Bounds3 {
+  const bounds = new Box3()
+  const point = new Vector3()
+  let meshCount = 0
+  role.traverse((object) => {
+    const mesh = object as Mesh
+    if (!mesh.isMesh) return
+    meshCount++
+    const position = mesh.geometry.getAttribute('position')
+    if (position === undefined || position.itemSize < 3 || position.count === 0)
+      fail(source, `Role mesh "${mesh.name}" needs position geometry.`)
+    const matrix = relativeMatrix(mesh, source)
+    for (let index = 0; index < position.count; index++) {
+      point.fromBufferAttribute(position, index).applyMatrix4(matrix)
+      if (![point.x, point.y, point.z].every(Number.isFinite))
+        fail(source, `Role mesh "${mesh.name}" has non-finite geometry.`)
+      bounds.expandByPoint(point)
+    }
+  })
+  if (meshCount === 0 || bounds.isEmpty())
+    fail(source, `Role node "${role.name}" has no finite render bounds.`)
+  return boundsRecord(bounds)
+}
+
+function validateVisibleContactGeometry(
+  source: Object3D,
+  metadata: CloudwayScrollAdapterMetadataV1,
+  roles: readonly Object3D[],
+): Pick<ValidatedCloudwayScrollDonor, 'deckSupportMeshName' | 'roleBounds'> {
+  const [deckRole, negativeRole, positiveRole] = roles
+  const halfWidth = metadata.support.width / 2
+  const halfDepth = metadata.support.depth / 2
+  const supportCandidates: { bounds: Bounds3; mesh: Mesh }[] = []
+  deckRole!.traverse((object) => {
+    const mesh = object as Mesh
+    if (!mesh.isMesh) return
+    const bounds = roleBounds(source, mesh)
+    if (
+      bounds.minX <= -halfWidth + GEOMETRY_EPSILON &&
+      bounds.maxX >= halfWidth - GEOMETRY_EPSILON &&
+      bounds.minZ <= -halfDepth + GEOMETRY_EPSILON &&
+      bounds.maxZ >= halfDepth - GEOMETRY_EPSILON &&
+      Math.abs(bounds.maxY) <= GEOMETRY_EPSILON
+    )
+      supportCandidates.push({ bounds, mesh })
+  })
+  supportCandidates.sort(
+    (left, right) =>
+      right.bounds.maxY -
+      right.bounds.minY -
+      (left.bounds.maxY - left.bounds.minY),
+  )
+  const deckSupport = supportCandidates[0]
+  const nextCandidate = supportCandidates[1]
+  if (
+    deckSupport === undefined ||
+    !deckSupport.mesh.name ||
+    (nextCandidate !== undefined &&
+      Math.abs(
+        deckSupport.bounds.maxY -
+          deckSupport.bounds.minY -
+          (nextCandidate.bounds.maxY - nextCandidate.bounds.minY),
+      ) <= GEOMETRY_EPSILON)
+  )
+    fail(
+      source,
+      'Deck role must have one named thickest mesh covering the certified support at landing y=0.',
+    )
+
+  const deck = roleBounds(source, deckRole!)
+  const negativeRoller = roleBounds(source, negativeRole!)
+  const positiveRoller = roleBounds(source, positiveRole!)
+  const negativeAnchor = metadata.motion.rollerEdgeAnchors.negative[0]
+  const positiveAnchor = metadata.motion.rollerEdgeAnchors.positive[0]
+  if (
+    Math.abs(negativeRoller.maxX - negativeAnchor) > GEOMETRY_EPSILON ||
+    negativeRoller.minX >= negativeAnchor - GEOMETRY_EPSILON ||
+    Math.abs(positiveRoller.minX - positiveAnchor) > GEOMETRY_EPSILON ||
+    positiveRoller.maxX <= positiveAnchor + GEOMETRY_EPSILON
+  )
+    fail(
+      source,
+      'Roller render bounds must begin at their certified deck-edge anchors and extend outward.',
+    )
+  return {
+    deckSupportMeshName: deckSupport.mesh.name,
+    roleBounds: { deck, negativeRoller, positiveRoller },
+  }
 }
 
 export function validateCloudwayScrollDonor(
@@ -487,6 +599,7 @@ export function validateCloudwayScrollDonor(
       source,
       'collider_json and platform_adapter_json support dimensions must match.',
     )
-  validateRoleTree(source, metadata)
-  return { collider, metadata }
+  const roles = validateRoleTree(source, metadata)
+  const geometry = validateVisibleContactGeometry(source, metadata, roles)
+  return { collider, metadata, ...geometry }
 }

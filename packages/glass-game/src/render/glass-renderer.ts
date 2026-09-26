@@ -12,7 +12,7 @@ import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createAtmosphere } from './atmosphere'
 import { installBackdropFog } from './backdrop-fog'
-import type { ChallengeCameraMetrics } from './camera'
+import type { AdventureCameraMode, ChallengeCameraMetrics } from './camera'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
 import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR, isCloudwayLevel, } from './cloudway-scene'
@@ -35,6 +35,7 @@ import { canRenderViewport } from './viewport'
 export interface GlassRendererOptions {
   reducedMotion?: boolean
   followSmoothnessSeconds?: number
+  cameraMode?: AdventureCameraMode
   renderQuality?: GlassRenderQualityPreference
   onAssetError?: (id: string, error: unknown) => void
   onLoadingProgress?: (progress: LoadingProgress) => void
@@ -63,6 +64,8 @@ export interface GlassRenderer {
   setOrbitActive(active: boolean): void
   zoom(delta: number): void
   recenter(): void
+  setCameraMode(mode: AdventureCameraMode): void
+  getCameraMode(): AdventureCameraMode
   /** Actual rendered view heading, used for presentation and diagnostics. */
   getCameraYaw(): number
   /** Actual rendered Merc heading, used only by development diagnostics. */
@@ -225,6 +228,7 @@ function createGlassRendererInstance(
   const camera = createAdventureCamera(level, {
     reducedMotion: options.reducedMotion,
     followSmoothnessSeconds: options.followSmoothnessSeconds,
+    mode: options.cameraMode,
   })
   camera.camera.far = sceneFrame.cameraFar
   camera.camera.updateProjectionMatrix()
@@ -435,6 +439,8 @@ function createGlassRendererInstance(
     setOrbitActive: camera.setOrbitActive,
     zoom: camera.zoom,
     recenter: camera.recenter,
+    setCameraMode: camera.setMode,
+    getCameraMode: camera.mode,
     getCameraYaw: camera.yaw,
     getMercYaw: () => merc?.root.rotation.y ?? null,
     getMovementYaw: camera.movementYaw,
@@ -603,7 +609,15 @@ function createGlassRendererInstance(
       renderer.shadowMap.needsUpdate = updateShadow
       if (updateShadow) shadowUpdates++
       else shadowReuses++
-      renderer.render(scene, camera.camera)
+      const mercVisible = merc?.root.visible
+      if (merc !== undefined && camera.mode() === 'first-person')
+        merc.root.visible = false
+      try {
+        renderer.render(scene, camera.camera)
+      } finally {
+        if (merc !== undefined && mercVisible !== undefined)
+          merc.root.visible = mercVisible
+      }
       if (!firstFrameVerified) {
         verifyFirstFrame(renderer.getContext())
         firstFrameVerified = true

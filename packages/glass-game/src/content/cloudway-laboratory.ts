@@ -8,6 +8,16 @@ const PEARL_WIDTH = 3.2
 const PEARL_DEPTH = 0.72
 const SCROLL_LOCAL_WIDTH = 0.757494056
 const SCROLL_LOCAL_DEPTH = 2.205964088
+const SCROLL_EXTENSION_LENGTH = SCROLL_LOCAL_DEPTH
+// GLTFLoader raycasts across the dense roller barrel place its crown at
+// 0.0494 m. The 0.05 m contact plane prevents Merc's feet entering the gold,
+// while the 0.189/0.1885 m bands stop before the descending decorative spikes.
+const SCROLL_ROLLER_TOP = 0.05
+const SCROLL_ROLLER_CONTACT_DEPTH = 0.05
+const SCROLL_ROLLER_CROSS_MIN = -1.05
+const SCROLL_ROLLER_CROSS_MAX = 1.05
+const SCROLL_NEGATIVE_EDGE_LENGTH = 0.189
+const SCROLL_POSITIVE_EDGE_LENGTH = 0.1885
 const ROSE_WIDTH = 1.64
 const ROSE_DEPTH = 1.64
 const AMETHYST_WIDTH = 1.64
@@ -30,10 +40,18 @@ const SCROLL_APPROACH_ENTRY_Z = ARRIVAL_Z + PEARL_DEPTH + ARRIVAL_APPROACH_GAP
 const SCROLL_APPROACH_Z = SCROLL_APPROACH_ENTRY_Z + PEARL_DEPTH
 const SCROLL_X = SCROLL_APPROACH_X
 const SCROLL_Z =
-  SCROLL_APPROACH_Z + PEARL_DEPTH / 2 + SCROLL_GAP + SCROLL_LOCAL_WIDTH / 2
+  SCROLL_APPROACH_Z +
+  PEARL_DEPTH / 2 +
+  SCROLL_GAP +
+  SCROLL_NEGATIVE_EDGE_LENGTH +
+  SCROLL_EXTENSION_LENGTH / 2
 const SCROLL_CATCH_X = SCROLL_X
 const SCROLL_CATCH_Z =
-  SCROLL_Z + SCROLL_LOCAL_WIDTH / 2 + SCROLL_GAP + PEARL_DEPTH / 2
+  SCROLL_Z +
+  SCROLL_EXTENSION_LENGTH / 2 +
+  SCROLL_POSITIVE_EDGE_LENGTH +
+  SCROLL_GAP +
+  PEARL_DEPTH / 2
 const SCROLL_COURT_Z = SCROLL_CATCH_Z + PEARL_DEPTH
 const ROSE_X = -0.25
 const ROSE_Z = SCROLL_COURT_Z + PEARL_DEPTH / 2 + CRYSTAL_GAP + ROSE_DEPTH / 2
@@ -115,7 +133,7 @@ const PLATFORMS: readonly PlatformDefinition[] = [
     SCROLL_X,
     SCROLL_Z,
     SCROLL_LOCAL_DEPTH,
-    SCROLL_LOCAL_WIDTH,
+    SCROLL_EXTENSION_LENGTH,
     0,
     0.1,
     {
@@ -124,6 +142,22 @@ const PLATFORMS: readonly PlatformDefinition[] = [
       behavior: {
         kind: 'scroll',
         axis: 'z',
+        edgeSupports: {
+          negative: {
+            outwardLength: SCROLL_NEGATIVE_EDGE_LENGTH,
+            minCrossAxis: SCROLL_ROLLER_CROSS_MIN,
+            maxCrossAxis: SCROLL_ROLLER_CROSS_MAX,
+            topOffset: SCROLL_ROLLER_TOP,
+            thickness: SCROLL_ROLLER_CONTACT_DEPTH,
+          },
+          positive: {
+            outwardLength: SCROLL_POSITIVE_EDGE_LENGTH,
+            minCrossAxis: SCROLL_ROLLER_CROSS_MIN,
+            maxCrossAxis: SCROLL_ROLLER_CROSS_MAX,
+            topOffset: SCROLL_ROLLER_TOP,
+            thickness: SCROLL_ROLLER_CONTACT_DEPTH,
+          },
+        },
         minLengthRatio: 0.25,
         extendedSeconds: 4,
         retractedSeconds: 3,
@@ -268,7 +302,7 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
   authored: {
     levelId: 'cloudway-crystal-promenade-first-slice',
     layoutId: 'crystal-promenade-first-slice',
-    contentRevision: 2,
+    contentRevision: 3,
   },
   movement: {
     walkSpeed: 1.55,
@@ -376,27 +410,29 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
       id: 'scroll-entry',
       minX: Math.max(
         SCROLL_APPROACH_X - PEARL_WIDTH / 2,
-        SCROLL_X - SCROLL_LOCAL_DEPTH / 2,
+        SCROLL_X + SCROLL_ROLLER_CROSS_MIN,
       ),
       maxX: Math.min(
         SCROLL_APPROACH_X + PEARL_WIDTH / 2,
-        SCROLL_X + SCROLL_LOCAL_DEPTH / 2,
+        SCROLL_X + SCROLL_ROLLER_CROSS_MAX,
       ),
       minZ: SCROLL_APPROACH_Z + PEARL_DEPTH / 2,
-      maxZ: SCROLL_Z - SCROLL_LOCAL_WIDTH / 2,
+      maxZ:
+        SCROLL_Z - SCROLL_EXTENSION_LENGTH / 2 - SCROLL_NEGATIVE_EDGE_LENGTH,
       top: 0,
     },
     {
       id: 'scroll-exit',
       minX: Math.max(
-        SCROLL_X - SCROLL_LOCAL_DEPTH / 2,
+        SCROLL_X + SCROLL_ROLLER_CROSS_MIN,
         SCROLL_CATCH_X - PEARL_WIDTH / 2,
       ),
       maxX: Math.min(
-        SCROLL_X + SCROLL_LOCAL_DEPTH / 2,
+        SCROLL_X + SCROLL_ROLLER_CROSS_MAX,
         SCROLL_CATCH_X + PEARL_WIDTH / 2,
       ),
-      minZ: SCROLL_Z + SCROLL_LOCAL_WIDTH / 2,
+      minZ:
+        SCROLL_Z + SCROLL_EXTENSION_LENGTH / 2 + SCROLL_POSITIVE_EDGE_LENGTH,
       maxZ: SCROLL_CATCH_Z - PEARL_DEPTH / 2,
       top: 0,
     },
@@ -442,7 +478,7 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
       minY: -5,
       maxY: 5,
       minZ: -13,
-      maxZ: 2,
+      maxZ: 4,
     },
     lightBounds: {
       minX: -3,
@@ -450,7 +486,7 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
       minY: -1,
       maxY: 4,
       minZ: -11,
-      maxZ: 1.5,
+      maxZ: 3.5,
     },
     rooms: [],
     audioRegions: [
@@ -462,7 +498,7 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
           minY: -5,
           maxY: 5,
           minZ: -13,
-          maxZ: 2,
+          maxZ: 4,
         },
         sceneId: 'garden',
       },
@@ -512,8 +548,25 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS = {
     finalTerrace: { x: FINAL_CATCH_X, z: FINAL_TERRACE_Z },
   },
   scroll: {
+    extensionLength: SCROLL_EXTENSION_LENGTH,
     localWidth: SCROLL_LOCAL_WIDTH,
     localDepth: SCROLL_LOCAL_DEPTH,
+    edgeSupports: {
+      negative: {
+        outwardLength: SCROLL_NEGATIVE_EDGE_LENGTH,
+        minCrossAxis: SCROLL_ROLLER_CROSS_MIN,
+        maxCrossAxis: SCROLL_ROLLER_CROSS_MAX,
+        topOffset: SCROLL_ROLLER_TOP,
+        thickness: SCROLL_ROLLER_CONTACT_DEPTH,
+      },
+      positive: {
+        outwardLength: SCROLL_POSITIVE_EDGE_LENGTH,
+        minCrossAxis: SCROLL_ROLLER_CROSS_MIN,
+        maxCrossAxis: SCROLL_ROLLER_CROSS_MAX,
+        topOffset: SCROLL_ROLLER_TOP,
+        thickness: SCROLL_ROLLER_CONTACT_DEPTH,
+      },
+    },
   },
 } as const
 
