@@ -170,7 +170,9 @@ on:
         description: >-
           Optional shell run after each web build to assert the bundle carries
           what it must. Reads $STAGE ("dist" before cap sync, "synced" after),
-          $DIST_DIR and $ANDROID_ASSETS_DIR. Empty means no check.
+          $DIST_DIR and $ANDROID_ASSETS_DIR. The iOS jobs run it after each of
+          their web builds too, with STAGE=dist and ANDROID_ASSETS_DIR empty.
+          Empty means no check.
         required: false
         type: string
         default: ''
@@ -761,6 +763,7 @@ jobs:
       APP_SLUG: ${{ inputs.app-slug }}
       NATIVE_TEST_PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
       NATIVE_TEST_IOS_BUILD_SETTING: ${{ inputs.native-test-ios-build-setting }}
+      VERIFY_ASSETS: ${{ inputs.verify-assets }}
 
     steps:
       - name: Checkout
@@ -855,6 +858,17 @@ jobs:
             pnpm --filter "$PKG" exec vite build
             pnpm --filter "$PKG" exec cap sync ios
           fi
+
+      - name: Verify the TestFlight bundle
+        if: env.HAS_ASC == 'true' && inputs.verify-assets != ''
+        shell: bash
+        env:
+          STAGE: dist
+        run: |
+          set -euo pipefail
+          export DIST_DIR="$APP_DIR/dist"
+          export ANDROID_ASSETS_DIR=""
+          bash -euo pipefail -c "$VERIFY_ASSETS"
 
       - name: Import signing certificate
         if: env.HAS_ASC == 'true'
@@ -1092,6 +1106,7 @@ jobs:
       APP_SLUG: ${{ inputs.app-slug }}
       NATIVE_TEST_PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
       NATIVE_TEST_IOS_BUILD_SETTING: ${{ inputs.native-test-ios-build-setting }}
+      VERIFY_ASSETS: ${{ inputs.verify-assets }}
 
     steps:
       - name: Checkout
@@ -1157,6 +1172,17 @@ jobs:
           else
             pnpm --filter "$PKG" exec vite build
           fi
+
+      - name: Verify the simulator bundle
+        if: inputs.verify-assets != ''
+        shell: bash
+        env:
+          STAGE: dist
+        run: |
+          set -euo pipefail
+          export DIST_DIR="$APP_DIR/dist"
+          export ANDROID_ASSETS_DIR=""
+          bash -euo pipefail -c "$VERIFY_ASSETS"
 
       - name: Synchronize iOS project
         if: env.USE_NATIVE_TEST_PROFILE != 'true'
@@ -1265,6 +1291,17 @@ jobs:
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
           pnpm --filter "$PKG" exec vite build
           pnpm --filter "$PKG" exec cap sync ios
+
+      - name: Verify the release bundle
+        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true' && inputs.verify-assets != ''
+        shell: bash
+        env:
+          STAGE: dist
+        run: |
+          set -euo pipefail
+          export DIST_DIR="$APP_DIR/dist"
+          export ANDROID_ASSETS_DIR=""
+          bash -euo pipefail -c "$VERIFY_ASSETS"
 
       - name: Archive and export IPA
         if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
