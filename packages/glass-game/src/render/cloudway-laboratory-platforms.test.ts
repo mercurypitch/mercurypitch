@@ -332,14 +332,15 @@ describe('Cloudway laboratory platform renderer', () => {
     for (const id of [
       'arrival-entry',
       'arrival',
-      'arrival-court',
-      'arrival-threshold',
+      'scroll-approach-entry',
       'scroll-approach',
       'scroll-deck',
       'scroll-catch',
+      'scroll-court',
       'rose-step',
       'amethyst-step',
       'final-catch',
+      'final-terrace',
     ])
       expect(floorById.get(id)?.children).toHaveLength(0)
 
@@ -356,28 +357,34 @@ describe('Cloudway laboratory platform renderer', () => {
       if (object instanceof InstancedMesh) batches.push(object)
     })
     expect(batches).toHaveLength(1)
-    expect(batches[0]?.count).toBe(7)
+    expect(batches[0]?.count).toBe(8)
     const matrixVersion = batches[0]!.instanceMatrix.version
     renderer.update(snapshot)
     expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion)
-    const actualZ: number[] = []
+    const actualPositions: { x: number; z: number }[] = []
     const matrix = new Matrix4()
     const position = new Vector3()
     for (let index = 0; index < batches[0]!.count; index++) {
       batches[0]!.getMatrixAt(index, matrix)
       position.setFromMatrixPosition(matrix)
-      actualZ.push(position.z)
+      actualPositions.push({ x: position.x, z: position.z })
     }
-    const expectedZ = [
-      ...CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrivalRows,
+    const expectedPositions = [
+      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrivalEntry,
+      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrival,
+      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres
+        .scrollApproachEntry,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollApproach,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollCatch,
+      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollCourt,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.finalCatch,
-    ].sort((a, b) => a - b)
-    actualZ.sort((a, b) => a - b)
-    expectedZ.forEach((expected, index) =>
-      expect(actualZ[index]).toBeCloseTo(expected, 5),
-    )
+      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.finalTerrace,
+    ].sort((a, b) => a.z - b.z)
+    actualPositions.sort((a, b) => a.z - b.z)
+    expectedPositions.forEach((expected, index) => {
+      expect(actualPositions[index]?.x).toBeCloseTo(expected.x, 5)
+      expect(actualPositions[index]?.z).toBeCloseTo(expected.z, 5)
+    })
     allMeshes(installed as Group).forEach((mesh) => {
       expect(mesh.userData.excludeFromCameraCollision).toBe(true)
       expect(mesh.castShadow).toBe(false)
@@ -388,7 +395,7 @@ describe('Cloudway laboratory platform renderer', () => {
         (id) => id !== 'final-catch',
       ),
     })
-    expect(batches[0]!.count).toBe(6)
+    expect(batches[0]!.count).toBe(7)
     expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion + 1)
 
     renderer.dispose()

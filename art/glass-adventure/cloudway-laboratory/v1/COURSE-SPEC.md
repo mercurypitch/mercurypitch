@@ -1,6 +1,6 @@
 # Cloudway II — The Crystal Promenade
 
-An exploratory second course for testing the approved platform family, separate from the current introductory Cloudway. This document is the implementation brief; the course is not shipped or playable yet. Its final dimensions depend on the reviewed Meshy donors, support anchors and measured jump envelope. [The editable course study](crystal-promenade.design.json) imports directly into the Level Studio and contains 27 pieces: 18 support regions, six route markers and three voice targets.
+An exploratory second course for testing the approved platform family, separate from the current introductory Cloudway. The complete course remains an unshipped study; a bounded first slice with four accepted runtime assets is playable through the B-side Games Preview in games-enabled owner builds, and its development URL remains available. Its final dimensions depend on the reviewed Meshy donors, support anchors and measured jump envelope. [The editable course study](crystal-promenade.design.json) imports directly into the Level Studio and contains 27 pieces: 18 support regions, six route markers and three voice targets.
 
 ## Journey and pacing
 
@@ -45,7 +45,7 @@ Required singing takes place only at the arrival, listening garden and final ter
 
 All full images, dense models, texture masters, Blender projects, turntables and animation masters belong in the shared Proton creative source tree documented in [README.md](README.md). Git holds this specification, metadata, receipts, compact previews and accepted build assets.
 
-The 20 image references and 20 dense Meshy originals are complete. Packed Blender source preparation and semantic material/part authoring are in progress; no new asset has passed game acceptance. The editor and pure scroll timing/collision work can proceed independently, but do not establish that this course is playable.
+The 20 image references and 20 dense Meshy originals are complete. Packed Blender source preparation and semantic material/part authoring remain in progress. Four source-preserving runtime assets have passed the bounded first-slice contract: pearl marble long, gilt scroll bridge, rose quartz crackle fast and amethyst crackle slow. Acceptance applies only to those frozen GLBs and their declared contact surfaces; it does not imply that the remaining full-course library is playable.
 
 ## Editable study review
 
@@ -65,3 +65,27 @@ The 27-piece study passes the studio schema and top-view checks with zero warnin
 Every authored void is explicit, including the half-metre crystal-pair gap. The raft waits 1.5 seconds at each endpoint. The current flat-course controller requires a small jump onto each 0.16-metre terrace tread; the proof includes these jumps. This result covers fixed-step simulation, not touch-camera ease, loaded visual alignment, mobile frame rate or accepted art. The final dimensions must be reconciled with each Blender support surface while preserving ornament proportions.
 
 All three study encounters deliberately use a comfortable held note. The editor's configurable 0/4/7 melody remains a musical design proposal; this study does not pretend that relative melody targets or a final sung phrase are integrated. Existing playable courses and campaign progression are unchanged.
+
+## First-slice spacing checkpoint — 26 September 2026
+
+The playable first slice keeps the stable `cloudway-crystal-promenade-first-slice` level and layout namespace and advances `contentRevision` to 2 for the topology change. Each wait or singing court joins two unscaled pearl donors into a 3.2 × 1.44 metre rest. Those joins are confined to the four static courts; challenge islands never touch. This replaces the earlier continuous stack of shallow pearl rows while preserving the accepted 3.2 × 0.72 × 0.34 metre contact declaration on every instance.
+
+The full-extension scroll contact is 2.205964088 metres wide across X and 0.757494056 metres deep along travel after its certified quarter turn. It has a 0.70 metre edge gap before and after it. At 25 percent extension its travel-axis depth is 0.189373514 metres, so the normal walking jump that lands on the full deck misses the retracted landing window. The static training gap is 0.55 metres. The scroll catch to rose, rose to amethyst and amethyst to final catch gaps are each 0.50 metres; the measured 2-second rose versus 4-second amethyst separation therefore remains the half-metre gap specified by the full study.
+
+| Platform centre       | X (m) |      Z (m) | Role                                     |
+| --------------------- | ----: | ---------: | ---------------------------------------- |
+| Arrival entry         | -0.85 | -11.160000 | Spawn row of the joined arrival court    |
+| Arrival               | -0.85 | -10.440000 | First voice rest                         |
+| Scroll approach entry |  0.15 |  -9.170000 | Landing row after the training jump      |
+| Scroll approach       |  0.15 |  -8.450000 | Saved timing wait                        |
+| Scroll deck           |  0.15 |  -7.011253 | Timed moving support                     |
+| Scroll catch          |  0.15 |  -5.572506 | Landing row after the second scroll jump |
+| Scroll court          |  0.15 |  -4.852506 | Second voice rest                        |
+| Rose                  | -0.25 |  -3.172506 | 2-second crackle                         |
+| Amethyst              |  0.25 |  -1.302506 | 4-second crackle                         |
+| Final catch           |  0.85 |   0.107494 | Saved landing and final voice rest       |
+| Final terrace         |  0.85 |   0.827494 | Joined exit row                          |
+
+`CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS` is the code-facing source for these centres, certified dimensions and edge gaps. Checkpoints, voice anchors, the exit and presentation bounds derive from the same coordinates.
+
+The focused traversal proof passes at both 30 and 60 updates per second. It requires jumps across every authored void, lands on the actual scroll support, remains grounded while the centred scroll retracts, and completes the whole route without a respawn when timing is correct. Separate regressions prove that walking cannot cross either 0.70 metre scroll gap, the normal jump fails during the retracted window, and the miss returns to `scroll-save` before the next successful full-extension attempt. The accepted-asset proof freezes all four GLB hashes and checks root identity, contact or support metadata, collider dimensions, scroll roller anchors and every rotated world-space platform footprint without scaling the art.
