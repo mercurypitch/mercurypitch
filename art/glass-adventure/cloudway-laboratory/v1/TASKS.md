@@ -3,11 +3,22 @@
 Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a second exploratory course, and a browser level editor. The earlier melody-route A/B/C choice remains open.
 
 Current delivery: four first-crossing assets have passed matched full/bounded
-WebGL review and are bound to the development route. The combined scene and
+WebGL review and are bound to the Crystal Promenade Preview entry in games-enabled owner builds. The combined scene and
 staged production-adapter phases passed visual review. Physical-device testing
 remains open. The other sixteen donors remain archived source artwork.
 Earlier timestamped checkpoints below are historical; they do not override this
 status.
+
+## Final device-readiness pass — 26 September
+
+- [x] Identify and hydrate nine exact local runtime LFS pointers causing the floating museum JSON error; museum reaches ready in the browser.
+- [x] Make the compact Crystal Promenade available from B-side Games in games-enabled owner builds, not only a development URL. Host tests and actual touch navigation pass.
+- [ ] Floating touch control and calmer gallery / authored route camera integration, regression checks.
+- [x] Clear timed gaps around scroll and crackle islands; safe voice courts, measured contact and 30/60 Hz traversal. Scroll gaps remain 0.70 m on both sides when fully extended; other challenge gaps are 0.50–0.55 m. Twenty-four focused cases pass.
+- [ ] Actual loaded-scene visual inspection, final focused coverage/review, affected CI and merge in dependency order.
+
+The earlier first-crossing handoff below predates the owner's spacing feedback.
+It is retained as historical evidence and is superseded by this final pass.
 
 ## Current first-crossing evidence
 
@@ -87,7 +98,7 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 
 ## Remote checkpoint
 
-Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains scroll simulation, reference catalogue, production recipes and receipt mirrors. The editor was moved into private dotfiles at the owner's request. This PR is stacked on the open #861 fixes; neither PR has merge approval in this batch. The separate laboratory route loads its four accepted deliveries. Existing campaign art remains unchanged; the remaining sixteen sources are not exposed as finished runtime artwork.
+Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains scroll simulation, reference catalogue, production recipes and receipt mirrors. The editor was moved into private dotfiles at the owner's request. PR #861 merged on 26 September as main commit `6b2d3783`; the owner authorized final review and merge of both PRs after the camera, spacing and gallery-load fixes. PR #863 is being rebased onto that merged main before its final CI gate. The separate laboratory route loads its four accepted deliveries. Existing campaign art remains unchanged; the remaining sixteen sources are not exposed as finished runtime artwork.
 
 ## Source-quality checkpoint
 

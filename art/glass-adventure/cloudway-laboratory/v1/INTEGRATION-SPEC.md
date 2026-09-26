@@ -12,7 +12,7 @@ measurement and evidence from the actual game renderer.
 
 ## First playable boundary
 
-The smallest useful course slice is a developer-only route with:
+The smallest useful course slice is a separately selected Preview course with:
 
 1. a static arrival and checkpoint;
 2. one centred scroll bridge between static landings;
@@ -27,6 +27,11 @@ course dressing is connected. It must use a distinct level and save identity and
 must stay out of the campaign trial catalogue until the complete course passes
 runtime review. Simple visible fallback floors remain in place until the whole
 runtime donor family validates and installs transactionally.
+
+Games-enabled owner builds expose the first slice through the B-side Games
+Crystal Promenade card. The standalone development query remains an additional
+local shortcut; production does not honor that query. This preview is separate
+from campaign unlocks and does not enable games in public store profiles.
 
 The complete 27-piece top-view study remains the design authority in
 [`crystal-promenade.design.json`](crystal-promenade.design.json). Its clean
@@ -266,7 +271,7 @@ integration.
 
 The implementation uses these boundaries:
 
-- `content/cloudway-laboratory.ts`: distinct developer-only level and route;
+- `content/cloudway-laboratory.ts`: distinct Preview level and save namespace;
 - `render/cloudway-laboratory-catalog.ts`: stable render IDs, bundle ID, exact
   semantic roles and material policies;
 - `render/cloudway-laboratory-platforms.ts`: transactional family validation,
@@ -277,8 +282,10 @@ The implementation uses these boundaries:
   renderer beside the current Cloudway renderer;
 - `browser/assets.ts`: a separate logical bundle path, manifest and declared
   external dependencies for web and native packaging; and
-- `content/development-levels.ts` plus the standalone host: an explicit
-  developer query route only.
+- `content/development-levels.ts` plus the standalone host: an explicit local
+  development query; and
+- the narrow `@irchiinnuss/glass-game/promenade` entry plus Beside Cue's
+  `GamesScreen`: the Preview card in games-enabled owner builds.
 
 The new bundle must not replace or redirect `cloudway-platform-kit-v1`.
 Installation validates the complete family before removing any visible fallback
@@ -317,7 +324,7 @@ dense-mesh camera query is most visible.
 
 1. Accept semantic runtime exports for the scroll, Rose and Amethyst donors,
    including exact metadata, manifests and repeatable export evidence.
-2. Add the developer-only content, catalogue and asset declaration without
+2. Add the separately selected content, catalogue and asset declaration without
    changing the campaign or current Cloudway IDs.
 3. Add the laboratory renderer with cardinal matrices, role-based motion and
    explicit material replacement.

@@ -80,7 +80,7 @@ Inspect dense donors before reducing anything. The marble/opal tops must have a 
 - Basin: model is intentionally dry; water is a runtime surface/effect.
 - Repeated props: batch compatible geometry/materials by visible region; retain picking identities.
 
-The development-only first crossing binds four reviewed GLBs: the scroll bridge,
+The first crossing binds four reviewed GLBs: the scroll bridge,
 instanced pearl rests, Rose Quartz and Amethyst. All are real Git LFS files under
 `apps/beside-cue/public/games/cloudway-laboratory-v1/`; a clean checkout does not
 need the private source archive to run them. Their full-resolution and bounded
@@ -91,6 +91,11 @@ matched Blender material and clay source proofs for all twenty donors. The other
 sixteen donors remain source artwork awaiting their own finalization and runtime
 acceptance. No production asset is approved merely because its provider job
 succeeds.
+
+Games-enabled owner builds expose this bounded course as **Crystal Promenade —
+Preview** under B-side Games, including Android and TestFlight. The standalone
+`?layout=cloudway-laboratory` shortcut remains development-only. Campaign unlocks
+and public store profiles are unchanged.
 
 | First-crossing delivery |      Bytes | Geometry triangles, including alternate states |
 | ----------------------- | ---------: | ---------------------------------------------: |
