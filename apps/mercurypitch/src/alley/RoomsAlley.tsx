@@ -445,7 +445,7 @@ export const RoomsAlley: Component = () => {
   // Where the card sits: measured, so a card with no Enter sits lower, and
   // kept above whatever the dock is drawing (the rail, or the pill over it).
   createEffect(
-    on([cardDoor, doors], ([key]) => {
+    on([cardDoor, doors, safeRight], ([key, , insetRight]) => {
       if (key === null || panel === undefined) return
       const dock = document.querySelector('.mp-dock')
       const floor = dock?.getBoundingClientRect().top ?? size().h
@@ -454,6 +454,7 @@ export const RoomsAlley: Component = () => {
         size().w,
         floor,
         panel.offsetHeight,
+        insetRight,
       )
       panel.style.left = `${spot.x}px`
       panel.style.top = `${spot.y}px`

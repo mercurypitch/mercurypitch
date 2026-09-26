@@ -523,6 +523,31 @@ describe('the right safe-area inset', () => {
   })
 })
 
+describe('the right safe-area inset, and the card', () => {
+  it('keeps the card under the door nearest it clear of it too', async () => {
+    // PR 859 final review, NB3: the doors and the band kept out of the
+    // inset, and the card centred under the door nearest it did not.
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    const { el } = await mountAlley()
+    const root = el('rooms-alley')
+    root.style.setProperty('--safe-right', '400px')
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    observer.callback([], observer as unknown as ResizeObserver)
+
+    const right = (key: HTMLElement): number =>
+      Number.parseFloat(key.style.left) + Number.parseFloat(key.style.width)
+    const keys = [...root.querySelectorAll<HTMLElement>('.mp-alley__key')]
+    const nearest = keys.reduce((a, b) => (right(a) >= right(b) ? a : b))
+    el(`alley-door-${nearest.dataset.door ?? ''}`).click()
+    const panel = el('alley-panel')
+    expect(Number.parseFloat(panel.style.left) + 236).toBeLessThanOrEqual(
+      852 - 400,
+    )
+  })
+})
+
 describe('the Sing door clip', () => {
   it('has a source only while Sing is picked', async () => {
     // A src'd <video>, even paused, is a media pipeline and a metadata read
