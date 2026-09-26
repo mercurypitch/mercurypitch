@@ -1,6 +1,6 @@
 // First-person camera — stable eye framing and temporary encounter target aim.
 
-import type { Box3, PerspectiveCamera} from 'three';
+import type { Box3, PerspectiveCamera } from 'three'
 import { MathUtils, Vector3 } from 'three'
 
 export const FIRST_PERSON_EYE_HEIGHT = 0.48
