@@ -1,7 +1,7 @@
 // Adventure touch controls — stick, look and jump never steal each other's pointer.
 import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
-import styles from './GlassAdventure.module.css'
 import { sampleFloatingStick } from './floating-stick'
+import styles from './GlassAdventure.module.css'
 import type { AdventureInput } from './input'
 
 interface TouchControlsProps {
@@ -91,6 +91,7 @@ export function TouchControls(props: TouchControlsProps) {
       document.removeEventListener('pointercancel', releaseStick, true)
     })
   })
+
   function move(event: PointerEvent): void {
     if (props.disabled || event.pointerId !== stickPointer) return
     event.preventDefault()
@@ -105,6 +106,7 @@ export function TouchControls(props: TouchControlsProps) {
     }))
     props.input.setStick(sample.inputX, sample.inputY)
   }
+
   function releaseStick(event: PointerEvent): void {
     if (event.type === 'lostpointercapture' && event.target !== stickElement)
       return
@@ -118,6 +120,7 @@ export function TouchControls(props: TouchControlsProps) {
       offsetY: 0,
     }))
   }
+
   function releaseJump(event: PointerEvent): void {
     if (event.pointerId !== jumpPointer) return
     jumpPointer = null

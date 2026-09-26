@@ -3,114 +3,26 @@
 // ============================================================
 
 import type { Object3D } from 'three'
-import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
-import type { GameSnapshot, LevelDefinition, MovementReferenceKind, RouteCameraSectionDefinition, Vec3, } from '../contracts'
+import { MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3 } from 'three'
+import type { GameSnapshot, LevelDefinition, MovementReferenceKind, } from '../contracts'
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
 import { createCameraHeadingIntent } from './camera-heading-intent'
 import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
+import type {AdventureCameraOptions, ChallengeCameraMetrics} from './camera-policy';
+import { addFiniteOffset,  createFallbackChallengeSubjects, ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, frameUnion, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_PITCHES, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw  } from './camera-policy'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
 import { createRouteCameraDirector } from './route-camera'
 
-const ORBIT_FOLLOW_GRACE_SECONDS = 1.15
-const EXPLORATION_FOV_DEGREES = 48
-const MAXIMUM_FOLLOW_RADIANS_PER_SECOND = (80 * Math.PI) / 180
-const FOLLOW_COMPLETE_RADIANS = 0.01
-const MOVING_SPEED = 0.05
-const MAXIMUM_OBSTRUCTION_PITCH = 1.35
-const OBSTRUCTION_LIFT_PITCHES = [
-  0.72,
-  0.9,
-  1.08,
-  1.22,
-  MAXIMUM_OBSTRUCTION_PITCH,
-] as const
-const OBSTRUCTION_LIFT_RESPONSE = 9
-const OBSTRUCTION_RELEASE_DISTANCE = 1.35
-const OBSTRUCTION_TRIGGER_DISTANCE = 0.9
-const ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE = 1.6
-const ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE = 1.15
-const ENCLOSURE_READABLE_BOOM_DISTANCE = 1.55
-const ENCLOSURE_DISTANCE_RECOVERY_RESPONSE = 7
-
-export const CAMERA_FOLLOW_SMOOTHNESS = {
-  minimum: 0.08,
-  maximum: 0.45,
-  default: 0.32,
-} as const
-
-export interface AdventureCameraOptions {
-  /** Avoid unsolicited view rotation for vestibular-sensitive players. */
-  reducedMotion?: boolean
-  /** Seconds for automatic follow to accelerate from rest to its turn cap. */
-  followSmoothnessSeconds?: number
-}
-
-export interface ChallengeCameraMetrics {
-  mode: 'exploration' | 'entering' | 'holding' | 'restoring'
-  encounterId: string | null
-  progress: number
-  /** True only when a held live-panel reframe has reached its planned pose. */
-  settled: boolean
-  safeBottomFraction: number
-  position: { x: number; y: number; z: number }
-  target: { x: number; y: number; z: number }
-  mercFrame: ChallengeCameraScreenFrame | null
-  targetFrame: ChallengeCameraScreenFrame | null
-  combinedFrame: ChallengeCameraScreenFrame | null
-  safeBottomNdc: number | null
-  side: -1 | 1 | null
-  clearance: number | null
-  occluded: boolean | null
-}
-
-function frameUnion(
-  first: ChallengeCameraScreenFrame,
-  second: ChallengeCameraScreenFrame,
-): ChallengeCameraScreenFrame {
-  return {
-    minX: Math.min(first.minX, second.minX),
-    maxX: Math.max(first.maxX, second.maxX),
-    minY: Math.min(first.minY, second.minY),
-    maxY: Math.max(first.maxY, second.maxY),
-  }
-}
-
-function validFollowSmoothness(value: number | undefined): number {
-  if (!Number.isFinite(value)) return CAMERA_FOLLOW_SMOOTHNESS.default
-  return MathUtils.clamp(
-    value!,
-    CAMERA_FOLLOW_SMOOTHNESS.minimum,
-    CAMERA_FOLLOW_SMOOTHNESS.maximum,
-  )
-}
-
-function validRouteYaw(
-  section: RouteCameraSectionDefinition | null,
-): number | null {
-  return section !== null && Number.isFinite(section.yaw) ? section.yaw : null
-}
-
-function addFiniteOffset(target: Vector3, offset: Vec3 | undefined): void {
-  if (offset === undefined) return
-  if (Number.isFinite(offset.x)) target.x += offset.x
-  if (Number.isFinite(offset.y)) target.y += offset.y
-  if (Number.isFinite(offset.z)) target.z += offset.z
-}
-
-/** Positive forward means away from the eye along the ground plane. */
-export function cameraRelativeMovement(
-  x: number,
-  forward: number,
-  yaw: number,
-) {
-  const length = Math.max(1, Math.hypot(x, forward))
-  return {
-    moveX: (x * Math.cos(yaw) - forward * Math.sin(yaw)) / length,
-    moveZ: (-x * Math.sin(yaw) - forward * Math.cos(yaw)) / length,
-  }
-}
+export {
+  CAMERA_FOLLOW_SMOOTHNESS,
+  cameraRelativeMovement,
+} from './camera-policy'
+export type {
+  AdventureCameraOptions,
+  ChallengeCameraMetrics,
+} from './camera-policy'
 
 export function createAdventureCamera(
   level: LevelDefinition,
@@ -291,37 +203,8 @@ export function createAdventureCamera(
     return bestPitch
   }
 
-  function focusedChallengeId(snapshot: GameSnapshot): string | null {
-    if (requestedChallengeId !== null) return requestedChallengeId
-    if (snapshot.activeEncounter !== null) return snapshot.activeEncounter.id
-    return (
-      snapshot.breakables.find((item) => item.phase === 'shattering')?.id ??
-      null
-    )
-  }
-
-  function fallbackChallengeSubjects(
-    encounterId: string,
-    snapshot: GameSnapshot,
-  ): ChallengeCameraSubjects {
-    const playerPosition = new Vector3().copy(snapshot.player.position)
-    const exhibit = level.breakables.find((item) => item.id === encounterId)
-    const exhibitBase = new Vector3().copy(
-      exhibit?.position ?? snapshot.player.position,
-    )
-    exhibitBase.y += exhibit?.mount?.height ?? 0.255
-    return {
-      encounterId,
-      merc: new Box3(
-        playerPosition.clone().add(new Vector3(-0.34, 0, -0.26)),
-        playerPosition.clone().add(new Vector3(0.34, 1.35, 0.26)),
-      ),
-      target: new Box3(
-        exhibitBase.clone().add(new Vector3(-0.42, 0, -0.42)),
-        exhibitBase.clone().add(new Vector3(0.42, 1.15, 0.42)),
-      ),
-    }
-  }
+  const focusedChallengeId = (snapshot: GameSnapshot): string | null =>
+    selectFocusedChallengeId(requestedChallengeId, snapshot)
 
   function challengePositionConstraint(
     snapshot: GameSnapshot,
@@ -386,9 +269,17 @@ export function createAdventureCamera(
     encounterId: string,
     snapshot: GameSnapshot,
   ): void {
-    challengeSubjects ??= fallbackChallengeSubjects(encounterId, snapshot)
+    challengeSubjects ??= createFallbackChallengeSubjects(
+      level,
+      encounterId,
+      snapshot,
+    )
     if (challengeSubjects.encounterId !== encounterId)
-      challengeSubjects = fallbackChallengeSubjects(encounterId, snapshot)
+      challengeSubjects = createFallbackChallengeSubjects(
+        level,
+        encounterId,
+        snapshot,
+      )
     challengePlanningPosition ??= camera.position.clone()
     challengePlayerOrigin ??= new Vector3().copy(snapshot.player.position)
     const planKey = [

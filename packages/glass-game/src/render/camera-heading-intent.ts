@@ -1,7 +1,7 @@
 // Camera heading intent — distinguish steady steering from a deliberate sustained lateral turn.
 
-import { shortestAngleDelta } from './angular-response'
 import type { MovementReferenceKind } from '../contracts'
+import { shortestAngleDelta } from './angular-response'
 
 const LATERAL_FOLLOW_DWELL_SECONDS = 0.4
 const STICK_COMMIT_SECONDS = 0.4

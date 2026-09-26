@@ -1,7 +1,8 @@
 // Camera heading intent policy — held and interrupted contacts never leak stale view turns.
 
 import { describe, expect, it } from 'vitest'
-import { createCameraHeadingIntent, type CameraHeadingIntentSample, } from './camera-heading-intent'
+import type {CameraHeadingIntentSample} from './camera-heading-intent';
+import { createCameraHeadingIntent  } from './camera-heading-intent'
 
 const SAMPLE: CameraHeadingIntentSample = {
   elapsedSeconds: 0.2,
