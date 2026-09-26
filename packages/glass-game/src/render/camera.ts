@@ -418,7 +418,16 @@ export function createAdventureCamera(
         headingIntent.reset()
         stopAngularResponse(followResponse, yaw)
       }
+      const routeAvailable =
+        !presentationPaused &&
+        !snapshot.paused &&
+        snapshot.phase === 'idle' &&
+        snapshot.activeEncounter === null
+      const routeSample = routeAvailable
+        ? snapshot.player
+        : { grounded: false, supportPlatformId: null }
       if (cameraMode === 'first-person') {
+        activeRouteSection = routeDirector.update(routeSample, safeDt).section
         firstPersonChallengeId = challengeId
         if (
           challengeId !== null &&
@@ -484,17 +493,7 @@ export function createAdventureCamera(
       const useMeshOccluders = obstruction.useMeshOccludersAt(
         snapshot.player.position.y,
       )
-      const routeAvailable =
-        !presentationPaused &&
-        !snapshot.paused &&
-        snapshot.phase === 'idle' &&
-        snapshot.activeEncounter === null
-      const routeUpdate = routeDirector.update(
-        routeAvailable
-          ? snapshot.player
-          : { grounded: false, supportPlatformId: null },
-        safeDt,
-      )
+      const routeUpdate = routeDirector.update(routeSample, safeDt)
       activeRouteSection = routeUpdate.section
       bodyTarget.copy(snapshot.player.position)
       bodyTarget.y += 0.42

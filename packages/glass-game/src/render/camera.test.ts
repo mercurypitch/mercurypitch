@@ -1,6 +1,7 @@
 // Camera movement regression — heading follow stays smooth without steering the player.
 import { Box3, BoxGeometry, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
+import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '../content/cloudway-laboratory'
 import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASS_FOUNDATION_STRAIGHT } from '../content/foundation-routes'
 import { GLASSWORKS } from '../content/glassworks'
@@ -509,6 +510,50 @@ describe('camera-relative traversal', () => {
     rig.rebaseMovement('keyboard')
     updateFor(rig, withMotion(state, state.player.facingYaw), 2)
     expect(Math.abs(angleError(rig.yaw(), Math.PI))).toBeLessThan(0.03)
+  })
+
+  it('keeps route state current through first-person traversal and switchback', () => {
+    const level = CLOUDWAY_CRYSTAL_PROMENADE_STUDY
+    const rig = createAdventureCamera(level)
+    const state = createGlassGame(level).snapshot()
+    const scroll = level.platforms.find(
+      (platform) => platform.id === 'scroll-deck',
+    )!
+    const crossing: GameSnapshot = {
+      ...state,
+      player: {
+        ...state.player,
+        position: {
+          x: (scroll.minX + scroll.maxX) / 2,
+          y: scroll.top,
+          z: (scroll.minZ + scroll.maxZ) / 2,
+        },
+        facingYaw: Math.PI,
+        grounded: true,
+        supportPlatformId: scroll.id,
+        velocity: { x: 0, y: 0, z: 0 },
+      },
+    }
+
+    rig.setMode('first-person')
+    rig.orbit(0.55, 0)
+    const playerOwnedYaw = rig.yaw()
+    const stableMovementBasis = rig.movementYaw()
+    updateFor(rig, crossing, 1)
+    expect(rig.yaw()).toBeCloseTo(playerOwnedYaw)
+    expect(rig.movementYaw()).toBeCloseTo(stableMovementBasis)
+
+    rig.recenter()
+    expect(Math.abs(angleError(rig.yaw(), Math.PI))).toBeLessThan(0.001)
+
+    rig.setMode('third-person')
+    rig.update(crossing, FRAME)
+    expect(rig.getChallengeMetrics().target).toMatchObject({
+      x: crossing.player.position.x,
+      y: crossing.player.position.y + 0.42,
+      z: crossing.player.position.z + 0.65,
+    })
+    expect(Math.abs(angleError(rig.yaw(), Math.PI))).toBeLessThan(0.001)
   })
 
   it('moves away from the camera at all cardinal headings', () => {
