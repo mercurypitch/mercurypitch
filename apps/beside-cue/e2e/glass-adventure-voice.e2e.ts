@@ -1333,18 +1333,18 @@ test.describe('phone blur input', () => {
     await minimizeMuseumRaster(page)
     const cdp = await context.newCDPSession(page)
     const stick = page.getByRole('group', { name: 'Move Merc' })
-    const knob = stick.locator('span').nth(1)
+    const knob = page.getByTestId('floating-stick-knob')
     const box = await stick.boundingBox()
     expect(box).not.toBeNull()
-    const centre = {
-      x: box!.x + box!.width / 2,
-      y: box!.y + box!.height / 2,
+    const origin = {
+      x: box!.x + Math.min(60, box!.width * 0.36),
+      y: box!.y + box!.height - 64,
     }
-    const held = { id: 1, x: centre.x + 20, y: centre.y - 8 }
+    const held = { id: 1, x: origin.x + 30, y: origin.y - 16 }
     const before = await playerPosition(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 1, ...centre }],
+      touchPoints: [{ id: 1, ...origin }],
     })
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
@@ -1368,7 +1368,7 @@ test.describe('phone blur input', () => {
     expectNormalBrakingDistance(positionAtBlur, released)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ id: 1, x: centre.x + 28, y: centre.y - 12 }],
+      touchPoints: [{ id: 1, x: origin.x + 38, y: origin.y - 20 }],
     })
     await animationFrames(page, 6)
     expect((await playerPosition(page)).x).toBeCloseTo(released.x, 4)
@@ -1381,11 +1381,11 @@ test.describe('phone blur input', () => {
     const beforeFreshContact = await playerPosition(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 2, ...centre }],
+      touchPoints: [{ id: 2, ...origin }],
     })
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
-      touchPoints: [{ id: 2, x: centre.x - 20, y: centre.y + 8 }],
+      touchPoints: [{ id: 2, x: origin.x - 30, y: origin.y + 16 }],
     })
     await expectPlayerMovement(page, beforeFreshContact, 0.03)
     await cdp.send('Input.dispatchTouchEvent', {

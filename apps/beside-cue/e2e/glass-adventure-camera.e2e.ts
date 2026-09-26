@@ -18,6 +18,10 @@ interface CameraMetrics {
   safeBottomNdc: number | null
 }
 
+// Keep this browser-level timing assertion aligned with Merc's presentation
+// turn cap; the exact acceleration curve remains covered by merc.test.ts.
+const MAXIMUM_MERC_TURN_RADIANS_PER_SECOND = 6
+
 declare global {
   interface Window {
     cameraVoiceTrack?: MediaStreamTrack
@@ -158,6 +162,8 @@ async function dragMuseumWithMouse(
   const bounds = await viewport.boundingBox()
   if (bounds === null) throw new Error('Missing museum viewport.')
   const before = await numericAttribute(page, 'camera-yaw')
+  // This point deliberately overlaps the broad touch activation region: mouse
+  // orbit must pass through it on hybrid devices.
   const x = bounds.x + bounds.width * 0.35
   const y = bounds.y + bounds.height * 0.48
   await page.mouse.move(x, y)
@@ -238,7 +244,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-follow-smoothness',
-    '0.12',
+    '0.2',
   )
   await page.getByRole('button', { name: 'Camera tuning' }).click()
   panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
@@ -252,7 +258,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
   ).toEqual({
     cameraComfort: {
       lookSensitivity: 1.2,
-      followSmoothnessSeconds: 0.12,
+      followSmoothnessSeconds: 0.2,
     },
     renderQuality: 'auto',
   })
@@ -292,7 +298,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-follow-smoothness',
-    '0.2',
+    '0.32',
   )
 })
 
@@ -335,7 +341,7 @@ test('real keyboard chords and brief side taps steer without swinging the view @
   ).toBeLessThan(0.04)
 })
 
-test('phone tuner fits the viewport and real touch orbit and steering stay smooth @smoke', async ({
+test('phone tuner fits and a held thumb turns Merc without autocircling the camera @smoke', async ({
   page,
   context,
 }) => {
@@ -367,59 +373,86 @@ test('phone tuner fits the viewport and real touch orbit and steering stay smoot
     .getByRole('group', { name: 'Move Merc' })
     .boundingBox()
   expect(stick).not.toBeNull()
-  const centre = {
-    x: stick!.x + stick!.width / 2,
-    y: stick!.y + stick!.height / 2,
+  // Exercise the exposed lower part of the broad activation region. The
+  // encounter card can legitimately sit over its centre and should keep
+  // receiving its own touches.
+  const origin = {
+    x: stick!.x + Math.min(60, stick!.width * 0.36),
+    y: stick!.y + stick!.height - 64,
   }
+  expect(
+    await page.evaluate(({ x, y }) => {
+      const surface = document.querySelector(
+        '[aria-label="Glass museum; drag to look around"]',
+      )
+      const target = document.elementFromPoint(x, y)
+      return target !== null && surface?.contains(target) === true
+    }, origin),
+  ).toBe(true)
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
-    touchPoints: [{ id: 20, ...centre }],
+    touchPoints: [{ id: 20, ...origin }],
   })
+  await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+    'data-active',
+    'true',
+  )
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchMove',
-    touchPoints: [{ id: 20, x: centre.x, y: centre.y - 38 }],
+    touchPoints: [{ id: 20, x: origin.x, y: origin.y - 38 }],
   })
   await page.waitForTimeout(450)
   const settledYaw = await numericAttribute(page, 'merc-yaw')
   const settledCameraYaw = await numericAttribute(page, 'camera-yaw')
+  const turnStartedAt = await page.evaluate(() => performance.now())
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchMove',
-    touchPoints: [{ id: 20, x: centre.x + 38, y: centre.y }],
+    touchPoints: [{ id: 20, x: origin.x + 38, y: origin.y }],
   })
   await page.waitForTimeout(50)
-  const firstYaw = await numericAttribute(page, 'merc-yaw')
-  const firstTurn = Math.abs(angleDelta(settledYaw, firstYaw))
+  const firstSample = await page.evaluate(() => ({
+    at: performance.now(),
+    yaw: Number(
+      document
+        .querySelector('[data-testid="glass-adventure"]')
+        ?.getAttribute('data-merc-yaw'),
+    ),
+  }))
+  const firstTurn = Math.abs(angleDelta(settledYaw, firstSample.yaw))
   expect(
     Math.abs(
       angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
     ),
   ).toBeLessThan(0.04)
-  const firstError = Math.abs(
-    angleDelta(
-      firstYaw,
-      (await numericAttribute(page, 'travel-yaw')) + Math.PI,
-    ),
-  )
   expect(firstTurn).toBeGreaterThan(0)
-  expect(firstTurn).toBeLessThan(0.18)
-  await page.waitForTimeout(450)
+  expect(firstTurn).toBeLessThanOrEqual(
+    (MAXIMUM_MERC_TURN_RADIANS_PER_SECOND * (firstSample.at - turnStartedAt)) /
+      1_000,
+  )
+  await page.waitForTimeout(300)
+  const sustainedTurn = Math.abs(
+    angleDelta(settledYaw, await numericAttribute(page, 'merc-yaw')),
+  )
+  expect(sustainedTurn).toBeGreaterThan(firstTurn)
   expect(
     Math.abs(
-      angleDelta(
-        await numericAttribute(page, 'merc-yaw'),
-        (await numericAttribute(page, 'travel-yaw')) + Math.PI,
-      ),
+      angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
     ),
-  ).toBeLessThan(firstError)
+  ).toBeLessThan(0.04)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+    'data-active',
+    'false',
+  )
+  await page.waitForTimeout(1_800)
   expect(
     Math.abs(
       angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
     ),
   ).toBeGreaterThan(0.03)
-  await cdp.send('Input.dispatchTouchEvent', {
-    type: 'touchEnd',
-    touchPoints: [],
-  })
   await cdp.detach()
   expect(
     await page.evaluate(() => ({

@@ -1,4 +1,4 @@
-// Camera input follow regression — chords strafe steadily while deliberate lateral travel earns a smooth turn.
+// Camera input follow regression — stable input bases cannot feed camera turns back into travel.
 
 import { describe, expect, it, vi } from 'vitest'
 import type { LevelDefinition } from '../contracts'
@@ -69,7 +69,7 @@ function createHarness(zoom = 0) {
       const active = input.hasMovementIntent()
       const changed = input.consumeMovementReferenceChange()
       camera.setMovementActive(active)
-      if (active && changed) camera.rebaseMovement()
+      if (active && changed !== null) camera.rebaseMovement(changed)
       game.step(input.read(camera.movementYaw()), FRAME)
       camera.update(game.snapshot(), FRAME)
     }
@@ -131,22 +131,52 @@ describe('camera follow from real movement contacts', () => {
     harness.step(0.18)
     expect(yawDistance(start, harness.camera.yaw())).toBeLessThan(0.02)
 
-    harness.step(1.5)
+    harness.step(2.1)
     expect(yawDistance(harness.camera.yaw(), Math.PI / 2)).toBeLessThan(0.03)
     expect(harness.camera.movementYaw()).toBeCloseTo(start)
   })
 
-  it('applies the same dwell to a continuous lateral touch-stick sweep', () => {
+  it('holds the view through a continuous thumb sweep, then follows its final travel after release', () => {
     const harness = createHarness()
     const start = harness.camera.yaw()
     harness.input.setStick(0, -1)
     harness.step(0.35)
     harness.input.setStick(-1, 0)
 
-    harness.step(0.18)
-    expect(yawDistance(start, harness.camera.yaw())).toBeLessThan(0.02)
-
     harness.step(1.5)
+    expect(yawDistance(start, harness.camera.yaw())).toBeLessThan(0.02)
+    expect(harness.camera.movementYaw()).toBeCloseTo(start)
+
+    harness.input.setStick(0, 0)
+    const beforeReleaseFollow = harness.camera.yaw()
+    harness.step(FRAME)
+    const maximumFollowAcceleration = (80 * Math.PI) / 180 / 0.32
+    expect(yawDistance(beforeReleaseFollow, harness.camera.yaw())).toBeCloseTo(
+      (maximumFollowAcceleration * FRAME ** 2) / 2,
+    )
+    harness.step(2 - FRAME)
     expect(yawDistance(harness.camera.yaw(), Math.PI / 2)).toBeLessThan(0.03)
+  })
+
+  it('preserves held-thumb world travel while a separate pointer orbits', () => {
+    const harness = createHarness()
+    harness.input.setStick(0, -1)
+    harness.step(0.5)
+    const stableBasis = harness.camera.movementYaw()
+    const beforeOrbit = harness.input.read(stableBasis)
+
+    harness.camera.setOrbitActive(true)
+    harness.camera.orbit(0.75, 0)
+    harness.camera.setOrbitActive(false)
+
+    expect(harness.camera.movementYaw()).toBeCloseTo(stableBasis)
+    expect(harness.input.read(harness.camera.movementYaw())).toMatchObject({
+      moveX: beforeOrbit.moveX,
+      moveZ: beforeOrbit.moveZ,
+    })
+    const chosenView = harness.camera.yaw()
+    harness.step(1.5)
+    expect(harness.camera.yaw()).toBeCloseTo(chosenView)
+    expect(harness.camera.movementYaw()).toBeCloseTo(stableBasis)
   })
 })

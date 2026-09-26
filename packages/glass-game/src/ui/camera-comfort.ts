@@ -30,12 +30,12 @@ export const CAMERA_COMFORT_PRESETS: readonly CameraComfortPreset[] = [
   {
     id: 'gentle',
     label: 'Gentle',
-    settings: { lookSensitivity: 0.8, followSmoothnessSeconds: 0.32 },
+    settings: { lookSensitivity: 0.8, followSmoothnessSeconds: 0.42 },
   },
   {
     id: 'responsive',
     label: 'Responsive',
-    settings: { lookSensitivity: 1.2, followSmoothnessSeconds: 0.12 },
+    settings: { lookSensitivity: 1.2, followSmoothnessSeconds: 0.2 },
   },
 ]
 

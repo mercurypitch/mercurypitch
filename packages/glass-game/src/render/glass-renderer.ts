@@ -4,7 +4,7 @@
 
 import type { Material, Texture } from 'three'
 import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
-import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
+import type { GameSnapshot, LevelDefinition, MovementReferenceKind, Vec3, } from '../contracts'
 import { getRequiredRouteBreakableIds } from '../core/progress'
 import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
@@ -78,7 +78,7 @@ export interface GlassRenderer {
     shadowFrameInterval: 1 | 2
   }
   setMovementActive(active: boolean): void
-  rebaseMovement(): void
+  rebaseMovement(kind?: MovementReferenceKind): void
   cancelHeadingFollow(): void
   pickArtwork(clientX: number, clientY: number): string | null
   nearbyArtwork(position: Vec3): string | null

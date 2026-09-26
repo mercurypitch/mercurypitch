@@ -374,6 +374,29 @@ export interface LevelMovementDefinition {
   runRampSeconds: number
 }
 
+/** Input source that chose the stable camera-relative basis for one contact. */
+export type MovementReferenceKind = 'keyboard' | 'stick'
+
+/** One stable exploration composition shared by a set of route platforms. */
+export interface RouteCameraSectionDefinition {
+  id: string
+  platformIds: readonly string[]
+  yaw: number
+  /** World-space look-ahead from Merc's stable body pivot. */
+  targetOffset?: Vec3
+}
+
+/** Optional platform-route camera; levels without it retain gallery follow. */
+export interface RouteSectionCameraDefinition {
+  kind: 'route-sections'
+  initialSectionId: string
+  /** Grounded time on a new section before its composition becomes active. */
+  landingDwellSeconds?: number
+  sections: readonly RouteCameraSectionDefinition[]
+}
+
+export type LevelCameraDefinition = RouteSectionCameraDefinition
+
 export const LEVEL_MOVEMENT_LIMITS = {
   maximumSpeed: 6,
   maximumRunDelaySeconds: 5,
@@ -388,6 +411,7 @@ export interface LevelDefinition {
   presentation?: LevelPresentationDefinition
   rewards?: LevelRewardDefinition
   movement?: LevelMovementDefinition
+  camera?: LevelCameraDefinition
   intentionalGaps?: readonly IntentionalGapDefinition[]
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
