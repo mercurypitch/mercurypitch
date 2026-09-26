@@ -1,5 +1,6 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
 import { createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { readGlassAssetBlob } from '../asset-response'
 import type { MercEncoreAvailability, MercEncoreVariant, } from '../content/encore-examples'
 import { MERC_ENCORE_JUDGE_POLICY, MERC_ENCORE_PHRASES, mercEncoreAvailability, } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
@@ -114,13 +115,12 @@ export function EncoreDialog(props: {
     }))
     const deadline = setTimeout(() => request.abort(), 10_000)
     try {
-      const response = await fetch(host.assetUrl(variant.assetId), {
+      const url = host.assetUrl(variant.assetId)
+      const response = await fetch(url, {
         signal: request.signal,
       })
-      if (!response.ok) throw new Error('Voice example unavailable')
-      const audio = await response.blob()
-      if (!audio.size || audio.size > 1_000_000)
-        throw new Error('Invalid voice example')
+      const audio = await readGlassAssetBlob(url, response)
+      if (audio.size > 1_000_000) throw new Error('Invalid voice example')
       if (alive)
         setExamples((current) => ({
           ...current,
@@ -129,6 +129,10 @@ export function EncoreDialog(props: {
       if (!alive) throw new Error('Voice example request was cancelled')
       return audio
     } catch (cause) {
+      console.warn(
+        `[glass-game] Merc encore audio failed: ${variant.assetId}`,
+        cause,
+      )
       if (alive)
         setExamples((current) => ({
           ...current,
