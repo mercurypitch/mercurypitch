@@ -1540,3 +1540,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** a static Meshopt decoder import immediately initializes WebAssembly, even when the current level never uses compressed geometry. Beside Cue's `script-src 'self'` forbade that initialization.
 **Rule:** initialize the decoder on the first compressed-buffer request and permit the narrow `wasm-unsafe-eval` source in the application's CSP. Do not add JavaScript `unsafe-eval`. Verify a real compressed GLB under the actual app policy as well as the unaffected legacy route. Preserve concurrent asset downloads and retry a failed dynamic-import request without masking decoder failures.
 **See:** `apps/beside-cue/index.html`, `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
+
+### Inspect runtime asset bytes before changing a 3D model
+
+**Symptom:** a locally served museum failed with `Unexpected token v, version ht... is not valid JSON`.
+**Cause:** required GLB paths contained Git LFS pointer text after a worktree checkout, not model bytes.
+**Rule:** inspect the failing response and hydrate the exact runtime inventory before regenerating art; private source symlinks do not supply public runtime deliveries. The gallery guard names unresolved pointers, while native builds verify their inventory.
+**See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/scripts/native-games.ts`.
