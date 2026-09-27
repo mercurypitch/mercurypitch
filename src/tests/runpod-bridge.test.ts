@@ -478,6 +478,101 @@ describe('handleRunpodRequest — output', () => {
     expect(bucket.get).toHaveBeenCalledWith(key)
   })
 
+  it('streams the stem itself for the native app, from R2 first', async () => {
+    // A redirect would send the app to another origin, which has granted it
+    // nothing: the worker hands over the bytes instead.
+    const fetches = mockFetchOnce({
+      status: 'COMPLETED',
+      output: {
+        stems: [{ stem: 'vocal', filename: 'v.m4a', url: 'https://r2/v' }],
+      },
+    })
+    const key = 'runpod/job-1/Song_(Vocals)_roformer.m4a'
+    const bucket = mockBucket([{ key, size: 10 }], {
+      [key]: new ReadableStream(),
+    })
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      bucket,
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(200)
+    expect(res?.headers.get('content-type')).toBe('audio/mp4')
+    expect(bucket.get).toHaveBeenCalledWith(key)
+    // Only the status was asked of RunPod; the stem URL was never fetched.
+    expect(fetches).toHaveBeenCalledTimes(1)
+  })
+
+  it('fetches the stem for the native app when R2 does not have it', async () => {
+    const fetches = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            status: 'COMPLETED',
+            output: {
+              stems: [
+                { stem: 'vocal', filename: 'v.flac', url: 'https://r2/v' },
+              ],
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce(new Response('hello', { status: 200 }))
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      mockBucket(),
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(200)
+    expect(res?.headers.get('content-type')).toBe('audio/flac')
+    expect(await res?.text()).toBe('hello')
+    expect(String(fetches.mock.calls[1]?.[0])).toBe('https://r2/v')
+  })
+
+  it('502s the native app when the stem cannot be fetched', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            status: 'COMPLETED',
+            output: {
+              stems: [
+                { stem: 'vocal', filename: 'v.flac', url: 'https://r2/v' },
+              ],
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce(new Response('gone', { status: 403 }))
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      null,
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(502)
+  })
+
   it('still 404s from R2 when the wanted stem is not in the bucket', async () => {
     mockFetchOnce({}, false, 404)
     const bucket = mockBucket([

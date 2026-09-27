@@ -181,6 +181,10 @@ export async function handleRunpodRequest(
   /** Object-key prefix the handler wrote this env's stems under ("runpod" in
    *  prod, "runpod-dev" on dev). Used to locate a job's stems in R2. */
   stemPrefix = 'runpod',
+  /** `inlineStems`: hand a finished stem over as bytes, never as a redirect
+   *  to its storage URL. For the native app, whose page is on another origin
+   *  and could not read a response from storage that granted it nothing. */
+  options: { inlineStems?: boolean } = {},
 ): Promise<Response | null> {
   const stripped = url.pathname.replace(/^\/api\/uvr/, '')
   const match = stripped.match(
@@ -300,6 +304,7 @@ export async function handleRunpodRequest(
       rest,
       bucket,
       stemPrefix,
+      options.inlineStems === true,
     )
   }
 
@@ -677,6 +682,7 @@ async function serveRunpodOutput(
   rest: string | undefined,
   bucket: UvrInputBucket | null,
   stemPrefix: string,
+  inlineStems: boolean,
 ): Promise<Response> {
   const wanted = decodeStemKey(rest, sessionId)
 
@@ -690,6 +696,12 @@ async function serveRunpodOutput(
   if (status !== null && (status.status ?? '').toUpperCase() === 'COMPLETED') {
     const stem = findStemOutput(status.output, wanted)
     if (stem !== null) {
+      if (stem.url !== undefined && stem.url !== '' && inlineStems) {
+        return inlineStem(bucket, stemPrefix, jobId, wanted, {
+          url: stem.url,
+          filename: stem.filename,
+        })
+      }
       if (stem.url !== undefined && stem.url !== '') {
         return Response.redirect(stem.url, 302)
       }
@@ -718,6 +730,36 @@ async function serveRunpodOutput(
   }
 
   return json({ error: 'Output not ready' }, 404)
+}
+
+/** A stored stem as bytes rather than a redirect: from R2 through the
+ *  binding when the bucket has it (no storage origin involved at all), else
+ *  fetched from its URL here and streamed on. */
+async function inlineStem(
+  bucket: UvrInputBucket | null,
+  stemPrefix: string,
+  jobId: string,
+  wanted: string,
+  stem: { url: string; filename: string },
+): Promise<Response> {
+  if (bucket !== null) {
+    const fromR2 = await serveStemFromR2(
+      bucket,
+      stemPrefix,
+      jobId,
+      wanted,
+    ).catch(() => null)
+    if (fromR2 !== null) return fromR2
+  }
+  const stored = await fetch(stem.url).catch(() => null)
+  if (stored === null || !stored.ok || stored.body === null) {
+    return json({ error: 'The separated song could not be fetched' }, 502)
+  }
+  return new Response(stored.body, {
+    headers: {
+      'Content-Type': contentTypeForFilename(stem.filename),
+    },
+  })
 }
 
 /** The client double-prefixes the output path (it stores the full

@@ -278,3 +278,175 @@ describe('UVR worker routing protections', () => {
     })
   })
 })
+
+// The native app (plan S8, Stage 2) runs on capacitor://localhost on iOS and
+// https://localhost on Android, so every separation call it makes is
+// cross-origin. The web app's own calls are same-origin and must come back
+// exactly as they did: no CORS header of any kind.
+describe('separation for the native app', () => {
+  const NATIVE = ['capacitor://localhost', 'https://localhost']
+
+  for (const origin of NATIVE) {
+    it(`answers the preflight from ${origin} itself, before any backend`, async () => {
+      const getByName = vi.fn()
+      const upstream = stubDb()
+      const response = await worker.fetch(
+        new Request('https://app.test/api/uvr/process', {
+          method: 'OPTIONS',
+          headers: {
+            Origin: origin,
+            'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers':
+              'authorization,content-type,x-uvr-provider,x-uvr-duration-seconds,x-uvr-model',
+          },
+        }),
+        { UVR_SERVICE: { getByName } } as unknown as Env,
+      )
+
+      expect(response.status).toBe(204)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin)
+      expect(
+        response.headers
+          .get('Access-Control-Allow-Methods')
+          ?.split(/,\s*/u)
+          .sort(),
+      ).toEqual(['DELETE', 'GET', 'OPTIONS', 'POST'])
+      expect(
+        response.headers
+          .get('Access-Control-Allow-Headers')
+          ?.toLowerCase()
+          .split(/,\s*/u)
+          .sort(),
+      ).toEqual([
+        'authorization',
+        'content-type',
+        'x-uvr-duration-seconds',
+        'x-uvr-model',
+        'x-uvr-provider',
+      ])
+      expect(response.headers.get('Vary')).toBe('Origin')
+      expect(getByName).not.toHaveBeenCalled()
+      expect(upstream).not.toHaveBeenCalled()
+    })
+  }
+
+  it('lets the native app read a refusal, so it can say why', async () => {
+    const getByName = vi.fn()
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/process', {
+        method: 'POST',
+        headers: { Origin: 'capacitor://localhost' },
+      }),
+      {
+        JWT_SECRET: 'test-secret',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(401)
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+      'capacitor://localhost',
+    )
+    expect(response.headers.get('Vary')).toBe('Origin')
+    expect(getByName).not.toHaveBeenCalled()
+  })
+
+  it('hands the native app a stem itself, never a redirect it cannot follow', async () => {
+    const upstream = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://api.runpod.ai/')) {
+        return new Response(
+          JSON.stringify({
+            status: 'COMPLETED',
+            output: {
+              stems: [
+                {
+                  stem: 'vocal',
+                  filename: 'Song_(Vocals).m4a',
+                  url: 'https://stems.example/runpod-dev/job-1/Song_(Vocals).m4a',
+                },
+              ],
+            },
+          }),
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+      return new Response('the stem', { status: 200 })
+    })
+    vi.stubGlobal('fetch', upstream)
+
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/output/rp_gpu_job-1/vocal', {
+        headers: { Origin: 'capacitor://localhost' },
+      }),
+      {
+        RUNPOD_API_KEY: 'runpod-key',
+        RUNPOD_ENDPOINT_ID_GPU: 'ep-gpu',
+        UVR_SERVICE: { getByName: vi.fn() },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+      'capacitor://localhost',
+    )
+    expect(response.headers.get('Content-Type')).toBe('audio/mp4')
+    expect(await response.text()).toBe('the stem')
+  })
+
+  it('gives the web app no CORS header, and still redirects it to the stem', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              status: 'COMPLETED',
+              output: {
+                stems: [
+                  {
+                    stem: 'vocal',
+                    filename: 'v.flac',
+                    url: 'https://stems.example/runpod/job-1/v.flac',
+                  },
+                ],
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } },
+          ),
+      ),
+    )
+
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/output/rp_gpu_job-1/vocal'),
+      {
+        RUNPOD_API_KEY: 'runpod-key',
+        RUNPOD_ENDPOINT_ID_GPU: 'ep-gpu',
+        UVR_SERVICE: { getByName: vi.fn() },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe(
+      'https://stems.example/runpod/job-1/v.flac',
+    )
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+  })
+
+  it('gives any other origin nothing it could read', async () => {
+    const getByName = vi.fn()
+    const response = await worker.fetch(
+      new Request('https://app.test/api/uvr/process', {
+        method: 'POST',
+        headers: { Origin: 'https://elsewhere.example' },
+      }),
+      {
+        JWT_SECRET: 'test-secret',
+        UVR_SERVICE: { getByName },
+      } as unknown as Env,
+    )
+
+    expect(response.status).toBe(401)
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+  })
+})
