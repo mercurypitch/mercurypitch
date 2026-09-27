@@ -132,8 +132,7 @@ describe('shipped pearl quarter-turn tiers', () => {
         expect(position).toBeDefined()
         expect(normal).toBeDefined()
         for (const attribute of [position, normal])
-          for (const value of attribute.array)
-            expect(Number.isFinite(value)).toBe(true)
+          expect(attribute.array.every(Number.isFinite)).toBe(true)
       })
       disposeObject(scene)
     },

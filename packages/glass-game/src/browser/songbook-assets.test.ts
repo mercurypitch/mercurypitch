@@ -1,6 +1,6 @@
 // Songbook delivery proof — every selectable take must be packaged, hash-verified and bounded.
 import { createHash } from 'node:crypto'
-import { readdirSync,readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { MERC_SONGBOOK_ASSETS } from '../content/merc-songbook'
