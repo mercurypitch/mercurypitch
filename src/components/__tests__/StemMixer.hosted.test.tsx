@@ -166,14 +166,17 @@ function hosting(over: Partial<StemMixerHosting> = {}) {
   return { host, lent, controls: () => attached }
 }
 
-function mountHosted(host: StemMixerHosting): () => void {
+function mountHosted(
+  host: StemMixerHosting,
+  sessionId = 'karaoke-night-demo',
+): () => void {
   const { unmount } = render(() => (
     <StemMixer
       stems={{
         vocal: '/karaoke/examples/goodbye-to-spring/vocal.m4a',
         instrumental: '/karaoke/examples/goodbye-to-spring/instrumental.m4a',
       }}
-      sessionId="karaoke-night-demo"
+      sessionId={sessionId}
       songTitle="Goodbye to Spring"
       preset="performance"
       showStageSettings={false}
@@ -229,6 +232,25 @@ describe('the mixer the Karaoke room hosts', () => {
     })
     expect(controls()!.playing()).toBe(false)
     expect(controls()!.hasNotes()).toBe(false)
+  })
+
+  it('says a song with stored notes has them, so the room can offer them (K1)', async () => {
+    // The examples' notes are seeded under their session ids
+    // (bundled-notes.ts); a streamed vocal is never analysed on the phone, so
+    // a stored record is the only way a hosted song has notes.
+    const { savePitchAnalysisToDbStrict } =
+      await import('@/db/services/session-pitch-analysis-service')
+    const notes = [{ midi: 60, noteName: 'C4', startSec: 1, endSec: 2 }]
+    await savePitchAnalysisToDbStrict('karaoke-night-demo:notes-test', {
+      mergedNotes: notes,
+      segmentedNotes: notes,
+      pitchHistory: [],
+    })
+    const { host, controls } = hosting()
+    mountHosted(host, 'karaoke-night-demo:notes-test')
+    await waitFor(() => {
+      expect(controls()?.hasNotes()).toBe(true)
+    })
   })
 
   it("steps through the room's library, not the mixer's own", () => {

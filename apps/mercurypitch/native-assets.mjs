@@ -228,6 +228,12 @@ export const NATIVE_ASSETS = [
       "The examples' titles, credits, durations and lyrics: the room seeds its library from it before it ever asks the server (src/features/karaoke-night/bundled-examples.ts).",
   },
   {
+    glob: 'karaoke/examples/*/notes.json',
+    root: 'native',
+    reason:
+      "Each example's notes, generated on a desktop by the mixer's own analysis (scripts/generate-karaoke-example-notes.mjs): a phone cannot analyse a streamed vocal (audit K1), and the seed stores them where the mixer's loadCachedAnalysis looks (src/features/karaoke-night/bundled-notes.ts).",
+  },
+  {
     glob: 'karaoke/examples/*/*.m4a',
     root: 'native',
     reason:

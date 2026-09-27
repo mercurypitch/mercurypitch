@@ -3,3 +3,6 @@
 /art/glass-adventure/**/*.json
 # Immutable original production recipes referenced by their accepted SHA-256.
 /art/glass-adventure/journey-map/v10/production/archive/
+# The native Karaoke room's example notes, written compact by their generator
+# (apps/mercurypitch/scripts/generate-karaoke-example-notes.mjs).
+/apps/mercurypitch/native-only/karaoke/examples/*/notes.json

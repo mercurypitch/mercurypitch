@@ -25,6 +25,11 @@ export const BUNDLED_EXAMPLES_URL = '/karaoke/examples/manifest.json'
 export type BundledExample = DemoSongManifest & {
   slug: string
   stems: { vocal: string; instrumental: string }
+  /**
+   * Its notes, as the mixer's analysis would store them: a phone cannot
+   * analyse a streamed vocal (audit K1). See `bundled-notes.ts`.
+   */
+  notes?: string
 }
 
 const nonEmpty = (value: unknown): value is string =>

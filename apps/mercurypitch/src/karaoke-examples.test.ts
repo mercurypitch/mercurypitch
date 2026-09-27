@@ -35,6 +35,7 @@ interface Entry {
 
 interface BundledSong {
   slug: string
+  notes: string
   title: string
   artist: string
   attribution: {
@@ -106,6 +107,51 @@ describe('the example songs the room ships', () => {
       'nothing-in-the-dark',
     ])
   })
+})
+
+describe('their notes (audit K1)', () => {
+  // A phone cannot analyse a streamed vocal, so the examples carry the notes
+  // the mixer would have computed (scripts/generate-karaoke-example-notes.mjs)
+  // and the seed stores them where the mixer looks.
+  interface Notes {
+    version: number
+    vocalSha256: string
+    segmentedNotes: Array<{ midi: number; startSec: number; endSec: number }>
+    mergedNotes: unknown[]
+    keyRegions: unknown[]
+  }
+
+  it.each(manifest.songs.map((song) => [song.slug, song] as const))(
+    '%s: beside its vocal, from the vocal it ships',
+    (_, song) => {
+      const vocal = song.stems.vocal.replace(/^\//u, '')
+      expect(song.notes).toBe(
+        `/${vocal.slice(0, vocal.lastIndexOf('/'))}/notes.json`,
+      )
+      const notes = JSON.parse(
+        readFileSync(join(root, song.notes.slice(1)), 'utf8'),
+      ) as Notes
+      expect(notes.version).toBe(1)
+      // A stem whose pin changed needs its notes generated again.
+      expect(notes.vocalSha256).toBe(
+        pins.find((pin) => pin.path === vocal)?.sha256,
+      )
+      expect(notes.segmentedNotes.length).toBeGreaterThan(100)
+      expect(notes.mergedNotes.length).toBeGreaterThanOrEqual(
+        notes.segmentedNotes.length,
+      )
+      expect(notes.keyRegions.length).toBeGreaterThan(0)
+      let previous = 0
+      for (const note of notes.segmentedNotes) {
+        expect(note.startSec).toBeGreaterThanOrEqual(previous)
+        expect(note.endSec).toBeGreaterThan(note.startSec)
+        expect(note.endSec).toBeLessThanOrEqual(song.durationSec)
+        expect(note.midi).toBeGreaterThan(30)
+        expect(note.midi).toBeLessThan(96)
+        previous = note.startSec
+      }
+    },
+  )
 })
 
 describe('fetching them', () => {
@@ -186,6 +232,16 @@ describe('the native asset manifest carries them', () => {
       expect(
         globs.some((glob) => glob.test(pinned.path)),
         pinned.path,
+      ).toBe(true)
+    }
+  })
+
+  it('ships the notes', () => {
+    const globs = native.map((entry) => globToRegExp(entry.glob) as RegExp)
+    for (const song of manifest.songs) {
+      expect(
+        globs.some((glob) => glob.test(song.notes.slice(1))),
+        song.notes,
       ).toBe(true)
     }
   })

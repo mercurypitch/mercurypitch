@@ -60,12 +60,12 @@ export function exampleCreditFor(
  * row that already exists is left exactly alone.
  */
 export async function seedExamplesLibrary(): Promise<void> {
+  if (IS_NATIVE_BUILD) {
+    startNativeSeed()
+    return nativeSeed ?? undefined
+  }
   if (seeded) return
   seeded = true
-  if (IS_NATIVE_BUILD) {
-    await seedNativeExamples()
-    return
-  }
   try {
     const manifests = await loadDemoSongs()
     setExampleManifests(manifests)
@@ -94,23 +94,61 @@ export async function seedExamplesLibrary(): Promise<void> {
 }
 
 /**
- * The native app's seed: its bundle first, then the server.
+ * The native app's seed, in two halves: its bundle, then the server.
  *
  * The bundle alone makes the library, so a first launch with no network has
- * three songs to sing, their words and their credits (audit K3). Only then
- * does it ask the server, and what the server says is merged over the bundle
- * (`mergeExampleManifests`): a lyric correction, a credit, a song the bundle
- * lacks. Each half is quiet on failure, and the first never waits on the
- * second.
+ * three songs to sing, with their words, their credits and their notes
+ * (audits K3 and K1). Only then does it ask the server, and what the server
+ * says is merged over the bundle (`mergeExampleManifests`): a lyric
+ * correction, a credit, a song the bundle lacks. Each half is quiet on
+ * failure, and the first never waits on the second.
+ *
+ * One seed per launch, shared: the app starts it at boot, and the Karaoke
+ * room, which may open before it has finished, waits on the same one
+ * (`whenBundledExamplesSeeded`) instead of finding an empty library.
  */
-async function seedNativeExamples(): Promise<void> {
-  let bundled: BundledExample[] = []
+let nativeBundleSeed: Promise<BundledExample[]> | null = null
+let nativeSeed: Promise<void> | null = null
+
+function startNativeSeed(): void {
+  if (nativeBundleSeed !== null) return
+  const bundleHalf = seedBundledExamples()
+  nativeBundleSeed = bundleHalf
+  nativeSeed = bundleHalf.then(seedFromServer)
+}
+
+/**
+ * Resolves once the examples the bundle carries are in the library: rows,
+ * words and notes. Never waits on the network. Starts the seed if nothing
+ * has yet. Native only; the web has no bundle.
+ */
+export async function whenBundledExamplesSeeded(): Promise<void> {
+  startNativeSeed()
+  await nativeBundleSeed
+}
+
+async function seedBundledExamples(): Promise<BundledExample[]> {
   try {
-    bundled = await loadBundledExamples()
-    if (bundled.length > 0) await seedManifests(bundled, bundled)
+    const bundled = await loadBundledExamples()
+    if (bundled.length === 0) return bundled
+    await seedManifests(bundled, bundled)
+    // The notes come last: a song with no notes is still a song.
+    const { seedBundledNotes } = await import('./bundled-notes')
+    for (const song of bundled) {
+      try {
+        await seedBundledNotes(song)
+      } catch (err) {
+        if (IS_DEV) console.warn(`[Examples] notes for ${song.slug}:`, err)
+      }
+    }
+    return bundled
   } catch (err) {
     if (IS_DEV) console.warn('[Examples] seeding the bundle failed:', err)
+    return []
   }
+}
+
+async function seedFromServer(bundled: BundledExample[]): Promise<void> {
   try {
     const fromServer = await loadDemoSongsFromApi()
     if (fromServer.length === 0) return
@@ -185,5 +223,7 @@ async function ensureExamplesGroup(
 /** Test seam: forget that seeding has run. */
 export function resetExamplesSeedForTests(): void {
   seeded = false
+  nativeBundleSeed = null
+  nativeSeed = null
   setExampleManifests([])
 }

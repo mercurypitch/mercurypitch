@@ -42,18 +42,20 @@ interface BundledSong {
   stems: { vocal: string; instrumental: string }
 }
 
+const NATIVE_ONLY = resolve(process.cwd(), 'apps/mercurypitch/native-only')
 const bundleBytes = readFileSync(
-  resolve(
-    process.cwd(),
-    'apps/mercurypitch/native-only/karaoke/examples/manifest.json',
-  ),
+  resolve(NATIVE_ONLY, 'karaoke/examples/manifest.json'),
 )
 const bundle = JSON.parse(bundleBytes.toString('utf8')) as {
   songs: BundledSong[]
 }
 
 const net = {
+  /** Runs while a notes file is being read: the mixer storing a run. */
+  duringNotesRead: null as null | ((url: string) => Promise<void>),
   online: false,
+  /** Online, but the server never answers. */
+  hang: false,
   songs: [] as unknown[],
   asked: [] as string[],
 }
@@ -100,7 +102,9 @@ async function freshApp() {
 
 beforeEach(() => {
   localStorage.clear()
+  net.duringNotesRead = null
   net.online = false
+  net.hang = false
   net.songs = []
   net.asked = []
   vi.stubGlobal(
@@ -111,7 +115,12 @@ beforeEach(() => {
       if (url === '/karaoke/examples/manifest.json') {
         return Promise.resolve(packaged(bundleBytes))
       }
+      if (url.startsWith('/karaoke/examples/') && url.endsWith('.json')) {
+        if (net.duringNotesRead !== null) await net.duringNotesRead(url)
+        return packaged(readFileSync(resolve(NATIVE_ONLY, url.slice(1))))
+      }
       if (!net.online) throw new TypeError('Failed to fetch')
+      if (net.hang) return new Promise<Response>(() => undefined)
       if (url === 'https://api.example/api/demo-songs') {
         return Promise.resolve(
           new Response(JSON.stringify({ songs: net.songs }), { status: 200 }),
@@ -294,5 +303,135 @@ describe('going online later', () => {
       net.asked.indexOf('https://api.example/api/demo-songs'),
     )
     expect(examples()[0].outputs?.vocal).toBe(bundle.songs[0].stems.vocal)
+  })
+})
+
+describe('the notes the examples ship with (audit K1)', () => {
+  interface NotesFile {
+    segmentedNotes: Array<{ midi: number; startSec: number; endSec: number }>
+    mergedNotes: unknown[]
+    keyRegions: unknown[]
+  }
+  const notesOf = (dir: string): NotesFile =>
+    JSON.parse(
+      readFileSync(
+        resolve(NATIVE_ONLY, `karaoke/examples/${dir}/notes.json`),
+        'utf8',
+      ),
+    ) as NotesFile
+
+  it('stores each one where the mixer looks for it', async () => {
+    const { seed } = await freshApp()
+    await seed.seedExamplesLibrary()
+    const { loadPitchAnalysisFromDb } =
+      await import('@/db/services/session-pitch-analysis-service')
+
+    const dirs = ['goodbye-to-spring', 'josephine', 'nothing-in-the-dark']
+    for (const [index, id] of IDS.entries()) {
+      const file = notesOf(dirs[index])
+      const stored = await loadPitchAnalysisFromDb(id)
+      expect(stored?.segmentedNotes, id).toEqual(file.segmentedNotes)
+      expect(stored?.mergedNotes.length, id).toBe(file.mergedNotes.length)
+      expect(stored?.keyRegions, id).toEqual(file.keyRegions)
+      // The trace the canvas draws, derived the way an analysis run writes it.
+      expect(stored?.pitchHistory.length, id).toBeGreaterThan(
+        file.segmentedNotes.length,
+      )
+    }
+  })
+
+  it('leaves an analysis the singer already has, edits and all', async () => {
+    const { seed } = await freshApp()
+    const service = await import('@/db/services/session-pitch-analysis-service')
+    const mine = [{ midi: 60, noteName: 'C4', startSec: 1, endSec: 2 }]
+    await service.savePitchAnalysisToDbStrict('karaoke-night-demo:josephine', {
+      mergedNotes: mine,
+      segmentedNotes: mine,
+      pitchHistory: [],
+    })
+    await seed.seedExamplesLibrary()
+
+    const stored = await service.loadPitchAnalysisFromDb(
+      'karaoke-night-demo:josephine',
+    )
+    expect(stored?.segmentedNotes).toEqual(mine)
+    // And it did not even read the file: every launch seeds, and a song that
+    // has its notes should cost nothing.
+    expect(net.asked).not.toContain('/karaoke/examples/josephine/notes.json')
+  })
+
+  it('leaves a run the mixer stored while the file was being read', async () => {
+    const { seed } = await freshApp()
+    const service = await import('@/db/services/session-pitch-analysis-service')
+    const mine = [{ midi: 62, noteName: 'D4', startSec: 3, endSec: 4 }]
+    net.duringNotesRead = async (url) => {
+      if (url !== '/karaoke/examples/josephine/notes.json') return
+      await service.savePitchAnalysisToDbStrict(
+        'karaoke-night-demo:josephine',
+        { mergedNotes: mine, segmentedNotes: mine, pitchHistory: [] },
+      )
+    }
+    await seed.seedExamplesLibrary()
+
+    const stored = await service.loadPitchAnalysisFromDb(
+      'karaoke-night-demo:josephine',
+    )
+    expect(stored?.segmentedNotes).toEqual(mine)
+  })
+
+  it('gives a song the server added no notes: it streams, and nothing can analyse it', async () => {
+    net.online = true
+    net.songs = [
+      {
+        slug: 'brand-new',
+        title: 'Brand New',
+        artist: 'Josh Woodward',
+        attribution: {
+          text: 'Music: "Brand New" by Josh Woodward',
+          url: '',
+          license: 'CC BY 4.0',
+          licenseUrl: '',
+        },
+        stems: {
+          vocal: 'https://r2.example/demo/brand-new/vocal.m4a',
+          instrumental: 'https://r2.example/demo/brand-new/instrumental.m4a',
+        },
+      },
+    ]
+    const { seed } = await freshApp()
+    await seed.seedExamplesLibrary()
+    const { loadPitchAnalysisFromDb } =
+      await import('@/db/services/session-pitch-analysis-service')
+    expect(await loadPitchAnalysisFromDb('karaoke-night-demo:brand-new')).toBe(
+      null,
+    )
+  })
+})
+
+describe('a room that asks while the seed is running', () => {
+  it('waits for the same seed rather than finding an empty library', async () => {
+    const { seed, examples } = await freshApp()
+    const first = seed.seedExamplesLibrary()
+    await seed.seedExamplesLibrary()
+    expect(examples().map((row) => row.sessionId)).toEqual(IDS)
+    await first
+  })
+
+  it('has the bundled songs, their words and notes, without waiting on a slow network', async () => {
+    net.online = true
+    net.hang = true
+    const { seed, examples, lyrics } = await freshApp()
+    void seed.seedExamplesLibrary()
+    await seed.whenBundledExamplesSeeded()
+
+    expect(examples().map((row) => row.sessionId)).toEqual(IDS)
+    expect((await lyrics.loadLyricsFromDb(IDS[0]))?.text).toBe(
+      bundle.songs[0].lyricsText,
+    )
+    const { loadPitchAnalysisFromDb } =
+      await import('@/db/services/session-pitch-analysis-service')
+    expect(
+      (await loadPitchAnalysisFromDb(IDS[0]))?.segmentedNotes.length,
+    ).toBeGreaterThan(100)
   })
 })

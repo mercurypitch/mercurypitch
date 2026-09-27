@@ -17,7 +17,8 @@
       "stems": {
         "vocal": "/karaoke/examples/goodbye-to-spring/vocal.m4a",
         "instrumental": "/karaoke/examples/goodbye-to-spring/instrumental.m4a"
-      }
+      },
+      "notes": "/karaoke/examples/goodbye-to-spring/notes.json"
     },
     {
       "slug": "josephine",
@@ -35,7 +36,8 @@
       "stems": {
         "vocal": "/karaoke/examples/josephine/vocal.m4a",
         "instrumental": "/karaoke/examples/josephine/instrumental.m4a"
-      }
+      },
+      "notes": "/karaoke/examples/josephine/notes.json"
     },
     {
       "slug": "nothing-in-the-dark",
@@ -53,7 +55,8 @@
       "stems": {
         "vocal": "/karaoke/examples/nothing-in-the-dark/vocal.m4a",
         "instrumental": "/karaoke/examples/nothing-in-the-dark/instrumental.m4a"
-      }
+      },
+      "notes": "/karaoke/examples/nothing-in-the-dark/notes.json"
     }
   ]
 }
