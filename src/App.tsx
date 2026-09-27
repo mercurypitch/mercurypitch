@@ -4208,7 +4208,11 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_SETTINGS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
-                  <SettingsPage />
+                  {/* The native app's Settings is the shell's own pushed
+                      screen, and the web panel's links out, install hints
+                      and badge have no place in a store binary (S6). The
+                      constant folds, so the panel leaves that bundle. */}
+                  {IS_NATIVE_BUILD ? null : <SettingsPage />}
                 </TabErrorBoundary>
               </Show>
 

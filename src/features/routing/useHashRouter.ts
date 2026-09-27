@@ -157,7 +157,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       return TAB_KARAOKE
     }
     if (route.type === 'jam-room') return TAB_JAM
-    if (route.type === 'settings-section' || route.type === 'billing-return') {
+    // Natively Settings is a screen the shell pushes over the current tab,
+    // so a section link has no tab to go to (see applyRoute).
+    if (
+      (route.type === 'settings-section' && !IS_NATIVE_BUILD) ||
+      route.type === 'billing-return'
+    ) {
       return TAB_SETTINGS
     }
     return null
@@ -271,7 +276,15 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
       deps.startWalkthrough(sectionIds)
     } else if (route.type === 'settings-section') {
       deps.openSettingsSection(route.section)
-      deps.setActiveUvrSessionId(null)
+      if (IS_NATIVE_BUILD) {
+        // The shell pushed Settings over the tab the link was on, and that
+        // tab is still showing. Its address goes back in: left on
+        // #/settings/..., the same link could not open Settings a second
+        // time, because an address that does not change fires nothing.
+        replaceHash({ type: 'tab', tab: deps.activeTab() })
+      } else {
+        deps.setActiveUvrSessionId(null)
+      }
     } else if (route.type === 'admin') {
       deps.dismissWelcome()
     } else if (route.type === 'reset-password') {

@@ -20,6 +20,7 @@ import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
+import { nativeShellApi } from './native-shell-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
 
 export type { ActiveTab } from '@/features/tabs/constants'
@@ -91,11 +92,22 @@ export const [settingsAnchor, setSettingsAnchor] = createSignal<string | null>(
   null,
 )
 
-/** Jump to Settings with a specific sub-tab open, optionally at a control. */
+/**
+ * Jump to Settings with a specific sub-tab open, optionally at a control.
+ *
+ * Under the native build there is no Settings tab to switch to: Settings is
+ * a screen the shell pushes over the current tab, and the web panel is not
+ * in that bundle. Switching tabs there showed an empty page, so the section
+ * goes to the shell instead and the tab stays where it is.
+ */
 export function openSettingsSection(
   section: SettingsSection,
   anchor?: string,
 ): void {
+  if (IS_NATIVE_BUILD) {
+    nativeShellApi()?.pushSettings(section)
+    return
+  }
   setSettingsSection(section)
   setSettingsAnchor(anchor ?? null)
   setActiveTab(TAB_SETTINGS)

@@ -33,6 +33,7 @@
 
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
+import type { SettingsSection } from '@/stores/ui-store'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
 export interface NativeRunControls {
@@ -94,8 +95,15 @@ export interface NativeRunControls {
 
 /** What a room can ask the shell for. */
 export interface NativeShellApi {
-  /** Push the Settings screen (Back returns to the room). */
-  pushSettings: () => void
+  /**
+   * Push the Settings screen (Back returns to where it was asked from).
+   *
+   * The section is the web's name for the part of Settings a caller wanted
+   * (`openSettingsSection`): the native Settings has no tab of its own, so
+   * every in-app jump to one arrives here, and the shell decides which of
+   * its screens answers it.
+   */
+  pushSettings: (section?: SettingsSection) => void
   /**
    * Open THIS APP's row in the system Settings — the one place a refused
    * microphone can be turned back on, because neither platform prompts twice.
