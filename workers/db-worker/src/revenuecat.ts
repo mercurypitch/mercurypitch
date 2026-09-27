@@ -13,7 +13,8 @@
 //
 // Handled, as plan S8 §6.7 lists them:
 //   INITIAL_PURCHASE, RENEWAL  the entitlement, and one period's songs, rolled
-//                              over to the cap (songs-allowance.ts)
+//                              over to the cap, which counts subscription
+//                              songs only (songs-allowance.ts)
 //   EXPIRATION                 the entitlement ends; the songs left stay.
 //                              An expiration before the stored end is an
 //                              older period's, late, and changes nothing
@@ -32,12 +33,14 @@
 // Idempotent on the event id, as the Stripe webhook is on Stripe's: `rc:<id>`
 // goes into billingEvents once the event is processed, and every ledger write
 // carries a UNIQUE idempotency key derived from it, so a redelivery, or two
-// deliveries at once, writes nothing twice. Each grant computes its songs
-// from the balance in the same statement that writes them.
+// deliveries at once, writes nothing twice. A grant computes its songs from
+// the ledger as read, and its write lands only on that same ledger: if
+// anything was written in between, it reads again (writeOnLedger).
 
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
-import { songAllowance, SONGS_ENTITLEMENT } from './songs-allowance'
+import type { LedgerRow } from './songs-allowance'
+import { periodGrant, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, subscriptionSongs, } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -167,43 +170,98 @@ async function upsertEntitlement(
     .run()
 }
 
-/** One period's songs, topped up to the cap against the balance as it is
- *  written. A zero grant still writes its row: the row is the claim that
- *  makes a redelivery a no-op. */
+interface Ledger {
+  rows: LedgerRow[]
+  /** What a write checks the ledger still is: its rows, its last row and its
+   *  balance. */
+  version: string
+}
+
+/** The same fingerprint as Ledger.version, taken by the write itself. */
+const LEDGER_VERSION = `(SELECT COUNT(*) || ':' || COALESCE(MAX(rowid), 0) || ':' || COALESCE(SUM(delta), 0)
+    FROM creditLedger WHERE userId = ?)`
+
+/** Reads before a write that loses to a concurrent one, before giving up
+ *  and letting RevenueCat deliver the event again. */
+const LEDGER_ATTEMPTS = 5
+
+async function readLedger(env: Env, userId: string): Promise<Ledger> {
+  const { results } = await env.DB.prepare(
+    `SELECT rowid AS seq, delta, reason, jobRef, idempotencyKey
+       FROM creditLedger WHERE userId = ? ORDER BY rowid`,
+  )
+    .bind(userId)
+    .all<LedgerRow & { seq: number }>()
+  const balance = results.reduce((sum, row) => sum + Number(row.delta), 0)
+  const last = results.length === 0 ? 0 : results[results.length - 1].seq
+  return { rows: results, version: `${results.length}:${last}:${balance}` }
+}
+
+/** Write the row `key` names, with the delta `deltaFor` computes from the
+ *  ledger as read, only if the ledger is still what was read; else read it
+ *  again. Returns the row's delta, also when an earlier delivery wrote it. */
+async function writeOnLedger(
+  env: Env,
+  userId: string,
+  key: string,
+  reason: string,
+  jobRef: string | null,
+  deltaFor: (ledger: Ledger) => number,
+): Promise<number> {
+  for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
+    const ledger = await readLedger(env, userId)
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       SELECT ?, ?, ?, ?, ?, ?, ?
+        WHERE ${LEDGER_VERSION} = ?`,
+    )
+      .bind(
+        crypto.randomUUID(),
+        new Date().toISOString(),
+        userId,
+        deltaFor(ledger),
+        reason,
+        jobRef,
+        key,
+        userId,
+        ledger.version,
+      )
+      .run()
+    const row = await env.DB.prepare(
+      'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
+    )
+      .bind(key)
+      .first<{ delta: number }>()
+    if (row !== null) return row.delta
+  }
+  throw new Error(`${key}: the ledger kept changing under the write`)
+}
+
+/** One period's songs, topping the subscription's songs up to the cap.
+ *  Bought, promo and testing credits never count (owner, 28 Sep). A zero
+ *  grant still writes its row: the row is the claim that makes a
+ *  redelivery a no-op. */
 async function grantPeriod(
   env: Env,
   userId: string,
   eventId: string,
   productId: string | null,
 ): Promise<number> {
-  const { perPeriod, cap } = songAllowance(env)
-  const key = `rc:${eventId}`
-  await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     SELECT ?, ?, ?, MAX(0, MIN(?, ? - COALESCE(SUM(delta), 0))), 'subscription', ?, ?
-       FROM creditLedger WHERE userId = ?`,
+  const allowance = songAllowance(env)
+  return writeOnLedger(
+    env,
+    userId,
+    `rc:${eventId}`,
+    SUBSCRIPTION_GRANT,
+    productId,
+    (ledger) => periodGrant(subscriptionSongs(ledger.rows).held, allowance),
   )
-    .bind(
-      crypto.randomUUID(),
-      new Date().toISOString(),
-      userId,
-      perPeriod,
-      cap,
-      productId,
-      key,
-      userId,
-    )
-    .run()
-  const row = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
-  )
-    .bind(key)
-    .first<{ delta: number }>()
-  return row?.delta ?? 0
 }
 
 /** Move an anonymous identity's songs to the account, in one transaction:
- *  out of one, and exactly that many into the other. */
+ *  out of one, and exactly that many into the other. The subscription songs
+ *  among them stay subscription songs there, for its cap to count; the rest
+ *  arrive as the account's own credits. */
 async function moveSongs(
   env: Env,
   eventId: string,
@@ -213,6 +271,8 @@ async function moveSongs(
   const now = new Date().toISOString()
   const outKey = `rc:${eventId}:out:${fromId}`
   const inKey = `rc:${eventId}:in:${fromId}`
+  const songsInKey = `rc:${eventId}:in-songs:${fromId}`
+  const held = subscriptionSongs((await readLedger(env, fromId)).rows).held
   await env.DB.batch([
     env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
@@ -221,16 +281,30 @@ async function moveSongs(
     ).bind(crypto.randomUUID(), now, fromId, toId, outKey, fromId),
     env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-       SELECT ?, ?, ?, -delta, 'transfer-in', ?, ?
+       SELECT ?, ?, ?, MIN(?, -delta), ?, ?, ?
          FROM creditLedger WHERE idempotencyKey = ?`,
-    ).bind(crypto.randomUUID(), now, toId, fromId, inKey, outKey),
+    ).bind(
+      crypto.randomUUID(),
+      now,
+      toId,
+      held,
+      SUBSCRIPTION_MOVED_IN,
+      fromId,
+      songsInKey,
+      outKey,
+    ),
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       SELECT ?, ?, ?, -delta - MIN(?, -delta), 'transfer-in', ?, ?
+         FROM creditLedger WHERE idempotencyKey = ?`,
+    ).bind(crypto.randomUUID(), now, toId, held, fromId, inKey, outKey),
   ])
   const row = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
+    'SELECT COALESCE(SUM(delta), 0) AS moved FROM creditLedger WHERE idempotencyKey IN (?, ?)',
   )
-    .bind(inKey)
-    .first<{ delta: number }>()
-  return row?.delta ?? 0
+    .bind(inKey, songsInKey)
+    .first<{ moved: number }>()
+  return Number(row?.moved ?? 0)
 }
 
 async function transfer(env: Env, event: RevenueCatEvent): Promise<Outcome> {

@@ -5,10 +5,18 @@
 // left are the credit balance, and a subscription period grants songs into
 // that same append-only ledger (revenuecat.ts).
 //
-// Unused songs roll over, up to a cap: a period tops the balance up by at
-// most its own songs and never past the cap. The owner's numbers (27 Sep) are
-// 20 a month and a cap of 50. Both are config, SONGS_PER_PERIOD and
-// SONGS_ROLLOVER_CAP, so the open S7 decisions can move them without code.
+// Unused songs roll over, up to a cap: a period tops the subscription's songs
+// up by at most its own songs and never past the cap. The owner's numbers
+// (27 Sep) are 20 a month and a cap of 50. Both are config, SONGS_PER_PERIOD
+// and SONGS_ROLLOVER_CAP, so the open S7 decisions can move them without code.
+//
+// Only subscription songs count toward the cap (owner, 28 Sep, review S2).
+// Credits bought on the web, promo credits and testing allowances are the
+// singer's own and never make a period grant less. The ledger has one
+// balance, so which songs a separation spent is a rule, not a record:
+// subscriptionSongs() walks the ledger and spends the subscription's songs
+// first, the oldest period first, and a refunded separation gives back the
+// songs it took.
 
 /** The RevenueCat entitlement the subscription unlocks, and the server's
  *  `entitlements.feature` that mirrors it (plan S7 §3.9). */
@@ -49,10 +57,99 @@ export function songAllowance(env: SongAllowanceEnv): SongAllowance {
   return { perPeriod, cap }
 }
 
-/** The songs a period grants on top of `balance`. The ledger's own grant is
- *  the same arithmetic in SQL (revenuecat.ts), computed as it writes. */
-export function periodGrant(balance: number, allowance: SongAllowance): number {
-  return Math.max(0, Math.min(allowance.perPeriod, allowance.cap - balance))
+/** The songs a period grants on top of the subscription songs `held`. */
+export function periodGrant(held: number, allowance: SongAllowance): number {
+  return Math.max(0, Math.min(allowance.perPeriod, allowance.cap - held))
+}
+
+/** The ledger reason of a period's grant (revenuecat.ts). */
+export const SUBSCRIPTION_GRANT = 'subscription'
+/** The ledger reason of subscription songs moved in from another identity:
+ *  they stay subscription songs on the account (revenuecat.ts, TRANSFER). */
+export const SUBSCRIPTION_MOVED_IN = 'subscription-transfer-in'
+
+/** A creditLedger row, as the songs walk reads it. */
+export interface LedgerRow {
+  delta: number
+  reason: string | null
+  jobRef: string | null
+  idempotencyKey: string | null
+}
+
+/** One period's grant, and what is left of it. */
+export interface PeriodSongs {
+  /** The grant's ledger key: `rc:<event id>`. */
+  key: string
+  /** The store transaction the period was bought in, when known. */
+  transaction: string | null
+  /** Its songs not yet spent. */
+  left: number
+}
+
+export interface SubscriptionSongs {
+  /** Subscription songs not yet spent: what the rollover cap counts. */
+  held: number
+  /** Every period's grant with what is left of it, oldest first. */
+  periods: PeriodSongs[]
+}
+
+/** The subscription songs a ledger holds, walking it in the order it was
+ *  written. A separation spends the subscription's songs first, the oldest
+ *  period first, and its refund gives back exactly the songs it took. Any
+ *  other debit spends them first too, so a move away takes them all. Other
+ *  credits never become subscription songs, so the songs held are never
+ *  more than the balance. */
+export function subscriptionSongs(
+  rows: readonly LedgerRow[],
+): SubscriptionSongs {
+  const periods: PeriodSongs[] = []
+  const takenBy = new Map<string, Array<[PeriodSongs, number]>>()
+  let held = 0
+
+  const spend = (songs: number): Array<[PeriodSongs, number]> => {
+    const taken: Array<[PeriodSongs, number]> = []
+    let owed = songs
+    for (const period of periods) {
+      if (owed <= 0) break
+      const take = Math.min(period.left, owed)
+      if (take > 0) {
+        period.left -= take
+        owed -= take
+        held -= take
+        taken.push([period, take])
+      }
+    }
+    return taken
+  }
+
+  for (const row of rows) {
+    const delta = Number(row.delta)
+    const grant =
+      row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_MOVED_IN
+    if (grant && delta >= 0) {
+      periods.push({
+        key: row.idempotencyKey ?? '',
+        transaction: row.reason === SUBSCRIPTION_GRANT ? row.jobRef : null,
+        left: delta,
+      })
+      held += delta
+    } else if (row.reason === 'uvr-job' && delta < 0) {
+      const taken = spend(-delta)
+      if (row.jobRef !== null) takenBy.set(row.jobRef, taken)
+    } else if (row.reason === 'uvr-refund' && delta > 0) {
+      let back = delta
+      for (const [period, songs] of takenBy.get(row.jobRef ?? '') ?? []) {
+        const give = Math.min(songs, back)
+        period.left += give
+        held += give
+        back -= give
+      }
+      takenBy.delete(row.jobRef ?? '')
+    } else if (delta < 0) {
+      spend(-delta)
+    }
+  }
+  return { held, periods }
 }
 
 export interface SongsSummary {

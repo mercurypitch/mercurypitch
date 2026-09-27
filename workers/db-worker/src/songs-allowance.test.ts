@@ -1,10 +1,11 @@
-// The Karaoke subscription's arithmetic: what a period grants, what config
-// may change, and what /me reports. The ledger's own grant runs the same
-// arithmetic in SQL; node-tests/revenuecat-songs-integration.test.ts holds
-// the two to the same numbers through the real engine.
+// The Karaoke subscription's arithmetic: what a period grants, which songs
+// the cap counts, what config may change, and what /me reports.
+// node-tests/revenuecat-songs-integration.test.ts runs the same numbers
+// through the webhook and the real engine.
 
 import { describe, expect, it } from 'vitest'
-import { periodGrant, songAllowance, songsSummary } from './songs-allowance'
+import type { LedgerRow } from './songs-allowance'
+import { periodGrant, songAllowance, songsSummary, subscriptionSongs, } from './songs-allowance'
 
 const NOW = Date.parse('2026-09-27T12:00:00.000Z')
 
@@ -48,6 +49,114 @@ describe('a period’s grant', () => {
 
   it('makes up a balance overdrawn below zero only by the period', () => {
     expect(periodGrant(-3, allowance)).toBe(20)
+  })
+})
+
+describe('the subscription songs a ledger holds', () => {
+  // What the rollover cap counts (owner, 28 Sep): songs granted by the
+  // subscription and not yet spent. Spending takes them first, oldest period
+  // first; every other credit is the singer's own and never counts.
+  let n = 0
+  const row = (
+    delta: number,
+    reason: string,
+    jobRef: string | null = null,
+  ): LedgerRow => {
+    n += 1
+    return { delta, reason, jobRef, idempotencyKey: `key-${n}` }
+  }
+  const grant = (songs: number, transaction: string | null = null) =>
+    row(songs, 'subscription', transaction)
+
+  it('holds each period’s songs, and none of the other credits', () => {
+    const songs = subscriptionSongs([
+      row(50, 'purchase'),
+      row(5, 'promo'),
+      row(3, 'Managed testing allowance'),
+      grant(20, 'txn-1'),
+      grant(15, 'txn-2'),
+      row(9, 'transfer-in', 'someone'),
+    ])
+    expect(songs.held).toBe(35)
+    expect(songs.periods.map((period) => period.left)).toEqual([20, 15])
+    expect(songs.periods.map((period) => period.transaction)).toEqual([
+      'txn-1',
+      'txn-2',
+    ])
+  })
+
+  it('spends them first, the oldest period first', () => {
+    const songs = subscriptionSongs([
+      row(10, 'purchase'),
+      grant(20),
+      grant(20),
+      row(-25, 'uvr-job', 'job-a'),
+    ])
+    expect(songs.held).toBe(15)
+    expect(songs.periods.map((period) => period.left)).toEqual([0, 15])
+  })
+
+  it('spends the singer’s own credits once the songs run out', () => {
+    const songs = subscriptionSongs([
+      row(10, 'purchase'),
+      grant(5),
+      row(-8, 'uvr-job', 'job-b'),
+      grant(20),
+    ])
+    expect(songs.held).toBe(20)
+  })
+
+  it('gives a refunded job’s songs back where they came from', () => {
+    const songs = subscriptionSongs([
+      grant(3),
+      grant(20),
+      row(-5, 'uvr-job', 'job-c'),
+      row(-1, 'uvr-job', 'job-d'),
+      row(5, 'uvr-refund', 'job-c'),
+    ])
+    expect(songs.held).toBe(22)
+    expect(songs.periods.map((period) => period.left)).toEqual([3, 19])
+  })
+
+  it('gives nothing back for a job the singer’s own credits paid', () => {
+    const songs = subscriptionSongs([
+      row(4, 'purchase'),
+      row(-4, 'uvr-job', 'job-e'),
+      grant(20),
+      row(4, 'uvr-refund', 'job-e'),
+    ])
+    expect(songs.held).toBe(20)
+  })
+
+  it('holds nothing once the songs have moved to another account', () => {
+    const songs = subscriptionSongs([
+      row(7, 'promo'),
+      grant(20),
+      row(-27, 'transfer-out', 'account'),
+    ])
+    expect(songs.held).toBe(0)
+  })
+
+  it('takes subscription songs moved in as songs', () => {
+    const songs = subscriptionSongs([
+      row(12, 'subscription-transfer-in', 'device'),
+      row(7, 'transfer-in', 'device'),
+    ])
+    expect(songs.held).toBe(12)
+  })
+
+  it('keeps a period granted nothing, for the refund that names it', () => {
+    const songs = subscriptionSongs([grant(50), grant(0, 'txn-at-cap')])
+    expect(songs.periods.map((period) => period.transaction)).toEqual([
+      null,
+      'txn-at-cap',
+    ])
+    expect(songs.held).toBe(50)
+  })
+
+  it('never holds more songs than the balance', () => {
+    const songs = subscriptionSongs([grant(20), row(-30, 'adjustment')])
+    expect(songs.held).toBe(0)
   })
 })
 

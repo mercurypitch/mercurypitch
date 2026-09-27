@@ -10,8 +10,9 @@
 // the RevenueCat event id, the way the Stripe webhook is on Stripe's.
 //
 // Real SQLite with every migration applied, through the worker's own fetch:
-// the grant is one INSERT ... SELECT that reads the balance as it writes, and
-// only the real engine can say whether that SQL does what it claims.
+// a grant is written only on the ledger it was computed from (a guarded
+// INSERT ... SELECT), and only the real engine can say whether that SQL does
+// what it claims.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -127,6 +128,41 @@ function seedCredits(userId: string, delta: number, key: string): void {
        VALUES (?, ?, ?, ?, 'purchase', NULL, ?)`,
     )
     .run(`seed-${key}`, new Date().toISOString(), userId, delta, key)
+}
+
+/** Any ledger row: a separation's debit or refund, a promo, a move. */
+function seedRow(
+  userId: string,
+  delta: number,
+  reason: string,
+  key: string,
+  jobRef: string | null = null,
+): void {
+  sqlite
+    .prepare(
+      `INSERT INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      `seed-${key}`,
+      new Date().toISOString(),
+      userId,
+      delta,
+      reason,
+      jobRef,
+      key,
+    )
+}
+
+/** The songs a subscription period was granted, by its event. */
+function grantedFor(userId: string): number[] {
+  return (
+    sqlite
+      .prepare(
+        "SELECT delta FROM creditLedger WHERE userId = ? AND reason = 'subscription' ORDER BY rowid",
+      )
+      .all(userId) as Array<{ delta: number }>
+  ).map((row) => Number(row.delta))
 }
 
 /** The singer's app: signed in anonymously, as the native app is at first. */
@@ -353,7 +389,9 @@ describe('a subscription', () => {
 
   it('tops up only to the cap when songs were left over', async () => {
     await anonymousToken()
-    seedCredits(DEVICE, 45, 'left-over')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    seedRow(DEVICE, -5, 'uvr-job', 'debit-left-over', 'job-left-over')
 
     await deliver(rcEvent('RENEWAL'))
 
@@ -427,6 +465,95 @@ describe('a subscription', () => {
     )
 
     expect(balanceOf(DEVICE)).toBe(20)
+  })
+})
+
+describe('the rollover cap', () => {
+  // Owner, 28 Sep (review S2): only subscription songs count toward the cap.
+  // Credits bought on the web, promo credits and testing allowances never
+  // make a period grant less. Spending takes the subscription's songs first,
+  // oldest period first.
+  it('never counts bought credits: a full month on top of them', async () => {
+    await anonymousToken()
+    seedCredits(DEVICE, 50, 'bought-pack')
+
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    expect(grantedFor(DEVICE)).toEqual([20])
+    expect(balanceOf(DEVICE)).toBe(70)
+  })
+
+  it('never counts promo credits or a testing allowance either', async () => {
+    await anonymousToken()
+    seedRow(DEVICE, 30, 'promo', 'promo-code')
+    seedRow(DEVICE, 30, 'Managed testing allowance', 'testing:grant:1')
+
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+
+    expect(grantedFor(DEVICE)).toEqual([20, 20])
+  })
+
+  it('spends the subscription’s songs before bought ones', async () => {
+    await anonymousToken()
+    seedCredits(DEVICE, 40, 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    // Ten songs sung: all ten from the 40 subscription songs.
+    seedRow(DEVICE, -10, 'uvr-job', 'debit-ten', 'job-ten')
+
+    await deliver(rcEvent('RENEWAL'))
+
+    expect(grantedFor(DEVICE)).toEqual([20, 20, 20])
+    expect(balanceOf(DEVICE)).toBe(90)
+  })
+
+  it('gives a failed separation’s song back to the subscription', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    seedRow(DEVICE, -10, 'uvr-job', 'debit-failed', 'job-failed')
+    seedRow(DEVICE, 10, 'uvr-refund', 'refund-failed', 'job-failed')
+
+    await deliver(rcEvent('RENEWAL'))
+
+    expect(grantedFor(DEVICE)).toEqual([20, 20, 10])
+    expect(balanceOf(DEVICE)).toBe(50)
+  })
+
+  it('carries moved songs as songs, and moved credits as credits', async () => {
+    await anonymousToken()
+    seedAccount(ACCOUNT)
+    seedRow(DEVICE, 30, 'Managed testing allowance', 'testing:grant:2')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    await deliver(
+      rcEvent('TRANSFER', {
+        app_user_id: ACCOUNT,
+        transferred_from: [DEVICE],
+        transferred_to: [ACCOUNT],
+      }),
+    )
+    expect(balanceOf(ACCOUNT)).toBe(70)
+
+    await deliver(rcEvent('RENEWAL', { app_user_id: ACCOUNT, aliases: [] }))
+
+    // 40 subscription songs came along, so the cap leaves room for 10.
+    expect(grantedFor(ACCOUNT)).toEqual([10])
+    expect(balanceOf(ACCOUNT)).toBe(80)
+  })
+
+  it('stops at the cap when two renewals land at once', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+
+    await Promise.all([
+      deliver(rcEvent('RENEWAL')),
+      deliver(rcEvent('RENEWAL')),
+    ])
+
+    expect(balanceOf(DEVICE)).toBe(50)
   })
 })
 
