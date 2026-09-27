@@ -496,6 +496,20 @@ export function retryImport(id: string): void {
   pump()
 }
 
+/** Open the gate from a row that waits for songs ("Subscribe"). */
+export function showImportGate(): void {
+  gate?.(untrack(karaokeSongs))
+}
+
+/**
+ * Remove a ready song from this phone: its stems and its row (plan §10).
+ * The singer still has the original in Files, and can import it again.
+ */
+export async function removeImportedSong(id: string): Promise<boolean> {
+  markKaraokeSongPlayed(id)
+  return deleteUvrSession(id)
+}
+
 /** Remove a row, and the song with it. One being sent stops. */
 export async function removeImport(id: string): Promise<void> {
   if (current?.id === id) current.abort.abort()

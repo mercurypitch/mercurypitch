@@ -123,6 +123,28 @@ vi.mock('@/components/StemMixer', async () => {
 
 const seeding = vi.hoisted(() => ({ done: Promise.resolve() }))
 
+/** Stage 2 (a dev-target build), switched per test. */
+const build = vi.hoisted(() => ({ importing: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    get KARAOKE_IMPORT() {
+      return build.importing
+    },
+  }
+})
+
+const imports = vi.hoisted(() => ({ inFlight: 0, played: [] as string[] }))
+vi.mock('./karaoke-import-queue', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  importsInFlight: () => imports.inFlight,
+  markKaraokeSongPlayed: (id: string) => imports.played.push(id),
+}))
+vi.mock('./KaraokeImport', () => ({
+  KaraokeImport: () => <div data-testid="karaoke-import" />,
+}))
+
 vi.mock('@/features/karaoke-night/seed-examples', () => ({
   whenBundledExamplesSeeded: async () => seeding.done,
 }))
@@ -155,6 +177,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 }))
 
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
+import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
 
 const example = (slug: string, title: string, dir: string) => ({
@@ -243,6 +266,10 @@ const controls = () => {
 }
 
 beforeEach(() => {
+  build.importing = false
+  imports.inFlight = 0
+  imports.played = []
+  resetKaraokeSongsForTests()
   mixers.list = []
   library.rows = [GOODBYE, JOSEPHINE, DARK]
   seeding.done = Promise.resolve()
@@ -860,5 +887,75 @@ describe('the device', () => {
     current().setPlaying(true)
     unmount()
     expect(device.keepAwake).toHaveBeenLastCalledWith(false)
+  })
+})
+
+describe('songs of your own (Stage 2)', () => {
+  it('says how many are on their way on the song line, which opens the library', async () => {
+    build.importing = true
+    imports.inFlight = 2
+    await mountRoom()
+
+    expect(current().hosted.stage.badge?.()).toBe('Separating 2')
+    imports.inFlight = 0
+    expect(current().hosted.stage.badge?.()).toBeNull()
+  })
+
+  it('says nothing of them in a build that does not import', async () => {
+    imports.inFlight = 2
+    await mountRoom()
+
+    expect(current().hosted.stage.badge?.() ?? null).toBeNull()
+  })
+
+  it('takes the New mark off a song once it is sung', async () => {
+    build.importing = true
+    await mountRoom()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+
+    expect(imports.played).toEqual(['karaoke-night-demo'])
+  })
+
+  it("put the songs left in the options, which push Karaoke's settings", async () => {
+    build.importing = true
+    resetKaraokeSongsForTests({
+      left: 18,
+      subscribed: true,
+      renewsAt: '2026-10-27T10:00:00.000Z',
+      perPeriod: 20,
+    })
+    const pushSettings = vi.fn()
+    const unregisterShell = registerShellApi({ pushSettings })
+    try {
+      await mountRoom()
+      controls().openOptions?.()
+      const sheet = await screen.findByTestId('karaoke-options')
+
+      const row = within(sheet).getByRole('button', {
+        name: 'Songs this month: 18 of 20 left',
+      })
+      fireEvent.click(row)
+
+      expect(pushSettings).toHaveBeenCalledWith('karaoke')
+      expect(screen.queryByTestId('karaoke-options')).toBeNull()
+    } finally {
+      unregisterShell()
+    }
+  })
+
+  it('leave the songs out of the options in a build that does not import', async () => {
+    resetKaraokeSongsForTests({
+      left: 18,
+      subscribed: true,
+      renewsAt: null,
+      perPeriod: 20,
+    })
+    await mountRoom()
+    controls().openOptions?.()
+    const sheet = await screen.findByTestId('karaoke-options')
+
+    expect(within(sheet).queryByText('Songs this month')).toBeNull()
   })
 })

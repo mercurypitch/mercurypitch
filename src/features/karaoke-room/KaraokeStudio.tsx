@@ -17,6 +17,10 @@
 // A song chosen to sing is not sung here: the room hosts the one zen stage.
 // The room gets the song and the studio closes, unless the room could not
 // play it, in which case the studio stays and says why.
+//
+// Where songs can be imported (Stage 2, KARAOKE_IMPORT), the songs view
+// starts with Import a song, the room's own, and the options say how many
+// songs are left, a tap from Settings, Karaoke (plan §11, mock 10c).
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
@@ -27,6 +31,7 @@ import { SessionGroupTabs } from '@/components/SessionGroupTabs'
 import type { UvrStudioControls, UvrStudioHosting, UvrStudioView, } from '@/components/uvr-studio-hosting'
 import { UvrPanel } from '@/components/UvrPanel'
 import { TAB_SINGING } from '@/features/tabs/constants'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { getGroupsReactive, karaokeActiveGroupId, setKaraokeActiveGroupId, } from '@/stores/app-store'
 import { melodyStore } from '@/stores/melody-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -34,6 +39,8 @@ import { openSettingsSection, setActiveTab } from '@/stores/ui-store'
 import styles from './karaoke-room.module.css'
 import { roomLibrary } from './karaoke-room-library'
 import { requestKaraokeSong } from './karaoke-room-store'
+import { karaokeSongs, songsOptionRow } from './karaoke-songs'
+import { KaraokeImport } from './KaraokeImport'
 
 /** Said when a song chosen to sing is not one the room can play. */
 export const STUDIO_CANNOT_SING =
@@ -129,6 +136,12 @@ export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
         </button>
       </div>
 
+      <Show when={KARAOKE_IMPORT && view() === 'upload'}>
+        <div class={styles.studioImport}>
+          <KaraokeImport />
+        </div>
+      </Show>
+
       <UvrPanel initialView="upload" studio={hosting} onSelectMelody={toSing} />
 
       <Sheet
@@ -182,6 +195,22 @@ export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
             </span>
           </OptionSection>
           <OptionSection label="More">
+            <Show when={KARAOKE_IMPORT ? songsOptionRow(karaokeSongs()) : null}>
+              {(songs) => (
+                <button
+                  type="button"
+                  class={styles.sheetRowButton}
+                  aria-label={`${songs().label}: ${songs().value}`}
+                  onClick={() => {
+                    setOptionsOpen(false)
+                    openSettingsSection('karaoke')
+                  }}
+                >
+                  <span>{songs().label}</span>
+                  <span class={styles.optionValue}>{songs().value}</span>
+                </button>
+              )}
+            </Show>
             <button
               type="button"
               class={styles.sheetRowButton}

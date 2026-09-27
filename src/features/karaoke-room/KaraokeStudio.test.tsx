@@ -21,9 +21,20 @@ import { notifications, setNotifications } from '@/stores/notifications-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 // The studio only exists in the native app, where Settings is the shell's.
-vi.mock('@/lib/native-build', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  IS_NATIVE_BUILD: true,
+// Stage 2 (a dev-target build) is switched per test.
+const build = vi.hoisted(() => ({ importing: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return {
+    ...actual,
+    IS_NATIVE_BUILD: true,
+    get KARAOKE_IMPORT() {
+      return build.importing
+    },
+  }
+})
+vi.mock('./KaraokeImport', () => ({
+  KaraokeImport: () => <div data-testid="karaoke-import" />,
 }))
 
 const panel = vi.hoisted(() => ({
@@ -85,9 +96,12 @@ vi.mock('./karaoke-room-library', () => ({
 }))
 
 import { karaokeSongRequest, resetKaraokeRoomForTests, } from './karaoke-room-store'
+import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeStudio, STUDIO_CANNOT_SING } from './KaraokeStudio'
 
 beforeEach(() => {
+  build.importing = false
+  resetKaraokeSongsForTests()
   panel.props = null
   panel.showView.mockClear()
   panel.openGuide.mockClear()
@@ -268,5 +282,73 @@ describe('a melody found by singing', () => {
     expect(melodies.load).toHaveBeenCalledWith('melody-7')
     expect(onDone).toHaveBeenCalledTimes(1)
     expect(activeTab()).toBe(TAB_SINGING)
+  })
+})
+
+describe('songs of your own (Stage 2)', () => {
+  it('imports from the songs, not from the Sing view', () => {
+    build.importing = true
+    mount()
+    expect(screen.getByTestId('karaoke-import')).toBeTruthy()
+
+    const sheet = openOptions()
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Sing' }))
+
+    expect(screen.queryByTestId('karaoke-import')).toBeNull()
+  })
+
+  it('imports nothing, and counts no songs, in a build that does not', () => {
+    resetKaraokeSongsForTests({
+      left: 17,
+      subscribed: true,
+      renewsAt: null,
+      perPeriod: 20,
+    })
+    mount()
+
+    expect(screen.queryByTestId('karaoke-import')).toBeNull()
+    const sheet = openOptions()
+    expect(
+      within(sheet)
+        .getAllByRole('button')
+        .map((button) => button.textContent?.trim()),
+    ).toEqual(['Guide', 'Settings'])
+  })
+
+  it("say the songs left in the options, which open Karaoke's settings", () => {
+    build.importing = true
+    resetKaraokeSongsForTests({
+      left: 17,
+      subscribed: true,
+      renewsAt: null,
+      perPeriod: 20,
+    })
+    const pushSettings = vi.fn()
+    const unregister = registerShellApi({ pushSettings })
+    try {
+      mount()
+      const sheet = openOptions()
+
+      expect(
+        within(sheet)
+          .getAllByRole('button')
+          .map(
+            (button) =>
+              button.getAttribute('aria-label') ?? button.textContent?.trim(),
+          ),
+      ).toEqual(['Songs this month: 17 of 20 left', 'Guide', 'Settings'])
+      fireEvent.click(
+        within(sheet).getByRole('button', {
+          name: 'Songs this month: 17 of 20 left',
+        }),
+      )
+
+      expect(pushSettings).toHaveBeenCalledWith('karaoke')
+      expect(
+        screen.queryByRole('dialog', { name: 'Studio options' }),
+      ).toBeNull()
+    } finally {
+      unregister()
+    }
   })
 })

@@ -84,6 +84,18 @@ describe('the library sheet', () => {
     expect(within(sheet).getByText('Examples')).toBeTruthy()
   })
 
+  it('imports nothing in a build that does not (the store build)', () => {
+    const { sheet } = open([MINE, GOODBYE])
+
+    expect(within(sheet).queryByTestId('karaoke-import')).toBeNull()
+    expect(
+      within(sheet).queryByText('Songs you import appear here.'),
+    ).toBeNull()
+    expect(
+      within(sheet).queryByRole('button', { name: /^More for/u }),
+    ).toBeNull()
+  })
+
   it('names the song, its credit and its length', () => {
     open([GOODBYE])
 

@@ -666,3 +666,137 @@
 .paywallLinks a {
   color: var(--text-secondary, #a8b3bf);
 }
+
+/* ── The queue and your songs (Stage 2, §6.4) ─────────────────
+   A queue row is not a button: nothing on it plays yet. Its actions wrap
+   under its words. An imported song keeps its row button and gains a menu
+   button beside it; the menu opens under the row, in the list. */
+
+.songItem {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.songItem > .songRow {
+  flex: 1 1 0;
+}
+
+.songMore {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary, #a8b3bf);
+  cursor: pointer;
+}
+
+.songMore svg {
+  width: 20px;
+  height: 20px;
+}
+
+.songMenu {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--border, #30363d) 70%, transparent);
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+}
+
+.songMenuItem {
+  min-height: var(--touch-target, 44px);
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-primary, #e6edf3);
+  font: 500 15px/20px var(--font-body, sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+
+.newDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--accent, #b784ff);
+  vertical-align: middle;
+}
+
+.queueRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.queueBar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(230 237 243 / 12%);
+}
+
+.queueBar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent, #b784ff);
+  transition: width 0.3s ease;
+}
+
+.queueActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.queueAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--border, #30363d) 80%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-primary, #e6edf3);
+  font: 500 14px/18px var(--font-body, sans-serif);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.keepOpen {
+  margin: 0 2px;
+  font: 500 13px/18px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+/* Import a song, above the studio's list of songs (Stage 2). */
+.studioImport {
+  padding: 4px 16px 8px;
+}
+
+.sheetRowButton .optionValue {
+  margin-left: auto;
+  padding-left: 12px;
+}

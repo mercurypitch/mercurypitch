@@ -11,9 +11,10 @@
 //            them (K1: absent, never dead).
 //   Playing  the next song by itself; the music level and its way back to
 //            100% (the pill on the stage stays the everyday control).
-//   More     the one option pinned beside the gear (owner, 27 Sep); Manage
-//            songs, which pushes the studio (D8 A); and All settings, which
-//            pushes Settings as Sing's does.
+//   More     the one option pinned beside the gear (owner, 27 Sep); the
+//            songs left, where songs can be imported (Stage 2), which push
+//            Settings, Karaoke; Manage songs, which pushes the studio (D8
+//            A); and All settings, which pushes Settings as Sing's does.
 
 import type { Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
@@ -76,6 +77,10 @@ interface KaraokeRoomOptionsProps {
   musicPercent: () => number | null
   onResetMusicLevel: () => void
   onAllSettings: () => void
+  /** "Songs this month: 18 of 20 left", or null for no row (Stage 2 only). */
+  songsRow?: () => { label: string; value: string } | null
+  /** The songs row's tap: Settings, Karaoke. */
+  onSongs?: () => void
   /** Open the studio. Absent where nothing can: the row is then not drawn. */
   onManageSongs?: () => void
 }
@@ -169,6 +174,23 @@ export const KaraokeRoomOptions: Component<KaraokeRoomOptionsProps> = (
             </For>
           </select>
         </Row>
+        <Show when={props.songsRow?.()}>
+          {(songs) => (
+            <Row label={songs().label}>
+              <button
+                type="button"
+                class={styles.optionButton}
+                aria-label={`${songs().label}: ${songs().value}`}
+                onClick={() => {
+                  props.close()
+                  props.onSongs?.()
+                }}
+              >
+                {songs().value}
+              </button>
+            </Row>
+          )}
+        </Show>
         <Show when={props.onManageSongs !== undefined}>
           <Row
             label="Manage songs"

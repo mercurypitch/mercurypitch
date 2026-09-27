@@ -27,6 +27,11 @@
 //
 //   THE DEVICE. The mixer plays on the app's one AudioContext, lent through
 //   the bridge (REQ-NRM-033), and the screen stays awake while a song plays.
+//
+//   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
+//   songs on their way ("Separating 2") and opens the library, where they
+//   are; a song sung loses its New mark; and the options say how many songs
+//   are left, a tap from Settings, Karaoke.
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -39,13 +44,16 @@ import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
 import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import type { PinnedRoomToggle } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
 import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { karaokeSongs, songsOptionRow } from './karaoke-songs'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
@@ -201,7 +209,9 @@ export const KaraokeRoomStage: Component = () => {
       if (!playing) return
       setRunOn(true)
       const entry = untrack(cue)
-      if (entry !== null) rememberSungSong(entry.song.sessionId)
+      if (entry === null) return
+      rememberSungSong(entry.song.sessionId)
+      if (KARAOKE_IMPORT) markKaraokeSongPlayed(entry.song.sessionId)
     }),
   )
 
@@ -232,6 +242,11 @@ export const KaraokeRoomStage: Component = () => {
       },
       lyricsSize: karaokeLyricsSize,
       noteGlyphs: karaokeNoteGlyphs,
+      badge: () => {
+        if (!KARAOKE_IMPORT) return null
+        const coming = importsInFlight()
+        return coming > 0 ? `Separating ${coming}` : null
+      },
     },
     attach: (controls) => {
       if (entry.key !== cueToken) return
@@ -459,6 +474,10 @@ export const KaraokeRoomStage: Component = () => {
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
         onAllSettings={() => nativeShellApi()?.pushSettings()}
+        songsRow={() =>
+          KARAOKE_IMPORT ? songsOptionRow(karaokeSongs()) : null
+        }
+        onSongs={() => nativeShellApi()?.pushSettings('karaoke')}
         onManageSongs={
           nativeShellApi()?.openKaraokeStudio === undefined
             ? undefined

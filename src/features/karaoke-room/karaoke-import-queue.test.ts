@@ -175,7 +175,7 @@ import { TAB_KARAOKE, TAB_SINGING } from '@/features/tabs/constants'
 import { notifications, setNotifications } from '@/stores/notifications-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 import type { ImportRow } from './karaoke-import-queue'
-import { duplicateOf, enqueueImports, IMPORT_QUEUE_CAP, importRowLine, importRows, importsInFlight, KARAOKE_IMPORT_SENDING_KEY, KARAOKE_IMPORTS_KEY, karaokeNewSongs, markKaraokeSongPlayed, removeImport, resetImportQueueForTests, retryImport, sendingTitle, setImportGateHandler, startKaraokeImportQueue, } from './karaoke-import-queue'
+import { duplicateOf, enqueueImports, IMPORT_QUEUE_CAP, importRowLine, importRows, importsInFlight, KARAOKE_IMPORT_SENDING_KEY, KARAOKE_IMPORTS_KEY, karaokeNewSongs, markKaraokeSongPlayed, removeImport, removeImportedSong, resetImportQueueForTests, retryImport, sendingTitle, setImportGateHandler, showImportGate, startKaraokeImportQueue, } from './karaoke-import-queue'
 import { karaokeSongRequest, resetKaraokeRoomForTests, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 
@@ -454,6 +454,30 @@ describe('a song the server does not take', () => {
     })
     await settle()
     expect(fake.runs).toHaveLength(2)
+  })
+
+  it('shows the gate again when its row asks for songs', async () => {
+    const gate = vi.fn()
+    setImportGateHandler(gate)
+    resetKaraokeSongsForTests({
+      left: 0,
+      subscribed: false,
+      renewsAt: null,
+      perPeriod: 20,
+    })
+    await started()
+    await enqueueImports([song('Salt and Honey.flac')])
+    await settle()
+    ;(fake.runs[0] as FakeRun).reject(refusal(402))
+    await settle()
+    gate.mockClear()
+
+    showImportGate()
+
+    expect(gate).toHaveBeenCalledTimes(1)
+    expect(gate).toHaveBeenCalledWith(
+      expect.objectContaining({ left: 0, subscribed: false }),
+    )
   })
 
   it("waits for a subscriber's songs to come back", async () => {
@@ -752,6 +776,24 @@ describe('removing a row', () => {
       JSON.parse(localStorage.getItem(KARAOKE_IMPORTS_KEY) ?? '[]'),
     ).toEqual([])
     expect(queued).toHaveLength(1)
+  })
+
+  it('removes a ready song from the phone, and its New mark with it', async () => {
+    await started()
+    await enqueueImports([song('Long Road North.m4a')])
+    await settle()
+    const run = fake.runs[0] as FakeRun
+    accept(run)
+    patch(run.sessionId, { status: 'completed' })
+    await settle()
+    expect(karaokeNewSongs()).toEqual([run.sessionId])
+
+    const removed = await removeImportedSong(run.sessionId)
+
+    expect(removed).toBe(true)
+    expect(fake.deleted).toEqual([run.sessionId])
+    expect(karaokeNewSongs()).toEqual([])
+    expect(fake.sessions?.()).toEqual([])
   })
 
   it('forgets a song that was waiting, and nothing was used', async () => {
