@@ -45,6 +45,7 @@ import { AccountOfferSheet } from './settings/AccountOffer'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
+import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
 import { ShellScreens } from './ShellScreens'
@@ -217,6 +218,9 @@ export const NativeShell: Component = () => {
     setShellOwnsTransport(transportVisible())
   })
 
+  // Whether the rail is on screen, for a room whose own bar rests on it.
+  mirrorShellChrome()
+
   onCleanup(() => {
     setShellOwnsTransport(false)
     document.documentElement.removeAttribute('data-shell-chip')
@@ -243,6 +247,7 @@ export const NativeShell: Component = () => {
                   performBack(shellBackHost())
                 }}
                 onGear={controls().openOptions}
+                gearLabel={controls().optionsLabel}
                 // The chip is a button only where the room answers for one:
                 // the shell owns no picker of its own (R5).
                 onChip={controls().openRoomPicker}

@@ -42,6 +42,11 @@ export interface RoomHeaderProps {
   onChip?: () => void
   /** On screen, or fading out behind a pushed screen. Absent means on. */
   visible?: () => boolean
+  /**
+   * The gear's accessible name: the room says what its sheet holds (the
+   * Karaoke room's is "Karaoke options"). Absent means "Practice options".
+   */
+  gearLabel?: string
 }
 
 export const RoomHeader: Component<RoomHeaderProps> = (props) => {
@@ -105,7 +110,7 @@ export const RoomHeader: Component<RoomHeaderProps> = (props) => {
           <button
             type="button"
             class="mp-iconbtn"
-            aria-label="Practice options"
+            aria-label={props.gearLabel ?? 'Practice options'}
             data-testid="shell-room-gear"
             onClick={() => gear()()}
           >

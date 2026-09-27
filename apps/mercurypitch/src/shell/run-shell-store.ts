@@ -218,14 +218,29 @@ export const parked = createMemo<boolean>(() => {
   return owner !== null && owner !== currentTab()
 })
 
-/** Is there a run on this screen that the transport should be driving? */
-export const transportVisible = createMemo<boolean>(() => {
+/** Is a run going on the screen the singer is looking at? */
+const runOnScreen = createMemo<boolean>(() => {
   const state = runState()
   return (state === 'active' || state === 'paused') && !parked()
 })
 
-/** The full rail is gone exactly while the transport has its slot. */
-export const railVisible = createMemo<boolean>(() => !transportVisible())
+/**
+ * Does the room on screen draw its own transport? The Karaoke room's zen bar
+ * is one (S8 D2 A): the shell then draws nothing in the rail's place.
+ */
+const roomOwnsTransport = (): boolean =>
+  nativeRunControls()?.ownsTransport === true
+
+/** Is there a run on this screen that the shell's transport should drive? */
+export const transportVisible = createMemo<boolean>(
+  () => runOnScreen() && !roomOwnsTransport(),
+)
+
+/**
+ * The full rail is gone exactly while a run is on screen: the shell's
+ * transport has its slot, or the room is its own transport.
+ */
+export const railVisible = createMemo<boolean>(() => !runOnScreen())
 
 /** R2's corner chip: present whenever the transport took the rail's place. */
 export const chipVisible = createMemo<boolean>(

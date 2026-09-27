@@ -83,6 +83,18 @@ export interface NativeRunControls {
    */
   closeRoomOverlay?: () => boolean
   /**
+   * The room draws its own transport, and the shell must not draw another.
+   *
+   * The Karaoke room plays inside zen's bar: the scrubber, both times, the
+   * mic, the music level and Next, none of which the shell's Transport has
+   * (S8 decision D2 A). During a run the shell still steps the rail aside,
+   * as for any run, but draws no Transport and no corner chip in its place.
+   * Absent means the shell's Transport, as Sing has it.
+   */
+  readonly ownsTransport?: boolean
+  /** The gear's accessible name. Absent means "Practice options". */
+  readonly optionsLabel?: string
+  /**
    * Whether a take the singer has not kept is on screen.
    *
    * Absent means NO. Today no room can answer — a practice run leaves nothing
@@ -128,9 +140,46 @@ export interface NativeShellApi {
   openSignIn?: () => void
 }
 
+/**
+ * A claim on the app's one AudioContext (`packages/audio-io`'s broker). The
+ * last claim released suspends the clock; nothing ever closes it.
+ */
+export interface NativeAudioLease {
+  ensure(): AudioContext | null
+  unlock(): Promise<boolean>
+  release(): void
+}
+
+/**
+ * What a room under `src/` needs from the device and cannot import.
+ *
+ * The root package does not depend on `packages/audio-io`, and eslint keeps
+ * every `@irchiinnuss/mobile-runtime` entry but asset-fetch out of `src/`.
+ * The app registers this from its entry (apps/mercurypitch main.tsx); on the
+ * web nothing does, and a room that finds nothing builds its own context
+ * and leaves the screen to sleep as it always did.
+ */
+export interface NativeDeviceApi {
+  /** A lease on the one shared AudioContext, under the owner's name. */
+  acquireAudio: (owner: string) => NativeAudioLease
+  /** Keep the screen on while a song plays, and let it sleep after. */
+  keepAwake: (on: boolean) => void
+}
+
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(
   null,
 )
+const [deviceApi, setDeviceApi] = createSignal<NativeDeviceApi | null>(null)
+
+/** The device, or null on the web and before the app registers it. */
+export const nativeDeviceApi = deviceApi
+
+export function registerNativeDevice(api: NativeDeviceApi): () => void {
+  setDeviceApi(api)
+  return () => {
+    setDeviceApi((current) => (current === api ? null : current))
+  }
+}
 const [shellApi, setShellApi] = createSignal<NativeShellApi | null>(null)
 const [transportOwned, setTransportOwned] = createSignal(false)
 

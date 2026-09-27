@@ -1,0 +1,502 @@
+// ============================================================
+// The Karaoke room: arrival, the run, park and resume (plan S8 §2, §4.2)
+// ============================================================
+//
+// The room hosts the stem mixer's zen stage; the mixer is stood in for here
+// by a component that records what the room gave it and hands back controls
+// the test can move, because what is under test is the ROOM's wiring: which
+// song it cues and when, what it tells the shell, and what it keeps when it
+// is taken off the screen and put back.
+
+import { cleanup, render } from '@solidjs/testing-library'
+import type { Setter } from 'solid-js'
+import type { Mock } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GuideLevel, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
+import { TAB_KARAOKE } from '@/features/tabs/constants'
+import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerNativeDevice, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+
+interface FakeMixer {
+  sessionId: string
+  title: string
+  stems: { vocal?: string; instrumental?: string }
+  autoPlay: boolean | undefined
+  initialSeekSec: number | undefined
+  hosted: StemMixerHosting
+  alive: boolean
+  setPlaying: Setter<boolean>
+  setLoading: Setter<boolean>
+  setElapsed: Setter<number>
+  setLoadError: Setter<string>
+  /** The singer moving the sing pill. */
+  setGuideLevel: Setter<GuideLevel>
+  /** The room putting the guide back. */
+  setGuide: Mock
+  play: Mock
+  pause: Mock
+  seek: Mock
+  releaseMic: Mock
+}
+
+const mixers = vi.hoisted(() => ({ list: [] as FakeMixer[] }))
+
+vi.mock('@/components/StemMixer', async () => {
+  const { createSignal, onCleanup, onMount } = await import('solid-js')
+  return {
+    StemMixer: (props: {
+      sessionId: string
+      songTitle: string
+      stems: { vocal?: string; instrumental?: string }
+      autoPlay?: boolean
+      initialSeekSec?: number
+      hosted: StemMixerHosting
+    }) => {
+      const [playing, setPlaying] = createSignal(false)
+      const [loading, setLoading] = createSignal(true)
+      const [loadError, setLoadError] = createSignal('')
+      const [elapsed, setElapsed] = createSignal(0)
+      const [guide, setGuideLevel] = createSignal<GuideLevel>({
+        volume: 0.8,
+        muted: false,
+      })
+      const mixer: FakeMixer = {
+        sessionId: props.sessionId,
+        title: props.songTitle,
+        stems: props.stems,
+        autoPlay: props.autoPlay,
+        initialSeekSec: props.initialSeekSec,
+        hosted: props.hosted,
+        alive: true,
+        setPlaying,
+        setLoading,
+        setElapsed,
+        setLoadError,
+        setGuideLevel,
+        setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
+        play: vi.fn(() => setPlaying(true)),
+        pause: vi.fn(() => setPlaying(false)),
+        seek: vi.fn((seconds: number) => setElapsed(seconds)),
+        releaseMic: vi.fn(),
+      }
+      mixers.list.push(mixer)
+      onMount(() => {
+        props.hosted.attach({
+          playing,
+          loading,
+          loadError,
+          elapsed,
+          duration: () => 246,
+          hasNotes: () => true,
+          musicLevel: () => 1,
+          play: mixer.play,
+          pause: mixer.pause,
+          seek: mixer.seek,
+          resetMusicLevel: vi.fn(),
+          releaseMic: mixer.releaseMic,
+          guide,
+          setGuide: mixer.setGuide,
+        })
+      })
+      onCleanup(() => {
+        mixer.alive = false
+      })
+      return <div data-testid="fake-mixer" data-session={props.sessionId} />
+    },
+  }
+})
+
+const seeding = vi.hoisted(() => ({ done: Promise.resolve() }))
+
+vi.mock('@/features/karaoke-night/seed-examples', () => ({
+  whenBundledExamplesSeeded: async () => seeding.done,
+}))
+
+const library = vi.hoisted(() => ({
+  rows: [] as Array<{
+    sessionId: string
+    title: string
+    artist: string | null
+    durationSec: number | null
+    credit: string | null
+    kind: 'example' | 'yours'
+    stems: { vocal: string; instrumental: string }
+  }>,
+}))
+
+vi.mock('./karaoke-room-library', () => ({
+  roomLibrary: () => library.rows,
+  hydrateSong: async (row: { stems: unknown }) => Promise.resolve(row.stems),
+}))
+
+vi.mock('@/lib/backgrounds/background-surface', () => ({
+  useBackgroundSurfaceController: () => ({
+    resolvedStyle: () => ({ '--mp-stage-image': 'url("/room.webp")' }),
+  }),
+}))
+
+import { KARAOKE_LAST_SONG_KEY, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
+import { KaraokeRoomStage } from './KaraokeRoomStage'
+
+const example = (slug: string, title: string, dir: string) => ({
+  sessionId:
+    slug === 'karaoke-night'
+      ? 'karaoke-night-demo'
+      : `karaoke-night-demo:${slug}`,
+  title,
+  artist: 'Josh Woodward',
+  durationSec: 246,
+  credit: 'Josh Woodward · CC BY 4.0',
+  kind: 'example' as const,
+  stems: {
+    vocal: `/karaoke/examples/${dir}/vocal.m4a`,
+    instrumental: `/karaoke/examples/${dir}/instrumental.m4a`,
+  },
+})
+
+const GOODBYE = example(
+  'karaoke-night',
+  'Goodbye to Spring',
+  'goodbye-to-spring',
+)
+const JOSEPHINE = example(
+  'josephine',
+  "I'll Be Right Behind You, Josephine",
+  'josephine',
+)
+const DARK = example(
+  'nothing-in-the-dark',
+  'Nothing in the Dark',
+  'nothing-in-the-dark',
+)
+
+interface FakeDevice extends NativeDeviceApi {
+  acquireAudio: Mock
+  keepAwake: Mock
+  lease: {
+    ensure: Mock
+    unlock: Mock
+    release: Mock
+  }
+}
+
+function fakeDevice(): FakeDevice {
+  const lease = {
+    ensure: vi.fn(() => null),
+    unlock: vi.fn(async () => Promise.resolve(true)),
+    release: vi.fn(),
+  }
+  return {
+    acquireAudio: vi.fn(() => lease),
+    keepAwake: vi.fn(),
+    lease,
+  }
+}
+
+let device: FakeDevice
+let unregisterDevice: () => void
+
+const current = (): FakeMixer => {
+  const alive = mixers.list.filter((mixer) => mixer.alive)
+  const mixer = alive.at(-1)
+  if (mixer === undefined) throw new Error('no mixer on the stage')
+  return mixer
+}
+
+async function mountRoom(): Promise<() => void> {
+  const { unmount } = render(() => <KaraokeRoomStage />)
+  await vi.waitFor(() => {
+    expect(mixers.list.some((mixer) => mixer.alive)).toBe(true)
+  })
+  return unmount
+}
+
+/** Let every pending promise and timer of a few frames run. */
+const settleFor = async (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+const controls = () => {
+  const registered = nativeRunControls()
+  if (registered === null) throw new Error('the room registered nothing')
+  return registered
+}
+
+beforeEach(() => {
+  mixers.list = []
+  library.rows = [GOODBYE, JOSEPHINE, DARK]
+  seeding.done = Promise.resolve()
+  localStorage.clear()
+  resetKaraokeRoomForTests()
+  resetRoomArrivalHolds()
+  device = fakeDevice()
+  unregisterDevice = registerNativeDevice(device)
+})
+
+afterEach(() => {
+  cleanup()
+  unregisterDevice()
+  resetRoomArrivalHolds()
+  vi.clearAllMocks()
+})
+
+describe('arriving', () => {
+  it('cues Goodbye to Spring on a first visit, paused at the top', async () => {
+    await mountRoom()
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(current().title).toBe('Goodbye to Spring')
+    expect(current().stems).toEqual(GOODBYE.stems)
+    expect(current().autoPlay).not.toBe(true)
+    expect(current().play).not.toHaveBeenCalled()
+    expect(controls().isPlaying()).toBe(false)
+    expect(controls().isPaused()).toBe(false)
+    // A first visit leaves the guide vocal where the mixer starts it.
+    expect(current().setGuide).not.toHaveBeenCalled()
+  })
+
+  it('cues the last song sung', async () => {
+    localStorage.setItem(KARAOKE_LAST_SONG_KEY, JOSEPHINE.sessionId)
+    await mountRoom()
+
+    expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+  })
+
+  it('falls back to the first example when the last song is gone', async () => {
+    localStorage.setItem(KARAOKE_LAST_SONG_KEY, 'a-song-that-was-removed')
+    await mountRoom()
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+  })
+
+  it('waits for the door before it puts anything on the stage', async () => {
+    const release = holdRoomArrival()
+    render(() => <KaraokeRoomStage />)
+    // Long enough for the seed and the cue to have run, were it not held.
+    await settleFor(30)
+    expect(mixers.list).toHaveLength(0)
+
+    release()
+    await vi.waitFor(() => {
+      expect(mixers.list).toHaveLength(1)
+    })
+  })
+
+  it('waits for the seed, so a first launch finds its library', async () => {
+    let finish: () => void = () => undefined
+    seeding.done = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    library.rows = []
+    render(() => <KaraokeRoomStage />)
+    await settleFor(30)
+    expect(mixers.list).toHaveLength(0)
+
+    library.rows = [GOODBYE, JOSEPHINE, DARK]
+    finish()
+    await vi.waitFor(() => {
+      expect(mixers.list).toHaveLength(1)
+    })
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+  })
+
+  it('puts the credit on the song line', async () => {
+    await mountRoom()
+
+    expect(current().hosted.stage.byline()).toBe('Josh Woodward · CC BY 4.0')
+  })
+})
+
+describe('what it tells the shell', () => {
+  it('registers as the Karaoke tab, with its own transport', async () => {
+    await mountRoom()
+
+    expect(controls().tab).toBe(TAB_KARAOKE)
+    expect(controls().roomLabel).toBe('Broadway Theater')
+    expect(controls().ownsTransport).toBe(true)
+    expect(controls().optionsLabel).toBe('Karaoke options')
+  })
+
+  it('is a run once the song plays, and paused mid-song is still one', async () => {
+    await mountRoom()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+    expect(controls().isPlaying()).toBe(true)
+
+    controls().pause()
+    expect(current().pause).toHaveBeenCalledTimes(1)
+    expect(controls().isPlaying()).toBe(false)
+    expect(controls().isPaused()).toBe(true)
+
+    controls().resume()
+    expect(current().play).toHaveBeenCalledTimes(1)
+  })
+
+  it('remembers the song once it has been sung', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    expect(localStorage.getItem(KARAOKE_LAST_SONG_KEY)).toBe(GOODBYE.sessionId)
+  })
+
+  it('stops back to the top, and the run is over', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setElapsed(40)
+
+    controls().stop()
+
+    expect(current().pause).toHaveBeenCalled()
+    expect(current().seek).toHaveBeenLastCalledWith(0)
+    expect(controls().isPlaying()).toBe(false)
+    expect(controls().isPaused()).toBe(false)
+  })
+})
+
+describe('parking, and coming back', () => {
+  it('pauses, lets the microphone go, and keeps the place', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setElapsed(31)
+
+    controls().park()
+
+    expect(current().pause).toHaveBeenCalledTimes(1)
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+    expect(controls().isPaused()).toBe(true)
+  })
+
+  it('comes back after an unmount on the same song, paused at the same place', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setElapsed(31)
+    controls().park()
+    unmount()
+    expect(mixers.list.every((mixer) => !mixer.alive)).toBe(true)
+
+    await mountRoom()
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(current().initialSeekSec).toBe(31)
+    expect(current().autoPlay).not.toBe(true)
+    // Still a paused run from the first frame: the rail must not flash back
+    // while the song is loading again.
+    expect(controls().isPaused()).toBe(true)
+  })
+
+  it('puts the guide vocal back where the singer left it', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setGuideLevel({ volume: 0.3, muted: true })
+    controls().park()
+    unmount()
+
+    await mountRoom()
+
+    expect(current().setGuide).toHaveBeenCalledWith({
+      volume: 0.3,
+      muted: true,
+    })
+  })
+
+  it('pauses when the app is sent away', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    Reflect.deleteProperty(document, 'visibilityState')
+
+    expect(current().pause).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the next song', () => {
+  it('plays by itself when the setting is on, and the run carries across', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    const first = current()
+
+    first.setPlaying(false)
+    first.hosted.onEnded()
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+
+    expect(current().autoPlay).toBe(true)
+    // Between the two songs the run is paused, not over.
+    expect(controls().isPaused()).toBe(true)
+    current().setLoading(false)
+    current().setPlaying(true)
+    expect(controls().isPlaying()).toBe(true)
+  })
+
+  it('stays at the end when the setting is off, and the run is over', async () => {
+    setKaraokePlayNext(false)
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    current().setPlaying(false)
+    current().hosted.onEnded()
+    await Promise.resolve()
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(controls().isPlaying()).toBe(false)
+    expect(controls().isPaused()).toBe(false)
+  })
+
+  it("steps through the room's library from the bar", async () => {
+    await mountRoom()
+    expect(current().hosted.hasPrev()).toBe(false)
+    expect(current().hosted.hasNext()).toBe(true)
+
+    current().hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+    // Nothing was playing, so nothing starts.
+    expect(current().autoPlay).not.toBe(true)
+    expect(current().hosted.hasPrev()).toBe(true)
+  })
+})
+
+describe('the device', () => {
+  it("plays on the app's one AudioContext, and gives it back on the way out", async () => {
+    const unmount = await mountRoom()
+
+    expect(device.acquireAudio).toHaveBeenCalledWith('karaoke-room')
+    current().hosted.audio?.ensure()
+    expect(device.lease.ensure).toHaveBeenCalled()
+
+    unmount()
+    expect(device.lease.release).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the screen awake while a song plays, and only then', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+    expect(device.keepAwake).toHaveBeenLastCalledWith(true)
+
+    current().setPlaying(false)
+    expect(device.keepAwake).toHaveBeenLastCalledWith(false)
+
+    current().setPlaying(true)
+    unmount()
+    expect(device.keepAwake).toHaveBeenLastCalledWith(false)
+  })
+})

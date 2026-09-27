@@ -2052,6 +2052,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       resetMusicLevel: () => {
         audio.setMusicLevel(audio.musicLevelRange.defaultValue)
       },
+      releaseMic: () => {
+        if (mic.micActive()) void mic.toggleMic()
+      },
+      guide: () => ({ volume: vocal().volume, muted: vocal().muted }),
+      setGuide: (guide) => {
+        setTrackVolume('Vocal', guide.volume)
+        if (vocal().muted !== guide.muted) toggleMute('Vocal')
+      },
     })
 
     // Load cached data from IndexedDB in parallel:

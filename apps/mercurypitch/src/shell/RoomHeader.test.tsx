@@ -53,6 +53,43 @@ describe('RoomHeader', () => {
     ).toContain('Broadway Theater')
   })
 
+  it("names the gear for the room's own options when the room names them", () => {
+    // Sing's gear opens practice options; the Karaoke room's opens its own
+    // sheet (lyrics size, notes, the next song). A screen reader hears which.
+    const rendered = renderShell(() => (
+      <RoomHeader
+        title={() => 'Broadway Theater'}
+        onBack={() => {}}
+        onGear={() => {}}
+        gearLabel="Karaoke options"
+      />
+    ))
+    unmount = rendered.unmount
+
+    expect(
+      rendered.container
+        .querySelector('[data-testid="shell-room-gear"]')
+        ?.getAttribute('aria-label'),
+    ).toBe('Karaoke options')
+  })
+
+  it('keeps "Practice options" for a room that names nothing', () => {
+    const rendered = renderShell(() => (
+      <RoomHeader
+        title={() => 'Retro Analog Studio'}
+        onBack={() => {}}
+        onGear={() => {}}
+      />
+    ))
+    unmount = rendered.unmount
+
+    expect(
+      rendered.container
+        .querySelector('[data-testid="shell-room-gear"]')
+        ?.getAttribute('aria-label'),
+    ).toBe('Practice options')
+  })
+
   describe('while a screen is pushed', () => {
     it('is in, and touchable, with nothing pushed', () => {
       const rendered = renderShell(() => (

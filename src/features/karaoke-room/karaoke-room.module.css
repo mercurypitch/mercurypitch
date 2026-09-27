@@ -1,0 +1,30 @@
+/* ============================================================
+   The Karaoke room's box (native)
+   ============================================================
+   The room is the viewport, as the Sing room is: the picture reaches under
+   the room header and under the rail, both of which the shell fixes to the
+   edges. Below `--z-rail` (470) and below sheets (600), so the chrome the
+   shell owns still sits on top of it. The zen stage fills this box
+   (`KaraokeMobileStage.module.css`, `.hosted`), not the viewport. */
+
+.room {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage, 450);
+  overflow: hidden;
+  background: var(--bg-primary, #0d1117);
+}
+
+/* The scroller the room was rendered into has nothing left to lay out. */
+:global(.main-content):has(.room) {
+  overflow: hidden;
+}
+
+.cover {
+  position: absolute;
+  inset: 0;
+  background-image: var(--mp-stage-image);
+  background-position: var(--mp-stage-position, 50% 50%);
+  background-size: cover;
+  background-repeat: no-repeat;
+}

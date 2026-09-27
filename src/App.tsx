@@ -88,6 +88,16 @@ const ChallengeResultCard = lazy(async () =>
 // first run is the alley (S4), and a `lazy()` call is a side effect Rollup
 // keeps, chunk and all, whether or not anything mounts it — so the constant
 // picks a stub before the call is ever written.
+// The native Karaoke tab is a room (plan S8 D8 A), and the web never loads
+// it: the constant picks a function that renders nothing before `lazy()` is
+// ever written, so the web build has neither the call nor its chunk.
+const NativeKaraokeRoom: Component = IS_NATIVE_BUILD
+  ? lazy(async () =>
+      import('@/features/karaoke-room/KaraokeRoomStage').then((m) => ({
+        default: m.KaraokeRoomStage,
+      })),
+    )
+  : () => null
 type LazyFirstLight = ReturnType<typeof lazy<typeof FirstLightFlow>>
 const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
   ? (Object.assign(() => null, {
@@ -4218,12 +4228,16 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_KARAOKE}>
                 <TabErrorBoundary tabName={tabLabel(TAB_KARAOKE)}>
-                  <KaraokePage
-                    initialView={initialUvrView}
-                    initialSessionId={initialUvrSessionId}
-                    onSessionChange={setActiveUvrSessionId}
-                    onViewChange={setActiveUvrView}
-                  />
+                  {IS_NATIVE_BUILD ? (
+                    <NativeKaraokeRoom />
+                  ) : (
+                    <KaraokePage
+                      initialView={initialUvrView}
+                      initialSessionId={initialUvrSessionId}
+                      onSessionChange={setActiveUvrSessionId}
+                      onViewChange={setActiveUvrView}
+                    />
+                  )}
                 </TabErrorBoundary>
               </Show>
               <Show when={activeTab() === TAB_PIANO}>

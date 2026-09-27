@@ -209,7 +209,7 @@ describe('the mixer the Karaoke room hosts', () => {
     const { host } = hosting()
     mountHosted(host)
     await waitFor(() => {
-      expect(host.audio.ensure).toHaveBeenCalled()
+      expect(host.audio?.ensure).toHaveBeenCalled()
     })
     expect(constructed).toBe(0)
   })
@@ -232,6 +232,20 @@ describe('the mixer the Karaoke room hosts', () => {
     })
     expect(controls()!.playing()).toBe(false)
     expect(controls()!.hasNotes()).toBe(false)
+  })
+
+  it('hands the room the guide vocal, and takes it back after a park', async () => {
+    const { host, controls } = hosting()
+    mountHosted(host)
+    await waitFor(() => {
+      expect(controls()).not.toBeNull()
+    })
+    // A karaoke reference vocal starts muted, at the mixer's level.
+    expect(controls()!.guide()).toEqual({ volume: 0.8, muted: true })
+
+    controls()!.setGuide({ volume: 0.35, muted: false })
+
+    expect(controls()!.guide()).toEqual({ volume: 0.35, muted: false })
   })
 
   it('says a song with stored notes has them, so the room can offer them (K1)', async () => {
