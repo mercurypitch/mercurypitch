@@ -8,12 +8,14 @@ import type { MeshoptDecoder as MeshoptDecoderValue } from 'three/addons/libs/me
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
+import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage, releaseAssetTextureImages, } from './asset-texture-profile'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { prepareExhibitAsset } from './exhibit-asset'
 import { createKitInstance } from './kit-instance'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
+import type { GlassAssetQualityProfile } from './render-quality'
 import type { TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
 import type { createVessel } from './vessels'
@@ -62,6 +64,41 @@ export class RequiredMuseumAssetError extends Error {
   }
 }
 
+export interface MuseumAssetLoadOptions {
+  /** Cancels abort-capable work and invalidates late results from one attempt. */
+  readonly signal?: AbortSignal
+  /** Bounds simultaneous compressed downloads and Meshopt decode work. */
+  readonly maximumConcurrentBundleLoads?: number
+  /** Resizes decoded images before installation and their first GPU upload. */
+  readonly assetProfile?: GlassAssetQualityProfile
+  /** Transfers decoded-image lifetime to the renderer before publication. */
+  readonly onDecodedImage?: (image: TexImageSource) => void
+}
+
+const DEFAULT_MAXIMUM_CONCURRENT_BUNDLE_LOADS = 2
+
+function abortError(): DOMException {
+  return new DOMException('Museum asset loading was aborted.', 'AbortError')
+}
+
+async function forEachConcurrent<T>(
+  values: readonly T[],
+  maximumConcurrent: number,
+  signal: AbortSignal,
+  work: (value: T) => Promise<void>,
+): Promise<void> {
+  let next = 0
+  const worker = async () => {
+    while (!signal.aborted) {
+      const index = next++
+      if (index >= values.length) return
+      await work(values[index]!)
+    }
+  }
+  const count = Math.min(values.length, maximumConcurrent)
+  await Promise.all(Array.from({ length: count }, worker))
+}
+
 export async function loadMuseumAssets(
   level: LevelDefinition,
   assetUrl: (id: string) => string,
@@ -72,32 +109,84 @@ export async function loadMuseumAssets(
   disposed: () => boolean,
   onError?: (id: string, error: unknown) => void,
   onInstalled?: (taskId: string) => void,
+  options: MuseumAssetLoadOptions = {},
 ): Promise<void> {
   const plan = createMuseumAssetLoadPlan(level)
   const sceneRecipe = plan.sceneRecipe
+  const attempt = new AbortController()
+  const ownerSignal = options.signal
+  const abortAttempt = () => attempt.abort(ownerSignal?.reason)
+  ownerSignal?.addEventListener('abort', abortAttempt, { once: true })
+  if (ownerSignal?.aborted === true) abortAttempt()
+  const unavailable = () => disposed() || attempt.signal.aborted
+  const maximumConcurrentBundleLoads = Math.max(
+    1,
+    Math.min(
+      4,
+      Math.floor(
+        options.maximumConcurrentBundleLoads ??
+          DEFAULT_MAXIMUM_CONCURRENT_BUNDLE_LOADS,
+      ),
+    ),
+  )
   const completeUnit = (taskId: string) => {
-    if (!disposed()) onInstalled?.(taskId)
+    if (!unavailable()) onInstalled?.(taskId)
   }
   const failure = (id: string, error: unknown) => {
     if (error instanceof RequiredMuseumAssetError) return error
     const required = new RequiredMuseumAssetError(id, error)
-    if (!disposed()) onError?.(id, required)
+    if (!unavailable()) onError?.(id, required)
     return required
   }
   const loadScene = async (id: string) => {
+    if (attempt.signal.aborted) throw abortError()
     const failedDependencies: string[] = []
     const manager = new LoadingManager()
     manager.onError = (url) => failedDependencies.push(url)
-    const scene = (
-      await new GLTFLoader(manager)
-        .setMeshoptDecoder(lazyMeshoptDecoder as MeshoptDecoder)
-        .loadAsync(assetUrl(id))
-    ).scene
-    if (failedDependencies.length === 0) return scene
-    disposeObject(scene)
-    throw new Error(
-      `GLB "${id}" has unavailable dependencies: ${failedDependencies.join(', ')}`,
-    )
+    const abort = () => manager.abort()
+    attempt.signal.addEventListener('abort', abort, { once: true })
+    try {
+      const scene = (
+        await new GLTFLoader(manager)
+          .setMeshoptDecoder(lazyMeshoptDecoder as MeshoptDecoder)
+          .loadAsync(assetUrl(id))
+      ).scene
+      if (attempt.signal.aborted) {
+        releaseAssetTextureImages(scene)
+        disposeObject(scene)
+        throw abortError()
+      }
+      if (failedDependencies.length > 0) {
+        releaseAssetTextureImages(scene)
+        disposeObject(scene)
+        throw new Error(
+          `GLB "${id}" has unavailable dependencies: ${failedDependencies.join(', ')}`,
+        )
+      }
+      try {
+        await applyAssetTextureProfile(
+          scene,
+          options.assetProfile ?? 'full',
+          undefined,
+          attempt.signal,
+        )
+      } catch (error) {
+        releaseAssetTextureImages(scene)
+        disposeObject(scene)
+        throw error
+      }
+      if (attempt.signal.aborted) {
+        releaseAssetTextureImages(scene)
+        disposeObject(scene)
+        throw abortError()
+      }
+      collectAssetTextureImages(scene).forEach((image) =>
+        options.onDecodedImage?.(image),
+      )
+      return scene
+    } finally {
+      attempt.signal.removeEventListener('abort', abort)
+    }
   }
   const loadBundle = async (
     id: string,
@@ -109,10 +198,11 @@ export async function loadMuseumAssets(
     try {
       const preferred = sceneRecipe.preferredBundles?.[id]
       try {
-        scene = await loadScene(preferred ?? id)
+        const requested = preferred ?? id
+        scene = await loadScene(requested)
       } catch (error) {
         if (preferred === undefined) throw error
-        if (disposed()) return false
+        if (unavailable()) return false
         onError?.(preferred, error)
         // Catalogued legacy bundles are complete authored fallbacks. They may
         // replace a failed preferred revision; neither path reveals proxies.
@@ -120,17 +210,17 @@ export async function loadMuseumAssets(
         scene = await loadScene(id)
       }
     } catch (error) {
-      if (disposed()) return false
+      if (unavailable()) return false
       throw failure(id, error)
     }
     if (scene === undefined) return false
     try {
       await beforeInstall
-      if (disposed()) return false
+      if (unavailable()) return false
       use(scene, resolvedBundle)
       return true
     } catch (error) {
-      if (disposed()) return false
+      if (unavailable()) return false
       throw failure(resolvedBundle, error)
     } finally {
       disposeObject(scene)
@@ -142,11 +232,23 @@ export async function loadMuseumAssets(
     beforeInstall: Promise<unknown> = Promise.resolve(),
   ): Promise<boolean> => {
     let texture: Awaited<ReturnType<TextureLoader['loadAsync']>> | undefined
+    let decodedImage: TexImageSource | undefined
+    let imageRegistered = false
     try {
       texture = await new TextureLoader().loadAsync(assetUrl(recipe.asset))
+      decodedImage = texture.source.data as TexImageSource | undefined
+      if (unavailable()) {
+        if (decodedImage !== undefined) releaseAssetImage(decodedImage)
+        texture.dispose()
+        return false
+      }
+      if (decodedImage !== undefined && options.onDecodedImage !== undefined) {
+        options.onDecodedImage(decodedImage)
+        imageRegistered = true
+      }
       configureTexture(texture, recipe)
       await beforeInstall
-      if (disposed()) {
+      if (unavailable()) {
         texture.dispose()
         return false
       }
@@ -155,7 +257,9 @@ export async function loadMuseumAssets(
       return true
     } catch (error) {
       texture?.dispose()
-      if (disposed()) return false
+      if (decodedImage !== undefined && !imageRegistered)
+        releaseAssetImage(decodedImage)
+      if (unavailable()) return false
       throw failure(recipe.asset, error)
     }
   }
@@ -229,18 +333,22 @@ export async function loadMuseumAssets(
   // awaits attach later; keep this shared prerequisite owned in the meantime.
   // The original rejection still propagates through materialsReady below.
   void decorationSurfacesReady.catch(() => undefined)
-  const bundleLoads = plan.bundles.map(async (bundle) => {
-    const installed = await loadBundle(
-      bundle,
-      decorationSurfacesReady,
-      (scene, resolvedBundle) => {
-        museum.setKit(scene, bundle)
-        installTargets(scene, bundle, resolvedBundle)
-      },
-    )
-    if (installed) completeUnit(`bundle:${bundle}`)
-  })
-  const bundlesReady = Promise.all(bundleLoads)
+  const bundlesReady = forEachConcurrent(
+    plan.bundles,
+    maximumConcurrentBundleLoads,
+    attempt.signal,
+    async (bundle) => {
+      const installed = await loadBundle(
+        bundle,
+        decorationSurfacesReady,
+        (scene, resolvedBundle) => {
+          museum.setKit(scene, bundle)
+          installTargets(scene, bundle, resolvedBundle)
+        },
+      )
+      if (installed) completeUnit(`bundle:${bundle}`)
+    },
+  )
   const skyReady =
     plan.skyTexture === undefined
       ? Promise.resolve()
@@ -267,11 +375,19 @@ export async function loadMuseumAssets(
     )
     if (installed) completeUnit(`portrait:${id}`)
   })
-  await Promise.all([
-    materialsReady,
-    decorationTexturesReady,
-    bundlesReady,
-    skyReady,
-    ...portraitLoads,
-  ])
+  try {
+    await Promise.all([
+      materialsReady,
+      decorationTexturesReady,
+      bundlesReady,
+      skyReady,
+      ...portraitLoads,
+    ])
+  } catch (error) {
+    attempt.abort(error)
+    if (ownerSignal?.aborted === true || disposed()) return
+    throw error
+  } finally {
+    ownerSignal?.removeEventListener('abort', abortAttempt)
+  }
 }

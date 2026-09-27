@@ -1,0 +1,84 @@
+{
+  "schema": "mercurypitch.cloudway-mobile-resource-proof",
+  "version": 1,
+  "date": "2026-09-27",
+  "course": "cloudway-crystal-promenade-study",
+  "status": "local-risk-reduction-verified-physical-retest-required",
+  "scope": {
+    "sourceAssets": "The seven exact GLBs selected by the Crystal Promenade load plan. The optional Pearl Alcove lantern is excluded.",
+    "desktop": "High quality retains the original textures, geometry, silhouettes, materials, and two-bundle load limit.",
+    "mobile": "Auto selects Balanced for a primary coarse pointer or a mobile device hint. Balanced serializes bundle decode and caps color, normal, and emissive images at 1024 pixels and packed roughness, metalness, and occlusion images at 512 pixels before first renderer use.",
+    "limitation": "This is a local Chromium resource and lifecycle proof. It is not a physical iPhone 13 Pro reproduction, does not measure iOS process memory, and cannot establish that the reported TestFlight crash is resolved. A physical-device retest remains required."
+  },
+  "measuredResourceBudget": {
+    "method": "glTF-Transform 4.4.2 inspect; texture upload estimates include a full RGBA mip chain",
+    "assetCount": 7,
+    "compressedBytes": 46254396,
+    "compressedMiB": 44.11,
+    "meshUploadBytes": 104979559,
+    "meshUploadMiB": 100.12,
+    "fullTextureUploadBytes": 413837964,
+    "fullTextureUploadMiB": 394.67,
+    "mobileTextureUploadBytes": 95070860,
+    "mobileTextureUploadMiB": 90.67,
+    "mobileTextureLimitBytes": 100663296,
+    "fullMeshAndTextureUploadMiB": 494.78,
+    "mobileMeshAndTextureUploadMiB": 190.78,
+    "qualification": "The upload totals are deterministic projections for the shipped sources, not a peak-RSS or resident-GPU-memory measurement. Geometry is unchanged."
+  },
+  "chromiumProbe": {
+    "environment": "Playwright Chromium, 390x844 CSS pixels, deviceScaleFactor 3, touch and mobile enabled",
+    "selectedProfile": "balanced",
+    "observedResizeCount": 20,
+    "resizedTo1024": 12,
+    "resizedTo512": 8,
+    "allReturnedDimensionsExact": true,
+    "createImageBitmapSemantics": {
+      "colorSpaceConversion": "none",
+      "premultiplyAlpha": "none"
+    },
+    "runtimeResult": "The full Promenade reached ready, forward movement exceeded 0.2 world units, remained ready, and emitted no page or console errors."
+  },
+  "lifecycleEvidence": {
+    "boundedLoading": [
+      "bounds required GLB work so one renderer attempt cannot decode every bundle together",
+      "aborts the active GLB and never starts queued work after renderer teardown"
+    ],
+    "cancellation": [
+      "invalidates a standalone texture request and releases its late decoded image",
+      "stops between resizes and closes a replacement completed after abort"
+    ],
+    "ownership": "The renderer attempt tracks decoded image identity, disposes vessels, museum adapters, scenes, materials, and textures first, then closes each unique attempt-owned decoded image once. Shared images referenced through distinct Texture Sources are all replaced before the original is released.",
+    "independentReview": "A source-frozen independent review found no image lifetime, cancellation, retry, or disposal blocker."
+  },
+  "verification": [
+    {
+      "command": "pnpm --filter @irchiinnuss/glass-game exec vitest run src/render/asset-texture-profile.test.ts src/render/asset-kit.test.ts src/render/render-quality.test.ts src/render/glass-renderer.test.ts src/render/cloudway-mobile-resource-budget.test.ts",
+      "result": "5 files, 51 tests passed at the initial resource and lifecycle freeze; the later tablet policy regression is recorded separately below"
+    },
+    {
+      "command": "pnpm --filter @irchiinnuss/glass-game check",
+      "result": "passed"
+    },
+    {
+      "command": "BESIDE_CUE_E2E_PORT=5660 pnpm --dir apps/beside-cue exec playwright test e2e/glass-adventure-loading.e2e.ts e2e/glass-adventure-render-quality.e2e.ts --project=chromium-adventure --workers=1 --grep 'failed first GPU upload|compact touch Promenade downsizes'",
+      "result": "2 passed in 40.1 seconds"
+    },
+    {
+      "command": "pnpm --filter @irchiinnuss/glass-game exec vitest run src/render/render-quality.test.ts src/render/glass-renderer.test.ts",
+      "result": "2 files, 35 passed, including phone, portrait tablet, rotated tablet, zero viewport, a Safari-like tablet without a mobile hint, fine-pointer desktop, and explicit High selection"
+    },
+    {
+      "command": "BESIDE_CUE_E2E_PORT=5666 pnpm --dir apps/beside-cue exec playwright test e2e/glass-adventure-render-quality.e2e.ts --project=chromium-adventure --workers=1 --grep 'auto selects a stable compact-touch profile'",
+      "result": "1 passed in 10.6 seconds; helper copy and phone/tablet/desktop panel bounds verified"
+    }
+  ],
+  "regressionSources": [
+    "packages/glass-game/src/render/cloudway-mobile-resource-budget.test.ts",
+    "packages/glass-game/src/render/asset-texture-profile.test.ts",
+    "packages/glass-game/src/render/asset-kit.test.ts",
+    "packages/glass-game/src/render/glass-renderer.test.ts",
+    "apps/beside-cue/e2e/glass-adventure-render-quality.e2e.ts",
+    "apps/beside-cue/e2e/glass-adventure-loading.e2e.ts"
+  ]
+}

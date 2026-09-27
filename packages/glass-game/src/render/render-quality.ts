@@ -7,6 +7,7 @@ export type GlassRenderQualityProfile = Exclude<
   GlassRenderQualityPreference,
   'auto'
 >
+export type GlassAssetQualityProfile = 'full' | 'mobile'
 
 export interface GlassRenderQualityEnvironment {
   cssWidth: number
@@ -17,6 +18,8 @@ export interface GlassRenderQualityEnvironment {
 
 export interface GlassRenderQualityPolicy {
   profile: GlassRenderQualityProfile
+  assetProfile: GlassAssetQualityProfile
+  maximumConcurrentBundleLoads: 1 | 2
   maximumPixelRatio: number
   shadowFrameInterval: 1 | 2
   shadowMapSize: 1024
@@ -25,6 +28,8 @@ export interface GlassRenderQualityPolicy {
 
 const HIGH: GlassRenderQualityPolicy = {
   profile: 'high',
+  assetProfile: 'full',
+  maximumConcurrentBundleLoads: 2,
   maximumPixelRatio: 1.5,
   shadowFrameInterval: 1,
   shadowMapSize: 1024,
@@ -33,13 +38,13 @@ const HIGH: GlassRenderQualityPolicy = {
 
 const BALANCED: GlassRenderQualityPolicy = {
   profile: 'balanced',
+  assetProfile: 'mobile',
+  maximumConcurrentBundleLoads: 1,
   maximumPixelRatio: 1.25,
   shadowFrameInterval: 2,
   shadowMapSize: 1024,
   transmissionResolutionScale: 0.5,
 }
-
-const MAXIMUM_COMPACT_EDGE = 600
 
 export function parseGlassRenderQualityPreference(
   raw: string | null | undefined,
@@ -53,18 +58,7 @@ export function resolveGlassRenderQuality(
 ): GlassRenderQualityPolicy {
   if (preference === 'high') return HIGH
   if (preference === 'balanced') return BALANCED
-  const width = Number.isFinite(environment.cssWidth)
-    ? Math.max(0, environment.cssWidth)
-    : 0
-  const height = Number.isFinite(environment.cssHeight)
-    ? Math.max(0, environment.cssHeight)
-    : 0
-  const shortEdge = Math.min(width, height)
-  const compactCoarsePointer =
-    shortEdge > 0 &&
-    shortEdge <= MAXIMUM_COMPACT_EDGE &&
-    environment.coarsePointer
-  return environment.mobileHint || compactCoarsePointer ? BALANCED : HIGH
+  return environment.mobileHint || environment.coarsePointer ? BALANCED : HIGH
 }
 
 export function effectiveGlassPixelRatio(

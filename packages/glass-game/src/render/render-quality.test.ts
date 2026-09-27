@@ -19,33 +19,52 @@ describe('glass render quality', () => {
     expect(parseGlassRenderQualityPreference(null)).toBe('auto')
   })
 
-  it('keeps fine-pointer desktop high and selects balanced for a compact touch viewport', () => {
-    expect(resolveGlassRenderQuality('auto', DESKTOP).profile).toBe('high')
+  it('keeps fine-pointer desktop high and balances coarse phones and tablets at any viewport', () => {
+    expect(resolveGlassRenderQuality('auto', DESKTOP)).toMatchObject({
+      profile: 'high',
+      assetProfile: 'full',
+      maximumConcurrentBundleLoads: 2,
+    })
+
+    for (const viewport of [
+      { cssWidth: 390, cssHeight: 844 },
+      { cssWidth: 834, cssHeight: 1194 },
+      { cssWidth: 1194, cssHeight: 834 },
+      { cssWidth: 0, cssHeight: 0 },
+    ])
+      expect(
+        resolveGlassRenderQuality('auto', {
+          ...viewport,
+          coarsePointer: true,
+          mobileHint: false,
+        }),
+      ).toMatchObject({
+        profile: 'balanced',
+        assetProfile: 'mobile',
+        maximumConcurrentBundleLoads: 1,
+      })
+
     expect(
-      resolveGlassRenderQuality('auto', {
-        cssWidth: 390,
-        cssHeight: 844,
+      resolveGlassRenderQuality('high', {
+        cssWidth: 834,
+        cssHeight: 1194,
         coarsePointer: true,
         mobileHint: false,
-      }).profile,
-    ).toBe('balanced')
+      }),
+    ).toMatchObject({ profile: 'high', assetProfile: 'full' })
   })
 
-  it('uses the device mobile hint without treating a temporary zero-size container as compact', () => {
-    expect(
-      resolveGlassRenderQuality('auto', {
-        cssWidth: 0,
-        cssHeight: 0,
-        coarsePointer: true,
-        mobileHint: false,
-      }).profile,
-    ).toBe('high')
+  it('uses the device mobile hint when the primary pointer is fine', () => {
     expect(
       resolveGlassRenderQuality('auto', {
         ...DESKTOP,
         mobileHint: true,
-      }).profile,
-    ).toBe('balanced')
+      }),
+    ).toMatchObject({
+      profile: 'balanced',
+      assetProfile: 'mobile',
+      maximumConcurrentBundleLoads: 1,
+    })
   })
 
   it('keeps current high settings and bounds balanced DPR without upscaling', () => {
@@ -53,6 +72,8 @@ describe('glass render quality', () => {
     const balanced = resolveGlassRenderQuality('balanced', DESKTOP)
     expect(high).toEqual({
       profile: 'high',
+      assetProfile: 'full',
+      maximumConcurrentBundleLoads: 2,
       maximumPixelRatio: 1.5,
       shadowFrameInterval: 1,
       shadowMapSize: 1024,
@@ -60,6 +81,8 @@ describe('glass render quality', () => {
     })
     expect(balanced).toEqual({
       profile: 'balanced',
+      assetProfile: 'mobile',
+      maximumConcurrentBundleLoads: 1,
       maximumPixelRatio: 1.25,
       shadowFrameInterval: 2,
       shadowMapSize: 1024,

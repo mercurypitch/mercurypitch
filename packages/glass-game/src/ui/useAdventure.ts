@@ -26,6 +26,8 @@ import { createAdventureLoadingLifecycle } from './loading-lifecycle'
 import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
 import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
+import type { RendererFailureStage } from './renderer-failure'
+import { reportRendererFailure } from './renderer-failure'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
 
@@ -429,8 +431,23 @@ export function useAdventure(
     generation: number,
     message: string,
     attempt: GlassRenderer | null,
+    stage: RendererFailureStage,
+    cause: unknown,
   ): void {
+    const phase = loading.state().phase
     if (!loading.fail(generation, message)) return
+    const quality = attempt?.getRenderQuality()
+    reportRendererFailure(
+      {
+        attempt: generation,
+        phase,
+        stage,
+        preference: untrack(renderQualityPreference),
+        renderProfile: quality?.profile ?? 'unavailable',
+        assetProfile: quality?.assetProfile ?? 'unavailable',
+      },
+      cause,
+    )
     setInspection(null)
     setNearbyArtwork(null)
     soundscape.pause()
@@ -470,12 +487,24 @@ export function useAdventure(
             presentCompletion()
         },
         onContextLost: () => {
-          failRendererAttempt(generation, GRAPHICS_LOAD_ERROR, attempt)
+          failRendererAttempt(
+            generation,
+            GRAPHICS_LOAD_ERROR,
+            attempt,
+            'context-lost',
+            new Error('WebGL context lost'),
+          )
         },
       })
       setRenderQualityProfile(attempt.getRenderQuality().profile)
-    } catch {
-      loading.fail(generation, GRAPHICS_SUPPORT_ERROR)
+    } catch (cause) {
+      failRendererAttempt(
+        generation,
+        GRAPHICS_SUPPORT_ERROR,
+        attempt,
+        'initialization',
+        cause,
+      )
       return
     }
     if (
@@ -491,8 +520,14 @@ export function useAdventure(
       .then(() => {
         loading.assetsInstalled(generation)
       })
-      .catch(() => {
-        failRendererAttempt(generation, ASSET_LOAD_ERROR, attempt)
+      .catch((cause: unknown) => {
+        failRendererAttempt(
+          generation,
+          ASSET_LOAD_ERROR,
+          attempt,
+          'asset-load',
+          cause,
+        )
       })
   }
 
@@ -596,11 +631,13 @@ export function useAdventure(
           if (rendered && activeRenderer === renderer && needsStableFrame) {
             loading.frameRendered(rendererGeneration)
           }
-        } catch {
+        } catch (cause) {
           failRendererAttempt(
             rendererGeneration,
             GRAPHICS_LOAD_ERROR,
             activeRenderer,
+            'frame',
+            cause,
           )
         }
       frameId = requestAnimationFrame(tick)
