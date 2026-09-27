@@ -9,11 +9,13 @@
 // position, whether the song has notes). Everything else — the audio engine,
 // the lyrics, the sing pill, the scrubber — is the mixer's, unchanged.
 //
-// Only types: the room imports these without importing the mixer.
+// Only types: the room imports these without importing the mixer. They sit
+// beside the mixer they describe, in the component layer, so the mixer names
+// its own props without reaching up into a feature.
 
 import type { Accessor } from 'solid-js'
-import type { KaraokeStageHosting } from '@/components/KaraokeMobileStage'
-import type { StemMixerAudioLease } from './useStemMixerAudioController'
+import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { KaraokeStageHosting } from './KaraokeMobileStage'
 
 /** The guide vocal as the sing pill leaves it: its level, and whether it is off. */
 export interface GuideLevel {
@@ -57,7 +59,7 @@ export interface StemMixerHosting {
    * where nothing lends one (no device registered), and the mixer then
    * builds its own, as it always did.
    */
-  readonly audio?: StemMixerAudioLease
+  readonly audio?: AudioContextLease
   /** How the zen stage is hosted: its song line and the room's settings. */
   readonly stage: KaraokeStageHosting
   /** Receive the mixer's controls, once, when it is set up. */

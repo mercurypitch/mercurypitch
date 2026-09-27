@@ -12,7 +12,6 @@ import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, }
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
-import type { StemMixerHosting } from '@/features/stem-mixer/hosted-mixer'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
@@ -67,6 +66,7 @@ import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
@@ -142,9 +142,10 @@ interface StemMixerProps {
   /** Launch a library song with one performer role muted. */
   onPlayAlong?: (sessionId: string, preset: PlayAlongPreset) => void
   /**
-   * Hosted by the native Karaoke room (see `hosted-mixer.ts`): the zen stage
-   * at every width, the stems always streamed, the room's audio context
-   * rather than one of its own, and the room's library for prev and next.
+   * Hosted by the native Karaoke room (see `stem-mixer-hosting.ts`): the zen
+   * stage at every width, the stems always streamed, the room's audio
+   * context rather than one of its own, and the room's library for prev and
+   * next.
    */
   hosted?: StemMixerHosting
 }

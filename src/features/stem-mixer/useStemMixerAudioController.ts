@@ -5,6 +5,7 @@
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
+import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
@@ -101,18 +102,6 @@ interface CanvasView {
   isUserPanning?: () => boolean
 }
 
-/**
- * A room's claim on the app's one AudioContext (packages/audio-io), lent to
- * the mixer it hosts (REQ-NRM-033). The mixer builds its graph on the lent
- * context and resumes it through the claim, inside the tap that plays; it
- * never closes it (REQ-NRM-038) — the room gives the claim back, and the
- * broker suspends the clock when nobody holds one (REQ-NRM-039).
- */
-export interface StemMixerAudioLease {
-  ensure(): AudioContext | null
-  unlock(): Promise<boolean>
-}
-
 export interface StemMixerAudioDeps {
   // Track signals
   vocal: Accessor<StemTrack>
@@ -202,8 +191,12 @@ export interface StemMixerAudioDeps {
    * the 180 MB a phone cannot hold (K9).
    */
   forceStream?: boolean
-  /** Build on a room's lent context instead of constructing one. */
-  audioLease?: StemMixerAudioLease
+  /**
+   * Build on a room's lent context instead of constructing one. The room
+   * gives the claim back, and the broker suspends the clock when nobody
+   * holds one (REQ-NRM-039).
+   */
+  audioLease?: AudioContextLease
 }
 
 export interface StemMixerAudioController {

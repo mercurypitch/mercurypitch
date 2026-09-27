@@ -20,7 +20,7 @@
 //     the studio's player finds them set here.
 
 import { createSignal } from 'solid-js'
-import type { GuideLevel } from '@/features/stem-mixer/hosted-mixer'
+import type { GuideLevel } from '@/components/stem-mixer-hosting'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
 import { createPersistedSignal } from '@/lib/storage'

@@ -33,6 +33,7 @@
 
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
+import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { SettingsSection } from '@/stores/settings-section'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
@@ -157,12 +158,11 @@ export interface NativeShellApi {
 }
 
 /**
- * A claim on the app's one AudioContext (`packages/audio-io`'s broker). The
- * last claim released suspends the clock; nothing ever closes it.
+ * A claim on the app's one AudioContext (`packages/audio-io`'s broker), as
+ * its claimant holds it: what it lends, and the release. The last claim
+ * released suspends the clock; nothing ever closes it.
  */
-export interface NativeAudioLease {
-  ensure(): AudioContext | null
-  unlock(): Promise<boolean>
+export interface NativeAudioLease extends AudioContextLease {
   release(): void
 }
 

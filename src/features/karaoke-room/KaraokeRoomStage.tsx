@@ -30,11 +30,11 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import type { GuideLevel, HostedMixerControls, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { StemMixer } from '@/components/StemMixer'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { whenBundledExamplesSeeded } from '@/features/karaoke-night/seed-examples'
 import { roomName } from '@/features/rooms/room-names'
-import type { GuideLevel, HostedMixerControls, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
 import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'

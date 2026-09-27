@@ -12,7 +12,7 @@ import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-li
 import type { Setter } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GuideLevel, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
+import type { GuideLevel, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'

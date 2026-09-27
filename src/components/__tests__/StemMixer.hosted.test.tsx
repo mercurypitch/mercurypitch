@@ -18,7 +18,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KaraokeStageHosting } from '@/components/KaraokeMobileStage'
-import type { HostedMixerControls, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
+import type { HostedMixerControls, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 
 window.matchMedia = ((query: string) => ({
   matches: false,
