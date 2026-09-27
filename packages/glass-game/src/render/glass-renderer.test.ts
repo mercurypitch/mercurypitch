@@ -29,6 +29,12 @@ const state = vi.hoisted(() => {
     assetFailure: null as Error | null,
     assetCompletions: [] as string[],
     assetInstalled: null as ((taskId: string) => void) | null,
+    assetLoadOptions: null as {
+      assetProfile?: string
+      signal?: AbortSignal
+      maximumConcurrentBundleLoads?: number
+      onDecodedImage?: (image: TexImageSource) => void
+    } | null,
     museumFailure: null as Error | null,
     museumOwnershipFixture: false,
     museumDispose: vi.fn(),
@@ -117,6 +123,7 @@ vi.mock('./environment', () => ({
 vi.mock('./asset-kit', () => ({
   loadMuseumAssets: async (...args: unknown[]) => {
     state.assetInstalled = args[8] as (taskId: string) => void
+    state.assetLoadOptions = args[9] as typeof state.assetLoadOptions
     state.assetCompletions.forEach((taskId) => state.assetInstalled?.(taskId))
     if (state.assetFailure) throw state.assetFailure
   },
@@ -220,6 +227,7 @@ afterEach(() => {
   state.assetFailure = null
   state.assetCompletions = []
   state.assetInstalled = null
+  state.assetLoadOptions = null
   state.museumFailure = null
   state.museumOwnershipFixture = false
   state.museumDispose.mockReset()
@@ -328,6 +336,36 @@ it('checks the first frame without polling the GPU on every game frame', async (
   renderer.dispose()
 })
 
+it('balances Auto on a coarse-pointer tablet without a mobile browser hint', async () => {
+  const container = browserFixture()
+  const queries: string[] = []
+  vi.stubGlobal('window', {
+    devicePixelRatio: 2,
+    innerWidth: 1194,
+    innerHeight: 834,
+    matchMedia: (query: string) => {
+      queries.push(query)
+      return { matches: query === '(pointer: coarse)' }
+    },
+  })
+  vi.stubGlobal('navigator', {})
+
+  const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id)
+  await renderer.ready
+
+  expect(queries).toContain('(pointer: coarse)')
+  expect(renderer.getRenderQuality()).toMatchObject({
+    preference: 'auto',
+    profile: 'balanced',
+    assetProfile: 'mobile',
+  })
+  expect(state.assetLoadOptions).toMatchObject({
+    assetProfile: 'mobile',
+    maximumConcurrentBundleLoads: 1,
+  })
+  renderer.dispose()
+})
+
 it('applies balanced pixels and reuses at most one shadow frame', async () => {
   const container = browserFixture()
   vi.stubGlobal('window', {
@@ -345,6 +383,7 @@ it('applies balanced pixels and reuses at most one shadow frame', async () => {
   expect(renderer.getRenderQuality()).toEqual({
     preference: 'balanced',
     profile: 'balanced',
+    assetProfile: 'mobile',
     pixelRatio: 1.25,
     shadowFrameInterval: 2,
   })
@@ -359,6 +398,30 @@ it('applies balanced pixels and reuses at most one shadow frame', async () => {
   })
 
   renderer.dispose()
+})
+
+it('bounds balanced bundle work and aborts the renderer attempt on teardown', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+
+  expect(state.assetLoadOptions).toMatchObject({
+    assetProfile: 'mobile',
+    maximumConcurrentBundleLoads: 1,
+  })
+  expect(state.assetLoadOptions?.signal?.aborted).toBe(false)
+  const close = vi.fn()
+  const image = { close } as unknown as TexImageSource
+  state.assetLoadOptions?.onDecodedImage?.(image)
+  state.assetLoadOptions?.onDecodedImage?.(image)
+
+  renderer.dispose()
+  expect(state.assetLoadOptions?.signal?.aborted).toBe(true)
+  expect(close).toHaveBeenCalledOnce()
 })
 
 it('initializes a balanced shadow for probe and playable frames after each renderer attempt', async () => {
@@ -479,6 +542,7 @@ it('switches an explicit quality choice without changing the accepted high profi
   expect(renderer.getRenderQuality()).toEqual({
     preference: 'high',
     profile: 'high',
+    assetProfile: 'mobile',
     pixelRatio: 1.5,
     shadowFrameInterval: 1,
   })

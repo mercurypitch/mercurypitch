@@ -161,7 +161,8 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
             </div>
             <small>
               Balanced helps smooth play. High keeps the sharpest detail. Auto
-              chooses for your screen.
+              balances touch devices. Texture detail updates the next time you
+              open a gallery.
             </small>
           </fieldset>
           <label class={styles.row} for="glass-look-sensitivity">

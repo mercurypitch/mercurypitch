@@ -10,6 +10,7 @@ import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
+import { releaseAssetImage } from './asset-texture-profile'
 import { createAtmosphere } from './atmosphere'
 import { installBackdropFog } from './backdrop-fog'
 import type { AdventureCameraMode, ChallengeCameraMetrics } from './camera'
@@ -25,7 +26,7 @@ import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { precompileRendererPrograms } from './program-precompile'
-import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
+import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
@@ -78,6 +79,8 @@ export interface GlassRenderer {
   getRenderQuality(): {
     preference: GlassRenderQualityPreference
     profile: GlassRenderQualityProfile
+    /** Startup asset profile; changing display quality does not reload a world. */
+    assetProfile: GlassAssetQualityProfile
     pixelRatio: number
     shadowFrameInterval: 1 | 2
   }
@@ -173,7 +176,7 @@ function createGlassRendererInstance(
         : container.clientHeight,
     coarsePointer:
       typeof window.matchMedia === 'function' &&
-      window.matchMedia('(any-pointer: coarse)').matches,
+      window.matchMedia('(pointer: coarse)').matches,
     mobileHint:
       typeof navigator !== 'undefined' &&
       (
@@ -187,6 +190,7 @@ function createGlassRendererInstance(
     renderQualityPreference,
     qualityEnvironment,
   )
+  const loadedAssetProfile = renderQuality.assetProfile
   const shadowCadence = createShadowUpdateCadence(
     renderQuality.shadowFrameInterval,
   )
@@ -219,11 +223,19 @@ function createGlassRendererInstance(
   renderer.domElement.setAttribute('aria-label', 'Floating glass museum')
   container.append(renderer.domElement)
   const programPrecompile = new AbortController()
+  const assetLoads = new AbortController()
+  const decodedAssetImages = new Set<TexImageSource>()
+  const releaseDecodedAssetImages = () => {
+    decodedAssetImages.forEach((image) => releaseAssetImage(image))
+    decodedAssetImages.clear()
+  }
   registerPartialCleanup(() => {
+    assetLoads.abort()
     programPrecompile.abort()
     renderer.dispose()
     renderer.forceContextLoss()
     renderer.domElement.remove()
+    releaseDecodedAssetImages()
   })
   const scene = new Scene()
   scene.fog = isCloudwayLevel(level)
@@ -322,6 +334,7 @@ function createGlassRendererInstance(
     event.preventDefault()
     if (disposed || contextLost) return
     contextLost = true
+    assetLoads.abort()
     programPrecompile.abort()
     loading.freeze()
     options.onContextLost?.()
@@ -389,6 +402,16 @@ function createGlassRendererInstance(
     () => disposed,
     options.onAssetError,
     (taskId) => loading.complete(taskId),
+    {
+      signal: assetLoads.signal,
+      assetProfile: loadedAssetProfile,
+      maximumConcurrentBundleLoads: renderQuality.maximumConcurrentBundleLoads,
+      onDecodedImage: (image) => {
+        if (disposed || contextLost || assetLoads.signal.aborted)
+          releaseAssetImage(image)
+        else decodedAssetImages.add(image)
+      },
+    },
   )
   registerPartialCleanup(() => {
     void assetsReady.catch(() => undefined)
@@ -481,6 +504,7 @@ function createGlassRendererInstance(
     getRenderQuality: () => ({
       preference: renderQualityPreference,
       profile: renderQuality.profile,
+      assetProfile: loadedAssetProfile,
       pixelRatio,
       shadowFrameInterval: renderQuality.shadowFrameInterval,
     }),
@@ -644,6 +668,7 @@ function createGlassRendererInstance(
     dispose() {
       if (disposed) return
       disposed = true
+      assetLoads.abort()
       programPrecompile.abort()
       loading.freeze()
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
@@ -663,6 +688,7 @@ function createGlassRendererInstance(
       disposeObject(scene, borrowedMaterials)
       museum.materialLibrary.dispose()
       disposeMaterials(Object.values(materials))
+      releaseDecodedAssetImages()
       environment.dispose()
       key.shadow.dispose()
       renderer.dispose()

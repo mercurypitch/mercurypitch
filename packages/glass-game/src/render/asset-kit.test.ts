@@ -1,4 +1,4 @@
-// Required asset readiness — downloads start together and failures never reveal fallback museum proxies.
+// Required asset readiness — bounded downloads, cancellation and failures never reveal fallback museum proxies.
 
 import { Group, MeshPhysicalMaterial, Texture, TextureLoader } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
@@ -69,6 +69,26 @@ function levelWithRequiredDecoration(): LevelDefinition {
         },
       ],
       assetRecipeIds: ['garden-painting-v5'],
+    },
+  }
+}
+
+function levelWithTwoRequiredVisuals(): LevelDefinition {
+  const fixture = levelWithRequiredVisual()
+  return {
+    ...fixture,
+    id: 'two-required-assets-fixture',
+    presentation: {
+      ...fixture.presentation!,
+      visuals: [
+        ...fixture.presentation!.visuals!,
+        {
+          id: 'required-screen',
+          recipeId: 'museum-screen-v4',
+          position: { x: 1, y: 0, z: 0 },
+          yaw: 0,
+        },
+      ],
     },
   }
 }
@@ -364,4 +384,126 @@ it('declares one logical preferred/fallback bundle unit and completes it after i
   expect(bundleLoad).toHaveBeenCalledWith('museum-kit')
   expect(installed.filter((id) => id === 'bundle:museum-kit')).toHaveLength(1)
   expect(order).toEqual(['installed', 'completed'])
+})
+
+it('bounds required GLB work so one renderer attempt cannot decode every bundle together', async () => {
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
+    texture(),
+  )
+  const releases: Array<() => void> = []
+  let active = 0
+  let maximumActive = 0
+  const bundleLoad = vi
+    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .mockImplementation(
+      () =>
+        new Promise<GLTF>((resolve) => {
+          active++
+          maximumActive = Math.max(maximumActive, active)
+          releases.push(() => {
+            active--
+            resolve(gltf())
+          })
+        }),
+    )
+
+  const pending = loadMuseumAssets(
+    levelWithTwoRequiredVisuals(),
+    (id) => id,
+    new Map(),
+    museum(),
+    materials(),
+    vi.fn(),
+    () => false,
+    undefined,
+    undefined,
+    { maximumConcurrentBundleLoads: 1 },
+  )
+
+  await vi.waitFor(() => expect(bundleLoad).toHaveBeenCalledTimes(1))
+  releases.shift()?.()
+  await vi.waitFor(() => expect(bundleLoad).toHaveBeenCalledTimes(2))
+  releases.shift()?.()
+  await pending
+
+  expect(maximumActive).toBe(1)
+})
+
+it('aborts the active GLB and never starts queued work after renderer teardown', async () => {
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
+    texture(),
+  )
+  const bundleLoad = vi
+    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .mockImplementation(function (this: GLTFLoader) {
+      return new Promise<GLTF>((_resolve, reject) => {
+        this.manager.abortController.signal.addEventListener(
+          'abort',
+          () => reject(new DOMException('Aborted', 'AbortError')),
+          { once: true },
+        )
+      })
+    })
+  const setKit = vi.fn()
+  const attempt = new AbortController()
+  const pending = loadMuseumAssets(
+    levelWithTwoRequiredVisuals(),
+    (id) => id,
+    new Map(),
+    museum(setKit),
+    materials(),
+    vi.fn(),
+    () => false,
+    undefined,
+    undefined,
+    { maximumConcurrentBundleLoads: 1, signal: attempt.signal },
+  )
+
+  await vi.waitFor(() => expect(bundleLoad).toHaveBeenCalledTimes(1))
+  attempt.abort()
+  await expect(pending).resolves.toBeUndefined()
+
+  expect(bundleLoad).toHaveBeenCalledTimes(1)
+  expect(setKit).not.toHaveBeenCalled()
+})
+
+it('invalidates a standalone texture request and releases its late decoded image', async () => {
+  let resolveSky: ((texture: LoadedTexture) => void) | undefined
+  const image = { close: vi.fn(), height: 64, width: 64 }
+  const lateSky = new Texture(image) as unknown as LoadedTexture
+  const disposed = vi.fn()
+  lateSky.addEventListener('dispose', disposed)
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(
+    async (url) => {
+      if (url === 'museum-sky')
+        return new Promise<LoadedTexture>((resolve) => {
+          resolveSky = resolve
+        })
+      return texture()
+    },
+  )
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  const attempt = new AbortController()
+  const setSky = vi.fn()
+  const pending = loadMuseumAssets(
+    levelWithRequiredVisual(),
+    (id) => id,
+    new Map(),
+    museum(),
+    materials(),
+    setSky,
+    () => false,
+    undefined,
+    undefined,
+    { signal: attempt.signal },
+  )
+
+  await vi.waitFor(() => expect(resolveSky).toBeTypeOf('function'))
+  attempt.abort()
+  resolveSky?.(lateSky)
+  await expect(pending).resolves.toBeUndefined()
+
+  expect(setSky).not.toHaveBeenCalled()
+  expect(disposed).toHaveBeenCalledOnce()
+  expect(image.close).toHaveBeenCalledOnce()
 })

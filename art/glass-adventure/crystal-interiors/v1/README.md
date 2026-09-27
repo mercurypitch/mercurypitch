@@ -1,5 +1,11 @@
 # Crystal interior auditions v1
 
+Owner review, 27 September 2026: keep these three effects as comparison studies.
+They are **not the accepted final art direction**. The next pass should explore
+organic branching light with visible depth inside a thicker crystal volume.
+The current eight-centimetre scroll envelope is a specific study, not a
+universal interior treatment for every platform.
+
 Three bounded living-light studies share the same platform-local envelope:
 `resonance-veins`, `frost-roots`, and `aurora-heart`. The runtime implementation
 is generated from a stable seed, contracts every path by its full tube radius,
@@ -17,7 +23,7 @@ reduced motion, retraction, seed, and quality remain deterministic. The opaque
 tone-mapped core remains visible through the accepted 98.5%-transmissive scroll
 deck; optional frost sparkles never replace that core.
 
-The accepted readability pass uses millimetre-scale opaque cores with saturated
+The measured readability pass uses millimetre-scale opaque cores with saturated
 palette depth and a view-dependent bright edge. Frost's primary/branch diameters
 are 11.152/7.616 mm in the production envelope. The browser proof matches the
 game's 0.5 transmission-buffer scale, 0.9 exposure, and bright cloud backdrop.

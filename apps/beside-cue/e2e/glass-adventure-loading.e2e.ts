@@ -401,6 +401,18 @@ test('half-resolution glass waits through hidden layouts without invalid framebu
 test('a failed first GPU upload offers a fresh-scene retry without losing the saved checkpoint', async ({
   page,
 }) => {
+  const failures: unknown[] = []
+  page.on('console', (message) => {
+    if (
+      message.type() !== 'error' ||
+      !message.text().startsWith('[Glassworks graphics]')
+    )
+      return
+    void message
+      .args()[1]
+      ?.jsonValue()
+      .then((value) => failures.push(value))
+  })
   await prepare(page)
   await page.addInitScript(() => {
     localStorage.setItem(
@@ -432,12 +444,19 @@ test('a failed first GPU upload offers a fresh-scene retry without losing the sa
     timeout: 60_000,
   })
   await expect(cover).toContainText('graphics connection stopped')
+  await expect.poll(() => failures.length).toBe(1)
+  expect(failures[0]).toMatchObject({
+    attempt: 1,
+    phase: 'awaiting-first-frame',
+    stage: 'frame',
+  })
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'false',
   )
   await cover.getByRole('button', { name: 'Retry', exact: true }).click()
   await ready(page)
+  expect(failures).toHaveLength(1)
   expect(
     await page.evaluate(
       () =>

@@ -338,6 +338,9 @@ test('auto selects a stable compact-touch profile and explicit choices persist',
   const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   const quality = panel.getByRole('group', { name: 'Graphics quality' })
   await expectQualitySelectorWithinViewport(page)
+  await expect(panel).toContainText(
+    'Texture detail updates the next time you open a gallery.',
+  )
   await tap(
     page,
     context,
@@ -370,6 +373,107 @@ test('auto selects a stable compact-touch profile and explicit choices persist',
       .getByRole('button', { name: 'Close camera tuning' })
       .click()
   }
+})
+
+test('compact touch Promenade downsizes its GLB images before forward movement @smoke', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  await page.addInitScript(() => {
+    const prefix = 'beside-cue:glass-adventure:'
+    localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(
+      `${prefix}museum-audio:v1`,
+      JSON.stringify({ muted: true }),
+    )
+    const original = window.createImageBitmap.bind(window) as (
+      ...args: unknown[]
+    ) => Promise<ImageBitmap>
+    const state = window as Window & {
+      __glassAssetResizes?: {
+        actual: [number, number]
+        colorSpaceConversion?: string
+        premultiplyAlpha?: string
+        requested: [number, number]
+      }[]
+    }
+    state.__glassAssetResizes = []
+    Object.defineProperty(window, 'createImageBitmap', {
+      configurable: true,
+      value: async (...args: unknown[]) => {
+        const result = await original(...args)
+        const options = args[1] as ImageBitmapOptions | undefined
+        if (
+          options?.resizeWidth !== undefined &&
+          options.resizeHeight !== undefined
+        )
+          state.__glassAssetResizes!.push({
+            actual: [result.width, result.height],
+            colorSpaceConversion: options.colorSpaceConversion,
+            premultiplyAlpha: options.premultiplyAlpha,
+            requested: [options.resizeWidth, options.resizeHeight],
+          })
+        return result
+      },
+    })
+  })
+
+  const response = await page.goto('/glass-game/?layout=cloudway-laboratory', {
+    waitUntil: 'domcontentloaded',
+  })
+  expect(response?.status()).toBe(200)
+  const game = page.getByTestId('glass-adventure')
+  await expect(game).toHaveAttribute('data-ready', 'true', {
+    timeout: 90_000,
+  })
+  await expect(game).toHaveAttribute('data-render-quality-profile', 'balanced')
+
+  const resizes = await page.evaluate(
+    () =>
+      (
+        window as Window & {
+          __glassAssetResizes?: {
+            actual: [number, number]
+            colorSpaceConversion?: string
+            premultiplyAlpha?: string
+            requested: [number, number]
+          }[]
+        }
+      ).__glassAssetResizes ?? [],
+  )
+  expect(resizes.length).toBeGreaterThan(0)
+  expect(resizes.some((entry) => entry.requested[0] === 1024)).toBe(true)
+  expect(resizes.some((entry) => entry.requested[0] === 512)).toBe(true)
+  expect(
+    resizes.every(
+      (entry) =>
+        entry.actual[0] === entry.requested[0] &&
+        entry.actual[1] === entry.requested[1] &&
+        entry.colorSpaceConversion === 'none' &&
+        entry.premultiplyAlpha === 'none',
+    ),
+  ).toBe(true)
+
+  const start = await game.evaluate((element) => ({
+    x: Number(element.getAttribute('data-player-x')),
+    z: Number(element.getAttribute('data-player-z')),
+  }))
+  await page.getByLabel('Glass museum; drag to look around').focus()
+  await page.keyboard.down('KeyW')
+  await page.waitForTimeout(600)
+  await page.keyboard.up('KeyW')
+  const moved = await game.evaluate((element) => ({
+    x: Number(element.getAttribute('data-player-x')),
+    z: Number(element.getAttribute('data-player-z')),
+  }))
+
+  expect(Math.hypot(moved.x - start.x, moved.z - start.z)).toBeGreaterThan(0.2)
+  await expect(game).toHaveAttribute('data-ready', 'true')
+  expect(errors).toEqual([])
 })
 
 test('records matched High and Balanced real-render frames', async ({
