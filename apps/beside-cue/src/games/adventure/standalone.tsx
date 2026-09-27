@@ -29,6 +29,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'crystal-interiors' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
+    layout !== 'quarter-turn-art' &&
     layout !== 'cloudway-crescent' &&
     layout !== 'cloudway-ribbon' &&
     layout !== 'cloudway-terrace'
@@ -45,6 +46,7 @@ async function selectedDevelopmentLevel() {
     crystalInteriorStudy,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
+    CLOUDWAY_QUARTER_TURN_ART_STUDY,
     CLOUDWAY_CRESCENT_AUDITION,
     CLOUDWAY_RIBBON_AUDITION,
     CLOUDWAY_TERRACE_AUDITION,
@@ -70,6 +72,7 @@ async function selectedDevelopmentLevel() {
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
   if (layout === 'cloudway-mechanics-preview')
     return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW
+  if (layout === 'quarter-turn-art') return CLOUDWAY_QUARTER_TURN_ART_STUDY
   if (layout === 'cloudway-crescent') return CLOUDWAY_CRESCENT_AUDITION
   if (layout === 'cloudway-ribbon') return CLOUDWAY_RIBBON_AUDITION
   if (layout === 'cloudway-terrace') return CLOUDWAY_TERRACE_AUDITION
@@ -79,6 +82,24 @@ async function selectedDevelopmentLevel() {
 }
 
 async function mount(): Promise<void> {
+  if (
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get('lab') === 'songbook'
+  ) {
+    const { CreatorSongbook } = await import('./CreatorSongbook')
+    render(
+      () => (
+        <CreatorSongbook
+          assetBase="../games/"
+          onExit={() => {
+            window.location.href = './?campaign=1'
+          }}
+        />
+      ),
+      mountElement,
+    )
+    return
+  }
   if (
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get('lab') === 'creator-gallery'

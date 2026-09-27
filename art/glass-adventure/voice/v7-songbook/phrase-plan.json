@@ -1,0 +1,257 @@
+{
+  "revision": "merc-sung-v7-2026-09-27",
+  "selectedVoice": "Owner-selected Merc V1 Gentle Whimsical D2",
+  "phrases": [
+    {
+      "id": "first-arc",
+      "lyrics": "Let it shine",
+      "offsets": [
+        0,
+        2,
+        0
+      ],
+      "duration_ms": 6000,
+      "seed": 72091,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 D3, three long notes, the final D3 gently sustained",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    },
+    {
+      "id": "sunlit-steps",
+      "lyrics": "Tiny sparks can glow",
+      "offsets": [
+        0,
+        2,
+        4,
+        2,
+        0
+      ],
+      "duration_ms": 7500,
+      "seed": 72092,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 F-sharp3 E3 D3, one clear syllable per note",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    },
+    {
+      "id": "gallery-arch",
+      "lyrics": "Another beautiful mess",
+      "offsets": [
+        0,
+        2,
+        4,
+        7,
+        4,
+        2,
+        0
+      ],
+      "duration_ms": 9500,
+      "seed": 72093,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 F-sharp3 A3 F-sharp3 E3 D3, a single seven-syllable arch",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    },
+    {
+      "id": "little-light",
+      "lyrics": "Little light, lead me home",
+      "offsets": [
+        0,
+        2,
+        4,
+        7,
+        4,
+        0
+      ],
+      "duration_ms": 8500,
+      "seed": 72094,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 F-sharp3 A3 F-sharp3 D3, one syllable per note",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    },
+    {
+      "id": "quiet-garden",
+      "lyrics": "Let the quiet garden sing",
+      "offsets": [
+        0,
+        2,
+        4,
+        2,
+        5,
+        4,
+        0
+      ],
+      "duration_ms": 9500,
+      "seed": 72095,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 F-sharp3 E3 G3 F-sharp3 D3, seven notes with gently connected vowels",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    },
+    {
+      "id": "beside-you",
+      "lyrics": "Beside you, I find my tune",
+      "offsets": [
+        0,
+        2,
+        4,
+        7,
+        4,
+        2,
+        0
+      ],
+      "duration_ms": 9500,
+      "seed": 72096,
+      "positive_styles": [
+        "one dry isolated solo male vocal, absolutely unaccompanied a cappella",
+        "gentle whimsical friendly small museum guide, warm nimble lyric tenor, intimate smiling delivery",
+        "a simple memorable original vocal learning motif, no prelude or outro, sing the one line once",
+        "D major, comfortable low male register around D3 to A3, clear English consonants and sustained open vowels",
+        "legato with a very slight natural scoop between notes, steady tone, minimal vibrato",
+        "quiet studio, close microphone, clean natural human sung voice, no room reverb",
+        "The intended melody is D3 E3 F-sharp3 A3 F-sharp3 E3 D3, a rising hopeful arc then home",
+        "Do not read the note names aloud. Start the lyric immediately, finish on the final word."
+      ],
+      "negative_styles": [
+        "instruments",
+        "piano",
+        "strings",
+        "percussion",
+        "drums",
+        "backing music",
+        "harmonies",
+        "choir",
+        "vocal doubling",
+        "echo",
+        "reverb",
+        "spoken narration",
+        "robot voice",
+        "melisma",
+        "extra lyrics",
+        "ad libs"
+      ]
+    }
+  ]
+}

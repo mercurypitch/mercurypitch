@@ -8,6 +8,7 @@ import type { MeshoptDecoder as MeshoptDecoderValue } from 'three/addons/libs/me
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
+import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage, releaseAssetTextureImages, } from './asset-texture-profile'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
@@ -194,11 +195,18 @@ export async function loadMuseumAssets(
     use: (scene: Object3D, resolvedBundle: string) => void,
   ): Promise<boolean> => {
     let scene: Object3D | undefined
-    let resolvedBundle = sceneRecipe.preferredBundles?.[id] ?? id
+    const assetProfile = options.assetProfile ?? 'full'
+    let resolvedBundle = resolveAssetProfileBundle(
+      sceneRecipe.preferredBundles?.[id] ?? id,
+      assetProfile,
+    )
     try {
       const preferred = sceneRecipe.preferredBundles?.[id]
       try {
-        const requested = preferred ?? id
+        const requested = resolveAssetProfileBundle(
+          preferred ?? id,
+          assetProfile,
+        )
         scene = await loadScene(requested)
       } catch (error) {
         if (preferred === undefined) throw error
@@ -206,8 +214,8 @@ export async function loadMuseumAssets(
         onError?.(preferred, error)
         // Catalogued legacy bundles are complete authored fallbacks. They may
         // replace a failed preferred revision; neither path reveals proxies.
-        resolvedBundle = id
-        scene = await loadScene(id)
+        resolvedBundle = resolveAssetProfileBundle(id, assetProfile)
+        scene = await loadScene(resolvedBundle)
       }
     } catch (error) {
       if (unavailable()) return false

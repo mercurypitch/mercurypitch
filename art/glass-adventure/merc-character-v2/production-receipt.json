@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "assetId": "merc-v2",
+  "status": "production-reviewed animated character",
+  "runtime": {
+    "file": "apps/beside-cue/public/games/glass3d/merc-v2.glb",
+    "bytes": 987068,
+    "sha256": "a6b99aaeb464cfff4be6d7459de0881116af924894766c17b32319c458c089de",
+    "legacyBeforeFile": "apps/beside-cue/public/games/glass3d/merc.glb",
+    "legacyBeforeSha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+  },
+  "authoring": {
+    "blender": "5.2.2 LTS d13f752e3b9c",
+    "recipe": "apps/beside-cue/art/merc/make_merc_v2.py",
+    "recipeSha256": "ee79046187f2416b256daf006366144ca10b882f60743961949bca33f33aad71",
+    "denseDonor": {
+      "archiveFile": "<creative-archive>/donors/meshy-iridescent-tear.glb",
+      "bytes": 34480148,
+      "sha256": "33b42d3317403ce2707e94355dc446f0d1b2b0c3fa59544a352f189c258d2d21"
+    },
+    "cachedSculpt": {
+      "archiveFile": "<creative-archive>/glass-adventure/merc-character-v2/face-audition-v1/candidate/merc-face-sculpt-v4.blend",
+      "bytes": 565141,
+      "sha256": "5c172be2bcff4f9231fcbf3ff6518ea37552bc2839b0078a9ef9b30292163e9c"
+    },
+    "editableMaster": {
+      "archiveFile": "<creative-archive>/glass-adventure/merc-character-v2/face-audition-v1/candidate/merc-face-candidate-v4.blend",
+      "bytes": 811795,
+      "sha256": "118c0f7c9098dff8401a03136673b18631b0e6b8f48d3915c6d99fd82ea5c962"
+    }
+  },
+  "geometry": {
+    "triangles": 25984,
+    "draws": 4,
+    "textures": 0,
+    "parts": {
+      "merc_body": 20184,
+      "merc_face": 4000,
+      "merc_hand_l": 900,
+      "merc_hand_r": 900
+    },
+    "bodyConnectedComponents": 1,
+    "bodyBoundaryEdges": 0,
+    "bodyNonManifoldEdges": 0
+  },
+  "characterContract": {
+    "bones": [
+      "root",
+      "base",
+      "head",
+      "hand_l",
+      "hand_r"
+    ],
+    "morphs": [
+      "blink",
+      "wide",
+      "sing"
+    ],
+    "handMapping": "merc_hand_l rests at positive X; merc_hand_r rests at negative X",
+    "clips": [
+      {
+        "name": "sing",
+        "durationSeconds": 2,
+        "tracks": 16
+      },
+      {
+        "name": "listen",
+        "durationSeconds": 4,
+        "tracks": 16
+      },
+      {
+        "name": "welcome",
+        "durationSeconds": 1.6333333253860474,
+        "tracks": 16
+      },
+      {
+        "name": "laugh",
+        "durationSeconds": 1.2333333492279053,
+        "tracks": 16
+      },
+      {
+        "name": "celebrate",
+        "durationSeconds": 1.0666667222976685,
+        "tracks": 16
+      },
+      {
+        "name": "move",
+        "durationSeconds": 1.3666666746139526,
+        "tracks": 16
+      },
+      {
+        "name": "fall",
+        "durationSeconds": 1.399999976158142,
+        "tracks": 16
+      }
+    ]
+  },
+  "proof": {
+    "archiveDirectory": "<creative-archive>/glass-adventure/merc-character-v2/face-audition-v1/proofs/runtime-v4",
+    "receiptSha256": "c042f700e640555a8006808d561188c7a95a149031ed7fe3ab6928b38379ed1c",
+    "loader": "shared loadMercModel with production material replacement",
+    "views": [
+      "front",
+      "extreme-close",
+      "three-quarter",
+      "blink",
+      "sing",
+      "listen",
+      "welcome"
+    ],
+    "renderer": "software Chromium comparison; visual acceptance, not phone performance evidence"
+  },
+  "validation": {
+    "assetTest": "packages/glass-game/src/render/merc.test.ts",
+    "timingTest": "packages/glass-game/src/render/glass-renderer.test.ts",
+    "notes": "Decoded tests enforce the closed welded body, exact rig/morph/clip inventory, finite tracks, hand mapping, grounded poses, and dropped-frame animation ceiling."
+  }
+}

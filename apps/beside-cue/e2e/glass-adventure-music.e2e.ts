@@ -38,6 +38,17 @@ async function suspendRasterOutput(page: Page): Promise<void> {
 
 async function openMuseum(page: Page): Promise<void> {
   await page.addInitScript(() => {
+    const request = window.fetch.bind(window)
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const response = await request(...args)
+      const url = args[0] instanceof Request ? args[0].url : String(args[0])
+      if (!url.endsWith('.mp3')) return response
+      return {
+        ok: false,
+        status: 0,
+        arrayBuffer: () => response.arrayBuffer(),
+      } as Response
+    }
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
     localStorage.setItem(
@@ -102,7 +113,7 @@ async function openMuseum(page: Page): Promise<void> {
   await suspendRasterOutput(page)
 }
 
-test('exploration music stops before capture and stays stopped after background', async ({
+test('packaged exploration music plays at native status zero and stays quiet during capture', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 640, height: 480 })

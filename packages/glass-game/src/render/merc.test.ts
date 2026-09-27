@@ -1,10 +1,12 @@
 // Adventure jump pose — the shipped mascot remains upright throughout airborne travel.
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import type { Mesh } from 'three'
-import { Box3, Group, MeshPhysicalMaterial, SkinnedMesh } from 'three'
+import type { BufferGeometry,Mesh } from 'three'
+import { Box3, Group, MeshPhysicalMaterial, SkinnedMesh, Vector3, } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
+import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
 import { disposeObject } from './dispose'
@@ -21,14 +23,7 @@ it('matches Merc move cadence to pace while bounding feathered and future speeds
 })
 
 async function parseActualMerc() {
-  const source = await readFile(
-    fileURLToPath(
-      new URL(
-        '../../../../apps/beside-cue/public/games/glass3d/merc.glb',
-        import.meta.url,
-      ),
-    ),
-  )
+  const source = await readFile(actualMercUrl())
   return new GLTFLoader().parseAsync(
     source.buffer.slice(
       source.byteOffset,
@@ -36,6 +31,96 @@ async function parseActualMerc() {
     ),
     '',
   )
+}
+
+function repositoryFile(relativePath: string): string {
+  return fileURLToPath(new URL(`../../../../${relativePath}`, import.meta.url))
+}
+
+function actualMercUrl(): string {
+  return repositoryFile(
+    `apps/beside-cue/public/games/${GLASS_GAME_ASSET_FILES.merc}`,
+  )
+}
+
+const sha256 = (source: Uint8Array): string =>
+  createHash('sha256').update(source).digest('hex')
+
+it('matches the mapped delivery and public recipe to the production receipt', async () => {
+  const receipt = JSON.parse(
+    await readFile(
+      repositoryFile(
+        'art/glass-adventure/merc-character-v2/production-receipt.json',
+      ),
+      'utf8',
+    ),
+  ) as {
+    runtime: { bytes: number; file: string; sha256: string }
+    authoring: { recipe: string; recipeSha256: string }
+  }
+  const runtime = await readFile(actualMercUrl())
+  const recipe = await readFile(repositoryFile(receipt.authoring.recipe))
+
+  expect(receipt.runtime.file).toBe(
+    `apps/beside-cue/public/games/${GLASS_GAME_ASSET_FILES.merc}`,
+  )
+  expect(runtime.byteLength).toBe(receipt.runtime.bytes)
+  expect(sha256(runtime)).toBe(receipt.runtime.sha256)
+  expect(sha256(recipe)).toBe(receipt.authoring.recipeSha256)
+})
+
+function closedTopology(geometry: BufferGeometry): {
+  boundaryEdges: number
+  connectedComponents: number
+  nonManifoldEdges: number
+} {
+  const index = geometry.getIndex()
+  if (index === null) throw new Error('Merc body must remain indexed')
+  const edgeUses = new Map<string, number>()
+  const neighbors = new Map<number, Set<number>>()
+  const adjacent = (vertex: number): Set<number> => {
+    const existing = neighbors.get(vertex)
+    if (existing !== undefined) return existing
+    const created = new Set<number>()
+    neighbors.set(vertex, created)
+    return created
+  }
+  const connect = (a: number, b: number) => {
+    const low = Math.min(a, b)
+    const high = Math.max(a, b)
+    const key = `${low}:${high}`
+    edgeUses.set(key, (edgeUses.get(key) ?? 0) + 1)
+    adjacent(a).add(b)
+    adjacent(b).add(a)
+  }
+  for (let offset = 0; offset < index.count; offset += 3) {
+    const a = index.getX(offset)
+    const b = index.getX(offset + 1)
+    const c = index.getX(offset + 2)
+    connect(a, b)
+    connect(b, c)
+    connect(c, a)
+  }
+  let connectedComponents = 0
+  const visited = new Set<number>()
+  for (const start of neighbors.keys()) {
+    if (visited.has(start)) continue
+    connectedComponents++
+    const pending = [start]
+    while (pending.length > 0) {
+      const current = pending.pop()!
+      if (visited.has(current)) continue
+      visited.add(current)
+      for (const neighbor of neighbors.get(current) ?? [])
+        if (!visited.has(neighbor)) pending.push(neighbor)
+    }
+  }
+  return {
+    boundaryEdges: [...edgeUses.values()].filter((count) => count === 1).length,
+    connectedComponents,
+    nonManifoldEdges: [...edgeUses.values()].filter((count) => count > 2)
+      .length,
+  }
 }
 
 it('retains the actual rig, authored eyes, morphs, and gameplay clips', async () => {
@@ -61,14 +146,12 @@ it('retains the actual rig, authored eyes, morphs, and gameplay clips', async ()
     expect(face).toBeInstanceOf(SkinnedMesh)
     expect(
       (body as SkinnedMesh).skeleton.bones.map((bone) => bone.name),
-    ).toEqual(
-      expect.arrayContaining(['base', 'head', 'hand_l', 'hand_r', 'root']),
-    )
-    expect(face.morphTargetDictionary).toMatchObject({
-      blink: expect.any(Number),
-      wide: expect.any(Number),
-      sing: expect.any(Number),
-    })
+    ).toEqual(['root', 'base', 'head', 'hand_l', 'hand_r'])
+    expect(Object.keys(face.morphTargetDictionary ?? {}).sort()).toEqual([
+      'blink',
+      'sing',
+      'wide',
+    ])
     expect(
       Array.isArray(face.material)
         ? face.material[0]?.name
@@ -84,12 +167,18 @@ it('retains the actual rig, authored eyes, morphs, and gameplay clips', async ()
       'welcome',
     ])
     const clips = new Map(gltf.animations.map((clip) => [clip.name, clip]))
-    // The source spans are 1.6s/1.2s. Blender retains a 1/30s key origin,
-    // and Three defines clip duration as the largest key time.
-    expect(clips.get('welcome')?.duration).toBeCloseTo(49 / 30, 5)
-    expect(clips.get('laugh')?.duration).toBeCloseTo(37 / 30, 5)
-    for (const name of ['welcome', 'laugh']) {
+    const expectedDurations = new Map([
+      ['sing', 2],
+      ['listen', 4],
+      ['welcome', 49 / 30],
+      ['laugh', 37 / 30],
+      ['celebrate', 32 / 30],
+      ['move', 41 / 30],
+      ['fall', 42 / 30],
+    ])
+    for (const [name, duration] of expectedDurations) {
       const clip = clips.get(name)!
+      expect(clip.duration).toBeCloseTo(duration, 5)
       expect(clip.tracks).toHaveLength(16)
       expect(
         clip.tracks.some((track) =>
@@ -102,6 +191,25 @@ it('retains the actual rig, authored eyes, morphs, and gameplay clips', async ()
         ),
       ).toBe(true)
     }
+
+    const meshes = ['merc_body', 'merc_face', 'merc_hand_l', 'merc_hand_r'].map(
+      (name) => gltf.scene.getObjectByName(name) as SkinnedMesh,
+    )
+    expect(meshes.map((mesh) => mesh.geometry.getIndex()!.count / 3)).toEqual([
+      20_184, 4_000, 900, 900,
+    ])
+    expect(closedTopology((body as SkinnedMesh).geometry)).toEqual({
+      boundaryEdges: 0,
+      connectedComponents: 1,
+      nonManifoldEdges: 0,
+    })
+
+    const left = gltf.scene.getObjectByName('merc_hand_l')!
+    const right = gltf.scene.getObjectByName('merc_hand_r')!
+    const center = (object: typeof left) =>
+      new Box3().setFromObject(object).getCenter(new Vector3()).x
+    expect(center(left)).toBeGreaterThan(0.7)
+    expect(center(right)).toBeLessThan(-0.7)
   } finally {
     disposeObject(gltf.scene)
   }

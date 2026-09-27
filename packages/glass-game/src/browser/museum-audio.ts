@@ -1,5 +1,7 @@
 // Museum soundtrack — lazy approved scene loops, persisted mix, and a silent microphone handoff.
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { GlassMuseumAudio, MuseumAudioPreferences, MuseumAudioScene, } from '../host'
+import { reportAudioAssetFailure } from './audio-asset-failure'
 import { repairMuseumLoop } from './museum-loop'
 import { createMuseumOutput } from './museum-output'
 
@@ -96,9 +98,7 @@ export function createBrowserMuseumAudio(
   ): Promise<AudioBuffer> {
     const cached = cache.get(id)
     if (cached) return cached
-    const response = await fetch(options.assetUrl(id), { signal })
-    if (!response.ok) throw new Error(`Museum audio unavailable: ${id}`)
-    const bytes = await response.arrayBuffer()
+    const bytes = await fetchAssetBytes(options.assetUrl(id), { signal })
     if (signal.aborted) throw new Error('Museum audio cancelled')
     const decoded = await context.decodeAudioData(bytes)
     if (signal.aborted || disposed) throw new Error('Museum audio cancelled')
@@ -166,7 +166,9 @@ export function createBrowserMuseumAudio(
         active = { scene, output }
         void previous?.output.release()
         return true
-      } catch {
+      } catch (error) {
+        if (!abort.signal.aborted && !disposed)
+          reportAudioAssetFailure('museum-soundtrack', error)
         return false
       }
     }

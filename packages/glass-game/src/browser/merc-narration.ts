@@ -1,6 +1,8 @@
 // Merc narration — bounded one-shot dialogue with persisted opt-out and microphone-safe silence.
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { GlassMercNarration, MercNarrationCue, MercNarrationPreferences, } from '../host'
+import { reportAudioAssetFailure } from './audio-asset-failure'
 
 export interface MercNarrationOptions {
   assetUrl(id: string): string
@@ -215,16 +217,8 @@ export function createBrowserMercNarration(
       attempts.delete(attempt)
       if (current === attempt) current = undefined
     })
-    let response: Promise<Response>
-    try {
-      // Start transport during the same gesture as the context unlock.
-      response = fetch(url, { signal: abort.signal })
-    } catch {
-      abort.abort()
-      void output.release()
-      if (current === attempt) current = undefined
-      return Promise.resolve(false)
-    }
+    // Start transport during the same gesture as the context unlock.
+    const asset = fetchAssetBytes(url, { signal: abort.signal })
     const timeout = setTimeout(() => abort.abort(), START_TIMEOUT_MS)
     const cancelled = new Promise<false>((resolve) => {
       abort.signal.addEventListener('abort', () => resolve(false), {
@@ -233,12 +227,8 @@ export function createBrowserMercNarration(
     })
     const work = async (): Promise<boolean> => {
       try {
-        const [available, fetched] = await Promise.all([
-          output.unlocked,
-          response,
-        ])
-        if (!available || !fetched.ok || abort.signal.aborted) return false
-        const bytes = await fetched.arrayBuffer()
+        const [available, bytes] = await Promise.all([output.unlocked, asset])
+        if (!available || abort.signal.aborted) return false
         if (abort.signal.aborted || token !== generation || disposed)
           return false
         const decoded = await output.context?.decodeAudioData(bytes)
@@ -259,7 +249,9 @@ export function createBrowserMercNarration(
         )
           return false
         return output.play(decoded)
-      } catch {
+      } catch (error) {
+        if (!abort.signal.aborted && !disposed)
+          reportAudioAssetFailure('merc-narration', error)
         return false
       }
     }

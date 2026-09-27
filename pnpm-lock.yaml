@@ -444,6 +444,9 @@ importers:
       '@irchiinnuss/audio-io':
         specifier: workspace:*
         version: link:../audio-io
+      '@irchiinnuss/mobile-runtime':
+        specifier: workspace:*
+        version: link:../mobile-runtime
       '@irchiinnuss/pitch-engine':
         specifier: workspace:*
         version: link:../pitch-engine

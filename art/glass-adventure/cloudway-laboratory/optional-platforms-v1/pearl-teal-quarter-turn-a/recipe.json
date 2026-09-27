@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "assetId": "pearl-teal-quarter-turn-a-v1",
+  "version": "optional-platform-v1",
+  "rootNode": "Cloudway_PearlTealQuarterTurnA_V1",
+  "source": {
+    "kind": "new-meshy-image-to-3d-dense-donor",
+    "taskId": "01a0e351-284a-7752-bf9d-6da30d977277",
+    "credits": 40,
+    "file": "<creative-archive>/glass-adventure/modular-kit-v1/source-assets/meshy/pearl-teal-quarter-turn-a/dense-donor.glb",
+    "bytes": 50883664,
+    "sha256": "5533aae9bbb99d126982e60d60e87b9f0a72478975aafd843f1a6d8acfa60d55"
+  },
+  "authoring": {
+    "packedMaster": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/quarter-turn-a-authoring-v1.blend",
+    "horizontalGameplayScale": 1.6,
+    "sourceArmWidth": 0.52,
+    "playableArmWidth": 0.832,
+    "repairs": [
+      "flip the source-inherited inverted top-corner face",
+      "repair only the bounded top-corner custom normals responsible for the black notch",
+      "remove three mobile faces proven to collapse after Meshopt quantization"
+    ],
+    "materialRoles": ["marble", "gold-hardware", "teal-inlay"]
+  },
+  "runtimeTiers": [
+    {
+      "id": "desktop",
+      "triangles": 68000,
+      "meshDrawsPerPass": 3,
+      "textureMaximums": {
+        "baseColor": 2048,
+        "normal": 2048,
+        "orm": 1024
+      },
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb"
+    },
+    {
+      "id": "mobile",
+      "triangles": 31996,
+      "meshDrawsPerPass": 3,
+      "textureMaximums": {
+        "baseColor": 1024,
+        "normal": 1024,
+        "orm": 512
+      },
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb"
+    }
+  ],
+  "support": {
+    "kind": "two-box-union",
+    "coordinates": "metres; glTF +Y up",
+    "topY": 0.085,
+    "thickness": 0.18,
+    "innerQuadrant": "unsupported",
+    "behavior": "always-active static deck only",
+    "docks": ["+X", "-Z"]
+  },
+  "integration": {
+    "logicalBundle": "cloudway-lab-pearl-quarter-turn-a-v1",
+    "profileSelection": {
+      "full": "cloudway-lab-pearl-quarter-turn-a-desktop-v1",
+      "mobile": "cloudway-lab-pearl-quarter-turn-a-mobile-v1"
+    },
+    "previewLevel": "cloudway-quarter-turn-art-study-v1",
+    "developmentRoute": "/glass-game/?layout=quarter-turn-art"
+  }
+}

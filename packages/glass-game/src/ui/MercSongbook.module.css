@@ -1,0 +1,163 @@
+/* Songbook chrome owns its buttons across browser and native host layouts. */
+.songbook {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: #f5efdf;
+  color: #25433c;
+  font:
+    1rem/1.5 'Gabarito Variable',
+    system-ui,
+    sans-serif;
+}
+.inner {
+  max-width: 1120px;
+  margin: auto;
+  padding: max(24px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+}
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.header h1 {
+  font:
+    2.5rem/1.1 Georgia,
+    serif;
+  margin: 8px 0 0;
+  letter-spacing: -0.035em;
+}
+.eyebrow {
+  color: #795522;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.close,
+.actions button {
+  min-height: 46px;
+  border: 1px solid #b8a883;
+  border-radius: 999px;
+  background: #fffdf3;
+  color: #25433c;
+  font: inherit;
+  padding: 10px 17px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.close {
+  flex-shrink: 0;
+}
+.close:focus-visible,
+.actions button:focus-visible {
+  outline: 3px solid #00786d;
+  outline-offset: 3px;
+}
+.introduction {
+  font:
+    clamp(1.5rem, 4vw, 2rem)/1.25 Georgia,
+    serif;
+  margin: 30px 0 12px;
+}
+.explanation {
+  max-width: 760px;
+  margin: 0;
+  color: #4f6057;
+}
+.status {
+  min-height: 34px;
+  padding-top: 8px;
+  color: #943d28;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fffdf4;
+  border: 1px solid #c9b994;
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 8px 26px #25433c08;
+}
+.card h2 {
+  font:
+    1.75rem/1.18 Georgia,
+    serif;
+  margin: 16px 0 12px;
+  text-wrap: balance;
+}
+.setting {
+  color: #526259;
+  margin: 0 0 24px;
+  font-size: 0.92rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: auto;
+}
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.87rem;
+  padding: 10px 13px;
+}
+.actions button:first-child {
+  background: #254f45;
+  border-color: #254f45;
+  color: #fffdf3;
+}
+.actions button[aria-pressed='true'] {
+  background: #795522;
+  border-color: #795522;
+  color: #fff;
+}
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.actions svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+.footnote {
+  color: #5a695f;
+  font-size: 0.88rem;
+  margin: 26px 0 0;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .header h1 {
+    font-size: 2rem;
+  }
+  .card {
+    padding: 22px;
+  }
+}

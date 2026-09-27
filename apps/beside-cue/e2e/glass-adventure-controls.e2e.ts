@@ -1,6 +1,9 @@
 // Museum controls — real mouse, keyboard and simultaneous touch through the shared surface.
 import { expect, test } from '@playwright/test'
+import { GLASS_GAME_ASSET_FILES } from '@irchiinnuss/glass-game/assets'
 import { omitRasterOutput, openMuseum, value, verifyLookFirstMovementReacquisition, } from './helpers/glass-adventure-controls'
+
+const MERC_MODEL_PATH = `/games/${GLASS_GAME_ASSET_FILES.merc}`
 
 test.use({
   launchOptions: {
@@ -583,8 +586,12 @@ test.describe('phone', () => {
 test('replay starts fresh while gameplay saves preserve durable completion', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 640, height: 480 })
+  await page.setViewportSize({ width: 390, height: 844 })
   await omitRasterOutput(page)
+  let mercModelRequests = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === MERC_MODEL_PATH) mercModelRequests++
+  })
   const completedProgress = {
     version: 1,
     levelId: 'glassworks',
@@ -605,12 +612,21 @@ test('replay starts fresh while gameplay saves preserve durable completion', asy
   }, completedProgress)
   await page.goto('/glass-game/')
   await expect(
-    page.getByRole('dialog', { name: 'You made the museum sing.' }),
+    page.getByRole('dialog', { name: 'Glassworks is already complete.' }),
   ).toBeVisible()
-  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-    'data-completed',
-    '3',
+  const decisionLayout = await page
+    .getByRole('dialog', { name: 'Glassworks is already complete.' })
+    .evaluate((dialog) => ({
+      dialogWidth: dialog.getBoundingClientRect().width,
+      viewportWidth: document.documentElement.clientWidth,
+      pageOverflows: document.documentElement.scrollWidth > innerWidth,
+    }))
+  expect(decisionLayout.dialogWidth).toBeLessThanOrEqual(
+    decisionLayout.viewportWidth,
   )
+  expect(decisionLayout.pageOverflows).toBe(false)
+  await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
+  expect(mercModelRequests).toBe(0)
   await page.getByRole('button', { name: 'Play this gallery again' }).click()
   await expect(page.getByLabel('0 of 3 main exhibits opened')).toBeVisible({
     timeout: 30_000,
@@ -628,6 +644,7 @@ test('replay starts fresh while gameplay saves preserve durable completion', asy
     'data-checkpoint',
     'arrival',
   )
+  expect(mercModelRequests).toBe(1)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   const savedAfterLoad = await page.evaluate(() =>
     JSON.parse(

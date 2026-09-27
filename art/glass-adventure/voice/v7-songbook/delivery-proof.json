@@ -1,0 +1,122 @@
+{
+  "revision": "merc-songbook-v7-source-direct",
+  "selection": "Source-direct retains the source performance pitch with lower median pitch error than the residual-contour candidate in all six takes.",
+  "scope": "Automated lyric/pitch evidence; perceptual approval remains owner audition. These takes are not scored lesson references.",
+  "method": "Selected character voice conversion, then WORLD spectral resynthesis retaining source F0 and voiced mask; no hidden detector carrier.",
+  "files": [
+    {
+      "id": "first-arc",
+      "words": "Let it shine",
+      "runtimePath": "first-arc-merc.mp3",
+      "sourceSha256": "17fd62b152e520b7c94fc4e38f7c07c18b4318bfaa71780b74f814769481735e",
+      "convertedSha256": "bc81e2fabe2e1ceb0ad2a2cbdba7660d3b026b40cee6a828eae0e9dbe43bb2a5",
+      "deliverySha256": "e9f5f1a65db8fb1ab4f7df57480cebde3e9ac63f264f242f4c14b10dbe7c5fd2",
+      "transcript": "\u266a Let it shine \u266a",
+      "exactNormalizedLyrics": true,
+      "seconds": 6.037208,
+      "pitch": {
+        "source_voiced_frames": 1197,
+        "output_voiced_frames": 898,
+        "paired_voiced_frames": 898,
+        "median_absolute_cents": 3.554,
+        "p95_absolute_cents": 151.659,
+        "maximum_absolute_cents": 1684.376
+      }
+    },
+    {
+      "id": "sunlit-steps",
+      "words": "Tiny sparks can glow",
+      "runtimePath": "sunlit-steps-merc.mp3",
+      "sourceSha256": "b48fbd24862953b781124937c03208deeb0fb9990749d6ac0be3b522d6e1f49b",
+      "convertedSha256": "74726e5abb537becc39668d44ca0cefd5341a1b24417b95fa860e7944c35b5bc",
+      "deliverySha256": "c5f303e323410730e37a24a54b8d50bb364c82819139ba122c1fd93fb51b9850",
+      "transcript": "Tiny sparks can glow",
+      "exactNormalizedLyrics": true,
+      "seconds": 7.569708,
+      "pitch": {
+        "source_voiced_frames": 1460,
+        "output_voiced_frames": 1130,
+        "paired_voiced_frames": 1117,
+        "median_absolute_cents": 3.341,
+        "p95_absolute_cents": 455.673,
+        "maximum_absolute_cents": 1406.631
+      }
+    },
+    {
+      "id": "gallery-arch",
+      "words": "Another beautiful mess",
+      "runtimePath": "gallery-arch-merc.mp3",
+      "sourceSha256": "97077b89261b0f2572e71cc3048d095c6b89ce4848303ced67181afcf2b0f095",
+      "convertedSha256": "de7fd9ac0099afd4d0eb5f4446daea0586da4744cfea8e0cdba1f7215ef53eee",
+      "deliverySha256": "59a3f17b89bd8f65e5a0c81f2ede066285b97e4411eab443bedb1717fc349d11",
+      "transcript": "Another beautiful mess.",
+      "exactNormalizedLyrics": true,
+      "seconds": 9.566625,
+      "pitch": {
+        "source_voiced_frames": 1793,
+        "output_voiced_frames": 1409,
+        "paired_voiced_frames": 1406,
+        "median_absolute_cents": 3.726,
+        "p95_absolute_cents": 784.7,
+        "maximum_absolute_cents": 2198.467
+      }
+    },
+    {
+      "id": "little-light",
+      "words": "Little light, lead me home",
+      "runtimePath": "little-light-merc.mp3",
+      "sourceSha256": "c0e9ac98ec423da391309ee520f453a40f5860ccd81bc19661f00f071e9b75f9",
+      "convertedSha256": "83bc8ab9de1c7c12c522aab69364a924aac93b498cfcfa2f00a2126834813962",
+      "deliverySha256": "6fad25ee76595c9ad376d94dc015e8f38af044778905c92a08a5d62948eed438",
+      "transcript": "Little Light, lead me home",
+      "exactNormalizedLyrics": true,
+      "seconds": 8.545958,
+      "pitch": {
+        "source_voiced_frames": 1567,
+        "output_voiced_frames": 1143,
+        "paired_voiced_frames": 1126,
+        "median_absolute_cents": 3.36,
+        "p95_absolute_cents": 64.972,
+        "maximum_absolute_cents": 881.712
+      }
+    },
+    {
+      "id": "quiet-garden",
+      "words": "Let the quiet garden sing",
+      "runtimePath": "quiet-garden-merc.mp3",
+      "sourceSha256": "53479479329c9ce6a829cbf2e709683407565b470ce1898a3e2ef11f304484c6",
+      "convertedSha256": "44170452d07522c10127ad0eb2a117ffb28e1aa4249ac8329cf21801296d3ed6",
+      "deliverySha256": "28adebccf5f781110d3b267c825fc2c8e60d7c481de0bd7c801542afd8c03dbd",
+      "transcript": "\u266a Let the quiet garden sing \u266a",
+      "exactNormalizedLyrics": true,
+      "seconds": 9.566625,
+      "pitch": {
+        "source_voiced_frames": 1816,
+        "output_voiced_frames": 1406,
+        "paired_voiced_frames": 1394,
+        "median_absolute_cents": 3.606,
+        "p95_absolute_cents": 362.181,
+        "maximum_absolute_cents": 1697.49
+      }
+    },
+    {
+      "id": "beside-you",
+      "words": "Beside you, I find my tune",
+      "runtimePath": "beside-you-merc.mp3",
+      "sourceSha256": "5a75561ad98cab87917126518715884da6bef9dbb40ae5fb121a9be93fbbfc36",
+      "convertedSha256": "f70274224cb6b3a53f6a357708fd23b0fdaaf95089fbfd6d48e6ce45ce871d86",
+      "deliverySha256": "c8993c25729be0a65f8d6c0af77ae40b40b30514ccc296934d1f7d26d309fdb1",
+      "transcript": "Beside you I find my tune.",
+      "exactNormalizedLyrics": true,
+      "seconds": 9.566625,
+      "pitch": {
+        "source_voiced_frames": 1815,
+        "output_voiced_frames": 1577,
+        "paired_voiced_frames": 1559,
+        "median_absolute_cents": 3.945,
+        "p95_absolute_cents": 416.133,
+        "maximum_absolute_cents": 2017.595
+      }
+    }
+  ]
+}

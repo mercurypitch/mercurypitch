@@ -1,5 +1,8 @@
 // Campaign navigation — real host transitions preserve independent progress and teaching.
 import { expect, test, type Page } from '@playwright/test'
+import { GLASS_GAME_ASSET_FILES } from '@irchiinnuss/glass-game/assets'
+
+const MERC_MODEL_PATH = `/games/${GLASS_GAME_ASSET_FILES.merc}`
 
 test.use({
   viewport: { width: 320, height: 640 },
@@ -56,7 +59,7 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
   )
   expect(models.map((url) => new URL(url).pathname).sort()).toEqual(
     [
-      '/games/glass3d/merc.glb',
+      MERC_MODEL_PATH,
       '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
       '/games/journey-map-v10/floating-museum-botanical-kit-v10.glb',
       '/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
@@ -158,7 +161,7 @@ test('leaving a loading gallery retires it before the next gallery mounts', asyn
     release = resolve
   })
   let first = true
-  await page.route('**/games/glass3d/merc.glb', async (route) => {
+  await page.route(`**${MERC_MODEL_PATH}`, async (route) => {
     if (first) {
       first = false
       await held
@@ -205,9 +208,7 @@ test('a failed replay keeps the completed gallery save and can return to the cho
     ({ key, saved }) => localStorage.setItem(key, saved),
     { key, saved },
   )
-  await page.route('**/games/glass3d/merc.glb', (route) =>
-    route.abort('failed'),
-  )
+  await page.route(`**${MERC_MODEL_PATH}`, (route) => route.abort('failed'))
   await page.goto('/glass-game/?campaign=1')
   await page.getByRole('button', { name: 'Replay Twin Galleries' }).tap()
   await page.getByRole('button', { name: 'Begin this challenge' }).tap()

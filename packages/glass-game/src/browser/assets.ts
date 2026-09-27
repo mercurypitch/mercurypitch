@@ -8,6 +8,7 @@
 
 // The export resolves to an explicit .ts path for Node's native-build scripts.
 import { MERC_ENCORE_VARIANTS } from '@irchiinnuss/glass-game/encore-examples'
+import { MERC_SONGBOOK_ASSETS } from '@irchiinnuss/glass-game/songbook-content'
 
 const MATERIALS = [
   'warm-carrara',
@@ -29,7 +30,7 @@ const REACTION_CUES = [
 
 export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-loading': 'journey/merc-idle.webp',
-  merc: 'glass3d/merc.glb',
+  merc: 'glass3d/merc-v2.glb',
   'floor-marble': 'adventure/floor-marble.webp',
   'legend-johnny-cash': 'adventure/legend-johnny-cash.webp',
   'museum-kit': 'adventure/platform-kit-qa-v2.glb',
@@ -89,6 +90,13 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb',
   'pearl-ribbon-lantern-v1':
     'cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb',
+  'cloudway-lab-pearl-quarter-turn-a-desktop-v1':
+    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb',
+  'cloudway-lab-pearl-quarter-turn-a-mobile-v1':
+    'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb',
+  ...Object.fromEntries(
+    MERC_SONGBOOK_ASSETS.map((asset) => [asset.id, asset.path]),
+  ),
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
@@ -135,6 +143,7 @@ const MANIFEST_FILES = [
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',
   'adventure-voice-v6/manifest.json',
+  'adventure-voice-v7/manifest.json',
 ] as const
 
 // Standard glTF external buffers preserve the accepted source bytes while
@@ -147,9 +156,10 @@ const DEPENDENCY_FILES = [
 ] as const
 
 /** Explicit-listen examples are loaded on demand by the practice UI. */
-export const GLASS_GAME_ON_DEMAND_ASSET_IDS = MERC_ENCORE_VARIANTS.map(
-  (variant) => variant.assetId,
-)
+export const GLASS_GAME_ON_DEMAND_ASSET_IDS = [
+  ...MERC_ENCORE_VARIANTS.map((variant) => variant.assetId),
+  ...MERC_SONGBOOK_ASSETS.map((asset) => asset.id),
+]
 
 /** Delivery inventory for web and native, including on-demand audio. This is
  * a packaging list, not a runtime preload list; world load plans stay separate. */

@@ -29,6 +29,9 @@ describe('Glassworks asset contract', () => {
   })
 
   it('resolves the same authored ID beneath any host-owned base', () => {
+    expect(glassGameAssetUrl('merc', '/games')).toBe(
+      '/games/glass3d/merc-v2.glb',
+    )
     expect(glassGameAssetUrl('museum-window-v4', '/glass-game-assets')).toBe(
       '/glass-game-assets/adventure-v4/museum-window-bay.glb',
     )

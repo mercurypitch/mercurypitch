@@ -4,7 +4,11 @@
 
 import { For } from 'solid-js'
 
-export type CreatorPreviewPick = 'creator-gallery' | 'echo-curator'
+export type CreatorPreviewPick =
+  | 'creator-gallery'
+  | 'echo-curator'
+  | 'songbook'
+  | 'quarter-turn-art'
 
 interface CreatorPreviewCardsProps {
   onOpen: (preview: CreatorPreviewPick) => void
@@ -15,6 +19,18 @@ const CREATOR_PREVIEWS: readonly {
   name: string
   blurb: string
 }[] = [
+  {
+    id: 'songbook',
+    name: 'Merc’s little songbook',
+    blurb:
+      'Six little songs for our next journey. Hear Merc sing and compare the guide singer.',
+  },
+  {
+    id: 'quarter-turn-art',
+    name: 'The Pearl Turn',
+    blurb:
+      'A pearl-and-teal path to explore. Walk its curve and look at the new stonework.',
+  },
   {
     id: 'creator-gallery',
     name: 'Little discoveries',

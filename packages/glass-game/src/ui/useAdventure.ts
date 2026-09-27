@@ -584,15 +584,11 @@ export function useAdventure(
         (phase === 'ready' || needsStableFrame)
       )
         try {
-          const rendered = activeRenderer.render(
-            game.snapshot(),
-            Math.min(0.05, elapsed),
-            {
-              challengeEncounterId: voiceState()?.encounterId ?? null,
-              paused: paused() || tutorial(),
-              safeBottomFraction: challengeSafeBottom(),
-            },
-          )
+          const rendered = activeRenderer.render(game.snapshot(), elapsed, {
+            challengeEncounterId: voiceState()?.encounterId ?? null,
+            paused: paused() || tutorial(),
+            safeBottomFraction: challengeSafeBottom(),
+          })
           // Inspection attributes are sampled, not a second per-frame UI loop.
           if (needsStableFrame || now - lastCameraMetricsAt >= 100) {
             lastCameraMetricsAt = now
