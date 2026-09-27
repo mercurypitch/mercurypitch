@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuideLevel, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
-import { holdRoomArrival, nativeRunControls, registerNativeDevice, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 
 interface FakeMixer {
   sessionId: string
@@ -31,6 +31,9 @@ interface FakeMixer {
   setLoadError: Setter<string>
   /** The singer moving the sing pill. */
   setGuideLevel: Setter<GuideLevel>
+  setHasNotes: Setter<boolean>
+  setMusicLevel: Setter<number>
+  resetMusicLevel: Mock
   /** The room putting the guide back. */
   setGuide: Mock
   play: Mock
@@ -56,6 +59,8 @@ vi.mock('@/components/StemMixer', async () => {
       const [loading, setLoading] = createSignal(true)
       const [loadError, setLoadError] = createSignal('')
       const [elapsed, setElapsed] = createSignal(0)
+      const [hasNotes, setHasNotes] = createSignal(true)
+      const [musicLevel, setMusicLevel] = createSignal(0.7)
       const [guide, setGuideLevel] = createSignal<GuideLevel>({
         volume: 0.8,
         muted: false,
@@ -73,6 +78,9 @@ vi.mock('@/components/StemMixer', async () => {
         setElapsed,
         setLoadError,
         setGuideLevel,
+        setHasNotes,
+        setMusicLevel,
+        resetMusicLevel: vi.fn(() => setMusicLevel(0.7)),
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
         play: vi.fn(() => setPlaying(true)),
         pause: vi.fn(() => setPlaying(false)),
@@ -87,12 +95,12 @@ vi.mock('@/components/StemMixer', async () => {
           loadError,
           elapsed,
           duration: () => 246,
-          hasNotes: () => true,
-          musicLevel: () => 1,
+          hasNotes,
+          musicLevel,
           play: mixer.play,
           pause: mixer.pause,
           seek: mixer.seek,
-          resetMusicLevel: vi.fn(),
+          resetMusicLevel: mixer.resetMusicLevel,
           releaseMic: mixer.releaseMic,
           guide,
           setGuide: mixer.setGuide,
@@ -135,7 +143,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
   }),
 }))
 
-import { KARAOKE_LAST_SONG_KEY, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
 
 const example = (slug: string, title: string, dir: string) => ({
@@ -531,6 +539,183 @@ describe('the library', () => {
     expect(controls().closeRoomOverlay?.()).toBe(true)
     expect(screen.queryByTestId('karaoke-library')).toBeNull()
     expect(controls().closeRoomOverlay?.()).toBe(false)
+  })
+})
+
+describe('the Karaoke options', () => {
+  async function openOptions(): Promise<HTMLElement> {
+    controls().openOptions?.()
+    return screen.findByTestId('karaoke-options')
+  }
+
+  const switchNamed = (sheet: HTMLElement, name: string): HTMLElement =>
+    within(sheet).getByRole('switch', { name })
+
+  it('open from the gear, over a song that keeps playing', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    const sheet = await openOptions()
+
+    expect(within(sheet).getByText('Karaoke options')).toBeTruthy()
+    expect(current().pause).not.toHaveBeenCalled()
+  })
+
+  it('set the lyrics size, which the stage reads', async () => {
+    await mountRoom()
+    const sheet = await openOptions()
+    expect(
+      within(sheet)
+        .getByRole('button', { name: 'Medium' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Large' }))
+
+    expect(karaokeLyricsSize()).toBe('bigger')
+    expect(current().hosted.stage.lyricsSize()).toBe('bigger')
+    expect(localStorage.getItem('sm-zen-lyrics-size')).toBe('bigger')
+  })
+
+  it('offer the notes only for a song that has them', async () => {
+    await mountRoom()
+    const sheet = await openOptions()
+    const notes = switchNamed(sheet, 'Show notes over the lyrics')
+    expect(notes.getAttribute('aria-checked')).toBe('false')
+
+    fireEvent.click(notes)
+    expect(karaokeNoteGlyphs()).toBe(true)
+    expect(current().hosted.stage.noteGlyphs()).toBe(true)
+
+    current().setHasNotes(false)
+    expect(
+      within(sheet).queryByRole('switch', {
+        name: 'Show notes over the lyrics',
+      }),
+    ).toBeNull()
+  })
+
+  it('turn the next song off and on', async () => {
+    await mountRoom()
+    const sheet = await openOptions()
+    const next = switchNamed(sheet, 'Play the next song automatically')
+    expect(next.getAttribute('aria-checked')).toBe('true')
+
+    fireEvent.click(next)
+
+    expect(karaokePlayNext()).toBe(false)
+    expect(localStorage.getItem('karaoke-room-play-next')).toBe('false')
+  })
+
+  it('show the music level, and put it back to 100%', async () => {
+    await mountRoom()
+    current().setMusicLevel(0.98)
+    const sheet = await openOptions()
+    expect(within(sheet).getByText('140%')).toBeTruthy()
+
+    fireEvent.click(
+      within(sheet).getByRole('button', {
+        name: 'Reset the music level to 100%',
+      }),
+    )
+
+    expect(current().resetMusicLevel).toHaveBeenCalledTimes(1)
+    expect(within(sheet).getByText('100%')).toBeTruthy()
+  })
+
+  it('push All settings, and close', async () => {
+    const pushSettings = vi.fn()
+    const unregisterShell = registerShellApi({
+      pushSettings,
+    } as unknown as Parameters<typeof registerShellApi>[0])
+    try {
+      await mountRoom()
+      const sheet = await openOptions()
+
+      fireEvent.click(within(sheet).getByRole('button', { name: 'Open' }))
+
+      expect(pushSettings).toHaveBeenCalledTimes(1)
+      expect(screen.queryByTestId('karaoke-options')).toBeNull()
+    } finally {
+      unregisterShell()
+    }
+  })
+
+  it('are what Back closes first', async () => {
+    await mountRoom()
+    await openOptions()
+
+    expect(controls().closeRoomOverlay?.()).toBe(true)
+    expect(screen.queryByTestId('karaoke-options')).toBeNull()
+  })
+})
+
+describe('the option pinned beside the gear', () => {
+  const choose = async (value: string): Promise<void> => {
+    controls().openOptions?.()
+    const sheet = await screen.findByTestId('karaoke-options')
+    fireEvent.change(
+      within(sheet).getByRole('combobox', { name: 'Beside the gear' }),
+      { target: { value } },
+    )
+  }
+
+  it('is nothing until the singer pins one', async () => {
+    await mountRoom()
+
+    expect(controls().pinnedToggle?.() ?? null).toBeNull()
+  })
+
+  it('pins the notes, which switch from the header', async () => {
+    await mountRoom()
+    await choose('notes')
+
+    const pinned = controls().pinnedToggle?.()
+    expect(pinned).toMatchObject({
+      icon: 'notes',
+      label: 'Show notes over the lyrics',
+      pressed: false,
+    })
+    pinned?.onToggle()
+    expect(karaokeNoteGlyphs()).toBe(true)
+    expect(controls().pinnedToggle?.()?.pressed).toBe(true)
+    expect(localStorage.getItem(KARAOKE_PINNED_KEY)).toBe('notes')
+  })
+
+  it('draws no notes button for a song without notes', async () => {
+    await mountRoom()
+    await choose('notes')
+
+    current().setHasNotes(false)
+
+    expect(controls().pinnedToggle?.() ?? null).toBeNull()
+  })
+
+  it('steps the lyrics size from the header, and names the size', async () => {
+    await mountRoom()
+    await choose('lyrics-size')
+
+    expect(controls().pinnedToggle?.()?.label).toBe('Text size: Medium')
+    controls().pinnedToggle?.()?.onToggle()
+
+    expect(karaokeLyricsSize()).toBe('bigger')
+    expect(controls().pinnedToggle?.()?.label).toBe('Text size: Large')
+    expect(controls().pinnedToggle?.()?.pressed).toBeUndefined()
+  })
+
+  it('pins the next song, and a later visit finds it pinned', async () => {
+    const unmount = await mountRoom()
+    await choose('play-next')
+    expect(controls().pinnedToggle?.()?.pressed).toBe(true)
+    unmount()
+
+    await mountRoom()
+
+    const pinned = controls().pinnedToggle?.()
+    expect(pinned?.icon).toBe('play-next')
+    pinned?.onToggle()
+    expect(karaokePlayNext()).toBe(false)
   })
 })
 

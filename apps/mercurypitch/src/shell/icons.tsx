@@ -449,3 +449,26 @@ export const DocIcon: Component<ShellIconProps> = (props) => (
     <path d="M13.5 3.5v4h4M9 12h6M9 15.5h6" />
   </svg>
 )
+
+/** Text size: a small and a large A (the Karaoke room's lyrics size). */
+export const TextSizeIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M3 17l3.2-8L9.4 17M4.2 14.2h4.4" />
+    <path d="M12 19L16 7l4 12M13.4 15h5.2" />
+  </svg>
+)
+
+/** Notes over the lyrics: an eighth note. */
+export const NoteGlyphIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="8.5" cy="17.5" r="3" />
+    <path d="M11.5 17.5V5.5l7-1.8v4.1l-7 1.8" />
+  </svg>
+)
+
+/** The next song by itself: an endless loop. */
+export const AutoplayIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M7 9a3 3 0 0 0 0 6c1.7 0 2.8-1.4 5-3s3.3-3 5-3a3 3 0 0 1 0 6c-1.7 0-2.8-1.4-5-3S8.7 9 7 9z" />
+  </svg>
+)

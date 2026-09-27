@@ -35,15 +35,19 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import { whenBundledExamplesSeeded } from '@/features/karaoke-night/seed-examples'
 import { roomName } from '@/features/rooms/room-names'
 import type { GuideLevel, HostedMixerControls, StemMixerHosting, } from '@/features/stem-mixer/hosted-mixer'
+import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
+import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { nativeDeviceApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import type { PinnedRoomToggle } from '@/stores/native-shell-store'
+import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
-import { karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeStagedSong, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
+import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -102,6 +106,7 @@ export const KaraokeRoomStage: Component = () => {
 
   const [pickerOpen] = createSignal(false)
   const [libraryOpen, setLibraryOpen] = createSignal(false)
+  const [optionsOpen, setOptionsOpen] = createSignal(false)
   const background = useBackgroundSurfaceController('karaoke', pickerOpen)
 
   // Read fresh, never memoised: the arrival reads it the moment the seed
@@ -246,9 +251,63 @@ export const KaraokeRoomStage: Component = () => {
 
   // Back closes what the room has open over its stage before it leaves.
   const closeRoomOverlay = (): boolean => {
-    if (!libraryOpen()) return false
-    setLibraryOpen(false)
-    return true
+    if (optionsOpen()) {
+      setOptionsOpen(false)
+      return true
+    }
+    if (libraryOpen()) {
+      setLibraryOpen(false)
+      return true
+    }
+    return false
+  }
+
+  const hasNotes = (): boolean => mixer()?.hasNotes() === true
+
+  // As zen's pill reads it: a share of the level the app ships at.
+  const musicPercent = (): number | null => {
+    const controls = mixer()
+    if (controls === null) return null
+    return Math.round(
+      (controls.musicLevel() / MUSIC_LEVEL.spec.defaultValue) * 100,
+    )
+  }
+
+  // The one option beside the gear, as it is now. The notes are absent for
+  // a song without them, as their row is.
+  const pinnedToggle = (): PinnedRoomToggle | null => {
+    switch (karaokePinned()) {
+      case 'lyrics-size':
+        return {
+          icon: 'lyrics-size',
+          label: `Text size: ${KARAOKE_LYRICS_SIZE_LABELS[karaokeLyricsSize()]}`,
+          onToggle: () => {
+            setKaraokeLyricsSize(cycleLyricsSize(karaokeLyricsSize()))
+          },
+        }
+      case 'notes':
+        return hasNotes()
+          ? {
+              icon: 'notes',
+              label: 'Show notes over the lyrics',
+              pressed: karaokeNoteGlyphs(),
+              onToggle: () => {
+                setKaraokeNoteGlyphs(!karaokeNoteGlyphs())
+              },
+            }
+          : null
+      case 'play-next':
+        return {
+          icon: 'play-next',
+          label: 'Play the next song automatically',
+          pressed: karaokePlayNext(),
+          onToggle: () => {
+            setKaraokePlayNext(!karaokePlayNext())
+          },
+        }
+      default:
+        return null
+    }
   }
 
   const pause = (): void => {
@@ -289,7 +348,11 @@ export const KaraokeRoomStage: Component = () => {
         resume,
         stop,
         park,
+        openOptions: () => {
+          setOptionsOpen(true)
+        },
         closeRoomOverlay,
+        pinnedToggle,
       }),
     )
   })
@@ -353,6 +416,14 @@ export const KaraokeRoomStage: Component = () => {
         songs={library}
         currentId={() => cue()?.song.sessionId ?? null}
         onPick={pick}
+      />
+      <KaraokeRoomOptions
+        isOpen={optionsOpen()}
+        close={() => setOptionsOpen(false)}
+        hasNotes={hasNotes}
+        musicPercent={musicPercent}
+        onResetMusicLevel={() => mixer()?.resetMusicLevel()}
+        onAllSettings={() => nativeShellApi()?.pushSettings()}
       />
     </div>
   )

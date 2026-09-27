@@ -30,6 +30,22 @@ export const KARAOKE_LAST_SONG_KEY = 'karaoke-room-last-song'
 export const KARAOKE_PLAY_NEXT_KEY = 'karaoke-room-play-next'
 export const KARAOKE_LYRICS_SIZE_KEY = 'sm-zen-lyrics-size'
 export const KARAOKE_NOTE_GLYPHS_KEY = 'sm-zen-note-glyphs'
+export const KARAOKE_PINNED_KEY = 'karaoke-room-pinned'
+
+/** The options a singer can pin beside the gear, or none. */
+export const KARAOKE_PINNABLE = ['lyrics-size', 'notes', 'play-next'] as const
+export type KaraokePinnable = (typeof KARAOKE_PINNABLE)[number]
+export type KaraokePinned = KaraokePinnable | 'none'
+
+const isPinned = (value: unknown): value is KaraokePinned =>
+  value === 'none' || (KARAOKE_PINNABLE as readonly unknown[]).includes(value)
+
+/** What the Options sheet and the header call each lyrics size. */
+export const KARAOKE_LYRICS_SIZE_LABELS: Record<ZenLyricsSize, string> = {
+  smaller: 'Small',
+  current: 'Medium',
+  bigger: 'Large',
+}
 
 const isLyricsSize = (value: unknown): value is ZenLyricsSize =>
   (ZEN_LYRICS_SIZES as readonly unknown[]).includes(value)
@@ -52,6 +68,22 @@ const [noteGlyphs, setNoteGlyphsSignal] = createPersistedSignal<boolean>(
   false,
   { validator: isBoolean },
 )
+
+/**
+ * The one option beside the gear (owner, 27 Sep). None by default: the
+ * header stays Back, the room and the gear until the singer asks for more.
+ */
+const [pinned, setPinnedSignal] = createPersistedSignal<KaraokePinned>(
+  KARAOKE_PINNED_KEY,
+  'none',
+  { validator: isPinned },
+)
+
+export const karaokePinned = pinned
+
+export function setKaraokePinned(choice: KaraokePinned): void {
+  setPinnedSignal(choice)
+}
 
 export const karaokePlayNext = playNext
 export const karaokeLyricsSize = lyricsSize
@@ -124,7 +156,9 @@ export function resetKaraokeRoomForTests(): void {
   setPlayNextSignal(true)
   setLyricsSizeSignal('current')
   setNoteGlyphsSignal(false)
+  setPinnedSignal('none')
   try {
+    localStorage.removeItem(KARAOKE_PINNED_KEY)
     localStorage.removeItem(KARAOKE_PLAY_NEXT_KEY)
     localStorage.removeItem(KARAOKE_LYRICS_SIZE_KEY)
     localStorage.removeItem(KARAOKE_NOTE_GLYPHS_KEY)

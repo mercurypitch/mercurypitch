@@ -248,6 +248,7 @@ export const NativeShell: Component = () => {
                 }}
                 onGear={controls().openOptions}
                 gearLabel={controls().optionsLabel}
+                pinned={controls().pinnedToggle}
                 // The chip is a button only where the room answers for one:
                 // the shell owns no picker of its own (R5).
                 onChip={controls().openRoomPicker}

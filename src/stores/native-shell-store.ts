@@ -95,6 +95,12 @@ export interface NativeRunControls {
   /** The gear's accessible name. Absent means "Practice options". */
   readonly optionsLabel?: string
   /**
+   * The one option the singer pinned beside the gear, as it is now, or null
+   * for none (owner, 27 Sep: the Karaoke room's toggles live behind the gear,
+   * and one of them may also sit in the header). Absent means none.
+   */
+  pinnedToggle?: () => PinnedRoomToggle | null
+  /**
    * Whether a take the singer has not kept is on screen.
    *
    * Absent means NO. Today no room can answer — a practice run leaves nothing
@@ -103,6 +109,16 @@ export interface NativeRunControls {
    * room that gains a real take opts in here and gets the alert.
    */
   hasUnsavedTake?: () => boolean
+}
+
+/** An option a room pinned beside the gear. The shell draws it by `icon`. */
+export interface PinnedRoomToggle {
+  readonly icon: 'lyrics-size' | 'notes' | 'play-next'
+  /** The accessible name. A control that steps says its state here. */
+  readonly label: string
+  /** A switch's state. Absent for a control that steps, not switches. */
+  readonly pressed?: boolean
+  readonly onToggle: () => void
 }
 
 /** What a room can ask the shell for. */

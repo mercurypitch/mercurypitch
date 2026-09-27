@@ -666,6 +666,25 @@
   height: 16px;
 }
 
+/* Back on one side; on the other the gear, and the one option a room lets
+   the singer pin beside it (the Karaoke room). The chip between them may
+   shrink, with its ellipsis, rather than push the header past the screen. */
+.mp-room-header__end {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-room-header .mp-room-chip {
+  min-width: 0;
+}
+
+.mp-iconbtn--on {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--accent);
+}
+
 /* A chip with a picker behind it (R5). Taller, because it is a control now
    and a control on this surface is 44pt; the glass and the text are the
    label's, so the two read as one thing in two states rather than as two
