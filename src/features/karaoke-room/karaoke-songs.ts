@@ -16,6 +16,7 @@
 import { createSignal } from 'solid-js'
 import { requireAuth } from '@/db/services/auth-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
+import type { KaraokeRestoreOutcome } from '@/stores/native-shell-store'
 
 /**
  * The subscription as the paywall states it, until the store's own product
@@ -170,4 +171,21 @@ export function subscriptionStatusLine(state: KaraokeSongs): string {
   if (!state.subscribed) return 'Not subscribed'
   const on = formatRenewal(state.renewsAt)
   return on === null ? 'Subscribed' : `Subscribed, renews on ${on}`
+}
+
+/**
+ * What the store answered to Restore purchases, in the paywall and in
+ * Settings alike (plan §6.7, §9), so the two can never say it differently.
+ */
+export function restoreNote(outcome: KaraokeRestoreOutcome): string {
+  switch (outcome) {
+    case 'restored':
+      return 'Your Karaoke subscription is restored.'
+    case 'nothing':
+      return 'No Karaoke subscription was found to restore.'
+    case 'unavailable':
+      return 'Purchases are not available yet.'
+    case 'failed':
+      return 'The store could not restore purchases. Try again in a moment.'
+  }
 }

@@ -28,7 +28,7 @@ vi.mock('@/db/services/auth-service', () => ({
 }))
 
 import type { KaraokeSongs } from './karaoke-songs'
-import { confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, songsComeBackLine, songsLeftSentence, songsOptionRow, subscriptionStatusLine, } from './karaoke-songs'
+import { confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOptionRow, subscriptionStatusLine, } from './karaoke-songs'
 
 const subscriber: KaraokeSongs = {
   left: 18,
@@ -181,6 +181,19 @@ describe('the words', () => {
       'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.',
     )
     expect(confirmCostLine(unknown, 2)).toBe('Uses 2 of your songs.')
+  })
+
+  it('say what the store answered to Restore purchases, the same wherever it is asked', () => {
+    expect(restoreNote('restored')).toBe(
+      'Your Karaoke subscription is restored.',
+    )
+    expect(restoreNote('nothing')).toBe(
+      'No Karaoke subscription was found to restore.',
+    )
+    expect(restoreNote('unavailable')).toBe('Purchases are not available yet.')
+    expect(restoreNote('failed')).toBe(
+      'The store could not restore purchases. Try again in a moment.',
+    )
   })
 
   it('say when the songs come back, and how the subscription stands', () => {

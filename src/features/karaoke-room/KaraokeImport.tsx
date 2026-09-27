@@ -33,7 +33,7 @@ import { checkImport, IMPORT_ACCEPT, songTitleOf, } from './karaoke-import-check
 import { duplicateOf, enqueueImports, setImportGateHandler, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { KaraokeSongs } from './karaoke-songs'
-import { confirmCostLine, importLine, KARAOKE_PLAN, karaokeSongs, refreshKaraokeSongs, songsComeBackLine, } from './karaoke-songs'
+import { confirmCostLine, importLine, KARAOKE_PLAN, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, } from './karaoke-songs'
 
 /** A song left out of a confirm, and why. */
 interface LeftOut {
@@ -244,20 +244,12 @@ export const KaraokeImport: Component = () => {
       api === undefined
         ? 'unavailable'
         : await api.restore().catch(() => 'failed' as const)
-    switch (outcome) {
-      case 'restored':
-        await refreshKaraokeSongs({ identify: true })
-        close()
-        return
-      case 'nothing':
-        setNote('No Karaoke subscription was found to restore.')
-        return
-      case 'unavailable':
-        setNote('Purchases are not available yet.')
-        return
-      case 'failed':
-        setNote('The store could not restore purchases. Try again in a moment.')
+    if (outcome === 'restored') {
+      await refreshKaraokeSongs({ identify: true })
+      close()
+      return
     }
+    setNote(restoreNote(outcome))
   }
 
   const SheetHead: Component<{ title: string; closeLabel?: string }> = (

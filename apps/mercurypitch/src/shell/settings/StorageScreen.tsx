@@ -16,18 +16,21 @@ import { needsSignIn } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { wipeVoiceTakes } from '@/db/services/voice-take-service'
 import { clearLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { removeAllImportedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
 import { RefreshIcon } from '../icons'
 import { STORAGE_COPY, takesLine } from './account-copy'
 import { accountSignedIn } from './account-state'
+import { importedSongsStorageLine, removeImportedQuestion, songsStuckLine, } from './imported-songs-copy'
 import { askSettings } from './settings-alert'
 import { SettingsGroup, SettingsRow } from './SettingsList'
 import { startFresh } from './start-fresh'
 import type { StorageFacts } from './storage-facts'
 import { formatBytes, loadStorageFacts } from './storage-facts'
 
-/** The four categories, in the order the screen lists them. Each has its
- *  colour class, on its row's dot and on its part of the bar. */
-type Category = 'takes' | 'prints' | 'models' | 'rooms'
+/** The categories, in the order the screen lists them. Each has its colour
+ *  class, on its row's dot and on its part of the bar. `songs` is the
+ *  singer's own Karaoke songs, in a build that imports them. */
+type Category = 'takes' | 'prints' | 'models' | 'songs' | 'rooms'
 
 function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`
@@ -54,12 +57,20 @@ function barLabel(known: StorageFacts): string {
     known.cachedRooms.bytes === 0
       ? 'none'
       : formatBytes(known.cachedRooms.bytes)
+  const songs = known.importedSongs
   return [
     known.takes === null
       ? 'Takes unreadable'
       : `Takes ${formatBytes(known.takes.bytes)}`,
     `voiceprints ${formatBytes(known.voiceprints.bytes)}`,
     `models ${formatBytes(known.models.bytes)}`,
+    ...(songs === undefined
+      ? []
+      : [
+          songs.bytes === null
+            ? 'imported songs of a size not known'
+            : `imported songs ${formatBytes(songs.bytes)}`,
+        ]),
     `cached rooms ${rooms}`,
   ].join(', ')
 }
@@ -73,6 +84,7 @@ function barParts(
     ['takes', known.takes?.bytes ?? 0],
     ['prints', known.voiceprints.bytes],
     ['models', known.models.bytes],
+    ['songs', known.importedSongs?.bytes ?? 0],
     ['rooms', known.cachedRooms.bytes],
   ]
   return sizes
@@ -88,6 +100,8 @@ function ClearButton(props: {
   label: string
   disabled: boolean
   onPress?: () => void
+  /** The word on the button: Clear, or Remove for songs (mock 9c). */
+  text?: string
 }): JSX.Element {
   return (
     <button
@@ -97,7 +111,7 @@ function ClearButton(props: {
       disabled={props.disabled}
       onClick={() => props.onPress?.()}
     >
-      Clear
+      {props.text ?? 'Clear'}
     </button>
   )
 }
@@ -148,6 +162,22 @@ export function StorageScreen(): JSX.Element {
         clearLocalVoiceprints()
         void load()
       },
+    })
+  }
+
+  async function removeImportedSongs(): Promise<void> {
+    setError('')
+    const stuck = await removeAllImportedSongs()
+    if (stuck > 0 && live) setError(songsStuckLine(stuck))
+    await load()
+  }
+
+  function askRemoveImportedSongs(count: number): void {
+    askSettings({
+      ...removeImportedQuestion(count),
+      confirmLabel: 'Remove',
+      destructive: true,
+      onConfirm: () => void removeImportedSongs(),
     })
   }
 
@@ -247,6 +277,31 @@ export function StorageScreen(): JSX.Element {
                   sub="The pitch model and its runtime, part of the app"
                   value={formatBytes(known().models.bytes)}
                 />
+                <Show when={known().importedSongs}>
+                  {(songs) => (
+                    <SettingsRow
+                      id="storage-imported-songs"
+                      icon={<Dot category="songs" />}
+                      label="Imported songs"
+                      sub={importedSongsStorageLine(songs().count)}
+                      value={
+                        songs().bytes === null
+                          ? undefined
+                          : formatBytes(songs().bytes ?? 0)
+                      }
+                      accessory={
+                        <ClearButton
+                          label="Remove imported songs"
+                          text="Remove"
+                          disabled={songs().count === 0}
+                          onPress={() => {
+                            askRemoveImportedSongs(songs().count)
+                          }}
+                        />
+                      }
+                    />
+                  )}
+                </Show>
                 {/* Nothing is ever cached in a build where every room ships
                     inside the app, so its Clear stays off. */}
                 <SettingsRow
@@ -267,6 +322,12 @@ export function StorageScreen(): JSX.Element {
                   data-testid="storage-error"
                 >
                   {error()}
+                </p>
+              </Show>
+              <Show when={known().importedSongs !== undefined}>
+                <p class="mp-set__caption">
+                  The example songs are not counted here: they are part of the
+                  app, like its rooms' pictures.
                 </p>
               </Show>
             </div>

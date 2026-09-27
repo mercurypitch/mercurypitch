@@ -81,7 +81,7 @@ vi.mock('@/db/services/auth-service', () => ({
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
 import { IMPORT_ACCEPT } from './karaoke-import-checks'
-import { resetKaraokeSongsForTests } from './karaoke-songs'
+import { karaokeSongs, resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeImport } from './KaraokeImport'
 
 const subscriber: KaraokeSongs = {
@@ -424,6 +424,33 @@ describe('the paywall', () => {
       )
       fireEvent.click(within(offer).getByRole('button', { name: 'Sign in' }))
       expect(openSignIn).toHaveBeenCalledTimes(1)
+    } finally {
+      unregister()
+    }
+  })
+
+  it('closes on a restore, with the songs asked for again', async () => {
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('restored' as const),
+      },
+    })
+    try {
+      const paywall = await openPaywall()
+      server.next = subscriber
+
+      fireEvent.click(
+        within(paywall).getByRole('button', { name: 'Restore purchases' }),
+      )
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Sing your own songs' }),
+        ).toBeNull(),
+      )
+      expect(karaokeSongs().left).toBe(18)
     } finally {
       unregister()
     }

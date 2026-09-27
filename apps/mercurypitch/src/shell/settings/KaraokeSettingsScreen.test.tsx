@@ -64,6 +64,17 @@ describe('Settings, Karaoke', () => {
     expect(choice(root, 'bigger')?.getAttribute('aria-checked')).toBe('true')
   })
 
+  it('says nothing of a subscription or imported songs in a build without Import', () => {
+    const root = mount()
+
+    expect(
+      [...root.querySelectorAll('section')].map((group) =>
+        group.getAttribute('aria-label'),
+      ),
+    ).toEqual(['Lyrics', 'Playback'])
+    expect(root.textContent).not.toMatch(/subscri|import|songs left/iu)
+  })
+
   it('turns the next song off and on', () => {
     const root = mount()
     const next = root.querySelector<HTMLElement>(

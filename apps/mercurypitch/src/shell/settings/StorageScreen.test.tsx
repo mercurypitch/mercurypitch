@@ -128,6 +128,13 @@ describe('what is kept', () => {
     expect(row('storage-rooms')?.textContent).toContain('0 MB')
   })
 
+  it('has no imported songs in a build that cannot import them', async () => {
+    await open()
+
+    expect(row('storage-imported-songs')).toBeNull()
+    expect(view?.container.textContent).not.toMatch(/import/iu)
+  })
+
   it('offers no Clear for the pitch model, which goes only with the app', async () => {
     await open()
 

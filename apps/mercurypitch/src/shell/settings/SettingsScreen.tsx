@@ -19,6 +19,8 @@
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
+import { karaokeSongs, songsOptionRow, } from '@/features/karaoke-room/karaoke-songs'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { theme, themeSource } from '@/stores/theme-store'
 import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
@@ -182,11 +184,23 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               label="Sing"
               sub="Its options are behind the room's gear"
             />
+            {/* A build that imports songs has the subscription and the
+                songs on this phone there too, and the songs left show here
+                at a glance (mock 9a), as /me last said them. */}
             <SettingsRow
               id="rooms-karaoke"
               icon={<KaraokeIcon />}
               label="Karaoke"
-              sub="Text size and the next song"
+              sub={
+                KARAOKE_IMPORT
+                  ? 'Subscription, songs on this phone, lyrics'
+                  : 'Text size and the next song'
+              }
+              value={
+                KARAOKE_IMPORT
+                  ? songsOptionRow(karaokeSongs())?.value
+                  : undefined
+              }
               onPress={() => {
                 props.onPush('karaoke')
               }}

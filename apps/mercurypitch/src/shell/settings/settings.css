@@ -757,6 +757,12 @@
   background: var(--orange);
 }
 
+/* The singer's own Karaoke songs (plan S8 §9), in a build that imports them. */
+.mp-storage__bar > .is-songs,
+.mp-storage__dot.is-songs {
+  background: var(--yellow);
+}
+
 /* ---------- Microphone (S6 step 8) ---------- */
 
 .mp-mic__card {

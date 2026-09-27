@@ -472,3 +472,11 @@ export const AutoplayIcon: Component<ShellIconProps> = (props) => (
     <path d="M7 9a3 3 0 0 0 0 6c1.7 0 2.8-1.4 5-3s3.3-3 5-3a3 3 0 0 1 0 6c-1.7 0-2.8-1.4-5-3S8.7 9 7 9z" />
   </svg>
 )
+
+/** A subscription: the card it is paid with. */
+export const CardIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3" y="5.5" width="18" height="13" rx="2" />
+    <path d="M3 10h18M7 14.5h4" />
+  </svg>
+)
