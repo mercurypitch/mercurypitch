@@ -10,7 +10,9 @@
 //   - Play plays it, with zen's bar as the transport and the rail stepped
 //     aside (D2 A), and Pause holds the place;
 //   - the song line opens the library, which names songs rather than files
-//     (audit K7), and a pick cues that song;
+//     (audit K7), and a pick cues that song. Import heads it in a build that
+//     imports songs and is nowhere in the store's; probe-karaoke-import.mjs
+//     walks an import through;
 //   - the gear opens the options, and the one option pinned beside the gear
 //     is the singer's to choose, to use and to change (D4 A, owner 27 Sep);
 //   - "Manage songs" pushes the studio, the old Karaoke tab. Back returns to
@@ -32,9 +34,11 @@
  * In the page: every element in `scope` (the whole document for null) whose
  * content is wider than its box, and the page's own sideways scroll.
  *
- * One exception, and it is not a scroll: a line cut short with an ellipsis
+ * Two exceptions, and neither is a scroll. A line cut short with an ellipsis
  * (`text-overflow: ellipsis` on a box that clips) is wider than its box by
- * design, and shows that it is.
+ * design, and shows that it is. Text kept for a screen reader only (a 1 px
+ * box clipped away, `.srOnly`) is wider than its box by design too, and is
+ * never seen at all.
  */
 export const readSideways = (scope) => {
   const root = scope === null ? document.body : document.querySelector(scope)
@@ -58,6 +62,11 @@ export const readSideways = (scope) => {
     const style = getComputedStyle(el)
     const scrolls = /(auto|scroll)/u.test(style.overflowX)
     if (!scrolls && style.textOverflow === 'ellipsis') continue
+    const forReaders =
+      el.clientWidth <= 1 &&
+      (style.clipPath === 'inset(50%)' ||
+        style.clip === 'rect(0px, 0px, 0px, 0px)')
+    if (!scrolls && forReaders) continue
     over.push(
       `${name(el)} is ${wider} px wider than its box (overflow-x ${style.overflowX})`,
     )
@@ -72,7 +81,7 @@ export const readSideways = (scope) => {
 }
 
 /** In the page: the zen stage as a singer reads it. */
-const readStage = () => {
+export const readStage = () => {
   const stage = document.querySelector('[data-testid="karaoke-mobile-stage"]')
   if (stage === null) return null
   const line = stage.querySelector('[data-testid="karaoke-songline"]')
@@ -107,7 +116,7 @@ const readStage = () => {
 }
 
 /** A cue is ready when its stems are in and Play can be pressed. */
-const cueReady = (want) => {
+export const cueReady = (want) => {
   const stage = document.querySelector('[data-testid="karaoke-mobile-stage"]')
   if (stage === null) return false
   if (stage.querySelector('[role="alert"]') !== null) return true
@@ -299,6 +308,7 @@ export async function walkKaraoke(browser, args, frame, kit) {
     const library = await page.evaluate(() => {
       const sheet = document.querySelector('[data-testid="karaoke-library"]')
       return {
+        imports: sheet.querySelector('[data-testid="karaoke-import"]') !== null,
         groups: [...sheet.querySelectorAll('h3')].map((h) => h.textContent),
         rows: [
           ...sheet.querySelectorAll('[data-testid="karaoke-library-row"]'),
@@ -322,6 +332,13 @@ export async function walkKaraoke(browser, args, frame, kit) {
     ) {
       throw new Error(`the library: ${JSON.stringify(library)}`)
     }
+    // Import is Stage 2: in every build but the store's (api-base.mjs
+    // karaokeImportFor), and nowhere in the store's.
+    if (library.imports !== kit.importing) {
+      throw new Error(
+        `the library ${library.imports ? 'offers' : 'does not offer'} Import in a build that ${kit.importing ? 'imports' : 'does not import'} songs`,
+      )
+    }
     await shoot(page, ctx, 'karaoke-library')
     // The sheet, not only its list: a sheet's panel is its own scroller.
     read.push(
@@ -334,7 +351,7 @@ export async function walkKaraoke(browser, args, frame, kit) {
     await hidden('[data-testid="karaoke-library"]')
     const picked = await cued(next.title, 'a pick from the library')
     steps.push(
-      `karaoke library: ${library.rows.length} songs under ${library.groups.join(', ')}, titles not files, "${first.title}" marked; a pick cues "${picked.title}" (${picked.button})`,
+      `karaoke library: ${library.rows.length} songs under ${library.groups.join(', ')}, titles not files, "${first.title}" marked, Import ${library.imports ? 'offered' : 'absent'}; a pick cues "${picked.title}" (${picked.button})`,
     )
 
     // ── The options, and the one pinned beside the gear (D4 A) ─

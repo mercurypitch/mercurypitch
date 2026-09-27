@@ -29,8 +29,10 @@
 //
 // THE KARAOKE ROOM has a walk of its own on each frame (probe-karaoke.mjs):
 // the door, the cued song, play and pause, the library, the options and the
-// pin, and the studio, with nothing anywhere scrolling sideways.
-// `--karaoke-only` walks that alone.
+// pin, and the studio, with nothing anywhere scrolling sideways. A build
+// that imports songs (every build but the store's) then walks one import
+// through, against a stand-in for the two hosts it would reach
+// (probe-karaoke-import.mjs). `--karaoke-only` walks those alone.
 //
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
@@ -42,6 +44,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 import { walkKaraoke } from './probe-karaoke.mjs'
+import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
@@ -179,6 +182,14 @@ async function repaintRate(page, ms = 1000) {
 const API_HOSTS = /^https:\/\/api(?:-dev)?\.mercurypitch\.com\//u
 
 /**
+ * …and neither is the separation host. A native build sends `/api/uvr/*` to
+ * the web app's worker that goes with its db-worker (api-base.mjs
+ * resolveUvrOrigin). The Karaoke import walk answers it with a stand-in;
+ * every other walk sees it offline.
+ */
+const UVR_HOSTS = /^https:\/\/(?:dev\.)?mercurypitch\.com\/api\/uvr\//u
+
+/**
  * Packaged media, answered the way the iPhone answers it (device round 4).
  *
  * Capacitor's iOS scheme handler answers a non-Range GET for a bundled media
@@ -214,6 +225,7 @@ function emulateIosPackagedMedia() {
 
 async function isolate(context) {
   await context.route(API_HOSTS, (route) => route.abort('internetdisconnected'))
+  await context.route(UVR_HOSTS, (route) => route.abort('internetdisconnected'))
   await context.addInitScript(emulateIosPackagedMedia)
   return context
 }
@@ -4916,6 +4928,9 @@ async function main() {
     ],
   })
 
+  // Whether this bundle imports songs, from the switch its build read.
+  const imports = importTarget()
+
   // What the walks in their own modules borrow from this one.
   const kit = {
     isolate,
@@ -4924,12 +4939,34 @@ async function main() {
     tapDoor,
     waitPhase,
     walkOpen,
+    importing: imports.importing,
     bootTimeoutMs: BOOT_TIMEOUT_MS,
     stepTimeoutMs: STEP_TIMEOUT_MS,
     runTimeoutMs: RUN_TIMEOUT_MS,
   }
 
-  const steps = []
+  /** The room, then (where the build imports songs) one import through it. */
+  const walkKaraokeFrame = async (frame) => {
+    try {
+      steps.push(...(await walkKaraoke(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(`karaoke: ${error.message}`)
+    }
+    if (!imports.importing) return
+    try {
+      steps.push(
+        ...(await walkKaraokeImport(browser, args, frame, kit, imports)),
+      )
+    } catch (error) {
+      failures.push(`karaoke import: ${error.message}`)
+    }
+  }
+
+  const steps = [
+    imports.importing
+      ? `karaoke import: on, a ${imports.target} build (separating on ${imports.uvr === '' ? 'the page origin' : imports.uvr}); walked against a stand-in`
+      : `karaoke import: off, a ${imports.target} build; the library must not offer it`,
+  ]
   const failures = []
   if (args.dist !== null) {
     try {
@@ -4943,11 +4980,7 @@ async function main() {
     // and "it broke at both" are different reports, and the second one is the
     // one that says the fix is not a width rule.
     for (const frame of args.karaokeOnly ? FRAMES : []) {
-      try {
-        steps.push(...(await walkKaraoke(browser, args, frame, kit)))
-      } catch (error) {
-        failures.push(`karaoke: ${error.message}`)
-      }
+      await walkKaraokeFrame(frame)
     }
     for (const frame of args.landscapeOnly || args.karaokeOnly ? [] : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -4989,11 +5022,7 @@ async function main() {
           `[${frame.width}x${frame.height}] alley scope: ${error.message}`,
         )
       }
-      try {
-        steps.push(...(await walkKaraoke(browser, args, frame, kit)))
-      } catch (error) {
-        failures.push(`karaoke: ${error.message}`)
-      }
+      await walkKaraokeFrame(frame)
     }
     if (!args.chromeOnly && !args.karaokeOnly) {
       for (const frame of LANDSCAPE_FRAMES) {
