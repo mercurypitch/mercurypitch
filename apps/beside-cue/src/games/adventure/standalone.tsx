@@ -25,6 +25,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'conservatory' &&
     layout !== 'cloudway' &&
     layout !== 'cloudway-current' &&
+    layout !== 'thawing-song' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
     layout !== 'cloudway-crescent' &&
@@ -39,6 +40,7 @@ async function selectedDevelopmentLevel() {
     RESONANCE_CONSERVATORY,
     CLOUDWAY_GLASS_RIBBON,
     CLOUDWAY_CURRENT_TRIAL,
+    CLOUDWAY_THAWING_SONG,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_CRESCENT_AUDITION,
@@ -54,6 +56,7 @@ async function selectedDevelopmentLevel() {
   if (layout === 'conservatory') return RESONANCE_CONSERVATORY
   if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
   if (layout === 'cloudway-current') return CLOUDWAY_CURRENT_TRIAL
+  if (layout === 'thawing-song') return CLOUDWAY_THAWING_SONG
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
   if (layout === 'cloudway-mechanics-preview')
     return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW

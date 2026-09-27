@@ -207,3 +207,10 @@ wall, glass-crumble fall and both orientations.
 - Planned input modes beyond voice (tap rhythm, hear-and-select) are specced
   in [input-modes.md](input-modes.md); the mechanics library and the Merc's
   Journey spec live in [game-design.md](game-design.md).
+
+
+### The Thawing Song preview
+
+Games-enabled Android and TestFlight builds include a separate **The Thawing Song** card in B-side games. This ungraded candidate teaches the five Sunlit steps notes on safe marble courts, opens two physical frost gates, and finishes with a freshly sung full phrase. It does not add campaign stars or change existing Cloudway saves. Development also accepts `/glass-game/?layout=thawing-song`; production query parameters do not enable preview routes.
+
+Choose a comfortable key and pace before the first note. The same versioned attempt survives reloads and falls; changing the key or pace after progress requires an explicit fresh start. The finale uses the exact matched Merc recording when available, or a clearly identified instrumental guide in the chosen key. Microphone input alone drives the core melody judge; listening never awards a break.

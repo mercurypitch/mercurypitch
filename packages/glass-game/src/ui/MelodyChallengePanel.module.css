@@ -1,0 +1,150 @@
+/* Compact melody challenge controls leave the side camera visible on phone and tablet. */
+
+.melodyPanel {
+  display: grid;
+  gap: 9px;
+  padding-bottom: 16px;
+}
+
+.guidance h2 {
+  margin: 2px 0 3px;
+  font-size: 21px;
+  line-height: 1.16;
+}
+
+.guidance p {
+  margin: 0;
+  color: #50685c;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.anchorMeter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setupSummary {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  color: #50685c;
+  font-size: 13px;
+}
+
+.setupSummary strong {
+  color: #23483f;
+  font-weight: 650;
+}
+
+.paceChoices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.paceChoices legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.paceChoices label {
+  position: relative;
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid #9bad9b;
+  border-radius: 12px;
+  background: #fff8;
+  color: #365b51;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.paceChoices input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.paceChoices label:has(input:focus-visible) {
+  outline: 3px solid #af8638;
+  outline-offset: 2px;
+}
+
+.paceChoices:disabled label {
+  opacity: 0.58;
+}
+
+.selectedPace {
+  border-color: #396d5a !important;
+  background: #dce8d8 !important;
+  box-shadow: inset 0 0 0 1px #396d5a;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.actions > button {
+  min-height: 44px;
+  margin: 0;
+}
+
+@media (max-width: 430px) {
+  .melodyPanel {
+    width: calc(100% - 20px);
+    gap: 7px;
+    padding: 12px 14px 10px;
+    border-radius: 20px;
+  }
+
+  .guidance h2 {
+    font-size: 18px;
+  }
+
+  .guidance p {
+    font-size: 12px;
+  }
+
+  .setupSummary {
+    gap: 16px;
+  }
+
+  .paceChoices label {
+    min-height: 44px;
+    font-size: 12px;
+  }
+
+  .actions {
+    gap: 6px;
+  }
+
+  .actions > button {
+    padding-inline: 10px;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .melodyPanel {
+    gap: 5px;
+  }
+
+  .guidance p,
+  .setupSummary {
+    display: none;
+  }
+}

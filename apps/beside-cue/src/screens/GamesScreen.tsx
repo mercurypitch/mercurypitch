@@ -1,3 +1,4 @@
+import { CLOUDWAY_THAWING_SONG } from '@irchiinnuss/glass-game/thawing-song'
 import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '@irchiinnuss/glass-game/promenade'
 import { preloadF0Detector, releasePreloadedDetector, } from '@irchiinnuss/pitch-engine'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
@@ -35,6 +36,7 @@ type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
 type PlayPick =
   | 'adventure'
   | 'promenade'
+  | 'thawing-song'
   | 'journey'
   | 'trials'
   | 'cabinet3d'
@@ -191,6 +193,9 @@ export function GamesScreen(props: GamesScreenProps) {
               onExit={() => setPlaying(null)}
             />
           </Show>
+          <Show when={playing() === 'thawing-song'}>
+            <AdventureScreen level={CLOUDWAY_THAWING_SONG} onExit={() => setPlaying(null)} />
+          </Show>
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />
           </Show>
@@ -226,6 +231,7 @@ export function GamesScreen(props: GamesScreenProps) {
               playing() !== 'cabinet3d' &&
               playing() !== 'adventure' &&
               playing() !== 'promenade' &&
+              playing() !== 'thawing-song' &&
               playing() !== 'hallway3d' &&
               playing() !== 'chambers' &&
               playing() !== 'line' &&
@@ -288,6 +294,15 @@ export function GamesScreen(props: GamesScreenProps) {
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
             <path d="m9 5 7 7-7 7" />
           </svg>
+        </button>
+
+        <button class="game-card" type="button" onClick={() => setPlaying('thawing-song')}>
+          <img class="game-card__art" src="games/merc.webp" alt="" width="64" height="64" />
+          <span class="game-card__body">
+            <span class="game-card__name">The Thawing Song<span class="game-card__chip">Preview</span></span>
+            <span class="game-card__blurb">Wake a frosted garden, one note at a time. Join five little sparks into Merc’s song.</span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
         </button>
 
         <button

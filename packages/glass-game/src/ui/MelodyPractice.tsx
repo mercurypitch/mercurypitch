@@ -9,12 +9,8 @@ import type { GlassGameHost } from '../host'
 import type { MelodyPracticeController, MelodyPracticeRecordingAdapter, MelodyPracticeSnapshot, } from './melody-practice'
 import { createMelodyPractice } from './melody-practice'
 import styles from './MelodyPractice.module.css'
+import { MelodyRibbon } from './MelodyRibbon'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
-
-const VIEW_WIDTH = 720
-const VIEW_HEIGHT = 220
-const HORIZONTAL_PADDING = 34
-const VERTICAL_PADDING = 28
 
 export interface MelodyPracticeChoice {
   value: number
@@ -51,18 +47,6 @@ export interface MelodyPracticeProps {
   transpositionChoices?: readonly MelodyPracticeChoice[]
 }
 
-interface RibbonPoint {
-  x: number
-  y: number
-}
-
-interface RibbonGeometry {
-  paths: readonly string[]
-  anchors: readonly RibbonPoint[]
-  midiToY(midi: number): number
-  timeToX(timeSeconds: number): number
-}
-
 const DEFAULT_PACE_CHOICES: readonly MelodyPracticeChoice[] = [
   { value: 0.8, label: 'Brisk' },
   { value: 1, label: 'Natural' },
@@ -97,58 +81,6 @@ function emptySnapshot(props: MelodyPracticeProps): MelodyPracticeSnapshot {
   }))
 }
 
-function ribbonGeometry(contour: CompiledMelody | null): RibbonGeometry {
-  if (contour === null)
-    return {
-      paths: [],
-      anchors: [],
-      midiToY: () => VIEW_HEIGHT / 2,
-      timeToX: () => HORIZONTAL_PADDING,
-    }
-  const pitchMiddle = (contour.minimumMidi + contour.maximumMidi) / 2
-  const pitchSpan = Math.max(3, contour.maximumMidi - contour.minimumMidi + 2.5)
-  const usableWidth = VIEW_WIDTH - HORIZONTAL_PADDING * 2
-  const usableHeight = VIEW_HEIGHT - VERTICAL_PADDING * 2
-  const timeToX = (timeSeconds: number): number =>
-    HORIZONTAL_PADDING +
-    (Math.max(0, Math.min(contour.durationSeconds, timeSeconds)) /
-      contour.durationSeconds) *
-      usableWidth
-  const midiToY = (midi: number): number =>
-    VIEW_HEIGHT / 2 - ((midi - pitchMiddle) / pitchSpan) * usableHeight
-  const paths: string[] = []
-  let points: RibbonPoint[] = []
-  const finishPath = (): void => {
-    if (points.length === 0) return
-    paths.push(
-      points
-        .map(
-          (point, index) =>
-            `${index === 0 ? 'M' : 'L'}${point.x.toFixed(2)} ${point.y.toFixed(2)}`,
-        )
-        .join(' '),
-    )
-    points = []
-  }
-  for (const sample of contour.samples) {
-    if (sample.midi === null) {
-      finishPath()
-      continue
-    }
-    points.push({ x: timeToX(sample.timeSeconds), y: midiToY(sample.midi) })
-  }
-  finishPath()
-  return {
-    paths,
-    anchors: contour.anchors.map((anchor) => ({
-      x: timeToX(anchor.completedAtSeconds),
-      y: midiToY(anchor.midi),
-    })),
-    midiToY,
-    timeToX,
-  }
-}
-
 function displayTime(snapshot: MelodyPracticeSnapshot): number {
   if (snapshot.contour === null) return 0
   if (snapshot.mode === 'reference') return snapshot.referenceTimeSeconds
@@ -163,7 +95,6 @@ function active(mode: MelodyPracticeSnapshot['mode']): boolean {
 }
 
 export function MelodyPractice(props: MelodyPracticeProps) {
-  const clipId = createUniqueId()
   const titleId = createUniqueId()
   const descriptionId = createUniqueId()
   const [snapshot, setSnapshot] = createSignal(emptySnapshot(props))
@@ -199,46 +130,7 @@ export function MelodyPractice(props: MelodyPracticeProps) {
   const previewContour = createMemo(() =>
     compileMelody(props.melody, { rootMidi: 60 }),
   )
-  const geometry = createMemo(() =>
-    ribbonGeometry(snapshot().contour ?? previewContour()),
-  )
   const timelineSeconds = createMemo(() => displayTime(snapshot()))
-  const progressX = createMemo(() => geometry().timeToX(timelineSeconds()))
-  const livePoint = createMemo(() => {
-    const current = snapshot()
-    if (
-      current.mode !== 'singing' ||
-      current.pitch === null ||
-      current.contour === null
-    )
-      return null
-    return {
-      x: geometry().timeToX(displayTime(current)),
-      y: geometry().midiToY(current.pitch),
-    }
-  })
-  const targetPoint = createMemo(() => {
-    const current = snapshot()
-    if (
-      current.mode !== 'singing' ||
-      current.judge === null ||
-      current.contour === null
-    )
-      return null
-    return {
-      x: geometry().timeToX(displayTime(current)),
-      y: geometry().midiToY(current.judge.targetMidi),
-    }
-  })
-  const progressPercent = createMemo(() => {
-    const contour = snapshot().contour
-    if (contour === null) return 0
-    return Math.round(
-      (Math.max(0, Math.min(contour.durationSeconds, timelineSeconds())) /
-        contour.durationSeconds) *
-        100,
-    )
-  })
   const paceChoices = () => props.paceChoices ?? DEFAULT_PACE_CHOICES
   const transpositionChoices = () =>
     props.transpositionChoices ?? DEFAULT_TRANSPOSITION_CHOICES
@@ -305,81 +197,13 @@ export function MelodyPractice(props: MelodyPracticeProps) {
         </Show>
       </header>
 
-      <div class={styles.ribbonFrame}>
-        <svg
-          class={styles.ribbon}
-          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-          role="img"
-          aria-label="Melody ribbon. The lit portion shows how far you have travelled."
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            <clipPath id={clipId}>
-              <rect
-                x="0"
-                y="0"
-                width={Math.max(0, progressX())}
-                height={VIEW_HEIGHT}
-              />
-            </clipPath>
-          </defs>
-          <g class={styles.guideLines} aria-hidden="true">
-            <path
-              d={`M${HORIZONTAL_PADDING} 70H${VIEW_WIDTH - HORIZONTAL_PADDING}`}
-            />
-            <path
-              d={`M${HORIZONTAL_PADDING} 150H${VIEW_WIDTH - HORIZONTAL_PADDING}`}
-            />
-          </g>
-          <g class={styles.ribbonShadow} aria-hidden="true">
-            <For each={geometry().paths}>{(path) => <path d={path} />}</For>
-          </g>
-          <g
-            class={styles.ribbonGlow}
-            clip-path={`url(#${clipId})`}
-            aria-hidden="true"
-          >
-            <For each={geometry().paths}>{(path) => <path d={path} />}</For>
-          </g>
-          <g class={styles.anchorMarks} aria-hidden="true">
-            <For each={geometry().anchors}>
-              {(point) => <circle cx={point.x} cy={point.y} r="5" />}
-            </For>
-          </g>
-          <Show when={targetPoint()}>
-            {(point) => (
-              <circle
-                class={styles.target}
-                cx={point().x}
-                cy={point().y}
-                r="12"
-                aria-hidden="true"
-              />
-            )}
-          </Show>
-          <Show when={livePoint()}>
-            {(point) => (
-              <circle
-                class={styles.livePitch}
-                cx={point().x}
-                cy={point().y}
-                r="7"
-                aria-hidden="true"
-              />
-            )}
-          </Show>
-        </svg>
-        <div
-          class={styles.progress}
-          role="progressbar"
-          aria-label="Melody progress"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={progressPercent()}
-        >
-          <span style={{ width: `${progressPercent()}%` }} />
-        </div>
-      </div>
+      <MelodyRibbon
+        contour={snapshot().contour ?? previewContour()}
+        judge={snapshot().mode === 'singing' ? snapshot().judge : null}
+        pitch={snapshot().mode === 'singing' ? snapshot().pitch : null}
+        timelineSeconds={timelineSeconds()}
+        complete={snapshot().mode === 'complete'}
+      />
 
       <div class={styles.guidance} aria-live="polite" aria-atomic="true">
         <h3>{snapshot().message}</h3>

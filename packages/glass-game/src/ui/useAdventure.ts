@@ -14,6 +14,9 @@ import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } f
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { initialAdventureNotice } from './adventure-notice'
 import { createAdventureTransientMessages } from './adventure-transient-messages'
+import type { AdventureVoiceSnapshot } from './adventure-voice-challenge'
+import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
+import { createAdventureVoicePresentation } from './adventure-voice-presentation'
 import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
 import { createCameraModePreference } from './camera-mode-preference'
@@ -25,8 +28,6 @@ import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
-import type { VoiceChallengeSnapshot } from './voice-challenge'
-import { createVoiceChallenge } from './voice-challenge'
 
 const LOADING_PRESENTATION_MS = 2000
 const ASSET_LOAD_ERROR =
@@ -80,7 +81,7 @@ export function useAdventure(
     createSignal<MicrophoneIssue | null>(null)
   const [microphoneRecoveryPending, setMicrophoneRecoveryPending] =
     createSignal(false)
-  const [voiceState, setVoiceState] = createSignal<VoiceChallengeSnapshot>()
+  const [voiceState, setVoiceState] = createSignal<AdventureVoiceSnapshot>()
   const voiceMode = () => voiceState()?.mode ?? 'off'
   const voicePanelVisible = createMemo(() => voiceMode() !== 'off')
   const [challengeSafeBottom, setChallengeSafeBottom] = createSignal<number>()
@@ -209,7 +210,7 @@ export function useAdventure(
     }
   }
 
-  const voiceChallenge = createVoiceChallenge({
+  const voiceChallenge = createAdventureVoiceChallenge({
     host,
     game,
     level,
@@ -234,6 +235,10 @@ export function useAdventure(
       soundscape.releaseVoice()
     },
   })
+  const voicePresentation = createAdventureVoicePresentation(
+    voiceState,
+    voiceChallenge,
+  )
 
   async function start(): Promise<void> {
     const id = game.snapshot().nearbyBreakableId
@@ -376,15 +381,6 @@ export function useAdventure(
     cancel()
     game.setPaused(true)
     refresh()
-  }
-
-  function changeNote(): void {
-    voiceChallenge.refind()
-    refresh()
-  }
-
-  function replay(): void {
-    void voiceChallenge.replay()
   }
 
   function changeAudio(patch: Partial<MuseumAudioPreferences>): void {
@@ -533,7 +529,7 @@ export function useAdventure(
         if (voicePanel !== null) panelResize.unobserve(voicePanel)
         voicePanel = visible
           ? (viewport.parentElement?.querySelector<HTMLElement>(
-              '[aria-label="Voice challenge"]',
+              '[data-challenge-panel]',
             ) ?? null)
           : null
         if (voicePanel !== null) panelResize.observe(voicePanel)
@@ -707,14 +703,7 @@ export function useAdventure(
     voiceMode,
     pitch,
     target,
-    voiceEncounterId: () => voiceState()?.encounterId ?? null,
-    findingTarget: () => voiceState()?.findingTarget ?? null,
-    voiceMessage: () => voiceState()?.message ?? '',
-    voiceHint: () => voiceState()?.hint ?? '',
-    voicePair: () => voiceState()?.pair ?? false,
-    voiceStepIndex: () => voiceState()?.stepIndex ?? 0,
-    voiceStepCount: () => voiceState()?.stepCount ?? 1,
-    voiceStepCharge: () => voiceState()?.stepCharge ?? 0,
+    ...voicePresentation,
     notice: transientMessages.notice,
     narrationCaption: transientMessages.narrationCaption,
     paused,
@@ -732,8 +721,6 @@ export function useAdventure(
     resume,
     closeTutorial,
     showTutorial,
-    changeNote,
-    replay,
     audioPreferences,
     changeAudio,
     narrationPreferences,

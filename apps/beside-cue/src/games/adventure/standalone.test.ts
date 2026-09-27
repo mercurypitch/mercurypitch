@@ -38,6 +38,16 @@ async function mountAt(development: boolean, layout: string) {
 }
 
 describe('standalone development route', () => {
+  it('opens the separately saved Thawing Song only in development', async () => {
+    const level = await mountAt(true, 'thawing-song')
+    expect(level?.id).toBe('cloudway-thawing-song-audition')
+    expect(level?.melodyLesson?.stations).toHaveLength(5)
+  })
+
+  it('does not enable the melody preview through a production query', async () => {
+    expect(await mountAt(false, 'thawing-song')).toBeUndefined()
+  })
+
   it('opens the distinct Promenade save identity directly in development', async () => {
     const level = await mountAt(true, 'cloudway-laboratory')
     expect(level?.id).toBe('cloudway-crystal-promenade-first-slice')

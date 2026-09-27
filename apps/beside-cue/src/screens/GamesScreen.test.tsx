@@ -123,6 +123,17 @@ describe('the games list warming the detector (P7)', () => {
 })
 
 describe('owner-build adventure entries', () => {
+  it('opens the Thawing Song preview without changing the museum campaign', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /The Thawing Song/u }))
+    const host = screen.getByTestId('adventure-host')
+    expect(host).toHaveAttribute('data-level', 'cloudway-thawing-song-audition')
+    expect(host).toHaveAttribute('data-campaign', 'false')
+    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
+    fireEvent.click(host)
+    expect(screen.getByRole('button', { name: /The Thawing Song/u })).toBeVisible()
+  })
+
   it('opens the bounded Promenade directly and returns to the list', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /Crystal Promenade/u }))

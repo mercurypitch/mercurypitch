@@ -1,0 +1,104 @@
+.ribbonFrame {
+  --glass: #eef3e9;
+  --case-deep: #10332f;
+  --ribbon: #63ad9d;
+  --ribbon-lit: #f0c56d;
+  --brass: #bc914b;
+  position: relative;
+  padding: 4px 5px 0;
+  overflow: hidden;
+  border: 1px solid rgb(21 66 59 / 18%);
+  border-radius: 14px 14px 7px 7px;
+  background: var(--glass);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 70%),
+    inset 0 -18px 36px rgb(57 104 91 / 8%);
+}
+
+.ribbon {
+  display: block;
+  height: clamp(170px, 30vw, 220px);
+  overflow: visible;
+}
+
+.ribbonFrame .ribbon {
+  width: 100%;
+}
+
+.ribbonFrame[data-compact='true'] .ribbon {
+  height: 108px;
+}
+
+.guideLines path {
+  fill: none;
+  stroke: #9cb4aa;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+  stroke-width: 1.25;
+}
+
+.ribbonShadow path,
+.ribbonGlow path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ribbonShadow path {
+  stroke: #aac2b9;
+  stroke-width: 12;
+}
+
+.ribbonGlow path {
+  stroke: var(--ribbon);
+  stroke-width: 13;
+  filter: drop-shadow(0 3px 3px rgb(24 75 67 / 24%));
+}
+
+.ribbonFrame[data-complete='true'] .ribbonGlow path {
+  stroke: var(--ribbon-lit);
+}
+
+.anchorMarks circle {
+  fill: var(--glass);
+  stroke: #6e978c;
+  stroke-width: 3;
+}
+
+.target {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 3;
+  opacity: 0.82;
+}
+
+.livePitch {
+  fill: #fff8e8;
+  stroke: var(--case-deep);
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 3px rgb(10 44 39 / 38%));
+}
+
+.progress {
+  height: 5px;
+  margin: 0 -5px;
+  overflow: hidden;
+  background: #c4d2cb;
+}
+
+.progress > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--brass);
+}
+
+@media (max-width: 560px) {
+  .ribbon {
+    height: 168px;
+  }
+
+  .ribbonFrame[data-compact='true'] .ribbon {
+    height: 96px;
+  }
+}
