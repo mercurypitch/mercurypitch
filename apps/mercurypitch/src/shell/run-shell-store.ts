@@ -65,7 +65,9 @@ export type PushedScreen =
   | 'microphone'
   | 'room-noise'
   | 'storage'
+  | 'this-phone'
   | 'appearance'
+  | 'about'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */

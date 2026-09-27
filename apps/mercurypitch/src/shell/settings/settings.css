@@ -867,3 +867,41 @@
   background: transparent;
   padding: 0 4px 8px;
 }
+
+/* ---------- This phone and About (S6 step 9) ---------- */
+
+/* A row that opens a page on the web is an anchor: no underline, the
+   row's own colour. */
+.mp-set-row--link {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.mp-set__caption--center {
+  text-align: center;
+}
+
+.mp-about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+
+.mp-about__mark {
+  width: 64px;
+  height: 64px;
+}
+
+.mp-about__name {
+  font: 700 22px/28px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-about__version {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}

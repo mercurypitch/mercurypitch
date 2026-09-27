@@ -16,11 +16,12 @@
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, LockIcon, MicIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
+import { ContrastIcon, InfoIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { appearanceLabel } from './AppearanceScreen'
+import { deviceFacts, loadDeviceFacts } from './device-facts'
 import { knownInput } from './level-check'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
@@ -31,7 +32,9 @@ export type SettingsSubScreen =
   | 'delete-account'
   | 'microphone'
   | 'storage'
+  | 'this-phone'
   | 'appearance'
+  | 'about'
 
 /** The Microphone row's answer: the input once heard, Off once refused. */
 function microphoneValue(): string | undefined {
@@ -53,6 +56,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
     // The Storage row's size, read on every visit: a take kept since the
     // last one changed it.
     void loadStorageFacts()
+    void loadDeviceFacts()
   })
   // The line after a deletion is said once: leaving Settings retires it.
   onCleanup(dismissAccountDeletedNote)
@@ -124,6 +128,15 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               }}
             />
             <SettingsRow
+              id="this-phone"
+              icon={<PhoneIcon />}
+              label="This phone"
+              value={deviceFacts()?.model ?? undefined}
+              onPress={() => {
+                props.onPush('this-phone')
+              }}
+            />
+            <SettingsRow
               id="appearance"
               icon={<ContrastIcon />}
               label="Appearance"
@@ -134,7 +147,19 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
             />
           </SettingsGroup>
         </div>
-        <div class="mp-set__col" />
+        <div class="mp-set__col">
+          <SettingsGroup title="About">
+            <SettingsRow
+              id="about"
+              icon={<InfoIcon />}
+              label="About MercuryPitch"
+              value={deviceFacts()?.version ?? undefined}
+              onPress={() => {
+                props.onPush('about')
+              }}
+            />
+          </SettingsGroup>
+        </div>
       </div>
       <p class="mp-set__privacy">
         <LockIcon size={14} /> Only you can hear you.

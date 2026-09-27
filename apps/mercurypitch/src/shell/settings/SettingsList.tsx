@@ -11,7 +11,7 @@
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import './settings.css'
-import { AccountIcon, CheckIcon, ChevronIcon } from '../icons'
+import { AccountIcon, CheckIcon, ChevronIcon, ExternalIcon } from '../icons'
 import { accountCard, accountSignedIn } from './account-state'
 
 export interface SettingsGroupProps {
@@ -97,6 +97,37 @@ export function SettingsRow(props: SettingsRowProps): JSX.Element {
         {body(true)}
       </button>
     </Show>
+  )
+}
+
+export interface SettingsLinkRowProps {
+  /** Stable name for tests and the probe: `data-settings-row`. */
+  id: string
+  icon?: JSX.Element
+  label: JSX.Element
+  /** A page on the web, which opens outside the app. */
+  href: string
+}
+
+/**
+ * A row that leaves the app for a page on the web: an anchor, never a
+ * button, with the external mark where a pushing row has its chevron.
+ */
+export function SettingsLinkRow(props: SettingsLinkRowProps): JSX.Element {
+  return (
+    <a
+      class="mp-set-row mp-set-row--button mp-set-row--link"
+      data-settings-row={props.id}
+      href={props.href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Show when={props.icon}>
+        {(icon) => <span class="mp-set-row__icon">{icon()}</span>}
+      </Show>
+      <span class="mp-set-row__label">{props.label}</span>
+      <ExternalIcon class="mp-set-row__chev" size={18} />
+    </a>
   )
 }
 

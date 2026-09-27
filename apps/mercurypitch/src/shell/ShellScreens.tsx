@@ -18,6 +18,7 @@ import { Show } from 'solid-js'
 import { PushedScreen } from './PushedScreen'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
+import { AboutScreen } from './settings/AboutScreen'
 import { AccountNameScreen } from './settings/AccountNameScreen'
 import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
@@ -27,6 +28,7 @@ import { MicrophoneScreen } from './settings/MicrophoneScreen'
 import { RoomNoiseScreen } from './settings/RoomNoiseScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
 import { StorageScreen } from './settings/StorageScreen'
+import { ThisPhoneScreen } from './settings/ThisPhoneScreen'
 
 export interface ShellScreensProps {
   /**
@@ -46,7 +48,9 @@ const TITLES: Record<PushedScreenId, string> = {
   microphone: 'Microphone',
   'room-noise': 'Room noise',
   storage: 'Storage',
+  'this-phone': 'This phone',
   appearance: 'Appearance',
+  about: 'About',
   developer: 'Developer',
 }
 
@@ -69,8 +73,12 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <RoomNoiseScreen />
       case 'storage':
         return <StorageScreen />
+      case 'this-phone':
+        return <ThisPhoneScreen />
       case 'appearance':
         return <AppearanceScreen />
+      case 'about':
+        return <AboutScreen />
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />

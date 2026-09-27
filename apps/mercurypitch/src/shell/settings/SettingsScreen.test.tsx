@@ -14,6 +14,7 @@ import { renderShell } from '../render-for-test'
 import { ACCOUNT_DELETED, ACCOUNT_ROW } from './account-copy'
 import { dismissAccountDeletedNote, resumeAfterDeletion, } from './account-deletion'
 import { refreshAccount, resetAccountState } from './account-state'
+import type * as DeviceFactsModule from './device-facts'
 import type * as LevelCheckModule from './level-check'
 import { SettingsScreen } from './SettingsScreen'
 
@@ -23,6 +24,19 @@ vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
 }))
 const heard = vi.hoisted(() => ({
   input: null as null | 'denied' | { label: string },
+}))
+const phone = vi.hoisted(() => ({
+  facts: null as null | {
+    model: string | null
+    system: string | null
+    version: string | null
+  },
+}))
+
+vi.mock('./device-facts', async (importOriginal) => ({
+  ...(await importOriginal<typeof DeviceFactsModule>()),
+  deviceFacts: () => phone.facts,
+  loadDeviceFacts: vi.fn(async () => phone.facts),
 }))
 
 vi.mock('./level-check', async (importOriginal) => ({
@@ -200,9 +214,30 @@ describe('Settings', () => {
 
     expect(
       order.filter((id) =>
-        ['microphone', 'storage', 'appearance'].includes(id ?? ''),
+        ['microphone', 'storage', 'this-phone', 'appearance', 'about'].includes(
+          id ?? '',
+        ),
       ),
-    ).toEqual(['microphone', 'storage', 'appearance'])
+    ).toEqual(['microphone', 'storage', 'this-phone', 'appearance', 'about'])
+  })
+
+  it('names the phone on its row and the version on About, and pushes each', () => {
+    phone.facts = {
+      model: 'iPhone17,3',
+      system: 'iOS 26.0',
+      version: '0.6.0 (380)',
+    }
+    const onPush = vi.fn()
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+
+    row('this-phone')?.click()
+    row('about')?.click()
+
+    expect(row('this-phone')?.textContent).toContain('iPhone17,3')
+    expect(row('about')?.textContent).toContain('0.6.0 (380)')
+    expect(onPush).toHaveBeenCalledWith('this-phone')
+    expect(onPush).toHaveBeenCalledWith('about')
+    phone.facts = null
   })
 
   it('pushes Account from its row', () => {

@@ -409,3 +409,43 @@ export const ExternalIcon: Component<ShellIconProps> = (props) => (
     <path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" />
   </svg>
 )
+
+/** About, and the phone's system: the letter i in a ring. */
+export const InfoIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 11v5.5M12 7.8h.01" />
+  </svg>
+)
+
+/** The app itself, as installed: a box with its arrow in. */
+export const AppIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5v10M8 9.5l4 4 4-4" />
+    <path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" />
+  </svg>
+)
+
+/** Graphics: two panes, one over the other. */
+export const GraphicsIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3.5" y="7.5" width="12" height="12" rx="2" />
+    <path d="M8.5 4.5h10a2 2 0 0 1 2 2v10" />
+  </svg>
+)
+
+/** Audio out: a speaker with its sound. */
+export const SpeakerIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </svg>
+)
+
+/** A document: the terms of use. */
+export const DocIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M6.5 3.5h7l4 4v13h-11z" />
+    <path d="M13.5 3.5v4h4M9 12h6M9 15.5h6" />
+  </svg>
+)
