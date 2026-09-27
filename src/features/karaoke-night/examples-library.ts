@@ -24,6 +24,7 @@
 // Plan: docs/plans/lrc-mapper-studio-plan.md (Phase 7).
 
 import type { UvrSession } from '@/stores/uvr-store'
+import type { BundledExample } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
 import { demoIsPlayable, demoSessionId, isDemoSessionId } from './demo-song'
 
@@ -180,4 +181,69 @@ export function exampleAttribution(
     license: attribution.license ?? '',
     licenseUrl: attribution.licenseUrl ?? '',
   }
+}
+
+const nonEmpty = (value: string | undefined): boolean =>
+  value !== undefined && value.trim() !== ''
+
+/**
+ * The native app's examples: the songs its bundle carries, and the server's
+ * list once it is online, as one list (plan S8 §8, decision D13 A).
+ *
+ * The bundle's songs come first, in its order, then the songs only the
+ * server has, in the server's order. They are matched by session id, not by
+ * slug text: the legacy song has no slug on an old row and `karaoke-night`
+ * on a new one, and both are the same row.
+ *
+ * For a bundled song the server can correct two things:
+ *   - the lyrics, when its revision is higher: an authored correction, which
+ *     `seedDemoLyrics` then applies only to a copy nobody has edited;
+ *   - the credit, when it has one, so a corrected credit reaches every device
+ *     as it does on the web.
+ * The stems stay the bundle's. They are the ones that play with no network,
+ * and the server's copy of the same song is the same audio.
+ *
+ * Unlike the web's list, the server cannot take a bundled song away. Parking
+ * a song in the studio stops the web offering it, but the binary has already
+ * shipped, and a library that loses a song on going online is worse than one
+ * that keeps a song the studio has since parked.
+ */
+export function mergeExampleManifests(
+  bundled: readonly BundledExample[],
+  fromServer: readonly DemoSongManifest[],
+): DemoSongManifest[] {
+  const served = new Map(
+    fromServer.map((song) => [demoSessionId(song.slug), song]),
+  )
+
+  const merged: DemoSongManifest[] = bundled.map((song) => {
+    const server = served.get(demoSessionId(song.slug))
+    if (server === undefined) return song
+    const newerLyrics =
+      (server.lyricsRevision ?? 0) > (song.lyricsRevision ?? 0) &&
+      (nonEmpty(server.lyricsText) || nonEmpty(server.lyrics))
+    return {
+      ...song,
+      ...(nonEmpty(server.attribution?.text)
+        ? { attribution: server.attribution }
+        : {}),
+      ...(newerLyrics
+        ? {
+            lyricsRevision: server.lyricsRevision,
+            lyricsText: server.lyricsText,
+            lyrics: server.lyrics,
+          }
+        : {}),
+    }
+  })
+
+  const bundledIds = new Set(bundled.map((song) => demoSessionId(song.slug)))
+  const added = new Set<string>()
+  for (const song of fromServer) {
+    const id = demoSessionId(song.slug)
+    if (bundledIds.has(id) || added.has(id)) continue
+    added.add(id)
+    merged.push(song)
+  }
+  return merged
 }

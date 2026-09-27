@@ -413,6 +413,144 @@ describe('handleRunpodRequest — status', () => {
   })
 })
 
+// ── status: only a 404 means the job is gone (review S7) ─────────
+//
+// A transient failure of RunPod's status API (a 429, a 5xx, a dropped
+// connection) was answered as "Your separated stems have expired", a
+// terminal error. The native room shows that as an expired song, and under
+// D12 an expired song is not refunded, so a network blip cost the singer a
+// song while the job was still running. Only RunPod's 404 says the job is
+// gone; anything else keeps the client polling.
+
+describe('handleRunpodRequest — status when RunPod does not answer', () => {
+  const transient: Array<[string, () => Promise<Response>]> = [
+    [
+      'a 503',
+      async () =>
+        Promise.resolve({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable',
+          json: () => Promise.resolve({}),
+        } as Response),
+    ],
+    [
+      'a 429',
+      async () =>
+        Promise.resolve({
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          json: () => Promise.resolve({}),
+        } as Response),
+    ],
+    [
+      'a 500',
+      async () =>
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({}),
+        } as Response),
+    ],
+    [
+      'a dropped connection',
+      async () => Promise.reject(new TypeError('fetch failed')),
+    ],
+  ]
+
+  it.each(transient)(
+    '%s keeps the client polling, with nothing in R2 yet',
+    async (_, respond) => {
+      vi.spyOn(global, 'fetch').mockImplementation(respond)
+      const bucket = mockBucket([])
+      const { request, url } = req('/api/uvr/status/rp_gpu_running-job')
+      const res = await handleRunpodRequest(
+        request,
+        url,
+        'GET',
+        CFG,
+        null,
+        bucket,
+        'runpod',
+      )
+      const body = (await res?.json()) as {
+        status: string
+        error?: string
+        files: unknown[]
+      }
+      expect(res?.status).toBe(200)
+      expect(body.status).toBe('processing')
+      expect(body.error).toBeUndefined()
+      expect(body.files).toEqual([])
+    },
+  )
+
+  it('keeps polling with no bucket at all', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation(async () =>
+      Promise.reject(new TypeError('fetch failed')),
+    )
+    const { request, url } = req('/api/uvr/status/rp_gpu_running-job')
+    const res = await handleRunpodRequest(request, url, 'GET', CFG)
+    const body = (await res?.json()) as { status: string }
+    expect(body.status).toBe('processing')
+  })
+
+  it('still recovers a finished job from R2 when RunPod blips', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation(async () =>
+      Promise.resolve({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        json: () => Promise.resolve({}),
+      } as Response),
+    )
+    const bucket = mockBucket([
+      { key: 'runpod/job-7/Song_(Vocals)_roformer.mp3', size: 11 },
+      { key: 'runpod/job-7/Song_(Instrumental)_roformer.mp3', size: 22 },
+    ])
+    const { request, url } = req('/api/uvr/status/rp_gpu_job-7')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      bucket,
+      'runpod',
+    )
+    const body = (await res?.json()) as { status: string }
+    expect(body.status).toBe('completed')
+  })
+
+  it('refunds nothing for a blip: the job may yet deliver', async () => {
+    const fetched = vi
+      .spyOn(global, 'fetch')
+      .mockImplementation(async () =>
+        Promise.reject(new TypeError('fetch failed')),
+      )
+    const meter = { baseUrl: 'https://db.test', serviceKey: 'service-key' }
+    const { request, url } = req('/api/uvr/status/rp_gpu_running-job')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      meter,
+      mockBucket([]),
+      'runpod',
+    )
+    const body = (await res?.json()) as { status: string }
+    expect(body.status).toBe('processing')
+    expect(
+      fetched.mock.calls.filter(([target]) =>
+        String(target).includes('/api/billing/refund'),
+      ),
+    ).toEqual([])
+  })
+})
+
 // ── output ──────────────────────────────────────────────────────
 
 describe('handleRunpodRequest — output', () => {
@@ -476,6 +614,101 @@ describe('handleRunpodRequest — output', () => {
     expect(res?.status).toBe(200)
     expect(res?.headers.get('content-type')).toBe('audio/flac')
     expect(bucket.get).toHaveBeenCalledWith(key)
+  })
+
+  it('streams the stem itself for the native app, from R2 first', async () => {
+    // A redirect would send the app to another origin, which has granted it
+    // nothing: the worker hands over the bytes instead.
+    const fetches = mockFetchOnce({
+      status: 'COMPLETED',
+      output: {
+        stems: [{ stem: 'vocal', filename: 'v.mp3', url: 'https://r2/v' }],
+      },
+    })
+    const key = 'runpod/job-1/Song_(Vocals)_roformer.mp3'
+    const bucket = mockBucket([{ key, size: 10 }], {
+      [key]: new ReadableStream(),
+    })
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      bucket,
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(200)
+    expect(res?.headers.get('content-type')).toBe('audio/mpeg')
+    expect(bucket.get).toHaveBeenCalledWith(key)
+    // Only the status was asked of RunPod; the stem URL was never fetched.
+    expect(fetches).toHaveBeenCalledTimes(1)
+  })
+
+  it('fetches the stem for the native app when R2 does not have it', async () => {
+    const fetches = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            status: 'COMPLETED',
+            output: {
+              stems: [
+                { stem: 'vocal', filename: 'v.flac', url: 'https://r2/v' },
+              ],
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce(new Response('hello', { status: 200 }))
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      mockBucket(),
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(200)
+    expect(res?.headers.get('content-type')).toBe('audio/flac')
+    expect(await res?.text()).toBe('hello')
+    expect(String(fetches.mock.calls[1]?.[0])).toBe('https://r2/v')
+  })
+
+  it('502s the native app when the stem cannot be fetched', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            status: 'COMPLETED',
+            output: {
+              stems: [
+                { stem: 'vocal', filename: 'v.flac', url: 'https://r2/v' },
+              ],
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce(new Response('gone', { status: 403 }))
+    const { request, url } = req('/api/uvr/output/rp_gpu_job-1/vocal')
+    const res = await handleRunpodRequest(
+      request,
+      url,
+      'GET',
+      CFG,
+      null,
+      null,
+      'runpod',
+      { inlineStems: true },
+    )
+    expect(res?.status).toBe(502)
   })
 
   it('still 404s from R2 when the wanted stem is not in the bucket', async () => {

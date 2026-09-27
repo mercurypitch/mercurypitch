@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 // @ts-expect-error -- the same kind of plain .mjs helper, shared with
 // scripts/assert-bundle.mjs, which must stay dependency-free.
-import { readEnvFiles, resolveApiBase } from './api-base.mjs'
+import { karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from './api-base.mjs'
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
 import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
@@ -58,6 +58,34 @@ const PURCHASE_POLICY = {
   platformEnv: 'VITE_MERCURYPITCH_NATIVE_PLATFORM',
 } as const
 
+/**
+ * The Karaoke room's Stage 2 (plan S8): the modules only a build that imports
+ * songs uses. Every reference to them from the rest of the app is a plain
+ * conditional on KARAOKE_IMPORT (src/lib/native-build.ts), which a store
+ * build folds away; declared free of side effects here, a module nothing
+ * uses is then dropped whole. Without this the import queue's module-level
+ * signals, which read storage as they are made, would keep it in the store
+ * build. `assert-bundle.mjs` STAGE 2 checks the result on every build, so a
+ * module missing from this list is a red check rather than a quiet leak.
+ */
+const KARAOKE_STAGE_2 = [
+  '/src/features/karaoke-room/KaraokeImport.tsx',
+  '/src/features/karaoke-room/KaraokeLibraryImports.tsx',
+  '/src/features/karaoke-room/karaoke-import-checks.ts',
+  '/src/features/karaoke-room/karaoke-import-queue.ts',
+  '/src/features/karaoke-room/karaoke-imported-songs.ts',
+  '/src/features/karaoke-room/karaoke-songs.ts',
+  '/apps/mercurypitch/src/shell/karaoke-subscription.ts',
+  '/apps/mercurypitch/src/shell/settings/KaraokeSongsGroups.tsx',
+  '/apps/mercurypitch/src/shell/settings/StorageImportedSongs.tsx',
+  '/apps/mercurypitch/src/shell/settings/imported-songs-copy.ts',
+]
+
+function isKaraokeStage2(id: string): boolean {
+  const path = id.replace(/\?.*$/u, '').replace(/\\/gu, '/')
+  return KARAOKE_STAGE_2.some((module) => path.endsWith(module))
+}
+
 export default defineConfig(({ mode, command }) => {
   // Fail before producing a bundle, not after shipping one. V1-1 composes no
   // store at all (src/infrastructure/mobile-runtime.ts), so today this can
@@ -85,9 +113,16 @@ export default defineConfig(({ mode, command }) => {
     readEnvFiles(fileURLToPath(new URL('.', import.meta.url)), mode),
     process.env,
   ) as { base: string; target: string; source: string }
+  // Stage 2 of the Karaoke room: where songs are separated, and whether the
+  // room offers to import them at all. Both follow the same switch.
+  const uvrOrigin = resolveUvrOrigin(api, process.env) as string
+  const karaokeImport = karaokeImportFor(api) as boolean
   if (command === 'build') {
     console.log(
       `[mercurypitch] API base compiled in: ${api.base === '' ? '(none: a local-only build, sign-in is off)' : api.base} [${api.target}; ${api.source}]`,
+    )
+    console.log(
+      `[mercurypitch] Karaoke import: ${karaokeImport ? 'on' : 'off'}; songs separated on ${uvrOrigin === '' ? '(no host: this build cannot separate)' : uvrOrigin}`,
     )
   }
 
@@ -125,9 +160,14 @@ export default defineConfig(({ mode, command }) => {
         // 2 KB of HTML where a picture should be. `configResolved` runs at
         // the end of resolveConfig, which is before both the snapshot and the
         // build, so one hook covers `vite`, `vite build` and `vite preview`.
+        //
+        // Awaited: Vite awaits every configResolved hook before it goes on,
+        // and the staging now starts by making sure the Karaoke room's
+        // example stems are here and exactly the pinned files
+        // (scripts/fetch-karaoke-examples.mjs), which may mean a download.
         name: 'mercurypitch:sync-native-assets',
-        configResolved() {
-          syncNativeAssets()
+        async configResolved() {
+          await syncNativeAssets()
         },
       },
     ],
@@ -175,6 +215,11 @@ export default defineConfig(({ mode, command }) => {
       // The resolved worker, over whatever the env files said: this is how
       // the production switch outranks the dev default in `.env`.
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(api.base),
+      // The Karaoke room's own songs (plan S8, Stage 2): compiled in for a
+      // test build and out of the store build, and the host that separates
+      // them, which goes with the worker above (api-base.mjs).
+      __KARAOKE_IMPORT__: JSON.stringify(karaokeImport),
+      __UVR_ORIGIN__: JSON.stringify(uvrOrigin),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')
           ? 'release'
@@ -194,6 +239,11 @@ export default defineConfig(({ mode, command }) => {
           fileURLToPath(new URL('.', import.meta.url)),
           'index.html',
         ),
+        treeshake: {
+          // A Karaoke Stage 2 module that nothing uses is dropped whole, its
+          // module-level state included (KARAOKE_STAGE_2, above).
+          moduleSideEffects: (id) => !isKaraokeStage2(id),
+        },
       },
     },
 

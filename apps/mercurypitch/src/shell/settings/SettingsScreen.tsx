@@ -19,6 +19,8 @@
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
+import { karaokeSongs, songsOptionRow, } from '@/features/karaoke-room/karaoke-songs'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { theme, themeSource } from '@/stores/theme-store'
 import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
@@ -41,6 +43,7 @@ export type SettingsSubScreen =
   | 'this-phone'
   | 'appearance'
   | 'about'
+  | 'karaoke'
 
 /** The Microphone row's answer: the input once heard, Off once refused. */
 function microphoneValue(): string | undefined {
@@ -171,9 +174,9 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           </SettingsGroup>
         </div>
         <div class="mp-set__col">
-          {/* The rooms keep their own options behind their own gear; this
-              only says where. Karaoke's place is held for the phase that
-              brings the room. */}
+          {/* The rooms keep their own options behind their own gear. Sing's
+              row only says where; Karaoke's opens the two of its settings a
+              singer may look for here (plan S8 §9). */}
           <SettingsGroup title="Rooms">
             <SettingsRow
               id="rooms-sing"
@@ -181,12 +184,26 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               label="Sing"
               sub="Its options are behind the room's gear"
             />
+            {/* A build that imports songs has the subscription and the
+                songs on this phone there too, and the songs left show here
+                at a glance (mock 9a), as /me last said them. */}
             <SettingsRow
               id="rooms-karaoke"
               icon={<KaraokeIcon />}
               label="Karaoke"
-              sub="Its settings arrive with the room"
-              accessory={<span class="mp-set-chip">Later</span>}
+              sub={
+                KARAOKE_IMPORT
+                  ? 'Subscription, songs on this phone, lyrics'
+                  : 'Text size and the next song'
+              }
+              value={
+                KARAOKE_IMPORT
+                  ? songsOptionRow(karaokeSongs())?.value
+                  : undefined
+              }
+              onPress={() => {
+                props.onPush('karaoke')
+              }}
             />
           </SettingsGroup>
           <SettingsGroup title="About">

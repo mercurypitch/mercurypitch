@@ -15,6 +15,7 @@ import { createMemo, createSignal, Show } from 'solid-js'
 import type { SessionExportStemType } from '@/db/services/session-export-service'
 import { exportSession, listSessionExportStems, } from '@/db/services/session-export-service'
 import { getOriginalFileBlob } from '@/db/services/uvr-service'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { DeviceSync, Download, Zap } from './icons'
@@ -86,12 +87,18 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     createSignal<SessionExportPreset>('all')
   const [archiveError, setArchiveError] = createSignal('')
 
+  // In the native app a song stays on this phone: V1 syncs no songs and
+  // exports nothing (plan S8, "Out of V1"), and a separation is paid for
+  // only through the room's own import. So every row below that sends a
+  // song away, saves it out or spends on it is the web's alone.
   const canDownloadOriginal = () =>
+    !IS_NATIVE_BUILD &&
     props.session?.status === 'completed' &&
     props.session.originalFile != null &&
     props.session.originalFile.size > 0
 
   const canRerunHq = () =>
+    !IS_NATIVE_BUILD &&
     props.session?.status === 'completed' &&
     props.session.processingMode === 'local' &&
     props.session.provider !== 'manual' &&
@@ -99,11 +106,13 @@ export const UvrSessionActions: Component<UvrSessionActionsProps> = (props) => {
     props.session.originalFile.size > 0 &&
     props.onRerunHq !== undefined
 
-  const canExportArchive = () => props.session?.status === 'completed'
+  const canExportArchive = () =>
+    !IS_NATIVE_BUILD && props.session?.status === 'completed'
 
   // The bundle needs the content hash: it is the song's identity on the
   // other device, and without it dedupe cannot answer "already have it".
   const canSendToDevice = () =>
+    !IS_NATIVE_BUILD &&
     props.session?.status === 'completed' &&
     props.session.fileHash !== undefined &&
     props.session.fileHash !== '' &&

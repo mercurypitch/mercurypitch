@@ -112,3 +112,57 @@ export function resolveApiBase(files, processEnv) {
     source,
   }
 }
+
+// ============================================================
+// Where a native build separates songs, and whether it offers to
+// ============================================================
+//
+// Separation is not the db-worker's: `/api/uvr/*` is served by the web app's
+// own worker (src/worker.ts), which checks the singer's token against the
+// db-worker named in its `DB_API_URL`. So the host a native build separates
+// on is the web host that goes WITH its db-worker: dev.mercurypitch.com
+// checks tokens against api-dev, mercurypitch.com against api. Deriving one
+// from the other, rather than reading a second variable, is what keeps a
+// build from signing in against one and separating against the other.
+//
+// A build pointed at some other worker ('configured', a local one) has no
+// web host to derive, so the process may name one: `MERCURYPITCH_UVR_ORIGIN`.
+// Only then. A stray variable cannot move a TestFlight or a store build.
+
+/** The web app's worker for each db-worker a native build may name. */
+export const UVR_ORIGINS = Object.freeze({
+  dev: 'https://dev.mercurypitch.com',
+  production: 'https://mercurypitch.com',
+})
+
+/** Names the separation host for a build pointed at another worker. */
+export const UVR_ORIGIN_ENV = 'MERCURYPITCH_UVR_ORIGIN'
+
+/**
+ * The origin a native build sends `/api/uvr/*` to. Empty for a build with
+ * no web host to go with its worker: separation then has nowhere to go, and
+ * the bundle asks the page's own origin, as the web does.
+ *
+ * @param {{ target: string }} api what `resolveApiBase` answered
+ * @param {Record<string, string | undefined>} processEnv the process environment
+ * @returns {string}
+ */
+export function resolveUvrOrigin(api, processEnv) {
+  if (api.target === 'dev') return UVR_ORIGINS.dev
+  if (api.target === 'production') return UVR_ORIGINS.production
+  return (processEnv[UVR_ORIGIN_ENV] ?? '').trim().replace(/\/+$/u, '')
+}
+
+/**
+ * Whether the Karaoke room offers to import a singer's own songs (plan S8,
+ * Stage 2). The owner's rule, 27 Sep: on in every build that is not the
+ * store build, which is TestFlight, a probe and a laptop; off in the store
+ * build until the subscription is real. The switch that picks the worker
+ * picks this too, so the two cannot disagree.
+ *
+ * @param {{ target: string }} api what `resolveApiBase` answered
+ * @returns {boolean}
+ */
+export function karaokeImportFor(api) {
+  return api.target !== 'production'
+}

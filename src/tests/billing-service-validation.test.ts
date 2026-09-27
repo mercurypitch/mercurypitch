@@ -66,3 +66,75 @@ describe('billing entitlement validation', () => {
     expect(supporterEntitlement(billing)).toEqual(body.entitlements[0])
   })
 })
+
+describe('the Karaoke songs on /me (plan S8 §8)', () => {
+  const base = {
+    creditBalance: 18,
+    entitlements: [
+      {
+        feature: 'cloud',
+        source: 'revenuecat:karaoke_monthly',
+        expiresAt: '2026-10-27T10:00:00.000Z',
+      },
+    ],
+    stripeConfigured: false,
+  }
+
+  function answer(body: unknown): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })),
+    )
+  }
+
+  it('reads the songs a subscription leaves', async () => {
+    const body: BillingMe = {
+      ...base,
+      songs: {
+        subscribed: true,
+        left: 18,
+        renewsAt: '2026-10-27T10:00:00.000Z',
+        perPeriod: 20,
+        cap: 50,
+      },
+    }
+    answer(body)
+
+    await expect(fetchBillingMe('https://api.test')).resolves.toEqual(body)
+  })
+
+  it('reads an older worker, which says nothing of songs', async () => {
+    answer(base)
+
+    const billing = await fetchBillingMe('https://api.test')
+
+    expect(billing?.creditBalance).toBe(18)
+    expect(billing?.songs).toBeUndefined()
+  })
+
+  for (const [what, songs] of [
+    ['a subscription that is not a yes or no', { subscribed: 'yes' }],
+    ['songs left below none', { left: -1 }],
+    ['songs left that are not a number', { left: '18' }],
+    ['a period of no number', { perPeriod: Number.NaN }],
+    ['a cap that is missing', { cap: undefined }],
+    ['a renewal that is not a date', { renewsAt: 20261027 }],
+  ] as const) {
+    it(`sets aside a songs summary with ${what}, and keeps the rest`, async () => {
+      const readable: Record<string, unknown> = {
+        subscribed: true,
+        left: 18,
+        renewsAt: '2026-10-27T10:00:00.000Z',
+        perPeriod: 20,
+        cap: 50,
+      }
+      answer({ ...base, songs: { ...readable, ...songs } })
+
+      const billing = await fetchBillingMe('https://api.test')
+
+      expect(billing?.creditBalance).toBe(18)
+      expect(billing?.entitlements).toHaveLength(1)
+      expect(billing && 'songs' in billing).toBe(false)
+    })
+  }
+})

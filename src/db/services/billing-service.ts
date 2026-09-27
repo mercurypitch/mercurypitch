@@ -59,9 +59,51 @@ export interface BillingMe {
   }>
   redeemedPromos?: string[]
   stripeConfigured: boolean
+  /** The Karaoke room's songs (plan S8 §8): what a subscription grants, and
+   *  what is left of the balance it grants into. Absent on an older
+   *  db-worker, and set aside when it does not read as one. */
+  songs?: BillingSongs
+}
+
+export interface BillingSongs {
+  /** A Karaoke subscription that has not ended. */
+  subscribed: boolean
+  /** Songs that can still be separated. */
+  left: number
+  /** When the next songs arrive, while subscribed. */
+  renewsAt: string | null
+  /** Songs a month grants. */
+  perPeriod: number
+  /** The most songs a grant ever tops the balance up to. */
+  cap: number
 }
 
 type BillingEntitlement = BillingMe['entitlements'][number]
+
+function isSongCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function isBillingSongs(value: unknown): value is BillingSongs {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<BillingSongs>
+  return (
+    typeof candidate.subscribed === 'boolean' &&
+    isSongCount(candidate.left) &&
+    (candidate.renewsAt === null || typeof candidate.renewsAt === 'string') &&
+    isSongCount(candidate.perPeriod) &&
+    isSongCount(candidate.cap)
+  )
+}
+
+/** A songs summary that does not read as one is set aside, and the rest of
+ *  /me stands: the web never reads it, and the room falls back to the
+ *  balance. */
+function withReadableSongs(me: BillingMe): BillingMe {
+  if (me.songs === undefined || isBillingSongs(me.songs)) return me
+  const { songs: _unreadable, ...rest } = me
+  return rest
+}
 
 function isBillingEntitlement(value: unknown): value is BillingEntitlement {
   if (typeof value !== 'object' || value === null) return false
@@ -201,7 +243,7 @@ export async function fetchBillingMe(
     })
     if (!res.ok) return null
     const data = (await res.json()) as unknown
-    return isBillingMe(data) ? data : null
+    return isBillingMe(data) ? withReadableSongs(data) : null
   } catch {
     // Backend unreachable — degrade to "no billing info" instead of throwing.
     return null

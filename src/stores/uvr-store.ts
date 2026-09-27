@@ -23,6 +23,7 @@ import { recordActivity } from '@/db/services/user-activity-service'
 import { deleteAllUvrSessionsFromDb, deleteImportedUvrSessionDataStrict, deleteSessionGroupFromDb, sessionHasPlayableStems, sessionStemPresence, } from '@/db/services/uvr-service'
 import { deleteAllTranscriptionsFromDb } from '@/db/services/whisper-transcription-db-service'
 import { IS_DEV } from '@/lib/defaults'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 
 // ── UVR (Vocal Separation) ─────────────────────────────────────
 //
@@ -38,12 +39,17 @@ export type UvrProcessingMode = 'server' | 'local'
 const DEFAULT_PROCESSING_MODE: UvrProcessingMode = 'local'
 
 export function getUvrProcessingMode(): UvrProcessingMode {
+  // The native app separates on the server only (plan S8 §6, no Browser
+  // mode). The preference is synced between devices, so a phone can hold
+  // the web's "local"; it is never acted on there.
+  if (IS_NATIVE_BUILD) return 'server'
   const saved = localStorage.getItem('pitchperfect_uvr-processing-mode')
   if (saved === 'local' || saved === 'server') return saved
   return DEFAULT_PROCESSING_MODE
 }
 
 export function setUvrProcessingMode(mode: UvrProcessingMode): void {
+  if (IS_NATIVE_BUILD && mode !== 'server') return
   localStorage.setItem('pitchperfect_uvr-processing-mode', mode)
   _setUvrProcessingMode(mode)
 }

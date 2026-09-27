@@ -10,6 +10,8 @@
 //   models       the pitch engine's wasm pair and model, measured when the
 //                app was built: they go only with the app, so no Clear
 //   cachedRooms  nothing, in a build where every room ships inside the app
+//   importedSongs  the singer's own Karaoke songs, their voice and music
+//                (plan S8 §9); only in a build that imports them
 //
 // A category that cannot be read is null, never zero: "0 MB" for a store
 // that did not answer would be the same lie as "0 sessions" was.
@@ -17,14 +19,33 @@
 import { createSignal } from 'solid-js'
 import { getVoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { loadLocalVoiceprints } from '@/db/services/voiceprint-service'
+import type { ImportedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
+import { importedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
+import { whenSessionStoreReady } from '@/stores/uvr-store'
 
 export interface StorageFacts {
   takes: { count: number; bytes: number } | null
   voiceprints: { count: number; bytes: number }
   models: { bytes: number }
   cachedRooms: { bytes: number }
+  /** Absent in a build that cannot import songs. A size never recorded is
+   *  null and adds nothing to the total. */
+  importedSongs?: ImportedSongs
   /** Everything that could be read, added up. */
   total: number
+}
+
+/** The singer's own songs, once the session store has read them. */
+async function readThem(): Promise<ImportedSongs> {
+  await whenSessionStoreReady()
+  return importedSongs()
+}
+
+/** None to read in a build that cannot import them: one conditional on the
+ *  constant, which a store build folds away with `readThem`. */
+async function readImportedSongs(): Promise<ImportedSongs | undefined> {
+  return KARAOKE_IMPORT ? readThem() : undefined
 }
 
 const [total, setTotal] = createSignal<number | null>(null)
@@ -48,10 +69,22 @@ export async function loadStorageFacts(): Promise<StorageFacts> {
   }
   const models = { bytes: __PITCH_ENGINE_BYTES__ }
   const cachedRooms = { bytes: 0 }
+  const songs = await readImportedSongs()
   const sum =
-    (takes?.bytes ?? 0) + voiceprints.bytes + models.bytes + cachedRooms.bytes
+    (takes?.bytes ?? 0) +
+    voiceprints.bytes +
+    models.bytes +
+    cachedRooms.bytes +
+    (songs?.bytes ?? 0)
   setTotal(sum)
-  return { takes, voiceprints, models, cachedRooms, total: sum }
+  return {
+    takes,
+    voiceprints,
+    models,
+    cachedRooms,
+    ...(songs === undefined ? {} : { importedSongs: songs }),
+    total: sum,
+  }
 }
 
 /** "186 MB", "1.4 MB", "18.4 GB": decimal units, as the phone's own Settings. */

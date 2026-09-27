@@ -5,9 +5,11 @@
 import { z } from 'zod/v4'
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
-import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD, UVR_ORIGIN, } from '@/lib/native-build'
 
-const API_BASE = '/api/uvr'
+/** Empty origin on the web: its page is on the worker that serves this. A
+ *  native page is not, so its build names that worker's host. */
+const API_BASE = `${UVR_ORIGIN}/api/uvr`
 
 /** Per-request cap for a status poll. Without it, a socket left half-open by an
  *  iOS app-switch (frozen page → resumed with a dead connection) never settles,
@@ -150,9 +152,17 @@ export function uvrLengthFactor(durationSeconds?: number): number {
 // Default processing options. `model` is a server-side registry name
 // (see runpod/handler.py MODEL_REGISTRY), not a weights filename:
 // roformer = BS-RoFormer, the high-quality default.
+//
+// A native build asks for MP3 (owner, 28 Sep): a phone fetches the two stems
+// over its own connection, keeps them, and decodes both to play, and a WAV
+// stem is more than four times the size. The deployed handler writes MP3
+// already, at 320 kb/s (audio-separator's default), so no new RunPod image is
+// needed. Every path the room plays a stem through takes it as it takes AAC:
+// WebCodecs' AudioDecoder ("mp3") where the phone has one, and
+// decodeAudioData everywhere. The web keeps WAV.
 export const DEFAULT_PROCESS_REQUEST: ProcessRequest = {
   model: 'roformer',
-  output_format: 'WAV',
+  output_format: IS_NATIVE_BUILD ? 'MP3' : 'WAV',
   stems: ['vocal', 'instrumental'],
   cpu_profile: 'high',
 }
@@ -458,6 +468,72 @@ export async function listModels(): Promise<string[]> {
   return data.models
 }
 
+/** How much of an upload has been sent, from 0 to 1. */
+export type UploadProgress = (share: number) => void
+
+/**
+ * POST a form with XMLHttpRequest, whose upload reports how far it has got,
+ * and answer with the Response fetch would have given, so the caller reads
+ * a refusal the same way either way. fetch cannot report an upload's
+ * progress; the native room shows "Sending · 45%" while a song goes up over
+ * a phone's connection (plan S8 §6.4). A dropped connection rejects with a
+ * TypeError and a stopped one with an AbortError, as fetch's do.
+ */
+async function postWithProgress(
+  url: string,
+  headers: Record<string, string>,
+  body: FormData,
+  signal: AbortSignal | undefined,
+  onProgress: UploadProgress,
+): Promise<Response> {
+  return new Promise<Response>((resolve, reject) => {
+    const stopped = () =>
+      new DOMException('The upload was stopped.', 'AbortError')
+    if (signal?.aborted === true) {
+      reject(stopped())
+      return
+    }
+    const xhr = new XMLHttpRequest()
+    const stop = () => xhr.abort()
+    signal?.addEventListener('abort', stop, { once: true })
+    const settled = () => signal?.removeEventListener('abort', stop)
+
+    xhr.open('POST', url)
+    for (const [name, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(name, value)
+    }
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        onProgress(Math.min(1, event.loaded / event.total))
+      }
+    }
+    xhr.onload = () => {
+      settled()
+      // Status 0 is a request that never got an answer, which fetch rejects.
+      if (xhr.status < 200 || xhr.status > 599) {
+        reject(new TypeError('Failed to fetch'))
+        return
+      }
+      const bodiless = [204, 205, 304].includes(xhr.status)
+      resolve(
+        new Response(bodiless ? null : xhr.responseText, {
+          status: xhr.status,
+          statusText: xhr.statusText,
+        }),
+      )
+    }
+    xhr.onerror = () => {
+      settled()
+      reject(new TypeError('Failed to fetch'))
+    }
+    xhr.onabort = () => {
+      settled()
+      reject(stopped())
+    }
+    xhr.send(body)
+  })
+}
+
 /**
  * Start processing an audio file
  */
@@ -467,6 +543,9 @@ export async function processAudio(
   file: File | null,
   options: ProcessRequest = DEFAULT_PROCESS_REQUEST,
   signal?: AbortSignal,
+  /** Asks for the upload's progress, which sends it with XMLHttpRequest.
+   *  Without it the request is the fetch the web has always made. */
+  onUploadProgress?: UploadProgress,
 ): Promise<ProcessResponse> {
   const formData = new FormData()
   if (file !== null) formData.append('file', file)
@@ -523,12 +602,21 @@ export async function processAudio(
     headers['X-UVR-Model'] = options.model
   }
 
-  const response = await fetch(`${API_BASE}/process`, {
-    method: 'POST',
-    headers,
-    body: formData,
-    signal,
-  })
+  const response =
+    onUploadProgress === undefined
+      ? await fetch(`${API_BASE}/process`, {
+          method: 'POST',
+          headers,
+          body: formData,
+          signal,
+        })
+      : await postWithProgress(
+          `${API_BASE}/process`,
+          headers,
+          formData,
+          signal,
+          onUploadProgress,
+        )
 
   if (!response.ok) {
     const raw = await response.text()

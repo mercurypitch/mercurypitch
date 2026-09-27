@@ -92,7 +92,9 @@ import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
 import { abandonStoragePort, hydrateStoragePort, installStoragePort, } from '@/lib/storage-port'
+import { registerNativeDevice } from '@/stores/native-shell-store'
 import { initTheme } from '@/stores/theme-store'
+import { createNativeDevice } from './infrastructure/native-device'
 import { installNativeShell } from './infrastructure/native-shell'
 import { createPreferencesStoragePort } from './infrastructure/preferences-storage'
 import { createSocialLoginBridge } from './infrastructure/social-login'
@@ -126,6 +128,10 @@ initTheme()
 // Before the first render, so a back press during boot is answered by this
 // app rather than by Capacitor's default, which is to exit.
 installNativeShell()
+// The one AudioContext and the screen's keep-awake, for a room under `src/`
+// that cannot import either (the Karaoke room). Before the first render, so
+// a room never mounts without them.
+registerNativeDevice(createNativeDevice())
 // Lazy: the loader runs on the first sign-in press, so a session that never
 // signs in never pays for the plugin's module graph.
 registerSocialLoginBridge(() => Promise.resolve(createSocialLoginBridge()))
@@ -160,6 +166,17 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
     registerDeveloperSection({
       id: 'audio',
       title: 'Audio',
+      render: () => <Panel />,
+    })
+  })
+  // The Karaoke room's no-streaming path, taken on purpose on a phone that
+  // could stream, and which way the last song was held: every iPhone before
+  // iOS 26 has no AudioDecoder (owner, 28 Sep). Same gate, same reason.
+  void import('./shell/KaraokeAudioPanel').then((module) => {
+    const Panel = module.KaraokeAudioPanel
+    registerDeveloperSection({
+      id: 'karaoke-audio',
+      title: 'Karaoke audio',
       render: () => <Panel />,
     })
   })

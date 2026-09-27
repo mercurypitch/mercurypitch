@@ -2,8 +2,10 @@
 // StemMixer Audio Controller — audio engine, transport, RAF tick
 // ============================================================
 
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
+import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
@@ -14,6 +16,7 @@ import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
@@ -28,12 +31,16 @@ import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
-import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
+import type { SongPathLog } from './stem-load-path'
+import { createSongPathLog } from './stem-load-path'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, NEEDS_STREAMING_MESSAGE, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
+import { canStreamStems, readStemShape } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
+import { decodePastGuard } from './stream-switches'
 import type { StreamingStemVoice } from './streaming-stem-voice'
 import { createStreamingStemVoice } from './streaming-stem-voice'
 import type { PitchNote } from './types'
@@ -181,6 +188,20 @@ export interface StemMixerAudioDeps {
     msg: string,
     type?: 'info' | 'success' | 'warning' | 'error',
   ) => void
+
+  /**
+   * Stream the stems whatever the device class says. The native Karaoke room
+   * asks for it: an Android tablet's user agent reads as a desktop and a phone
+   * on its side is not narrow, and the full decode either one was handed is
+   * the 180 MB a phone cannot hold (K9).
+   */
+  forceStream?: boolean
+  /**
+   * Build on a room's lent context instead of constructing one. The room
+   * gives the claim back, and the broker suspends the clock when nobody
+   * holds one (REQ-NRM-039).
+   */
+  audioLease?: AudioContextLease
 }
 
 export interface StemMixerAudioController {
@@ -276,6 +297,12 @@ export interface StemMixerAudioController {
   // Ref accessors (for onCleanup)
   getAudioCtx: () => AudioContext | null
   getRafId: () => number
+  /**
+   * Take the mixer's own nodes off the context and forget it, without
+   * closing it: the way out for a mixer on a lent context. The next
+   * `ensureAudioCtx` builds a fresh graph on whatever the lease lends.
+   */
+  detachGraph: () => void
 }
 
 // ── Constants ──────────────────────────────────────────────────
@@ -394,6 +421,7 @@ export const useStemMixerAudioController = (
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
   let mainGain: GainNode | null = null
+  let softClipNode: WaveShaperNode | null = null
   let vocalAnalyser: AnalyserNode | null = null
   let pitchDetector: PitchDetector | null = null
   let rafId = 0
@@ -522,7 +550,7 @@ export const useStemMixerAudioController = (
    * detection, sample-exact waveform zoom). A phone cannot hold two of them at
    * all: 180 MB of decoded PCM is where iOS kills the tab.
    */
-  const streamStems = deviceClass === 'mobile'
+  const streamStems = deps.forceStream === true || deviceClass === 'mobile'
 
   onCleanup(() => {
     disposed = true
@@ -600,7 +628,7 @@ export const useStemMixerAudioController = (
   // ── Audio Context ────────────────────────────────────────────
   const ensureAudioCtx = () => {
     if (!audioCtx) {
-      audioCtx = new AudioContext()
+      audioCtx = deps.audioLease?.ensure() ?? new AudioContext()
       mainGain = audioCtx.createGain()
       mainGain.gain.value = musicLevel()
       // The master ends in a soft clipper, not the raw destination: the music
@@ -611,6 +639,7 @@ export const useStemMixerAudioController = (
       softClip.oversample = 'none'
       mainGain.connect(softClip)
       softClip.connect(audioCtx.destination)
+      softClipNode = softClip
       vocalAnalyser = audioCtx.createAnalyser()
       vocalAnalyser.fftSize = PITCH_FFT_SIZE
       vocalAnalyser.smoothingTimeConstant = 0.3
@@ -620,11 +649,32 @@ export const useStemMixerAudioController = (
       })
     }
     if (audioCtx.state !== 'running') {
-      void audioCtx.resume().catch(() => {
-        // Outside a user gesture (iOS) — audio-unlock retries on the next tap.
-      })
+      if (deps.audioLease !== undefined) {
+        // The broker's own resume: it also clears a suspension the app's
+        // trip to the background left behind (packages/audio-io).
+        void deps.audioLease.unlock().catch(() => false)
+      } else {
+        void audioCtx.resume().catch(() => {
+          // Outside a user gesture (iOS) — audio-unlock retries on the next tap.
+        })
+      }
     }
     return audioCtx
+  }
+
+  const detachGraph = (): void => {
+    for (const node of [mainGain, softClipNode, vocalAnalyser]) {
+      try {
+        node?.disconnect()
+      } catch (_) {
+        /* already off the context */
+      }
+    }
+    mainGain = null
+    softClipNode = null
+    vocalAnalyser = null
+    pitchDetector = null
+    audioCtx = null
   }
 
   // iOS: first tap anywhere primes the playback audio session (the ring/silent
@@ -697,6 +747,46 @@ export const useStemMixerAudioController = (
     let residentBytes = 0
     /** What one streamed stem cost, for the budget the extras are fitted to. */
     let streamedStemCost = 0
+    /** Why a stem was refused rather than decoded whole, when one was. */
+    let refused: string | null = null
+    // Which way each stem is held, for the Developer screen's Karaoke audio
+    // section and the audio record (stem-load-path.ts). A native test build's
+    // hosted room only: the web and the store build fold all of it away.
+    const pathLog: SongPathLog | null =
+      IS_NATIVE_BUILD &&
+      import.meta.env.VITE_PORTABLE_CONSOLE === 'true' &&
+      deps.forceStream === true
+        ? createSongPathLog({ streams: canStreamStems() })
+        : null
+    /** What a whole decode of a stem holds, from its container alone. */
+    const shapeOf = async (
+      bytes: ArrayBuffer,
+    ): Promise<{
+      wholeDecodeBytes: number | null
+      codec: string | null
+      sampleRate: number | null
+      channelCount: number | null
+    }> => {
+      const shape = await readStemShape(new Blob([bytes]))
+      if (shape === null) {
+        return {
+          wholeDecodeBytes: null,
+          codec: null,
+          sampleRate: null,
+          channelCount: null,
+        }
+      }
+      return {
+        wholeDecodeBytes: decodedStemBytes(
+          shape.durationSeconds,
+          ctx.sampleRate,
+          shape.channelCount,
+        ),
+        codec: shape.codec,
+        sampleRate: shape.sampleRate,
+        channelCount: shape.channelCount,
+      }
+    }
     const trace = (line: string): void => {
       if (!IS_DIAGNOSTIC_BUILD) return
       console.info(`[stem-mixer] ${line}`)
@@ -742,6 +832,8 @@ export const useStemMixerAudioController = (
 
     const loadOne = async (url: string): Promise<LoadedStem> => {
       const name = stemName(url)
+      /** Refused by the guard and decoded anyway, by the crash test. */
+      let pastGuard = false
       // A stem the visitor has already downloaded once. R2 serves these
       // with no Cache-Control at all, so the browser re-fetched all six
       // megabytes on every open — the whole wait, paid again, for a song
@@ -792,6 +884,27 @@ export const useStemMixerAudioController = (
         if (streamed !== null) {
           loadedCount++
           noteStreamed(name, streamed)
+          if (IS_NATIVE_BUILD && pathLog !== null) {
+            const shape = await shapeOf(bytes)
+            pathLog.decided({
+              name,
+              path: 'stream',
+              bytes: bytes.byteLength,
+              wholeDecodeBytes: decodedStemBytes(
+                streamed.durationSeconds,
+                ctx.sampleRate,
+                streamed.channelCount,
+              ),
+              codec: shape.codec,
+              sampleRate: streamed.sampleRate,
+              channelCount: streamed.channelCount,
+            })
+            pathLog.held(
+              name,
+              streamed.displayBytes +
+                streamedStemBytes(streamed.sampleRate, streamed.channelCount),
+            )
+          }
           return {
             buffer: streamed.displayBuffer,
             stream: streamed.stream,
@@ -801,12 +914,51 @@ export const useStemMixerAudioController = (
               streamedStemBytes(streamed.sampleRate, streamed.channelCount),
           }
         }
+        // No AudioDecoder at all, in a room that asked for the stream. A song
+        // decoded whole is what kills the phone (plan S8 §7 rule 2), so only a
+        // small stem is, and a song is refused with the reason.
+        if (
+          deps.forceStream === true &&
+          !canStreamStems() &&
+          bytes.byteLength > HOSTED_WHOLE_DECODE_MAX_BYTES
+        ) {
+          if (IS_NATIVE_BUILD && decodePastGuard()) {
+            // The Developer screen's crash test: decode it whole anyway, to
+            // learn whether this phone survives what the guard refuses.
+            pastGuard = true
+          } else {
+            trace(
+              `${name} cannot be streamed here, and ${mb(bytes.byteLength)}MB is too much to decode whole`,
+            )
+            if (IS_NATIVE_BUILD && pathLog !== null) {
+              pathLog.decided({
+                name,
+                path: 'refused',
+                bytes: bytes.byteLength,
+                ...(await shapeOf(bytes)),
+              })
+            }
+            refused = NEEDS_STREAMING_MESSAGE
+            throw new Error(NEEDS_STREAMING_MESSAGE)
+          }
+        }
         // A codec this platform will not decode, or a container mediabunny
         // cannot walk. Better a whole decode than no song.
         trace(`${name} cannot be streamed; decoding all of it`)
       }
 
       trace(`${name} decoding ${mb(bytes.byteLength)}MB`)
+      if (IS_NATIVE_BUILD && pathLog !== null) {
+        // Written down before the decode: if it kills the app, this is the
+        // line that says what it was holding (stem-load-path.ts).
+        pathLog.decided({
+          name,
+          path: 'whole',
+          bytes: bytes.byteLength,
+          ...(await shapeOf(bytes)),
+          pastGuard,
+        })
+      }
       const buf = await ctx.decodeAudioData(bytes)
       // Counted after the decode, not after the download. The guard below
       // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
@@ -816,6 +968,12 @@ export const useStemMixerAudioController = (
       // mixer with no sound and no explanation.
       loadedCount++
       noteDecoded(name, buf)
+      if (IS_NATIVE_BUILD && pathLog !== null) {
+        pathLog.held(
+          name,
+          decodedStemBytes(buf.duration, buf.sampleRate, buf.numberOfChannels),
+        )
+      }
       return {
         buffer: buf,
         durationSeconds: buf.duration,
@@ -992,7 +1150,12 @@ export const useStemMixerAudioController = (
       // has produced no audio either, and counting the request instead of
       // the result left that room silent behind a working transport, with
       // no error and no retry.
-      if (loadedCount === 0 && !disposed) {
+      if (refused !== null && !disposed) {
+        // Terminal: loading it again cannot stream either.
+        setLoadErrorRetryable(false)
+        setLoadErrorLocal(refused)
+        deps.showNotification(refused, 'warning')
+      } else if (loadedCount === 0 && !disposed) {
         const msg =
           'Stems could not be loaded. Audio data may have been lost after a page reload.'
         setLoadErrorLocal(msg)
@@ -1057,6 +1220,7 @@ export const useStemMixerAudioController = (
     } finally {
       setLoading(false)
       void platform.keepAwake.disable()
+      if (IS_NATIVE_BUILD && pathLog !== null) pathLog.finished()
     }
   }
 
@@ -1074,9 +1238,9 @@ export const useStemMixerAudioController = (
   }): Promise<boolean> => {
     try {
       const ctx = ensureAudioCtx()
-      const resp = await fetch(input.url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const bytes = await resp.arrayBuffer()
+      // Through the packaged-media rule (K2): a stem inside the native app
+      // answers status 0 on iOS, with its bytes.
+      const bytes = await fetchAssetBytes(input.url)
 
       // The same fork as a stem loaded with the song: adding one by hand on a
       // phone must not be the ninety megabytes the load path now avoids.
@@ -1739,9 +1903,8 @@ export const useStemMixerAudioController = (
         ext = '.mid'
       } else {
         if (!track.url) return
-        const resp = await fetch(track.url)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        blob = await resp.blob()
+        // Status 0 with a body is a packaged file on iOS, not a failure (K2).
+        blob = new Blob([await fetchAssetBytes(track.url)])
         ext = '.wav'
       }
 
@@ -1825,5 +1988,6 @@ export const useStemMixerAudioController = (
     getPerformanceSnapshot,
     getAudioCtx: () => audioCtx,
     getRafId: () => rafId,
+    detachGraph,
   }
 }

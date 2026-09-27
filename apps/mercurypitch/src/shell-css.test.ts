@@ -77,3 +77,18 @@ describe("the room header's side padding", () => {
     expect(left).not.toMatch(/--safe-right\b/u)
   })
 })
+
+// A room can be its own transport (the Karaoke room during a song, plan S8
+// D2 A): then the rail steps aside, the shell's transport does not come in,
+// and the band is an empty strip over the room's own bar. The dock is a
+// frame that passes taps through, and so must that strip be: it took the
+// taps meant for zen's Play and Pause (probe-karaoke.mjs found it).
+describe("the dock's band", () => {
+  it('takes no taps of its own', () => {
+    expect(declaration('.mp-dock > .mp-band', 'pointer-events')).toBe('none')
+  })
+
+  it('takes them through a layer that is in', () => {
+    expect(declaration('.mp-layer.is-in', 'pointer-events')).toBe('auto')
+  })
+})

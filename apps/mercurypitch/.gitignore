@@ -21,3 +21,10 @@ public/
 # android/.gitignore covering exactly those, and duplicating the rules here
 # would give two files authority over one decision. Verified with
 # `git check-ignore` after `cap add`.
+
+# The Karaoke room's example stems. scripts/fetch-karaoke-examples.mjs fetches
+# them from R2 and verifies each against its sha256 pin before every build;
+# 25 MiB of audio does not belong in git history. The manifest beside them is
+# committed. `.part` is a download that has not been verified yet.
+native-only/**/*.m4a
+native-only/**/*.part

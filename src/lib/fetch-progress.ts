@@ -12,6 +12,14 @@
 // response with no `Content-Length` still reports bytes (with `total: null`,
 // so the UI can show a byte count instead of a fake percentage), and a
 // response with no readable body falls back to `arrayBuffer()`.
+//
+// A song packaged inside the native app is read from the WebView's own
+// scheme, and on iOS that read answers status 0 and `ok: false` with the
+// whole file in the body. The rule for that lives in one place,
+// `@irchiinnuss/mobile-runtime/asset-fetch`, and this reads by it: status 0
+// is read, and refused only when nothing came back (an opaque answer).
+
+import { assetResponseFailed } from '@irchiinnuss/mobile-runtime/asset-fetch'
 
 /** Placeholder that lets a copied chunk be collected before the loop ends. */
 const EMPTY_CHUNK = new Uint8Array(0)
@@ -66,7 +74,9 @@ function declaredLength(resp: Response): number | null {
  * Fetch `url` into an ArrayBuffer, reporting bytes as they arrive.
  *
  * Throws on a non-2xx status (with the status in the message) and on abort,
- * exactly like the plain `fetch` + `arrayBuffer()` pair it replaces.
+ * exactly like the plain `fetch` + `arrayBuffer()` pair it replaces. A
+ * status-0 answer is read like a 200 (a packaged file on iOS), and throws
+ * only when it carried nothing.
  */
 export async function fetchArrayBufferWithProgress(
   url: string,
@@ -74,7 +84,11 @@ export async function fetchArrayBufferWithProgress(
 ): Promise<ArrayBuffer> {
   const { signal, onProgress } = options
   const resp = await fetch(url, signal !== undefined ? { signal } : {})
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`)
+  if (assetResponseFailed(resp)) {
+    throw new Error(`HTTP ${resp.status} for ${url}`)
+  }
+  /** Status 0 and nothing read: an opaque answer, not a packaged file. */
+  const emptyOpaque = (bytes: number): boolean => !resp.ok && bytes === 0
 
   const total = declaredLength(resp)
   onProgress?.(progressOf(0, total))
@@ -83,6 +97,7 @@ export async function fetchArrayBufferWithProgress(
   // one atomic read, and the caller's next report is the finished size.
   if (resp.body === null) {
     const buf = await resp.arrayBuffer()
+    if (emptyOpaque(buf.byteLength)) throw new Error(`Asset was empty: ${url}`)
     onProgress?.(progressOf(buf.byteLength, total ?? buf.byteLength))
     return buf
   }
@@ -105,6 +120,7 @@ export async function fetchArrayBufferWithProgress(
     // be torn down instead of held open until GC.
     reader.releaseLock()
   }
+  if (emptyOpaque(received)) throw new Error(`Asset was empty: ${url}`)
 
   // One allocation rather than repeated concatenation — a 12 MB stem would
   // otherwise copy itself ~200 times.

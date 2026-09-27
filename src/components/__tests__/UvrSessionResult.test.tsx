@@ -483,6 +483,26 @@ describe('UvrSessionResult Component', () => {
     })
   })
 
+  describe('Share link', () => {
+    it('is offered on the web, beside the export', () => {
+      seedSession({
+        sessionId: 'session-123',
+        status: 'completed',
+        progress: 100,
+        createdAt: Date.now() - 3600000,
+      })
+
+      render(() => <UvrSessionResult {...defaultProps} />)
+
+      openCardMenu()
+      expect(
+        screen
+          .getAllByRole('menuitem')
+          .map((row) => row.getAttribute('data-testid')),
+      ).toEqual(['overflow-export-zip', 'overflow-share', 'overflow-delete'])
+    })
+  })
+
   describe('Status Colors', () => {
     it('uses success color for completed status', () => {
       seedSession({

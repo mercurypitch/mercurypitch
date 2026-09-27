@@ -15,6 +15,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
+import { KaraokeStudioScreen } from './KaraokeStudioScreen'
 import { PushedScreen } from './PushedScreen'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
@@ -24,6 +25,7 @@ import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
+import { KaraokeSettingsScreen } from './settings/KaraokeSettingsScreen'
 import { MicrophoneScreen } from './settings/MicrophoneScreen'
 import { RoomNoiseScreen } from './settings/RoomNoiseScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
@@ -51,6 +53,8 @@ const TITLES: Record<PushedScreenId, string> = {
   'this-phone': 'This phone',
   appearance: 'Appearance',
   about: 'About',
+  karaoke: 'Karaoke',
+  'karaoke-studio': 'Karaoke studio',
   developer: 'Developer',
 }
 
@@ -79,6 +83,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <AppearanceScreen />
       case 'about':
         return <AboutScreen />
+      case 'karaoke':
+        return <KaraokeSettingsScreen />
+      case 'karaoke-studio':
+        return <KaraokeStudioScreen />
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />

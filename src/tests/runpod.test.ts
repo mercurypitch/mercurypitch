@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RunpodConfig, RunpodStatus } from '@/lib/runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, submitJob, toSessionId, } from '@/lib/runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, getRunpodConfig, isRunpodSessionId, jobExecutionTimeoutMs, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, runpodEndpointUrl, runpodHeaders, RunpodJobGoneError, submitJob, toSessionId, } from '@/lib/runpod'
 
 const CFG: RunpodConfig = {
   apiKey: 'key-123',
@@ -512,5 +512,27 @@ describe('fetch wrappers', () => {
     await expect(fetchJobStatus(CFG, 'ep-gpu', 'job-1')).rejects.toThrow(
       'RunPod status failed: 404 Not Found',
     )
+  })
+
+  it('fetchJobStatus says the job is gone on a 404, and only then', async () => {
+    // Review S7: only RunPod's 404 means the job is gone. A 429 or a 5xx is
+    // RunPod having a moment while the job may still run.
+    for (const [status, gone] of [
+      [404, true],
+      [429, false],
+      [500, false],
+      [503, false],
+    ] as const) {
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: false,
+        status,
+        statusText: 'Nope',
+      } as Response)
+      const thrown = await fetchJobStatus(CFG, 'ep-gpu', 'job-1').catch(
+        (error: unknown) => error,
+      )
+      expect(thrown instanceof RunpodJobGoneError, String(status)).toBe(gone)
+      expect(thrown).toBeInstanceOf(Error)
+    }
   })
 })

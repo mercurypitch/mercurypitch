@@ -15,35 +15,11 @@
 
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { loadBundledExamples } from './bundled-examples'
+import type { DemoSongManifest } from './demo-song-manifest'
 
-export interface DemoSongManifest {
-  /**
-   * Stable id for this demo. Absent on the shipped manifest, which is
-   * `LEGACY_SLUG` by definition — see `demoSessionId`.
-   */
-  slug?: string
-  title: string
-  artist: string
-  attribution: {
-    text: string
-    url: string
-    license: string
-    licenseUrl: string
-  }
-  stems: { vocal?: string; instrumental?: string }
-  /** Lyrics URL — .lrc or .lyricsfile (synced), or .txt (plain). */
-  lyrics?: string
-  /** Lyrics pasted straight into the studio. Wins over `lyrics` when set. */
-  lyricsText?: string
-  /**
-   * Bumped by the API whenever the lyrics change. Seeding is deliberately
-   * non-destructive, so this is the only way an authored correction can
-   * reach a visitor who already has the old copy. Absent for the shipped
-   * manifest, which is revision zero by definition.
-   */
-  lyricsRevision?: number
-  durationSec?: number
-}
+export type { DemoSongManifest }
 
 /**
  * Session id of the ORIGINAL demo — lyrics, pitch analysis and scores
@@ -131,7 +107,12 @@ function isManifest(m: unknown): m is DemoSongManifest {
   )
 }
 
-async function loadListFromApi(
+/**
+ * The studio's published list alone, with no fallback: empty when there is
+ * no API, no row or no connection. The native app merges it over the
+ * examples its bundle carries (`mergeExampleManifests`).
+ */
+export async function loadDemoSongsFromApi(
   signal?: AbortSignal,
 ): Promise<DemoSongManifest[]> {
   if ((API_BASE_URL ?? '') === '') return []
@@ -177,7 +158,7 @@ async function loadFromManifest(
 export async function loadDemoSongs(
   signal?: AbortSignal,
 ): Promise<DemoSongManifest[]> {
-  const fromApi = await loadListFromApi(signal)
+  const fromApi = await loadDemoSongsFromApi(signal)
   if (fromApi.length > 0) return fromApi
   const shipped = await loadFromManifest(signal)
   return shipped === null ? [] : [shipped]
@@ -433,7 +414,24 @@ export async function seedDemoLyricsForSession(
   signal?: AbortSignal,
 ): Promise<void> {
   if (!isDemoSessionId(sessionId)) return
-  const songs = await loadDemoSongs(signal)
+  const songs = IS_NATIVE_BUILD
+    ? await nativeExamplesFor(sessionId, signal)
+    : await loadDemoSongs(signal)
   const manifest = songs.find((m) => demoSessionId(m.slug) === sessionId)
   if (manifest !== undefined) await seedDemoLyrics(manifest, signal)
+}
+
+/**
+ * Where the native app looks for an example's words: its own bundle first,
+ * which answers with no network, and the studio's list only for a song the
+ * bundle does not carry.
+ */
+async function nativeExamplesFor(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<DemoSongManifest[]> {
+  const bundled = await loadBundledExamples()
+  return bundled.some((m) => demoSessionId(m.slug) === sessionId)
+    ? bundled
+    : loadDemoSongsFromApi(signal)
 }

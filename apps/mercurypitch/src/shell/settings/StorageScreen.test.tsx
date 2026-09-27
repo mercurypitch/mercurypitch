@@ -128,6 +128,21 @@ describe('what is kept', () => {
     expect(row('storage-rooms')?.textContent).toContain('0 MB')
   })
 
+  it('has no imported songs in a build that cannot import them', async () => {
+    // Even facts that named some: the screen itself carries no such row.
+    factsMock.mockResolvedValue({
+      ...FACTS,
+      importedSongs: { count: 7, bytes: 71_200_000 },
+    })
+    await open()
+
+    expect(row('storage-imported-songs')).toBeNull()
+    expect(view?.container.textContent).not.toMatch(/import|example songs/iu)
+    expect(
+      document.querySelector('.mp-storage__bar')?.getAttribute('aria-label'),
+    ).not.toMatch(/import/iu)
+  })
+
   it('offers no Clear for the pitch model, which goes only with the app', async () => {
     await open()
 

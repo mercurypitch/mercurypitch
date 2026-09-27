@@ -56,6 +56,12 @@ vi.mock('./settings/AppearanceScreen', () => ({
 vi.mock('./settings/AboutScreen', () => ({
   AboutScreen: marker('about'),
 }))
+vi.mock('./settings/KaraokeSettingsScreen', () => ({
+  KaraokeSettingsScreen: marker('karaoke'),
+}))
+vi.mock('./KaraokeStudioScreen', () => ({
+  KaraokeStudioScreen: marker('karaoke-studio'),
+}))
 
 /** Every screen on the stack, with the title its bar carries. */
 const SCREENS: readonly [PushedScreen, string][] = [
@@ -69,6 +75,7 @@ const SCREENS: readonly [PushedScreen, string][] = [
   ['this-phone', 'This phone'],
   ['appearance', 'Appearance'],
   ['about', 'About'],
+  ['karaoke', 'Karaoke'],
 ]
 
 let view: RenderedShell | null = null
@@ -120,6 +127,18 @@ describe('the Settings stack', () => {
       expect(drawn()).toEqual([{ title: 'Settings', marker: 'settings' }])
     })
   }
+
+  it('draws the Karaoke studio over the room, not over Settings, and Back takes it off', () => {
+    pushScreen('karaoke-studio')
+    const top = drawn()
+
+    view?.container
+      .querySelector<HTMLButtonElement>('[data-testid="shell-pushed-back"]')
+      ?.click()
+
+    expect(top).toEqual([{ title: 'Karaoke studio', marker: 'karaoke-studio' }])
+    expect(pushed()).toBeNull()
+  })
 
   it('draws nothing for Developer on a build without one', () => {
     pushScreen('developer')

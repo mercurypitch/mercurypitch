@@ -1,8 +1,9 @@
 import { ContainerProxy } from '@cloudflare/containers'
 import type { KVNamespace, R2Bucket } from '@cloudflare/workers-types'
+import { nativeAppOrigin, nativePreflight, withNativeCors, } from './lib/native-app-cors'
 import { getRunpodConfig, requestedRunpodTier } from './lib/runpod'
-import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
+import type { UvrInputBucket } from './lib/runpod-stem-storage'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
 import { handleOgCardRequest, ogCardExists } from './og-card-handler'
@@ -173,6 +174,138 @@ async function validateDbSession(
   }
 }
 
+/**
+ * Everything under `/api/uvr/*`. `inlineStems` is for the native app, which
+ * cannot follow a finished stem's redirect to storage on another origin: the
+ * worker hands it the bytes instead (runpod-bridge.ts).
+ */
+async function routeUvr(
+  request: Request,
+  env: Env,
+  url: URL,
+  method: string,
+  inlineStems: boolean,
+): Promise<Response> {
+  // Gate state-changing / expensive operations (process, delete-session)
+  // behind a valid app JWT; reads (models/status/output) stay open so
+  // <audio> playback and status polling keep working without auth headers.
+  // Signature + expiry only (no DB lookup) — enough to stop anonymous
+  // compute abuse and arbitrary session deletion.
+  if (method !== 'GET' && method !== 'OPTIONS') {
+    const auth = await verifyBearer(request, env.JWT_SECRET)
+    if (!auth) {
+      return json({ error: 'Unauthorized' }, 401)
+    }
+    const rejected = await validateDbSession(request, env.DB_API_URL)
+    if (rejected !== null) return rejected
+  }
+
+  // New processing is RunPod-only and must always pass the paid admission
+  // gate below. A missing/unknown provider used to fall through to the
+  // unmetered container, letting any app JWT bypass credits and rate limits.
+  const isProcessRequest =
+    method === 'POST' && url.pathname === '/api/uvr/process'
+  const requestedTier = isProcessRequest
+    ? requestedRunpodTier(request, url)
+    : null
+  if (isProcessRequest && requestedTier === null) {
+    return json(
+      {
+        error:
+          'Choose Server mode for cloud processing or Browser mode for on-device processing.',
+      },
+      400,
+    )
+  }
+
+  // When RunPod is configured, dispatch eligible requests to it (opted-in
+  // /process, or any rp_-prefixed session id). Legacy container session
+  // reads still fall through below.
+  const runpod = getRunpodConfig(env)
+  if (runpod) {
+    const meter = getMeteringConfig(env)
+    // A configured GPU without its billing/admission service is an unsafe
+    // state: accepting jobs would bypass both credits and rate limits.
+    // Refuse new RunPod work, while keeping status/output reads available
+    // so already-paid jobs remain recoverable.
+    if (isProcessRequest && requestedTier !== null && meter === null) {
+      return json(
+        {
+          error:
+            'Server processing protection is unavailable. Use Browser mode instead.',
+        },
+        503,
+      )
+    }
+    try {
+      const handled = await handleRunpodRequest(
+        request,
+        url,
+        method,
+        runpod,
+        meter,
+        // R2Bucket's overloaded put() doesn't structurally match the
+        // bridge's minimal interface; the runtime shape is compatible.
+        (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
+        env.RUNPOD_STEM_PREFIX ?? 'runpod',
+        { inlineStems },
+      )
+      if (handled !== null) return handled
+      // A valid process request can still be unhandled when the selected
+      // tier has no endpoint. Never let that configuration gap fall
+      // through to the legacy, unmetered container.
+      if (isProcessRequest) {
+        return json(
+          {
+            error:
+              'The selected server processing tier is not available right now. Use Browser mode instead.',
+          },
+          503,
+        )
+      }
+    } catch (err) {
+      console.error('[worker] runpod error:', err)
+      return json(
+        {
+          error: 'RunPod dispatch failed',
+          detail: err instanceof Error ? err.message : String(err),
+        },
+        502,
+      )
+    }
+  } else {
+    // Server mode is GPU-only: a RunPod-opted request must never fall
+    // through to the CPU container (slower, unmetered — free paid-looking
+    // jobs). Without RunPod configured it gets a clear 503 instead.
+    const rejected = rejectUnconfiguredRunpod(request, url, method)
+    if (rejected !== null) return rejected
+  }
+
+  const stripped = url.pathname.replace(/^\/api\/uvr/, '')
+  console.log(`[worker] proxying /api/uvr${stripped} → container`)
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const container = env.UVR_SERVICE.getByName('uvr-instance') as any
+    await container.start()
+    const containerUrl = new URL(request.url)
+    containerUrl.pathname = stripped
+    const proxied = new Request(containerUrl.toString(), request)
+    const resp = await container.fetch(proxied)
+    console.log(`[worker] container responded: ${resp.status}`)
+    return resp
+  } catch (err) {
+    console.error(`[worker] container fetch error:`, err)
+    return json(
+      {
+        error: 'Container unreachable',
+        detail: err instanceof Error ? err.message : String(err),
+      },
+      502,
+    )
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -180,125 +313,20 @@ export default {
 
     console.log(`[worker] ${method} ${url.pathname}`)
 
-    // Proxy UVR API requests to the UVR backend (RunPod GPU or CPU container)
+    // Proxy UVR API requests to the UVR backend (RunPod GPU or CPU container).
+    // The native app is the one cross-origin caller (native-app-cors.ts): its
+    // preflight is answered here, and its answers carry the header it needs.
+    // Every other caller gets exactly what it always got.
     if (url.pathname.startsWith('/api/uvr/')) {
-      // Gate state-changing / expensive operations (process, delete-session)
-      // behind a valid app JWT; reads (models/status/output) stay open so
-      // <audio> playback and status polling keep working without auth headers.
-      // Signature + expiry only (no DB lookup) — enough to stop anonymous
-      // compute abuse and arbitrary session deletion.
-      if (method !== 'GET' && method !== 'OPTIONS') {
-        const auth = await verifyBearer(request, env.JWT_SECRET)
-        if (!auth) {
-          return json({ error: 'Unauthorized' }, 401)
-        }
-        const rejected = await validateDbSession(request, env.DB_API_URL)
-        if (rejected !== null) return rejected
+      const nativeOrigin = nativeAppOrigin(request)
+      if (nativeOrigin === null) {
+        return routeUvr(request, env, url, method, false)
       }
-
-      // New processing is RunPod-only and must always pass the paid admission
-      // gate below. A missing/unknown provider used to fall through to the
-      // unmetered container, letting any app JWT bypass credits and rate limits.
-      const isProcessRequest =
-        method === 'POST' && url.pathname === '/api/uvr/process'
-      const requestedTier = isProcessRequest
-        ? requestedRunpodTier(request, url)
-        : null
-      if (isProcessRequest && requestedTier === null) {
-        return json(
-          {
-            error:
-              'Choose Server mode for cloud processing or Browser mode for on-device processing.',
-          },
-          400,
-        )
-      }
-
-      // When RunPod is configured, dispatch eligible requests to it (opted-in
-      // /process, or any rp_-prefixed session id). Legacy container session
-      // reads still fall through below.
-      const runpod = getRunpodConfig(env)
-      if (runpod) {
-        const meter = getMeteringConfig(env)
-        // A configured GPU without its billing/admission service is an unsafe
-        // state: accepting jobs would bypass both credits and rate limits.
-        // Refuse new RunPod work, while keeping status/output reads available
-        // so already-paid jobs remain recoverable.
-        if (isProcessRequest && requestedTier !== null && meter === null) {
-          return json(
-            {
-              error:
-                'Server processing protection is unavailable. Use Browser mode instead.',
-            },
-            503,
-          )
-        }
-        try {
-          const handled = await handleRunpodRequest(
-            request,
-            url,
-            method,
-            runpod,
-            meter,
-            // R2Bucket's overloaded put() doesn't structurally match the
-            // bridge's minimal interface; the runtime shape is compatible.
-            (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
-            env.RUNPOD_STEM_PREFIX ?? 'runpod',
-          )
-          if (handled !== null) return handled
-          // A valid process request can still be unhandled when the selected
-          // tier has no endpoint. Never let that configuration gap fall
-          // through to the legacy, unmetered container.
-          if (isProcessRequest) {
-            return json(
-              {
-                error:
-                  'The selected server processing tier is not available right now. Use Browser mode instead.',
-              },
-              503,
-            )
-          }
-        } catch (err) {
-          console.error('[worker] runpod error:', err)
-          return json(
-            {
-              error: 'RunPod dispatch failed',
-              detail: err instanceof Error ? err.message : String(err),
-            },
-            502,
-          )
-        }
-      } else {
-        // Server mode is GPU-only: a RunPod-opted request must never fall
-        // through to the CPU container (slower, unmetered — free paid-looking
-        // jobs). Without RunPod configured it gets a clear 503 instead.
-        const rejected = rejectUnconfiguredRunpod(request, url, method)
-        if (rejected !== null) return rejected
-      }
-
-      const stripped = url.pathname.replace(/^\/api\/uvr/, '')
-      console.log(`[worker] proxying /api/uvr${stripped} → container`)
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const container = env.UVR_SERVICE.getByName('uvr-instance') as any
-        await container.start()
-        const containerUrl = new URL(request.url)
-        containerUrl.pathname = stripped
-        const proxied = new Request(containerUrl.toString(), request)
-        const resp = await container.fetch(proxied)
-        console.log(`[worker] container responded: ${resp.status}`)
-        return resp
-      } catch (err) {
-        console.error(`[worker] container fetch error:`, err)
-        return json(
-          {
-            error: 'Container unreachable',
-            detail: err instanceof Error ? err.message : String(err),
-          },
-          502,
-        )
-      }
+      if (method === 'OPTIONS') return nativePreflight(nativeOrigin)
+      return withNativeCors(
+        await routeUvr(request, env, url, method, true),
+        nativeOrigin,
+      )
     }
 
     // Shared voiceprint cards — /api/og/card/*  →  KV-backed

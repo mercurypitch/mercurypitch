@@ -33,6 +33,7 @@
 
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
+import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { SettingsSection } from '@/stores/settings-section'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
@@ -83,6 +84,24 @@ export interface NativeRunControls {
    */
   closeRoomOverlay?: () => boolean
   /**
+   * The room draws its own transport, and the shell must not draw another.
+   *
+   * The Karaoke room plays inside zen's bar: the scrubber, both times, the
+   * mic, the music level and Next, none of which the shell's Transport has
+   * (S8 decision D2 A). During a run the shell still steps the rail aside,
+   * as for any run, but draws no Transport and no corner chip in its place.
+   * Absent means the shell's Transport, as Sing has it.
+   */
+  readonly ownsTransport?: boolean
+  /** The gear's accessible name. Absent means "Practice options". */
+  readonly optionsLabel?: string
+  /**
+   * The one option the singer pinned beside the gear, as it is now, or null
+   * for none (owner, 27 Sep: the Karaoke room's toggles live behind the gear,
+   * and one of them may also sit in the header). Absent means none.
+   */
+  pinnedToggle?: () => PinnedRoomToggle | null
+  /**
    * Whether a take the singer has not kept is on screen.
    *
    * Absent means NO. Today no room can answer — a practice run leaves nothing
@@ -91,6 +110,16 @@ export interface NativeRunControls {
    * room that gains a real take opts in here and gets the alert.
    */
   hasUnsavedTake?: () => boolean
+}
+
+/** An option a room pinned beside the gear. The shell draws it by `icon`. */
+export interface PinnedRoomToggle {
+  readonly icon: 'lyrics-size' | 'notes' | 'play-next'
+  /** The accessible name. A control that steps says its state here. */
+  readonly label: string
+  /** A switch's state. Absent for a control that steps, not switches. */
+  readonly pressed?: boolean
+  readonly onToggle: () => void
 }
 
 /** What a room can ask the shell for. */
@@ -126,11 +155,85 @@ export interface NativeShellApi {
    * (S6 audit D2). Optional, like `openAppSettings`.
    */
   openSignIn?: () => void
+  /**
+   * Push the Karaoke studio over the room: the old Karaoke tab, a library to
+   * work on (plan S8 §11, decision D8 A). The room's Options reach it from
+   * "Manage songs". Optional, like `openSignIn`: a room that finds no shell
+   * that offers it draws no row for it.
+   */
+  openKaraokeStudio?: () => void
+  /**
+   * The Karaoke subscription, bought and restored through the store (plan
+   * S8 §6.7). The purchase port it wraps lives in the app, which the room
+   * cannot import. Until the store products and RevenueCat's keys exist
+   * (owner, plan step 25) the port is the inert one and every call answers
+   * `unavailable`, so the paywall fails closed. Optional, like the rest: a
+   * room that finds none treats it the same way.
+   */
+  karaokeSubscription?: KaraokeSubscriptionApi
+}
+
+/** How a Subscribe ended. Only `purchased` changes anything. */
+export type KaraokeSubscribeOutcome =
+  | 'purchased'
+  | 'pending'
+  | 'cancelled'
+  | 'unavailable'
+  | 'failed'
+
+/** How a Restore purchases ended. */
+export type KaraokeRestoreOutcome =
+  | 'restored'
+  | 'nothing'
+  | 'unavailable'
+  | 'failed'
+
+export interface KaraokeSubscriptionApi {
+  subscribe: () => Promise<KaraokeSubscribeOutcome>
+  restore: () => Promise<KaraokeRestoreOutcome>
+  /** The store's own page for the subscription, where the store has one. */
+  manage?: () => Promise<void>
+}
+
+/**
+ * A claim on the app's one AudioContext (`packages/audio-io`'s broker), as
+ * its claimant holds it: what it lends, and the release. The last claim
+ * released suspends the clock; nothing ever closes it.
+ */
+export interface NativeAudioLease extends AudioContextLease {
+  release(): void
+}
+
+/**
+ * What a room under `src/` needs from the device and cannot import.
+ *
+ * The root package does not depend on `packages/audio-io`, and eslint keeps
+ * every `@irchiinnuss/mobile-runtime` entry but asset-fetch out of `src/`.
+ * The app registers this from its entry (apps/mercurypitch main.tsx); on the
+ * web nothing does, and a room that finds nothing builds its own context
+ * and leaves the screen to sleep as it always did.
+ */
+export interface NativeDeviceApi {
+  /** A lease on the one shared AudioContext, under the owner's name. */
+  acquireAudio: (owner: string) => NativeAudioLease
+  /** Keep the screen on while a song plays, and let it sleep after. */
+  keepAwake: (on: boolean) => void
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(
   null,
 )
+const [deviceApi, setDeviceApi] = createSignal<NativeDeviceApi | null>(null)
+
+/** The device, or null on the web and before the app registers it. */
+export const nativeDeviceApi = deviceApi
+
+export function registerNativeDevice(api: NativeDeviceApi): () => void {
+  setDeviceApi(api)
+  return () => {
+    setDeviceApi((current) => (current === api ? null : current))
+  }
+}
 const [shellApi, setShellApi] = createSignal<NativeShellApi | null>(null)
 const [transportOwned, setTransportOwned] = createSignal(false)
 

@@ -1095,3 +1095,200 @@
   font-size: 0.95rem;
   font-weight: 800;
 }
+
+/* ── Hosted by the native Karaoke room ─────────────────────
+   The room is a box the shell owns, not the viewport (REQ-NRM-004): the
+   stage fills it rather than portalling over it, starts under the room
+   header the shell draws (its 52 px row over the safe area), and leaves the
+   picture to the room's own [data-room-background], which the alley's door
+   hands over to. What the stage keeps of its background is the plum veil. */
+.hosted {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: calc(var(--safe-top, 0px) + 52px);
+  color: var(--stage-color);
+  background: linear-gradient(
+    180deg,
+    rgba(14, 6, 25, 0.9) 0%,
+    rgba(18, 8, 31, 0.72) 45%,
+    rgba(10, 4, 18, 0.94) 100%
+  );
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The song line: title, credit, and the library behind a tap. */
+.songLine {
+  flex-shrink: 0;
+  padding: 2px max(12px, var(--safe-right, 0px)) 2px
+    max(12px, var(--safe-left, 0px));
+}
+
+.songLineButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.songLineButton:active {
+  opacity: 0.8;
+}
+
+.songLineButton > svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: rgba(244, 236, 255, 0.7);
+}
+
+.songLineText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hosted .title {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.byline {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(244, 236, 255, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(201, 162, 255, 0.18);
+  color: #e2cfff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.badge > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c9a2ff;
+}
+
+/* While the shell's rail is up (before the first play, and after a song
+   ends) the bar and the two floating controls stand on it rather than
+   under it. During a song the rail steps aside and zen's bar is the
+   transport (the room's `ownsTransport`). */
+.hosted .bottomBar {
+  transition: padding-bottom 0.24s ease;
+}
+
+:global(:root[data-shell-rail='on']) .hosted .bottomBar {
+  padding-bottom: calc(var(--tabbar-total, 64px) + 10px);
+}
+
+:global(:root[data-shell-rail='on']) .hosted .singPill,
+:global(:root[data-shell-rail='on']) .hosted .micFloatBtn {
+  bottom: calc(128px + var(--tabbar-total, 64px));
+}
+
+/* ── Hosted, on its side (decision D3 A) ───────────────────
+   Two columns inside the safe area: the song and the transport on the
+   left, the lyrics on the right, the way the wide Apple Music layout zen
+   borrows from does it. Zen had no orientation rule at all: a phone on its
+   side got the portrait column, and 24vh + 32vh of padding at 393 px tall
+   left almost no line to read. `max-height` keeps a tablet out of it. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .hosted {
+    display: grid;
+    grid-template-columns: minmax(236px, 286px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'song lyrics'
+      'aside lyrics'
+      'bar lyrics';
+    column-gap: 26px;
+    padding: calc(var(--safe-top, 0px) + 52px) max(12px, var(--safe-right, 0px))
+      0 max(16px, var(--safe-left, 0px));
+  }
+
+  /* Anything the stage adds that has no place of its own (the notes hint,
+     the pitch ribbon) sits in the left column's middle. */
+  .hosted > * {
+    grid-area: aside;
+    min-width: 0;
+  }
+
+  .hosted .songLine {
+    grid-area: song;
+    padding: 0;
+  }
+
+  .hosted .lyrics {
+    grid-area: lyrics;
+    width: auto;
+    margin: 0;
+    padding: 14vh 54px 22vh 0;
+  }
+
+  /* Cued, the shell's rail is up and runs along the bottom under both
+     columns: the lyrics column stops above it, so the line being read is
+     never under the rail (review V3). During a song the rail steps aside
+     and the column has its height back. */
+  :global(:root[data-shell-rail='on']) .hosted .lyrics {
+    margin-bottom: calc(var(--tabbar-total, 64px) + 6px);
+  }
+
+  .hosted .line {
+    font-size: calc(1.6rem * var(--lyrics-scale, 1));
+    margin-bottom: 0.8rem;
+  }
+
+  .hosted .bottomBar {
+    grid-area: bar;
+    width: auto;
+    margin: 0;
+    padding: 6px 0 calc(8px + var(--safe-bottom));
+    background: none;
+  }
+
+  .hosted .transport {
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .hosted .transportMain {
+    gap: 12px;
+  }
+
+  /* Out of the grid: these two are placed against the whole stage. */
+  .hosted .stateOverlay,
+  .hosted .singPill {
+    grid-area: auto;
+  }
+
+  .hosted .singPill {
+    right: max(12px, var(--safe-right, 0px));
+    bottom: calc(18px + var(--safe-bottom));
+  }
+}

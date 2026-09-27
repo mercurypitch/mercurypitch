@@ -23,7 +23,7 @@ import { fuzzyScore } from '@/lib/fuzzy-match'
 import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night-link'
 import { extractTitle } from '@/lib/lyrics-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
-import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
@@ -43,7 +43,7 @@ import { isTerminalUploadQueueStatus, MAX_UVR_UPLOAD_QUEUE_ITEMS, } from '@/lib/
 import type { UvrProcessingMode, UvrSession } from '@/stores/app-store'
 import { addSessionToGroup, cancelUvrSession, completeUvrSession, createGroup, currentUvrSession, deleteAllUvrSessions, getAllUvrSessions, getAllUvrSessionsReactive, getGroupsReactive, getUvrProcessingMode, getUvrSession, isSessionStoreReady, karaokeActiveGroupId, resumableServerSessions, retryUvrSession, saveAllUvrSessions, setCurrentUvrSession, setErrorUvrSession, setKaraokeActiveGroupId, setUvrForceWebGpu, setUvrProcessingMode, setUvrSessionResuming, startTour, startUvrSession, STEM_MIXER_TOUR_STEPS, updateUvrSessionOutputs, uvrForceWebGpu, uvrModelError, uvrModelStatus, uvrProcessingMode, } from '@/stores/app-store'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
-import { isPlaylistActive } from '@/stores/karaoke-playlist-store'
+import { isPlaylistActive, stopPlaylist } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { syncCodeToJoin } from '@/stores/sync-store'
@@ -56,6 +56,8 @@ import { CheckCircle, ChevronDown, ChevronLeft, ChevronUp, Cpu, DeviceSync, Expo
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 import type { ExtraStemInput } from './StemMixer'
+import type { UvrStudioHosting } from './uvr-studio-hosting'
+import type { UvrView } from './uvr-view'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -68,13 +70,7 @@ const ShazamResults = lazy(async () =>
   })),
 )
 
-export type UvrView =
-  | 'upload'
-  | 'processing'
-  | 'results'
-  | 'mixer'
-  | 'shazam-listen'
-  | 'shazam-results'
+export type { UvrView } from './uvr-view'
 
 const CORE_LIBRARY_EXPORT_STEMS: readonly SessionExportStemType[] = [
   'vocal',
@@ -114,6 +110,12 @@ interface UvrPanelProps {
   onOpenStemMixer?: (sessionId: string) => void
   /** Auto-jump confidence threshold for stem matches (default 85) */
   autoJumpThreshold?: number
+  /**
+   * The native app's studio around the panel (plan S8 §11): it draws the
+   * header and the group row, and a song chosen to sing goes back to the
+   * Karaoke room. Never passed on the web.
+   */
+  studio?: UvrStudioHosting
 }
 
 export const UvrPanel: Component<UvrPanelProps> = (props) => {
@@ -200,6 +202,33 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
   const [showGuide, setShowGuide] = createSignal(false)
+
+  // The native studio around the panel draws the one options button and the
+  // Group row in place of this panel's header and group tabs (plan S8 §11),
+  // and drives the view and the guide through these.
+  if (IS_NATIVE_BUILD) {
+    untrack(() => props.studio)?.attach({
+      view: currentView,
+      showView: (view) => {
+        setCurrentView(view)
+        props.onViewChange?.(view)
+        props.onSessionChange?.(null)
+      },
+      openGuide: () => setShowGuide(true),
+    })
+  }
+
+  /**
+   * Native: a song chosen to sing goes back to the Karaoke room, which hosts
+   * the one zen stage, rather than onto a second one here (plan S8 §11).
+   * True when the room was handed it.
+   */
+  const handToRoom = (sessionId: string): boolean => {
+    const studio = props.studio
+    if (studio === undefined) return false
+    studio.onSing(sessionId)
+    return true
+  }
   /** The phone's options sheet, holding what the header cannot fit. */
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   const [showClearStorageConfirm, setShowClearStorageConfirm] =
@@ -836,6 +865,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
   // correct stems are in place — so the mixer never reuses a previous
   // (already-ended) instance or loads stale stems.
   useKaraokePlaylistRunner((hydrated) => {
+    if (IS_NATIVE_BUILD && handToRoom(hydrated.sessionId)) {
+      // The room has no playlists in V1 (plan S8 §3; the studio keeps
+      // them): its song goes on the room's stage, and the playlist ends.
+      stopPlaylist()
+      return
+    }
     supersedeMixerSelection()
     batch(() => {
       setCurrentUvrSession(hydrated)
@@ -1707,6 +1742,8 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     const token = supersedeMixerSelection()
     const current = currentUvrSession()
     if (!current?.outputs && !current?.stemMeta) return
+    if (IS_NATIVE_BUILD && current !== null && handToRoom(current.sessionId))
+      return
     const s = await ensureHydrated(current)
     if (token !== mixerSelectionToken) return
 
@@ -1758,6 +1795,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       preparationLabel?: string
     } = {},
   ): Promise<void> => {
+    if (IS_NATIVE_BUILD && handToRoom(sessionId)) return
     const token = supersedeMixerSelection()
     const raw = getUvrSession(sessionId)
     if (!raw?.outputs && !raw?.stemMeta) {
@@ -1941,6 +1979,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     sessionId: string,
     stems?: { vocal?: boolean; instrumental?: boolean; midi?: boolean },
   ) => {
+    if (IS_NATIVE_BUILD && handToRoom(sessionId)) return
     const token = supersedeMixerSelection()
     const raw = getUvrSession(sessionId)
     if (!raw?.outputs && !raw?.stemMeta) return
@@ -2249,7 +2288,13 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             these two rows (title + view tabs, then the separation pills) push
             the stage below the fold. The separation controls still exist in
             the Upload view and under Settings > Karaoke. */}
-        <Show when={!karaokeFocus() && currentView() !== 'mixer'}>
+        {/* Not in the native app: the studio around the panel draws the one
+            options button there, beside its Group row (plan S8 §11). */}
+        <Show
+          when={
+            !IS_NATIVE_BUILD && !karaokeFocus() && currentView() !== 'mixer'
+          }
+        >
           <div class="panel-header">
             <div class="uvr-header-left">
               <div
@@ -2359,122 +2404,130 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               onDragLeave={handleZipDragLeave}
               onDrop={handleZipDrop}
             >
-              <div class="section-header">
-                <h4>Upload Audio</h4>
-              </div>
+              {/* The native app imports its own way, in Stage 2 of the room
+                  (plan S8 §6): a durable queue and files on the phone, behind
+                  a switch that is off in store builds. This panel's upload
+                  box, its queue, the stems upload and the phone signpost to
+                  Karaoke Night (a link out of the app's one document, audit
+                  K4) are the web's. */}
+              <Show when={!IS_NATIVE_BUILD}>
+                <div class="section-header">
+                  <h4>Upload Audio</h4>
+                </div>
 
-              {/* A television has no file manager, so the upload box below is
+                {/* A television has no file manager, so the upload box below is
                   a dead end there. Say so before the user discovers it by
                   clicking, and point at the two paths that work. */}
-              <Show when={isTvDevice()}>
-                <div class="uvr-tv-upload-note" data-testid="uvr-tv-lead">
-                  <strong>Adding songs on a TV</strong>
-                  <p>
-                    This TV's browser cannot open files. Prepare songs on a
-                    phone or computer while signed in, then play them from your
-                    library below — or try a demo song right away.
-                  </p>
-                </div>
-              </Show>
+                <Show when={isTvDevice()}>
+                  <div class="uvr-tv-upload-note" data-testid="uvr-tv-lead">
+                    <strong>Adding songs on a TV</strong>
+                    <p>
+                      This TV's browser cannot open files. Prepare songs on a
+                      phone or computer while signed in, then play them from
+                      your library below — or try a demo song right away.
+                    </p>
+                  </div>
+                </Show>
 
-              {/* Karaoke Night links here, but nothing here said Karaoke Night
+                {/* Karaoke Night links here, but nothing here said Karaoke Night
                   existed unless you first found the Options sheet — so a phone
                   arriving in the studio met the widest surface in the app with
                   no hint that a stage built for it was one tap away. Named for
                   the difference between them rather than "also try...", so the
                   choice is answerable without opening both. */}
-              <Show when={isNarrow() && !isTvDevice()}>
-                <div
-                  class="uvr-tv-upload-note uvr-stage-note"
-                  data-testid="uvr-stage-lead"
-                >
-                  <strong>You're in the studio</strong>
-                  <p>
-                    This is where songs are separated into stems and analysed.
-                    To actually sing one, Karaoke Night is the full-screen stage
-                    — and it is the surface built for a phone.
-                  </p>
-                  <BusyLink
-                    class="uvr-stage-note-link"
-                    href={KARAOKE_NIGHT_PATH}
-                    busyLabel="Opening Karaoke Night…"
+                <Show when={isNarrow() && !isTvDevice()}>
+                  <div
+                    class="uvr-tv-upload-note uvr-stage-note"
+                    data-testid="uvr-stage-lead"
                   >
-                    <StageCurtains />
-                    Open Karaoke Night
-                  </BusyLink>
+                    <strong>You're in the studio</strong>
+                    <p>
+                      This is where songs are separated into stems and analysed.
+                      To actually sing one, Karaoke Night is the full-screen
+                      stage — and it is the surface built for a phone.
+                    </p>
+                    <BusyLink
+                      class="uvr-stage-note-link"
+                      href={KARAOKE_NIGHT_PATH}
+                      busyLabel="Opening Karaoke Night…"
+                    >
+                      <StageCurtains />
+                      Open Karaoke Night
+                    </BusyLink>
+                  </div>
+                </Show>
+
+                <UvrUploadControl
+                  onFilesSelect={enqueueAudioFiles}
+                  onImportZips={startZipImport}
+                  disabled={
+                    uploadQueue.isRunning() ||
+                    allSessions().some(
+                      (item) =>
+                        item.status === 'uploading' ||
+                        item.status === 'processing' ||
+                        item.status === 'finalizing',
+                    )
+                  }
+                  maxSize={
+                    uvrProcessingMode() === 'server'
+                      ? SERVER_MAX_UPLOAD_BYTES
+                      : LOCAL_MAX_UPLOAD_BYTES
+                  }
+                  maxSizeNote={
+                    uvrProcessingMode() === 'server'
+                      ? 'Cloud GPU upload limit — for larger files use Browser mode'
+                      : undefined
+                  }
+                />
+
+                <Show when={uploadQueue.items().length > 0}>
+                  <div ref={uploadQueueAnchor} data-testid="uvr-upload-queue">
+                    <UvrUploadQueue
+                      items={uploadQueue.items}
+                      running={uploadQueue.isRunning}
+                      mode={() =>
+                        uploadQueue.isRunning()
+                          ? activeUvrUploadQueueMode()
+                          : uvrProcessingMode()
+                      }
+                      costPerSong={() =>
+                        bandSplitChoice() ? bandCost() : songCost()
+                      }
+                      onStart={() => void startUploadQueue()}
+                      onRemove={uploadQueue.remove}
+                      onSkip={uploadQueue.skipQueued}
+                      onSkipRemaining={uploadQueue.skipRemaining}
+                      onCancel={uploadQueue.cancelActive}
+                      onRetryFailed={uploadQueue.requeueFailed}
+                      onClear={uploadQueue.clear}
+                    />
+                  </div>
+                </Show>
+
+                <UvrStemUploadControl
+                  disabled={
+                    uploadQueue.isRunning() ||
+                    allSessions().some(
+                      (item) =>
+                        item.status === 'uploading' ||
+                        item.status === 'processing' ||
+                        item.status === 'finalizing',
+                    )
+                  }
+                />
+
+                <div class="upload-divider">
+                  <span class="upload-divider-text">
+                    <Show
+                      when={allSessions().length > 0}
+                      fallback="or import existing sessions"
+                    >
+                      or continue from existing session
+                    </Show>
+                  </span>
                 </div>
               </Show>
-
-              <UvrUploadControl
-                onFilesSelect={enqueueAudioFiles}
-                onImportZips={startZipImport}
-                disabled={
-                  uploadQueue.isRunning() ||
-                  allSessions().some(
-                    (item) =>
-                      item.status === 'uploading' ||
-                      item.status === 'processing' ||
-                      item.status === 'finalizing',
-                  )
-                }
-                maxSize={
-                  uvrProcessingMode() === 'server'
-                    ? SERVER_MAX_UPLOAD_BYTES
-                    : LOCAL_MAX_UPLOAD_BYTES
-                }
-                maxSizeNote={
-                  uvrProcessingMode() === 'server'
-                    ? 'Cloud GPU upload limit — for larger files use Browser mode'
-                    : undefined
-                }
-              />
-
-              <Show when={uploadQueue.items().length > 0}>
-                <div ref={uploadQueueAnchor} data-testid="uvr-upload-queue">
-                  <UvrUploadQueue
-                    items={uploadQueue.items}
-                    running={uploadQueue.isRunning}
-                    mode={() =>
-                      uploadQueue.isRunning()
-                        ? activeUvrUploadQueueMode()
-                        : uvrProcessingMode()
-                    }
-                    costPerSong={() =>
-                      bandSplitChoice() ? bandCost() : songCost()
-                    }
-                    onStart={() => void startUploadQueue()}
-                    onRemove={uploadQueue.remove}
-                    onSkip={uploadQueue.skipQueued}
-                    onSkipRemaining={uploadQueue.skipRemaining}
-                    onCancel={uploadQueue.cancelActive}
-                    onRetryFailed={uploadQueue.requeueFailed}
-                    onClear={uploadQueue.clear}
-                  />
-                </div>
-              </Show>
-
-              <UvrStemUploadControl
-                disabled={
-                  uploadQueue.isRunning() ||
-                  allSessions().some(
-                    (item) =>
-                      item.status === 'uploading' ||
-                      item.status === 'processing' ||
-                      item.status === 'finalizing',
-                  )
-                }
-              />
-
-              <div class="upload-divider">
-                <span class="upload-divider-text">
-                  <Show
-                    when={allSessions().length > 0}
-                    fallback="or import existing sessions"
-                  >
-                    or continue from existing session
-                  </Show>
-                </span>
-              </div>
 
               {/* Karaoke playlists gallery (above the session list) */}
               <KaraokePlaylistGallery />
@@ -2499,7 +2552,9 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                   </Show>
                 </button>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <Show when={allSessions().length > 0}>
+                  {/* Exporting stems is out of V1 in the native app (plan S8
+                      §1), and so is this ZIP round trip's other half. */}
+                  <Show when={!IS_NATIVE_BUILD && allSessions().length > 0}>
                     <Show
                       when={
                         activeGroupId() != null && filteredSessions().length > 0
@@ -2529,30 +2584,35 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     </button>
                   </Show>
                   {/* Outside the sessions-exist gate on purpose: the empty
-                      device is exactly the one that needs to receive. */}
-                  <button
-                    class="section-action-btn section-action-btn-accent icon-only"
-                    onClick={() => openSyncModal()}
-                    title="Sync songs with another of your devices"
-                    aria-label="Sync songs with another of your devices"
-                  >
-                    <DeviceSync />
-                  </button>
-                  <label
-                    class="section-action-btn icon-only"
-                    title="Import sessions from ZIP files (multi-select supported)"
-                    style={{ cursor: isImporting() ? 'default' : 'pointer' }}
-                  >
-                    <ImportFile />
-                    <input
-                      type="file"
-                      accept=".zip"
-                      multiple
-                      style={{ display: 'none' }}
-                      onChange={handleImportZip}
-                      disabled={isImporting()}
-                    />
-                  </label>
+                      device is exactly the one that needs to receive. The
+                      native app syncs no songs in V1 (plan S8, D9). */}
+                  <Show when={!IS_NATIVE_BUILD}>
+                    <button
+                      class="section-action-btn section-action-btn-accent icon-only"
+                      onClick={() => openSyncModal()}
+                      title="Sync songs with another of your devices"
+                      aria-label="Sync songs with another of your devices"
+                    >
+                      <DeviceSync />
+                    </button>
+                  </Show>
+                  <Show when={!IS_NATIVE_BUILD}>
+                    <label
+                      class="section-action-btn icon-only"
+                      title="Import sessions from ZIP files (multi-select supported)"
+                      style={{ cursor: isImporting() ? 'default' : 'pointer' }}
+                    >
+                      <ImportFile />
+                      <input
+                        type="file"
+                        accept=".zip"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={handleImportZip}
+                        disabled={isImporting()}
+                      />
+                    </label>
+                  </Show>
                   <Show when={allSessions().length > 0}>
                     <button
                       class="section-action-btn section-action-btn-danger icon-only"
@@ -2571,10 +2631,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     <Music />
                   </span>
                   <h3>No songs yet</h3>
-                  <p>Upload a song to split it into stems you can sing over.</p>
-                  <label class="primary-btn" for="uvr-file-input">
-                    <FilePlus /> Start uploading
-                  </label>
+                  {/* The upload box this points at is the web's. */}
+                  <Show when={!IS_NATIVE_BUILD}>
+                    <p>
+                      Upload a song to split it into stems you can sing over.
+                    </p>
+                    <label class="primary-btn" for="uvr-file-input">
+                      <FilePlus /> Start uploading
+                    </label>
+                  </Show>
                 </div>
               </Show>
 
@@ -2613,12 +2678,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     desktop the sidebar's Song-groups panel owns this filter
                     (uvr-groups-inline hides >=769px, the drawer breakpoint),
                     so the freed row goes back to the session list. */}
-                <div class="uvr-groups-inline">
-                  <SessionGroupTabs
-                    activeGroupId={activeGroupId()}
-                    onSelectGroup={setActiveGroupId}
-                  />
-                </div>
+                <Show when={!IS_NATIVE_BUILD}>
+                  <div class="uvr-groups-inline">
+                    <SessionGroupTabs
+                      activeGroupId={activeGroupId()}
+                      onSelectGroup={setActiveGroupId}
+                    />
+                  </div>
+                </Show>
                 <div class="history-list history-list-inline">
                   <For
                     each={filteredSessions().sort(

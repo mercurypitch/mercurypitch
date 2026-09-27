@@ -33,11 +33,12 @@ import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
+import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, pushSettingsSection, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { resumeAfterDeletion } from './settings/account-deletion'
 import { installAccountOffer } from './settings/account-offer'
@@ -45,6 +46,7 @@ import { AccountOfferSheet } from './settings/AccountOffer'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
+import { mirrorShellChrome } from './shell-attributes'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
 import { ShellScreens } from './ShellScreens'
@@ -110,22 +112,33 @@ export const NativeShell: Component = () => {
     // a take is kept in the Sing room (account-offer.ts).
     onCleanup(installAccountOffer())
 
+    // Stage 2 of the Karaoke room (plan S8): the queue that sends imported
+    // songs, and the store its paywall reaches. Nothing in a build without
+    // Import (karaoke-import-wiring.ts).
+    const karaoke = installKaraokeImport()
+    onCleanup(karaoke.stop)
+
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
     // shell pushes.
     onCleanup(
       registerShellApi({
+        ...karaoke.api,
         // Natively every "open Settings at <section>" lands here
-        // (ui-store's openSettingsSection). Only the account has a screen
-        // of its own to open at; anything else is Settings itself.
+        // (ui-store's openSettingsSection). The account and Karaoke have a
+        // screen of their own to open at; anything else is Settings itself.
         pushSettings: (section) => {
-          pushSettingsScreen(section === 'account' ? 'account' : undefined)
+          pushSettingsSection(section)
         },
         // The Sing room's denied state (3d) is the one caller: a refused
         // microphone can only be undone in the system's own Settings.
         openAppSettings: () => openAppSettings(),
         // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
         openSignIn,
+        // The Karaoke room's "Manage songs" (S8 §11, D8 A).
+        openKaraokeStudio: () => {
+          pushScreen('karaoke-studio')
+        },
       }),
     )
 
@@ -217,6 +230,9 @@ export const NativeShell: Component = () => {
     setShellOwnsTransport(transportVisible())
   })
 
+  // Whether the rail is on screen, for a room whose own bar rests on it.
+  mirrorShellChrome()
+
   onCleanup(() => {
     setShellOwnsTransport(false)
     document.documentElement.removeAttribute('data-shell-chip')
@@ -243,6 +259,8 @@ export const NativeShell: Component = () => {
                   performBack(shellBackHost())
                 }}
                 onGear={controls().openOptions}
+                gearLabel={controls().optionsLabel}
+                pinned={controls().pinnedToggle}
                 // The chip is a button only where the room answers for one:
                 // the shell owns no picker of its own (R5).
                 onChip={controls().openRoomPicker}

@@ -10,6 +10,8 @@
 //   POST /api/billing/debit     — auth; meter a server UVR job (idempotent)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
 //   POST /api/billing/promo/redeem — auth + verified email; { code } → credits
+//   POST /api/billing/revenuecat — RevenueCat; secret header, idempotent: the
+//                                   Karaoke subscription's songs (revenuecat.ts)
 //
 // Design (see docs/plans/premium.md):
 //  • Prices live in the DB (pricingPlans), never in the repo. `amount` NULL
@@ -30,6 +32,8 @@
 import type { Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
 import { sendBillingAlert, sendPurchaseThankYou } from './email'
+import { handleRevenueCatWebhook } from './revenuecat'
+import { songAllowance, songsSummary } from './songs-allowance'
 import type { PricingRow } from './billing-core'
 import { UVR_TIER_PLAN_IDS, bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from './billing-core'
 
@@ -178,9 +182,13 @@ async function handleMe(
     redeemedPromos = []
   }
 
+  const balance = creditBalance(ledger.results)
   return respond({
-    creditBalance: creditBalance(ledger.results),
+    creditBalance: balance,
     entitlements,
+    // The same balance in the native app's words, with the Karaoke
+    // subscription around it (songs-allowance.ts).
+    songs: songsSummary(entitlements, balance, songAllowance(env), Date.now()),
     redeemedPromos,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
@@ -1286,6 +1294,9 @@ export async function handleBilling(
   }
   if (route === 'webhook' && method === 'POST') {
     return handleWebhook(request, env, respond)
+  }
+  if (route === 'revenuecat' && method === 'POST') {
+    return handleRevenueCatWebhook(request, env, respond)
   }
   if (route === 'uvr-admit' && method === 'POST') {
     return handleUvrAdmission(request, env, respond)

@@ -14,3 +14,8 @@ dist
 # master in public/ would fail this app's check for a file it never wrote.
 .native-public
 public
+
+# The example songs' notes. Written compact by
+# scripts/generate-karaoke-example-notes.mjs and never edited by hand: the
+# three files are 170 KB as one line each, and several times that pretty.
+native-only/karaoke/examples/*/notes.json

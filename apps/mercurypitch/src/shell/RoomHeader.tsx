@@ -24,7 +24,15 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, Show } from 'solid-js'
-import { BackIcon, GearIcon, MicIcon } from './icons'
+import { Dynamic } from 'solid-js/web'
+import type { PinnedRoomToggle } from '@/stores/native-shell-store'
+import { AutoplayIcon, BackIcon, GearIcon, MicIcon, NoteGlyphIcon, TextSizeIcon, } from './icons'
+
+const PINNED_ICONS: Record<PinnedRoomToggle['icon'], Component> = {
+  'lyrics-size': TextSizeIcon,
+  notes: NoteGlyphIcon,
+  'play-next': AutoplayIcon,
+}
 
 export interface RoomHeaderProps {
   title: () => string
@@ -42,7 +50,23 @@ export interface RoomHeaderProps {
   onChip?: () => void
   /** On screen, or fading out behind a pushed screen. Absent means on. */
   visible?: () => boolean
+  /**
+   * The gear's accessible name: the room says what its sheet holds (the
+   * Karaoke room's is "Karaoke options"). Absent means "Practice options".
+   */
+  gearLabel?: string
+  /**
+   * The one option the room's singer pinned beside the gear, or null. The
+   * room owns what it does; the header draws it, next to the gear.
+   */
+  pinned?: () => PinnedRoomToggle | null
 }
+
+/** A switch says whether it is on; a control that steps says nothing. */
+const pressedState = (
+  pressed: boolean | undefined,
+): 'true' | 'false' | undefined =>
+  pressed === undefined ? undefined : pressed ? 'true' : 'false'
 
 export const RoomHeader: Component<RoomHeaderProps> = (props) => {
   const on = (): boolean => props.visible?.() !== false
@@ -97,22 +121,40 @@ export const RoomHeader: Component<RoomHeaderProps> = (props) => {
           </button>
         )}
       </Show>
-      <Show
-        when={props.onGear}
-        fallback={<span class="mp-iconbtn" aria-hidden="true" />}
-      >
-        {(gear) => (
-          <button
-            type="button"
-            class="mp-iconbtn"
-            aria-label="Practice options"
-            data-testid="shell-room-gear"
-            onClick={() => gear()()}
-          >
-            <GearIcon />
-          </button>
-        )}
-      </Show>
+      <div class="mp-room-header__end">
+        <Show when={props.pinned?.()}>
+          {(toggle) => (
+            <button
+              type="button"
+              class="mp-iconbtn"
+              classList={{ 'mp-iconbtn--on': toggle().pressed === true }}
+              aria-label={toggle().label}
+              aria-pressed={pressedState(toggle().pressed)}
+              data-testid="shell-room-pinned"
+              data-pinned={toggle().icon}
+              onClick={() => toggle().onToggle()}
+            >
+              <Dynamic component={PINNED_ICONS[toggle().icon]} />
+            </button>
+          )}
+        </Show>
+        <Show
+          when={props.onGear}
+          fallback={<span class="mp-iconbtn" aria-hidden="true" />}
+        >
+          {(gear) => (
+            <button
+              type="button"
+              class="mp-iconbtn"
+              aria-label={props.gearLabel ?? 'Practice options'}
+              data-testid="shell-room-gear"
+              onClick={() => gear()()}
+            >
+              <GearIcon />
+            </button>
+          )}
+        </Show>
+      </div>
     </div>
   )
 }

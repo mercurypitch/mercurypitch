@@ -503,6 +503,16 @@ export async function submitJob(
   return (await resp.json()) as RunpodRunResponse
 }
 
+/** RunPod's 404 for a job: it has no record of it, so the job is gone. It is
+ *  the only answer that means so. A 429, a 5xx or a dropped connection is
+ *  RunPod having a moment while the job may still be running (review S7). */
+export class RunpodJobGoneError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RunpodJobGoneError'
+  }
+}
+
 export async function fetchJobStatus(
   cfg: RunpodConfig,
   endpointId: string,
@@ -513,7 +523,10 @@ export async function fetchJobStatus(
     { headers: runpodHeaders(cfg) },
   )
   if (!resp.ok) {
-    throw new Error(`RunPod status failed: ${resp.status} ${resp.statusText}`)
+    const message = `RunPod status failed: ${resp.status} ${resp.statusText}`
+    throw resp.status === 404
+      ? new RunpodJobGoneError(message)
+      : new Error(message)
   }
   return (await resp.json()) as RunpodStatus
 }

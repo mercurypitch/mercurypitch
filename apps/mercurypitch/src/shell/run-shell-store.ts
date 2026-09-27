@@ -36,6 +36,7 @@ import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from
 import type { ActiveTab } from '@/features/tabs/constants'
 import { markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
+import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
 
 export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
@@ -54,7 +55,8 @@ export type RailVariant = 'r1' | 'r2'
  *
  * Settings is the root of a stack of them: it is a short grouped list whose
  * rows push screens of their own (S6, decision D1 A), and each of those can
- * push again. Developer stands on its own, reached from More.
+ * push again. Developer stands on its own, reached from More, and so does the
+ * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A).
  */
 export type PushedScreen =
   | 'settings'
@@ -68,6 +70,8 @@ export type PushedScreen =
   | 'this-phone'
   | 'appearance'
   | 'about'
+  | 'karaoke'
+  | 'karaoke-studio'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -218,14 +222,29 @@ export const parked = createMemo<boolean>(() => {
   return owner !== null && owner !== currentTab()
 })
 
-/** Is there a run on this screen that the transport should be driving? */
-export const transportVisible = createMemo<boolean>(() => {
+/** Is a run going on the screen the singer is looking at? */
+const runOnScreen = createMemo<boolean>(() => {
   const state = runState()
   return (state === 'active' || state === 'paused') && !parked()
 })
 
-/** The full rail is gone exactly while the transport has its slot. */
-export const railVisible = createMemo<boolean>(() => !transportVisible())
+/**
+ * Does the room on screen draw its own transport? The Karaoke room's zen bar
+ * is one (S8 D2 A): the shell then draws nothing in the rail's place.
+ */
+const roomOwnsTransport = (): boolean =>
+  nativeRunControls()?.ownsTransport === true
+
+/** Is there a run on this screen that the shell's transport should drive? */
+export const transportVisible = createMemo<boolean>(
+  () => runOnScreen() && !roomOwnsTransport(),
+)
+
+/**
+ * The full rail is gone exactly while a run is on screen: the shell's
+ * transport has its slot, or the room is its own transport.
+ */
+export const railVisible = createMemo<boolean>(() => !runOnScreen())
 
 /** R2's corner chip: present whenever the transport took the rail's place. */
 export const chipVisible = createMemo<boolean>(
@@ -356,7 +375,10 @@ export function pushScreen(screen: PushedScreen): void {
 }
 
 /** A screen that is only ever reached through Settings. */
-export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
+export type SettingsChild = Exclude<
+  PushedScreen,
+  'settings' | 'developer' | 'karaoke-studio'
+>
 
 /**
  * Settings, with one of its own screens over it when the caller names one.
@@ -368,6 +390,24 @@ export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
 export function pushSettingsScreen(screen?: SettingsChild): void {
   pushScreen('settings')
   if (screen !== undefined) pushScreen(screen)
+}
+
+/** The web Settings sections that have a screen of their own here. */
+const SECTION_SCREENS: Partial<Record<SettingsSection, SettingsChild>> = {
+  account: 'account',
+  karaoke: 'karaoke',
+}
+
+/**
+ * Settings at one of the web panel's sections: what ui-store's
+ * `openSettingsSection` means natively. A section with a screen of its own
+ * opens on it (the studio's Settings button lands on Karaoke's); any other
+ * section, or none, is Settings itself.
+ */
+export function pushSettingsSection(section?: SettingsSection): void {
+  pushSettingsScreen(
+    section === undefined ? undefined : SECTION_SCREENS[section],
+  )
 }
 
 /** One level down: what Back does to a pushed screen. */

@@ -54,6 +54,8 @@ describe('the storage facts', () => {
     expect(facts.cachedRooms.bytes).toBe(0)
     expect(facts.total).toBe(186_000_000 + facts.voiceprints.bytes + 12_812_345)
     expect(storageTotal()).toBe(facts.total)
+    // A build that cannot import songs has none to count.
+    expect(facts.importedSongs).toBeUndefined()
   })
 
   it('names a takes store it could not read, rather than calling it empty', async () => {

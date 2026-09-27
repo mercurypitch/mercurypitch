@@ -74,14 +74,23 @@ describe('the alley reducer', () => {
 
   it('lifts a locked door and goes no further: no wake, no enter', () => {
     const states = run([
-      tap('karaoke'),
+      tap('piano'),
       { type: 'wake' },
       { type: 'enter' },
-      tap('karaoke'),
+      tap('piano'),
     ])
     for (const s of states)
-      expect(s).toEqual({ phase: 'selected', door: 'karaoke' })
-    expect(isLifted(states[3], 'karaoke')).toBe(true)
+      expect(s).toEqual({ phase: 'selected', door: 'piano' })
+    expect(isLifted(states[3], 'piano')).toBe(true)
+  })
+
+  it('opens the Karaoke door as it opens any open door', () => {
+    const states = run([tap('karaoke'), { type: 'wake' }, { type: 'enter' }])
+    expect(states.map((s) => `${s.phase}:${s.door ?? '-'}`)).toEqual([
+      'selected:karaoke',
+      'alive:karaoke',
+      'opening:karaoke',
+    ])
   })
 
   it('moves the selection to another door', () => {

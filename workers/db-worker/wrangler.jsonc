@@ -158,6 +158,10 @@
         // previews) land on the dev app, never production.
         "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
         "PASSKEY_RP_ID": "dev.mercurypitch.com",
+        // The store environment whose RevenueCat events grant songs here.
+        // Dev-target builds (TestFlight, license testers) buy in SANDBOX;
+        // a PRODUCTION event is acknowledged and changes nothing.
+        "REVENUECAT_ENVIRONMENT": "SANDBOX",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -259,6 +263,9 @@
         "APPLE_CLIENT_IDS": "com.irchiinnuss.mercurypitch",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
         "PASSKEY_RP_ID": "mercurypitch.com",
+        // Only real store purchases grant songs on prod: a SANDBOX event
+        // (TestFlight, a license tester) is acknowledged and changes nothing.
+        "REVENUECAT_ENVIRONMENT": "PRODUCTION",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

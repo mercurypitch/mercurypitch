@@ -771,6 +771,10 @@ export default defineConfig(({ command, mode }) => {
       // `src/` tree, so the constant has to exist in both or the one that
       // omits it evaluates a bare identifier and throws.
       __NATIVE_BUILD__: JSON.stringify(false),
+      // The native Karaoke room's import (plan S8, Stage 2). The web has its
+      // own upload, and separates on its own origin: `/api/uvr` as it was.
+      __KARAOKE_IMPORT__: JSON.stringify(false),
+      __UVR_ORIGIN__: JSON.stringify(''),
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],

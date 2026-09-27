@@ -31,6 +31,15 @@
 //            failure takes now, and it is a red check rather than a blank
 //            screen on a phone.
 //
+//   EXAMPLES The Karaoke room's example songs arrived whole: the manifest the
+//            room seeds its library from is in the bundle, and every stem it
+//            names is there with the size and sha256 it was pinned at
+//            (fetch-karaoke-examples.mjs). They are what a first launch with
+//            no network sings, so a missing or truncated stem is a room that
+//            opens on a song it cannot play -- and on the phone, a packaged
+//            file that is not there answers status 0 with no body, which
+//            looks like silence rather than an error.
+//
 //   WORKER   The built JS names exactly the db-worker this build asked for
 //            (../api-base.mjs): the dev one unless MERCURYPITCH_API_TARGET=
 //            production was set on purpose, and never the other one. The
@@ -62,6 +71,15 @@
 //            two places, and one static import anywhere would bring every
 //            line of it back without a visible change on the web.
 //
+//   STAGE 2  The Karaoke room imports a singer's own songs in exactly the
+//            builds the owner chose (27 Sep): every build that is not the
+//            store build. The switch is a build constant (KARAOKE_IMPORT,
+//            src/lib/native-build.ts) that api-base.mjs's karaokeImportFor
+//            decides from the same target as the worker, so a store build
+//            must carry none of the import, its queue, its paywall or its
+//            Settings rows -- absent, not hidden -- and every other build
+//            must carry all of them.
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -73,11 +91,16 @@
 // the reusable Capacitor workflow, which knows nothing about this app -- has
 // installed the workspace first.
 
+import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { API_BASES, readEnvFiles, resolveApiBase } from '../api-base.mjs'
-import { resolveNativeAssets, totalBytes } from '../native-assets.mjs'
+import { API_BASES, karaokeImportFor, readEnvFiles, resolveApiBase, } from '../api-base.mjs'
+import { resolveNativeAssets, resolveNativeAssetSources, totalBytes, } from '../native-assets.mjs'
+import { KARAOKE_EXAMPLE_PINS, NATIVE_ONLY_DIR, } from './fetch-karaoke-examples.mjs'
+
+/** The examples manifest, relative to a bundle root. */
+const EXAMPLES_MANIFEST = 'karaoke/examples/manifest.json'
 
 /** The files sync-ort-assets.mjs vendors, relative to a bundle root. */
 const VENDORED = [
@@ -138,6 +161,18 @@ const WEB_SIGN_IN = [
     'Sign in with your phone',
     'the web sign-in dialog (AuthModal, its television phone row)',
   ],
+]
+
+/**
+ * Present in a build that imports songs, and in no other: each is a piece of
+ * Stage 2 a store build must not carry.
+ */
+const KARAOKE_STAGE_2 = [
+  ['Import a song', "the Karaoke room's Import button"],
+  ['Sing your own songs', 'the Karaoke paywall'],
+  ['karaoke-room-imports', 'the import queue'],
+  ['Remove imported songs', 'Settings and Storage for imported songs'],
+  ['Songs this month', 'the songs left, in the room and in Settings'],
 ]
 
 const failures = []
@@ -252,11 +287,14 @@ function main(argv) {
     )
 
     // MANIFEST -- resolve the same globs against this bundle root that
-    // sync-native-assets.mjs resolved against public/ on the way in. An entry
-    // that matched four files there and none here is a publicDir that was not
-    // copied; an entry that matches nothing in either is a rename, and the
-    // staging step has already refused to build.
-    const staged = resolveNativeAssets(WEB_PUBLIC)
+    // sync-native-assets.mjs resolved against public/ and native-only/ on the
+    // way in. An entry that matched four files there and none here is a
+    // publicDir that was not copied; an entry that matches nothing in either
+    // is a rename, and the staging step has already refused to build.
+    const staged = resolveNativeAssetSources({
+      public: WEB_PUBLIC,
+      native: NATIVE_ONLY_DIR,
+    })
     const bundled = resolveNativeAssets(root)
 
     for (const entry of bundled.entries) {
@@ -271,15 +309,58 @@ function main(argv) {
       )
     }
 
-    // Every file the manifest resolves to in public/ has to be here too. The
-    // per-entry check above passes on a partial copy; this one does not.
-    const absent = staged.files.filter((file) => !existsSync(join(root, file)))
+    // Every file the manifest resolves to in its source trees has to be here
+    // too. The per-entry check above passes on a partial copy; this one does
+    // not.
+    const absent = staged.files
+      .map((file) => file.path)
+      .filter((file) => !existsSync(join(root, file)))
     record(
       staged.files.length > 0 && absent.length === 0,
       `${label}: all ${staged.files.length} manifest files were copied`,
       staged.files.length === 0
-        ? `The manifest resolved to no files at all under ${WEB_PUBLIC}. Either the web app's public/ tree is missing from this checkout or every glob in native-assets.mjs is stale.`
+        ? `The manifest resolved to no files at all under ${WEB_PUBLIC} or ${NATIVE_ONLY_DIR}. Either a source tree is missing from this checkout or every glob in native-assets.mjs is stale.`
         : `Missing here: ${absent.slice(0, 8).join(', ')}${absent.length > 8 ? ` (+${absent.length - 8} more)` : ''}. Rebuild${synced ? ', then cap sync' : ''}.`,
+    )
+
+    // EXAMPLES -- the songs a first launch with no network sings.
+    const examplesFile = join(root, EXAMPLES_MANIFEST)
+    /** @type {string[]} */
+    let named = []
+    try {
+      const examples = JSON.parse(readFileSync(examplesFile, 'utf8'))
+      named = examples.songs.flatMap((song) => [
+        song.stems.vocal,
+        song.stems.instrumental,
+      ])
+    } catch (error) {
+      named = []
+      record(
+        false,
+        `${label}: ${EXAMPLES_MANIFEST} is readable`,
+        `${error instanceof Error ? error.message : String(error)}. The Karaoke room seeds its example songs from this file.`,
+      )
+    }
+    const wrong = named.flatMap((url) => {
+      const path = String(url).replace(/^\//u, '')
+      const pin = KARAOKE_EXAMPLE_PINS.find(
+        (candidate) => candidate.path === path,
+      )
+      const file = join(root, path)
+      if (pin === undefined) return [`${path} (no pin)`]
+      if (!existsSync(file)) return [`${path} (missing)`]
+      const bytes = readFileSync(file)
+      const hash = createHash('sha256').update(bytes).digest('hex')
+      return bytes.byteLength === pin.bytes && hash === pin.sha256
+        ? []
+        : [`${path} (${bytes.byteLength} bytes, sha256 ${hash.slice(0, 12)})`]
+    })
+    record(
+      named.length > 0 && wrong.length === 0,
+      `${label}: the ${named.length} example stems the Karaoke room names are here, as pinned`,
+      named.length === 0
+        ? `${EXAMPLES_MANIFEST} names no stems.`
+        : `Wrong or missing: ${wrong.join(', ')}. The build stages them from native-only/ after scripts/fetch-karaoke-examples.mjs verified them${synced ? '; cap sync did not copy them, or this is a stale bundle' : ''}.`,
     )
 
     const manifestBytes = totalBytes(root, bundled.files)
@@ -346,6 +427,27 @@ function main(argv) {
       `${label}: the web Settings panel is not in the bundle`,
       `Found ${webSettings.join('; ')}. Something imports the web SettingsPanel without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native Settings is apps/mercurypitch/src/shell/settings.`,
     )
+
+    // STAGE 2 -- decided from the same answer as WORKER, so it can only be
+    // asked once the requested base resolved.
+    if (api !== undefined) {
+      const importing = karaokeImportFor(api)
+      const carried = KARAOKE_STAGE_2.filter(([needle]) =>
+        assets.some((file) => contains(file, needle)),
+      )
+      const wrong = importing
+        ? KARAOKE_STAGE_2.filter((piece) => !carried.includes(piece))
+        : carried
+      record(
+        wrong.length === 0,
+        importing
+          ? `${label}: the Karaoke room imports songs in this ${api.target} build (${KARAOKE_STAGE_2.length} pieces)`
+          : `${label}: the store build carries no Karaoke import`,
+        importing
+          ? `Missing: ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. A ${api.target} build compiles KARAOKE_IMPORT in as true (vite.config.ts, api-base.mjs karaokeImportFor)${synced ? '; or this is a stale bundle' : ''}.`
+          : `Found ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. Something reaches Stage 2 from a path KARAOKE_IMPORT does not fold away (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`,
+      )
+    }
 
     const webSignIn = []
     for (const file of assets) {

@@ -16,6 +16,7 @@ import { needsSignIn } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { wipeVoiceTakes } from '@/db/services/voice-take-service'
 import { clearLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { RefreshIcon } from '../icons'
 import { STORAGE_COPY, takesLine } from './account-copy'
 import { accountSignedIn } from './account-state'
@@ -24,10 +25,22 @@ import { SettingsGroup, SettingsRow } from './SettingsList'
 import { startFresh } from './start-fresh'
 import type { StorageFacts } from './storage-facts'
 import { formatBytes, loadStorageFacts } from './storage-facts'
+import type { StorageCategory as Category } from './storage-parts'
+import { ClearButton, Dot } from './storage-parts'
+import type { StorageImportedSongsProps } from './StorageImportedSongs'
+import { StorageImportedSongsNote, StorageImportedSongsRow, } from './StorageImportedSongs'
 
-/** The four categories, in the order the screen lists them. Each has its
- *  colour class, on its row's dot and on its part of the bar. */
-type Category = 'takes' | 'prints' | 'models' | 'rooms'
+// The singer's own Karaoke songs (plan S8 §9) reach this screen only through
+// the two stand-ins below and the bar's label, each a plain conditional on
+// the constant: a store build folds them away, and StorageImportedSongs.tsx
+// with them (a `<Show>` would keep its children in that bundle).
+const ImportedSongsRow = (props: StorageImportedSongsProps): JSX.Element =>
+  KARAOKE_IMPORT ? <StorageImportedSongsRow {...props} /> : null
+
+const ImportedSongsNote = (props: {
+  songs: StorageFacts['importedSongs']
+}): JSX.Element =>
+  KARAOKE_IMPORT ? <StorageImportedSongsNote {...props} /> : null
 
 function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`
@@ -54,12 +67,20 @@ function barLabel(known: StorageFacts): string {
     known.cachedRooms.bytes === 0
       ? 'none'
       : formatBytes(known.cachedRooms.bytes)
+  const songs = KARAOKE_IMPORT ? known.importedSongs : undefined
   return [
     known.takes === null
       ? 'Takes unreadable'
       : `Takes ${formatBytes(known.takes.bytes)}`,
     `voiceprints ${formatBytes(known.voiceprints.bytes)}`,
     `models ${formatBytes(known.models.bytes)}`,
+    ...(songs === undefined
+      ? []
+      : [
+          songs.bytes === null
+            ? 'imported songs of a size not known'
+            : `imported songs ${formatBytes(songs.bytes)}`,
+        ]),
     `cached rooms ${rooms}`,
   ].join(', ')
 }
@@ -73,33 +94,12 @@ function barParts(
     ['takes', known.takes?.bytes ?? 0],
     ['prints', known.voiceprints.bytes],
     ['models', known.models.bytes],
+    ['songs', known.importedSongs?.bytes ?? 0],
     ['rooms', known.cachedRooms.bytes],
   ]
   return sizes
     .filter(([, bytes]) => bytes > 0)
     .map(([category, bytes]) => ({ category, share: bytes / known.total }))
-}
-
-function Dot(props: { category: Category }): JSX.Element {
-  return <span class={`mp-storage__dot is-${props.category}`} />
-}
-
-function ClearButton(props: {
-  label: string
-  disabled: boolean
-  onPress?: () => void
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      class="mp-set-button mp-set-button--secondary mp-set-button--small"
-      aria-label={props.label}
-      disabled={props.disabled}
-      onClick={() => props.onPress?.()}
-    >
-      Clear
-    </button>
-  )
 }
 
 export function StorageScreen(): JSX.Element {
@@ -247,6 +247,13 @@ export function StorageScreen(): JSX.Element {
                   sub="The pitch model and its runtime, part of the app"
                   value={formatBytes(known().models.bytes)}
                 />
+                <ImportedSongsRow
+                  songs={known().importedSongs}
+                  onError={(message) => {
+                    if (live) setError(message)
+                  }}
+                  onChanged={load}
+                />
                 {/* Nothing is ever cached in a build where every room ships
                     inside the app, so its Clear stays off. */}
                 <SettingsRow
@@ -269,6 +276,7 @@ export function StorageScreen(): JSX.Element {
                   {error()}
                 </p>
               </Show>
+              <ImportedSongsNote songs={known().importedSongs} />
             </div>
             <Show when={!accountSignedIn()}>
               <div class="mp-storage__fresh">

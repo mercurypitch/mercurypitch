@@ -38,6 +38,14 @@
 // Fetching the rest from the web origin is a separate decision because it
 // needs the native Content-Security-Policy to allow `img-src` for that origin
 // (task A6), and A6 has not settled which origin is compiled in.
+//
+// TWO ROOTS. Almost every entry names a file of the web app's public/ tree,
+// because the code that asks for it is shared with the web app. A few files
+// belong to this app alone: the Karaoke room's example songs (25 MiB the web
+// app streams from R2 instead, and must not start deploying). Those entries
+// say `root: 'native'` and resolve against `native-only/`, which is served at
+// the same `/` — a bundle has one origin root, whichever tree a file came
+// from, and one path may come from only one of them.
 
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -46,8 +54,19 @@ import { join } from 'node:path'
  * One manifest entry.
  *
  * @typedef {object} NativeAssetEntry
- * @property {string} glob Path glob relative to the repository's `public/`.
+ * @property {string} glob Path glob relative to the entry's root: the
+ *   repository's `public/`, or this app's `native-only/` for `root: 'native'`.
  * @property {string} reason One line: which surface needs it, and where.
+ * @property {'native'} [root] Staged from `native-only/`, not `public/`: a
+ *   file only the native app serves.
+ */
+
+/**
+ * Where the two tiers are staged from.
+ *
+ * @typedef {object} NativeAssetRoots
+ * @property {string} public The web app's public/ tree.
+ * @property {string} native This app's native-only/ tree.
  */
 
 /** @type {readonly NativeAssetEntry[]} */
@@ -195,6 +214,61 @@ export const NATIVE_ASSETS = [
     reason:
       'The two room ambients a selected Sing or Ear Lab door fades in, decoded into a looping buffer (apps/mercurypitch/src/alley/alley-audio.ts).',
   },
+
+  // ── The Karaoke room's example songs (native-only/) ─────────
+  //
+  // Three songs by Josh Woodward, CC BY 4.0, so a first launch with no
+  // network has something to sing (plan S8 §8, D13 A). The stems are fetched
+  // from R2 and pinned by sha256 (scripts/fetch-karaoke-examples.mjs), never
+  // committed; the manifest beside them is committed.
+  {
+    glob: 'karaoke/examples/manifest.json',
+    root: 'native',
+    reason:
+      "The examples' titles, credits, durations and lyrics: the room seeds its library from it before it ever asks the server (src/features/karaoke-night/bundled-examples.ts).",
+  },
+  {
+    glob: 'karaoke/examples/*/notes.json',
+    root: 'native',
+    reason:
+      "Each example's notes, generated on a desktop by the mixer's own analysis (scripts/generate-karaoke-example-notes.mjs): a phone cannot analyse a streamed vocal (audit K1), and the seed stores them where the mixer's loadCachedAnalysis looks (src/features/karaoke-night/bundled-notes.ts).",
+  },
+  {
+    glob: 'karaoke/examples/*/*.m4a',
+    root: 'native',
+    reason:
+      'The six example stems the manifest names, played from the bundle by the Karaoke room (src/features/karaoke-room) through the streamed mixer.',
+  },
+
+  // ── The Karaoke stage's sing pill ────────────────────────────
+  //
+  // The zen stage's guide-vocal control is a lit stage microphone, drawn as a
+  // picture in two states and asked for by absolute path. Without these the
+  // pill drew a broken-image glyph in every frame (review V1).
+  {
+    glob: 'mic/guide-vocal-*.webp',
+    reason:
+      "The sing pill's microphone, on and muted: GuideVocalMic (src/components/mobile/GuideVocalMic.tsx) draws it on the zen stage the Karaoke room hosts (src/components/KaraokeMobileStage.tsx).",
+  },
+
+  // ── The Karaoke room's pictures ──────────────────────────────
+  //
+  // The Broadway Theater is the room's own picture in the app (plan S8, D7
+  // A): free here, while the web keeps it a supporter room delivered from
+  // the server, so its files live in native-only/ and never reach the web's
+  // public/. Cut from the 4K masters by the premium pipeline's recipe
+  // (landscape-2k 2048 x 1152 and portrait-2k 1440 x 2560, WebP q90).
+  {
+    glob: 'karaoke/broadway-theater-*.webp',
+    root: 'native',
+    reason:
+      "The Broadway Theater in both orientations, the Karaoke room's default picture: the room draws it on its [data-room-background] (src/features/karaoke-room/KaraokeRoomStage.tsx via the 'karaoke' surface in src/lib/backgrounds/background-catalog.ts), and the Karaoke door's open ends on it (apps/mercurypitch/src/alley/alley-entry.ts).",
+  },
+  {
+    glob: 'karaoke-night/tokyo-cyber-*.webp',
+    reason:
+      "Tokyo Cyber in both orientations, the Karaoke room's other free picture: the chip's picker offers every free room of the 'karaoke' surface (src/lib/backgrounds/background-catalog.ts), and a picked room the bundle did not carry would draw nothing offline.",
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */
@@ -267,10 +341,11 @@ export function listFiles(root) {
 }
 
 /**
- * Resolve the manifest against a directory — the repository's `public/` when
- * staging a build, a bundle root when asserting one. Both callers run the same
- * globs over the same matcher, which is the point: an entry that resolved to
- * four files on the way in has to resolve to four files on the way out.
+ * Resolve the whole manifest against ONE directory: a bundle root, where both
+ * tiers have landed side by side, or a `manifest` narrowed to one tier and
+ * that tier's tree. The sources side runs the same globs over the same
+ * matcher (`resolveNativeAssetSources`), which is the point: an entry that
+ * resolved to four files on the way in has to resolve to four on the way out.
  *
  * @param {string} root
  * @param {readonly NativeAssetEntry[]} [manifest]
@@ -287,6 +362,56 @@ export function resolveNativeAssets(root, manifest = NATIVE_ASSETS) {
   for (const entry of entries) for (const file of entry.files) seen.add(file)
 
   return { entries, files: [...seen].sort() }
+}
+
+/**
+ * Resolve the manifest against the trees it is staged FROM: each entry
+ * against its own root. What `resolveNativeAssets` is to a bundle, this is to
+ * the sources: sync-native-assets.mjs copies from here, and assert-bundle.mjs
+ * checks that every file named here arrived.
+ *
+ * One bundle path, one source: a path both trees would provide is refused,
+ * because which copy won would depend on the order of a loop.
+ *
+ * @param {NativeAssetRoots} roots
+ * @param {readonly NativeAssetEntry[]} [manifest]
+ * @returns {{ entries: Array<NativeAssetEntry & { files: string[] }>, files: Array<{ path: string, from: string }> }}
+ */
+export function resolveNativeAssetSources(roots, manifest = NATIVE_ASSETS) {
+  const listed = {
+    public: listFiles(roots.public),
+    native: listFiles(roots.native),
+  }
+  const entries = manifest.map((entry) => {
+    const pattern = globToRegExp(entry.glob)
+    const tier = entry.root === 'native' ? 'native' : 'public'
+    return {
+      ...entry,
+      files: listed[tier].filter((file) => pattern.test(file)),
+    }
+  })
+
+  /** @type {Map<string, string>} */
+  const from = new Map()
+  for (const entry of entries) {
+    const dir = entry.root === 'native' ? roots.native : roots.public
+    for (const file of entry.files) {
+      const already = from.get(file)
+      if (already !== undefined && already !== dir) {
+        throw new Error(
+          `[native-assets] ${file} is named from both ${already} and ${dir}. A bundle has one origin root: give the file one source.`,
+        )
+      }
+      from.set(file, dir)
+    }
+  }
+
+  return {
+    entries,
+    files: [...from.keys()]
+      .sort()
+      .map((path) => ({ path, from: /** @type {string} */ (from.get(path)) })),
+  }
 }
 
 /**

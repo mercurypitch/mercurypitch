@@ -13,7 +13,8 @@ import { audioDurationSecs } from './audio-duration'
 
 export { audioDurationSecs } from './audio-duration'
 import { UVR_MODEL_PATH } from './defaults'
-import type { OutputFile } from './uvr-api'
+import { IS_NATIVE_BUILD } from './native-build'
+import type { OutputFile, UploadProgress } from './uvr-api'
 import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, TerminalPollError, } from './uvr-api'
 import { VocalSeparator } from './vocal-separator'
 
@@ -399,6 +400,7 @@ async function processServer(
   callbacks: ProcessingCallbacks,
   model?: string,
   signal?: AbortSignal,
+  onUploadProgress?: UploadProgress,
 ): Promise<void> {
   // Server mode targets the metered RunPod GPU tier. The worker rejects an
   // unconfigured tier instead of falling through to unmetered container work.
@@ -429,6 +431,7 @@ async function processServer(
       ...(durationSecs !== null ? { duration_seconds: durationSecs } : {}),
     },
     signal,
+    onUploadProgress,
   )
 
   if (response.status !== 'processing') {
@@ -490,6 +493,9 @@ export interface UvrPipelineOptions {
   model?: string
   /** Cancels model preparation, upload, or polling for queue-owned runs. */
   signal?: AbortSignal
+  /** How much of a server upload has been sent, from 0 to 1. Asking for it
+   *  sends the upload with XMLHttpRequest (see processAudio). */
+  onUploadProgress?: UploadProgress
 }
 
 export async function runUvrPipeline(
@@ -508,10 +514,13 @@ export async function runUvrPipeline(
       callbacks,
       options.model,
       options.signal,
+      options.onUploadProgress,
     )
   }
-  // Request eviction protection only after stems have been saved successfully.
-  void ensurePersistentStorage()
+  // Request eviction protection only after stems have been saved
+  // successfully. The web's request, with its "allow ... when prompted": the
+  // app has no browser, and no prompt would ever come (review V2).
+  if (!IS_NATIVE_BUILD) void ensurePersistentStorage()
 }
 
 export function cancelUvrPipeline(
