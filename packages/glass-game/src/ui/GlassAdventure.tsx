@@ -1,21 +1,18 @@
 // Glass adventure — choose a saved, fresh or completed visit before loading its 3D gallery.
 import { createMemo, createSignal, Show } from 'solid-js'
 import { GLASSWORKS } from '../content/glassworks'
-import type { LevelDefinition } from '../contracts'
 import { readProgress } from '../core/progress'
-import type { GlassGameHost } from '../host'
+import type { AdventureVisitProps } from './AdventureVisit'
 import { AdventureVisit } from './AdventureVisit'
 import { CompletedVisitDecision } from './CompletedVisitDecision'
 import { createFreshVisitHost } from './fresh-visit-host'
 
-export interface GlassAdventureProps {
-  host: GlassGameHost
-  level?: LevelDefinition
-  onContinue?(): void
-  continueLabel?: string
+export interface GlassAdventureProps extends Omit<
+  AdventureVisitProps,
+  'onRestart'
+> {
   freshStart?: boolean
   onRestart?(): void
-  replayGoal?: { title: string; tier: 1 | 2 | 3 }
 }
 
 type VisitSelection = {

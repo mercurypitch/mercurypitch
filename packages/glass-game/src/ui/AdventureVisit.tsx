@@ -2,13 +2,14 @@
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
+import type { LevelDefinition } from '../contracts'
+import type { GlassGameHost } from '../host'
 import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { AdventureMessageStack } from './AdventureMessageStack'
 import { AdventureVoicePanel } from './AdventureVoicePanel'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
-import type { GlassAdventureProps } from './GlassAdventure'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
@@ -26,9 +27,16 @@ const EncoreDialog = lazy(async () => ({
   default: (await import('./EncoreDialog')).EncoreDialog,
 }))
 
-export function AdventureVisit(
-  props: GlassAdventureProps & { onRestart(): void },
-) {
+export interface AdventureVisitProps {
+  host: GlassGameHost
+  level?: LevelDefinition
+  onContinue?(): void
+  continueLabel?: string
+  onRestart(): void
+  replayGoal?: { title: string; tier: 1 | 2 | 3 }
+}
+
+export function AdventureVisit(props: AdventureVisitProps) {
   let canvas!: HTMLDivElement
   const level = untrack(() => props.level) ?? GLASSWORKS
   const encore = GALLERY_ENCORES[level.authored?.levelId ?? level.id]
