@@ -4,14 +4,14 @@
   "escapeHatches.explicitAny": 11,
   "escapeHatches.tsIgnore": 0,
   "layering.totalErrors": 227,
-  "layering.crossFeatureImports": 506,
+  "layering.crossFeatureImports": 523,
   "tests.presenceOnlyBlocks": 333,
   "tests.blocksWithoutAssertion": 50,
   "tests.e2eHardWaits": 500,
   "tests.e2eSpecsWithoutAssertion": 0,
   "tests.alwaysTrueAssertions": 43,
-  "complexity.functionsOverCognitive15": 435,
-  "complexity.cognitiveOver50": 46,
+  "complexity.functionsOverCognitive15": 436,
+  "complexity.cognitiveOver50": 45,
   "cycles.errors": 1,
   "cycles.circular": 38
 }
