@@ -113,6 +113,52 @@ afterEach(() => {
 })
 
 describe('Merc narration', () => {
+  it('exposes only the active voice envelope and closes the mouth on retirement', async () => {
+    context.decodeAudioData.mockResolvedValue({
+      ...buffer(),
+      getChannelData: () =>
+        Float32Array.from({ length: 1000 }, (_, i) => (i < 100 ? 0 : 0.192)),
+    } as AudioBuffer)
+    const narration = createBrowserMercNarration(options)
+    expect(narration.outputLevel?.()).toBe(0)
+    await narration.play('tutorial-note')
+    expect(narration.outputLevel?.()).toBe(0)
+    context.currentTime = 0.2
+    expect(narration.outputLevel?.()).toBeCloseTo(1)
+    const quiet = narration.silenceForVoice()
+    expect(narration.outputLevel?.()).toBe(0)
+    await vi.advanceTimersByTimeAsync(120)
+    await quiet
+    await narration.play('beautiful-mess')
+    context.currentTime = 0.4
+    expect(narration.outputLevel?.()).toBeCloseTo(1)
+    context.sources.at(-1)?.onended?.()
+    expect(narration.outputLevel?.()).toBe(0)
+    narration.dispose()
+    expect(narration.outputLevel?.()).toBe(0)
+  })
+
+  it('never animates a late decoded cue after pause or preference opt-out', async () => {
+    const late = deferred<AudioBuffer>()
+    context.decodeAudioData.mockReturnValueOnce(late.promise)
+    const narration = createBrowserMercNarration(options)
+    const starting = narration.play('tutorial-note')
+    await flush()
+    narration.pause()
+    late.resolve({
+      ...buffer(),
+      getChannelData: () => new Float32Array(1000).fill(1),
+    } as AudioBuffer)
+    await starting
+    await flush()
+    context.currentTime = 0.2
+    expect(narration.outputLevel?.()).toBe(0)
+    expect(context.sources).toHaveLength(0)
+    narration.setPreferences({ enabled: false })
+    expect(narration.outputLevel?.()).toBe(0)
+    narration.dispose()
+  })
+
   it('decodes a complete packaged cue when the iOS WebView reports status zero', async () => {
     fetcher.mockResolvedValue({
       ok: false,

@@ -10,6 +10,7 @@ import type { GameSnapshot } from '../contracts'
 import { MOVEMENT } from '../core/movement'
 import { stepAngularResponse } from './angular-response'
 import { loadMercModel } from './merc-model'
+import { createMercPresentationPose } from './merc-presentation-pose'
 
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
 const MAXIMUM_TURN_ACCELERATION = 72
@@ -17,6 +18,8 @@ const MINIMUM_MOVE_TIME_SCALE = 0.35
 const MAXIMUM_MOVE_TIME_SCALE = 2.4
 
 export interface AdventureMercPresentation {
+  /** Audio-clock narration envelope, distinct from the player's microphone. */
+  narrationLevel?: number
   /** Render-only root yaw toward the active exhibit. */
   facingYaw?: number | null
   /** Presentation clock, independent of a voice-paused simulation. */
@@ -47,6 +50,7 @@ export async function loadAdventureMerc(url: string) {
   root.name = 'adventure-merc'
   root.add(body)
   const mixer = new AnimationMixer(body)
+  const presentationPose = createMercPresentationPose(body)
   const clips = new Map(asset.animations.map((clip) => [clip.name, clip]))
   let current: AnimationAction | undefined
   let clipName = ''
@@ -80,15 +84,18 @@ export async function loadAdventureMerc(url: string) {
       reducedMotion: boolean,
       presentation: AdventureMercPresentation = {},
     ) {
+      if (disposed) return
+      presentationPose.restoreMixerPose()
       const player = snapshot.player
-      const count = snapshot.breakables.filter(
-        (item) => item.phase === 'complete',
-      ).length
+      let count = 0
+      let active = false
+      for (const item of snapshot.breakables) {
+        if (item.phase === 'complete') count++
+        else if (item.phase === 'charging' || item.phase === 'listening')
+          active = true
+      }
       if (count > completed) celebrateUntil = snapshot.elapsedSeconds + 1.15
       completed = count
-      const active = snapshot.breakables.some(
-        (item) => item.phase === 'charging' || item.phase === 'listening',
-      )
       const horizontalSpeed = Math.hypot(player.velocity.x, player.velocity.z)
       const moving = horizontalSpeed > 0.08
       // The authored fall clip topples into a puddle. Normal airborne travel
@@ -108,10 +115,17 @@ export async function loadAdventureMerc(url: string) {
         reducedMotion && !moving && !active,
         name === 'move' ? mercMoveTimeScale(horizontalSpeed) : 1,
       )
-      mixer.update(Math.max(0, dt))
+      const animationDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
+      mixer.update(animationDt)
+      presentationPose.applyAfterMixer(
+        animationDt,
+        presentation.narrationLevel,
+        name === 'listen' && player.grounded,
+        reducedMotion,
+      )
       if (player.grounded && !wasGrounded) squash = 0.18
       wasGrounded = player.grounded
-      squash *= Math.exp(-13 * dt)
+      squash *= Math.exp(-13 * animationDt)
       const stretch = reducedMotion ? 1 : player.grounded ? 1 - squash : 1.07
       body.scale.set(
         scale / Math.sqrt(stretch),
@@ -134,6 +148,7 @@ export async function loadAdventureMerc(url: string) {
     dispose() {
       if (disposed) return
       disposed = true
+      presentationPose.restoreMixerPose()
       mixer.stopAllAction()
       mixer.uncacheRoot(body)
       root.removeFromParent()

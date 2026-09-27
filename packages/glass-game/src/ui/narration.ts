@@ -4,6 +4,7 @@ import type { GlassMercNarration, MercNarrationCue, MercNarrationLine, MercNarra
 import { createMercReactionSelector, MERC_PATH_OPEN_LINE, } from './merc-reactions'
 
 export interface AdventureNarration {
+  outputLevel(): number
   preferences(): MercNarrationPreferences | undefined
   welcomeGesture(): void
   breakCompleted(outcome: BreakOutcome): MercNarrationLine
@@ -45,6 +46,8 @@ export function createAdventureNarration(
   }
 
   return {
+    outputLevel: () =>
+      disposed || voiceHeld || !canPlay() ? 0 : (audio?.outputLevel?.() ?? 0),
     preferences: () => audio?.preferences(),
     welcomeGesture() {
       if (

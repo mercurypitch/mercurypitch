@@ -46,6 +46,8 @@ export interface GlassRendererOptions {
 }
 
 export interface GlassRendererPresentation {
+  /** Optional narrated speech energy for Merc's mouth; no microphone access. */
+  narrationLevel?: number
   challengeEncounterId: string | null
   /** Host pause or tutorial state; voice setup pause remains camera-active. */
   paused: boolean
@@ -564,6 +566,7 @@ function createGlassRendererInstance(
       merc?.update(snapshot, animationDt, options.reducedMotion ?? false, {
         facingYaw: presentationFacingYaw,
         turnDeltaSeconds: presentationPaused ? 0 : cameraDt,
+        narrationLevel: presentationPaused ? 0 : presentation?.narrationLevel,
       })
       for (const state of snapshot.breakables)
         vessels.get(state.id)?.update(state, snapshot.elapsedSeconds)

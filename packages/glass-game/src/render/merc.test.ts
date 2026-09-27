@@ -293,6 +293,71 @@ it('keeps the actual Merc hands above the gameplay floor through grounded clips'
   }
 })
 
+it('animates the actual sing morph from narration at equal 30/60 fps poses without disturbing authored eyes', async () => {
+  const load = vi.spyOn(GLTFLoader.prototype, 'loadAsync')
+  load.mockResolvedValueOnce(await parseActualMerc())
+  const thirty = await loadAdventureMerc('local-test-merc.glb')
+  load.mockResolvedValueOnce(await parseActualMerc())
+  const sixty = await loadAdventureMerc('local-test-merc.glb')
+  load.mockResolvedValueOnce(await parseActualMerc())
+  const silent = await loadAdventureMerc('local-test-merc.glb')
+  const thirtySnapshot = createGlassGame(GLASSWORKS).snapshot()
+  const sixtySnapshot = createGlassGame(GLASSWORKS).snapshot()
+  const silentSnapshot = createGlassGame(GLASSWORKS).snapshot()
+  const thirtyFace = thirty.root.getObjectByName('merc_face') as SkinnedMesh
+  const sixtyFace = sixty.root.getObjectByName('merc_face') as SkinnedMesh
+  const silentFace = silent.root.getObjectByName('merc_face') as SkinnedMesh
+  const indices = thirtyFace.morphTargetDictionary!
+
+  try {
+    for (let frame = 0; frame < 30; frame++) {
+      thirtySnapshot.elapsedSeconds += 1 / 30
+      thirty.update(thirtySnapshot, 1 / 30, false, { narrationLevel: 1 })
+    }
+    for (let frame = 0; frame < 60; frame++) {
+      sixtySnapshot.elapsedSeconds += 1 / 60
+      sixty.update(sixtySnapshot, 1 / 60, false, { narrationLevel: 1 })
+      silentSnapshot.elapsedSeconds += 1 / 60
+      silent.update(silentSnapshot, 1 / 60, false, { narrationLevel: 0 })
+    }
+
+    expect(thirtyFace.morphTargetInfluences![indices.sing!]).toBeCloseTo(
+      sixtyFace.morphTargetInfluences![indices.sing!]!,
+      6,
+    )
+    expect(sixtyFace.morphTargetInfluences![indices.sing!]).toBeGreaterThan(
+      0.68,
+    )
+    expect(sixtyFace.morphTargetInfluences![indices.sing!]).toBeLessThanOrEqual(
+      0.72,
+    )
+    for (const name of ['blink', 'wide'] as const)
+      expect(sixtyFace.morphTargetInfluences![indices[name]!]).toBeCloseTo(
+        silentFace.morphTargetInfluences![indices[name]!]!,
+        7,
+      )
+    expect(
+      thirty.root
+        .getObjectByName('head')!
+        .quaternion.angleTo(sixty.root.getObjectByName('head')!.quaternion),
+    ).toBeLessThan(1e-6)
+    expect(animatedMinimumY(sixty.root)).toBeGreaterThan(0.005)
+
+    const pausedHead = sixty.root.getObjectByName('head')!.quaternion.clone()
+    const pausedSing = sixtyFace.morphTargetInfluences![indices.sing!]!
+    for (let frame = 0; frame < 30; frame++)
+      sixty.update(sixtySnapshot, 0, false, { narrationLevel: 0 })
+    expect(
+      sixty.root.getObjectByName('head')!.quaternion.angleTo(pausedHead),
+    ).toBeLessThan(1e-12)
+    expect(sixtyFace.morphTargetInfluences![indices.sing!]).toBe(pausedSing)
+  } finally {
+    thirty.dispose()
+    sixty.dispose()
+    silent.dispose()
+  }
+})
+
 it.each([false, true])(
   'keeps the actual Merc rig upright on repeated jumps with reduced motion=%s',
   async (reducedMotion) => {

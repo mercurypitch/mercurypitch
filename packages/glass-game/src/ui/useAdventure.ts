@@ -585,6 +585,7 @@ export function useAdventure(
       )
         try {
           const rendered = activeRenderer.render(game.snapshot(), elapsed, {
+            narrationLevel: narration.outputLevel(),
             challengeEncounterId: voiceState()?.encounterId ?? null,
             paused: paused() || tutorial(),
             safeBottomFraction: challengeSafeBottom(),

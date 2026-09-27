@@ -35,6 +35,24 @@ function fixture(initiallyEnabled = true, random: () => number = () => 0) {
 }
 
 describe('adventure narration', () => {
+  it('passes speech energy only while the visible game owns narration', async () => {
+    const { audio, subject, allow } = fixture()
+    audio.outputLevel = () => 0.6
+    expect(subject.outputLevel()).toBe(0.6)
+    allow(false)
+    expect(subject.outputLevel()).toBe(0)
+    allow(true)
+    await subject.silenceForVoice()
+    expect(subject.outputLevel()).toBe(0)
+    subject.releaseVoice()
+    expect(subject.outputLevel()).toBe(0.6)
+    subject.dispose()
+    expect(subject.outputLevel()).toBe(0)
+    expect(createAdventureNarration(undefined, () => true).outputLevel()).toBe(
+      0,
+    )
+  })
+
   it('preserves an unattempted welcome while the initial scene is loading', async () => {
     const { audio, subject, allow } = fixture()
     allow(false)
