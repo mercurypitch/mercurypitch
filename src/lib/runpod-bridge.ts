@@ -8,7 +8,7 @@
 // src/tests/runpod-bridge.test.ts.
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
-import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, RUNPOD_STEM_NAMES, submitJob, toSessionId, } from './runpod'
+import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, RUNPOD_STEM_NAMES, RunpodJobGoneError, submitJob, toSessionId, } from './runpod'
 import type { UvrInputBucket } from './runpod-stem-storage'
 import { baseName, inlineStem, serveStemFromR2, statusFromR2, stemDir, } from './runpod-stem-storage'
 import type { MeteringConfig } from './uvr-metering'
@@ -139,13 +139,17 @@ export async function handleRunpodRequest(
   }
 
   if (route === 'status' && method === 'GET') {
-    // RunPod retains a job's result only ~30 min. Past that it 404s (throws) or
-    // returns an unknown state — but the stems live in R2 for ~24 h, so we can
-    // still recover a job whose client polling was lost to a reload / app-switch.
+    // RunPod retains a job's result only ~30 min. Past that it 404s (the job is
+    // gone) or returns an unknown state — but the stems live in R2 for ~24 h, so
+    // we can still recover a job whose client polling was lost to a reload /
+    // app-switch. Only the 404 means gone: a 429, a 5xx or a dropped connection
+    // is RunPod having a moment while the job may still run (review S7).
     let status: RunpodStatus | null = null
+    let gone = false
     try {
       status = await fetchJobStatus(cfg, endpointId, parsed.jobId)
     } catch (err) {
+      gone = err instanceof RunpodJobGoneError
       console.warn(
         `[runpod] ${sessionId} status unreadable (${err instanceof Error ? err.message : String(err)}) — trying R2`,
       )
@@ -193,11 +197,12 @@ export async function handleRunpodRequest(
         return json(recovered)
       }
     }
-    // No live job and no stems in R2. If RunPod gave a definitive not-found
-    // (threw → status null), the result has expired — surface a terminal,
-    // actionable error. Otherwise keep the client polling (its 30-min wall
-    // clock bounds it) rather than killing a job over a transient blip.
-    if (status === null) {
+    // No live job and no stems in R2. Only RunPod's definitive not-found (its
+    // 404) means the result has expired — surface a terminal, actionable error.
+    // Anything else keeps the client polling (its 30-min wall clock bounds it)
+    // rather than killing a job, or refunding it, over a transient blip: a
+    // RunPod that did not answer is reported as still working.
+    if (gone) {
       return json({
         session_id: sessionId,
         status: 'error',
@@ -206,7 +211,7 @@ export async function handleRunpodRequest(
           'Your separated stems have expired. Please separate the song again.',
       } satisfies BridgeStatusResponse)
     }
-    return json(mapStatusToResponse(sessionId, status))
+    return json(mapStatusToResponse(sessionId, status ?? {}))
   }
 
   if (route === 'output' && method === 'GET') {
