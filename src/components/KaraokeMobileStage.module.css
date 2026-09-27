@@ -1211,3 +1211,76 @@
 :global(:root[data-shell-rail='on']) .hosted .micFloatBtn {
   bottom: calc(128px + var(--tabbar-total, 64px));
 }
+
+/* ── Hosted, on its side (decision D3 A) ───────────────────
+   Two columns inside the safe area: the song and the transport on the
+   left, the lyrics on the right, the way the wide Apple Music layout zen
+   borrows from does it. Zen had no orientation rule at all: a phone on its
+   side got the portrait column, and 24vh + 32vh of padding at 393 px tall
+   left almost no line to read. `max-height` keeps a tablet out of it. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .hosted {
+    display: grid;
+    grid-template-columns: minmax(236px, 286px) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'song lyrics'
+      'aside lyrics'
+      'bar lyrics';
+    column-gap: 26px;
+    padding: calc(var(--safe-top, 0px) + 52px) max(12px, var(--safe-right, 0px))
+      0 max(16px, var(--safe-left, 0px));
+  }
+
+  /* Anything the stage adds that has no place of its own (the notes hint,
+     the pitch ribbon) sits in the left column's middle. */
+  .hosted > * {
+    grid-area: aside;
+    min-width: 0;
+  }
+
+  .hosted .songLine {
+    grid-area: song;
+    padding: 0;
+  }
+
+  .hosted .lyrics {
+    grid-area: lyrics;
+    width: auto;
+    margin: 0;
+    padding: 14vh 54px 22vh 0;
+  }
+
+  .hosted .line {
+    font-size: calc(1.6rem * var(--lyrics-scale, 1));
+    margin-bottom: 0.8rem;
+  }
+
+  .hosted .bottomBar {
+    grid-area: bar;
+    width: auto;
+    margin: 0;
+    padding: 6px 0 calc(8px + var(--safe-bottom));
+    background: none;
+  }
+
+  .hosted .transport {
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .hosted .transportMain {
+    gap: 12px;
+  }
+
+  /* Out of the grid: these two are placed against the whole stage. */
+  .hosted .stateOverlay,
+  .hosted .singPill {
+    grid-area: auto;
+  }
+
+  .hosted .singPill {
+    right: max(12px, var(--safe-right, 0px));
+    bottom: calc(18px + var(--safe-bottom));
+  }
+}
