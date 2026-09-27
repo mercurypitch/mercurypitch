@@ -133,6 +133,55 @@ describe('fetchArrayBufferWithProgress', () => {
       fetchArrayBufferWithProgress('https://x/gone.mp3'),
     ).rejects.toThrow('HTTP 404')
   })
+
+  // K2 (karaoke audit): a file packaged inside the iOS app, fetched from the
+  // WebView's own scheme, answers status 0 and `ok: false` WITH its whole
+  // body. The bundled example songs are exactly that, and every one of them
+  // was refused here before a byte was read.
+  it('reads a packaged file that answers status 0 with its body (iOS)', async () => {
+    const packaged = streamingResponse([120, 80])
+    Object.assign(packaged, { ok: false, status: 0 })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(packaged)),
+    )
+    const buf = await fetchArrayBufferWithProgress(
+      '/karaoke/examples/goodbye-to-spring/vocal.m4a',
+    )
+    expect(buf.byteLength).toBe(200)
+  })
+
+  it('reads a status-0 file that has no stream to read, too', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 0,
+          headers: new Headers(),
+          body: null,
+          arrayBuffer: () => Promise.resolve(new ArrayBuffer(48)),
+        } as unknown as Response),
+      ),
+    )
+    const buf = await fetchArrayBufferWithProgress('/karaoke/a.m4a')
+    expect(buf.byteLength).toBe(48)
+  })
+
+  it('refuses a status-0 answer with nothing in it, naming the file', async () => {
+    // An opaque cross-origin response also says 0; its body is empty. That
+    // is a failure, and "the file is not there" has to be told apart from
+    // "the file will not decode" in a device report.
+    const opaque = streamingResponse([])
+    Object.assign(opaque, { ok: false, status: 0 })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(opaque)),
+    )
+    await expect(
+      fetchArrayBufferWithProgress('/karaoke/missing.m4a'),
+    ).rejects.toThrow('/karaoke/missing.m4a')
+  })
 })
 
 describe('aggregateProgress', () => {

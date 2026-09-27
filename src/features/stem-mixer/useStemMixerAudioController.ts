@@ -2,6 +2,7 @@
 // StemMixer Audio Controller — audio engine, transport, RAF tick
 // ============================================================
 
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
@@ -1074,9 +1075,9 @@ export const useStemMixerAudioController = (
   }): Promise<boolean> => {
     try {
       const ctx = ensureAudioCtx()
-      const resp = await fetch(input.url)
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-      const bytes = await resp.arrayBuffer()
+      // Through the packaged-media rule (K2): a stem inside the native app
+      // answers status 0 on iOS, with its bytes.
+      const bytes = await fetchAssetBytes(input.url)
 
       // The same fork as a stem loaded with the song: adding one by hand on a
       // phone must not be the ninety megabytes the load path now avoids.
@@ -1739,9 +1740,8 @@ export const useStemMixerAudioController = (
         ext = '.mid'
       } else {
         if (!track.url) return
-        const resp = await fetch(track.url)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        blob = await resp.blob()
+        // Status 0 with a body is a packaged file on iOS, not a failure (K2).
+        blob = new Blob([await fetchAssetBytes(track.url)])
         ext = '.wav'
       }
 
