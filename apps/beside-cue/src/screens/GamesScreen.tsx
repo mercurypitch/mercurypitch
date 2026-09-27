@@ -26,6 +26,8 @@ import { ShelfStage } from '@/games/glass3d/render/ShelfStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { isWarmEnabled, whenIdleAfterPaint } from '@/games/glass3d/runtime/warm'
 import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
+import type { CreatorPreviewPick } from './CreatorPreviewCards'
+import { CreatorPreviewCards } from './CreatorPreviewCards'
 import { RangeFinder } from './RangeFinder'
 import { TapTuner } from './TapTuner'
 
@@ -36,11 +38,10 @@ interface GamesScreenProps {
 type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
 
 type PlayPick =
+  | CreatorPreviewPick
   | 'adventure'
   | 'promenade'
   | 'thawing-song'
-  | 'echo-curator'
-  | 'creator-gallery'
   | 'journey'
   | 'trials'
   | 'cabinet3d'
@@ -337,57 +338,7 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
-        <button
-          class="game-card"
-          type="button"
-          onClick={() => setPlaying('creator-gallery')}
-        >
-          <img
-            class="game-card__art"
-            src="games/merc.webp"
-            alt=""
-            width="64"
-            height="64"
-          />
-          <span class="game-card__body">
-            <span class="game-card__name">
-              Little discoveries<span class="game-card__chip">Preview</span>
-            </span>
-            <span class="game-card__blurb">
-              An optional pearl alcove and three living crystal studies to
-              explore.
-            </span>
-          </span>
-          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m9 5 7 7-7 7" />
-          </svg>
-        </button>
-
-        <button
-          class="game-card"
-          type="button"
-          onClick={() => setPlaying('echo-curator')}
-        >
-          <img
-            class="game-card__art"
-            src="games/merc.webp"
-            alt=""
-            width="64"
-            height="64"
-          />
-          <span class="game-card__body">
-            <span class="game-card__name">
-              Echo Curator<span class="game-card__chip">Preview</span>
-            </span>
-            <span class="game-card__blurb">
-              Merc offers a little melody. Echo it back, at your own pace,
-              through three friendly rounds.
-            </span>
-          </span>
-          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m9 5 7 7-7 7" />
-          </svg>
-        </button>
+        <CreatorPreviewCards onOpen={setPlaying} />
 
         <button
           class="game-card"
