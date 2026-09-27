@@ -16,6 +16,25 @@ const ORT_FILES = [
   'ort-wasm-simd-threaded.wasm',
 ] as const
 
+/**
+ * Dressing used only by the legacy Glassworks scene mounted from the separate
+ * web preview entry. Native navigation enters the campaign or Promenade from
+ * GamesScreen and never mounts that entry or scene.
+ */
+export const NATIVE_STANDALONE_ONLY_GAME_ASSETS = [
+  'games/adventure-v2/garden-kit.glb',
+  'games/adventure-v3/gilded-column.glb',
+  'games/adventure-v3/garden-arcade.glb',
+  'games/adventure-v3/observatory-canopy.glb',
+] as const
+
+/** Remove web-preview-only output without changing its public source bytes. */
+export function pruneNativeStandaloneGameAssets(output: string): void {
+  rmSync(resolve(output, 'glass-game'), { recursive: true, force: true })
+  for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+    rmSync(resolve(output, asset), { force: true })
+}
+
 const runtimeDirectory = (): string => {
   const appRequire = createRequire(new URL('../package.json', import.meta.url))
   const engineRequire = createRequire(
@@ -31,6 +50,7 @@ const runtimeDirectory = (): string => {
 export function gameAssetsPlugin(
   gamesEnabled: boolean,
   runtimeDir?: string,
+  nativeProfile = false,
 ): Plugin {
   let config: ResolvedConfig
   const assertOutput = (output: string): void => {
@@ -61,7 +81,8 @@ export function gameAssetsPlugin(
       assertOutput(resolve(config.root, config.build.outDir))
       const output = config.build.rollupOptions.output
       for (const target of Array.isArray(output) ? output : [output]) {
-        if (target?.dir) assertOutput(resolve(config.root, target.dir))
+        if (typeof target?.dir === 'string' && target.dir !== '')
+          assertOutput(resolve(config.root, target.dir))
       }
     },
     configureServer() {
@@ -83,6 +104,7 @@ export function gameAssetsPlugin(
         throw new Error('Games build is missing models/swiftf0.onnx')
       }
       copyRuntime(resolve(output, 'ort'))
+      if (nativeProfile) pruneNativeStandaloneGameAssets(output)
     },
   }
 }

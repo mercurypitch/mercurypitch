@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync, } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { NATIVE_STANDALONE_ONLY_GAME_ASSETS, pruneNativeStandaloneGameAssets, } from './game-assets.ts'
 
 export type NativePlatform = 'android' | 'ios'
 export interface NativeGamesOptions {
@@ -17,13 +18,17 @@ export interface NativeGamesOptions {
   prepareOnly: boolean
 }
 
-export const requiredGameAssets = [
+const nativeStandaloneAssets = new Set<string>(
+  NATIVE_STANDALONE_ONLY_GAME_ASSETS,
+)
+
+export const requiredGameAssets: readonly string[] = [
   'index.html',
   'models/swiftf0.onnx',
   'ort/ort-wasm-simd-threaded.mjs',
   'ort/ort-wasm-simd-threaded.wasm',
   ...GLASS_GAME_REQUIRED_FILES.map((asset) => `games/${asset}`),
-] as const
+].filter((asset) => !nativeStandaloneAssets.has(asset))
 
 export const nativeGamesChecksumFile = 'native-games-profile.sha256'
 
@@ -32,6 +37,15 @@ const gitLfsPointerHeader = 'version https://git-lfs.github.com/spec/v1'
 interface GamesBundleDigest {
   indexSha256: string
   assetSha256: Readonly<Record<string, string>>
+}
+
+function assertNativeStandaloneAssetsAbsent(directory: string): void {
+  const unexpected = [
+    'glass-game/index.html',
+    ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
+  ].find((asset) => existsSync(resolve(directory, asset)))
+  if (unexpected !== undefined)
+    throw new Error(`Native games bundle retains web-only asset ${unexpected}`)
 }
 
 function gamesChecksumManifest(bundle: GamesBundleDigest): string {
@@ -130,6 +144,11 @@ export function stageGamesProfile(
     writeFileSync(target, plist)
   }
   if (bundle !== undefined) {
+    // Without --build, dist may be a complete web games build. Native has no
+    // route to its separate museum preview, so remove that entry and dressing
+    // before Capacitor copies the offline tree.
+    pruneNativeStandaloneGameAssets(output)
+    assertNativeStandaloneAssetsAbsent(output)
     const checksums = gamesChecksumManifest(bundle)
     writeFileSync(resolve(output, nativeGamesChecksumFile), checksums)
     writeFileSync(
@@ -163,6 +182,8 @@ export function verifySyncedGamesProfile(
   const markerPath = resolve(output, 'native-games-profile.json')
   if (!existsSync(markerPath))
     throw new Error(`Synced ${platform} games profile is missing its marker`)
+  assertNativeStandaloneAssetsAbsent(resolve(appDirectory, 'dist'))
+  assertNativeStandaloneAssetsAbsent(output)
   const marker = JSON.parse(readFileSync(markerPath, 'utf8')) as {
     schema?: number
     profile?: string

@@ -2,12 +2,12 @@
 // Game asset packaging — exercise Vite's real public-copy lifecycle
 // ============================================================
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync, } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { build } from 'vite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { gameAssetsPlugin } from './game-assets'
+import { gameAssetsPlugin, NATIVE_STANDALONE_ONLY_GAME_ASSETS, } from './game-assets'
 
 let root: string
 const seed = (file: string, content: string): void => {
@@ -17,12 +17,17 @@ const seed = (file: string, content: string): void => {
 }
 const contents = (file: string): string =>
   readFileSync(join(root, file), 'utf8')
-const compile = (enabled: boolean, outDir = 'output', rollupDir?: string) =>
+const compile = (
+  enabled: boolean,
+  outDir = 'output',
+  rollupDir?: string,
+  nativeProfile = false,
+) =>
   build({
     root,
     configFile: false,
     logLevel: 'silent',
-    plugins: [gameAssetsPlugin(enabled, join(root, 'runtime'))],
+    plugins: [gameAssetsPlugin(enabled, join(root, 'runtime'), nativeProfile)],
     build: {
       outDir,
       minify: false,
@@ -36,6 +41,8 @@ beforeEach(() => {
   seed('index.html', '<main>Beside Cue<img src="/art/record.svg"></main>')
   seed('public/art/record.svg', '<svg/>')
   seed('public/games/glass3d/merc.glb', 'merc source')
+  for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+    seed(`public/${asset}`, `${asset} source`)
   seed('public/models/swiftf0.onnx', 'model source')
   seed('public/ort/stale.wasm', 'stale public runtime')
   seed('runtime/ort-wasm-simd-threaded.mjs', 'runtime module')
@@ -81,10 +88,22 @@ describe('direct Vite game asset packaging', () => {
     )
     expect(contents('output/models/swiftf0.onnx')).toBe('model source')
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
+    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+      expect(contents(`output/${asset}`)).toBe(`${asset} source`)
     expect(existsSync(join(root, 'output/ort/stale.wasm'))).toBe(false)
     await compile(false)
     for (const directory of ['games', 'models', 'ort'])
       expect(existsSync(join(root, 'output', directory))).toBe(false)
+  })
+
+  it('omits only standalone museum dressing from a native games build', async () => {
+    await compile(true, 'output', undefined, true)
+    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS) {
+      expect(existsSync(join(root, 'output', asset))).toBe(false)
+      expect(contents(`public/${asset}`)).toBe(`${asset} source`)
+    }
+    expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
+    expect(contents('output/models/swiftf0.onnx')).toBe('model source')
   })
 
   it('refuses a missing runtime even if a stale public copy exists', async () => {
