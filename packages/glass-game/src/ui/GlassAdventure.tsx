@@ -434,9 +434,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           {(lesson) => (
             <MelodyRouteProgress
               lesson={lesson()}
-              completedEncounterIds={
-                adventure.snapshot().completedBreakableIds
-              }
+              completedEncounterIds={adventure.snapshot().completedBreakableIds}
               activeEncounterId={adventure.voiceEncounterId()}
             />
           )}

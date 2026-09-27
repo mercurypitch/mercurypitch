@@ -1,8 +1,6 @@
-// Thawing Song presentation — room-owned bays, honest gate planters and five ordered melody cues.
+// Thawing Song presentation — open-air garden rooms, honest gate planters and five ordered melody cues.
 
-import type { LevelDefinition, MelodyStationMarkerDefinition, PlatformDefinition, RoomDecorationInstanceDefinition, RoomPresentationDefinition, SolidPropDefinition, Vec3, VisualInstanceDefinition, } from '../contracts'
-import type { MuseumWallBayPlacement } from './enclosed-wall-kit'
-import { museumScreenBay } from './enclosed-wall-kit.ts'
+import type { LevelDefinition, MelodyStationMarkerDefinition, PlatformDefinition, RoomDecorationInstanceDefinition, RoomPresentationDefinition, SolidPropDefinition, Vec3, } from '../contracts'
 import { crystalPlanter } from './museum-room-dressings.ts'
 
 const ROOM_SECTION_IDS = [
@@ -18,7 +16,9 @@ type ThawingSongRoomSectionId = (typeof ROOM_SECTION_IDS)[number]
 
 const ROOM_HORIZONTAL_MARGIN = 0.55
 const ROOM_TOP = 3.9
-const CAMERA_HORIZONTAL_MARGIN = 0.3
+// These courts float in open air. Their render ownership stays tight, while
+// the camera volume leaves enough sky around a narrow slab for portrait shots.
+const OPEN_AIR_CAMERA_MARGIN = 6
 const GATE_SIDE_PLANTER_LOCAL_X = 1.43
 const PLANTER_SCALE = 0.82
 // The V5 planter donor is 1.4m tall, so its route scale reaches 1.148m. This
@@ -63,64 +63,6 @@ const MARKER_POSES: Readonly<
     yaw: -Math.PI / 2,
   },
 }
-
-interface ScreenPlacement extends MuseumWallBayPlacement {
-  roomSectionId: ThawingSongRoomSectionId
-}
-
-const SCREEN_PLACEMENTS: readonly ScreenPlacement[] = [
-  // A west-side arrival bay gives the opening court a sheltered edge without
-  // narrowing its playable slab.
-  {
-    id: 'arrival-west-screen',
-    roomSectionId: 'thaw-north',
-    axis: 'z',
-    x: -7.72,
-    z: -10,
-    yaw: Math.PI / 2,
-    platformId: 'thaw-arrival-3',
-  },
-  // Two north-facing bays make the three-lane crown read as a garden court and
-  // keep its far edge visibly architectural.
-  {
-    id: 'crown-west-screen',
-    roomSectionId: 'thaw-east',
-    axis: 'x',
-    x: -1.65,
-    z: 4.54,
-    yaw: Math.PI,
-    platformId: 'thaw-east-1-3',
-  },
-  {
-    id: 'crown-east-screen',
-    roomSectionId: 'thaw-east',
-    axis: 'x',
-    x: 1.55,
-    z: 4.54,
-    yaw: Math.PI,
-    platformId: 'thaw-east-2-3',
-  },
-  // Paired east-side bays reveal the two homecoming courts one at a time after
-  // the second frost gate.
-  {
-    id: 'homecoming-north-screen',
-    roomSectionId: 'thaw-south',
-    axis: 'z',
-    x: 10.3,
-    z: -0.4,
-    yaw: -Math.PI / 2,
-    platformId: 'thaw-south-1-3',
-  },
-  {
-    id: 'homecoming-south-screen',
-    roomSectionId: 'thaw-south',
-    axis: 'z',
-    x: 10.3,
-    z: -4.15,
-    yaw: -Math.PI / 2,
-    platformId: 'thaw-south-2-3',
-  },
-]
 
 function requiredPlatform(
   level: LevelDefinition,
@@ -177,40 +119,15 @@ function createRooms(
         maxZ: maxZ + ROOM_HORIZONTAL_MARGIN,
       },
       cameraBounds: {
-        minX: minX - CAMERA_HORIZONTAL_MARGIN,
-        maxX: maxX + CAMERA_HORIZONTAL_MARGIN,
+        minX: minX - OPEN_AIR_CAMERA_MARGIN,
+        maxX: maxX + OPEN_AIR_CAMERA_MARGIN,
         minY: 0,
         maxY: 3.2,
-        minZ: minZ - CAMERA_HORIZONTAL_MARGIN,
-        maxZ: maxZ + CAMERA_HORIZONTAL_MARGIN,
+        minZ: minZ - OPEN_AIR_CAMERA_MARGIN,
+        maxZ: maxZ + OPEN_AIR_CAMERA_MARGIN,
       },
     }
   })
-}
-
-function createScreens(level: LevelDefinition): {
-  solids: readonly SolidPropDefinition[]
-  visuals: readonly VisualInstanceDefinition[]
-} {
-  const solids: SolidPropDefinition[] = []
-  const visuals: VisualInstanceDefinition[] = []
-  for (const placement of SCREEN_PLACEMENTS) {
-    requiredPlatform(level, placement.platformId!)
-    const prefix = roomPrefix(level, placement.roomSectionId)
-    const bay = museumScreenBay({
-      ...placement,
-      id: `${prefix}/visual/${placement.id}`,
-    })
-    solids.push(...bay.solids)
-    visuals.push({
-      id: bay.visual.id,
-      recipeId: bay.visual.recipeId,
-      position: bay.visual.position,
-      yaw: bay.visual.yaw,
-      coveredSolidIds: bay.visual.coversSolidIds,
-    })
-  }
-  return { solids, visuals }
 }
 
 function transformLocalX(position: Vec3, yaw: number, localX: number): Vec3 {
@@ -347,20 +264,14 @@ export function dressThawingSong(level: LevelDefinition): LevelDefinition {
   const presentation = level.presentation
   if (presentation === undefined)
     throw new Error('The Thawing Song presentation manifest is missing.')
-  const screens = createScreens(level)
   const gatePlanters = createGatePlanters(level)
   for (const art of floorArt()) requiredPlatform(level, art.platformId)
   return {
     ...level,
-    solids: [
-      ...(level.solids ?? []),
-      ...screens.solids,
-      ...gatePlanters.solids,
-    ],
+    solids: [...(level.solids ?? []), ...gatePlanters.solids],
     presentation: {
       ...presentation,
       rooms: createRooms(level),
-      visuals: [...presentation.visuals, ...screens.visuals],
       decorations: [
         ...(presentation.decorations ?? []),
         ...gatePlanters.decorations,
@@ -368,11 +279,7 @@ export function dressThawingSong(level: LevelDefinition): LevelDefinition {
       melodyMarkers: createMelodyMarkers(level),
       floorArt: [...(presentation.floorArt ?? []), ...floorArt()],
       assetRecipeIds: [
-        ...new Set([
-          ...presentation.assetRecipeIds,
-          'crystal-planter-v5',
-          'museum-screen-v4',
-        ]),
+        ...new Set([...presentation.assetRecipeIds, 'crystal-planter-v5']),
       ].sort(),
     },
   }

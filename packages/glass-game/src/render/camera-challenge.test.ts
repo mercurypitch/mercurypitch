@@ -2,6 +2,7 @@
 
 import { Box3, Vector3 } from 'three'
 import { expect, it } from 'vitest'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { GLASSWORKS } from '../content/glassworks'
 import type { GameSnapshot } from '../contracts'
 import { createGlassGame } from '../core/game'
@@ -200,4 +201,47 @@ it('keeps portrait FOV bounded when the live panel triggers repeated replans', (
     expect(adventureCamera.camera.fov).toBeLessThanOrEqual(58)
     expect(adventureCamera.getChallengeMetrics().settled).toBe(true)
   }
+})
+
+it('fits the Thawing Song finale above the live panel on a portrait phone', () => {
+  const initial = createGlassGame(CLOUDWAY_THAWING_SONG).snapshot()
+  const snapshot: GameSnapshot = {
+    ...initial,
+    player: {
+      ...initial.player,
+      position: { x: 9.1, y: 0, z: -7.38 },
+      grounded: true,
+      supportPlatformId: 'thaw-pavilion-2',
+      facingYaw: Math.PI,
+    },
+  }
+  const adventureCamera = createAdventureCamera(CLOUDWAY_THAWING_SONG)
+  adventureCamera.camera.aspect = 390 / 844
+  adventureCamera.camera.updateProjectionMatrix()
+  adventureCamera.update(snapshot, 0.05)
+  adventureCamera.setChallengeEncounter('thaw-portrait-finale')
+  adventureCamera.setChallengeSafeBottomFraction(0.361)
+  adventureCamera.setChallengeSubjects({
+    encounterId: 'thaw-portrait-finale',
+    merc: new Box3(
+      new Vector3(8.83, 0.015, -7.57),
+      new Vector3(9.37, 0.565, -7.19),
+    ),
+    target: new Box3(
+      new Vector3(8.8088, 0.255, -9.2004),
+      new Vector3(9.3912, 1.095, -9.0996),
+    ),
+    targetFacing: new Vector3(0, 0, 1),
+  })
+  for (let frame = 0; frame < 120; frame++)
+    adventureCamera.update(snapshot, 0.05)
+
+  const metrics = adventureCamera.getChallengeMetrics()
+  expect(metrics).toMatchObject({ mode: 'holding', settled: true })
+  expect(metrics.combinedFrame!.minX).toBeGreaterThanOrEqual(-0.881)
+  expect(metrics.combinedFrame!.maxX).toBeLessThanOrEqual(0.881)
+  expect(metrics.combinedFrame!.minY).toBeGreaterThanOrEqual(
+    metrics.safeBottomNdc! - 0.001,
+  )
+  expect(metrics.combinedFrame!.maxY).toBeLessThanOrEqual(0.861)
 })

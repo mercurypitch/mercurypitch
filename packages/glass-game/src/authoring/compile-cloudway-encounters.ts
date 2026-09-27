@@ -133,14 +133,25 @@ export function compileEncounter(
     if (envelope !== undefined) {
       for (const [field, value] of Object.entries(envelope))
         if (!Number.isFinite(value) || value <= 0)
-          fail(`profiles.intactExhibits.${variant}.${field}`, 'must be positive and finite.')
-      solids = [...solids, {
-        id: `intact:${id}`, kind: 'prop', shape: 'box',
-        minX: position.x - envelope.width / 2, maxX: position.x + envelope.width / 2,
-        minZ: position.z - envelope.depth / 2, maxZ: position.z + envelope.depth / 2,
-        top: position.y + envelope.mountHeight + envelope.height, thickness: envelope.height,
-        activation: { noneCompleted: [id] },
-      }]
+          fail(
+            `profiles.intactExhibits.${variant}.${field}`,
+            'must be positive and finite.',
+          )
+      solids = [
+        ...solids,
+        {
+          id: `intact:${id}`,
+          kind: 'prop',
+          shape: 'box',
+          minX: position.x - envelope.width / 2,
+          maxX: position.x + envelope.width / 2,
+          minZ: position.z - envelope.depth / 2,
+          maxZ: position.z + envelope.depth / 2,
+          top: position.y + envelope.mountHeight + envelope.height,
+          thickness: envelope.height,
+          activation: { noneCompleted: [id] },
+        },
+      ]
     }
   } else {
     const authored = record(source.presentation, `${path}.presentation`)

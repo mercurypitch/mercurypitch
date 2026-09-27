@@ -1,10 +1,7 @@
 // Adventure voice presentation — stable accessors keep session orchestration out of the Solid view.
 
 import type { Accessor } from 'solid-js'
-import type {
-  AdventureVoiceController,
-  AdventureVoiceSnapshot,
-} from './adventure-voice-challenge'
+import type { AdventureVoiceController, AdventureVoiceSnapshot, } from './adventure-voice-challenge'
 
 export function createAdventureVoicePresentation(
   state: Accessor<AdventureVoiceSnapshot | undefined>,

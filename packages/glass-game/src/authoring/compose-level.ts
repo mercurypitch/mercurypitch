@@ -115,9 +115,16 @@ function validateChallenge(
   path: string,
   diagnostics: LevelAuthoringDiagnostic[],
 ): void {
-  if (challenge.kind === 'melody-anchor' || challenge.kind === 'melody-contour') {
-    diagnostic(diagnostics, 'invalid-challenge', path,
-      'Melodic encounters require the versioned Cloudway lesson compiler.')
+  if (
+    challenge.kind === 'melody-anchor' ||
+    challenge.kind === 'melody-contour'
+  ) {
+    diagnostic(
+      diagnostics,
+      'invalid-challenge',
+      path,
+      'Melodic encounters require the versioned Cloudway lesson compiler.',
+    )
     return
   }
   const validTargets = new Set(['comfortable', 'low', 'high'])

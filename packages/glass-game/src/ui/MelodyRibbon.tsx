@@ -84,9 +84,7 @@ export function MelodyRibbon(props: MelodyRibbonProps) {
       0,
       Math.min(props.contour.durationSeconds, props.timelineSeconds ?? 0),
     )
-  const progressX = createMemo(() =>
-    geometry().timeToX(timelineSeconds()),
-  )
+  const progressX = createMemo(() => geometry().timeToX(timelineSeconds()))
   const progressPercent = createMemo(() =>
     Math.round((timelineSeconds() / props.contour.durationSeconds) * 100),
   )

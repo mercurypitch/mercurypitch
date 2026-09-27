@@ -5,7 +5,10 @@ import courseDocument from './data/cloudway-thawing-song.course.json' with { typ
 import { dressThawingSong } from './thawing-song-presentation.ts'
 import { THAWING_SONG_PROFILES } from './thawing-song-profiles.ts'
 
-const course = compileCloudwayCourseDocument(courseDocument, THAWING_SONG_PROFILES)[0]
+const course = compileCloudwayCourseDocument(
+  courseDocument,
+  THAWING_SONG_PROFILES,
+)[0]
 if (course === undefined || course.id !== 'cloudway-thawing-song-audition')
   throw new Error('The Thawing Song course is missing.')
 

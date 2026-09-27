@@ -1,11 +1,7 @@
 // Adventure voice panel — selects the compact pitch or melody presentation for one session controller.
 
 import { Show } from 'solid-js'
-import type {
-  BreakableDefinition,
-  MelodyChallengeDefinition,
-  PitchTargetId,
-} from '../contracts'
+import type { BreakableDefinition, MelodyChallengeDefinition, PitchTargetId, } from '../contracts'
 import type { AdventureVoiceMode } from './adventure-voice-challenge'
 import { MelodyChallengePanel } from './MelodyChallengePanel'
 import type { useAdventure } from './useAdventure'
@@ -61,9 +57,7 @@ export function AdventureVoicePanel(props: {
               : undefined
           }
           steps={pitchSteps(props.active?.challenge)}
-          stepIndex={
-            props.adventure.snapshot().activeEncounter?.stepIndex ?? 0
-          }
+          stepIndex={props.adventure.snapshot().activeEncounter?.stepIndex ?? 0}
           onCancel={props.adventure.cancel}
           onReplay={props.adventure.replay}
           onRefind={props.adventure.changeNote}

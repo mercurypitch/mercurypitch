@@ -131,7 +131,9 @@ describe('owner-build adventure entries', () => {
     expect(host).toHaveAttribute('data-campaign', 'false')
     expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
     fireEvent.click(host)
-    expect(screen.getByRole('button', { name: /The Thawing Song/u })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: /The Thawing Song/u }),
+    ).toBeVisible()
   })
 
   it('opens the bounded Promenade directly and returns to the list', () => {

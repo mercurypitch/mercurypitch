@@ -537,9 +537,7 @@
           },
           "radius": 0.4,
           "facingYaw": -1.5707963267948966,
-          "requiresCompleted": [
-            "thaw-gate-rise"
-          ]
+          "requiresCompleted": ["thaw-gate-rise"]
         },
         {
           "id": "thaw-home-save",
@@ -550,9 +548,7 @@
           },
           "radius": 0.4,
           "facingYaw": 0,
-          "requiresCompleted": [
-            "thaw-gate-return"
-          ]
+          "requiresCompleted": ["thaw-gate-return"]
         },
         {
           "id": "thaw-portrait-save",
@@ -616,9 +612,7 @@
             "reference": "anchor-tone",
             "anchorId": "sunlit-steps-two"
           },
-          "requiresCompleted": [
-            "thaw-note-home"
-          ],
+          "requiresCompleted": ["thaw-note-home"],
           "presentation": {
             "kind": "barrier",
             "profileId": "frosted-scroll-wall",
@@ -646,9 +640,7 @@
             "reference": "anchor-tone",
             "anchorId": "sunlit-steps-four"
           },
-          "requiresCompleted": [
-            "thaw-gate-rise"
-          ]
+          "requiresCompleted": ["thaw-gate-rise"]
         },
         {
           "id": "thaw-gate-return",
@@ -671,9 +663,7 @@
             "reference": "anchor-tone",
             "anchorId": "sunlit-steps-back-two"
           },
-          "requiresCompleted": [
-            "thaw-note-crown"
-          ],
+          "requiresCompleted": ["thaw-note-crown"],
           "presentation": {
             "kind": "barrier",
             "profileId": "frosted-scroll-wall",
@@ -701,9 +691,7 @@
             "reference": "anchor-tone",
             "anchorId": "sunlit-steps-return"
           },
-          "requiresCompleted": [
-            "thaw-gate-return"
-          ]
+          "requiresCompleted": ["thaw-gate-return"]
         },
         {
           "id": "thaw-portrait-finale",
@@ -725,9 +713,7 @@
             "lessonId": "thawing-song-sunlit",
             "reference": "whole-melody"
           },
-          "requiresCompleted": [
-            "thaw-note-homecoming"
-          ]
+          "requiresCompleted": ["thaw-note-homecoming"]
         }
       ],
       "melodyLesson": {
@@ -853,9 +839,7 @@
         "minZ": -10.45,
         "maxZ": -10.05,
         "top": 0,
-        "requiresCompleted": [
-          "thaw-portrait-finale"
-        ]
+        "requiresCompleted": ["thaw-portrait-finale"]
       },
       "fallBelow": -3.5,
       "presentation": {

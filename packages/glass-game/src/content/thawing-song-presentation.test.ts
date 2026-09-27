@@ -51,6 +51,18 @@ describe('The Thawing Song presentation', () => {
         expect(room!.bounds.minZ).toBeLessThanOrEqual(platform.minZ)
         expect(room!.bounds.maxZ).toBeGreaterThanOrEqual(platform.maxZ)
       }
+      expect(room!.cameraBounds!.minX).toBeLessThanOrEqual(
+        room!.bounds.minX - 5.4,
+      )
+      expect(room!.cameraBounds!.maxX).toBeGreaterThanOrEqual(
+        room!.bounds.maxX + 5.4,
+      )
+      expect(room!.cameraBounds!.minZ).toBeLessThanOrEqual(
+        room!.bounds.minZ - 5.4,
+      )
+      expect(room!.cameraBounds!.maxZ).toBeGreaterThanOrEqual(
+        room!.bounds.maxZ + 5.4,
+      )
     }
   })
 
@@ -168,57 +180,15 @@ describe('The Thawing Song presentation', () => {
     }
   })
 
-  it('pairs every screen with a visible proxy and keeps native-pruned kits out of the load plan', () => {
-    const screens =
-      level.presentation?.visuals.filter(
-        (visual) => visual.recipeId === 'museum-screen-v4',
-      ) ?? []
-    expect(screens).toHaveLength(5)
-    expect(
-      screens.map(({ id, position, yaw }) => ({
-        id: id.slice(id.lastIndexOf('/') + 1),
-        position,
-        yaw,
-      })),
-    ).toEqual([
-      {
-        id: 'arrival-west-screen',
-        position: { x: -7.72, y: 0, z: -10 },
-        yaw: Math.PI / 2,
-      },
-      {
-        id: 'crown-west-screen',
-        position: { x: -1.65, y: 0, z: 4.54 },
-        yaw: Math.PI,
-      },
-      {
-        id: 'crown-east-screen',
-        position: { x: 1.55, y: 0, z: 4.54 },
-        yaw: Math.PI,
-      },
-      {
-        id: 'homecoming-north-screen',
-        position: { x: 10.3, y: 0, z: -0.4 },
-        yaw: -Math.PI / 2,
-      },
-      {
-        id: 'homecoming-south-screen',
-        position: { x: 10.3, y: 0, z: -4.15 },
-        yaw: -Math.PI / 2,
-      },
-    ])
-    for (const screen of screens) {
-      expect(screen.coveredSolidIds).toHaveLength(1)
-      const solid = level.solids?.find(
-        (candidate) => candidate.id === screen.coveredSolidIds![0],
-      )
-      expect(solid?.presentation).toEqual({ role: 'wall', material: 'stone' })
-    }
-
+  it('keeps opaque enclosure bays and native-pruned kits out of the open garden load plan', () => {
     const plan = createMuseumAssetLoadPlan(level)
-    expect(plan.bundles).toEqual(
-      expect.arrayContaining(['museum-screen-v4', 'museum-decor-v5']),
+    expect(level.presentation?.visuals).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ recipeId: 'museum-screen-v4' }),
+      ]),
     )
+    expect(plan.bundles).toContain('museum-decor-v5')
+    expect(plan.bundles).not.toContain('museum-screen-v4')
     expect(plan.bundles).not.toEqual(
       expect.arrayContaining([
         'museum-garden-v2',

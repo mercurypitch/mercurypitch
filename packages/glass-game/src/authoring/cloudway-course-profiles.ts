@@ -56,10 +56,28 @@ export interface CloudwayCourseProfileCatalog {
   /** Ordinary exhibit recipes accepted by this course family. */
   encounterVariants: readonly string[]
   /** Certified intact exhibit envelopes; removed with their own completed target. */
-  intactExhibits?: Readonly<Partial<Record<string, {
-    width: number; height: number; depth: number; mountHeight: number
-  }>>>
-  melodyLessons?: Readonly<Partial<Record<string, Omit<MelodyLessonDefinition,
-    'id' | 'revision' | 'stations' | 'finaleEncounterId'>>>>
-
+  intactExhibits?: Readonly<
+    Partial<
+      Record<
+        string,
+        {
+          width: number
+          height: number
+          depth: number
+          mountHeight: number
+        }
+      >
+    >
+  >
+  melodyLessons?: Readonly<
+    Partial<
+      Record<
+        string,
+        Omit<
+          MelodyLessonDefinition,
+          'id' | 'revision' | 'stations' | 'finaleEncounterId'
+        >
+      >
+    >
+  >
 }

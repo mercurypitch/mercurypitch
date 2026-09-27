@@ -19,16 +19,16 @@ Device acceptance should include permission denial/retry, background interruptio
 
 Source: `packages/glass-game/src/content/data/cloudway-thawing-song.course.json`.
 
-| Beat | Lesson | Physical setting |
-| --- | --- | --- |
-| Arrival | Home note | Broad marble court |
-| First thaw | Two semitones up | Static court before the first ice gate |
-| Lantern turn | Four semitones up | Safe turn after the gate |
-| Return thaw | Back down two | Second static gate court |
-| Homecoming | Original note | Safe court beyond the second gate |
-| Portrait | Complete phrase | Broad final pavilion and separate exit |
+| Beat         | Lesson            | Physical setting                       |
+| ------------ | ----------------- | -------------------------------------- |
+| Arrival      | Home note         | Broad marble court                     |
+| First thaw   | Two semitones up  | Static court before the first ice gate |
+| Lantern turn | Four semitones up | Safe turn after the gate               |
+| Return thaw  | Back down two     | Second static gate court               |
+| Homecoming   | Original note     | Safe court beyond the second gate      |
+| Portrait     | Complete phrase   | Broad final pavilion and separate exit |
 
-The route bends north, east and south instead of repeating a straight corridor. Eight deliberate gaps are 0.55–0.65 m. No compulsory note challenge uses a moving, timed, breaking or slippery platform. Decorations reuse the delivered detailed screen, planter, marble and glass assets; the level requires no extra native asset pack.
+The route bends north, east and south instead of repeating a straight corridor. Eight deliberate gaps are 0.55–0.65 m. No compulsory note challenge uses a moving, timed, breaking or slippery platform. Decorations reuse the delivered detailed planter, marble and glass assets; the level requires no extra native asset pack.
 
 ## Reusable authoring contract
 

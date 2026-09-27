@@ -1,26 +1,13 @@
 // Adventure voice router — keeps legacy pitch holds and melody lessons behind one UI lifecycle.
 
-import type {
-  ChallengeDefinition,
-  GameEvent,
-  GlassGame,
-  LevelDefinition,
-  PitchTargetId,
-  PitchTargets,
-} from '../contracts'
+import type { ChallengeDefinition, GameEvent, GlassGame, LevelDefinition, PitchTargetId, PitchTargets, } from '../contracts'
 import type { CompiledMelody } from '../core/melody-contour'
 import type { GlassGameHost } from '../host'
 import type { MelodyJudgeSnapshot } from '../melody-contracts'
-import type {
-  MelodyAdventureMode,
-  MelodyAdventureSnapshot,
-} from './melody-adventure-challenge'
+import type { MelodyAdventureMode, MelodyAdventureSnapshot, } from './melody-adventure-challenge'
 import { createMelodyAdventureChallenge } from './melody-adventure-challenge'
 import type { MicrophoneIssue } from './mic-error'
-import type {
-  VoiceChallengeMode,
-  VoiceChallengeSnapshot,
-} from './voice-challenge'
+import type { VoiceChallengeMode, VoiceChallengeSnapshot, } from './voice-challenge'
 import { createVoiceChallenge } from './voice-challenge'
 
 export type AdventureVoiceMode = VoiceChallengeMode | MelodyAdventureMode
@@ -100,7 +87,9 @@ function pitchSnapshot(
   }
 }
 
-function melodySnapshot(snapshot: MelodyAdventureSnapshot): AdventureVoiceSnapshot {
+function melodySnapshot(
+  snapshot: MelodyAdventureSnapshot,
+): AdventureVoiceSnapshot {
   return {
     mode: snapshot.mode,
     challengeKind: snapshot.challengeKind,

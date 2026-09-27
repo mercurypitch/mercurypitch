@@ -109,8 +109,17 @@ export interface CloudwayCourseEncounterSource {
   challengeProfileId?: 'comfortable-hold'
   challenge?:
     | { profileId: 'comfortable-hold' }
-    | { profileId: 'melody-anchor'; lessonId: string; anchorId: string; reference: 'anchor-tone' }
-    | { profileId: 'melody-contour'; lessonId: string; reference: 'whole-melody' }
+    | {
+        profileId: 'melody-anchor'
+        lessonId: string
+        anchorId: string
+        reference: 'anchor-tone'
+      }
+    | {
+        profileId: 'melody-contour'
+        lessonId: string
+        reference: 'whole-melody'
+      }
   presentation?: {
     kind: 'barrier'
     profileId: string
