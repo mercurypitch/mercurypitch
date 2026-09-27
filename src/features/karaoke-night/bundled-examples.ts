@@ -16,7 +16,7 @@
 // bundle never fetches this manifest.
 
 import { fetchAssetRead } from '@irchiinnuss/mobile-runtime/asset-fetch'
-import type { DemoSongManifest } from './demo-song'
+import type { DemoSongManifest } from './demo-song-manifest'
 
 /** Where the bundle's manifest is served, at the app's own origin root. */
 export const BUNDLED_EXAMPLES_URL = '/karaoke/examples/manifest.json'
