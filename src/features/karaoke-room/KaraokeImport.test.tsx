@@ -206,7 +206,9 @@ describe('the Import button', () => {
 
     queue.gate?.({ left: 0, subscribed: false, renewsAt: null, perPeriod: 20 })
 
-    await sheet('Sing your own songs')
+    const paywall = await sheet('Sing your own songs')
+    expect(paywall.textContent).toContain('20 songs a month · €4.99')
+    expect(clicks).not.toHaveBeenCalled()
   })
 })
 
@@ -352,7 +354,12 @@ describe('a song refused before anything is sent', () => {
 
     pick(input, [song('Harbour Lights.mp3')])
 
-    await sheet('Harbour Lights is already in your songs')
+    const refused = await sheet('Harbour Lights is already in your songs')
+    expect(refused.textContent).toContain('Nothing was used.')
+    expect(
+      screen.queryByRole('dialog', { name: 'Separate this song?' }),
+    ).toBeNull()
+    expect(queue.enqueued).toEqual([])
   })
 
   it('is refused when the phone cannot keep a copy of it', async () => {
@@ -363,7 +370,11 @@ describe('a song refused before anything is sent', () => {
 
     fireEvent.click(within(confirm).getByRole('button', { name: 'Separate' }))
 
-    await sheet('Not enough space on this phone')
+    const refused = await sheet('Not enough space on this phone')
+    expect(refused.textContent).toContain(
+      'Free up some space and try again. Nothing was used.',
+    )
+    expect(queue.enqueued).toHaveLength(1)
   })
 })
 
