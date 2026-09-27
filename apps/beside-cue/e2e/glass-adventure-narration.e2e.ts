@@ -18,12 +18,23 @@ test.use({
 })
 test.setTimeout(120_000)
 
-test('Merc speaks after a gesture, becomes quiet before capture, and respects his own mute @smoke', async ({
+test('Merc packaged voice plays at native status zero, quiets before capture, and respects mute @smoke', async ({
   page,
 }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.addInitScript(() => {
+    const request = window.fetch.bind(window)
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const response = await request(...args)
+      const url = args[0] instanceof Request ? args[0].url : String(args[0])
+      if (!url.endsWith('.mp3')) return response
+      return {
+        ok: false,
+        status: 0,
+        arrayBuffer: () => response.arrayBuffer(),
+      } as Response
+    }
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
     localStorage.setItem(

@@ -49,6 +49,7 @@ const state = vi.hoisted(() => {
     forceContextLoss: vi.fn(),
     canvasRemove: vi.fn(),
     mercDispose: vi.fn(),
+    mercUpdate: vi.fn(),
     runtimeRoomId: undefined as string | undefined,
     cullCloudwayPlatforms: vi.fn(),
     visibleRoomIds,
@@ -133,7 +134,7 @@ vi.mock('./merc', () => ({
   loadAdventureMerc: async () => {
     const root = new Group()
     root.name = 'test-adventure-merc'
-    return { root, update: vi.fn(), dispose: state.mercDispose }
+    return { root, update: state.mercUpdate, dispose: state.mercDispose }
   },
 }))
 vi.mock('./atmosphere', () => ({
@@ -252,6 +253,7 @@ afterEach(() => {
   state.forceContextLoss.mockClear()
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
+  state.mercUpdate.mockClear()
   state.updateRoomVisibility.mockClear()
   state.updateRoomVisibility.mockReturnValue({
     visibleRoomIds: state.visibleRoomIds,
@@ -281,6 +283,36 @@ it('hides Merc only for the primary first-person render', async () => {
   renderer.render(snapshot, 0.016)
 
   expect(state.mercVisibleAtRender).toEqual([false, true])
+  renderer.dispose()
+})
+
+it('keeps Merc animation on elapsed presentation time across a dropped mobile frame', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  state.mercUpdate.mockClear()
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.12)
+
+  expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.12, false, {
+    facingYaw: undefined,
+    turnDeltaSeconds: 0.05,
+  })
+
+  state.mercUpdate.mockClear()
+  renderer.render(snapshot, 0.9)
+  expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.25, false, {
+    facingYaw: undefined,
+    turnDeltaSeconds: 0.05,
+  })
+
+  state.mercUpdate.mockClear()
+  snapshot.paused = true
+  renderer.render(snapshot, 0.12)
+  expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0, false, {
+    facingYaw: undefined,
+    turnDeltaSeconds: 0,
+  })
   renderer.dispose()
 })
 

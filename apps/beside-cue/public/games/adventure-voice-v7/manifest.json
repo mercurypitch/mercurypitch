@@ -1,0 +1,70 @@
+{
+  "revision": "merc-songbook-v7-2026-09-27",
+  "purpose": "Optional original song audition. Not scored reference audio.",
+  "models": {
+    "music": "music_v2_5, guide singer",
+    "merc": "Selected Merc D2 via eleven_multilingual_sts_v2, source-pitch WORLD restoration"
+  },
+  "files": [
+    {
+      "path": "beside-you-merc.mp3",
+      "bytes": 193004,
+      "sha256": "c8993c25729be0a65f8d6c0af77ae40b40b30514ccc296934d1f7d26d309fdb1"
+    },
+    {
+      "path": "beside-you-music.mp3",
+      "bytes": 153852,
+      "sha256": "d9a8cb81d21fc640e885385a8b08ae8a8f71e387c34bd92779008af55aced084"
+    },
+    {
+      "path": "first-arc-merc.mp3",
+      "bytes": 122444,
+      "sha256": "e9f5f1a65db8fb1ab4f7df57480cebde3e9ac63f264f242f4c14b10dbe7c5fd2"
+    },
+    {
+      "path": "first-arc-music.mp3",
+      "bytes": 97427,
+      "sha256": "2464a2fcd0aa9907f5f4d1561c687c14ffd945be5c9f45d60537c16fc68e36c2"
+    },
+    {
+      "path": "gallery-arch-merc.mp3",
+      "bytes": 193004,
+      "sha256": "59a3f17b89bd8f65e5a0c81f2ede066285b97e4411eab443bedb1717fc349d11"
+    },
+    {
+      "path": "gallery-arch-music.mp3",
+      "bytes": 153852,
+      "sha256": "db07c8791a423ce5f22e551b4c5801aa8177f4cd795a03c8e5b329fea974d4b9"
+    },
+    {
+      "path": "little-light-merc.mp3",
+      "bytes": 172844,
+      "sha256": "6fad25ee76595c9ad376d94dc015e8f38af044778905c92a08a5d62948eed438"
+    },
+    {
+      "path": "little-light-music.mp3",
+      "bytes": 137551,
+      "sha256": "919e3f3805e574c113d37a9b2755e961a728888dc80e4f59eab3a21bce8ef8d4"
+    },
+    {
+      "path": "quiet-garden-merc.mp3",
+      "bytes": 193004,
+      "sha256": "28adebccf5f781110d3b267c825fc2c8e60d7c481de0bd7c801542afd8c03dbd"
+    },
+    {
+      "path": "quiet-garden-music.mp3",
+      "bytes": 153852,
+      "sha256": "5ea916ec74da9aa48194fc5e7308c01341877ece1fdff7661a671300b452cdc3"
+    },
+    {
+      "path": "sunlit-steps-merc.mp3",
+      "bytes": 153164,
+      "sha256": "c5f303e323410730e37a24a54b8d50bb364c82819139ba122c1fd93fb51b9850"
+    },
+    {
+      "path": "sunlit-steps-music.mp3",
+      "bytes": 122087,
+      "sha256": "1619dd3632230ded4a8c784066932eb2014ecee355dcaf6270deb86ff07e0f73"
+    }
+  ]
+}

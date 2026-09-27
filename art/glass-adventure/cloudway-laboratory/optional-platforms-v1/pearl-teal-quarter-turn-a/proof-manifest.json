@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "assetId": "pearl-teal-quarter-turn-a-v1",
+  "version": "optional-platform-v1",
+  "status": "production-ready isolated modular platform pilot",
+  "source": {
+    "recipe": {
+      "file": "recipe.json",
+      "bytes": 2433,
+      "sha256": "637d6953b0c55ef52fd937da52caaf042dc89d00bdcd2598313cf3c3b757ec51"
+    },
+    "compactReceipt": {
+      "file": "production-receipt.json",
+      "bytes": 6018,
+      "sha256": "7e3b1b2c6240e656df02aa3b9d3065510c815f8b6dcbb65c320a9bd9b00ca667"
+    },
+    "providerReceipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/receipts/pearl-teal-quarter-turn-a/receipt.json",
+      "bytes": 6580,
+      "sha256": "23f5f90b2511ee66c416ad6d919e8eb5957ac2b986cd715cf3db8dcb4d10d5cc",
+      "taskId": "01a0e351-284a-7752-bf9d-6da30d977277",
+      "credits": 40
+    },
+    "packedAuthoringMaster": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/quarter-turn-a-authoring-v1.blend",
+      "bytes": 66255036,
+      "sha256": "db24d9ced8367eafd4a1eb0b49ab3f57f1f70dc770f02fe7d72a06a1078536d9",
+      "blender": "5.2.2 LTS",
+      "editableMeshes": 3,
+      "packedImages": 9,
+      "externalDependencies": 0
+    },
+    "authoringScript": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/production/author_runtime_pilot.py",
+      "bytes": 37310,
+      "sha256": "e9a702143da540fc520e3ef4f7127a60c7d67d6ecf42b86b96b2e6aad1e0fd92"
+    },
+    "fullReceipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/production-receipt.json",
+      "bytes": 20424,
+      "sha256": "92d792c068aa5c645ba3a1e94ff9c64ba085d7faea9ad34137b70980fd6ddcb8"
+    },
+    "archiveCheckpoint": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/checkpoint.json",
+      "bytes": 18824,
+      "sha256": "21d918abf0babde3744fd15db45daa85bdba0630a4f4265ee4a5fe4205d1674f",
+      "integrityRecords": 41
+    }
+  },
+  "runtime": [
+    {
+      "tier": "desktop",
+      "bundle": "cloudway-lab-pearl-quarter-turn-a-desktop-v1",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb",
+      "bytes": 6794736,
+      "sha256": "bd264c04a34e02ca6d510bb2ad3e876cd9f773f31463f39ce4e857b3b287c413",
+      "triangles": 68000,
+      "uploadVertices": 59858,
+      "meshDrawsPerPass": 3,
+      "decodedGeometry": {
+        "degenerateTriangles": 0,
+        "nonFiniteVertexValues": 0,
+        "nonFiniteNormalValues": 0,
+        "flaggedPrimitives": 0
+      }
+    },
+    {
+      "tier": "mobile",
+      "bundle": "cloudway-lab-pearl-quarter-turn-a-mobile-v1",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb",
+      "bytes": 2097048,
+      "sha256": "dde3db664c97416e32cfcfb82e07f4dd2ffb989917847c1efc6e5e2d3219d137",
+      "triangles": 31996,
+      "uploadVertices": 36746,
+      "meshDrawsPerPass": 3,
+      "decodedGeometry": {
+        "degenerateTriangles": 0,
+        "nonFiniteVertexValues": 0,
+        "nonFiniteNormalValues": 0,
+        "flaggedPrimitives": 0
+      }
+    }
+  ],
+  "support": {
+    "kind": "exact two-box union",
+    "topY": 0.085,
+    "playableArmWidth": 0.832,
+    "playerRadius": 0.16,
+    "bodyClearanceAcrossWidth": 0.512,
+    "innerQuadrantFilled": false,
+    "runtimeRestriction": "always-active static deck parts only",
+    "repeatedPlacement": "scene nodes clone per placement while sharing the owned donor BufferGeometry and material references"
+  },
+  "proofs": {
+    "blender": {
+      "renderer": "Blender 5.2.2 LTS Cycles",
+      "images": [
+        {
+          "role": "desktop-pbr",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-desktop-pbr-three-quarter.png",
+          "bytes": 1120502,
+          "sha256": "f7ae979fe51df22cfa0d66209d0f23acb8a5042b17301eddc2d689e14a8b11a0"
+        },
+        {
+          "role": "mobile-pbr",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-mobile-pbr-three-quarter.png",
+          "bytes": 1122501,
+          "sha256": "3c3fe4f0243acce9eeec855720f029e736219a864920a4efc937d4bc91ef8028"
+        },
+        {
+          "role": "desktop-clay",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-desktop-clay-three-quarter.png",
+          "bytes": 1039429,
+          "sha256": "ab73d137a32a7dcf945f015002e147ebb7e480a417cd054911bdcf49e056ec2c"
+        },
+        {
+          "role": "mobile-clay",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-mobile-clay-three-quarter.png",
+          "bytes": 1041999,
+          "sha256": "991f5309d9a51047240bb0b865e82c7e11bf1a7b2259ace40fcf5b24d60bbacd"
+        },
+        {
+          "role": "source-desktop-mobile-pbr-comparison",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/source-desktop-mobile-pbr.png",
+          "bytes": 2938571,
+          "sha256": "8436b9a0035b0d44c3d92c4839fb36579b9f9ca10c7b1a954ae6934ce7b8f293"
+        },
+        {
+          "role": "source-desktop-mobile-clay-comparison",
+          "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/source-desktop-mobile-clay.png",
+          "bytes": 2556978,
+          "sha256": "09a6d8fcd91b57b350f5a90daaa2269f6834a87eb388e23178150a89f043c00d"
+        }
+      ],
+      "review": {
+        "topCornerNotch": "repaired and absent",
+        "mobileScallops": "minor reduction faceting accepted under Cloudway grazing light"
+      }
+    },
+    "integratedGame": {
+      "receipt": {
+        "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/runtime-game-proof.json",
+        "bytes": 4135,
+        "sha256": "2f1448735f6bc1053f9d4aa0e7b78089a235ef86cc3ae7fa681f2cc5fdb86584"
+      },
+      "route": "/glass-game/?layout=quarter-turn-art",
+      "levelId": "cloudway-quarter-turn-art-study-v1",
+      "renderer": "actual Three.js WebGL2 game renderer; ACES Filmic; Cloudway environment",
+      "capture": "Playwright Chromium with SwiftShader; real raster output; no rendering stubs",
+      "profiles": [
+        {
+          "profile": "high",
+          "viewportCss": [1440, 900],
+          "requestedTier": "desktop",
+          "samples": 152,
+          "minimumY": 0,
+          "maximumY": 0,
+          "respawns": 0,
+          "screenshots": [
+            {
+              "role": "start",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-desktop-high-start.png",
+              "bytes": 1358678,
+              "sha256": "82da8afcc7087c04e90012bc3617aa97096f0dd792c2e69b2fa5c36be36719f2"
+            },
+            {
+              "role": "corner",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-desktop-high-corner.png",
+              "bytes": 1379830,
+              "sha256": "c8c5cde16c01e238e041177887202245b57c0d128636cbdb218e152349070800"
+            },
+            {
+              "role": "finish",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-desktop-high-finish.png",
+              "bytes": 1382756,
+              "sha256": "acc8cb506efa6d5e5ad68395d7adf605fc4e3970355962848ba811ca3155e474"
+            }
+          ]
+        },
+        {
+          "profile": "balanced",
+          "viewportCss": [430, 932],
+          "devicePixelRatio": 3,
+          "canvasBuffer": [537, 1165],
+          "requestedTier": "mobile",
+          "samples": 77,
+          "minimumY": 0,
+          "maximumY": 0,
+          "respawns": 0,
+          "screenshots": [
+            {
+              "role": "start",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-mobile-balanced-start.png",
+              "bytes": 2010160,
+              "sha256": "fc4cfd3da096abcdd78572ad497de8dc0f53e6055ca6c5dc1743698648f61c49"
+            },
+            {
+              "role": "corner",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-mobile-balanced-corner.png",
+              "bytes": 2073496,
+              "sha256": "2da3dda34a37df34b59a9bf91223953ec25f779a5b1dc0d13337ad1cc2c104fb"
+            },
+            {
+              "role": "finish",
+              "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/pearl-teal-quarter-turn-a/proofs/quarter-turn-a-runtime-mobile-balanced-finish.png",
+              "bytes": 2055712,
+              "sha256": "6585958a353730fde3758080a8de3ed404458e6c8f60dccaed3ad092ee038602"
+            }
+          ]
+        }
+      ],
+      "assertions": {
+        "desktopAndMobileProfileRequestsMatched": true,
+        "bothDockSeamsCrossed": true,
+        "elbowCrossed": true,
+        "feetStayedAtTopY": true,
+        "innerQuadrantFilled": false,
+        "ownerVisualReviewAccepted": true
+      }
+    }
+  },
+  "verification": {
+    "command": "pnpm --filter @irchiinnuss/glass-game exec vitest run src/render/quarter-turn-platform-layout.test.ts src/render/quarter-turn-platform-asset.test.ts src/render/asset-profile-bundles.test.ts src/content/quarter-turn-art-study.test.ts",
+    "testFiles": 4,
+    "tests": 10,
+    "result": "passed",
+    "contractCoverage": [
+      "multiple translated and cardinally rotated placements",
+      "exact two-box support with no hidden quadrant",
+      "rejection of activation, unlock, movement, and non-deck behaviors",
+      "shared runtime donor geometry and profile-tier selection"
+    ]
+  }
+}

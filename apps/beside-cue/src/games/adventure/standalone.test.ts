@@ -67,6 +67,21 @@ describe('standalone development route', () => {
     })
   })
 
+  it('opens the isolated quarter-turn art and footing study in development', async () => {
+    const level = await mountAt(true, 'quarter-turn-art')
+    expect(level?.id).toBe('cloudway-quarter-turn-art-study-v1')
+    expect(level?.authored).toMatchObject({
+      layoutId: 'quarter-turn-art-study-v1',
+      contentRevision: 1,
+    })
+    expect(
+      level?.platforms.filter(
+        (platform) =>
+          platform.renderId === 'cloudway-pearl-teal-quarter-turn-a',
+      ),
+    ).toHaveLength(2)
+  })
+
   it('ignores the laboratory query in a production host', async () => {
     expect(await mountAt(false, 'cloudway-laboratory')).toBeUndefined()
   })

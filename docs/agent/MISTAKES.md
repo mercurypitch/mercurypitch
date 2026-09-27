@@ -805,6 +805,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** mark decorative platform meshes `excludeFromCameraCollision` and use cheap physical proxies updated from current simulation state. Measure microphone acquisition, bounds traversal and real rasterization separately; do not add audio delays or reduce accepted artwork. Desktop CPU isolation does not establish physical-device frame time.
 **See:** `packages/glass-game/src/render/cloudway-platforms.ts`, `packages/glass-game/src/render/camera-platform-occlusion.ts`, `art/glass-adventure/cloudway-laboratory/v1/source-assets/proofs/runtime/cloudway-sing-stall-2026-09-27/`.
 
+### Separate WebGL rendering from browser canvas presentation
+
+**Symptom:** the entire 3D canvas becomes a diagonal mosaic while DOM controls remain clear, sometimes recovering without a reload.
+**Cause:** a standalone textured WebGL triangle reproduced the corruption with combined ANGLE/Vulkan compositor flags, despite correct framebuffer readback, nonzero buffers and no GL error; switching either path to OpenGL was clean. The exact upstream component remains unidentified.
+**Rule:** compare isolated hardware backends and immediate framebuffer readback against screenshots before changing game assets or shaders. A clean `gl.getError()` does not prove correct presentation; do not label a driver crash without evidence.
+**See:** [ANGLE backend selection](https://chromium.googlesource.com/angle/angle/+/main/doc/DebuggingTips.md), `packages/glass-game/src/render/viewport.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

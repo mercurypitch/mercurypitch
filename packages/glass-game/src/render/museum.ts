@@ -19,6 +19,7 @@ import { createMelodyStationMarkers } from './melody-station-markers'
 import { createPlanarReflectionController } from './planar-reflections'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
+import { createPearlQuarterTurnPlatformRenderer } from './quarter-turn-platform'
 import { createRoomDecorations } from './room-decorations'
 import { createRoomVisibilityController } from './room-visibility'
 import { getMuseumSceneRecipe, getMuseumVisualRecipe } from './scene-catalog'
@@ -306,6 +307,13 @@ export function createMuseum(
     materials,
     materialLibrary,
   )
+  const pearlQuarterTurnPlatforms = createPearlQuarterTurnPlatformRenderer(
+    level,
+    root,
+    floors,
+    materials,
+    materialLibrary,
+  )
   const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
@@ -406,6 +414,10 @@ export function createMuseum(
         scene,
         bundle,
       )
+      const pearlQuarterTurnPlatformIds = pearlQuarterTurnPlatforms.install(
+        scene,
+        bundle,
+      )
       for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
@@ -430,7 +442,8 @@ export function createMuseum(
       for (const platform of level.platforms) {
         if (
           cloudwayPlatformIds.has(platform.id) ||
-          cloudwayLaboratoryPlatformIds.has(platform.id)
+          cloudwayLaboratoryPlatformIds.has(platform.id) ||
+          pearlQuarterTurnPlatformIds.has(platform.id)
         )
           continue
         const recipe = getPlatformRenderRecipe(
@@ -560,13 +573,15 @@ export function createMuseum(
       })
       cloudwayPlatforms.update(snapshot)
       cloudwayLaboratoryPlatforms.update(snapshot)
+      pearlQuarterTurnPlatforms.update(snapshot)
       pads.update(snapshot)
       return shadowVisibilityChanged
     },
     cullCloudwayPlatforms(camera: PerspectiveCamera | undefined) {
       const cloudwayChanged = cloudwayPlatforms.cullForView(camera)
       const laboratoryChanged = cloudwayLaboratoryPlatforms.cullForView(camera)
-      return cloudwayChanged || laboratoryChanged
+      const quarterTurnChanged = pearlQuarterTurnPlatforms.cullForView(camera)
+      return cloudwayChanged || laboratoryChanged || quarterTurnChanged
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {
@@ -620,6 +635,7 @@ export function createMuseum(
     },
     setVisibleRooms,
     dispose() {
+      pearlQuarterTurnPlatforms.dispose()
       cloudwayLaboratoryPlatforms.dispose()
       cloudwayPlatforms.dispose()
       decorations.dispose()

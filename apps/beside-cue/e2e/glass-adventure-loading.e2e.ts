@@ -1,6 +1,9 @@
 // Museum loading — opaque concealment, blocked input, recoverable failures and tutorial entry.
 import { expect, test, type Page } from '@playwright/test'
+import { GLASS_GAME_ASSET_FILES } from '@irchiinnuss/glass-game/assets'
 import { fileURLToPath } from 'node:url'
+
+const MERC_MODEL_PATH = `/games/${GLASS_GAME_ASSET_FILES.merc}`
 
 test.use({
   viewport: { width: 640, height: 480 },
@@ -49,7 +52,7 @@ test('a slow asset keeps an opaque phone cover and cannot collect movement or ca
   const held = new Promise<void>((resolve) => {
     release = resolve
   })
-  await page.route('**/games/glass3d/merc.glb', async (route) => {
+  await page.route(`**${MERC_MODEL_PATH}`, async (route) => {
     await held
     await route.continue()
   })
@@ -284,7 +287,7 @@ test('a pending visit can be left; late downloads never reopen it', async ({
   const held = new Promise<void>((resolve) => {
     release = resolve
   })
-  await page.route('**/games/glass3d/merc.glb', async (route) => {
+  await page.route(`**${MERC_MODEL_PATH}`, async (route) => {
     await held
     if (!page.isClosed()) await route.continue().catch(() => undefined)
   })

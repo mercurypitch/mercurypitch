@@ -65,7 +65,11 @@ function deferred<T>() {
 const flush = async () => {
   for (let index = 0; index < 12; index++) await Promise.resolve()
 }
-type AudioResponse = { ok: boolean; arrayBuffer(): Promise<ArrayBuffer> }
+type AudioResponse = {
+  ok: boolean
+  status?: number
+  arrayBuffer(): Promise<ArrayBuffer>
+}
 type AudioFetch = (
   url: string,
   init: { signal: AbortSignal },
@@ -97,6 +101,7 @@ beforeEach(() => {
   })
   fetcher = vi.fn<AudioFetch>().mockResolvedValue({
     ok: true,
+    status: 200,
     arrayBuffer: async () => new ArrayBuffer(16),
   })
   vi.stubGlobal('fetch', fetcher)
@@ -108,6 +113,22 @@ afterEach(() => {
 })
 
 describe('Merc narration', () => {
+  it('decodes a complete packaged cue when the iOS WebView reports status zero', async () => {
+    fetcher.mockResolvedValue({
+      ok: false,
+      status: 0,
+      arrayBuffer: async () => new ArrayBuffer(16),
+    })
+    const narration = createBrowserMercNarration(options)
+
+    await expect(narration.play('required-break')).resolves.toBe(true)
+
+    expect(context.decodeAudioData).toHaveBeenCalledOnce()
+    expect(context.sources[0].start).toHaveBeenCalledWith(0)
+    narration.dispose()
+    await vi.advanceTimersByTimeAsync(120)
+  })
+
   it('stays lazy until a gesture and maps the approved tutorial cue', async () => {
     const narration = createBrowserMercNarration(options)
     expect(contextsCreated).toBe(0)
@@ -341,14 +362,23 @@ describe('Merc narration', () => {
   })
 
   it('turns transport and decode failures into a false result', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
     context.decodeAudioData.mockRejectedValue(new Error('bad audio'))
     const narration = createBrowserMercNarration(options)
 
     await expect(narration.play('required-break')).resolves.toBe(false)
 
+    expect(warning).toHaveBeenCalledWith('[Glassworks audio]', {
+      channel: 'merc-narration',
+      errorName: 'Error',
+      errorMessage: 'bad audio',
+    })
     expect(context.sources).toHaveLength(0)
     expect(sharedAudioContextOwners()).toHaveLength(0)
     narration.dispose()
+    warning.mockRestore()
   })
 
   it('turns synchronous audio setup failure into a false result', async () => {

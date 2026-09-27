@@ -71,7 +71,11 @@ const flush = async () => {
 }
 let context: ContextFake
 let stored: string | null
-type AudioResponse = { ok: boolean; arrayBuffer(): Promise<ArrayBuffer> }
+type AudioResponse = {
+  ok: boolean
+  status?: number
+  arrayBuffer(): Promise<ArrayBuffer>
+}
 type AudioFetch = (
   url: string,
   init: { signal: AbortSignal },
@@ -94,6 +98,7 @@ beforeEach(() => {
   })
   fetcher = vi.fn<AudioFetch>().mockResolvedValue({
     ok: true,
+    status: 200,
     arrayBuffer: async () => new ArrayBuffer(4),
   })
   vi.stubGlobal('fetch', fetcher)
@@ -105,6 +110,22 @@ afterEach(() => {
 })
 
 describe('approved museum soundtrack', () => {
+  it('decodes complete packaged audio when the iOS WebView reports status zero', async () => {
+    fetcher.mockResolvedValue({
+      ok: false,
+      status: 0,
+      arrayBuffer: async () => new ArrayBuffer(4),
+    })
+    const music = createBrowserMuseumAudio(options)
+
+    await expect(music.start()).resolves.toBe(true)
+
+    expect(context.decodeAudioData).toHaveBeenCalledTimes(2)
+    expect(context.sources).toHaveLength(2)
+    music.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
+
   it('survives the previous last lease queued suspension while its fresh unlock is pending', async () => {
     const resumed = deferred<undefined>()
     context.resume.mockImplementation(() => resumed.promise)
@@ -440,6 +461,9 @@ describe('approved museum soundtrack', () => {
   })
 
   it('fails optional audio cleanly on unavailable context or failed asset, and tolerates blocked storage', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
     resetSharedAudioContext({ createContext: () => undefined })
     const unavailable = createBrowserMuseumAudio(options)
     expect(await unavailable.start()).toBe(false)
@@ -450,6 +474,7 @@ describe('approved museum soundtrack', () => {
     })
     fetcher.mockResolvedValue({
       ok: false,
+      status: 404,
       arrayBuffer: async () => new ArrayBuffer(4),
     })
     const music = createBrowserMuseumAudio({
@@ -466,7 +491,16 @@ describe('approved museum soundtrack', () => {
       music.setPreferences({ musicVolume: Number.NaN }),
     ).not.toThrow()
     expect(music.preferences().musicVolume).toBe(0.65)
+    expect(warning).toHaveBeenCalledWith(
+      '[Glassworks audio]',
+      expect.objectContaining({
+        channel: 'museum-soundtrack',
+        errorName: 'Error',
+        errorMessage: expect.stringContaining('404'),
+      }),
+    )
     expect(sharedAudioContextOwners()).toHaveLength(0)
     music.dispose()
+    warning.mockRestore()
   })
 })

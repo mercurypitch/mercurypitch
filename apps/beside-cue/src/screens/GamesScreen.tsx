@@ -1,4 +1,5 @@
 import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '@irchiinnuss/glass-game/promenade'
+import { CLOUDWAY_QUARTER_TURN_ART_STUDY } from '@irchiinnuss/glass-game/quarter-turn'
 import { CLOUDWAY_THAWING_SONG } from '@irchiinnuss/glass-game/thawing-song'
 import { preloadF0Detector, releasePreloadedDetector, } from '@irchiinnuss/pitch-engine'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
@@ -7,6 +8,7 @@ import { AppHeader } from '@/components/AppHeader'
 import { AdventureScreen } from '@/games/adventure/AdventureScreen'
 import { CreatorAudition } from '@/games/adventure/CreatorAudition'
 import { CreatorGallery } from '@/games/adventure/CreatorGallery'
+import { CreatorSongbook } from '@/games/adventure/CreatorSongbook'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
@@ -210,6 +212,15 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'echo-curator'}>
             <CreatorAudition onExit={() => setPlaying(null)} />
           </Show>
+          <Show when={playing() === 'quarter-turn-art'}>
+            <AdventureScreen
+              level={CLOUDWAY_QUARTER_TURN_ART_STUDY}
+              onExit={() => setPlaying(null)}
+            />
+          </Show>
+          <Show when={playing() === 'songbook'}>
+            <CreatorSongbook onExit={() => setPlaying(null)} />
+          </Show>
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />
           </Show>
@@ -247,6 +258,8 @@ export function GamesScreen(props: GamesScreenProps) {
               playing() !== 'promenade' &&
               playing() !== 'thawing-song' &&
               playing() !== 'echo-curator' &&
+              playing() !== 'songbook' &&
+              playing() !== 'quarter-turn-art' &&
               playing() !== 'creator-gallery' &&
               playing() !== 'hallway3d' &&
               playing() !== 'chambers' &&

@@ -103,6 +103,30 @@
         "EXT_texture_webp",
         "KHR_mesh_quantization"
       ]
+    },
+    {
+      "id": "cloudway-lab-pearl-quarter-turn-a-desktop-v1",
+      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb",
+      "node": "Cloudway_PearlTealQuarterTurnA_V1",
+      "bytes": 6794736,
+      "sha256": "bd264c04a34e02ca6d510bb2ad3e876cd9f773f31463f39ce4e857b3b287c413",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-pearl-quarter-turn-a-mobile-v1",
+      "file": "optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb",
+      "node": "Cloudway_PearlTealQuarterTurnA_V1",
+      "bytes": 2097048,
+      "sha256": "dde3db664c97416e32cfcfb82e07f4dd2ffb989917847c1efc6e5e2d3219d137",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_mesh_quantization"
+      ]
     }
   ]
 }

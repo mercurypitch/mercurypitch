@@ -16,7 +16,10 @@
     "./echo-curator": "./src/echo-curator.ts",
     "./promenade": "./src/content/cloudway-laboratory.ts",
     "./thawing-song": "./src/content/cloudway-thawing-song.ts",
-    "./creator-levels": "./src/creator-levels.ts"
+    "./creator-levels": "./src/creator-levels.ts",
+    "./songbook": "./src/songbook.ts",
+    "./songbook-content": "./src/content/merc-songbook.ts",
+    "./quarter-turn": "./src/quarter-turn.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
@@ -24,6 +27,7 @@
   },
   "dependencies": {
     "@irchiinnuss/audio-io": "workspace:*",
+    "@irchiinnuss/mobile-runtime": "workspace:*",
     "@irchiinnuss/pitch-engine": "workspace:*",
     "three": "^0.185.1"
   },

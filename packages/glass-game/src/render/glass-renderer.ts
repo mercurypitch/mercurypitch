@@ -56,6 +56,11 @@ export interface GlassRendererPresentation {
 export interface GlassRenderer {
   /** Required assets are installed; the host still owns the first-frame gate. */
   ready: Promise<void>
+  /**
+   * `dt` is the uncapped visible-frame interval. Each presentation system
+   * applies its own safety bound; camera response must not truncate Merc's
+   * animation clock after an ordinary dropped mobile frame.
+   */
   render(
     snapshot: GameSnapshot,
     dt: number,
@@ -529,7 +534,12 @@ function createGlassRendererInstance(
     render(snapshot, delta, presentation) {
       if (disposed || contextLost || !drawable) return false
       latest = snapshot
-      const cameraDt = Math.max(0, Math.min(0.05, delta))
+      const elapsedDt = Number.isFinite(delta) ? Math.max(0, delta) : 0
+      const cameraDt = Math.min(0.05, elapsedDt)
+      // A slow mobile frame cannot be redrawn, but dropping its elapsed time
+      // here made Merc's mixer lag behind the game's wall clock afterward.
+      // Keep a suspension bound while allowing ordinary hitches to catch up.
+      const animationDt = snapshot.paused ? 0 : Math.min(0.25, elapsedDt)
       const simulationDt = snapshot.paused ? 0 : cameraDt
       const presentationPaused = presentation?.paused ?? snapshot.paused
       camera.setChallengeEncounter(presentation?.challengeEncounterId ?? null)
@@ -551,7 +561,7 @@ function createGlassRendererInstance(
       if (portal.update(snapshot, simulationDt))
         options.onExitCelebrationComplete?.()
       contact.update(snapshot)
-      merc?.update(snapshot, simulationDt, options.reducedMotion ?? false, {
+      merc?.update(snapshot, animationDt, options.reducedMotion ?? false, {
         facingYaw: presentationFacingYaw,
         turnDeltaSeconds: presentationPaused ? 0 : cameraDt,
       })

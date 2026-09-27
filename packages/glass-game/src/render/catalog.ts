@@ -3,6 +3,7 @@
 // ============================================================
 
 import { FROST_WALL_BUNDLE, FROST_WALL_PANE, } from '../content/frost-wall-profile'
+import { PEARL_QUARTER_TURN_BUNDLE_IDS, PEARL_QUARTER_TURN_DOCK_RENDER_ID, PEARL_QUARTER_TURN_RENDER_ID, } from '../content/pearl-quarter-turn-profile'
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
@@ -425,6 +426,17 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     bundle: CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide,
     body: 'glass',
     outline: false,
+    suspendedHull: false,
+  },
+  [PEARL_QUARTER_TURN_RENDER_ID]: {
+    bundle: PEARL_QUARTER_TURN_BUNDLE_IDS.logical,
+    body: 'marble',
+    outline: false,
+    suspendedHull: false,
+  },
+  [PEARL_QUARTER_TURN_DOCK_RENDER_ID]: {
+    body: 'marble',
+    outline: true,
     suspendedHull: false,
   },
 }

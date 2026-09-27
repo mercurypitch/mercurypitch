@@ -178,6 +178,21 @@ async function installCompletedVisit(
 
 async function openEncore(page: Page) {
   await page.goto('/glass-game/?layout=journey')
+  const completedVisit = page.getByRole('dialog', {
+    name: `${GLASSWORKS_JOURNEY.title} is already complete.`,
+    exact: true,
+  })
+  await expect(completedVisit).toBeVisible()
+  await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
+  expect(
+    await page.evaluate(() => window.encoreIntegration.streams.length),
+  ).toBe(0)
+  expect(
+    await page.evaluate(() => window.encoreIntegration.audioEvents),
+  ).toEqual([])
+  await completedVisit
+    .getByRole('button', { name: 'Review completion', exact: true })
+    .tap()
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',

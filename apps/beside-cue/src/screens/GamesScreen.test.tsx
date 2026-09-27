@@ -75,6 +75,13 @@ vi.mock('@/games/adventure/CreatorGallery', () => ({
     </button>
   ),
 }))
+vi.mock('@/games/adventure/CreatorSongbook', () => ({
+  CreatorSongbook: (props: { onExit(): void }) => (
+    <button data-testid="songbook-host" onClick={() => props.onExit()}>
+      Leave songbook
+    </button>
+  ),
+}))
 vi.mock('@/games/adventure/CreatorAudition', () => ({
   CreatorAudition: (props: { onExit(): void }) => (
     <button data-testid="curator-host" onClick={() => props.onExit()}>
@@ -137,6 +144,36 @@ describe('the games list warming the detector (P7)', () => {
 })
 
 describe('owner-build adventure entries', () => {
+  it('opens the Pearl Turn as an isolated study without altering the campaign', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /The Pearl Turn/u }))
+    const host = screen.getByTestId('adventure-host')
+    expect(host).toHaveAttribute(
+      'data-level',
+      'cloudway-quarter-turn-art-study-v1',
+    )
+    expect(host).toHaveAttribute('data-campaign', 'false')
+    expect(screen.queryByTestId('legacy-journey')).toBeNull()
+    fireEvent.click(host)
+    expect(
+      screen.getByRole('button', { name: /The Pearl Turn/u }),
+    ).toBeEnabled()
+  })
+  it('opens the songbook without mounting a movement game and returns to the list', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: /Merc’s little songbook/u }),
+    )
+    const host = screen.getByTestId('songbook-host')
+    expect(screen.queryByTestId('legacy-journey')).toBeNull()
+    expect(screen.queryByTestId('adventure-host')).toBeNull()
+    fireEvent.click(host)
+    expect(screen.queryByTestId('songbook-host')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /Merc’s little songbook/u }),
+    ).toBeEnabled()
+  })
+
   it('opens art studies without mounting another game', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /Little discoveries/u }))

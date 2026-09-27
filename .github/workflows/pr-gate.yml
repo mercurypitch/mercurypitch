@@ -492,6 +492,7 @@ jobs:
             narration,
             render-quality,
             replay,
+            songbook,
             solids,
             thawing-song,
             voice,
