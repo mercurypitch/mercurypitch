@@ -71,6 +71,15 @@
 //            two places, and one static import anywhere would bring every
 //            line of it back without a visible change on the web.
 //
+//   STAGE 2  The Karaoke room imports a singer's own songs in exactly the
+//            builds the owner chose (27 Sep): every build that is not the
+//            store build. The switch is a build constant (KARAOKE_IMPORT,
+//            src/lib/native-build.ts) that api-base.mjs's karaokeImportFor
+//            decides from the same target as the worker, so a store build
+//            must carry none of the import, its queue, its paywall or its
+//            Settings rows -- absent, not hidden -- and every other build
+//            must carry all of them.
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -86,7 +95,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { API_BASES, readEnvFiles, resolveApiBase } from '../api-base.mjs'
+import { API_BASES, karaokeImportFor, readEnvFiles, resolveApiBase, } from '../api-base.mjs'
 import { resolveNativeAssets, resolveNativeAssetSources, totalBytes, } from '../native-assets.mjs'
 import { KARAOKE_EXAMPLE_PINS, NATIVE_ONLY_DIR, } from './fetch-karaoke-examples.mjs'
 
@@ -152,6 +161,18 @@ const WEB_SIGN_IN = [
     'Sign in with your phone',
     'the web sign-in dialog (AuthModal, its television phone row)',
   ],
+]
+
+/**
+ * Present in a build that imports songs, and in no other: each is a piece of
+ * Stage 2 a store build must not carry.
+ */
+const KARAOKE_STAGE_2 = [
+  ['Import a song', "the Karaoke room's Import button"],
+  ['Sing your own songs', 'the Karaoke paywall'],
+  ['karaoke-room-imports', 'the import queue'],
+  ['Remove imported songs', 'Settings and Storage for imported songs'],
+  ['Songs this month', 'the songs left, in the room and in Settings'],
 ]
 
 const failures = []
@@ -406,6 +427,27 @@ function main(argv) {
       `${label}: the web Settings panel is not in the bundle`,
       `Found ${webSettings.join('; ')}. Something imports the web SettingsPanel without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native Settings is apps/mercurypitch/src/shell/settings.`,
     )
+
+    // STAGE 2 -- decided from the same answer as WORKER, so it can only be
+    // asked once the requested base resolved.
+    if (api !== undefined) {
+      const importing = karaokeImportFor(api)
+      const carried = KARAOKE_STAGE_2.filter(([needle]) =>
+        assets.some((file) => contains(file, needle)),
+      )
+      const wrong = importing
+        ? KARAOKE_STAGE_2.filter((piece) => !carried.includes(piece))
+        : carried
+      record(
+        wrong.length === 0,
+        importing
+          ? `${label}: the Karaoke room imports songs in this ${api.target} build (${KARAOKE_STAGE_2.length} pieces)`
+          : `${label}: the store build carries no Karaoke import`,
+        importing
+          ? `Missing: ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. A ${api.target} build compiles KARAOKE_IMPORT in as true (vite.config.ts, api-base.mjs karaokeImportFor)${synced ? '; or this is a stale bundle' : ''}.`
+          : `Found ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. Something reaches Stage 2 from a path KARAOKE_IMPORT does not fold away (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`,
+      )
+    }
 
     const webSignIn = []
     for (const file of assets) {

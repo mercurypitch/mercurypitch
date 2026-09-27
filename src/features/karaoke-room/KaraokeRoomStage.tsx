@@ -242,9 +242,10 @@ export const KaraokeRoomStage: Component = () => {
       },
       lyricsSize: karaokeLyricsSize,
       noteGlyphs: karaokeNoteGlyphs,
+      // One conditional on the constant, which a store build folds to 0, so
+      // the queue is not referenced there at all.
       badge: () => {
-        if (!KARAOKE_IMPORT) return null
-        const coming = importsInFlight()
+        const coming = KARAOKE_IMPORT ? importsInFlight() : 0
         return coming > 0 ? `Separating ${coming}` : null
       },
     },

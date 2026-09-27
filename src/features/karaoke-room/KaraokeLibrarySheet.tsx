@@ -16,17 +16,22 @@
 // sheet, the queue's rows sit at the top of your songs with what each one
 // waits for, a new song carries a dot until it is first sung, and each
 // imported song has one menu item: Remove from this phone (plan §3, §6.4).
+// All of that is KaraokeLibraryImports.tsx, reached only through the
+// stand-ins below: each is a plain conditional on the constant, which a
+// store build folds to nothing, and the Stage 2 modules drop out of it whole
+// (apps/mercurypitch/vite.config.ts; assert-bundle.mjs STAGE 2 proves it).
+// A `<Show when={KARAOKE_IMPORT}>` would not: its children are a function
+// Rollup cannot see through, so they would stay in the store build.
 
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
-import { contactFormUrl } from '@/lib/contact-links'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import type { ImportRow, ImportRowState } from './karaoke-import-queue'
-import { importRowLine, importRows, karaokeNewSongs, removeImport, removeImportedSong, retryImport, sendingTitle, showImportGate, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
+import { NoteGlyph } from './karaoke-room-glyphs'
 import type { RoomSong } from './karaoke-room-library'
-import { KaraokeImport } from './KaraokeImport'
+import type { ImportedSongMenuProps } from './KaraokeLibraryImports'
+import { ImportedSongMenu, LibraryImportHead, libraryQueueLength, LibraryQueueRows, SongNewMark, } from './KaraokeLibraryImports'
 
 /** "4:06": minutes and two-digit seconds, or null for no known length. */
 export function formatSongDuration(seconds: number | null): string | null {
@@ -49,153 +54,6 @@ const CloseGlyph: Component = () => (
   </svg>
 )
 
-/** A note: a song in the list. */
-const NoteGlyph: Component = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.7"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M9.5 17.5V6.2l9-1.7v11" />
-    <circle cx="7.2" cy="17.6" r="2.3" />
-    <circle cx="16.2" cy="15.9" r="2.3" />
-  </svg>
-)
-
-/** Three dots: a song's menu. */
-const MoreGlyph: Component = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <circle cx="6" cy="12" r="1.7" />
-    <circle cx="12" cy="12" r="1.7" />
-    <circle cx="18" cy="12" r="1.7" />
-  </svg>
-)
-
-/** The share a row's bar shows, or null for a row without one. */
-function barOf(state: ImportRowState): number | null {
-  if (state.kind === 'sending') return Math.floor(state.share * 100)
-  if (state.kind === 'separating') return state.percent
-  return null
-}
-
-/** What was sent and got nowhere yet costs nothing to remove. */
-const REMOVABLE_WAITING: ReadonlySet<ImportRowState['kind']> = new Set([
-  'waiting-turn',
-  'waiting-network',
-  'busy',
-  'blocked',
-])
-
-const EXPIRED_SUPPORT = contactFormUrl(
-  'support',
-  'A Karaoke song expired on the server before it reached my phone.',
-)
-
-/** A song in the import queue: what it waits for, and what can be done. */
-const QueueRow: Component<{ row: ImportRow }> = (props) => {
-  const state = (): ImportRowState => props.row.state
-  const failed = () => {
-    const now = state()
-    return now.kind === 'failed' ? now.reason : null
-  }
-  const RemoveButton: Component = () => (
-    <button
-      type="button"
-      class={styles.queueAction}
-      onClick={() => void removeImport(props.row.sessionId)}
-    >
-      Remove
-    </button>
-  )
-  return (
-    <li
-      class={styles.queueRow}
-      data-testid="karaoke-queue-row"
-      data-state={state().kind}
-    >
-      <span class={styles.songArt} aria-hidden="true">
-        <NoteGlyph />
-      </span>
-      <span class={styles.songText}>
-        <span class={styles.songTitle}>{props.row.title}</span>
-        <span class={styles.songSub}>{importRowLine(state())}</span>
-        <Show when={barOf(state())}>
-          {(share) => (
-            <span
-              class={styles.queueBar}
-              role="progressbar"
-              aria-label={props.row.title}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={share()}
-            >
-              <i style={{ width: `${share()}%` }} />
-            </span>
-          )}
-        </Show>
-        <Show when={failed() === 'expired'}>
-          <span class={styles.songSub}>Separating it again uses a song.</span>
-        </Show>
-        <Show when={failed() !== null || REMOVABLE_WAITING.has(state().kind)}>
-          <span class={styles.queueActions}>
-            <Show when={failed() === 'expired'}>
-              <button
-                type="button"
-                class={styles.queueAction}
-                onClick={() => retryImport(props.row.sessionId)}
-              >
-                Separate again
-              </button>
-              <a
-                class={styles.queueAction}
-                href={EXPIRED_SUPPORT}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Ask support
-              </a>
-            </Show>
-            <Show
-              when={
-                failed() !== null &&
-                failed() !== 'expired' &&
-                failed() !== 'missing'
-              }
-            >
-              <button
-                type="button"
-                class={styles.queueAction}
-                onClick={() => retryImport(props.row.sessionId)}
-              >
-                Try again
-              </button>
-            </Show>
-            <Show
-              when={(() => {
-                const now = state()
-                return now.kind === 'blocked' && !now.subscribed
-              })()}
-            >
-              <button
-                type="button"
-                class={styles.queueAction}
-                onClick={() => showImportGate()}
-              >
-                Subscribe
-              </button>
-            </Show>
-            <RemoveButton />
-          </span>
-        </Show>
-      </span>
-    </li>
-  )
-}
-
 /** Three bars: the song on the stage. */
 const OnStageGlyph: Component = () => (
   <svg
@@ -209,6 +67,20 @@ const OnStageGlyph: Component = () => (
     <path d="M6 9v6M10 5v14M14 8v8M18 10.5v3" />
   </svg>
 )
+
+const ImportHead: Component = () =>
+  KARAOKE_IMPORT ? <LibraryImportHead /> : null
+
+const QueueRows: Component = () =>
+  KARAOKE_IMPORT ? <LibraryQueueRows /> : null
+
+const queueLength = (): number => (KARAOKE_IMPORT ? libraryQueueLength() : 0)
+
+const NewMark: Component<{ sessionId: string }> = (props) =>
+  KARAOKE_IMPORT ? <SongNewMark sessionId={props.sessionId} /> : null
+
+const SongMenu: Component<ImportedSongMenuProps> = (props) =>
+  KARAOKE_IMPORT ? <ImportedSongMenu {...props} /> : null
 
 interface KaraokeLibrarySheetProps {
   isOpen: boolean
@@ -227,15 +99,11 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
   const examples = (): RoomSong[] =>
     props.songs().filter((song) => song.kind === 'example')
 
-  const queue = (): ImportRow[] => (KARAOKE_IMPORT ? importRows() : [])
   const [menuFor, setMenuFor] = createSignal<string | null>(null)
 
   const Row: Component<{ song: RoomSong }> = (row) => {
     const current = (): boolean => props.currentId() === row.song.sessionId
     const sub = (): string | null => row.song.credit ?? row.song.artist
-    const isNew = (): boolean =>
-      KARAOKE_IMPORT && karaokeNewSongs().includes(row.song.sessionId)
-    const hasMenu = (): boolean => KARAOKE_IMPORT && row.song.kind === 'yours'
     const menuOpen = (): boolean => menuFor() === row.song.sessionId
     return (
       <li class={styles.songItem}>
@@ -256,11 +124,7 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
           <span class={styles.songText}>
             <span class={styles.songTitle}>
               {row.song.title}
-              <Show when={isNew()}>
-                <span class={styles.newDot}>
-                  <span class={styles.srOnly}> New</span>
-                </span>
-              </Show>
+              <NewMark sessionId={row.song.sessionId} />
             </span>
             <Show when={sub()}>
               {(line) => <span class={styles.songSub}>{line()}</span>}
@@ -270,36 +134,13 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
             {(length) => <span class={styles.songLength}>{length()}</span>}
           </Show>
         </button>
-        <Show when={hasMenu()}>
-          <button
-            type="button"
-            class={styles.songMore}
-            aria-label={`More for ${row.song.title}`}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen()}
-            onClick={() => setMenuFor(menuOpen() ? null : row.song.sessionId)}
-          >
-            <MoreGlyph />
-          </button>
-          <Show when={menuOpen()}>
-            <div
-              class={styles.songMenu}
-              role="menu"
-              aria-label={row.song.title}
-            >
-              <button
-                type="button"
-                role="menuitem"
-                class={styles.songMenuItem}
-                onClick={() => {
-                  setMenuFor(null)
-                  void removeImportedSong(row.song.sessionId)
-                }}
-              >
-                Remove from this phone
-              </button>
-            </div>
-          </Show>
+        <Show when={row.song.kind === 'yours'}>
+          <SongMenu
+            song={row.song}
+            open={menuOpen()}
+            onToggle={() => setMenuFor(menuOpen() ? null : row.song.sessionId)}
+            onClose={() => setMenuFor(null)}
+          />
         </Show>
       </li>
     )
@@ -320,25 +161,16 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
           </button>
         </div>
 
-        <Show when={KARAOKE_IMPORT}>
-          <KaraokeImport />
-          <Show when={sendingTitle()}>
-            {(title) => (
-              <p class={styles.keepOpen} role="status">
-                {`Keep Mercury Pitch open until ${title()} is sent.`}
-              </p>
-            )}
-          </Show>
-        </Show>
+        <ImportHead />
 
         <Show when={KARAOKE_IMPORT || yours().length > 0}>
           <section class={styles.group}>
             <h3 class={styles.groupTitle}>Your songs</h3>
             <ul class={styles.songList}>
-              <For each={queue()}>{(row) => <QueueRow row={row} />}</For>
+              <QueueRows />
               <For each={yours()}>{(song) => <Row song={song} />}</For>
             </ul>
-            <Show when={queue().length === 0 && yours().length === 0}>
+            <Show when={queueLength() === 0 && yours().length === 0}>
               <p class={styles.groupNote}>Songs you import appear here.</p>
             </Show>
           </section>

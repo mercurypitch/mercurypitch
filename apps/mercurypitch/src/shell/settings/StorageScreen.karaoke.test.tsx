@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
 import type * as UserService from '@/db/services/user-service'
+import type * as NativeBuild from '@/lib/native-build'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { confirmSettingsAlert, resetSettingsAlert } from './settings-alert'
@@ -19,6 +20,11 @@ import type { StorageFacts } from './storage-facts'
 import { loadStorageFacts } from './storage-facts'
 import { StorageScreen } from './StorageScreen'
 
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  IS_NATIVE_BUILD: true,
+  KARAOKE_IMPORT: true,
+}))
 vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthService>()),
   needsSignIn: () => false,

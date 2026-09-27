@@ -9,8 +9,9 @@
 // room cannot import the shell.
 //
 // A build without Import (the store build, until the subscription is real)
-// gets neither. KARAOKE_IMPORT is a compile-time constant there, so the
-// branch below, and all it imports, is dead code in that bundle.
+// gets neither. KARAOKE_IMPORT is a compile-time constant there, and the one
+// conditional below folds to its stub, so `install` and all it imports are
+// dead code in that bundle (assert-bundle.mjs STAGE 2 proves it).
 
 import { requireAuth } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
@@ -36,8 +37,7 @@ export interface KaraokeImportWiring {
   readonly stop: () => void
 }
 
-export function installKaraokeImport(): KaraokeImportWiring {
-  if (!KARAOKE_IMPORT) return { api: {}, stop: () => undefined }
+function install(): KaraokeImportWiring {
   return {
     api: {
       karaokeSubscription: createKaraokeSubscription(
@@ -47,4 +47,8 @@ export function installKaraokeImport(): KaraokeImportWiring {
     },
     stop: startKaraokeImportQueue(),
   }
+}
+
+export function installKaraokeImport(): KaraokeImportWiring {
+  return KARAOKE_IMPORT ? install() : { api: {}, stop: () => undefined }
 }

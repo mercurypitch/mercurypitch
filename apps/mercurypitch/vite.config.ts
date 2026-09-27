@@ -58,6 +58,34 @@ const PURCHASE_POLICY = {
   platformEnv: 'VITE_MERCURYPITCH_NATIVE_PLATFORM',
 } as const
 
+/**
+ * The Karaoke room's Stage 2 (plan S8): the modules only a build that imports
+ * songs uses. Every reference to them from the rest of the app is a plain
+ * conditional on KARAOKE_IMPORT (src/lib/native-build.ts), which a store
+ * build folds away; declared free of side effects here, a module nothing
+ * uses is then dropped whole. Without this the import queue's module-level
+ * signals, which read storage as they are made, would keep it in the store
+ * build. `assert-bundle.mjs` STAGE 2 checks the result on every build, so a
+ * module missing from this list is a red check rather than a quiet leak.
+ */
+const KARAOKE_STAGE_2 = [
+  '/src/features/karaoke-room/KaraokeImport.tsx',
+  '/src/features/karaoke-room/KaraokeLibraryImports.tsx',
+  '/src/features/karaoke-room/karaoke-import-checks.ts',
+  '/src/features/karaoke-room/karaoke-import-queue.ts',
+  '/src/features/karaoke-room/karaoke-imported-songs.ts',
+  '/src/features/karaoke-room/karaoke-songs.ts',
+  '/apps/mercurypitch/src/shell/karaoke-subscription.ts',
+  '/apps/mercurypitch/src/shell/settings/KaraokeSongsGroups.tsx',
+  '/apps/mercurypitch/src/shell/settings/StorageImportedSongs.tsx',
+  '/apps/mercurypitch/src/shell/settings/imported-songs-copy.ts',
+]
+
+function isKaraokeStage2(id: string): boolean {
+  const path = id.replace(/\?.*$/u, '').replace(/\\/gu, '/')
+  return KARAOKE_STAGE_2.some((module) => path.endsWith(module))
+}
+
 export default defineConfig(({ mode, command }) => {
   // Fail before producing a bundle, not after shipping one. V1-1 composes no
   // store at all (src/infrastructure/mobile-runtime.ts), so today this can
@@ -211,6 +239,11 @@ export default defineConfig(({ mode, command }) => {
           fileURLToPath(new URL('.', import.meta.url)),
           'index.html',
         ),
+        treeshake: {
+          // A Karaoke Stage 2 module that nothing uses is dropped whole, its
+          // module-level state included (KARAOKE_STAGE_2, above).
+          moduleSideEffects: (id) => !isKaraokeStage2(id),
+        },
       },
     },
 

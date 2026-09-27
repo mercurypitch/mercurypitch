@@ -64,6 +64,19 @@ interface KaraokeStudioProps {
   onDone: () => void
 }
 
+/**
+ * Stage 2's Import on the songs view. A plain conditional on the constant,
+ * which a store build folds to nothing, so KaraokeImport and the rest of
+ * Stage 2 drop out of it (a `<Show when={KARAOKE_IMPORT}>` would keep its
+ * children).
+ */
+const StudioImport: Component = () =>
+  KARAOKE_IMPORT ? (
+    <div class={styles.studioImport}>
+      <KaraokeImport />
+    </div>
+  ) : null
+
 export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
   const [controls, setControls] = createSignal<UvrStudioControls | null>(null)
   const [optionsOpen, setOptionsOpen] = createSignal(false)
@@ -136,10 +149,8 @@ export const KaraokeStudio: Component<KaraokeStudioProps> = (props) => {
         </button>
       </div>
 
-      <Show when={KARAOKE_IMPORT && view() === 'upload'}>
-        <div class={styles.studioImport}>
-          <KaraokeImport />
-        </div>
+      <Show when={view() === 'upload'}>
+        <StudioImport />
       </Show>
 
       <UvrPanel initialView="upload" studio={hosting} onSelectMelody={toSing} />

@@ -186,12 +186,16 @@ describe('the library, where songs can be imported', () => {
         state: { kind: 'failed', reason: 'separation' },
       },
     ]
-    open([])
+    const { sheet } = open([])
 
     const failed = row('Long Road North')
     expect(failed.textContent).toContain(
       'This song could not be separated. It was given back.',
     )
+    // A row in the queue is a song on its way: the list is not empty.
+    expect(
+      within(sheet).queryByText('Songs you import appear here.'),
+    ).toBeNull()
     fireEvent.click(within(failed).getByRole('button', { name: 'Try again' }))
     fireEvent.click(within(failed).getByRole('button', { name: 'Remove' }))
 

@@ -37,10 +37,15 @@ export interface StorageFacts {
 }
 
 /** The singer's own songs, once the session store has read them. */
-async function readImportedSongs(): Promise<ImportedSongs | undefined> {
-  if (!KARAOKE_IMPORT) return undefined
+async function readThem(): Promise<ImportedSongs> {
   await whenSessionStoreReady()
   return importedSongs()
+}
+
+/** None to read in a build that cannot import them: one conditional on the
+ *  constant, which a store build folds away with `readThem`. */
+async function readImportedSongs(): Promise<ImportedSongs | undefined> {
+  return KARAOKE_IMPORT ? readThem() : undefined
 }
 
 const [total, setTotal] = createSignal<number | null>(null)
