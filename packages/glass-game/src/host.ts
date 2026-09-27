@@ -81,6 +81,8 @@ export interface MercNarrationPreferences {
 }
 
 export interface GlassMercNarration {
+  /** Current decoded speech energy, 0–1; optional presentation only, never mic input. */
+  outputLevel?(): number
   /** Replace any older cue; false means playback was unavailable or retired. */
   play(cue: MercNarrationCue): Promise<boolean>
   /** Invalidate pending work immediately; resolve once the audible tail is gone. */

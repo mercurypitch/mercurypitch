@@ -295,6 +295,7 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
   renderer.render(snapshot, 0.12)
 
   expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.12, false, {
+    narrationLevel: undefined,
     facingYaw: undefined,
     turnDeltaSeconds: 0.05,
   })
@@ -302,6 +303,7 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
   state.mercUpdate.mockClear()
   renderer.render(snapshot, 0.9)
   expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.25, false, {
+    narrationLevel: undefined,
     facingYaw: undefined,
     turnDeltaSeconds: 0.05,
   })
@@ -310,9 +312,39 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
   snapshot.paused = true
   renderer.render(snapshot, 0.12)
   expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0, false, {
+    narrationLevel: 0,
     facingYaw: undefined,
     turnDeltaSeconds: 0,
   })
+  renderer.dispose()
+})
+
+it('passes voice energy to the mascot and suppresses it during a host pause', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  renderer.render(snapshot, 0.016, {
+    paused: false,
+    challengeEncounterId: null,
+    narrationLevel: 0.7,
+  })
+  expect(state.mercUpdate).toHaveBeenLastCalledWith(
+    snapshot,
+    0.016,
+    false,
+    expect.objectContaining({ narrationLevel: 0.7 }),
+  )
+  renderer.render(snapshot, 0.016, {
+    paused: true,
+    challengeEncounterId: null,
+    narrationLevel: 0.7,
+  })
+  expect(state.mercUpdate).toHaveBeenLastCalledWith(
+    snapshot,
+    0.016,
+    false,
+    expect.objectContaining({ narrationLevel: 0 }),
+  )
   renderer.dispose()
 })
 

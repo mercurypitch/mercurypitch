@@ -3,6 +3,7 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { GlassMercNarration, MercNarrationCue, MercNarrationPreferences, } from '../host'
 import { reportAudioAssetFailure } from './audio-asset-failure'
+import { createSpeechEnvelope, speechEnvelopeAt, type SpeechEnvelope, } from './speech-envelope'
 
 export interface MercNarrationOptions {
   assetUrl(id: string): string
@@ -42,6 +43,8 @@ function createNarrationOutput(onInterrupted: () => void) {
   let releasing = false
   let unlocking = true
   let source: AudioBufferSourceNode | undefined
+  let envelope: SpeechEnvelope | undefined
+  let startedAt = 0
   let deadline = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   let resolveFinished!: () => void
@@ -72,6 +75,7 @@ function createNarrationOutput(onInterrupted: () => void) {
   function finish(): void {
     if (closed) return
     closed = true
+    envelope = undefined
     clearTimeout(timer)
     deadline = 0
     if (source) {
@@ -137,6 +141,17 @@ function createNarrationOutput(onInterrupted: () => void) {
     unlocked,
     finished,
     release,
+    outputLevel(): number {
+      if (
+        closed ||
+        releasing ||
+        !source ||
+        !envelope ||
+        context?.state !== 'running'
+      )
+        return 0
+      return speechEnvelopeAt(envelope, context.currentTime - startedAt)
+    },
     play(buffer: AudioBuffer): boolean {
       if (
         !context ||
@@ -146,7 +161,9 @@ function createNarrationOutput(onInterrupted: () => void) {
         context.state !== 'running'
       )
         return false
+      envelope = createSpeechEnvelope(buffer)
       const at = context.currentTime
+      startedAt = at
       const next = context.createBufferSource()
       next.buffer = buffer
       next.connect(bus)
@@ -278,6 +295,7 @@ export function createBrowserMercNarration(
 
   return {
     play,
+    outputLevel: () => current?.output.outputLevel() ?? 0,
     silenceForVoice: retireAll,
     pause() {
       void retireAll()
