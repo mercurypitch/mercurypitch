@@ -110,6 +110,33 @@ describe('with a site key configured', () => {
     expect(opts.sitekey).toBe(SITE_KEY)
   })
 
+  it('draws the widget only when Cloudflare needs the person, when asked to', async () => {
+    // The native sign-in sheet. The token is still demanded; only the drawing
+    // changes.
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    render(() => (
+      <mod.default onToken={vi.fn()} appearance="interaction-only" />
+    ))
+
+    await scriptLoads()
+
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1))
+    const opts = api.render.mock.calls[0][1] as { appearance?: string }
+    expect(opts.appearance).toBe('interaction-only')
+  })
+
+  it("leaves every web form on Cloudflare's default appearance", async () => {
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    render(() => <mod.default onToken={vi.fn()} />)
+
+    await scriptLoads()
+
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1))
+    expect(Object.keys(api.render.mock.calls[0][1])).not.toContain('appearance')
+  })
+
   it('injects the script once no matter how many widgets ask', async () => {
     // Two forms on one page (a modal over the reset route) must not race two
     // copies of the same script into the head.

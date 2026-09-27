@@ -17,6 +17,7 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { rememberSignInMethod } from '@/lib/last-sign-in'
 import type { AuthResponse, SignInOutcome } from './auth-service'
 import { adoptSession, isTwofaChallenge } from './auth-service'
+import { getDeviceSecret, getUserId } from './user-service'
 
 function requireBaseUrl(): string {
   if (API_BASE_URL == null || API_BASE_URL === '') {
@@ -54,10 +55,19 @@ async function postJson(path: string, body: unknown): Promise<Response> {
 export async function requestLoginCode(
   email: string,
   turnstileToken = '',
+  options: {
+    /**
+     * Ask for a code that SETS UP an account when the address has none. The
+     * native sheet asks; the web's pane does not, and an address with no
+     * account still gets nothing there.
+     */
+    signUp?: boolean
+  } = {},
 ): Promise<string> {
   const res = await postJson('/api/auth/email-code/request', {
     email: email.trim().toLowerCase(),
     cfTurnstileToken: turnstileToken,
+    ...(options.signUp === true ? { signUp: true } : {}),
   })
   if (!res.ok) throw new Error(await messageOf(res, 'Could not send a code'))
   const body = (await res.json()) as { ceremony: string }
@@ -75,10 +85,22 @@ export async function requestLoginCode(
 export async function verifyLoginCode(
   ceremony: string,
   code: string,
+  options: {
+    /**
+     * Send this device's anonymous credential along. A sign-up code then
+     * takes over the device's anonymous account in place, so what it
+     * practiced stays with the new account, exactly as signing up with Apple
+     * or Google does. A sign-in code ignores it.
+     */
+    proveDevice?: boolean
+  } = {},
 ): Promise<SignInOutcome> {
   const res = await postJson('/api/auth/email-code/verify', {
     ceremony,
     code: code.trim(),
+    ...(options.proveDevice === true
+      ? { deviceId: getUserId(), deviceSecret: getDeviceSecret() }
+      : {}),
   })
   if (!res.ok) {
     throw new Error(await messageOf(res, 'That code is not valid'))
