@@ -21,8 +21,25 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as DeviceTier from '@/lib/device-tier'
 import type { DeviceClass } from '@/lib/device-tier'
+import type * as NativeBuild from '@/lib/native-build'
 
 let deviceClass: DeviceClass = 'mobile'
+
+/** The web, until a case says it is a native test build. */
+const build = vi.hoisted(() => ({ native: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  get IS_NATIVE_BUILD() {
+    return build.native
+  },
+}))
+
+/** The Developer screen's crash test (stream-switches.ts), off until asked. */
+const switches = vi.hoisted(() => ({ pastGuard: false }))
+vi.mock('./stream-switches', () => ({
+  decodePastGuard: () => switches.pastGuard,
+  noStreamForced: () => false,
+}))
 
 vi.mock('@/lib/device-tier', async (importOriginal) => {
   const actual = await importOriginal<typeof DeviceTier>()
@@ -83,8 +100,17 @@ vi.mock('./stem-stream-source', () => ({
       },
     }
   }),
+  // The container read the Developer screen estimates a whole decode from.
+  readStemShape: vi.fn(async () => ({
+    durationSeconds: SONG_SECONDS,
+    sampleRate: STEM_RATE,
+    channelCount: STEM_CHANNELS,
+    codec: 'mp3',
+  })),
 }))
 
+import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
+import { readLastSongPath, resetSongPathForTests } from './stem-load-path'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
 import { useStemMixerAudioController } from './useStemMixerAudioController'
 
@@ -115,6 +141,8 @@ function fullyDecodedBuffer(): AudioBuffer {
 }
 
 let decodeCalls = 0
+/** Called as a decode starts: what the record says at that moment. */
+let onDecode: (() => void) | null = null
 
 function fakeAudioContext(): unknown {
   const param = () => ({
@@ -182,6 +210,7 @@ function fakeAudioContext(): unknown {
     })),
     decodeAudioData: vi.fn(async () => {
       decodeCalls++
+      onDecode?.()
       return fullyDecodedBuffer()
     }),
   }
@@ -278,6 +307,7 @@ let stemBytes = 10 * 1024 * 1024
 
 beforeEach(() => {
   decodeCalls = 0
+  onDecode = null
   openedStreams = 0
   disposedStreams = 0
   chunkIterations = 0
@@ -498,6 +528,175 @@ describe('the Karaoke room on a phone that cannot stream (no AudioDecoder)', () 
 
     expect(decodeCalls).toBe(2)
     expect(h.controller.loadError()).toBe('')
+    h.dispose()
+  })
+})
+
+describe('the Developer screen’s record of how a song was held', () => {
+  // A native test build's hosted room writes down which way it held each
+  // stem (stem-load-path.ts): the Karaoke audio section reads the record,
+  // and the Audio section's Copy report carries the lines.
+  const MIB = 1024 * 1024
+  /** One stem of this song decoded whole at the room's 48 kHz. */
+  const WHOLE_STEM = Math.round(SONG_SECONDS * STEM_RATE * STEM_CHANNELS * 4)
+  const karaoke = () =>
+    audioDiagnosticEntries().filter((entry) => entry.source === 'karaoke')
+  const hosted = { forceStream: true } as Partial<StemMixerAudioDeps>
+
+  beforeEach(() => {
+    build.native = true
+    vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+    localStorage.clear()
+    resetAudioDiagnosticsForTests()
+    resetSongPathForTests()
+    deviceClass = 'mobile'
+  })
+
+  afterEach(() => {
+    build.native = false
+    switches.pastGuard = false
+    vi.unstubAllEnvs()
+    localStorage.clear()
+  })
+
+  it('says a streamed song was streamed, with its size and what a whole decode would hold', async () => {
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    const record = readLastSongPath()
+    expect(record).toMatchObject({
+      path: 'stream',
+      songBytes: 2 * stemBytes,
+      wholeDecodeBytes: 2 * WHOLE_STEM,
+      codec: 'mp3',
+      stems: 2,
+      state: 'done',
+    })
+    // An envelope and a window per stem: nothing like the 180 MB.
+    expect(record?.residentBytes).toBeGreaterThan(0)
+    expect(record?.residentBytes).toBeLessThan(16 * MIB)
+    expect(karaoke().map((entry) => entry.event)).toEqual([
+      'song-open',
+      'stem-stream',
+      'stem-held',
+      'stem-stream',
+      'stem-held',
+      'song-path',
+    ])
+    expect(karaoke()[0].detail).toMatchObject({ streams: true })
+    h.dispose()
+  })
+
+  it('says a refused song was refused, and decodes none of it', async () => {
+    decoderPresent = false
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(readLastSongPath()).toMatchObject({
+      path: 'refused',
+      songBytes: 2 * stemBytes,
+      wholeDecodeBytes: 2 * WHOLE_STEM,
+      residentBytes: null,
+      state: 'done',
+    })
+    const refusals = karaoke().filter((entry) => entry.event === 'stem-refused')
+    expect(refusals).toHaveLength(2)
+    expect(refusals.every((entry) => entry.failed)).toBe(true)
+    expect(karaoke()[0].detail).toMatchObject({ streams: false })
+    h.dispose()
+  })
+
+  it('writes a whole decode down before the decode starts', async () => {
+    decoderPresent = false
+    stemBytes = MIB
+    const seen: unknown[] = []
+    onDecode = () => seen.push(readLastSongPath())
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    // If that first decode had killed the app, a relaunch would find this.
+    expect(seen[0]).toMatchObject({ path: 'whole', state: 'loading', stems: 1 })
+    expect(readLastSongPath()).toMatchObject({
+      path: 'whole',
+      state: 'done',
+      residentBytes: 2 * WHOLE_STEM,
+      pastGuard: false,
+    })
+    h.dispose()
+  })
+
+  it('decodes a song the guard refuses whole when the crash test asks', async () => {
+    decoderPresent = false
+    switches.pastGuard = true
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
+    expect(readLastSongPath()).toMatchObject({
+      path: 'whole',
+      pastGuard: true,
+      state: 'done',
+    })
+    h.dispose()
+  })
+
+  it('leaves a small stem to the plain whole decode, crash test or not', async () => {
+    decoderPresent = false
+    stemBytes = MIB
+    switches.pastGuard = true
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(readLastSongPath()).toMatchObject({
+      path: 'whole',
+      pastGuard: false,
+    })
+    h.dispose()
+  })
+
+  it('keeps no record on the web', async () => {
+    build.native = false
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(readLastSongPath()).toBeNull()
+    expect(karaoke()).toHaveLength(0)
+    h.dispose()
+  })
+
+  it('keeps no record in a build without the portable console', async () => {
+    vi.stubEnv('VITE_PORTABLE_CONSOLE', '')
+    const h = harness(hosted)
+    await h.controller.loadStems()
+
+    expect(readLastSongPath()).toBeNull()
+    expect(karaoke()).toHaveLength(0)
+    h.dispose()
+  })
+
+  it('keeps no record for a mixer no room is hosting', async () => {
+    const h = harness()
+    await h.controller.loadStems()
+
+    expect(readLastSongPath()).toBeNull()
+    h.dispose()
+  })
+})
+
+describe('the crash test, outside a native build', () => {
+  it('cannot take a song past the guard', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    switches.pastGuard = true
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(h.controller.loadErrorRetryable()).toBe(false)
+    switches.pastGuard = false
     h.dispose()
   })
 })

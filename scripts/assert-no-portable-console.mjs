@@ -19,11 +19,19 @@ import { join } from 'node:path'
 
 const root = process.argv[2] ?? 'dist'
 
-/** Strings that only exist inside the portable console's own module. */
+/**
+ * Strings that only exist inside the portable console's own module, and in
+ * the Developer screen's Karaoke audio switches and record
+ * (src/features/stem-mixer/stream-switches.ts, stem-load-path.ts): those are
+ * read only in a native build with the console, so the web carries none.
+ */
 const FINGERPRINTS = [
   'MercuryPitch portable console',
   'mp:portableConsole:log',
   'Portable console',
+  'mp:dev-karaoke-force-no-stream',
+  'mp:dev-karaoke-decode-past-guard',
+  'mp:dev-karaoke-last-song-path',
 ]
 
 function* files(dir) {

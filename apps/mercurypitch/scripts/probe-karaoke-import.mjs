@@ -57,6 +57,14 @@ export function importTarget(processEnv = process.env) {
   }
 }
 
+/**
+ * The Developer screen's record of the last song the room held, read in the
+ * page (src/features/stem-mixer/stem-load-path.ts). A test build keeps it,
+ * which is the build this walk runs; null when there is none.
+ */
+const lastSongPath = () =>
+  JSON.parse(localStorage.getItem('mp:dev-karaoke-last-song-path') ?? 'null')
+
 /** Two short takes of real AAC in the bundle: the song, and its "stems". */
 const MEDIA = {
   song: 'rooms/alley/ear-lab-workshop-ambient-take2-loop.m4a',
@@ -825,6 +833,21 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
         `the imported song: its MP3 stems were decoded whole (${streamedWhole.join(', ')} bytes), not streamed`,
       )
     }
+    // The Developer screen's record of it (stem-load-path.ts), which a test
+    // build keeps: streamed, the two MP3s' size, and a whole decode's cost
+    // read from their containers by the real demuxer.
+    const streamedRecord = await page.evaluate(lastSongPath)
+    if (
+      streamedRecord?.path !== 'stream' ||
+      streamedRecord.codec !== 'mp3' ||
+      streamedRecord.state !== 'done' ||
+      streamedRecord.songBytes !== stemSizes[0] + stemSizes[1] ||
+      !(streamedRecord.wholeDecodeBytes > 0)
+    ) {
+      failures.push(
+        `the imported song: the Developer record reads ${JSON.stringify(streamedRecord)}, not a finished streamed mp3`,
+      )
+    }
     steps.push(
       `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; the line reads "17 of 20 songs left this month."; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the MP3 stems saved on the phone (${stemSizes.join(' and ')} bytes, 320 kb/s), streamed: neither decoded whole`,
     )
@@ -850,6 +873,17 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       .tap()
     await hidden('[data-testid="karaoke-library"]')
     await visible(`${stage} [role="alert"]`, runTimeoutMs)
+    const refusedRecord = await page.evaluate(lastSongPath)
+    if (
+      refusedRecord?.path !== 'refused' ||
+      refusedRecord.state !== 'done' ||
+      refusedRecord.residentBytes !== null ||
+      !(refusedRecord.wholeDecodeBytes > 0)
+    ) {
+      failures.push(
+        `the example without AudioDecoder: the Developer record reads ${JSON.stringify(refusedRecord)}, not a refusal with a whole decode's cost`,
+      )
+    }
     await openLibrary()
     await page
       .locator(`[data-testid="karaoke-library-row"][data-session="${mine.id}"]`)
@@ -902,6 +936,17 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     ) {
       failures.push(
         `the imported song without AudioDecoder: whole decodes of ${JSON.stringify(decodedWhole)} bytes, not one of each stem`,
+      )
+    }
+    const wholeRecord = await page.evaluate(lastSongPath)
+    if (
+      wholeRecord?.path !== 'whole' ||
+      wholeRecord.codec !== 'mp3' ||
+      wholeRecord.state !== 'done' ||
+      !(wholeRecord.residentBytes > 0)
+    ) {
+      failures.push(
+        `the imported song without AudioDecoder: the Developer record reads ${JSON.stringify(wholeRecord)}, not a finished whole decode`,
       )
     }
     await page.evaluate(() => {

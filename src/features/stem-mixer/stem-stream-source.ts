@@ -20,6 +20,8 @@
 // The import is dynamic. mediabunny is a large module and the desktop path
 // never needs it.
 
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { noStreamForced } from './stream-switches'
 import type { StemStreamChunk } from './streaming-stem-voice'
 
 export interface StemStream {
@@ -41,6 +43,71 @@ export interface StemStream {
 }
 
 /**
+ * WebCodecs is what does the decoding, so its absence settles the question
+ * before a large module is fetched to ask it. Safari has had AudioDecoder
+ * only since 26.0 ("WebKit Features in Safari 26.0"; MDN browser-compat-data,
+ * api/AudioDecoder, with Safari on iOS and the iOS WebView mirroring it), so
+ * on iOS 16 to 18, which this app supports, the answer is no and the caller
+ * takes its fallback. Absent in jsdom too, which is why the unit tests take
+ * the buffered path without having to say so.
+ *
+ * A native test build can be told to answer no on a phone that has one: the
+ * Developer screen's "Force the no-streaming path" (stream-switches.ts).
+ */
+export function canStreamStems(): boolean {
+  if (IS_NATIVE_BUILD && noStreamForced()) return false
+  return typeof AudioDecoder !== 'undefined'
+}
+
+/** What a stem is, read from its container: nothing is decoded. */
+export interface StemShape {
+  readonly durationSeconds: number
+  readonly sampleRate: number
+  readonly channelCount: number
+  /** The codec a decoder would be configured with: 'mp3', 'mp4a.40.2'. */
+  readonly codec: string | null
+}
+
+/**
+ * How long a stem is and how many channels it has, read from the container
+ * alone, for what a whole decode of it would hold. Demuxing is JavaScript,
+ * so this answers on a phone with no AudioDecoder, which is where the answer
+ * is wanted: the Developer screen's estimate for a song the room refused or
+ * decoded whole. Null when the file cannot be read.
+ */
+export async function readStemShape(blob: Blob): Promise<StemShape | null> {
+  let input: { dispose: () => void } | null = null
+  try {
+    const { ALL_FORMATS, BlobSource, Input } = await import('mediabunny')
+    const opened = new Input({
+      formats: ALL_FORMATS,
+      source: new BlobSource(blob, { maxCacheSize: 1024 * 1024 }),
+    })
+    input = opened
+    const track = await opened.getPrimaryAudioTrack()
+    if (track === null) return null
+    const [sampleRate, channelCount, config] = await Promise.all([
+      track.getSampleRate(),
+      track.getNumberOfChannels(),
+      track.getDecoderConfig(),
+    ])
+    const durationSeconds =
+      (await opened.getDurationFromMetadata()) ??
+      (await opened.computeDuration())
+    return {
+      durationSeconds,
+      sampleRate,
+      channelCount,
+      codec: config?.codec ?? null,
+    }
+  } catch {
+    return null
+  } finally {
+    input?.dispose()
+  }
+}
+
+/**
  * A blob rather than a url on purpose: the bytes are already in hand from the
  * download or the audio cache, and re-fetching them over range requests would
  * pay for the same megabytes twice.
@@ -48,16 +115,6 @@ export interface StemStream {
  * Returns null when the file cannot be demuxed or this platform cannot decode
  * the codec, which is the caller's signal to decode it the old way.
  */
-/**
- * WebCodecs is what does the decoding, so its absence settles the question
- * before a large module is fetched to ask it. Present in Safari from 16.4,
- * which is every iOS this app supports; absent in jsdom, which is why the
- * unit tests take the buffered path without having to say so.
- */
-export function canStreamStems(): boolean {
-  return typeof AudioDecoder !== 'undefined'
-}
-
 export async function openStemStream(blob: Blob): Promise<StemStream | null> {
   if (!canStreamStems()) return null
   let input: { dispose: () => void } | null = null

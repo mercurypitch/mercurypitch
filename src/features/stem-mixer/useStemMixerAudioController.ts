@@ -16,6 +16,7 @@ import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import { hasJudgedComparisons } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import { buildMidiFile, DEFAULT_BPM, detectNotes, MIDI_NOTE_RANGE, PITCH_DETECTOR_DEFAULTS, synthesizeMidiBuffer, } from '@/lib/midi-generator'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
@@ -30,13 +31,16 @@ import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
+import type { SongPathLog } from './stem-load-path'
+import { createSongPathLog } from './stem-load-path'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, NEEDS_STREAMING_MESSAGE, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
-import { canStreamStems } from './stem-stream-source'
+import { canStreamStems, readStemShape } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
+import { decodePastGuard } from './stream-switches'
 import type { StreamingStemVoice } from './streaming-stem-voice'
 import { createStreamingStemVoice } from './streaming-stem-voice'
 import type { PitchNote } from './types'
@@ -745,6 +749,44 @@ export const useStemMixerAudioController = (
     let streamedStemCost = 0
     /** Why a stem was refused rather than decoded whole, when one was. */
     let refused: string | null = null
+    // Which way each stem is held, for the Developer screen's Karaoke audio
+    // section and the audio record (stem-load-path.ts). A native test build's
+    // hosted room only: the web and the store build fold all of it away.
+    const pathLog: SongPathLog | null =
+      IS_NATIVE_BUILD &&
+      import.meta.env.VITE_PORTABLE_CONSOLE === 'true' &&
+      deps.forceStream === true
+        ? createSongPathLog({ streams: canStreamStems() })
+        : null
+    /** What a whole decode of a stem holds, from its container alone. */
+    const shapeOf = async (
+      bytes: ArrayBuffer,
+    ): Promise<{
+      wholeDecodeBytes: number | null
+      codec: string | null
+      sampleRate: number | null
+      channelCount: number | null
+    }> => {
+      const shape = await readStemShape(new Blob([bytes]))
+      if (shape === null) {
+        return {
+          wholeDecodeBytes: null,
+          codec: null,
+          sampleRate: null,
+          channelCount: null,
+        }
+      }
+      return {
+        wholeDecodeBytes: decodedStemBytes(
+          shape.durationSeconds,
+          ctx.sampleRate,
+          shape.channelCount,
+        ),
+        codec: shape.codec,
+        sampleRate: shape.sampleRate,
+        channelCount: shape.channelCount,
+      }
+    }
     const trace = (line: string): void => {
       if (!IS_DIAGNOSTIC_BUILD) return
       console.info(`[stem-mixer] ${line}`)
@@ -790,6 +832,8 @@ export const useStemMixerAudioController = (
 
     const loadOne = async (url: string): Promise<LoadedStem> => {
       const name = stemName(url)
+      /** Refused by the guard and decoded anyway, by the crash test. */
+      let pastGuard = false
       // A stem the visitor has already downloaded once. R2 serves these
       // with no Cache-Control at all, so the browser re-fetched all six
       // megabytes on every open — the whole wait, paid again, for a song
@@ -840,6 +884,27 @@ export const useStemMixerAudioController = (
         if (streamed !== null) {
           loadedCount++
           noteStreamed(name, streamed)
+          if (IS_NATIVE_BUILD && pathLog !== null) {
+            const shape = await shapeOf(bytes)
+            pathLog.decided({
+              name,
+              path: 'stream',
+              bytes: bytes.byteLength,
+              wholeDecodeBytes: decodedStemBytes(
+                streamed.durationSeconds,
+                ctx.sampleRate,
+                streamed.channelCount,
+              ),
+              codec: shape.codec,
+              sampleRate: streamed.sampleRate,
+              channelCount: streamed.channelCount,
+            })
+            pathLog.held(
+              name,
+              streamed.displayBytes +
+                streamedStemBytes(streamed.sampleRate, streamed.channelCount),
+            )
+          }
           return {
             buffer: streamed.displayBuffer,
             stream: streamed.stream,
@@ -857,11 +922,25 @@ export const useStemMixerAudioController = (
           !canStreamStems() &&
           bytes.byteLength > HOSTED_WHOLE_DECODE_MAX_BYTES
         ) {
-          trace(
-            `${name} cannot be streamed here, and ${mb(bytes.byteLength)}MB is too much to decode whole`,
-          )
-          refused = NEEDS_STREAMING_MESSAGE
-          throw new Error(NEEDS_STREAMING_MESSAGE)
+          if (IS_NATIVE_BUILD && decodePastGuard()) {
+            // The Developer screen's crash test: decode it whole anyway, to
+            // learn whether this phone survives what the guard refuses.
+            pastGuard = true
+          } else {
+            trace(
+              `${name} cannot be streamed here, and ${mb(bytes.byteLength)}MB is too much to decode whole`,
+            )
+            if (IS_NATIVE_BUILD && pathLog !== null) {
+              pathLog.decided({
+                name,
+                path: 'refused',
+                bytes: bytes.byteLength,
+                ...(await shapeOf(bytes)),
+              })
+            }
+            refused = NEEDS_STREAMING_MESSAGE
+            throw new Error(NEEDS_STREAMING_MESSAGE)
+          }
         }
         // A codec this platform will not decode, or a container mediabunny
         // cannot walk. Better a whole decode than no song.
@@ -869,6 +948,17 @@ export const useStemMixerAudioController = (
       }
 
       trace(`${name} decoding ${mb(bytes.byteLength)}MB`)
+      if (IS_NATIVE_BUILD && pathLog !== null) {
+        // Written down before the decode: if it kills the app, this is the
+        // line that says what it was holding (stem-load-path.ts).
+        pathLog.decided({
+          name,
+          path: 'whole',
+          bytes: bytes.byteLength,
+          ...(await shapeOf(bytes)),
+          pastGuard,
+        })
+      }
       const buf = await ctx.decodeAudioData(bytes)
       // Counted after the decode, not after the download. The guard below
       // treats `loadedCount === 0` as "nothing usable arrived", and a stem that
@@ -878,6 +968,12 @@ export const useStemMixerAudioController = (
       // mixer with no sound and no explanation.
       loadedCount++
       noteDecoded(name, buf)
+      if (IS_NATIVE_BUILD && pathLog !== null) {
+        pathLog.held(
+          name,
+          decodedStemBytes(buf.duration, buf.sampleRate, buf.numberOfChannels),
+        )
+      }
       return {
         buffer: buf,
         durationSeconds: buf.duration,
@@ -1124,6 +1220,7 @@ export const useStemMixerAudioController = (
     } finally {
       setLoading(false)
       void platform.keepAwake.disable()
+      if (IS_NATIVE_BUILD && pathLog !== null) pathLog.finished()
     }
   }
 

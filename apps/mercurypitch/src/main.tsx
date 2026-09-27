@@ -169,6 +169,17 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // The Karaoke room's no-streaming path, taken on purpose on a phone that
+  // could stream, and which way the last song was held: every iPhone before
+  // iOS 26 has no AudioDecoder (owner, 28 Sep). Same gate, same reason.
+  void import('./shell/KaraokeAudioPanel').then((module) => {
+    const Panel = module.KaraokeAudioPanel
+    registerDeveloperSection({
+      id: 'karaoke-audio',
+      title: 'Karaoke audio',
+      render: () => <Panel />,
+    })
+  })
   // And whether the web view was ever turned: a line in the same record at
   // launch and for every change after it, so the copied report says so even
   // when the Developer screen was opened long after the turn.
