@@ -34,6 +34,19 @@ export const ACCOUNT_ADDS_TITLE = 'An account adds'
 /** What stays on the phone either way. Said wherever the promises are. */
 export const TAKES_STAY_ON_PHONE = 'Takes stay on this phone.'
 
+/**
+ * The offer (S6 decision 02): a sheet once, after a take is kept in the Sing
+ * room, and a card at the top of Settings until the singer says Later. Both
+ * list ACCOUNT_PROMISES and end on TAKES_STAY_ON_PHONE.
+ */
+export const ACCOUNT_OFFER = {
+  /** Over the sheet's title, when the take just kept is the phone's first. */
+  firstTake: 'Your first take is kept',
+  title: 'Take your practice with you',
+  accept: 'Sign in',
+  decline: 'Later',
+} as const
+
 /** The Account row in Settings. */
 export const ACCOUNT_ROW = {
   label: 'Account',

@@ -12,6 +12,10 @@
 // Every row that leads somewhere pushes a screen of its own onto the shell's
 // stack (`run-shell-store.ts`), so Back walks down it one level at a time.
 // The groups sit in one column upright and two on a phone on its side.
+//
+// With no account on the phone yet, the account offer sits at the top in the
+// Account row's place (2b), and Later folds it into the row until the app
+// next starts (account-offer.ts).
 
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
@@ -19,7 +23,9 @@ import { theme, themeSource } from '@/stores/theme-store'
 import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
+import { offerCardShown } from './account-offer'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
+import { AccountOfferCard } from './AccountOffer'
 import { appearanceLabel } from './AppearanceScreen'
 import { deviceFacts, loadDeviceFacts } from './device-facts'
 import { knownInput } from './level-check'
@@ -43,8 +49,50 @@ function microphoneValue(): string | undefined {
   return heard === 'denied' ? 'Off' : heard.label
 }
 
+/**
+ * The offer in the Account row's place, while there is no account yet and no
+ * Later since launch. Not under the line after a deletion: the singer has
+ * just chosen to have no account.
+ */
+function offerCardHere(): boolean {
+  return offerCardShown() && accountDeletedNote() === null
+}
+
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
+}
+
+/** The Account row, and Delete account under it while there is one. */
+function AccountGroup(props: SettingsScreenProps): JSX.Element {
+  return (
+    <SettingsGroup>
+      <SettingsRow
+        id="account"
+        icon={<AccountAvatar />}
+        label={accountSignedIn() ? accountDisplayName() : ACCOUNT_ROW.label}
+        sub={
+          accountSignedIn() ? accountProviderLine() : ACCOUNT_ROW.signedOutSub
+        }
+        value={accountSignedIn() ? undefined : ACCOUNT_ROW.signedOutValue}
+        onPress={() => {
+          props.onPush('account')
+        }}
+      />
+      {/* One tap from Settings, and only while there is an account to
+          delete (REQ-NAM-055). */}
+      <Show when={accountSignedIn()}>
+        <SettingsRow
+          id="delete-account"
+          icon={<TrashIcon />}
+          label="Delete account"
+          tone="danger"
+          onPress={() => {
+            props.onPush('delete-account')
+          }}
+        />
+      </Show>
+    </SettingsGroup>
+  )
 }
 
 export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
@@ -73,37 +121,12 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
       </Show>
       <div class="mp-set__cols">
         <div class="mp-set__col">
-          <SettingsGroup>
-            <SettingsRow
-              id="account"
-              icon={<AccountAvatar />}
-              label={
-                accountSignedIn() ? accountDisplayName() : ACCOUNT_ROW.label
-              }
-              sub={
-                accountSignedIn()
-                  ? accountProviderLine()
-                  : ACCOUNT_ROW.signedOutSub
-              }
-              value={accountSignedIn() ? undefined : ACCOUNT_ROW.signedOutValue}
-              onPress={() => {
-                props.onPush('account')
-              }}
-            />
-            {/* One tap from Settings, and only while there is an account to
-                delete (REQ-NAM-055). */}
-            <Show when={accountSignedIn()}>
-              <SettingsRow
-                id="delete-account"
-                icon={<TrashIcon />}
-                label="Delete account"
-                tone="danger"
-                onPress={() => {
-                  props.onPush('delete-account')
-                }}
-              />
-            </Show>
-          </SettingsGroup>
+          <Show
+            when={offerCardHere()}
+            fallback={<AccountGroup onPush={props.onPush} />}
+          >
+            <AccountOfferCard />
+          </Show>
           <SettingsGroup title="This phone">
             <SettingsRow
               id="microphone"

@@ -17,11 +17,19 @@ const ICONS = [HistoryIcon, PhoneIcon, LockIcon] as const
 export interface AccountPromisesProps {
   /** The small caps title over them, or none (the offer has its own). */
   title?: string
+  /** No card of their own: the offer's sheet and card already frame them. */
+  bare?: boolean
 }
 
 export function AccountPromises(props: AccountPromisesProps): JSX.Element {
   const list = (): JSX.Element => (
-    <ul class="mp-set-card mp-set-promises">
+    <ul
+      class={
+        props.bare === true
+          ? 'mp-set-promises mp-set-promises--bare'
+          : 'mp-set-card mp-set-promises'
+      }
+    >
       <For each={ACCOUNT_PROMISES}>
         {(promise, index) => (
           <li>

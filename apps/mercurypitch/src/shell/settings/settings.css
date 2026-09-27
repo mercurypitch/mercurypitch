@@ -917,3 +917,66 @@
   color: var(--text-secondary);
   font: 600 12px/16px var(--font-body, sans-serif);
 }
+
+/* ---------- the account offer (S6 2a, 2b) ---------- */
+
+.mp-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mp-offer--sheet {
+  padding: 4px 4px 8px;
+}
+
+.mp-offer__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-offer__label {
+  font: 500 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mp-offer__title {
+  margin: 0;
+  font: 600 24px/30px var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.mp-offer--card .mp-offer__title {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+/* The sheet and the card frame the promises already. */
+.mp-set-promises--bare {
+  margin: 0;
+  padding: 0;
+}
+
+/* Sign in and Later: the same size, side by side (REQ-NAM-012). */
+.mp-offer__answers {
+  display: flex;
+  gap: 12px;
+}
+
+.mp-offer__answers > .mp-set-button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* On its side the sheet sits in the middle, 560 wide, with the room showing
+   at both ends (2a). The attribute outranks the sheet's own width. */
+@media (orientation: landscape) and (min-width: 640px) {
+  [role='dialog'].mp-offer-sheet {
+    width: min(100%, 560px);
+    margin-inline: auto;
+  }
+}

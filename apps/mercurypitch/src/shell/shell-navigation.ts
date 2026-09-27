@@ -23,6 +23,7 @@ import { navigateTo } from '@/lib/hash-router'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { declineOffer, offerOpen } from './settings/account-offer'
 import { closeLatencySheet, latencySheetOpen } from './settings/latency-sheet'
 import { dismissSettingsAlert, settingsAlertOpen, } from './settings/settings-alert'
 import { signInBack, signInOpen } from './settings/sign-in-state'
@@ -173,7 +174,8 @@ function shellOverlayOpen(): boolean {
     settingsAlertOpen() ||
     moreOpen() ||
     signInOpen() ||
-    latencySheetOpen()
+    latencySheetOpen() ||
+    offerOpen()
   )
 }
 
@@ -195,7 +197,9 @@ function shellOverlayOpen(): boolean {
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
   if (keepAlertOpen() || settingsAlertOpen()) return 'alert'
-  if (moreOpen() || signInOpen() || latencySheetOpen()) return 'sheet'
+  if (moreOpen() || signInOpen() || latencySheetOpen() || offerOpen()) {
+    return 'sheet'
+  }
   if (pushed() !== null) return 'pushed'
   if (hasSomewhereToGo) return 'history'
   return 'minimize'
@@ -258,12 +262,15 @@ export function performBack(host: BackHost): BackOutcome {
       else dismissKeepAlert()
       break
     case 'sheet':
-      // The sign-in and latency sheets open over More's screens, never
-      // beside the More sheet itself, so whichever is up is the one this
-      // press is for. The sign-in sheet steps back a pane before it closes;
-      // closing the latency sheet ends a run in flight.
+      // The sign-in and latency sheets open over More's screens, and the
+      // account offer over the Sing room, never beside the More sheet
+      // itself, so whichever is up is the one this press is for. The
+      // sign-in sheet steps back a pane before it closes; closing the
+      // latency sheet ends a run in flight; the offer, which has no close
+      // button, takes Back as Later.
       if (signInOpen()) signInBack()
       else if (latencySheetOpen()) closeLatencySheet()
+      else if (offerOpen()) declineOffer()
       else closeMore()
       break
     case 'room-overlay':

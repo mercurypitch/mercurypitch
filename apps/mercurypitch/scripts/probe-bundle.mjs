@@ -1399,6 +1399,50 @@ async function walkRun(page, ctx, steps) {
   )
   steps.push('room: Keep closes the card and the room rests')
 
+  // ── The account offer (S6 2a): a beat after the first Keep, once ──
+  const offer = page.locator('[data-testid="account-offer"]')
+  await expectVisible(offer, 'the account offer after the first Keep')
+  await page.waitForTimeout(400)
+  // Its shape, not its words: the words live in the app's copy module,
+  // where the owner's answer on what an account includes will land.
+  const offerShape = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="account-offer"]')
+    const line = (selector) =>
+      root?.querySelector(selector)?.textContent?.trim() ?? ''
+    return {
+      label: line('.mp-offer__label'),
+      title: line('.mp-offer__title'),
+      promises: root?.querySelectorAll('.mp-set-promises li').length ?? 0,
+      caption: line('.mp-set__caption'),
+    }
+  })
+  const offerAnswersBox = await offerAnswers(
+    page,
+    '[data-testid="sheet-panel"]',
+  )
+  if (
+    offerShape.label === '' ||
+    offerShape.title === '' ||
+    offerShape.promises === 0 ||
+    offerShape.caption === '' ||
+    offerAnswersBox.close ||
+    !sameAnswers(offerAnswersBox)
+  ) {
+    throw new Error(
+      `the account offer: ${JSON.stringify({ ...offerShape, ...offerAnswersBox })}`,
+    )
+  }
+  await shoot(page, ctx, 'room-account-offer')
+  await page.locator('[data-testid="offer-later"]').click()
+  await expectGone(offer, 'the account offer after Later')
+  await expectVisible(
+    page.locator('[data-testid="sing-capsule"]'),
+    'the capsule after Later',
+  )
+  steps.push(
+    `offer: a beat after the first Keep, over the room, with the first-take line, ${offerShape.promises} promises, Sign in and Later ${Math.round(offerAnswersBox.signIn.width)} x ${Math.round(offerAnswersBox.signIn.height)} each and no close button; Later lands back in the room`,
+  )
+
   // ── A second take: the history line is there now ──
   await page.locator('[data-testid="sing-capsule"]').click()
   await expectText(
@@ -1489,6 +1533,12 @@ async function walkRun(page, ctx, steps) {
     )
   }
   steps.push('room: Back over the end card rests the room and keeps the take')
+  // A second kept take, and the offer does not come again (REQ-NAM-010).
+  await page.waitForTimeout(1000)
+  if (await page.locator('[data-testid="account-offer"]').count()) {
+    throw new Error('the account offer came again after a second Keep')
+  }
+  steps.push('offer: not again after a second Keep')
 
   // …and the room still works when it is entered again.
   await page.locator('[data-rail-item="rooms"]').click()
@@ -4437,12 +4487,46 @@ async function walkAlleyScope(browser, args, frame) {
 }
 
 /**
- * The native pass to the sign-in sheet and back (S6, step 3): More, then
- * Settings, then Account, then its one button. The sheet is the phone's way
- * in, over the screen that asked: a code by email is always offered, and the
- * television's phone row and the passkey button never are (audit D2). Back
- * is the shell's own, the one Android's button presses: a pane, then the
- * sheet, then each screen under it, in that order.
+ * The two answers of the account offer, measured: the same size, side by
+ * side (REQ-NAM-012). `scope` is the sheet or the card they sit in.
+ */
+async function offerAnswers(page, scope) {
+  return page.evaluate((selector) => {
+    const root = document.querySelector(selector)
+    const box = (testId) => {
+      const node = root?.querySelector(`[data-testid="${testId}"]`)
+      if (!node) return null
+      const r = node.getBoundingClientRect()
+      return { x: r.x, y: r.y, width: r.width, height: r.height }
+    }
+    return {
+      signIn: box('offer-sign-in'),
+      later: box('offer-later'),
+      close: root?.querySelector('[aria-label="Close"]') !== null,
+    }
+  }, scope)
+}
+
+/** Equal within a pixel, on one row, Sign in first. */
+function sameAnswers(answers) {
+  const { signIn, later } = answers
+  if (signIn === null || later === null) return false
+  return (
+    Math.abs(signIn.width - later.width) <= 1 &&
+    Math.abs(signIn.height - later.height) <= 1 &&
+    Math.abs(signIn.y - later.y) <= 1 &&
+    signIn.x < later.x
+  )
+}
+
+/**
+ * The native pass to the sign-in sheet and back (S6, steps 3 and 11): More,
+ * then Settings, where a phone with no account yet finds the offer at the
+ * top in the Account row's place, then its Sign in. The sheet is the phone's
+ * way in, over the screen that asked: a code by email is always offered, and
+ * the television's phone row and the passkey button never are (audit D2).
+ * Back is the shell's own, the one Android's button presses: a pane, then
+ * the sheet, then the screen under it, in that order.
  */
 async function walkToSignIn(page, ctx, pushed, rail) {
   const steps = []
@@ -4455,9 +4539,35 @@ async function walkToSignIn(page, ctx, pushed, rail) {
   await visible('[data-more-item="settings"]')
   await page.locator('[data-more-item="settings"]').click()
   await visible('[data-testid="settings-screen"]')
-  await page.locator('[data-settings-row="account"]').click()
-  await visible('[data-testid="account-screen"]')
-  await page.locator('[data-testid="account-sign-in"]').click()
+
+  // The offer, standing (2b): at the top, in the Account row's place.
+  await visible('[data-testid="offer-card"]')
+  const card = await page.evaluate(() => ({
+    first:
+      document
+        .querySelector('.mp-set__col')
+        ?.firstElementChild?.getAttribute('data-testid') ?? null,
+    accountRow:
+      document.querySelector('[data-settings-row="account"]') !== null,
+  }))
+  const cardAnswers = await offerAnswers(page, '[data-testid="offer-card"]')
+  if (
+    card.first !== 'offer-card' ||
+    card.accountRow ||
+    !sameAnswers(cardAnswers)
+  ) {
+    throw new Error(
+      `the offer card: ${JSON.stringify({ ...card, ...cardAnswers })}`,
+    )
+  }
+  await shoot(page, ctx, 'settings-offer-card')
+  steps.push(
+    `offer: the card tops Settings in the Account row's place, Sign in and Later ${Math.round(cardAnswers.signIn.width)} x ${Math.round(cardAnswers.signIn.height)} each`,
+  )
+
+  await page
+    .locator('[data-testid="offer-card"] [data-testid="offer-sign-in"]')
+    .click()
   const sheet = page.locator('[data-testid="signin-sheet"]')
   await sheet.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   await page.waitForTimeout(400)
@@ -4484,7 +4594,7 @@ async function walkToSignIn(page, ctx, pushed, rail) {
     throw new Error(`the sign-in sheet: ${JSON.stringify(offered)}`)
   }
   steps.push(
-    `sign-in: the sheet over Account (${offered.ways.join(', ')}); no phone row, no passkey, no web dialog`,
+    `sign-in: the sheet over Settings, from the offer (${offered.ways.join(', ')}); no phone row, no passkey, no web dialog`,
   )
 
   await page.locator('[data-testid="signin-email"]').click()
@@ -4496,17 +4606,16 @@ async function walkToSignIn(page, ctx, pushed, rail) {
   await visible('[data-testid="signin-sheet"][data-pane="methods"]')
   backs.push(await pressBack(page))
   await sheet.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
-  await visible('[data-testid="account-screen"]')
-  backs.push(await pressBack(page))
-  await visible('[data-testid="settings-screen"]')
+  // Sign in is not Later: the card is still there under the sheet.
+  await visible('[data-testid="offer-card"]')
   backs.push(await pressBack(page))
   await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
-  if (backs.join(',') !== 'sheet,sheet,pushed,pushed') {
+  if (backs.join(',') !== 'sheet,sheet,pushed') {
     throw new Error(`sign-in: Back went ${backs.join(', ')}`)
   }
   steps.push(
-    'sign-in: Back stepped the sheet to its first pane, closed it, then popped Account and Settings',
+    'sign-in: Back stepped the sheet to its first pane, closed it onto Settings with the offer still up, then popped Settings',
   )
   return steps
 }
