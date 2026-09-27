@@ -1,29 +1,23 @@
 // Cloudway laboratory platform presentation — install the bounded first-slice donors as one validated transaction.
 
-import type { Mesh, MeshStandardMaterial, Object3D } from 'three'
-import { DynamicDrawUsage, Group, InstancedMesh, Matrix4, Vector3 } from 'three'
+import type { Mesh, MeshStandardMaterial, Object3D, PerspectiveCamera, } from 'three'
+import { Box3, Group, Matrix4, Vector3 } from 'three'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, } from '../contracts'
 import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
 import type { CloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
-import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
+import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import { createCloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import { disposeObject } from './dispose'
 import { createKitInstance, removeKitGeometry } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
-
-interface InstalledStaticBatch {
-  enabledMask: string | undefined
-  readonly instances: readonly {
-    readonly matrix: Matrix4
-    readonly platform: PlatformDefinition
-  }[]
-  readonly mesh: InstancedMesh
-}
+import type { RigidPlatformBatch } from './rigid-platform-batch'
+import { createRigidPlatformBatch, updateRigidPlatformBatch, } from './rigid-platform-batch'
 
 interface InstalledScroll {
   readonly adapter: CloudwayScrollAdapter
@@ -183,6 +177,14 @@ export function createCloudwayLaboratoryPlatformRenderer(
     (platform) =>
       platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle,
   )
+  const frostPlatforms = level.platforms.filter(
+    (platform) =>
+      platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.frostLily,
+  )
+  const auroraPlatforms = level.platforms.filter(
+    (platform) =>
+      platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.auroraGlide,
+  )
   const expectedBundles = new Set<string>()
   if (pearlPlatforms.length > 0)
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
@@ -192,8 +194,14 @@ export function createCloudwayLaboratoryPlatformRenderer(
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
   if (amethystPlatforms.length > 0)
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle)
+  if (frostPlatforms.length > 0)
+    expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.frostLily)
+  if (auroraPlatforms.length > 0)
+    expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide)
   const coveredPlatformIds = new Set([
     ...pearlPlatforms.map((platform) => platform.id),
+    ...frostPlatforms.map((platform) => platform.id),
+    ...auroraPlatforms.map((platform) => platform.id),
     ...scrollPlatforms.map((platform) => platform.id),
     ...rosePlatforms.map((platform) => platform.id),
     ...amethystPlatforms.map((platform) => platform.id),
@@ -203,11 +211,29 @@ export function createCloudwayLaboratoryPlatformRenderer(
   root.name = 'cloudway-laboratory-platform-art'
   root.visible = false
   const stagedBundles = new Set<string>()
-  const installedStatic: InstalledStaticBatch[] = []
+  const installedStatic: RigidPlatformBatch[] = []
   const installedScroll: InstalledScroll[] = []
   const installedCrackle: InstalledCrackle[] = []
   let attached = false
   let committed = false
+  let activePlatformIds: ReadonlySet<string> = new Set()
+  const viewSelector = createCloudwayPlatformViewSelector({
+    shadowDirection: { x: 0, y: -1, z: 0 },
+    shadowReceiverMinimumY: 0,
+  })
+  const movingBounds = new Box3()
+  const movingSelection = new WeakMap<Group, boolean>()
+
+  function selectMovingRoot(
+    movingRoot: Group,
+    bounds: Box3 | undefined,
+  ): boolean {
+    const wasSelected = movingSelection.get(movingRoot)
+    const visible = bounds !== undefined && viewSelector.includes(bounds)
+    movingSelection.set(movingRoot, visible)
+    movingRoot.visible = visible
+    return wasSelected !== visible
+  }
 
   function attach(): void {
     if (attached) return
@@ -228,19 +254,26 @@ export function createCloudwayLaboratoryPlatformRenderer(
     committed = true
   }
 
-  function stagePearl(sourceScene: Object3D): void {
-    const source = exactNamedObject(
-      sourceScene,
-      CLOUDWAY_LAB_ROOT_NAMES.pearlRest,
-    )
+  function stageRigid(
+    sourceScene: Object3D,
+    key: 'pearlRest' | 'frostLily' | 'auroraGlide',
+    platforms: readonly PlatformDefinition[],
+  ): void {
+    const source = exactNamedObject(sourceScene, CLOUDWAY_LAB_ROOT_NAMES[key])
     const validated = validateCloudwayLaboratoryStaticDonor(
       source,
-      'pearl-marble-long',
+      {
+        pearlRest: 'pearl-marble-long',
+        frostLily: 'frost-lily-step',
+        auroraGlide: 'aurora-glide-raft',
+      }[key],
+      key === 'pearlRest' ? undefined : CLOUDWAY_LAB_RIGID_MATERIAL_ROLES[key],
     )
     if (
-      validated.metadata.material.appearanceStatus !==
+      key === 'pearlRest' &&
+      (validated.metadata.material.appearanceStatus !==
         'provider-pbr-preserved' ||
-      validated.metadata.material.intendedAppearance !== 'opaque'
+        validated.metadata.material.intendedAppearance !== 'opaque')
     )
       fail(
         'pearl rest must retain its accepted opaque provider PBR appearance.',
@@ -248,7 +281,7 @@ export function createCloudwayLaboratoryPlatformRenderer(
     const template = createKitInstance(source, materials, {}, materialLibrary)
     excludeDenseCameraCollision(template)
     template.updateMatrixWorld(true)
-    const placements = pearlPlatforms.map((platform) => {
+    const placements = platforms.map((platform) => {
       const turns = validateStaticPlatform(
         platform,
         validated.collider.width,
@@ -265,29 +298,14 @@ export function createCloudwayLaboratoryPlatformRenderer(
       )
       return { placement, platform }
     })
-    const staged: InstalledStaticBatch[] = []
+    const staged: RigidPlatformBatch[] = []
     try {
       template.traverse((object) => {
         const sourceMesh = object as Mesh
         if (!sourceMesh.isMesh) return
-        const mesh = new InstancedMesh(
-          sourceMesh.geometry,
-          sourceMesh.material,
-          placements.length,
-        )
-        mesh.name = `${sourceMesh.name || 'mesh'}__pearl-rest-instances`
-        mesh.instanceMatrix.setUsage(DynamicDrawUsage)
-        const instances = placements.map(({ placement, platform }, index) => {
-          const matrix = placement.clone().multiply(sourceMesh.matrixWorld)
-          mesh.setMatrixAt(index, matrix)
-          return { matrix, platform }
-        })
-        mesh.computeBoundingBox()
-        mesh.computeBoundingSphere()
-        mesh.count = 0
-        staged.push({ enabledMask: undefined, instances, mesh })
+        staged.push(createRigidPlatformBatch(sourceMesh, placements))
       })
-      if (staged.length === 0) fail('pearl rest has no static Mesh geometry.')
+      if (staged.length === 0) fail(`${key} has no static Mesh geometry.`)
     } catch (error) {
       staged.forEach((item) => item.mesh.dispose())
       disposeObject(template, materialLibrary.materials)
@@ -359,7 +377,12 @@ export function createCloudwayLaboratoryPlatformRenderer(
     install(sourceScene: Object3D, bundle: string): ReadonlySet<string> {
       if (!expectedBundles.has(bundle) || stagedBundles.has(bundle))
         return new Set()
-      if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.pearlRest) stagePearl(sourceScene)
+      if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
+        stageRigid(sourceScene, 'pearlRest', pearlPlatforms)
+      else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.frostLily)
+        stageRigid(sourceScene, 'frostLily', frostPlatforms)
+      else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide)
+        stageRigid(sourceScene, 'auroraGlide', auroraPlatforms)
       else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.scroll)
         stageScroll(sourceScene)
       else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
@@ -377,22 +400,15 @@ export function createCloudwayLaboratoryPlatformRenderer(
       for (const state of snapshot.platformStates ?? [])
         runtimeById.set(state.id, state)
       const active = new Set(snapshot.enabledPlatformIds)
-      for (const batch of installedStatic) {
-        const enabledMask = committed
-          ? batch.instances
-              .map((instance) => (active.has(instance.platform.id) ? '1' : '0'))
-              .join('')
-          : ''
-        if (enabledMask === batch.enabledMask) continue
-        let count = 0
-        if (committed)
-          for (const instance of batch.instances)
-            if (active.has(instance.platform.id))
-              batch.mesh.setMatrixAt(count++, instance.matrix)
-        batch.mesh.count = count
-        batch.mesh.instanceMatrix.needsUpdate = true
-        batch.enabledMask = enabledMask
-      }
+      activePlatformIds = active
+      for (const batch of installedStatic)
+        updateRigidPlatformBatch(
+          batch,
+          committed,
+          active,
+          runtimeById,
+          viewSelector.includes,
+        )
       for (const item of installedScroll) {
         const state = runtimeById.get(item.platform.id)
         item.adapter.root.visible = false
@@ -407,6 +423,34 @@ export function createCloudwayLaboratoryPlatformRenderer(
           continue
         item.adapter.update(state)
       }
+    },
+    cullForView(camera: PerspectiveCamera | undefined): boolean {
+      // Laboratory donors deliberately do not cast shadows: no hidden caster
+      // needs retention outside the expanded camera/fog volume.
+      viewSelector.update(camera, [])
+      let changed = false
+      for (const batch of installedStatic)
+        changed =
+          updateRigidPlatformBatch(
+            batch,
+            committed,
+            activePlatformIds,
+            runtimeById,
+            viewSelector.includes,
+          ) || changed
+      for (const item of installedScroll) {
+        const bounds = item.adapter.root.visible
+          ? item.adapter.getLiveBounds(movingBounds)
+          : undefined
+        changed = selectMovingRoot(item.adapter.root, bounds) || changed
+      }
+      for (const item of installedCrackle) {
+        const bounds = item.adapter.root.visible
+          ? movingBounds.setFromObject(item.adapter.root)
+          : undefined
+        changed = selectMovingRoot(item.adapter.root, bounds) || changed
+      }
+      return changed
     },
     dispose(): void {
       installedScroll.forEach((item) => item.adapter.dispose())

@@ -1,0 +1,410 @@
+{
+  "schema": 1,
+  "assetId": "frost-lily-step",
+  "status": "fresh Blender reopen and matched headless authoring proof passed; browser and live-game validation pending",
+  "runtime": {
+    "file": "source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v2.glb",
+    "bytes": 3359924,
+    "sha256": "3a3b8682f14bb463bcb13dc695191279144e1a799e7d5764348d98a3600ea9cf"
+  },
+  "workingBlend": {
+    "file": "source-assets/blender/frost-lily-step/frost-lily-step-runtime-v2-working.blend",
+    "bytes": 26219351,
+    "sha256": "074928a0a533efd3fae987c40f4a3c4774e2f0f3db8f280bc0feb49ffe304cfd",
+    "rootIdentity": true,
+    "triangles": 355472,
+    "materialNames": [
+      "CloudwayLab_FrostLilyStep__glass",
+      "CloudwayLab_FrostLilyStep__opaque_trim"
+    ],
+    "images": [
+      {
+        "role": "base_color",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "role": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      },
+      {
+        "role": "metallic",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      },
+      {
+        "role": "roughness",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      }
+    ],
+    "faceAssignmentsMatchReport": true
+  },
+  "rawGlb": {
+    "rootNode": "CloudwayLab_FrostLilyStep",
+    "rootIdentity": true,
+    "metadata": {
+      "schema": "cloudway-lab-static-v1",
+      "assetId": "frost-lily-step",
+      "kind": "platform",
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "landing-or-resting-datum"
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 1.65,
+        "depth": 2.2,
+        "topY": 0,
+        "height": 0.3
+      },
+      "material": {
+        "kind": "authored-pbr-regions",
+        "appearanceStatus": "authored-regions",
+        "intendedAppearance": "glass-and-trim",
+        "roles": {
+          "opaque": [
+            "CloudwayLab_FrostLilyStep__opaque_trim"
+          ],
+          "glass": [
+            "CloudwayLab_FrostLilyStep__glass"
+          ]
+        },
+        "targetGlass": {
+          "transmission": 0.58,
+          "roughness": 0.2,
+          "thickness": 0.09,
+          "ior": 1.45
+        }
+      },
+      "source": {
+        "denseMaster": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+        "denseMasterSha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+        "donorSha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4"
+      },
+      "geometry": {
+        "vertices": 194437,
+        "triangles": 355472,
+        "polygons": 355472,
+        "runtimeBoundsMetres": {
+          "minimum": [
+            -0.903678834,
+            -0.353698492,
+            -1.200000048
+          ],
+          "maximum": [
+            0.903678834,
+            0.035248309,
+            1.200000048
+          ]
+        },
+        "positionQuantizationStepUpperBoundMetres": 3.6622e-05,
+        "decimated": false,
+        "remeshed": false
+      },
+      "textures": [
+        {
+          "role": "base_color",
+          "sourceDimensions": [
+            8192,
+            8192
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "role": "normal",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "role": "metallic",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "role": "roughness",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        }
+      ]
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.65,
+      "depth": 2.2,
+      "height": 0.3,
+      "topY": 0,
+      "center": [
+        0,
+        -0.15,
+        0
+      ]
+    },
+    "primitives": [
+      {
+        "mesh": 0,
+        "name": "CloudwayLab_FrostLilyStep__opaque_detail__mesh",
+        "material": "CloudwayLab_FrostLilyStep__opaque_trim",
+        "triangles": 346423
+      },
+      {
+        "mesh": 1,
+        "name": "CloudwayLab_FrostLilyStep__glass_detail__mesh",
+        "material": "CloudwayLab_FrostLilyStep__glass",
+        "triangles": 9049
+      }
+    ],
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materials": [
+      {
+        "name": "CloudwayLab_FrostLilyStep__opaque_trim",
+        "role": "opaque",
+        "glassTransmissionAuthored": false
+      },
+      {
+        "name": "CloudwayLab_FrostLilyStep__glass",
+        "role": "glass",
+        "glassTransmissionAuthored": true
+      }
+    ]
+  },
+  "validator": {
+    "command": "apps/beside-cue/node_modules/.bin/gltf-transform validate source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v2.glb",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0,
+    "informational": [
+      "EXT_meshopt_compression is unsupported by the validator itself"
+    ]
+  },
+  "freshImport": {
+    "currentV1": {
+      "triangles": 355472,
+      "normalCorners": 1066416,
+      "shortNormalCorners": 0,
+      "minimumNormalLength": 0.9999997615814209,
+      "maximumNormalLength": 1.000000238418579,
+      "materialNames": [
+        "CloudwayLab_FrostLilyStep__provider_pbr"
+      ],
+      "meshes": [
+        {
+          "name": "CloudwayLab_FrostLilyStep__provider_detail",
+          "triangles": 355472,
+          "material": "CloudwayLab_FrostLilyStep__provider_pbr"
+        }
+      ],
+      "boundsBlenderZUp": {
+        "minimum": [
+          -0.9036897541828104,
+          -1.2000000476987402,
+          -0.353689028599419
+        ],
+        "maximum": [
+          0.9036897541289157,
+          1.2000000476686914,
+          0.035238875725426055
+        ]
+      }
+    },
+    "splitV2": {
+      "triangles": 355472,
+      "normalCorners": 1066416,
+      "shortNormalCorners": 0,
+      "minimumNormalLength": 0.9999997615814209,
+      "maximumNormalLength": 1.000000238418579,
+      "materialNames": [
+        "CloudwayLab_FrostLilyStep__glass",
+        "CloudwayLab_FrostLilyStep__opaque_trim"
+      ],
+      "meshes": [
+        {
+          "name": "CloudwayLab_FrostLilyStep__glass_detail",
+          "triangles": 9049,
+          "material": "CloudwayLab_FrostLilyStep__glass"
+        },
+        {
+          "name": "CloudwayLab_FrostLilyStep__opaque_detail",
+          "triangles": 346423,
+          "material": "CloudwayLab_FrostLilyStep__opaque_trim"
+        }
+      ],
+      "boundsBlenderZUp": {
+        "minimum": [
+          -0.9036897541828104,
+          -1.2000000476987402,
+          -0.353689028599419
+        ],
+        "maximum": [
+          0.9036897541289157,
+          1.2000000476686914,
+          0.035238875725426055
+        ]
+      }
+    },
+    "boundsToleranceMetres": 0.00010986600000000001,
+    "normalInventoryMatchesCurrentV1": true
+  },
+  "visualProof": {
+    "renderer": "Blender 5.2.2 EEVEE Next headless",
+    "scope": "Matched authoring proof only; it is not browser, tablet, or in-game GPU evidence.",
+    "renders": [
+      {
+        "variant": "donor",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-donor-gameplay.png",
+        "bytes": 612174,
+        "sha256": "f36b4c611229c3fc4d4ecf330a3f13198ad8b2f8130648cf776101f4a282e88e",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "donor",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-donor-nearest.png",
+        "bytes": 1524681,
+        "sha256": "89f56cb615282ca638bd3b7b6f0024131c59b30432e805660d22c89231471cca",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "current-v1",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-current-v1-gameplay.png",
+        "bytes": 601044,
+        "sha256": "4388502722e82f86ca00285e63a68b270357d0280ad1bd9139018b8e32ecf663",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "current-v1",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-current-v1-nearest.png",
+        "bytes": 1347052,
+        "sha256": "06d1a04c7362d26a0606964c79970fb2f586d8105cbea38d58427dd69817b586",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-split-v2-gameplay.png",
+        "bytes": 668407,
+        "sha256": "26162420e836ee3ce7d8087af29dce66280ccd03bfc8f8f6ced4d0ef75385f56",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-split-v2-nearest.png",
+        "bytes": 1581790,
+        "sha256": "0928cb7a76df6c8d13f31613a179ae032464a2fe888b422b38ac8b5dedddbd1e",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2-semantic-mask",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-split-v2-semantic-mask-gameplay.png",
+        "bytes": 373855,
+        "sha256": "155363402d776d04cdf67db27901f1e55e2875dd152f79a7815014e13f418d7a",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2-semantic-mask",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/matched-split-v2-semantic-mask-nearest.png",
+        "bytes": 321526,
+        "sha256": "17cca8fd88e329fb90d57d62f148536c7a8c149f6f2ee4596b39a5ec75a04226",
+        "resolution": [
+          1100,
+          820
+        ]
+      }
+    ],
+    "comparisons": [
+      {
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/comparison-donor-current-v1-split-v2-gameplay.png",
+        "bytes": 1072998,
+        "sha256": "0e21cfc2187ed38a94327b71bb997c760610d3292109626b97003db33dbddfbb",
+        "resolution": [
+          3300,
+          820
+        ]
+      },
+      {
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/comparison-donor-current-v1-split-v2-nearest.png",
+        "bytes": 3383271,
+        "sha256": "634381f7f340a0a526f86ffc113f6cbffba180ae0c3ea6315244ba79e640a7e7",
+        "resolution": [
+          3300,
+          820
+        ]
+      }
+    ],
+    "finding": "Matched authoring review passed: the broad ice slab and lily field remain one coherent glass region, all four ornate pearl/gold corner cages remain opaque, and matched gameplay-framed/nearest authoring masks show no material bleed."
+  },
+  "immutableMaster": {
+    "file": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+    "sha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+    "matchesExpected": true
+  },
+  "rebuild": "timeout 1200 flock -w 1200 \"${GLASS_BLENDER_LOCK:-/tmp/glass-cloudway-blender.lock}\" env ALSOFT_DRIVERS=null \"${BLENDER_BIN:-blender}\" --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_static_material_split_runtime.py -- --asset frost-lily-step"
+}

@@ -1,7 +1,8 @@
 // Adventure camera policy — public tuning contracts and deterministic framing helpers.
 
-import { Box3, MathUtils, Vector3 } from 'three'
+import { Box3, MathUtils, Matrix4, Vector3 } from 'three'
 import type { GameSnapshot, LevelDefinition, RouteCameraSectionDefinition, Vec3, } from '../contracts'
+import { getBreakableRenderRecipe } from './catalog'
 import type { ChallengeCameraScreenFrame, ChallengeCameraSubjects, } from './challenge-camera'
 
 export const ORBIT_FOLLOW_GRACE_SECONDS = 1.15
@@ -131,16 +132,32 @@ export function createFallbackChallengeSubjects(
   const exhibitBase = new Vector3().copy(
     exhibit?.position ?? snapshot.player.position,
   )
-  exhibitBase.y += exhibit?.mount?.height ?? 0.255
+  const barrier = exhibit?.presentation?.kind === 'barrier'
+  exhibitBase.y += barrier ? 0 : (exhibit?.mount?.height ?? 0.255)
+  const envelope =
+    barrier && exhibit !== undefined
+      ? getBreakableRenderRecipe(exhibit.variant).barrierEnvelope
+      : undefined
+  const target =
+    envelope === undefined
+      ? new Box3(
+          exhibitBase.clone().add(new Vector3(-0.42, 0, -0.42)),
+          exhibitBase.clone().add(new Vector3(0.42, 1.15, 0.42)),
+        )
+      : new Box3(
+          new Vector3(-envelope.width / 2, 0, -envelope.depth / 2),
+          new Vector3(envelope.width / 2, envelope.height, envelope.depth / 2),
+        ).applyMatrix4(
+          new Matrix4()
+            .makeRotationY(exhibit!.presentation!.facingYaw)
+            .setPosition(exhibitBase),
+        )
   return {
     encounterId,
     merc: new Box3(
       playerPosition.clone().add(new Vector3(-0.34, 0, -0.26)),
       playerPosition.clone().add(new Vector3(0.34, 1.35, 0.26)),
     ),
-    target: new Box3(
-      exhibitBase.clone().add(new Vector3(-0.42, 0, -0.42)),
-      exhibitBase.clone().add(new Vector3(0.42, 1.15, 0.42)),
-    ),
+    target,
   }
 }

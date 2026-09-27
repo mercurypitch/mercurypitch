@@ -2,8 +2,8 @@
 // Adventure vessels — dimensional glass, an earned stress glow and bounded shatter.
 // ============================================================
 
-import type { BufferGeometry, Material, Texture } from 'three'
-import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, Vector3, } from 'three'
+import type { BufferGeometry, Material, Texture, Vector3 } from 'three'
+import { Box3, BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, } from 'three'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
@@ -12,6 +12,9 @@ import { disposeObject } from './dispose'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
 import { createMaterialLibrary } from './material-library'
+import type { ShatterBurst } from './shatter-burst'
+import { createShatterBurst } from './shatter-burst'
+import { fallbackShatterProfile, planShatterShardMotion, } from './shatter-motion'
 
 /** Fallbacks and authored GLBs share the same recipe-sized, floor-based envelope. */
 function fitDisplayHeight(
@@ -30,15 +33,16 @@ export function createVesselGeometry(variant: string): BufferGeometry {
   const recipe = getBreakableRenderRecipe(variant)
   const shape = recipe.fallbackShape
   if (shape === 'slab') {
+    const envelope = recipe.barrierEnvelope ?? PORTRAIT_EXHIBIT_ENVELOPE
     const geometry = new BoxGeometry(
-      PORTRAIT_EXHIBIT_ENVELOPE.width,
-      PORTRAIT_EXHIBIT_ENVELOPE.height,
-      PORTRAIT_EXHIBIT_ENVELOPE.depth,
+      envelope.width,
+      envelope.height,
+      envelope.depth,
       6,
       8,
       1,
     )
-    geometry.translate(0, PORTRAIT_EXHIBIT_ENVELOPE.height / 2, 0)
+    geometry.translate(0, envelope.height / 2, 0)
     return fitDisplayHeight(geometry, recipe.displayHeight)
   }
   const profile =
@@ -117,14 +121,20 @@ export function createVessel(
   reducedMotion: boolean,
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
+  const shatterProfile =
+    recipe.shatterProfile ?? fallbackShatterProfile(recipe.fallbackShape)
   const pictureBearingPortrait = recipe.portraitFracture === 'picture-bearing'
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
   root.position.copy(target.position)
-  root.position.y += target.mount?.height ?? DEFAULT_EXHIBIT_MOUNT_HEIGHT
-  if (target.mount !== undefined) root.rotation.y = target.mount.facingYaw
-  if (recipe.faceAnchor === true)
+  if (target.presentation?.kind === 'barrier') {
+    root.rotation.y = target.presentation.facingYaw
+  } else {
+    root.position.y += target.mount?.height ?? DEFAULT_EXHIBIT_MOUNT_HEIGHT
+    if (target.mount !== undefined) root.rotation.y = target.mount.facingYaw
+  }
+  if (target.presentation?.kind !== 'barrier' && recipe.faceAnchor === true)
     root.rotation.y = Math.atan2(
       target.anchor.x - target.position.x,
       target.anchor.z - target.position.z,
@@ -182,13 +192,16 @@ export function createVessel(
     root.add(persistentPortrait)
   }
   let intact: Mesh
+  const intactLocalBounds = new Box3()
   let shardMeshes: {
+    delay: number
     mesh: Mesh
     origin: Vector3
     velocity: Vector3
     spin: Vector3
   }[] = []
   let cracks: LineSegments[] = []
+  let burst: ShatterBurst | undefined
   const crackMaterial = new LineBasicMaterial({
     color: 0xcaffee,
     transparent: true,
@@ -209,6 +222,8 @@ export function createVessel(
       crack.geometry.dispose()
       root.remove(crack)
     }
+    burst?.dispose()
+    burst = undefined
     shardGroup.clear()
     shardMeshes = []
     cracks = []
@@ -216,26 +231,27 @@ export function createVessel(
     intact.name = `vessel-intact-${target.id}`
     intact.castShadow = true
     root.add(intact)
+    geometry.computeBoundingBox()
+    intactLocalBounds.copy(geometry.boundingBox ?? new Box3())
     const pieces =
       authoredPieces ?? fractureGeometry(geometry, recipe.fragmentBudget)
     pieces.forEach((piece, i) => {
       const mesh = new Mesh(piece.geometry, shardMaterial)
       mesh.position.copy(piece.centre)
       mesh.castShadow = true
-      const outward = new Vector3(piece.centre.x, 0, piece.centre.z)
-      if (outward.lengthSq() < 0.001)
-        outward.set(Math.sin(i * 2.4), 0, Math.cos(i * 2.4))
-      outward.normalize().multiplyScalar(0.6 + (i % 5) * 0.1)
-      outward.y = 0.85 + (i % 4) * 0.12
+      const motion = planShatterShardMotion(
+        target.id,
+        shatterProfile,
+        intactLocalBounds,
+        piece.centre,
+        i,
+      )
       shardMeshes.push({
+        delay: motion.delay,
         mesh,
         origin: piece.centre,
-        velocity: outward,
-        spin: new Vector3(
-          Math.sin(i * 2.1),
-          Math.cos(i * 1.4),
-          Math.sin(i + 1),
-        ).multiplyScalar(2.4),
+        velocity: motion.velocity,
+        spin: motion.spin,
       })
       shardGroup.add(mesh)
       const crack = new LineSegments(
@@ -246,6 +262,15 @@ export function createVessel(
       cracks.push(crack)
       root.add(crack)
     })
+    if (!reducedMotion) {
+      burst = createShatterBurst(
+        target.id,
+        shatterProfile,
+        intactLocalBounds,
+        recipe.tint,
+      )
+      root.add(burst.root)
+    }
   }
   const initialGeometry = createVesselGeometry(target.variant)
   if (
@@ -274,6 +299,10 @@ export function createVessel(
     materialLibrary,
     addPersistent(object: Group) {
       root.add(object)
+    },
+    getIntactBounds(box: Box3): Box3 {
+      root.updateWorldMatrix(true, false)
+      return box.copy(intactLocalBounds).applyMatrix4(root.matrixWorld)
     },
     setGeometry(
       geometry: BufferGeometry,
@@ -375,21 +404,39 @@ export function createVessel(
         surface.emissive.setHex(0x3fccbe)
         surface.emissiveIntensity = stress
       }
-      crackMaterial.opacity = Math.max(0, state.charge - 0.35) * 0.9
+      const anticipation =
+        age < 0 ? 0 : delay <= 0 ? 1 : Math.max(0, Math.min(1, age / delay))
+      const crackReveal = Math.max(
+        Math.max(0, state.charge - 0.25) / 0.75,
+        anticipation,
+      )
+      crackMaterial.opacity = Math.min(1, crackReveal) * 0.92
       for (const crack of cracks)
-        crack.visible = intact.visible && state.charge > 0.35
+        crack.visible = intact.visible && crackReveal > 0
       if (!reducedMotion && intact.visible && state.charge > 0.6) {
         intact.rotation.z = Math.sin(now * 48) * (state.charge - 0.6) * 0.018
       } else intact.rotation.z = 0
       const flight = Math.max(0, age - delay)
       shardGroup.visible =
         shattered && !restored && flight < timing.visibleFlightSeconds
+      const fade =
+        timing.fadeSeconds === 0
+          ? 0
+          : Math.max(0, flight - timing.fadeStartSeconds) / timing.fadeSeconds
+      const microVisible =
+        !reducedMotion &&
+        shattered &&
+        !restored &&
+        flight < SHATTER_PRESENTATION_TIMING.normal.visibleFlightSeconds
+      burst?.update(flight, fade, microVisible)
       if (persistentPortrait !== undefined)
         persistentPortrait.visible =
           portraitReady && (!pictureBearingPortrait || !shardGroup.visible)
       if (shardGroup.visible)
         for (const shard of shardMeshes) {
-          const t = flight * timing.flightTimeScale
+          // Stagger release, not appearance: delayed pieces still fill their
+          // original part of the pane until the fracture reaches them.
+          const t = Math.max(0, flight - shard.delay) * timing.flightTimeScale
           shard.mesh.position
             .copy(shard.origin)
             .addScaledVector(shard.velocity, t)
@@ -399,11 +446,6 @@ export function createVessel(
             shard.spin.y * t,
             shard.spin.z * t,
           )
-          const fade =
-            timing.fadeSeconds === 0
-              ? 0
-              : Math.max(0, flight - timing.fadeStartSeconds) /
-                timing.fadeSeconds
           shard.mesh.scale.setScalar(Math.max(0.001, 1 - fade))
         }
       wave.visible = !reducedMotion && shattered && flight < 0.55
@@ -411,6 +453,8 @@ export function createVessel(
       waveMaterial.opacity = wave.visible ? (1 - flight / 0.55) * 0.65 : 0
     },
     dispose() {
+      burst?.dispose()
+      burst = undefined
       glass.envMap = null
       disposeObject(
         root,

@@ -6,6 +6,8 @@
     "strict": true,
     "noEmit": true,
     "resolveJsonModule": true,
+    // Shared game source also runs in Node's native TypeScript authoring tools.
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     // ES2024 for the type checker only; "target" stays ES2023, so nothing
     // about the emitted code changes. The repo already uses an ES2024 API —

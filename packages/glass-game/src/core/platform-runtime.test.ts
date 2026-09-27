@@ -812,7 +812,7 @@ describe('authored platform runtime', () => {
     )
   })
 
-  it('carries a rider without drift, then stops applying support delta after jump', () => {
+  it('carries a rider, inherits takeoff velocity once, then stops applying support delta', () => {
     const game = createGlassGame(
       level([
         platform('raft', {
@@ -833,14 +833,92 @@ describe('authored platform runtime', () => {
     expect(riding.player.position.x).toBeCloseTo(raft.offset.x, 8)
     expect(riding.player.position.z).toBe(0)
 
+    const beforeJumpRaftX = stateFor(game, 'raft')!.offset.x
     const jump = game.step({ ...idle, jumpDown: true }, MOVEMENT.fixedStep)
     expect(jump).toContainEqual({ type: 'jumped' })
+    const afterJump = game.snapshot()
+    const expectedTakeoffVelocity =
+      (stateFor(game, 'raft')!.offset.x - beforeJumpRaftX) / MOVEMENT.fixedStep
+    expect(afterJump.player.velocity.x).toBeCloseTo(
+      Math.min(expectedTakeoffVelocity, MOVEMENT.maximumPlatformTakeoffSpeed),
+      8,
+    )
     const airborneX = game.snapshot().player.position.x
     const raftX = stateFor(game, 'raft')!.offset.x
     fixedSteps(game, 12)
     expect(game.snapshot().player.supportPlatformId).toBeNull()
-    expect(game.snapshot().player.position.x).toBeCloseTo(airborneX, 8)
+    expect(game.snapshot().player.position.x).toBeGreaterThan(airborneX)
+    expect(game.snapshot().player.position.x - airborneX).toBeLessThan(0.2)
     expect(stateFor(game, 'raft')!.offset.x - raftX).toBeGreaterThan(0.1)
+  })
+
+  it('inherits no horizontal speed during an endpoint dwell and reverses with the raft', () => {
+    const movingLevel = () =>
+      level([
+        platform('raft', {
+          behavior: {
+            kind: 'glide',
+            translation: { x: 1, y: 0, z: 0 },
+            travelSeconds: 1,
+            dwellSeconds: 0.1,
+          },
+        }),
+      ])
+
+    const dwelling = createGlassGame(movingLevel())
+    expect(
+      dwelling.step({ ...idle, jumpDown: true }, MOVEMENT.fixedStep),
+    ).toContainEqual({ type: 'jumped' })
+    expect(dwelling.snapshot().player.velocity.x).toBe(0)
+
+    const reversing = createGlassGame(movingLevel())
+    fixedSteps(reversing, 204)
+    const before = stateFor(reversing, 'raft')!.offset.x
+    expect(
+      reversing.step({ ...idle, jumpDown: true }, MOVEMENT.fixedStep),
+    ).toContainEqual({ type: 'jumped' })
+    const supportVelocity =
+      (stateFor(reversing, 'raft')!.offset.x - before) / MOVEMENT.fixedStep
+    expect(supportVelocity).toBeLessThan(0)
+    expect(reversing.snapshot().player.velocity.x).toBeCloseTo(
+      supportVelocity,
+      8,
+    )
+  })
+
+  it('produces the same raft takeoff after matched 30 and 60 Hz presentation steps', () => {
+    const sample = (frameDelta: number) => {
+      const game = createGlassGame(
+        level([
+          platform('raft', {
+            behavior: {
+              kind: 'glide',
+              translation: { x: 1, y: 0, z: 0 },
+              travelSeconds: 1.5,
+              dwellSeconds: 0.1,
+            },
+          }),
+        ]),
+      )
+      const frames = Math.round(0.6 / frameDelta)
+      for (let frame = 0; frame < frames; frame++) game.step(idle, frameDelta)
+      game.step({ ...idle, jumpDown: true }, frameDelta)
+      if (frameDelta < 1 / 30)
+        game.step({ ...idle, jumpDown: true }, 1 / 30 - frameDelta)
+      return {
+        player: game.snapshot().player,
+        raft: stateFor(game, 'raft')!,
+      }
+    }
+
+    const sixty = sample(1 / 60)
+    const thirty = sample(1 / 30)
+    expect(sixty.player.velocity.x).toBeGreaterThan(0)
+    expect(sixty.player.position.x).toBeCloseTo(thirty.player.position.x, 10)
+    expect(sixty.player.position.y).toBeCloseTo(thirty.player.position.y, 10)
+    expect(sixty.player.velocity.x).toBeCloseTo(thirty.player.velocity.x, 10)
+    expect(sixty.player.velocity.y).toBeCloseTo(thirty.player.velocity.y, 10)
+    expect(sixty.raft.offset.x).toBeCloseTo(thirty.raft.offset.x, 10)
   })
 
   it('freezes a paused glide and resumes one bounded step without wall-clock catch-up', () => {

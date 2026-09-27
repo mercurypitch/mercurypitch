@@ -23,7 +23,7 @@ export interface CloudwayLaboratoryStaticMetadataV1 {
     readonly height: number
   }
   readonly material: {
-    readonly kind: 'provider-pbr'
+    readonly kind: 'provider-pbr' | 'authored-pbr-regions'
     readonly appearanceStatus: string
     readonly intendedAppearance: string
   }
@@ -168,6 +168,7 @@ function readCollider(source: Object3D): CloudwayLaboratoryStaticColliderV1 {
 function readMetadata(
   source: Object3D,
   expectedAssetId: string,
+  materialRoles?: Readonly<Record<string, 'opaque' | 'glass'>>,
 ): CloudwayLaboratoryStaticMetadataV1 {
   const raw = encodedObject(source, CLOUDWAY_LAB_STATIC_METADATA_KEY)
   const schema = exact(
@@ -246,14 +247,47 @@ function readMetadata(
   const materialKind = exact(
     source,
     material.kind,
-    'provider-pbr',
+    materialRoles === undefined ? 'provider-pbr' : 'authored-pbr-regions',
     'cloudway_lab_asset_json.material.kind',
   )
+  if (materialRoles !== undefined) {
+    const roles = object(source, material.roles, 'material.roles')
+    for (const role of ['opaque', 'glass'] as const) {
+      const declared = roles[role]
+      const expected = Object.keys(materialRoles).filter(
+        (name) => materialRoles[name] === role,
+      )
+      if (
+        !Array.isArray(declared) ||
+        declared.length !== expected.length ||
+        new Set(declared).size !== expected.length ||
+        expected.some((name) => !declared.includes(name))
+      )
+        fail(
+          source,
+          `material.roles.${role} must match the reviewed material set.`,
+        )
+    }
+  }
   if (
     typeof material.appearanceStatus !== 'string' ||
     typeof material.intendedAppearance !== 'string'
   )
     fail(source, 'static material status and intended appearance are required.')
+  if (materialRoles !== undefined) {
+    exact(
+      source,
+      material.appearanceStatus,
+      'authored-regions',
+      'material.appearanceStatus',
+    )
+    exact(
+      source,
+      material.intendedAppearance,
+      'glass-and-trim',
+      'material.intendedAppearance',
+    )
+  }
   const geometry = object(
     source,
     raw.geometry,
@@ -298,10 +332,12 @@ function readMetadata(
 export function validateCloudwayLaboratoryStaticDonor(
   source: Object3D,
   expectedAssetId: string,
+  materialRoles?: Readonly<Record<string, 'opaque' | 'glass'>>,
 ): ValidatedCloudwayLaboratoryStaticDonor {
   identityRoot(source)
   const collider = readCollider(source)
-  const metadata = readMetadata(source, expectedAssetId)
+  const metadata = readMetadata(source, expectedAssetId, materialRoles)
+  const represented = new Set<string>()
   if (
     Math.abs(collider.width - metadata.contact.width) > EPSILON ||
     Math.abs(collider.depth - metadata.contact.depth) > EPSILON ||
@@ -340,7 +376,21 @@ export function validateCloudwayLaboratoryStaticDonor(
       fail(source, `Mesh "${mesh.name}" has non-finite PBR material values.`)
     if (physical.transparent || physical.opacity !== 1)
       fail(source, `Mesh "${mesh.name}" must be fully opaque provider PBR.`)
-    if (physical.isMeshPhysicalMaterial && physical.transmission !== 0)
+    const role = materialRoles?.[physical.name]
+    if (materialRoles !== undefined && role === undefined)
+      fail(source, `Mesh "${mesh.name}" uses an unreviewed material region.`)
+    represented.add(physical.name)
+    if (role === 'glass') {
+      if (
+        !physical.isMeshPhysicalMaterial ||
+        physical.transmission <= 0 ||
+        physical.transmission > 1
+      )
+        fail(
+          source,
+          `Glass region "${mesh.name}" must preserve physical transmission.`,
+        )
+    } else if (physical.isMeshPhysicalMaterial && physical.transmission !== 0)
       fail(source, `Mesh "${mesh.name}" must preserve opaque provider PBR.`)
     const indexCount = mesh.geometry.index?.count
     if (indexCount === undefined || indexCount % 3 !== 0)
@@ -348,6 +398,11 @@ export function validateCloudwayLaboratoryStaticDonor(
     triangles += indexCount / 3
     meshes++
   })
+  if (
+    materialRoles !== undefined &&
+    Object.keys(materialRoles).some((name) => !represented.has(name))
+  )
+    fail(source, 'Every reviewed material region must be represented.')
   if (meshes === 0 || triangles !== metadata.geometry.triangles)
     fail(source, 'loaded triangle inventory differs from the runtime metadata.')
   return { collider, metadata }

@@ -24,6 +24,7 @@ import { createGalleryInspection } from './gallery-inspection'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
+import { precompileRendererPrograms } from './program-precompile'
 import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { createResonancePortal } from './resonance-portal'
@@ -152,6 +153,7 @@ function createGlassRendererInstance(
   const loading = createLoadingProgressLedger(
     [
       'merc:model',
+      'gpu:programs',
       ...assetPlan.taskIds,
       ...(environmentTaskId === undefined ? [] : [environmentTaskId]),
       ...(reflectionTaskId === undefined ? [] : [reflectionTaskId]),
@@ -216,7 +218,9 @@ function createGlassRendererInstance(
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute('aria-label', 'Floating glass museum')
   container.append(renderer.domElement)
+  const programPrecompile = new AbortController()
   registerPartialCleanup(() => {
+    programPrecompile.abort()
     renderer.dispose()
     renderer.forceContextLoss()
     renderer.domElement.remove()
@@ -318,6 +322,7 @@ function createGlassRendererInstance(
     event.preventDefault()
     if (disposed || contextLost) return
     contextLost = true
+    programPrecompile.abort()
     loading.freeze()
     options.onContextLost?.()
   }
@@ -428,6 +433,18 @@ function createGlassRendererInstance(
       }
       if (!disposed && !contextLost) loading.complete(reflectionTaskId!)
     })
+    .then(async () => {
+      if (disposed || contextLost) return
+      // Compile hidden fragment/instancing variants behind the loading screen,
+      // after the final lighting and environment exist, before the first Sing.
+      await precompileRendererPrograms(
+        renderer,
+        scene,
+        camera.camera,
+        programPrecompile.signal,
+      )
+      if (!disposed && !contextLost) loading.complete('gpu:programs')
+    })
     .catch((error: unknown) => {
       loading.freeze()
       throw error
@@ -526,14 +543,14 @@ function createGlassRendererInstance(
         challengeVessel
       ) {
         merc.root.updateWorldMatrix(true, true)
-        challengeVessel.root.updateWorldMatrix(true, true)
         mercBounds.setFromObject(merc.root, true)
-        targetBounds.setFromObject(challengeVessel.root, true)
+        challengeVessel.getIntactBounds(targetBounds)
         if (!mercBounds.isEmpty() && !targetBounds.isEmpty()) {
           const planarTarget =
             challengeDefinition !== undefined &&
-            getBreakableRenderRecipe(challengeDefinition.variant).faceAnchor ===
-              true
+            (getBreakableRenderRecipe(challengeDefinition.variant)
+              .faceAnchor === true ||
+              challengeDefinition.presentation?.kind === 'barrier')
           camera.setChallengeSubjects({
             encounterId: challengeId,
             merc: mercBounds,
@@ -627,6 +644,7 @@ function createGlassRendererInstance(
     dispose() {
       if (disposed) return
       disposed = true
+      programPrecompile.abort()
       loading.freeze()
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()

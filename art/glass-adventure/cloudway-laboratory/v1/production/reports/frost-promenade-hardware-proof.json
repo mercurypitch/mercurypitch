@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-27",
+  "platform": "Desktop Linux, AMD Radeon RX 9070 XT, Chromium ANGLE OpenGL",
+  "deviceAcceptance": "Android and iPhone gameplay/performance acceptance remains with owner; desktop timings are not mobile claims.",
+  "wallCases": [
+    {
+      "layout": "cloudway-mechanics-preview",
+      "camera": "first-person",
+      "readyMilliseconds": 2606,
+      "challengeEntryMilliseconds": 132.9,
+      "challengeLongTasks": [],
+      "errors": []
+    },
+    {
+      "layout": "cloudway-laboratory",
+      "camera": "first-person",
+      "readyMilliseconds": 2639,
+      "challengeEntryMilliseconds": 64.6,
+      "challengeLongTasks": [],
+      "errors": []
+    },
+    {
+      "layout": "cloudway-laboratory",
+      "camera": "third-person",
+      "readyMilliseconds": 3207,
+      "challengeEntryMilliseconds": 98.3,
+      "challengeLongTasks": [],
+      "errors": []
+    },
+    {
+      "layout": "cloudway-mechanics-preview",
+      "camera": "third-person",
+      "readyMilliseconds": 2576,
+      "challengeEntryMilliseconds": 47.7,
+      "challengeLongTasks": [],
+      "errors": []
+    }
+  ],
+  "existingShatter": {
+    "encounters": [
+      "arrival-goblet",
+      "crossing-vase",
+      "finale-portrait"
+    ],
+    "challengeEntryMilliseconds": [
+      241,
+      43,
+      38
+    ],
+    "readyMilliseconds": [
+      3053,
+      2746,
+      2516
+    ],
+    "challengeLongTasks": []
+  },
+  "proofDirectory": "source-assets/proofs/runtime/frost-promenade-2026-09-27/",
+  "visualReview": "Accepted actual runtime intact, shattering, open and restored wall in both camera modes; accepted Frost/Aurora gameplay and existing goblet/vase/portrait fracture. Rejected quantized-position-bake proof retained separately."
+}

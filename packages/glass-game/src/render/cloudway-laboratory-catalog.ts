@@ -5,6 +5,8 @@ export const CLOUDWAY_LAB_PLATFORM_RENDER_IDS = {
   scroll: 'cloudway-lab-gilt-scroll',
   roseCrackle: 'cloudway-lab-rose-crackle',
   amethystCrackle: 'cloudway-lab-amethyst-crackle',
+  frostLily: 'cloudway-lab-frost-lily',
+  auroraGlide: 'cloudway-lab-aurora-glide',
 } as const
 
 export type CloudwayLaboratoryPlatformRenderId =
@@ -15,6 +17,8 @@ export const CLOUDWAY_LAB_BUNDLE_IDS = {
   scroll: 'gilt-scroll-bridge-runtime-v1',
   roseCrackle: 'cloudway-lab-rose-crackle-v1',
   amethystCrackle: 'cloudway-lab-amethyst-crackle-v1',
+  frostLily: 'cloudway-lab-frost-lily-step-v1',
+  auroraGlide: 'cloudway-lab-aurora-glide-raft-v1',
 } as const
 
 export const CLOUDWAY_LAB_ROOT_NAMES = {
@@ -22,6 +26,19 @@ export const CLOUDWAY_LAB_ROOT_NAMES = {
   scroll: 'Cloudway_GiltScrollBridge_RuntimeV1',
   roseCrackle: 'CloudwayLab_RoseQuartzCrackleFast',
   amethystCrackle: 'CloudwayLab_AmethystCrackleSlow',
+  frostLily: 'CloudwayLab_FrostLilyStep',
+  auroraGlide: 'CloudwayLab_AuroraGlideRaft',
+} as const
+
+export const CLOUDWAY_LAB_RIGID_MATERIAL_ROLES = {
+  frostLily: {
+    CloudwayLab_FrostLilyStep__opaque_trim: 'opaque',
+    CloudwayLab_FrostLilyStep__glass: 'glass',
+  },
+  auroraGlide: {
+    CloudwayLab_AuroraGlideRaft__opaque_trim: 'opaque',
+    CloudwayLab_AuroraGlideRaft__glass: 'glass',
+  },
 } as const
 
 export const CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS = {

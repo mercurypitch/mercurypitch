@@ -1554,3 +1554,24 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** required GLB paths contained Git LFS pointer text after a worktree checkout, not model bytes.
 **Rule:** inspect the failing response and hydrate the exact runtime inventory before regenerating art; private source symlinks do not supply public runtime deliveries. The gallery guard names unresolved pointers, while native builds verify their inventory.
 **See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/scripts/native-games.ts`.
+
+### Inspect the opened passage at the actual floor datum
+
+**Symptom:** a shattered doorway would let Merc walk through a visible 30-centimetre stone sill.
+**Cause:** the donor's fused bottom crossbar remained in the persistent frame, while its collision profile described only the side posts and top. Overall bounds and closed-pane previews could not reveal the mismatch.
+**Rule:** review the fully open frame from both sides, measure the threshold against gameplay step height, and test the actual exported opening. Keep the frame feet and clear passage on the court datum; do not bury decoration or remove collision to conceal a raised sill.
+**See:** `packages/glass-game/src/render/frost-wall-asset.test.ts`, `packages/glass-game/src/content/frost-wall-profile.ts`.
+
+### Promote quantized vertex attributes before baking transforms
+
+**Symptom:** a certified 2.69 m glass pane became about 0.69 m tall in the game although Blender, GLB accessor bounds and collision all agreed.
+**Cause:** `flattenGeometry` applied world transforms into normalized Int16 position buffers, then converted them to Float32 afterward. Coordinates outside the normalized range had already overflowed; reading the source bounds alone could not catch it.
+**Rule:** promote transform-bearing attributes before applying any matrix. Test the final prepared geometry from an actual compressed GLB, and inspect intact and fractured states in the real renderer. A passing interaction test does not establish visual correctness.
+**See:** `packages/glass-game/src/render/asset-geometry.ts`, `packages/glass-game/src/render/frost-wall-asset.test.ts`.
+
+### Own shader-readiness polling before renderer teardown
+
+**Symptom:** leaving or losing the WebGL context during shader precompile could leave readiness pending and throw from a timer.
+**Cause:** Three's `compileAsync` timer rereads material properties that `WebGLRenderer.dispose()` deletes; the timer is not cancellable.
+**Rule:** snapshot the guarded program handles after `compile`, own the readiness timer, and abort it before disposing materials or renderer state. Bound driver waits and test disposal and context loss while precompile is pending.
+**See:** `packages/glass-game/src/render/program-precompile.ts`, `packages/glass-game/src/render/glass-renderer.test.ts`.

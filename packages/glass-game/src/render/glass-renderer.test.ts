@@ -10,6 +10,13 @@ const state = vi.hoisted(() => {
   const visibleRoomIds = new Set<string>()
   return {
     render: vi.fn(),
+    compile: vi.fn(
+      (_scene: Scene, _camera: PerspectiveCamera) => new Set([{}]),
+    ),
+    programIsReady: vi.fn(() => true),
+    programProperties: vi.fn(() => ({
+      currentProgram: { isReady: () => state.programIsReady() },
+    })),
     setSize: vi.fn(),
     setPixelRatio: vi.fn(),
     reflectionProbeRender: Symbol('reflection-probe-render'),
@@ -67,6 +74,8 @@ vi.mock('three', async (original) => ({
     info = { render: {}, memory: {} }
     setSize = state.setSize
     setPixelRatio = state.setPixelRatio
+    compile = state.compile
+    properties = { get: state.programProperties }
     getContext = () => ({
       drawingBufferWidth: 800,
       drawingBufferHeight: 600,
@@ -222,6 +231,9 @@ afterEach(() => {
   state.warningSharesLibraryTexture = false
   state.environmentLoadFailure = null
   state.render.mockClear()
+  state.compile.mockClear()
+  state.programIsReady.mockReset().mockReturnValue(true)
+  state.programProperties.mockClear()
   state.setSize.mockClear()
   state.setPixelRatio.mockClear()
   state.shadowNeedsUpdateAtProbeRender.length = 0
@@ -525,7 +537,7 @@ it('publishes a fixed plan synchronously and reaches full only after installs an
     (id) => id,
     { onLoadingProgress: (progress) => updates.push(progress) },
   )
-  const expectedTotal = assetPlan.taskIds.length + 3
+  const expectedTotal = assetPlan.taskIds.length + 4
   expect(updates[0]).toEqual({ completedUnits: 0, totalUnits: expectedTotal })
 
   await expect(renderer.ready).resolves.toBeUndefined()
@@ -540,6 +552,54 @@ it('publishes a fixed plan synchronously and reaches full only after installs an
   })
   renderer.dispose()
 })
+
+it('keeps the loading gate until hidden shatter programs are compiled', async () => {
+  state.programIsReady.mockReturnValue(false)
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  let ready = false
+  void renderer.ready.then(() => {
+    ready = true
+  })
+  await vi.waitFor(() => expect(state.compile).toHaveBeenCalledOnce())
+  const compiledScene = state.compile.mock.calls[0]![0] as Scene
+  expect(
+    compiledScene.getObjectByName(
+      `vessel-shards-${GLASSWORKS.breakables[0]!.id}`,
+    ),
+  ).toBeDefined()
+  expect(ready).toBe(false)
+  state.programIsReady.mockReturnValue(true)
+  await renderer.ready
+  expect(ready).toBe(true)
+  renderer.dispose()
+})
+
+it.each(['dispose', 'context loss'] as const)(
+  'cancels pending shader polling before renderer teardown on %s',
+  async (cause) => {
+    state.programIsReady.mockReturnValue(false)
+    const renderer = createGlassRenderer(
+      browserFixture(),
+      GLASSWORKS,
+      (id) => id,
+      {
+        onContextLost: () => renderer.dispose(),
+      },
+    )
+    await vi.waitFor(() => expect(state.compile).toHaveBeenCalledOnce())
+    const readinessCalls = state.programIsReady.mock.calls.length
+
+    if (cause === 'context loss')
+      state.listeners.get('webglcontextlost')?.(new Event('webglcontextlost'))
+    else renderer.dispose()
+
+    await expect(renderer.ready).resolves.toBeUndefined()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(state.programIsReady).toHaveBeenCalledTimes(readinessCalls)
+    expect(state.rendererDispose).toHaveBeenCalledOnce()
+    expect(state.forceContextLoss).toHaveBeenCalledOnce()
+  },
+)
 
 it('freezes progress after a required failure and ignores later installs', async () => {
   const assetPlan = createMuseumAssetLoadPlan(GLASSWORKS)

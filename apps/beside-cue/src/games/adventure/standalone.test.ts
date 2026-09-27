@@ -48,8 +48,21 @@ describe('standalone development route', () => {
     ])
   })
 
+  it('opens the separate cardinal mechanics route only by its development query', async () => {
+    const level = await mountAt(true, 'cloudway-mechanics-preview')
+    expect(level?.id).toBe('cloudway-crystal-promenade-mechanics-preview')
+    expect(level?.authored).toMatchObject({
+      layoutId: 'crystal-promenade-mechanics-preview',
+      contentRevision: 1,
+    })
+  })
+
   it('ignores the laboratory query in a production host', async () => {
     expect(await mountAt(false, 'cloudway-laboratory')).toBeUndefined()
+  })
+
+  it('ignores the mechanics preview query in a production host', async () => {
+    expect(await mountAt(false, 'cloudway-mechanics-preview')).toBeUndefined()
   })
 
   it('leaves unknown layout queries on the normal entry', async () => {

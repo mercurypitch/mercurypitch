@@ -389,14 +389,14 @@ function buildCloudwayLayout(
       `${saveId}-finale-left-planter`,
       roomId,
       finale.minX + 0.42,
-      finale.minZ + 0.48,
+      finale.maxZ - 0.48,
       finale.id,
     ),
     planter(
       `${saveId}-finale-right-planter`,
       roomId,
       finale.maxX - 0.42,
-      finale.minZ + 0.48,
+      finale.maxZ - 0.48,
       finale.id,
     ),
     planter(

@@ -1,0 +1,288 @@
+{
+  "schema": 2,
+  "assetId": "frost-lily-step",
+  "status": "runtime material-region derivative prepared; fresh reopen audit and matched headless authoring proof passed; browser and live-game validation pending",
+  "scope": "Dense source triangles, UVs, and corner normals are preserved across an exact face partition. The immutable master and full provider maps remain unchanged.",
+  "source": {
+    "denseMaster": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+    "denseMasterSha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+    "donorSha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4"
+  },
+  "lineage": {
+    "runtimeV1": {
+      "file": "source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v1.glb",
+      "sha256": "8674c1d802a3825c5bd1e02945ef7243aa7d6e94328ca31358baac75956b6368"
+    },
+    "packedWorkingBlend": {
+      "file": "source-assets/blender/frost-lily-step/frost-lily-step-runtime-v2-working.blend",
+      "bytes": 26219351,
+      "sha256": "074928a0a533efd3fae987c40f4a3c4774e2f0f3db8f280bc0feb49ffe304cfd"
+    },
+    "bundleIdPreserved": "cloudway-lab-frost-lily-step-v1",
+    "rootNodePreserved": "CloudwayLab_FrostLilyStep"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v2.glb",
+    "bytes": 3359924,
+    "sha256": "3a3b8682f14bb463bcb13dc695191279144e1a799e7d5764348d98a3600ea9cf",
+    "bundleId": "cloudway-lab-frost-lily-step-v1",
+    "rootNode": "CloudwayLab_FrostLilyStep",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materials": {
+      "materialNames": [
+        "CloudwayLab_FrostLilyStep__glass",
+        "CloudwayLab_FrostLilyStep__opaque_trim"
+      ],
+      "opaqueTransmissionExtensionAbsent": true,
+      "glassTransmission": 0.5799999833106995,
+      "glassIor": 1.4500000476837158,
+      "glassMetallic": 0.0,
+      "glassRoughness": 0.20000000298023224,
+      "alphaMode": "OPAQUE"
+    },
+    "primitiveNodeSplit": {
+      "method": "JSON-only primitive-to-child-node separation",
+      "sourcePrimitiveCount": 2,
+      "runtimeMeshNodes": 2,
+      "binaryPayloadSha256": "16bf06b9b28b7c2e914f633354be59020ec288c9523b409ad8621b512bf6e89f",
+      "binaryPayloadUnchanged": true,
+      "roles": [
+        {
+          "role": "opaque",
+          "material": "CloudwayLab_FrostLilyStep__opaque_trim",
+          "mesh": 0,
+          "node": 2
+        },
+        {
+          "role": "glass",
+          "material": "CloudwayLab_FrostLilyStep__glass",
+          "mesh": 1,
+          "node": 3
+        }
+      ]
+    },
+    "resourceBudget": {
+      "embeddedImageBytes": 971142,
+      "meshoptDecodedBufferBytes": 8155330,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432
+    }
+  },
+  "material": {
+    "kind": "authored-pbr-regions",
+    "appearanceStatus": "authored-regions",
+    "intendedAppearance": "glass-and-trim",
+    "roles": {
+      "opaque": [
+        "CloudwayLab_FrostLilyStep__opaque_trim"
+      ],
+      "glass": [
+        "CloudwayLab_FrostLilyStep__glass"
+      ]
+    },
+    "targetGlass": {
+      "transmission": 0.58,
+      "roughness": 0.2,
+      "thickness": 0.09,
+      "ior": 1.45
+    }
+  },
+  "classification": {
+    "method": "Median of seven deterministic provider-metallic samples per existing UV triangle (centroid plus 18% and 45% inset samples toward each corner), combined with an authored cardinal-corner spatial seed.",
+    "samplesPerFace": 7,
+    "metallicMedianThreshold": 0.65,
+    "cornerSeed": {
+      "absoluteXAtLeast": 0.62,
+      "absoluteYAtLeast": 0.88
+    },
+    "cornerSeedTriangles": 327572,
+    "opaqueTriangles": 346423,
+    "glassTriangles": 9049,
+    "opaqueSourceFaceIndexSha256": "eaad54a9718b7e1a3dc911926409dd1d78a8c80b61fecb62cac93f8d2f22aea0",
+    "glassSourceFaceIndexSha256": "8e92f8ee7291f74fbf03860668864bd8b706a835def76eb9fd3a385e471f0cf2",
+    "rejectedCandidate": {
+      "id": "uv-metallic-only",
+      "description": "Provider metallic samples alone omit low-metallic faces within the four pearl/gold corner cages; the deterministic cardinal corner seed restores those connected visual fittings without selecting the broad ice field."
+    },
+    "proofs": [
+      {
+        "label": "accepted",
+        "view": "three-quarter",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/classification-accepted-three-quarter.png",
+        "bytes": 373901,
+        "sha256": "837d3ef0def02cb85f44986ab754cae37fba772e2d377e2bb13a9f433dd2a5e5",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "label": "accepted",
+        "view": "top",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/classification-accepted-top.png",
+        "bytes": 376201,
+        "sha256": "82321c0cf88d3b4dc1023e07ec4dd3d5e1cd9f9d109d9cdb517d6b14a217b7dd",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "label": "rejected-uv-metallic-only",
+        "view": "top",
+        "file": "source-assets/proofs/runtime/frost-lily-step/runtime-v2/classification-rejected-uv-metallic-only-top.png",
+        "bytes": 379833,
+        "sha256": "69f50eaccc1dc8bc405be2821d8592539bc7568d909925f8fe63e6ad8006ae53",
+        "resolution": [
+          1100,
+          820
+        ]
+      }
+    ]
+  },
+  "geometry": {
+    "vertices": 194437,
+    "triangles": 355472,
+    "polygons": 355472,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -0.903678834,
+        -0.353698492,
+        -1.200000048
+      ],
+      "maximum": [
+        0.903678834,
+        0.035248309,
+        1.200000048
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 3.6622e-05,
+    "decimated": false,
+    "remeshed": false,
+    "partitionAudit": {
+      "sourceFaceCoverageSha256": "cb65f1bf7284412b0badd220e3b78cbde5703cbfd83a834e30a4b0bbd2f47477",
+      "sourceCornerFingerprint": {
+        "triangles": 355472,
+        "worldCornerPositionsFloat32Sha256": "db1bde1d1010e760064da85fc94a31a118ff6c53cf0897d7508a8090c1fba729",
+        "cornerUvsFloat32Sha256": "39d3db4f27b0253698173eb29e7dfb1185a4cdbcd6007ab1cd636fb2855110b5",
+        "cornerNormalsFloat32Sha256": "a8a0419dba28af2d25eaf58e5766b744202cd2a58dd01dbde5731823ddc516cf"
+      },
+      "postAssignmentCornerFingerprint": {
+        "triangles": 355472,
+        "worldCornerPositionsFloat32Sha256": "db1bde1d1010e760064da85fc94a31a118ff6c53cf0897d7508a8090c1fba729",
+        "cornerUvsFloat32Sha256": "39d3db4f27b0253698173eb29e7dfb1185a4cdbcd6007ab1cd636fb2855110b5",
+        "cornerNormalsFloat32Sha256": "a8a0419dba28af2d25eaf58e5766b744202cd2a58dd01dbde5731823ddc516cf"
+      },
+      "roles": {
+        "opaque": {
+          "material": "CloudwayLab_FrostLilyStep__opaque_trim",
+          "triangles": 346423,
+          "sourceFaceIndexSha256": "eaad54a9718b7e1a3dc911926409dd1d78a8c80b61fecb62cac93f8d2f22aea0",
+          "minimumSourceFaceIndex": 0,
+          "maximumSourceFaceIndex": 355471
+        },
+        "glass": {
+          "material": "CloudwayLab_FrostLilyStep__glass",
+          "triangles": 9049,
+          "sourceFaceIndexSha256": "8e92f8ee7291f74fbf03860668864bd8b706a835def76eb9fd3a385e471f0cf2",
+          "minimumSourceFaceIndex": 25922,
+          "maximumSourceFaceIndex": 330964
+        }
+      },
+      "everySourceTriangleAssignedExactlyOnce": true,
+      "surfaceGeometryDuplicated": false
+    }
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 88
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 1.65,
+      "depth": 2.2,
+      "topY": 0,
+      "height": 0.3
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.031210542,
+      "minimumUpNormal": 0.957079113,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.031210542,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "timeout 1200 flock -w 1200 \"${GLASS_BLENDER_LOCK:-/tmp/glass-cloudway-blender.lock}\" env ALSOFT_DRIVERS=null \"${BLENDER_BIN:-blender}\" --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_material_split_runtime.py -- --asset frost-lily-step",
+  "freshReopenAudit": {
+    "status": "fresh Blender reopen and matched headless authoring proof passed; browser and live-game validation pending",
+    "file": "source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v2-audit.json",
+    "mirror": "art/glass-adventure/cloudway-laboratory/v1/production/reports/frost-lily-step-runtime-v2-audit.json",
+    "bytes": 11908,
+    "sha256": "8b7a46b588bcfd4950c4c4b153a6b727884f68ee4d183093501aec8e740ecd28"
+  }
+}

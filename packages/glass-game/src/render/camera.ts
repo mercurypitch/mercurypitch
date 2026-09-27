@@ -140,6 +140,7 @@ export function createAdventureCamera(
         activeSolidIds,
         true,
         false,
+        'subject-visibility',
       ) <
       reach - 0.08
     )

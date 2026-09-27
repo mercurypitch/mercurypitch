@@ -2,6 +2,12 @@
 
 [Open visual catalogue](review.html) · [Task list](TASKS.md) · [Blender review](BLENDER-REVIEW.md) · [Integration spec](INTEGRATION-SPEC.md)
 
+The [Frost Promenade pass](FROST-PROMENADE.md) extends the course with measured
+JSON authoring, a frost bend, a shatterable wall and a moving Aurora raft. It also
+provides a separate route with cardinal turns. That document contains the current
+test sequence and source-data contract; the first-crossing notes below describe
+the original four-asset delivery.
+
 20 distinct single-object references were generated with the built-in ChatGPT image tool and visually inspected. `catalogue.json` retains every final prompt, output path and SHA-256. References are source art, not game models.
 
 ## Local review and authoring
@@ -45,8 +51,9 @@ device:
    replaced by matching separate shards when each platform breaks.
 4. Fall once and retry. The checkpoint should recover Merc on safe footing and
    restore the moving and cracking platforms without a stall.
-5. Break all three voice targets and use the marked exit. Approaching the exit
-   before completing them must not finish the course.
+5. Continue through the frost bend, sing through the wall, ride the Aurora raft
+   and use the marked exit. Approaching the exit before completing the required
+   voice targets must not finish the course.
 
 Inspect the scroll etching, pink/gold surface and purple/gold surface at normal
 play distance and the nearest camera. Report both appearance and responsiveness;

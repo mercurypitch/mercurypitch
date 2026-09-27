@@ -2,12 +2,16 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import { FROST_WALL_BUNDLE, FROST_WALL_PANE, } from '../content/frost-wall-profile'
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
 export interface BreakableRenderRecipe {
+  shatterProfile?: 'crown' | 'radial' | 'sheet' | 'ice-wall'
+  /** Local pane bounds: centred in X/Z, resting at Y=0. */
+  barrierEnvelope?: { width: number; height: number; depth: number }
   bundle?: string
   intactNode?: string
   shardPrefix?: string
@@ -37,6 +41,7 @@ export interface BreakableRenderRecipe {
 }
 
 const CLEAR_GLASS = {
+  shatterProfile: 'radial' as const,
   tint: 0xd9fff4,
   roughness: 0.025,
   transmission: 0.97,
@@ -47,6 +52,7 @@ const CLEAR_GLASS = {
 function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
   return {
     ...CLEAR_GLASS,
+    shatterProfile: 'sheet',
     bundle: 'legend-slab',
     intactNode: 'legend_cash_intact',
     shardPrefix: 'legend_cash_shard_',
@@ -66,11 +72,28 @@ function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
 export const BREAKABLE_RENDER_CATALOG: Readonly<
   Record<string, BreakableRenderRecipe>
 > = {
+  'frosted-scroll-wall': {
+    ...CLEAR_GLASS,
+    shatterProfile: 'ice-wall',
+    barrierEnvelope: FROST_WALL_PANE,
+    bundle: FROST_WALL_BUNDLE,
+    intactNode: 'frost_wall_intact',
+    shardPrefix: 'frost_wall_shard_',
+    shardCount: 32,
+    persistentPrefix: 'frost_wall_frame',
+    displayHeight: FROST_WALL_PANE.height,
+    fallbackShape: 'slab',
+    fragmentBudget: 24,
+    tint: 0xbdeeff,
+    roughness: 0.16,
+    thickness: FROST_WALL_PANE.depth,
+  },
   'portrait-awakened-muse': collectedPortrait('painting-portrait-v5'),
   'portrait-interval': collectedPortrait('painting-interval-v6'),
   'portrait-wave-keeper': collectedPortrait('painting-wave-keeper-v7'),
   goblet: {
     ...CLEAR_GLASS,
+    shatterProfile: 'crown',
     bundle: 'vessels',
     intactNode: 'goblet_laurel_intact',
     shardPrefix: 'goblet_laurel_shard_',
@@ -109,6 +132,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
   },
   coupe: {
     ...CLEAR_GLASS,
+    shatterProfile: 'crown',
     bundle: 'glass-coupe-v3',
     intactNode: 'coupe_aurora_intact',
     shardPrefix: 'coupe_aurora_shard_',
@@ -157,6 +181,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
   },
   portrait: {
     ...CLEAR_GLASS,
+    shatterProfile: 'sheet',
     bundle: 'legend-slab',
     intactNode: 'legend_cash_intact',
     shardPrefix: 'legend_cash_shard_',
@@ -171,6 +196,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
   },
   'archive-glazing-v5': {
     ...CLEAR_GLASS,
+    shatterProfile: 'sheet',
     bundle: 'legend-slab',
     intactNode: 'legend_cash_intact',
     shardPrefix: 'legend_cash_shard_',
@@ -385,6 +411,18 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
   },
   [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle]: {
     bundle: CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.frostLily]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.frostLily,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.auroraGlide]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide,
     body: 'glass',
     outline: false,
     suspendedHull: false,
