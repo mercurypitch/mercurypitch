@@ -22,7 +22,7 @@ import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING
 import { navigateTo } from '@/lib/hash-router'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
-import { closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
 
@@ -128,8 +128,9 @@ export function goToTab(tab: ActiveTab): void {
   closeColumn()
   closeMore()
   // A pushed screen covers the whole viewport. Leaving it up while the hash
-  // and the rail's mark both moved is a tab change nobody can see.
-  popScreen()
+  // and the rail's mark both moved is a tab change nobody can see — and
+  // Settings is a stack, so every level of it goes, not only the top one.
+  clearScreens()
   const state = runState()
   const owner = runOwner()
   if ((state === 'active' || state === 'paused') && owner === currentTab()) {
@@ -146,7 +147,7 @@ export function returnToRun(): void {
   cancelDoorOpen()
   closeColumn()
   closeMore()
-  popScreen()
+  clearScreens()
   navigateTo({ type: 'tab', tab: owner })
 }
 
@@ -172,7 +173,8 @@ function shellOverlayOpen(): boolean {
  *
  * The pushed screen sits under the sheet because a sheet opens OVER one
  * (More is reachable while Settings is up); the alert is above both because
- * a modal question has to be answerable.
+ * a modal question has to be answerable. Pushed screens are a stack (Settings
+ * and the screens its rows push), and one press pops one level of it.
  *
  * The room's own overlay sits between the sheet and a pushed screen, and it
  * is NOT resolved here: the only way to ask a room whether it has one is to

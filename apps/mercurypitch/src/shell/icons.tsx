@@ -246,3 +246,27 @@ export const ConsoleIcon: Component<ShellIconProps> = (props) => (
     <path d="M8 10l2.5 2.5L8 15M13 15h3.5" />
   </svg>
 )
+
+// ── Settings (S6) ────────────────────────────────────────────
+
+/** The row that pushes a screen of its own. */
+export const ChevronIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+)
+
+/** Appearance: half the disc filled, dark against light. */
+export const ContrastIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+/** The choice that is in force. */
+export const CheckIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+)

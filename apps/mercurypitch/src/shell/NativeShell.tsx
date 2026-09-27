@@ -14,8 +14,8 @@
 //
 // WHAT IT OWNS: the rail, the transport that replaces it during a run, the
 // corner chip and its column, the session pill, the More sheet, the room
-// header on a room that registered controls, and Settings inside a pushed
-// screen. WHAT IT DOES NOT: the run itself. The room owns Start, the engine
+// header on a room that registered controls, and the native Settings with
+// the screens it pushes. WHAT IT DOES NOT: the run itself. The room owns Start, the engine
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
@@ -24,7 +24,6 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
-import { SettingsPanel } from '@/components/SettingsPanel'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
@@ -36,13 +35,13 @@ import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
-import { PushedScreen } from './PushedScreen'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
+import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
@@ -286,19 +285,12 @@ export const NativeShell: Component = () => {
             {shellAnnouncement()}
           </span>
 
-          <Show when={pushed() === 'settings'}>
-            <PushedScreen title="Settings" onBack={popScreen}>
-              <div id="settings-panel">
-                <SettingsPanel />
-              </div>
-            </PushedScreen>
-          </Show>
-
-          <Show when={DEVELOPER_AVAILABLE && pushed() === 'developer'}>
-            <PushedScreen title="Developer" onBack={popScreen}>
-              <DeveloperScreen />
-            </PushedScreen>
-          </Show>
+          {/* Settings and the screens its rows push, and Developer: one
+              stack, and only its top screen drawn (ShellScreens.tsx). The
+              web SettingsPanel is not in this bundle at all. */}
+          <ShellScreens
+            developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
+          />
 
           {/* Inside the root, not beside it: the sheet copies the custom
               properties that resolve on its anchor onto its own portal, and

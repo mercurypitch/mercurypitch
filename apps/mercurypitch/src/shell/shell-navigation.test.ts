@@ -8,7 +8,7 @@ import { registerRunControls } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
-import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
+import { openColumn, openMore, pushed, pushedStack, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
 import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, returnToRun, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
@@ -438,5 +438,55 @@ describe('a pushed screen and a rail tap', () => {
     goToTab(TAB_PROGRESS)
 
     expect(pushed()).toBeNull()
+  })
+})
+
+describe('a stack of pushed screens', () => {
+  // Settings pushes screens of its own now (S6, decision D1 A). Back walks
+  // down them one at a time; anything that leaves for a tab takes them all.
+  it('pops one level per Back before it leaves the room', () => {
+    pushScreen('settings')
+    pushScreen('appearance')
+    const back = host(true)
+
+    const first = performBack(back)
+    const under = pushed()
+    const second = performBack(back)
+    const third = performBack(back)
+
+    expect([first, second, third]).toEqual(['pushed', 'pushed', 'history'])
+    expect(under).toBe('settings')
+    expect(back.back).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears every level on a rail tap', () => {
+    pushScreen('settings')
+    pushScreen('appearance')
+
+    goToTab(TAB_PROGRESS)
+
+    expect(pushedStack()).toEqual([])
+  })
+
+  it('clears every level on the way back to a parked run', () => {
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => true,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    })
+    setPlaybackState('playing')
+    setActiveTab(TAB_HOME)
+    pushScreen('settings')
+    pushScreen('appearance')
+
+    returnToRun()
+
+    expect(pushedStack()).toEqual([])
+    expect(window.location.hash).toContain('singing')
   })
 })

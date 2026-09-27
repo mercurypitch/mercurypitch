@@ -624,7 +624,35 @@ async function walkChrome(page, ctx) {
   await pushed.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   await page.waitForTimeout(500)
   await shoot(page, ctx, 'settings-pushed')
-  steps.push('settings: pushed')
+  // The native Settings, titled once (audit D8: the web panel inside the
+  // pushed screen said "Settings" a second time under the bar).
+  const titled = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('[data-testid="shell-pushed"] *')].filter(
+        (node) =>
+          node.children.length === 0 &&
+          (node.textContent ?? '').trim() === 'Settings',
+      ).length,
+  )
+  if (titled !== 1) {
+    throw new Error(`Settings is titled ${titled} times on its own screen`)
+  }
+  steps.push('settings: pushed, the native screen, titled once')
+
+  // A row pushes a screen of its own over Settings, and Back walks down
+  // the stack one level at a time (S6, decision D1 A).
+  await page.locator('[data-settings-row="appearance"]').click()
+  const appearance = page.locator('[data-testid="appearance-screen"]')
+  await appearance.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await page.waitForTimeout(300)
+  await shoot(page, ctx, 'settings-appearance')
+  await page.locator('[data-testid="shell-pushed-back"]').click()
+  await page
+    .locator('[data-testid="settings-screen"]')
+    .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  steps.push(
+    'settings: Appearance pushed over it, and Back returns to Settings',
+  )
 
   await page.locator('[data-testid="shell-pushed-back"]').click()
   await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })

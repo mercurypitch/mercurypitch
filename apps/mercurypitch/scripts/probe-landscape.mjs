@@ -638,20 +638,15 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible(pushed)
     await settle()
     await measure('settings', pushed, { end: true })
-    await back(pushed)
-
-    await more('account')
-    await visible(pushed)
+    // Settings is a stack now (S6): a row pushes a screen of its own over it,
+    // and each level is measured the same way before Back walks down it.
+    at = 'on the way to Appearance'
+    await page.locator('[data-settings-row="appearance"]').click()
+    await visible('[data-testid="appearance-screen"]')
     await settle()
-    await measure('account', pushed)
-    await page.locator('[data-testid="show-login"]').first().click()
-    await visible('[data-testid="auth-modal-overlay"]')
-    await settle()
-    await measure('sign-in', '[data-testid="auth-modal-overlay"]', {
-      end: true,
-    })
-    await page.locator('[data-testid="auth-modal-close"]').click()
-    await hidden('[data-testid="auth-modal-overlay"]')
+    await measure('appearance', pushed)
+    await back('[data-testid="appearance-screen"]')
+    await visible('[data-testid="settings-screen"]')
     await back(pushed)
 
     await more('developer')

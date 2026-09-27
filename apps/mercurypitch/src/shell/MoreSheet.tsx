@@ -24,7 +24,6 @@ import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { TAB_GUITAR, TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
-import { setSettingsSection } from '@/stores/ui-store'
 import { AccountIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, } from './icons'
 import { goToTab } from './shell-navigation'
 
@@ -43,8 +42,7 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
     run()
   }
 
-  const openSettings = (section?: 'account'): void => {
-    if (section !== undefined) setSettingsSection(section)
+  const openSettings = (): void => {
     props.onClose()
     props.onPushSettings()
   }
@@ -91,7 +89,7 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
             type="button"
             class="mp-itile"
             data-more-item="account"
-            onClick={() => openSettings('account')}
+            onClick={() => openSettings()}
           >
             <AccountIcon />
             Account
