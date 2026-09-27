@@ -245,6 +245,29 @@ describe('the studio library', () => {
     ).toBeNull()
   })
 
+  it('keeps every song on this phone: no sync, no share link, no download or export', () => {
+    // Everything the web's card menu can offer: a hashed song separated in
+    // the browser, with its original kept.
+    store.sessions.set('song-a', {
+      ...song('song-a', 'g1'),
+      fileHash: 'hash-a',
+      processingMode: 'local',
+    } as UvrSession)
+    openStudio()
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'Sync songs with another of your devices',
+      }),
+    ).toBeNull()
+    // One row is left on each song, so each menu is that one button.
+    expect(
+      screen
+        .getAllByTestId('session-more')
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Delete this song', 'Delete this song'])
+  })
+
   it('leaves the groups to the studio: no row of tabs', () => {
     const { container } = openStudio()
 

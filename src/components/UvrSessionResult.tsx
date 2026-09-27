@@ -6,6 +6,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { setSessionStem } from '@/db/services/manual-stem-service'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { sessionSize, sessionSizeLabel } from '@/lib/session-size'
 import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
@@ -257,15 +258,21 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
    * has a single "..." instead of two that behave differently.
    */
   const cardMenuItems = createMemo((): OverflowMenuItem[] => [
-    {
-      key: 'share',
-      label: 'Copy share link',
-      icon: () => <Share />,
-      disabled: props.disabled === true,
-      onSelect: () => {
-        void handleCopyLink(new Event('copy-link'))
-      },
-    },
+    // The link names this page's own origin. In the native app that is the
+    // app's WebView, which no one else can open, and V1 shares nothing.
+    ...(IS_NATIVE_BUILD
+      ? []
+      : [
+          {
+            key: 'share',
+            label: 'Copy share link',
+            icon: () => <Share />,
+            disabled: props.disabled === true,
+            onSelect: () => {
+              void handleCopyLink(new Event('copy-link'))
+            },
+          },
+        ]),
     {
       key: 'delete',
       label: 'Delete this song',

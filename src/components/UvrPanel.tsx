@@ -2589,15 +2589,18 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                     </button>
                   </Show>
                   {/* Outside the sessions-exist gate on purpose: the empty
-                      device is exactly the one that needs to receive. */}
-                  <button
-                    class="section-action-btn section-action-btn-accent icon-only"
-                    onClick={() => openSyncModal()}
-                    title="Sync songs with another of your devices"
-                    aria-label="Sync songs with another of your devices"
-                  >
-                    <DeviceSync />
-                  </button>
+                      device is exactly the one that needs to receive. The
+                      native app syncs no songs in V1 (plan S8, D9). */}
+                  <Show when={!IS_NATIVE_BUILD}>
+                    <button
+                      class="section-action-btn section-action-btn-accent icon-only"
+                      onClick={() => openSyncModal()}
+                      title="Sync songs with another of your devices"
+                      aria-label="Sync songs with another of your devices"
+                    >
+                      <DeviceSync />
+                    </button>
+                  </Show>
                   <Show when={!IS_NATIVE_BUILD}>
                     <label
                       class="section-action-btn icon-only"

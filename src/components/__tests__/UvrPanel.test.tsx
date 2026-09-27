@@ -305,6 +305,18 @@ describe('UvrPanel Component', () => {
       await waitFor(() => expect(syncUi.openSyncModal).toHaveBeenCalled())
     })
 
+    it('offers the sync on the web, even before a first song', () => {
+      render(() => <UvrPanel />)
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'Sync songs with another of your devices',
+        }),
+      )
+
+      expect(syncUi.openSyncModal).toHaveBeenCalled()
+    })
+
     it('leaves the modal closed when nothing was scanned', () => {
       render(() => <UvrPanel />)
       expect(syncUi.openSyncModal).not.toHaveBeenCalled()

@@ -108,6 +108,24 @@ describe('UvrSessionActions', () => {
     expect(sole).toHaveAccessibleName('Export session ZIP')
   })
 
+  it('offers a hashed song to another device', () => {
+    // The web's rows that send a song away; the native app offers none of
+    // them (UvrPanel.native.test.tsx).
+    const onSendToDevice = vi.fn()
+    render(() => (
+      <UvrSessionActions
+        sessionId="session-123"
+        session={completedSession({ fileHash: 'hash-123' })}
+        onSendToDevice={onSendToDevice}
+      />
+    ))
+
+    openMenu()
+    fireEvent.click(screen.getByTestId('overflow-send'))
+
+    expect(onSendToDevice).toHaveBeenCalledWith('session-123')
+  })
+
   // ------------------------------------------------------------
   // A menu of one
   // ------------------------------------------------------------
