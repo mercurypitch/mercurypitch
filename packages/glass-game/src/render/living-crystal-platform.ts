@@ -114,11 +114,11 @@ export function createLivingCrystalPlatformRenderer(
       ]
       const stagedHardwareMaterial = new MeshStandardMaterial({
         name: 'LivingCrystalV2_RuntimeGold',
-        color: 0xd4a64f,
-        metalness: 0.9,
-        roughness: 0.2,
-        emissive: 0x2c1503,
-        emissiveIntensity: 0.12,
+        color: 0xf1c46c,
+        metalness: 0.82,
+        roughness: 0.16,
+        emissive: 0x3a1600,
+        emissiveIntensity: 0.18,
       })
       const stagedShellMaterials: MeshPhysicalMaterial[] = []
       const staged: InstalledLivingCrystalPlatform[] = []
@@ -128,15 +128,16 @@ export function createLivingCrystalPlatformRenderer(
           const shellMaterial = new MeshPhysicalMaterial({
             name: `LivingCrystalV2_RuntimeShell_${placement.interior.variant}`,
             color: tuning.shellTint,
-            roughness: 0.11,
+            roughness: 0,
             metalness: 0,
-            transmission: 0.94,
-            thickness: 0.5,
-            ior: 1.47,
+            transmission: 0.985,
+            thickness: 0.08,
+            ior: 1.05,
             attenuationColor: new Color(tuning.attenuationTint),
-            attenuationDistance: 1.25,
-            clearcoat: 0.34,
-            clearcoatRoughness: 0.08,
+            attenuationDistance: 0.65,
+            clearcoat: 0.55,
+            clearcoatRoughness: 0.025,
+            specularIntensity: 0.92,
             transparent: false,
             opacity: 1,
             depthWrite: true,

@@ -75,12 +75,12 @@ const FRAGMENT_SHADER = /* glsl */ `
     float echoPulse = pulseBand(phase, fract(clock * 0.115 - 0.38), 0.075);
     float pearl = smoothstep(0.72, 0.98, vPathData.b);
     float depthWarmth = smoothstep(0.05, 0.95, vPathData.g);
-    vec3 base = mix(uSecondary, uPrimary, 0.34 + depthWarmth * 0.44);
+    vec3 base = mix(uSecondary, uPrimary, 0.18 + depthWarmth * 0.38);
     base = mix(base, uPrimary, pearl * 0.82);
     float travelling = primaryPulse + echoPulse * 0.48;
     vec3 light = uAccent * travelling * uIntensity;
     light += uAccent * pearl * (0.42 + primaryPulse * 0.58) * uIntensity;
-    vec3 finalColor = base * diffuse + base * rim * 0.35 + light;
+    vec3 finalColor = base * diffuse + base * rim * 0.46 + light;
     gl_FragColor = vec4(finalColor, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

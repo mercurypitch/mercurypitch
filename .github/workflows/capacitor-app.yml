@@ -680,7 +680,7 @@ jobs:
             profile_argument="-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
           fi
           bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
-            "$profile_argument" ./gradlew bundleRelease assembleRelease --no-daemon
+            "$profile_argument" ./gradlew bundleRelease assembleRelease --no-daemon --stacktrace
 
       # Every run, not only a release: the release bundle is built on pull
       # requests too, so this is where a size regression is cheapest to see.

@@ -56,24 +56,24 @@ export const LIVING_CRYSTAL_VARIANTS: Readonly<
 > = {
   'pearl-roots': {
     palette: {
-      primary: 0xffe4b5,
-      secondary: 0xc37a1e,
-      accent: 0xfff3d1,
+      primary: 0xffe5a6,
+      secondary: 0x8c4a10,
+      accent: 0xffffe3,
     },
-    intensity: 1.55,
+    intensity: 1.75,
     speed: 0.34,
-    shellTint: 0xf2a8c0,
-    attenuationTint: 0xffc4d5,
+    shellTint: 0xf8cada,
+    attenuationTint: 0xf6a9c1,
   },
   'living-amber': {
     palette: {
-      primary: 0xffbf4d,
-      secondary: 0x9d3e0b,
-      accent: 0xfff0a8,
+      primary: 0xffb52e,
+      secondary: 0x6f2304,
+      accent: 0xfff0a0,
     },
-    intensity: 1.72,
+    intensity: 1.8,
     speed: 0.46,
-    shellTint: 0xf09a78,
-    attenuationTint: 0xffae72,
+    shellTint: 0xf6c09a,
+    attenuationTint: 0xe98b55,
   },
 }
