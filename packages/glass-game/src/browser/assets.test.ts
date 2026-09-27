@@ -95,5 +95,8 @@ describe('Glassworks asset contract', () => {
     expect(glassGameAssetPath('merc-encore-home-v5')).toBe(
       'adventure-voice/merc-encore-home-v5.mp3',
     )
+    expect(glassGameAssetPath('living-crystal-platform-v2')).toBe(
+      'crystal-interiors-v2/living-crystal-platform-v2.glb',
+    )
   })
 })

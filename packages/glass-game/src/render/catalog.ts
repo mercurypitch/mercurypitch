@@ -3,6 +3,7 @@
 // ============================================================
 
 import { FROST_WALL_BUNDLE, FROST_WALL_PANE, } from '../content/frost-wall-profile'
+import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_STAGING_RENDER_ID, } from '../content/living-crystal-profile'
 import { PEARL_QUARTER_TURN_BUNDLE_IDS, PEARL_QUARTER_TURN_DOCK_RENDER_ID, PEARL_QUARTER_TURN_RENDER_ID, } from '../content/pearl-quarter-turn-profile'
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
@@ -435,6 +436,17 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     suspendedHull: false,
   },
   [PEARL_QUARTER_TURN_DOCK_RENDER_ID]: {
+    body: 'marble',
+    outline: true,
+    suspendedHull: false,
+  },
+  [LIVING_CRYSTAL_PLATFORM_RENDER_ID]: {
+    bundle: LIVING_CRYSTAL_PLATFORM_BUNDLE_ID,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [LIVING_CRYSTAL_STAGING_RENDER_ID]: {
     body: 'marble',
     outline: true,
     suspendedHull: false,

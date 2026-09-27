@@ -82,6 +82,29 @@ describe('standalone development route', () => {
     ).toHaveLength(2)
   })
 
+  it('opens both living-crystal v2 palettes without changing the study support', async () => {
+    const pearl = await mountAt(true, 'living-crystal')
+    expect(pearl?.id).toBe('living-crystal-pearl-roots-art-study-v2')
+    expect(pearl?.presentation?.livingCrystalInteriors).toEqual([
+      expect.objectContaining({ variant: 'pearl-roots' }),
+    ])
+
+    vi.resetModules()
+    mounted.levels.length = 0
+    document.body.innerHTML = '<div id="root"></div>'
+    vi.stubEnv('DEV', true)
+    window.history.replaceState(
+      {},
+      '',
+      '/glass-game/?layout=living-crystal&interior=living-amber',
+    )
+    await import('./standalone')
+    await vi.waitFor(() => expect(mounted.levels).toHaveLength(1))
+    expect(mounted.levels[0]?.id).toBe(
+      'living-crystal-living-amber-art-study-v2',
+    )
+  })
+
   it('ignores the laboratory query in a production host', async () => {
     expect(await mountAt(false, 'cloudway-laboratory')).toBeUndefined()
   })

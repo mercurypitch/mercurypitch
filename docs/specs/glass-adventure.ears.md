@@ -63,6 +63,12 @@ Owner decision 2026-09-28: Glassworks belongs to Beside Cue for now. mercurypitc
 - GA-36: While the switch is off, `/glass-game` shall still answer a hard load with the museum document, its staged assets and its service-worker rule, and that document shall ask not to be indexed.
 - GA-37: While the switch is on, as in the dev deploy, PR previews and the local dev server, the web build shall list Glassworks on every surface named in GA-35 and its document shall be indexable. The switch shall not affect Beside Cue builds.
 
+## Recorded speech and crystal art studies
+
+- GA-38: While Merc's recorded narration plays, his mouth presentation shall follow the decoded clip's audio clock without reading microphone input or creating another audio context. Capturing the player's voice, hiding or pausing the visit, and retiring a narration source shall suppress that presentation. Hosts without a narration envelope shall remain supported.
+- GA-39: Procedural attentive and speech poses shall be bounded layers over the authored animation. Each update shall restore the preceding authored pose before evaluating the next frame. Paused frames shall not advance the pose; reduced motion shall suppress the added idle gestures. Hands, eye morphs and upright jump behavior shall retain their accepted constraints.
+- GA-40: A living-crystal art study shall separate its physical glass shell, permanent hardware and dimensional interior. Its walkable support shall match the declared asset dimensions and orientation. Variant palette and animation tuning shall be content data; pausing, reduced motion and disposal shall not leave an independently running effect.
+
 ## Evidence
 
 Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest. GA-35 to GA-37: `scripts/assert-glassworks-listing.mjs` on every web build, `tools/glassworks-listing.test.ts`, `src/tests/home-destinations.test.tsx` and `src/e2e/glass-game.spec.ts`.

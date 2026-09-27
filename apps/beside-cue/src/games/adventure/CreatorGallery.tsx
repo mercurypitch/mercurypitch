@@ -1,6 +1,6 @@
 // Creator gallery — native-accessible art studies keep separate identities from the campaign.
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
-import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, } from '@irchiinnuss/glass-game/creator-levels'
+import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
 import { createSignal, For, Show } from 'solid-js'
 import { AdventureScreen } from './AdventureScreen'
 import styles from './CreatorGallery.module.css'
@@ -12,6 +12,20 @@ const studies = [
     description:
       'A little detour through the Thawing Song. Find two optional treasures beside the garden.',
     create: () => CLOUDWAY_THAWING_SONG_ALCOVE,
+  },
+  {
+    id: 'pearl-roots-v2',
+    title: 'The living pearl',
+    description:
+      'Cross a thick rose crystal grown around dimensional pearl-gold roots.',
+    create: () => livingCrystalStudy('pearl-roots'),
+  },
+  {
+    id: 'living-amber-v2',
+    title: 'The living amber',
+    description:
+      'Try the same walkable crystal with a warmer travelling amber heart.',
+    create: () => livingCrystalStudy('living-amber'),
   },
   {
     id: 'resonance-veins',
