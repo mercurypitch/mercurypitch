@@ -451,7 +451,19 @@ describe('explicit native games profile', () => {
     expect(
       reusable.match(/run-with-optional-profile-argument\.sh/gu),
     ).toHaveLength(4)
-    expect(reusable).toContain('Upload signed native testing artifacts')
+    expect(reusable).toContain('Upload signed native testing APK')
+    const apkUpload = reusable
+      .split('name: Upload signed native testing APK')[1]
+      ?.split('\n      - name:')[0]
+    expect(apkUpload).toContain('android-native-testing-apk')
+    expect(apkUpload).toContain('outputs/apk/release/app-release*.apk')
+    expect(apkUpload).not.toContain('.aab')
+    const bundleUpload = reusable
+      .split('name: Upload signed native testing Play bundle')[1]
+      ?.split('\n      - name:')[0]
+    expect(bundleUpload).toContain('outputs/bundle/release/app-release*.aab')
+    expect(bundleUpload).not.toContain('.apk')
+    expect(reusable).toContain('steps.native-testing-apk.outputs.artifact-url')
     expect(reusable).toContain(
       "if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'",
     )

@@ -708,19 +708,35 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      # No Play publisher or service-account credential exists here. Keeping
-      # the signed non-tag AAB lets the owner upload this exact package to an
-      # internal track by hand; the debug APK above remains the sideload path.
-      - name: Upload signed native testing artifacts
+      # Keep the sideload download separate from the Play bundle. Combining
+      # both makes testers download the same game assets twice (~650 MiB).
+      - name: Upload signed native testing APK
+        if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'
+        id: native-testing-apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app-slug }}-android-native-testing-apk
+          path: ${{ inputs.app-dir }}/android/app/build/outputs/apk/release/app-release*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # No Play publisher credential exists here. Preserve the signed AAB for
+      # a separate manual internal-track upload without burdening sideloads.
+      - name: Upload signed native testing Play bundle
         if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.app-slug }}-android-native-testing
-          path: |
-            ${{ inputs.app-dir }}/android/app/build/outputs/bundle/release/app-release*.aab
-            ${{ inputs.app-dir }}/android/app/build/outputs/apk/release/app-release*.apk
+          name: ${{ inputs.app-slug }}-android-native-testing-aab
+          path: ${{ inputs.app-dir }}/android/app/build/outputs/bundle/release/app-release*.aab
           if-no-files-found: error
           retention-days: 30
+
+      - name: Link the APK-only device download
+        if: steps.native-testing-apk.outcome == 'success'
+        env:
+          APK_ARTIFACT_URL: ${{ steps.native-testing-apk.outputs.artifact-url }}
+        run: |
+          printf '### Android device test\n\n[Download signed APK only](%s) — extract and install the APK. The Play AAB is a separate artifact.\n' "$APK_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report signing state
         if: always()
