@@ -55,7 +55,8 @@ export type RailVariant = 'r1' | 'r2'
  *
  * Settings is the root of a stack of them: it is a short grouped list whose
  * rows push screens of their own (S6, decision D1 A), and each of those can
- * push again. Developer stands on its own, reached from More.
+ * push again. Developer stands on its own, reached from More, and so does the
+ * Karaoke studio, reached from the Karaoke room's Options (S8 §11, D8 A).
  */
 export type PushedScreen =
   | 'settings'
@@ -70,6 +71,7 @@ export type PushedScreen =
   | 'appearance'
   | 'about'
   | 'karaoke'
+  | 'karaoke-studio'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -373,7 +375,10 @@ export function pushScreen(screen: PushedScreen): void {
 }
 
 /** A screen that is only ever reached through Settings. */
-export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
+export type SettingsChild = Exclude<
+  PushedScreen,
+  'settings' | 'developer' | 'karaoke-studio'
+>
 
 /**
  * Settings, with one of its own screens over it when the caller names one.

@@ -15,6 +15,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { Show } from 'solid-js'
+import { KaraokeStudioScreen } from './KaraokeStudioScreen'
 import { PushedScreen } from './PushedScreen'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
@@ -53,6 +54,7 @@ const TITLES: Record<PushedScreenId, string> = {
   appearance: 'Appearance',
   about: 'About',
   karaoke: 'Karaoke',
+  'karaoke-studio': 'Karaoke studio',
   developer: 'Developer',
 }
 
@@ -83,6 +85,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <AboutScreen />
       case 'karaoke':
         return <KaraokeSettingsScreen />
+      case 'karaoke-studio':
+        return <KaraokeStudioScreen />
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />

@@ -327,3 +327,154 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ── The studio (plan S8 §11, D8 A) ───────────────────────────
+   The old Karaoke tab, pushed over the room from Manage songs. Its bar
+   holds the Group row and the one options button that the panel's header
+   and group tabs were; the panel below keeps its list and its views and
+   scrolls inside the pushed screen, never sideways (audit K5). */
+
+.studio {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* The panel is sized for a tab of its own: in the studio it is the rest of
+   the screen under the bar. */
+.studio :global(.uvr-panel) {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.studioBar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px max(16px, var(--safe-right, 0px)) 6px
+    max(16px, var(--safe-left, 0px));
+}
+
+.groupRow {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: var(--touch-target, 44px);
+  padding: 0 14px;
+  border: 1px solid rgb(230 237 243 / 12%);
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary, #e6edf3);
+  font: 400 15px/20px var(--font-body, sans-serif);
+  text-align: start;
+  cursor: pointer;
+}
+
+.groupLabel {
+  flex: none;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 13px;
+}
+
+.groupValue {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupRow svg {
+  flex: none;
+}
+
+.studioOptionsButton {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
+  padding: 0;
+  border: 1px solid rgb(230 237 243 / 12%);
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary, #e6edf3);
+  cursor: pointer;
+}
+
+.studioOptionsButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sheetRowButton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border, #30363d) 55%, transparent);
+  background: none;
+  color: var(--text-primary, #e6edf3);
+  font: 400 15px/20px var(--font-body, sans-serif);
+  text-align: start;
+  cursor: pointer;
+}
+
+.sheetRowButton:last-child {
+  border-bottom: none;
+}
+
+.groupSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* The group tabs, stood on end: one group a line, and a long name wraps.
+   They are SessionGroupTabs, whose classes are its own module's, so the list
+   reaches them by position: its root, each tab or tab wrapper, and the pill
+   inside a wrapper. */
+.groupList > div {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+  overflow-x: visible;
+}
+
+.groupList > div > * {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.groupList > div > button,
+.groupList > div > div > div:first-child {
+  display: flex;
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  box-sizing: border-box;
+  font-size: 15px;
+  white-space: normal;
+}
+
+.groupList > div > div > div:first-child > button:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  text-align: start;
+}

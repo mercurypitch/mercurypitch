@@ -45,7 +45,7 @@ interface FakeMixer {
 const mixers = vi.hoisted(() => ({ list: [] as FakeMixer[] }))
 
 vi.mock('@/components/StemMixer', async () => {
-  const { createSignal, onCleanup, onMount } = await import('solid-js')
+  const { createSignal, onCleanup, onMount, untrack } = await import('solid-js')
   return {
     StemMixer: (props: {
       sessionId: string
@@ -65,13 +65,20 @@ vi.mock('@/components/StemMixer', async () => {
         volume: 0.8,
         muted: false,
       })
-      const mixer: FakeMixer = {
+      // What the room mounted this mixer with: read once, as the real one
+      // reads them, which is the thing the tests look at. The rule cannot
+      // see that `untrack` here is solid's, taken from a dynamic import.
+      // eslint-disable-next-line solid/reactivity
+      const given = untrack(() => ({
         sessionId: props.sessionId,
         title: props.songTitle,
         stems: props.stems,
         autoPlay: props.autoPlay,
         initialSeekSec: props.initialSeekSec,
         hosted: props.hosted,
+      }))
+      const mixer: FakeMixer = {
+        ...given,
         alive: true,
         setPlaying,
         setLoading,
@@ -89,7 +96,7 @@ vi.mock('@/components/StemMixer', async () => {
       }
       mixers.list.push(mixer)
       onMount(() => {
-        props.hosted.attach({
+        given.hosted.attach({
           playing,
           loading,
           loadError,
@@ -147,7 +154,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
   }),
 }))
 
-import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
 
 const example = (slug: string, title: string, dir: string) => ({
@@ -637,10 +644,51 @@ describe('the Karaoke options', () => {
       await mountRoom()
       const sheet = await openOptions()
 
-      fireEvent.click(within(sheet).getByRole('button', { name: 'Open' }))
+      fireEvent.click(
+        within(sheet).getByRole('button', { name: 'Open all settings' }),
+      )
 
       expect(pushSettings).toHaveBeenCalledTimes(1)
       expect(screen.queryByTestId('karaoke-options')).toBeNull()
+    } finally {
+      unregisterShell()
+    }
+  })
+
+  it('open the studio from Manage songs, pausing the song first', async () => {
+    const openKaraokeStudio = vi.fn()
+    const unregisterShell = registerShellApi({
+      pushSettings: vi.fn(),
+      openKaraokeStudio,
+    })
+    try {
+      await mountRoom()
+      current().setLoading(false)
+      current().setPlaying(true)
+      const sheet = await openOptions()
+
+      fireEvent.click(
+        within(sheet).getByRole('button', { name: 'Manage songs' }),
+      )
+
+      expect(current().pause).toHaveBeenCalledTimes(1)
+      expect(openKaraokeStudio).toHaveBeenCalledTimes(1)
+      expect(screen.queryByTestId('karaoke-options')).toBeNull()
+    } finally {
+      unregisterShell()
+    }
+  })
+
+  it('offer no Manage songs where nothing can open the studio', async () => {
+    const unregisterShell = registerShellApi({ pushSettings: vi.fn() })
+    try {
+      await mountRoom()
+      const sheet = await openOptions()
+
+      expect(
+        within(sheet).queryByRole('button', { name: 'Manage songs' }),
+      ).toBeNull()
+      expect(within(sheet).queryByText('Manage songs')).toBeNull()
     } finally {
       unregisterShell()
     }
@@ -652,6 +700,44 @@ describe('the Karaoke options', () => {
 
     expect(controls().closeRoomOverlay?.()).toBe(true)
     expect(screen.queryByTestId('karaoke-options')).toBeNull()
+  })
+})
+
+describe('a song the studio hands back', () => {
+  it('goes on the stage, playing', async () => {
+    await mountRoom()
+
+    requestKaraokeSong(DARK.sessionId)
+
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(DARK.sessionId)
+    })
+    expect(current().autoPlay).toBe(true)
+    expect(karaokeSongRequest()).toBeNull()
+  })
+
+  it('leaves the stage as it was when the room does not have the song', async () => {
+    await mountRoom()
+
+    requestKaraokeSong('a-song-the-room-cannot-play')
+    await settleFor(30)
+
+    expect(current().sessionId).toBe(GOODBYE.sessionId)
+    expect(karaokeStagedSong()).toBe(GOODBYE.sessionId)
+    expect(mixers.list.filter((mixer) => mixer.alive)).toHaveLength(1)
+    expect(karaokeSongRequest()).toBeNull()
+  })
+
+  it('is what an arrival cues when the room was not on the screen', async () => {
+    requestKaraokeSong(JOSEPHINE.sessionId)
+
+    await mountRoom()
+
+    expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    expect(current().autoPlay).not.toBe(true)
+    await settleFor(30)
+    expect(mixers.list).toHaveLength(1)
+    expect(karaokeSongRequest()).toBeNull()
   })
 })
 

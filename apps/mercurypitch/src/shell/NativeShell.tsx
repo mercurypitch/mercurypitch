@@ -127,6 +127,10 @@ export const NativeShell: Component = () => {
         openAppSettings: () => openAppSettings(),
         // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
         openSignIn,
+        // The Karaoke room's "Manage songs" (S8 §11, D8 A).
+        openKaraokeStudio: () => {
+          pushScreen('karaoke-studio')
+        },
       }),
     )
 

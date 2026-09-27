@@ -11,8 +11,9 @@
 //            them (K1: absent, never dead).
 //   Playing  the next song by itself; the music level and its way back to
 //            100% (the pill on the stage stays the everyday control).
-//   More     the one option pinned beside the gear (owner, 27 Sep), and All
-//            settings, which pushes Settings as Sing's does.
+//   More     the one option pinned beside the gear (owner, 27 Sep); Manage
+//            songs, which pushes the studio (D8 A); and All settings, which
+//            pushes Settings as Sing's does.
 
 import type { Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
@@ -75,6 +76,8 @@ interface KaraokeRoomOptionsProps {
   musicPercent: () => number | null
   onResetMusicLevel: () => void
   onAllSettings: () => void
+  /** Open the studio. Absent where nothing can: the row is then not drawn. */
+  onManageSongs?: () => void
 }
 
 export const KaraokeRoomOptions: Component<KaraokeRoomOptionsProps> = (
@@ -166,10 +169,29 @@ export const KaraokeRoomOptions: Component<KaraokeRoomOptionsProps> = (
             </For>
           </select>
         </Row>
+        <Show when={props.onManageSongs !== undefined}>
+          <Row
+            label="Manage songs"
+            sub="The studio: your groups, playlists and lyrics"
+          >
+            <button
+              type="button"
+              class={styles.optionButton}
+              aria-label="Manage songs"
+              onClick={() => {
+                props.close()
+                props.onManageSongs?.()
+              }}
+            >
+              Open
+            </button>
+          </Row>
+        </Show>
         <Row label="All settings">
           <button
             type="button"
             class={styles.optionButton}
+            aria-label="Open all settings"
             onClick={() => {
               props.close()
               props.onAllSettings()

@@ -45,7 +45,7 @@ import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
@@ -166,6 +166,9 @@ export const KaraokeRoomStage: Component = () => {
     )
     if (song === null) return
     arrived = true
+    // A song the studio handed back while the room was away is the staged
+    // song, so this arrival is its answer.
+    takeKaraokeSongRequest()
     const resuming = parked !== null && parked.sessionId === song.sessionId
     // A parked song that is no longer in the library cannot come back.
     if (!resuming) setRunOn(false)
@@ -173,6 +176,22 @@ export const KaraokeRoomStage: Component = () => {
       autoPlay: false,
       seekSec: resuming && parked.seconds > 0 ? parked.seconds : undefined,
       guide: resuming ? parked.guide : null,
+    })
+  })
+
+  // A song the studio handed back (plan S8 §11): on the stage, playing. One
+  // that the room cannot play leaves the stage as it was.
+  createEffect(() => {
+    if (karaokeSongRequest() === null || !arrived) return
+    untrack(() => {
+      const request = takeKaraokeSongRequest()
+      if (request === null) return
+      const song = library().find((row) => row.sessionId === request.sessionId)
+      if (song === undefined) {
+        setKaraokeStagedSong(cue()?.song.sessionId ?? null)
+        return
+      }
+      void cueSong(song, { autoPlay: true })
     })
   })
 
@@ -248,6 +267,13 @@ export const KaraokeRoomStage: Component = () => {
     setLibraryOpen(false)
     if (song.sessionId === cue()?.song.sessionId) return
     void cueSong(song, { autoPlay: isPlaying() })
+  }
+
+  // Manage songs (plan S8 §5): the studio, pushed over the room. The song
+  // stops first; the studio is a list to work on, not a stage.
+  const openStudio = (): void => {
+    mixer()?.pause()
+    nativeShellApi()?.openKaraokeStudio?.()
   }
 
   // Back closes what the room has open over its stage before it leaves.
@@ -433,6 +459,11 @@ export const KaraokeRoomStage: Component = () => {
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
         onAllSettings={() => nativeShellApi()?.pushSettings()}
+        onManageSongs={
+          nativeShellApi()?.openKaraokeStudio === undefined
+            ? undefined
+            : openStudio
+        }
       />
       <KaraokeRoomPicker
         isOpen={pickerOpen()}

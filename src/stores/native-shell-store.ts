@@ -155,6 +155,13 @@ export interface NativeShellApi {
    * (S6 audit D2). Optional, like `openAppSettings`.
    */
   openSignIn?: () => void
+  /**
+   * Push the Karaoke studio over the room: the old Karaoke tab, a library to
+   * work on (plan S8 §11, decision D8 A). The room's Options reach it from
+   * "Manage songs". Optional, like `openSignIn`: a room that finds no shell
+   * that offers it draws no row for it.
+   */
+  openKaraokeStudio?: () => void
 }
 
 /**

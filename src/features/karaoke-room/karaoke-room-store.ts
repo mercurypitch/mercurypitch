@@ -7,7 +7,8 @@
 //
 //   - the song on the stage, so coming back shows the same one;
 //   - a parked song's place and its guide vocal, so a run the shell parked
-//     comes back paused where it stopped (plan S8 §4.2).
+//     comes back paused where it stopped (plan S8 §4.2);
+//   - a song the studio handed back, until the room takes it (§11).
 //
 // The music level needs nothing here: the mixer keeps that one itself
 // (`master-headroom.ts`), for every song.
@@ -19,7 +20,7 @@
 //     notes share zen's own keys (plan §4.3), so a singer who set them in
 //     the studio's player finds them set here.
 
-import { createSignal } from 'solid-js'
+import { createSignal, untrack } from 'solid-js'
 import type { GuideLevel } from '@/components/stem-mixer-hosting'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
@@ -149,10 +150,42 @@ export function takeParkedKaraokeSong(): ParkedSong | null {
   return place
 }
 
+/**
+ * A song the studio handed back (plan S8 §11): the room puts it on the
+ * stage, playing. One request at a time; the room takes it once.
+ */
+export interface KaraokeSongRequest {
+  readonly sessionId: string
+}
+
+const [songRequest, setSongRequest] = createSignal<KaraokeSongRequest | null>(
+  null,
+)
+
+/** The song the studio last handed back and the room has not taken yet. */
+export const karaokeSongRequest = songRequest
+
+/**
+ * Hand a song to the room. It is also the song on the stage from here on,
+ * so a room that is not on the screen arrives on it.
+ */
+export function requestKaraokeSong(sessionId: string): void {
+  setStagedSong(sessionId)
+  setSongRequest({ sessionId })
+}
+
+/** The request, once: taking it clears it. */
+export function takeKaraokeSongRequest(): KaraokeSongRequest | null {
+  const request = untrack(songRequest)
+  if (request !== null) setSongRequest(null)
+  return request
+}
+
 /** Tests only: a room that has never been visited, with every default. */
 export function resetKaraokeRoomForTests(): void {
   parkedSong = null
   setStagedSong(null)
+  setSongRequest(null)
   setPlayNextSignal(true)
   setLyricsSizeSignal('current')
   setNoteGlyphsSignal(false)

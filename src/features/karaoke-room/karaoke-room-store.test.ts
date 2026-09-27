@@ -72,3 +72,17 @@ describe('a parked song', () => {
     expect(store.takeParkedKaraokeSong()).toBeNull()
   })
 })
+
+describe('a song the studio hands back', () => {
+  it('is staged for the next arrival, and asked for once', async () => {
+    const store = await freshStore()
+
+    store.requestKaraokeSong('mine')
+
+    expect(store.karaokeStagedSong()).toBe('mine')
+    expect(store.karaokeSongRequest()?.sessionId).toBe('mine')
+    expect(store.takeKaraokeSongRequest()?.sessionId).toBe('mine')
+    expect(store.karaokeSongRequest()).toBeNull()
+    expect(store.takeKaraokeSongRequest()).toBeNull()
+  })
+})
