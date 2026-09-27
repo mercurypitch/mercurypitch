@@ -168,6 +168,14 @@ export interface Env {
   STRIPE_SECRET_KEY?: string
   /** Stripe webhook signing secret (whsec_...) for /api/billing/webhook. */
   STRIPE_WEBHOOK_SECRET?: string
+  /** The Authorization header RevenueCat sends with every webhook, as set in
+   *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
+   *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
+  REVENUECAT_WEBHOOK_AUTH?: string
+  /** Songs a Karaoke subscription period grants. Default 20 (songs-allowance.ts). */
+  SONGS_PER_PERIOD?: string
+  /** The balance unused songs roll over to, at most. Default 50. */
+  SONGS_ROLLOVER_CAP?: string
   /** Shared secret authorizing service-to-service billing calls (the main
    *  worker's job refunds via X-Service-Key). Set the SAME value on both
    *  workers; refunds return 503 while unset. */
