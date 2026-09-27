@@ -436,8 +436,6 @@ export function contentTypeForFilename(filename: string): string {
   const ext = dot >= 0 ? filename.slice(dot).toLowerCase() : ''
   if (ext === '.mp3') return 'audio/mpeg'
   if (ext === '.flac') return 'audio/flac'
-  // AAC in an MP4 container: what the native app asks for (plan S8 §7).
-  if (ext === '.m4a') return 'audio/mp4'
   return 'audio/wav'
 }
 

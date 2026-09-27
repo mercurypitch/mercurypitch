@@ -29,7 +29,7 @@ async function separate(native: boolean): Promise<void> {
         status: 'processing',
         message: 'Processing started',
         model: 'roformer',
-        output_format: 'M4A',
+        output_format: 'MP3',
       }),
     ),
     pollForCompletion: vi.fn(async () => Promise.resolve(undefined)),

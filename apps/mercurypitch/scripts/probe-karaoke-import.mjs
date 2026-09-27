@@ -14,7 +14,11 @@
 //   - Separate puts it in the queue, whose row says each thing it waits for:
 //     Sending with the keep-open line, a studio slot, Separating with its
 //     bar (and the room's song line says so too), Saving to this phone;
-//   - the song arrives as yours, marked new, and plays in the room;
+//   - the song arrives as yours, marked new, and plays in the room from the
+//     stems saved on the phone: streamed, never decoded whole, and then
+//     again with AudioDecoder taken away, decoded whole as a small song may
+//     be. The stems are MP3 as the deployed handler writes them (owner, 28
+//     Sep: no new RunPod image), made from a take in the repository;
 //   - the room's options and Settings count the songs; Restore purchases
 //     and Subscribe fail closed, since no store is there yet (owner, 27 Sep);
 //   - the song's own menu removes it from this phone;
@@ -30,6 +34,7 @@
 // Nothing scrolls sideways on any surface it opens (readSideways).
 
 import { Buffer } from 'node:buffer'
+import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from '../api-base.mjs'
@@ -57,6 +62,40 @@ const MEDIA = {
   song: 'rooms/alley/ear-lab-workshop-ambient-take2-loop.m4a',
   vocal: 'rooms/alley/ear-lab-workshop-ambient-take2-loop.m4a',
   instrumental: 'rooms/alley/retro-analog-studio-ambient-take2-loop.m4a',
+}
+
+/**
+ * A stem as the deployed handler writes one for a native build, which asks
+ * for MP3: audio-separator 0.44.2 exports through pydub and ffmpeg at 320
+ * kb/s whenever no bitrate is set (common_separator.py, write_audio_pydub),
+ * and runpod/handler.py never sets one. Made from the take's source in the
+ * repository, since the bundle carries no MP3 of its own.
+ */
+function handlerMp3(path, name) {
+  const made = spawnSync(
+    'ffmpeg',
+    [
+      '-v',
+      'error',
+      '-i',
+      resolve(APP_DIR, '../../public', path),
+      '-vn',
+      '-c:a',
+      'libmp3lame',
+      '-b:a',
+      '320k',
+      '-f',
+      'mp3',
+      'pipe:1',
+    ],
+    { maxBuffer: 64 * 1024 * 1024 },
+  )
+  if (made.status !== 0) {
+    throw new Error(
+      `the stand-in's ${name}: ffmpeg made no MP3 (${made.error?.message ?? String(made.stderr).trim()})`,
+    )
+  }
+  return made.stdout
 }
 
 const SONG = 'Harbour Lights'
@@ -101,19 +140,20 @@ function probeToken() {
   ].join('.')
 }
 
-/** The bytes the stand-in serves, read from the bundle being walked. */
+/** The bytes the stand-in serves: the song as the bundle being walked
+ *  serves it, and its stems as MP3, the way the handler returns them. */
 async function readMedia(context, baseUrl) {
-  const bytes = {}
-  for (const [name, path] of Object.entries(MEDIA)) {
-    const response = await context.request.get(new URL(path, baseUrl).href)
-    if (!response.ok()) {
-      throw new Error(
-        `the stand-in's ${name}: ${path} answered ${response.status()}`,
-      )
-    }
-    bytes[name] = await response.body()
+  const response = await context.request.get(new URL(MEDIA.song, baseUrl).href)
+  if (!response.ok()) {
+    throw new Error(
+      `the stand-in's song: ${MEDIA.song} answered ${response.status()}`,
+    )
   }
-  return bytes
+  return {
+    song: await response.body(),
+    vocal: handlerMp3(MEDIA.vocal, 'vocal'),
+    instrumental: handlerMp3(MEDIA.instrumental, 'instrumental'),
+  }
 }
 
 /**
@@ -219,8 +259,8 @@ function standIn(media) {
         progress: 100,
         files: ['vocal', 'instrumental'].map((stem) => ({
           stem,
-          filename: `${stem}.m4a`,
-          path: `${stem}.m4a`,
+          filename: `${stem}.mp3`,
+          path: `${stem}.mp3`,
           size: media[stem].length,
         })),
       }
@@ -240,7 +280,7 @@ function standIn(media) {
       const body = request.postDataBuffer()?.toString('latin1') ?? ''
       state.uploads.push({
         signedIn: signedIn(headers),
-        m4a: /name="output_format"\r\n\r\nM4A\r\n/u.test(body),
+        mp3: /name="output_format"\r\n\r\nMP3\r\n/u.test(body),
         song: body.includes(`filename="${SONG}.m4a"`),
       })
       await state.upload.done
@@ -251,14 +291,14 @@ function standIn(media) {
         status: 'processing',
         message: 'Queued',
         model: 'roformer',
-        output_format: 'M4A',
+        output_format: 'MP3',
       })
     }
     if (method === 'GET' && pathname === `/api/uvr/status/${JOB}`) {
       return json(route, headers, statusOf())
     }
     const output = new RegExp(
-      `^/api/uvr/output/${JOB}/(vocal|instrumental)\\.m4a$`,
+      `^/api/uvr/output/${JOB}/(vocal|instrumental)\\.mp3$`,
       'u',
     ).exec(pathname)
     if (method === 'GET' && output !== null) {
@@ -267,7 +307,7 @@ function standIn(media) {
       return route.fulfill({
         status: 200,
         headers: cors(headers),
-        contentType: 'audio/mp4',
+        contentType: 'audio/mpeg',
         body: media[output[1]],
       })
     }
@@ -432,6 +472,17 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       failures.push(`page error: ${error.message}`)
     })
     await page.addInitScript(seed, args.theme)
+    // Every whole decode the page asks for, by its size: a stem streamed is
+    // never one of them.
+    await page.addInitScript(() => {
+      const sizes = []
+      window.__probeDecodes = sizes
+      const decode = BaseAudioContext.prototype.decodeAudioData
+      BaseAudioContext.prototype.decodeAudioData = function (data, ...rest) {
+        sizes.push(data?.byteLength ?? -1)
+        return decode.call(this, data, ...rest)
+      }
+    })
     await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
     await page
       .locator('#root.loaded')
@@ -639,7 +690,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       'the upload never reached the separation host',
     )
     const [upload] = state.uploads
-    if (!upload.signedIn || !upload.m4a || !upload.song) {
+    if (!upload.signedIn || !upload.mp3 || !upload.song) {
       throw new Error(`the upload: ${JSON.stringify(upload)}`)
     }
     const whileSending = await library()
@@ -699,7 +750,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     await shoot(page, ctx, 'import-saving')
     state.stems.release()
     steps.push(
-      `karaoke import: the row reads "${sending.line}" with "${whileSending.keepOpen}", then "${queued.line}", "${separating.line}" (bar ${separating.bar}, the song line "${badgeText}"), then "Saving to this phone"; the upload carried the identity and asked for M4A`,
+      `karaoke import: the row reads "${sending.line}" with "${whileSending.keepOpen}", then "${queued.line}", "${separating.line}" (bar ${separating.bar}, the song line "${badgeText}"), then "Saving to this phone"; the upload carried the identity and asked for MP3`,
     )
 
     // ── Yours, new, and it plays ──────────────────────────────
@@ -763,8 +814,101 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     const badgeGone = (await badge.count()) === 0
     if (!badgeGone)
       failures.push('the song line still says a song is separating')
+    const stemSizes = [media.vocal.length, media.instrumental.length]
+    const wholeDecodes = async () =>
+      (await page.evaluate(() => window.__probeDecodes ?? [])).filter((size) =>
+        stemSizes.includes(size),
+      )
+    const streamedWhole = await wholeDecodes()
+    if (streamedWhole.length > 0) {
+      failures.push(
+        `the imported song: its MP3 stems were decoded whole (${streamedWhole.join(', ')} bytes), not streamed`,
+      )
+    }
     steps.push(
-      `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; the line reads "17 of 20 songs left this month."; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the stems saved on the phone`,
+      `karaoke import: "${SONG}" arrives under ${mine.group}, marked new, the only new one; the line reads "17 of 20 songs left this month."; it cues and plays (${cue.elapsed}s to ${playing.elapsed}s) from the MP3 stems saved on the phone (${stemSizes.join(' and ')} bytes, 320 kb/s), streamed: neither decoded whole`,
+    )
+
+    // ── Again, on a phone without AudioDecoder ────────────────
+    // The fallback every WKWebView before iOS 26 takes: the room decodes a
+    // stem whole only while it is small, as these are. Another song first,
+    // so the stems load again; an example is too big, and is refused.
+    at = 'the imported song without AudioDecoder'
+    await page.evaluate(() => {
+      window.__probeAudioDecoder = window.AudioDecoder
+      delete window.AudioDecoder
+    })
+    const example = arrived.songs.find((song) => song.group !== mine.group)
+    if (example === undefined) {
+      throw new Error(`no example to switch to: ${JSON.stringify(arrived)}`)
+    }
+    await openLibrary()
+    await page
+      .locator(
+        `[data-testid="karaoke-library-row"][data-session="${example.id}"]`,
+      )
+      .tap()
+    await hidden('[data-testid="karaoke-library"]')
+    await visible(`${stage} [role="alert"]`, runTimeoutMs)
+    await openLibrary()
+    await page
+      .locator(`[data-testid="karaoke-library-row"][data-session="${mine.id}"]`)
+      .tap()
+    await hidden('[data-testid="karaoke-library"]')
+    // Not cued(): that one settles for any card, and the example's refusal
+    // is still up for a moment after the tap.
+    await page
+      .waitForFunction(
+        (song) => {
+          const stage = document.querySelector(
+            '[data-testid="karaoke-mobile-stage"]',
+          )
+          const title = stage
+            ?.querySelector('[data-testid="karaoke-songline"]')
+            ?.getAttribute('aria-label')
+          const play = stage?.querySelector('button[aria-label="Play"]')
+          return (
+            title === `${song}. Open the songs` &&
+            stage?.querySelector('[role="alert"]') === null &&
+            play !== null &&
+            play !== undefined &&
+            !play.disabled
+          )
+        },
+        SONG,
+        { timeout: runTimeoutMs },
+      )
+      .catch(async () => {
+        throw new Error(
+          `the imported song without AudioDecoder never cued: ${JSON.stringify(await page.evaluate(readStage))}`,
+        )
+      })
+    const whole = await page.evaluate(readStage)
+    await page.locator(`${stage} button[aria-label="Play"]`).tap()
+    await visible(`${stage} button[aria-label="Pause"]`)
+    await page.waitForTimeout(2600)
+    const decodedPlaying = await page.evaluate(readStage)
+    if (!(decodedPlaying.elapsed >= whole.elapsed + 1)) {
+      throw new Error(
+        `the imported song without AudioDecoder: the time did not move (${whole.elapsed}s, then ${decodedPlaying.elapsed}s)`,
+      )
+    }
+    await page.locator(`${stage} button[aria-label="Pause"]`).tap()
+    await visible(`${stage} button[aria-label="Play"]`)
+    const decodedWhole = await wholeDecodes()
+    if (
+      stemSizes.some((size) => !decodedWhole.includes(size)) ||
+      decodedWhole.length !== 2
+    ) {
+      failures.push(
+        `the imported song without AudioDecoder: whole decodes of ${JSON.stringify(decodedWhole)} bytes, not one of each stem`,
+      )
+    }
+    await page.evaluate(() => {
+      window.AudioDecoder = window.__probeAudioDecoder
+    })
+    steps.push(
+      `karaoke import: without AudioDecoder, "${example.title}" is refused and "${SONG}" plays again (${whole.elapsed}s to ${decodedPlaying.elapsed}s), each MP3 stem decoded whole once, from the phone`,
     )
 
     // ── The options and Settings count the songs ──────────────

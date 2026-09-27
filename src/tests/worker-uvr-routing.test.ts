@@ -362,8 +362,8 @@ describe('separation for the native app', () => {
               stems: [
                 {
                   stem: 'vocal',
-                  filename: 'Song_(Vocals).m4a',
-                  url: 'https://stems.example/runpod-dev/job-1/Song_(Vocals).m4a',
+                  filename: 'Song_(Vocals).mp3',
+                  url: 'https://stems.example/runpod-dev/job-1/Song_(Vocals).mp3',
                 },
               ],
             },
@@ -390,7 +390,7 @@ describe('separation for the native app', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
       'capacitor://localhost',
     )
-    expect(response.headers.get('Content-Type')).toBe('audio/mp4')
+    expect(response.headers.get('Content-Type')).toBe('audio/mpeg')
     expect(await response.text()).toBe('the stem')
   })
 

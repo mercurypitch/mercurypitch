@@ -143,9 +143,9 @@ export function fitStems(input: StemFitInput): StemFit {
 /**
  * The largest compressed stem a room that asked for the stream decodes whole
  * when this platform cannot stream at all. The room's stems are AAC at 128
- * kbps or more (the examples about 137, a separation 192), so 2 MiB is at
- * most about two minutes: some 48 MiB each at 48 kHz stereo, and two of them
- * well under what killed iOS. Every full song is bigger.
+ * kbps or more (the examples, about 137) or MP3 at 320 (a separation), so
+ * 2 MiB is at most about two minutes: some 48 MiB each at 48 kHz stereo, and
+ * two of them well under what killed iOS. Every full song is bigger.
  */
 export const HOSTED_WHOLE_DECODE_MAX_BYTES = 2 * 1024 * 1024
 

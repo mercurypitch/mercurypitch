@@ -153,13 +153,16 @@ export function uvrLengthFactor(durationSeconds?: number): number {
 // (see runpod/handler.py MODEL_REGISTRY), not a weights filename:
 // roformer = BS-RoFormer, the high-quality default.
 //
-// A native build asks for AAC in M4A (plan S8 §7): a phone fetches the two
-// stems over its own connection, keeps them, and decodes both to play, and a
-// WAV stem is about ten times the size. The handler still separates to a
-// lossless file and encodes only the stems it keeps. The web keeps WAV.
+// A native build asks for MP3 (owner, 28 Sep): a phone fetches the two stems
+// over its own connection, keeps them, and decodes both to play, and a WAV
+// stem is more than four times the size. The deployed handler writes MP3
+// already, at 320 kb/s (audio-separator's default), so no new RunPod image is
+// needed. Every path the room plays a stem through takes it as it takes AAC:
+// WebCodecs' AudioDecoder ("mp3") where the phone has one, and
+// decodeAudioData everywhere. The web keeps WAV.
 export const DEFAULT_PROCESS_REQUEST: ProcessRequest = {
   model: 'roformer',
-  output_format: IS_NATIVE_BUILD ? 'M4A' : 'WAV',
+  output_format: IS_NATIVE_BUILD ? 'MP3' : 'WAV',
   stems: ['vocal', 'instrumental'],
   cpu_profile: 'high',
 }

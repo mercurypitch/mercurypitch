@@ -42,7 +42,7 @@ describe('DEFAULT_PROCESS_REQUEST', () => {
   })
 
   it('has WAV output format', () => {
-    // The web's own; a native build asks for M4A (uvr-api-native.test.ts).
+    // The web's own; a native build asks for MP3 (uvr-api-native.test.ts).
     expect(DEFAULT_PROCESS_REQUEST.output_format).toBe('WAV')
   })
 

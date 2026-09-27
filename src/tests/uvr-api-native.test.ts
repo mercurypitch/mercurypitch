@@ -53,7 +53,7 @@ describe('a native build', () => {
             status: 'processing',
             message: 'Processing started',
             model: 'roformer',
-            output_format: 'M4A',
+            output_format: 'MP3',
           })
         }
         if (url.includes('/session/')) {
@@ -71,7 +71,7 @@ describe('a native build', () => {
       provider: 'runpod',
     })
     await getProcessStatus('rp_gpu_job-1')
-    await getOutputFile('rp_gpu_job-1', 'vocal.m4a')
+    await getOutputFile('rp_gpu_job-1', 'vocal.mp3')
     await deleteSession('rp_gpu_job-1')
     await healthCheck()
 
@@ -79,7 +79,7 @@ describe('a native build', () => {
       'https://dev.mercurypitch.com/api/uvr/models',
       'https://dev.mercurypitch.com/api/uvr/process',
       'https://dev.mercurypitch.com/api/uvr/status/rp_gpu_job-1',
-      'https://dev.mercurypitch.com/api/uvr/output/rp_gpu_job-1/vocal.m4a',
+      'https://dev.mercurypitch.com/api/uvr/output/rp_gpu_job-1/vocal.mp3',
       'https://dev.mercurypitch.com/api/uvr/session/rp_gpu_job-1',
       'https://dev.mercurypitch.com/api/uvr/health',
     ])
@@ -87,8 +87,11 @@ describe('a native build', () => {
 })
 
 describe('what a native build asks the server for', () => {
-  it('asks for AAC in M4A, which a phone keeps and decodes (plan S8 §7)', () => {
-    expect(DEFAULT_PROCESS_REQUEST.output_format).toBe('M4A')
+  it('asks for MP3, which the deployed handler already writes (owner, 28 Sep)', () => {
+    // Every path the room plays a stem through takes MP3 as it takes AAC:
+    // WebCodecs' AudioDecoder ("mp3") where the phone has one, and
+    // decodeAudioData everywhere. No new RunPod image is needed for it.
+    expect(DEFAULT_PROCESS_REQUEST.output_format).toBe('MP3')
   })
 })
 
@@ -179,7 +182,7 @@ describe('sending a song with its progress', () => {
       status: 'processing',
       message: 'Processing started',
       model: 'roformer',
-      output_format: 'M4A',
+      output_format: 'MP3',
     })
 
     await expect(pending).resolves.toMatchObject({ session_id: 'rp_gpu_job-2' })
@@ -194,7 +197,7 @@ describe('sending a song with its progress', () => {
       'X-UVR-Duration-Seconds': '200',
       'X-UVR-Model': 'roformer',
     })
-    expect((xhr.body as FormData).get('output_format')).toBe('M4A')
+    expect((xhr.body as FormData).get('output_format')).toBe('MP3')
   })
 
   it('keeps the status of a refusal, for the queue to act on', async () => {

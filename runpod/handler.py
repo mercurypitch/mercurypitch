@@ -12,7 +12,7 @@
 #     "audio_base64":  "<base64 audio>",                   # fallback (small files)
 #     "filename":      "song.mp3",
 #     "model":         "roformer",                         # optional registry name
-#     "output_format": "FLAC",                             # WAV | MP3 | FLAC | M4A
+#     "output_format": "FLAC",                             # WAV | MP3 | FLAC
 #     "stems":         ["vocal", "instrumental"],          # optional, advisory
 #     "source_stem":   "original",                         # or "instrumental"
 #     "drop_stems":    ["vocal"],                          # optional
@@ -332,19 +332,7 @@ S3_URL_TTL_SECS = int(os.getenv("S3_URL_TTL_SECS", str(24 * 3600)))
 S3_KEY_PREFIX = os.getenv("S3_KEY_PREFIX", "runpod").strip("/") or "runpod"
 
 _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]+$")
-_VALID_FORMATS = {"WAV", "MP3", "FLAC", "M4A"}
-# AAC in an MP4 container, for the native Karaoke room (plan S8 section 7): a
-# phone keeps and decodes both stems of every song, and the bundled examples
-# have proven this path at about this rate. 192 kb/s stereo is 4-6 MB for a
-# four-minute stem, against 40 MB and more as WAV.
-_M4A_BITRATE = "192k"
-# How each stem file is stored, by extension.
-_CONTENT_TYPES = {
-    ".wav": "audio/wav",
-    ".mp3": "audio/mpeg",
-    ".flac": "audio/flac",
-    ".m4a": "audio/mp4",
-}
+_VALID_FORMATS = {"WAV", "MP3", "FLAC"}
 # Substring fallback for stem classification (the parenthesised marker in
 # _STEM_MARKER_RE wins first). Order matters: "instrumental" must be tried
 # before "other" would ever match, and the list stays a superset of every
@@ -815,54 +803,13 @@ def _reconcile_residual(
     return True
 
 
-def _separation_format(output_format: str) -> str:
-    """The format the model writes for a requested output format.
-
-    M4A is encoded from a lossless FLAC after the model has run: residual
-    reconciliation reads and rewrites the stems as samples, which a lossy
-    file would round twice. Every other format is written as asked.
-    """
-    return "FLAC" if output_format == "M4A" else output_format
-
-
-def _encode_m4a(path: str) -> str:
-    """Encode one kept stem as AAC in MP4, beside it under the same name.
-
-    The index goes at the front (+faststart), so a player can start before
-    the whole file has arrived. The lossless stem is removed once the AAC
-    one exists; on a failed encode it stays and RuntimeError says why, which
-    fails the job, and a failed job is refunded.
-    """
-    import subprocess
-
-    target = os.path.splitext(path)[0] + ".m4a"
-    result = subprocess.run(
-        [
-            "ffmpeg", "-v", "error", "-y",
-            "-i", path,
-            "-vn",
-            "-c:a", "aac",
-            "-b:a", _M4A_BITRATE,
-            "-movflags", "+faststart",
-            target,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=300,
-    )
-    if result.returncode != 0 or not os.path.isfile(target):
-        if os.path.isfile(target):
-            os.remove(target)
-        raise RuntimeError(
-            f"Could not encode {os.path.basename(path)!r} as M4A: "
-            f"{result.stderr.strip()[-300:]}"
-        )
-    os.remove(path)
-    return target
-
-
 def _upload_stem(local_path: str, key: str) -> str:
-    ctype = _CONTENT_TYPES.get(os.path.splitext(local_path)[1].lower(), "audio/wav")
+    content_types = {
+        ".wav": "audio/wav",
+        ".mp3": "audio/mpeg",
+        ".flac": "audio/flac",
+    }
+    ctype = content_types.get(os.path.splitext(local_path)[1].lower(), "audio/wav")
     _s3().upload_file(
         local_path, S3_BUCKET, key, ExtraArgs={"ContentType": ctype}
     )
@@ -1006,9 +953,7 @@ def handler(job: dict) -> dict:
             }
 
         t0 = time.time()
-        separator = _get_separator(
-            model_spec, job_dir, _separation_format(output_format), quality
-        )
+        separator = _get_separator(model_spec, job_dir, output_format, quality)
         timings["load_model"] = round(time.time() - t0, 3)
 
         t0 = time.time()
@@ -1063,13 +1008,6 @@ def handler(job: dict) -> dict:
                     residual_stem,
                     [s for _, s in kept],
                 )
-
-        # The kept stems only, and only now: dropping and reconciliation have
-        # finished with the lossless files.
-        if output_format == "M4A":
-            t0 = time.time()
-            kept = [(_encode_m4a(p), s) for p, s in kept]
-            timings["encode"] = round(time.time() - t0, 3)
 
         t0 = time.time()
         stems: list[dict] = []

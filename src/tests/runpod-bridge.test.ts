@@ -507,8 +507,8 @@ describe('handleRunpodRequest — status when RunPod does not answer', () => {
       } as Response),
     )
     const bucket = mockBucket([
-      { key: 'runpod/job-7/Song_(Vocals)_roformer.m4a', size: 11 },
-      { key: 'runpod/job-7/Song_(Instrumental)_roformer.m4a', size: 22 },
+      { key: 'runpod/job-7/Song_(Vocals)_roformer.mp3', size: 11 },
+      { key: 'runpod/job-7/Song_(Instrumental)_roformer.mp3', size: 22 },
     ])
     const { request, url } = req('/api/uvr/status/rp_gpu_job-7')
     const res = await handleRunpodRequest(
@@ -622,10 +622,10 @@ describe('handleRunpodRequest — output', () => {
     const fetches = mockFetchOnce({
       status: 'COMPLETED',
       output: {
-        stems: [{ stem: 'vocal', filename: 'v.m4a', url: 'https://r2/v' }],
+        stems: [{ stem: 'vocal', filename: 'v.mp3', url: 'https://r2/v' }],
       },
     })
-    const key = 'runpod/job-1/Song_(Vocals)_roformer.m4a'
+    const key = 'runpod/job-1/Song_(Vocals)_roformer.mp3'
     const bucket = mockBucket([{ key, size: 10 }], {
       [key]: new ReadableStream(),
     })
@@ -641,7 +641,7 @@ describe('handleRunpodRequest — output', () => {
       { inlineStems: true },
     )
     expect(res?.status).toBe(200)
-    expect(res?.headers.get('content-type')).toBe('audio/mp4')
+    expect(res?.headers.get('content-type')).toBe('audio/mpeg')
     expect(bucket.get).toHaveBeenCalledWith(key)
     // Only the status was asked of RunPod; the stem URL was never fetched.
     expect(fetches).toHaveBeenCalledTimes(1)
