@@ -1476,22 +1476,64 @@ export async function deleteAccount(): Promise<void> {
   authChanged()
 }
 
-/** Current user + profile, or null when not authenticated / unreachable. */
-export async function fetchMe(): Promise<MeResponse | null> {
+/**
+ * What reading the account came back with, and WHY when it has no account.
+ *
+ * `signed-out` is a phone with no session, or one the server refused;
+ * `unreachable` is a network or a server that could not answer. The two
+ * read the same through `fetchMe()`, which is how a phone with no signal
+ * came to tell a signed-in singer they were signed out (REQ-NAM-049).
+ */
+export type MeRead =
+  | { status: 'ok'; me: MeResponse }
+  | { status: 'signed-out' }
+  | { status: 'unreachable' }
+
+/** The account's own record, or why there is none. See `MeRead`. */
+export async function readMe(): Promise<MeRead> {
   const token = getAuthToken()
-  if (token == null || token === '') return null
+  if (token == null || token === '') return { status: 'signed-out' }
+  let res: Response
   try {
-    const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) {
-      await handleAuthResponse(res)
-      return null
-    }
-    return (await res.json()) as MeResponse
   } catch {
-    // Backend unreachable (offline / CORS / down) — treat as unauthenticated
-    // so the account UI degrades gracefully instead of leaking a NetworkError.
-    return null
+    // Offline, CORS, a worker that is down, or no API configured at all.
+    return { status: 'unreachable' }
   }
+  if (!res.ok) {
+    await handleAuthResponse(res)
+    return res.status === 401 || res.status === 403
+      ? { status: 'signed-out' }
+      : { status: 'unreachable' }
+  }
+  try {
+    return { status: 'ok', me: (await res.json()) as MeResponse }
+  } catch {
+    return { status: 'unreachable' }
+  }
+}
+
+/** Current user + profile, or null when not authenticated / unreachable. */
+export async function fetchMe(): Promise<MeResponse | null> {
+  // Deliberately the old answer for the old callers: null either way, so the
+  // account UI degrades instead of leaking a NetworkError. A caller that must
+  // tell the two apart reads `readMe()`.
+  const read = await readMe()
+  return read.status === 'ok' ? read.me : null
+}
+
+/**
+ * The provider the held token names, when it names a real account, or null.
+ *
+ * Local work, so it answers with no network: a phone that cannot reach the
+ * server still knows it signed in with Apple. Reactive, like `accountHeld`.
+ */
+export function heldAccountProvider(): string | null {
+  authVersion()
+  const token = getAuthToken()
+  if (token == null || token === '') return null
+  const provider = decodeToken(token)?.provider ?? null
+  return isRegisteredProvider(provider) ? provider : null
 }
