@@ -97,6 +97,87 @@ export interface SubscriptionSongs {
   periods: PeriodSongs[]
 }
 
+/** The walk's state: every period so far, and what each separation took. */
+interface SongsWalk {
+  held: number
+  periods: PeriodSongs[]
+  /** Per separation job, the periods it spent and how many songs of each. */
+  takenBy: Map<string, Array<[PeriodSongs, number]>>
+}
+
+/** Spends `songs` from the periods, the oldest first; says what each gave. */
+function spendSongs(
+  walk: SongsWalk,
+  songs: number,
+): Array<[PeriodSongs, number]> {
+  const taken: Array<[PeriodSongs, number]> = []
+  let owed = songs
+  for (const period of walk.periods) {
+    if (owed <= 0) break
+    const take = Math.min(period.left, owed)
+    if (take > 0) {
+      period.left -= take
+      owed -= take
+      walk.held -= take
+      taken.push([period, take])
+    }
+  }
+  return taken
+}
+
+/** A store refund takes back what was left of its own period, and spends
+ *  the rest of what it takes like any other debit. */
+function refundPeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
+  const period = walk.periods.find((entry) => entry.key === row.jobRef)
+  const take = Math.min(period?.left ?? 0, songs)
+  if (period !== undefined) {
+    period.left -= take
+    walk.held -= take
+  }
+  spendSongs(walk, songs - take)
+}
+
+/** A separation's refund gives back exactly the songs it took. */
+function giveBack(walk: SongsWalk, row: LedgerRow, songs: number): void {
+  const job = row.jobRef ?? ''
+  let back = songs
+  for (const [period, spent] of walk.takenBy.get(job) ?? []) {
+    const give = Math.min(spent, back)
+    period.left += give
+    walk.held += give
+    back -= give
+  }
+  walk.takenBy.delete(job)
+}
+
+function isPeriodGrant(row: LedgerRow): boolean {
+  return (
+    row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_MOVED_IN
+  )
+}
+
+/** One ledger row's effect on the subscription songs. */
+function readRow(walk: SongsWalk, row: LedgerRow): void {
+  const delta = Number(row.delta)
+  if (isPeriodGrant(row) && delta >= 0) {
+    walk.periods.push({
+      key: row.idempotencyKey ?? '',
+      transaction: row.reason === SUBSCRIPTION_GRANT ? row.jobRef : null,
+      left: delta,
+    })
+    walk.held += delta
+  } else if (row.reason === SUBSCRIPTION_REFUND && delta < 0) {
+    refundPeriod(walk, row, -delta)
+  } else if (row.reason === 'uvr-job' && delta < 0) {
+    const taken = spendSongs(walk, -delta)
+    if (row.jobRef !== null) walk.takenBy.set(row.jobRef, taken)
+  } else if (row.reason === 'uvr-refund' && delta > 0) {
+    giveBack(walk, row, delta)
+  } else if (delta < 0) {
+    spendSongs(walk, -delta)
+  }
+}
+
 /** The subscription songs a ledger holds, walking it in the order it was
  *  written. A separation spends the subscription's songs first, the oldest
  *  period first, and its refund gives back exactly the songs it took. A
@@ -107,62 +188,9 @@ export interface SubscriptionSongs {
 export function subscriptionSongs(
   rows: readonly LedgerRow[],
 ): SubscriptionSongs {
-  const periods: PeriodSongs[] = []
-  const takenBy = new Map<string, Array<[PeriodSongs, number]>>()
-  let held = 0
-
-  const spend = (songs: number): Array<[PeriodSongs, number]> => {
-    const taken: Array<[PeriodSongs, number]> = []
-    let owed = songs
-    for (const period of periods) {
-      if (owed <= 0) break
-      const take = Math.min(period.left, owed)
-      if (take > 0) {
-        period.left -= take
-        owed -= take
-        held -= take
-        taken.push([period, take])
-      }
-    }
-    return taken
-  }
-
-  for (const row of rows) {
-    const delta = Number(row.delta)
-    const grant =
-      row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_MOVED_IN
-    if (grant && delta >= 0) {
-      periods.push({
-        key: row.idempotencyKey ?? '',
-        transaction: row.reason === SUBSCRIPTION_GRANT ? row.jobRef : null,
-        left: delta,
-      })
-      held += delta
-    } else if (row.reason === SUBSCRIPTION_REFUND && delta < 0) {
-      const period = periods.find((entry) => entry.key === row.jobRef)
-      const take = Math.min(period?.left ?? 0, -delta)
-      if (period !== undefined) {
-        period.left -= take
-        held -= take
-      }
-      spend(-delta - take)
-    } else if (row.reason === 'uvr-job' && delta < 0) {
-      const taken = spend(-delta)
-      if (row.jobRef !== null) takenBy.set(row.jobRef, taken)
-    } else if (row.reason === 'uvr-refund' && delta > 0) {
-      let back = delta
-      for (const [period, songs] of takenBy.get(row.jobRef ?? '') ?? []) {
-        const give = Math.min(songs, back)
-        period.left += give
-        held += give
-        back -= give
-      }
-      takenBy.delete(row.jobRef ?? '')
-    } else if (delta < 0) {
-      spend(-delta)
-    }
-  }
-  return { held, periods }
+  const walk: SongsWalk = { held: 0, periods: [], takenBy: new Map() }
+  for (const row of rows) readRow(walk, row)
+  return { held: walk.held, periods: walk.periods }
 }
 
 export interface SongsSummary {
