@@ -15,7 +15,7 @@ const host = createMercuryGlassHost(() => {
   window.location.href = '/'
 })
 
-function showCampaignLoadFailure(): void {
+const showCampaignLoadFailure = (): void => {
   if (document.getElementById('glass-campaign-load-error') !== null) return
   const notice = document.createElement('p')
   notice.id = 'glass-campaign-load-error'
