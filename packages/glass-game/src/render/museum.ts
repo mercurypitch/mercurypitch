@@ -13,6 +13,7 @@ import { createCloudwayPlatformRenderer } from './cloudway-platforms'
 import { createExhibitApproachPads } from './exhibit-approach-pads'
 import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
+import { createLivingCrystalPlatformRenderer } from './living-crystal-platform'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
 import { createMelodyStationMarkers } from './melody-station-markers'
@@ -314,6 +315,11 @@ export function createMuseum(
     materials,
     materialLibrary,
   )
+  const livingCrystalPlatforms = createLivingCrystalPlatformRenderer(
+    level,
+    root,
+    floors,
+  )
   const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
@@ -418,6 +424,10 @@ export function createMuseum(
         scene,
         bundle,
       )
+      const livingCrystalPlatformIds = livingCrystalPlatforms.install(
+        scene,
+        bundle,
+      )
       for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
@@ -443,7 +453,8 @@ export function createMuseum(
         if (
           cloudwayPlatformIds.has(platform.id) ||
           cloudwayLaboratoryPlatformIds.has(platform.id) ||
-          pearlQuarterTurnPlatformIds.has(platform.id)
+          pearlQuarterTurnPlatformIds.has(platform.id) ||
+          livingCrystalPlatformIds.has(platform.id)
         )
           continue
         const recipe = getPlatformRenderRecipe(
@@ -574,6 +585,7 @@ export function createMuseum(
       cloudwayPlatforms.update(snapshot)
       cloudwayLaboratoryPlatforms.update(snapshot)
       pearlQuarterTurnPlatforms.update(snapshot)
+      livingCrystalPlatforms.update(snapshot)
       pads.update(snapshot)
       return shadowVisibilityChanged
     },
@@ -581,7 +593,13 @@ export function createMuseum(
       const cloudwayChanged = cloudwayPlatforms.cullForView(camera)
       const laboratoryChanged = cloudwayLaboratoryPlatforms.cullForView(camera)
       const quarterTurnChanged = pearlQuarterTurnPlatforms.cullForView(camera)
-      return cloudwayChanged || laboratoryChanged || quarterTurnChanged
+      const livingCrystalChanged = livingCrystalPlatforms.cullForView(camera)
+      return (
+        cloudwayChanged ||
+        laboratoryChanged ||
+        quarterTurnChanged ||
+        livingCrystalChanged
+      )
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {
@@ -635,6 +653,7 @@ export function createMuseum(
     },
     setVisibleRooms,
     dispose() {
+      livingCrystalPlatforms.dispose()
       pearlQuarterTurnPlatforms.dispose()
       cloudwayLaboratoryPlatforms.dispose()
       cloudwayPlatforms.dispose()

@@ -386,6 +386,7 @@ export interface LevelPresentationDefinition {
   melodyMarkers?: readonly MelodyStationMarkerDefinition[]
   floorArt?: readonly PlatformFloorArtDefinition[]
   crystalInteriors?: readonly CrystalInteriorPresentationDefinition[]
+  livingCrystalInteriors?: readonly LivingCrystalInteriorPresentationDefinition[]
   assetRecipeIds: readonly string[]
 }
 
@@ -393,6 +394,16 @@ export interface LevelPresentationDefinition {
 export interface CrystalInteriorPresentationDefinition {
   platformId: string
   preset: 'resonance-veins' | 'frost-roots' | 'aurora-heart'
+  seed: number
+  intensity?: number
+  speed?: number
+  palette?: { primary: number; secondary: number; accent: number }
+}
+
+/** A thick crystal donor with one contained, opaque animated branch sculpture. */
+export interface LivingCrystalInteriorPresentationDefinition {
+  platformId: string
+  variant: 'pearl-roots' | 'living-amber'
   seed: number
   intensity?: number
   speed?: number

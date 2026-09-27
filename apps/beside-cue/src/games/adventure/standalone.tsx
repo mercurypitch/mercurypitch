@@ -27,6 +27,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'cloudway-current' &&
     layout !== 'thawing-song' &&
     layout !== 'crystal-interiors' &&
+    layout !== 'living-crystal' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
     layout !== 'quarter-turn-art' &&
@@ -44,6 +45,7 @@ async function selectedDevelopmentLevel() {
     CLOUDWAY_CURRENT_TRIAL,
     CLOUDWAY_THAWING_SONG,
     crystalInteriorStudy,
+    livingCrystalStudy,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_QUARTER_TURN_ART_STUDY,
@@ -67,6 +69,12 @@ async function selectedDevelopmentLevel() {
       preset === 'frost-roots' || preset === 'aurora-heart'
         ? preset
         : 'resonance-veins',
+    )
+  }
+  if (layout === 'living-crystal') {
+    const preset = new URLSearchParams(window.location.search).get('interior')
+    return livingCrystalStudy(
+      preset === 'living-amber' ? 'living-amber' : 'pearl-roots',
     )
   }
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY

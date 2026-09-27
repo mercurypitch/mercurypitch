@@ -3,7 +3,8 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { GlassMercNarration, MercNarrationCue, MercNarrationPreferences, } from '../host'
 import { reportAudioAssetFailure } from './audio-asset-failure'
-import { createSpeechEnvelope, speechEnvelopeAt, type SpeechEnvelope, } from './speech-envelope'
+import type { SpeechEnvelope } from './speech-envelope'
+import { createSpeechEnvelope, speechEnvelopeAt } from './speech-envelope'
 
 export interface MercNarrationOptions {
   assetUrl(id: string): string

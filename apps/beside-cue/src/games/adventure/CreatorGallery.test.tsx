@@ -24,6 +24,8 @@ import { CreatorGallery } from './CreatorGallery'
 describe('creator art studies', () => {
   it.each([
     ['The pearl alcove', 'cloudway-thawing-song-alcove'],
+    ['The living pearl', 'living-crystal-pearl-roots-art-study-v2'],
+    ['The living amber', 'living-crystal-living-amber-art-study-v2'],
     ['Resonance veins', 'cloudway-crystal-interior-resonance-veins'],
     ['Frost roots', 'cloudway-crystal-interior-frost-roots'],
     ['Aurora heart', 'cloudway-crystal-interior-aurora-heart'],

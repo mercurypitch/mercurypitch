@@ -94,6 +94,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-desktop-v1.glb',
   'cloudway-lab-pearl-quarter-turn-a-mobile-v1':
     'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb',
+  'living-crystal-platform-v2':
+    'crystal-interiors-v2/living-crystal-platform-v2.glb',
   ...Object.fromEntries(
     MERC_SONGBOOK_ASSETS.map((asset) => [asset.id, asset.path]),
   ),
