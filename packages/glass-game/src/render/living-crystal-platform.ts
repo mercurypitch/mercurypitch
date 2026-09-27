@@ -256,8 +256,10 @@ export function createLivingCrystalPlatformRenderer(
       return {
         installed: installed?.length ?? 0,
         visible,
-        drawCalls: visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.meshDrawsPerPass,
-        renderedTriangles: visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles,
+        // Primitive inventory; transmission can add renderer passes.
+        visibleMeshPrimitives:
+          visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.meshDrawsPerPass,
+        visibleGeometryTriangles: visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles,
         sharedGeometryBytes: geometryBytes(geometries),
         textures: 0,
         interiors: installed?.map((item) => item.interior.snapshot()) ?? [],
