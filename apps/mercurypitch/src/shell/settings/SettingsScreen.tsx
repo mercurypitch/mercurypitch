@@ -16,7 +16,7 @@
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, InfoIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
+import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
@@ -148,6 +148,24 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           </SettingsGroup>
         </div>
         <div class="mp-set__col">
+          {/* The rooms keep their own options behind their own gear; this
+              only says where. Karaoke's place is held for the phase that
+              brings the room. */}
+          <SettingsGroup title="Rooms">
+            <SettingsRow
+              id="rooms-sing"
+              icon={<MicIcon />}
+              label="Sing"
+              sub="Its options are behind the room's gear"
+            />
+            <SettingsRow
+              id="rooms-karaoke"
+              icon={<KaraokeIcon />}
+              label="Karaoke"
+              sub="Its settings arrive with the room"
+              accessory={<span class="mp-set-chip">Later</span>}
+            />
+          </SettingsGroup>
           <SettingsGroup title="About">
             <SettingsRow
               id="about"

@@ -214,11 +214,25 @@ describe('Settings', () => {
 
     expect(
       order.filter((id) =>
-        ['microphone', 'storage', 'this-phone', 'appearance', 'about'].includes(
-          id ?? '',
-        ),
+        [
+          'microphone',
+          'storage',
+          'this-phone',
+          'appearance',
+          'rooms-sing',
+          'rooms-karaoke',
+          'about',
+        ].includes(id ?? ''),
       ),
-    ).toEqual(['microphone', 'storage', 'this-phone', 'appearance', 'about'])
+    ).toEqual([
+      'microphone',
+      'storage',
+      'this-phone',
+      'appearance',
+      'rooms-sing',
+      'rooms-karaoke',
+      'about',
+    ])
   })
 
   it('names the phone on its row and the version on About, and pushes each', () => {
@@ -238,6 +252,22 @@ describe('Settings', () => {
     expect(onPush).toHaveBeenCalledWith('this-phone')
     expect(onPush).toHaveBeenCalledWith('about')
     phone.facts = null
+  })
+
+  it("points to Sing's own options and holds Karaoke's place, pressing nothing (Rooms)", () => {
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+    const sing = row('rooms-sing')
+    const karaoke = row('rooms-karaoke')
+
+    expect(sing?.textContent).toContain(
+      "Its options are behind the room's gear",
+    )
+    expect(karaoke?.textContent).toContain('Its settings arrive with the room')
+    expect(karaoke?.textContent).toContain('Later')
+    expect(sing?.tagName).not.toBe('BUTTON')
+    expect(karaoke?.tagName).not.toBe('BUTTON')
+    expect(sing?.closest('section')?.getAttribute('aria-label')).toBe('Rooms')
   })
 
   it('pushes Account from its row', () => {
