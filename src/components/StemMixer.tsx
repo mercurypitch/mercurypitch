@@ -877,6 +877,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     if (id !== null) props.onPickSession?.(id)
   }
 
+  // The same retry the desktop card has carried all along. On a phone the
+  // stage IS the mixer, so without it a failed load had no door but the
+  // browser's reload button. A room's song refused for good (a phone that
+  // cannot stream it) has none: loading it again lands on the same refusal,
+  // and the library is the way on.
+  const retryLoad = (): (() => void) | undefined =>
+    hosted !== undefined && !audio.loadErrorRetryable()
+      ? undefined
+      : () => {
+          void audio.loadStems()
+        }
+
   // End-of-song: a running playlist advances through its own flow (scoring,
   // summary); free-library listening auto-advances only when autoplay is on.
   const handleSongEnded = (): void => {
@@ -2332,18 +2344,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             loadPhase={audio.loadPhase}
             loadedBytes={audio.loadedBytes}
             totalBytes={audio.totalBytes}
-            // The same retry the desktop card has carried all along. On a
-            // phone this stage IS the mixer, so without it a failed load had
-            // no door but the browser's reload button. A room's song refused
-            // for good (a phone that cannot stream it) has none: loading it
-            // again lands on the same refusal, and the library is the way on.
-            onRetryLoad={
-              hosted !== undefined && !audio.loadErrorRetryable()
-                ? undefined
-                : () => {
-                    void audio.loadStems()
-                  }
-            }
+            // A retry, or none for a song refused for good (retryLoad).
+            onRetryLoad={retryLoad()}
             elapsed={audio.elapsed}
             lyricsElapsed={audio.audibleElapsed}
             duration={audio.duration}
