@@ -27,6 +27,11 @@
 // On its side the room is two columns (D3 A); probe-landscape.mjs measures
 // that with the phones' own insets, and reads the studio sideways there too.
 //
+// Every picture in the room draws something. A path the bundle does not
+// carry is answered with the app's own index.html, so the request succeeds,
+// the <img> finishes loading and has no pixels: a broken-image glyph on the
+// stage, and no error anywhere (the sing pill's microphone, review V1).
+//
 // Wired into probe-bundle.mjs, which owns the browser and passes its own
 // helpers in, as it does for the landscape walk.
 
@@ -81,6 +86,23 @@ export const readSideways = (scope) => {
 }
 
 /** In the page: the zen stage as a singer reads it. */
+/**
+ * In the page: the pictures in `scope` that finished loading and drew
+ * nothing (`naturalWidth` 0), and how many are still loading.
+ */
+export const readBrokenImages = (scope) => {
+  const root = document.querySelector(scope)
+  if (root === null) return { images: 0, loading: 0, broken: [`no ${scope}`] }
+  const images = [...root.querySelectorAll('img')]
+  return {
+    images: images.length,
+    loading: images.filter((img) => !img.complete).length,
+    broken: images
+      .filter((img) => img.complete && img.naturalWidth === 0)
+      .map((img) => img.getAttribute('src') ?? '(no src)'),
+  }
+}
+
 export const readStage = () => {
   const stage = document.querySelector('[data-testid="karaoke-mobile-stage"]')
   if (stage === null) return null
@@ -206,6 +228,29 @@ export async function walkKaraoke(browser, args, frame, kit) {
       }
       return `${name} ${read.elements}`
     }
+    const pictures = async (name) => {
+      await page
+        .waitForFunction(
+          (scope) =>
+            [
+              ...(document.querySelector(scope)?.querySelectorAll('img') ?? []),
+            ].every((img) => img.complete),
+          '[data-testid="karaoke-room"]',
+          { timeout: stepTimeoutMs },
+        )
+        .catch(() => undefined)
+      const seen = await page.evaluate(
+        readBrokenImages,
+        '[data-testid="karaoke-room"]',
+      )
+      for (const src of seen.broken) {
+        failures.push(`${name}: the picture ${src} draws nothing`)
+      }
+      if (seen.loading > 0) {
+        failures.push(`${name}: ${seen.loading} picture(s) never finished`)
+      }
+      return seen.images
+    }
     const read = []
     await visible('[data-testid="rooms-alley"]')
     await settle(600)
@@ -254,8 +299,9 @@ export async function walkKaraoke(browser, args, frame, kit) {
     await settle(300)
     await shoot(page, ctx, 'karaoke-room')
     read.push(await sideways('the room', '[data-testid="karaoke-room"]'))
+    const drawn = await pictures('arrival')
     steps.push(
-      `karaoke arrival: "${first.title}" cued and paused at ${first.elapsed}s, Play ready, the rail ${first.rail ?? 'off'}`,
+      `karaoke arrival: "${first.title}" cued and paused at ${first.elapsed}s, Play ready, the rail ${first.rail ?? 'off'}; ${drawn} picture(s) in the room, every one drawn`,
     )
 
     // ── Play and Pause (D2 A) ─────────────────────────────────
@@ -279,6 +325,7 @@ export async function walkKaraoke(browser, args, frame, kit) {
       )
     }
     await shoot(page, ctx, 'karaoke-playing')
+    await pictures('playing')
     at = 'pause'
     await page
       .locator(

@@ -240,6 +240,17 @@ export const NATIVE_ASSETS = [
       'The six example stems the manifest names, played from the bundle by the Karaoke room (src/features/karaoke-room) through the streamed mixer.',
   },
 
+  // ── The Karaoke stage's sing pill ────────────────────────────
+  //
+  // The zen stage's guide-vocal control is a lit stage microphone, drawn as a
+  // picture in two states and asked for by absolute path. Without these the
+  // pill drew a broken-image glyph in every frame (review V1).
+  {
+    glob: 'mic/guide-vocal-*.webp',
+    reason:
+      "The sing pill's microphone, on and muted: GuideVocalMic (src/components/mobile/GuideVocalMic.tsx) draws it on the zen stage the Karaoke room hosts (src/components/KaraokeMobileStage.tsx).",
+  },
+
   // ── The Karaoke room's pictures ──────────────────────────────
   //
   // The Broadway Theater is the room's own picture in the app (plan S8, D7

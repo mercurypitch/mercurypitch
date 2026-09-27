@@ -248,6 +248,39 @@ describe('the pictures an open door ends on', () => {
   )
 })
 
+describe("the pictures the Karaoke room's stage draws", () => {
+  // The stage's sing pill is a picture, not an icon: GuideVocalMic asks for
+  // /mic/guide-vocal-on.webp and -off.webp by absolute path. The bundle did
+  // not carry them, and a path the bundle lacks is answered with the app's
+  // index.html, so the pill drew a broken-image glyph in every frame of both
+  // builds and nothing failed (review V1). The probe now fails on it; this
+  // is the same check before a build.
+  const shipped = new Set([...publicFiles, ...nativeFiles])
+  const source = readFileSync(
+    fileURLToPath(
+      new URL(
+        '../../../src/components/mobile/GuideVocalMic.tsx',
+        import.meta.url,
+      ),
+    ),
+    'utf8',
+  )
+  const asked = [...source.matchAll(/'\/([^']+\.webp)'/gu)].map(
+    (match) => match[1],
+  )
+
+  it('names both states of the pill', () => {
+    expect(asked.sort()).toEqual([
+      'mic/guide-vocal-off.webp',
+      'mic/guide-vocal-on.webp',
+    ])
+  })
+
+  it('ships every picture the pill asks for', () => {
+    expect(asked.filter((file) => !shipped.has(file))).toEqual([])
+  })
+})
+
 describe('the native build, when a shipped file changes', () => {
   // The manifest's header asks for every file it ships to be in the mobile
   // workflow's `paths:` filter and in its `changed-paths-regex`, or a change
