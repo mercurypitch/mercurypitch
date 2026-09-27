@@ -18,8 +18,10 @@ import { Show } from 'solid-js'
 import { PushedScreen } from './PushedScreen'
 import type { PushedScreen as PushedScreenId } from './run-shell-store'
 import { popScreen, pushed, pushScreen } from './run-shell-store'
+import { AccountNameScreen } from './settings/AccountNameScreen'
 import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
+import { DevicesScreen } from './settings/DevicesScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
 
 export interface ShellScreensProps {
@@ -34,6 +36,8 @@ export interface ShellScreensProps {
 const TITLES: Record<PushedScreenId, string> = {
   settings: 'Settings',
   account: 'Account',
+  'account-name': 'Name',
+  devices: 'Devices',
   appearance: 'Appearance',
   developer: 'Developer',
 }
@@ -45,6 +49,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <SettingsScreen onPush={pushScreen} />
       case 'account':
         return <AccountScreen />
+      case 'account-name':
+        return <AccountNameScreen />
+      case 'devices':
+        return <DevicesScreen />
       case 'appearance':
         return <AppearanceScreen />
       case 'developer': {

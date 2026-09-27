@@ -56,7 +56,13 @@ export type RailVariant = 'r1' | 'r2'
  * rows push screens of their own (S6, decision D1 A), and each of those can
  * push again. Developer stands on its own, reached from More.
  */
-export type PushedScreen = 'settings' | 'account' | 'appearance' | 'developer'
+export type PushedScreen =
+  | 'settings'
+  | 'account'
+  | 'account-name'
+  | 'devices'
+  | 'appearance'
+  | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000

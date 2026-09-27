@@ -52,3 +52,36 @@ export const ACCOUNT_OFFLINE = {
   title: 'Could not reach your account just now.',
   body: 'You are still signed in on this phone; your practice here is safe.',
 } as const
+
+/**
+ * The card after this phone signed out of an account (REQ-NAM-054): the
+ * account's history is not shown, not gone, and the phone's practice stays.
+ */
+export const ACCOUNT_SIGNED_OUT_HERE = {
+  title: 'Signed out',
+  body: "Your account's history shows again when you sign in. Everything you practice is kept on this phone.",
+} as const
+
+/** The one question before signing out (4f, REQ-NAM-054). */
+export const SIGN_OUT_QUESTION = {
+  title: 'Sign out?',
+  text: "Your practice stays on this phone. Sign in again any time to see your account's history.",
+  confirm: 'Sign out',
+} as const
+
+/**
+ * Under a private Apple relay address. The web's words, verbatim: it is the
+ * only way into the account where there is no Apple sheet.
+ */
+export const RELAY_NOTE =
+  'Your private Apple address. Keep a note of it: it signs you in with an email code on the web or Android.'
+
+/**
+ * Two-step sign-in as a state (S6 decision 04 A): it is set up on the web,
+ * and a sign-in on this phone asks for the code whenever it is on.
+ */
+export const TWO_STEP = {
+  label: 'Two-step sign-in',
+  offSub: 'Turn it on from the web. This phone asks for the code.',
+  onSub: 'Change it from the web. This phone asks for the code.',
+} as const

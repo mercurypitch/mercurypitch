@@ -310,3 +310,35 @@ export const MailIcon: Component<ShellIconProps> = (props) => (
     <path d="M4 7l8 6 8-6" />
   </svg>
 )
+
+/** The account's name. */
+export const PersonIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="8.5" r="3.8" />
+    <path d="M4.5 20c.9-3.7 3.9-5.8 7.5-5.8s6.6 2.1 7.5 5.8" />
+  </svg>
+)
+
+/** Two-step sign-in: the shield with its check. */
+export const ShieldIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5l7 2.6v5.2c0 4.4-2.9 7.8-7 9.2-4.1-1.4-7-4.8-7-9.2V6.1z" />
+    <path d="M9 12.2l2.2 2.2 3.8-4" />
+  </svg>
+)
+
+/** Copy: two sheets, one over the other. */
+export const CopyIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+  </svg>
+)
+
+/** Sign out: the door, and the arrow leaving through it. */
+export const SignOutIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10" />
+    <path d="M14.5 8l4 4-4 4M18.5 12H9.5" />
+  </svg>
+)

@@ -93,6 +93,7 @@ describe('the account state', () => {
       name: 'Alex',
       email: 'singer@example.test',
       provider: 'apple',
+      newsletter: false,
     })
     expect(accountDisplayName()).toBe('Alex')
     expect(accountProviderLine()).toBe('Signed in with Apple')
@@ -169,5 +170,44 @@ describe('the account state', () => {
     resetAccountState({ keepStored: true })
 
     expect(accountCard()).toBeNull()
+  })
+
+  it('keeps the product-news answer on the card', async () => {
+    setAuthToken(token('user-1', 'google'))
+    const answer = me('user-1', 'Alex', 'singer@example.test', 'google')
+    readMeMock.mockResolvedValue({
+      ...answer,
+      me: {
+        ...answer.me,
+        user: { ...answer.me.user, newsletterOptIn: true },
+      },
+    })
+
+    await refreshAccount()
+
+    expect(accountCard()?.newsletter).toBe(true)
+  })
+
+  it('reads a card this phone kept before it carried that answer as off', () => {
+    setAuthToken(token('user-1', 'google'))
+    localStorage.setItem(
+      'mp:account-card',
+      JSON.stringify({
+        id: 'user-1',
+        name: 'Alex',
+        email: 'singer@example.test',
+        provider: 'google',
+      }),
+    )
+
+    resetAccountState({ keepStored: true })
+
+    expect(accountCard()).toEqual({
+      id: 'user-1',
+      name: 'Alex',
+      email: 'singer@example.test',
+      provider: 'google',
+      newsletter: false,
+    })
   })
 })

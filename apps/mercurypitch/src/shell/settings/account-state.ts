@@ -35,27 +35,42 @@ export interface AccountCard {
   email: string
   /** The account's own provider: 'apple', 'google', 'password'. */
   provider: string
+  /** Asked for product news by email. */
+  newsletter: boolean
 }
 
 const STORAGE_KEY = 'mp:account-card'
 
-function isCard(value: unknown): value is AccountCard {
-  if (typeof value !== 'object' || value === null) return false
+/**
+ * A kept card, whatever version of this module kept it. A card from before
+ * the product-news answer was on it reads as off: the next read of the
+ * account puts the real answer back.
+ */
+function cardOf(value: unknown): AccountCard | null {
+  if (typeof value !== 'object' || value === null) return null
   const card = value as Record<string, unknown>
-  return (
-    typeof card.id === 'string' &&
-    typeof card.name === 'string' &&
-    typeof card.email === 'string' &&
-    typeof card.provider === 'string'
-  )
+  if (
+    typeof card.id !== 'string' ||
+    typeof card.name !== 'string' ||
+    typeof card.email !== 'string' ||
+    typeof card.provider !== 'string'
+  ) {
+    return null
+  }
+  return {
+    id: card.id,
+    name: card.name,
+    email: card.email,
+    provider: card.provider,
+    newsletter: card.newsletter === true,
+  }
 }
 
 function readStored(): AccountCard | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw === null) return null
-    const parsed: unknown = JSON.parse(raw)
-    return isCard(parsed) ? parsed : null
+    return cardOf(JSON.parse(raw))
   } catch {
     return null
   }
@@ -121,6 +136,7 @@ function cardFrom(me: MeResponse): AccountCard {
     name: String(me.profile?.displayName ?? '').trim(),
     email: me.user.email ?? '',
     provider: me.user.authProvider,
+    newsletter: me.user.newsletterOptIn === true,
   }
 }
 
