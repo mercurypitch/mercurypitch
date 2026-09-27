@@ -68,6 +68,10 @@ export const SUBSCRIPTION_GRANT = 'subscription'
  *  they stay subscription songs on the account (revenuecat.ts, TRANSFER). */
 export const SUBSCRIPTION_MOVED_IN = 'subscription-transfer-in'
 
+/** The ledger reason of the songs a refund takes back: what was left of the
+ *  refunded period's grant, which the row names by its key (revenuecat.ts). */
+export const SUBSCRIPTION_REFUND = 'subscription-refund'
+
 /** A creditLedger row, as the songs walk reads it. */
 export interface LedgerRow {
   delta: number
@@ -95,8 +99,9 @@ export interface SubscriptionSongs {
 
 /** The subscription songs a ledger holds, walking it in the order it was
  *  written. A separation spends the subscription's songs first, the oldest
- *  period first, and its refund gives back exactly the songs it took. Any
- *  other debit spends them first too, so a move away takes them all. Other
+ *  period first, and its refund gives back exactly the songs it took. A
+ *  store refund takes back what was left of its own period. Any other debit
+ *  spends them first too, so a move away takes them all. Other
  *  credits never become subscription songs, so the songs held are never
  *  more than the balance. */
 export function subscriptionSongs(
@@ -133,6 +138,14 @@ export function subscriptionSongs(
         left: delta,
       })
       held += delta
+    } else if (row.reason === SUBSCRIPTION_REFUND && delta < 0) {
+      const period = periods.find((entry) => entry.key === row.jobRef)
+      const take = Math.min(period?.left ?? 0, -delta)
+      if (period !== undefined) {
+        period.left -= take
+        held -= take
+      }
+      spend(-delta - take)
     } else if (row.reason === 'uvr-job' && delta < 0) {
       const taken = spend(-delta)
       if (row.jobRef !== null) takenBy.set(row.jobRef, taken)

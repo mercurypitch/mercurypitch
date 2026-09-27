@@ -154,6 +154,28 @@ describe('the subscription songs a ledger holds', () => {
     expect(songs.held).toBe(50)
   })
 
+  it('takes a refunded period’s songs back from that period', () => {
+    const refunded: LedgerRow = {
+      delta: 20,
+      reason: 'subscription',
+      jobRef: 'txn-2',
+      idempotencyKey: 'rc:renewal',
+    }
+    const songs = subscriptionSongs([
+      grant(20, 'txn-1'),
+      row(-15, 'uvr-job', 'job-f'),
+      refunded,
+      {
+        delta: -20,
+        reason: 'subscription-refund',
+        jobRef: 'rc:renewal',
+        idempotencyKey: 'rc:refund:clawback',
+      },
+    ])
+    expect(songs.held).toBe(5)
+    expect(songs.periods.map((period) => period.left)).toEqual([5, 0])
+  })
+
   it('never holds more songs than the balance', () => {
     const songs = subscriptionSongs([grant(20), row(-30, 'adjustment')])
     expect(songs.held).toBe(0)

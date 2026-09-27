@@ -18,6 +18,11 @@
 //   EXPIRATION                 the entitlement ends; the songs left stay.
 //                              An expiration before the stored end is an
 //                              older period's, late, and changes nothing
+//   CANCELLATION, when its     a refund, which RevenueCat reports for the
+//   cancel_reason is           latest period only: the entitlement ends now,
+//   CUSTOMER_SUPPORT           and what is left of that period's songs is
+//                              taken back. Any other cancellation only stops
+//                              the renewal; the period runs to its end
 //   TRANSFER                   the entitlement moves to the account it names,
 //                              and so do the songs of an anonymous identity:
 //                              a singer who subscribed before signing in to an
@@ -40,7 +45,7 @@
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
 import type { LedgerRow } from './songs-allowance'
-import { periodGrant, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, subscriptionSongs, } from './songs-allowance'
+import { periodGrant, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, subscriptionSongs, } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -51,7 +56,9 @@ interface RevenueCatEvent {
   app_user_id?: unknown
   original_app_user_id?: unknown
   aliases?: unknown
+  cancel_reason?: unknown
   product_id?: unknown
+  transaction_id?: unknown
   entitlement_ids?: unknown
   environment?: unknown
   expiration_at_ms?: unknown
@@ -63,6 +70,7 @@ interface Outcome {
   ignored?: string
   granted?: number
   moved?: number
+  clawedBack?: number
 }
 
 const RC_ANONYMOUS_PREFIX = '$RCAnonymousID:'
@@ -197,19 +205,19 @@ async function readLedger(env: Env, userId: string): Promise<Ledger> {
   return { rows: results, version: `${results.length}:${last}:${balance}` }
 }
 
-/** Write the row `key` names, with the delta `deltaFor` computes from the
- *  ledger as read, only if the ledger is still what was read; else read it
- *  again. Returns the row's delta, also when an earlier delivery wrote it. */
+/** Write the row `key` names, as `rowFor` computes it from the ledger as
+ *  read, only if the ledger is still what was read; else read it again.
+ *  Returns the row's delta, also when an earlier delivery wrote it. */
 async function writeOnLedger(
   env: Env,
   userId: string,
   key: string,
   reason: string,
-  jobRef: string | null,
-  deltaFor: (ledger: Ledger) => number,
+  rowFor: (ledger: Ledger) => { delta: number; jobRef: string | null },
 ): Promise<number> {
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readLedger(env, userId)
+    const { delta, jobRef } = rowFor(ledger)
     await env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
        SELECT ?, ?, ?, ?, ?, ?, ?
@@ -219,7 +227,7 @@ async function writeOnLedger(
         crypto.randomUUID(),
         new Date().toISOString(),
         userId,
-        deltaFor(ledger),
+        delta,
         reason,
         jobRef,
         key,
@@ -238,24 +246,53 @@ async function writeOnLedger(
 }
 
 /** One period's songs, topping the subscription's songs up to the cap.
- *  Bought, promo and testing credits never count (owner, 28 Sep). A zero
- *  grant still writes its row: the row is the claim that makes a
- *  redelivery a no-op. */
+ *  Bought, promo and testing credits never count (owner, 28 Sep). The row
+ *  names the store transaction the period was bought in, which a refund
+ *  names too. A zero grant still writes its row: the row is the claim that
+ *  makes a redelivery a no-op. */
 async function grantPeriod(
   env: Env,
   userId: string,
-  eventId: string,
-  productId: string | null,
+  event: RevenueCatEvent,
 ): Promise<number> {
   const allowance = songAllowance(env)
   return writeOnLedger(
     env,
     userId,
-    `rc:${eventId}`,
+    `rc:${String(event.id)}`,
     SUBSCRIPTION_GRANT,
-    productId,
-    (ledger) => periodGrant(subscriptionSongs(ledger.rows).held, allowance),
+    (ledger) => ({
+      delta: periodGrant(subscriptionSongs(ledger.rows).held, allowance),
+      jobRef: text(event.transaction_id) ?? text(event.product_id),
+    }),
   )
+}
+
+/** A refund: take back what is left of the refunded period's songs, the
+ *  period the event's transaction names. RevenueCat reports a refund for
+ *  the latest period only, so without a transaction it is the latest.
+ *  Returns the songs taken back. */
+async function clawBack(
+  env: Env,
+  userId: string,
+  event: RevenueCatEvent,
+): Promise<number> {
+  const transaction = text(event.transaction_id)
+  const taken = await writeOnLedger(
+    env,
+    userId,
+    `rc:${String(event.id)}:clawback`,
+    SUBSCRIPTION_REFUND,
+    (ledger) => {
+      const { periods } = subscriptionSongs(ledger.rows)
+      const period =
+        periods.find(
+          (entry) => transaction !== null && entry.transaction === transaction,
+        ) ?? periods[periods.length - 1]
+      return { delta: -(period?.left ?? 0), jobRef: period?.key ?? null }
+    },
+  )
+  return -taken
 }
 
 /** Move an anonymous identity's songs to the account, in one transaction:
@@ -342,10 +379,13 @@ async function applyEvent(
   type: string,
 ): Promise<Outcome> {
   if (type === 'TRANSFER') return transfer(env, event)
+  const refund =
+    type === 'CANCELLATION' && text(event.cancel_reason) === 'CUSTOMER_SUPPORT'
   if (
     type !== 'INITIAL_PURCHASE' &&
     type !== 'RENEWAL' &&
-    type !== 'EXPIRATION'
+    type !== 'EXPIRATION' &&
+    !refund
   ) {
     return { ignored: type }
   }
@@ -369,6 +409,19 @@ async function applyEvent(
     return {}
   }
 
+  if (refund) {
+    // The refunded period is over now, whatever it would have run to.
+    const now = new Date().toISOString()
+    await env.DB.prepare(
+      `UPDATE entitlements SET expiresAt = ?, updatedAt = ?
+        WHERE userId = ? AND feature = ?
+          AND (expiresAt IS NULL OR expiresAt > ?)`,
+    )
+      .bind(now, now, user.id, SONGS_ENTITLEMENT, now)
+      .run()
+    return { clawedBack: await clawBack(env, user.id, event) }
+  }
+
   const productId = text(event.product_id)
   await upsertEntitlement(
     env,
@@ -376,9 +429,7 @@ async function applyEvent(
     `revenuecat:${productId ?? 'unknown'}`,
     periodEnd(event),
   )
-  return {
-    granted: await grantPeriod(env, user.id, String(event.id), productId),
-  }
+  return { granted: await grantPeriod(env, user.id, event) }
 }
 
 export async function handleRevenueCatWebhook(

@@ -557,6 +557,148 @@ describe('the rollover cap', () => {
   })
 })
 
+describe('a refund', () => {
+  // Review S4: RevenueCat reports a refund as a CANCELLATION whose
+  // cancel_reason is CUSTOMER_SUPPORT, for the latest period only. It ends
+  // the subscription now and takes back what is left of that period's songs.
+  const refund = (fields: Record<string, unknown> = {}) =>
+    rcEvent('CANCELLATION', {
+      cancel_reason: 'CUSTOMER_SUPPORT',
+      expiration_at_ms: Date.now() - 1_000,
+      ...fields,
+    })
+
+  it('ends the subscription now, and takes back the month’s songs', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+
+    const response = await deliver(refund({ transaction_id: 'txn-1' }))
+
+    expect(await response.json()).toMatchObject({
+      received: true,
+      clawedBack: 20,
+    })
+    expect(balanceOf(DEVICE)).toBe(0)
+    expect(await songsFor(token)).toMatchObject({
+      subscribed: false,
+      left: 0,
+    })
+  })
+
+  it('takes back only the songs of that month not yet sung', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    seedRow(DEVICE, -5, 'uvr-job', 'debit-five', 'job-five')
+
+    await deliver(refund({ transaction_id: 'txn-1' }))
+
+    expect(balanceOf(DEVICE)).toBe(0)
+  })
+
+  it('leaves the songs rolled over from the months before', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    seedRow(DEVICE, -15, 'uvr-job', 'debit-fifteen', 'job-fifteen')
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+
+    await deliver(refund({ transaction_id: 'txn-2' }))
+
+    expect(balanceOf(DEVICE)).toBe(5)
+  })
+
+  it('leaves the singer’s own credits alone', async () => {
+    await anonymousToken()
+    seedCredits(DEVICE, 10, 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+
+    await deliver(refund({ transaction_id: 'txn-1' }))
+
+    expect(balanceOf(DEVICE)).toBe(10)
+  })
+
+  it('takes back the month the refund names', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+    // The cap left room for 10 of the third month's songs.
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-3' }))
+
+    await deliver(refund({ transaction_id: 'txn-2' }))
+
+    expect(balanceOf(DEVICE)).toBe(30)
+  })
+
+  it('takes the latest month when the refund names no transaction', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+
+    await deliver(refund())
+
+    expect(balanceOf(DEVICE)).toBe(20)
+  })
+
+  it('takes back once when a retry comes after the record was lost', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+    const event = refund({ transaction_id: 'txn-2' })
+
+    await deliver(event)
+    sqlite.prepare('DELETE FROM billingEvents').run()
+    await deliver(event)
+
+    expect(balanceOf(DEVICE)).toBe(20)
+  })
+
+  it('takes back once, even when songs came back to that month since', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    seedRow(DEVICE, -5, 'uvr-job', 'debit-failed', 'job-failed')
+    const event = refund({ transaction_id: 'txn-1' })
+    await deliver(event)
+    // The separation failed after all, and its songs came back.
+    seedRow(DEVICE, 5, 'uvr-refund', 'refund-failed', 'job-failed')
+    sqlite.prepare('DELETE FROM billingEvents').run()
+
+    await deliver(event)
+
+    expect(balanceOf(DEVICE)).toBe(5)
+  })
+
+  it('lets the next renewal fill the cap again', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+    await deliver(refund({ transaction_id: 'txn-2' }))
+
+    await deliver(
+      rcEvent('RENEWAL', {
+        transaction_id: 'txn-3',
+        expiration_at_ms: Date.now() + 30 * 86_400_000,
+      }),
+    )
+
+    expect(grantedFor(DEVICE)).toEqual([20, 20, 20])
+    expect(balanceOf(DEVICE)).toBe(40)
+  })
+
+  it('is not an ordinary cancellation, which keeps the month', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE', { transaction_id: 'txn-1' }))
+
+    await deliver(
+      rcEvent('CANCELLATION', {
+        cancel_reason: 'UNSUBSCRIBE',
+        transaction_id: 'txn-1',
+      }),
+    )
+
+    expect(balanceOf(DEVICE)).toBe(20)
+    expect(await songsFor(token)).toMatchObject({ subscribed: true })
+  })
+})
+
 describe('events that arrive out of order', () => {
   // Review S3: RevenueCat retries a delivery that failed, so an older
   // period's event can arrive after a newer one. It must not end, or
