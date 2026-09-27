@@ -57,6 +57,7 @@ import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
 import type { ExtraStemInput } from './StemMixer'
 import type { UvrStudioHosting } from './uvr-studio-hosting'
+import type { UvrView } from './uvr-view'
 
 const ShazamListen = lazy(async () =>
   import('@/components/ShazamListen').then((m) => ({
@@ -69,13 +70,7 @@ const ShazamResults = lazy(async () =>
   })),
 )
 
-export type UvrView =
-  | 'upload'
-  | 'processing'
-  | 'results'
-  | 'mixer'
-  | 'shazam-listen'
-  | 'shazam-results'
+export type { UvrView } from './uvr-view'
 
 const CORE_LIBRARY_EXPORT_STEMS: readonly SessionExportStemType[] = [
   'vocal',

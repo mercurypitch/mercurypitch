@@ -14,7 +14,7 @@
 // panel sits behind IS_NATIVE_BUILD, so none of it reaches the web bundle.
 
 import type { Accessor } from 'solid-js'
-import type { UvrView } from './UvrPanel'
+import type { UvrView } from './uvr-view'
 
 /** The views the studio's options offer: find a song by singing, or the songs. */
 export type UvrStudioView = Extract<UvrView, 'shazam-listen' | 'upload'>
