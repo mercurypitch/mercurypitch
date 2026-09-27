@@ -193,7 +193,11 @@ export function createAdventureCamera(
   }
 
   function challengeInputLocked(): boolean {
-    return requestedChallengeId !== null || challengeDirector.active()
+    return (
+      requestedChallengeId !== null ||
+      firstPersonChallengeId !== null ||
+      challengeDirector.active()
+    )
   }
 
   function metrics(): ChallengeCameraMetrics {

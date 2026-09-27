@@ -183,6 +183,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.snapshot().completedBreakableIds.includes(item.id),
       ).length,
   )
+  const cameraInputBlocked = (): boolean =>
+    !adventure.ready() ||
+    adventure.paused() ||
+    adventure.tutorial() ||
+    adventure.snapshot().complete ||
+    adventure.cameraInputLocked()
   let pointer: number | null = null
   let previous = { x: 0, y: 0 }
   let pointerStart = { x: 0, y: 0 }
@@ -239,13 +245,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     return isReady
   }, false)
   createEffect(() => {
-    if (
-      !adventure.ready() ||
-      adventure.paused() ||
-      adventure.tutorial() ||
-      adventure.snapshot().complete
-    )
-      releaseOrbit()
+    if (cameraInputBlocked()) releaseOrbit()
   })
   return (
     <div
@@ -288,13 +288,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         tabIndex={adventure.ready() ? 0 : -1}
         onPointerDown={(event) => {
           if (pointer !== null) isTap = false
-          if (
-            event.button !== 0 ||
-            !adventure.ready() ||
-            pointer !== null ||
-            adventure.paused() ||
-            adventure.tutorial()
-          )
+          if (event.button !== 0 || pointer !== null || cameraInputBlocked())
             return
           adventure.gameplayGesture()
           pointer = event.pointerId
@@ -306,13 +300,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.setOrbitActive(true)
         }}
         onPointerMove={(event) => {
-          if (
-            !adventure.ready() ||
-            event.pointerId !== pointer ||
-            adventure.paused() ||
-            adventure.tutorial()
-          )
-            return
+          if (event.pointerId !== pointer || cameraInputBlocked()) return
           if (
             Math.hypot(
               event.clientX - pointerStart.x,
@@ -335,8 +323,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         onLostPointerCapture={release}
         onWheel={(event) => {
           event.preventDefault()
-          if (!adventure.ready() || adventure.paused() || adventure.tutorial())
-            return
+          if (cameraInputBlocked()) return
           adventure.zoom(event.deltaY * 0.002)
         }}
       />
@@ -407,6 +394,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             type="button"
             onClick={adventure.recenter}
             aria-label="Recenter camera"
+            disabled={adventure.cameraInputLocked()}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 3H3v3m15-3h3v3M3 18v3h3m15-3v3h-3" />

@@ -26,6 +26,12 @@ declare global {
   interface Window {
     cameraVoiceTrack?: MediaStreamTrack
     cameraVoiceGain?: GainNode
+    cinematicCameraPointers?: {
+      mouseDowns: number
+      mouseCaptures: number
+      touchDowns: number
+      touchCaptures: number
+    }
   }
 }
 
@@ -536,8 +542,9 @@ test('frames Merc and the exhibit above the phone panel and restores after cance
   await expect(movementControls).toBeVisible()
 })
 
-test('tap entry holds the shot through the full shatter before restoring @smoke', async ({
+test('tap entry owns mouse and touch through the full shatter before restoring @smoke', async ({
   page,
+  context,
 }) => {
   await installCameraVoice(page)
   await page.goto('/glass-game/')
@@ -577,6 +584,69 @@ test('tap entry holds the shot through the full shatter before restoring @smoke'
     'data-challenge-camera-mode',
     'holding',
   )
+  const heldYaw = await numericAttribute(page, 'camera-yaw')
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  const viewportBounds = await viewport.boundingBox()
+  if (viewportBounds === null) throw new Error('Missing museum viewport.')
+  await viewport.evaluate((element) => {
+    window.cinematicCameraPointers = {
+      mouseDowns: 0,
+      mouseCaptures: 0,
+      touchDowns: 0,
+      touchCaptures: 0,
+    }
+    element.addEventListener('pointerdown', (event) => {
+      const pointer = event as PointerEvent
+      if (pointer.pointerType === 'mouse')
+        window.cinematicCameraPointers!.mouseDowns++
+      if (pointer.pointerType === 'touch')
+        window.cinematicCameraPointers!.touchDowns++
+    })
+    element.addEventListener('gotpointercapture', (event) => {
+      // Touch implicitly captures Three's child canvas before the event
+      // bubbles here. Only a capture owned by this interaction host would
+      // keep the app-level orbit gesture alive through the cinematic.
+      if (event.target !== element) return
+      const pointer = event as PointerEvent
+      if (pointer.pointerType === 'mouse')
+        window.cinematicCameraPointers!.mouseCaptures++
+      if (pointer.pointerType === 'touch')
+        window.cinematicCameraPointers!.touchCaptures++
+    })
+  })
+  const dragStart = {
+    x: viewportBounds.x + viewportBounds.width * 0.5,
+    y: viewportBounds.y + viewportBounds.height * 0.35,
+  }
+  await page.mouse.move(dragStart.x, dragStart.y)
+  await page.mouse.down()
+  await page.mouse.move(dragStart.x + 120, dragStart.y - 45, { steps: 6 })
+  await page.mouse.up()
+
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ id: 17, ...dragStart }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ id: 17, x: dragStart.x - 110, y: dragStart.y + 40 }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await cdp.detach()
+
+  expect(await page.evaluate(() => window.cinematicCameraPointers)).toEqual({
+    mouseDowns: 1,
+    mouseCaptures: 0,
+    touchDowns: 1,
+    touchCaptures: 0,
+  })
+  expect(
+    Math.abs(angleDelta(heldYaw, await numericAttribute(page, 'camera-yaw'))),
+  ).toBeLessThan(0.002)
   await expect(adventure).toHaveAttribute(
     'data-challenge-camera-mode',
     'restoring',
@@ -592,4 +662,6 @@ test('tap entry holds the shot through the full shatter before restoring @smoke'
   expect(returned.position.y).toBeCloseTo(before.position.y, 3)
   expect(returned.position.z).toBeCloseTo(before.position.z, 3)
   await expect(movementControls).toBeVisible()
+  expect(await dragMuseumWithMouse(page, 80)).toBeGreaterThan(0.1)
+  expect(await dragMuseumWithTouch(page, context, -80)).toBeGreaterThan(0.1)
 })
