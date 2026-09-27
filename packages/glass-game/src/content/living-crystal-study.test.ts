@@ -37,7 +37,7 @@ describe('living-crystal v2 art study', () => {
     const staging = LIVING_CRYSTAL_PEARL_ROOTS_STUDY.platforms.filter(
       (platform) => platform.renderId === LIVING_CRYSTAL_STAGING_RENDER_ID,
     )
-    expect(staging).toHaveLength(2)
+    expect(staging).toHaveLength(3)
     expect(Math.max(...staging.map((platform) => platform.maxX))).toBe(4.8)
     expect(Math.min(...staging.map((platform) => platform.minX))).toBe(-4.8)
     expect(

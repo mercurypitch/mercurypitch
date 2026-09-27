@@ -36,8 +36,8 @@ describe('living-crystal interior animation', () => {
     effect.configure({ variant: 'living-amber' })
     expect(effect.snapshot().settings).toMatchObject({
       variant: 'living-amber',
-      intensity: 1.72,
-      palette: { primary: 0xffbf4d },
+      intensity: 1.8,
+      palette: { primary: 0xffb52e },
     })
     effect.configure({
       variant: 'pearl-roots',
@@ -47,7 +47,7 @@ describe('living-crystal interior animation', () => {
     expect(effect.snapshot().settings).toMatchObject({
       variant: 'pearl-roots',
       intensity: 2.4,
-      palette: { primary: 0xffe4b5, accent: 0xabcdef },
+      palette: { primary: 0xffe5a6, accent: 0xabcdef },
     })
     effect.dispose()
   })

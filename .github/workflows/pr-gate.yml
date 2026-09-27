@@ -484,6 +484,7 @@ jobs:
             encore-examples,
             journey,
             island-paths,
+            living-crystal,
             loading,
             message-stack,
             mic-recovery,

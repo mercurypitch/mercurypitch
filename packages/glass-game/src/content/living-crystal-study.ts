@@ -6,6 +6,7 @@ import { LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_PLATFORM_SUPPORT, LIV
 
 export const LIVING_CRYSTAL_PLATFORM_ID = 'living-crystal/main'
 export const LIVING_CRYSTAL_START_ID = 'living-crystal/start-gallery'
+export const LIVING_CRYSTAL_CONNECTOR_ID = 'living-crystal/rear-connector'
 export const LIVING_CRYSTAL_STAGING_ID = 'living-crystal/open-staging'
 
 const TOP = 0
@@ -13,8 +14,8 @@ const TOP = 0
 export const LIVING_CRYSTAL_STUDY_PLATFORMS: readonly PlatformDefinition[] = [
   {
     id: LIVING_CRYSTAL_START_ID,
-    minX: -3,
-    maxX: 3,
+    minX: -1.15,
+    maxX: 1.15,
     minZ: -3.15,
     maxZ: -LIVING_CRYSTAL_PLATFORM_SUPPORT.depth / 2,
     top: TOP,
@@ -37,10 +38,22 @@ export const LIVING_CRYSTAL_STUDY_PLATFORMS: readonly PlatformDefinition[] = [
     renderQuarterTurns: 0,
   },
   {
+    id: LIVING_CRYSTAL_CONNECTOR_ID,
+    minX: -1.15,
+    maxX: 1.15,
+    minZ: LIVING_CRYSTAL_PLATFORM_SUPPORT.depth / 2,
+    maxZ: 1.95,
+    top: TOP,
+    thickness: 0.28,
+    kind: 'deck',
+    material: 'stone',
+    renderId: LIVING_CRYSTAL_STAGING_RENDER_ID,
+  },
+  {
     id: LIVING_CRYSTAL_STAGING_ID,
     minX: -4.8,
     maxX: 4.8,
-    minZ: LIVING_CRYSTAL_PLATFORM_SUPPORT.depth / 2,
+    minZ: 1.95,
     maxZ: 5.4,
     top: TOP,
     thickness: 0.28,
@@ -89,6 +102,7 @@ export function livingCrystalStudy(
           platformIds: [
             LIVING_CRYSTAL_START_ID,
             LIVING_CRYSTAL_PLATFORM_ID,
+            LIVING_CRYSTAL_CONNECTOR_ID,
             LIVING_CRYSTAL_STAGING_ID,
           ],
           yaw: Math.PI,
