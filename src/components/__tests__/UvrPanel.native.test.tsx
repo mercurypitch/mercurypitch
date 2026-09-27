@@ -200,10 +200,13 @@ describe('the studio around the panel', () => {
 
   it('is handed the guide', () => {
     const { controls } = openStudio()
+    expect(screen.queryByText('Vocal Separation Guide')).toBeNull()
 
     controls().openGuide()
 
-    expect(screen.getByText('Vocal Separation Guide')).toBeTruthy()
+    expect(screen.getByText('Vocal Separation Guide').textContent).toBe(
+      'Vocal Separation Guide',
+    )
   })
 
   it('finds nothing that separates on the phone, costs credits or leaves the app', () => {

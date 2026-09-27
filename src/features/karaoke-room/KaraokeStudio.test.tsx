@@ -231,8 +231,8 @@ describe('the Group row', () => {
     mount()
 
     expect(
-      screen.getByRole('button', { name: 'Group: All songs' }),
-    ).toBeTruthy()
+      screen.getByTestId('karaoke-studio-group').getAttribute('aria-label'),
+    ).toBe('Group: All songs')
   })
 })
 
