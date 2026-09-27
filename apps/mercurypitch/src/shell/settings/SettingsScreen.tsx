@@ -14,23 +14,51 @@
 // The groups sit in one column upright and two on a phone on its side.
 
 import type { JSX } from 'solid-js'
+import { onMount } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
 import { ContrastIcon, LockIcon } from '../icons'
+import { ACCOUNT_ROW } from './account-copy'
+import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { appearanceLabel } from './AppearanceScreen'
-import { SettingsGroup, SettingsRow } from './SettingsList'
+import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 
 /** The screens a Settings row pushes. */
-export type SettingsSubScreen = 'appearance'
+export type SettingsSubScreen = 'account' | 'appearance'
 
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
 }
 
 export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
+  // The row names the account from the card the phone kept; one read per
+  // session keeps it current without asking the server on every visit. The
+  // Account screen reads again whenever it opens.
+  onMount(() => {
+    if (accountSignedIn() && accountReach() === 'idle') void refreshAccount()
+  })
+
   return (
     <div class="mp-set" data-testid="settings-screen">
       <div class="mp-set__cols">
         <div class="mp-set__col">
+          <SettingsGroup>
+            <SettingsRow
+              id="account"
+              icon={<AccountAvatar />}
+              label={
+                accountSignedIn() ? accountDisplayName() : ACCOUNT_ROW.label
+              }
+              sub={
+                accountSignedIn()
+                  ? accountProviderLine()
+                  : ACCOUNT_ROW.signedOutSub
+              }
+              value={accountSignedIn() ? undefined : ACCOUNT_ROW.signedOutValue}
+              onPress={() => {
+                props.onPush('account')
+              }}
+            />
+          </SettingsGroup>
           <SettingsGroup title="This phone">
             <SettingsRow
               id="appearance"

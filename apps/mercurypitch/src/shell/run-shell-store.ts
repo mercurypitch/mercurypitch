@@ -56,7 +56,7 @@ export type RailVariant = 'r1' | 'r2'
  * rows push screens of their own (S6, decision D1 A), and each of those can
  * push again. Developer stands on its own, reached from More.
  */
-export type PushedScreen = 'settings' | 'appearance' | 'developer'
+export type PushedScreen = 'settings' | 'account' | 'appearance' | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000
@@ -341,6 +341,21 @@ export function pushScreen(screen: PushedScreen): void {
     if (at !== -1) return stack.slice(0, at + 1)
     return [...stack, screen]
   })
+}
+
+/** A screen that is only ever reached through Settings. */
+export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
+
+/**
+ * Settings, with one of its own screens over it when the caller names one.
+ *
+ * More's Account tile and a room's "Sign in" both land on Account, but with
+ * Settings under it: Back from there goes to Settings, which is where the
+ * Account screen lives.
+ */
+export function pushSettingsScreen(screen?: SettingsChild): void {
+  pushScreen('settings')
+  if (screen !== undefined) pushScreen(screen)
 }
 
 /** One level down: what Back does to a pushed screen. */

@@ -11,7 +11,8 @@
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import './settings.css'
-import { CheckIcon, ChevronIcon } from '../icons'
+import { AccountIcon, CheckIcon, ChevronIcon } from '../icons'
+import { accountCard, accountSignedIn } from './account-state'
 
 export interface SettingsGroupProps {
   /** The small caps title over the group; a group of one may go without. */
@@ -129,5 +130,36 @@ export function SettingsChoice(props: SettingsChoiceProps): JSX.Element {
         <CheckIcon class="mp-set-row__check" size={20} />
       </Show>
     </button>
+  )
+}
+
+export interface AccountAvatarProps {
+  /** The identity card's larger disc. */
+  large?: boolean
+}
+
+/**
+ * The account's disc: the first letter of its name once the phone knows it,
+ * the person glyph before that and whenever nothing is signed in.
+ */
+export function AccountAvatar(props: AccountAvatarProps): JSX.Element {
+  const initial = (): string => {
+    if (!accountSignedIn()) return ''
+    const name = accountCard()?.name ?? ''
+    return name === '' ? '' : name.slice(0, 1).toLocaleUpperCase()
+  }
+  return (
+    <span
+      class={
+        props.large === true
+          ? 'mp-set-avatar mp-set-avatar--lg'
+          : 'mp-set-avatar'
+      }
+      aria-hidden="true"
+    >
+      <Show when={initial()} fallback={<AccountIcon size={22} />}>
+        {initial()}
+      </Show>
+    </span>
   )
 }

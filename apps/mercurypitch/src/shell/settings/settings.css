@@ -162,3 +162,171 @@
   color: var(--text-muted);
   text-align: center;
 }
+
+.mp-set__caption {
+  margin: 0;
+  padding: 0 4px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+/* ---------- the account's disc ---------- */
+
+.mp-set-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font: 600 18px/1 var(--font-body, sans-serif);
+}
+
+.mp-set-avatar--lg {
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+}
+
+.mp-set-row__icon .mp-set-avatar svg,
+.mp-set-avatar svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- a card: the identity, the promises ---------- */
+
+.mp-set-card {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.mp-set-card__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mp-set-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.mp-set-card__text strong {
+  font: 600 16px/21px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-set-card__provider {
+  font-weight: 500;
+}
+
+.mp-set-promises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.mp-set-promises li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font: 400 16px/22px var(--font-body, sans-serif);
+}
+
+.mp-set-promises svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+/* ---------- a note over the card ---------- */
+
+.mp-set-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-set-note p {
+  margin: 0;
+}
+
+.mp-set-note svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.mp-set-note--warn {
+  background: color-mix(in srgb, var(--yellow) 12%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--yellow) 38%, transparent);
+}
+
+.mp-set-note--warn svg {
+  color: var(--yellow);
+}
+
+/* ---------- the kit's capsule button ---------- */
+
+.mp-set-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font: 600 17px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-set-button:active {
+  transform: scale(0.98);
+}
+
+.mp-set-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mp-set-button--secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.mp-set-button--danger {
+  background: transparent;
+  color: var(--red);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+.mp-set-button--small {
+  width: auto;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+}

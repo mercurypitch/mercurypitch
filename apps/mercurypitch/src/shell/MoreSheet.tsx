@@ -31,6 +31,8 @@ export interface MoreSheetProps {
   open: () => boolean
   onClose: () => void
   onPushSettings: () => void
+  /** Account, with Settings under it. */
+  onPushAccount: () => void
   onPushDeveloper: () => void
 }
 
@@ -89,7 +91,10 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
             type="button"
             class="mp-itile"
             data-more-item="account"
-            onClick={() => openSettings()}
+            onClick={() => {
+              props.onClose()
+              props.onPushAccount()
+            }}
           >
             <AccountIcon />
             Account

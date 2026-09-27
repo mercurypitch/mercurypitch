@@ -37,7 +37,7 @@ import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
@@ -101,8 +101,11 @@ export const NativeShell: Component = () => {
     // shell pushes.
     onCleanup(
       registerShellApi({
-        pushSettings: () => {
-          pushScreen('settings')
+        // Natively every "open Settings at <section>" lands here
+        // (ui-store's openSettingsSection). Only the account has a screen
+        // of its own to open at; anything else is Settings itself.
+        pushSettings: (section) => {
+          pushSettingsScreen(section === 'account' ? 'account' : undefined)
         },
         // The Sing room's denied state (3d) is the one caller: a refused
         // microphone can only be undone in the system's own Settings.
@@ -301,6 +304,9 @@ export const NativeShell: Component = () => {
             onClose={closeMore}
             onPushSettings={() => {
               pushScreen('settings')
+            }}
+            onPushAccount={() => {
+              pushSettingsScreen('account')
             }}
             onPushDeveloper={() => {
               pushScreen('developer')

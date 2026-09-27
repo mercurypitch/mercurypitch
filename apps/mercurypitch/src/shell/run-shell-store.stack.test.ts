@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
-import { clearScreens, popScreen, pushed, pushedStack, pushScreen, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
+import { clearScreens, popScreen, pushed, pushedStack, pushScreen, pushSettingsScreen, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
 
 beforeEach(() => {
   setActiveTab(TAB_SINGING)
@@ -94,5 +94,21 @@ describe('the pushed-screen stack', () => {
       header: true,
       covered: false,
     })
+  })
+
+  it('opens a screen of Settings with Settings under it', () => {
+    // More's Account tile: Back from Account has to land on Settings.
+    pushSettingsScreen('account')
+
+    expect(pushedStack()).toEqual(['settings', 'account'])
+  })
+
+  it('opens Settings itself when no screen of it is named', () => {
+    pushScreen('settings')
+    pushScreen('appearance')
+
+    pushSettingsScreen()
+
+    expect(pushedStack()).toEqual(['settings'])
   })
 })

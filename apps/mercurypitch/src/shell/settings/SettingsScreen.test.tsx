@@ -3,10 +3,34 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as AuthService from '@/db/services/auth-service'
+import { readMe } from '@/db/services/auth-service'
+import { setAuthToken } from '@/db/services/user-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
+import { ACCOUNT_ROW } from './account-copy'
+import { refreshAccount, resetAccountState } from './account-state'
 import { SettingsScreen } from './SettingsScreen'
+
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof AuthService>()),
+  readMe: vi.fn(),
+}))
+
+function token(provider: string): string {
+  const body = btoa(
+    JSON.stringify({
+      sub: 'user-1',
+      provider,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }),
+  )
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+  return `header.${body}.signature`
+}
 
 let view: RenderedShell | null = null
 
@@ -22,6 +46,9 @@ afterEach(() => {
   view = null
   stopThemeAutoWatch()
   setTheme('dark')
+  setAuthToken(null)
+  resetAccountState()
+  vi.mocked(readMe).mockReset()
 })
 
 describe('Settings', () => {
@@ -55,5 +82,52 @@ describe('Settings', () => {
     expect(screen?.lastElementChild?.textContent?.trim()).toBe(
       'Only you can hear you.',
     )
+  })
+
+  it('offers sign-in on the Account row while nothing is signed in', () => {
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+    const account = row('account')?.textContent ?? ''
+
+    expect(account).toContain(ACCOUNT_ROW.signedOutSub)
+    expect(account).toContain(ACCOUNT_ROW.signedOutValue)
+  })
+
+  it('names the account and how it signs in on the Account row', async () => {
+    setAuthToken(token('apple'))
+    vi.mocked(readMe).mockResolvedValueOnce({
+      status: 'ok',
+      me: {
+        user: {
+          id: 'user-1',
+          createdAt: '',
+          updatedAt: '',
+          authProvider: 'apple',
+          email: 'singer@example.test',
+          emailVerified: true,
+          lastLoginAt: null,
+          isTestAccount: false,
+          testAccountExpiresAt: null,
+        },
+        profile: { displayName: 'Alex' },
+      },
+    })
+    await refreshAccount()
+
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+    const account = row('account')?.textContent ?? ''
+
+    expect(account).toContain('Alex')
+    expect(account).toContain('Signed in with Apple')
+    expect(account).not.toContain(ACCOUNT_ROW.signedOutValue)
+  })
+
+  it('pushes Account from its row', () => {
+    const onPush = vi.fn()
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+
+    row('account')?.click()
+
+    expect(onPush).toHaveBeenCalledWith('account')
   })
 })

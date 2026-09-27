@@ -270,3 +270,28 @@ export const CheckIcon: Component<ShellIconProps> = (props) => (
     <path d="M5 12.5l4.5 4.5L19 7.5" />
   </svg>
 )
+
+/** An account's history: the clock face with its hand swept back. */
+export const HistoryIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 8.9" />
+    <path d="M4.5 4.5v4.4h4.4" />
+    <path d="M12 8v4.4l3 1.8" />
+  </svg>
+)
+
+/** This phone, and the next one. */
+export const PhoneIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+    <path d="M11 18h2" />
+  </svg>
+)
+
+/** Something needs attention, and nothing is lost. */
+export const WarnIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 4l9 16H3z" />
+    <path d="M12 10v4M12 17h.01" />
+  </svg>
+)

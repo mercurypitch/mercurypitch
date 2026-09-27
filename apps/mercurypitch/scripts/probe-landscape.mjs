@@ -649,6 +649,16 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible('[data-testid="settings-screen"]')
     await back(pushed)
 
+    // More's Account tile lands on Account, with Settings under it.
+    at = 'on the way to Account'
+    await more('account')
+    await visible('[data-testid="account-screen"]')
+    await settle()
+    await measure('account', pushed)
+    await back('[data-testid="account-screen"]')
+    await visible('[data-testid="settings-screen"]')
+    await back(pushed)
+
     await more('developer')
     await visible('[data-testid="shell-developer"]')
     await settle()
