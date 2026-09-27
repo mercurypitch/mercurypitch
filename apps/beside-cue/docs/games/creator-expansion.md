@@ -71,8 +71,9 @@ or frame-by-frame mesh generation. Preset, seed, palette, intensity and speed ar
 configurable. Only certified scroll platforms accept this presentation field.
 
 The effect retracts with the platform and respects pause, reset and reduced
-motion. Each instance has a bounded resource lifecycle and at most two draw
-calls. It changes no movement contacts or singing requirements.
+motion. Each instance has a bounded resource lifecycle and one or two mesh draws per
+render pass; transmission passes can multiply the total frame cost. It changes
+no movement contacts or singing requirements.
 
 ### Echo Curator and musical memories
 

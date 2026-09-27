@@ -85,8 +85,15 @@ describe('living crystal interiors', () => {
       const effect = createInScroll(preset)
       effect.root.updateMatrixWorld(true)
       const bounds = new Box3().setFromObject(effect.root)
+      const tubeBounds = new Box3().setFromObject(firstMesh(effect.root))
       const drift = effect.snapshot().maximumAnimatedDisplacement
 
+      expect(tubeBounds.min.x).toBeGreaterThanOrEqual(-1.044 - 1e-6)
+      expect(tubeBounds.max.x).toBeLessThanOrEqual(1.044 + 1e-6)
+      expect(tubeBounds.min.y).toBeGreaterThanOrEqual(-0.084 - 1e-6)
+      expect(tubeBounds.max.y).toBeLessThanOrEqual(-0.016 + 1e-6)
+      expect(tubeBounds.min.z).toBeGreaterThanOrEqual(-1.044 - 1e-6)
+      expect(tubeBounds.max.z).toBeLessThanOrEqual(1.044 + 1e-6)
       expect(bounds.min.x - drift).toBeGreaterThanOrEqual(-1.05 - 1e-6)
       expect(bounds.max.x + drift).toBeLessThanOrEqual(1.05 + 1e-6)
       expect(bounds.min.y - drift).toBeGreaterThanOrEqual(-0.09 - 1e-6)

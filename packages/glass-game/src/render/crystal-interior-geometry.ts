@@ -71,6 +71,37 @@ function containedPoint(
   ]
 }
 
+function containPathSurfaces(
+  layout: CrystalInteriorLayout,
+  settings: NormalizedCrystalInteriorSettings,
+): CrystalInteriorLayout {
+  const bounds = crystalInteriorBounds(settings)
+  const maximumRadius = Math.max(...layout.paths.map((path) => path.radius))
+  const minimum: CrystalInteriorPoint = [
+    bounds.minimum[0] + maximumRadius,
+    bounds.minimum[1] + maximumRadius,
+    bounds.minimum[2] + maximumRadius,
+  ]
+  const maximum: CrystalInteriorPoint = [
+    bounds.maximum[0] - maximumRadius,
+    bounds.maximum[1] - maximumRadius,
+    bounds.maximum[2] - maximumRadius,
+  ]
+  if (minimum.some((value, axis) => value >= maximum[axis]!))
+    throw new Error(
+      'Crystal interior tube radii must leave a positive inset volume.',
+    )
+  return {
+    ...layout,
+    paths: layout.paths.map((path) => ({
+      ...path,
+      points: path.points.map((point) =>
+        containedPoint(point, minimum, maximum),
+      ),
+    })),
+  }
+}
+
 function resonanceLayout(
   settings: NormalizedCrystalInteriorSettings,
   random: RandomSource,
@@ -112,7 +143,7 @@ function resonanceLayout(
       id: `resonance-trunk-${trunk}`,
       kind: 'tube',
       points,
-      radius: Math.min(spanY, spanZ) * 0.052,
+      radius: Math.min(spanY, spanZ) * 0.075,
       phaseOffset: trunk * 0.09,
       paletteIndex: trunk === 0 ? 2 : ((trunk % 2) as 0 | 1),
     })
@@ -143,7 +174,7 @@ function resonanceLayout(
         id: `resonance-branch-${trunk}-${branch}`,
         kind: 'tube',
         points: [fork, midpoint, branchEnd],
-        radius: Math.min(spanY, spanZ) * 0.029,
+        radius: Math.min(spanY, spanZ) * 0.05,
         phaseOffset: forkIndex / (pointCount - 1) + trunk * 0.09,
         paletteIndex: branch === 0 ? 0 : 1,
       })
@@ -190,7 +221,7 @@ function frostLayout(
       id: `frost-root-${root}`,
       kind: 'tube',
       points,
-      radius: Math.min(spanY, spanZ) * 0.022,
+      radius: Math.min(spanY, spanZ) * 0.082,
       phaseOffset: root * 0.12,
       paletteIndex: (root % 3) as 0 | 1 | 2,
     })
@@ -208,7 +239,7 @@ function frostLayout(
       id: `frost-branch-${root}`,
       kind: 'tube',
       points: [branchStart, branchEnd],
-      radius: Math.min(spanY, spanZ) * 0.013,
+      radius: Math.min(spanY, spanZ) * 0.056,
       phaseOffset: 0.45 + root * 0.12,
       paletteIndex: (root % 2) as 0 | 1,
     })
@@ -265,7 +296,7 @@ function auroraLayout(
       id: `aurora-ribbon-${ribbon}`,
       kind: 'ribbon',
       points,
-      radius: Math.min(spanY, spanZ) * (0.075 + ribbon * 0.012),
+      radius: Math.min(spanY, spanZ) * (0.085 + ribbon * 0.012),
       phaseOffset: ribbon / 3,
       paletteIndex: ribbon as 0 | 1 | 2,
     })
@@ -278,7 +309,8 @@ export function generateCrystalInteriorLayout(
 ): CrystalInteriorLayout {
   const random = randomSource(settings.seed)
   if (settings.preset === 'resonance-veins')
-    return resonanceLayout(settings, random)
-  if (settings.preset === 'frost-roots') return frostLayout(settings, random)
-  return auroraLayout(settings, random)
+    return containPathSurfaces(resonanceLayout(settings, random), settings)
+  if (settings.preset === 'frost-roots')
+    return containPathSurfaces(frostLayout(settings, random), settings)
+  return containPathSurfaces(auroraLayout(settings, random), settings)
 }

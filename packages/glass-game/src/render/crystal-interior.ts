@@ -70,6 +70,7 @@ const VERTEX_SHADER = /* glsl */ `
   varying float vPhase;
   varying float vPalette;
   varying vec3 vNormal;
+  varying vec3 vViewDirection;
 
   void main() {
     vPhase = interiorPhase;
@@ -78,7 +79,9 @@ const VERTEX_SHADER = /* glsl */ `
     vec3 moved = position;
     float wave = sin(position.x * 7.0 + interiorPhase * 6.2831853 + uTime * 0.7);
     moved += normal * wave * uDrift * uMotion;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(moved, 1.0);
+    vec4 viewPosition = modelViewMatrix * vec4(moved, 1.0);
+    vViewDirection = normalize(-viewPosition.xyz);
+    gl_Position = projectionMatrix * viewPosition;
   }
 `
 
@@ -94,6 +97,7 @@ const FRAGMENT_SHADER = /* glsl */ `
   varying float vPhase;
   varying float vPalette;
   varying vec3 vNormal;
+  varying vec3 vViewDirection;
 
   float circularDistance(float a, float b) {
     float d = abs(fract(a) - fract(b));
@@ -109,8 +113,12 @@ const FRAGMENT_SHADER = /* glsl */ `
     float quietPulse = 0.34 + 0.14 * sin((vPhase + uTime * 0.035) * 6.2831853);
     float envelope = mix(quietPulse, 0.2 + pulse, uMotion);
     vec3 normal = normalize(vNormal);
-    float depth = 0.58 + 0.42 * abs(dot(normal, normalize(vec3(0.35, 0.72, 0.6))));
-    vec3 color = palette * depth * envelope * uIntensity * uVisibility * 2.8;
+    float facing = abs(dot(normal, normalize(vViewDirection)));
+    float edge = pow(1.0 - facing, 1.15);
+    vec3 saturatedCore = palette * (0.34 + envelope * 0.24);
+    vec3 brightEdge = mix(palette, vec3(1.0), 0.18) * (1.05 + envelope * 1.35);
+    vec3 color = mix(saturatedCore, brightEdge, 0.22 + edge * 0.78);
+    color *= uIntensity * uVisibility;
     gl_FragColor = vec4(clamp(color, 0.0, 4.0), 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
