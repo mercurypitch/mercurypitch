@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "assetId": "pearl-ribbon-lantern",
+  "version": "optional-exhibit-v1",
+  "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+  "source": {
+    "kind": "existing-packed-dense-master",
+    "file": "cloudway-laboratory/v1/blender/pearl-ribbon-lantern/pearl-ribbon-lantern-dense-master.blend",
+    "triangles": 1825540,
+    "sha256": "41fde09a62f445d58ca037808e92b2aa5aef09c0f781f50c55787a505e6253bb"
+  },
+  "lods": [
+    {
+      "id": "lod0",
+      "targetTriangles": 120000,
+      "textureMaximum": 2048,
+      "distribution": "creative-archive-proof-only"
+    },
+    {
+      "id": "lod1",
+      "targetTriangles": 36000,
+      "textureMaximum": 1024,
+      "distribution": "shipping-runtime",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb"
+    }
+  ],
+  "materialRoles": {
+    "strategy": "one batched provider PBR material; metallic and base-colour channels retain pearl, gilt ribbon, and ivory roles",
+    "roles": ["pearl-chamber", "gilt-ribbon-and-trim", "ivory-base-and-finial"]
+  },
+  "collision": {
+    "kind": "non-walkable cylindrical obstacle",
+    "source": "measured final bounds and resting-base band"
+  }
+}

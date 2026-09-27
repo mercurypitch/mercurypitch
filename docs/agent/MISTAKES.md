@@ -1580,5 +1580,5 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 
 **Symptom:** a jump appeared to reach a stone deck but Merc fell past its visible rim.
 **Cause:** the exported contact rectangle was inset from a continuous near-horizontal ledge; bounds/metadata checks alone certified the mismatch.
-**Rule:** ray-test the decoded top and corners at the gameplay datum, then inspect both supported landings and side deflection in the actual renderer. Separate a structural ledge from lower ornament before fitting art or changing authored gaps.
+**Rule:** ray-test the decoded top and corners at the gameplay datum, then inspect both supported landings and side deflection in the actual renderer. Separate a structural ledge from lower ornament before fitting art or changing authored gaps. Compare custom support metadata with decoded anchors in the declared coordinate system: Blender export transforms nodes, but JSON extras need an explicit Blender XY to glTF XZ conversion.
 **See:** `packages/glass-game/src/render/cloudway-laboratory-assets.test.ts`, `apps/beside-cue/e2e/glass-adventure-solids.e2e.ts`.

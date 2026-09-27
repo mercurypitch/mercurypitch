@@ -37,6 +37,15 @@ it('loads the actual lantern, contains its footprint and blocks Merc without blo
   ).scene
   const root = scene.getObjectByName(recipe.node)!
   expect(root).toBeDefined()
+  const contract = JSON.parse(root.userData.asset_contract_json as string) as {
+    support: { centreXZ: [number, number] }
+    supportAnchor: string
+  }
+  const supportAnchor = scene.getObjectByName(contract.supportAnchor)!
+  expect(supportAnchor).toBeDefined()
+  expect(supportAnchor.position.x).toBeCloseTo(contract.support.centreXZ[0], 7)
+  expect(supportAnchor.position.y).toBeCloseTo(0, 7)
+  expect(supportAnchor.position.z).toBeCloseTo(contract.support.centreXZ[1], 7)
   root.position.copy(decoration.position)
   root.rotation.y = decoration.yaw
   root.updateMatrixWorld(true)

@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "version": "crystal-interiors-v1",
+  "coordinates": "platform-local metres; runtime +Y up; Blender proof +Z up",
+  "envelope": {
+    "width": 2.1,
+    "height": 0.08,
+    "depth": 2.1,
+    "centerRuntime": [0.0, -0.05, 0.0],
+    "inset": 0.006
+  },
+  "presets": [
+    {
+      "id": "resonance-veins",
+      "seed": 4051,
+      "geometry": "three tapered primary curve paths with bounded forks",
+      "surfaceRadiiMetres": { "primary": 0.0051, "branch": 0.0034 },
+      "palette": ["#ffa31a", "#ff3d12", "#ffdf70"],
+      "motion": "root-to-tip travelling emission pulse"
+    },
+    {
+      "id": "frost-roots",
+      "seed": 771,
+      "geometry": "five descending curve paths, readable side roots, and sparse accents",
+      "surfaceRadiiMetres": { "primary": 0.005576, "branch": 0.003808 },
+      "palette": ["#00b7f5", "#172bbf", "#34f5d0"],
+      "motion": "slow growth/recession envelope with sparse sparkle breathing"
+    },
+    {
+      "id": "aurora-heart",
+      "seed": 1209,
+      "geometry": "three rounded heart-crossing ribbon paths",
+      "surfaceRadiiMetres": [0.00578, 0.006596, 0.007412],
+      "palette": ["#ff3cb9", "#713cff", "#18dfff"],
+      "motion": "slow bounded vertex drift and staggered emission"
+    }
+  ],
+  "runtime": {
+    "highDrawBudget": 6,
+    "mobileDrawBudget": 3,
+    "textures": 0,
+    "physicsChanges": 0,
+    "shaderPolicy": "one local opaque emissive material with a saturated core and view-dependent bright edge, local tone-mapping and output-colour chunks; depth test and depth write enabled; no renderer chunk mutation",
+    "surfaceContainment": "path centre lines are contracted by the preset maximum radius so complete tube surfaces remain inside the explicit inset volume",
+    "productionProof": {
+      "transmissionResolutionScale": 0.5,
+      "toneMappingExposure": 0.9,
+      "background": "journey-map-v3/cloudscape.webp"
+    }
+  }
+}

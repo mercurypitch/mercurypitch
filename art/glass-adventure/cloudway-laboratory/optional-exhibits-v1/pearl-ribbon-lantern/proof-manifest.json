@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "assetId": "pearl-ribbon-lantern",
+  "version": "optional-exhibit-v1",
+  "status": "production-ready static optional exhibit",
+  "source": {
+    "recipe": "recipe.json",
+    "recipeSha256": "131027e7657c03b8c655a3b1dfacd04b7686b949db87334e009ee5960cfc8d5d",
+    "denseMaster": {
+      "file": "<creative-archive>/glass-adventure/cloudway-laboratory/v1/blender/pearl-ribbon-lantern/pearl-ribbon-lantern-dense-master.blend",
+      "bytes": 197627807,
+      "sha256": "41fde09a62f445d58ca037808e92b2aa5aef09c0f781f50c55787a505e6253bb",
+      "triangles": 1825540,
+      "regenerated": false
+    },
+    "packedAuthoringMaster": {
+      "file": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/blender/pearl-ribbon-lantern-authoring-v1.blend",
+      "bytes": 197404237,
+      "sha256": "80c19bc0a07ae65f86b3045dd68e71d7884057d0451fd6510f6b7aef82a344d4"
+    },
+    "compactReceipt": {
+      "file": "production-receipt.json",
+      "sha256": "b672c06e1b1290e957bd4df434c9248d0216e46a734974c44cd484a837d4100b"
+    }
+  },
+  "runtime": [
+    {
+      "lod": "lod0",
+      "distribution": "creative-archive-proof-only",
+      "file": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/runtime/pearl-ribbon-lantern-lod0.glb",
+      "bytes": 2734736,
+      "sha256": "e33bb30aaa5b8c67b4c30df8db570371a964fe49860a718b011a5bb8361098ab",
+      "triangles": 120000,
+      "primitiveDraws": 1,
+      "textureMaximum": 2048,
+      "supportCentreXZ": [-0.00014375150203704834, 0.000016227364540100098]
+    },
+    {
+      "lod": "lod1",
+      "distribution": "shipping-runtime",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb",
+      "bytes": 795660,
+      "sha256": "928d278e84c43728e76d3500ae7c8c9ab28356d4af8e611ce48a7a004d8b3ce9",
+      "triangles": 36000,
+      "primitiveDraws": 1,
+      "textureMaximum": 1024,
+      "gameplaySelection": true,
+      "supportCentreXZ": [-0.00014375150203704834, 0.000016227364540100098]
+    }
+  ],
+  "metadataCorrection": {
+    "scope": "embedded support contract only",
+    "nonContractGltfJsonSemanticallyIdentical": true,
+    "changedContractPath": "support.centreXZ[1]",
+    "appearanceProofImagesChanged": false,
+    "runtimes": [
+      {
+        "lod": "lod0",
+        "priorSha256": "6652eda8b75f542a35488634ef7bdd00cbb06a2566a11e38a29fa670b46a64cd",
+        "correctedSha256": "e33bb30aaa5b8c67b4c30df8db570371a964fe49860a718b011a5bb8361098ab",
+        "bytesBefore": 2734740,
+        "bytesAfter": 2734736,
+        "binChunkSha256": "d69e1d6b8f90001b1805b9fa059a0b046b0e6f7c91b255ec286360845aefa7d3",
+        "binChunkByteIdentical": true
+      },
+      {
+        "lod": "lod1",
+        "priorSha256": "f50a10af4d2810c052fba00fa61b2b9f571e09d08c456a202c50e023c6f60403",
+        "correctedSha256": "928d278e84c43728e76d3500ae7c8c9ab28356d4af8e611ce48a7a004d8b3ce9",
+        "bytesBefore": 795660,
+        "bytesAfter": 795660,
+        "binChunkSha256": "54223625d1bce40f14ad7f51790c24449398681fd6b8104b8077de7e48309442",
+        "binChunkByteIdentical": true
+      }
+    ]
+  },
+  "installation": {
+    "level": "cloudway-thawing-song-alcove",
+    "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+    "renderNode": "PearlRibbonLanternGeometry",
+    "position": [3.51, 0, 9.55],
+    "yawRadians": -1.5707963267948966,
+    "scale": 1,
+    "supportingPlatformId": "thaw-alcove-beacon-rest",
+    "supportAnchor": [3.5099837726354597, 0, 9.549856248497964],
+    "renderedBounds": {
+      "min": [3.1934810216875467, -0.00001988438998523634, 9.21140717528791],
+      "max": [3.827069606020888, 1.3998990058898926, 9.889171794429117]
+    },
+    "obstacle": {
+      "kind": "cylinder",
+      "radius": 0.35067819607257844,
+      "height": 1.399999976158142,
+      "centreY": 0.699999988079071
+    }
+  },
+  "proofs": {
+    "blender": {
+      "receipt": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/production-receipt.json",
+      "receiptSha256": "cb371ae39e6f138e4c8668d8835aad13bb7f952fc9b010f9727fd6d7954758e3",
+      "matchedImages": 6
+    },
+    "standaloneWebgl": {
+      "receipt": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/webgl-proof.json",
+      "receiptSha256": "ec3933d36a49f9e9c75726705c064b8a0944a8a9766af448fd3d41b5a1942118",
+      "publicLod0Absent": true,
+      "metadataOnlyContractRefresh": true,
+      "servedDistributions": {
+        "lod0": "creative-archive",
+        "lod1": "shipping-runtime"
+      },
+      "screenshot": {
+        "file": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/proofs/browser/pearl-ribbon-lantern-lod-comparison.png",
+        "bytes": 197349,
+        "sha256": "81add836a35d8ab71dc409f5610120a607040664788acb30dd0ff5bee9be8c2b"
+      }
+    },
+    "integratedGame": {
+      "receipt": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/integrated-game-proof.json",
+      "receiptSha256": "66db6ef28d2a59ba0cbc3e650c0aa86cb0f5e2d247341d7ccc62dfc8a727932c",
+      "renderer": "WebGL2; sRGB; ACES Filmic; exposure 0.9",
+      "assetRequest": "cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb",
+      "surfacePrimitiveCost": {
+        "drawCalls": 1,
+        "triangles": 36000
+      },
+      "nativeHighFrameCost": {
+        "drawCalls": 3,
+        "submittedTriangles": 108000,
+        "explanation": "one opaque primitive participates in the live colour and shadow passes"
+      },
+      "normals": {
+        "vertices": 35253,
+        "invalid": 0,
+        "lengthRange": [0.9939989819250078, 1.0051945189027056]
+      },
+      "screenshot": {
+        "file": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/proofs/integrated-game/pearl-ribbon-lantern-creator-gallery.png",
+        "bytes": 1126516,
+        "sha256": "95ac670c183a891074e3885affd450cfd7159b9cbc1fd1fa5c9e45d4eecd2084"
+      }
+    }
+  }
+}

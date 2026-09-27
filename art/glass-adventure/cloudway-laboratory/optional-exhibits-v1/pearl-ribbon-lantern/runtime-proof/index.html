@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pearl ribbon lantern runtime proof</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #050913;
+        color: #f8f0dd;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      h1 {
+        position: fixed;
+        top: 24px;
+        left: 32px;
+        margin: 0;
+        font-size: 18px;
+        text-shadow: 0 2px 12px #000;
+      }
+      .labels {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        padding: 0 190px;
+      }
+      .labels div {
+        padding: 9px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        background: rgba(5, 9, 19, 0.72);
+        text-align: center;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pearl ribbon lantern — actual GLB runtime</h1>
+    <div class="labels">
+      <div>LOD0 · 120k</div>
+      <div>LOD1 · 36k</div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
