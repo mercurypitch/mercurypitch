@@ -18,11 +18,15 @@ import { SignInSheet } from './SignInSheet'
 const stand = vi.hoisted(() => ({
   request: vi.fn(),
   verify: vi.fn(),
+  adopt: vi.fn(async () => 0),
 }))
 
 vi.mock('@/db/services/auth-email-code-service', () => ({
   requestLoginCode: stand.request,
   verifyLoginCode: stand.verify,
+}))
+vi.mock('@/db/services/voiceprint-service', () => ({
+  adoptDeviceVoiceprints: stand.adopt,
 }))
 vi.mock('@/features/account/sign-in-methods', () => ({
   appleSignInOffered: () => false,
@@ -72,6 +76,7 @@ async function codeSentTo(address: string): Promise<void> {
 beforeEach(() => {
   stand.request.mockReset()
   stand.verify.mockReset()
+  stand.adopt.mockClear()
   stand.request.mockResolvedValue('ceremony-1')
   resetSignIn()
   view = renderShell(() => <SignInSheet />)
@@ -129,6 +134,8 @@ describe('a code by email', () => {
       proveDevice: true,
     })
     expect(signInOpen()).toBe(false)
+    // The code made the account (isNew), so the phone's takes join it.
+    expect(stand.adopt).toHaveBeenCalledTimes(1)
   })
 
   it('says a wrong code is wrong and keeps the digits', async () => {

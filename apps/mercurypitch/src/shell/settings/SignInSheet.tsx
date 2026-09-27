@@ -22,6 +22,7 @@ import { GoogleMark } from '@/components/account/GoogleMark'
 import { Sheet } from '@/components/mobile/Sheet'
 import Turnstile from '@/components/shared/Turnstile'
 import type { AuthResponse } from '@/db/services/auth-service'
+import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { showNotification } from '@/stores/notifications-store'
@@ -333,6 +334,11 @@ export function SignInSheet(props: SignInSheetProps) {
     onSignedIn: (auth) => {
       closeSignIn()
       showNotification('Signed in', 'info')
+      // An account made here takes this phone's unclaimed takes with it:
+      // making it is the consent (REQ-NAM-036, 037). Signing in to one that
+      // already existed takes nothing (REQ-NAM-039). Retag-first means a
+      // failed upload is carried by the next sync, so nothing waits on it.
+      if (auth.isNew) void adoptDeviceVoiceprints().catch(() => 0)
       void refreshAccount()
       props.onSignedIn?.(auth)
     },
