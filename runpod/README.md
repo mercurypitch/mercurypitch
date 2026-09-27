@@ -23,6 +23,7 @@ image, not part of the Vite/Cloudflare build.
 | `requirements.txt` | Python deps (torch/onnxruntime come from CUDA wheels in the Dockerfile) |
 | `test_input.json` | Sample job for the local test loop |
 | `test_input_split.json` | Sample second-pass job (split an instrumental into its parts) |
+| `test_m4a_output.py` | AAC (M4A) output for the native Karaoke room: the model writes FLAC, the kept stems are encoded to AAC with the index first. Needs only ffmpeg: `python -m pytest runpod/test_m4a_output.py` |
 | `test_stem_contract.py` | Stem-contract tests — classification, registry, residual reconciliation, and handler/api parity. No GPU or weights needed: `python -m pytest runpod/test_stem_contract.py` |
 
 ## Job contract
@@ -37,7 +38,7 @@ The handler receives RunPod's `input` object:
     "audio_s3_key":  "input/<uuid>.mp3",     // big files: handler downloads from S3_BUCKET
     "filename":      "song.mp3",
     "model":         "roformer",              // optional registry name (see below)
-    "output_format": "FLAC",                  // WAV | MP3 | FLAC (FLAC keeps payloads small)
+    "output_format": "FLAC",                  // WAV | MP3 | FLAC | M4A (FLAC keeps payloads small)
     "stems":         ["vocal", "instrumental"],
 
     // ── Second pass (splitting a stem into its parts) ──
