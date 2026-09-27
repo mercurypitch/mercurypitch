@@ -100,6 +100,21 @@ function writeLocal(records: readonly VoiceprintRecord[]): void {
   }
 }
 
+/**
+ * Empty this device's own voiceprint list, and nothing else: the account's
+ * copies are the account's, and a device clear never reaches them. Returns
+ * how many went. For the native Storage screen's Clear.
+ */
+export function clearLocalVoiceprints(): number {
+  const count = loadLocalVoiceprints().length
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Blocked storage holds nothing to clear.
+  }
+  return count
+}
+
 // ── Save ─────────────────────────────────────────────────────────
 
 /**
