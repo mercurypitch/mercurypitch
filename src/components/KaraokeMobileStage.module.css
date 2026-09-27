@@ -1251,6 +1251,14 @@
     padding: 14vh 54px 22vh 0;
   }
 
+  /* Cued, the shell's rail is up and runs along the bottom under both
+     columns: the lyrics column stops above it, so the line being read is
+     never under the rail (review V3). During a song the rail steps aside
+     and the column has its height back. */
+  :global(:root[data-shell-rail='on']) .hosted .lyrics {
+    margin-bottom: calc(var(--tabbar-total, 64px) + 6px);
+  }
+
   .hosted .line {
     font-size: calc(1.6rem * var(--lyrics-scale, 1));
     margin-bottom: 0.8rem;

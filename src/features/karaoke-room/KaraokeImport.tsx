@@ -338,7 +338,12 @@ export const KaraokeImport: Component = () => {
         }}
       />
 
-      <Sheet isOpen={sheet() !== null} close={close} ariaLabel={sheetLabel()}>
+      <Sheet
+        isOpen={sheet() !== null}
+        close={close}
+        ariaLabel={sheetLabel()}
+        class={styles.importPanel}
+      >
         <div class={styles.importSheet} data-testid="karaoke-import-sheet">
           <Switch>
             <Match when={confirming()}>

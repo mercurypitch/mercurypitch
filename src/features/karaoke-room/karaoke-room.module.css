@@ -546,6 +546,15 @@
   min-width: 0;
 }
 
+/* On its side a phone is about 390 px tall, and a sheet's usual 68% of it
+   left the answer, Separate or Subscribe, under a scroll (review V4). There
+   the sheet may take the height the phone has, and its content sizes it. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .importPanel {
+    --sheet-max-h: calc(100dvh - var(--safe-top, 0px) - 8px);
+  }
+}
+
 .sheetText {
   margin: 0;
   font: 400 15px/21px var(--font-body, sans-serif);

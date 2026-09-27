@@ -404,6 +404,23 @@ const readColumns = () => {
   }
 }
 
+/**
+ * In the page: whether the shell's rail is up, and where it and the lyrics
+ * column are drawn.
+ */
+const readRailOverLyrics = () => {
+  const box = (el) => {
+    if (el === null) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+  }
+  return {
+    up: document.documentElement.getAttribute('data-shell-rail') === 'on',
+    rail: box(document.querySelector('[data-testid="shell-rail"] .mp-rail')),
+    lyrics: box(document.querySelector('[data-testid="karaoke-lyrics"]')),
+  }
+}
+
 /** What is wrong with the columns `readColumns` read, if anything. */
 const columnProblems = (c) => {
   if (c.song === null || c.play === null || c.lyricsBox === null) {
@@ -840,6 +857,28 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     } else {
       steps.push(
         `landscape karaoke: two columns, the song and the transport in ${columns.left.join('..')}, the lyrics in ${columns.lyrics.join('..')}`,
+      )
+    }
+    // Cued, the rail is up (plan §4.2) and runs along the bottom under both
+    // columns: the lyrics column has to stop above it, or the line being
+    // read is under the rail (review V3).
+    at = 'the rail beside the lyrics'
+    const railed = await page.evaluate(readRailOverLyrics)
+    const px = (b) =>
+      b === null
+        ? 'none'
+        : `[${[b.left, b.top, b.right, b.bottom].map(Math.round).join(', ')}]`
+    if (!railed.up || railed.rail === null) {
+      failures.push(
+        `karaoke cued: the rail is not up before the first play (${JSON.stringify(railed)})`,
+      )
+    } else if (railed.lyrics === null || overlaps(railed.rail, railed.lyrics)) {
+      failures.push(
+        `karaoke cued: the rail ${px(railed.rail)} covers the lyrics column ${px(railed.lyrics)}`,
+      )
+    } else {
+      steps.push(
+        `landscape karaoke cued: the rail ${px(railed.rail)} is clear of the lyrics column ${px(railed.lyrics)}`,
       )
     }
     at = 'playing on its side'

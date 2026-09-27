@@ -39,6 +39,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from '../api-base.mjs'
 import { cueReady, readSideways, readStage } from './probe-karaoke.mjs'
+import { LANDSCAPE_INSET_FRAMES } from './probe-landscape.mjs'
 
 const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -64,6 +65,78 @@ export function importTarget(processEnv = process.env) {
  */
 const lastSongPath = () =>
   JSON.parse(localStorage.getItem('mp:dev-karaoke-last-song-path') ?? 'null')
+
+/**
+ * In the page: where a sheet's button named `label` is drawn, and whether it
+ * is whole on the screen above the home indicator's band and on top there,
+ * with the sheet as it opened (nothing scrolled).
+ */
+const readSheetButton = ([sheet, label, bottomInset]) => {
+  const panel = document.querySelector(sheet)
+  const button = [...(panel?.querySelectorAll('button') ?? [])].find(
+    (el) => el.textContent?.trim() === label,
+  )
+  if (panel === null || button === undefined) return { missing: true }
+  const r = button.getBoundingClientRect()
+  const hit = document.elementFromPoint(
+    (r.left + r.right) / 2,
+    (r.top + r.bottom) / 2,
+  )
+  return {
+    missing: false,
+    top: Math.round(r.top),
+    bottom: Math.round(r.bottom),
+    limit: window.innerHeight - bottomInset,
+    scrolled: Math.round(panel.scrollTop),
+    onTop: hit !== null && (hit === button || button.contains(hit)),
+  }
+}
+
+/**
+ * A sheet on its side (review V4): the same phone turned, with its own
+ * insets (probe-landscape.mjs), must show its answer, `label`, without a
+ * scroll. The walk goes on upright afterwards, with no insets, as before.
+ * Returns what is wrong, or null.
+ */
+async function answerOnItsSide(page, context, frame, sheet, label) {
+  const side = LANDSCAPE_INSET_FRAMES.find(
+    (turned) => turned.width === frame.height && turned.height === frame.width,
+  )
+  if (side === undefined) return { where: 'no turned frame', problem: null }
+  const where = `${side.width}x${side.height}`
+  const cdp = await context.newCDPSession(page)
+  try {
+    await page.setViewportSize({ width: side.width, height: side.height })
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+      insets: {
+        top: 0,
+        left: side.side,
+        right: side.side,
+        bottom: side.bottom,
+      },
+    })
+    await page.waitForTimeout(600)
+    const at = await page.evaluate(readSheetButton, [sheet, label, side.bottom])
+    if (at.missing) return { where, problem: `no "${label}"` }
+    if (at.scrolled !== 0) {
+      return { where, problem: `the sheet opened scrolled by ${at.scrolled}` }
+    }
+    if (at.top < 0 || at.bottom > at.limit + 0.5 || !at.onTop) {
+      return {
+        where,
+        problem: `"${label}" is at ${at.top}..${at.bottom}, not on screen above ${at.limit}${at.onTop ? '' : ' and on top'} without a scroll`,
+      }
+    }
+    return { where, problem: null, at }
+  } finally {
+    await page.setViewportSize({ width: frame.width, height: frame.height })
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+      insets: { top: 0, left: 0, right: 0, bottom: 0 },
+    })
+    await cdp.detach()
+    await page.waitForTimeout(400)
+  }
+}
 
 /** Two short takes of real AAC in the bundle: the song, and its "stems". */
 const MEDIA = {
@@ -684,6 +757,22 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     }
     await shoot(page, ctx, 'import-confirm')
     read.push(await sideways('the confirm sheet', confirm))
+    const confirmTurned = await answerOnItsSide(
+      page,
+      context,
+      frame,
+      confirm,
+      'Separate',
+    )
+    if (confirmTurned.problem !== null) {
+      failures.push(
+        `the confirm sheet on its side (${confirmTurned.where}): ${confirmTurned.problem}`,
+      )
+    } else if (confirmTurned.at !== undefined) {
+      steps.push(
+        `karaoke import: on its side (${confirmTurned.where}) the confirm sheet shows Separate at ${confirmTurned.at.top}..${confirmTurned.at.bottom} without a scroll`,
+      )
+    }
     steps.push(
       `karaoke import: the picker opens inside the tap (several at once); "${asked.title}" names "${SONG}", "${asked.lines[0]}", the day to collect it in and the keep-open line; asking made the phone's identity (1 anonymous, then /me)`,
     )
@@ -1105,6 +1194,22 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       }
     }
     said('the paywall', offer.all)
+    const paywallTurned = await answerOnItsSide(
+      page,
+      context,
+      frame,
+      paywall,
+      'Subscribe',
+    )
+    if (paywallTurned.problem !== null) {
+      failures.push(
+        `the paywall on its side (${paywallTurned.where}): ${paywallTurned.problem}`,
+      )
+    } else if (paywallTurned.at !== undefined) {
+      steps.push(
+        `karaoke import: on its side (${paywallTurned.where}) the paywall shows Subscribe at ${paywallTurned.at.top}..${paywallTurned.at.bottom} without a scroll`,
+      )
+    }
     await page.locator(`${paywall} button`, { hasText: /^Subscribe$/u }).tap()
     await visible(`${paywall} >> text=Subscriptions are not available yet.`)
     await shoot(page, ctx, 'import-paywall')
