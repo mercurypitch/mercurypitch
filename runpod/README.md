@@ -16,15 +16,15 @@ image, not part of the Vite/Cloudflare build.
 
 ## Contents
 
-| File | Purpose |
-|------|---------|
-| `handler.py` | RunPod serverless handler — downloads input, separates, returns stems |
-| `Dockerfile` | CUDA image; pre-bakes the default model to cut cold-starts |
-| `requirements.txt` | Python deps (torch/onnxruntime come from CUDA wheels in the Dockerfile) |
-| `test_input.json` | Sample job for the local test loop |
-| `test_input_split.json` | Sample second-pass job (split an instrumental into its parts) |
-| `test_m4a_output.py` | AAC (M4A) output for the native Karaoke room: the model writes FLAC, the kept stems are encoded to AAC with the index first. Needs only ffmpeg: `python -m pytest runpod/test_m4a_output.py` |
-| `test_stem_contract.py` | Stem-contract tests — classification, registry, residual reconciliation, and handler/api parity. No GPU or weights needed: `python -m pytest runpod/test_stem_contract.py` |
+| File                    | Purpose                                                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handler.py`            | RunPod serverless handler — downloads input, separates, returns stems                                                                                                                        |
+| `Dockerfile`            | CUDA image; pre-bakes the default model to cut cold-starts                                                                                                                                   |
+| `requirements.txt`      | Python deps (torch/onnxruntime come from CUDA wheels in the Dockerfile)                                                                                                                      |
+| `test_input.json`       | Sample job for the local test loop                                                                                                                                                           |
+| `test_input_split.json` | Sample second-pass job (split an instrumental into its parts)                                                                                                                                |
+| `test_m4a_output.py`    | AAC (M4A) output for the native Karaoke room: the model writes FLAC, the kept stems are encoded to AAC with the index first. Needs only ffmpeg: `python -m pytest runpod/test_m4a_output.py` |
+| `test_stem_contract.py` | Stem-contract tests — classification, registry, residual reconciliation, and handler/api parity. No GPU or weights needed: `python -m pytest runpod/test_stem_contract.py`                   |
 
 ## Job contract
 
@@ -33,20 +33,20 @@ The handler receives RunPod's `input` object:
 ```jsonc
 {
   "input": {
-    "audio_url":     "https://.../song.mp3", // handler fetches it
-    "audio_base64":  "<base64>",             // small files inlined in the job (≤7 MB)
-    "audio_s3_key":  "input/<uuid>.mp3",     // big files: handler downloads from S3_BUCKET
-    "filename":      "song.mp3",
-    "model":         "roformer",              // optional registry name (see below)
-    "output_format": "FLAC",                  // WAV | MP3 | FLAC | M4A (FLAC keeps payloads small)
-    "stems":         ["vocal", "instrumental"],
+    "audio_url": "https://.../song.mp3", // handler fetches it
+    "audio_base64": "<base64>", // small files inlined in the job (≤7 MB)
+    "audio_s3_key": "input/<uuid>.mp3", // big files: handler downloads from S3_BUCKET
+    "filename": "song.mp3",
+    "model": "roformer", // optional registry name (see below)
+    "output_format": "FLAC", // WAV | MP3 | FLAC | M4A (FLAC keeps payloads small)
+    "stems": ["vocal", "instrumental"],
 
     // ── Second pass (splitting a stem into its parts) ──
-    "source_stem":         "original",        // or "instrumental"
-    "drop_stems":          ["vocal"],         // default ["vocal"] when source_stem != "original"
-    "reconcile_residual":  true,              // default: on for a second pass
-    "residual_stem":       "other"
-  }
+    "source_stem": "original", // or "instrumental"
+    "drop_stems": ["vocal"], // default ["vocal"] when source_stem != "original"
+    "reconcile_residual": true, // default: on for a second pass
+    "residual_stem": "other",
+  },
 }
 ```
 
@@ -57,15 +57,15 @@ never a raw weights filename. All weights are baked into the image. Every
 registry entry declares the stems it produces (`MODEL_REGISTRY[...].stems`),
 returned as `model_stems` — so nothing downstream hard-codes a two-stem world.
 
-| Name | Weights | Stems | What it is |
-|---|---|---|---|
-| `roformer` (default) | BS-RoFormer viperx 1297 | vocal, instrumental | Highest single-model quality (vocals SDR ~12.9 vs ~10 for MDX); ~2-4x slower than MDX |
-| `mdx` | UVR-MDX-NET Inst HQ_3 | vocal, instrumental | The previous default; fastest tier |
-| `karaoke` | Mel-Band RoFormer karaoke | vocal, instrumental | Removes only the LEAD vocal — backing vocals stay in the instrumental (its stem is labeled `(Karaoke)` and mapped to `instrumental`) |
-| `ensemble` | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | vocal, instrumental | Max quality; ~2x the time of `roformer`, and ensemble members reload per job |
-| `demucs` | htdemucs | vocal, drums, bass, other | Fast multi-stem tier; one model pass |
-| `demucs-ft` | htdemucs_ft | vocal, drums, bass, other | Best 4-stem quality — **four** fine-tuned models bagged, so ~4x `demucs` |
-| `demucs-6s` | htdemucs_6s | + guitar, piano | The only source of a guitar stem. Piano rides along on the same compute but **bleeds heavily**, so the app drops it by default (`defaultDropStems` in `src/lib/uvr-api.ts`) and the residual pass folds its audio into `other`. The server stays neutral and will return it on request. |
+| Name                 | Weights                                         | Stems                     | What it is                                                                                                                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `roformer` (default) | BS-RoFormer viperx 1297                         | vocal, instrumental       | Highest single-model quality (vocals SDR ~12.9 vs ~10 for MDX); ~2-4x slower than MDX                                                                                                                                                                                                   |
+| `mdx`                | UVR-MDX-NET Inst HQ_3                           | vocal, instrumental       | The previous default; fastest tier                                                                                                                                                                                                                                                      |
+| `karaoke`            | Mel-Band RoFormer karaoke                       | vocal, instrumental       | Removes only the LEAD vocal — backing vocals stay in the instrumental (its stem is labeled `(Karaoke)` and mapped to `instrumental`)                                                                                                                                                    |
+| `ensemble`           | BS-RoFormer + Mel-Band RoFormer Kim, `avg_wave` | vocal, instrumental       | Max quality; ~2x the time of `roformer`, and ensemble members reload per job                                                                                                                                                                                                            |
+| `demucs`             | htdemucs                                        | vocal, drums, bass, other | Fast multi-stem tier; one model pass                                                                                                                                                                                                                                                    |
+| `demucs-ft`          | htdemucs_ft                                     | vocal, drums, bass, other | Best 4-stem quality — **four** fine-tuned models bagged, so ~4x `demucs`                                                                                                                                                                                                                |
+| `demucs-6s`          | htdemucs_6s                                     | + guitar, piano           | The only source of a guitar stem. Piano rides along on the same compute but **bleeds heavily**, so the app drops it by default (`defaultDropStems` in `src/lib/uvr-api.ts`) and the residual pass folds its audio into `other`. The server stays neutral and will return it on request. |
 
 `UVR_DEMUCS_SHIFTS` (default 2) is the main cost dial for the Demucs
 tiers: it runs N passes at different offsets and averages them, so
@@ -89,7 +89,7 @@ model. That flips on two behaviours:
 Reconciliation is only sound when the input really is the sum of the kept
 stems — i.e. already vocal-free. It stays **off** by default for
 `source_stem: "original"`, where dropping the vocal and reconciling would
-fold the *vocal* into the residual. The response echoes `source_stem`,
+fold the _vocal_ into the residual. The response echoes `source_stem`,
 `dropped_stems` and `reconciled_stem` so the app can tell what happened.
 
 The legacy value `UVR-MDX-NET-Inst_HQ_3` is still accepted (maps to
@@ -124,17 +124,28 @@ Output:
 ```jsonc
 {
   "stems": [
-    { "stem": "vocal", "filename": "...", "url": "https://...",   // when S3/R2 is configured
-      "size": 1234, "duration": 201.3 },
-    { "stem": "instrumental", "filename": "...", "data_base64": "..." } // otherwise
+    {
+      "stem": "vocal",
+      "filename": "...",
+      "url": "https://...", // when S3/R2 is configured
+      "size": 1234,
+      "duration": 201.3,
+    },
+    { "stem": "instrumental", "filename": "...", "data_base64": "..." }, // otherwise
   ],
   "model": "roformer",
   "model_files": ["model_bs_roformer_ep_317_sdr_12.9755.ckpt"],
   "output_format": "FLAC",
   "device": "cuda",
   "storage": "s3",
-  "timings": { "download": 1.2, "load_model": 0.0, "separate": 132.7, "upload": 2.1, "total": 136.0 },
-  "cost":    { "gpu_usd_per_hr": 0.69, "billed_secs": 136.0, "usd": 0.0261 }
+  "timings": {
+    "download": 1.2,
+    "load_model": 0.0,
+    "separate": 132.7,
+    "upload": 2.1,
+    "total": 136.0,
+  },
+  "cost": { "gpu_usd_per_hr": 0.69, "billed_secs": 136.0, "usd": 0.0261 },
 }
 ```
 
@@ -148,15 +159,15 @@ Set S3-compatible storage (Cloudflare R2 works) so stems come back as URLs
 instead of inline base64. Base64 is only practical for small local-test
 files; production must use storage to stay under RunPod payload limits.
 
-| Env var | Meaning |
-|---------|---------|
-| `S3_BUCKET` | Bucket name |
-| `S3_ENDPOINT_URL` | e.g. `https://<account>.r2.cloudflarestorage.com` |
-| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Credentials (also accepts `AWS_*`) |
-| `S3_REGION` | `auto` for R2 |
-| `S3_PUBLIC_BASE_URL` | Public/CDN base for returned URLs; if empty, presigned GETs are used |
-| `S3_URL_TTL_SECS` | Presigned URL lifetime (default 24h) |
-| `S3_KEY_PREFIX` | Key prefix inside the bucket (default `runpod`). Set per endpoint to separate environments sharing one bucket — e.g. `runpod-dev` on the dev/test endpoint — and to scope prefix-based lifecycle rules |
+| Env var                                     | Meaning                                                                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `S3_BUCKET`                                 | Bucket name                                                                                                                                                                                            |
+| `S3_ENDPOINT_URL`                           | e.g. `https://<account>.r2.cloudflarestorage.com`                                                                                                                                                      |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Credentials (also accepts `AWS_*`)                                                                                                                                                                     |
+| `S3_REGION`                                 | `auto` for R2                                                                                                                                                                                          |
+| `S3_PUBLIC_BASE_URL`                        | Public/CDN base for returned URLs; if empty, presigned GETs are used                                                                                                                                   |
+| `S3_URL_TTL_SECS`                           | Presigned URL lifetime (default 24h)                                                                                                                                                                   |
+| `S3_KEY_PREFIX`                             | Key prefix inside the bucket (default `runpod`). Set per endpoint to separate environments sharing one bucket — e.g. `runpod-dev` on the dev/test endpoint — and to scope prefix-based lifecycle rules |
 
 Other tunables: `UVR_DEFAULT_MODEL`, `UVR_MODEL_DIR` (default `/models`),
 `UVR_MAX_INPUT_BYTES` (default 100 MB), `UVR_MIN_INPUT_SECONDS` (default
@@ -166,13 +177,13 @@ opaque tensor error mid-separation), `RUNPOD_GPU_USD_PER_HR` (default
 
 ## Separation quality
 
-| Env (endpoint default) | Job override (`input`) | Default | Meaning |
-|---|---|---|---|
-| `UVR_INVERT_USING_SPEC` | `invert_using_spec` | **on** | Derive the vocal stem by spectrogram-domain inversion instead of time-domain subtraction. Time-domain leaves phase-misalignment bleed (instrumental audibly leaking into the vocal, varying by song); spec inversion matches the in-browser separator |
-| `UVR_MDX_OVERLAP` | `mdx_overlap` | 0.25 | MDX chunk overlap (0.1–0.95); higher = smoother seams, slower |
-| `UVR_MDX_DENOISE` | `mdx_denoise` | off | MDX two-pass denoise; cleaner output at ~2x inference time |
-| `UVR_MDX_SEGMENT_SIZE` | `mdx_segment_size` | 256 | MDX segment size (64–4096) |
-| `UVR_MDXC_OVERLAP` | `mdxc_overlap` | 8 | RoFormer/MDXC chunk overlap (integer 2–50 — different semantics from the MDX fraction); higher = smoother seams, slower. RoFormer checkpoints keep their own trained segment size |
+| Env (endpoint default)  | Job override (`input`) | Default | Meaning                                                                                                                                                                                                                                               |
+| ----------------------- | ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UVR_INVERT_USING_SPEC` | `invert_using_spec`    | **on**  | Derive the vocal stem by spectrogram-domain inversion instead of time-domain subtraction. Time-domain leaves phase-misalignment bleed (instrumental audibly leaking into the vocal, varying by song); spec inversion matches the in-browser separator |
+| `UVR_MDX_OVERLAP`       | `mdx_overlap`          | 0.25    | MDX chunk overlap (0.1–0.95); higher = smoother seams, slower                                                                                                                                                                                         |
+| `UVR_MDX_DENOISE`       | `mdx_denoise`          | off     | MDX two-pass denoise; cleaner output at ~2x inference time                                                                                                                                                                                            |
+| `UVR_MDX_SEGMENT_SIZE`  | `mdx_segment_size`     | 256     | MDX segment size (64–4096)                                                                                                                                                                                                                            |
+| `UVR_MDXC_OVERLAP`      | `mdxc_overlap`         | 8       | RoFormer/MDXC chunk overlap (integer 2–50 — different semantics from the MDX fraction); higher = smoother seams, slower. RoFormer checkpoints keep their own trained segment size                                                                     |
 
 The warm separator is cached per (model, quality) tuple: jobs using the
 endpoint defaults never rebuild; an override rebuilds once (a few seconds).
@@ -185,11 +196,11 @@ RunPod bills **per second from when a worker starts until it stops** — there i
 no charge while zero workers run. A billed worker spends time in three phases
 (per the RunPod docs); each has a lever:
 
-| Phase | What it is | Lever |
-|-------|-----------|-------|
-| **Start time** | Container init + loading the model into GPU memory | Model is **baked into the image** (no re-download) and **eager-loaded at startup** (`UVR_EAGER_LOAD=1`) so **FlashBoot** can snapshot the warmed worker and restore it in ~2s |
-| **Execution time** | Separating the song | Lean one-shot handler + warm model reuse across jobs; set an **execution timeout** on the endpoint (~300s) to cap runaway jobs |
-| **Idle timeout** | Seconds the worker stays up after a job (default 5s) | Tune in endpoint settings — higher reuses the warm worker for a burst of songs, lower cuts idle billing |
+| Phase              | What it is                                           | Lever                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Start time**     | Container init + loading the model into GPU memory   | Model is **baked into the image** (no re-download) and **eager-loaded at startup** (`UVR_EAGER_LOAD=1`) so **FlashBoot** can snapshot the warmed worker and restore it in ~2s |
+| **Execution time** | Separating the song                                  | Lean one-shot handler + warm model reuse across jobs; set an **execution timeout** on the endpoint (~300s) to cap runaway jobs                                                |
+| **Idle timeout**   | Seconds the worker stays up after a job (default 5s) | Tune in endpoint settings — higher reuses the warm worker for a burst of songs, lower cuts idle billing                                                                       |
 
 The handler caches the loaded model across warm invocations, so a second song
 on a still-warm worker skips Start time entirely. The full endpoint-settings
