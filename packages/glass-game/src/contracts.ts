@@ -1,6 +1,9 @@
 // Glass adventure contracts — content, simulation and host-neutral observations.
 
+import type { MelodyAttemptConfiguration, MelodyAttemptConfigurationResult, MelodyAttemptIdentity, MelodyJudgeSnapshot, MelodyLessonDefinition, } from './melody-contracts'
 import type { PitchWaveDefinition } from './pitch-wave'
+
+export type * from './melody-contracts'
 
 export interface Vec3 {
   x: number
@@ -191,7 +194,7 @@ export interface PitchStepDefinition {
   hold: HoldDefinition
 }
 
-export type ChallengeDefinition =
+export type PitchChallengeDefinition =
   | { kind: 'hold'; step: PitchStepDefinition }
   | {
       kind: 'settle-wave'
@@ -203,6 +206,28 @@ export type ChallengeDefinition =
       steps: readonly [PitchStepDefinition, PitchStepDefinition]
       wrongOrder: 'reset'
     }
+
+export interface MelodyAnchorChallengeDefinition {
+  kind: 'melody-anchor'
+  lessonId: string
+  anchorId: string
+  reference: 'anchor-tone'
+  step: { hold: HoldDefinition }
+}
+
+export interface MelodyContourChallengeDefinition {
+  kind: 'melody-contour'
+  lessonId: string
+  reference: 'whole-melody'
+}
+
+export type MelodyChallengeDefinition =
+  | MelodyAnchorChallengeDefinition
+  | MelodyContourChallengeDefinition
+
+export type ChallengeDefinition =
+  | PitchChallengeDefinition
+  | MelodyChallengeDefinition
 
 export interface BreakableDefinition {
   id: string
@@ -312,6 +337,17 @@ export interface RoomDecorationInstanceDefinition {
   coveredSolidIds?: readonly string[]
 }
 
+/** One low diegetic route cue, ordered with the lesson's melodic stations. */
+export interface MelodyStationMarkerDefinition {
+  id: string
+  roomId: string
+  encounterId: string
+  anchorId: string
+  position: Vec3
+  yaw: number
+  pitchOffsetSemitones: number
+}
+
 export interface EncounterSuccessNotice {
   encounterId: string
   notice: string
@@ -347,6 +383,7 @@ export interface LevelPresentationDefinition {
   audioRegions: readonly AudioRegionDefinition[]
   visuals: readonly VisualInstanceDefinition[]
   decorations?: readonly RoomDecorationInstanceDefinition[]
+  melodyMarkers?: readonly MelodyStationMarkerDefinition[]
   floorArt?: readonly PlatformFloorArtDefinition[]
   assetRecipeIds: readonly string[]
 }
@@ -439,6 +476,7 @@ export interface LevelDefinition {
   rewards?: LevelRewardDefinition
   movement?: LevelMovementDefinition
   camera?: LevelCameraDefinition
+  melodyLesson?: MelodyLessonDefinition
   intentionalGaps?: readonly IntentionalGapDefinition[]
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
@@ -514,16 +552,9 @@ export interface GameSnapshot {
   activeSolidIds?: readonly string[]
   enabledPlatformIds: readonly string[]
   completedBreakableIds: readonly string[]
-  activeEncounter: {
-    id: string
-    kind: ChallengeDefinition['kind']
-    charge: number
-    stepCharge: number
-    stepIndex: number
-    stepCount: number
-    target: PitchTargetId
-    targetMidi: number
-  } | null
+  activeEncounter: (ChallengeProgress & { id: string }) | null
+  /** Always live; optional so older presentation fixtures remain readable. */
+  melodyAttempt?: MelodyAttemptIdentity | null
   phase: EncounterPhase
   paused: boolean
   checkpointId: string
@@ -578,14 +609,50 @@ export interface LevelRewardSummary {
 }
 
 export interface SavedProgress {
-  /** Version 1 remains readable; new writes use version 2 with reward progress. */
-  version: 1 | 2
+  /** Versions 1 and 2 remain readable; melody attempts write version 3. */
+  version: 1 | 2 | 3
   levelId: string
   checkpointId: string
   completedBreakableIds: string[]
   finished?: boolean
   rewards?: SavedRewardProgress
+  melodyAttempt?: MelodyAttemptIdentity
 }
+
+interface ChallengeProgressBase {
+  kind: ChallengeDefinition['kind']
+  stepIndex: number
+  stepCount: number
+  stepCharge: number
+  charge: number
+  targetMidi: number
+}
+
+export interface PitchChallengeProgress extends ChallengeProgressBase {
+  kind: PitchChallengeDefinition['kind']
+  /** Optional only so pre-melody progress fixtures remain source-compatible. */
+  targetKind?: 'pitch'
+  target: PitchTargetId
+}
+
+export interface MelodyAnchorChallengeProgress extends ChallengeProgressBase {
+  kind: 'melody-anchor'
+  targetKind: 'melody-anchor'
+  target: string
+}
+
+export interface MelodyContourChallengeProgress extends ChallengeProgressBase {
+  kind: 'melody-contour'
+  targetKind: 'melody-contour'
+  target: string
+  melodyJudge: MelodyJudgeSnapshot
+}
+
+export type MelodyChallengeProgress =
+  | MelodyAnchorChallengeProgress
+  | MelodyContourChallengeProgress
+
+export type ChallengeProgress = PitchChallengeProgress | MelodyChallengeProgress
 
 export type BreakOutcome = 'celebration' | 'path-opened' | 'exit-opened'
 
@@ -612,6 +679,11 @@ export interface GlassGame {
     nowMs?: number,
   ): GameEvent[]
   snapshot(): GameSnapshot
+  configureMelodyAttempt(
+    configuration: MelodyAttemptConfiguration,
+  ): MelodyAttemptConfigurationResult
+  /** Melody encounters use the configured attempt; pitch encounters keep calibrated targets. */
+  beginEncounter(id: string): boolean
   /** A number is the backwards-compatible shorthand for `{ comfortable: n }`. */
   beginEncounter(id: string, targets: number | PitchTargets): boolean
   feedPitch(frame: PitchObservation, nowMs: number): GameEvent[]

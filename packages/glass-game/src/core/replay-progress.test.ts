@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { MUSEUM_CAMPAIGN } from '../content/campaign'
 import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
 import { replayProfilesForLevel } from '../content/replay-profiles'
-import type { SavedProgress } from '../contracts'
+import type { ChallengeDefinition, PitchStepDefinition, SavedProgress, } from '../contracts'
 import { readProgress } from './progress'
 import { resolveReplayProfile } from './replay-profile'
 import { beginReplayAttempt, canEnterReplay, highestReplayTier, readReplayProgress, saveReplayAttempt, } from './replay-progress'
@@ -24,6 +24,16 @@ const complete = (profile = easy): SavedProgress => ({
   finished: true,
 })
 
+function pitchSteps(
+  challenge: ChallengeDefinition,
+): readonly PitchStepDefinition[] {
+  if (challenge.kind === 'melody-anchor' || challenge.kind === 'melody-contour')
+    throw new Error(
+      'Museum replay fixture unexpectedly contains a melody lesson.',
+    )
+  return challenge.kind === 'ordered-pair' ? challenge.steps : [challenge.step]
+}
+
 describe('authored replay goals', () => {
   it('resolves every current gallery without changing its paths or capture reliability', () => {
     for (const chapter of MUSEUM_CAMPAIGN) {
@@ -40,14 +50,8 @@ describe('authored replay goals', () => {
         for (const [index, exhibit] of resolved.level.breakables.entries()) {
           const original = chapter.level.breakables[index]!
           if (exhibit.optional) expect(exhibit).toBe(original)
-          const nextSteps =
-            exhibit.challenge.kind === 'ordered-pair'
-              ? exhibit.challenge.steps
-              : [exhibit.challenge.step]
-          const oldSteps =
-            original.challenge.kind === 'ordered-pair'
-              ? original.challenge.steps
-              : [original.challenge.step]
+          const nextSteps = pitchSteps(exhibit.challenge)
+          const oldSteps = pitchSteps(original.challenge)
           nextSteps.forEach((step, stepIndex) => {
             const previous = oldSteps[stepIndex]!
             expect(step.target).toBe(previous.target)

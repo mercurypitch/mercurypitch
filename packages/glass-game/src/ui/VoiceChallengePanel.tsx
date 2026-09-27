@@ -62,6 +62,7 @@ export function VoiceChallengePanel(props: {
     <section
       class={styles.encounter}
       aria-label="Voice challenge"
+      data-challenge-panel
       data-voice-mode={props.mode}
       data-step-index={props.stepIndex}
       onKeyDown={handlePanelKeyDown}

@@ -6,6 +6,9 @@ import type { CompiledRoom } from './internal'
 import { diagnostic, mapEncounterRefs, runtimeRoomId } from './internal'
 
 function cloneChallenge(challenge: ChallengeDefinition): ChallengeDefinition {
+  if (challenge.kind === 'melody-contour') return { ...challenge }
+  if (challenge.kind === 'melody-anchor')
+    return { ...challenge, step: { hold: { ...challenge.step.hold } } }
   if (challenge.kind === 'settle-wave')
     return {
       kind: challenge.kind,

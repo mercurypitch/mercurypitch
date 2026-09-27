@@ -1,6 +1,5 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
 import { createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { readGlassAssetBlob } from '../asset-response'
 import type { MercEncoreAvailability, MercEncoreVariant, } from '../content/encore-examples'
 import { MERC_ENCORE_JUDGE_POLICY, MERC_ENCORE_PHRASES, mercEncoreAvailability, } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
@@ -16,6 +15,7 @@ import { createEncorePlaybackClaims, retireEncoreAudioLease, } from './encore-au
 import styles from './EncoreDialog.module.css'
 import type { MelodyPracticeSnapshot } from './melody-practice'
 import { MelodyPractice } from './MelodyPractice'
+import { loadMercMelodyExample } from './merc-melody-reference'
 import type { MusicalMemoryState } from './musical-memory'
 import { createMusicalMemory } from './musical-memory'
 
@@ -115,12 +115,11 @@ export function EncoreDialog(props: {
     }))
     const deadline = setTimeout(() => request.abort(), 10_000)
     try {
-      const url = host.assetUrl(variant.assetId)
-      const response = await fetch(url, {
-        signal: request.signal,
-      })
-      const audio = await readGlassAssetBlob(url, response)
-      if (audio.size > 1_000_000) throw new Error('Invalid voice example')
+      const audio = await loadMercMelodyExample(
+        host.assetUrl,
+        variant,
+        request.signal,
+      )
       if (alive)
         setExamples((current) => ({
           ...current,

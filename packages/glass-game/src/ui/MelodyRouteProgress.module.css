@@ -1,0 +1,59 @@
+/* The route marker is a quiet travel cue; challenge detail remains in the bottom panel. */
+
+.route {
+  position: absolute;
+  top: max(82px, calc(env(safe-area-inset-top) + 70px));
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #fff6;
+  border-radius: 999px;
+  background: #173f49ba;
+  box-shadow: 0 3px 16px #153a4420;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.note {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid #c6dbd2;
+  border-radius: 50%;
+  color: #f4f4e6;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.complete {
+  border-color: #f0c56d;
+  background: #f0c56d;
+  color: #173f49;
+}
+
+.active {
+  box-shadow: 0 0 0 3px #fff9;
+}
+
+@media (max-width: 430px) {
+  .route {
+    top: max(68px, calc(env(safe-area-inset-top) + 56px));
+    gap: 5px;
+    padding: 6px 8px;
+  }
+
+  .note {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note {
+    transition: none;
+  }
+}

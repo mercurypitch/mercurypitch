@@ -15,6 +15,7 @@ import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import { createMelodyStationMarkers } from './melody-station-markers'
 import { createPlanarReflectionController } from './planar-reflections'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
@@ -204,6 +205,15 @@ export function createMuseum(
     if (room === undefined)
       throw new Error(
         `Room decoration could not find authored room "${instance.roomId}".`,
+      )
+    room.add(instance.root)
+  }
+  const melodyMarkers = createMelodyStationMarkers(level, materials)
+  for (const instance of melodyMarkers.instances) {
+    const room = roomGroups.get(instance.roomId)
+    if (room === undefined)
+      throw new Error(
+        `Melody marker could not find authored room "${instance.roomId}".`,
       )
     room.add(instance.root)
   }
@@ -529,6 +539,7 @@ export function createMuseum(
       const active = new Set(activeSolidIds)
       activeSolids = active
       decorations.update(active)
+      melodyMarkers.update(snapshot)
       dressing.update(snapshot.enabledPlatformIds)
       for (const { solid, mesh } of solidProxies) {
         const solidActive = active.has(solid.id)

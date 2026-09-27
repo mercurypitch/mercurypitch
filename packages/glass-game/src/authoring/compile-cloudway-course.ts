@@ -6,6 +6,7 @@ import type { CloudwayCourseProfileCatalog } from './cloudway-course-profiles'
 import type { CloudwayCourseDocumentSource } from './cloudway-course-source'
 import { array, bounds3, CLOUDWAY_GAP_TOLERANCE, exactKeys, fail, finite, identifierSet, positive, record, string, stringArray, vec3, } from './cloudway-course-validation.ts'
 import { compileEncounter, requireKnownReferences, validateEncounterGraph, validateStaticAnchor, } from './compile-cloudway-encounters.ts'
+import { compileCloudwayMelodyLesson, validateMelodyRoute, } from './compile-cloudway-melody.ts'
 import { compileGap, compilePlatform } from './compile-cloudway-platforms.ts'
 
 const COURSE_SCHEMA = 'mercurypitch.cloudway-course'
@@ -59,24 +60,30 @@ function compileCourse(
   raw: unknown,
   catalog: CloudwayCourseProfileCatalog,
   path: string,
+  schemaVersion: 2 | 3,
 ): LevelDefinition {
   const source = record(raw, path)
-  exactKeys(source, path, [
-    'id',
-    'title',
-    'authored',
-    'movement',
-    'guidance',
-    'spawn',
-    'platforms',
-    'gaps',
-    'checkpoints',
-    'encounters',
-    'camera',
-    'exit',
-    'fallBelow',
-    'presentation',
-  ])
+  exactKeys(
+    source,
+    path,
+    [
+      'id',
+      'title',
+      'authored',
+      'movement',
+      'guidance',
+      'spawn',
+      'platforms',
+      'gaps',
+      'checkpoints',
+      'encounters',
+      'camera',
+      'exit',
+      'fallBelow',
+      'presentation',
+    ],
+    schemaVersion === 3 ? ['melodyLesson'] : [],
+  )
 
   const platformValues = array(source.platforms, `${path}.platforms`).map(
     (platform, index) =>
@@ -101,7 +108,12 @@ function compileCourse(
 
   const encounterValues = array(source.encounters, `${path}.encounters`).map(
     (encounter, index) =>
-      compileEncounter(encounter, catalog, `${path}.encounters[${index}]`),
+      compileEncounter(
+        encounter,
+        catalog,
+        `${path}.encounters[${index}]`,
+        schemaVersion,
+      ),
   )
   const breakables = encounterValues.map((encounter) => encounter.definition)
   validateEncounterGraph(breakables)
@@ -338,6 +350,18 @@ function compileCourse(
     presentation.lightBounds,
     `${path}.presentation.lightBounds`,
   )
+  const melodyLesson = compileCloudwayMelodyLesson(
+    source.melodyLesson,
+    catalog,
+    `${path}.melodyLesson`,
+  )
+  validateMelodyRoute(
+    melodyLesson,
+    breakables,
+    checkpointValues,
+    compiledExit.requiresCompleted,
+    `${path}.melodyLesson`,
+  )
   const assetRecipeIds = Array.from(
     new Set([
       ...platformValues.map((platform) => platform.profile.renderId),
@@ -347,6 +371,7 @@ function compileCourse(
 
   return {
     id,
+    melodyLesson,
     title: string(source.title, `${path}.title`),
     authored: {
       levelId,
@@ -417,11 +442,17 @@ export function compileCloudwayCourseDocument(
   exactKeys(document, 'courseDocument', ['schema', 'schemaVersion', 'courses'])
   if (document.schema !== COURSE_SCHEMA)
     fail('courseDocument.schema', `must be "${COURSE_SCHEMA}".`)
-  if (document.schemaVersion !== 2)
-    fail('courseDocument.schemaVersion', 'must be 2.')
+  if (document.schemaVersion !== 2 && document.schemaVersion !== 3)
+    fail('courseDocument.schemaVersion', 'must be 2 or 3.')
+  const schemaVersion = document.schemaVersion
   const courses = array(document.courses, 'courseDocument.courses').map(
     (course, index) =>
-      compileCourse(course, catalog, `courseDocument.courses[${index}]`),
+      compileCourse(
+        course,
+        catalog,
+        `courseDocument.courses[${index}]`,
+        schemaVersion,
+      ),
   )
   identifierSet(
     courses.map((course) => course.id),

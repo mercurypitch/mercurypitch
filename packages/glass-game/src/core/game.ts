@@ -1,12 +1,15 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
-import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PitchAccuracyGradingPolicy, PlatformDefinition, } from '../contracts'
+import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PitchAccuracyGradingPolicy, PitchTargets, PlatformDefinition, } from '../contracts'
 import { deriveBreakOutcome } from './break-outcome'
 import type { ChallengeJudge } from './challenge'
 import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
 import { containsBody, findSupport, FLAT_COURSE_COLLIDER, intentionalGapDefinitionError, } from './collision'
 import { blockExitPortalCrossing, crossesExitPortal, deriveExitPortalGeometry, } from './exit-portal'
+import type { ResolvedMelodyAttempt } from './melody-attempt'
+import { melodyLessonError, readMelodyAttempt, resolveMelodyAttempt, sameMelodyAttempt, } from './melody-attempt'
+import { createMelodyChallengeJudge } from './melody-challenge'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { createPlatformRuntime } from './platform-runtime'
 import { findCheckpoint, getRequiredRouteBreakableIds, readProgress, requirementsMet, } from './progress'
@@ -30,6 +33,8 @@ export function createGlassGame(
   saved?: unknown,
   collider: CourseCollider = FLAT_COURSE_COLLIDER,
 ): GlassGame {
+  const lessonError = melodyLessonError(level)
+  if (lessonError !== undefined) throw new Error(lessonError)
   for (const gap of level.intentionalGaps ?? []) {
     const error = intentionalGapDefinitionError(gap)
     if (error !== undefined)
@@ -50,6 +55,10 @@ export function createGlassGame(
       )
   const progress = readProgress(level, saved)
   const completed = new Set(progress.completedBreakableIds)
+  let melodyAttempt: ResolvedMelodyAttempt | null = readMelodyAttempt(
+    level,
+    progress.melodyAttempt,
+  )
   let rewardProgress =
     progress.rewards ?? readRewardProgress(level, undefined, completed)
   let checkpointId = progress.checkpointId
@@ -409,6 +418,7 @@ export function createGlassGame(
           active === null
             ? null
             : { id: active.target.id, ...active.judge.snapshot() },
+        melodyAttempt: melodyAttempt?.identity ?? null,
         phase: phase(),
         paused,
         checkpointId,
@@ -421,18 +431,56 @@ export function createGlassGame(
         rewardSummary: summarizeRewards(level, rewardProgress),
       }
     },
-    beginEncounter(id, targets) {
+    configureMelodyAttempt(configuration) {
+      if (level.melodyLesson === undefined)
+        return { ok: false, reason: 'no-lesson' }
+      let resolved: ResolvedMelodyAttempt
+      try {
+        resolved = resolveMelodyAttempt(level, configuration)
+      } catch {
+        return { ok: false, reason: 'invalid' }
+      }
+      if (active !== null || shattering !== null)
+        return { ok: false, reason: 'frozen' }
+      if (
+        melodyAttempt !== null &&
+        sameMelodyAttempt(melodyAttempt.identity, resolved.identity)
+      )
+        return { ok: true, changed: false, attempt: melodyAttempt.identity }
+      const lessonProgress = level.melodyLesson.stations.some((station) =>
+        completed.has(station.encounterId),
+      )
+      if (lessonProgress) return { ok: false, reason: 'frozen' }
+      melodyAttempt = resolved
+      return { ok: true, changed: true, attempt: resolved.identity }
+    },
+    beginEncounter(id, targets?: number | PitchTargets) {
       if (paused || complete || active !== null || shattering !== null)
         return false
       const target = level.breakables.find((candidate) => candidate.id === id)
       if (target === undefined || !eligible(target)) return false
-      const challenge = createChallengeJudge(target.challenge, targets)
-      if (!challenge.ok) return false
+      let judge: ChallengeJudge
+      if (
+        target.challenge.kind === 'melody-anchor' ||
+        target.challenge.kind === 'melody-contour'
+      ) {
+        if (targets !== undefined || melodyAttempt === null) return false
+        try {
+          judge = createMelodyChallengeJudge(target.challenge, melodyAttempt)
+        } catch {
+          return false
+        }
+      } else {
+        if (targets === undefined) return false
+        const challenge = createChallengeJudge(target.challenge, targets)
+        if (!challenge.ok) return false
+        judge = challenge.judge
+      }
       releaseMovement(player)
       accumulator = 0
       active = {
         target,
-        judge: challenge.judge,
+        judge,
         ...(() => {
           const qualityPolicy = level.rewards?.grading.find(
             (policy) => policy.encounterId === target.id,
@@ -520,7 +568,7 @@ export function createGlassGame(
     },
     saveProgress() {
       return {
-        version: 2,
+        version: level.melodyLesson === undefined ? 2 : 3,
         levelId: level.id,
         checkpointId,
         completedBreakableIds: [...completed],
@@ -529,6 +577,9 @@ export function createGlassGame(
           level.rewards === undefined
             ? emptyRewardProgress()
             : readRewardProgress(level, rewardProgress, completed),
+        ...(melodyAttempt === null
+          ? {}
+          : { melodyAttempt: melodyAttempt.identity }),
       }
     },
   }

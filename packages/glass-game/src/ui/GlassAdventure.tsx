@@ -6,6 +6,7 @@ import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
 import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { AdventureMessageStack } from './AdventureMessageStack'
+import { AdventureVoicePanel } from './AdventureVoicePanel'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
@@ -13,12 +14,12 @@ import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
+import { MelodyRouteProgress } from './MelodyRouteProgress'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 import { ReplayCompletion, RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
-import { VoiceChallengePanel } from './VoiceChallengePanel'
 
 const CameraTuningPanel = lazy(async () => ({
   default: (await import('./CameraTuningPanel')).CameraTuningPanel,
@@ -165,25 +166,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       adventure.microphoneIssue() === null &&
       nearby() !== undefined,
   )
-  const voiceSteps = createMemo(() => {
-    const challenge = active()?.challenge
-    if (!challenge) return []
-    switch (challenge.kind) {
-      case 'hold':
-      case 'settle-wave':
-        return [challenge.step.target]
-      case 'ordered-pair':
-        return challenge.steps.map((step) => step.target)
-      default:
-        return []
-    }
-  })
-  const waveCycles = createMemo(() => {
-    const challenge = active()?.challenge
-    return challenge?.kind === 'settle-wave'
-      ? challenge.wave.requiredCycles
-      : undefined
-  })
   const count = createMemo(
     () =>
       level.breakables.filter(
@@ -448,6 +430,15 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             />
           </Show>
         </div>
+        <Show when={level.melodyLesson}>
+          {(lesson) => (
+            <MelodyRouteProgress
+              lesson={lesson()}
+              completedEncounterIds={adventure.snapshot().completedBreakableIds}
+              activeEncounterId={adventure.voiceEncounterId()}
+            />
+          )}
+        </Show>
         <AdventureMessageStack
           narration={visibleNarrationCaption()}
           notice={visibleNotice()}
@@ -522,22 +513,10 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             </div>
           </Show>
           <Show when={adventure.voiceMode() !== 'off'}>
-            <VoiceChallengePanel
-              label={active()?.label ?? 'Glass exhibit'}
-              mode={adventure.voiceMode()}
-              message={adventure.voiceMessage()}
-              hint={adventure.voiceHint()}
-              target={adventure.target()}
-              pitch={adventure.pitch()}
-              charge={adventure.snapshot().activeEncounter?.charge ?? 0}
-              pair={adventure.voicePair()}
-              wave={active()?.challenge.kind === 'settle-wave'}
-              waveCycles={waveCycles()}
-              steps={voiceSteps()}
-              stepIndex={adventure.snapshot().activeEncounter?.stepIndex ?? 0}
-              onCancel={adventure.cancel}
-              onReplay={adventure.replay}
-              onRefind={adventure.changeNote}
+            <AdventureVoicePanel
+              adventure={adventure}
+              active={active()}
+              onStartFresh={props.onRestart}
             />
           </Show>
           <Show

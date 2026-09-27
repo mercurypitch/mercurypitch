@@ -1,6 +1,6 @@
 // Voice challenge session — one microphone generation owns calibration, references and scoring.
 
-import type { BreakableDefinition, ChallengeDefinition, GameEvent, GlassGame, LevelDefinition, PitchObservation, PitchTargetId, PitchTargets, } from '../contracts'
+import type { BreakableDefinition, GameEvent, GlassGame, LevelDefinition, PitchChallengeDefinition, PitchObservation, PitchTargetId, PitchTargets, } from '../contracts'
 import { createChallengeJudge } from '../core/challenge'
 import type { GlassGameHost, GlassSound, GlassVoiceSession } from '../host'
 import type { MicrophoneIssue } from './mic-error'
@@ -105,7 +105,7 @@ function readPair(raw: string | null): PairCalibration | null {
   }
 }
 
-function steps(definition: ChallengeDefinition) {
+function steps(definition: PitchChallengeDefinition) {
   return definition.kind === 'ordered-pair'
     ? definition.steps
     : [definition.step]
@@ -117,12 +117,18 @@ function pairTolerances(level: LevelDefinition): {
 } {
   let low = 0
   let high = 0
-  for (const breakable of level.breakables)
+  for (const breakable of level.breakables) {
+    if (
+      breakable.challenge.kind === 'melody-anchor' ||
+      breakable.challenge.kind === 'melody-contour'
+    )
+      continue
     for (const step of steps(breakable.challenge)) {
       if (step.target === 'low') low = Math.max(low, step.hold.toleranceCents)
       else if (step.target === 'high')
         high = Math.max(high, step.hold.toleranceCents)
     }
+  }
   return { low, high }
 }
 
@@ -138,7 +144,7 @@ function copyTargets(targets: PitchTargets): PitchTargets {
   return { ...targets }
 }
 
-function isPairChallenge(definition: ChallengeDefinition): boolean {
+function isPairChallenge(definition: PitchChallengeDefinition): boolean {
   return (
     definition.kind === 'ordered-pair' ||
     steps(definition).some(
@@ -154,7 +160,7 @@ function targetCopy(target: PitchTargetId): string {
 }
 
 function calibrationQueue(
-  definition: ChallengeDefinition,
+  definition: PitchChallengeDefinition,
   targets: PitchTargets,
 ): PitchTargetId[] {
   const required = new Set(steps(definition).map((step) => step.target))
@@ -187,7 +193,7 @@ function findingCopy(target: PitchTargetId): { message: string; hint: string } {
   }
 }
 
-function referenceCopy(definition: ChallengeDefinition): {
+function referenceCopy(definition: PitchChallengeDefinition): {
   message: string
   hint: string
 } {
@@ -207,7 +213,7 @@ function referenceCopy(definition: ChallengeDefinition): {
       }
 }
 
-function singingCopy(definition: ChallengeDefinition): {
+function singingCopy(definition: PitchChallengeDefinition): {
   message: string
   hint: string
 } {
@@ -266,7 +272,9 @@ export function createVoiceChallenge(
   let stopObserving: (() => void) | null = null
   let sound: GlassSound | null = null
   let soundTimer: ReturnType<typeof setTimeout> | undefined
-  let current: BreakableDefinition | null = null
+  let current:
+    | (BreakableDefinition & { challenge: PitchChallengeDefinition })
+    | null = null
   let targets: PitchTargets = {}
   let queue: PitchTargetId[] = []
   let samples: PitchObservation[] = []
@@ -346,7 +354,7 @@ export function createVoiceChallenge(
     else options.host.writePreference(PAIR_PREFERENCE, JSON.stringify(pair))
   }
 
-  const prepareTargets = (definition: ChallengeDefinition): void => {
+  const prepareTargets = (definition: PitchChallengeDefinition): void => {
     targets = {}
     if (comfortable !== null) targets = { comfortable }
     if (pair !== null) {
@@ -574,11 +582,18 @@ export function createVoiceChallenge(
       batch.some((event) => event.type === 'challenge-step') &&
       options.game.snapshot().activeEncounter !== null
     ) {
+      const active = options.game.snapshot().activeEncounter
+      if (
+        active === null ||
+        active.targetKind === 'melody-anchor' ||
+        active.targetKind === 'melody-contour'
+      )
+        return
       emit({
         message:
           current.challenge.kind === 'settle-wave'
             ? `Sway ${current.challenge.wave.requiredCycles === 2 ? 'twice' : `${current.challenge.wave.requiredCycles} times`}, then return.`
-            : `Sing ${targetCopy(options.game.snapshot().activeEncounter!.target)}.`,
+            : `Sing ${targetCopy(active.target)}.`,
         hint:
           current.challenge.kind === 'settle-wave'
             ? `Make ${current.challenge.wave.requiredCycles} gentle waves above and below your note, then return to the middle. A semitone is enough; keep it comfortable.`
@@ -592,9 +607,16 @@ export function createVoiceChallenge(
     const encounter = options.level.breakables.find(
       (candidate) => candidate.id === encounterId,
     )
-    if (encounter === undefined) return
+    if (
+      encounter === undefined ||
+      encounter.challenge.kind === 'melody-anchor' ||
+      encounter.challenge.kind === 'melody-contour'
+    )
+      return
     stopSound()
-    current = encounter
+    current = encounter as BreakableDefinition & {
+      challenge: PitchChallengeDefinition
+    }
     prepareTargets(encounter.challenge)
     const run = ++generation
     resetEvidence()

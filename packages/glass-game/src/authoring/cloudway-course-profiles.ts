@@ -1,6 +1,6 @@
 // Cloudway course profiles — certified contacts stay outside editable route JSON.
 
-import type { PlatformBehaviorDefinition, PlatformScrollEdgeSupportDefinition, PlatformSurfaceDefinition, SolidMaterialRole, SolidProxyRole, Vec3, } from '../contracts'
+import type { MelodyLessonDefinition, PlatformBehaviorDefinition, PlatformScrollEdgeSupportDefinition, PlatformSurfaceDefinition, SolidMaterialRole, SolidProxyRole, Vec3, } from '../contracts'
 
 export type CloudwayPlatformBehaviorKind = PlatformBehaviorDefinition['kind']
 
@@ -55,4 +55,29 @@ export interface CloudwayCourseProfileCatalog {
   barriers: Readonly<Partial<Record<string, CloudwayBarrierProfile>>>
   /** Ordinary exhibit recipes accepted by this course family. */
   encounterVariants: readonly string[]
+  /** Certified intact exhibit envelopes; removed with their own completed target. */
+  intactExhibits?: Readonly<
+    Partial<
+      Record<
+        string,
+        {
+          width: number
+          height: number
+          depth: number
+          mountHeight: number
+        }
+      >
+    >
+  >
+  melodyLessons?: Readonly<
+    Partial<
+      Record<
+        string,
+        Omit<
+          MelodyLessonDefinition,
+          'id' | 'revision' | 'stations' | 'finaleEncounterId'
+        >
+      >
+    >
+  >
 }

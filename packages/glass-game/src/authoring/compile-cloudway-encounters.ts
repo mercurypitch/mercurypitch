@@ -6,25 +6,8 @@ import { containsBody } from '../core/collision.ts'
 import { MOVEMENT } from '../core/movement.ts'
 import type { CloudwayBarrierBoxProfile, CloudwayBarrierProfile, CloudwayCourseProfileCatalog, } from './cloudway-course-profiles'
 import { boolean, cardinalQuarterTurns, CLOUDWAY_GAP_TOLERANCE, exactKeys, fail, finite, identifierSet, record, string, stringArray, vec3, } from './cloudway-course-validation.ts'
+import { compileCloudwayChallenge } from './compile-cloudway-melody.ts'
 import { transformPoint } from './transform.ts'
-
-function comfortableHold(): BreakableDefinition['challenge'] {
-  return {
-    kind: 'hold',
-    step: {
-      target: 'comfortable',
-      hold: {
-        requiredSeconds: 1.2,
-        toleranceCents: 150,
-        confidenceFloor: 0.5,
-        dropoutGraceSeconds: 0.15,
-        decayPerSecond: 0.25,
-        maximumSampleGapSeconds: 0.1,
-        maximumSampleAgeMs: 150,
-      },
-    },
-  }
-}
 
 function validateBarrierProfile(
   profile: CloudwayBarrierProfile,
@@ -102,6 +85,7 @@ export function compileEncounter(
   raw: unknown,
   catalog: CloudwayCourseProfileCatalog,
   path: string,
+  schemaVersion: 2 | 3 = 2,
 ): CompiledEncounter {
   const source = record(raw, path)
   exactKeys(
@@ -114,7 +98,7 @@ export function compileEncounter(
       'position',
       'anchor',
       'optional',
-      'challengeProfileId',
+      schemaVersion === 2 ? 'challengeProfileId' : 'challenge',
     ],
     ['requiresCompleted', 'presentation'],
   )
@@ -122,8 +106,7 @@ export function compileEncounter(
   const variant = string(source.variant, `${path}.variant`)
   const position = vec3(source.position, `${path}.position`)
   const anchor = vec3(source.anchor, `${path}.anchor`)
-  if (source.challengeProfileId !== 'comfortable-hold')
-    fail(`${path}.challengeProfileId`, 'must be comfortable-hold.')
+  const challenge = compileCloudwayChallenge(source, schemaVersion, path)
   let presentation: BreakableDefinition['presentation']
   let solids: readonly SolidPropDefinition[]
   let barrierFacingYaw: number | undefined
@@ -146,6 +129,30 @@ export function compileEncounter(
         radiusBottom: EXHIBIT_PLINTH.radiusBottom,
       },
     ]
+    const envelope = catalog.intactExhibits?.[variant]
+    if (envelope !== undefined) {
+      for (const [field, value] of Object.entries(envelope))
+        if (!Number.isFinite(value) || value <= 0)
+          fail(
+            `profiles.intactExhibits.${variant}.${field}`,
+            'must be positive and finite.',
+          )
+      solids = [
+        ...solids,
+        {
+          id: `intact:${id}`,
+          kind: 'prop',
+          shape: 'box',
+          minX: position.x - envelope.width / 2,
+          maxX: position.x + envelope.width / 2,
+          minZ: position.z - envelope.depth / 2,
+          maxZ: position.z + envelope.depth / 2,
+          top: position.y + envelope.mountHeight + envelope.height,
+          thickness: envelope.height,
+          activation: { noneCompleted: [id] },
+        },
+      ]
+    }
   } else {
     const authored = record(source.presentation, `${path}.presentation`)
     exactKeys(authored, `${path}.presentation`, [
@@ -214,7 +221,7 @@ export function compileEncounter(
         source.requiresCompleted === undefined
           ? undefined
           : stringArray(source.requiresCompleted, `${path}.requiresCompleted`),
-      challenge: comfortableHold(),
+      challenge,
       presentation,
     },
     solids,

@@ -1,8 +1,10 @@
 // Fresh visit host regressions — loading a replay never mutates the completed durable save.
 import { describe, expect, it, vi } from 'vitest'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
 import type { SavedProgress } from '../contracts'
+import { createGlassGame } from '../core/game'
 import type { GlassGameHost } from '../host'
 import { createFreshVisitHost } from './fresh-visit-host'
 
@@ -129,5 +131,51 @@ describe('fresh visit host', () => {
     const saved = saveProgress.mock.calls[0][0] as SavedProgress
     expect(saved.rewards?.qualityResults).toEqual([best])
     expect(saved.rewards?.collectedPortraitIds).toEqual([portraitId])
+  })
+
+  it('replaces an old melody identity instead of resurrecting its route evidence', () => {
+    const oldGame = createGlassGame(CLOUDWAY_THAWING_SONG)
+    expect(
+      oldGame.configureMelodyAttempt({
+        attemptId: 'old-attempt',
+        comfortableMidi: 60,
+        pace: 1.25,
+      }).ok,
+    ).toBe(true)
+    const durable: SavedProgress = {
+      ...oldGame.saveProgress(),
+      completedBreakableIds: [
+        CLOUDWAY_THAWING_SONG.melodyLesson!.stations[0]!.encounterId,
+      ],
+    }
+    const saveProgress = vi.fn()
+    const host = {
+      loadProgress: vi.fn(() => durable),
+      saveProgress,
+    } as unknown as GlassGameHost
+    const freshHost = createFreshVisitHost(host, CLOUDWAY_THAWING_SONG)
+    const freshGame = createGlassGame(
+      CLOUDWAY_THAWING_SONG,
+      freshHost.loadProgress(CLOUDWAY_THAWING_SONG.id),
+    )
+    expect(freshGame.snapshot().melodyAttempt).toBeNull()
+    expect(
+      freshGame.configureMelodyAttempt({
+        attemptId: 'new-attempt',
+        comfortableMidi: 62,
+        pace: 1,
+      }).ok,
+    ).toBe(true)
+
+    freshHost.saveProgress(freshGame.saveProgress())
+
+    const saved = saveProgress.mock.calls[0][0] as SavedProgress
+    expect(saved.melodyAttempt).toMatchObject({
+      attemptId: 'new-attempt',
+      comfortableMidi: 62,
+      rootMidi: 60,
+      pace: 1,
+    })
+    expect(saved.completedBreakableIds).toEqual([])
   })
 })
