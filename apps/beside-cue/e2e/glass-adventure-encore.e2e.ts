@@ -1,5 +1,5 @@
 // Optional finale regression — real PCM through the pitch detector, explicit recording and local replay.
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { stat, writeFile } from 'node:fs/promises'
 import { GLASSWORKS_JOURNEY } from '../../../packages/glass-game/src/content/glassworks-journey'
 import { readProgress } from '../../../packages/glass-game/src/core/progress'
@@ -22,6 +22,24 @@ test.use({
   },
 })
 test.setTimeout(120_000)
+
+async function reviewCompletedVisit(
+  page: Page,
+  levelTitle: string,
+): Promise<void> {
+  const choice = page.getByRole('dialog', {
+    name: `${levelTitle} is already complete.`,
+    exact: true,
+  })
+  await expect(choice).toBeVisible()
+  await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
+  await choice.getByRole('button', { name: 'Review completion' }).click()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 60_000 },
+  )
+}
 
 test('optional encore records only with consent, preserves completion and fits mobile @smoke', async ({
   page,
@@ -123,11 +141,15 @@ test('optional encore records only with consent, preserves completion and fits m
     { complete },
   )
   await page.goto('/glass-game/?layout=journey')
-  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-    'data-ready',
-    'true',
-    { timeout: 60_000 },
+  await expect(page.getByTestId('glass-completed-visit')).toHaveAttribute(
+    'data-level-id',
+    level.id,
   )
+  expect(await page.evaluate(() => window.encoreFixture.streams)).toHaveLength(
+    0,
+  )
+  expect(await page.evaluate(() => window.encoreFixture.recordings)).toBe(0)
+  await reviewCompletedVisit(page, level.title)
   await page.getByRole('button', { name: 'Sing an optional encore' }).click()
   const dialog = page.getByRole('dialog', { name: 'Leave a little light.' })
   await expect(dialog).toBeVisible()
@@ -280,11 +302,7 @@ test('optional encore records only with consent, preserves completion and fits m
     page.getByRole('button', { name: 'Sing an optional encore' }),
   ).toBeFocused()
   await page.reload()
-  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-    'data-ready',
-    'true',
-    { timeout: 60_000 },
-  )
+  await reviewCompletedVisit(page, level.title)
   await page.getByRole('button', { name: 'Sing an optional encore' }).click()
   await expect(
     dialog.getByRole('region', { name: 'Saved musical memory' }),
