@@ -5,6 +5,14 @@
 // Supporter sources are opaque protected keys, never public asset URLs. The
 // shared runtime resolves those keys through the authenticated background
 // endpoint and exposes only a short-lived object URL to the renderer.
+//
+// ONE ROOM DIFFERS BY BUILD. In the native app the Karaoke room IS the
+// Broadway Theater (plan S8, decision D7 A): free, packaged in both
+// orientations (apps/mercurypitch/native-only/karaoke/), and the surface's
+// default. On the web it stays the supporter room it is. The constant folds,
+// so each build carries only its own answer.
+
+import { IS_NATIVE_BUILD } from '../native-build'
 
 export type BackgroundSurface =
   | 'karaoke'
@@ -1156,9 +1164,17 @@ export const BACKGROUND_CATALOG = [
     label: 'Broadway Theater',
     description: 'A gilded proscenium arch and an empty house',
     edition: 'broadway-theater',
-    delivery: 'master-ready',
-    access: supporterAccess('karaoke-broadway-theater'),
-    assetSource: protectedSource('karaoke', 'karaoke-broadway-theater'),
+    delivery: IS_NATIVE_BUILD ? 'shipped' : 'master-ready',
+    access: IS_NATIVE_BUILD
+      ? { kind: 'free' }
+      : supporterAccess('karaoke-broadway-theater'),
+    assetSource: IS_NATIVE_BUILD
+      ? publicSource(
+          '/karaoke/broadway-theater-landscape.webp',
+          undefined,
+          '/karaoke/broadway-theater-portrait.webp',
+        )
+      : protectedSource('karaoke', 'karaoke-broadway-theater'),
     focalPoint: { x: 0.5, y: 0.5 },
   },
   {
@@ -1403,15 +1419,21 @@ export const BACKGROUND_CATALOG = [
   },
 ] as const satisfies readonly BackgroundDefinition[]
 
+/** The one room that is free in the native app and a supporter's on the web. */
+type NativeFreeBackgroundId = 'karaoke-broadway-theater'
+
 export const DEFAULT_BACKGROUND_IDS = {
-  karaoke: 'karaoke-theatre',
+  karaoke: IS_NATIVE_BUILD ? 'karaoke-broadway-theater' : 'karaoke-theatre',
   jam: 'room-stage',
   piano: 'piano-afterglow',
   guitar: 'velvet-rehearsal',
   ear: 'ear-regulator-room',
   drum: 'drum-pocket-console',
   sing: 'sing-retro-analog-studio',
-} as const satisfies Record<BackgroundSurface, FreeBackgroundId>
+} as const satisfies Record<
+  BackgroundSurface,
+  FreeBackgroundId | NativeFreeBackgroundId
+>
 
 const BACKGROUND_BY_ID = new Map<BackgroundId, BackgroundDefinition>(
   BACKGROUND_CATALOG.map((background) => [background.id, background]),

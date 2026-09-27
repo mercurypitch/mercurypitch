@@ -48,6 +48,7 @@ import type { ParkedSong } from './karaoke-room-store'
 import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
+import { KaraokeRoomPicker } from './KaraokeRoomPicker'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -104,7 +105,7 @@ export const KaraokeRoomStage: Component = () => {
   // A song the shell parked on the way out: this arrival is its return.
   const parked = takeParkedKaraokeSong()
 
-  const [pickerOpen] = createSignal(false)
+  const [pickerOpen, setPickerOpen] = createSignal(false)
   const [libraryOpen, setLibraryOpen] = createSignal(false)
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   const background = useBackgroundSurfaceController('karaoke', pickerOpen)
@@ -251,6 +252,10 @@ export const KaraokeRoomStage: Component = () => {
 
   // Back closes what the room has open over its stage before it leaves.
   const closeRoomOverlay = (): boolean => {
+    if (pickerOpen()) {
+      setPickerOpen(false)
+      return true
+    }
     if (optionsOpen()) {
       setOptionsOpen(false)
       return true
@@ -351,6 +356,10 @@ export const KaraokeRoomStage: Component = () => {
         openOptions: () => {
           setOptionsOpen(true)
         },
+        // The chip in the room header: the room's picture (R5).
+        openRoomPicker: () => {
+          setPickerOpen(true)
+        },
         closeRoomOverlay,
         pinnedToggle,
       }),
@@ -424,6 +433,11 @@ export const KaraokeRoomStage: Component = () => {
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
         onAllSettings={() => nativeShellApi()?.pushSettings()}
+      />
+      <KaraokeRoomPicker
+        isOpen={pickerOpen()}
+        close={() => setPickerOpen(false)}
+        background={background}
       />
     </div>
   )

@@ -239,6 +239,25 @@ export const NATIVE_ASSETS = [
     reason:
       'The six example stems the manifest names, played from the bundle by the Karaoke room (src/features/karaoke-room) through the streamed mixer.',
   },
+
+  // ── The Karaoke room's pictures ──────────────────────────────
+  //
+  // The Broadway Theater is the room's own picture in the app (plan S8, D7
+  // A): free here, while the web keeps it a supporter room delivered from
+  // the server, so its files live in native-only/ and never reach the web's
+  // public/. Cut from the 4K masters by the premium pipeline's recipe
+  // (landscape-2k 2048 x 1152 and portrait-2k 1440 x 2560, WebP q90).
+  {
+    glob: 'karaoke/broadway-theater-*.webp',
+    root: 'native',
+    reason:
+      "The Broadway Theater in both orientations, the Karaoke room's default picture: the room draws it on its [data-room-background] (src/features/karaoke-room/KaraokeRoomStage.tsx via the 'karaoke' surface in src/lib/backgrounds/background-catalog.ts), and the Karaoke door's open ends on it (apps/mercurypitch/src/alley/alley-entry.ts).",
+  },
+  {
+    glob: 'karaoke-night/tokyo-cyber-*.webp',
+    reason:
+      "Tokyo Cyber in both orientations, the Karaoke room's other free picture: the chip's picker offers every free room of the 'karaoke' surface (src/lib/backgrounds/background-catalog.ts), and a picked room the bundle did not carry would draw nothing offline.",
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */

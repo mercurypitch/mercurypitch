@@ -9,6 +9,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createComputed, createEffect, createMemo, createRoot, createSignal, onCleanup, onMount, } from 'solid-js'
+import { IS_NATIVE_BUILD } from '../native-build'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, BackgroundTreatment, PublicBackgroundSource, } from './background-catalog'
 import { defaultBackground, getBackgroundDefinition, listBackgrounds, } from './background-catalog'
 import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from './background-catalog-store'
@@ -274,7 +275,16 @@ export function listRuntimeBackgrounds(
     }))
 
   const unlocked = new Set(state.unlockedIds)
-  const premium = state.assets
+  // A room this build ships free is not one to unlock as well: in the app
+  // the server's copy of the Broadway Theater is the Karaoke room's own
+  // picture (D7 A), listed once, as the free room it is here. The web ships
+  // no supporter room free, and folds this away.
+  const serverAssets = IS_NATIVE_BUILD
+    ? state.assets.filter(
+        (asset) => !free.some((background) => background.id === asset.id),
+      )
+    : state.assets
+  const premium = serverAssets
     .filter((asset) => asset.surface === surface)
     .map((asset): RuntimeBackgroundOption | null => {
       const background = getBackgroundDefinition(asset.id)

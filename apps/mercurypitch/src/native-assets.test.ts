@@ -23,7 +23,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { BackgroundDefinition, PublicBackgroundSource, } from '@/lib/backgrounds/background-catalog'
 import { defaultBackground, listBackgrounds, } from '@/lib/backgrounds/background-catalog'
 // @ts-expect-error -- a plain .mjs manifest with no types, on purpose: the
@@ -33,6 +33,13 @@ import { globToRegExp, listFiles, NATIVE_ASSETS, resolveNativeAssets, resolveNat
 // @ts-expect-error -- as above.
 import { KARAOKE_EXAMPLE_PINS } from '../scripts/fetch-karaoke-examples.mjs'
 import { DOORS } from './alley/alley-plate'
+
+// The catalogue as the APP builds it: the Karaoke room's Broadway Theater is
+// free and packaged there (D7 A), and a supporter room on the web.
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  IS_NATIVE_BUILD: true,
+}))
 
 interface Entry {
   glob: string
@@ -198,7 +205,7 @@ describe('the pictures an open door ends on', () => {
   )
 
   it('has an open door to check', () => {
-    expect(rooms.map(([key]) => key)).toEqual(['ear', 'sing'])
+    expect(rooms.map(([key]) => key)).toEqual(['ear', 'karaoke', 'sing'])
   })
 
   /** Every file a public room names, as a path under public/. */

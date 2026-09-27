@@ -24,7 +24,7 @@
 
 import type { NamedRoomId } from '@/features/rooms/room-names'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_EAR_LAB, TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_EAR_LAB, TAB_KARAOKE, TAB_SINGING, } from '@/features/tabs/constants'
 import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
 
 export type DoorKey = 'ear' | 'piano' | 'drums' | 'karaoke' | 'sing' | 'guitar'
@@ -157,14 +157,18 @@ export const DOORS: readonly DoorSpec[] = [
     ],
   },
   {
+    // Open since plan S8 §2: the room is the zen player over the Broadway
+    // Theater (src/features/karaoke-room). An ambient and a clip may follow;
+    // until then the door lifts and opens with neither.
     key: 'karaoke',
     roomId: 'karaoke',
-    tab: null,
+    tab: TAB_KARAOKE,
     ambient: null,
     clip: null,
     drift: false,
     spill: 'rgba(255, 84, 96, 0.46)',
-    roomBackground: null,
+    // KaraokeRoomStage's `.cover`: no transform of its own.
+    roomBackground: { surface: 'karaoke', scale: 1 },
     quad: [
       [489, 639],
       [590, 588],

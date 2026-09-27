@@ -137,6 +137,10 @@ vi.mock('./karaoke-room-library', () => ({
   hydrateSong: async (row: { stems: unknown }) => Promise.resolve(row.stems),
 }))
 
+vi.mock('@/features/backgrounds/PremiumBackgroundPicker', () => ({
+  PremiumBackgroundPicker: () => <div data-testid="fake-background-picker" />,
+}))
+
 vi.mock('@/lib/backgrounds/background-surface', () => ({
   useBackgroundSurfaceController: () => ({
     resolvedStyle: () => ({ '--mp-stage-image': 'url("/room.webp")' }),
@@ -716,6 +720,32 @@ describe('the option pinned beside the gear', () => {
     expect(pinned?.icon).toBe('play-next')
     pinned?.onToggle()
     expect(karaokePlayNext()).toBe(false)
+  })
+})
+
+describe('the room picture', () => {
+  it('is drawn behind the stage, from the karaoke surface', async () => {
+    await mountRoom()
+
+    const room = screen.getByTestId('karaoke-room')
+    expect(room.style.getPropertyValue('--mp-stage-image')).toBe(
+      'url("/room.webp")',
+    )
+    expect(
+      room.querySelector('[data-room-background]'),
+      'the element the door grows into',
+    ).not.toBeNull()
+  })
+
+  it('is chosen from the chip, and Back closes the chooser first', async () => {
+    await mountRoom()
+
+    controls().openRoomPicker?.()
+    const picker = await screen.findByTestId('karaoke-room-picker')
+    expect(within(picker).getByTestId('fake-background-picker')).toBeTruthy()
+
+    expect(controls().closeRoomOverlay?.()).toBe(true)
+    expect(screen.queryByTestId('karaoke-room-picker')).toBeNull()
   })
 })
 

@@ -13,6 +13,11 @@
 // `typeof` guard is what makes the module safe to import from a test, and it
 // is the same idiom `src/lib/defaults.ts` uses for `__COMMIT_SHA__`.
 
+// Declared here as well as in src/vite-env.d.ts: the db worker type-checks
+// this module through the background catalogue (workers/db-worker perks.ts),
+// and its program has no Vite globals. Ambient, so it emits nothing.
+declare const __NATIVE_BUILD__: boolean | undefined
+
 /** True only inside the `apps/mercurypitch` bundle. False on the web, and
  *  false under vitest — where a test that needs the other answer mocks
  *  `@/lib/native-build`. */

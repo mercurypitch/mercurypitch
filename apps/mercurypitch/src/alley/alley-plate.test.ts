@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { alleyFit } from './alley-geometry'
-import { ALLEY_PLATE, DOORS, doorSpec, plateSourceFor } from './alley-plate'
+import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
 
 const drawn = (
   w: number,
@@ -55,6 +56,7 @@ describe('the room an open door ends on', () => {
   it.each([
     ['sing', 'sing-room/sing-room.module.css', '.cover'],
     ['ear', 'ear-lab/EarRoomShell.module.css', '.roomPlate'],
+    ['karaoke', 'karaoke-room/karaoke-room.module.css', '.cover'],
   ] as const)(
     '%s: its room draws the picture as the door expects',
     (key, file, selector) => {
@@ -67,6 +69,15 @@ describe('the room an open door ends on', () => {
       expect(spec?.scale).toBe(scaleOf(block))
     },
   )
+
+  it('opens the Karaoke door onto the Karaoke tab (plan S8 §2)', () => {
+    expect(isEnterable('karaoke')).toBe(true)
+    expect(doorSpec('karaoke').tab).toBe(TAB_KARAOKE)
+    expect(doorSpec('karaoke').roomBackground).toEqual({
+      surface: 'karaoke',
+      scale: 1,
+    })
+  })
 
   it('names a room for exactly the doors that open', () => {
     for (const door of DOORS) {

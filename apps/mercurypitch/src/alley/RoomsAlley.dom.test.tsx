@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
-import { TAB_PROGRESS, TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_KARAOKE, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import type * as RunShell from '../shell/run-shell-store'
@@ -155,6 +155,20 @@ describe('entering a room from the alley', () => {
     // never draws).
     await vi.advanceTimersByTimeAsync(2000)
     expect(welcome.welcomeSeen()).toBe(true)
+  })
+
+  it('opens the Karaoke door into the Karaoke room (plan S8 §2)', async () => {
+    const { el, store, nav } = await mountAlley()
+
+    el('alley-door-karaoke').click()
+    expect(el('alley-door-karaoke').getAttribute('aria-label')).toBe(
+      'Karaoke, Broadway Theater. Sing your favorite songs.',
+    )
+    el('alley-enter').click()
+    expect(store.roomArrivalHeld()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(700)
+    expect(nav.goToTab).toHaveBeenCalledWith(TAB_KARAOKE)
   })
 
   it('leaves the welcome unseen when the open is called off', async () => {
@@ -685,7 +699,7 @@ describe('the Sing door clip', () => {
     el('alley-door-sing').click()
     expect(clip.getAttribute('src')).toMatch(/\.mp4$/u)
     load.mockClear()
-    el('alley-door-karaoke').click()
+    el('alley-door-piano').click()
     expect(clip.getAttribute('src')).toBeNull()
     expect(load.mock.contexts).toContain(clip)
 

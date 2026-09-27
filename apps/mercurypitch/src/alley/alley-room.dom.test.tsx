@@ -21,6 +21,8 @@ const SIZES: Record<string, readonly [number, number]> = {
   '/ear-lab/regulator-room-portrait.webp': [1440, 2560],
   '/ear-lab/regulator-room-landscape.webp': [2048, 1152],
   '/sing/retro-analog-studio-portrait.webp': [1440, 2560],
+  '/karaoke/broadway-theater-portrait.webp': [1440, 2560],
+  '/karaoke/broadway-theater-landscape.webp': [2048, 1152],
 }
 
 // jsdom decodes nothing and sizes nothing. Here each image decodes when the
@@ -96,7 +98,7 @@ function memoryStorage(): Storage {
 const cleanups: Array<() => void> = []
 
 /** The room module, and the controller behind a surface with its retain watched. */
-async function rooms(surface: 'ear' | 'sing' = 'ear') {
+async function rooms(surface: 'ear' | 'sing' | 'karaoke' = 'ear') {
   const room = await import('./alley-room')
   cleanups.push(room.dropRoom)
   const preloadRoom: typeof room.preloadRoom = (spec) => {
@@ -233,6 +235,36 @@ describe("a door's room picture", () => {
     await expect(preload?.source().later).resolves.toBeNull()
   })
 
+  it("is the Karaoke room's own picture, the Broadway Theater, in the app (D7 A)", async () => {
+    // The web keeps the Broadway Theater a supporter room; the app's
+    // Karaoke room is that picture, free, in both orientations.
+    vi.doMock('@/lib/native-build', async (importOriginal) => ({
+      ...(await importOriginal<Record<string, unknown>>()),
+      IS_NATIVE_BUILD: true,
+    }))
+    try {
+      const { room, plate, controller } = await rooms('karaoke')
+      const preload = room.preloadRoom(plate.doorSpec('karaoke'))
+
+      expect(controller.resolved().url).toBe(
+        '/karaoke/broadway-theater-portrait.webp',
+      )
+      expect(decodes.map((d) => d.src)).toEqual([
+        '/karaoke/broadway-theater-portrait.webp',
+      ])
+      decodes[0].succeed()
+      await settle()
+      expect(preload?.source().now).toMatchObject({
+        src: '/karaoke/broadway-theater-portrait.webp',
+        width: 1440,
+        height: 2560,
+        scale: 1,
+      })
+    } finally {
+      vi.doUnmock('@/lib/native-build')
+    }
+  })
+
   it('holds the controller until released, and lets it go once', async () => {
     const { room, plate, letGo } = await rooms('ear')
     const preload = room.preloadRoom(plate.doorSpec('ear'))
@@ -249,7 +281,7 @@ describe("a door's room picture", () => {
 
   it('is nothing for a door with no room behind it yet', async () => {
     const { room, plate, retain } = await rooms('ear')
-    expect(room.preloadRoom(plate.doorSpec('karaoke'))).toBeNull()
+    expect(room.preloadRoom(plate.doorSpec('piano'))).toBeNull()
     expect(retain).not.toHaveBeenCalled()
     expect(decodes).toHaveLength(0)
   })
@@ -388,7 +420,7 @@ describe('through the alley', () => {
 
   it('a locked door holds no room', async () => {
     const { el, retain } = await mountAlley()
-    el('alley-door-karaoke').click()
+    el('alley-door-piano').click()
     expect(retain).not.toHaveBeenCalled()
     expect(decodes).toHaveLength(0)
   })
