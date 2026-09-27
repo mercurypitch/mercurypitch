@@ -16,6 +16,12 @@
 //   3. Ten minutes, single use, claimed by an atomic UPDATE.
 //   4. Rate limits per address and per IP, on top of all of that.
 //
+// A code can also SET UP an account, when the client asks for one and the
+// address has none yet (the native sheet; S6 decision 05). That row carries
+// NO_ACCOUNT_YET where the userId would be, and everything above holds for it
+// unchanged: one row per ceremony, five attempts, ten minutes, one use. Typing
+// it back creates the account (auth.ts, finishSignUpCode).
+//
 // Deliberately free of any auth.ts import: this is data and arithmetic, so it
 // can be tested against a real SQLite without a Request in sight.
 
@@ -34,6 +40,15 @@ export const LOGIN_CODE_MAX_ATTEMPTS = 5
  * oldest gets the same bound without the denial of service.
  */
 export const LOGIN_CODE_MAX_LIVE = 3
+
+/**
+ * The userId a sign-up code carries: nobody holds its address yet.
+ *
+ * Every real users.id is a UUID, so no account can ever answer to it. A
+ * verifier that knew nothing of sign-up codes would look this id up, find
+ * no account, and refuse the code, which is the failure the row should have.
+ */
+export const NO_ACCOUNT_YET = ''
 
 export interface LoginCodeClaim {
   userId: string
@@ -130,8 +145,29 @@ export async function pruneLoginCodes(
 }
 
 /**
+ * Delete the sign-up codes whose ten minutes are over.
+ *
+ * A sign-in code is erased with its account (USER_OWNED_TABLES in auth.ts).
+ * A sign-up code nobody typed back names an address with no account, so no
+ * deletion would ever reach it: it goes once it can no longer be used.
+ */
+export async function forgetStaleSignUpCodes(
+  db: D1Database,
+  nowMs: number,
+): Promise<void> {
+  await db
+    .prepare('DELETE FROM loginCodes WHERE userId = ? AND expiresAt <= ?')
+    .bind(NO_ACCOUNT_YET, new Date(nowMs).toISOString())
+    .run()
+}
+
+/**
  * Mint a code for one address. Returns the row id the ceremony token will
  * carry, and the readable code for the email — the only place it exists.
+ *
+ * `userId` is the account the code signs in to, or NO_ACCOUNT_YET for a code
+ * that sets one up. Every mint sweeps the stale sign-up codes first, whichever
+ * kind it writes, so the two kinds of request do the same work.
  */
 export async function mintLoginCode(
   db: D1Database,
@@ -139,6 +175,7 @@ export async function mintLoginCode(
   email: string,
   nowMs: number,
 ): Promise<{ id: number; code: string }> {
+  await forgetStaleSignUpCodes(db, nowMs)
   await pruneLoginCodes(db, email, nowMs)
   const code = generateLoginCode()
   // RETURNING rather than meta.last_row_id: the id is the whole point of the
@@ -211,4 +248,26 @@ export async function claimLoginCode(
   if ((claimed.meta.changes ?? 0) !== 1) return { ok: false }
 
   return { ok: true, claim: { userId: row.userId, email: row.email } }
+}
+
+/**
+ * Hand an address's sign-up codes to the account one of them just set up,
+ * spent.
+ *
+ * They name the address, so from here they are erased with the account like
+ * any sign-in code; and spent, so none of the others still in flight can try
+ * to set up a second account for the same address.
+ */
+export async function adoptSignUpCodes(
+  db: D1Database,
+  email: string,
+  userId: string,
+  nowMs: number,
+): Promise<void> {
+  await db
+    .prepare(
+      'UPDATE loginCodes SET userId = ?, usedAt = COALESCE(usedAt, ?) WHERE email = ? AND userId = ?',
+    )
+    .bind(userId, new Date(nowMs).toISOString(), email, NO_ACCOUNT_YET)
+    .run()
 }

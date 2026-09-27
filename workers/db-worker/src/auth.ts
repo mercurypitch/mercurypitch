@@ -28,8 +28,10 @@ import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
 import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
+import { sendSignUpCode } from './email-sign-up-code'
 import { shouldTouchLastActive } from './last-active'
-import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
+import type { LoginCodeClaim } from './login-codes'
+import { adoptSignUpCodes, claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, NO_ACCOUNT_YET, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
 import { setNewsletterConsent } from './newsletter-consent'
 import { purgePerksByEmail } from './perks'
@@ -1080,6 +1082,12 @@ interface AuthBody {
   code?: string
   /** The signed blob naming what is still owed (email-code/verify). */
   ceremony?: string
+  /**
+   * Asks email-code/request for a code that SETS UP an account when the
+   * address has none. Only `true` counts. The native sheet sends it; the
+   * web's pane does not, and keeps its old answer for an unknown address.
+   */
+  signUp?: boolean
   /** The secret only the device that asked for that code holds (device/poll). */
   pollToken?: string
   /** What the TV calls itself, shown to whoever approves (device/start). */
@@ -1731,12 +1739,45 @@ async function sendLoginCodeEmail(
 }
 
 /**
- * POST /api/auth/email-code/request { email } → { ok: true, ceremony }
+ * Mail a sign-up code to an address with no account. Best-effort, and the
+ * same local affordance as sendLoginCodeEmail: with no Resend key the code is
+ * logged, so the flow can be walked through end to end on a laptop.
+ */
+async function sendSignUpCodeEmail(
+  env: Env,
+  email: string,
+  code: string,
+): Promise<void> {
+  try {
+    if (!env.RESEND_API_KEY) {
+      console.log(
+        `[auth] sign-up code (email skipped, no RESEND_API_KEY): ${code}`,
+      )
+      return
+    }
+    await sendSignUpCode(
+      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+      email,
+      { code, ttlMinutes: LOGIN_CODE_TTL_MS / 60_000 },
+    )
+  } catch (err) {
+    console.error(
+      `[auth] sign-up code email failed (non-fatal): ${String(err)}`,
+    )
+  }
+}
+
+/**
+ * POST /api/auth/email-code/request { email, signUp? } → { ok: true, ceremony }
  *
  * Answers identically whether or not the address has an account. The unknown
  * branch still generates a code and still hashes it, so the two paths differ by
  * one INSERT rather than by any measurable work; the ceremony it signs names
  * row 0, which AUTOINCREMENT can never produce.
+ *
+ * With `signUp: true` (the native sheet) an address with no account gets a
+ * real code instead of the decoy: one that sets the account up when it is
+ * typed back (finishSignUpCode). The answer is the same one again.
  *
  * The mail goes through waitUntil rather than being awaited: an awaited Resend
  * round-trip is a few hundred milliseconds that only a KNOWN address pays,
@@ -1769,21 +1810,38 @@ async function handleEmailCodeRequest(
     'email-code-address',
   )
   const user = addressRl.allowed ? await findUserByEmail(env.DB, email) : null
+  // A code that sets an account up: only when the client asked for one, and
+  // only within the address's budget. Asked that way, a known and an unknown
+  // address both get a row and a mail, so the two answers stay alike in work
+  // as well as in shape.
+  const signUp = body.signUp === true && addressRl.allowed && user === null
 
   let codeId = 0
+  let work: Promise<void> | null = null
   if (user?.email) {
     const minted = await mintLoginCode(env.DB, user.id, email, Date.now())
     codeId = minted.id
-    const work = sendLoginCodeEmail(env, user, minted.code)
+    work = sendLoginCodeEmail(env, user, minted.code)
+  } else if (signUp) {
+    const minted = await mintLoginCode(
+      env.DB,
+      NO_ACCOUNT_YET,
+      email,
+      Date.now(),
+    )
+    codeId = minted.id
+    work = sendSignUpCodeEmail(env, email, minted.code)
+  } else {
+    // The decoy. Same hashing cost, no row, and a ceremony that can never
+    // match anything.
+    await hashLoginCode(generateLoginCode())
+  }
+  if (work !== null) {
     // Checked as a function rather than "is there a ctx": a runtime that hands
     // over a context without waitUntil (a test harness, a non-CF host) must
     // still send the mail, not throw halfway through minting a code.
     if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(work)
     else await work
-  } else {
-    // The decoy. Same hashing cost, no row, and a ceremony that can never
-    // match anything.
-    await hashLoginCode(generateLoginCode())
   }
 
   const ceremony = await issueCeremony(env.JWT_SECRET as string, {
@@ -1794,8 +1852,14 @@ async function handleEmailCodeRequest(
   return respond({ ok: true, ceremony })
 }
 
+/** One answer for every code that buys nothing: wrong, spent, expired, dead. */
+const DEAD_CODE = { error: 'That code is not valid or has expired' }
+
 /**
- * POST /api/auth/email-code/verify { ceremony, code }
+ * POST /api/auth/email-code/verify { ceremony, code, deviceId?, deviceSecret? }
+ *
+ * The device fields matter only to a sign-up code, which takes over the
+ * phone's anonymous account when the caller proves it holds it.
  *
  * Typing a mailed code is proof of inbox control — the same proof the
  * "confirm your address" link asks for — so a success also resolves any
@@ -1809,14 +1873,13 @@ async function handleEmailCodeVerify(
   env: Env,
   respond: Respond,
 ): Promise<Response> {
-  const dead = { error: 'That code is not valid or has expired' }
   const claims = await readCeremony(
     env.JWT_SECRET as string,
     body.ceremony,
     'logincode',
   )
   const code = body.code?.trim() ?? ''
-  if (claims === null || code === '') return respond(dead, { status: 401 })
+  if (claims === null || code === '') return respond(DEAD_CODE, { status: 401 })
 
   const outcome = await claimLoginCode(
     env.DB,
@@ -1824,7 +1887,11 @@ async function handleEmailCodeVerify(
     code,
     Date.now(),
   )
-  if (!outcome.ok) return respond(dead, { status: 401 })
+  if (!outcome.ok) return respond(DEAD_CODE, { status: 401 })
+  // No account held the address when this code was mailed: it sets one up.
+  if (outcome.claim.userId === NO_ACCOUNT_YET) {
+    return finishSignUpCode(request, body, env, respond, outcome.claim)
+  }
 
   const row = await findUserById(env.DB, outcome.claim.userId)
   // The address is re-checked against the row rather than trusted from the
@@ -1834,7 +1901,7 @@ async function handleEmailCodeVerify(
     row === null ||
     (row.email ?? '').toLowerCase() !== outcome.claim.email.toLowerCase()
   ) {
-    return respond(dead, { status: 401 })
+    return respond(DEAD_CODE, { status: 401 })
   }
   assertAccountActive(row)
 
@@ -1862,6 +1929,92 @@ async function handleEmailCodeVerify(
   const challenge = await twofaChallenge(env, row.id, 'emailcode')
   if (challenge !== null) return respond(challenge)
   return issueSession(env, row, respond, false, sessionOrigin(request))
+}
+
+/**
+ * A sign-up code typed back: create the account it was mailed for.
+ *
+ * Reading the code proved the inbox, so the account starts confirmed. When
+ * the caller proves it holds this device's anonymous account (claimedDevice,
+ * the proof the Apple, Google and password routes ask for too), that account
+ * is upgraded in place, so what the phone practiced stays attached to the
+ * same id; without that proof the account is a new one. It has no password:
+ * it signs in with a code, and can set one through the reset link.
+ *
+ * The address is checked again rather than trusted from when the code was
+ * mailed. If somebody took it in between, this code creates nothing and is
+ * answered exactly like a wrong one.
+ */
+async function finishSignUpCode(
+  request: Request,
+  body: AuthBody,
+  env: Env,
+  respond: Respond,
+  claim: LoginCodeClaim,
+): Promise<Response> {
+  const email = claim.email.toLowerCase()
+  if ((await findUserByEmail(env.DB, email)) !== null) {
+    return respond(DEAD_CODE, { status: 401 })
+  }
+  const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
+
+  let userId: string
+  try {
+    userId = await accountForSignUpCode(env, email, deviceId)
+  } catch (err) {
+    // users.email is UNIQUE, so an account that took the address between the
+    // check above and the write lands here. That one case is a dead code;
+    // anything else is a real failure and goes on up.
+    if ((await findUserByEmail(env.DB, email)) !== null) {
+      return respond(DEAD_CODE, { status: 401 })
+    }
+    throw err
+  }
+  await adoptSignUpCodes(env.DB, email, userId, Date.now())
+
+  const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
+  await Promise.all([
+    clearRateLimit(env.DB, ip, 'email-code/verify'),
+    clearRateLimit(env.DB, `email:${email}`, 'email-code-address'),
+  ])
+  await sendWelcomeEmail(env, email, null)
+
+  const challenge = await twofaChallenge(env, userId, 'emailcode')
+  if (challenge !== null) return respond(challenge)
+  const row = (await findUserById(env.DB, userId)) as UserRow
+  return issueSession(env, row, respond, true, sessionOrigin(request))
+}
+
+/**
+ * The account a sign-up code becomes: the proven anonymous device, upgraded
+ * in place, or a new account. Returns its id.
+ */
+async function accountForSignUpCode(
+  env: Env,
+  email: string,
+  deviceId: string | undefined,
+): Promise<string> {
+  if (deviceId !== undefined) {
+    const anon = await findUserById(env.DB, deviceId)
+    if (anon?.authProvider === 'anonymous') {
+      assertAccountActive(anon)
+      const upgraded = await env.DB.prepare(
+        `UPDATE users SET authProvider = 'password', email = ?, emailVerified = 1, tokenVersion = tokenVersion + 1, updatedAt = ? WHERE id = ? AND authProvider = 'anonymous'`,
+      )
+        .bind(email, nowIso(), anon.id)
+        .run()
+      if ((upgraded.meta.changes ?? 0) === 1) return anon.id
+    }
+  }
+  const id = crypto.randomUUID()
+  await createUser(env.DB, {
+    id,
+    authProvider: 'password',
+    email,
+    emailVerified: true,
+  })
+  await ensureProfile(env.DB, id, defaultDisplayName(id))
+  return id
 }
 
 /**
