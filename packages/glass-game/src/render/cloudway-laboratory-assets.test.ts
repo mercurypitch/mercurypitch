@@ -4,14 +4,17 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Mesh as MeshType, Object3D } from 'three'
-import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, } from 'three'
+import { Box3, BoxGeometry, Group, Matrix3, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Texture, Vector3, } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
 import type { PlatformRuntimeSnapshot } from '../contracts'
 import type { CloudwayCrackleMaterialBinding } from './cloudway-crackle-adapter'
 import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
-import { CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
+import { CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PEARL_PRESENTATION_FIT, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
+import { fitCloudwayLaboratoryRigidPresentation } from './cloudway-laboratory-platforms'
 import { disposeObject } from './dispose'
 
 interface GltfMaterial {
@@ -234,7 +237,77 @@ function runtime(
   }
 }
 
+async function loadedPearlScene(): Promise<Object3D> {
+  const bytes = readFileSync(
+    new URL(
+      '../../../../apps/beside-cue/public/games/cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
+      import.meta.url,
+    ),
+  )
+  const loader = new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .register(() => ({
+      name: 'EXT_texture_webp',
+      loadTexture: async () => new Texture(),
+    }))
+  return (
+    await loader.parseAsync(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      '',
+    )
+  ).scene
+}
+
+function topNormalY(root: Object3D, x: number, z: number): number {
+  const ray = new Raycaster(new Vector3(x, 1, z), new Vector3(0, -1, 0), 0, 2)
+  const hit = ray.intersectObject(root, true)[0]!
+  expect(hit).toBeDefined()
+  expect(hit.point.y).toBeGreaterThan(-0.003)
+  expect(hit.point.y).toBeLessThan(0.001)
+  return hit
+    .face!.normal.clone()
+    .applyMatrix3(new Matrix3().getNormalMatrix(hit.object.matrixWorld))
+    .normalize().y
+}
+
 describe('accepted Cloudway contact footprints', () => {
+  it('fits the decoded Pearl near-datum support to its certified contact without touching height', async () => {
+    const scene = await loadedPearlScene()
+    const source = scene.getObjectByName(CLOUDWAY_LAB_ROOT_NAMES.pearlRest)!
+    const originalBounds = new Box3().setFromObject(source)
+    const originalHeight = originalBounds.max.y - originalBounds.min.y
+    const sourceHalfWidth =
+      CLOUDWAY_LAB_PEARL_PRESENTATION_FIT.sourceSupportWidth / 2
+    const sourceHalfDepth =
+      CLOUDWAY_LAB_PEARL_PRESENTATION_FIT.sourceSupportDepth / 2
+    for (const x of [-sourceHalfWidth, sourceHalfWidth])
+      for (const z of [-sourceHalfDepth, sourceHalfDepth])
+        expect(topNormalY(source, x, z)).toBeGreaterThan(0.999)
+
+    fitCloudwayLaboratoryRigidPresentation(source, 'pearlRest', {
+      width: 3.2,
+      depth: 0.72,
+    })
+    source.updateMatrixWorld(true)
+    expect(source.scale.x).toBeCloseTo(3.2 / 3.32, 12)
+    expect(source.scale.y).toBe(1)
+    expect(source.scale.z).toBeCloseTo(0.72 / 0.78, 12)
+    for (const x of [-1.6, 1.6])
+      for (const z of [-0.36, 0.36])
+        expect(topNormalY(source, x, z)).toBeGreaterThan(0.999)
+
+    const fittedBounds = new Box3().setFromObject(source)
+    expect(fittedBounds.max.y - fittedBounds.min.y).toBeCloseTo(
+      originalHeight,
+      8,
+    )
+    expect(fittedBounds.max.x - 1.6).toBeLessThan(0.09)
+    expect(-1.6 - fittedBounds.min.x).toBeLessThan(0.09)
+    expect(fittedBounds.max.z - 0.36).toBeLessThan(0.09)
+    expect(-0.36 - fittedBounds.min.z).toBeLessThan(0.09)
+    disposeObject(scene)
+  })
+
   it.each(CONTACT_CASES)(
     'keeps $rootName metadata, collision and level support aligned without root scaling',
     (asset) => {

@@ -84,18 +84,21 @@ collision.
 
 1. Start each route, then try its first turn using touch and keyboard. Check both
    camera modes, including manual camera override and recovery.
-2. Cross the scroll at full extension and from each roller edge. Walk off a
+2. On an ordinary stone court, jump near an outer edge and deliberately land
+   just short of the next court. A supported jump should land; a miss should
+   strike or clear the side, never sink through the slab.
+3. Cross the scroll at full extension and from each roller edge. Walk off a
    retracting edge and confirm the fall returns to a safe checkpoint.
-3. Cross the pink/purple pair, then the Frost Lily steps. The deliberate gaps
+4. Cross the pink/purple pair, then the Frost Lily steps. The deliberate gaps
    require jumps; icy control should ease back to normal on the next stone rest.
-4. Approach the wall without singing: its pane must block passage. Start the
+5. Approach the wall without singing: its pane must block passage. Start the
    challenge on its safe court, sing the target, watch the burst, then pass
    through the opening. The gold frame should remain and should still collide.
-5. Reload after breaking the wall. The same checkpoint and open passage should
+6. Reload after breaking the wall. The same checkpoint and open passage should
    restore immediately, without another burst or invisible pane.
-6. Ride and jump from the Aurora raft in both travel directions. Confirm that
+7. Ride and jump from the Aurora raft in both travel directions. Confirm that
    its visible position, footing and takeoff agree. Fall and retry once.
-7. Complete all required targets and enter the finale. The exit must remain
+8. Complete all required targets and enter the finale. The exit must remain
    locked while a required encounter is incomplete.
 
 Desktop hardware proof and automated simulation establish different things.
@@ -143,3 +146,31 @@ were being written into quantized integer geometry before float promotion,
 compressing the new wall. Position, normal and tangent attributes now promote
 before transforms; source data and authored UVs remain intact. Regression tests
 exercise the actual shipped quantized wall as well as synthetic geometry.
+
+## Edge-contact follow-up
+
+A real-keyboard jump reproduced a descending body missing strict top support
+while still overlapping the platform side. Post-descent recovery previously
+handled only props. Platforms now separate that missed landing from the slab,
+while successful landings keep the same foot-centre support rule. Connected
+shallow steps remain walkable. Only the exact bordering rims of a marked gap
+that the body spans simultaneously keep the existing narrow-gap fall behavior;
+ordinary jump gaps still have solid landing edges.
+
+The automatic browser solids suite includes a successful landing, a grazing
+outer edge, a clear miss and a short approach to the next actual Pearl platform.
+These use keyboard input on the compiled course. Core regressions cover both
+30 and 60 Hz, moving contact, shallow roller steps, props and intentional gaps.
+
+The Pearl donor's continuous top was also wider than its contact metadata. A
+measured local presentation fit maps its 3.32 × 0.78 m near-datum ledge to the
+existing 3.20 × 0.72 m course contact, preserving height, source geometry,
+materials and authored gap sizes. The lower ornamental rim remains visible;
+it is not advertised as extra landing space. Decoded-GLB corner rays cover the
+fit independently of metadata.
+
+Follow-up validation: 78 focused collision/course tests, 10 asset/presentation
+tests, six automatic real-input browser cases and four actual-raster AMD GPU
+cases pass. Independent review is clear; see the
+[edge-contact receipt](production/reports/platform-edge-contact-proof.json).
+Physical-device retesting remains an owner acceptance step.

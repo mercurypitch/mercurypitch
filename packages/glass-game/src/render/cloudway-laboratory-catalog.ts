@@ -41,6 +41,12 @@ export const CLOUDWAY_LAB_RIGID_MATERIAL_ROLES = {
   },
 } as const
 
+/** Continuous near-datum support measured from the accepted Pearl runtime GLB. */
+export const CLOUDWAY_LAB_PEARL_PRESENTATION_FIT = {
+  sourceSupportWidth: 3.32,
+  sourceSupportDepth: 0.78,
+} as const
+
 export const CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS = {
   roseCrackle: {
     CloudwayLab_RoseQuartz__glass: 'glass',

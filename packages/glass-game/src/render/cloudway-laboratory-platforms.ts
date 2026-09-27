@@ -7,7 +7,7 @@ import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
 import type { CloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
-import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PEARL_PRESENTATION_FIT, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
 import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
@@ -78,6 +78,19 @@ function validateStaticPlatform(
       `platform "${platform.id}" must match certified ${expectedWidth} x ${expectedDepth} x ${height} metre contact.`,
     )
   return turns
+}
+
+export function fitCloudwayLaboratoryRigidPresentation(
+  template: Object3D,
+  key: 'pearlRest' | 'frostLily' | 'auroraGlide',
+  contact: { readonly width: number; readonly depth: number },
+): void {
+  if (key !== 'pearlRest') return
+  template.scale.set(
+    contact.width / CLOUDWAY_LAB_PEARL_PRESENTATION_FIT.sourceSupportWidth,
+    1,
+    contact.depth / CLOUDWAY_LAB_PEARL_PRESENTATION_FIT.sourceSupportDepth,
+  )
 }
 
 function excludeDenseCameraCollision(root: Object3D): void {
@@ -279,6 +292,7 @@ export function createCloudwayLaboratoryPlatformRenderer(
         'pearl rest must retain its accepted opaque provider PBR appearance.',
       )
     const template = createKitInstance(source, materials, {}, materialLibrary)
+    fitCloudwayLaboratoryRigidPresentation(template, key, validated.collider)
     excludeDenseCameraCollision(template)
     template.updateMatrixWorld(true)
     const placements = platforms.map((platform) => {
