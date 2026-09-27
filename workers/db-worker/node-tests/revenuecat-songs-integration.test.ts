@@ -13,6 +13,8 @@
 // the grant is one INSERT ... SELECT that reads the balance as it writes, and
 // only the real engine can say whether that SQL does what it claims.
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from '../src/auth'
@@ -159,6 +161,9 @@ beforeEach(() => {
     JWT_SECRET: 'revenuecat-integration-secret-jwt',
     ALLOWED_ORIGINS: 'http://localhost',
     REVENUECAT_WEBHOOK_AUTH: WEBHOOK_AUTH,
+    // The dev deployment, which TestFlight builds and license testers buy
+    // from: their purchases are RevenueCat's SANDBOX (wrangler.jsonc).
+    REVENUECAT_ENVIRONMENT: 'SANDBOX',
   }
   events = 0
 })
@@ -196,6 +201,94 @@ describe('the webhook', () => {
     const response = await deliver(body)
 
     expect(response.status).toBe(400)
+  })
+})
+
+describe('a delivery from another store environment', () => {
+  // Review S1: a TestFlight or license-tester purchase is RevenueCat's
+  // SANDBOX. Only the deployment that environment belongs to may grant for
+  // it: SANDBOX on dev, PRODUCTION on prod.
+  it('grants nothing on prod for a sandbox purchase', async () => {
+    await anonymousToken()
+    env = { ...env, REVENUECAT_ENVIRONMENT: 'PRODUCTION' }
+
+    const response = await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      received: true,
+      ignored: 'another store environment',
+    })
+    expect(balanceOf(DEVICE)).toBe(0)
+    expect(entitlementOf(DEVICE)).toBeUndefined()
+  })
+
+  it('takes a deployment nobody configured for prod', async () => {
+    await anonymousToken()
+    env = { ...env, REVENUECAT_ENVIRONMENT: undefined }
+
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    expect(balanceOf(DEVICE)).toBe(0)
+
+    await deliver(rcEvent('INITIAL_PURCHASE', { environment: 'PRODUCTION' }))
+    expect(balanceOf(DEVICE)).toBe(20)
+  })
+
+  it('grants on dev for a sandbox purchase, and nothing for a real one', async () => {
+    await anonymousToken()
+
+    await deliver(rcEvent('INITIAL_PURCHASE', { environment: 'PRODUCTION' }))
+    expect(balanceOf(DEVICE)).toBe(0)
+
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    expect(balanceOf(DEVICE)).toBe(20)
+  })
+
+  it('changes nothing else either: no expiry, no move', async () => {
+    await anonymousToken()
+    seedAccount(ACCOUNT)
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    const before = entitlementOf(DEVICE)
+
+    for (const type of ['EXPIRATION', 'RENEWAL']) {
+      await deliver(
+        rcEvent(type, {
+          environment: 'PRODUCTION',
+          expiration_at_ms: Date.now() - 3_600_000,
+        }),
+      )
+    }
+    await deliver(
+      rcEvent('TRANSFER', {
+        environment: 'PRODUCTION',
+        app_user_id: ACCOUNT,
+        transferred_from: [DEVICE],
+        transferred_to: [ACCOUNT],
+      }),
+    )
+
+    expect(entitlementOf(DEVICE)).toEqual(before)
+    expect([balanceOf(DEVICE), balanceOf(ACCOUNT)]).toEqual([20, 0])
+  })
+
+  it('treats an event that names no environment as another one', async () => {
+    await anonymousToken()
+
+    await deliver(rcEvent('INITIAL_PURCHASE', { environment: undefined }))
+
+    expect(balanceOf(DEVICE)).toBe(0)
+  })
+
+  it('is set per deployment: SANDBOX on dev, PRODUCTION on prod', () => {
+    const config = readFileSync(resolve(__dirname, '../wrangler.jsonc'), 'utf8')
+    const dev = config.slice(
+      config.indexOf('"dev": {'),
+      config.indexOf('"prod": {'),
+    )
+    const prod = config.slice(config.indexOf('"prod": {'))
+    expect(dev).toMatch(/"REVENUECAT_ENVIRONMENT":\s*"SANDBOX"/)
+    expect(prod).toMatch(/"REVENUECAT_ENVIRONMENT":\s*"PRODUCTION"/)
+    expect(prod).not.toMatch(/"REVENUECAT_ENVIRONMENT":\s*"SANDBOX"/)
   })
 })
 

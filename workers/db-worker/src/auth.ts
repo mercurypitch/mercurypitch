@@ -172,6 +172,11 @@ export interface Env {
    *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
    *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
   REVENUECAT_WEBHOOK_AUTH?: string
+  /** The store environment this deployment grants songs for: `SANDBOX` on
+   *  dev (TestFlight builds, license testers) or `PRODUCTION` on prod.
+   *  RevenueCat marks every event with one; an event from the other is
+   *  acknowledged and changes nothing. Unset means PRODUCTION. */
+  REVENUECAT_ENVIRONMENT?: string
   /** Songs a Karaoke subscription period grants. Default 20 (songs-allowance.ts). */
   SONGS_PER_PERIOD?: string
   /** The balance unused songs roll over to, at most. Default 50. */

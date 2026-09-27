@@ -22,6 +22,11 @@
 //                              its own credits: they may have been bought.
 // Everything else is acknowledged without action.
 //
+// Every event names its store environment. Only the one this deployment is
+// for (REVENUECAT_ENVIRONMENT: SANDBOX on dev, PRODUCTION on prod, and
+// PRODUCTION when unset) changes anything; an event from the other, such as
+// a TestFlight purchase reaching prod, is acknowledged and ignored.
+//
 // Idempotent on the event id, as the Stripe webhook is on Stripe's: `rc:<id>`
 // goes into billingEvents once the event is processed, and every ledger write
 // carries a UNIQUE idempotency key derived from it, so a redelivery, or two
@@ -43,6 +48,7 @@ interface RevenueCatEvent {
   aliases?: unknown
   product_id?: unknown
   entitlement_ids?: unknown
+  environment?: unknown
   expiration_at_ms?: unknown
   transferred_from?: unknown
   transferred_to?: unknown
@@ -103,6 +109,15 @@ async function firstKnownUser(
     if (user !== null) return user
   }
   return null
+}
+
+/** The store environment this deployment grants for. Anything but an
+ *  explicit SANDBOX is PRODUCTION, so a deployment nobody configured never
+ *  grants songs for a test purchase. */
+function deploymentEnvironment(env: Env): 'SANDBOX' | 'PRODUCTION' {
+  return env.REVENUECAT_ENVIRONMENT?.trim().toUpperCase() === 'SANDBOX'
+    ? 'SANDBOX'
+    : 'PRODUCTION'
 }
 
 function unlocksSongs(event: RevenueCatEvent): boolean {
@@ -310,7 +325,10 @@ export async function handleRevenueCatWebhook(
     .first<{ id: string }>()
   if (seen !== null) return respond({ received: true, duplicate: true })
 
-  const outcome = await applyEvent(env, event, type)
+  const outcome: Outcome =
+    text(event.environment) === deploymentEnvironment(env)
+      ? await applyEvent(env, event, type)
+      : { ignored: 'another store environment' }
   await env.DB.prepare(
     'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
   )
