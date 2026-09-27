@@ -109,6 +109,10 @@ export default defineConfig(({ mode, command }) => {
     )
   }
   const gamesEnabled = env.VITE_BESIDE_CUE_GAMES === '1'
+  const nativeGamesProfile =
+    gamesEnabled &&
+    (env.VITE_BESIDE_CUE_NATIVE_PLATFORM === 'android' ||
+      env.VITE_BESIDE_CUE_NATIVE_PLATFORM === 'ios')
   const https = mode === 'https' ? devCert() : undefined
   return {
     base: './',
@@ -119,7 +123,7 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       ...(mode === 'https' && https === undefined ? [basicSsl()] : []),
       solid(),
-      gameAssetsPlugin(gamesEnabled),
+      gameAssetsPlugin(gamesEnabled, undefined, nativeGamesProfile),
     ],
     resolve: {
       alias: [
@@ -152,14 +156,15 @@ export default defineConfig(({ mode, command }) => {
     build: {
       target: 'es2022',
       rollupOptions: {
-        input: gamesEnabled
-          ? {
-              app: fileURLToPath(new URL('./index.html', import.meta.url)),
-              museum: fileURLToPath(
-                new URL('./glass-game/index.html', import.meta.url),
-              ),
-            }
-          : fileURLToPath(new URL('./index.html', import.meta.url)),
+        input:
+          gamesEnabled && !nativeGamesProfile
+            ? {
+                app: fileURLToPath(new URL('./index.html', import.meta.url)),
+                museum: fileURLToPath(
+                  new URL('./glass-game/index.html', import.meta.url),
+                ),
+              }
+            : fileURLToPath(new URL('./index.html', import.meta.url)),
       },
     },
     // The pitch stream's detector worker imports the detector, which is big

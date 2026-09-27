@@ -2,13 +2,14 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
-import { glassGameAssetPath } from '@irchiinnuss/glass-game/assets'
+import { GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
+import { NATIVE_STANDALONE_ONLY_GAME_ASSETS } from './game-assets.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
@@ -51,6 +52,16 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
+  it('subtracts exactly the standalone Glassworks dressing from the web inventory', () => {
+    const native = new Set(requiredGameAssets)
+    const webOnly = GLASS_GAME_REQUIRED_FILES.map(
+      (asset) => `games/${asset}`,
+    ).filter((asset) => !native.has(asset))
+
+    expect(webOnly).toEqual([...NATIVE_STANDALONE_ONLY_GAME_ASSETS])
+    expect(native.has('games/glass3d/merc.glb')).toBe(true)
+  })
+
   it('includes each referenced glTF buffer and image in the shared offline package', () => {
     const declared = new Set<string>(requiredGameAssets)
     const models = requiredGameAssets.filter((asset) => asset.endsWith('.gltf'))
@@ -193,6 +204,24 @@ describe('explicit native games profile', () => {
     expect(second.assetSha256['index.html']).not.toBe(
       first.assetSha256['index.html'],
     )
+  })
+
+  it('prunes a prebuilt web preview without removing in-app game assets', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+      put(directory, `dist/${asset}`, 'web-only dressing')
+    put(directory, 'dist/glass-game/index.html', '<main>Museum preview</main>')
+    put(directory, 'dist/games/glass3d/glass.glb', 'cabinet game asset')
+
+    stageGamesProfile(directory, 'android', false)
+
+    expect(existsSync(resolve(directory, 'dist/glass-game'))).toBe(false)
+    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+      expect(existsSync(resolve(directory, 'dist', asset))).toBe(false)
+    expect(
+      readFileSync(resolve(directory, 'dist/games/glass3d/glass.glb'), 'utf8'),
+    ).toBe('cabinet game asset')
   })
 
   it('rejects an empty model download even when every required path exists', () => {
