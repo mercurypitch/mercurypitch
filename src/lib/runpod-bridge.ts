@@ -9,6 +9,8 @@
 
 import type { BridgeStatusResponse, RunpodConfig, RunpodStatus, RunpodTier, } from './runpod'
 import { base64ToBytes, buildJobInput, bytesToBase64, cancelJob, classifyStemFromFilename, contentTypeForFilename, endpointFor, fetchJobStatus, findStemOutput, mapStatusToResponse, parseSession, requestedRunpodTier, resolveTier, RUNPOD_ALLOWED_MODELS, RUNPOD_DEFAULT_MODEL, RUNPOD_STEM_NAMES, submitJob, toSessionId, } from './runpod'
+import type { UvrInputBucket } from './runpod-stem-storage'
+import { baseName, inlineStem, serveStemFromR2, statusFromR2, stemDir, } from './runpod-stem-storage'
 import type { MeteringConfig } from './uvr-metering'
 import { admitUvrJob, debitForJob, refundJob } from './uvr-metering'
 
@@ -26,94 +28,6 @@ const RUNPOD_MAX_INLINE_BYTES = 7 * 1024 * 1024
 // handler's own 100 MB byte cap and ~12-min duration cap, which remain
 // the real compute bound.
 const RUNPOD_MAX_UPLOAD_BYTES = 95 * 1024 * 1024
-
-/** Minimal R2 surface the bridge needs — a subset of R2Bucket, so this pure
- *  module stays testable with a plain mock. `put` stages large inputs; `list` +
- *  `get` power the durable stem-recovery fallback (serve stems straight from R2
- *  for the ~24 h the objects live, after RunPod has forgotten the job at ~30
- *  min). The binding is named UVR_INPUT_BUCKET but is the same bucket the
- *  handler uploads stems to. */
-export interface UvrInputBucket {
-  put(
-    key: string,
-    value: ReadableStream | ArrayBuffer,
-    options?: { httpMetadata?: { contentType?: string } },
-  ): Promise<unknown>
-  list(options?: {
-    prefix?: string
-    limit?: number
-  }): Promise<{ objects: { key: string; size: number }[] }>
-  get(key: string): Promise<{ body: ReadableStream; size: number } | null>
-}
-
-/** The R2 object key prefix the handler wrote a job's stems under, ending in a
- *  slash so a list scopes to exactly one job's stems. */
-function stemDir(prefix: string, jobId: string): string {
-  return `${prefix.replace(/\/+$/, '')}/${jobId}/`
-}
-
-function baseName(key: string): string {
-  const i = key.lastIndexOf('/')
-  return i >= 0 ? key.slice(i + 1) : key
-}
-
-/**
- * Synthesize a completed-status response from stems still in R2 when RunPod no
- * longer has the job (its result expires ~30 min; the R2 objects live ~24 h).
- * Returns null when the job's stems aren't (or are no longer) in the bucket.
- */
-async function statusFromR2(
-  bucket: UvrInputBucket,
-  prefix: string,
-  sessionId: string,
-  jobId: string,
-): Promise<BridgeStatusResponse | null> {
-  const listed = await bucket.list({ prefix: stemDir(prefix, jobId) })
-  const files = (listed.objects ?? [])
-    .map((o) => {
-      const name = baseName(o.key)
-      const stem = classifyStemFromFilename(name)
-      return {
-        stem,
-        filename: name,
-        // Same shape mapStatusToResponse emits, so the client re-fetches each
-        // stem through /output (which serves it from R2 below).
-        path: `/api/uvr/output/${sessionId}/${encodeURIComponent(stem)}`,
-        size: o.size,
-      }
-    })
-    // Any classified stem counts: split jobs leave drums/bass/guitar/piano/
-    // other here, and limiting recovery to vocal+instrumental silently broke
-    // re-attaching to a finished split after a reload.
-    .filter((f) => (RUNPOD_STEM_NAMES as readonly string[]).includes(f.stem))
-  if (files.length === 0) return null
-  return { session_id: sessionId, status: 'completed', progress: 100, files }
-}
-
-/**
- * Serve a stem straight from R2 by listing the job's `<prefix>/<jobId>/` folder
- * — the durable path when RunPod can't resolve the output anymore. Returns null
- * when the wanted stem isn't in the bucket.
- */
-async function serveStemFromR2(
-  bucket: UvrInputBucket,
-  prefix: string,
-  jobId: string,
-  wanted: string,
-): Promise<Response | null> {
-  const listed = await bucket.list({ prefix: stemDir(prefix, jobId) })
-  const objs = listed.objects ?? []
-  const needle = wanted.toLowerCase()
-  const match =
-    objs.find((o) => classifyStemFromFilename(baseName(o.key)) === needle) ??
-    objs.find((o) => baseName(o.key).toLowerCase() === needle)
-  if (match === undefined) return null
-  const obj = await bucket.get(match.key)
-  if (obj === null) return null
-  return new Response(obj.body, {
-    headers: { 'Content-Type': contentTypeForFilename(match.key) },
-  })
-}
 
 function json(
   body: unknown,
@@ -730,36 +644,6 @@ async function serveRunpodOutput(
   }
 
   return json({ error: 'Output not ready' }, 404)
-}
-
-/** A stored stem as bytes rather than a redirect: from R2 through the
- *  binding when the bucket has it (no storage origin involved at all), else
- *  fetched from its URL here and streamed on. */
-async function inlineStem(
-  bucket: UvrInputBucket | null,
-  stemPrefix: string,
-  jobId: string,
-  wanted: string,
-  stem: { url: string; filename: string },
-): Promise<Response> {
-  if (bucket !== null) {
-    const fromR2 = await serveStemFromR2(
-      bucket,
-      stemPrefix,
-      jobId,
-      wanted,
-    ).catch(() => null)
-    if (fromR2 !== null) return fromR2
-  }
-  const stored = await fetch(stem.url).catch(() => null)
-  if (stored === null || !stored.ok || stored.body === null) {
-    return json({ error: 'The separated song could not be fetched' }, 502)
-  }
-  return new Response(stored.body, {
-    headers: {
-      'Content-Type': contentTypeForFilename(stem.filename),
-    },
-  })
 }
 
 /** The client double-prefixes the output path (it stores the full
