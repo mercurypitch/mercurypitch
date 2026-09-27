@@ -16,7 +16,7 @@
 // Scrubber carry the touch behavior, and this file keeps only the karaoke
 // skin (purple stage tokens in the module CSS) and the lyrics logic.
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
@@ -76,9 +76,33 @@ interface ParsedLine {
   leadInFrom?: number
 }
 
+/**
+ * The stage hosted by the native Karaoke room (REQ-NRM-023), declared rather
+ * than forked. The room's shell owns the Back, the room's name and picture
+ * and the gear (REQ-NRM-032); the room's sheets own the toggles and the
+ * library. So, hosted, the stage draws inside the room's box instead of as a
+ * portal over the viewport (REQ-NRM-004), and its header is one line: the
+ * song, its credit, and the way into the library. Absent everywhere else —
+ * the web's phone stage and Karaoke Night are exactly what they were.
+ */
+export interface KaraokeStageHosting {
+  /** Under the title: the artist, and the credit a licence asks for. */
+  byline: () => string | null
+  /** The song line's tap: the room's library. */
+  onOpenLibrary: () => void
+  /** Set in the room's Options, not by a header button. */
+  lyricsSize: () => ZenLyricsSize
+  /** Notes over the lyrics, set in the room's Options. */
+  noteGlyphs: () => boolean
+  /** A short count beside the title while songs are on their way. */
+  badge?: () => string | null
+}
+
 export interface KaraokeMobileStageProps {
   songTitle: string
   onBack?: () => void
+  /** Hosted by the native Karaoke room; see `KaraokeStageHosting`. */
+  hosted?: KaraokeStageHosting
 
   // Audio (stem-mixer audio controller)
   playing: () => boolean
@@ -213,6 +237,12 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   props,
 ) => {
   const background = useBackgroundSurfaceController('karaoke')
+  // Fixed for the stage's lifetime: a room hosts it from mount to unmount.
+  // eslint-disable-next-line solid/reactivity
+  const hosting = props.hosted
+  /** The stage's own way out. Hosted, the room header's Back is the only one. */
+  const backHandler = (): (() => void) | undefined =>
+    hosting === undefined ? props.onBack : undefined
 
   /**
    * The clock for anything the singer follows by ear.
@@ -434,10 +464,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // ── Lyrics size presets (Smaller / Current / Bigger) ──────────
   // Cycled from the header button; Ctrl/Cmd+wheel (trackpad pinch) over the
   // lyrics steps through the same presets. Persisted per user.
-  const [lyricsSize, setLyricsSize] = createPersistedSignal<ZenLyricsSize>(
-    'sm-zen-lyrics-size',
-    'current',
-  )
+  const [lyricsSize, setLyricsSize] =
+    hosting === undefined
+      ? createPersistedSignal<ZenLyricsSize>('sm-zen-lyrics-size', 'current')
+      : [hosting.lyricsSize, (_next: ZenLyricsSize): void => undefined]
   const lyricsSizeTitle = (): string =>
     ({
       smaller: 'Lyrics size: Smaller — click for Current',
@@ -454,10 +484,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Chord-chart labels over the words: the note the singer should hit,
   // from the denoised pitch alignment. Enabling with no notes yet asks
   // the host to run the analysis; glyphs fade in when it lands.
-  const [noteGlyphsOn, setNoteGlyphsOn] = createPersistedSignal(
-    'sm-zen-note-glyphs',
-    false,
-  )
+  const [noteGlyphsOn, setNoteGlyphsOn] =
+    hosting === undefined
+      ? createPersistedSignal('sm-zen-note-glyphs', false)
+      : [hosting.noteGlyphs, (_next: boolean): void => undefined]
   const wordNoteIndex = createMemo(() =>
     buildWordNoteIndex(props.alignedWords?.() ?? []),
   )
@@ -579,97 +609,132 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     props.onToggleMic?.()
   }
 
-  return (
-    <StageShell
-      class={`${styles.stage} mp-dark-stage`}
-      style={background.resolvedStyle()}
-      testId="karaoke-mobile-stage"
-    >
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div class={styles.header}>
-        <Show when={props.onBack}>
-          <button
-            class={styles.backBtn}
-            onClick={() => props.onBack?.()}
-            title="Back to Karaoke Night"
-            aria-label="Back"
-          >
-            <ChevronLeftIcon />
-          </button>
+  // The phone stage's own header, everywhere the stage is not hosted.
+  const webHeader = (): JSX.Element => (
+    <div class={styles.header}>
+      <Show when={props.onBack}>
+        <button
+          class={styles.backBtn}
+          onClick={() => props.onBack?.()}
+          title="Back to Karaoke Night"
+          aria-label="Back"
+        >
+          <ChevronLeftIcon />
+        </button>
+      </Show>
+      <div class={styles.titleWrap}>
+        <p class={styles.title}>{displayTitle()}</p>
+        <Show when={isPlaylistActive() && nextSong()}>
+          <p class={styles.subtitle}>
+            Up next: {nextSong()!.songTitle}
+            <Show when={nextSong()!.singerName}>
+              {' '}
+              ({nextSong()!.singerName})
+            </Show>
+          </p>
         </Show>
-        <div class={styles.titleWrap}>
-          <p class={styles.title}>{displayTitle()}</p>
-          <Show when={isPlaylistActive() && nextSong()}>
-            <p class={styles.subtitle}>
-              Up next: {nextSong()!.songTitle}
-              <Show when={nextSong()!.singerName}>
-                {' '}
-                ({nextSong()!.singerName})
-              </Show>
-            </p>
-          </Show>
-        </div>
-        <div class={styles.headerActions}>
-          <Show when={props.showStageSettings !== false}>
-            <PremiumBackgroundPicker
-              controller={background}
-              label="Stage"
-              iconOnly
-            />
-          </Show>
-          <Show when={props.alignedWords}>
-            <button
-              class={styles.autoplayBtn}
-              classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
-              onClick={toggleNoteGlyphs}
-              aria-pressed={noteGlyphsOn()}
-              title={
-                noteGlyphsOn()
-                  ? 'Hide the notes to sing'
-                  : 'Show the note to sing over each word'
-              }
-              aria-label="Toggle the sing-this-note labels"
-            >
-              <NoteGlyphIcon />
-            </button>
-          </Show>
+      </div>
+      <div class={styles.headerActions}>
+        <Show when={props.showStageSettings !== false}>
+          <PremiumBackgroundPicker
+            controller={background}
+            label="Stage"
+            iconOnly
+          />
+        </Show>
+        <Show when={props.alignedWords}>
           <button
             class={styles.autoplayBtn}
-            classList={{
-              [styles.autoplayBtnOn]: lyricsSize() !== 'current',
-            }}
-            onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
-            title={lyricsSizeTitle()}
-            aria-label="Cycle the lyrics text size"
+            classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
+            onClick={toggleNoteGlyphs}
+            aria-pressed={noteGlyphsOn()}
+            title={
+              noteGlyphsOn()
+                ? 'Hide the notes to sing'
+                : 'Show the note to sing over each word'
+            }
+            aria-label="Toggle the sing-this-note labels"
           >
-            <TextSizeIcon />
+            <NoteGlyphIcon />
           </button>
-          <Show when={props.onPickSession}>
+        </Show>
+        <button
+          class={styles.autoplayBtn}
+          classList={{
+            [styles.autoplayBtnOn]: lyricsSize() !== 'current',
+          }}
+          onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
+          title={lyricsSizeTitle()}
+          aria-label="Cycle the lyrics text size"
+        >
+          <TextSizeIcon />
+        </button>
+        <Show when={props.onPickSession}>
+          <button
+            class={styles.autoplayBtn}
+            classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
+            onClick={() => props.onToggleAutoplay()}
+            aria-pressed={props.autoplayEnabled()}
+            title={
+              props.autoplayEnabled()
+                ? 'Autoplay is on — the next song plays automatically'
+                : 'Autoplay is off — turn on to keep playing song after song'
+            }
+            aria-label="Toggle autoplay"
+          >
+            <AutoplayIcon />
+          </button>
+          <button
+            class={styles.listBtn}
+            onClick={() => setSheetOpen(true)}
+            title="Songs and playlists"
+            aria-label="Open the song list"
+          >
+            <SongListIcon />
+          </button>
+        </Show>
+      </div>
+    </div>
+  )
+
+  const content = (): JSX.Element => (
+    <>
+      {/* ── Header ─────────────────────────────────────────── */}
+      <Show when={hosting} fallback={webHeader()}>
+        {(host) => (
+          <div class={styles.songLine}>
             <button
-              class={styles.autoplayBtn}
-              classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
-              onClick={() => props.onToggleAutoplay()}
-              aria-pressed={props.autoplayEnabled()}
-              title={
-                props.autoplayEnabled()
-                  ? 'Autoplay is on — the next song plays automatically'
-                  : 'Autoplay is off — turn on to keep playing song after song'
-              }
-              aria-label="Toggle autoplay"
+              type="button"
+              class={styles.songLineButton}
+              onClick={() => host().onOpenLibrary()}
+              aria-label={`${displayTitle()}. Open the songs`}
+              data-testid="karaoke-songline"
             >
-              <AutoplayIcon />
-            </button>
-            <button
-              class={styles.listBtn}
-              onClick={() => setSheetOpen(true)}
-              title="Songs and playlists"
-              aria-label="Open the song list"
-            >
+              <span class={styles.songLineText}>
+                <span class={styles.title}>{displayTitle()}</span>
+                <Show when={host().byline()}>
+                  {(byline) => <span class={styles.byline}>{byline()}</span>}
+                </Show>
+              </span>
+              <Show when={host().badge?.()}>
+                {(badge) => (
+                  <span
+                    class={styles.badge}
+                    data-testid="karaoke-songline-badge"
+                  >
+                    <i aria-hidden="true" />
+                    {badge()}
+                  </span>
+                )}
+              </Show>
               <SongListIcon />
             </button>
-          </Show>
-        </div>
-      </div>
+            <Show when={isPlaylistActive() && nextSong()}>
+              <p class={styles.subtitle}>Up next: {nextSong()!.songTitle}</p>
+            </Show>
+          </div>
+        )}
+      </Show>
 
       {/* ── Desktop-zen playlist card (uses the side gutter) ── */}
       <Show when={showPlaylistCard()}>
@@ -738,6 +803,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       <div
         ref={scrollerRef}
         class={styles.lyrics}
+        data-testid={hosting === undefined ? undefined : 'karaoke-lyrics'}
         classList={{
           [styles.lyricsEmpty]: lines().length === 0,
           [styles.lyricsNoted]: noteGlyphsOn() && hasNoteData(),
@@ -1085,12 +1151,12 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             {/* The way out, while it is still working. The header's back
                 chevron is behind this overlay's blur, which on a download
                 that runs for minutes reads as no way out at all. */}
-            <Show when={props.onBack}>
+            <Show when={backHandler()}>
               <div class={styles.stateActions}>
                 <button
                   type="button"
                   class={styles.stateAction}
-                  onClick={() => props.onBack?.()}
+                  onClick={() => backHandler()?.()}
                 >
                   Go back
                 </button>
@@ -1103,7 +1169,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         <div class={styles.stateOverlay}>
           <div class={styles.loadCard} role="alert">
             <p>{props.loadError()}</p>
-            <Show when={props.onRetryLoad ?? props.onBack}>
+            <Show when={props.onRetryLoad ?? backHandler()}>
               <div class={styles.stateActions}>
                 <Show when={props.onRetryLoad}>
                   <button
@@ -1114,11 +1180,11 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                     Try again
                   </button>
                 </Show>
-                <Show when={props.onBack}>
+                <Show when={backHandler()}>
                   <button
                     type="button"
                     class={styles.stateAction}
-                    onClick={() => props.onBack?.()}
+                    onClick={() => backHandler()?.()}
                   >
                     Go back
                   </button>
@@ -1130,56 +1196,59 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       </Show>
 
       {/* ── Song sheet ─────────────────────────────────────── */}
-      <Sheet
-        isOpen={sheetOpen()}
-        close={() => setSheetOpen(false)}
-        ariaLabel="Songs and playlists"
-      >
-        <Show when={librarySongs().length > 0}>
-          <p class={styles.sheetKicker}>Your library</p>
-          <ul class={styles.sheetList}>
-            <For each={librarySongs()}>
-              {(s) => (
-                <li>
-                  <button
-                    class={styles.sheetRow}
-                    onClick={() => pickSession(s.sessionId)}
-                  >
-                    {s.originalFile?.name ?? s.sessionId}
-                  </button>
-                </li>
-              )}
-            </For>
-          </ul>
-        </Show>
-        <Show when={getPlaylistsReactive().length > 0}>
-          <p class={styles.sheetKicker}>Your playlists</p>
-          <ul class={styles.sheetList}>
-            <For each={getPlaylistsReactive()}>
-              {(p) => (
-                <li>
-                  <button
-                    class={styles.sheetRow}
-                    onClick={() => pickPlaylist(p.id)}
-                  >
-                    <PlayGlyphIcon class={styles.sheetPlay} />
-                    {p.name}
-                  </button>
-                </li>
-              )}
-            </For>
-          </ul>
-        </Show>
-        <Show
-          when={
-            librarySongs().length === 0 && getPlaylistsReactive().length === 0
-          }
+      {/* Hosted, the room's library is the song list. */}
+      <Show when={hosting === undefined}>
+        <Sheet
+          isOpen={sheetOpen()}
+          close={() => setSheetOpen(false)}
+          ariaLabel="Songs and playlists"
         >
-          <p class={styles.sheetEmpty}>
-            Nothing else here yet — go back to add a song.
-          </p>
-        </Show>
-      </Sheet>
+          <Show when={librarySongs().length > 0}>
+            <p class={styles.sheetKicker}>Your library</p>
+            <ul class={styles.sheetList}>
+              <For each={librarySongs()}>
+                {(s) => (
+                  <li>
+                    <button
+                      class={styles.sheetRow}
+                      onClick={() => pickSession(s.sessionId)}
+                    >
+                      {s.originalFile?.name ?? s.sessionId}
+                    </button>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
+          <Show when={getPlaylistsReactive().length > 0}>
+            <p class={styles.sheetKicker}>Your playlists</p>
+            <ul class={styles.sheetList}>
+              <For each={getPlaylistsReactive()}>
+                {(p) => (
+                  <li>
+                    <button
+                      class={styles.sheetRow}
+                      onClick={() => pickPlaylist(p.id)}
+                    >
+                      <PlayGlyphIcon class={styles.sheetPlay} />
+                      {p.name}
+                    </button>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </Show>
+          <Show
+            when={
+              librarySongs().length === 0 && getPlaylistsReactive().length === 0
+            }
+          >
+            <p class={styles.sheetEmpty}>
+              Nothing else here yet — go back to add a song.
+            </p>
+          </Show>
+        </Sheet>
+      </Show>
 
       {/* ── Add-lyrics fallback (paste text / load a .lrc or .txt) ── */}
       <Show when={props.onUploadLyrics}>
@@ -1210,6 +1279,29 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         />
       </Show>
       <KaraokePlaylistSummary />
-    </StageShell>
+    </>
+  )
+
+  return (
+    <Show
+      when={hosting === undefined}
+      fallback={
+        <div
+          class={`${styles.stage} ${styles.hosted} mp-dark-stage`}
+          data-testid="karaoke-mobile-stage"
+          data-hosted=""
+        >
+          {content()}
+        </div>
+      }
+    >
+      <StageShell
+        class={`${styles.stage} mp-dark-stage`}
+        style={background.resolvedStyle()}
+        testId="karaoke-mobile-stage"
+      >
+        {content()}
+      </StageShell>
+    </Show>
   )
 }

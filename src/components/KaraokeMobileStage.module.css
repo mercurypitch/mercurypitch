@@ -1095,3 +1095,119 @@
   font-size: 0.95rem;
   font-weight: 800;
 }
+
+/* ── Hosted by the native Karaoke room ─────────────────────
+   The room is a box the shell owns, not the viewport (REQ-NRM-004): the
+   stage fills it rather than portalling over it, starts under the room
+   header the shell draws (its 52 px row over the safe area), and leaves the
+   picture to the room's own [data-room-background], which the alley's door
+   hands over to. What the stage keeps of its background is the plum veil. */
+.hosted {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: calc(var(--safe-top, 0px) + 52px);
+  color: var(--stage-color);
+  background: linear-gradient(
+    180deg,
+    rgba(14, 6, 25, 0.9) 0%,
+    rgba(18, 8, 31, 0.72) 45%,
+    rgba(10, 4, 18, 0.94) 100%
+  );
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The song line: title, credit, and the library behind a tap. */
+.songLine {
+  flex-shrink: 0;
+  padding: 2px max(12px, var(--safe-right, 0px)) 2px
+    max(12px, var(--safe-left, 0px));
+}
+
+.songLineButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.songLineButton:active {
+  opacity: 0.8;
+}
+
+.songLineButton > svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: rgba(244, 236, 255, 0.7);
+}
+
+.songLineText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hosted .title {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.byline {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(244, 236, 255, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(201, 162, 255, 0.18);
+  color: #e2cfff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.badge > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c9a2ff;
+}
+
+/* While the shell's rail is up (before the first play, and after a song
+   ends) the bar and the two floating controls stand on it rather than
+   under it. During a song the rail steps aside and zen's bar is the
+   transport (the room's `ownsTransport`). */
+.hosted .bottomBar {
+  transition: padding-bottom 0.24s ease;
+}
+
+:global(:root[data-shell-rail='on']) .hosted .bottomBar {
+  padding-bottom: calc(var(--tabbar-total, 64px) + 10px);
+}
+
+:global(:root[data-shell-rail='on']) .hosted .singPill,
+:global(:root[data-shell-rail='on']) .hosted .micFloatBtn {
+  bottom: calc(128px + var(--tabbar-total, 64px));
+}
