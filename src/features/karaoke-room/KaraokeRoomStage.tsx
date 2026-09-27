@@ -43,6 +43,7 @@ import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
 import { karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeStagedSong, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -100,6 +101,7 @@ export const KaraokeRoomStage: Component = () => {
   const parked = takeParkedKaraokeSong()
 
   const [pickerOpen] = createSignal(false)
+  const [libraryOpen, setLibraryOpen] = createSignal(false)
   const background = useBackgroundSurfaceController('karaoke', pickerOpen)
 
   // Read fresh, never memoised: the arrival reads it the moment the seed
@@ -200,7 +202,9 @@ export const KaraokeRoomStage: Component = () => {
     audio: lease,
     stage: {
       byline: () => entry.song.credit ?? entry.song.artist,
-      onOpenLibrary: () => undefined,
+      onOpenLibrary: () => {
+        setLibraryOpen(true)
+      },
       lyricsSize: karaokeLyricsSize,
       noteGlyphs: karaokeNoteGlyphs,
     },
@@ -231,6 +235,21 @@ export const KaraokeRoomStage: Component = () => {
     controls !== null && !controls.loading()
       ? controls.elapsed()
       : (entry.seekSec ?? 0)
+
+  // A song picked in the library goes on the stage as Next would put it:
+  // playing if one was playing. The song already there just closes the list.
+  const pick = (song: RoomSong): void => {
+    setLibraryOpen(false)
+    if (song.sessionId === cue()?.song.sessionId) return
+    void cueSong(song, { autoPlay: isPlaying() })
+  }
+
+  // Back closes what the room has open over its stage before it leaves.
+  const closeRoomOverlay = (): boolean => {
+    if (!libraryOpen()) return false
+    setLibraryOpen(false)
+    return true
+  }
 
   const pause = (): void => {
     mixer()?.pause()
@@ -270,6 +289,7 @@ export const KaraokeRoomStage: Component = () => {
         resume,
         stop,
         park,
+        closeRoomOverlay,
       }),
     )
   })
@@ -327,6 +347,13 @@ export const KaraokeRoomStage: Component = () => {
           />
         )}
       </Show>
+      <KaraokeLibrarySheet
+        isOpen={libraryOpen()}
+        close={() => setLibraryOpen(false)}
+        songs={library}
+        currentId={() => cue()?.song.sessionId ?? null}
+        onPick={pick}
+      />
     </div>
   )
 }

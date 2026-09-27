@@ -8,7 +8,7 @@
 // song it cues and when, what it tells the shell, and what it keeps when it
 // is taken off the screen and put back.
 
-import { cleanup, render } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import type { Setter } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -470,6 +470,67 @@ describe('the next song', () => {
     // Nothing was playing, so nothing starts.
     expect(current().autoPlay).not.toBe(true)
     expect(current().hosted.hasPrev()).toBe(true)
+  })
+})
+
+describe('the library', () => {
+  it('opens from the song line, and the song picked goes on the stage', async () => {
+    await mountRoom()
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^I'll Be Right Behind You/u }),
+    )
+
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+    expect(screen.queryByTestId('karaoke-library')).toBeNull()
+    // Nothing was playing, so nothing starts.
+    expect(current().autoPlay).not.toBe(true)
+  })
+
+  it('marks the song on the stage', async () => {
+    await mountRoom()
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+
+    expect(
+      within(sheet)
+        .getByRole('button', { name: /^Goodbye to Spring/u })
+        .getAttribute('aria-current'),
+    ).toBe('true')
+  })
+
+  it('plays the song picked while one is playing', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    current().hosted.stage.onOpenLibrary()
+    const sheet = await screen.findByTestId('karaoke-library')
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: /^Nothing in the Dark/u }),
+    )
+
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(DARK.sessionId)
+    })
+    expect(current().autoPlay).toBe(true)
+  })
+
+  it('is what Back closes first, before the room', async () => {
+    await mountRoom()
+    expect(controls().closeRoomOverlay?.()).toBe(false)
+
+    current().hosted.stage.onOpenLibrary()
+    await screen.findByTestId('karaoke-library')
+
+    expect(controls().closeRoomOverlay?.()).toBe(true)
+    expect(screen.queryByTestId('karaoke-library')).toBeNull()
+    expect(controls().closeRoomOverlay?.()).toBe(false)
   })
 })
 
