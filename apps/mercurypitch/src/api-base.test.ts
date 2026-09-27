@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 // @ts-expect-error -- a plain .mjs module with no types, shared with a Vite
 // config and with a bare-node script that runs before any install.
-import { API_BASES, readEnvFiles, resolveApiBase } from '../api-base.mjs'
+import { API_BASES, karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from '../api-base.mjs'
 
 interface Resolved {
   base: string
@@ -198,5 +198,47 @@ describe('the env files, in the order Vite reads them', () => {
         'VITE_WORKER_HOST=api-dev.mercurypitch.com\nVITE_API_BASE_URL=https://${VITE_WORKER_HOST}\n',
       ),
     ).toBe(API_BASES.dev)
+  })
+})
+
+// Stage 2 of the Karaoke room (plan S8): a singer's own songs, separated on
+// the server. The owner wants it on TestFlight, which builds against the dev
+// worker, and off in the store build; the switch that already decides the
+// worker decides this too.
+describe('importing songs into the Karaoke room', () => {
+  it('is on in every build that is not the store build', () => {
+    expect(karaokeImportFor({ target: 'dev' })).toBe(true)
+    expect(karaokeImportFor({ target: 'configured' })).toBe(true)
+    expect(karaokeImportFor({ target: 'production' })).toBe(false)
+  })
+})
+
+// Separation is served by the web app's worker, not the db-worker, so a
+// native build names that host too: the one that goes with its worker.
+describe('the host a native build separates on', () => {
+  it('goes with the worker the switch chose', () => {
+    expect(resolveUvrOrigin({ target: 'dev' }, {})).toBe(
+      'https://dev.mercurypitch.com',
+    )
+    expect(resolveUvrOrigin({ target: 'production' }, {})).toBe(
+      'https://mercurypitch.com',
+    )
+  })
+
+  it('is named by the process for a local worker, and only then', () => {
+    expect(resolveUvrOrigin({ target: 'configured' }, {})).toBe('')
+    expect(
+      resolveUvrOrigin(
+        { target: 'configured' },
+        { MERCURYPITCH_UVR_ORIGIN: 'http://localhost:8787/' },
+      ),
+    ).toBe('http://localhost:8787')
+    // A stray variable cannot point a TestFlight or a store build elsewhere.
+    expect(
+      resolveUvrOrigin(
+        { target: 'dev' },
+        { MERCURYPITCH_UVR_ORIGIN: 'http://localhost:8787' },
+      ),
+    ).toBe('https://dev.mercurypitch.com')
   })
 })

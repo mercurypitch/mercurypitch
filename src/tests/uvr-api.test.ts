@@ -387,6 +387,14 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
     expect(init.signal).toBe(controller.signal)
   })
 
+  it('asks its own origin on the web', async () => {
+    // A native build names a host (uvr-api-native.test.ts); the web never
+    // does, so its requests are exactly what they were.
+    const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
+    await processAudio(new File([new Uint8Array([1])], 'song.mp3'))
+    expect(String(spy.mock.calls[0]?.[0])).toBe('/api/uvr/process')
+  })
+
   it('omits the header without a provider', async () => {
     const spy = vi.spyOn(global, 'fetch').mockResolvedValue(OK_RESPONSE)
     await processAudio(new File([new Uint8Array([1])], 'song.mp3'))

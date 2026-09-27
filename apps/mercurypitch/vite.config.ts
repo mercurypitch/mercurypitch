@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 // @ts-expect-error -- the same kind of plain .mjs helper, shared with
 // scripts/assert-bundle.mjs, which must stay dependency-free.
-import { readEnvFiles, resolveApiBase } from './api-base.mjs'
+import { karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from './api-base.mjs'
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
 import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
@@ -85,9 +85,16 @@ export default defineConfig(({ mode, command }) => {
     readEnvFiles(fileURLToPath(new URL('.', import.meta.url)), mode),
     process.env,
   ) as { base: string; target: string; source: string }
+  // Stage 2 of the Karaoke room: where songs are separated, and whether the
+  // room offers to import them at all. Both follow the same switch.
+  const uvrOrigin = resolveUvrOrigin(api, process.env) as string
+  const karaokeImport = karaokeImportFor(api) as boolean
   if (command === 'build') {
     console.log(
       `[mercurypitch] API base compiled in: ${api.base === '' ? '(none: a local-only build, sign-in is off)' : api.base} [${api.target}; ${api.source}]`,
+    )
+    console.log(
+      `[mercurypitch] Karaoke import: ${karaokeImport ? 'on' : 'off'}; songs separated on ${uvrOrigin === '' ? '(no host: this build cannot separate)' : uvrOrigin}`,
     )
   }
 
@@ -180,6 +187,11 @@ export default defineConfig(({ mode, command }) => {
       // The resolved worker, over whatever the env files said: this is how
       // the production switch outranks the dev default in `.env`.
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(api.base),
+      // The Karaoke room's own songs (plan S8, Stage 2): compiled in for a
+      // test build and out of the store build, and the host that separates
+      // them, which goes with the worker above (api-base.mjs).
+      __KARAOKE_IMPORT__: JSON.stringify(karaokeImport),
+      __UVR_ORIGIN__: JSON.stringify(uvrOrigin),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')
           ? 'release'

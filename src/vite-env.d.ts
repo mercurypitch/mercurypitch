@@ -19,3 +19,11 @@ declare const __SW_ENABLED__: boolean
  * it and the root `src/` tree both of them compile is where it is read.
  */
 declare const __NATIVE_BUILD__: boolean
+
+/**
+ * The native Karaoke room's import (plan S8, Stage 2), and the host that
+ * separates its songs. False and empty in the web build. Read only through
+ * `src/lib/native-build.ts`, for the reason `__NATIVE_BUILD__` is.
+ */
+declare const __KARAOKE_IMPORT__: boolean
+declare const __UVR_ORIGIN__: string

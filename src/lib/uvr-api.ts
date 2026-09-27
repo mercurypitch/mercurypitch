@@ -5,9 +5,11 @@
 import { z } from 'zod/v4'
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
-import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT, UVR_ORIGIN } from '@/lib/native-build'
 
-const API_BASE = '/api/uvr'
+/** Empty origin on the web: its page is on the worker that serves this. A
+ *  native page is not, so its build names that worker's host. */
+const API_BASE = `${UVR_ORIGIN}/api/uvr`
 
 /** Per-request cap for a status poll. Without it, a socket left half-open by an
  *  iOS app-switch (frozen page → resumed with a dead connection) never settles,
