@@ -102,6 +102,26 @@ describe('ensurePersistentStorage', () => {
     expect(storage.persist).toHaveBeenCalledTimes(1)
   })
 
+  it('never announces a prompt in the app, where none comes', async () => {
+    // Review V2: the web's "Stems saved! ... allow persistent storage when
+    // prompted" sat twelve seconds over the Karaoke room's sheets.
+    vi.doMock('@/lib/native-build', async (importOriginal) => ({
+      ...(await importOriginal<Record<string, unknown>>()),
+      IS_NATIVE_BUILD: true,
+    }))
+    const storage = {
+      persist: vi.fn().mockResolvedValue(false),
+      persisted: vi.fn().mockResolvedValue(false),
+    }
+    stubStorageApi(storage)
+    const { ensurePersistentStorage } = await loadSubject()
+
+    await expect(ensurePersistentStorage('stems')).resolves.toBe(false)
+
+    expect(mocks.showNotification).not.toHaveBeenCalled()
+    vi.doUnmock('@/lib/native-build')
+  })
+
   it('keeps browser request failures non-fatal', async () => {
     const storage = {
       persist: vi.fn().mockRejectedValue(new Error('permission error')),

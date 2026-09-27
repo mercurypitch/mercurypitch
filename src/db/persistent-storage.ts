@@ -1,3 +1,5 @@
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+
 const PERSISTENCE_ATTEMPT_KEY = 'mp.storage_persist_prompted.v1'
 
 let attemptedThisPage = false
@@ -93,8 +95,9 @@ export async function ensurePersistentStorage(
   // Stems announce the request: the separation just finished and a prompt
   // out of nowhere would be a mystery. A kept take says "Take kept" on its
   // own page, and that page's rail footer carries the storage advice, so
-  // the request is silent there.
-  if (reason === 'stems') {
+  // the request is silent there. The app announces nothing: it has no
+  // browser, and no prompt comes (review V2).
+  if (reason === 'stems' && !IS_NATIVE_BUILD) {
     try {
       const { showNotification } = await import('@/stores/notifications-store')
       showNotification(

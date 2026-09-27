@@ -13,6 +13,7 @@ import { audioDurationSecs } from './audio-duration'
 
 export { audioDurationSecs } from './audio-duration'
 import { UVR_MODEL_PATH } from './defaults'
+import { IS_NATIVE_BUILD } from './native-build'
 import type { OutputFile, UploadProgress } from './uvr-api'
 import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, TerminalPollError, } from './uvr-api'
 import { VocalSeparator } from './vocal-separator'
@@ -516,8 +517,10 @@ export async function runUvrPipeline(
       options.onUploadProgress,
     )
   }
-  // Request eviction protection only after stems have been saved successfully.
-  void ensurePersistentStorage()
+  // Request eviction protection only after stems have been saved
+  // successfully. The web's request, with its "allow ... when prompted": the
+  // app has no browser, and no prompt would ever come (review V2).
+  if (!IS_NATIVE_BUILD) void ensurePersistentStorage()
 }
 
 export function cancelUvrPipeline(
