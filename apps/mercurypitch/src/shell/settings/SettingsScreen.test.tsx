@@ -9,7 +9,8 @@ import { setAuthToken } from '@/db/services/user-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { ACCOUNT_ROW } from './account-copy'
+import { ACCOUNT_DELETED, ACCOUNT_ROW } from './account-copy'
+import { dismissAccountDeletedNote, resumeAfterDeletion, } from './account-deletion'
 import { refreshAccount, resetAccountState } from './account-state'
 import { SettingsScreen } from './SettingsScreen'
 
@@ -129,5 +130,35 @@ describe('Settings', () => {
     row('account')?.click()
 
     expect(onPush).toHaveBeenCalledWith('account')
+  })
+
+  it('offers Delete account under the account, only while signed in (REQ-NAM-055)', async () => {
+    const onPush = vi.fn()
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+    const signedOut = row('delete-account')
+    view.unmount()
+    setAuthToken(token('google'))
+    vi.mocked(readMe).mockResolvedValue({ status: 'unreachable' })
+
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+    row('delete-account')?.click()
+
+    expect(signedOut).toBeNull()
+    expect(row('delete-account')?.textContent).toContain('Delete account')
+    expect(onPush).toHaveBeenCalledWith('delete-account')
+  })
+
+  it('says once, after a deletion, that the account is gone and the practice stays (5d)', () => {
+    sessionStorage.setItem('mp:account-deleted', '1')
+    resumeAfterDeletion()
+
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+    const said = view.container.textContent ?? ''
+    view.unmount()
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+    expect(said).toContain(ACCOUNT_DELETED)
+    expect(view.container.textContent).not.toContain(ACCOUNT_DELETED)
+    dismissAccountDeletedNote()
   })
 })

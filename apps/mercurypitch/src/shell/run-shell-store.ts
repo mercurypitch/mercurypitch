@@ -61,6 +61,7 @@ export type PushedScreen =
   | 'account'
   | 'account-name'
   | 'devices'
+  | 'delete-account'
   | 'appearance'
   | 'developer'
 

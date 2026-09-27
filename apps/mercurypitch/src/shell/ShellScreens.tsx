@@ -21,6 +21,7 @@ import { popScreen, pushed, pushScreen } from './run-shell-store'
 import { AccountNameScreen } from './settings/AccountNameScreen'
 import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
+import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
 
@@ -38,6 +39,7 @@ const TITLES: Record<PushedScreenId, string> = {
   account: 'Account',
   'account-name': 'Name',
   devices: 'Devices',
+  'delete-account': 'Delete account',
   appearance: 'Appearance',
   developer: 'Developer',
 }
@@ -53,6 +55,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <AccountNameScreen />
       case 'devices':
         return <DevicesScreen />
+      case 'delete-account':
+        return <DeleteAccountScreen />
       case 'appearance':
         return <AppearanceScreen />
       case 'developer': {

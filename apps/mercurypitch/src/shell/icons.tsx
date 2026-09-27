@@ -342,3 +342,28 @@ export const SignOutIcon: Component<ShellIconProps> = (props) => (
     <path d="M14.5 8l4 4-4 4M18.5 12H9.5" />
   </svg>
 )
+
+/** Delete: the bin. */
+export const TrashIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4.5 7h15M9.5 7V4.5h5V7" />
+    <path d="M6.5 7l.8 12a1.8 1.8 0 0 0 1.8 1.5h5.8a1.8 1.8 0 0 0 1.8-1.5l.8-12" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+)
+
+/** Leaderboards: the cup. */
+export const TrophyIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M8 4.5h8v5a4 4 0 0 1-8 0z" />
+    <path d="M8 6.5H5.5a2.5 2.5 0 0 0 2.6 3.4M16 6.5h2.5a2.5 2.5 0 0 1-2.6 3.4" />
+    <path d="M12 13.5v3.5M8.5 20h7M9.5 17h5v3h-5z" />
+  </svg>
+)
+
+/** A take: the waveform. */
+export const WaveIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M3.5 12h2M7.5 8v8M11 5v14M14.5 9v6M18 7v10M20.5 12h0" />
+  </svg>
+)

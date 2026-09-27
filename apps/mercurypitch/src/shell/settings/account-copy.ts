@@ -105,3 +105,39 @@ export function fillLine(runs: number, voiceprints: number): string {
     `${n} ${n === 1 ? one : many}`
   return `${count(runs, 'run', 'runs')} and ${count(voiceprints, 'voiceprint', 'voiceprints')}.`
 }
+
+/** The Delete account screen (5a): the loss named before anything happens. */
+export const DELETE_ACCOUNT = {
+  lead: 'Deleting cannot be undone. This is what happens.',
+  goesTitle: 'What goes',
+  goes: [
+    'Your account, and each way of signing in to it',
+    'The history and voiceprints kept in it',
+    'Leaderboard entries and any unspent credits',
+  ],
+  /** Only for an account made with Sign in with Apple. */
+  apple: {
+    label: 'Sign in with Apple stops for MercuryPitch',
+    sub: 'Apple is told to forget the link.',
+  },
+  staysTitle: 'What stays on this phone',
+  stays: {
+    label: 'Takes and practice kept here',
+    sub: 'They stay, under a new identity for this phone.',
+  },
+  /** A way to delete it with no app (REQ-NAM-060). */
+  elsewhere:
+    'No app to hand? The same button is in Settings at mercurypitch.com, once you sign in.',
+  button: 'Delete account',
+} as const
+
+/** The one question before deleting (5b, decision 03 A). */
+export const DELETE_QUESTION = {
+  title: 'Delete your account?',
+  text: 'This cannot be undone. Your account and the history kept in it are erased.',
+  confirm: 'Delete',
+} as const
+
+/** The line on Settings after a deletion (5d, REQ-NAM-059). */
+export const ACCOUNT_DELETED =
+  'Your account is deleted. Practice on this phone stays here.'

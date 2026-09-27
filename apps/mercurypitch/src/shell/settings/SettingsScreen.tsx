@@ -14,16 +14,17 @@
 // The groups sit in one column upright and two on a phone on its side.
 
 import type { JSX } from 'solid-js'
-import { onMount } from 'solid-js'
+import { onCleanup, onMount, Show } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, LockIcon } from '../icons'
+import { ContrastIcon, LockIcon, TrashIcon, WarnIcon } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
+import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { appearanceLabel } from './AppearanceScreen'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 
 /** The screens a Settings row pushes. */
-export type SettingsSubScreen = 'account' | 'appearance'
+export type SettingsSubScreen = 'account' | 'delete-account' | 'appearance'
 
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
@@ -36,9 +37,19 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
   onMount(() => {
     if (accountSignedIn() && accountReach() === 'idle') void refreshAccount()
   })
+  // The line after a deletion is said once: leaving Settings retires it.
+  onCleanup(dismissAccountDeletedNote)
 
   return (
     <div class="mp-set" data-testid="settings-screen">
+      <Show when={accountDeletedNote()}>
+        {(line) => (
+          <div class="mp-set-note" role="status" data-testid="account-deleted">
+            <WarnIcon size={20} />
+            <p>{line()}</p>
+          </div>
+        )}
+      </Show>
       <div class="mp-set__cols">
         <div class="mp-set__col">
           <SettingsGroup>
@@ -58,6 +69,19 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
                 props.onPush('account')
               }}
             />
+            {/* One tap from Settings, and only while there is an account to
+                delete (REQ-NAM-055). */}
+            <Show when={accountSignedIn()}>
+              <SettingsRow
+                id="delete-account"
+                icon={<TrashIcon />}
+                label="Delete account"
+                tone="danger"
+                onPress={() => {
+                  props.onPush('delete-account')
+                }}
+              />
+            </Show>
           </SettingsGroup>
           <SettingsGroup title="This phone">
             <SettingsRow

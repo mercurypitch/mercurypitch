@@ -39,6 +39,7 @@ import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
+import { resumeAfterDeletion } from './settings/account-deletion'
 import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
@@ -98,6 +99,10 @@ export const NativeShell: Component = () => {
       document.documentElement.removeAttribute('data-native-shell')
       document.documentElement.removeAttribute('data-room-header')
     })
+
+    // A deletion restarts the app (account-deletion.ts): it comes back on
+    // Settings, where one line says what happened.
+    resumeAfterDeletion()
 
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
