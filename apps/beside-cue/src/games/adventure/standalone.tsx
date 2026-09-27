@@ -26,6 +26,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'cloudway' &&
     layout !== 'cloudway-current' &&
     layout !== 'thawing-song' &&
+    layout !== 'crystal-interiors' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
     layout !== 'cloudway-crescent' &&
@@ -41,6 +42,7 @@ async function selectedDevelopmentLevel() {
     CLOUDWAY_GLASS_RIBBON,
     CLOUDWAY_CURRENT_TRIAL,
     CLOUDWAY_THAWING_SONG,
+    crystalInteriorStudy,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_CRESCENT_AUDITION,
@@ -57,6 +59,14 @@ async function selectedDevelopmentLevel() {
   if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
   if (layout === 'cloudway-current') return CLOUDWAY_CURRENT_TRIAL
   if (layout === 'thawing-song') return CLOUDWAY_THAWING_SONG
+  if (layout === 'crystal-interiors') {
+    const preset = new URLSearchParams(window.location.search).get('interior')
+    return crystalInteriorStudy(
+      preset === 'frost-roots' || preset === 'aurora-heart'
+        ? preset
+        : 'resonance-veins',
+    )
+  }
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
   if (layout === 'cloudway-mechanics-preview')
     return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW
@@ -69,6 +79,42 @@ async function selectedDevelopmentLevel() {
 }
 
 async function mount(): Promise<void> {
+  if (
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get('lab') === 'creator-gallery'
+  ) {
+    const { CreatorGallery } = await import('./CreatorGallery')
+    render(
+      () => (
+        <CreatorGallery
+          assetBase="../games/"
+          onExit={() => {
+            window.location.href = './?campaign=1'
+          }}
+        />
+      ),
+      mountElement,
+    )
+    return
+  }
+  if (
+    import.meta.env.DEV &&
+    new URLSearchParams(window.location.search).get('lab') === 'echo-curator'
+  ) {
+    const { CreatorAudition } = await import('./CreatorAudition')
+    render(
+      () => (
+        <CreatorAudition
+          assetBase="../games/"
+          onExit={() => {
+            window.location.href = './?campaign=1'
+          }}
+        />
+      ),
+      mountElement,
+    )
+    return
+  }
   const level = await selectedDevelopmentLevel()
   render(
     () => (

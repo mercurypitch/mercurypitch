@@ -54,6 +54,7 @@ describe('local musical memory store', () => {
     for (const patch of [
       { durationSeconds: Infinity },
       { durationSeconds: 46 },
+      { recordedAt: 1e100 },
       { rootMidi: NaN },
       { audio: new Blob([], { type: 'audio/webm' }) },
       { audio: new Blob(['script'], { type: 'text/html' }) },

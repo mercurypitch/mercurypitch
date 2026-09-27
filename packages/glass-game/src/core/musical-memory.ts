@@ -51,6 +51,7 @@ export function isMusicalMemory(value: unknown): value is MusicalMemory {
     item.melodyVersion! > 0 &&
     Number.isFinite(item.recordedAt) &&
     item.recordedAt! > 0 &&
+    Number.isFinite(new Date(item.recordedAt!).getTime()) &&
     Number.isFinite(item.rootMidi) &&
     item.rootMidi! >= 0 &&
     item.rootMidi! <= 127 &&

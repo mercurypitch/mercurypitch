@@ -1,0 +1,113 @@
+.gallery {
+  min-height: 100dvh;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: max(24px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  background:
+    radial-gradient(ellipse at 80% 0, #dae6d8, transparent 60%), #fcf5e5;
+  color: #244c43;
+  font-family: 'Gabarito Variable', sans-serif;
+}
+.header,
+.intro,
+.grid {
+  max-width: 960px;
+  margin-inline: auto;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.header h1 {
+  margin: 0;
+  font:
+    400 clamp(30px, 5vw, 52px)/1.1 Georgia,
+    serif;
+}
+.eyebrow {
+  color: #826526;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+.header button {
+  flex: none;
+  border: 1px solid #b49e6d;
+  border-radius: 24px;
+  padding: 12px 18px;
+  color: inherit;
+  background: #fff9eb;
+  font: inherit;
+}
+.intro {
+  margin-block: 28px 36px;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.card {
+  display: flex;
+  text-align: left;
+  align-items: flex-start;
+  gap: 18px;
+  min-height: 155px;
+  border: 1px solid #c4b384;
+  border-radius: 24px 6px 24px 6px;
+  padding: 24px;
+  background: #fffaf0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.card strong {
+  font:
+    400 25px/1.2 Georgia,
+    serif;
+}
+.number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #b89b51;
+  border-radius: 50%;
+  color: #fff7e2;
+  background: #27574c;
+}
+.description {
+  display: block;
+  margin-top: 12px;
+  color: #5d7063;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.gallery button:focus-visible {
+  outline: 3px solid #bd8d28;
+  outline-offset: 4px;
+}
+@media (max-width: 650px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .intro {
+    margin-block: 24px;
+  }
+  .card {
+    padding: 20px;
+    min-height: 140px;
+  }
+}

@@ -119,3 +119,6 @@ public/marketing/
 
 # Private local authoring tool; the app consumes authored level data only.
 /art/glass-adventure/level-studio/v1
+
+# Local alias to large creator-study browser proofs in the creative archive.
+art/glass-adventure/creator-expansion-proofs

@@ -161,7 +161,7 @@ test('optional encore records only with consent, preserves completion and fits m
       ),
     ).toBe(true)
   }
-  await page.setViewportSize({ width: 1024, height: 1000 })
+  await page.setViewportSize({ width: 390, height: 900 })
   await dialog
     .getByRole('button', { name: 'Sing the melody', exact: true })
     .click()
@@ -232,14 +232,44 @@ test('optional encore records only with consent, preserves completion and fits m
   expect(await page.evaluate(() => window.encoreFixture.streams)).toHaveLength(
     2,
   )
+  const candidateMemory = dialog.getByRole('region', {
+    name: 'New musical memory',
+  })
+  await expect(candidateMemory).toBeVisible()
+  await expect(candidateMemory).toContainText('First arc')
+  await expect(candidateMemory).toContainText('3 notes')
+  await expect(candidateMemory).toContainText('C4')
+  await expect(candidateMemory).toContainText('1×')
   await expect(
-    dialog.getByRole('region', { name: 'New recording' }),
+    candidateMemory.getByText(
+      'Stored locally. Nothing is uploaded or shared.',
+      { exact: true },
+    ),
   ).toBeVisible()
-  await dialog.getByRole('button', { name: 'Save take', exact: true }).click()
+  await expect(
+    candidateMemory.getByRole('button', {
+      name: 'Hear Merc’s take',
+      exact: true,
+    }),
+  ).toBeEnabled()
+  await candidateMemory.scrollIntoViewIfNeeded()
+  expect(
+    await dialog.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true)
+  await page.screenshot({
+    path: testInfo.outputPath('musical-memory-card-phone.png'),
+  })
+  await candidateMemory
+    .getByRole('button', { name: 'Save on this device', exact: true })
+    .click()
   await expect(
     dialog.getByText('Saved on this device. No recording was uploaded.'),
   ).toBeVisible()
-  await dialog.getByRole('button', { name: 'Listen', exact: true }).click()
+  await candidateMemory
+    .getByRole('button', { name: 'Hear your take', exact: true })
+    .click()
   await expect(
     dialog.getByRole('button', { name: 'Stop listening' }),
   ).toBeVisible()
@@ -257,7 +287,7 @@ test('optional encore records only with consent, preserves completion and fits m
   )
   await page.getByRole('button', { name: 'Sing an optional encore' }).click()
   await expect(
-    dialog.getByRole('region', { name: 'Saved recording' }),
+    dialog.getByRole('region', { name: 'Saved musical memory' }),
   ).toBeVisible()
   await expect(consent).not.toBeChecked()
   await expect(
@@ -271,18 +301,21 @@ test('optional encore records only with consent, preserves completion and fits m
     exact: true,
   })
   await album.getByRole('button', { name: 'Sing or hear your encore' }).click()
-  await expect(
-    dialog.getByRole('region', { name: 'Saved recording' }),
-  ).toBeVisible()
+  const savedMemory = dialog.getByRole('region', {
+    name: 'Saved musical memory',
+  })
+  await expect(savedMemory).toBeVisible()
   await expect(consent).not.toBeChecked()
-  await dialog.getByRole('button', { name: 'Listen', exact: true }).click()
+  await savedMemory
+    .getByRole('button', { name: 'Hear your take', exact: true })
+    .click()
   await expect(
     dialog.getByRole('button', { name: 'Stop listening' }),
   ).toBeVisible()
   await dialog.getByRole('button', { name: 'Stop listening' }).click()
   await dialog.getByRole('button', { name: 'Delete saved take' }).click()
   await expect(
-    dialog.getByRole('region', { name: 'Saved recording' }),
+    dialog.getByRole('region', { name: 'Saved musical memory' }),
   ).not.toBeVisible()
   await dialog.getByRole('button', { name: 'Back to collection' }).click()
   await expect(

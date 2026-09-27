@@ -198,6 +198,7 @@ export function GlassCampaign(props: {
     progressRevision()
     return MUSEUM_TRIALS.map((trial) => ({
       id: trial.id,
+      islandId: trial.islandId,
       islandTitle: trial.islandTitle,
       title: trial.chapter.level.title,
       description: trial.chapter.description,

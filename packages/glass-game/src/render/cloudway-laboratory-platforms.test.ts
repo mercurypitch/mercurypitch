@@ -1,8 +1,8 @@
 // Cloudway laboratory renderer tests — accepted dense donors install together or retain the complete gameplay fallback.
 
-import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, } from 'three'
+import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, ShaderMaterial, } from 'three'
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
 import { FROST_WALL_BUNDLE } from '../content/frost-wall-profile'
 import type { LevelDefinition } from '../contracts'
@@ -359,6 +359,71 @@ function disposeTestScene(
 }
 
 describe('Cloudway laboratory platform renderer', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('contains and retracts an authored interior, freezes it with pause or reduced motion, and releases its resources once', () => {
+    const preference = { matches: false }
+    vi.stubGlobal('matchMedia', () => preference)
+    const full = CLOUDWAY_CRYSTAL_PROMENADE_STUDY
+    const platform = full.platforms.find((item) => item.id === 'scroll-deck')!
+    const level: LevelDefinition = {
+      ...full,
+      platforms: [platform],
+      presentation: {
+        ...full.presentation!,
+        crystalInteriors: [
+          { platformId: platform.id, preset: 'aurora-heart', seed: 17 },
+        ],
+      },
+    }
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const scene = new Group()
+    const donor = scrollDonor()
+    const renderer = createCloudwayLaboratoryPlatformRenderer(
+      level,
+      scene,
+      fallbacks(level),
+      palette,
+      library,
+    )
+    renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.scroll)
+    const interior = scene.getObjectByName('crystal-interior__aurora-heart')!
+    expect(interior.parent?.getObjectByName('ScrollDeckGeometry')).toBeDefined()
+    const mesh = allMeshes(interior as Group)[0]!
+    const geometryDisposed = vi.fn()
+    const materialDisposed = vi.fn()
+    mesh.geometry.addEventListener('dispose', geometryDisposed)
+    const shader = mesh.material as ShaderMaterial
+    shader.addEventListener('dispose', materialDisposed)
+    const snapshot = createGlassGame(full).snapshot()
+    const state = snapshot.platformStates!.find(
+      (item) => item.id === platform.id,
+    )!
+    renderer.update({
+      ...snapshot,
+      elapsedSeconds: 1,
+      platformStates: [{ ...state, lengthRatio: 0.5 }],
+    })
+    expect(interior.children[0]?.scale.x).toBe(0.5)
+    renderer.update({ ...snapshot, elapsedSeconds: 1.05 })
+    expect(shader.uniforms.uTime!.value).toBeGreaterThan(0)
+    const beforePause = shader.uniforms.uTime!.value
+    renderer.update({ ...snapshot, elapsedSeconds: 1.1, paused: true })
+    expect(shader.uniforms.uTime!.value).toBe(beforePause)
+    preference.matches = true
+    renderer.update({ ...snapshot, elapsedSeconds: 1.2 })
+    expect(shader.uniforms.uMotion!.value).toBe(0)
+    expect(shader.uniforms.uTime!.value).toBe(beforePause)
+    renderer.update({ ...snapshot, elapsedSeconds: 0 })
+    expect(shader.uniforms.uTime!.value).toBe(0)
+    renderer.dispose()
+    renderer.dispose()
+    expect(geometryDisposed).toHaveBeenCalledTimes(1)
+    expect(materialDisposed).toHaveBeenCalledTimes(1)
+    disposeTestScene(scene, [donor], palette, library)
+  })
+
   it('declares six platform donors plus the wall bundle exactly once', () => {
     const plan = createMuseumAssetLoadPlan(CLOUDWAY_CRYSTAL_PROMENADE_STUDY)
     for (const bundle of Object.values(CLOUDWAY_LAB_BUNDLE_IDS)) {

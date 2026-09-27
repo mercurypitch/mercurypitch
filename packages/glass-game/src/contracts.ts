@@ -385,7 +385,18 @@ export interface LevelPresentationDefinition {
   decorations?: readonly RoomDecorationInstanceDefinition[]
   melodyMarkers?: readonly MelodyStationMarkerDefinition[]
   floorArt?: readonly PlatformFloorArtDefinition[]
+  crystalInteriors?: readonly CrystalInteriorPresentationDefinition[]
   assetRecipeIds: readonly string[]
+}
+
+/** Optional contained light sculptures; certified donor geometry owns the envelope. */
+export interface CrystalInteriorPresentationDefinition {
+  platformId: string
+  preset: 'resonance-veins' | 'frost-roots' | 'aurora-heart'
+  seed: number
+  intensity?: number
+  speed?: number
+  palette?: { primary: number; secondary: number; accent: number }
 }
 
 /** A finite authored exploration reward attached to one optional exhibit. */

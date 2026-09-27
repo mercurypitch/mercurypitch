@@ -12,6 +12,8 @@ import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-sta
 import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import { createCloudwayScrollAdapter } from './cloudway-scroll-adapter'
+import type {CrystalInteriorEffect} from './crystal-interior';
+import { createCrystalInterior  } from './crystal-interior'
 import { disposeObject } from './dispose'
 import { createKitInstance, removeKitGeometry } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
@@ -22,6 +24,8 @@ import { createRigidPlatformBatch, updateRigidPlatformBatch, } from './rigid-pla
 interface InstalledScroll {
   readonly adapter: CloudwayScrollAdapter
   readonly platform: PlatformDefinition
+  readonly interior?: CrystalInteriorEffect
+  reducedMotion: boolean
 }
 
 interface InstalledCrackle {
@@ -230,6 +234,11 @@ export function createCloudwayLaboratoryPlatformRenderer(
   let attached = false
   let committed = false
   let activePlatformIds: ReadonlySet<string> = new Set()
+  let previousSeconds: number | undefined
+  const reducedMotion =
+    typeof globalThis.matchMedia === 'function'
+      ? globalThis.matchMedia('(prefers-reduced-motion: reduce)')
+      : undefined
   const viewSelector = createCloudwayPlatformViewSelector({
     shadowDirection: { x: 0, y: -1, z: 0 },
     shadowReceiverMinimumY: 0,
@@ -345,11 +354,46 @@ export function createCloudwayLaboratoryPlatformRenderer(
           platform,
           materials: bindings,
         })
-        excludeDenseCameraCollision(adapter.root)
-        staged.push({ adapter, platform })
+        let interior: CrystalInteriorEffect | undefined
+        try {
+          const effect = level.presentation?.crystalInteriors?.find(
+            (entry) => entry.platformId === platform.id,
+          )
+          interior =
+            effect === undefined
+              ? undefined
+              : createCrystalInterior({
+                  ...effect,
+                  envelope: {
+                    width: 2.1,
+                    height: 0.08,
+                    depth: 2.1,
+                    center: [0, -0.05, 0],
+                    inset: 0.006,
+                  },
+                  retractionAxis: 'x',
+                  quality: 'high',
+                  reducedMotion: reducedMotion?.matches ?? false,
+                })
+          if (interior !== undefined) adapter.root.add(interior.root)
+          excludeDenseCameraCollision(adapter.root)
+          staged.push({
+            adapter,
+            platform,
+            interior,
+            reducedMotion: reducedMotion?.matches ?? false,
+          })
+        } catch (error) {
+          interior?.dispose()
+          adapter.dispose()
+          throw error
+        }
       }
     } catch (error) {
-      staged.forEach((item) => item.adapter.dispose())
+      staged.forEach((item) => {
+        item.interior?.dispose()
+        item.adapter.dispose()
+      })
       throw error
     }
     installedScroll.push(...staged)
@@ -410,6 +454,17 @@ export function createCloudwayLaboratoryPlatformRenderer(
       return coveredPlatformIds
     },
     update(snapshot: GameSnapshot): void {
+      const reset =
+        previousSeconds !== undefined &&
+        snapshot.elapsedSeconds < previousSeconds
+      const deltaSeconds =
+        previousSeconds === undefined
+          ? 0
+          : Math.max(
+              0,
+              Math.min(0.1, snapshot.elapsedSeconds - previousSeconds),
+            )
+      previousSeconds = snapshot.elapsedSeconds
       runtimeById.clear()
       for (const state of snapshot.platformStates ?? [])
         runtimeById.set(state.id, state)
@@ -424,6 +479,18 @@ export function createCloudwayLaboratoryPlatformRenderer(
           viewSelector.includes,
         )
       for (const item of installedScroll) {
+        if (reset) item.interior?.reset()
+        const motionDisabled = reducedMotion?.matches ?? false
+        if (item.reducedMotion !== motionDisabled) {
+          item.reducedMotion = motionDisabled
+          item.interior?.configure({ reducedMotion: motionDisabled })
+        }
+        item.interior?.update({
+          deltaSeconds,
+          paused: snapshot.paused,
+          scrollVisibleFraction:
+            runtimeById.get(item.platform.id)?.lengthRatio ?? 1,
+        })
         const state = runtimeById.get(item.platform.id)
         item.adapter.root.visible = false
         if (!committed || !active.has(item.platform.id) || state === undefined)
@@ -467,7 +534,10 @@ export function createCloudwayLaboratoryPlatformRenderer(
       return changed
     },
     dispose(): void {
-      installedScroll.forEach((item) => item.adapter.dispose())
+      installedScroll.forEach((item) => {
+        item.interior?.dispose()
+        item.adapter.dispose()
+      })
       installedCrackle.forEach((item) => item.adapter.dispose())
       installedStatic.forEach((item) => item.mesh.dispose())
       disposeObject(root, materialLibrary.materials)

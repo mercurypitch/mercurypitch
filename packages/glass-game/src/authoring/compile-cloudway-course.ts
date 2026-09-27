@@ -6,8 +6,10 @@ import type { CloudwayCourseProfileCatalog } from './cloudway-course-profiles'
 import type { CloudwayCourseDocumentSource } from './cloudway-course-source'
 import { array, bounds3, CLOUDWAY_GAP_TOLERANCE, exactKeys, fail, finite, identifierSet, positive, record, string, stringArray, vec3, } from './cloudway-course-validation.ts'
 import { compileEncounter, requireKnownReferences, validateEncounterGraph, validateStaticAnchor, } from './compile-cloudway-encounters.ts'
+import { compileCloudwayInteriors } from './compile-cloudway-interiors.ts'
 import { compileCloudwayMelodyLesson, validateMelodyRoute, } from './compile-cloudway-melody.ts'
 import { compileGap, compilePlatform } from './compile-cloudway-platforms.ts'
+import { compileCloudwayDiscoveryRewards } from './compile-cloudway-rewards.ts'
 
 const COURSE_SCHEMA = 'mercurypitch.cloudway-course'
 
@@ -82,7 +84,7 @@ function compileCourse(
       'fallBelow',
       'presentation',
     ],
-    schemaVersion === 3 ? ['melodyLesson'] : [],
+    schemaVersion === 3 ? ['melodyLesson', 'rewards'] : ['rewards'],
   )
 
   const platformValues = array(source.platforms, `${path}.platforms`).map(
@@ -124,6 +126,11 @@ function compileCourse(
       `${path}.encounters[${index}].anchor`,
     )
   const encounterIds = new Set(breakables.map((target) => target.id))
+  const rewards = compileCloudwayDiscoveryRewards(
+    source.rewards,
+    breakables,
+    `${path}.rewards`,
+  )
 
   const authored = record(source.authored, `${path}.authored`)
   exactKeys(authored, `${path}.authored`, [
@@ -330,11 +337,12 @@ function compileCourse(
   validateStaticAnchor(exitCenter, platforms, `${path}.exit`)
 
   const presentation = record(source.presentation, `${path}.presentation`)
-  exactKeys(presentation, `${path}.presentation`, [
-    'worldBounds',
-    'lightBounds',
-    'audioSceneId',
-  ])
+  exactKeys(
+    presentation,
+    `${path}.presentation`,
+    ['worldBounds', 'lightBounds', 'audioSceneId'],
+    ['crystalInteriors'],
+  )
   const audioSceneId = presentation.audioSceneId
   if (
     audioSceneId !== 'museum' &&
@@ -372,6 +380,7 @@ function compileCourse(
   return {
     id,
     melodyLesson,
+    ...(rewards === undefined ? {} : { rewards }),
     title: string(source.title, `${path}.title`),
     authored: {
       levelId,
@@ -429,6 +438,11 @@ function compileCourse(
       ],
       visuals: [],
       assetRecipeIds,
+      crystalInteriors: compileCloudwayInteriors(
+        presentation.crystalInteriors,
+        platforms,
+        `${path}.presentation.crystalInteriors`,
+      ),
     },
   }
 }
