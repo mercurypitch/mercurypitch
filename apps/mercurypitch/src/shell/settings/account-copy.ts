@@ -85,3 +85,23 @@ export const TWO_STEP = {
   offSub: 'Turn it on from the web. This phone asks for the code.',
   onSub: 'Change it from the web. This phone asks for the code.',
 } as const
+
+/**
+ * The one-time note after signing in to an account that already existed
+ * (4b, REQ-NAM-043 to 045). It says the account's history reached this
+ * phone, and what did not: takes stay on the phone that kept them.
+ */
+export const FILL_NOTE = {
+  lead: "Your account's history is on this phone now:",
+  takes: 'Takes stay on the phone that kept them.',
+  failedTitle: "Could not load your account's history just now.",
+  failedBody: 'What this phone kept is still here.',
+} as const
+
+/** "38 runs and 2 voiceprints.", the counts after FILL_NOTE.lead. */
+export function fillLine(runs: number, voiceprints: number): string {
+  if (runs === 0 && voiceprints === 0) return 'no runs or voiceprints yet.'
+  const count = (n: number, one: string, many: string): string =>
+    `${n} ${n === 1 ? one : many}`
+  return `${count(runs, 'run', 'runs')} and ${count(voiceprints, 'voiceprint', 'voiceprints')}.`
+}

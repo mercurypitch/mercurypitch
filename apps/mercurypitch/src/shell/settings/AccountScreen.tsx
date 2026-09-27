@@ -31,6 +31,7 @@ import { pushScreen } from '../run-shell-store'
 import { setProductNews, signOutHere } from './account-actions'
 import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, RELAY_NOTE, SIGN_OUT_QUESTION, TAKES_STAY_ON_PHONE, TWO_STEP, } from './account-copy'
 import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
+import { AccountFillNote } from './AccountFillNote'
 import { AccountPromises } from './AccountPromises'
 import { copyText } from './copy-text'
 import { askSettings } from './settings-alert'
@@ -272,6 +273,12 @@ function SignedIn(): JSX.Element {
               <strong>{ACCOUNT_OFFLINE.title}</strong> {ACCOUNT_OFFLINE.body}
             </p>
           </div>
+        </Show>
+        {/* Once, after a sign-in to an account that already existed (4b):
+            what arrived. Not while the account cannot be reached, whose
+            own note already says so. */}
+        <Show when={!unreachable()}>
+          <AccountFillNote />
         </Show>
         <IdentityCard />
         <Show when={unreachable()}>

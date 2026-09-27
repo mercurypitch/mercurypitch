@@ -28,6 +28,7 @@ vi.mock('@/db/services/auth-email-code-service', () => ({
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: stand.adopt,
 }))
+vi.mock('./account-fill', () => ({ markAccountFillDue: vi.fn() }))
 vi.mock('@/features/account/sign-in-methods', () => ({
   appleSignInOffered: () => false,
   nativeGoogleSignInOffered: () => false,

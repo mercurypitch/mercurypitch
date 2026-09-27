@@ -13,6 +13,7 @@ import { logout } from '@/db/services/auth-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { getUserId } from '@/db/services/user-service'
 import { showNotification } from '@/stores/notifications-store'
+import { forgetAccountFill } from './account-fill'
 import { forgetAccountCard, refreshAccount } from './account-state'
 
 /**
@@ -51,5 +52,6 @@ export async function setProductNews(on: boolean): Promise<void> {
 export function signOutHere(): void {
   logout()
   forgetAccountCard()
+  forgetAccountFill()
   showNotification('Signed out', 'info')
 }

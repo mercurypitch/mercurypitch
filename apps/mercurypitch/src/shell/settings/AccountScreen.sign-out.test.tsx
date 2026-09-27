@@ -16,6 +16,7 @@ import { setAuthToken } from '@/db/services/user-service'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, SIGN_OUT_QUESTION, } from './account-copy'
+import { markAccountFillDue } from './account-fill'
 import { accountCard, refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
 import { confirmSettingsAlert, dismissSettingsAlert, resetSettingsAlert, settingsAlert, } from './settings-alert'
@@ -150,6 +151,7 @@ describe('signing out', () => {
   })
 
   it('ends only this session, forgets the kept card, and says Signed out', async () => {
+    markAccountFillDue('user-1')
     view?.container
       .querySelector<HTMLButtonElement>('[data-testid="account-sign-out"]')
       ?.click()
@@ -160,6 +162,7 @@ describe('signing out', () => {
     expect(logoutMock).toHaveBeenCalledTimes(1)
     expect(accountCard()).toBeNull()
     expect(localStorage.getItem('mp:account-card')).toBeNull()
+    expect(localStorage.getItem('mp:account-fill-due')).toBeNull()
     expect(text()).toContain(ACCOUNT_SIGNED_OUT_HERE.title)
     expect(text()).toContain(ACCOUNT_SIGNED_OUT_HERE.body)
     expect(text()).not.toContain(ACCOUNT_SIGNED_OUT.title)

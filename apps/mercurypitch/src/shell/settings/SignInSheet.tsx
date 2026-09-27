@@ -28,6 +28,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { showNotification } from '@/stores/notifications-store'
 import { BackIcon, CloseIcon, MailIcon, WarnIcon } from '../icons'
 import { SIGN_IN_EVERYWHERE } from './account-copy'
+import { markAccountFillDue } from './account-fill'
 import { refreshAccount } from './account-state'
 import { CodeBoxes } from './CodeBoxes'
 import type { SignInFlow, SignInPane } from './sign-in-flow'
@@ -339,6 +340,9 @@ export function SignInSheet(props: SignInSheetProps) {
       // already existed takes nothing (REQ-NAM-039). Retag-first means a
       // failed upload is carried by the next sync, so nothing waits on it.
       if (auth.isNew) void adoptDeviceVoiceprints().catch(() => 0)
+      // An account that already existed brings its history: the Account
+      // screen says what arrived on the next visit (REQ-NAM-043).
+      else markAccountFillDue(auth.userId)
       void refreshAccount()
       props.onSignedIn?.(auth)
     },

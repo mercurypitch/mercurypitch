@@ -26,6 +26,7 @@ const stand = vi.hoisted(() => ({
   password: vi.fn(),
   twofa: vi.fn(),
   adopt: vi.fn(async () => 0),
+  fillDue: vi.fn(),
   appleOffered: true,
   googleOffered: true,
   owed: null as string | null,
@@ -54,6 +55,7 @@ vi.mock('@/db/services/auth-mfa-service', () => ({ verifyTwofa: stand.twofa }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: stand.adopt,
 }))
+vi.mock('./account-fill', () => ({ markAccountFillDue: stand.fillDue }))
 vi.mock('./account-state', async (importOriginal) => ({
   ...(await importOriginal<typeof AccountState>()),
   refreshAccount: vi.fn(async () => undefined),
@@ -98,6 +100,7 @@ beforeEach(() => {
   stand.password.mockReset()
   stand.twofa.mockReset()
   stand.adopt.mockClear()
+  stand.fillDue.mockClear()
   stand.appleOffered = true
   stand.googleOffered = true
   stand.owed = null
@@ -181,6 +184,7 @@ describe("this phone's takes", () => {
     await settle()
 
     expect(stand.adopt).toHaveBeenCalledTimes(1)
+    expect(stand.fillDue).not.toHaveBeenCalled()
   })
 
   it('stay unclaimed on a sign-in to an account that already existed (REQ-NAM-039)', async () => {
@@ -192,6 +196,16 @@ describe("this phone's takes", () => {
 
     expect(signInOpen()).toBe(false)
     expect(stand.adopt).not.toHaveBeenCalled()
+  })
+
+  it("leave the account's history to be announced on Account (REQ-NAM-043)", async () => {
+    stand.google.mockResolvedValue(SESSION)
+    openSignIn()
+
+    q('signin-google')?.click()
+    await settle()
+
+    expect(stand.fillDue).toHaveBeenCalledWith('user-1')
   })
 })
 
