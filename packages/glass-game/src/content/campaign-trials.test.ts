@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readProgress } from '../core/progress'
 import { evaluateTrialUnlock } from '../core/trial-unlock'
 import { MUSEUM_CAMPAIGN } from './campaign'
-import { islandChapterIds,MUSEUM_TRIALS } from './campaign-trials'
+import { islandChapterIds, MUSEUM_TRIALS } from './campaign-trials'
 import { FLOATING_MUSEUM_JOURNEY } from './museum-journey'
 
 const requirements = MUSEUM_CAMPAIGN.map((chapter) => ({

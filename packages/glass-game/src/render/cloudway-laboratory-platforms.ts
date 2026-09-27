@@ -12,8 +12,8 @@ import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-sta
 import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import { createCloudwayScrollAdapter } from './cloudway-scroll-adapter'
-import type {CrystalInteriorEffect} from './crystal-interior';
-import { createCrystalInterior  } from './crystal-interior'
+import type { CrystalInteriorEffect } from './crystal-interior'
+import { createCrystalInterior } from './crystal-interior'
 import { disposeObject } from './dispose'
 import { createKitInstance, removeKitGeometry } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
