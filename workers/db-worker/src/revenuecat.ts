@@ -30,7 +30,7 @@
 
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
-import { songAllowance,SONGS_ENTITLEMENT } from './songs-allowance'
+import { songAllowance, SONGS_ENTITLEMENT } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
