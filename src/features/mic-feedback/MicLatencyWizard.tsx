@@ -21,6 +21,7 @@
 //
 // The math is in @/lib/mic-latency; this file is capture, playback and copy.
 
+import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, Show } from 'solid-js'
 import type { LatencyResult } from '@/lib/mic-latency'
 import { detectOnsets, LATENCY_CLICK_COUNT, LATENCY_CLICK_INTERVAL_SEC, LATENCY_LEAD_IN_SEC, matchOnsetDeltas, summariseLatency, } from '@/lib/mic-latency'
@@ -52,6 +53,13 @@ export interface MicLatencyWizardProps {
   /** Extra class on the root, for a host that restyles the panel through
    *  the tokens it reads (--accent, --border, --bg-secondary, ...). */
   class?: string
+  /** The first paragraph, for a host with words of its own (the phone app's
+   *  sheet). Absent, the wizard says what it always has. */
+  intro?: JSX.Element
+  /** After a measurement is applied, with the number it set. */
+  onApplied?: (latencyMs: number) => void
+  /** After the offset is cleared. */
+  onCleared?: () => void
 }
 
 export function MicLatencyWizard(props: MicLatencyWizardProps) {
@@ -206,12 +214,14 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
       `Microphone latency set to ${measured} ms for this input.`,
       'success',
     )
+    props.onApplied?.(measured)
     props.onClose()
   }
 
   const clear = (): void => {
     clearMicLatency()
     showNotification('Microphone latency offset cleared.', 'info')
+    props.onCleared?.()
     props.onClose()
   }
 
@@ -247,11 +257,20 @@ export function MicLatencyWizard(props: MicLatencyWizardProps) {
 
       <Show when={phase() === 'idle'}>
         <p class={styles.copy}>
-          Your device takes a moment to play a sound and another to capture one.
-          Over that gap a note you sing lands late against the reference, and
-          scoring blames you for it. This plays {LATENCY_CLICK_COUNT} clicks
-          through your speakers, listens for them coming back, and measures the
-          gap.
+          <Show
+            when={props.intro}
+            fallback={
+              <>
+                Your device takes a moment to play a sound and another to
+                capture one. Over that gap a note you sing lands late against
+                the reference, and scoring blames you for it. This plays{' '}
+                {LATENCY_CLICK_COUNT} clicks through your speakers, listens for
+                them coming back, and measures the gap.
+              </>
+            }
+          >
+            {props.intro}
+          </Show>
         </p>
         <p class={styles.note}>
           Use speakers, not headphones — the microphone has to hear the clicks.
