@@ -54,15 +54,17 @@
   color: var(--text-primary, #e6edf3);
 }
 
+/* The glyph sits at the button's right edge, on the sheet's content edge,
+   and the 44 px target reaches left from it: a negative margin put it there
+   before and left the sheet 10 px wider than its box. */
 .sheetClose {
   display: inline-flex;
   flex: none;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   width: 44px;
   height: 44px;
-  margin-right: -10px;
-  padding: 0;
+  padding: 0 1px 0 0;
   border: none;
   border-radius: 50%;
   background: none;
