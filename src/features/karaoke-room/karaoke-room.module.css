@@ -480,3 +480,189 @@
   white-space: normal;
   text-align: start;
 }
+
+/* ── Import a song (Stage 2, §6.1) ────────────────────────────
+   The button heads the library and the studio; the line under it says what
+   can be imported and what is left. Its sheets are the kit's Sheet, with
+   words that wrap and buttons that stack, so nothing scrolls sideways at
+   393 px. */
+
+.importBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.importButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent, #b784ff) 45%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent, #b784ff) 14%, transparent);
+  color: var(--text-primary, #e6edf3);
+  font: 600 15px/20px var(--font-body, sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+
+.importButton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.importGlyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent, #b784ff);
+  color: var(--bg-primary, #0d1117);
+}
+
+.importGlyph svg {
+  width: 20px;
+  height: 20px;
+}
+
+.importLine {
+  margin: 0 2px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  overflow-wrap: anywhere;
+}
+
+.importSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sheetText {
+  margin: 0;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  overflow-wrap: anywhere;
+}
+
+.sheetList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 600 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+  overflow-wrap: anywhere;
+}
+
+.leftOut {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-tertiary, #8b949e);
+  overflow-wrap: anywhere;
+}
+
+.sheetNote {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(230 237 243 / 8%);
+  font: 400 14px/20px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.sheetActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: var(--touch-target, 44px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font: 600 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: none;
+  background: var(--accent, #b784ff);
+  color: var(--bg-primary, #0d1117);
+}
+
+.secondaryButton {
+  border: 1px solid color-mix(in srgb, var(--border, #30363d) 80%, transparent);
+  background: none;
+  color: var(--text-primary, #e6edf3);
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+}
+
+.paywallLines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.paywallLines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.paywallGlyph {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--accent, #b784ff);
+}
+
+.paywallGlyph svg {
+  width: 20px;
+  height: 20px;
+}
+
+.paywallPrice {
+  margin: 4px 0 0;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.paywallLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+}
+
+.paywallLinks a {
+  color: var(--text-secondary, #a8b3bf);
+}

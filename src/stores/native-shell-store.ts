@@ -162,6 +162,37 @@ export interface NativeShellApi {
    * that offers it draws no row for it.
    */
   openKaraokeStudio?: () => void
+  /**
+   * The Karaoke subscription, bought and restored through the store (plan
+   * S8 §6.7). The purchase port it wraps lives in the app, which the room
+   * cannot import. Until the store products and RevenueCat's keys exist
+   * (owner, plan step 25) the port is the inert one and every call answers
+   * `unavailable`, so the paywall fails closed. Optional, like the rest: a
+   * room that finds none treats it the same way.
+   */
+  karaokeSubscription?: KaraokeSubscriptionApi
+}
+
+/** How a Subscribe ended. Only `purchased` changes anything. */
+export type KaraokeSubscribeOutcome =
+  | 'purchased'
+  | 'pending'
+  | 'cancelled'
+  | 'unavailable'
+  | 'failed'
+
+/** How a Restore purchases ended. */
+export type KaraokeRestoreOutcome =
+  | 'restored'
+  | 'nothing'
+  | 'unavailable'
+  | 'failed'
+
+export interface KaraokeSubscriptionApi {
+  subscribe: () => Promise<KaraokeSubscribeOutcome>
+  restore: () => Promise<KaraokeRestoreOutcome>
+  /** The store's own page for the subscription, where the store has one. */
+  manage?: () => Promise<void>
 }
 
 /**
