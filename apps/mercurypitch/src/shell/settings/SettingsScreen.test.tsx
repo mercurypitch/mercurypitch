@@ -3,8 +3,8 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type * as AuthService from '@/db/services/auth-service'
-import { readMe } from '@/db/services/auth-service'
+import type * as AuthMeService from '@/db/services/auth-me-service'
+import { readMe } from '@/db/services/auth-me-service'
 import { setAuthToken } from '@/db/services/user-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
@@ -13,8 +13,8 @@ import { ACCOUNT_ROW } from './account-copy'
 import { refreshAccount, resetAccountState } from './account-state'
 import { SettingsScreen } from './SettingsScreen'
 
-vi.mock('@/db/services/auth-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof AuthService>()),
+vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof AuthMeService>()),
   readMe: vi.fn(),
 }))
 

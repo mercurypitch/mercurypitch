@@ -33,7 +33,7 @@
 
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import type { SettingsSection } from '@/stores/ui-store'
+import type { SettingsSection } from '@/stores/settings-section'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
 export interface NativeRunControls {

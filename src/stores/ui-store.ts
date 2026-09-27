@@ -21,9 +21,11 @@ import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
 import { nativeShellApi } from './native-shell-store'
+import type { SettingsSection } from './settings-section'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
 
 export type { ActiveTab } from '@/features/tabs/constants'
+export type { SettingsSection } from './settings-section'
 
 // ── Active tab ───────────────────────────────────────────────
 
@@ -67,14 +69,6 @@ export const setActiveTab = (tab: ActiveTab): ActiveTab => {
 // ── Settings sub-tab ─────────────────────────────────────────
 // Store-backed (not SettingsPanel-local) so deep links (#/settings/account)
 // and in-app actions ("Get credits" toasts) can open a specific section.
-
-export type SettingsSection =
-  | 'account'
-  | 'singing'
-  | 'karaoke'
-  | 'display'
-  | 'sync'
-  | 'credits'
 
 export const [settingsSection, setSettingsSection] =
   createSignal<SettingsSection>('account')

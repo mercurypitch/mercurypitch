@@ -3,8 +3,8 @@
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as AuthService from '@/db/services/auth-service'
-import { readMe } from '@/db/services/auth-service'
+import type * as AuthMeService from '@/db/services/auth-me-service'
+import { readMe } from '@/db/services/auth-me-service'
 import { setAuthToken } from '@/db/services/user-service'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
@@ -12,8 +12,8 @@ import { ACCOUNT_OFFLINE, ACCOUNT_PROMISES, ACCOUNT_SIGNED_OUT, } from './accoun
 import { refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
 
-vi.mock('@/db/services/auth-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof AuthService>()),
+vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof AuthMeService>()),
   readMe: vi.fn(),
 }))
 

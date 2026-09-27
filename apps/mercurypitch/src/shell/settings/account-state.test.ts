@@ -9,13 +9,13 @@
 // a failure to reach the account (REQ-NAM-049).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as AuthService from '@/db/services/auth-service'
-import { readMe } from '@/db/services/auth-service'
+import type * as AuthMeService from '@/db/services/auth-me-service'
+import { readMe } from '@/db/services/auth-me-service'
 import { getAuthToken, setAuthToken } from '@/db/services/user-service'
 import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, forgetAccountCard, refreshAccount, resetAccountState, } from './account-state'
 
-vi.mock('@/db/services/auth-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof AuthService>()),
+vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof AuthMeService>()),
   readMe: vi.fn(),
 }))
 

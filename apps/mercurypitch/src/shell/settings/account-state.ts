@@ -20,8 +20,9 @@
 // in again, and nothing on it is deleted (REQ-NAM-053).
 
 import { createSignal } from 'solid-js'
+import { heldAccountProvider, readMe } from '@/db/services/auth-me-service'
 import type { MeResponse } from '@/db/services/auth-service'
-import { accountHeld, currentAccountId, handleCloudSessionRejected, heldAccountProvider, readMe, } from '@/db/services/auth-service'
+import { accountHeld, currentAccountId, handleCloudSessionRejected, } from '@/db/services/auth-service'
 
 /** Where the last read of the account stands. */
 export type AccountReach = 'idle' | 'loading' | 'ok' | 'unreachable'

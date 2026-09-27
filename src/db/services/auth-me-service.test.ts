@@ -4,8 +4,7 @@
 //
 // fetchMe() answers null for a signed-out phone and for a phone with no
 // network alike, and the account card read that null as "You are signed
-// out" (S6 audit D1, REQ-NAM-049). readMe keeps the two apart; fetchMe keeps
-// its old answer for the callers that relied on it.
+// out" (S6 audit D1, REQ-NAM-049). readMe keeps the two apart.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +18,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
-import { fetchMe, readMe } from '@/db/services/auth-service'
+import { heldAccountProvider, readMe } from '@/db/services/auth-me-service'
 import { getAuthToken, setAuthToken } from '@/db/services/user-service'
 
 function makeToken(provider: string): string {
@@ -117,27 +116,20 @@ describe('readMe', () => {
   })
 })
 
-describe('fetchMe, for the callers that read null', () => {
-  it('still answers null for a lost connection', async () => {
-    setAuthToken(makeToken('apple'))
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new TypeError('Failed to fetch')
-      }),
-    )
+describe('heldAccountProvider', () => {
+  it('names the provider of the account the phone holds, with no network', () => {
+    setAuthToken(makeToken('google'))
 
-    const me = await fetchMe()
+    const provider = heldAccountProvider()
 
-    expect(me).toBeNull()
+    expect(provider).toBe('google')
   })
 
-  it('still answers the account when the server does', async () => {
-    setAuthToken(makeToken('apple'))
-    answer(200, ME)
+  it('names nothing for the anonymous device identity', () => {
+    setAuthToken(makeToken('anonymous'))
 
-    const me = await fetchMe()
+    const provider = heldAccountProvider()
 
-    expect(me).toEqual(ME)
+    expect(provider).toBeNull()
   })
 })
