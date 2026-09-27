@@ -259,7 +259,8 @@ export function createLivingCrystalPlatformRenderer(
         // Primitive inventory; transmission can add renderer passes.
         visibleMeshPrimitives:
           visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.meshDrawsPerPass,
-        visibleGeometryTriangles: visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles,
+        visibleGeometryTriangles:
+          visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles,
         sharedGeometryBytes: geometryBytes(geometries),
         textures: 0,
         interiors: installed?.map((item) => item.interior.snapshot()) ?? [],
