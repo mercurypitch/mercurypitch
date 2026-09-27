@@ -308,6 +308,16 @@ describe('Cloudway route-shape auditions', () => {
     for (const audition of Object.values(CLOUDWAY_LAYOUT_AUDITIONS)) {
       const presentation = audition.level.presentation!
       expect(presentation.decorations).toHaveLength(6)
+      const portrait = audition.level.breakables.find(
+        (target) => target.id === CLOUDWAY_ENCOUNTER_IDS.finale,
+      )!
+      const finalePlanters = presentation.decorations!.filter((item) =>
+        item.id.includes('-finale-'),
+      )
+      expect(finalePlanters).toHaveLength(2)
+      expect(
+        finalePlanters.every((item) => item.position.z > portrait.position.z),
+      ).toBe(true)
       expect(
         presentation.decorations?.every(
           (item) => item.recipeId === 'crystal-planter-v5',

@@ -2,10 +2,37 @@
 // Exhibit baking — retain every material slot, UV channel and tangent through matched fracture.
 // ============================================================
 
-import type { BufferGeometry, Material, Matrix4, Mesh, Object3D } from 'three'
+import type { BufferAttribute, BufferGeometry, InterleavedBufferAttribute, Material, Matrix4, Mesh, Object3D, } from 'three'
 import { Float32BufferAttribute } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { MaterialLibrary } from './material-library'
+
+type VertexAttribute = BufferAttribute | InterleavedBufferAttribute
+
+function isUnnormalizedFloatAttribute(attribute: VertexAttribute) {
+  return (
+    attribute.array instanceof Float32Array &&
+    !attribute.normalized &&
+    !('isInterleavedBufferAttribute' in attribute)
+  )
+}
+
+function promoteTransformAttribute(
+  geometry: BufferGeometry,
+  name: 'position' | 'normal' | 'tangent',
+) {
+  if (!geometry.hasAttribute(name)) return
+  const source = geometry.getAttribute(name)
+  if (isUnnormalizedFloatAttribute(source)) return
+  const data = new Float32Array(source.count * source.itemSize)
+  for (let vertex = 0; vertex < source.count; vertex++)
+    for (let component = 0; component < source.itemSize; component++)
+      data[vertex * source.itemSize + component] = source.getComponent(
+        vertex,
+        component,
+      )
+  geometry.setAttribute(name, new Float32BufferAttribute(data, source.itemSize))
+}
 
 export function createMaterialTable(library: MaterialLibrary) {
   const materials: Material[] = []
@@ -45,6 +72,14 @@ export function flattenGeometry(
             (_, i) => i,
           ),
         )
+      // glTF mesh quantization stores decoded values in normalized integer
+      // attributes. Three writes transforms back into that same integer array,
+      // so positions outside [-1, 1] wrap before the later geometry merge.
+      // Promote only attributes mutated by applyMatrix4; UVs and colors retain
+      // their normalized decoding until the attribute-union pass below.
+      promoteTransformAttribute(geometry, 'position')
+      promoteTransformAttribute(geometry, 'normal')
+      promoteTransformAttribute(geometry, 'tangent')
       geometry.applyMatrix4(mesh.matrixWorld).applyMatrix4(transform)
       if (!geometry.hasAttribute('normal')) geometry.computeVertexNormals()
       for (const [name, attribute] of Object.entries(geometry.attributes)) {
@@ -82,12 +117,7 @@ export function flattenGeometry(
       const count = geometry.getAttribute('position').count
       for (const [name, size] of attributes) {
         const source = geometry.getAttribute(name)
-        if (
-          geometry.hasAttribute(name) &&
-          source.array instanceof Float32Array &&
-          !source.normalized &&
-          !('isInterleavedBufferAttribute' in source)
-        )
+        if (geometry.hasAttribute(name) && isUnnormalizedFloatAttribute(source))
           continue
         const data = new Float32Array(count * size)
         for (let vertex = 0; vertex < count; vertex++)

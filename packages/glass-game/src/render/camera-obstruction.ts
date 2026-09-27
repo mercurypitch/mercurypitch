@@ -5,7 +5,7 @@ import { Ray, Raycaster, Vector3 } from 'three'
 import type { LevelDefinition } from '../contracts'
 import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
 import { ENCLOSURE_READABLE_BOOM_DISTANCE, OBSTRUCTION_LIFT_PITCHES, } from './camera-policy'
-import type { createEnclosureFraming } from './enclosure-framing'
+import type { createEnclosureFraming, EnclosureRayPurpose, } from './enclosure-framing'
 
 export function createCameraObstruction(
   level: LevelDefinition,
@@ -26,6 +26,7 @@ export function createCameraObstruction(
     activeSolidIds: readonly string[],
     constrainToEnclosure: boolean,
     useMeshOccluders = true,
+    purpose: EnclosureRayPurpose = 'camera-clearance',
   ): number {
     ray.set(origin, rayDirection)
     let safeDistance = reach
@@ -40,7 +41,13 @@ export function createCameraObstruction(
     if (enclosure !== null) {
       safeDistance = Math.min(
         safeDistance,
-        enclosure.solidDistance(origin, rayDirection, reach, activeSolidIds),
+        enclosure.solidDistance(
+          origin,
+          rayDirection,
+          reach,
+          activeSolidIds,
+          purpose,
+        ),
       )
       if (constrainToEnclosure) {
         const volumeDistance = enclosure.volumeDistance(

@@ -1,0 +1,410 @@
+{
+  "schema": 1,
+  "assetId": "aurora-glide-raft",
+  "status": "fresh Blender reopen and matched headless authoring proof passed; browser and live-game validation pending",
+  "runtime": {
+    "file": "source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb",
+    "bytes": 3035924,
+    "sha256": "a1533a0837faacc4d55df5b9aa1fc8cae303ccd8c9af2f91af2480863dcc570e"
+  },
+  "workingBlend": {
+    "file": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-runtime-v2-working.blend",
+    "bytes": 22943420,
+    "sha256": "9331461a0c9c24213bbfc25c8a42f8ed7531d5832aa64ff9f1e2c86360712bc3",
+    "rootIdentity": true,
+    "triangles": 302054,
+    "materialNames": [
+      "CloudwayLab_AuroraGlideRaft__glass",
+      "CloudwayLab_AuroraGlideRaft__opaque_trim"
+    ],
+    "images": [
+      {
+        "role": "base_color",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "role": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      },
+      {
+        "role": "metallic",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      },
+      {
+        "role": "roughness",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "packed": true
+      }
+    ],
+    "faceAssignmentsMatchReport": true
+  },
+  "rawGlb": {
+    "rootNode": "CloudwayLab_AuroraGlideRaft",
+    "rootIdentity": true,
+    "metadata": {
+      "schema": "cloudway-lab-static-v1",
+      "assetId": "aurora-glide-raft",
+      "kind": "platform",
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "landing-or-resting-datum"
+      },
+      "contact": {
+        "kind": "rectangle",
+        "width": 2.55,
+        "depth": 1.4,
+        "topY": 0,
+        "height": 0.28
+      },
+      "material": {
+        "kind": "authored-pbr-regions",
+        "appearanceStatus": "authored-regions",
+        "intendedAppearance": "glass-and-trim",
+        "roles": {
+          "opaque": [
+            "CloudwayLab_AuroraGlideRaft__opaque_trim"
+          ],
+          "glass": [
+            "CloudwayLab_AuroraGlideRaft__glass"
+          ]
+        },
+        "targetGlass": {
+          "transmission": 0.54,
+          "roughness": 0.16,
+          "thickness": 0.08,
+          "ior": 1.42
+        }
+      },
+      "source": {
+        "denseMaster": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+        "denseMasterSha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+        "donorSha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a"
+      },
+      "geometry": {
+        "vertices": 175986,
+        "triangles": 302054,
+        "polygons": 302054,
+        "runtimeBoundsMetres": {
+          "minimum": [
+            -1.350000024,
+            -0.302822262,
+            -0.781185091
+          ],
+          "maximum": [
+            1.349999905,
+            0.009768471,
+            0.78118515
+          ]
+        },
+        "positionQuantizationStepUpperBoundMetres": 4.1199e-05,
+        "decimated": false,
+        "remeshed": false
+      },
+      "textures": [
+        {
+          "role": "base_color",
+          "sourceDimensions": [
+            8192,
+            8192
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "role": "normal",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "role": "metallic",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "role": "roughness",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            1024,
+            1024
+          ]
+        }
+      ]
+    },
+    "collider": {
+      "shape": "box",
+      "width": 2.55,
+      "depth": 1.4,
+      "height": 0.28,
+      "topY": 0,
+      "center": [
+        0,
+        -0.14,
+        0
+      ]
+    },
+    "primitives": [
+      {
+        "mesh": 0,
+        "name": "CloudwayLab_AuroraGlideRaft__opaque_detail__mesh",
+        "material": "CloudwayLab_AuroraGlideRaft__opaque_trim",
+        "triangles": 289065
+      },
+      {
+        "mesh": 1,
+        "name": "CloudwayLab_AuroraGlideRaft__glass_detail__mesh",
+        "material": "CloudwayLab_AuroraGlideRaft__glass",
+        "triangles": 12989
+      }
+    ],
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materials": [
+      {
+        "name": "CloudwayLab_AuroraGlideRaft__opaque_trim",
+        "role": "opaque",
+        "glassTransmissionAuthored": false
+      },
+      {
+        "name": "CloudwayLab_AuroraGlideRaft__glass",
+        "role": "glass",
+        "glassTransmissionAuthored": true
+      }
+    ]
+  },
+  "validator": {
+    "command": "apps/beside-cue/node_modules/.bin/gltf-transform validate source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb",
+    "exitCode": 0,
+    "errors": 0,
+    "warnings": 0,
+    "informational": [
+      "EXT_meshopt_compression is unsupported by the validator itself"
+    ]
+  },
+  "freshImport": {
+    "currentV1": {
+      "triangles": 302054,
+      "normalCorners": 906162,
+      "shortNormalCorners": 2,
+      "minimumNormalLength": 0.06959807872772217,
+      "maximumNormalLength": 1.000001311302185,
+      "materialNames": [
+        "CloudwayLab_AuroraGlideRaft__provider_pbr"
+      ],
+      "meshes": [
+        {
+          "name": "CloudwayLab_AuroraGlideRaft__provider_detail",
+          "triangles": 302054,
+          "material": "CloudwayLab_AuroraGlideRaft__provider_pbr"
+        }
+      ],
+      "boundsBlenderZUp": {
+        "minimum": [
+          -1.3499999046565314,
+          -0.7811928912605133,
+          -0.30283964289667864
+        ],
+        "maximum": [
+          1.3499999046086053,
+          0.7811928912366177,
+          0.009785837068584158
+        ]
+      }
+    },
+    "splitV2": {
+      "triangles": 302054,
+      "normalCorners": 906162,
+      "shortNormalCorners": 2,
+      "minimumNormalLength": 0.06959807872772217,
+      "maximumNormalLength": 1.000001311302185,
+      "materialNames": [
+        "CloudwayLab_AuroraGlideRaft__glass",
+        "CloudwayLab_AuroraGlideRaft__opaque_trim"
+      ],
+      "meshes": [
+        {
+          "name": "CloudwayLab_AuroraGlideRaft__glass_detail",
+          "triangles": 12989,
+          "material": "CloudwayLab_AuroraGlideRaft__glass"
+        },
+        {
+          "name": "CloudwayLab_AuroraGlideRaft__opaque_detail",
+          "triangles": 289065,
+          "material": "CloudwayLab_AuroraGlideRaft__opaque_trim"
+        }
+      ],
+      "boundsBlenderZUp": {
+        "minimum": [
+          -1.3499999046565314,
+          -0.7811928912605133,
+          -0.30283964289667864
+        ],
+        "maximum": [
+          1.3499999046086053,
+          0.7811928912366177,
+          0.009785837068584158
+        ]
+      }
+    },
+    "boundsToleranceMetres": 0.000123597,
+    "normalInventoryMatchesCurrentV1": true
+  },
+  "visualProof": {
+    "renderer": "Blender 5.2.2 EEVEE Next headless",
+    "scope": "Matched authoring proof only; it is not browser, tablet, or in-game GPU evidence.",
+    "renders": [
+      {
+        "variant": "donor",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-donor-gameplay.png",
+        "bytes": 547866,
+        "sha256": "0487f5cf0c5f51b6b021213aa4561fd7bf4ec8d651c7deee9cc502750b96585b",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "donor",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-donor-nearest.png",
+        "bytes": 1363665,
+        "sha256": "32dcbd3c9e8c83ebcfdee370f26b8774ebc2cdfdc5d7dd36a01ea45c4844455c",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "current-v1",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-current-v1-gameplay.png",
+        "bytes": 547153,
+        "sha256": "21975e611cc8f43a78a0662e017b2f92042b785f96121e512749e5ad98241856",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "current-v1",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-current-v1-nearest.png",
+        "bytes": 1192622,
+        "sha256": "d2a972378e76be2c8f0c6acf74b180ae2cae0f893487ec163ec08586de037b7b",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-split-v2-gameplay.png",
+        "bytes": 589301,
+        "sha256": "40a01fcf529eafbfe01993fdaf5fa5b22b4e1779ced72835955baa63b98689bf",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-split-v2-nearest.png",
+        "bytes": 1522919,
+        "sha256": "3b4b00a2963ae312ce67f37fff7e8de11c9414e260b77fbb941402e86c9b626a",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2-semantic-mask",
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-split-v2-semantic-mask-gameplay.png",
+        "bytes": 381397,
+        "sha256": "78389aca07aa57514fa3b582e403141cbda3abe36ed6d5fa6e199764aa86e35f",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "variant": "split-v2-semantic-mask",
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/matched-split-v2-semantic-mask-nearest.png",
+        "bytes": 317745,
+        "sha256": "2301bb0e28cc8628d48b9a7b80b30416fee0eacd38cf583ccb9140462bd59ff1",
+        "resolution": [
+          1100,
+          820
+        ]
+      }
+    ],
+    "comparisons": [
+      {
+        "view": "gameplay",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/comparison-donor-current-v1-split-v2-gameplay.png",
+        "bytes": 881240,
+        "sha256": "b536b7bbbcbf23d0c632c1249a5c1b5bf2b39f92bf98fb39a001bc73657727cc",
+        "resolution": [
+          3300,
+          820
+        ]
+      },
+      {
+        "view": "nearest",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/comparison-donor-current-v1-split-v2-nearest.png",
+        "bytes": 2824539,
+        "sha256": "884484d2b7fd4b9705c547ecf69df4a00789ded9d70d334d68d0f0de1250d216",
+        "resolution": [
+          3300,
+          820
+        ]
+      }
+    ],
+    "finding": "Matched authoring review passed: the turquoise body remains one coherent glass region, all four gold corner caps and the thin top inlay/rim remain opaque and continuous, and matched gameplay-framed/nearest authoring masks show no bleed."
+  },
+  "immutableMaster": {
+    "file": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+    "sha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+    "matchesExpected": true
+  },
+  "rebuild": "timeout 1200 flock -w 1200 \"${GLASS_BLENDER_LOCK:-/tmp/glass-cloudway-blender.lock}\" env ALSOFT_DRIVERS=null \"${BLENDER_BIN:-blender}\" --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_static_material_split_runtime.py -- --asset aurora-glide-raft"
+}

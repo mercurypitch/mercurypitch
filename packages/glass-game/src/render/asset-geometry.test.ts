@@ -1,5 +1,5 @@
 // Authored asset regression — gold, glass and physical texture coordinates survive actual assembly and break.
-import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Group, Matrix4, Mesh, MeshPhysicalMaterial, NoColorSpace, PlaneGeometry, RepeatWrapping, SRGBColorSpace, Texture, Uint8BufferAttribute, Vector3, } from 'three'
+import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Group, Int16BufferAttribute, Matrix4, Mesh, MeshPhysicalMaterial, NoColorSpace, PlaneGeometry, RepeatWrapping, SRGBColorSpace, Texture, Uint8BufferAttribute, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createMaterialTable, flattenGeometry } from './asset-geometry'
@@ -42,6 +42,63 @@ function fixture() {
 }
 
 describe('authored museum materials', () => {
+  it('promotes quantized transform attributes before baking transforms outside normalized storage', () => {
+    const source = new BufferGeometry()
+    source.setAttribute(
+      'position',
+      new Int16BufferAttribute([0, 0, 0, 32_767, 0, 0, 0, 32_767, 0], 3, true),
+    )
+    source.setAttribute(
+      'normal',
+      new Int16BufferAttribute(
+        [0, 0, 32_767, 0, 0, 32_767, 0, 0, 32_767],
+        3,
+        true,
+      ),
+    )
+    source.setAttribute(
+      'tangent',
+      new Int16BufferAttribute(
+        [32_767, 0, 0, 32_767, 32_767, 0, 0, 32_767, 32_767, 0, 0, 32_767],
+        4,
+        true,
+      ),
+    )
+    source.setAttribute(
+      'uv',
+      new Uint8BufferAttribute([0, 0, 255, 0, 0, 128], 2, true),
+    )
+    const root = new Mesh(source, new MeshPhysicalMaterial())
+    const transform = new Matrix4().makeScale(1.72, 2.69, 0.055)
+    transform.setPosition(0.25, 0.4, -0.1)
+    const library = createMaterialLibrary()
+    const result = flattenGeometry(
+      root,
+      transform,
+      createMaterialTable(library),
+    )
+    const position = result.getAttribute('position')
+    expect(position.array).toBeInstanceOf(Float32Array)
+    expect(position.normalized).toBe(false)
+    expect(position.getX(0)).toBeCloseTo(0.25)
+    expect(position.getX(1)).toBeCloseTo(1.97)
+    expect(position.getY(2)).toBeCloseTo(3.09)
+    for (const name of ['normal', 'tangent'] as const) {
+      const attribute = result.getAttribute(name)
+      expect(attribute.array).toBeInstanceOf(Float32Array)
+      expect(attribute.normalized).toBe(false)
+    }
+    expect(result.getAttribute('normal').getZ(0)).toBeCloseTo(1)
+    expect(result.getAttribute('tangent').getX(0)).toBeCloseTo(1)
+    expect(result.getAttribute('tangent').getW(0)).toBeCloseTo(1)
+    expect(result.getAttribute('uv').getY(2)).toBeCloseTo(128 / 255)
+    expect(source.getAttribute('position').array).toBeInstanceOf(Int16Array)
+    expect(source.getAttribute('position').normalized).toBe(true)
+    result.dispose()
+    library.dispose()
+    disposeObject(root)
+  })
+
   it('merges indexed and unindexed primitives without losing normalized colors or group offsets', () => {
     const root = new Group()
     const box = new BoxGeometry()

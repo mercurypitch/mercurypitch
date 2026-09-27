@@ -61,6 +61,70 @@ describe('Cloudway laboratory static donor contract', () => {
     disposeObject(source)
   })
 
+  it('accepts only declared glass regions while keeping the trim opaque', () => {
+    const source = donor()
+    const trim = source.children[0] as Mesh
+    ;(trim.material as MeshStandardMaterial).name = 'reviewed-trim'
+    const glass = new Mesh(
+      new BoxGeometry(2.8, 0.2, 0.5),
+      new MeshPhysicalMaterial({ transmission: 0.65 }),
+    )
+    glass.material.name = 'reviewed-glass'
+    source.add(glass)
+    const roles = {
+      'reviewed-trim': 'opaque',
+      'reviewed-glass': 'glass',
+    } as const
+    const metadata = JSON.parse(
+      source.userData.cloudway_lab_asset_json as string,
+    ) as {
+      material: Record<string, unknown>
+      geometry: { triangles: number }
+    }
+    metadata.material = {
+      kind: 'authored-pbr-regions',
+      appearanceStatus: 'authored-regions',
+      intendedAppearance: 'glass-and-trim',
+      roles: { opaque: ['reviewed-trim'], glass: ['reviewed-glass'] },
+    }
+    metadata.geometry.triangles = 24
+    source.userData.cloudway_lab_asset_json = JSON.stringify(metadata)
+    expect(
+      validateCloudwayLaboratoryStaticDonor(source, 'pearl-marble-long', roles)
+        .metadata.geometry.triangles,
+    ).toBe(24)
+    for (const field of ['appearanceStatus', 'intendedAppearance'] as const) {
+      const accepted = metadata.material[field]
+      metadata.material[field] = 'unreviewed'
+      source.userData.cloudway_lab_asset_json = JSON.stringify(metadata)
+      expect(() =>
+        validateCloudwayLaboratoryStaticDonor(
+          source,
+          'pearl-marble-long',
+          roles,
+        ),
+      ).toThrow(`material.${field}`)
+      metadata.material[field] = accepted
+    }
+    source.userData.cloudway_lab_asset_json = JSON.stringify(metadata)
+    glass.material.transmission = 0
+    expect(() =>
+      validateCloudwayLaboratoryStaticDonor(source, 'pearl-marble-long', roles),
+    ).toThrow('physical transmission')
+    glass.material.transmission = 0.65
+    glass.material.name = 'unreviewed-glass'
+    expect(() =>
+      validateCloudwayLaboratoryStaticDonor(source, 'pearl-marble-long', roles),
+    ).toThrow('unreviewed material')
+    glass.material.name = 'reviewed-glass'
+    source.remove(glass)
+    expect(() =>
+      validateCloudwayLaboratoryStaticDonor(source, 'pearl-marble-long', roles),
+    ).toThrow('Every reviewed material region')
+    source.add(glass)
+    disposeObject(source)
+  })
+
   it.each([
     {
       label: 'blended opacity',

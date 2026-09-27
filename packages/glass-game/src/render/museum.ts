@@ -299,7 +299,7 @@ export function createMuseum(
   const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
-    if (target.mount === undefined) {
+    if (target.mount === undefined && target.presentation?.kind !== 'barrier') {
       const pedestal = new Mesh(
         new CylinderGeometry(
           EXHIBIT_PLINTH.radiusTop,
@@ -553,7 +553,9 @@ export function createMuseum(
       return shadowVisibilityChanged
     },
     cullCloudwayPlatforms(camera: PerspectiveCamera | undefined) {
-      return cloudwayPlatforms.cullForView(camera)
+      const cloudwayChanged = cloudwayPlatforms.cullForView(camera)
+      const laboratoryChanged = cloudwayLaboratoryPlatforms.cullForView(camera)
+      return cloudwayChanged || laboratoryChanged
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {

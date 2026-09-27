@@ -1,6 +1,7 @@
 // Crystal Promenade traversal proof — exercise measured jumps, the certified scroll, two-speed glass, voice rests and saved recovery.
 import { describe, expect, it } from 'vitest'
-import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS as MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY as LEVEL, } from '../content/cloudway-laboratory'
+import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS as MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW as PREVIEW, CLOUDWAY_CRYSTAL_PROMENADE_STUDY as LEVEL, } from '../content/cloudway-laboratory'
+import type { LevelDefinition } from '../contracts'
 import { containsBody } from './collision'
 import { createGlassGame } from './game'
 import { MOVEMENT } from './movement'
@@ -17,8 +18,8 @@ interface AttemptOptions {
   readonly supportId?: string
 }
 
-function visit(dt: number, saved?: unknown) {
-  const game = createGlassGame(LEVEL, saved)
+function visit(dt: number, saved?: unknown, level: LevelDefinition = LEVEL) {
+  const game = createGlassGame(level, saved)
   let seconds = 0
   let sequence = 0
   let respawns = 0
@@ -54,7 +55,7 @@ function visit(dt: number, saved?: unknown) {
     const distance = Math.hypot(dx, dz)
     const nx = dx / distance
     const nz = dz / distance
-    const edge = (LEVEL.intentionalGaps ?? []).some((gap) => {
+    const edge = (level.intentionalGaps ?? []).some((gap) => {
       const projectedX = position.x + nx * 0.26
       const projectedZ = position.z + nz * 0.26
       return (
@@ -64,7 +65,7 @@ function visit(dt: number, saved?: unknown) {
         projectedZ <= gap.maxZ
       )
     })
-    const raised = LEVEL.platforms.some((platform) => {
+    const raised = level.platforms.some((platform) => {
       const projectedX = position.x + nx * 0.4
       const projectedZ = position.z + nz * 0.4
       return (
@@ -184,10 +185,32 @@ function savedAt(checkpointId: string, completedBreakableIds: string[] = []) {
   }
 }
 
+function previewSavedAt(
+  checkpointId: string,
+  completedBreakableIds: string[] = [],
+) {
+  return {
+    version: 2,
+    levelId: PREVIEW.id,
+    checkpointId,
+    completedBreakableIds,
+    finished: false,
+  }
+}
+
 function platform(id: string) {
   const result = LEVEL.platforms.find((candidate) => candidate.id === id)
   if (result === undefined) throw new Error(`Missing platform ${id}`)
   return result
+}
+
+function platformCentre(level: LevelDefinition, id: string): RoutePoint {
+  const result = level.platforms.find((candidate) => candidate.id === id)
+  if (result === undefined) throw new Error(`Missing platform ${id}`)
+  return {
+    x: (result.minX + result.maxX) / 2,
+    z: (result.minZ + result.maxZ) / 2,
+  }
 }
 
 function forwardGap(fromId: string, toId: string): number {
@@ -232,12 +255,12 @@ function crossScroll(v: ReturnType<typeof visit>) {
   v.reach(P.scrollCatch, { supportId: 'scroll-catch' })
 }
 
-describe('Crystal Promenade first playable slice', () => {
-  it('keeps the first-slice namespace while publishing physical roller gaps as revision 3', () => {
+describe('Crystal Promenade mechanics bench', () => {
+  it('keeps the saved namespace and revision-3 prefix while publishing the revision-4 route', () => {
     expect(LEVEL.id).toBe('cloudway-crystal-promenade-first-slice')
     expect(LEVEL.authored).toMatchObject({
       layoutId: 'crystal-promenade-first-slice',
-      contentRevision: 3,
+      contentRevision: 4,
     })
     expect(LEVEL.platforms.map((item) => item.id)).toEqual([
       'arrival-entry',
@@ -251,6 +274,18 @@ describe('Crystal Promenade first playable slice', () => {
       'amethyst-step',
       'final-catch',
       'final-terrace',
+      'frost-lily-one',
+      'frost-lily-two',
+      'wall-approach-entry',
+      'wall-approach',
+      'wall-approach-middle',
+      'wall-approach-forward',
+      'wall-approach-threshold',
+      'wall-catch',
+      'raft-dock',
+      'aurora-raft',
+      'raft-catch',
+      'finale-court',
     ])
     expect(forwardGap('arrival', 'scroll-approach-entry')).toBeCloseTo(
       MEASUREMENTS.gaps.arrivalApproach,
@@ -285,11 +320,39 @@ describe('Crystal Promenade first playable slice', () => {
       MEASUREMENTS.gaps.duetExit,
       12,
     )
+    expect(forwardGap('final-terrace', 'frost-lily-one')).toBeCloseTo(
+      MEASUREMENTS.gaps.frostEntry,
+      12,
+    )
+    expect(forwardGap('frost-lily-one', 'frost-lily-two')).toBeCloseTo(
+      MEASUREMENTS.gaps.frostBend,
+      12,
+    )
+    expect(forwardGap('frost-lily-two', 'wall-approach-entry')).toBeCloseTo(
+      MEASUREMENTS.gaps.frostExit,
+      12,
+    )
+    expect(forwardGap('raft-dock', 'aurora-raft')).toBeCloseTo(
+      MEASUREMENTS.gaps.auroraEntry,
+      12,
+    )
+    const raft = platform('aurora-raft')
+    expect(platform('raft-catch').minZ - (raft.maxZ + 2.2)).toBeCloseTo(
+      MEASUREMENTS.gaps.auroraExit,
+      12,
+    )
     for (const [back, front] of [
       ['arrival-entry', 'arrival'],
       ['scroll-approach-entry', 'scroll-approach'],
       ['scroll-catch', 'scroll-court'],
       ['final-catch', 'final-terrace'],
+      ['wall-approach-entry', 'wall-approach'],
+      ['wall-approach', 'wall-approach-middle'],
+      ['wall-approach-middle', 'wall-approach-forward'],
+      ['wall-approach-forward', 'wall-approach-threshold'],
+      ['wall-approach-threshold', 'wall-catch'],
+      ['wall-catch', 'raft-dock'],
+      ['raft-catch', 'finale-court'],
     ] as const) {
       expect(forwardGap(back, front)).toBeCloseTo(0, 12)
       expect(platform(front).maxZ - platform(back).minZ).toBeCloseTo(1.44, 12)
@@ -314,25 +377,25 @@ describe('Crystal Promenade first playable slice', () => {
       ).toBe(true)
   })
 
-  it('restores a revision 2 completion at the moved revision 3 checkpoint', () => {
-    const revision2FinalCatchZ = 0.107494056
+  it('restores revision-3 partial and completed saves without moving the retained checkpoint', () => {
+    const partial = createGlassGame(
+      LEVEL,
+      savedAt('final-save', ['voice-home', 'voice-third']),
+    ).snapshot()
+    expect(partial.player.position.x).toBeCloseTo(P.finalCatch.x, 12)
+    expect(partial.player.position.y).toBe(0)
+    expect(partial.player.position.z).toBeCloseTo(P.finalCatch.z, 12)
+    expect(partial.player.supportPlatformId).toBe('final-catch')
+    expect(partial.complete).toBe(false)
+
     const earnedEncounterIds = ['voice-home', 'voice-third', 'voice-fifth']
-    const legacy = {
+    const completed = createGlassGame(LEVEL, {
       ...savedAt('final-save', earnedEncounterIds),
       finished: true,
-    }
-
-    const snapshot = createGlassGame(LEVEL, legacy).snapshot()
-
-    expect(snapshot.player.position).toEqual({
-      x: P.finalCatch.x,
-      y: 0,
-      z: P.finalCatch.z,
-    })
-    expect(snapshot.player.position.z).not.toBeCloseTo(revision2FinalCatchZ, 8)
-    expect(snapshot.player.supportPlatformId).toBe('final-catch')
-    expect(snapshot.completedBreakableIds).toEqual(earnedEncounterIds)
-    expect(snapshot.complete).toBe(true)
+    }).snapshot()
+    expect(completed.completedBreakableIds).toEqual(earnedEncounterIds)
+    expect(completed.complete).toBe(true)
+    expect(completed.activeSolidIds).not.toContain('barrier:voice-fifth:pane')
   })
 
   it.each([1 / 60, 1 / 30])(
@@ -357,25 +420,43 @@ describe('Crystal Promenade first playable slice', () => {
       v.reach(P.amethyst, { settle: false, supportId: 'amethyst-step' })
       v.reach(P.finalCatch, { supportId: 'final-catch' })
       expect(v.game.snapshot().checkpointId).toBe('final-save')
+      v.reach(P.finalTerrace, { supportId: 'final-terrace' })
+      v.reach(P.frostLilyOne, { supportId: 'frost-lily-one' })
+      v.reach(P.frostLilyTwo, { supportId: 'frost-lily-two' })
+      const fifth = LEVEL.breakables.find(
+        (target) => target.id === 'voice-fifth',
+      )!
+      v.reach(fifth.anchor, {
+        maxSeconds: 20,
+        supportId: 'wall-approach-entry',
+      })
+      expect(v.game.snapshot().checkpointId).toBe('wall-save')
+      expect(v.game.snapshot().activeSolidIds).toContain(
+        'barrier:voice-fifth:pane',
+      )
+      v.sing('voice-fifth')
+      expect(v.game.snapshot().activeSolidIds).not.toContain(
+        'barrier:voice-fifth:pane',
+      )
+      v.reach(P.wallApproach, { supportId: 'wall-approach' })
+      for (const id of [
+        'wall-approach-middle',
+        'wall-approach-forward',
+        'wall-approach-threshold',
+        'wall-catch',
+        'raft-dock',
+      ])
+        v.reach(platformCentre(LEVEL, id), { supportId: id })
+      v.waitFor(() => Math.abs(v.platform('aurora-raft')?.offset.z ?? 1) < 1e-6)
+      v.reach(P.auroraRaft, { settle: false, supportId: 'aurora-raft' })
+      v.waitFor(() => (v.platform('aurora-raft')?.offset.z ?? 0) > 2.18)
+      v.reach(P.raftCatch, { supportId: 'raft-catch' })
+      expect(v.game.snapshot().checkpointId).toBe('finale-save')
       const exitPoint = {
         x: (LEVEL.exit.minX + LEVEL.exit.maxX) / 2,
         z: LEVEL.exit.maxZ - 0.05,
       }
-      v.reach(
-        { x: exitPoint.x, z: P.finalTerrace.z },
-        { supportId: 'final-terrace' },
-      )
-      for (let frame = 0; frame < Math.ceil(0.5 / dt); frame++) v.step(0, 1)
-      expect(v.game.snapshot().complete).toBe(false)
-      expect(v.game.snapshot().player.position.z).toBeLessThan(
-        (LEVEL.exit.minZ + LEVEL.exit.maxZ) / 2,
-      )
-      const fifth = LEVEL.breakables.find(
-        (target) => target.id === 'voice-fifth',
-      )!
-      v.reach(fifth.anchor, { supportId: 'final-catch' })
-      v.sing('voice-fifth')
-      v.reach(exitPoint, { supportId: 'final-terrace' })
+      v.reach(exitPoint, { supportId: 'finale-court' })
       v.rest(1)
       expect(v.game.snapshot().complete).toBe(true)
       expect(v.respawns()).toBe(0)
@@ -388,6 +469,150 @@ describe('Crystal Promenade first playable slice', () => {
           'rose-step',
           'amethyst-step',
           'final-catch',
+          'frost-lily-one',
+          'frost-lily-two',
+          'wall-approach-entry',
+          'wall-approach',
+          'wall-approach-middle',
+          'wall-approach-forward',
+          'wall-approach-threshold',
+          'aurora-raft',
+          'raft-catch',
+        ]),
+      )
+    },
+  )
+
+  it.each([1 / 60, 1 / 30])(
+    'traverses the cross-axis mechanics preview without a fall at %s seconds/frame',
+    (dt) => {
+      const v = visit(dt, previewSavedAt('preview-arrival-save'), PREVIEW)
+      const encounter = (id: string) =>
+        PREVIEW.breakables.find((target) => target.id === id)!
+      v.reach(encounter('preview-voice-home').anchor, {
+        supportId: 'preview-arrival',
+      })
+      v.sing('preview-voice-home')
+      v.reach({ x: -7.63, z: -0.55 }, { supportId: 'preview-frost-one' })
+      v.reach({ x: -4.88, z: 0.2 }, { supportId: 'preview-frost-two' })
+      v.reach(
+        { x: -2.15, z: 0.2 },
+        {
+          maxSeconds: 20,
+          supportId: 'preview-frost-catch',
+        },
+      )
+      expect(v.game.snapshot().checkpointId).toBe('preview-scroll-save')
+      v.waitFor(
+        () =>
+          v.platform('preview-scroll-deck')?.phase === 'extended' &&
+          (v.platform('preview-scroll-deck')?.phaseProgress ?? 1) < 0.05,
+      )
+      const scroll = PREVIEW.platforms.find(
+        (platform) => platform.id === 'preview-scroll-deck',
+      )!
+      const negativeRollerX =
+        scroll.minX -
+        MEASUREMENTS.scroll.edgeSupports.negative.outwardLength / 2
+      const positiveRollerX =
+        scroll.maxX +
+        MEASUREMENTS.scroll.edgeSupports.positive.outwardLength / 2
+      v.reach(
+        { x: negativeRollerX, z: 0.2 },
+        {
+          settle: false,
+          supportId: 'preview-scroll-deck',
+        },
+      )
+      v.reach(
+        { x: 0.201982044, z: 0.2 },
+        {
+          settle: false,
+          supportId: 'preview-scroll-deck',
+        },
+      )
+      v.reach(
+        { x: positiveRollerX, z: 0.2 },
+        {
+          settle: false,
+          supportId: 'preview-scroll-deck',
+        },
+      )
+      v.reach(
+        { x: 3.273464088, z: 0.2 },
+        {
+          supportId: 'preview-scroll-court',
+        },
+      )
+      v.sing('preview-voice-third')
+      v.reach(
+        { x: 3, z: 3.12 },
+        {
+          settle: false,
+          supportId: 'preview-rose-step',
+        },
+      )
+      v.reach(
+        { x: 3.45, z: 4.99 },
+        {
+          settle: false,
+          supportId: 'preview-amethyst-step',
+        },
+      )
+      v.reach(encounter('preview-voice-fifth').anchor, {
+        maxSeconds: 20,
+        supportId: 'preview-wall-approach-entry',
+      })
+      expect(v.game.snapshot().checkpointId).toBe('preview-wall-save')
+      v.sing('preview-voice-fifth')
+      for (const id of [
+        'preview-wall-approach',
+        'preview-wall-approach-middle',
+        'preview-wall-approach-forward',
+        'preview-wall-approach-threshold',
+        'preview-wall-catch',
+        'preview-raft-dock',
+        'preview-glide-turn',
+      ])
+        v.reach(platformCentre(PREVIEW, id), { supportId: id })
+      v.waitFor(
+        () => Math.abs(v.platform('preview-aurora-raft')?.offset.x ?? 1) < 1e-6,
+      )
+      v.reach(platformCentre(PREVIEW, 'preview-aurora-raft'), {
+        settle: false,
+        supportId: 'preview-aurora-raft',
+      })
+      v.waitFor(() => (v.platform('preview-aurora-raft')?.offset.x ?? 0) > 2.18)
+      v.reach(platformCentre(PREVIEW, 'preview-raft-catch'), {
+        supportId: 'preview-raft-catch',
+      })
+      expect(v.game.snapshot().checkpointId).toBe('preview-finale-save')
+      v.reach(
+        {
+          x: PREVIEW.exit.maxX - 0.02,
+          z: (PREVIEW.exit.minZ + PREVIEW.exit.maxZ) / 2,
+        },
+        {
+          supportId: 'preview-finale',
+        },
+      )
+      v.rest(0.5)
+      expect(v.game.snapshot().complete).toBe(true)
+      expect(v.respawns()).toBe(0)
+      expect([...v.visited]).toEqual(
+        expect.arrayContaining([
+          'preview-frost-one',
+          'preview-frost-two',
+          'preview-scroll-deck',
+          'preview-rose-step',
+          'preview-amethyst-step',
+          'preview-wall-approach-entry',
+          'preview-wall-approach',
+          'preview-wall-approach-middle',
+          'preview-wall-approach-forward',
+          'preview-wall-approach-threshold',
+          'preview-aurora-raft',
+          'preview-raft-catch',
         ]),
       )
     },

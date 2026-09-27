@@ -205,6 +205,81 @@ describe('manual adventure movement', () => {
     expect(bufferedJump).toBe(true)
   })
 
+  it('inherits bounded horizontal support velocity only on a fresh jump edge', () => {
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const supportVelocity = {
+      x: MOVEMENT.maximumPlatformTakeoffSpeed * 4,
+      y: 3,
+      z: 0,
+    }
+
+    const first = stepMovement(
+      state,
+      { ...idle, jumpDown: true },
+      MOVEMENT.fixedStep,
+      [floor],
+      FLAT_COURSE_COLLIDER,
+      pacedMovement,
+      { supportVelocity },
+    )
+    expect(first.jumped).toBe(true)
+    expect(state.velocity.x).toBeCloseTo(
+      MOVEMENT.maximumPlatformTakeoffSpeed,
+      8,
+    )
+    expect(state.velocity.z).toBe(0)
+    const once = state.velocity.x
+
+    const held = stepMovement(
+      state,
+      { ...idle, jumpDown: true },
+      MOVEMENT.fixedStep,
+      [floor],
+      FLAT_COURSE_COLLIDER,
+      pacedMovement,
+      { supportVelocity },
+    )
+    expect(held.jumped).toBe(false)
+    expect(state.velocity.x).toBeLessThanOrEqual(once)
+    expect(state.velocity.y).toBeLessThan(
+      Math.sqrt(2 * MOVEMENT.gravity * MOVEMENT.jumpHeight),
+    )
+  })
+
+  it('replaces the remaining inherited component after landing instead of stacking it', () => {
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const supportVelocity = { x: 1, y: 0, z: 0 }
+    stepMovement(
+      state,
+      { ...idle, jumpDown: true },
+      MOVEMENT.fixedStep,
+      [floor],
+      FLAT_COURSE_COLLIDER,
+      pacedMovement,
+      { supportVelocity },
+    )
+    state.position.y = 0
+    state.velocity.y = 0
+    state.grounded = true
+    state.supportPlatformId = floor.id
+    state.supportSolidId = floor.id
+    state.jumpWasDown = false
+    state.requireJumpRelease = false
+
+    const second = stepMovement(
+      state,
+      { ...idle, jumpDown: true },
+      MOVEMENT.fixedStep,
+      [floor],
+      FLAT_COURSE_COLLIDER,
+      pacedMovement,
+      { supportVelocity },
+    )
+    expect(second.jumped).toBe(true)
+    expect(state.velocity.x).toBeCloseTo(1, 8)
+    expect(state.inheritedSupportVelocity.x).toBeCloseTo(1, 8)
+  })
+
   it('allows coyote jumping shortly after walking off, but not after expiry', () => {
     for (const delay of [0.05, 0.15]) {
       const state = createMovement({ x: 0, y: 0, z: 0 }, 0)

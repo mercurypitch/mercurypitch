@@ -48,7 +48,20 @@ describe('data-driven exhibit recipes', () => {
         node?: string
       }[]
     }
-    const receipts = [...v3Manifest.assets, ...v6Manifest.models]
+    const laboratoryManifest = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../../../apps/beside-cue/public/games/cloudway-laboratory-v1/manifest.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ) as typeof v3Manifest
+    const receipts = [
+      ...v3Manifest.assets,
+      ...v6Manifest.models,
+      ...laboratoryManifest.assets,
+    ]
     const files: Record<string, string> = {
       vessels: 'adventure/vessels.glb',
       'vessels-v2': 'adventure-v2/vessels-qa-v2.glb',
@@ -63,6 +76,12 @@ describe('data-driven exhibit recipes', () => {
         v6Manifest.models.map((asset) => [
           asset.id,
           `adventure-v6/${asset.file}`,
+        ]),
+      ),
+      ...Object.fromEntries(
+        laboratoryManifest.assets.map((asset) => [
+          asset.id,
+          `cloudway-laboratory-v1/${asset.file}`,
         ]),
       ),
     }

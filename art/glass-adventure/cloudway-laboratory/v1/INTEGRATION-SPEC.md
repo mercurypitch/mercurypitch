@@ -293,9 +293,12 @@ floor.
 
 The laboratory renderer can reuse current Cloudway view selection, shadow-bound
 collection, authoritative platform snapshots and transactional fallback swap.
-It can reuse instancing for repeated opaque parts with identical geometry and
-materials. Transmissive glass stays unbatched until ordering is proven because
-one `InstancedMesh` cannot sort its instances independently.
+It uses instancing for repeated rigid parts with identical geometry and
+materials. Frost Lily and Aurora also batch their explicit physical-transmission
+regions: these retain opaque alpha with transmission, not alpha-blended glass.
+Their separated platform footprints need nearest/gameplay runtime review; an
+`InstancedMesh` cannot sort overlapping transparent instances independently.
+Do not generalize this path to overlapping alpha-blended panels.
 
 Authored crackle shards can reuse the exact-root validation and centroid-pivot
 ideas in `asset-geometry.ts` and `exhibit-asset.ts`. The procedural fracture

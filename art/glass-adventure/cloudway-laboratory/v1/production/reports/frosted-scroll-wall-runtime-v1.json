@@ -1,0 +1,1152 @@
+{
+  "schema": "cloudway-frosted-scroll-wall-runtime/v1",
+  "assetId": "frosted-scroll-wall",
+  "bundleId": "cloudway-lab-frosted-scroll-wall-v1",
+  "status": "runtime GLB prepared and fresh-open audited; actual Three/WebGL proof pending",
+  "coordinates": {
+    "upAxis": "+Y",
+    "frontAxis": "+Z",
+    "units": "metres",
+    "root": "centred pane floor"
+  },
+  "lineage": {
+    "semanticCandidate": {
+      "file": "source-assets/blender/frosted-scroll-wall/frosted-scroll-wall-semantic-candidate.blend",
+      "bytes": 173921543,
+      "sha256": "4c0c4e39fbc0794422d9ba97bf07992b12b726f1130347c0adffe35e30c7b2e1"
+    },
+    "denseMaster": {
+      "file": "source-assets/blender/frosted-scroll-wall/frosted-scroll-wall-dense-master.blend",
+      "bytes": 136599619,
+      "sha256": "336c030768c557b5d72bdc22dee12669f21d3d534331f92e3d879c421ef357a7",
+      "allFileImagesPacked": true,
+      "rawAndReviewCollectionsRetained": true
+    },
+    "denseDonor": {
+      "file": "source-assets/meshy/frosted-scroll-wall/dense-donor.glb",
+      "bytes": 83156144,
+      "sha256": "7cfb07546a0f42880029b52ca17baa5001b04a3455b221a173e8a88fc28df855",
+      "taskId": "01a0d89a-9c5b-71b5-907f-45bd5a6f801b",
+      "receipt": {
+        "file": "source-assets/meshy/frosted-scroll-wall/receipt.json",
+        "bytes": 6615,
+        "sha256": "479dceaff573df4976c7ea89d9790888dfd18ac23add5c72d5cd5a8ccfab801e"
+      },
+      "providerQuality": {
+        "status": "needs-review",
+        "requested": {
+          "aiModel": "meshy-7.1",
+          "geometryResolution": "4k",
+          "textureResolution": "8k",
+          "pbr": true,
+          "remesh": false
+        },
+        "observed": {
+          "aiModel": null,
+          "geometryResolution": "4k",
+          "baseColorDimensions": [
+            [
+              8192,
+              8192
+            ]
+          ]
+        },
+        "issues": [
+          "Provider did not confirm the requested Meshy 7.1 model."
+        ],
+        "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+      }
+    },
+    "archivedSourceHashesUnchanged": true,
+    "sourceTopologyReduced": false,
+    "providerFrameTriangles": 296610,
+    "archivedPaneTrianglesExcluded": 405146
+  },
+  "runtime": {
+    "packedBlend": {
+      "file": "source-assets/blender/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.blend",
+      "bytes": 32977843,
+      "sha256": "19fdcc1992429561c6d061560375cf27a520c5ca223af9ecf3521d5cac0de599"
+    },
+    "glb": {
+      "file": "source-assets/runtime/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb",
+      "bytes": 4341728,
+      "sha256": "aac5f64854b052762f997448325d76ce09710c67409740223a8898c0146e3485"
+    },
+    "shippingCopy": {
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb",
+      "bytes": 4341728,
+      "sha256": "aac5f64854b052762f997448325d76ce09710c67409740223a8898c0146e3485"
+    },
+    "rootNode": "CloudwayLab_FrostedScrollWall",
+    "frameNode": "frost_wall_frame",
+    "intactNode": "frost_wall_intact",
+    "shardPrefix": "frost_wall_shard_",
+    "shardCount": 32
+  },
+  "geometry": {
+    "root": "CloudwayLab_FrostedScrollWall",
+    "directChildren": [
+      "frost_wall_frame",
+      "frost_wall_intact",
+      "frost_wall_pane_contact",
+      "frost_wall_shard_000",
+      "frost_wall_shard_001",
+      "frost_wall_shard_002",
+      "frost_wall_shard_003",
+      "frost_wall_shard_004",
+      "frost_wall_shard_005",
+      "frost_wall_shard_006",
+      "frost_wall_shard_007",
+      "frost_wall_shard_008",
+      "frost_wall_shard_009",
+      "frost_wall_shard_010",
+      "frost_wall_shard_011",
+      "frost_wall_shard_012",
+      "frost_wall_shard_013",
+      "frost_wall_shard_014",
+      "frost_wall_shard_015",
+      "frost_wall_shard_016",
+      "frost_wall_shard_017",
+      "frost_wall_shard_018",
+      "frost_wall_shard_019",
+      "frost_wall_shard_020",
+      "frost_wall_shard_021",
+      "frost_wall_shard_022",
+      "frost_wall_shard_023",
+      "frost_wall_shard_024",
+      "frost_wall_shard_025",
+      "frost_wall_shard_026",
+      "frost_wall_shard_027",
+      "frost_wall_shard_028",
+      "frost_wall_shard_029",
+      "frost_wall_shard_030",
+      "frost_wall_shard_031"
+    ],
+    "intactBoundsBlenderZUpMetres": {
+      "min": [
+        -0.860000014,
+        -0.0275,
+        0.0
+      ],
+      "max": [
+        0.860000014,
+        0.0275,
+        2.690000057
+      ]
+    },
+    "intactClosedAudit": {
+      "vertices": 54,
+      "polygons": 29,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "volumeCubicMetres": 0.249345668,
+      "originBlenderZUp": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "shards": [
+      {
+        "name": "frost_wall_shard_000",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.011135379,
+        "originBlenderZUp": [
+          -0.706399083,
+          0.0,
+          0.365311772
+        ]
+      },
+      {
+        "name": "frost_wall_shard_001",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.014660137,
+        "originBlenderZUp": [
+          -0.365104228,
+          0.0,
+          0.296727508
+        ]
+      },
+      {
+        "name": "frost_wall_shard_002",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.011681229,
+        "originBlenderZUp": [
+          -0.007885821,
+          0.0,
+          0.390618026
+        ]
+      },
+      {
+        "name": "frost_wall_shard_003",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.016679344,
+        "originBlenderZUp": [
+          0.373777568,
+          0.0,
+          0.297950178
+        ]
+      },
+      {
+        "name": "frost_wall_shard_004",
+        "vertices": 56,
+        "polygons": 54,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.010183874,
+        "originBlenderZUp": [
+          0.721099257,
+          0.0,
+          0.390386075
+        ]
+      },
+      {
+        "name": "frost_wall_shard_005",
+        "vertices": 56,
+        "polygons": 54,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.005610028,
+        "originBlenderZUp": [
+          -0.737497628,
+          0.0,
+          0.867278457
+        ]
+      },
+      {
+        "name": "frost_wall_shard_006",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.006935327,
+        "originBlenderZUp": [
+          -0.437586755,
+          0.0,
+          0.894221663
+        ]
+      },
+      {
+        "name": "frost_wall_shard_007",
+        "vertices": 82,
+        "polygons": 77,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008326462,
+        "originBlenderZUp": [
+          -0.086667173,
+          0.0,
+          0.849686205
+        ]
+      },
+      {
+        "name": "frost_wall_shard_008",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007864391,
+        "originBlenderZUp": [
+          0.307688206,
+          0.0,
+          0.87947613
+        ]
+      },
+      {
+        "name": "frost_wall_shard_009",
+        "vertices": 76,
+        "polygons": 72,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.00781263,
+        "originBlenderZUp": [
+          0.687221706,
+          0.0,
+          0.888298452
+        ]
+      },
+      {
+        "name": "frost_wall_shard_010",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007201259,
+        "originBlenderZUp": [
+          -0.68815732,
+          0.0,
+          1.284087181
+        ]
+      },
+      {
+        "name": "frost_wall_shard_011",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.004297217,
+        "originBlenderZUp": [
+          -0.402616411,
+          0.0,
+          1.181084275
+        ]
+      },
+      {
+        "name": "frost_wall_shard_012",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007064153,
+        "originBlenderZUp": [
+          -0.190625057,
+          0.0,
+          1.349276066
+        ]
+      },
+      {
+        "name": "frost_wall_shard_013",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007824222,
+        "originBlenderZUp": [
+          0.115841158,
+          0.0,
+          1.252447486
+        ]
+      },
+      {
+        "name": "frost_wall_shard_014",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.004627389,
+        "originBlenderZUp": [
+          0.413725287,
+          0.0,
+          1.20605886
+        ]
+      },
+      {
+        "name": "frost_wall_shard_015",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008199042,
+        "originBlenderZUp": [
+          0.667167962,
+          0.0,
+          1.32319665
+        ]
+      },
+      {
+        "name": "frost_wall_shard_016",
+        "vertices": 56,
+        "polygons": 54,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.006226291,
+        "originBlenderZUp": [
+          -0.730834901,
+          0.0,
+          1.68959415
+        ]
+      },
+      {
+        "name": "frost_wall_shard_017",
+        "vertices": 98,
+        "polygons": 93,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007829735,
+        "originBlenderZUp": [
+          -0.409031332,
+          0.0,
+          1.645308375
+        ]
+      },
+      {
+        "name": "frost_wall_shard_018",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008980156,
+        "originBlenderZUp": [
+          -0.021916911,
+          0.0,
+          1.726083159
+        ]
+      },
+      {
+        "name": "frost_wall_shard_019",
+        "vertices": 90,
+        "polygons": 85,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008046111,
+        "originBlenderZUp": [
+          0.377185553,
+          0.0,
+          1.634897947
+        ]
+      },
+      {
+        "name": "frost_wall_shard_020",
+        "vertices": 56,
+        "polygons": 54,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007410403,
+        "originBlenderZUp": [
+          0.714050055,
+          0.0,
+          1.747852802
+        ]
+      },
+      {
+        "name": "frost_wall_shard_021",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008649711,
+        "originBlenderZUp": [
+          -0.604654133,
+          0.0,
+          2.030829191
+        ]
+      },
+      {
+        "name": "frost_wall_shard_022",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007680337,
+        "originBlenderZUp": [
+          -0.204595685,
+          0.0,
+          2.098136425
+        ]
+      },
+      {
+        "name": "frost_wall_shard_023",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007387815,
+        "originBlenderZUp": [
+          0.229056865,
+          0.0,
+          2.005711317
+        ]
+      },
+      {
+        "name": "frost_wall_shard_024",
+        "vertices": 70,
+        "polygons": 67,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.008349974,
+        "originBlenderZUp": [
+          0.626862884,
+          0.0,
+          2.106969357
+        ]
+      },
+      {
+        "name": "frost_wall_shard_025",
+        "vertices": 84,
+        "polygons": 76,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.006914131,
+        "originBlenderZUp": [
+          -0.686709702,
+          0.0,
+          2.372148991
+        ]
+      },
+      {
+        "name": "frost_wall_shard_026",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.00518939,
+        "originBlenderZUp": [
+          -0.305215448,
+          0.0,
+          2.387256861
+        ]
+      },
+      {
+        "name": "frost_wall_shard_027",
+        "vertices": 84,
+        "polygons": 80,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.006537455,
+        "originBlenderZUp": [
+          0.115158521,
+          0.0,
+          2.321479321
+        ]
+      },
+      {
+        "name": "frost_wall_shard_028",
+        "vertices": 112,
+        "polygons": 102,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.007637686,
+        "originBlenderZUp": [
+          0.602953553,
+          0.0,
+          2.404216766
+        ]
+      },
+      {
+        "name": "frost_wall_shard_029",
+        "vertices": 86,
+        "polygons": 79,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.003488039,
+        "originBlenderZUp": [
+          -0.398926497,
+          0.0,
+          2.577553034
+        ]
+      },
+      {
+        "name": "frost_wall_shard_030",
+        "vertices": 80,
+        "polygons": 74,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.004281009,
+        "originBlenderZUp": [
+          -0.001872336,
+          0.0,
+          2.582946062
+        ]
+      },
+      {
+        "name": "frost_wall_shard_031",
+        "vertices": 80,
+        "polygons": 74,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "volumeCubicMetres": 0.004146065,
+        "originBlenderZUp": [
+          0.351156324,
+          0.0,
+          2.554226637
+        ]
+      }
+    ],
+    "frameBoundsBlenderZUpMetres": {
+      "min": [
+        -1.355656505,
+        -0.245718434,
+        2.0504e-05
+      ],
+      "max": [
+        1.355656505,
+        0.245718434,
+        3.0
+      ]
+    },
+    "images": [
+      {
+        "name": "frosted-scroll-wall__base_color",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__metallic",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__normal",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__pane_base_color",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__pane_metallic",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__roughness",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "triangles": 302606
+  },
+  "textures": {
+    "policy": {
+      "maximumDimension": 2048,
+      "webpQuality": 88,
+      "choice": "2K preserves the 960px matched proof while bounding Android upload cost"
+    },
+    "images": [
+      {
+        "name": "frosted-scroll-wall__base_color",
+        "role": "provider-base-color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "name": "frosted-scroll-wall__normal",
+        "role": "provider-normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "name": "frosted-scroll-wall__metallic",
+        "role": "provider-metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "name": "frosted-scroll-wall__roughness",
+        "role": "provider-roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "name": "frosted-scroll-wall__pane_base_color",
+        "role": "pane-base-color",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      },
+      {
+        "name": "frosted-scroll-wall__pane_metallic",
+        "role": "pane-metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "packed": true
+      }
+    ],
+    "estimatedRgba8BaseLevelBytes": 83886080,
+    "estimatedRgba8MipmappedBytes": 111848107,
+    "fullResolutionMastersArchived": true
+  },
+  "proofs": {
+    "runtime": [
+      {
+        "state": "intact",
+        "view": "front",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/intact-front.png",
+        "bytes": 1528819,
+        "sha256": "3987e93d1aa08c7ee1c9a499791bfc17acfaeff0ce0671d5b80ee14712494d26",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "intact",
+        "view": "back",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/intact-back.png",
+        "bytes": 1348898,
+        "sha256": "79c6c46eca27e417b3a6444845569a8c9ef36358e69c37edcb9446c99387434a",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "intact",
+        "view": "side",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/intact-side.png",
+        "bytes": 222092,
+        "sha256": "7e5242f54f59fd31ff31df404a777b63a0f1731dd77d1bc37ae1020e609aa735",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "shards",
+        "view": "front",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/shards-front.png",
+        "bytes": 1557373,
+        "sha256": "5bde1e43627b3e44894de7e4307de78815e1f855d16c44acfa784b62be2b14a4",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "shards",
+        "view": "back",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/shards-back.png",
+        "bytes": 1383634,
+        "sha256": "366c275cb9a76357162375d3f3ce970b0781713c901fa0397c13ef62568791fc",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "shards",
+        "view": "side",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/shards-side.png",
+        "bytes": 222256,
+        "sha256": "5b0e1bdd5bb07eab0a37116f9bde341b6218d886c5d215cb6ac500af52d48eef",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "open",
+        "view": "front",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/open-front.png",
+        "bytes": 1118888,
+        "sha256": "734de161522ccbd1a79cd2462a91b36ed9bc3b29878993d8b8b3a3865ac7a021",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "open",
+        "view": "back",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/open-back.png",
+        "bytes": 978506,
+        "sha256": "73547ee74836e3018d90aa0f0bfad800708bb76b52e27ece2703b2de8ccae4db",
+        "dimensions": [
+          960,
+          960
+        ]
+      },
+      {
+        "state": "open",
+        "view": "side",
+        "file": "source-assets/proofs/blender/frosted-scroll-wall/runtime-v1-2k/open-side.png",
+        "bytes": 218797,
+        "sha256": "b391c3d42656e976ad8a91d9ed60f75274f0e88f7c1d0a17878ac24030828f51",
+        "dimensions": [
+          960,
+          960
+        ]
+      }
+    ],
+    "matchedAgainstFullResolution": [
+      {
+        "stateView": "intact-front",
+        "meanAbsoluteRgb": [
+          0.12184,
+          0.13726,
+          0.18792
+        ],
+        "rmsRgb": [
+          1.10248,
+          1.1677,
+          1.43571
+        ],
+        "changedPixelFractionAbove2": 0.0122005
+      },
+      {
+        "stateView": "intact-back",
+        "meanAbsoluteRgb": [
+          0.08988,
+          0.10757,
+          0.17627
+        ],
+        "rmsRgb": [
+          0.83137,
+          0.88817,
+          1.17341
+        ],
+        "changedPixelFractionAbove2": 0.0093034
+      },
+      {
+        "stateView": "intact-side",
+        "meanAbsoluteRgb": [
+          0.03874,
+          0.04123,
+          0.04484
+        ],
+        "rmsRgb": [
+          0.52568,
+          0.55598,
+          0.65374
+        ],
+        "changedPixelFractionAbove2": 0.0033464
+      },
+      {
+        "stateView": "shards-front",
+        "meanAbsoluteRgb": [
+          0.12153,
+          0.13649,
+          0.18509
+        ],
+        "rmsRgb": [
+          1.10119,
+          1.16629,
+          1.43066
+        ],
+        "changedPixelFractionAbove2": 0.0120953
+      },
+      {
+        "stateView": "shards-back",
+        "meanAbsoluteRgb": [
+          0.08978,
+          0.10702,
+          0.17343
+        ],
+        "rmsRgb": [
+          0.83171,
+          0.88822,
+          1.17056
+        ],
+        "changedPixelFractionAbove2": 0.0093023
+      },
+      {
+        "stateView": "shards-side",
+        "meanAbsoluteRgb": [
+          0.03891,
+          0.0414,
+          0.04494
+        ],
+        "rmsRgb": [
+          0.52268,
+          0.5531,
+          0.65351
+        ],
+        "changedPixelFractionAbove2": 0.0033225
+      },
+      {
+        "stateView": "open-front",
+        "meanAbsoluteRgb": [
+          0.11582,
+          0.1256,
+          0.14429
+        ],
+        "rmsRgb": [
+          1.09701,
+          1.16121,
+          1.37952
+        ],
+        "changedPixelFractionAbove2": 0.0115451
+      },
+      {
+        "stateView": "open-back",
+        "meanAbsoluteRgb": [
+          0.08544,
+          0.09535,
+          0.1186
+        ],
+        "rmsRgb": [
+          0.82449,
+          0.87547,
+          1.03132
+        ],
+        "changedPixelFractionAbove2": 0.0086567
+      },
+      {
+        "stateView": "open-side",
+        "meanAbsoluteRgb": [
+          0.03892,
+          0.04127,
+          0.04475
+        ],
+        "rmsRgb": [
+          0.52318,
+          0.55303,
+          0.65387
+        ],
+        "changedPixelFractionAbove2": 0.0033735
+      }
+    ],
+    "states": [
+      "intact",
+      "shards",
+      "open"
+    ],
+    "views": [
+      "front",
+      "back",
+      "side"
+    ]
+  },
+  "glbInventory": {
+    "assetVersion": "2.0",
+    "generator": "glTF-Transform v4.4.2",
+    "nodes": 43,
+    "meshes": 36,
+    "materials": [
+      "FrostWallFrameBacking__authored_pbr",
+      "FrostWallFrame__provider_pbr",
+      "FrostWallGlass__cut_edge",
+      "FrostWallGlass__surface",
+      "FrostWallInnerTrim__authored_pbr"
+    ],
+    "images": [
+      {
+        "name": "set-0-normal",
+        "mimeType": "image/webp",
+        "bytes": 404214,
+        "sha256": "39b958707c574cb02e6b640f1f0ecfec30efbd869f4c2a81853a2577cd27d409",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "set-0-base_color",
+        "mimeType": "image/webp",
+        "bytes": 990484,
+        "sha256": "8de4397a472167d429b305329a6066471c189910a05214a247df4ad80276b330",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frosted-scroll-wall__metallic-frosted-scroll-wall__roughness",
+        "mimeType": "image/webp",
+        "bytes": 534536,
+        "sha256": "6b0a3c2904c92856613d56c3851100546f96520c88a35378f55418b4faa1411c",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frost-wall-surface-base-color-4096",
+        "mimeType": "image/webp",
+        "bytes": 84628,
+        "sha256": "fb0c64d3932c642eb0fa7eeb2c0d382b027e45ac214b5c902bd4267983e87f40",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "frost-wall-surface-metallic-4096",
+        "mimeType": "image/webp",
+        "bytes": 49424,
+        "sha256": "31d5d4c9ac3c96c4b589dae53fed8caa100c9caaa1739d4fbbe04e4b906ff99a",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "textures": 5,
+    "triangles": 302606,
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_materials_clearcoat",
+      "KHR_materials_ior",
+      "KHR_materials_transmission",
+      "KHR_mesh_quantization"
+    ],
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "resourceBudget": {
+      "embeddedImageBytes": 2063286,
+      "meshoptDecodedBufferBytes": 7239668,
+      "otherBufferBytes": 0
+    },
+    "semanticMetadataNodes": [
+      {
+        "name": "frost_wall_pane_contact",
+        "role": "breakable-pane-collider-metadata",
+        "boundsYUpMetres": {
+          "min": [
+            -0.86,
+            0.0,
+            -0.0275
+          ],
+          "max": [
+            0.86,
+            2.69,
+            0.0275
+          ]
+        }
+      },
+      {
+        "name": "frost_wall_frame_left",
+        "role": "persistent-frame-solid-metadata",
+        "boundsYUpMetres": {
+          "min": [
+            -1.355656475,
+            0.0,
+            -0.2457184345
+          ],
+          "max": [
+            -0.86,
+            2.44,
+            0.2457184345
+          ]
+        }
+      },
+      {
+        "name": "frost_wall_frame_right",
+        "role": "persistent-frame-solid-metadata",
+        "boundsYUpMetres": {
+          "min": [
+            0.86,
+            0.0,
+            -0.2457184345
+          ],
+          "max": [
+            1.355656475,
+            2.44,
+            0.2457184345
+          ]
+        }
+      },
+      {
+        "name": "frost_wall_frame_top",
+        "role": "persistent-frame-solid-metadata",
+        "boundsYUpMetres": {
+          "min": [
+            -0.86,
+            2.44,
+            -0.2457184345
+          ],
+          "max": [
+            0.86,
+            3.0,
+            0.2457184345
+          ]
+        }
+      }
+    ],
+    "externalDependencies": []
+  },
+  "semanticMetadata": [
+    {
+      "name": "frost_wall_pane_contact",
+      "parent": "CloudwayLab_FrostedScrollWall",
+      "restoredAfterMeshopt": false,
+      "extras": {
+        "role": "breakable-pane-collider-metadata",
+        "bounds_y_up_json": "{\"min\":[-0.86,0.0,-0.0275],\"max\":[0.86,2.69,0.0275]}",
+        "coordinates": "glTF +Y up; X horizontal; Z depth"
+      }
+    },
+    {
+      "name": "frost_wall_frame_left",
+      "parent": "frost_wall_frame",
+      "restoredAfterMeshopt": false,
+      "extras": {
+        "role": "persistent-frame-solid-metadata",
+        "bounds_y_up_json": "{\"min\":[-1.355656475,0.0,-0.2457184345],\"max\":[-0.86,2.44,0.2457184345]}",
+        "coordinates": "glTF +Y up; X horizontal; Z depth"
+      }
+    },
+    {
+      "name": "frost_wall_frame_right",
+      "parent": "frost_wall_frame",
+      "restoredAfterMeshopt": false,
+      "extras": {
+        "role": "persistent-frame-solid-metadata",
+        "bounds_y_up_json": "{\"min\":[0.86,0.0,-0.2457184345],\"max\":[1.355656475,2.44,0.2457184345]}",
+        "coordinates": "glTF +Y up; X horizontal; Z depth"
+      }
+    },
+    {
+      "name": "frost_wall_frame_top",
+      "parent": "frost_wall_frame",
+      "restoredAfterMeshopt": false,
+      "extras": {
+        "role": "persistent-frame-solid-metadata",
+        "bounds_y_up_json": "{\"min\":[-0.86,2.44,-0.2457184345],\"max\":[0.86,3.0,0.2457184345]}",
+        "coordinates": "glTF +Y up; X horizontal; Z depth"
+      }
+    }
+  ],
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_frosted_scroll_wall_runtime_delivery.py"
+}

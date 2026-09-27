@@ -1,0 +1,1246 @@
+{
+  "schema": "mercurypitch.cloudway-course",
+  "schemaVersion": 2,
+  "courses": [
+    {
+      "id": "cloudway-crystal-promenade-first-slice",
+      "title": "The Crystal Promenade",
+      "authored": {
+        "levelId": "cloudway-crystal-promenade-first-slice",
+        "layoutId": "crystal-promenade-first-slice",
+        "contentRevision": 4
+      },
+      "movement": {
+        "walkSpeed": 1.55,
+        "runSpeed": 2.6,
+        "runDelaySeconds": 0.6,
+        "runRampSeconds": 0.8
+      },
+      "guidance": {
+        "subtitle": "The expanded Crystal Promenade crossing",
+        "openingNotice": "Sing on safe courts, then cross each moving glasswork deliberately.",
+        "completionTitle": "The full promenade passage shines.",
+        "completionNext": "Return to the floating museum, or try another crossing."
+      },
+      "spawn": {
+        "position": {
+          "x": -0.2,
+          "y": 0,
+          "z": -11.16
+        },
+        "facingYaw": 3.141592653589793,
+        "checkpointId": "arrival-save"
+      },
+      "platforms": [
+        {
+          "id": "arrival-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -0.85,
+            "y": 0,
+            "z": -11.16
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "arrival",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -0.85,
+            "y": 0,
+            "z": -10.44
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "scroll-approach-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.15,
+            "y": 0,
+            "z": -9.17
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "scroll-approach",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.15,
+            "y": 0,
+            "z": -8.45
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "scroll-deck",
+          "profileId": "gilt-scroll",
+          "center": {
+            "x": 0.15,
+            "y": 0,
+            "z": -6.098017956
+          },
+          "quarterTurns": 1,
+          "behavior": {
+            "kind": "scroll",
+            "minLengthRatio": 0.25,
+            "extendedSeconds": 4,
+            "retractedSeconds": 3,
+            "transitionSeconds": 1.5,
+            "initialState": "extended"
+          }
+        },
+        {
+          "id": "scroll-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.15,
+            "y": 0,
+            "z": -3.746535912
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "scroll-court",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.15,
+            "y": 0,
+            "z": -3.026535912
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "rose-step",
+          "profileId": "rose-crackle",
+          "center": {
+            "x": -0.25,
+            "y": 0,
+            "z": -1.346535912
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 2,
+            "releaseSeconds": 1.15,
+            "resetSeconds": 2
+          }
+        },
+        {
+          "id": "amethyst-step",
+          "profileId": "amethyst-crackle",
+          "center": {
+            "x": 0.25,
+            "y": 0,
+            "z": 0.523464088
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 4,
+            "releaseSeconds": 1.15,
+            "resetSeconds": 2
+          }
+        },
+        {
+          "id": "final-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.85,
+            "y": 0,
+            "z": 1.933464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "final-terrace",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 0.85,
+            "y": 0,
+            "z": 2.653464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "frost-lily-one",
+          "profileId": "frost-lily",
+          "center": {
+            "x": 0.25,
+            "y": 0,
+            "z": 4.663464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "frost-lily-two",
+          "profileId": "frost-lily",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 7.413464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-approach-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 9.423464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-approach",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 10.143464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-approach-middle",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 10.863464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-approach-forward",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 11.583464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-approach-threshold",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 12.303464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "wall-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 13.023464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "raft-dock",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 13.743464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "aurora-raft",
+          "profileId": "aurora-glide",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 15.353464088
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "glide",
+            "translation": {
+              "x": 0,
+              "y": 0,
+              "z": 2.2
+            },
+            "travelSeconds": 3.2,
+            "dwellSeconds": 1.35
+          }
+        },
+        {
+          "id": "raft-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 19.163464088
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "finale-court",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1,
+            "y": 0,
+            "z": 19.883464088
+          },
+          "quarterTurns": 0
+        }
+      ],
+      "gaps": [
+        {
+          "id": "arrival-approach",
+          "fromPlatformId": "arrival",
+          "toPlatformId": "scroll-approach-entry",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "scroll-entry",
+          "fromPlatformId": "scroll-approach",
+          "toPlatformId": "scroll-deck",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "scroll-extended",
+          "distance": 0.7
+        },
+        {
+          "id": "scroll-exit",
+          "fromPlatformId": "scroll-deck",
+          "toPlatformId": "scroll-catch",
+          "axis": "z",
+          "fromState": "scroll-extended",
+          "toState": "base",
+          "distance": 0.7
+        },
+        {
+          "id": "rose-entry",
+          "fromPlatformId": "scroll-court",
+          "toPlatformId": "rose-step",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "crystal-duet",
+          "fromPlatformId": "rose-step",
+          "toPlatformId": "amethyst-step",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "duet-exit",
+          "fromPlatformId": "amethyst-step",
+          "toPlatformId": "final-catch",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "frost-entry",
+          "fromPlatformId": "final-terrace",
+          "toPlatformId": "frost-lily-one",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "frost-bend",
+          "fromPlatformId": "frost-lily-one",
+          "toPlatformId": "frost-lily-two",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "frost-exit",
+          "fromPlatformId": "frost-lily-two",
+          "toPlatformId": "wall-approach-entry",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "aurora-entry",
+          "fromPlatformId": "raft-dock",
+          "toPlatformId": "aurora-raft",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "aurora-exit",
+          "fromPlatformId": "aurora-raft",
+          "toPlatformId": "raft-catch",
+          "axis": "z",
+          "fromState": "glide-end",
+          "toState": "base",
+          "distance": 0.55
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "arrival-save",
+          "position": {
+            "x": -0.2,
+            "y": 0,
+            "z": -11.16
+          },
+          "radius": 0.65,
+          "facingYaw": 3.141592653589793
+        },
+        {
+          "id": "scroll-save",
+          "position": {
+            "x": 0.15,
+            "y": 0,
+            "z": -8.45
+          },
+          "radius": 0.42,
+          "facingYaw": 3.141592653589793,
+          "requiresCompleted": ["voice-home"]
+        },
+        {
+          "id": "final-save",
+          "position": {
+            "x": 0.85,
+            "y": 0,
+            "z": 1.933464088
+          },
+          "radius": 0.36,
+          "facingYaw": 3.141592653589793,
+          "requiresCompleted": ["voice-third"]
+        },
+        {
+          "id": "wall-save",
+          "position": {
+            "x": 1,
+            "y": 0,
+            "z": 9.423464088
+          },
+          "radius": 0.4,
+          "facingYaw": 3.141592653589793,
+          "requiresCompleted": ["voice-third"]
+        },
+        {
+          "id": "finale-save",
+          "position": {
+            "x": 1,
+            "y": 0,
+            "z": 19.163464088
+          },
+          "radius": 0.4,
+          "facingYaw": 3.141592653589793,
+          "requiresCompleted": ["voice-fifth"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "voice-home",
+          "label": "The arrival camellia",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": -1.75,
+            "y": 0,
+            "z": -10.44
+          },
+          "anchor": {
+            "x": -1.1,
+            "y": 0,
+            "z": -10.44
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold"
+        },
+        {
+          "id": "voice-third",
+          "label": "The scroll-court urn",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": -0.75,
+            "y": 0,
+            "z": -3.026535912
+          },
+          "anchor": {
+            "x": -0.2,
+            "y": 0,
+            "z": -3.026535912
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold",
+          "requiresCompleted": ["voice-home"]
+        },
+        {
+          "id": "voice-fifth",
+          "label": "The frosted threshold",
+          "variant": "frosted-scroll-wall",
+          "position": {
+            "x": 1,
+            "y": 0,
+            "z": 12.663464088
+          },
+          "anchor": {
+            "x": 1,
+            "y": 0,
+            "z": 9.423464088
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold",
+          "requiresCompleted": ["voice-third"],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": 3.141592653589793
+          }
+        }
+      ],
+      "camera": {
+        "initialSectionId": "arrival-court",
+        "landingDwellSeconds": 0.75,
+        "sections": [
+          {
+            "id": "arrival-court",
+            "platformIds": ["arrival-entry", "arrival"],
+            "lookFromPlatformId": "arrival",
+            "lookToPlatformId": "scroll-approach-entry",
+            "targetOffset": {
+              "x": 0.3,
+              "y": 0,
+              "z": 0.7
+            }
+          },
+          {
+            "id": "scroll-crossing",
+            "platformIds": [
+              "scroll-approach-entry",
+              "scroll-approach",
+              "scroll-deck",
+              "scroll-catch",
+              "scroll-court"
+            ],
+            "lookFromPlatformId": "scroll-approach",
+            "lookToPlatformId": "scroll-catch",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.65
+            }
+          },
+          {
+            "id": "crystal-duet",
+            "platformIds": [
+              "rose-step",
+              "amethyst-step",
+              "final-catch",
+              "final-terrace"
+            ],
+            "lookFromPlatformId": "rose-step",
+            "lookToPlatformId": "final-catch",
+            "targetOffset": {
+              "x": 0.25,
+              "y": 0,
+              "z": 0.65
+            }
+          },
+          {
+            "id": "frost-bend",
+            "platformIds": ["frost-lily-one", "frost-lily-two"],
+            "lookFromPlatformId": "frost-lily-one",
+            "lookToPlatformId": "frost-lily-two",
+            "targetOffset": {
+              "x": 0.2,
+              "y": 0,
+              "z": 0.65
+            }
+          },
+          {
+            "id": "ice-wall-court",
+            "platformIds": [
+              "wall-approach-entry",
+              "wall-approach",
+              "wall-approach-middle",
+              "wall-approach-forward",
+              "wall-approach-threshold",
+              "wall-catch"
+            ],
+            "lookFromPlatformId": "wall-approach-entry",
+            "lookToPlatformId": "wall-catch",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.55
+            }
+          },
+          {
+            "id": "aurora-crossing",
+            "platformIds": ["raft-dock", "aurora-raft", "raft-catch"],
+            "lookFromPlatformId": "raft-dock",
+            "lookToPlatformId": "raft-catch",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.65
+            }
+          },
+          {
+            "id": "finale-court",
+            "platformIds": ["finale-court"],
+            "lookFromPlatformId": "raft-catch",
+            "lookToPlatformId": "finale-court",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.4
+            }
+          }
+        ]
+      },
+      "exit": {
+        "minX": 1.45,
+        "maxX": 2.35,
+        "minZ": 19.745970032,
+        "maxZ": 20.245970032,
+        "top": 0,
+        "requiresCompleted": ["voice-home", "voice-third", "voice-fifth"]
+      },
+      "fallBelow": -3.5,
+      "presentation": {
+        "worldBounds": {
+          "minX": -5,
+          "maxX": 5,
+          "minY": -5,
+          "maxY": 5,
+          "minZ": -13,
+          "maxZ": 23.16
+        },
+        "lightBounds": {
+          "minX": -3.5,
+          "maxX": 4,
+          "minY": -1,
+          "maxY": 4,
+          "minZ": -12,
+          "maxZ": 22.16
+        },
+        "audioSceneId": "garden"
+      }
+    },
+    {
+      "id": "cloudway-crystal-promenade-mechanics-preview",
+      "title": "Crystal Promenade Mechanics Preview",
+      "authored": {
+        "levelId": "cloudway-crystal-promenade-mechanics-preview",
+        "layoutId": "crystal-promenade-mechanics-preview",
+        "contentRevision": 1
+      },
+      "movement": {
+        "walkSpeed": 1.55,
+        "runSpeed": 2.6,
+        "runDelaySeconds": 0.6,
+        "runRampSeconds": 0.8
+      },
+      "guidance": {
+        "subtitle": "A cardinal mechanics proving course",
+        "openingNotice": "Follow the frost, scroll, crackle wall and moving raft.",
+        "completionTitle": "The mechanics preview is complete.",
+        "completionNext": "Return to the Crystal Promenade."
+      },
+      "spawn": {
+        "position": {
+          "x": -10.36,
+          "y": 0,
+          "z": 0.2
+        },
+        "facingYaw": -1.5707963267948966,
+        "checkpointId": "preview-arrival-save"
+      },
+      "platforms": [
+        {
+          "id": "preview-arrival-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -10.36,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-arrival",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -9.64,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-frost-one",
+          "profileId": "frost-lily",
+          "center": {
+            "x": -7.63,
+            "y": 0,
+            "z": -0.55
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-frost-two",
+          "profileId": "frost-lily",
+          "center": {
+            "x": -4.88,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-frost-catch-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -2.87,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-frost-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -2.15,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-scroll-deck",
+          "profileId": "gilt-scroll",
+          "center": {
+            "x": 0.201982044,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "scroll",
+            "minLengthRatio": 0.25,
+            "extendedSeconds": 4,
+            "retractedSeconds": 3,
+            "transitionSeconds": 1.5,
+            "initialState": "extended"
+          }
+        },
+        {
+          "id": "preview-scroll-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 2.553464088,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-scroll-court",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.273464088,
+            "y": 0,
+            "z": 0.2
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-rose-step",
+          "profileId": "rose-crackle",
+          "center": {
+            "x": 3,
+            "y": 0,
+            "z": 3.12
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 2,
+            "releaseSeconds": 1.15,
+            "resetSeconds": 2
+          }
+        },
+        {
+          "id": "preview-amethyst-step",
+          "profileId": "amethyst-crackle",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 4.99
+          },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 4,
+            "releaseSeconds": 1.15,
+            "resetSeconds": 2
+          }
+        },
+        {
+          "id": "preview-wall-approach-entry",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 6.4
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-wall-approach",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 7.12
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-wall-approach-middle",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 7.84
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-wall-approach-forward",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 8.56
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-wall-approach-threshold",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 9.28
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-wall-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 10.0
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-raft-dock",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 3.45,
+            "y": 0,
+            "z": 10.72
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "preview-glide-turn",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 5.41,
+            "y": 0,
+            "z": 10.36
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-aurora-raft",
+          "profileId": "aurora-glide",
+          "center": {
+            "x": 7.02,
+            "y": 0,
+            "z": 10.36
+          },
+          "quarterTurns": 1,
+          "behavior": {
+            "kind": "glide",
+            "translation": {
+              "x": 2.2,
+              "y": 0,
+              "z": 0
+            },
+            "travelSeconds": 3.2,
+            "dwellSeconds": 1.35
+          }
+        },
+        {
+          "id": "preview-raft-catch",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 10.83,
+            "y": 0,
+            "z": 10.36
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "preview-finale",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 11.55,
+            "y": 0,
+            "z": 10.36
+          },
+          "quarterTurns": 1
+        }
+      ],
+      "gaps": [
+        {
+          "id": "preview-frost-entry",
+          "fromPlatformId": "preview-arrival",
+          "toPlatformId": "preview-frost-one",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "preview-frost-bend",
+          "fromPlatformId": "preview-frost-one",
+          "toPlatformId": "preview-frost-two",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "preview-frost-exit",
+          "fromPlatformId": "preview-frost-two",
+          "toPlatformId": "preview-frost-catch-entry",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "preview-scroll-entry",
+          "fromPlatformId": "preview-frost-catch",
+          "toPlatformId": "preview-scroll-deck",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "scroll-extended",
+          "distance": 0.7
+        },
+        {
+          "id": "preview-scroll-exit",
+          "fromPlatformId": "preview-scroll-deck",
+          "toPlatformId": "preview-scroll-catch",
+          "axis": "x",
+          "fromState": "scroll-extended",
+          "toState": "base",
+          "distance": 0.7
+        },
+        {
+          "id": "preview-rose-entry",
+          "fromPlatformId": "preview-scroll-court",
+          "toPlatformId": "preview-rose-step",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "preview-crystal-duet",
+          "fromPlatformId": "preview-rose-step",
+          "toPlatformId": "preview-amethyst-step",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "preview-crystal-exit",
+          "fromPlatformId": "preview-amethyst-step",
+          "toPlatformId": "preview-wall-approach-entry",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.5
+        },
+        {
+          "id": "preview-aurora-entry",
+          "fromPlatformId": "preview-glide-turn",
+          "toPlatformId": "preview-aurora-raft",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "preview-aurora-exit",
+          "fromPlatformId": "preview-aurora-raft",
+          "toPlatformId": "preview-raft-catch",
+          "axis": "x",
+          "fromState": "glide-end",
+          "toState": "base",
+          "distance": 0.55
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "preview-arrival-save",
+          "position": {
+            "x": -10.36,
+            "y": 0,
+            "z": 0.2
+          },
+          "radius": 0.5,
+          "facingYaw": -1.5707963267948966
+        },
+        {
+          "id": "preview-scroll-save",
+          "position": {
+            "x": -2.15,
+            "y": 0,
+            "z": 0.2
+          },
+          "radius": 0.4,
+          "facingYaw": -1.5707963267948966,
+          "requiresCompleted": ["preview-voice-home"]
+        },
+        {
+          "id": "preview-wall-save",
+          "position": {
+            "x": 3.45,
+            "y": 0,
+            "z": 6.4
+          },
+          "radius": 0.4,
+          "facingYaw": 3.141592653589793,
+          "requiresCompleted": ["preview-voice-third"]
+        },
+        {
+          "id": "preview-finale-save",
+          "position": {
+            "x": 10.83,
+            "y": 0,
+            "z": 10.36
+          },
+          "radius": 0.4,
+          "facingYaw": -1.5707963267948966,
+          "requiresCompleted": ["preview-voice-fifth"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "preview-voice-home",
+          "label": "The preview arrival bloom",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": -9.64,
+            "y": 0,
+            "z": -0.7
+          },
+          "anchor": {
+            "x": -9.64,
+            "y": 0,
+            "z": 0.2
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold"
+        },
+        {
+          "id": "preview-voice-third",
+          "label": "The preview scroll urn",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": 3.273464088,
+            "y": 0,
+            "z": -0.7
+          },
+          "anchor": {
+            "x": 3.273464088,
+            "y": 0,
+            "z": 0.2
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold",
+          "requiresCompleted": ["preview-voice-home"]
+        },
+        {
+          "id": "preview-voice-fifth",
+          "label": "The preview frosted threshold",
+          "variant": "frosted-scroll-wall",
+          "position": {
+            "x": 3.45,
+            "y": 0,
+            "z": 9.64
+          },
+          "anchor": {
+            "x": 3.45,
+            "y": 0,
+            "z": 6.4
+          },
+          "optional": false,
+          "challengeProfileId": "comfortable-hold",
+          "requiresCompleted": ["preview-voice-third"],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": 3.141592653589793
+          }
+        }
+      ],
+      "camera": {
+        "initialSectionId": "preview-arrival-frost",
+        "landingDwellSeconds": 0.75,
+        "sections": [
+          {
+            "id": "preview-arrival-frost",
+            "platformIds": [
+              "preview-arrival-entry",
+              "preview-arrival",
+              "preview-frost-one",
+              "preview-frost-two",
+              "preview-frost-catch-entry",
+              "preview-frost-catch"
+            ],
+            "lookFromPlatformId": "preview-arrival",
+            "lookToPlatformId": "preview-frost-catch",
+            "targetOffset": {
+              "x": 0.55,
+              "y": 0,
+              "z": 0
+            }
+          },
+          {
+            "id": "preview-scroll-east",
+            "platformIds": [
+              "preview-scroll-deck",
+              "preview-scroll-catch",
+              "preview-scroll-court"
+            ],
+            "lookFromPlatformId": "preview-scroll-deck",
+            "lookToPlatformId": "preview-scroll-court",
+            "targetOffset": {
+              "x": 0.55,
+              "y": 0,
+              "z": 0
+            }
+          },
+          {
+            "id": "preview-crystal-north",
+            "platformIds": ["preview-rose-step", "preview-amethyst-step"],
+            "lookFromPlatformId": "preview-rose-step",
+            "lookToPlatformId": "preview-wall-approach-entry",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.55
+            }
+          },
+          {
+            "id": "preview-wall-north",
+            "platformIds": [
+              "preview-wall-approach-entry",
+              "preview-wall-approach",
+              "preview-wall-approach-middle",
+              "preview-wall-approach-forward",
+              "preview-wall-approach-threshold",
+              "preview-wall-catch",
+              "preview-raft-dock"
+            ],
+            "lookFromPlatformId": "preview-wall-approach-entry",
+            "lookToPlatformId": "preview-raft-dock",
+            "targetOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0.55
+            }
+          },
+          {
+            "id": "preview-aurora-east",
+            "platformIds": ["preview-glide-turn", "preview-aurora-raft"],
+            "lookFromPlatformId": "preview-glide-turn",
+            "lookToPlatformId": "preview-aurora-raft",
+            "targetOffset": {
+              "x": 0.55,
+              "y": 0,
+              "z": 0
+            }
+          },
+          {
+            "id": "preview-finale-east",
+            "platformIds": ["preview-raft-catch", "preview-finale"],
+            "lookFromPlatformId": "preview-raft-catch",
+            "lookToPlatformId": "preview-finale",
+            "targetOffset": {
+              "x": 0.45,
+              "y": 0,
+              "z": 0
+            }
+          }
+        ]
+      },
+      "exit": {
+        "minX": 11.4,
+        "maxX": 11.88,
+        "minZ": 9.91,
+        "maxZ": 10.81,
+        "top": 0,
+        "requiresCompleted": [
+          "preview-voice-home",
+          "preview-voice-third",
+          "preview-voice-fifth"
+        ]
+      },
+      "fallBelow": -3.5,
+      "presentation": {
+        "worldBounds": {
+          "minX": -13,
+          "maxX": 14,
+          "minY": -5,
+          "maxY": 5,
+          "minZ": -4,
+          "maxZ": 14.16
+        },
+        "lightBounds": {
+          "minX": -12,
+          "maxX": 13,
+          "minY": -1,
+          "maxY": 4,
+          "minZ": -3,
+          "maxZ": 13.16
+        },
+        "audioSceneId": "garden"
+      }
+    }
+  ]
+}

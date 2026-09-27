@@ -81,6 +81,12 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb',
   'cloudway-lab-amethyst-crackle-v1':
     'cloudway-laboratory-v1/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb',
+  'cloudway-lab-frost-lily-step-v1':
+    'cloudway-laboratory-v1/frost-lily-step/frost-lily-step-runtime-v2.glb',
+  'cloudway-lab-aurora-glide-raft-v1':
+    'cloudway-laboratory-v1/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb',
+  'cloudway-lab-frosted-scroll-wall-v1':
+    'cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
@@ -123,6 +129,7 @@ const MANIFEST_FILES = [
   'journey-map-v8/manifest.json',
   'cloudway-v7/manifest.json',
   'cloudway-v3/manifest.json',
+  'cloudway-laboratory-v1/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',
   'adventure-voice-v6/manifest.json',

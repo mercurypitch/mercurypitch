@@ -19,7 +19,7 @@ export function prepareExhibitAsset(
   if (
     !Number.isInteger(count) ||
     count < 1 ||
-    count > 24 ||
+    count > 48 ||
     recipe.intactNode === undefined ||
     recipe.intactNode.length === 0 ||
     recipe.shardPrefix === undefined ||
@@ -62,6 +62,17 @@ export function prepareExhibitAsset(
   if (bounds.isEmpty() || !Number.isFinite(height) || height <= 0)
     throw new Error(`Invalid intact bounds in ${resolvedBundle}`)
   const scale = recipe.displayHeight / height
+  const envelope = recipe.barrierEnvelope
+  if (
+    envelope !== undefined &&
+    (Math.abs((bounds.max.x - bounds.min.x) * scale - envelope.width) > 0.002 ||
+      Math.abs((bounds.max.z - bounds.min.z) * scale - envelope.depth) >
+        0.002 ||
+      Math.abs(recipe.displayHeight - envelope.height) > 0.002)
+  )
+    throw new Error(
+      `Pane bounds do not match certified contact in ${resolvedBundle}`,
+    )
   const transform = new Matrix4()
     .makeScale(scale, scale, scale)
     .multiply(

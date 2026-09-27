@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Bounds3, CourseSolid, PlatformBehaviorDefinition, PlatformDefinition, PlatformPhase, PlatformRuntimeSnapshot, PlatformSurfaceDefinition, Vec3, } from '../contracts'
-import { LEVEL_MOVEMENT_LIMITS, PLATFORM_BEHAVIOR_LIMITS } from '../contracts'
+import { LEVEL_MOVEMENT_LIMITS, PLATFORM_BEHAVIOR_LIMITS, } from '../contracts.ts'
 import type { MovingPlatformCollision } from './collision'
 
 const ZERO: Readonly<Vec3> = { x: 0, y: 0, z: 0 }

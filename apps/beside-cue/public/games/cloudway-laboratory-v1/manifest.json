@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "title": "Cloudway laboratory runtime delivery",
+  "sourceArchive": "art/glass-adventure/cloudway-laboratory/v1/source-assets (Proton-linked; ignored)",
+  "productionReports": "art/glass-adventure/cloudway-laboratory/v1/production/reports",
+  "assets": [
+    {
+      "id": "cloudway-lab-pearl-marble-long-v1",
+      "file": "pearl-marble-long/pearl-marble-long-runtime-v1.glb",
+      "node": "CloudwayLab_PearlMarbleLong",
+      "bytes": 1401472,
+      "sha256": "dda126cc3c9ea41a326fd06299f1bdf89e1a7e2789b1c2eceb83380c0f9ca861",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "gilt-scroll-bridge-runtime-v1",
+      "file": "gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb",
+      "node": "Cloudway_GiltScrollBridge_RuntimeV1",
+      "bytes": 4951124,
+      "sha256": "eb141261cc6dc65a2fd889c0984c0cdb2be8bcbb869e44b45d654845c252edba",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-rose-crackle-v1",
+      "file": "rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb",
+      "node": "CloudwayLab_RoseQuartzCrackleFast",
+      "bytes": 9491080,
+      "sha256": "faabbbb1c4a4f7019502c79e51299a1fb7317de7315fe3410f8b167caaed5285",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-amethyst-crackle-v1",
+      "file": "amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb",
+      "node": "CloudwayLab_AmethystCrackleSlow",
+      "bytes": 19673144,
+      "sha256": "2a9615df89bbac42be86c14f0ca251c34d8937aa3b6ed7990baf50fb07991b4c",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-frost-lily-step-v1",
+      "file": "frost-lily-step/frost-lily-step-runtime-v2.glb",
+      "node": "CloudwayLab_FrostLilyStep",
+      "bytes": 3359924,
+      "sha256": "3a3b8682f14bb463bcb13dc695191279144e1a799e7d5764348d98a3600ea9cf",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-aurora-glide-raft-v1",
+      "file": "aurora-glide-raft/aurora-glide-raft-runtime-v2.glb",
+      "node": "CloudwayLab_AuroraGlideRaft",
+      "bytes": 3035924,
+      "sha256": "a1533a0837faacc4d55df5b9aa1fc8cae303ccd8c9af2f91af2480863dcc570e",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-frosted-scroll-wall-v1",
+      "file": "frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb",
+      "node": "CloudwayLab_FrostedScrollWall",
+      "bytes": 4341728,
+      "sha256": "aac5f64854b052762f997448325d76ce09710c67409740223a8898c0146e3485",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "intactNode": "frost_wall_intact",
+      "shardPrefix": "frost_wall_shard_",
+      "shardCount": 32,
+      "persistentFrameNode": "frost_wall_frame"
+    }
+  ]
+}

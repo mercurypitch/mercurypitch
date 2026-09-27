@@ -1,9 +1,9 @@
 // Adventure movement — manual free-space intent with fixed-step jump forgiveness.
 
 import type { CourseSolid, IntentionalGapDefinition, LevelMovementDefinition, MovementInput, PlatformSurfaceDefinition, PlayerState, Vec3, } from '../contracts'
-import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
+import { LEVEL_MOVEMENT_LIMITS } from '../contracts.ts'
 import type { CourseCollider, MovingPlatformCollision } from './collision'
-import { findSupport, FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes, } from './collision'
+import { findSupport, FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes, } from './collision.ts'
 
 function publicPlatformId(solid: CourseSolid | null): string | null {
   return solid === null || solid.kind === 'prop'
@@ -19,6 +19,7 @@ export const MOVEMENT = {
   coyoteSeconds: 0.11,
   bufferSeconds: 0.13,
   maximumFallSpeed: 5.5,
+  maximumPlatformTakeoffSpeed: 1.6,
   radius: 0.16,
   height: 0.5,
   fixedStep: 1 / 120,
@@ -45,10 +46,14 @@ export interface MovementState extends PlayerState {
   runDirection: { x: number; z: number } | null
   supportPlatformId: string | null
   supportSolidId: string | null
+  /** Remaining horizontal velocity inherited from the last moving support. */
+  inheritedSupportVelocity: { x: number; z: number }
 }
 
 export interface MovementRuntimeStep {
   supportDelta?: Vec3
+  /** Authoritative support transform velocity for this fixed simulation step. */
+  supportVelocity?: Vec3
   surface?: PlatformSurfaceDefinition
   intentionalGaps?: readonly IntentionalGapDefinition[]
   platformMotions?: readonly MovingPlatformCollision[]
@@ -113,6 +118,7 @@ export function createMovement(
     runDirection: null,
     supportPlatformId: null,
     supportSolidId: null,
+    inheritedSupportVelocity: { x: 0, z: 0 },
   }
 }
 
@@ -125,7 +131,25 @@ export function releaseMovement(
   state.coyoteLeft = 0
   state.jumpWasDown = false
   state.requireJumpRelease = true
+  state.inheritedSupportVelocity = { x: 0, z: 0 }
   resetRunUp(state)
+}
+
+function boundedTakeoffVelocity(value: Vec3 | undefined): {
+  x: number
+  z: number
+} {
+  if (
+    value === undefined ||
+    !Number.isFinite(value.x) ||
+    !Number.isFinite(value.z)
+  )
+    return { x: 0, z: 0 }
+  const magnitude = Math.hypot(value.x, value.z)
+  if (magnitude <= MOVEMENT.maximumPlatformTakeoffSpeed)
+    return { x: value.x, z: value.z }
+  const scale = MOVEMENT.maximumPlatformTakeoffSpeed / magnitude
+  return { x: value.x * scale, z: value.z * scale }
 }
 
 export function stepMovement(
@@ -264,6 +288,8 @@ export function stepMovement(
   const mix = difference > acceleration ? acceleration / difference : 1
   state.velocity.x += deltaX * mix
   state.velocity.z += deltaZ * mix
+  state.inheritedSupportVelocity.x *= 1 - mix
+  state.inheritedSupportVelocity.z *= 1 - mix
   if (Math.hypot(state.velocity.x, state.velocity.z) > 0.01)
     state.facingYaw = Math.atan2(-state.velocity.x, -state.velocity.z)
 
@@ -277,6 +303,10 @@ export function stepMovement(
   const jumped =
     state.bufferedJump > 0 && (state.grounded || state.coyoteLeft > 0)
   if (jumped) {
+    const inherited = boundedTakeoffVelocity(runtime.supportVelocity)
+    state.velocity.x += inherited.x - state.inheritedSupportVelocity.x
+    state.velocity.z += inherited.z - state.inheritedSupportVelocity.z
+    state.inheritedSupportVelocity = inherited
     state.velocity.y = Math.sqrt(2 * MOVEMENT.gravity * MOVEMENT.jumpHeight)
     state.grounded = false
     state.coyoteLeft = 0
@@ -303,8 +333,14 @@ export function stepMovement(
     runtime.intentionalGaps,
   )
   state.position = collision.position
-  if (collision.blockedX) state.velocity.x = 0
-  if (collision.blockedZ) state.velocity.z = 0
+  if (collision.blockedX) {
+    state.velocity.x = 0
+    state.inheritedSupportVelocity.x = 0
+  }
+  if (collision.blockedZ) {
+    state.velocity.z = 0
+    state.inheritedSupportVelocity.z = 0
+  }
   if (collision.ceiling || collision.support !== null) state.velocity.y = 0
   if (canRun && direction !== null) {
     const progress =

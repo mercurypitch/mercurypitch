@@ -1,0 +1,288 @@
+{
+  "schema": 2,
+  "assetId": "aurora-glide-raft",
+  "status": "runtime material-region derivative prepared; fresh reopen audit and matched headless authoring proof passed; browser and live-game validation pending",
+  "scope": "Dense source triangles, UVs, and corner normals are preserved across an exact face partition. The immutable master and full provider maps remain unchanged.",
+  "source": {
+    "denseMaster": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+    "denseMasterSha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+    "donorSha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a"
+  },
+  "lineage": {
+    "runtimeV1": {
+      "file": "source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v1.glb",
+      "sha256": "4f10382b4bc458ea8e9f26a9fa2d048e0b4a66728d362b9515033d8302b6f5cd"
+    },
+    "packedWorkingBlend": {
+      "file": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-runtime-v2-working.blend",
+      "bytes": 22943420,
+      "sha256": "9331461a0c9c24213bbfc25c8a42f8ed7531d5832aa64ff9f1e2c86360712bc3"
+    },
+    "bundleIdPreserved": "cloudway-lab-aurora-glide-raft-v1",
+    "rootNodePreserved": "CloudwayLab_AuroraGlideRaft"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb",
+    "bytes": 3035924,
+    "sha256": "a1533a0837faacc4d55df5b9aa1fc8cae303ccd8c9af2f91af2480863dcc570e",
+    "bundleId": "cloudway-lab-aurora-glide-raft-v1",
+    "rootNode": "CloudwayLab_AuroraGlideRaft",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materials": {
+      "materialNames": [
+        "CloudwayLab_AuroraGlideRaft__glass",
+        "CloudwayLab_AuroraGlideRaft__opaque_trim"
+      ],
+      "opaqueTransmissionExtensionAbsent": true,
+      "glassTransmission": 0.5400000214576721,
+      "glassIor": 1.4199999570846558,
+      "glassMetallic": 0.0,
+      "glassRoughness": 0.1599999964237213,
+      "alphaMode": "OPAQUE"
+    },
+    "primitiveNodeSplit": {
+      "method": "JSON-only primitive-to-child-node separation",
+      "sourcePrimitiveCount": 2,
+      "runtimeMeshNodes": 2,
+      "binaryPayloadSha256": "256be18e9066da1df32db8289f43ade32716a97c28937d0caafd0d85f8458a5c",
+      "binaryPayloadUnchanged": true,
+      "roles": [
+        {
+          "role": "opaque",
+          "material": "CloudwayLab_AuroraGlideRaft__opaque_trim",
+          "mesh": 0,
+          "node": 2
+        },
+        {
+          "role": "glass",
+          "material": "CloudwayLab_AuroraGlideRaft__glass",
+          "mesh": 1,
+          "node": 3
+        }
+      ]
+    },
+    "resourceBudget": {
+      "embeddedImageBytes": 884598,
+      "meshoptDecodedBufferBytes": 7130374,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432
+    }
+  },
+  "material": {
+    "kind": "authored-pbr-regions",
+    "appearanceStatus": "authored-regions",
+    "intendedAppearance": "glass-and-trim",
+    "roles": {
+      "opaque": [
+        "CloudwayLab_AuroraGlideRaft__opaque_trim"
+      ],
+      "glass": [
+        "CloudwayLab_AuroraGlideRaft__glass"
+      ]
+    },
+    "targetGlass": {
+      "transmission": 0.54,
+      "roughness": 0.16,
+      "thickness": 0.08,
+      "ior": 1.42
+    }
+  },
+  "classification": {
+    "method": "Median of seven deterministic provider-metallic samples per existing UV triangle (centroid plus 18% and 45% inset samples toward each corner), combined with an authored cardinal-corner spatial seed.",
+    "samplesPerFace": 7,
+    "metallicMedianThreshold": 0.45,
+    "cornerSeed": {
+      "absoluteXAtLeast": 0.9,
+      "absoluteYAtLeast": 0.38
+    },
+    "cornerSeedTriangles": 250663,
+    "opaqueTriangles": 289065,
+    "glassTriangles": 12989,
+    "opaqueSourceFaceIndexSha256": "87633a1bfe0aabf48ac2d7defdb214cd205ef5cb465f08a884bb10fc2b44dc2f",
+    "glassSourceFaceIndexSha256": "01bfa4f34aa90f874ff970d579d2f47d1e918e07fb75c6de89c9b03d105a3aef",
+    "rejectedCandidate": {
+      "id": "metallic-median-0.65",
+      "description": "A 0.65 median threshold visibly fragments the thin gold top inlay/rim. The reviewed 0.45 threshold keeps the line continuous while the broad turquoise body remains in the glass region."
+    },
+    "proofs": [
+      {
+        "label": "accepted",
+        "view": "three-quarter",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/classification-accepted-three-quarter.png",
+        "bytes": 381171,
+        "sha256": "de21f5243543f6cfba3cd62e61606ab722788b4819637083fc89dbcc5f20f8e1",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "label": "accepted",
+        "view": "top",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/classification-accepted-top.png",
+        "bytes": 552545,
+        "sha256": "249566b72003ae9f35fa7cc5e83f776df40eb064e9a30166899526f18d9002ff",
+        "resolution": [
+          1100,
+          820
+        ]
+      },
+      {
+        "label": "rejected-metallic-median-0.65",
+        "view": "top",
+        "file": "source-assets/proofs/runtime/aurora-glide-raft/runtime-v2/classification-rejected-metallic-median-0.65-top.png",
+        "bytes": 518400,
+        "sha256": "839f4d45a51d86383d76233024a71f6a42984940afa37969e5ae32bcb6a8ba46",
+        "resolution": [
+          1100,
+          820
+        ]
+      }
+    ]
+  },
+  "geometry": {
+    "vertices": 175986,
+    "triangles": 302054,
+    "polygons": 302054,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -1.350000024,
+        -0.302822262,
+        -0.781185091
+      ],
+      "maximum": [
+        1.349999905,
+        0.009768471,
+        0.78118515
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 4.1199e-05,
+    "decimated": false,
+    "remeshed": false,
+    "partitionAudit": {
+      "sourceFaceCoverageSha256": "69ab281908212f6aeaeb1e8eb7f7629ab2a3ece628a8134226565412fdaa83bc",
+      "sourceCornerFingerprint": {
+        "triangles": 302054,
+        "worldCornerPositionsFloat32Sha256": "c90d75edf52df08d36a336e29e95a17ed61c3ec71d977825d9ead75a76d9873e",
+        "cornerUvsFloat32Sha256": "6d597894e1d7ecceb517a19be0a26cd104e5f4f7026c4cf53bc4011b3ab23019",
+        "cornerNormalsFloat32Sha256": "0d5d4013579ed170b75477268f1368e33b8cf71fb4b8eb2cdeacd88019c1b4f4"
+      },
+      "postAssignmentCornerFingerprint": {
+        "triangles": 302054,
+        "worldCornerPositionsFloat32Sha256": "c90d75edf52df08d36a336e29e95a17ed61c3ec71d977825d9ead75a76d9873e",
+        "cornerUvsFloat32Sha256": "6d597894e1d7ecceb517a19be0a26cd104e5f4f7026c4cf53bc4011b3ab23019",
+        "cornerNormalsFloat32Sha256": "0d5d4013579ed170b75477268f1368e33b8cf71fb4b8eb2cdeacd88019c1b4f4"
+      },
+      "roles": {
+        "opaque": {
+          "material": "CloudwayLab_AuroraGlideRaft__opaque_trim",
+          "triangles": 289065,
+          "sourceFaceIndexSha256": "87633a1bfe0aabf48ac2d7defdb214cd205ef5cb465f08a884bb10fc2b44dc2f",
+          "minimumSourceFaceIndex": 0,
+          "maximumSourceFaceIndex": 302053
+        },
+        "glass": {
+          "material": "CloudwayLab_AuroraGlideRaft__glass",
+          "triangles": 12989,
+          "sourceFaceIndexSha256": "01bfa4f34aa90f874ff970d579d2f47d1e918e07fb75c6de89c9b03d105a3aef",
+          "minimumSourceFaceIndex": 13022,
+          "maximumSourceFaceIndex": 292915
+        }
+      },
+      "everySourceTriangleAssignedExactlyOnce": true,
+      "surfaceGeometryDuplicated": false
+    }
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 88
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 2.55,
+      "depth": 1.4,
+      "topY": 0,
+      "height": 0.28
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.004680604,
+      "minimumUpNormal": 0.998310983,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.004680604,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "timeout 1200 flock -w 1200 \"${GLASS_BLENDER_LOCK:-/tmp/glass-cloudway-blender.lock}\" env ALSOFT_DRIVERS=null \"${BLENDER_BIN:-blender}\" --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_material_split_runtime.py -- --asset aurora-glide-raft",
+  "freshReopenAudit": {
+    "status": "fresh Blender reopen and matched headless authoring proof passed; browser and live-game validation pending",
+    "file": "source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v2-audit.json",
+    "mirror": "art/glass-adventure/cloudway-laboratory/v1/production/reports/aurora-glide-raft-runtime-v2-audit.json",
+    "bytes": 11995,
+    "sha256": "4bec9f5ed15e5d8164100da09dae90e73f4f758a3c5ecfec50eeb3ed3312ab73"
+  }
+}

@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 649 1130" role="img" aria-label="The Crystal Promenade compiled course map">
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#518a88"/></marker></defs>
+<rect width="649" height="1130" fill="#faf8f0"/>
+<g font-family="system-ui,sans-serif" fill="#244b49"><text x="30" y="36" font-size="23" font-weight="650">The Crystal Promenade</text><text x="30" y="62" font-size="13">Compiled landing bounds · arrows show course order · dashed outlines show raft end pose</text>
+<rect x="125.2295353982301" y="976.916482300885" width="59.01548672566373" height="14.75387168141595" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="139.983407079646" y="919.5105088495576" width="56.33296460176992" height="18.777654867256643" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="139.983407079646" y="831.4308582588496" width="56.33296460176992" height="18.77765486725662" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="135.42311946902657" y="779.3899290553098" width="43.993362831858406" height="13.412610619469028" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="148.83573008849558" y="721.9839556039824" width="30.58075221238938" height="13.412610619469028" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="148.83573008849558" y="679.0636016216814" width="43.993362831858406" height="13.412610619469028" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="148.7016039823009" y="625.6814113561948" width="44.26161504424779" height="14.753871681415914" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="168.82051991150445" y="551.9120529491152" width="24.14269911504425" height="14.75387168141595" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="168.82051991150445" y="478.14269454203543" width="44.26161504424779" height="14.75387168141595" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="156.74917035398232" y="328.18970781637165" width="68.40431415929204" height="14.753871681415998" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<rect x="156.74917035398232" y="216.86503967477873" width="68.40431415929204" height="14.75387168141595" fill="#bf675f" fill-opacity=".1" stroke="#bf675f" stroke-dasharray="3 3" stroke-width=".7"/>
+<path d="M141.32466814159295 1020.6415929203541 L141.32466814159295 1001.3274336283188" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M141.32466814159295 1001.3274336283188 L168.149889380531 967.2594026548674" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M168.149889380531 967.2594026548674 L168.149889380531 947.9452433628319" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M168.149889380531 947.9452433628319 L168.149889380531 884.8528046825222" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M168.149889380531 884.8528046825222 L168.149889380531 821.773778612832" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M168.149889380531 821.773778612832 L168.149889380531 802.4596193207965" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M168.149889380531 802.4596193207965 L157.41980088495575 757.3932476393807" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M157.41980088495575 757.3932476393807 L170.83241150442478 707.2300839225665" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M170.83241150442478 707.2300839225665 L186.9275442477876 669.4065219756637" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M186.9275442477876 669.4065219756637 L186.9275442477876 650.0923626836284" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M186.9275442477876 650.0923626836284 L170.83241150442478 596.1736679933629" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M170.83241150442478 596.1736679933629 L190.95132743362834 522.4043095862833" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 522.4043095862833 L190.95132743362834 468.48561489601775" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 468.48561489601775 L190.95132743362834 449.17145560398234" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 449.17145560398234 L190.95132743362834 429.8572963119469" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 429.8572963119469 L190.95132743362834 410.54313701991157" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 410.54313701991157 L190.95132743362834 391.22897772787616" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 391.22897772787616 L190.95132743362834 371.91481843584074" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 371.91481843584074 L190.95132743362834 352.6006591438054" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 352.6006591438054 L190.95132743362834 309.41205294911504" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 309.41205294911504 L190.95132743362834 207.20796002876102" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<path d="M190.95132743362834 207.20796002876102 L190.95132743362834 187.89380073672567" fill="none" stroke="#518a88" stroke-opacity=".35" marker-end="url(#arrow)"/>
+<rect x="98.40431415929204" y="1010.9845132743365" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="141.32466814159295" y="1024.641592920354" font-size="11" text-anchor="middle" font-weight="700">1</text>
+<rect x="334.2522123893806" y="101" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="112" font-size="12">1. arrival-entry</text>
+<rect x="98.40431415929204" y="991.670353982301" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="141.32466814159295" y="1005.3274336283188" font-size="11" text-anchor="middle" font-weight="700">2</text>
+<rect x="334.2522123893806" y="125" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="136" font-size="12">2. arrival</text>
+<rect x="125.2295353982301" y="957.6023230088496" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="168.149889380531" y="971.2594026548674" font-size="11" text-anchor="middle" font-weight="700">3</text>
+<rect x="334.2522123893806" y="149" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="160" font-size="12">3. scroll-approach-entry</text>
+<rect x="125.2295353982301" y="938.2881637168142" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="168.149889380531" y="951.9452433628319" font-size="11" text-anchor="middle" font-weight="700">4</text>
+<rect x="334.2522123893806" y="173" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="184" font-size="12">4. scroll-approach</text>
+<rect x="138.5621520276549" y="855.2650673296461" width="59.175474705752215" height="59.175474705752215" fill="#edce76" stroke="#61736f" rx="2"/>
+<text x="168.149889380531" y="888.8528046825222" font-size="11" text-anchor="middle" font-weight="700">5</text>
+<rect x="334.2522123893806" y="197" width="13" height="13" rx="2" fill="#edce76" stroke="#61736f"/><text x="356.2522123893806" y="208" font-size="12">5. scroll-deck</text>
+<rect x="125.2295353982301" y="812.1166989668142" width="85.84070796460179" height="19.314159292035395" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="168.149889380531" y="825.773778612832" font-size="11" text-anchor="middle" font-weight="700">6</text>
+<rect x="334.2522123893806" y="221" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="232" font-size="12">6. scroll-catch</text>
+<rect x="125.2295353982301" y="792.8025396747788" width="85.84070796460179" height="19.314159292035395" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="168.149889380531" y="806.4596193207965" font-size="11" text-anchor="middle" font-weight="700">7</text>
+<rect x="334.2522123893806" y="245" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="256" font-size="12">7. scroll-court</text>
+<rect x="135.42311946902657" y="735.3965662234514" width="43.993362831858406" height="43.99336283185841" fill="#e4a9bc" stroke="#61736f" rx="2"/>
+<text x="157.41980088495575" y="761.3932476393807" font-size="11" text-anchor="middle" font-weight="700">8</text>
+<rect x="334.2522123893806" y="269" width="13" height="13" rx="2" fill="#e4a9bc" stroke="#61736f"/><text x="356.2522123893806" y="280" font-size="12">8. rose-step</text>
+<rect x="148.83573008849558" y="692.4762122411505" width="43.993362831858406" height="29.507743362831864" fill="#b7a4d8" stroke="#61736f" rx="2"/>
+<text x="170.83241150442478" y="711.2300839225665" font-size="11" text-anchor="middle" font-weight="700">9</text>
+<rect x="334.2522123893806" y="293" width="13" height="13" rx="2" fill="#b7a4d8" stroke="#61736f"/><text x="356.2522123893806" y="304" font-size="12">9. amethyst-step</text>
+<rect x="144.00719026548674" y="659.7494423296461" width="85.84070796460179" height="19.314159292035395" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="186.9275442477876" y="673.4065219756637" font-size="11" text-anchor="middle" font-weight="700">10</text>
+<rect x="334.2522123893806" y="317" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="328" font-size="12">10. final-catch</text>
+<rect x="144.00719026548674" y="640.4352830376107" width="85.84070796460179" height="19.314159292035395" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="186.9275442477876" y="654.0923626836284" font-size="11" text-anchor="middle" font-weight="700">11</text>
+<rect x="334.2522123893806" y="341" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="352" font-size="12">11. final-terrace</text>
+<rect x="148.7016039823009" y="566.665924630531" width="44.26161504424779" height="59.01548672566371" fill="#a8d6e6" stroke="#61736f" rx="2"/>
+<text x="170.83241150442478" y="600.1736679933629" font-size="11" text-anchor="middle" font-weight="700">12</text>
+<rect x="334.2522123893806" y="365" width="13" height="13" rx="2" fill="#a8d6e6" stroke="#61736f"/><text x="356.2522123893806" y="376" font-size="12">12. frost-lily-one</text>
+<rect x="168.82051991150445" y="492.8965662234514" width="44.26161504424779" height="59.015486725663706" fill="#a8d6e6" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="526.4043095862833" font-size="11" text-anchor="middle" font-weight="700">13</text>
+<rect x="334.2522123893806" y="389" width="13" height="13" rx="2" fill="#a8d6e6" stroke="#61736f"/><text x="356.2522123893806" y="400" font-size="12">13. frost-lily-two</text>
+<rect x="148.03097345132744" y="458.8285352500001" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="472.48561489601775" font-size="11" text-anchor="middle" font-weight="700">14</text>
+<rect x="334.2522123893806" y="413" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="424" font-size="12">14. wall-approach-entry</text>
+<rect x="148.03097345132744" y="439.51437595796466" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="453.17145560398234" font-size="11" text-anchor="middle" font-weight="700">15</text>
+<rect x="334.2522123893806" y="437" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="448" font-size="12">15. wall-approach</text>
+<rect x="148.03097345132744" y="420.20021666592925" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="433.8572963119469" font-size="11" text-anchor="middle" font-weight="700">16</text>
+<rect x="334.2522123893806" y="461" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="472" font-size="12">16. wall-approach-middle</text>
+<rect x="148.03097345132744" y="400.8860573738939" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="414.54313701991157" font-size="11" text-anchor="middle" font-weight="700">17</text>
+<rect x="334.2522123893806" y="485" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="496" font-size="12">17. wall-approach-forward</text>
+<rect x="148.03097345132744" y="381.5718980818585" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="395.22897772787616" font-size="11" text-anchor="middle" font-weight="700">18</text>
+<rect x="334.2522123893806" y="509" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="520" font-size="12">18. wall-approach-threshold</text>
+<rect x="148.03097345132744" y="362.257738789823" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="375.91481843584074" font-size="11" text-anchor="middle" font-weight="700">19</text>
+<rect x="334.2522123893806" y="533" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="544" font-size="12">19. wall-catch</text>
+<rect x="148.03097345132744" y="342.94357949778765" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="356.6006591438054" font-size="11" text-anchor="middle" font-weight="700">20</text>
+<rect x="334.2522123893806" y="557" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="568" font-size="12">20. raft-dock</text>
+<rect x="156.74917035398232" y="290.6343980818584" width="68.40431415929204" height="37.55530973451329" fill="#78d7c5" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="313.41205294911504" font-size="11" text-anchor="middle" font-weight="700">21</text>
+<rect x="156.74917035398232" y="231.61891135619467" width="68.40431415929204" height="37.55530973451324" fill="#78d7c5" fill-opacity=".12" stroke="#289688" stroke-dasharray="5 3"/>
+<path d="M190.95132743362834 309.41205294911504 L190.95132743362834 250.3965662234513" stroke="#289688" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<rect x="334.2522123893806" y="581" width="13" height="13" rx="2" fill="#78d7c5" stroke="#61736f"/><text x="356.2522123893806" y="592" font-size="12">21. aurora-raft</text>
+<rect x="148.03097345132744" y="197.55088038274334" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="211.20796002876102" font-size="11" text-anchor="middle" font-weight="700">22</text>
+<rect x="334.2522123893806" y="605" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="616" font-size="12">22. raft-catch</text>
+<rect x="148.03097345132744" y="178.236721090708" width="85.84070796460179" height="19.31415929203537" fill="#f5ead1" stroke="#61736f" rx="2"/>
+<text x="190.95132743362834" y="191.89380073672567" font-size="11" text-anchor="middle" font-weight="700">23</text>
+<rect x="334.2522123893806" y="629" width="13" height="13" rx="2" fill="#f5ead1" stroke="#61736f"/><text x="356.2522123893806" y="640" font-size="12">23. finale-court</text>
+<rect x="167.8816371681416" y="380.83420449778765" width="46.13938053097345" height="1.4753871681415855" fill="#3985b5"/>
+<rect x="214.02101769911505" y="374.98044671391045" width="13.296094600387166" height="13.182902735896047" fill="#7d6848"/>
+<rect x="154.58554256775443" y="374.98044671391045" width="13.29609460038717" height="13.182902735896047" fill="#7d6848"/>
+<rect x="167.8816371681416" y="374.98044671391045" width="46.13938053097345" height="13.182902735896047" fill="#7d6848"/>
+<circle cx="134.6183628318584" cy="1001.3274336283188" r="5" fill="#225e59" stroke="white" stroke-width="2"><title>The arrival camellia singing anchor</title></circle>
+<circle cx="158.76106194690266" cy="802.4596193207965" r="5" fill="#225e59" stroke="white" stroke-width="2"><title>The scroll-court urn singing anchor</title></circle>
+<circle cx="190.95132743362834" cy="468.48561489601775" r="5" fill="#225e59" stroke="white" stroke-width="2"><title>The frosted threshold singing anchor</title></circle>
+<circle cx="158.76106194690266" cy="1020.6415929203541" r="9" fill="none" stroke="#917023" stroke-width="1.4"><title>arrival-save</title></circle>
+<circle cx="168.149889380531" cy="947.9452433628319" r="9" fill="none" stroke="#917023" stroke-width="1.4"><title>scroll-save</title></circle>
+<circle cx="186.9275442477876" cy="669.4065219756637" r="9" fill="none" stroke="#917023" stroke-width="1.4"><title>final-save</title></circle>
+<circle cx="190.95132743362834" cy="468.48561489601775" r="9" fill="none" stroke="#917023" stroke-width="1.4"><title>wall-save</title></circle>
+<circle cx="190.95132743362834" cy="207.20796002876102" r="9" fill="none" stroke="#917023" stroke-width="1.4"><title>finale-save</title></circle>
+<rect x="203.02267699115046" y="178.16949858849563" width="24.142699115044255" height="13.412610619469028" fill="#e9c75e" stroke="#8c6b16" stroke-width="2"/>
+<text x="30" y="1108" font-size="12">Green dots: singing anchors · gold rings: checkpoints · blue bar: shatterable wall · gold box: exit</text></g></svg>

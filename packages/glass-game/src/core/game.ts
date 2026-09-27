@@ -264,6 +264,9 @@ export function createGlassGame(
         const previousPosition = { ...player.position }
         const previousSupportSolidId = player.supportSolidId
         const previousSupportPlatformId = player.supportPlatformId
+        const supportDelta = platformRuntime.supportDelta(
+          previousSupportSolidId,
+        )
         const step = stepMovement(
           player,
           input,
@@ -272,7 +275,12 @@ export function createGlassGame(
           collider,
           level.movement,
           {
-            supportDelta: platformRuntime.supportDelta(previousSupportSolidId),
+            supportDelta,
+            supportVelocity: {
+              x: supportDelta.x / MOVEMENT.fixedStep,
+              y: supportDelta.y / MOVEMENT.fixedStep,
+              z: supportDelta.z / MOVEMENT.fixedStep,
+            },
             surface: platformRuntime.surface(previousSupportPlatformId),
             intentionalGaps: level.intentionalGaps,
             platformMotions: platformRuntime.motions(enabledPlatforms),

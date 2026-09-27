@@ -5,6 +5,7 @@ import type { Bounds3, LevelDefinition, SolidPropDefinition, } from '../contract
 
 export const CAMERA_CLEARANCE_RADIUS = 0.24
 export const CAMERA_TARGET_LOOK_AHEAD = 0.45
+export type EnclosureRayPurpose = 'camera-clearance' | 'subject-visibility'
 
 const INTERVAL_EPSILON = 0.0001
 const SURFACE_INSET = 0.01
@@ -33,7 +34,10 @@ function shrinkCameraVolume(bounds: Bounds3): Box3 | null {
   return box.isEmpty() ? null : box
 }
 
-function solidObstacle(solid: SolidPropDefinition): SolidObstacle {
+function solidObstacle(
+  solid: SolidPropDefinition,
+  enclosed: boolean,
+): SolidObstacle {
   const minY = solid.top - solid.thickness
   const maxY = solid.top
   let targetBox: Box3
@@ -51,7 +55,7 @@ function solidObstacle(solid: SolidPropDefinition): SolidObstacle {
   }
   const cameraBox = targetBox.clone().expandByScalar(CAMERA_CLEARANCE_RADIUS)
   const visibilityBox = targetBox.clone()
-  if (solid.presentation?.role === 'gate') {
+  if (enclosed && solid.presentation?.role === 'gate') {
     // A closed progress gate owns the doorway even when the camera could
     // otherwise pitch over its visible top into the unrevealed room.
     cameraBox.min.y = -1_000_000
@@ -169,12 +173,13 @@ export interface EnclosureFraming {
     direction: Vector3,
     reach: number,
   ): number | null
-  /** Treats active authored walls and gates as camera-radius obstacles. */
+  /** Uses camera-radius clearance for placement, actual surfaces for subject visibility. */
   solidDistance(
     origin: Vector3,
     direction: Vector3,
     reach: number,
     activeSolidIds: readonly string[],
+    purpose?: EnclosureRayPurpose,
   ): number
   /** Checks a retained camera centre before using it as a zero-boom fallback. */
   cameraPositionSafe(
@@ -205,10 +210,11 @@ export function createEnclosureFraming(
       ) ?? []
   const rawVolumes = volumePairs.map((pair) => pair.raw)
   const cameraVolumes = volumePairs.map((pair) => pair.camera)
-  if (cameraVolumes.length === 0) return null
+  if (cameraVolumes.length === 0 && (level.solids?.length ?? 0) === 0)
+    return null
 
-  const solidObstacles: SolidObstacle[] = (level.solids ?? []).map(
-    solidObstacle,
+  const solidObstacles: SolidObstacle[] = (level.solids ?? []).map((solid) =>
+    solidObstacle(solid, cameraVolumes.length > 0),
   )
   const desiredTarget = new Vector3()
   const targetDirection = new Vector3()
@@ -295,7 +301,13 @@ export function createEnclosureFraming(
         ) ?? 0
       )
     },
-    solidDistance(origin, direction, reach, activeSolidIds) {
+    solidDistance(
+      origin,
+      direction,
+      reach,
+      activeSolidIds,
+      purpose = 'camera-clearance',
+    ) {
       let visibilityDistance = reach
       const forbidden: RayInterval[] = []
       for (const obstacle of solidObstacles) {
@@ -313,6 +325,7 @@ export function createEnclosureFraming(
               Math.max(0, visibilityInterval.minimum - SURFACE_INSET),
             )
         }
+        if (purpose === 'subject-visibility') continue
         const cameraInterval = rayBoxInterval(
           origin,
           direction,
@@ -348,8 +361,9 @@ export function createEnclosureFraming(
         candidateDistance,
       )
       if (
-        volumeDistance === null ||
-        volumeDistance < candidateDistance - INTERVAL_EPSILON
+        (volumeDistance === null && cameraVolumes.length > 0) ||
+        (volumeDistance !== null &&
+          volumeDistance < candidateDistance - INTERVAL_EPSILON)
       )
         return false
       return (

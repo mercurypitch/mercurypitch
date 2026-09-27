@@ -1,5 +1,25 @@
 # Cloudway laboratory execution — 25 September 2026
 
+## Active continuation — 27 September
+
+PRs #861, #863 and tablet polish #867 are merged. The new branch
+`feat/glass-frost-promenade` implements the next scoped pass. See
+[FROST-PROMENADE.md](FROST-PROMENADE.md) for routes, authoring boundaries and the
+device checklist. Earlier unmerged/pending entries below are historical.
+
+- [x] Two strict JSON-authored routes, measured gaps, static voice/checkpoint
+      courts and camera sections; preserve the existing preview's save identity.
+- [x] Frost footing and a moving Aurora raft with bounded takeoff carry; both
+      routes pass full simulation traversal at 30 and 60 Hz.
+- [x] Permanent wall frame, completion-controlled pane collision, side camera
+      framing and restored-open state.
+- [x] Crown/radial/sheet/ice shatter profiles, closed wall fragments, bounded
+      instanced detail, reduced-motion and lifecycle checks.
+- [x] Accept final Frost Lily/Aurora material regions and frost wall GLB through
+      fresh export, actual loader and matched visual review.
+- [ ] Complete real-GPU wall sequence, independent review, PR gates and remote CI.
+- [ ] Owner tests the new routes and effects on Android/iPhone before merge.
+
 Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a second exploratory course, and a browser level editor. The earlier melody-route A/B/C choice remains open.
 
 Current delivery: four first-crossing assets have passed matched full/bounded

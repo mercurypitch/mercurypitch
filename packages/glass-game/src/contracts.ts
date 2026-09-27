@@ -210,6 +210,8 @@ export interface BreakableDefinition {
   position: Vec3
   anchor: Vec3
   mount?: ExhibitMountDefinition
+  /** Floor-mounted pane; its certified recipe supplies the contact envelope. */
+  presentation?: { kind: 'barrier'; facingYaw: number }
   variant: string
   optional: boolean
   requiresCompleted?: readonly string[]

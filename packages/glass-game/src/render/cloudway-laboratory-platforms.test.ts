@@ -4,10 +4,11 @@ import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, } from 'thre
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
+import { FROST_WALL_BUNDLE } from '../content/frost-wall-profile'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
-import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, isCloudwayLaboratoryPlatformRenderId, } from './cloudway-laboratory-catalog'
 import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-platforms'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMaterialLibrary } from './material-library'
@@ -75,6 +76,74 @@ function pearlDonor(): Group {
   mesh.name = 'PearlDenseGeometry'
   mesh.position.y = -0.17
   source.add(mesh)
+  return source
+}
+
+function rigidGlassDonor(key: 'frostLily' | 'auroraGlide'): Group {
+  const profile =
+    key === 'frostLily'
+      ? { assetId: 'frost-lily-step', width: 1.65, depth: 2.2, height: 0.3 }
+      : { assetId: 'aurora-glide-raft', width: 2.55, depth: 1.4, height: 0.28 }
+  const roles = CLOUDWAY_LAB_RIGID_MATERIAL_ROLES[key]
+  const source = new Group()
+  source.name = CLOUDWAY_LAB_ROOT_NAMES[key]
+  source.userData.collider_json = JSON.stringify({
+    shape: 'box',
+    width: profile.width,
+    depth: profile.depth,
+    height: profile.height,
+    topY: 0,
+    center: [0, -profile.height / 2, 0],
+  })
+  source.userData.cloudway_lab_asset_json = JSON.stringify({
+    schema: 'cloudway-lab-static-v1',
+    assetId: profile.assetId,
+    kind: 'platform',
+    coordinates: {
+      upAxis: '+Y',
+      units: 'metres',
+      origin: 'landing-or-resting-datum',
+    },
+    contact: {
+      kind: 'rectangle',
+      width: profile.width,
+      depth: profile.depth,
+      topY: 0,
+      height: profile.height,
+    },
+    material: {
+      kind: 'authored-pbr-regions',
+      appearanceStatus: 'authored-regions',
+      intendedAppearance: 'glass-and-trim',
+      roles: {
+        opaque: Object.keys(roles).filter(
+          (name) => roles[name as keyof typeof roles] === 'opaque',
+        ),
+        glass: Object.keys(roles).filter(
+          (name) => roles[name as keyof typeof roles] === 'glass',
+        ),
+      },
+    },
+    geometry: {
+      triangles: Object.keys(roles).length * 12,
+      decimated: false,
+      remeshed: false,
+    },
+  })
+  for (const [name, role] of Object.entries(roles)) {
+    const material =
+      role === 'glass'
+        ? new MeshPhysicalMaterial({ transmission: 0.62, roughness: 0.18 })
+        : new MeshStandardMaterial({ metalness: 0.45, roughness: 0.3 })
+    material.name = name
+    const mesh = new Mesh(
+      new BoxGeometry(profile.width, profile.height, profile.depth),
+      material,
+    )
+    mesh.name = `${source.name}__${role}`
+    mesh.position.y = -profile.height / 2
+    source.add(mesh)
+  }
   return source
 }
 
@@ -290,7 +359,7 @@ function disposeTestScene(
 }
 
 describe('Cloudway laboratory platform renderer', () => {
-  it('declares the four accepted runtime bundles for the first slice', () => {
+  it('declares six platform donors plus the wall bundle exactly once', () => {
     const plan = createMuseumAssetLoadPlan(CLOUDWAY_CRYSTAL_PROMENADE_STUDY)
     for (const bundle of Object.values(CLOUDWAY_LAB_BUNDLE_IDS)) {
       expect(plan.bundles.filter((id) => id === bundle)).toEqual([bundle])
@@ -298,7 +367,10 @@ describe('Cloudway laboratory platform renderer', () => {
         `bundle:${bundle}`,
       ])
     }
-    expect(plan.bundles).toHaveLength(4)
+    expect(plan.bundles.filter((id) => id === FROST_WALL_BUNDLE)).toEqual([
+      FROST_WALL_BUNDLE,
+    ])
+    expect(plan.bundles).toHaveLength(7)
   })
 
   it('commits accepted donors together and instances repeated rests', () => {
@@ -319,6 +391,8 @@ describe('Cloudway laboratory platform renderer', () => {
     const scroll = scrollDonor()
     const rose = crackleDonor('roseCrackle')
     const amethyst = crackleDonor('amethystCrackle')
+    const frost = rigidGlassDonor('frostLily')
+    const aurora = rigidGlassDonor('auroraGlide')
 
     renderer.install(pearl, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
     expect(floorById.get('scroll-approach')?.children).toHaveLength(1)
@@ -326,23 +400,15 @@ describe('Cloudway laboratory platform renderer', () => {
     renderer.install(rose, CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
     expect(floorById.get('scroll-deck')?.children).toHaveLength(1)
     renderer.install(amethyst, CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle)
+    renderer.install(frost, CLOUDWAY_LAB_BUNDLE_IDS.frostLily)
+    expect(floorById.get('frost-lily-one')?.children).toHaveLength(1)
+    renderer.install(aurora, CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide)
     const snapshot = createGlassGame(level).snapshot()
     renderer.update(snapshot)
 
-    for (const id of [
-      'arrival-entry',
-      'arrival',
-      'scroll-approach-entry',
-      'scroll-approach',
-      'scroll-deck',
-      'scroll-catch',
-      'scroll-court',
-      'rose-step',
-      'amethyst-step',
-      'final-catch',
-      'final-terrace',
-    ])
-      expect(floorById.get(id)?.children).toHaveLength(0)
+    for (const platform of level.platforms)
+      if (isCloudwayLaboratoryPlatformRenderId(platform.renderId))
+        expect(floorById.get(platform.id)?.children).toHaveLength(0)
 
     const installed = scene.getObjectByName('cloudway-laboratory-platform-art')
     expect(installed?.visible).toBe(true)
@@ -356,30 +422,42 @@ describe('Cloudway laboratory platform renderer', () => {
     installed?.traverse((object) => {
       if (object instanceof InstancedMesh) batches.push(object)
     })
-    expect(batches).toHaveLength(1)
-    expect(batches[0]?.count).toBe(8)
-    const matrixVersion = batches[0]!.instanceMatrix.version
+    expect(batches).toHaveLength(5)
+    const pearlBatch = batches.find((batch) =>
+      batch.name.startsWith('PearlDenseGeometry'),
+    )!
+    const frostBatches = batches.filter((batch) =>
+      batch.name.startsWith(CLOUDWAY_LAB_ROOT_NAMES.frostLily),
+    )
+    const auroraBatches = batches.filter((batch) =>
+      batch.name.startsWith(CLOUDWAY_LAB_ROOT_NAMES.auroraGlide),
+    )
+    const pearlPlatforms = level.platforms.filter(
+      (platform) =>
+        platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+    )
+    expect(pearlBatch.count).toBe(pearlPlatforms.length)
+    expect(frostBatches).toHaveLength(2)
+    frostBatches.forEach((batch) => expect(batch.count).toBe(2))
+    expect(auroraBatches).toHaveLength(2)
+    auroraBatches.forEach((batch) => expect(batch.count).toBe(1))
+    const matrixVersion = pearlBatch.instanceMatrix.version
     renderer.update(snapshot)
-    expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion)
+    expect(pearlBatch.instanceMatrix.version).toBe(matrixVersion)
     const actualPositions: { x: number; z: number }[] = []
     const matrix = new Matrix4()
     const position = new Vector3()
-    for (let index = 0; index < batches[0]!.count; index++) {
-      batches[0]!.getMatrixAt(index, matrix)
+    for (let index = 0; index < pearlBatch.count; index++) {
+      pearlBatch.getMatrixAt(index, matrix)
       position.setFromMatrixPosition(matrix)
       actualPositions.push({ x: position.x, z: position.z })
     }
-    const expectedPositions = [
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrivalEntry,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrival,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres
-        .scrollApproachEntry,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollApproach,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollCatch,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollCourt,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.finalCatch,
-      CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.finalTerrace,
-    ].sort((a, b) => a.z - b.z)
+    const expectedPositions = pearlPlatforms
+      .map((platform) => ({
+        x: (platform.minX + platform.maxX) / 2,
+        z: (platform.minZ + platform.maxZ) / 2,
+      }))
+      .sort((a, b) => a.z - b.z)
     actualPositions.sort((a, b) => a.z - b.z)
     expectedPositions.forEach((expected, index) => {
       expect(actualPositions[index]?.x).toBeCloseTo(expected.x, 5)
@@ -395,11 +473,16 @@ describe('Cloudway laboratory platform renderer', () => {
         (id) => id !== 'final-catch',
       ),
     })
-    expect(batches[0]!.count).toBe(7)
-    expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion + 1)
+    expect(pearlBatch.count).toBe(pearlPlatforms.length - 1)
+    expect(pearlBatch.instanceMatrix.version).toBe(matrixVersion + 1)
 
     renderer.dispose()
-    disposeTestScene(scene, [pearl, scroll, rose, amethyst], palette, library)
+    disposeTestScene(
+      scene,
+      [pearl, scroll, rose, amethyst, frost, aurora],
+      palette,
+      library,
+    )
   })
 
   it('keeps every accepted-family fallback when the scroll donor is invalid', () => {

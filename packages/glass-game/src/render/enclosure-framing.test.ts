@@ -98,6 +98,36 @@ const CHAMBER_GATE = 'glassworks-chamber/chamber/chamber/solid/east-center-body'
 const REVEAL_GATE = 'glassworks-chamber/chamber/reveal/solid/north-gate-body'
 
 describe('enclosure framing', () => {
+  it('keeps open-air wall collision after its visual proxy is replaced', () => {
+    const framing = createEnclosureFraming(levelWithVolumes([]))!
+    const origin = new Vector3(0, 0.42, 0)
+    const direction = new Vector3(0, 0, 1)
+    const result = new Vector3()
+    expect(framing).not.toBeNull()
+    expect(framing.volumeDistance(origin, direction, 4)).toBeNull()
+    expect(
+      framing.frameTarget(origin, Math.PI, ['progress-gate'], result),
+    ).toBe(false)
+    expect(result).toEqual(origin)
+    expect(
+      framing.solidDistance(origin, direction, 4, ['progress-gate']),
+    ).toBeCloseTo(0.75)
+    expect(
+      framing.cameraPositionSafe(origin, new Vector3(0, 0.42, 2), [
+        'progress-gate',
+      ]),
+    ).toBe(false)
+    expect(
+      framing.cameraPositionSafe(origin, new Vector3(0, 0.42, 2), []),
+    ).toBe(true)
+    // Outdoor walls have a finite height; only enclosed doorway gates suppress reveals above them.
+    expect(
+      framing.solidDistance(new Vector3(0, 3, 0), direction, 4, [
+        'progress-gate',
+      ]),
+    ).toBe(4)
+  })
+
   it('traverses the real chamber joins while active gates retain each reveal', () => {
     const framing = createEnclosureFraming(GLASS_ENCLOSED_CHAMBER)!
     const east = new Vector3(1, 0, 0)

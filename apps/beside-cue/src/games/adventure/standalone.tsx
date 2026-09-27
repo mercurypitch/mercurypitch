@@ -26,6 +26,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'cloudway' &&
     layout !== 'cloudway-current' &&
     layout !== 'cloudway-laboratory' &&
+    layout !== 'cloudway-mechanics-preview' &&
     layout !== 'cloudway-crescent' &&
     layout !== 'cloudway-ribbon' &&
     layout !== 'cloudway-terrace'
@@ -39,6 +40,7 @@ async function selectedDevelopmentLevel() {
     CLOUDWAY_GLASS_RIBBON,
     CLOUDWAY_CURRENT_TRIAL,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
+    CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_CRESCENT_AUDITION,
     CLOUDWAY_RIBBON_AUDITION,
     CLOUDWAY_TERRACE_AUDITION,
@@ -53,6 +55,8 @@ async function selectedDevelopmentLevel() {
   if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
   if (layout === 'cloudway-current') return CLOUDWAY_CURRENT_TRIAL
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
+  if (layout === 'cloudway-mechanics-preview')
+    return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW
   if (layout === 'cloudway-crescent') return CLOUDWAY_CRESCENT_AUDITION
   if (layout === 'cloudway-ribbon') return CLOUDWAY_RIBBON_AUDITION
   if (layout === 'cloudway-terrace') return CLOUDWAY_TERRACE_AUDITION
