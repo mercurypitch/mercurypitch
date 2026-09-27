@@ -33,6 +33,7 @@ import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
+import { installKaraokeImport } from './karaoke-import-wiring'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
 import { Rail } from './Rail'
@@ -111,11 +112,18 @@ export const NativeShell: Component = () => {
     // a take is kept in the Sing room (account-offer.ts).
     onCleanup(installAccountOffer())
 
+    // Stage 2 of the Karaoke room (plan S8): the queue that sends imported
+    // songs, and the store its paywall reaches. Nothing in a build without
+    // Import (karaoke-import-wiring.ts).
+    const karaoke = installKaraokeImport()
+    onCleanup(karaoke.stop)
+
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
     // shell pushes.
     onCleanup(
       registerShellApi({
+        ...karaoke.api,
         // Natively every "open Settings at <section>" lands here
         // (ui-store's openSettingsSection). The account and Karaoke have a
         // screen of their own to open at; anything else is Settings itself.
