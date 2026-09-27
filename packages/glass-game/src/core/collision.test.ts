@@ -95,6 +95,42 @@ function glassworksAt(spawn: Vec3): LevelDefinition {
   }
 }
 
+function edgeLandingLevel(
+  spawn: Vec3,
+  platforms: readonly PlatformDefinition[],
+  intentionalGaps: LevelDefinition['intentionalGaps'] = [],
+): LevelDefinition {
+  return {
+    id: 'edge-landing-fixture',
+    title: 'Edge landing fixture',
+    spawn: { position: spawn, facingYaw: 0 },
+    platforms,
+    intentionalGaps,
+    checkpoints: [],
+    breakables: [],
+    exit: {
+      minX: 10,
+      maxX: 11,
+      minZ: 10,
+      maxZ: 11,
+      top: 1,
+      requiresCompleted: [],
+    },
+    fallBelow: -2,
+  }
+}
+
+function settleAt(
+  level: LevelDefinition,
+  framesPerSecond: 30 | 60,
+): ReturnType<ReturnType<typeof createGlassGame>['snapshot']> {
+  const game = createGlassGame(level)
+  const input = { moveX: 0, moveZ: 0, jumpDown: false }
+  for (let frame = 0; frame < framesPerSecond / 2; frame++)
+    game.step(input, 1 / framesPerSecond)
+  return game.snapshot()
+}
+
 function run(
   approach: Pick<Approach, 'spawn' | 'input'>,
   framesPerSecond: 30 | 60,
@@ -210,4 +246,157 @@ describe('Glassworks floor contact', () => {
     expect(markedGap.support).toBeNull()
     expect(markedGap.position.y).toBeLessThan(0)
   })
+
+  it.each([30, 60] as const)(
+    'separates a descending circular body from an overlapped platform side at %dHz',
+    (framesPerSecond) => {
+      const landing: PlatformDefinition = {
+        id: 'landing',
+        minX: 0,
+        maxX: 1,
+        minZ: -1,
+        maxZ: 1,
+        top: 0,
+        thickness: 0.2,
+        kind: 'deck',
+        material: 'stone',
+      }
+      const spawn = { x: -MOVEMENT.radius / 2, y: 0.04, z: 0 }
+      const snapshot = settleAt(
+        edgeLandingLevel(spawn, [landing]),
+        framesPerSecond,
+      )
+
+      expect(spawn.x).toBeLessThan(landing.minX)
+      expect(spawn.x + MOVEMENT.radius).toBeGreaterThan(landing.minX)
+      expect(snapshot.player.grounded).toBe(false)
+      expect(snapshot.player.position.x).toBeCloseTo(
+        landing.minX - MOVEMENT.radius,
+      )
+      expect(snapshot.player.position.x + MOVEMENT.radius).toBeLessThanOrEqual(
+        landing.minX,
+      )
+      expect(snapshot.player.position.y).toBeLessThan(landing.top)
+      expect(snapshot.player.supportPlatformId).toBeNull()
+    },
+  )
+
+  it.each([30, 60] as const)(
+    'still lands when the descending foot centre reaches the platform top at %dHz',
+    (framesPerSecond) => {
+      const landing: PlatformDefinition = {
+        id: 'landing',
+        minX: 0,
+        maxX: 1,
+        minZ: -1,
+        maxZ: 1,
+        top: 0,
+        thickness: 0.2,
+        kind: 'deck',
+        material: 'stone',
+      }
+      const snapshot = settleAt(
+        edgeLandingLevel({ x: 0.01, y: 0.04, z: 0 }, [landing]),
+        framesPerSecond,
+      )
+
+      expect(snapshot.player.grounded).toBe(true)
+      expect(snapshot.player.position.y).toBe(landing.top)
+      expect(snapshot.player.supportPlatformId).toBe(landing.id)
+    },
+  )
+
+  it.each([30, 60] as const)(
+    'does not turn a marked same-height gap into body-width support at %dHz',
+    (framesPerSecond) => {
+      const left: PlatformDefinition = {
+        id: 'left',
+        minX: -1,
+        maxX: -0.05,
+        minZ: -1,
+        maxZ: 1,
+        top: 0,
+        thickness: 0.2,
+        kind: 'deck',
+        material: 'stone',
+      }
+      const right: PlatformDefinition = {
+        ...left,
+        id: 'right',
+        minX: 0.05,
+        maxX: 1,
+      }
+      const snapshot = settleAt(
+        edgeLandingLevel(
+          { x: 0, y: 0.04, z: 0 },
+          [left, right],
+          [
+            {
+              id: 'marked-gap',
+              minX: -0.05,
+              maxX: 0.05,
+              minZ: -1,
+              maxZ: 1,
+              top: 0,
+            },
+          ],
+        ),
+        framesPerSecond,
+      )
+
+      expect(snapshot.player.grounded).toBe(false)
+      expect(snapshot.player.position.x).toBe(0)
+      expect(snapshot.player.position.y).toBeLessThan(0)
+      expect(snapshot.player.supportPlatformId).toBeNull()
+    },
+  )
+
+  it.each([30, 60] as const)(
+    'separates from the far side of a marked gap wider than the body at %dHz',
+    (framesPerSecond) => {
+      const departure: PlatformDefinition = {
+        id: 'departure',
+        minX: -1,
+        maxX: -0.6,
+        minZ: -1,
+        maxZ: 1,
+        top: 0,
+        thickness: 0.2,
+        kind: 'deck',
+        material: 'stone',
+      }
+      const landing: PlatformDefinition = {
+        ...departure,
+        id: 'landing',
+        minX: 0,
+        maxX: 1,
+      }
+      const snapshot = settleAt(
+        edgeLandingLevel(
+          { x: -MOVEMENT.radius / 2, y: 0.04, z: 0 },
+          [departure, landing],
+          [
+            {
+              id: 'wide-gap',
+              minX: -0.6,
+              maxX: 0,
+              minZ: -1,
+              maxZ: 1,
+              top: 0,
+            },
+          ],
+        ),
+        framesPerSecond,
+      )
+
+      expect(snapshot.player.grounded).toBe(false)
+      expect(snapshot.player.position.x).toBeCloseTo(
+        landing.minX - MOVEMENT.radius,
+      )
+      expect(snapshot.player.position.x + MOVEMENT.radius).toBeLessThanOrEqual(
+        landing.minX,
+      )
+      expect(snapshot.player.position.y).toBeLessThan(landing.top)
+    },
+  )
 })

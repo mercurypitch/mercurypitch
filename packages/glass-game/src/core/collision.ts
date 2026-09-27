@@ -74,21 +74,59 @@ function overlap(
   return aMax > bMin + EPSILON && aMin < bMax - EPSILON
 }
 
-/** An edge step can begin the next sweep inside a prop's expanded side bounds. */
-function recoverPropOverlap(
+function bordersBridgedIntentionalGap(
+  position: Vec3,
+  shape: BodyShape,
+  solid: PlatformDefinition,
+  gaps: readonly IntentionalGapDefinition[],
+): boolean {
+  return gaps.some((gap) => {
+    if (
+      Math.abs(gap.top - solid.top) > 0.02 ||
+      position.x <= gap.minX + EPSILON ||
+      position.x >= gap.maxX - EPSILON ||
+      position.z <= gap.minZ + EPSILON ||
+      position.z >= gap.maxZ - EPSILON
+    )
+      return false
+    const spansX =
+      position.x - shape.radius <= gap.minX + EPSILON &&
+      position.x + shape.radius >= gap.maxX - EPSILON
+    const bordersX =
+      Math.abs(solid.maxX - gap.minX) <= EPSILON ||
+      Math.abs(solid.minX - gap.maxX) <= EPSILON
+    const spansZ =
+      position.z - shape.radius <= gap.minZ + EPSILON &&
+      position.z + shape.radius >= gap.maxZ - EPSILON
+    const bordersZ =
+      Math.abs(solid.maxZ - gap.minZ) <= EPSILON ||
+      Math.abs(solid.minZ - gap.maxZ) <= EPSILON
+    return (spansX && bordersX) || (spansZ && bordersZ)
+  })
+}
+
+/** A vertical step can begin with the body already inside expanded side bounds. */
+function recoverSideOverlap(
   next: Vec3,
   previous: Vec3,
   shape: BodyShape,
   solid: CourseSolid,
+  intentionalGaps: readonly IntentionalGapDefinition[],
 ): void {
   if (
-    solid.kind !== 'prop' ||
     !overlap(
       next.y,
       next.y + shape.height,
       solid.top - solid.thickness,
       solid.top,
     )
+  )
+    return
+  // A marked sub-body gap deliberately permits simultaneous overlap with both
+  // rims. One-sided contact at the far edge of an ordinary jump remains solid.
+  if (
+    solid.kind !== 'prop' &&
+    bordersBridgedIntentionalGap(next, shape, solid, intentionalGaps)
   )
     return
   if (isRound(solid)) {
@@ -496,12 +534,14 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
         }
       }
     }
-    // Keep established floor-gap foot-centre semantics. Only props recover side
-    // overlap after leaving a rim; this also handles a taper widening during descent.
+    // Keep established floor-gap foot-centre semantics, but never let a body
+    // that missed the top sweep descend through an ordinary platform side.
+    // This also handles a prop taper widening during descent.
     for (const p of platforms) {
+      if (isConnectedWalkableStep(position, shape, p, platforms)) continue
       const beforeX = next.x,
         beforeZ = next.z
-      recoverPropOverlap(next, position, shape, p)
+      recoverSideOverlap(next, position, shape, p, intentionalGaps)
       if ((next.x - beforeX) * displacement.x < -EPSILON) result.blockedX = true
       if ((next.z - beforeZ) * displacement.z < -EPSILON) result.blockedZ = true
     }
