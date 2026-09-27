@@ -137,7 +137,10 @@ test('creator studies remain readable and selectable at phone and tablet widths 
     'data-level-id',
     'cloudway-crystal-interior-frost-roots',
   )
-  // This test checks real navigation, without waiting for or stubbing the rendering pipeline.
+  // Wait for the actual renderer and assets; a mounted host alone is not a playable study.
+  await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 60_000 })
+  await page.getByRole('button', { name: 'Skip tutorial', exact: true }).tap()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByRole('button', { name: 'Leave museum', exact: true }).tap()
   await expect(
     page.getByRole('heading', { name: 'Little discoveries' }),

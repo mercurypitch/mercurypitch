@@ -140,20 +140,24 @@ describe('owner-build adventure entries', () => {
   it('opens art studies without mounting another game', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /Little discoveries/u }))
-    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('adventure-host')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('creator-gallery-host'))
+    const host = screen.getByTestId('creator-gallery-host')
+    expect(screen.queryByTestId('legacy-journey')).toBeNull()
+    expect(screen.queryByTestId('adventure-host')).toBeNull()
+    fireEvent.click(host)
+    expect(screen.queryByTestId('creator-gallery-host')).toBeNull()
     expect(
       screen.getByRole('button', { name: /Little discoveries/u }),
-    ).toBeVisible()
+    ).toBeEnabled()
   })
   it('opens the optional curator without mounting a movement game and returns cleanly', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /Echo Curator/u }))
-    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('adventure-host')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('curator-host'))
-    expect(screen.getByRole('button', { name: /Echo Curator/u })).toBeVisible()
+    const host = screen.getByTestId('curator-host')
+    expect(screen.queryByTestId('legacy-journey')).toBeNull()
+    expect(screen.queryByTestId('adventure-host')).toBeNull()
+    fireEvent.click(host)
+    expect(screen.queryByTestId('curator-host')).toBeNull()
+    expect(screen.getByRole('button', { name: /Echo Curator/u })).toBeEnabled()
   })
   it('opens the Thawing Song preview without changing the museum campaign', () => {
     render(() => <GamesScreen onBack={() => {}} />)
