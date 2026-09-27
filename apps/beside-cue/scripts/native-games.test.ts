@@ -59,7 +59,7 @@ describe('explicit native games profile', () => {
     ).filter((asset) => !native.has(asset))
 
     expect(webOnly).toEqual([...NATIVE_STANDALONE_ONLY_GAME_ASSETS])
-    expect(native.has('games/glass3d/merc.glb')).toBe(true)
+    expect(native.has(`games/${glassGameAssetPath('merc')}`)).toBe(true)
   })
 
   it('includes each referenced glTF buffer and image in the shared offline package', () => {
