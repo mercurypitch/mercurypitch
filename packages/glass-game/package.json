@@ -13,7 +13,8 @@
     "./browser": "./src/browser/browser-host.ts",
     "./assets": "./src/browser/assets.ts",
     "./encore-examples": "./src/content/encore-examples.ts",
-    "./promenade": "./src/content/cloudway-laboratory.ts"
+    "./promenade": "./src/content/cloudway-laboratory.ts",
+    "./thawing-song": "./src/content/cloudway-thawing-song.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

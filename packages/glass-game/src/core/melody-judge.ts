@@ -6,27 +6,17 @@
 // only from fresh, ordered PitchObservations and locally reachable curve points.
 
 import type { PitchObservation } from '../contracts'
+import type { MelodyJudgeFeedback, MelodyJudgePhase, MelodyJudgePolicy, MelodyJudgeSnapshot, } from '../melody-contracts'
 import { createMelodyAnchorEvidenceGuard } from './melody-anchor-evidence'
 import type { CompiledMelody, CompiledMelodyAnchor, CompiledMelodyPhrase, CompiledMelodySegment, MelodyContourPoint, } from './melody-contour'
 import { sampleMelodyAtTime } from './melody-contour'
 
-export interface MelodyJudgePolicy {
-  landingToleranceCents: number
-  glideToleranceCents: number
-  confidenceFloor: number
-  maximumSampleAgeMs: number
-  maximumSampleGapSeconds: number
-  dropoutGraceSeconds: number
-  mismatchGraceSeconds: number
-  acquisitionSeconds: number
-  /** Fresh, aligned voiced time required at each landing; zero disables it. */
-  minimumAnchorEvidenceSeconds: number
-  minimumPace: number
-  maximumPace: number
-  alignmentResolutionSeconds: number
-  maximumAlignmentWindowSeconds: number
-  directionThresholdCents: number
-}
+export type {
+  MelodyJudgeFeedback,
+  MelodyJudgePhase,
+  MelodyJudgePolicy,
+  MelodyJudgeSnapshot,
+} from '../melody-contracts'
 
 export const DEFAULT_MELODY_JUDGE_POLICY: MelodyJudgePolicy = {
   landingToleranceCents: 60,
@@ -45,19 +35,6 @@ export const DEFAULT_MELODY_JUDGE_POLICY: MelodyJudgePolicy = {
   directionThresholdCents: 18,
 }
 
-export type MelodyJudgePhase = 'acquiring' | 'following' | 'breath' | 'complete'
-
-export type MelodyJudgeFeedback =
-  | 'find-start'
-  | 'on-track'
-  | 'high'
-  | 'low'
-  | 'dropout'
-  | 'stale'
-  | 'retry'
-  | 'breathe'
-  | 'complete'
-
 export type MelodyJudgeEvent =
   | {
       type: 'anchor-complete'
@@ -67,21 +44,6 @@ export type MelodyJudgeEvent =
   | { type: 'phrase-complete'; phraseId: string }
   | { type: 'breath'; afterPhraseId: string; nextPhraseId: string }
   | { type: 'complete' }
-
-export interface MelodyJudgeSnapshot {
-  phase: MelodyJudgePhase
-  feedback: MelodyJudgeFeedback
-  progress: number
-  phraseIndex: number
-  phraseCount: number
-  currentPhraseId: string
-  targetMidi: number
-  pitchErrorCents: number | null
-  coveredAnchorIds: readonly string[]
-  completedPhraseIds: readonly string[]
-  retryCount: number
-  complete: boolean
-}
 
 export interface MelodyJudge {
   feed(frame: PitchObservation, nowMs: number): readonly MelodyJudgeEvent[]

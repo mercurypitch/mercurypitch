@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { composeLevel } from '../authoring/compose-level'
-import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, PitchTargetId, } from '../contracts'
+import type { Bounds3, BreakOutcome, ChallengeDefinition, GameEvent, GlassGame, MovementInput, PitchStepDefinition, PitchTargetId, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
@@ -32,6 +32,16 @@ const ids = {
   portraitCheckpoint: `${prefix}/portrait/checkpoint/entry`,
   panoramaCheckpoint: `${prefix}/panorama/checkpoint/panorama`,
 } as const
+
+function pitchSteps(
+  challenge: ChallengeDefinition,
+): readonly PitchStepDefinition[] {
+  if (challenge.kind === 'melody-anchor' || challenge.kind === 'melody-contour')
+    throw new Error(
+      'Twin Galleries fixture unexpectedly contains a melody lesson.',
+    )
+  return challenge.kind === 'ordered-pair' ? challenge.steps : [challenge.step]
+}
 
 const requiredIds = [
   ids.lower,
@@ -134,12 +144,7 @@ function sing(
     (candidate) => candidate.id === encounterId,
   )?.challenge
   expect(challenge).toBeDefined()
-  const stepsToSing =
-    challenge?.kind === 'ordered-pair'
-      ? challenge.steps
-      : challenge
-        ? [challenge.step]
-        : []
+  const stepsToSing = challenge === undefined ? [] : pitchSteps(challenge)
   const events: GameEvent[] = []
   let sequence = 0
   for (const step of stepsToSing) {
@@ -173,9 +178,7 @@ function overlap(left: Bounds3, right: Bounds3, axis: 'x' | 'z'): number {
 function targets(
   challenge: (typeof TWIN_GALLERIES.breakables)[number]['challenge'],
 ): PitchTargetId[] {
-  return challenge.kind === 'ordered-pair'
-    ? challenge.steps.map((step) => step.target)
-    : [challenge.step.target]
+  return pitchSteps(challenge).map((step) => step.target)
 }
 
 describe('Twin Galleries blockout', () => {

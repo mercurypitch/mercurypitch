@@ -6,47 +6,16 @@
 // place that resolves feel, pace, transposition, silent gaps and interpolation,
 // so a renderer or reference player cannot quietly diverge from the judge.
 
-export type MelodyConnection = 'glide' | 'separate-note'
+import type { MelodyAnchorDefinition, MelodyDefinition, MelodyPhraseDefinition, MelodyVibratoDefinition, } from '../melody-contracts'
 
-export interface MelodyVibratoDefinition {
-  kind: 'vibrato'
-  depthCents: number
-  rateHz: number
-}
-
-export interface MelodyAnchorDefinition {
-  id: string
-  offsetSemitones: number
-  landingSeconds?: number
-  /** Duration and articulation from this anchor to the next one. */
-  transitionSeconds?: number
-  connection?: MelodyConnection
-  ornament?: MelodyVibratoDefinition
-}
-
-export interface MelodyPhraseDefinition {
-  id: string
-  anchors: readonly MelodyAnchorDefinition[]
-  /** A phrase boundary is an optional breath, never a required silence timer. */
-  allowBreathAfter: boolean
-}
-
-export interface MelodyFeelDefinition {
-  landingSeconds: number
-  finalLandingSeconds: number
-  transitionSeconds: number
-  breathSeconds: number
-  connection: MelodyConnection
-}
-
-export interface MelodyDefinition {
-  id: string
-  version: number
-  title: string
-  description: string
-  feel: MelodyFeelDefinition
-  phrases: readonly MelodyPhraseDefinition[]
-}
+export type {
+  MelodyAnchorDefinition,
+  MelodyConnection,
+  MelodyDefinition,
+  MelodyFeelDefinition,
+  MelodyPhraseDefinition,
+  MelodyVibratoDefinition,
+} from '../melody-contracts'
 
 export interface MelodyCompileLimits {
   maximumPhrases: number

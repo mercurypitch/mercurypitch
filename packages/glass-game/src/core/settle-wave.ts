@@ -92,6 +92,7 @@ export function createSettleWaveChallenge(
           : wave.charge()
       return {
         kind: 'settle-wave',
+        targetKind: 'pitch',
         stepIndex: wave === null ? 0 : 1,
         stepCount: 2,
         stepCharge,

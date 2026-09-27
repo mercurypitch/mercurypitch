@@ -1,16 +1,8 @@
 // Challenge judge contracts — shared capture-clock progress for every lesson.
 
-import type { ChallengeDefinition, PitchObservation, PitchTargetId, } from '../contracts'
+import type { ChallengeProgress, PitchObservation } from '../contracts'
 
-export interface ChallengeProgress {
-  kind: ChallengeDefinition['kind']
-  stepIndex: number
-  stepCount: number
-  stepCharge: number
-  charge: number
-  target: PitchTargetId
-  targetMidi: number
-}
+export type { ChallengeProgress } from '../contracts'
 
 export type ChallengeJudgeEvent =
   | { type: 'step-complete'; completedSteps: number }

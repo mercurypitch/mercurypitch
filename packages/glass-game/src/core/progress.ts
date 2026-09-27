@@ -1,6 +1,7 @@
 // Adventure progress — validate stable content IDs and restore only reachable checkpoints.
 
 import type { CheckpointDefinition, LevelDefinition, SavedProgress, } from '../contracts'
+import { readMelodyAttempt, sameMelodyAttempt } from './melody-attempt'
 import { emptyRewardProgress, mergeRewardProgress, readRewardProgress, } from './rewards'
 
 export function requirementsMet(
@@ -63,7 +64,7 @@ export function readProgress(
   raw: unknown,
 ): SavedProgress {
   const fallback: SavedProgress = {
-    version: 2,
+    version: level.melodyLesson === undefined ? 2 : 3,
     levelId: level.id,
     checkpointId: level.spawn.checkpointId ?? level.checkpoints[0]?.id ?? '',
     completedBreakableIds: [],
@@ -73,14 +74,27 @@ export function readProgress(
   if (typeof raw !== 'object' || raw === null) return fallback
   const data = raw as Partial<SavedProgress>
   if (
-    (data.version !== 1 && data.version !== 2) ||
+    (data.version !== 1 && data.version !== 2 && data.version !== 3) ||
     data.levelId !== level.id ||
     !Array.isArray(data.completedBreakableIds)
   )
     return fallback
+  const melodyAttempt =
+    data.version === 3
+      ? readMelodyAttempt(level, data.melodyAttempt)?.identity
+      : undefined
+  const melodyEncounterIds = new Set([
+    ...(level.melodyLesson?.stations.map((station) => station.encounterId) ??
+      []),
+    ...(level.melodyLesson === undefined
+      ? []
+      : [level.melodyLesson.finaleEncounterId]),
+  ])
   const requested = new Set(
     data.completedBreakableIds.filter(
-      (id): id is string => typeof id === 'string',
+      (id): id is string =>
+        typeof id === 'string' &&
+        (melodyAttempt !== undefined || !melodyEncounterIds.has(id)),
     ),
   )
   const completed = new Set<string>()
@@ -100,7 +114,7 @@ export function readProgress(
       requirementsMet(p.requiresCompleted, completed),
   )
   return {
-    version: 2,
+    version: level.melodyLesson === undefined ? 2 : 3,
     levelId: level.id,
     checkpointId: checkpoint?.id ?? fallback.checkpointId,
     completedBreakableIds: [...completed],
@@ -113,6 +127,7 @@ export function readProgress(
       // including v2 visits made before that gallery gained its collection card.
       true,
     ),
+    ...(melodyAttempt === undefined ? {} : { melodyAttempt }),
   }
 }
 
@@ -124,16 +139,42 @@ export function mergeSavedProgress(
 ): SavedProgress {
   const left = readProgress(level, leftRaw)
   const right = readProgress(level, rightRaw)
+  const leftAttempt = left.melodyAttempt
+  const rightAttempt = right.melodyAttempt
+  const sameAttempt =
+    leftAttempt !== undefined &&
+    rightAttempt !== undefined &&
+    sameMelodyAttempt(leftAttempt, rightAttempt)
+  const rightStartsAttempt =
+    rightAttempt !== undefined && (leftAttempt === undefined || !sameAttempt)
+  const leftOnlyAttempt =
+    leftAttempt !== undefined && rightAttempt === undefined
+  const selectedAttempt = rightAttempt ?? leftAttempt
+  const selectedCheckpoint = leftOnlyAttempt
+    ? left.checkpointId
+    : right.checkpointId
+  const selectedCompleted =
+    level.melodyLesson === undefined || sameAttempt
+      ? [...left.completedBreakableIds, ...right.completedBreakableIds]
+      : rightStartsAttempt
+        ? right.completedBreakableIds
+        : left.completedBreakableIds
+  const selectedFinished =
+    level.melodyLesson === undefined || sameAttempt
+      ? left.finished === true || right.finished === true
+      : rightStartsAttempt
+        ? right.finished === true
+        : left.finished === true
   return readProgress(level, {
-    version: 2,
+    version: level.melodyLesson === undefined ? 2 : 3,
     levelId: level.id,
-    checkpointId: right.checkpointId,
-    completedBreakableIds: [
-      ...left.completedBreakableIds,
-      ...right.completedBreakableIds,
-    ],
-    finished: left.finished === true || right.finished === true,
+    checkpointId: selectedCheckpoint,
+    completedBreakableIds: selectedCompleted,
+    finished: selectedFinished,
     rewards: mergeRewardProgress(level, left.rewards, right.rewards),
+    ...(selectedAttempt === undefined
+      ? {}
+      : { melodyAttempt: selectedAttempt }),
   })
 }
 

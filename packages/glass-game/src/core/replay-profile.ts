@@ -57,6 +57,8 @@ function resolveChallenge(
     throw new Error(
       'Replay lesson values must be finite and within the authored practice bounds.',
     )
+  if (challenge.kind === 'melody-anchor' || challenge.kind === 'melody-contour')
+    throw new Error('Pitch replay profiles cannot override melody lessons.')
   if (
     challenge.kind !== 'settle-wave' &&
     (patch.waveCycles !== undefined || patch.waveSeconds !== undefined)

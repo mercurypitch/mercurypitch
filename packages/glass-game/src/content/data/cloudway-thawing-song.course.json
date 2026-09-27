@@ -1,0 +1,882 @@
+{
+  "schema": "mercurypitch.cloudway-course",
+  "schemaVersion": 3,
+  "courses": [
+    {
+      "id": "cloudway-thawing-song-audition",
+      "title": "The Thawing Song",
+      "authored": {
+        "levelId": "cloudway-thawing-song-audition",
+        "layoutId": "thawing-song-crescent-v1",
+        "contentRevision": 1
+      },
+      "movement": {
+        "walkSpeed": 1.65,
+        "runSpeed": 2.6,
+        "runDelaySeconds": 0.65,
+        "runRampSeconds": 0.85
+      },
+      "guidance": {
+        "subtitle": "Five little sparks, one song",
+        "openingNotice": "Meet the first note on the marble court.",
+        "completionTitle": "A whole garden, awakened by your song.",
+        "completionNext": "The melody is yours. Visit again in a comfortable key."
+      },
+      "spawn": {
+        "position": {
+          "x": -6,
+          "y": 0,
+          "z": -11.44
+        },
+        "facingYaw": 3.141592653589793,
+        "checkpointId": "thaw-arrival-save"
+      },
+      "platforms": [
+        {
+          "id": "thaw-arrival-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -6,
+            "y": 0,
+            "z": -11.44
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-arrival-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -6,
+            "y": 0,
+            "z": -10.72
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-arrival-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -6,
+            "y": 0,
+            "z": -10
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-arrival-4",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -6,
+            "y": 0,
+            "z": -9.28
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-arrival-5",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -6,
+            "y": 0,
+            "z": -8.56
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-frost-one",
+          "profileId": "frost-lily",
+          "center": {
+            "x": -6.35,
+            "y": 0,
+            "z": -6.55
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-frost-two",
+          "profileId": "frost-lily",
+          "center": {
+            "x": -5.65,
+            "y": 0,
+            "z": -3.7
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-rise-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": -1.69
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-rise-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": -0.97
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-rise-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": -0.25
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-rise-4",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": 0.47
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-rise-5",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": 1.19
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-lantern-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": 1.91
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-lantern-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": 2.63
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-lantern-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -5.4,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-1-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -1.65,
+            "y": 0,
+            "z": 2.63
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-1-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -1.65,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-1-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": -1.65,
+            "y": 0,
+            "z": 4.07
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-2-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1.55,
+            "y": 0,
+            "z": 2.63
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-2-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1.55,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-east-2-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 1.55,
+            "y": 0,
+            "z": 4.07
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-return-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 4.06,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-return-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 4.78,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-return-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 5.5,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-return-4",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 6.22,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-return-5",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 6.94,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-home-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 7.66,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-home-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 8.38,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-home-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": 3.35
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-1-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 8.38,
+            "y": 0,
+            "z": -0.4
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-1-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -0.4
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-1-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.82,
+            "y": 0,
+            "z": -0.4
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-2-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 8.38,
+            "y": 0,
+            "z": -4.15
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-2-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -4.15
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-south-2-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.82,
+            "y": 0,
+            "z": -4.15
+          },
+          "quarterTurns": 1
+        },
+        {
+          "id": "thaw-pavilion-1",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -6.66
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-pavilion-2",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -7.38
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-pavilion-3",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -8.1
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-pavilion-4",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -8.82
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-pavilion-5",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -9.54
+          },
+          "quarterTurns": 0
+        },
+        {
+          "id": "thaw-pavilion-6",
+          "profileId": "pearl-rest",
+          "center": {
+            "x": 9.1,
+            "y": 0,
+            "z": -10.26
+          },
+          "quarterTurns": 0
+        }
+      ],
+      "gaps": [
+        {
+          "id": "thaw-frost-entry",
+          "fromPlatformId": "thaw-arrival-5",
+          "toPlatformId": "thaw-frost-one",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-frost-bend",
+          "fromPlatformId": "thaw-frost-one",
+          "toPlatformId": "thaw-frost-two",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.65
+        },
+        {
+          "id": "thaw-frost-catch",
+          "fromPlatformId": "thaw-frost-two",
+          "toPlatformId": "thaw-rise-1",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-east-entry",
+          "fromPlatformId": "thaw-lantern-3",
+          "toPlatformId": "thaw-east-1-2",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-east-catch",
+          "fromPlatformId": "thaw-east-2-2",
+          "toPlatformId": "thaw-return-1",
+          "axis": "x",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-south-entry",
+          "fromPlatformId": "thaw-home-3",
+          "toPlatformId": "thaw-south-1-2",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-south-step",
+          "fromPlatformId": "thaw-south-1-2",
+          "toPlatformId": "thaw-south-2-2",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        },
+        {
+          "id": "thaw-pavilion-entry",
+          "fromPlatformId": "thaw-south-2-2",
+          "toPlatformId": "thaw-pavilion-1",
+          "axis": "z",
+          "fromState": "base",
+          "toState": "base",
+          "distance": 0.55
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "thaw-arrival-save",
+          "position": {
+            "x": -6,
+            "y": 0,
+            "z": -11.44
+          },
+          "radius": 0.4,
+          "facingYaw": 3.141592653589793
+        },
+        {
+          "id": "thaw-garden-save",
+          "position": {
+            "x": -5.4,
+            "y": 0,
+            "z": 2.63
+          },
+          "radius": 0.4,
+          "facingYaw": -1.5707963267948966,
+          "requiresCompleted": [
+            "thaw-gate-rise"
+          ]
+        },
+        {
+          "id": "thaw-home-save",
+          "position": {
+            "x": 8.38,
+            "y": 0,
+            "z": 3.35
+          },
+          "radius": 0.4,
+          "facingYaw": 0,
+          "requiresCompleted": [
+            "thaw-gate-return"
+          ]
+        },
+        {
+          "id": "thaw-portrait-save",
+          "position": {
+            "x": 9.1,
+            "y": 0,
+            "z": -7.38
+          },
+          "radius": 0.4,
+          "facingYaw": 0,
+          "requiresCompleted": [
+            "thaw-note-home",
+            "thaw-gate-rise",
+            "thaw-note-crown",
+            "thaw-gate-return",
+            "thaw-note-homecoming"
+          ]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "thaw-note-home",
+          "label": "A tiny spark",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": -6,
+            "y": 0,
+            "z": -9.6
+          },
+          "anchor": {
+            "x": -6,
+            "y": 0,
+            "z": -10.72
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "anchor-tone",
+            "anchorId": "sunlit-steps-home"
+          }
+        },
+        {
+          "id": "thaw-gate-rise",
+          "label": "The first thaw",
+          "variant": "frosted-scroll-wall",
+          "position": {
+            "x": -5.4,
+            "y": 0,
+            "z": 1.55
+          },
+          "anchor": {
+            "x": -5.4,
+            "y": 0,
+            "z": -1.69
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "anchor-tone",
+            "anchorId": "sunlit-steps-two"
+          },
+          "requiresCompleted": [
+            "thaw-note-home"
+          ],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": 3.141592653589793
+          }
+        },
+        {
+          "id": "thaw-note-crown",
+          "label": "A little brighter",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": -6.25,
+            "y": 0,
+            "z": 3.25
+          },
+          "anchor": {
+            "x": -5.4,
+            "y": 0,
+            "z": 2.63
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "anchor-tone",
+            "anchorId": "sunlit-steps-four"
+          },
+          "requiresCompleted": [
+            "thaw-gate-rise"
+          ]
+        },
+        {
+          "id": "thaw-gate-return",
+          "label": "The returning light",
+          "variant": "frosted-scroll-wall",
+          "position": {
+            "x": 7.3,
+            "y": 0,
+            "z": 3.35
+          },
+          "anchor": {
+            "x": 4.06,
+            "y": 0,
+            "z": 3.35
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "anchor-tone",
+            "anchorId": "sunlit-steps-back-two"
+          },
+          "requiresCompleted": [
+            "thaw-note-crown"
+          ],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": -1.5707963267948966
+          }
+        },
+        {
+          "id": "thaw-note-homecoming",
+          "label": "Home again",
+          "variant": "cloudway-lab-voice",
+          "position": {
+            "x": 8.95,
+            "y": 0,
+            "z": 4.2
+          },
+          "anchor": {
+            "x": 8.38,
+            "y": 0,
+            "z": 3.35
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "anchor-tone",
+            "anchorId": "sunlit-steps-return"
+          },
+          "requiresCompleted": [
+            "thaw-gate-return"
+          ]
+        },
+        {
+          "id": "thaw-portrait-finale",
+          "label": "The awakened song",
+          "variant": "portrait-awakened-muse",
+          "position": {
+            "x": 9.1,
+            "y": 0,
+            "z": -9.15
+          },
+          "anchor": {
+            "x": 9.1,
+            "y": 0,
+            "z": -8.1
+          },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-contour",
+            "lessonId": "thawing-song-sunlit",
+            "reference": "whole-melody"
+          },
+          "requiresCompleted": [
+            "thaw-note-homecoming"
+          ]
+        }
+      ],
+      "melodyLesson": {
+        "profileId": "sunlit-steps-v1",
+        "id": "thawing-song-sunlit",
+        "revision": 1,
+        "stations": [
+          {
+            "encounterId": "thaw-note-home",
+            "anchorId": "sunlit-steps-home"
+          },
+          {
+            "encounterId": "thaw-gate-rise",
+            "anchorId": "sunlit-steps-two"
+          },
+          {
+            "encounterId": "thaw-note-crown",
+            "anchorId": "sunlit-steps-four"
+          },
+          {
+            "encounterId": "thaw-gate-return",
+            "anchorId": "sunlit-steps-back-two"
+          },
+          {
+            "encounterId": "thaw-note-homecoming",
+            "anchorId": "sunlit-steps-return"
+          }
+        ],
+        "finaleEncounterId": "thaw-portrait-finale"
+      },
+      "camera": {
+        "initialSectionId": "thaw-north",
+        "landingDwellSeconds": 0.75,
+        "sections": [
+          {
+            "id": "thaw-north",
+            "platformIds": [
+              "thaw-arrival-1",
+              "thaw-arrival-2",
+              "thaw-arrival-3",
+              "thaw-arrival-4",
+              "thaw-arrival-5",
+              "thaw-frost-one",
+              "thaw-frost-two"
+            ],
+            "lookFromPlatformId": "thaw-arrival-1",
+            "lookToPlatformId": "thaw-frost-two"
+          },
+          {
+            "id": "thaw-first-gate",
+            "platformIds": [
+              "thaw-rise-1",
+              "thaw-rise-2",
+              "thaw-rise-3",
+              "thaw-rise-4",
+              "thaw-rise-5"
+            ],
+            "lookFromPlatformId": "thaw-rise-1",
+            "lookToPlatformId": "thaw-rise-5"
+          },
+          {
+            "id": "thaw-east",
+            "platformIds": [
+              "thaw-lantern-1",
+              "thaw-lantern-2",
+              "thaw-lantern-3",
+              "thaw-east-1-1",
+              "thaw-east-1-2",
+              "thaw-east-1-3",
+              "thaw-east-2-1",
+              "thaw-east-2-2",
+              "thaw-east-2-3"
+            ],
+            "lookFromPlatformId": "thaw-lantern-2",
+            "lookToPlatformId": "thaw-east-2-2"
+          },
+          {
+            "id": "thaw-second-gate",
+            "platformIds": [
+              "thaw-return-1",
+              "thaw-return-2",
+              "thaw-return-3",
+              "thaw-return-4",
+              "thaw-return-5"
+            ],
+            "lookFromPlatformId": "thaw-return-1",
+            "lookToPlatformId": "thaw-return-5"
+          },
+          {
+            "id": "thaw-south",
+            "platformIds": [
+              "thaw-home-1",
+              "thaw-home-2",
+              "thaw-home-3",
+              "thaw-south-1-1",
+              "thaw-south-1-2",
+              "thaw-south-1-3",
+              "thaw-south-2-1",
+              "thaw-south-2-2",
+              "thaw-south-2-3"
+            ],
+            "lookFromPlatformId": "thaw-home-2",
+            "lookToPlatformId": "thaw-south-2-2"
+          },
+          {
+            "id": "thaw-finale",
+            "platformIds": [
+              "thaw-pavilion-1",
+              "thaw-pavilion-2",
+              "thaw-pavilion-3",
+              "thaw-pavilion-4",
+              "thaw-pavilion-5",
+              "thaw-pavilion-6"
+            ],
+            "lookFromPlatformId": "thaw-pavilion-1",
+            "lookToPlatformId": "thaw-pavilion-6"
+          }
+        ]
+      },
+      "exit": {
+        "minX": 8.65,
+        "maxX": 9.55,
+        "minZ": -10.45,
+        "maxZ": -10.05,
+        "top": 0,
+        "requiresCompleted": [
+          "thaw-portrait-finale"
+        ]
+      },
+      "fallBelow": -3.5,
+      "presentation": {
+        "worldBounds": {
+          "minX": -10,
+          "maxX": 13,
+          "minY": -5,
+          "maxY": 6,
+          "minZ": -15,
+          "maxZ": 8
+        },
+        "lightBounds": {
+          "minX": -8,
+          "maxX": 11,
+          "minY": -1,
+          "maxY": 5,
+          "minZ": -13,
+          "maxZ": 6
+        },
+        "audioSceneId": "garden"
+      }
+    }
+  ]
+}

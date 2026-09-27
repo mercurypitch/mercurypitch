@@ -1,6 +1,6 @@
 // Pitch challenge judging — dispatch held notes and ordered pairs over one capture-clock contract.
 
-import type { ChallengeDefinition, PitchObservation, PitchStepDefinition, PitchTargetId, PitchTargets, } from '../contracts'
+import type { ChallengeDefinition, PitchChallengeDefinition, PitchObservation, PitchStepDefinition, PitchTargetId, PitchTargets, } from '../contracts'
 import type { ChallengeJudge, ChallengeJudgeEvent } from './challenge-contracts'
 import type { HoldJudge } from './hold'
 import { createHoldJudge } from './hold'
@@ -18,6 +18,10 @@ export type ChallengeTargetError =
   | {
       reason: 'ambiguous-targets'
       targets: readonly [PitchTargetId, PitchTargetId]
+    }
+  | {
+      reason: 'unsupported-challenge'
+      kind: 'melody-anchor' | 'melody-contour'
     }
 
 export type ChallengeJudgeResult =
@@ -69,7 +73,7 @@ function matchesStep(
 }
 
 function createHoldChallenge(
-  definition: ChallengeDefinition & { kind: 'hold' },
+  definition: PitchChallengeDefinition & { kind: 'hold' },
   step: ResolvedStep,
 ): ChallengeJudge {
   const hold = createHoldJudge(step.definition.hold, step.midi)
@@ -91,6 +95,7 @@ function createHoldChallenge(
     },
     snapshot: () => ({
       kind: definition.kind,
+      targetKind: 'pitch',
       stepIndex: 0,
       stepCount: 1,
       stepCharge: complete ? 1 : hold.charge(),
@@ -102,7 +107,7 @@ function createHoldChallenge(
 }
 
 function createOrderedPairChallenge(
-  definition: ChallengeDefinition & { kind: 'ordered-pair' },
+  definition: PitchChallengeDefinition & { kind: 'ordered-pair' },
   steps: readonly [ResolvedStep, ResolvedStep],
 ): ChallengeJudge {
   let completedSteps = 0
@@ -188,6 +193,7 @@ function createOrderedPairChallenge(
       const stepCharge = completedSteps >= steps.length ? 1 : expected.charge()
       return {
         kind: definition.kind,
+        targetKind: 'pitch',
         stepIndex,
         stepCount: steps.length,
         stepCharge,
@@ -207,6 +213,15 @@ export function createChallengeJudge(
   definition: ChallengeDefinition,
   suppliedTargets: number | PitchTargets,
 ): ChallengeJudgeResult {
+  if (
+    definition.kind === 'melody-anchor' ||
+    definition.kind === 'melody-contour'
+  )
+    return {
+      ok: false,
+      reason: 'unsupported-challenge',
+      kind: definition.kind,
+    }
   const targets: PitchTargets =
     typeof suppliedTargets === 'number'
       ? { comfortable: suppliedTargets }

@@ -4,7 +4,7 @@ import type { Bounds3, PlatformRenderQuarterTurns, Vec3 } from '../contracts'
 
 export interface CloudwayCourseDocumentSource {
   schema: 'mercurypitch.cloudway-course'
-  schemaVersion: 2
+  schemaVersion: 2 | 3
   courses: readonly CloudwayCourseSource[]
 }
 
@@ -35,6 +35,7 @@ export interface CloudwayCourseSource {
   encounters: readonly CloudwayCourseEncounterSource[]
   camera: CloudwayCourseCameraSource
   exit: CloudwayCourseExitSource
+  melodyLesson?: CloudwayMelodyLessonSource
   fallBelow: number
   presentation: {
     worldBounds: Bounds3
@@ -105,7 +106,11 @@ export interface CloudwayCourseEncounterSource {
   anchor: Vec3
   optional: boolean
   requiresCompleted?: readonly string[]
-  challengeProfileId: 'comfortable-hold'
+  challengeProfileId?: 'comfortable-hold'
+  challenge?:
+    | { profileId: 'comfortable-hold' }
+    | { profileId: 'melody-anchor'; lessonId: string; anchorId: string; reference: 'anchor-tone' }
+    | { profileId: 'melody-contour'; lessonId: string; reference: 'whole-melody' }
   presentation?: {
     kind: 'barrier'
     profileId: string
@@ -132,4 +137,13 @@ export interface CloudwayCourseExitSource {
   maxZ: number
   top: number
   requiresCompleted: readonly string[]
+}
+
+/** Reusable musical profile plus the explicitly authored route's station identities. */
+export interface CloudwayMelodyLessonSource {
+  profileId: string
+  id: string
+  revision: number
+  stations: readonly { encounterId: string; anchorId: string }[]
+  finaleEncounterId: string
 }
