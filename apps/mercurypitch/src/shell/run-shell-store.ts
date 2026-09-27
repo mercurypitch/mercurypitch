@@ -62,6 +62,8 @@ export type PushedScreen =
   | 'account-name'
   | 'devices'
   | 'delete-account'
+  | 'microphone'
+  | 'room-noise'
   | 'storage'
   | 'appearance'
   | 'developer'

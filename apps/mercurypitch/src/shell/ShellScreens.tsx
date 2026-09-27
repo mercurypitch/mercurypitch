@@ -23,6 +23,8 @@ import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
+import { MicrophoneScreen } from './settings/MicrophoneScreen'
+import { RoomNoiseScreen } from './settings/RoomNoiseScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
 import { StorageScreen } from './settings/StorageScreen'
 
@@ -41,6 +43,8 @@ const TITLES: Record<PushedScreenId, string> = {
   'account-name': 'Name',
   devices: 'Devices',
   'delete-account': 'Delete account',
+  microphone: 'Microphone',
+  'room-noise': 'Room noise',
   storage: 'Storage',
   appearance: 'Appearance',
   developer: 'Developer',
@@ -59,6 +63,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <DevicesScreen />
       case 'delete-account':
         return <DeleteAccountScreen />
+      case 'microphone':
+        return <MicrophoneScreen />
+      case 'room-noise':
+        return <RoomNoiseScreen />
       case 'storage':
         return <StorageScreen />
       case 'appearance':

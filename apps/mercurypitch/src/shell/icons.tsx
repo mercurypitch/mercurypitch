@@ -384,3 +384,28 @@ export const RefreshIcon: Component<ShellIconProps> = (props) => (
     <path d="M19.5 4.5v4.4h-4.4" />
   </svg>
 )
+
+/** Latency: a stopwatch, for the gap the wizard measures. */
+export const TimerIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="13.5" r="7.5" />
+    <path d="M12 13.5V9.5M10 2.5h4M18.5 6l1.5-1.5" />
+  </svg>
+)
+
+/** Auto-calibrate: two sliders, set by listening. */
+export const TuneIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 8h9M17 8h3M4 16h3M11 16h9" />
+    <circle cx="15" cy="8" r="2" />
+    <circle cx="9" cy="16" r="2" />
+  </svg>
+)
+
+/** Leaves the app: the phone's own Settings. */
+export const ExternalIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" />
+  </svg>
+)

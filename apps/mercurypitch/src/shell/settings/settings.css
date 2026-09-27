@@ -756,3 +756,114 @@
 .mp-storage__dot.is-rooms {
   background: var(--orange);
 }
+
+/* ---------- Microphone (S6 step 8) ---------- */
+
+.mp-mic__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-mic__eyebrow {
+  margin: 0;
+  font: 600 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mp-mic__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.mp-mic__input svg {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.mp-mic__input strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 16px/21px var(--font-body, sans-serif);
+}
+
+.mp-mic__chip {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 16%, transparent);
+  color: var(--teal);
+  font: 600 12px/16px var(--font-body, sans-serif);
+}
+
+.mp-mic__meta {
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.mp-mic__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mp-mic__ask {
+  margin: 0;
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-mic__peak {
+  flex: 0 0 auto;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.mp-mic__closed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* The meter: the fill's width is the level, on a dB scale. */
+.mp-mic__meter {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mp-mic__fill {
+  display: block;
+  height: 100%;
+  width: var(--p, 0%);
+  border-radius: 4px;
+  background: var(--green);
+  transition: width 80ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-mic__fill {
+    transition: none;
+  }
+}
+
+/* The web's wizard, inside the phone's sheet: the sheet is its panel. */
+.mp-latency {
+  border: 0;
+  background: transparent;
+  padding: 0 4px 8px;
+}

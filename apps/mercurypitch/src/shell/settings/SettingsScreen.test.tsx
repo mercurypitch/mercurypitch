@@ -14,11 +14,20 @@ import { renderShell } from '../render-for-test'
 import { ACCOUNT_DELETED, ACCOUNT_ROW } from './account-copy'
 import { dismissAccountDeletedNote, resumeAfterDeletion, } from './account-deletion'
 import { refreshAccount, resetAccountState } from './account-state'
+import type * as LevelCheckModule from './level-check'
 import { SettingsScreen } from './SettingsScreen'
 
 vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
   readMe: vi.fn(),
+}))
+const heard = vi.hoisted(() => ({
+  input: null as null | 'denied' | { label: string },
+}))
+
+vi.mock('./level-check', async (importOriginal) => ({
+  ...(await importOriginal<typeof LevelCheckModule>()),
+  knownInput: () => heard.input,
 }))
 vi.mock('@/db/services/voice-take-service', async (importOriginal) => ({
   ...(await importOriginal<typeof VoiceTakeService>()),
@@ -154,6 +163,46 @@ describe('Settings', () => {
     // 186 MB of takes and the 12.8 MB pitch model the app ships with.
     expect(row('storage')?.textContent).toContain('199 MB')
     expect(onPush).toHaveBeenCalledWith('storage')
+  })
+
+  it('names the input on the Microphone row once it has been heard, and pushes Microphone', () => {
+    const onPush = vi.fn()
+    heard.input = null
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+    const unheard = row('microphone')?.textContent ?? ''
+    view.unmount()
+    heard.input = { label: 'iPhone Microphone' }
+
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+    row('microphone')?.click()
+
+    expect(unheard).toBe('Microphone')
+    expect(row('microphone')?.textContent).toContain('iPhone Microphone')
+    expect(onPush).toHaveBeenCalledWith('microphone')
+    heard.input = null
+  })
+
+  it('says the microphone is off on its row once it has been refused', () => {
+    heard.input = 'denied'
+
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+    expect(row('microphone')?.textContent).toContain('Off')
+    heard.input = null
+  })
+
+  it('lists This phone in the order 7a draws it: Microphone, then Storage', () => {
+    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+    const order = [
+      ...(view.container.querySelectorAll('[data-settings-row]') ?? []),
+    ].map((node) => node.getAttribute('data-settings-row'))
+
+    expect(
+      order.filter((id) =>
+        ['microphone', 'storage', 'appearance'].includes(id ?? ''),
+      ),
+    ).toEqual(['microphone', 'storage', 'appearance'])
   })
 
   it('pushes Account from its row', () => {

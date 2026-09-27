@@ -16,11 +16,12 @@
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, LockIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
+import { ContrastIcon, LockIcon, MicIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { appearanceLabel } from './AppearanceScreen'
+import { knownInput } from './level-check'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
 
@@ -28,8 +29,16 @@ import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
 export type SettingsSubScreen =
   | 'account'
   | 'delete-account'
+  | 'microphone'
   | 'storage'
   | 'appearance'
+
+/** The Microphone row's answer: the input once heard, Off once refused. */
+function microphoneValue(): string | undefined {
+  const heard = knownInput()
+  if (heard === null) return undefined
+  return heard === 'denied' ? 'Off' : heard.label
+}
 
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
@@ -92,6 +101,15 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
             </Show>
           </SettingsGroup>
           <SettingsGroup title="This phone">
+            <SettingsRow
+              id="microphone"
+              icon={<MicIcon />}
+              label="Microphone"
+              value={microphoneValue()}
+              onPress={() => {
+                props.onPush('microphone')
+              }}
+            />
             <SettingsRow
               id="storage"
               icon={<StorageIcon />}
