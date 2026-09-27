@@ -46,11 +46,12 @@ vi.mock('@/lib/device-tier', async (importOriginal) => {
   }
 })
 
-const streams = vi.hoisted(() => ({ opened: 0 }))
+const streams = vi.hoisted(() => ({ opened: 0, decoder: true }))
 
 vi.mock('@/features/stem-mixer/stem-stream-source', () => ({
-  canStreamStems: () => true,
+  canStreamStems: () => streams.decoder,
   openStemStream: vi.fn(async () => {
+    if (!streams.decoder) return null
     streams.opened += 1
     return {
       sampleRate: 48_000,
@@ -115,6 +116,7 @@ let constructed = 0
 
 beforeEach(() => {
   streams.opened = 0
+  streams.decoder = true
   constructed = 0
   localStorage.clear()
   Element.prototype.scrollTo = vi.fn()
@@ -272,5 +274,41 @@ describe('the mixer the Karaoke room hosts', () => {
     mountHosted(host)
     fireEvent.click(screen.getByLabelText('Next song'))
     expect(host.onNext).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a song the room cannot play on this phone', () => {
+  // A WKWebView with no WebCodecs AudioDecoder cannot stream, and the room
+  // refuses a song it would have to decode whole (review item 3). Loading it
+  // again lands on the same refusal, so the card offers no "Try again".
+  it('says why, and offers no Try again', async () => {
+    streams.decoder = false
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 0,
+      body: null,
+      headers: new Headers(),
+      arrayBuffer: async () => new ArrayBuffer(5 * 1024 * 1024),
+    }))
+    const { host } = hosting()
+    mountHosted(host)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain(
+      "This song needs a newer version of this phone's software to play here.",
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
+  it('still offers Try again for a load that can succeed next time', async () => {
+    vi.stubGlobal('fetch', async () =>
+      Promise.reject(new TypeError('Failed to fetch')),
+    )
+    const { host } = hosting()
+    mountHosted(host)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('Stems could not be loaded.')
+    expect(screen.getByRole('button', { name: 'Try again' })).not.toBeNull()
   })
 })

@@ -30,10 +30,11 @@ import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
-import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, NEEDS_STREAMING_MESSAGE, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
+import { canStreamStems } from './stem-stream-source'
 import type { StreamedStem } from './stem-streaming-load'
 import { loadStreamedStem } from './stem-streaming-load'
 import type { StreamingStemVoice } from './streaming-stem-voice'
@@ -742,6 +743,8 @@ export const useStemMixerAudioController = (
     let residentBytes = 0
     /** What one streamed stem cost, for the budget the extras are fitted to. */
     let streamedStemCost = 0
+    /** Why a stem was refused rather than decoded whole, when one was. */
+    let refused: string | null = null
     const trace = (line: string): void => {
       if (!IS_DIAGNOSTIC_BUILD) return
       console.info(`[stem-mixer] ${line}`)
@@ -845,6 +848,20 @@ export const useStemMixerAudioController = (
               streamed.displayBytes +
               streamedStemBytes(streamed.sampleRate, streamed.channelCount),
           }
+        }
+        // No AudioDecoder at all, in a room that asked for the stream. A song
+        // decoded whole is what kills the phone (plan S8 §7 rule 2), so only a
+        // small stem is, and a song is refused with the reason.
+        if (
+          deps.forceStream === true &&
+          !canStreamStems() &&
+          bytes.byteLength > HOSTED_WHOLE_DECODE_MAX_BYTES
+        ) {
+          trace(
+            `${name} cannot be streamed here, and ${mb(bytes.byteLength)}MB is too much to decode whole`,
+          )
+          refused = NEEDS_STREAMING_MESSAGE
+          throw new Error(NEEDS_STREAMING_MESSAGE)
         }
         // A codec this platform will not decode, or a container mediabunny
         // cannot walk. Better a whole decode than no song.
@@ -1037,7 +1054,12 @@ export const useStemMixerAudioController = (
       // has produced no audio either, and counting the request instead of
       // the result left that room silent behind a working transport, with
       // no error and no retry.
-      if (loadedCount === 0 && !disposed) {
+      if (refused !== null && !disposed) {
+        // Terminal: loading it again cannot stream either.
+        setLoadErrorRetryable(false)
+        setLoadErrorLocal(refused)
+        deps.showNotification(refused, 'warning')
+      } else if (loadedCount === 0 && !disposed) {
         const msg =
           'Stems could not be loaded. Audio data may have been lost after a page reload.'
         setLoadErrorLocal(msg)

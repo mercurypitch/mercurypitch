@@ -601,3 +601,107 @@ export async function walkKaraoke(browser, args, frame, kit) {
   }
   return steps.map((step) => `[${where}] ${step}`)
 }
+
+/**
+ * A phone that cannot stream: a WKWebView with no WebCodecs AudioDecoder.
+ * The room asked for the stream, so it must refuse a song it would have to
+ * decode whole (the ~180 MiB that killed iOS), say why, and offer no Try
+ * again, since a second try lands on the same refusal (review item 3, plan
+ * S8 §7 rule 2). Every decode the page asks for is weighed on the way.
+ */
+export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
+  const { isolate, seed, tapDoor, waitPhase, walkOpen, bootTimeoutMs } = kit
+  const ctx = { ...args, frame }
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const where = `${frame.width}x${frame.height}`
+  try {
+    const page = await context.newPage()
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      delete window.AudioDecoder
+      const sizes = []
+      window.__probeDecodes = sizes
+      const decode = BaseAudioContext.prototype.decodeAudioData
+      BaseAudioContext.prototype.decodeAudioData = function (data, ...rest) {
+        sizes.push(data?.byteLength ?? -1)
+        return decode.call(this, data, ...rest)
+      }
+    })
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page
+      .locator('#root.loaded')
+      .waitFor({ state: 'attached', timeout: bootTimeoutMs })
+    await page
+      .locator('[data-testid="rooms-alley"]')
+      .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    await page.waitForTimeout(600)
+    await tapDoor(page, 'karaoke')
+    await waitPhase(page, 'alive', 'karaoke', 'select Karaoke')
+    await walkOpen(
+      page,
+      ctx,
+      'karaoke-nodecoder-open',
+      '[data-testid="karaoke-room"]',
+    )
+    const card = page.locator(
+      '[data-testid="karaoke-mobile-stage"] [role="alert"]',
+    )
+    await card
+      .first()
+      .waitFor({ state: 'visible', timeout: kit.runTimeoutMs })
+      .catch(async () => {
+        const decodes = await page.evaluate(() => window.__probeDecodes ?? [])
+        throw new Error(
+          `no refusal showed; the stage reads ${JSON.stringify(await page.evaluate(readStage))}; decodes asked for: ${JSON.stringify(decodes)} bytes`,
+        )
+      })
+    const seen = await page.evaluate(() => {
+      const alert = document.querySelector(
+        '[data-testid="karaoke-mobile-stage"] [role="alert"]',
+      )
+      return {
+        decoderGone: typeof window.AudioDecoder === 'undefined',
+        text: alert?.querySelector('p')?.textContent?.trim() ?? null,
+        buttons: [...(alert?.querySelectorAll('button') ?? [])].map((b) =>
+          (b.textContent ?? '').trim(),
+        ),
+        decodes: window.__probeDecodes ?? [],
+      }
+    })
+    const problems = []
+    if (!seen.decoderGone) problems.push('AudioDecoder was still there')
+    if (
+      seen.text !==
+      "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
+    ) {
+      problems.push(`the card reads ${JSON.stringify(seen.text)}`)
+    }
+    if (seen.buttons.includes('Try again')) {
+      problems.push('the card offers Try again')
+    }
+    const whole = seen.decodes.filter((bytes) => bytes > 2 * 1024 * 1024)
+    if (whole.length > 0) {
+      problems.push(
+        `it decoded ${whole.length} stem(s) whole (${whole.join(', ')} bytes)`,
+      )
+    }
+    if (problems.length > 0) throw new Error(problems.join('; '))
+    return [
+      `[${where}] karaoke without AudioDecoder: the song is refused, not decoded whole: "${seen.text}"; no Try again; ${seen.decodes.length} decode(s) asked for, none over 2 MiB`,
+    ]
+  } catch (error) {
+    throw new Error(
+      `[${where}] without AudioDecoder: ${error.message.split('\n')[0]}`,
+    )
+  } finally {
+    await context.close()
+  }
+}

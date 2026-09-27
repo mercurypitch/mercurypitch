@@ -55,9 +55,15 @@ let openedStreams = 0
 let disposedStreams = 0
 let chunkIterations = 0
 
+/** False for a WKWebView with no WebCodecs AudioDecoder: nothing streams. */
+let decoderPresent = true
+/** False for a file this decoder cannot stream (a codec it lacks). */
+let streamable = true
+
 vi.mock('./stem-stream-source', () => ({
-  canStreamStems: () => true,
+  canStreamStems: () => decoderPresent,
   openStemStream: vi.fn(async () => {
+    if (!decoderPresent || !streamable) return null
     openedStreams++
     return {
       sampleRate: STEM_RATE,
@@ -267,17 +273,23 @@ function harness(overrides: Partial<StemMixerAudioDeps> = {}) {
   }
 }
 
+/** Every stem the fetch answers is this big. */
+let stemBytes = 10 * 1024 * 1024
+
 beforeEach(() => {
   decodeCalls = 0
   openedStreams = 0
   disposedStreams = 0
   chunkIterations = 0
+  decoderPresent = true
+  streamable = true
+  stemBytes = 10 * 1024 * 1024
   vi.stubGlobal(
     'fetch',
     vi.fn(
       async () =>
-        new Response(new Uint8Array(10 * 1024 * 1024), {
-          headers: { 'content-length': String(10 * 1024 * 1024) },
+        new Response(new Uint8Array(stemBytes), {
+          headers: { 'content-length': String(stemBytes) },
         }),
     ),
   )
@@ -412,6 +424,80 @@ describe('the Karaoke room, whatever the device says it is (K9)', () => {
     expect(decodeCalls).toBe(0)
     expect(openedStreams).toBe(2)
     expect(h.vocal().stream ?? null).not.toBeNull()
+    h.dispose()
+  })
+})
+
+describe('the Karaoke room on a phone that cannot stream (no AudioDecoder)', () => {
+  // Streaming needs WebCodecs' AudioDecoder, and a WKWebView before it
+  // arrived has none. The mixer then decoded the song whole ("better a whole
+  // decode than no song"), which for a song is the ~180 MiB that killed iOS.
+  // The room asked for the stream, so it refuses a song it would have to
+  // decode whole, and says why (review item 3, plan S8 §7 rule 2).
+  it('refuses a song it would have to decode whole, and says why', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(h.controller.loadError()).toBe(
+      "This song needs a newer version of this phone's software to play here. Update it, then open the song again.",
+    )
+    // Loading it again cannot stream either.
+    expect(h.controller.loadErrorRetryable()).toBe(false)
+    expect(h.notifications.some((m) => /could not be loaded/u.test(m))).toBe(
+      false,
+    )
+    h.dispose()
+  })
+
+  it('still plays a stem small enough to hold whole', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    stemBytes = 1024 * 1024
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
+    h.dispose()
+  })
+
+  it('refuses the song once a stem is past the line, not before', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    stemBytes = 2 * 1024 * 1024 + 1
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(h.controller.loadErrorRetryable()).toBe(false)
+    h.dispose()
+  })
+
+  it('is about a missing AudioDecoder only: a file the decoder cannot stream is decoded as before', async () => {
+    // The room's stems are AAC, which every AudioDecoder streams. The
+    // refusal is for the phone that has none (the brief's scope); a codec
+    // the decoder lacks still falls back to a whole decode.
+    deviceClass = 'mobile'
+    streamable = false
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
+    h.dispose()
+  })
+
+  it('leaves the web mixer as it was: it decodes the song whole', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    const h = harness()
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
     h.dispose()
   })
 })

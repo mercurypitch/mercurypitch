@@ -29,10 +29,12 @@
 //
 // THE KARAOKE ROOM has a walk of its own on each frame (probe-karaoke.mjs):
 // the door, the cued song, play and pause, the library, the options and the
-// pin, and the studio, with nothing anywhere scrolling sideways. A build
-// that imports songs (every build but the store's) then walks one import
-// through, against a stand-in for the two hosts it would reach
-// (probe-karaoke-import.mjs). `--karaoke-only` walks those alone.
+// pin, and the studio, with nothing anywhere scrolling sideways. Then the
+// room on a phone with no AudioDecoder, which cannot stream: the song is
+// refused with the reason, never decoded whole. A build that imports songs
+// (every build but the store's) then walks one import through, against a
+// stand-in for the two hosts it would reach (probe-karaoke-import.mjs).
+// `--karaoke-only` walks those alone.
 //
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
@@ -43,7 +45,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
-import { walkKaraoke } from './probe-karaoke.mjs'
+import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
@@ -4949,6 +4951,11 @@ async function main() {
   const walkKaraokeFrame = async (frame) => {
     try {
       steps.push(...(await walkKaraoke(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(`karaoke: ${error.message}`)
+    }
+    try {
+      steps.push(...(await walkKaraokeNoDecoder(browser, args, frame, kit)))
     } catch (error) {
       failures.push(`karaoke: ${error.message}`)
     }

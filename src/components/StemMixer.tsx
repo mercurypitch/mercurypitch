@@ -2334,10 +2334,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             totalBytes={audio.totalBytes}
             // The same retry the desktop card has carried all along. On a
             // phone this stage IS the mixer, so without it a failed load had
-            // no door but the browser's reload button.
-            onRetryLoad={() => {
-              void audio.loadStems()
-            }}
+            // no door but the browser's reload button. A room's song refused
+            // for good (a phone that cannot stream it) has none: loading it
+            // again lands on the same refusal, and the library is the way on.
+            onRetryLoad={
+              hosted !== undefined && !audio.loadErrorRetryable()
+                ? undefined
+                : () => {
+                    void audio.loadStems()
+                  }
+            }
             elapsed={audio.elapsed}
             lyricsElapsed={audio.audibleElapsed}
             duration={audio.duration}

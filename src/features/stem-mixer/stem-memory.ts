@@ -132,6 +132,27 @@ export function fitStems(input: StemFitInput): StemFit {
   return { allowed, skipped: input.pending - allowed, projectedBytes }
 }
 
+// ── A room that cannot stream ────────────────────────────────
+//
+// Streaming needs WebCodecs' AudioDecoder, and a WKWebView from before it
+// arrived has none. The web mixer then decodes the song whole, as it always
+// has. A room that asked for the stream must not (plan S8 §7 rule 2): a whole
+// song decoded is the ~180 MiB that killed iOS. There a stem is decoded whole
+// only while it is small, and a song is refused with the reason.
+
+/**
+ * The largest compressed stem a room that asked for the stream decodes whole
+ * when this platform cannot stream at all. The room's stems are AAC at 128
+ * kbps or more (the examples about 137, a separation 192), so 2 MiB is at
+ * most about two minutes: some 48 MiB each at 48 kHz stereo, and two of them
+ * well under what killed iOS. Every full song is bigger.
+ */
+export const HOSTED_WHOLE_DECODE_MAX_BYTES = 2 * 1024 * 1024
+
+/** What the room says instead of decoding a song it cannot hold. */
+export const NEEDS_STREAMING_MESSAGE =
+  "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
+
 // ── Streamed playback ────────────────────────────────────────
 //
 // The other way to hold a stem: decode a few seconds at a time and schedule
