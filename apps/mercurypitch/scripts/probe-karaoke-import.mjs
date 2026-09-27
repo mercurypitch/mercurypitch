@@ -605,7 +605,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       lines: [
         'Uses 1 of your 20 songs this month. 17 left after this.',
         'Sends: this song to our server, which splits it into voice and music.',
-        'Open Mercury Pitch within about 48 hours to save it to this phone.',
+        'Open Mercury Pitch within about a day to save it to this phone.',
         'Keep Mercury Pitch open while it is sent, about half a minute. The separating carries on if you leave.',
       ],
       buttons: ['Close', 'Separate', 'Cancel'],
@@ -626,7 +626,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     await shoot(page, ctx, 'import-confirm')
     read.push(await sideways('the confirm sheet', confirm))
     steps.push(
-      `karaoke import: the picker opens inside the tap (several at once); "${asked.title}" names "${SONG}", "${asked.lines[0]}", the 48 hours and the keep-open line; asking made the phone's identity (1 anonymous, then /me)`,
+      `karaoke import: the picker opens inside the tap (several at once); "${asked.title}" names "${SONG}", "${asked.lines[0]}", the day to collect it in and the keep-open line; asking made the phone's identity (1 anonymous, then /me)`,
     )
 
     // ── The queue, each thing it waits for ────────────────────
