@@ -27,6 +27,11 @@
 // set through the DevTools protocol (probe-landscape.mjs). `--landscape-only`
 // walks that half alone.
 //
+// THE KARAOKE ROOM has a walk of its own on each frame (probe-karaoke.mjs):
+// the door, the cued song, play and pause, the library, the options and the
+// pin, and the studio, with nothing anywhere scrolling sideways.
+// `--karaoke-only` walks that alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -36,6 +41,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { walkKaraoke } from './probe-karaoke.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
@@ -83,6 +89,7 @@ function parseArgs(argv) {
     headed: false,
     chromeOnly: false,
     landscapeOnly: false,
+    karaokeOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -93,6 +100,7 @@ function parseArgs(argv) {
     else if (flag === '--headed') args.headed = true
     else if (flag === '--chrome-only') args.chromeOnly = true
     else if (flag === '--landscape-only') args.landscapeOnly = true
+    else if (flag === '--karaoke-only') args.karaokeOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -3181,11 +3189,14 @@ async function walkAlley(browser, args, frame) {
       throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
     }
     const singLabel = 'Sing, Retro Analog Studio. A live stage for your voice.'
-    const karaokeLabel =
-      'Karaoke, Broadway Theater. Coming soon. Sing your favorite songs.'
+    // Karaoke opens (plan S8 §2); Piano is still to come.
+    const karaokeLabel = 'Karaoke, Broadway Theater. Sing your favorite songs.'
+    const pianoLabel =
+      'Piano, Nocturne Studio. Coming soon. Falling notes. MIDI ready.'
     if (
       !first.labels.includes(singLabel) ||
-      !first.labels.includes(karaokeLabel)
+      !first.labels.includes(karaokeLabel) ||
+      !first.labels.includes(pianoLabel)
     ) {
       throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
     }
@@ -3398,39 +3409,41 @@ async function walkAlley(browser, args, frame) {
     await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     await waitPhase(page, 'rest', null, 'Ear Lab open: back at rest')
 
-    // ── Karaoke: locked ───────────────────────────────────────
-    await tapDoor(page, 'karaoke')
-    await waitPhase(page, 'selected', 'karaoke', 'Karaoke')
+    // ── A locked door: Piano ──────────────────────────────────
+    // Karaoke was the locked door this walked until the room opened it
+    // (plan S8 §2); probe-karaoke.mjs walks it now. Piano is still to come.
+    await tapDoor(page, 'piano')
+    await waitPhase(page, 'selected', 'piano', 'Piano')
     await page.waitForTimeout(600)
     await expectText(
       page,
       '[data-testid="alley-eyebrow"]',
       'Coming soon',
-      'the Karaoke eyebrow',
+      'the Piano eyebrow',
     )
     await expectText(
       page,
       '[data-testid="alley-line"]',
-      'Sing your favorite songs.',
-      'the Karaoke line',
+      'Falling notes. MIDI ready.',
+      'the Piano line',
     )
     const locked = await alleyNow(page)
     if (locked.sounding !== null || locked.level !== 0) {
-      throw new Error(`Karaoke: sound is up ${JSON.stringify(locked)}`)
+      throw new Error(`Piano: sound is up ${JSON.stringify(locked)}`)
     }
     if ((await mediaPlaying(page)) !== 0) {
-      throw new Error('Karaoke: a media element is still playing')
+      throw new Error('Piano: a media element is still playing')
     }
-    note = await goneKept(page, 'Karaoke', {
+    note = await goneKept(page, 'Piano', {
       gone: ['[data-testid="alley-enter"]', '.mp-alley__door.is-alive'],
       kept: [
         '[data-testid="alley-eyebrow"]',
-        '.mp-alley__door.is-selected[data-door="karaoke"]',
+        '.mp-alley__door.is-selected[data-door="piano"]',
       ],
     })
-    await shoot(page, ctx, 'alley-karaoke-locked')
+    await shoot(page, ctx, 'alley-piano-locked')
     steps.push(
-      `alley Karaoke: Coming soon, its line, no Enter, nothing playing; ${note}`,
+      `alley Piano: Coming soon, its line, no Enter, nothing playing; ${note}`,
     )
 
     // ── An open called off: a rail tab at +150 ms ─────────────
@@ -4763,6 +4776,10 @@ const UPLOAD_CHUNKS = [
     "the app chunk: the vocal separator's own upload box, the voiceprint sync and the MIDI library import all upload a file the singer chose. Covered by the denial rule, which allowlists nothing.",
   ],
   [
+    'KaraokeStudio',
+    "the Karaoke studio pushed from the room (plan S8 §11) names the panel's `upload` view, where its songs are listed: a view id, not copy. The panel itself compiles into the app chunk above.",
+  ],
+  [
     'AdminContentStudio',
     "the owner's studio: managed uploads of demo audio, and the states of one in flight.",
   ],
@@ -4899,6 +4916,19 @@ async function main() {
     ],
   })
 
+  // What the walks in their own modules borrow from this one.
+  const kit = {
+    isolate,
+    seed,
+    shoot,
+    tapDoor,
+    waitPhase,
+    walkOpen,
+    bootTimeoutMs: BOOT_TIMEOUT_MS,
+    stepTimeoutMs: STEP_TIMEOUT_MS,
+    runTimeoutMs: RUN_TIMEOUT_MS,
+  }
+
   const steps = []
   const failures = []
   if (args.dist !== null) {
@@ -4912,7 +4942,14 @@ async function main() {
     // Every frame is walked even when an earlier one failed: "it broke at 390"
     // and "it broke at both" are different reports, and the second one is the
     // one that says the fix is not a width rule.
-    for (const frame of args.landscapeOnly ? [] : FRAMES) {
+    for (const frame of args.karaokeOnly ? FRAMES : []) {
+      try {
+        steps.push(...(await walkKaraoke(browser, args, frame, kit)))
+      } catch (error) {
+        failures.push(`karaoke: ${error.message}`)
+      }
+    }
+    for (const frame of args.landscapeOnly || args.karaokeOnly ? [] : FRAMES) {
       const result = await walkFrame(browser, args, frame)
       steps.push(...result.steps)
       failures.push(...result.failures)
@@ -4952,8 +4989,13 @@ async function main() {
           `[${frame.width}x${frame.height}] alley scope: ${error.message}`,
         )
       }
+      try {
+        steps.push(...(await walkKaraoke(browser, args, frame, kit)))
+      } catch (error) {
+        failures.push(`karaoke: ${error.message}`)
+      }
     }
-    if (!args.chromeOnly) {
+    if (!args.chromeOnly && !args.karaokeOnly) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
           steps.push(...(await walkAlleyLandscape(browser, args, frame)))
@@ -4971,14 +5013,6 @@ async function main() {
             `[${frame.width}x${frame.height}] alley safe top: ${error.message}`,
           )
         }
-      }
-      const kit = {
-        isolate,
-        seed,
-        shoot,
-        bootTimeoutMs: BOOT_TIMEOUT_MS,
-        stepTimeoutMs: STEP_TIMEOUT_MS,
-        runTimeoutMs: RUN_TIMEOUT_MS,
       }
       for (const frame of LANDSCAPE_INSET_FRAMES) {
         try {
@@ -5004,9 +5038,12 @@ async function main() {
     process.exitCode = 1
     return
   }
-  console.log(
-    `\nprobe-bundle: every step passed (${args.theme}, ${args.landscapeOnly ? 'landscape only' : `${FRAMES.length} frames`}).`,
-  )
+  const scope = args.landscapeOnly
+    ? 'landscape only'
+    : args.karaokeOnly
+      ? `the Karaoke room only, ${FRAMES.length} frames`
+      : `${FRAMES.length} frames`
+  console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 
 await main()

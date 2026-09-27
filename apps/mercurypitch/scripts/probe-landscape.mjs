@@ -26,6 +26,8 @@
 // so the Sing room's run and its take sheet are real) and passes in its own
 // seed, isolation and screenshot helpers.
 
+import { readSideways } from './probe-karaoke.mjs'
+
 /** The two phones the brief names, on their sides. */
 export const LANDSCAPE_INSET_FRAMES = [
   { width: 852, height: 393, side: 59, bottom: 21 },
@@ -367,6 +369,69 @@ const readCoachMark = () => {
 const overlaps = (a, b) =>
   Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 &&
   Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5
+
+/**
+ * In the page: where the hosted zen stage draws its song line, its play
+ * button and its lyrics, as [left, right] and [top, bottom] in CSS px.
+ */
+const readColumns = () => {
+  const box = (selector) => {
+    const el = document.querySelector(selector)
+    if (el === null) return null
+    const r = el.getBoundingClientRect()
+    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }
+  }
+  const song = box('[data-testid="karaoke-songline"]')
+  const play = box(
+    '[data-testid="karaoke-mobile-stage"] button[aria-label="Play"], [data-testid="karaoke-mobile-stage"] button[aria-label="Pause"]',
+  )
+  const lyrics = box('[data-testid="karaoke-lyrics"]')
+  const stage = box('[data-testid="karaoke-mobile-stage"]')
+  const round = (n) => Math.round(n)
+  return {
+    song,
+    play,
+    lyricsBox: lyrics,
+    stage,
+    left:
+      song === null || play === null
+        ? null
+        : [
+            round(Math.min(song.left, play.left)),
+            round(Math.max(song.right, play.right)),
+          ],
+    lyrics: lyrics === null ? null : [round(lyrics.left), round(lyrics.right)],
+  }
+}
+
+/** What is wrong with the columns `readColumns` read, if anything. */
+const columnProblems = (c) => {
+  if (c.song === null || c.play === null || c.lyricsBox === null) {
+    return ['the song line, the play button or the lyrics is missing']
+  }
+  const problems = []
+  if (c.song.right > c.lyricsBox.left + 0.5) {
+    problems.push('the song line runs into the lyrics column')
+  }
+  if (c.play.right > c.lyricsBox.left + 0.5) {
+    problems.push('the transport runs into the lyrics column')
+  }
+  if (!(c.play.top > c.song.bottom)) {
+    problems.push('the transport is not under the song line')
+  }
+  const tall = c.lyricsBox.bottom - c.lyricsBox.top
+  const stageTall = c.stage.bottom - c.stage.top
+  if (tall < stageTall * 0.5) {
+    problems.push(
+      `the lyrics column is ${Math.round(tall)} px of ${Math.round(stageTall)}`,
+    )
+  }
+  const leftWide = c.play.right - Math.min(c.song.left, c.play.left)
+  if (c.lyricsBox.right - c.lyricsBox.left <= leftWide) {
+    problems.push('the lyrics column is not the wider one')
+  }
+  return problems
+}
 
 /**
  * One frame: every surface the brief names, each measured where it opens and
@@ -731,13 +796,12 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await measure('developer', '[data-testid="shell-developer"]', { end: true })
     await back('[data-testid="shell-developer"]')
 
-    // ── Karaoke, Piano and Guitar, from More ──
+    // ── Piano and Guitar, from More ──
     // The studio's own rooms, shared with the web app. A phone on its side
     // is wider than the web's phone rule, so each draws its wide layout: the
-    // Karaoke header and its view tabs, the song status bar over Piano and
-    // Guitar, and Piano's practice-view toolbar.
+    // song status bar over Piano and Guitar, and Piano's practice-view
+    // toolbar.
     for (const [item, ready] of [
-      ['karaoke', '.uvr-panel .panel-header'],
       ['piano', '[data-testid="practice-view-toolbar"]'],
       ['guitar', '[data-testid="gp-song-status-bar"]'],
     ]) {
@@ -746,57 +810,70 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
       await visible(ready)
       await settle(600)
       await measure(item, null, { end: true })
-      if (item !== 'karaoke') continue
-      // The header's row is wider than a phone on its side, so it scrolls
-      // sideways. Scrolled to its end it is measured again, the same way:
-      // what went off to the left must not pass under the notch either. And
-      // its last control has to come to rest whole, and clear of the right
-      // inset, or the end of the row cannot be reached.
-      at = 'scrolling the karaoke header'
-      const header = '.uvr-panel .panel-header'
-      const row = await page.evaluate((selector) => {
-        const el = document.querySelector(selector)
-        const tabs = el.querySelectorAll('.header-actions .view-tab')
-        const last = tabs[tabs.length - 1]
-        el.scrollLeft = el.scrollWidth
-        const box = el.getBoundingClientRect()
-        const r = last.getBoundingClientRect()
-        const round = (n) => Math.round(n * 10) / 10
-        return {
-          over: el.scrollWidth - el.clientWidth,
-          whole: r.left >= box.left - 0.5 && r.right <= box.right + 0.5,
-          box: `${round(box.left)}..${round(box.right)}`,
-          left: round(r.left),
-          right: round(r.right),
-          text: (last.textContent ?? '').trim(),
-        }
-      }, header)
-      await settle(300)
-      const end = await page.evaluate(audit, { scope: header, exempt: EXEMPT })
-      await shoot(page, ctx, 'landscape-karaoke-header-end')
-      await page.evaluate((selector) => {
-        document.querySelector(selector).scrollLeft = 0
-      }, header)
-      const problems = end.problems.map(
-        (p) => `karaoke header, scrolled to its end: ${p}`,
-      )
-      if (!row.whole) {
-        problems.push(
-          `karaoke header, scrolled to its end: "${row.text}" spans x ${row.left}..${row.right}, cut by the header's box at ${row.box}`,
-        )
-      }
-      if (row.right > frame.width - frame.side + 0.5) {
-        problems.push(
-          `karaoke header, scrolled to its end: "${row.text}" ends at x ${row.right}, inside the ${frame.side} px inset`,
-        )
-      }
-      if (problems.length > 0) failures.push(...problems)
-      else {
-        steps.push(
-          `karaoke header: ${row.over} px wider than its box (${row.box}), so it scrolls sideways; scrolled to its end, ${end.inks} runs of ink inside the ${frame.side} px insets, and "${row.text}" whole at x ${row.left}..${row.right}`,
-        )
-      }
     }
+    // ── Karaoke, from More: the room on its side (plan S8 D3 A) ──
+    // Two columns: the song, the bar and the transport on the left, the
+    // lyrics on the right. Measured cued, and again playing, when the rail
+    // has stepped aside and zen's bar is down on the home indicator's band.
+    // Last, because a song paused in the room is a run: the rail stays
+    // aside until it ends, and Back parks it under a session pill.
+    at = 'on the way to karaoke'
+    const stageButton = (label) =>
+      `[data-testid="karaoke-mobile-stage"] button[aria-label="${label}"]`
+    await more('karaoke')
+    await visible('[data-testid="karaoke-room"]')
+    await page
+      .locator(`${stageButton('Play')}:not([disabled])`)
+      .waitFor({ state: 'visible', timeout: runTimeoutMs })
+      .catch(() => {
+        throw new Error('no song ready to play in the room')
+      })
+    await settle(600)
+    await measure('karaoke', null, { end: true })
+    at = 'reading the two columns'
+    const columns = await page.evaluate(readColumns)
+    const problems = columnProblems(columns)
+    if (problems.length > 0) {
+      failures.push(
+        `karaoke columns: ${problems.join('; ')} (${JSON.stringify(columns)})`,
+      )
+    } else {
+      steps.push(
+        `landscape karaoke: two columns, the song and the transport in ${columns.left.join('..')}, the lyrics in ${columns.lyrics.join('..')}`,
+      )
+    }
+    at = 'playing on its side'
+    await page.locator(stageButton('Play')).click()
+    await visible(stageButton('Pause'))
+    await settle(1200)
+    await measure('karaoke-playing', null)
+    await page.locator(stageButton('Pause')).click()
+    await visible(stageButton('Play'))
+
+    // The options, and the studio they push, which must not scroll sideways
+    // on its side either (plan step 12).
+    at = 'on the way to the karaoke options'
+    const options = '[role="dialog"][aria-label="Karaoke options"]'
+    await page.locator('[data-testid="shell-room-gear"]').click()
+    await visible(options)
+    await settle()
+    await measure('karaoke-options', options, { end: true })
+    at = 'on the way to the karaoke studio'
+    await page.locator('button[aria-label="Manage songs"]').click()
+    await visible('[data-testid="karaoke-studio"]')
+    await visible('.history-list-inline .uvr-session-result')
+    await settle(600)
+    await measure('karaoke-studio', pushed, { end: true })
+    const wide = await page.evaluate(readSideways, pushed)
+    if (wide.over.length > 0) {
+      failures.push(...wide.over.map((line) => `karaoke studio: ${line}`))
+    } else {
+      steps.push(
+        `landscape karaoke studio: none of its ${wide.elements} elements is wider than its box`,
+      )
+    }
+    await back('[data-testid="karaoke-studio"]')
+    await visible('[data-testid="karaoke-room"]')
   } catch (error) {
     failures.push(`${at}: ${error.message.split('\n')[0]}`)
   } finally {
