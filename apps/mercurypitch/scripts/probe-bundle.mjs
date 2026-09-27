@@ -661,6 +661,8 @@ async function walkChrome(page, ctx) {
   await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
   steps.push('settings: back to the rail')
 
+  steps.push(...(await walkToSignIn(page, ctx, pushed, rail)))
+
   // One reservation, not two (P2). The stage's own bar used to add its own
   // safe-area inset on top of the scroller's, which left 8 + 10 + 34 pt of
   // nothing between the last control and the band on a notched phone. Since
@@ -4432,6 +4434,81 @@ async function walkAlleyScope(browser, args, frame) {
   }
   if (failures.length > 0) throw new Error(failures.join('; '))
   return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
+/**
+ * The native pass to the sign-in sheet and back (S6, step 3): More, then
+ * Settings, then Account, then its one button. The sheet is the phone's way
+ * in, over the screen that asked: a code by email is always offered, and the
+ * television's phone row and the passkey button never are (audit D2). Back
+ * is the shell's own, the one Android's button presses: a pane, then the
+ * sheet, then each screen under it, in that order.
+ */
+async function walkToSignIn(page, ctx, pushed, rail) {
+  const steps = []
+  const visible = (selector) =>
+    page
+      .locator(selector)
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+
+  await page.locator('[data-rail-item="more"]').click()
+  await visible('[data-more-item="settings"]')
+  await page.locator('[data-more-item="settings"]').click()
+  await visible('[data-testid="settings-screen"]')
+  await page.locator('[data-settings-row="account"]').click()
+  await visible('[data-testid="account-screen"]')
+  await page.locator('[data-testid="account-sign-in"]').click()
+  const sheet = page.locator('[data-testid="signin-sheet"]')
+  await sheet.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  await page.waitForTimeout(400)
+  await shoot(page, ctx, 'signin-sheet')
+
+  const offered = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="signin-sheet"]')
+    const text = root?.textContent ?? ''
+    return {
+      ways: [...(root?.querySelectorAll('.mp-signin__ways button') ?? [])].map(
+        (button) => button.getAttribute('data-testid'),
+      ),
+      phoneRow: text.includes('Sign in with your phone'),
+      passkey: /passkey/i.test(text),
+      webDialog: document.querySelector('[data-testid="auth-modal-overlay"]'),
+    }
+  })
+  if (
+    !offered.ways.includes('signin-email') ||
+    offered.phoneRow ||
+    offered.passkey ||
+    offered.webDialog !== null
+  ) {
+    throw new Error(`the sign-in sheet: ${JSON.stringify(offered)}`)
+  }
+  steps.push(
+    `sign-in: the sheet over Account (${offered.ways.join(', ')}); no phone row, no passkey, no web dialog`,
+  )
+
+  await page.locator('[data-testid="signin-email"]').click()
+  await visible('[data-testid="signin-email-input"]')
+  await page.waitForTimeout(300)
+  await shoot(page, ctx, 'signin-email')
+
+  const backs = [await pressBack(page)]
+  await visible('[data-testid="signin-sheet"][data-pane="methods"]')
+  backs.push(await pressBack(page))
+  await sheet.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+  await visible('[data-testid="account-screen"]')
+  backs.push(await pressBack(page))
+  await visible('[data-testid="settings-screen"]')
+  backs.push(await pressBack(page))
+  await pushed.waitFor({ state: 'hidden', timeout: STEP_TIMEOUT_MS })
+  await rail.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  if (backs.join(',') !== 'sheet,sheet,pushed,pushed') {
+    throw new Error(`sign-in: Back went ${backs.join(', ')}`)
+  }
+  steps.push(
+    'sign-in: Back stepped the sheet to its first pane, closed it, then popped Account and Settings',
+  )
+  return steps
 }
 
 async function pressBack(page) {

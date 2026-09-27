@@ -330,3 +330,241 @@
   padding: 0 16px;
   font-size: 15px;
 }
+
+/* ---------- the sign-in sheet ---------- */
+
+.mp-signin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 4px 8px;
+}
+
+.mp-signin__head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-signin__spacer {
+  width: 44px;
+  height: 44px;
+}
+
+.mp-signin__title {
+  margin: 0;
+  text-align: center;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-signin__lead {
+  margin: 0;
+  text-align: center;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-signin__lead strong {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-signin__ways,
+.mp-signin__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mp-signin__form {
+  gap: 12px;
+}
+
+/* The three ways in: full buttons, one height. */
+.mp-provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 600 17px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-provider:active {
+  transform: scale(0.98);
+}
+
+.mp-provider:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Apple's own style: white on a dark screen, black on a light one. The two
+   text tokens are exactly that pair, whichever theme is on. */
+.mp-provider--apple {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.mp-provider--google {
+  background: var(--bg-secondary);
+}
+
+.mp-signin__link {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 500 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-signin__link:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mp-signin__caption {
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-signin__fine {
+  margin: 0;
+  text-align: center;
+  font: 400 12px/17px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-signin__fine a {
+  color: var(--text-secondary);
+}
+
+.mp-signin__error {
+  margin: 0;
+  text-align: center;
+  font: 500 14px/19px var(--font-body, sans-serif);
+  color: var(--red);
+}
+
+/* ---------- a labelled field ---------- */
+
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-field__label {
+  font: 500 13px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* 16px: iOS zooms the page into any field set smaller. */
+.mp-field__input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: 400 16px/1.2 var(--font-body, sans-serif);
+}
+
+.mp-field__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- six boxes over one field ---------- */
+
+.mp-code {
+  position: relative;
+}
+
+.mp-code__boxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mp-code__box {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font:
+    600 24px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.mp-code__box.is-filled {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+}
+
+.mp-code__input:focus ~ .mp-code__boxes .mp-code__box.is-next {
+  border-color: var(--accent);
+}
+
+/* The real field lies over the boxes and draws nothing of its own, so a tap
+   anywhere on the row lands in it and the keyboard's code suggestion fills it
+   in one go. */
+.mp-code__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+}
+
+.mp-code__input::selection {
+  background: transparent;
+}
+
+.mp-code__input:focus {
+  outline: none;
+}
+
+/* A recovery code: the field shows itself and the boxes step aside. */
+.mp-code--free .mp-code__input {
+  position: static;
+  height: 56px;
+  padding: 0 14px;
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  caret-color: auto;
+  text-align: center;
+  letter-spacing: 0.08em;
+  font:
+    600 20px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}

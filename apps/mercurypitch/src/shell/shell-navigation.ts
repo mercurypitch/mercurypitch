@@ -23,6 +23,7 @@ import { navigateTo } from '@/lib/hash-router'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { signInBack, signInOpen } from './settings/sign-in-state'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
 
@@ -164,7 +165,7 @@ export type BackOutcome =
 
 /** Everything the SHELL owns that outranks the room's own overlay. */
 function shellOverlayOpen(): boolean {
-  return columnOpen() || keepAlertOpen() || moreOpen()
+  return columnOpen() || keepAlertOpen() || moreOpen() || signInOpen()
 }
 
 /**
@@ -172,7 +173,8 @@ function shellOverlayOpen(): boolean {
  * keyboard's, and Android's hardware button.
  *
  * The pushed screen sits under the sheet because a sheet opens OVER one
- * (More is reachable while Settings is up); the alert is above both because
+ * (More is reachable while Settings is up, and the sign-in sheet opens over
+ * Account); the alert is above both because
  * a modal question has to be answerable. Pushed screens are a stack (Settings
  * and the screens its rows push), and one press pops one level of it.
  *
@@ -184,7 +186,7 @@ function shellOverlayOpen(): boolean {
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
   if (keepAlertOpen()) return 'alert'
-  if (moreOpen()) return 'sheet'
+  if (moreOpen() || signInOpen()) return 'sheet'
   if (pushed() !== null) return 'pushed'
   if (hasSomewhereToGo) return 'history'
   return 'minimize'
@@ -245,7 +247,11 @@ export function performBack(host: BackHost): BackOutcome {
       dismissKeepAlert()
       break
     case 'sheet':
-      closeMore()
+      // The sign-in sheet opens over More's screens, never beside the More
+      // sheet itself, so whichever is up is the one this press is for. The
+      // sign-in sheet steps back a pane before it closes.
+      if (signInOpen()) signInBack()
+      else closeMore()
       break
     case 'room-overlay':
       // Already closed by the ask above.

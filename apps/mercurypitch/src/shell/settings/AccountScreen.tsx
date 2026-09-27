@@ -4,8 +4,8 @@
 //
 // Pushed from Settings' first row (and from More's Account tile, which
 // lands here with Settings under it). Signed out, it says what an account
-// is for and what stays on the phone either way. Signed in, it shows who,
-// and how they sign in.
+// is for and what stays on the phone either way, and opens the sign-in
+// sheet. Signed in, it shows who, and how they sign in.
 //
 // Signed in is the TOKEN's answer (account-state.ts), never the server's:
 // with no network this screen says the account could not be reached, keeps
@@ -19,6 +19,7 @@ import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, TAKES_STAY_ON_
 import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { AccountPromises } from './AccountPromises'
 import { AccountAvatar } from './SettingsList'
+import { openSignIn } from './sign-in-state'
 
 function NoAccount(): JSX.Element {
   return (
@@ -36,6 +37,14 @@ function NoAccount(): JSX.Element {
       </div>
       <AccountPromises title={ACCOUNT_ADDS_TITLE} />
       <p class="mp-set__caption">{TAKES_STAY_ON_PHONE}</p>
+      <button
+        type="button"
+        class="mp-set-button"
+        data-testid="account-sign-in"
+        onClick={openSignIn}
+      >
+        Sign in or create an account
+      </button>
     </>
   )
 }

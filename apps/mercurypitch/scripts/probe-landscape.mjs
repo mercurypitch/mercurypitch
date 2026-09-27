@@ -655,6 +655,17 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible('[data-testid="account-screen"]')
     await settle()
     await measure('account', pushed)
+    // Its one button opens the sign-in sheet over it (S6 step 3), measured
+    // the way the web dialog it replaced was.
+    at = 'on the way to the sign-in sheet'
+    await page.locator('[data-testid="account-sign-in"]').click()
+    await visible('[data-testid="signin-sheet"]')
+    await settle()
+    await measure('sign-in', '[role="dialog"][aria-label="Sign in"]', {
+      end: true,
+    })
+    await page.keyboard.press('Escape')
+    await hidden('[data-testid="signin-sheet"]')
     await back('[data-testid="account-screen"]')
     await visible('[data-testid="settings-screen"]')
     await back(pushed)

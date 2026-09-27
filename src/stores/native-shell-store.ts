@@ -117,6 +117,15 @@ export interface NativeShellApi {
    * room that finds no shell (or an older one) simply has no button to offer.
    */
   openAppSettings?: () => Promise<boolean>
+  /**
+   * Open the shell's sign-in sheet.
+   *
+   * Every in-app "Sign in" (`openAuthModal`) arrives here under the native
+   * build: the web's sign-in dialog, with its password-first form, the
+   * television's phone row and the passkey button, is not the phone's way in
+   * (S6 audit D2). Optional, like `openAppSettings`.
+   */
+  openSignIn?: () => void
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(

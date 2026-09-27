@@ -295,3 +295,18 @@ export const WarnIcon: Component<ShellIconProps> = (props) => (
     <path d="M12 10v4M12 17h.01" />
   </svg>
 )
+
+/** Close a sheet. */
+export const CloseIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
+
+/** A code by email. */
+export const MailIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+    <path d="M4 7l8 6 8-6" />
+  </svg>
+)

@@ -11,6 +11,7 @@ import { renderShell } from '../render-for-test'
 import { ACCOUNT_OFFLINE, ACCOUNT_PROMISES, ACCOUNT_SIGNED_OUT, } from './account-copy'
 import { refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
+import { resetSignIn, signInOpen } from './sign-in-state'
 
 vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
@@ -82,6 +83,18 @@ describe('the Account screen', () => {
     expect(text()).toContain(ACCOUNT_SIGNED_OUT.title)
     for (const promise of ACCOUNT_PROMISES) expect(text()).toContain(promise)
     expect(readMeMock).not.toHaveBeenCalled()
+  })
+
+  it('opens the sign-in sheet from its one button while there is no account', () => {
+    resetSignIn()
+    view = renderShell(() => <AccountScreen />)
+
+    view.container
+      .querySelector<HTMLButtonElement>('[data-testid="account-sign-in"]')
+      ?.click()
+
+    expect(signInOpen()).toBe(true)
+    resetSignIn()
   })
 
   it('keeps a signed-in singer signed in with no network, and says why the card is thin (D1)', async () => {

@@ -20,6 +20,14 @@ export const ACCOUNT_PROMISES = [
   'Still yours if this phone is lost',
 ] as const
 
+/**
+ * The line under the sign-in sheet's title. It says the account is reachable
+ * from the next phone and from the web, so it is a promise like the three
+ * above and lives with them.
+ */
+export const SIGN_IN_EVERYWHERE =
+  'Use the same way on this phone, your next one and the web.'
+
 /** The title over the promises on the Account screen. */
 export const ACCOUNT_ADDS_TITLE = 'An account adds'
 

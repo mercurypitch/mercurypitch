@@ -39,6 +39,8 @@ import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
+import { openSignIn } from './settings/sign-in-state'
+import { SignInSheet } from './settings/SignInSheet'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
 import { ShellScreens } from './ShellScreens'
@@ -110,6 +112,8 @@ export const NativeShell: Component = () => {
         // The Sing room's denied state (3d) is the one caller: a refused
         // microphone can only be undone in the system's own Settings.
         openAppSettings: () => openAppSettings(),
+        // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
+        openSignIn,
       }),
     )
 
@@ -318,6 +322,10 @@ export const NativeShell: Component = () => {
             onDiscard={finishRun}
             onKeep={finishRun}
           />
+
+          {/* The phone's one way in, over whatever asked for it: the
+              Account screen's button and every in-app "Sign in". */}
+          <SignInSheet />
         </ShellRoot>
       </Portal>
     </>
