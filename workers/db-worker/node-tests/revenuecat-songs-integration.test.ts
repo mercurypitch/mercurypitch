@@ -439,6 +439,24 @@ describe('an anonymous identity', () => {
   })
 })
 
+describe('signing up on the phone that subscribed', () => {
+  it('keeps the songs: the account is the same identity, upgraded', async () => {
+    await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    const signedUp = await postJson('/api/auth/register', {
+      email: 'singer@example.com',
+      password: 'Singer123!pass',
+      deviceId: DEVICE,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(signedUp.status).toBe(200)
+    const { token } = (await signedUp.json()) as { token: string }
+
+    expect(await songsFor(token)).toMatchObject({ subscribed: true, left: 20 })
+  })
+})
+
 describe('/me without a subscription', () => {
   it('counts the credits the account already has as its songs', async () => {
     const token = await anonymousToken()
