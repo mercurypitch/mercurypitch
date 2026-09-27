@@ -93,12 +93,15 @@ describe('the library sheet', () => {
     expect(row.textContent).toContain('4:06')
   })
 
-  it('says the examples are part of the app', () => {
-    open([GOODBYE])
+  it('says the examples are part of the app, under the examples', () => {
+    open([MINE, GOODBYE])
 
-    expect(
-      screen.getByText('Part of the app: they play with the phone offline.'),
-    ).toBeTruthy()
+    const note = screen.getByText(
+      'Part of the app: they play with the phone offline.',
+    )
+    expect(note.closest('section')?.querySelector('h3')?.textContent).toBe(
+      'Examples',
+    )
   })
 
   it('marks the song on the stage, and only that one', () => {
