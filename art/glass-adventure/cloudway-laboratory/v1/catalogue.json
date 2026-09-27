@@ -223,7 +223,19 @@
       "preview": "previews/singing-fountain-basin.webp"
     }
   ],
-  "productionStatus": "Meshy blocked: Proton Pass CLI session expired; no paid jobs submitted.",
+  "productionStatus": "Dense source proofs exist for all 20 catalogue entries; this does not imply game-art acceptance. Pearl Ribbon Lantern optional exhibit v1 is the first separately finished delivery.",
+  "productionRecords": {
+    "denseSourceProofIndex": "production/master-index.json",
+    "denseSourceProofStage": "dense-source-proof-not-game-art-acceptance",
+    "deliveries": [
+      {
+        "assetId": "pearl-ribbon-lantern",
+        "version": "optional-exhibit-v1",
+        "status": "production-ready static optional exhibit",
+        "proofManifest": "../optional-exhibits-v1/pearl-ribbon-lantern/proof-manifest.json"
+      }
+    ]
+  },
   "sourceStorage": {
     "privateAlias": "<user-dotfiles>/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
     "syncRelative": "5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1",

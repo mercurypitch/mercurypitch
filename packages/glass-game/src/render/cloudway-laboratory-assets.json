@@ -346,24 +346,18 @@
     },
     {
       "id": "pearl-ribbon-lantern",
-      "bundleId": "cloudway-lab-pearl-ribbon-lantern-v1",
-      "rootNode": "CloudwayLab_PearlRibbonLantern",
+      "bundleId": "pearl-ribbon-lantern-v1",
+      "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
       "kind": "prop",
       "material": {
         "kind": "provider-pbr",
-        "appearanceStatus": "needs-material-region-separation",
-        "intendedAppearance": "transmissive-glass-with-opaque-trim",
-        "targetGlass": {
-          "transmission": 0.42,
-          "roughness": 0.22,
-          "thickness": 0.05,
-          "ior": 1.45
-        }
+        "appearanceStatus": "provider-pbr-preserved",
+        "intendedAppearance": "opaque-pearl-gilt-ivory"
       },
       "textures": {
-        "color": 2048,
+        "color": 1024,
         "data": 1024,
-        "quality": 88
+        "quality": 82
       },
       "contact": {
         "kind": "resting-base",

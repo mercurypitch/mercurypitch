@@ -83,7 +83,9 @@ references, with the existing instrumental fallback where no recording exists.
 There is no countdown opponent, lost life or campaign penalty. Reference playback
 and microphone capture are fenced so Merc cannot pass the player's attempt.
 
-The Encore scorecard shows actual local attempt and phrase evidence. Merc/player
+After completing a gallery, choose **Sing an optional encore**; an earned
+portrait in the collection also offers **Sing or hear your encore**. The Encore
+scorecard shows actual local attempt and phrase evidence. Merc/player
 comparison uses the existing opt-in recording, playback, deletion and export
 controls. Recording is optional; nothing is uploaded automatically, and a missing
 clip is shown honestly rather than as a usable playback button.

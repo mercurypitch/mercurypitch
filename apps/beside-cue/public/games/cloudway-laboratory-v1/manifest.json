@@ -91,6 +91,18 @@
       "shardPrefix": "frost_wall_shard_",
       "shardCount": 32,
       "persistentFrameNode": "frost_wall_frame"
+    },
+    {
+      "id": "pearl-ribbon-lantern-v1",
+      "file": "optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb",
+      "node": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+      "bytes": 795660,
+      "sha256": "928d278e84c43728e76d3500ae7c8c9ab28356d4af8e611ce48a7a004d8b3ce9",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
     }
   ]
 }

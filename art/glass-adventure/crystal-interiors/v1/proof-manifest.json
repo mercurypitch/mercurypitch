@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "version": "crystal-interiors-v1",
+  "status": "three selectable production-ready living crystal presets",
+  "source": {
+    "recipe": "recipe.json",
+    "recipeSha256": "7b7b3ef09e77aa4c8c478899361690adcf6202954d06d6c2beaa224bb1452cf8",
+    "authoringScriptSha256": "b6d9bf8653d2f33c2a2748beec4df2ccb7d0c4c6666552b45734ebea4a9e9fde",
+    "packedAuthoringMaster": {
+      "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/blender/crystal-interiors-v1-authoring.blend",
+      "bytes": 116183,
+      "sha256": "060e2dc78b3ed08ccd5a9c8df3d9e112ac248a36cdecfd1b88fa352ea735112b",
+      "editableCurves": 22,
+      "externalDependencies": 0
+    },
+    "authoringReceipt": {
+      "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/authoring-receipt.json",
+      "sha256": "6762e15d2a86b2d617fd0f02b5ec985fdc351d18957d0cecaa7cef4be62286be",
+      "historicalImages": 12,
+      "historicalImagesMatchCurrentWidths": false
+    }
+  },
+  "runtime": {
+    "modules": [
+      "packages/glass-game/src/render/crystal-interior-config.ts",
+      "packages/glass-game/src/render/crystal-interior-geometry.ts",
+      "packages/glass-game/src/render/crystal-interior.ts"
+    ],
+    "envelope": {
+      "width": 2.1,
+      "height": 0.08,
+      "depth": 2.1,
+      "center": [0, -0.05, 0],
+      "inset": 0.006,
+      "coordinates": "platform-local metres; +Y up; scroll retracts on local X"
+    },
+    "lifecycle": ["configure", "update", "reset", "snapshot", "dispose"],
+    "controls": [
+      "seed",
+      "palette",
+      "intensity",
+      "speed",
+      "pause",
+      "reducedMotion",
+      "scrollVisibleFraction",
+      "quality"
+    ],
+    "costs": {
+      "resonance-veins": {
+        "high": {
+          "drawCalls": 1,
+          "triangles": 840,
+          "vertices": 720,
+          "geometryBytes": 33840
+        },
+        "mobile": {
+          "drawCalls": 1,
+          "triangles": 480,
+          "vertices": 450,
+          "geometryBytes": 20880
+        }
+      },
+      "frost-roots": {
+        "high": {
+          "drawCalls": 2,
+          "triangles": 980,
+          "vertices": 858,
+          "geometryBytes": 39696
+        },
+        "mobile": {
+          "drawCalls": 2,
+          "triangles": 560,
+          "vertices": 543,
+          "geometryBytes": 24576
+        }
+      },
+      "aurora-heart": {
+        "high": {
+          "drawCalls": 1,
+          "triangles": 2016,
+          "vertices": 1440,
+          "geometryBytes": 69696
+        },
+        "mobile": {
+          "drawCalls": 1,
+          "triangles": 1152,
+          "vertices": 900,
+          "geometryBytes": 42912
+        }
+      }
+    }
+  },
+  "proofs": {
+    "certifiedScrollShell": {
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb",
+      "bytes": 4951124,
+      "sha256": "eb141261cc6dc65a2fd889c0984c0cdb2be8bcbb869e44b45d654845c252edba",
+      "dimensions": [2.205964088, 0.1, 2.205964088],
+      "deckMaterial": {
+        "physical": true,
+        "transmission": 0.9850000143051147,
+        "transparent": false
+      }
+    },
+    "webgl": {
+      "receipt": "<creative-archive>/glass-adventure/crystal-interiors/v1/runtime-proof.json",
+      "receiptSha256": "51822edbc5d8861b1bb2026f677781de39ccb0f379989b8168f36cd8ca7e5b1a",
+      "renderer": "WebGL2; sRGB; ACES Filmic; exposure 0.9; transmission resolution scale 0.5",
+      "background": "journey-map-v3/cloudscape.webp",
+      "assertions": {
+        "visibleThroughTransmission": true,
+        "opaqueToneMappedCore": true,
+        "productionPresentationMatched": true,
+        "animatedFramesDiffer": true,
+        "pausedFramesMatch": true,
+        "reducedMotionFramesMatch": true,
+        "resetRestoresStart": true,
+        "retractionCapturedAt": 0.36,
+        "maximumAuroraDisplacementMetres": 0.00238
+      },
+      "screenshots": [
+        {
+          "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/proofs/browser/crystal-interiors-real-scroll-shells.png",
+          "bytes": 805944,
+          "sha256": "359ed82e1a90e8d5c010bcce54a50b0a41a9b8c83419c3bd96a9a852de589be8"
+        },
+        {
+          "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/proofs/browser/resonance-veins-real-scroll-retracted.png",
+          "bytes": 819148,
+          "sha256": "2e513bf61e90ece24bb316840265d02558aab1c7bfaa1cea6b1745069d7514af"
+        }
+      ]
+    },
+    "creatorGallery": {
+      "receipt": "<creative-archive>/glass-adventure/crystal-interiors/v1/creator-gallery-proof.json",
+      "receiptSha256": "bef10d34765ed5e7f36e32500e50a3018baea9c8b78d0061b35256a71e41977d",
+      "url": "/glass-game/?lab=creator-gallery",
+      "selectedCard": "Frost roots",
+      "levelId": "cloudway-crystal-interior-frost-roots",
+      "presentation": {
+        "platformId": "scroll-deck",
+        "preset": "frost-roots",
+        "seed": 270926
+      },
+      "installedRuntime": {
+        "ancestorsVisible": true,
+        "inCameraFrustum": true,
+        "drawCalls": 2,
+        "triangles": 980,
+        "points": 18,
+        "opaqueToneMappedCore": true
+      },
+      "screenshots": {
+        "installed": {
+          "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/proofs/integrated-game/frost-roots-creator-gallery.png",
+          "bytes": 1074776,
+          "sha256": "cbfba4c130ab5cfdfb536ea7c8ef25a0fd99db1b1cd22fd5a9ba31ec88c545ff"
+        },
+        "effectOff": {
+          "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/proofs/integrated-game/frost-roots-creator-gallery-effect-off.png",
+          "bytes": 1068112,
+          "sha256": "ae122f4b17db9ef4284706f41747e26d79cb448430cc929bf373b3b42c34957a"
+        },
+        "effectOnly": {
+          "file": "<creative-archive>/glass-adventure/crystal-interiors/v1/proofs/integrated-game/frost-roots-creator-gallery-effect-only.png",
+          "bytes": 1120132,
+          "sha256": "7075c44060ffc13fc29767fb7e34361a6d3513f9e70124a6c6e50a1f4327b319"
+        }
+      },
+      "readability": "cyan/cobalt branching is visibly present in the installed frame and absent in the same-deck effect-off frame",
+      "framing": "browser-only camera position; game renderer, assets, materials, presentation, and animation loop unchanged"
+    }
+  }
+}

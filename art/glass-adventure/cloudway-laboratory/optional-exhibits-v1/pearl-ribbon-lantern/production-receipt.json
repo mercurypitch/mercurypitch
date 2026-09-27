@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "assetId": "pearl-ribbon-lantern",
+  "version": "optional-exhibit-v1",
+  "status": "production-ready static optional exhibit",
+  "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+  "renderNode": "PearlRibbonLanternGeometry",
+  "boundsBlenderZUp": {
+    "min": [
+      -0.33867818117141724,
+      -0.31630221009254456,
+      0.0
+    ],
+    "max": [
+      0.3386782109737396,
+      0.31630221009254456,
+      1.399999976158142
+    ]
+  },
+  "support": {
+    "kind": "resting-base",
+    "walkable": false,
+    "centreBlenderXY": [
+      -0.00014375150203704834,
+      -1.6227364540100098e-05
+    ],
+    "centreXZ": [
+      -0.00014375150203704834,
+      1.6227364540100098e-05
+    ],
+    "width": 0.5129840075969696,
+    "depth": 0.5129581987857819,
+    "datumY": 0.0,
+    "measurementBandMetres": 0.04,
+    "sampleVertices": 5455,
+    "fullBoundsBlenderZUp": {
+      "min": [
+        -0.33867818117141724,
+        -0.31630221009254456,
+        0.0
+      ],
+      "max": [
+        0.3386782109737396,
+        0.31630221009254456,
+        1.399999976158142
+      ]
+    }
+  },
+  "material": {
+    "drawMaterials": 1,
+    "name": "PearlRibbonLantern__PearlGiltIvoryPBR",
+    "roles": [
+      "pearl-chamber",
+      "gilt-ribbon-and-trim",
+      "ivory-base-and-finial"
+    ],
+    "roleEncoding": "provider base-colour, metallic, roughness, and normal textures"
+  },
+  "runtimes": [
+    {
+      "lod": "lod0",
+      "contract": {
+        "schema": 1,
+        "assetId": "pearl-ribbon-lantern",
+        "version": "optional-exhibit-v1",
+        "lod": "lod0",
+        "coordinates": "metres; glTF +Y up; origin at resting-base centre",
+        "renderNode": "PearlRibbonLanternGeometry",
+        "lightAnchor": "PearlRibbonLanternLightAnchor",
+        "supportAnchor": "PearlRibbonLanternSupportAnchor",
+        "support": {
+          "kind": "resting-base",
+          "walkable": false,
+          "width": 0.5129840075969696,
+          "depth": 0.5129581987857819,
+          "centreXZ": [
+            -0.00014375150203704834,
+            1.6227364540100098e-05
+          ],
+          "datumY": 0
+        },
+        "obstacle": {
+          "kind": "cylinder",
+          "radius": 0.35067819607257844,
+          "height": 1.399999976158142,
+          "centreY": 0.699999988079071
+        },
+        "triangles": 120000,
+        "drawCalls": 1,
+        "physics": "decorative non-walkable obstacle; no gameplay behavior"
+      },
+      "validation": {
+        "file": "runtime/pearl-ribbon-lantern-lod0.glb",
+        "bytes": 2734736,
+        "sha256": "e33bb30aaa5b8c67b4c30df8db570371a964fe49860a718b011a5bb8361098ab",
+        "triangles": 120000,
+        "primitives": 1,
+        "materials": 1,
+        "images": 3,
+        "textures": 3,
+        "extensionsUsed": [
+          "EXT_meshopt_compression",
+          "EXT_texture_webp",
+          "KHR_mesh_quantization"
+        ],
+        "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+        "renderNode": "PearlRibbonLanternGeometry",
+        "supportAnchorTranslation": [
+          -0.00014375150203704834,
+          0,
+          1.6227364540100098e-05
+        ]
+      },
+      "distribution": "creative-archive-proof-only",
+      "archiveFile": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/runtime/pearl-ribbon-lantern-lod0.glb",
+      "archiveSha256": "e33bb30aaa5b8c67b4c30df8db570371a964fe49860a718b011a5bb8361098ab"
+    },
+    {
+      "lod": "lod1",
+      "contract": {
+        "schema": 1,
+        "assetId": "pearl-ribbon-lantern",
+        "version": "optional-exhibit-v1",
+        "lod": "lod1",
+        "coordinates": "metres; glTF +Y up; origin at resting-base centre",
+        "renderNode": "PearlRibbonLanternGeometry",
+        "lightAnchor": "PearlRibbonLanternLightAnchor",
+        "supportAnchor": "PearlRibbonLanternSupportAnchor",
+        "support": {
+          "kind": "resting-base",
+          "walkable": false,
+          "width": 0.5129840075969696,
+          "depth": 0.5129581987857819,
+          "centreXZ": [
+            -0.00014375150203704834,
+            1.6227364540100098e-05
+          ],
+          "datumY": 0
+        },
+        "obstacle": {
+          "kind": "cylinder",
+          "radius": 0.35067819607257844,
+          "height": 1.399999976158142,
+          "centreY": 0.699999988079071
+        },
+        "triangles": 36000,
+        "drawCalls": 1,
+        "physics": "decorative non-walkable obstacle; no gameplay behavior"
+      },
+      "validation": {
+        "file": "runtime/pearl-ribbon-lantern-lod1.glb",
+        "bytes": 795660,
+        "sha256": "928d278e84c43728e76d3500ae7c8c9ab28356d4af8e611ce48a7a004d8b3ce9",
+        "triangles": 36000,
+        "primitives": 1,
+        "materials": 1,
+        "images": 3,
+        "textures": 3,
+        "extensionsUsed": [
+          "EXT_meshopt_compression",
+          "EXT_texture_webp",
+          "KHR_mesh_quantization"
+        ],
+        "rootNode": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",
+        "renderNode": "PearlRibbonLanternGeometry",
+        "supportAnchorTranslation": [
+          -0.00014375150203704834,
+          0,
+          1.6227364540100098e-05
+        ]
+      },
+      "distribution": "shipping-runtime",
+      "publicFile": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb",
+      "publicSha256": "928d278e84c43728e76d3500ae7c8c9ab28356d4af8e611ce48a7a004d8b3ce9"
+    }
+  ],
+  "authoringMaster": {
+    "file": "blender/pearl-ribbon-lantern-authoring-v1.blend",
+    "bytes": 197404237,
+    "sha256": "80c19bc0a07ae65f86b3045dd68e71d7884057d0451fd6510f6b7aef82a344d4",
+    "packed": true,
+    "blenderVersion": "5.2.2 LTS"
+  },
+  "proofCount": 6,
+  "fullReceipt": "<creative-archive>/glass-adventure/cloudway-laboratory/optional-exhibits-v1/pearl-ribbon-lantern/production-receipt.json"
+}

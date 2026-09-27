@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crystal interior runtime proof</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background: #050714;
+        color: #f7f3ec;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #050714;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      .heading {
+        position: fixed;
+        left: 32px;
+        top: 24px;
+        z-index: 2;
+        margin: 0;
+        font-size: 17px;
+        font-weight: 650;
+        letter-spacing: 0.02em;
+        text-shadow: 0 2px 12px #000;
+      }
+      .labels {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 25px;
+        z-index: 2;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        padding: 0 80px;
+        pointer-events: none;
+      }
+      .label {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        padding: 9px 14px;
+        text-align: center;
+        background: rgba(8, 11, 31, 0.68);
+        backdrop-filter: blur(12px);
+        font-size: 13px;
+        letter-spacing: 0.025em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="heading">Living crystal interiors — real Three.js runtime</h1>
+    <div class="labels">
+      <div class="label">Resonance veins</div>
+      <div class="label">Frost roots</div>
+      <div class="label">Aurora heart</div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
