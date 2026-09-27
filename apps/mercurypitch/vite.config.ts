@@ -125,9 +125,14 @@ export default defineConfig(({ mode, command }) => {
         // 2 KB of HTML where a picture should be. `configResolved` runs at
         // the end of resolveConfig, which is before both the snapshot and the
         // build, so one hook covers `vite`, `vite build` and `vite preview`.
+        //
+        // Awaited: Vite awaits every configResolved hook before it goes on,
+        // and the staging now starts by making sure the Karaoke room's
+        // example stems are here and exactly the pinned files
+        // (scripts/fetch-karaoke-examples.mjs), which may mean a download.
         name: 'mercurypitch:sync-native-assets',
-        configResolved() {
-          syncNativeAssets()
+        async configResolved() {
+          await syncNativeAssets()
         },
       },
     ],

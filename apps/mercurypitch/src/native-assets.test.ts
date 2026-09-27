@@ -12,8 +12,16 @@
 // So the same check runs here, in the suite `pnpm mercurypitch:test` runs and
 // the PR gate runs for every change under `src/` — the change that is
 // actually likely to move a picture.
+//
+// Two roots since the Karaoke room: an entry with `root: 'native'` names a
+// file of this app's own native-only/ tree, not the web app's public/. Part
+// of that tree is fetched at build time and never committed (the example
+// stems, pinned by sha256), so it is checked as what the build will stage:
+// the committed files plus the pinned ones.
 
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { BackgroundDefinition, PublicBackgroundSource, } from '@/lib/backgrounds/background-catalog'
@@ -21,17 +29,52 @@ import { defaultBackground, listBackgrounds, } from '@/lib/backgrounds/backgroun
 // @ts-expect-error -- a plain .mjs manifest with no types, on purpose: the
 // same file is read by a Vite config, by a bare-node build script that runs
 // before any install, and by this test.
-import { globToRegExp, NATIVE_ASSETS, resolveNativeAssets, } from '../native-assets.mjs'
+import { globToRegExp, listFiles, NATIVE_ASSETS, resolveNativeAssets, resolveNativeAssetSources, } from '../native-assets.mjs'
+// @ts-expect-error -- as above.
+import { KARAOKE_EXAMPLE_PINS } from '../scripts/fetch-karaoke-examples.mjs'
 import { DOORS } from './alley/alley-plate'
 
 interface Entry {
   glob: string
   reason: string
+  root?: 'native'
 }
 
 const entries = NATIVE_ASSETS as readonly Entry[]
+const publicEntries = entries.filter((entry) => entry.root !== 'native')
+const nativeEntries = entries.filter((entry) => entry.root === 'native')
 
 const WEB_PUBLIC = fileURLToPath(new URL('../../../public', import.meta.url))
+const NATIVE_ONLY = fileURLToPath(new URL('../native-only', import.meta.url))
+
+/**
+ * What the native-only tree holds when a build stages it: the committed
+ * files, and the pinned ones the build fetches first. The test run in CI has
+ * not fetched anything, so the pins stand in for the stems.
+ */
+const nativeOnlyFiles: readonly string[] = [
+  ...new Set([
+    ...(listFiles(NATIVE_ONLY) as string[]),
+    ...(KARAOKE_EXAMPLE_PINS as ReadonlyArray<{ path: string }>).map(
+      (pin) => pin.path,
+    ),
+  ]),
+].sort()
+
+/** Each native entry with the native-only files it stages. */
+const nativeResolved = nativeEntries.map((entry) => {
+  const glob = globToRegExp(entry.glob) as RegExp
+  return { ...entry, files: nativeOnlyFiles.filter((file) => glob.test(file)) }
+})
+
+/** Every file a build stages from public/, as paths under public/. */
+const publicFiles = (
+  resolveNativeAssets(WEB_PUBLIC, publicEntries) as { files: string[] }
+).files
+/** Every file a build stages from native-only/. */
+const nativeFiles = [
+  ...new Set(nativeResolved.flatMap((entry) => entry.files)),
+].sort()
 const WORKFLOW = fileURLToPath(
   new URL(
     '../../../.github/workflows/mercurypitch-mobile.yml',
@@ -40,8 +83,8 @@ const WORKFLOW = fileURLToPath(
 )
 
 describe('native asset manifest', () => {
-  it('resolves every entry against the web app public tree', () => {
-    const resolved = resolveNativeAssets(WEB_PUBLIC) as {
+  it('resolves every public entry against the web app public tree', () => {
+    const resolved = resolveNativeAssets(WEB_PUBLIC, publicEntries) as {
       entries: Array<Entry & { files: string[] }>
       files: string[]
     }
@@ -53,7 +96,54 @@ describe('native asset manifest', () => {
     expect(empty).toEqual([])
     // The tree really was walked. Without this the assertion above passes
     // just as happily against a public/ directory that is not there.
-    expect(resolved.files.length).toBeGreaterThan(entries.length)
+    expect(resolved.files.length).toBeGreaterThan(publicEntries.length)
+  })
+
+  it('resolves every native entry against what the build stages from native-only/', () => {
+    expect(nativeEntries.length).toBeGreaterThan(0)
+    expect(
+      nativeResolved
+        .filter((entry) => entry.files.length === 0)
+        .map((entry) => entry.glob),
+    ).toEqual([])
+  })
+
+  it('stages each entry from its own tree', () => {
+    const pub = mkdtempSync(join(tmpdir(), 'mp-public-'))
+    const native = mkdtempSync(join(tmpdir(), 'mp-native-'))
+    writeFileSync(join(pub, 'picture.webp'), 'p')
+    writeFileSync(join(native, 'song.json'), 'n')
+    const sources = resolveNativeAssetSources({ public: pub, native }, [
+      { glob: 'picture.webp', reason: 'a picture from public/' },
+      { glob: 'song.json', root: 'native', reason: 'a file from native-only/' },
+    ]) as { files: Array<{ path: string; from: string }> }
+    expect(sources.files).toEqual([
+      { path: 'picture.webp', from: pub },
+      { path: 'song.json', from: native },
+    ])
+  })
+
+  it('refuses a path both trees would provide', () => {
+    const pub = mkdtempSync(join(tmpdir(), 'mp-public-'))
+    const native = mkdtempSync(join(tmpdir(), 'mp-native-'))
+    writeFileSync(join(pub, 'same.json'), 'p')
+    writeFileSync(join(native, 'same.json'), 'n')
+    expect(() =>
+      resolveNativeAssetSources({ public: pub, native }, [
+        { glob: 'same.json', reason: 'named from public/' },
+        { glob: 'same.json', root: 'native', reason: 'and from native-only/' },
+      ]),
+    ).toThrow(/one source/u)
+  })
+
+  it('gives each bundle path one source', () => {
+    // Both trees land at the same origin root. A path in both would ship
+    // whichever copy the staging loop wrote last.
+    const both = nativeFiles.filter((file) => publicFiles.includes(file))
+    expect(both).toEqual([])
+    expect(
+      nativeFiles.filter((file) => existsSync(`${WEB_PUBLIC}/${file}`)),
+    ).toEqual([])
   })
 
   it('gives every entry a reason, and names each glob once', () => {
@@ -100,9 +190,7 @@ describe('the pictures an open door ends on', () => {
   // no photograph and the open had nothing to end on (device round 4).
   // Every file of each open door's default room, in both orientations and
   // at every density the catalogue names, has to ship.
-  const shipped = new Set(
-    (resolveNativeAssets(WEB_PUBLIC) as { files: string[] }).files,
-  )
+  const shipped = new Set([...publicFiles, ...nativeFiles])
   const rooms = DOORS.flatMap((door) =>
     door.roomBackground === null
       ? []
@@ -160,12 +248,14 @@ describe('the native build, when a shipped file changes', () => {
   // the Ear Lab's pictures one by one, so a new room there has to be added
   // to both, and nothing checked that it was.
   const workflow = readFileSync(WORKFLOW, 'utf8')
-  const files = (
-    resolveNativeAssets(WEB_PUBLIC) as { files: string[] }
-  ).files.map((file) => `public/${file}`)
+  const files = [
+    ...publicFiles.map((file) => `public/${file}`),
+    ...nativeFiles.map((file) => `apps/mercurypitch/native-only/${file}`),
+  ]
 
   it('has files to check', () => {
     expect(files.length).toBeGreaterThan(entries.length)
+    expect(files.some((file) => file.startsWith('apps/'))).toBe(true)
   })
 
   it("runs for every one of them, by the pull request's paths filter", () => {

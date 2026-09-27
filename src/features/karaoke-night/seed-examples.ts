@@ -15,10 +15,13 @@
 
 import { createSignal } from 'solid-js'
 import { IS_DEV } from '@/lib/defaults'
-import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, importUvrSessionDurable, } from '@/stores/uvr-store'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { addSessionToGroup, createGroup, getAllUvrSessions, getGroups, importUvrSessionDurable, updateUvrSessionOutputs, } from '@/stores/uvr-store'
+import type { BundledExample } from './bundled-examples'
+import { loadBundledExamples } from './bundled-examples'
 import type { DemoSongManifest } from './demo-song'
-import { demoSessionId, loadDemoSongs, seedDemoLyrics } from './demo-song'
-import { exampleAttribution, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, reconcileExampleGroup, } from './examples-library'
+import { demoSessionId, loadDemoSongs, loadDemoSongsFromApi, seedDemoLyrics, } from './demo-song'
+import { exampleAttribution, EXAMPLES_GROUP_NAME, exampleSessionFrom, examplesToSeed, isExampleSession, mergeExampleManifests, reconcileExampleGroup, } from './examples-library'
 
 let seeded = false
 
@@ -59,6 +62,10 @@ export function exampleCreditFor(
 export async function seedExamplesLibrary(): Promise<void> {
   if (seeded) return
   seeded = true
+  if (IS_NATIVE_BUILD) {
+    await seedNativeExamples()
+    return
+  }
   try {
     const manifests = await loadDemoSongs()
     setExampleManifests(manifests)
@@ -86,8 +93,79 @@ export async function seedExamplesLibrary(): Promise<void> {
   }
 }
 
+/**
+ * The native app's seed: its bundle first, then the server.
+ *
+ * The bundle alone makes the library, so a first launch with no network has
+ * three songs to sing, their words and their credits (audit K3). Only then
+ * does it ask the server, and what the server says is merged over the bundle
+ * (`mergeExampleManifests`): a lyric correction, a credit, a song the bundle
+ * lacks. Each half is quiet on failure, and the first never waits on the
+ * second.
+ */
+async function seedNativeExamples(): Promise<void> {
+  let bundled: BundledExample[] = []
+  try {
+    bundled = await loadBundledExamples()
+    if (bundled.length > 0) await seedManifests(bundled, bundled)
+  } catch (err) {
+    if (IS_DEV) console.warn('[Examples] seeding the bundle failed:', err)
+  }
+  try {
+    const fromServer = await loadDemoSongsFromApi()
+    if (fromServer.length === 0) return
+    await seedManifests(mergeExampleManifests(bundled, fromServer), bundled)
+  } catch (err) {
+    if (IS_DEV) console.warn('[Examples] going online failed:', err)
+  }
+}
+
+/**
+ * Write one list of examples: rows, lyrics, the group. The native half of
+ * `seedExamplesLibrary`, with one step the web does not need — a row an
+ * earlier build seeded with the R2 stems is pointed at the bundle's, so the
+ * song plays with no network like one seeded today.
+ */
+async function seedManifests(
+  manifests: readonly DemoSongManifest[],
+  bundled: readonly BundledExample[],
+): Promise<void> {
+  setExampleManifests(manifests)
+
+  const existing = new Set(getAllUvrSessions().map((s) => s.sessionId))
+  for (const song of bundled) {
+    const row = getAllUvrSessions().find(
+      (s) => s.sessionId === demoSessionId(song.slug),
+    )
+    if (
+      row === undefined ||
+      !isExampleSession(row) ||
+      (row.outputs?.vocal === song.stems.vocal &&
+        row.outputs.instrumental === song.stems.instrumental)
+    )
+      continue
+    updateUvrSessionOutputs(row.sessionId, [
+      { stem: 'vocal', path: song.stems.vocal, duration: song.durationSec },
+      {
+        stem: 'instrumental',
+        path: song.stems.instrumental,
+        duration: song.durationSec,
+      },
+    ])
+  }
+
+  // Ordered by the song's place in the whole list, not among the missing
+  // ones: a song the server adds later sorts after the bundle's three.
+  for (const manifest of examplesToSeed(manifests, existing)) {
+    const session = exampleSessionFrom(manifest, manifests.indexOf(manifest))
+    if (await importUvrSessionDurable(session)) existing.add(session.sessionId)
+  }
+  for (const manifest of manifests) await seedDemoLyrics(manifest)
+  await ensureExamplesGroup(manifests, existing)
+}
+
 async function ensureExamplesGroup(
-  manifests: Awaited<ReturnType<typeof loadDemoSongs>>,
+  manifests: readonly DemoSongManifest[],
   existing: ReadonlySet<string>,
 ): Promise<void> {
   const group =

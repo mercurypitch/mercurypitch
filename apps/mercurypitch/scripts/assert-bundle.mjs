@@ -31,6 +31,15 @@
 //            failure takes now, and it is a red check rather than a blank
 //            screen on a phone.
 //
+//   EXAMPLES The Karaoke room's example songs arrived whole: the manifest the
+//            room seeds its library from is in the bundle, and every stem it
+//            names is there with the size and sha256 it was pinned at
+//            (fetch-karaoke-examples.mjs). They are what a first launch with
+//            no network sings, so a missing or truncated stem is a room that
+//            opens on a song it cannot play -- and on the phone, a packaged
+//            file that is not there answers status 0 with no body, which
+//            looks like silence rather than an error.
+//
 //   WORKER   The built JS names exactly the db-worker this build asked for
 //            (../api-base.mjs): the dev one unless MERCURYPITCH_API_TARGET=
 //            production was set on purpose, and never the other one. The
@@ -73,11 +82,16 @@
 // the reusable Capacitor workflow, which knows nothing about this app -- has
 // installed the workspace first.
 
+import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { API_BASES, readEnvFiles, resolveApiBase } from '../api-base.mjs'
-import { resolveNativeAssets, totalBytes } from '../native-assets.mjs'
+import { resolveNativeAssets, resolveNativeAssetSources, totalBytes, } from '../native-assets.mjs'
+import { KARAOKE_EXAMPLE_PINS, NATIVE_ONLY_DIR, } from './fetch-karaoke-examples.mjs'
+
+/** The examples manifest, relative to a bundle root. */
+const EXAMPLES_MANIFEST = 'karaoke/examples/manifest.json'
 
 /** The files sync-ort-assets.mjs vendors, relative to a bundle root. */
 const VENDORED = [
@@ -252,11 +266,14 @@ function main(argv) {
     )
 
     // MANIFEST -- resolve the same globs against this bundle root that
-    // sync-native-assets.mjs resolved against public/ on the way in. An entry
-    // that matched four files there and none here is a publicDir that was not
-    // copied; an entry that matches nothing in either is a rename, and the
-    // staging step has already refused to build.
-    const staged = resolveNativeAssets(WEB_PUBLIC)
+    // sync-native-assets.mjs resolved against public/ and native-only/ on the
+    // way in. An entry that matched four files there and none here is a
+    // publicDir that was not copied; an entry that matches nothing in either
+    // is a rename, and the staging step has already refused to build.
+    const staged = resolveNativeAssetSources({
+      public: WEB_PUBLIC,
+      native: NATIVE_ONLY_DIR,
+    })
     const bundled = resolveNativeAssets(root)
 
     for (const entry of bundled.entries) {
@@ -271,15 +288,58 @@ function main(argv) {
       )
     }
 
-    // Every file the manifest resolves to in public/ has to be here too. The
-    // per-entry check above passes on a partial copy; this one does not.
-    const absent = staged.files.filter((file) => !existsSync(join(root, file)))
+    // Every file the manifest resolves to in its source trees has to be here
+    // too. The per-entry check above passes on a partial copy; this one does
+    // not.
+    const absent = staged.files
+      .map((file) => file.path)
+      .filter((file) => !existsSync(join(root, file)))
     record(
       staged.files.length > 0 && absent.length === 0,
       `${label}: all ${staged.files.length} manifest files were copied`,
       staged.files.length === 0
-        ? `The manifest resolved to no files at all under ${WEB_PUBLIC}. Either the web app's public/ tree is missing from this checkout or every glob in native-assets.mjs is stale.`
+        ? `The manifest resolved to no files at all under ${WEB_PUBLIC} or ${NATIVE_ONLY_DIR}. Either a source tree is missing from this checkout or every glob in native-assets.mjs is stale.`
         : `Missing here: ${absent.slice(0, 8).join(', ')}${absent.length > 8 ? ` (+${absent.length - 8} more)` : ''}. Rebuild${synced ? ', then cap sync' : ''}.`,
+    )
+
+    // EXAMPLES -- the songs a first launch with no network sings.
+    const examplesFile = join(root, EXAMPLES_MANIFEST)
+    /** @type {string[]} */
+    let named = []
+    try {
+      const examples = JSON.parse(readFileSync(examplesFile, 'utf8'))
+      named = examples.songs.flatMap((song) => [
+        song.stems.vocal,
+        song.stems.instrumental,
+      ])
+    } catch (error) {
+      named = []
+      record(
+        false,
+        `${label}: ${EXAMPLES_MANIFEST} is readable`,
+        `${error instanceof Error ? error.message : String(error)}. The Karaoke room seeds its example songs from this file.`,
+      )
+    }
+    const wrong = named.flatMap((url) => {
+      const path = String(url).replace(/^\//u, '')
+      const pin = KARAOKE_EXAMPLE_PINS.find(
+        (candidate) => candidate.path === path,
+      )
+      const file = join(root, path)
+      if (pin === undefined) return [`${path} (no pin)`]
+      if (!existsSync(file)) return [`${path} (missing)`]
+      const bytes = readFileSync(file)
+      const hash = createHash('sha256').update(bytes).digest('hex')
+      return bytes.byteLength === pin.bytes && hash === pin.sha256
+        ? []
+        : [`${path} (${bytes.byteLength} bytes, sha256 ${hash.slice(0, 12)})`]
+    })
+    record(
+      named.length > 0 && wrong.length === 0,
+      `${label}: the ${named.length} example stems the Karaoke room names are here, as pinned`,
+      named.length === 0
+        ? `${EXAMPLES_MANIFEST} names no stems.`
+        : `Wrong or missing: ${wrong.join(', ')}. The build stages them from native-only/ after scripts/fetch-karaoke-examples.mjs verified them${synced ? '; cap sync did not copy them, or this is a stale bundle' : ''}.`,
     )
 
     const manifestBytes = totalBytes(root, bundled.files)

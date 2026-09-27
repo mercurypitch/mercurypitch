@@ -157,4 +157,25 @@ describe('seedExamplesLibrary', () => {
     // A session that is not an example has no credit to show.
     expect(exampleCreditFor('my-own-song')).toBeNull()
   })
+
+  it('never reads the native bundle on the web', async () => {
+    // The native app seeds from the examples its bundle carries
+    // (bundled-examples.ts); the web has no such file and must not ask.
+    const asked: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        asked.push(String(input))
+        return Promise.resolve(new Response('', { status: 404 }))
+      }),
+    )
+    try {
+      resetExamplesSeedForTests()
+      await seedExamplesLibrary()
+      expect(asked).not.toContain('/karaoke/examples/manifest.json')
+      expect(exampleIds().length).toBeGreaterThan(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

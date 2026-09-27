@@ -15,6 +15,8 @@
 
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { loadBundledExamples } from './bundled-examples'
 
 export interface DemoSongManifest {
   /**
@@ -131,7 +133,12 @@ function isManifest(m: unknown): m is DemoSongManifest {
   )
 }
 
-async function loadListFromApi(
+/**
+ * The studio's published list alone, with no fallback: empty when there is
+ * no API, no row or no connection. The native app merges it over the
+ * examples its bundle carries (`mergeExampleManifests`).
+ */
+export async function loadDemoSongsFromApi(
   signal?: AbortSignal,
 ): Promise<DemoSongManifest[]> {
   if ((API_BASE_URL ?? '') === '') return []
@@ -177,7 +184,7 @@ async function loadFromManifest(
 export async function loadDemoSongs(
   signal?: AbortSignal,
 ): Promise<DemoSongManifest[]> {
-  const fromApi = await loadListFromApi(signal)
+  const fromApi = await loadDemoSongsFromApi(signal)
   if (fromApi.length > 0) return fromApi
   const shipped = await loadFromManifest(signal)
   return shipped === null ? [] : [shipped]
@@ -433,7 +440,24 @@ export async function seedDemoLyricsForSession(
   signal?: AbortSignal,
 ): Promise<void> {
   if (!isDemoSessionId(sessionId)) return
-  const songs = await loadDemoSongs(signal)
+  const songs = IS_NATIVE_BUILD
+    ? await nativeExamplesFor(sessionId, signal)
+    : await loadDemoSongs(signal)
   const manifest = songs.find((m) => demoSessionId(m.slug) === sessionId)
   if (manifest !== undefined) await seedDemoLyrics(manifest, signal)
+}
+
+/**
+ * Where the native app looks for an example's words: its own bundle first,
+ * which answers with no network, and the studio's list only for a song the
+ * bundle does not carry.
+ */
+async function nativeExamplesFor(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<DemoSongManifest[]> {
+  const bundled = await loadBundledExamples()
+  return bundled.some((m) => demoSessionId(m.slug) === sessionId)
+    ? bundled
+    : loadDemoSongsFromApi(signal)
 }

@@ -1,13 +1,17 @@
 // Stages everything the native bundle serves from its origin root into one
 // generated directory, and hands Vite that directory as its publicDir.
 //
-// Two tiers live there, from two different places:
+// Three tiers live there, from three different places:
 //   - the pitch engine's runtime (sync-ort-assets.mjs): the wasm pair and the
 //     SwiftF0 model, so the microphone works on a plane
 //   - the manifest tier (../native-assets.mjs): the public/ pictures the V1-1
 //     surfaces reference by absolute URL — the twin portraits, the character
 //     art, the onboarding sky and the room covers. The first TestFlight build
 //     shipped without them and every one of those images came up blank.
+//   - the native-only entries of the same manifest, from ../native-only/: the
+//     Karaoke room's example songs, which the web app never serves. Their
+//     stems are fetched and verified against sha256 pins first
+//     (fetch-karaoke-examples.mjs), so nothing has to remember to fetch them.
 //
 // WHY A SEPARATE DIRECTORY, and not `apps/mercurypitch/public/`. Everything
 // here is copied in by a build; nothing is authored. A directory called
@@ -24,10 +28,11 @@
 // Still runnable directly (`node scripts/sync-native-assets.mjs`) for a
 // one-off, and that is what the package's predev/prebuild hooks call.
 
-import { copyFileSync, mkdirSync, rmSync } from 'node:fs'
+import { copyFileSync, mkdirSync, rmSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { NATIVE_ASSETS, resolveNativeAssets, totalBytes, } from '../native-assets.mjs'
+import { NATIVE_ASSETS, resolveNativeAssetSources } from '../native-assets.mjs'
+import { ensureKaraokeExamples, NATIVE_ONLY_DIR, } from './fetch-karaoke-examples.mjs'
 import { syncOrtAssets } from './sync-ort-assets.mjs'
 
 // Re-exported so vite.config.ts reads both helpers through its one untyped
@@ -39,10 +44,17 @@ const here = dirname(fileURLToPath(import.meta.url))
 /** The generated publicDir. Gitignored, wiped and refilled by every build. */
 export const NATIVE_PUBLIC_DIR = join(here, '../.native-public')
 
-/** The web app's public/ tree — the one source of truth for both tiers. */
+/** The web app's public/ tree — the source of every entry but the native ones. */
 export const WEB_PUBLIC_DIR = join(here, '../../../public')
 
-export function syncNativeAssets() {
+export { NATIVE_ONLY_DIR }
+
+export async function syncNativeAssets() {
+  // Before anything is wiped: a fetch that fails (no network on a first
+  // build, a stem that changed on R2) stops the build with the previous
+  // staging still in place, and names the file.
+  await ensureKaraokeExamples({ log: (line) => console.log(line) })
+
   // Wipe first. A manifest entry that was narrowed, or an asset that was
   // renamed, otherwise leaves its old file sitting in the bundle forever:
   // present, plausible and no longer referenced by anything.
@@ -51,7 +63,10 @@ export function syncNativeAssets() {
 
   const { ortOut, modelOut } = syncOrtAssets(NATIVE_PUBLIC_DIR)
 
-  const { entries, files } = resolveNativeAssets(WEB_PUBLIC_DIR)
+  const { entries, files } = resolveNativeAssetSources({
+    public: WEB_PUBLIC_DIR,
+    native: NATIVE_ONLY_DIR,
+  })
 
   // An entry that matches nothing is a rename nobody noticed, and the whole
   // point of naming files instead of copying a tree is that this is loud.
@@ -60,16 +75,23 @@ export function syncNativeAssets() {
   const empty = entries.filter((entry) => entry.files.length === 0)
   if (empty.length > 0) {
     throw new Error(
-      `[sync-native-assets] ${empty.length} manifest entr${empty.length === 1 ? 'y matches' : 'ies match'} no file under ${WEB_PUBLIC_DIR}:\n` +
-        empty.map((entry) => `  - ${entry.glob}`).join('\n') +
+      `[sync-native-assets] ${empty.length} manifest entr${empty.length === 1 ? 'y matches' : 'ies match'} no file:\n` +
+        empty
+          .map(
+            (entry) =>
+              `  - ${entry.glob} (under ${entry.root === 'native' ? NATIVE_ONLY_DIR : WEB_PUBLIC_DIR})`,
+          )
+          .join('\n') +
         `\nEither the asset moved (fix the glob in native-assets.mjs) or it is gone (drop the entry, and check what rendered it).`,
     )
   }
 
-  for (const file of files) {
-    const to = join(NATIVE_PUBLIC_DIR, file)
+  let bytes = 0
+  for (const { path, from } of files) {
+    const to = join(NATIVE_PUBLIC_DIR, path)
     mkdirSync(dirname(to), { recursive: true })
-    copyFileSync(join(WEB_PUBLIC_DIR, file), to)
+    copyFileSync(join(from, path), to)
+    bytes += statSync(to).size
   }
 
   return {
@@ -77,14 +99,14 @@ export function syncNativeAssets() {
     ortOut,
     modelOut,
     entries,
-    files,
-    bytes: totalBytes(WEB_PUBLIC_DIR, files),
+    files: files.map((file) => file.path),
+    bytes,
   }
 }
 
 // Direct invocation stays supported.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const { dir, files, bytes } = syncNativeAssets()
+  const { dir, files, bytes } = await syncNativeAssets()
   console.log(
     `[sync-native-assets] ${NATIVE_ASSETS.length} manifest entries -> ${files.length} files, ${bytes} bytes`,
   )
