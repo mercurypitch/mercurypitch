@@ -1373,12 +1373,12 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Rule:** retry with `SHARP_IGNORE_GLOBAL_LIBVIPS=1 pnpm install --frozen-lockfile`; do not change the lockfile or add build dependencies for the host's optional library.
 **See:** `pnpm-lock.yaml` (Sharp install dependencies).
 
-### Give glass transmission a real scene background
+### Judge glass in its production render path
 
-**Symptom:** valid transparent GLBs appeared as solid white silhouettes in a review canvas, while Blender renders looked correct.
-**Cause:** the alpha canvas had only a CSS background. Three's transmission pass used its white clear fallback; CSS is outside the scene it samples.
-**Rule:** supply a real `scene.background` or rendered backdrop before judging glass materials. Confirm in the actual GLB browser view, separately from Blender proofs.
-**See:** `art/glass-adventure/v3/model-viewer.js`.
+**Symptom:** transparent GLBs appeared white on a review canvas; later, clear isolated crystal branches nearly vanished inside the actual scroll.
+**Cause:** CSS backgrounds are absent from Three's transmission pass. Separately, a dark full-resolution preview concealed the game's subpixel branches and pale-on-cloud contrast at half-resolution transmission.
+**Rule:** provide a real scene backdrop and match production exposure, transmission resolution, camera scale and surrounding art. Confirm actual-game contribution with effect-on/off captures before accepting appearance; do not raise global rendering cost to rescue tiny detail.
+**See:** `art/glass-adventure/v3/model-viewer.js`, `packages/glass-game/src/render/crystal-interior-geometry.ts`, `art/glass-adventure/crystal-interiors/v1/`.
 
 ### Validate fractured meshes again after GLB export
 

@@ -68,18 +68,18 @@ interface PresetDefaults {
 const PRESET_DEFAULTS: Readonly<Record<CrystalInteriorPreset, PresetDefaults>> =
   {
     'resonance-veins': {
-      palette: { primary: 0xffcb67, secondary: 0xff7f45, accent: 0xfff1b2 },
-      intensity: 1.15,
+      palette: { primary: 0xffa31a, secondary: 0xff3d12, accent: 0xffdf70 },
+      intensity: 1.18,
       speed: 0.72,
     },
     'frost-roots': {
-      palette: { primary: 0xbfeeff, secondary: 0x67bfff, accent: 0xf3fdff },
-      intensity: 1.05,
+      palette: { primary: 0x00b7f5, secondary: 0x172bbf, accent: 0x34f5d0 },
+      intensity: 1.22,
       speed: 0.4,
     },
     'aurora-heart': {
-      palette: { primary: 0xff8fcf, secondary: 0xa98cff, accent: 0x7ee9ff },
-      intensity: 0.92,
+      palette: { primary: 0xff3cb9, secondary: 0x713cff, accent: 0x18dfff },
+      intensity: 1,
       speed: 0.24,
     },
   }
