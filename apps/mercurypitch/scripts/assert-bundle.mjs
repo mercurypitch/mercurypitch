@@ -128,6 +128,18 @@ const WEB_SETTINGS = [
   ['peerpush.com', 'the web Settings panel (SettingsPanel, its About badge)'],
 ]
 
+/**
+ * Present in the web sign-in dialog and nowhere else. The phone signs in
+ * through its own sheet (apps/mercurypitch/src/shell/settings/SignInSheet),
+ * which has no television row (audit D2).
+ */
+const WEB_SIGN_IN = [
+  [
+    'Sign in with your phone',
+    'the web sign-in dialog (AuthModal, its television phone row)',
+  ],
+]
+
 const failures = []
 
 /** One line per check, whichever way it went. */
@@ -333,6 +345,19 @@ function main(argv) {
       webSettings.length === 0,
       `${label}: the web Settings panel is not in the bundle`,
       `Found ${webSettings.join('; ')}. Something imports the web SettingsPanel without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native Settings is apps/mercurypitch/src/shell/settings.`,
+    )
+
+    const webSignIn = []
+    for (const file of assets) {
+      for (const [needle, what] of WEB_SIGN_IN) {
+        if (contains(file, needle))
+          webSignIn.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      webSignIn.length === 0,
+      `${label}: the web sign-in dialog is not in the bundle`,
+      `Found ${webSignIn.join('; ')}. Something renders the web AuthModal without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native way in is the shell's sign-in sheet; openAuthModal routes to it.`,
     )
   }
 

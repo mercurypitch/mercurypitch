@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TAB_PROGRESS, TAB_SETTINGS } from '@/features/tabs/constants'
 import type * as NativeBuild from '@/lib/native-build'
 import { registerShellApi } from './native-shell-store'
-import { activeTab, openSettingsSection, setActiveTab } from './ui-store'
+import { activeTab, authModalMode, closeAuthModal, openAuthModal, openSettingsSection, setActiveTab, } from './ui-store'
 
 const build = vi.hoisted(() => ({ native: false }))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
@@ -24,6 +24,7 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 afterEach(() => {
   build.native = false
   setActiveTab(TAB_PROGRESS)
+  closeAuthModal()
 })
 
 describe('opening a Settings section', () => {
@@ -46,5 +47,25 @@ describe('opening a Settings section', () => {
 
     expect(pushSettings).toHaveBeenCalledWith('account')
     expect(activeTab()).toBe(TAB_PROGRESS)
+  })
+})
+
+describe('asking the singer to sign in', () => {
+  it('opens the web sign-in dialog on the web', () => {
+    openAuthModal('login')
+
+    expect(authModalMode()).toBe('login')
+  })
+
+  it('asks the native shell for its sheet, and never opens the web dialog (D2)', () => {
+    build.native = true
+    const openSignIn = vi.fn()
+    const unregister = registerShellApi({ pushSettings: vi.fn(), openSignIn })
+
+    openAuthModal('register')
+    unregister()
+
+    expect(openSignIn).toHaveBeenCalledTimes(1)
+    expect(authModalMode()).toBeNull()
   })
 })

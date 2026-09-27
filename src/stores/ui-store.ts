@@ -21,8 +21,8 @@ import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
 import { nativeShellApi } from './native-shell-store'
-import type { SettingsSection } from './settings-section'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
+import type { SettingsSection } from './settings-section'
 
 export type { ActiveTab } from '@/features/tabs/constants'
 export type { SettingsSection } from './settings-section'
@@ -383,7 +383,19 @@ export type AuthModalMode = 'login' | 'register'
 export const [authModalMode, setAuthModalMode] =
   createSignal<AuthModalMode | null>(null)
 
+/**
+ * Ask the singer to sign in (or to create an account).
+ *
+ * Under the native build the shell answers with its own sign-in sheet, and
+ * the web dialog never opens: the phone's way in is Apple, Google or a mailed
+ * code, not the password form, the television's phone row or the passkey
+ * button the dialog leads with.
+ */
 export function openAuthModal(mode: AuthModalMode = 'login'): void {
+  if (IS_NATIVE_BUILD) {
+    nativeShellApi()?.openSignIn?.()
+    return
+  }
   setAuthModalMode(mode)
 }
 
