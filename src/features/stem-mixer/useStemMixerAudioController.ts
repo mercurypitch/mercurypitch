@@ -101,6 +101,18 @@ interface CanvasView {
   isUserPanning?: () => boolean
 }
 
+/**
+ * A room's claim on the app's one AudioContext (packages/audio-io), lent to
+ * the mixer it hosts (REQ-NRM-033). The mixer builds its graph on the lent
+ * context and resumes it through the claim, inside the tap that plays; it
+ * never closes it (REQ-NRM-038) — the room gives the claim back, and the
+ * broker suspends the clock when nobody holds one (REQ-NRM-039).
+ */
+export interface StemMixerAudioLease {
+  ensure(): AudioContext | null
+  unlock(): Promise<boolean>
+}
+
 export interface StemMixerAudioDeps {
   // Track signals
   vocal: Accessor<StemTrack>
@@ -182,6 +194,16 @@ export interface StemMixerAudioDeps {
     msg: string,
     type?: 'info' | 'success' | 'warning' | 'error',
   ) => void
+
+  /**
+   * Stream the stems whatever the device class says. The native Karaoke room
+   * asks for it: an Android tablet's user agent reads as a desktop and a phone
+   * on its side is not narrow, and the full decode either one was handed is
+   * the 180 MB a phone cannot hold (K9).
+   */
+  forceStream?: boolean
+  /** Build on a room's lent context instead of constructing one. */
+  audioLease?: StemMixerAudioLease
 }
 
 export interface StemMixerAudioController {
@@ -277,6 +299,12 @@ export interface StemMixerAudioController {
   // Ref accessors (for onCleanup)
   getAudioCtx: () => AudioContext | null
   getRafId: () => number
+  /**
+   * Take the mixer's own nodes off the context and forget it, without
+   * closing it: the way out for a mixer on a lent context. The next
+   * `ensureAudioCtx` builds a fresh graph on whatever the lease lends.
+   */
+  detachGraph: () => void
 }
 
 // ── Constants ──────────────────────────────────────────────────
@@ -395,6 +423,7 @@ export const useStemMixerAudioController = (
   // ── Mutable refs ─────────────────────────────────────────────
   let audioCtx: AudioContext | null = null
   let mainGain: GainNode | null = null
+  let softClipNode: WaveShaperNode | null = null
   let vocalAnalyser: AnalyserNode | null = null
   let pitchDetector: PitchDetector | null = null
   let rafId = 0
@@ -523,7 +552,7 @@ export const useStemMixerAudioController = (
    * detection, sample-exact waveform zoom). A phone cannot hold two of them at
    * all: 180 MB of decoded PCM is where iOS kills the tab.
    */
-  const streamStems = deviceClass === 'mobile'
+  const streamStems = deps.forceStream === true || deviceClass === 'mobile'
 
   onCleanup(() => {
     disposed = true
@@ -601,7 +630,7 @@ export const useStemMixerAudioController = (
   // ── Audio Context ────────────────────────────────────────────
   const ensureAudioCtx = () => {
     if (!audioCtx) {
-      audioCtx = new AudioContext()
+      audioCtx = deps.audioLease?.ensure() ?? new AudioContext()
       mainGain = audioCtx.createGain()
       mainGain.gain.value = musicLevel()
       // The master ends in a soft clipper, not the raw destination: the music
@@ -612,6 +641,7 @@ export const useStemMixerAudioController = (
       softClip.oversample = 'none'
       mainGain.connect(softClip)
       softClip.connect(audioCtx.destination)
+      softClipNode = softClip
       vocalAnalyser = audioCtx.createAnalyser()
       vocalAnalyser.fftSize = PITCH_FFT_SIZE
       vocalAnalyser.smoothingTimeConstant = 0.3
@@ -621,11 +651,32 @@ export const useStemMixerAudioController = (
       })
     }
     if (audioCtx.state !== 'running') {
-      void audioCtx.resume().catch(() => {
-        // Outside a user gesture (iOS) — audio-unlock retries on the next tap.
-      })
+      if (deps.audioLease !== undefined) {
+        // The broker's own resume: it also clears a suspension the app's
+        // trip to the background left behind (packages/audio-io).
+        void deps.audioLease.unlock().catch(() => false)
+      } else {
+        void audioCtx.resume().catch(() => {
+          // Outside a user gesture (iOS) — audio-unlock retries on the next tap.
+        })
+      }
     }
     return audioCtx
+  }
+
+  const detachGraph = (): void => {
+    for (const node of [mainGain, softClipNode, vocalAnalyser]) {
+      try {
+        node?.disconnect()
+      } catch (_) {
+        /* already off the context */
+      }
+    }
+    mainGain = null
+    softClipNode = null
+    vocalAnalyser = null
+    pitchDetector = null
+    audioCtx = null
   }
 
   // iOS: first tap anywhere primes the playback audio session (the ring/silent
@@ -1825,5 +1876,6 @@ export const useStemMixerAudioController = (
     getPerformanceSnapshot,
     getAudioCtx: () => audioCtx,
     getRafId: () => rafId,
+    detachGraph,
   }
 }

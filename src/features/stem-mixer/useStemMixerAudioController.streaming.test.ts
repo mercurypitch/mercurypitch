@@ -399,3 +399,19 @@ describe('opening the same song on a desktop', () => {
     h.dispose()
   })
 })
+
+describe('the Karaoke room, whatever the device says it is (K9)', () => {
+  // An Android tablet's user agent reads as a desktop, and a wide phone on
+  // its side is not narrow: both were handed a full decode, which is the
+  // 180 MB that kills a phone. The room asks for the stream outright.
+  it('streams on a device classed desktop when its host asks', async () => {
+    deviceClass = 'desktop'
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(openedStreams).toBe(2)
+    expect(h.vocal().stream ?? null).not.toBeNull()
+    h.dispose()
+  })
+})

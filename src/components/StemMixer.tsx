@@ -12,6 +12,7 @@ import { KARAOKE_STAGE_ALPHA, loadKaraokeStageAlpha, persistKaraokeStageAlpha, }
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
+import type { StemMixerHosting } from '@/features/stem-mixer/hosted-mixer'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
@@ -140,6 +141,12 @@ interface StemMixerProps {
   onPickSession?: (sessionId: string) => void
   /** Launch a library song with one performer role muted. */
   onPlayAlong?: (sessionId: string, preset: PlayAlongPreset) => void
+  /**
+   * Hosted by the native Karaoke room (see `hosted-mixer.ts`): the zen stage
+   * at every width, the stems always streamed, the room's audio context
+   * rather than one of its own, and the room's library for prev and next.
+   */
+  hosted?: StemMixerHosting
 }
 
 interface StemTrack {
@@ -296,6 +303,10 @@ const StemLoadProgress = (props: {
 // ── Component ──────────────────────────────────────────────────
 
 export const StemMixer: Component<StemMixerProps> = (props) => {
+  // Fixed for the mixer's lifetime, like `preset`: a room hosts a mixer from
+  // mount to unmount (it is keyed per song).
+  // eslint-disable-next-line solid/reactivity
+  const hosted = props.hosted
   const background = useBackgroundSurfaceController('karaoke')
 
   // ── State ────────────────────────────────────────────────────
@@ -577,6 +588,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
     onMicFrame: karaokeVoiceCapture.pushMicFrame,
     showNotification,
+    // The room streams whatever the user agent says (K9), on the one
+    // context it lends (REQ-NRM-033).
+    forceStream: hosted !== undefined,
+    audioLease: hosted?.audio,
   })
 
   // Backfill audio ctx holders for mic controller
@@ -676,7 +691,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // page — the studio mixer is a desktop surface (decision D4).
   // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
   // same clean lyrics stage the phone gets automatically.
-  const zenStage = () => isNarrow() || karaokeZen()
+  // Hosted by the Karaoke room it is zen at every width: an 852-wide phone
+  // on its side is not narrow, and got the desktop mixer (K6).
+  const zenStage = () => hosted !== undefined || isNarrow() || karaokeZen()
 
   // ── "Why did the music get quiet?" ───────────────────────────
   // Opening a mic makes iOS switch the whole page to `playAndRecord` and
@@ -818,18 +835,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const canLibraryNav = (): boolean => props.onPickSession !== undefined
 
   const hasPrevItem = (): boolean =>
-    playlist.isPlaylistActive()
-      ? playlist.currentIndex() > 0
-      : canLibraryNav() &&
-        prevSessionId(orderedLibraryIds(), props.sessionId) !== null
+    hosted !== undefined
+      ? hosted.hasPrev()
+      : playlist.isPlaylistActive()
+        ? playlist.currentIndex() > 0
+        : canLibraryNav() &&
+          prevSessionId(orderedLibraryIds(), props.sessionId) !== null
 
   const hasNextItem = (): boolean =>
-    playlist.isPlaylistActive()
-      ? playlist.nextSong() !== null
-      : canLibraryNav() &&
-        nextSessionId(orderedLibraryIds(), props.sessionId) !== null
+    hosted !== undefined
+      ? hosted.hasNext()
+      : playlist.isPlaylistActive()
+        ? playlist.nextSong() !== null
+        : canLibraryNav() &&
+          nextSessionId(orderedLibraryIds(), props.sessionId) !== null
 
   const goPrevItem = (): void => {
+    if (hosted !== undefined) {
+      hosted.onPrev()
+      return
+    }
     if (playlist.isPlaylistActive()) {
       handlePlaylistPrev()
       return
@@ -839,6 +864,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   const goNextItem = (): void => {
+    if (hosted !== undefined) {
+      hosted.onNext()
+      return
+    }
     if (playlist.isPlaylistActive()) {
       handlePlaylistNext()
       return
@@ -850,6 +879,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // End-of-song: a running playlist advances through its own flow (scoring,
   // summary); free-library listening auto-advances only when autoplay is on.
   const handleSongEnded = (): void => {
+    // The room decides what follows a song: its own library, its own
+    // "Play the next song automatically".
+    if (hosted !== undefined) {
+      hosted.onEnded()
+      return
+    }
     if (playlist.isPlaylistActive()) {
       handlePlaylistSongEnded()
       return
@@ -2001,6 +2036,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   onMount(() => {
     audio.loadStems()
     loadLyrics()
+    hosted?.attach({
+      playing: audio.playing,
+      loading: audio.loading,
+      loadError: audio.loadError,
+      elapsed: audio.elapsed,
+      duration: audio.duration,
+      hasNotes: () =>
+        pitchAnalysis.offlineSegmentedNotes().length > 0 ||
+        pitchAnalysis.offlineMergedNotes().length > 0,
+      musicLevel: audio.musicLevel,
+      play: () => audio.handlePlay(),
+      pause: () => audio.handlePause(),
+      seek: (seconds) => audio.seekTo(seconds),
+      resetMusicLevel: () => {
+        audio.setMusicLevel(audio.musicLevelRange.defaultValue)
+      },
+    })
 
     // Load cached data from IndexedDB in parallel:
     // 1. Whisper transcription (words + timestamps)
@@ -2210,6 +2262,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       document.removeEventListener('pointerup', smWin.__smResizeEnd)
       delete smWin.__smResizeEnd
     }
+    // A lent context is the room's, and closing it would cost a gesture to
+    // get back (REQ-NRM-038): the mixer takes its own nodes off it instead.
+    if (hosted !== undefined) {
+      audio.detachGraph()
+      return
+    }
     const ctx = audio.getAudioCtx()
     if (ctx) {
       ctx.close().catch(() => {
@@ -2253,6 +2311,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         <>
           <KaraokeMobileStage
             songTitle={props.songTitle}
+            hosted={hosted?.stage}
             onBack={handleZenBack}
             playing={audio.playing}
             loading={audio.loading}
