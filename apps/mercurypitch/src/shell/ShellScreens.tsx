@@ -24,6 +24,7 @@ import { AppearanceScreen } from './settings/AppearanceScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
+import { StorageScreen } from './settings/StorageScreen'
 
 export interface ShellScreensProps {
   /**
@@ -40,6 +41,7 @@ const TITLES: Record<PushedScreenId, string> = {
   'account-name': 'Name',
   devices: 'Devices',
   'delete-account': 'Delete account',
+  storage: 'Storage',
   appearance: 'Appearance',
   developer: 'Developer',
 }
@@ -57,6 +59,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <DevicesScreen />
       case 'delete-account':
         return <DeleteAccountScreen />
+      case 'storage':
+        return <StorageScreen />
       case 'appearance':
         return <AppearanceScreen />
       case 'developer': {

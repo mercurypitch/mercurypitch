@@ -30,6 +30,10 @@ import { fileURLToPath } from 'node:url'
 import { NATIVE_ASSETS, resolveNativeAssets, totalBytes, } from '../native-assets.mjs'
 import { syncOrtAssets } from './sync-ort-assets.mjs'
 
+// Re-exported so vite.config.ts reads both helpers through its one untyped
+// import of this file.
+export { pitchEngineBytes } from './sync-ort-assets.mjs'
+
 const here = dirname(fileURLToPath(import.meta.url))
 
 /** The generated publicDir. Gitignored, wiped and refilled by every build. */

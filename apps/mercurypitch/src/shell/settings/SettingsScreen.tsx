@@ -16,15 +16,20 @@
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { theme, themeSource } from '@/stores/theme-store'
-import { ContrastIcon, LockIcon, TrashIcon, WarnIcon } from '../icons'
+import { ContrastIcon, LockIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
 import { ACCOUNT_ROW } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, } from './account-deletion'
 import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { appearanceLabel } from './AppearanceScreen'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
+import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
 
 /** The screens a Settings row pushes. */
-export type SettingsSubScreen = 'account' | 'delete-account' | 'appearance'
+export type SettingsSubScreen =
+  | 'account'
+  | 'delete-account'
+  | 'storage'
+  | 'appearance'
 
 export interface SettingsScreenProps {
   onPush: (screen: SettingsSubScreen) => void
@@ -36,6 +41,9 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
   // Account screen reads again whenever it opens.
   onMount(() => {
     if (accountSignedIn() && accountReach() === 'idle') void refreshAccount()
+    // The Storage row's size, read on every visit: a take kept since the
+    // last one changed it.
+    void loadStorageFacts()
   })
   // The line after a deletion is said once: leaving Settings retires it.
   onCleanup(dismissAccountDeletedNote)
@@ -84,6 +92,19 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
             </Show>
           </SettingsGroup>
           <SettingsGroup title="This phone">
+            <SettingsRow
+              id="storage"
+              icon={<StorageIcon />}
+              label="Storage"
+              value={
+                storageTotal() === null
+                  ? undefined
+                  : formatBytes(storageTotal() ?? 0)
+              }
+              onPress={() => {
+                props.onPush('storage')
+              }}
+            />
             <SettingsRow
               id="appearance"
               icon={<ContrastIcon />}

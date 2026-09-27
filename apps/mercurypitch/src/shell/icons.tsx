@@ -367,3 +367,20 @@ export const WaveIcon: Component<ShellIconProps> = (props) => (
     <path d="M3.5 12h2M7.5 8v8M11 5v14M14.5 9v6M18 7v10M20.5 12h0" />
   </svg>
 )
+
+/** Storage: the stacked disc of a drive. */
+export const StorageIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <ellipse cx="12" cy="6" rx="7.5" ry="2.5" />
+    <path d="M4.5 6v12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5V6" />
+    <path d="M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5" />
+  </svg>
+)
+
+/** Start fresh: the arrow coming round. */
+export const RefreshIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+    <path d="M19.5 4.5v4.4h-4.4" />
+  </svg>
+)

@@ -26,7 +26,7 @@
 // in it is copied there by a build, and one copy of the wasm runtime and the
 // SwiftF0 model in the repository (the web app's public/ tree) is better than
 // two that can drift.
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -38,25 +38,48 @@ const here = dirname(fileURLToPath(import.meta.url))
  *   publicDir, which is what every build and dev server wants; a caller passes
  *   its own only to stage somewhere else.
  */
-export function syncOrtAssets(outRoot = join(here, '../.native-public')) {
-  // onnxruntime-web is a dependency of the pitch engine, not of this app, so it
-  // is resolved from the engine's own module graph — pnpm keeps graphs strict
-  // and a bare resolve from here would miss.
+/** The wasm pair the engine loads, by name inside onnxruntime-web's dist. */
+const ORT_FILES = ['ort-wasm-simd-threaded.mjs', 'ort-wasm-simd-threaded.wasm']
+
+/** The SwiftF0 model, in the web app's public tree. */
+const MODEL_SRC = join(here, '../../../public/models/swiftf0.onnx')
+
+/**
+ * onnxruntime-web is a dependency of the pitch engine, not of this app, so it
+ * is resolved from the engine's own module graph — pnpm keeps graphs strict
+ * and a bare resolve from here would miss.
+ */
+function ortDistDir() {
   const appRequire = createRequire(import.meta.url)
   const engineRequire = createRequire(
     appRequire.resolve('@irchiinnuss/pitch-engine'),
   )
-  const ortDist = join(
+  return join(
     dirname(dirname(engineRequire.resolve('onnxruntime-web'))),
     'dist',
   )
+}
+
+/**
+ * The bytes the pitch engine adds to the app: the wasm pair and the model,
+ * measured at their sources, which are exactly what gets vendored. The
+ * Storage screen shows it as what the app itself takes (S6 step 7); it has
+ * no Clear, because these go only with the app.
+ */
+export function pitchEngineBytes() {
+  const ortDist = ortDistDir()
+  return [...ORT_FILES.map((file) => join(ortDist, file)), MODEL_SRC].reduce(
+    (total, file) => total + (existsSync(file) ? statSync(file).size : 0),
+    0,
+  )
+}
+
+export function syncOrtAssets(outRoot = join(here, '../.native-public')) {
+  const ortDist = ortDistDir()
 
   const ortOut = join(outRoot, 'ort')
   mkdirSync(ortOut, { recursive: true })
-  for (const file of [
-    'ort-wasm-simd-threaded.mjs',
-    'ort-wasm-simd-threaded.wasm',
-  ]) {
+  for (const file of ORT_FILES) {
     const from = join(ortDist, file)
     if (!existsSync(from)) {
       throw new Error(
@@ -72,7 +95,7 @@ export function syncOrtAssets(outRoot = join(here, '../.native-public')) {
   // kits, none of which belong in a V1-1 binary. The pictures the V1-1 surfaces
   // DO need are named one at a time in ../native-assets.mjs and staged beside
   // this model by sync-native-assets.mjs.
-  const modelSrc = join(here, '../../../public/models/swiftf0.onnx')
+  const modelSrc = MODEL_SRC
   const modelOut = join(outRoot, 'models')
   if (!existsSync(modelSrc)) {
     throw new Error(

@@ -651,3 +651,108 @@
   gap: 10px;
   min-width: 0;
 }
+
+/* ---------- Storage (S6 step 7) ---------- */
+
+/* Upright: the total, the categories, then Start fresh. On its side the
+   total and Start fresh stand on the left and the categories on the right,
+   the way 6a draws it. */
+.mp-storage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'kept'
+    'fresh';
+  gap: 16px;
+}
+
+.mp-storage__head {
+  grid-area: head;
+}
+
+.mp-storage__kept {
+  grid-area: kept;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mp-storage__fresh {
+  grid-area: fresh;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .mp-storage {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head kept'
+      'fresh kept';
+    align-items: start;
+  }
+}
+
+.mp-storage__sum {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mp-storage__total {
+  font: 700 28px/34px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.mp-storage__caption {
+  margin: 2px 0 10px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* One bar in the four categories' colours; a sliver stays visible. */
+.mp-storage__bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mp-storage__bar > i {
+  display: block;
+  height: 100%;
+  width: var(--p);
+  min-width: 3px;
+}
+
+.mp-storage__dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.mp-storage__bar > .is-takes,
+.mp-storage__dot.is-takes {
+  background: var(--accent);
+}
+
+.mp-storage__bar > .is-prints,
+.mp-storage__dot.is-prints {
+  background: var(--teal);
+}
+
+.mp-storage__bar > .is-models,
+.mp-storage__dot.is-models {
+  background: var(--purple);
+}
+
+.mp-storage__bar > .is-rooms,
+.mp-storage__dot.is-rooms {
+  background: var(--orange);
+}

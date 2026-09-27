@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
 import { readMe } from '@/db/services/auth-me-service'
 import { setAuthToken } from '@/db/services/user-service'
+import type * as VoiceTakeService from '@/db/services/voice-take-service'
+import { getVoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
@@ -18,6 +20,18 @@ vi.mock('@/db/services/auth-me-service', async (importOriginal) => ({
   ...(await importOriginal<typeof AuthMeService>()),
   readMe: vi.fn(),
 }))
+vi.mock('@/db/services/voice-take-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof VoiceTakeService>()),
+  getVoiceStorageSnapshot: vi.fn(),
+}))
+
+async function settle(): Promise<void> {
+  for (let i = 0; i < 4; i += 1) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
+  }
+}
 
 function token(provider: string): string {
   const body = btoa(
@@ -121,6 +135,25 @@ describe('Settings', () => {
     expect(account).toContain('Alex')
     expect(account).toContain('Signed in with Apple')
     expect(account).not.toContain(ACCOUNT_ROW.signedOutValue)
+  })
+
+  it('says what the phone keeps on the Storage row, and pushes Storage from it', async () => {
+    vi.mocked(getVoiceStorageSnapshot).mockResolvedValue({
+      takeCount: 23,
+      voiceBytes: 186_000_000,
+      browserUsage: null,
+      browserQuota: null,
+      persistent: null,
+    })
+    const onPush = vi.fn()
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
+    await settle()
+
+    row('storage')?.click()
+
+    // 186 MB of takes and the 12.8 MB pitch model the app ships with.
+    expect(row('storage')?.textContent).toContain('199 MB')
+    expect(onPush).toHaveBeenCalledWith('storage')
   })
 
   it('pushes Account from its row', () => {

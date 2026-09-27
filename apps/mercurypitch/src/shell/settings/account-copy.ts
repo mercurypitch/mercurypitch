@@ -141,3 +141,28 @@ export const DELETE_QUESTION = {
 /** The line on Settings after a deletion (5d, REQ-NAM-059). */
 export const ACCOUNT_DELETED =
   'Your account is deleted. Practice on this phone stays here.'
+
+/**
+ * Storage (6a, 6b): where each kind of record is kept, as the Storage screen
+ * and its questions say it. Takes are never uploaded. Voiceprints go online
+ * whenever the phone holds a session, an account's or the phone's own, so
+ * only a phone that never held one can say a cleared voiceprint cannot come
+ * back.
+ */
+export const STORAGE_COPY = {
+  clearTakes:
+    'They are only on this phone, so they cannot come back. Your history and voiceprints stay.',
+  clearVoiceprints: {
+    account:
+      'The copies on this phone go. Your account keeps the ones it holds.',
+    online:
+      'The copies on this phone go. Copies saved online with your history stay.',
+    phoneOnly:
+      'They are only on this phone, so they cannot come back. Your history and takes stay.',
+  },
+} as const
+
+/** The Takes row's line: "23 takes, only on this phone". */
+export function takesLine(count: number): string {
+  return `${count} ${count === 1 ? 'take' : 'takes'}, only on this phone`
+}
