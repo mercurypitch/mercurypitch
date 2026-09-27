@@ -129,6 +129,15 @@
   height: var(--tabbar-height);
 }
 
+/* The band passes taps through, as the dock does, and takes them only
+   through a layer that is in. A room can be its own transport (the Karaoke
+   room during a song, S8 D2 A): the rail steps aside, the shell's transport
+   stays out, and an empty band over the room's own bar took the taps meant
+   for its Play and Pause. */
+.mp-dock > .mp-band {
+  pointer-events: none;
+}
+
 .mp-layer {
   grid-area: 1 / 1;
   display: flex;
@@ -146,6 +155,7 @@
 }
 
 .mp-layer.is-in {
+  pointer-events: auto;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
