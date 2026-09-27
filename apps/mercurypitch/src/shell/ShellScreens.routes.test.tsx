@@ -56,6 +56,9 @@ vi.mock('./settings/AppearanceScreen', () => ({
 vi.mock('./settings/AboutScreen', () => ({
   AboutScreen: marker('about'),
 }))
+vi.mock('./settings/KaraokeSettingsScreen', () => ({
+  KaraokeSettingsScreen: marker('karaoke'),
+}))
 
 /** Every screen on the stack, with the title its bar carries. */
 const SCREENS: readonly [PushedScreen, string][] = [
@@ -69,6 +72,7 @@ const SCREENS: readonly [PushedScreen, string][] = [
   ['this-phone', 'This phone'],
   ['appearance', 'Appearance'],
   ['about', 'About'],
+  ['karaoke', 'Karaoke'],
 ]
 
 let view: RenderedShell | null = null

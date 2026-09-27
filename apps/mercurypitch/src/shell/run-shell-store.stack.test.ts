@@ -10,7 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { setActiveTab } from '@/stores/ui-store'
-import { clearScreens, popScreen, pushed, pushedStack, pushScreen, pushSettingsScreen, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
+import { clearScreens, popScreen, pushed, pushedStack, pushScreen, pushSettingsScreen, pushSettingsSection, resetRunShell, roomHeaderVisible, shellCovered, } from './run-shell-store'
 
 beforeEach(() => {
   setActiveTab(TAB_SINGING)
@@ -109,6 +109,27 @@ describe('the pushed-screen stack', () => {
 
     pushSettingsScreen()
 
+    expect(pushedStack()).toEqual(['settings'])
+  })
+})
+
+describe('Settings at a section', () => {
+  // ui-store's openSettingsSection lands here natively: the web panel's
+  // sections, mapped onto the screens the shell has.
+  it('opens the sections that have a screen of their own', () => {
+    pushSettingsSection('karaoke')
+    expect(pushedStack()).toEqual(['settings', 'karaoke'])
+
+    pushSettingsSection('account')
+    expect(pushedStack()).toEqual(['settings', 'account'])
+  })
+
+  it('opens Settings itself for a section with no screen, or none named', () => {
+    pushSettingsSection('singing')
+    expect(pushedStack()).toEqual(['settings'])
+
+    pushScreen('appearance')
+    pushSettingsSection()
     expect(pushedStack()).toEqual(['settings'])
   })
 })

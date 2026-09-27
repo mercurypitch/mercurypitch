@@ -41,6 +41,7 @@ export type SettingsSubScreen =
   | 'this-phone'
   | 'appearance'
   | 'about'
+  | 'karaoke'
 
 /** The Microphone row's answer: the input once heard, Off once refused. */
 function microphoneValue(): string | undefined {
@@ -171,9 +172,9 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           </SettingsGroup>
         </div>
         <div class="mp-set__col">
-          {/* The rooms keep their own options behind their own gear; this
-              only says where. Karaoke's place is held for the phase that
-              brings the room. */}
+          {/* The rooms keep their own options behind their own gear. Sing's
+              row only says where; Karaoke's opens the two of its settings a
+              singer may look for here (plan S8 §9). */}
           <SettingsGroup title="Rooms">
             <SettingsRow
               id="rooms-sing"
@@ -185,8 +186,10 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               id="rooms-karaoke"
               icon={<KaraokeIcon />}
               label="Karaoke"
-              sub="Its settings arrive with the room"
-              accessory={<span class="mp-set-chip">Later</span>}
+              sub="Text size and the next song"
+              onPress={() => {
+                props.onPush('karaoke')
+              }}
             />
           </SettingsGroup>
           <SettingsGroup title="About">

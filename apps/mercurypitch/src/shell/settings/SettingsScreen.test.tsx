@@ -267,8 +267,9 @@ describe('Settings', () => {
     phone.facts = null
   })
 
-  it("points to Sing's own options and holds Karaoke's place, pressing nothing (Rooms)", () => {
-    view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+  it("points to Sing's own options, and pushes Karaoke's (Rooms)", () => {
+    const onPush = vi.fn()
+    view = renderShell(() => <SettingsScreen onPush={onPush} />)
 
     const sing = row('rooms-sing')
     const karaoke = row('rooms-karaoke')
@@ -276,11 +277,15 @@ describe('Settings', () => {
     expect(sing?.textContent).toContain(
       "Its options are behind the room's gear",
     )
-    expect(karaoke?.textContent).toContain('Its settings arrive with the room')
-    expect(karaoke?.textContent).toContain('Later')
     expect(sing?.tagName).not.toBe('BUTTON')
-    expect(karaoke?.tagName).not.toBe('BUTTON')
     expect(sing?.closest('section')?.getAttribute('aria-label')).toBe('Rooms')
+    // The room is here now (plan S8 §9): the row is live, and no longer
+    // holds a place for later.
+    expect(karaoke?.tagName).toBe('BUTTON')
+    expect(karaoke?.textContent).toContain('Text size and the next song')
+    expect(karaoke?.textContent).not.toContain('Later')
+    karaoke?.click()
+    expect(onPush).toHaveBeenCalledWith('karaoke')
   })
 
   it('pushes Account from its row', () => {

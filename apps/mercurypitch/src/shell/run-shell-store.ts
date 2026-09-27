@@ -36,6 +36,7 @@ import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from
 import type { ActiveTab } from '@/features/tabs/constants'
 import { markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
+import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
 
 export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
@@ -68,6 +69,7 @@ export type PushedScreen =
   | 'this-phone'
   | 'appearance'
   | 'about'
+  | 'karaoke'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -383,6 +385,24 @@ export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
 export function pushSettingsScreen(screen?: SettingsChild): void {
   pushScreen('settings')
   if (screen !== undefined) pushScreen(screen)
+}
+
+/** The web Settings sections that have a screen of their own here. */
+const SECTION_SCREENS: Partial<Record<SettingsSection, SettingsChild>> = {
+  account: 'account',
+  karaoke: 'karaoke',
+}
+
+/**
+ * Settings at one of the web panel's sections: what ui-store's
+ * `openSettingsSection` means natively. A section with a screen of its own
+ * opens on it (the studio's Settings button lands on Karaoke's); any other
+ * section, or none, is Settings itself.
+ */
+export function pushSettingsSection(section?: SettingsSection): void {
+  pushSettingsScreen(
+    section === undefined ? undefined : SECTION_SCREENS[section],
+  )
 }
 
 /** One level down: what Back does to a pushed screen. */

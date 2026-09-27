@@ -24,6 +24,7 @@ import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
 import { DevicesScreen } from './settings/DevicesScreen'
+import { KaraokeSettingsScreen } from './settings/KaraokeSettingsScreen'
 import { MicrophoneScreen } from './settings/MicrophoneScreen'
 import { RoomNoiseScreen } from './settings/RoomNoiseScreen'
 import { SettingsScreen } from './settings/SettingsScreen'
@@ -51,6 +52,7 @@ const TITLES: Record<PushedScreenId, string> = {
   'this-phone': 'This phone',
   appearance: 'Appearance',
   about: 'About',
+  karaoke: 'Karaoke',
   developer: 'Developer',
 }
 
@@ -79,6 +81,8 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <AppearanceScreen />
       case 'about':
         return <AboutScreen />
+      case 'karaoke':
+        return <KaraokeSettingsScreen />
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />
