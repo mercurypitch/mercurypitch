@@ -374,8 +374,11 @@ describe('a subscription', () => {
 
   it('ends at expiration, and the songs left stay', async () => {
     const token = await anonymousToken()
-    await deliver(rcEvent('INITIAL_PURCHASE'))
-    // RevenueCat sends EXPIRATION once the period is over: a moment ago.
+    // The period ended two hours ago and was not renewed; RevenueCat sends
+    // EXPIRATION once the grace for billing is over too: a moment ago.
+    await deliver(
+      rcEvent('INITIAL_PURCHASE', { expiration_at_ms: Date.now() - 7_200_000 }),
+    )
     const ended = Date.now() - 3_600_000
 
     const response = await deliver(
@@ -424,6 +427,105 @@ describe('a subscription', () => {
     )
 
     expect(balanceOf(DEVICE)).toBe(20)
+  })
+})
+
+describe('events that arrive out of order', () => {
+  // Review S3: RevenueCat retries a delivery that failed, so an older
+  // period's event can arrive after a newer one. It must not end, or
+  // shorten, the subscription the newer one set.
+  const DAY = 86_400_000
+
+  it('a late first purchase does not end a renewed subscription', async () => {
+    const token = await anonymousToken()
+    const renewedEnd = Date.now() + 29 * DAY
+    const firstEnd = Date.now() - DAY
+
+    await deliver(rcEvent('RENEWAL', { expiration_at_ms: renewedEnd }))
+    await deliver(rcEvent('INITIAL_PURCHASE', { expiration_at_ms: firstEnd }))
+
+    expect(entitlementOf(DEVICE)?.expiresAt).toBe(
+      new Date(renewedEnd).toISOString(),
+    )
+    expect(await songsFor(token)).toMatchObject({
+      subscribed: true,
+      renewsAt: new Date(renewedEnd).toISOString(),
+    })
+  })
+
+  it('keeps the product of the newer period', async () => {
+    await anonymousToken()
+    await deliver(
+      rcEvent('RENEWAL', {
+        product_id: 'mercurypitch_karaoke_yearly',
+        expiration_at_ms: Date.now() + 300 * DAY,
+      }),
+    )
+    await deliver(rcEvent('INITIAL_PURCHASE', { expiration_at_ms: Date.now() }))
+
+    expect(entitlementOf(DEVICE)?.source).toBe(
+      'revenuecat:mercurypitch_karaoke_yearly',
+    )
+  })
+
+  it('takes an event with no end as open-ended, the latest end there is', async () => {
+    await anonymousToken()
+    await deliver(
+      rcEvent('INITIAL_PURCHASE', { expiration_at_ms: Date.now() + 30 * DAY }),
+    )
+
+    await deliver(rcEvent('RENEWAL', { expiration_at_ms: undefined }))
+
+    expect(entitlementOf(DEVICE)?.expiresAt).toBeNull()
+  })
+
+  it('a late expiration of an old period does not end a renewed one', async () => {
+    const token = await anonymousToken()
+    const end = Date.now() + 30 * DAY
+    await deliver(rcEvent('INITIAL_PURCHASE', { expiration_at_ms: end }))
+
+    await deliver(
+      rcEvent('EXPIRATION', { expiration_at_ms: Date.now() - 2 * DAY }),
+    )
+
+    expect(entitlementOf(DEVICE)?.expiresAt).toBe(new Date(end).toISOString())
+    expect(await songsFor(token)).toMatchObject({ subscribed: true })
+  })
+
+  it('an expiration at the stored end still ends it', async () => {
+    const token = await anonymousToken()
+    const end = Date.now() - 60_000
+    await deliver(rcEvent('INITIAL_PURCHASE', { expiration_at_ms: end }))
+
+    await deliver(rcEvent('EXPIRATION', { expiration_at_ms: end }))
+
+    expect(entitlementOf(DEVICE)?.expiresAt).toBe(new Date(end).toISOString())
+    expect(await songsFor(token)).toMatchObject({ subscribed: false })
+  })
+
+  it('a move does not shorten the account’s own, later subscription', async () => {
+    await anonymousToken()
+    seedAccount(ACCOUNT)
+    const accountEnd = new Date(Date.now() + 60 * DAY).toISOString()
+    sqlite
+      .prepare(
+        `INSERT INTO entitlements (id, createdAt, updatedAt, userId, feature, source, expiresAt)
+         VALUES ('own', ?, ?, ?, 'cloud', 'revenuecat:mercurypitch_karaoke_yearly', ?)`,
+      )
+      .run(accountEnd, accountEnd, ACCOUNT, accountEnd)
+    await deliver(
+      rcEvent('INITIAL_PURCHASE', { expiration_at_ms: Date.now() + 30 * DAY }),
+    )
+
+    await deliver(
+      rcEvent('TRANSFER', {
+        app_user_id: ACCOUNT,
+        transferred_from: [DEVICE],
+        transferred_to: [ACCOUNT],
+      }),
+    )
+
+    expect(entitlementOf(ACCOUNT)?.expiresAt).toBe(accountEnd)
   })
 })
 

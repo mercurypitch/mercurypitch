@@ -14,7 +14,9 @@
 // Handled, as plan S8 §6.7 lists them:
 //   INITIAL_PURCHASE, RENEWAL  the entitlement, and one period's songs, rolled
 //                              over to the cap (songs-allowance.ts)
-//   EXPIRATION                 the entitlement ends; the songs left stay
+//   EXPIRATION                 the entitlement ends; the songs left stay.
+//                              An expiration before the stored end is an
+//                              older period's, late, and changes nothing
 //   TRANSFER                   the entitlement moves to the account it names,
 //                              and so do the songs of an anonymous identity:
 //                              a singer who subscribed before signing in to an
@@ -111,6 +113,9 @@ async function firstKnownUser(
   return null
 }
 
+/** In an upsert: the incoming end is at or after the stored one. */
+const LATER_END = `(excluded.expiresAt IS NULL OR (entitlements.expiresAt IS NOT NULL AND excluded.expiresAt >= entitlements.expiresAt))`
+
 /** The store environment this deployment grants for. Anything but an
  *  explicit SANDBOX is PRODUCTION, so a deployment nobody configured never
  *  grants songs for a test purchase. */
@@ -131,6 +136,10 @@ function periodEnd(event: RevenueCatEvent): string | null {
     : null
 }
 
+/** The entitlement until `expiresAt`, never shorter than it already is.
+ *  RevenueCat retries a failed delivery, so an older period's event can
+ *  arrive after a newer one (review S3): the later end wins, and with it the
+ *  product that set it. No end at all (null) is the latest there is. */
 async function upsertEntitlement(
   env: Env,
   userId: string,
@@ -143,8 +152,8 @@ async function upsertEntitlement(
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(userId, feature) DO UPDATE SET
        updatedAt = excluded.updatedAt,
-       source    = excluded.source,
-       expiresAt = excluded.expiresAt`,
+       source    = CASE WHEN ${LATER_END} THEN excluded.source ELSE entitlements.source END,
+       expiresAt = CASE WHEN ${LATER_END} THEN excluded.expiresAt ELSE entitlements.expiresAt END`,
   )
     .bind(
       crypto.randomUUID(),
@@ -271,11 +280,17 @@ async function applyEvent(
   if (user === null) return { ignored: 'unknown user' }
 
   if (type === 'EXPIRATION') {
+    // Only an expiration at or after the stored end is about the current
+    // period. An earlier one is an older period's, delivered late (review S3),
+    // and must not end the subscription that has since renewed.
     const now = new Date().toISOString()
+    const ended = periodEnd(event) ?? now
     await env.DB.prepare(
-      'UPDATE entitlements SET expiresAt = ?, updatedAt = ? WHERE userId = ? AND feature = ?',
+      `UPDATE entitlements SET expiresAt = ?, updatedAt = ?
+        WHERE userId = ? AND feature = ?
+          AND (expiresAt IS NULL OR expiresAt <= ?)`,
     )
-      .bind(periodEnd(event) ?? now, now, user.id, SONGS_ENTITLEMENT)
+      .bind(ended, now, user.id, SONGS_ENTITLEMENT, ended)
       .run()
     return {}
   }
