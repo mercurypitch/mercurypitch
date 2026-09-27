@@ -1,6 +1,6 @@
 // Optional finale regression — real PCM through the pitch detector, explicit recording and local replay.
 import { expect, test } from '@playwright/test'
-import { writeFile } from 'node:fs/promises'
+import { stat, writeFile } from 'node:fs/promises'
 import { GLASSWORKS_JOURNEY } from '../../../packages/glass-game/src/content/glassworks-journey'
 import { readProgress } from '../../../packages/glass-game/src/core/progress'
 
@@ -313,6 +313,17 @@ test('optional encore records only with consent, preserves completion and fits m
     dialog.getByRole('button', { name: 'Stop listening' }),
   ).toBeVisible()
   await dialog.getByRole('button', { name: 'Stop listening' }).click()
+  const downloadEvent = page.waitForEvent('download')
+  await savedMemory.getByRole('button', { name: 'Export audio' }).click()
+  const download = await downloadEvent
+  expect(download.suggestedFilename()).toMatch(
+    /^merc-[a-zA-Z0-9_-]+-\d{4}-\d{2}-\d{2}\.(webm|m4a|ogg)$/,
+  )
+  expect(await download.failure()).toBeNull()
+  const downloadedPath = await download.path()
+  expect(downloadedPath).not.toBeNull()
+  expect((await stat(downloadedPath!)).size).toBeGreaterThan(0)
+  await expect(savedMemory).toBeVisible()
   await dialog.getByRole('button', { name: 'Delete saved take' }).click()
   await expect(
     dialog.getByRole('region', { name: 'Saved musical memory' }),

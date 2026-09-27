@@ -26,19 +26,11 @@ import { createAdventureLoadingLifecycle } from './loading-lifecycle'
 import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
 import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
-import type { RendererFailureStage } from './renderer-failure'
-import { reportRendererFailure } from './renderer-failure'
+import { ASSET_LOAD_ERROR, createRendererFailureController, GRAPHICS_LOAD_ERROR, GRAPHICS_SUPPORT_ERROR, } from './renderer-failure'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
 
 const LOADING_PRESENTATION_MS = 2000
-const ASSET_LOAD_ERROR =
-  'The gallery could not finish loading. Check your connection, then retry.'
-const GRAPHICS_LOAD_ERROR =
-  'The graphics connection stopped. Your progress is safe. Retry the gallery.'
-const GRAPHICS_SUPPORT_ERROR =
-  'The museum needs 3D graphics support. Close other demanding apps, then retry.'
-
 export function useAdventure(
   host: GlassGameHost,
   level: LevelDefinition,
@@ -427,39 +419,23 @@ export function useAdventure(
     refresh()
   }
 
-  function failRendererAttempt(
-    generation: number,
-    message: string,
-    attempt: GlassRenderer | null,
-    stage: RendererFailureStage,
-    cause: unknown,
-  ): void {
-    const phase = loading.state().phase
-    if (!loading.fail(generation, message)) return
-    const quality = attempt?.getRenderQuality()
-    reportRendererFailure(
-      {
-        attempt: generation,
-        phase,
-        stage,
-        preference: untrack(renderQualityPreference),
-        renderProfile: quality?.profile ?? 'unavailable',
-        assetProfile: quality?.assetProfile ?? 'unavailable',
-      },
-      cause,
-    )
-    setInspection(null)
-    setNearbyArtwork(null)
-    soundscape.pause()
-    cancel()
-    game.setPaused(true)
-    refresh()
-    if (renderer === attempt) {
+  const failRendererAttempt = createRendererFailureController({
+    loading,
+    preference: () => untrack(renderQualityPreference),
+    currentRenderer: () => renderer,
+    clearCurrentRenderer: () => {
       renderer = null
       rendererGeneration = 0
-    }
-    attempt?.dispose()
-  }
+    },
+    clearPresentation: () => {
+      setInspection(null)
+      setNearbyArtwork(null)
+    },
+    pauseSoundscape: soundscape.pause,
+    cancelInteraction: cancel,
+    pauseGame: () => game.setPaused(true),
+    refresh,
+  })
 
   function beginRendererAttempt(): void {
     if (!alive) return
@@ -487,24 +463,24 @@ export function useAdventure(
             presentCompletion()
         },
         onContextLost: () => {
-          failRendererAttempt(
+          failRendererAttempt({
             generation,
-            GRAPHICS_LOAD_ERROR,
-            attempt,
-            'context-lost',
-            new Error('WebGL context lost'),
-          )
+            message: GRAPHICS_LOAD_ERROR,
+            renderer: attempt,
+            stage: 'context-lost',
+            cause: new Error('WebGL context lost'),
+          })
         },
       })
       setRenderQualityProfile(attempt.getRenderQuality().profile)
     } catch (cause) {
-      failRendererAttempt(
+      failRendererAttempt({
         generation,
-        GRAPHICS_SUPPORT_ERROR,
-        attempt,
-        'initialization',
+        message: GRAPHICS_SUPPORT_ERROR,
+        renderer: attempt,
+        stage: 'initialization',
         cause,
-      )
+      })
       return
     }
     if (
@@ -521,13 +497,13 @@ export function useAdventure(
         loading.assetsInstalled(generation)
       })
       .catch((cause: unknown) => {
-        failRendererAttempt(
+        failRendererAttempt({
           generation,
-          ASSET_LOAD_ERROR,
-          attempt,
-          'asset-load',
+          message: ASSET_LOAD_ERROR,
+          renderer: attempt,
+          stage: 'asset-load',
           cause,
-        )
+        })
       })
   }
 
@@ -632,13 +608,13 @@ export function useAdventure(
             loading.frameRendered(rendererGeneration)
           }
         } catch (cause) {
-          failRendererAttempt(
-            rendererGeneration,
-            GRAPHICS_LOAD_ERROR,
-            activeRenderer,
-            'frame',
+          failRendererAttempt({
+            generation: rendererGeneration,
+            message: GRAPHICS_LOAD_ERROR,
+            renderer: activeRenderer,
+            stage: 'frame',
             cause,
-          )
+          })
         }
       frameId = requestAnimationFrame(tick)
     }
