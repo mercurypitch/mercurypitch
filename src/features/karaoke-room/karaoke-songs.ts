@@ -28,6 +28,22 @@ export const KARAOKE_PLAN = Object.freeze({
   price: '€4.99',
 })
 
+/**
+ * The days a separated song waits on the server for this phone to collect
+ * it. The stems' R2 bucket expires them one day after they are written
+ * (docs/claude/RUNPOD.md, "Stem storage lifecycle": `--expire-days 1` on the
+ * `runpod/` and `runpod-dev/` prefixes), so the confirm sheet asks for about
+ * a day and promises no more (owner, 28 Sep).
+ */
+export const STEMS_KEPT_DAYS = 1
+
+/** When to open the app again for a song, within what the stems are kept. */
+export function collectLine(count: number): string {
+  const within =
+    STEMS_KEPT_DAYS === 1 ? 'about a day' : `about ${STEMS_KEPT_DAYS} days`
+  return `Open Mercury Pitch within ${within} to save ${count === 1 ? 'it' : 'them'} to this phone.`
+}
+
 export interface KaraokeSongs {
   /** Songs that can still be separated, or null until the server has said. */
   readonly left: number | null

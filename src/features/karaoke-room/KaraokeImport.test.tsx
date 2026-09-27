@@ -228,12 +228,14 @@ describe('the confirm sheet', () => {
       'Sends: this song to our server, which splits it into voice and music.',
     )
     expect(text).toContain(
-      'Open Mercury Pitch within about 48 hours to save it to this phone.',
+      'Open Mercury Pitch within about a day to save it to this phone.',
     )
     expect(text).toContain('Keep Mercury Pitch open while it is sent')
-    // Owner, 27 Sep: the copy never states the server's retention, never
-    // says credits, and never says nothing is uploaded.
-    expect(text).not.toMatch(/week|seven days|7 days|credit|nothing uploaded/iu)
+    // Owner, 27 and 28 Sep: the copy promises no longer than the stems are
+    // kept, never says credits, and never says nothing is uploaded.
+    expect(text).not.toMatch(
+      /48|hours|week|seven days|7 days|credit|nothing uploaded/iu,
+    )
     expect(queue.enqueued).toEqual([])
 
     fireEvent.click(within(confirm).getByRole('button', { name: 'Separate' }))
@@ -259,7 +261,7 @@ describe('the confirm sheet', () => {
       'Uses 3 of your 20 songs this month. 15 left after this.',
     )
     expect(confirm.textContent).toContain(
-      'Open Mercury Pitch within about 48 hours to save them to this phone.',
+      'Open Mercury Pitch within about a day to save them to this phone.',
     )
   })
 

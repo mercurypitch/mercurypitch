@@ -16,10 +16,11 @@
 // last word either way; a refusal there reaches the same gate through the
 // queue (setImportGateHandler).
 //
-// Copy (owner, 27 Sep): songs, never credits; the singer is asked to open
-// the app within about 48 hours to collect a song, and the server's own
-// retention is never stated. Subscribe fails closed until the store's
-// products exist.
+// Copy (owner, 27 and 28 Sep): songs, never credits; the singer is asked to
+// open the app within about a day to collect a song, which is what the
+// stems' R2 lifecycle keeps (collectLine, STEMS_KEPT_DAYS), and nothing
+// longer is promised. Subscribe fails closed until the store's products
+// exist.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
@@ -33,7 +34,7 @@ import { checkImport, IMPORT_ACCEPT, songTitleOf, } from './karaoke-import-check
 import { duplicateOf, enqueueImports, setImportGateHandler, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { KaraokeSongs } from './karaoke-songs'
-import { confirmCostLine, importLine, KARAOKE_PLAN, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, } from './karaoke-songs'
+import { collectLine, confirmCostLine, importLine, KARAOKE_PLAN, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, } from './karaoke-songs'
 
 /** A song left out of a confirm, and why. */
 interface LeftOut {
@@ -361,9 +362,7 @@ export const KaraokeImport: Component = () => {
                     <p class={styles.sheetText}>
                       {`Sends: ${them('this song', 'these songs')} to our server, which splits ${them('it', 'them')} into voice and music.`}
                     </p>
-                    <p class={styles.sheetText}>
-                      {`Open Mercury Pitch within about 48 hours to save ${them('it', 'them')} to this phone.`}
-                    </p>
+                    <p class={styles.sheetText}>{collectLine(count())}</p>
                     <p class={styles.sheetText}>
                       {`Keep Mercury Pitch open while ${them('it is', 'they are')} sent, ${sendEstimate(bytes())}. The separating carries on if you leave.`}
                     </p>

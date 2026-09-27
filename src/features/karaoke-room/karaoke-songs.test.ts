@@ -6,6 +6,8 @@
 // left this month"; a dev account with credits and no subscription reads
 // its balance as songs; a worker that says nothing leaves what is known.
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BillingMe } from '@/db/services/billing-service'
 
@@ -28,7 +30,7 @@ vi.mock('@/db/services/auth-service', () => ({
 }))
 
 import type { KaraokeSongs } from './karaoke-songs'
-import { confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOptionRow, subscriptionStatusLine, } from './karaoke-songs'
+import { collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
 
 const subscriber: KaraokeSongs = {
   left: 18,
@@ -208,6 +210,31 @@ describe('the words', () => {
     )
     expect(songsComeBackLine({ ...subscriber, renewsAt: null })).toBe(
       'Your 20 songs come back next month.',
+    )
+  })
+})
+
+describe('how long a separated song waits', () => {
+  // Owner, 28 Sep: never promise 48 hours. The copy asks for the song to be
+  // collected within what the stems' R2 lifecycle rule actually keeps.
+  it('asks for about a day, the one the stems are kept', () => {
+    expect(STEMS_KEPT_DAYS).toBe(1)
+    expect(collectLine(1)).toBe(
+      'Open Mercury Pitch within about a day to save it to this phone.',
+    )
+    expect(collectLine(3)).toBe(
+      'Open Mercury Pitch within about a day to save them to this phone.',
+    )
+  })
+
+  it('is the lifecycle rule the bucket is documented to carry', () => {
+    const runbook = readFileSync(
+      resolve(__dirname, '../../../docs/claude/RUNPOD.md'),
+      'utf8',
+    )
+    expect(runbook).toContain(`--expire-days ${STEMS_KEPT_DAYS}`)
+    expect(runbook).toMatch(
+      new RegExp(`\`runpod-dev/\` objects after ${STEMS_KEPT_DAYS} day`, 'u'),
     )
   })
 })
