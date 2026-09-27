@@ -174,8 +174,8 @@ describe('shipped living-crystal platform', () => {
     expect(renderer.snapshot()).toMatchObject({
       installed: 2,
       visible: 2,
-      drawCalls: 6,
-      renderedTriangles: LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles * 2,
+      visibleMeshPrimitives: 6,
+      visibleGeometryTriangles: LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles * 2,
       textures: 0,
     })
     reducedMotion = true
