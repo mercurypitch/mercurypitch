@@ -39,6 +39,7 @@ import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
 import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
+import { SettingsAlert } from './settings/SettingsAlert'
 import { openSignIn } from './settings/sign-in-state'
 import { SignInSheet } from './settings/SignInSheet'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
@@ -326,6 +327,10 @@ export const NativeShell: Component = () => {
           {/* The phone's one way in, over whatever asked for it: the
               Account screen's button and every in-app "Sign in". */}
           <SignInSheet />
+
+          {/* The question a Settings screen is asking, if any. After the
+              sheet, so an alert asked over it is drawn over it. */}
+          <SettingsAlert />
         </ShellRoot>
       </Portal>
     </>

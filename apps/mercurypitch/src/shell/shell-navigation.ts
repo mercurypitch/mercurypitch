@@ -23,6 +23,7 @@ import { navigateTo } from '@/lib/hash-router'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
 import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { dismissSettingsAlert, settingsAlertOpen, } from './settings/settings-alert'
 import { signInBack, signInOpen } from './settings/sign-in-state'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
@@ -165,7 +166,13 @@ export type BackOutcome =
 
 /** Everything the SHELL owns that outranks the room's own overlay. */
 function shellOverlayOpen(): boolean {
-  return columnOpen() || keepAlertOpen() || moreOpen() || signInOpen()
+  return (
+    columnOpen() ||
+    keepAlertOpen() ||
+    settingsAlertOpen() ||
+    moreOpen() ||
+    signInOpen()
+  )
 }
 
 /**
@@ -174,8 +181,8 @@ function shellOverlayOpen(): boolean {
  *
  * The pushed screen sits under the sheet because a sheet opens OVER one
  * (More is reachable while Settings is up, and the sign-in sheet opens over
- * Account); the alert is above both because
- * a modal question has to be answerable. Pushed screens are a stack (Settings
+ * Account); an alert (the run's Keep, or a question Settings asks) is above
+ * both because a modal question has to be answerable. Pushed screens are a stack (Settings
  * and the screens its rows push), and one press pops one level of it.
  *
  * The room's own overlay sits between the sheet and a pushed screen, and it
@@ -185,7 +192,7 @@ function shellOverlayOpen(): boolean {
  */
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
-  if (keepAlertOpen()) return 'alert'
+  if (keepAlertOpen() || settingsAlertOpen()) return 'alert'
   if (moreOpen() || signInOpen()) return 'sheet'
   if (pushed() !== null) return 'pushed'
   if (hasSomewhereToGo) return 'history'
@@ -244,7 +251,9 @@ export function performBack(host: BackHost): BackOutcome {
       closeColumn()
       break
     case 'alert':
-      dismissKeepAlert()
+      // Back is Cancel, for the run's Keep question and for Settings' own.
+      if (settingsAlertOpen()) dismissSettingsAlert()
+      else dismissKeepAlert()
       break
     case 'sheet':
       // The sign-in sheet opens over More's screens, never beside the More
