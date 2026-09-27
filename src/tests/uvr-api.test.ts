@@ -42,7 +42,34 @@ describe('DEFAULT_PROCESS_REQUEST', () => {
   })
 
   it('has WAV output format', () => {
+    // The web's own; a native build asks for M4A (uvr-api-native.test.ts).
     expect(DEFAULT_PROCESS_REQUEST.output_format).toBe('WAV')
+  })
+
+  it('sends a web upload with fetch, as it always has', async () => {
+    const spy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          session_id: 'rp_gpu_job-3',
+          status: 'processing',
+          message: 'Processing started',
+          model: 'roformer',
+          output_format: 'WAV',
+        }),
+    } as Response)
+    const xhr = vi.fn()
+    vi.stubGlobal('XMLHttpRequest', xhr)
+    try {
+      await processAudio(new File([new Uint8Array([1])], 'song.mp3'), {
+        provider: 'runpod',
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(xhr).not.toHaveBeenCalled()
   })
 
   it('requests both stems by default', () => {
