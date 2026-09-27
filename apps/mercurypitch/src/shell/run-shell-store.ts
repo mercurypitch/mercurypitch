@@ -49,8 +49,26 @@ export type RunState = 'browsing' | 'active' | 'paused' | 'ended'
  */
 export type RailVariant = 'r1' | 'r2'
 
-/** A screen pushed over the tab, with its own Back. */
-export type PushedScreen = 'settings' | 'developer'
+/**
+ * A screen pushed over the tab, with its own Back.
+ *
+ * Settings is the root of a stack of them: it is a short grouped list whose
+ * rows push screens of their own (S6, decision D1 A), and each of those can
+ * push again. Developer stands on its own, reached from More.
+ */
+export type PushedScreen =
+  | 'settings'
+  | 'account'
+  | 'account-name'
+  | 'devices'
+  | 'delete-account'
+  | 'microphone'
+  | 'room-noise'
+  | 'storage'
+  | 'this-phone'
+  | 'appearance'
+  | 'about'
+  | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
 export const COLUMN_IDLE_MS = 4000
@@ -66,7 +84,9 @@ const [takeOnScreen, setTakeOnScreen] = createSignal(false)
 const [locked, setLocked] = createSignal(false)
 const [columnOpen, setColumnOpen] = createSignal(false)
 const [moreOpen, setMoreOpen] = createSignal(false)
-const [pushed, setPushed] = createSignal<PushedScreen | null>(null)
+// The whole stack, bottom first. Never mutated in place: a new array per
+// change is what tells every reader that something moved.
+const [pushedStack, setPushedStack] = createSignal<readonly PushedScreen[]>([])
 const [keepAlertOpen, setKeepAlertOpen] = createSignal(false)
 const [variant, setVariant] = createSignal<RailVariant>('r2')
 const [announcement, setAnnouncement] = createSignal('')
@@ -125,10 +145,20 @@ export {
   keepAlertOpen,
   locked,
   moreOpen,
-  pushed,
+  pushedStack,
   runLabel,
   runOwner,
   variant,
+}
+
+/**
+ * The screen on top of the stack, or null. Everything that only needs to
+ * know WHETHER something is pushed, or which screen is showing, reads this;
+ * the stack itself is for the few that walk it.
+ */
+export function pushed(): PushedScreen | null {
+  const stack = pushedStack()
+  return stack.length === 0 ? null : stack[stack.length - 1]
 }
 
 /** The announcement the shell's live region reads out, or ''. */
@@ -305,15 +335,55 @@ export function closeMore(): void {
  */
 const DEVELOPER_AVAILABLE = import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
 
+/**
+ * Push a screen over whatever is showing.
+ *
+ * A screen already in the stack is gone back down to rather than pushed a
+ * second time: More stays reachable while a sub-screen is up, and its
+ * Settings tile has to land on the one Settings there is, not on a copy
+ * whose Back leads to itself.
+ */
 export function pushScreen(screen: PushedScreen): void {
   if (screen === 'developer' && !DEVELOPER_AVAILABLE) return
   closeColumn()
   closeMore()
-  setPushed(screen)
+  setPushedStack((stack) => {
+    const at = stack.indexOf(screen)
+    if (at === stack.length - 1 && at !== -1) return stack
+    if (at !== -1) return stack.slice(0, at + 1)
+    return [...stack, screen]
+  })
 }
 
+/** A screen that is only ever reached through Settings. */
+export type SettingsChild = Exclude<PushedScreen, 'settings' | 'developer'>
+
+/**
+ * Settings, with one of its own screens over it when the caller names one.
+ *
+ * More's Account tile and a room's "Sign in" both land on Account, but with
+ * Settings under it: Back from there goes to Settings, which is where the
+ * Account screen lives.
+ */
+export function pushSettingsScreen(screen?: SettingsChild): void {
+  pushScreen('settings')
+  if (screen !== undefined) pushScreen(screen)
+}
+
+/** One level down: what Back does to a pushed screen. */
 export function popScreen(): void {
-  setPushed(null)
+  setPushedStack((stack) =>
+    stack.length === 0 ? stack : stack.slice(0, stack.length - 1),
+  )
+}
+
+/**
+ * Every level at once. For leaving: a rail tab or the session pill changes
+ * the tab under the stack, and a screen left standing over it would be a tab
+ * change nobody could see.
+ */
+export function clearScreens(): void {
+  setPushedStack((stack) => (stack.length === 0 ? stack : []))
 }
 
 export function toggleLock(): void {
@@ -403,7 +473,7 @@ export function resetRunShell(): void {
   setLocked(false)
   setColumnOpen(false)
   setMoreOpen(false)
-  setPushed(null)
+  setPushedStack([])
   setKeepAlertOpen(false)
   setVariant('r2')
   setAnnouncement('')

@@ -31,16 +31,16 @@ export interface PurchaseThankYouVars {
   orderDateIso: string
 }
 
-const APP_URL = 'https://mercurypitch.com'
-const ABOUT_URL = 'https://about.mercurypitch.com'
+export const APP_URL = 'https://mercurypitch.com'
+export const ABOUT_URL = 'https://about.mercurypitch.com'
 const CREDITS_URL = 'https://mercurypitch.com/#/settings/credits'
 const KARAOKE_URL = 'https://mercurypitch.com/#/karaoke'
-const REPO_URL = 'https://github.com/mercurypitch/mercurypitch'
+export const REPO_URL = 'https://github.com/mercurypitch/mercurypitch'
 // App serves this 1200×630 card (see index.html og:image).
 const OG_IMAGE_URL = 'https://mercurypitch.com/og-image.png'
 
 // ── palette (GitHub-dark, matches the app + landing) ─────────────────
-const C = {
+export const C = {
   page: '#010409',
   card: '#0d1117',
   panel: '#06121f',
@@ -53,7 +53,7 @@ const C = {
   purple: '#bc8cff',
 } as const
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -279,7 +279,7 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
 // ── Shared footer (all emails) ───────────────────────────────────────
 // `reason` is the lead-in of the "why you got this" line, e.g.
 // "You're receiving this because you created an account on".
-function footerHtml(reason: string): string {
+export function footerHtml(reason: string): string {
   return `<tr>
             <td style="padding:24px 16px 8px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; text-align:center;">
               <p style="margin:0 0 12px; font-size:14px; color:${C.muted};">
@@ -1245,7 +1245,7 @@ async function resendPost(
 }
 
 /** resendPost for the callers that only care whether it went. */
-async function resendSend(
+export async function resendSend(
   cfg: ResendConfig,
   to: string,
   rendered: RenderedEmail,

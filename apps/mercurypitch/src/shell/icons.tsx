@@ -246,3 +246,206 @@ export const ConsoleIcon: Component<ShellIconProps> = (props) => (
     <path d="M8 10l2.5 2.5L8 15M13 15h3.5" />
   </svg>
 )
+
+// ── Settings (S6) ────────────────────────────────────────────
+
+/** The row that pushes a screen of its own. */
+export const ChevronIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+)
+
+/** Appearance: half the disc filled, dark against light. */
+export const ContrastIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
+  </svg>
+)
+
+/** The choice that is in force. */
+export const CheckIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </svg>
+)
+
+/** An account's history: the clock face with its hand swept back. */
+export const HistoryIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 8.9" />
+    <path d="M4.5 4.5v4.4h4.4" />
+    <path d="M12 8v4.4l3 1.8" />
+  </svg>
+)
+
+/** This phone, and the next one. */
+export const PhoneIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+    <path d="M11 18h2" />
+  </svg>
+)
+
+/** Something needs attention, and nothing is lost. */
+export const WarnIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 4l9 16H3z" />
+    <path d="M12 10v4M12 17h.01" />
+  </svg>
+)
+
+/** Close a sheet. */
+export const CloseIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
+
+/** A code by email. */
+export const MailIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+    <path d="M4 7l8 6 8-6" />
+  </svg>
+)
+
+/** The account's name. */
+export const PersonIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="8.5" r="3.8" />
+    <path d="M4.5 20c.9-3.7 3.9-5.8 7.5-5.8s6.6 2.1 7.5 5.8" />
+  </svg>
+)
+
+/** Two-step sign-in: the shield with its check. */
+export const ShieldIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5l7 2.6v5.2c0 4.4-2.9 7.8-7 9.2-4.1-1.4-7-4.8-7-9.2V6.1z" />
+    <path d="M9 12.2l2.2 2.2 3.8-4" />
+  </svg>
+)
+
+/** Copy: two sheets, one over the other. */
+export const CopyIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+  </svg>
+)
+
+/** Sign out: the door, and the arrow leaving through it. */
+export const SignOutIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10" />
+    <path d="M14.5 8l4 4-4 4M18.5 12H9.5" />
+  </svg>
+)
+
+/** Delete: the bin. */
+export const TrashIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4.5 7h15M9.5 7V4.5h5V7" />
+    <path d="M6.5 7l.8 12a1.8 1.8 0 0 0 1.8 1.5h5.8a1.8 1.8 0 0 0 1.8-1.5l.8-12" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+)
+
+/** Leaderboards: the cup. */
+export const TrophyIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M8 4.5h8v5a4 4 0 0 1-8 0z" />
+    <path d="M8 6.5H5.5a2.5 2.5 0 0 0 2.6 3.4M16 6.5h2.5a2.5 2.5 0 0 1-2.6 3.4" />
+    <path d="M12 13.5v3.5M8.5 20h7M9.5 17h5v3h-5z" />
+  </svg>
+)
+
+/** A take: the waveform. */
+export const WaveIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M3.5 12h2M7.5 8v8M11 5v14M14.5 9v6M18 7v10M20.5 12h0" />
+  </svg>
+)
+
+/** Storage: the stacked disc of a drive. */
+export const StorageIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <ellipse cx="12" cy="6" rx="7.5" ry="2.5" />
+    <path d="M4.5 6v12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5V6" />
+    <path d="M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5" />
+  </svg>
+)
+
+/** Start fresh: the arrow coming round. */
+export const RefreshIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+    <path d="M19.5 4.5v4.4h-4.4" />
+  </svg>
+)
+
+/** Latency: a stopwatch, for the gap the wizard measures. */
+export const TimerIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="13.5" r="7.5" />
+    <path d="M12 13.5V9.5M10 2.5h4M18.5 6l1.5-1.5" />
+  </svg>
+)
+
+/** Auto-calibrate: two sliders, set by listening. */
+export const TuneIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 8h9M17 8h3M4 16h3M11 16h9" />
+    <circle cx="15" cy="8" r="2" />
+    <circle cx="9" cy="16" r="2" />
+  </svg>
+)
+
+/** Leaves the app: the phone's own Settings. */
+export const ExternalIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" />
+  </svg>
+)
+
+/** About, and the phone's system: the letter i in a ring. */
+export const InfoIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 11v5.5M12 7.8h.01" />
+  </svg>
+)
+
+/** The app itself, as installed: a box with its arrow in. */
+export const AppIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M12 3.5v10M8 9.5l4 4 4-4" />
+    <path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" />
+  </svg>
+)
+
+/** Graphics: two panes, one over the other. */
+export const GraphicsIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <rect x="3.5" y="7.5" width="12" height="12" rx="2" />
+    <path d="M8.5 4.5h10a2 2 0 0 1 2 2v10" />
+  </svg>
+)
+
+/** Audio out: a speaker with its sound. */
+export const SpeakerIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </svg>
+)
+
+/** A document: the terms of use. */
+export const DocIcon: Component<ShellIconProps> = (props) => (
+  <svg {...base(props)}>
+    <path d="M6.5 3.5h7l4 4v13h-11z" />
+    <path d="M13.5 3.5v4h4M9 12h6M9 15.5h6" />
+  </svg>
+)

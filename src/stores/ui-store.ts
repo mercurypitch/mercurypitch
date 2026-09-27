@@ -20,9 +20,12 @@ import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
+import { nativeShellApi } from './native-shell-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from './notifications-store'
+import type { SettingsSection } from './settings-section'
 
 export type { ActiveTab } from '@/features/tabs/constants'
+export type { SettingsSection } from './settings-section'
 
 // ── Active tab ───────────────────────────────────────────────
 
@@ -67,14 +70,6 @@ export const setActiveTab = (tab: ActiveTab): ActiveTab => {
 // Store-backed (not SettingsPanel-local) so deep links (#/settings/account)
 // and in-app actions ("Get credits" toasts) can open a specific section.
 
-export type SettingsSection =
-  | 'account'
-  | 'singing'
-  | 'karaoke'
-  | 'display'
-  | 'sync'
-  | 'credits'
-
 export const [settingsSection, setSettingsSection] =
   createSignal<SettingsSection>('account')
 
@@ -91,11 +86,22 @@ export const [settingsAnchor, setSettingsAnchor] = createSignal<string | null>(
   null,
 )
 
-/** Jump to Settings with a specific sub-tab open, optionally at a control. */
+/**
+ * Jump to Settings with a specific sub-tab open, optionally at a control.
+ *
+ * Under the native build there is no Settings tab to switch to: Settings is
+ * a screen the shell pushes over the current tab, and the web panel is not
+ * in that bundle. Switching tabs there showed an empty page, so the section
+ * goes to the shell instead and the tab stays where it is.
+ */
 export function openSettingsSection(
   section: SettingsSection,
   anchor?: string,
 ): void {
+  if (IS_NATIVE_BUILD) {
+    nativeShellApi()?.pushSettings(section)
+    return
+  }
   setSettingsSection(section)
   setSettingsAnchor(anchor ?? null)
   setActiveTab(TAB_SETTINGS)
@@ -377,7 +383,19 @@ export type AuthModalMode = 'login' | 'register'
 export const [authModalMode, setAuthModalMode] =
   createSignal<AuthModalMode | null>(null)
 
+/**
+ * Ask the singer to sign in (or to create an account).
+ *
+ * Under the native build the shell answers with its own sign-in sheet, and
+ * the web dialog never opens: the phone's way in is Apple, Google or a mailed
+ * code, not the password form, the television's phone row or the passkey
+ * button the dialog leads with.
+ */
 export function openAuthModal(mode: AuthModalMode = 'login'): void {
+  if (IS_NATIVE_BUILD) {
+    nativeShellApi()?.openSignIn?.()
+    return
+  }
   setAuthModalMode(mode)
 }
 

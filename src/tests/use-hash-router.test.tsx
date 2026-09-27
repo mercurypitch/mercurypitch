@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { UvrView } from '@/components/UvrPanel'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type * as NativeBuild from '@/lib/native-build'
 import type { AdminSection } from '@/stores/ui-store'
@@ -49,6 +49,8 @@ function mountRouter(options: {
   const setInitialUvrView = vi.fn()
   const openOnboardingMap = vi.fn()
   const dismissWelcome = vi.fn()
+  const openSettingsSection = vi.fn()
+  const setActiveUvrSessionId = vi.fn()
 
   const Fixture = () => {
     const [voiceConstellationOpen, setVoiceOpen] = createSignal(false)
@@ -58,7 +60,7 @@ function mountRouter(options: {
       requestActiveTabChange,
       setInitialUvrView,
       setInitialUvrSessionId: vi.fn(),
-      setActiveUvrSessionId: vi.fn(),
+      setActiveUvrSessionId,
       openLearningWalkthrough: vi.fn(),
       openWalkthroughChapter: vi.fn(),
       startWalkthrough: vi.fn(),
@@ -71,7 +73,7 @@ function mountRouter(options: {
       handleShareFallback: vi.fn(),
       handleShareShort: vi.fn(),
       handleBillingReturn: vi.fn(),
-      openSettingsSection: vi.fn(),
+      openSettingsSection,
       settingsSection: () => 'account',
       openAdminContent,
       closeAdminContent,
@@ -111,8 +113,54 @@ function mountRouter(options: {
     setInitialUvrView,
     openOnboardingMap,
     dismissWelcome,
+    openSettingsSection,
+    setActiveUvrSessionId,
   }
 }
+
+describe('the Settings section route', () => {
+  afterEach(() => {
+    build.native = false
+  })
+
+  it('opens the Settings tab on the web, leaving the address on it', async () => {
+    history.replaceState(null, '', '#/settings/account')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      activeTab: TAB_PROGRESS,
+    })
+
+    await waitFor(() =>
+      expect(router.openSettingsSection).toHaveBeenCalledWith('account'),
+    )
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_SETTINGS,
+      expect.any(Function),
+    )
+    expect(window.location.hash).toBe('#/settings/account')
+  })
+
+  it('hands the section to the native shell and puts the tab it was on back in the address', async () => {
+    // Natively Settings is a screen pushed over the tab, not a tab. Left on
+    // #/settings/account, the same link could never open it a second time:
+    // an address that does not change fires no hashchange.
+    build.native = true
+    history.replaceState(null, '', '#/settings/account')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      activeTab: TAB_PROGRESS,
+    })
+
+    await waitFor(() =>
+      expect(router.openSettingsSection).toHaveBeenCalledWith('account'),
+    )
+    expect(window.location.hash).toBe('#/progress')
+    expect(router.requestActiveTabChange).not.toHaveBeenCalled()
+    expect(router.setActiveUvrSessionId).not.toHaveBeenCalled()
+  })
+})
 
 describe('the First Light map route', () => {
   afterEach(() => {

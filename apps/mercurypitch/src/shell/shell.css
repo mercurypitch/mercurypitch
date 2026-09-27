@@ -939,6 +939,11 @@
   font-weight: 600;
 }
 
+/* An answer that loses something: Delete, Clear, Start fresh. */
+.mp-alert__actions .mp-alert__danger {
+  color: var(--red);
+}
+
 /* ---------- shared ---------- */
 
 .mp-sr-only {

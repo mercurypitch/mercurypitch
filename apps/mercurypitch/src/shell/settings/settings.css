@@ -1,0 +1,982 @@
+/* ============================================================
+   Settings, and every screen its rows push (S6)
+   ============================================================
+
+   The kit's grouped list (S1.4; the S6 mock's `.list` and `.row`): rounded
+   cards of rows at least 48 px tall, a small caps title over each group,
+   the value on the right and a chevron on a row that pushes. The colours
+   are the app's own tokens, so dark, light and every preset carry over.
+
+   Each side is at least its inset plus the kit's 8 px: a phone on its side
+   has the island at one end, and the mock keeps ink 59 px clear of it. */
+
+.mp-set {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px max(20px, calc(var(--safe-right, 0px) + 8px)) 20px
+    max(20px, calc(var(--safe-left, 0px) + 8px));
+}
+
+/* Portrait is one column. On its side a phone is wide and short, so the
+   groups go into two columns and the whole of Settings fits on one screen. */
+.mp-set__cols {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mp-set__col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.mp-set__col:empty {
+  display: none;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .mp-set__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+}
+
+.mp-set-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.mp-set-group__title {
+  margin: 0;
+  padding: 0 14px;
+  font: 500 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mp-set-list {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.mp-set-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font: 400 15px/20px var(--font-body, sans-serif);
+  text-align: left;
+}
+
+.mp-set-row:last-child {
+  border-bottom: 0;
+}
+
+.mp-set-row--button {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-set-row--button:active {
+  background: var(--bg-tertiary);
+}
+
+.mp-set-row--danger {
+  color: var(--red);
+}
+
+.mp-set-row__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.mp-set-row__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mp-set-row--danger .mp-set-row__icon {
+  color: var(--red);
+}
+
+.mp-set-row__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mp-set-row__sub {
+  display: block;
+  font: 400 12px/16px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-set-row__value {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-set-row__chev {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.mp-set-row__check {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.mp-set__privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.mp-set__caption {
+  margin: 0;
+  padding: 0 4px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+/* ---------- the account's disc ---------- */
+
+.mp-set-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  font: 600 18px/1 var(--font-body, sans-serif);
+}
+
+.mp-set-avatar--lg {
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+}
+
+.mp-set-row__icon .mp-set-avatar svg,
+.mp-set-avatar svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ---------- a card: the identity, the promises ---------- */
+
+.mp-set-card {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.mp-set-card__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mp-set-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.mp-set-card__text strong {
+  font: 600 16px/21px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-set-card__provider {
+  font-weight: 500;
+}
+
+.mp-set-promises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.mp-set-promises li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font: 400 16px/22px var(--font-body, sans-serif);
+}
+
+.mp-set-promises svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+/* ---------- a note over the card ---------- */
+
+.mp-set-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-set-note p {
+  margin: 0;
+}
+
+.mp-set-note svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.mp-set-note--warn {
+  background: color-mix(in srgb, var(--yellow) 12%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--yellow) 38%, transparent);
+}
+
+.mp-set-note--warn svg {
+  color: var(--yellow);
+}
+
+/* ---------- the kit's capsule button ---------- */
+
+.mp-set-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text-inverse);
+  font: 600 17px/1 var(--font-body, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-set-button:active {
+  transform: scale(0.98);
+}
+
+.mp-set-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mp-set-button--secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.mp-set-button--danger {
+  background: transparent;
+  color: var(--red);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+.mp-set-button--small {
+  width: auto;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* ---------- the sign-in sheet ---------- */
+
+.mp-signin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 4px 8px;
+}
+
+.mp-signin__head {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-signin__spacer {
+  width: 44px;
+  height: 44px;
+}
+
+.mp-signin__title {
+  margin: 0;
+  text-align: center;
+  font: 600 17px/22px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-signin__lead {
+  margin: 0;
+  text-align: center;
+  font: 400 15px/21px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-signin__lead strong {
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.mp-signin__ways,
+.mp-signin__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mp-signin__form {
+  gap: 12px;
+}
+
+/* The three ways in: full buttons, one height. */
+.mp-provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: 600 17px/1 var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-provider:active {
+  transform: scale(0.98);
+}
+
+.mp-provider:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Apple's own style: white on a dark screen, black on a light one. The two
+   text tokens are exactly that pair, whichever theme is on. */
+.mp-provider--apple {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.mp-provider--google {
+  background: var(--bg-secondary);
+}
+
+.mp-signin__link {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: 500 15px/20px var(--font-body, sans-serif);
+  cursor: pointer;
+}
+
+.mp-signin__link:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mp-signin__caption {
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-signin__fine {
+  margin: 0;
+  text-align: center;
+  font: 400 12px/17px var(--font-body, sans-serif);
+  color: var(--text-muted);
+}
+
+.mp-signin__fine a {
+  color: var(--text-secondary);
+}
+
+.mp-signin__error {
+  margin: 0;
+  text-align: center;
+  font: 500 14px/19px var(--font-body, sans-serif);
+  color: var(--red);
+}
+
+/* ---------- a labelled field ---------- */
+
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-field__label {
+  font: 500 13px/16px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* 16px: iOS zooms the page into any field set smaller. */
+.mp-field__input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: 400 16px/1.2 var(--font-body, sans-serif);
+}
+
+.mp-field__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- six boxes over one field ---------- */
+
+.mp-code {
+  position: relative;
+}
+
+.mp-code__boxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mp-code__box {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font:
+    600 24px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.mp-code__box.is-filled {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+}
+
+.mp-code__input:focus ~ .mp-code__boxes .mp-code__box.is-next {
+  border-color: var(--accent);
+}
+
+/* The real field lies over the boxes and draws nothing of its own, so a tap
+   anywhere on the row lands in it and the keyboard's code suggestion fills it
+   in one go. */
+.mp-code__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+}
+
+.mp-code__input::selection {
+  background: transparent;
+}
+
+.mp-code__input:focus {
+  outline: none;
+}
+
+/* A recovery code: the field shows itself and the boxes step aside. */
+.mp-code--free .mp-code__input {
+  position: static;
+  height: 56px;
+  padding: 0 14px;
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  caret-color: auto;
+  text-align: center;
+  letter-spacing: 0.08em;
+  font:
+    600 20px/1 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+/* ---------- the signed-in Account screen (S6 step 4) ---------- */
+
+/* The address is the one thing on the card a singer may want to keep, so it
+   can be selected even where the copy button is refused. */
+.mp-set-card__email {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.mp-set-card__note {
+  margin: 12px 0 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-set-card__action {
+  margin-top: 10px;
+}
+
+.mp-set__error {
+  margin: 0;
+  padding: 0 4px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--red);
+}
+
+/* The kit's toggle: 51 x 31, the knob riding to the right when on. */
+.mp-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  box-shadow: inset 0 0 0 1px var(--border);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--mp-out, 220ms) var(--mp-ease, ease);
+}
+
+.mp-switch[aria-checked='true'] {
+  background: var(--green);
+  box-shadow: none;
+}
+
+.mp-switch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mp-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform var(--mp-out, 220ms) var(--mp-ease, ease);
+}
+
+.mp-switch[aria-checked='true'] .mp-switch__knob {
+  transform: translateX(20px);
+}
+
+.mp-switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A note with an action under its sentence (the fill's Try again). */
+.mp-set-note__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---------- Storage (S6 step 7) ---------- */
+
+/* Upright: the total, the categories, then Start fresh. On its side the
+   total and Start fresh stand on the left and the categories on the right,
+   the way 6a draws it. */
+.mp-storage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'kept'
+    'fresh';
+  gap: 16px;
+}
+
+.mp-storage__head {
+  grid-area: head;
+}
+
+.mp-storage__kept {
+  grid-area: kept;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mp-storage__fresh {
+  grid-area: fresh;
+}
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .mp-storage {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head kept'
+      'fresh kept';
+    align-items: start;
+  }
+}
+
+.mp-storage__sum {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mp-storage__total {
+  font: 700 28px/34px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.mp-storage__caption {
+  margin: 2px 0 10px;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* One bar in the four categories' colours; a sliver stays visible. */
+.mp-storage__bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mp-storage__bar > i {
+  display: block;
+  height: 100%;
+  width: var(--p);
+  min-width: 3px;
+}
+
+.mp-storage__dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.mp-storage__bar > .is-takes,
+.mp-storage__dot.is-takes {
+  background: var(--accent);
+}
+
+.mp-storage__bar > .is-prints,
+.mp-storage__dot.is-prints {
+  background: var(--teal);
+}
+
+.mp-storage__bar > .is-models,
+.mp-storage__dot.is-models {
+  background: var(--purple);
+}
+
+.mp-storage__bar > .is-rooms,
+.mp-storage__dot.is-rooms {
+  background: var(--orange);
+}
+
+/* ---------- Microphone (S6 step 8) ---------- */
+
+.mp-mic__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-mic__eyebrow {
+  margin: 0;
+  font: 600 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mp-mic__input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.mp-mic__input svg {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.mp-mic__input strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 16px/21px var(--font-body, sans-serif);
+}
+
+.mp-mic__chip {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 16%, transparent);
+  color: var(--teal);
+  font: 600 12px/16px var(--font-body, sans-serif);
+}
+
+.mp-mic__meta {
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.mp-mic__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mp-mic__ask {
+  margin: 0;
+  font: 400 14px/19px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-mic__peak {
+  flex: 0 0 auto;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.mp-mic__closed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* The meter: the fill's width is the level, on a dB scale. */
+.mp-mic__meter {
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.mp-mic__fill {
+  display: block;
+  height: 100%;
+  width: var(--p, 0%);
+  border-radius: 4px;
+  background: var(--green);
+  transition: width 80ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-mic__fill {
+    transition: none;
+  }
+}
+
+/* The web's wizard, inside the phone's sheet: the sheet is its panel. */
+.mp-latency {
+  border: 0;
+  background: transparent;
+  padding: 0 4px 8px;
+}
+
+/* ---------- This phone and About (S6 step 9) ---------- */
+
+/* A row that opens a page on the web is an anchor: no underline, the
+   row's own colour. */
+.mp-set-row--link {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.mp-set__caption--center {
+  text-align: center;
+}
+
+.mp-about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+
+.mp-about__mark {
+  width: 64px;
+  height: 64px;
+}
+
+.mp-about__name {
+  font: 700 22px/28px var(--font-body, sans-serif);
+  color: var(--text-primary);
+}
+
+.mp-about__version {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* ---------- the Rooms group (S6 step 10) ---------- */
+
+/* A quiet tag on a row that holds a place: "Later". */
+.mp-set-chip {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font: 600 12px/16px var(--font-body, sans-serif);
+}
+
+/* ---------- the account offer (S6 2a, 2b) ---------- */
+
+.mp-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mp-offer--sheet {
+  padding: 4px 4px 8px;
+}
+
+.mp-offer__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-offer__label {
+  font: 500 11px/14px var(--font-body, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mp-offer__title {
+  margin: 0;
+  font: 600 24px/30px var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.mp-offer--card .mp-offer__title {
+  font-size: 20px;
+  line-height: 26px;
+}
+
+/* The sheet and the card frame the promises already. */
+.mp-set-promises--bare {
+  margin: 0;
+  padding: 0;
+}
+
+/* Sign in and Later: the same size, side by side (REQ-NAM-012). */
+.mp-offer__answers {
+  display: flex;
+  gap: 12px;
+}
+
+.mp-offer__answers > .mp-set-button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* On its side the sheet sits in the middle, 560 wide, with the room showing
+   at both ends (2a). The attribute outranks the sheet's own width. */
+@media (orientation: landscape) and (min-width: 640px) {
+  [role='dialog'].mp-offer-sheet {
+    width: min(100%, 560px);
+    margin-inline: auto;
+  }
+}

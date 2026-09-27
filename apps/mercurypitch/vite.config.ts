@@ -1,14 +1,14 @@
+import { assertPurchaseBuildSafe } from '@irchiinnuss/purchase-kit'
 import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
-import { assertPurchaseBuildSafe } from '@irchiinnuss/purchase-kit'
-// @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
-// under bare node for a one-off sync as well as inside this config.
-import { NATIVE_PUBLIC_DIR, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
+import { defineConfig, loadEnv } from 'vite'
+import solid from 'vite-plugin-solid'
 // @ts-expect-error -- the same kind of plain .mjs helper, shared with
 // scripts/assert-bundle.mjs, which must stay dependency-free.
 import { readEnvFiles, resolveApiBase } from './api-base.mjs'
-import { defineConfig, loadEnv } from 'vite'
-import solid from 'vite-plugin-solid'
+// @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
+// under bare node for a one-off sync as well as inside this config.
+import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
 
 // The same resolution the root config does, for the same constant. `@`
 // resolves to the root `src`, so the code reading __COMMIT_SHA__ is literally
@@ -169,6 +169,8 @@ export default defineConfig(({ mode, command }) => {
       // that must not run inside a WebView keys off this rather than
       // sniffing the user agent.
       __NATIVE_BUILD__: JSON.stringify(true),
+      // What the pitch engine adds to the app, for the Storage screen.
+      __PITCH_ENGINE_BYTES__: JSON.stringify(pitchEngineBytes()),
 
       // The resolved worker, over whatever the env files said: this is how
       // the production switch outranks the dev default in `.env`.

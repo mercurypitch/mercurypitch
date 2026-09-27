@@ -4208,7 +4208,11 @@ const AppShell: Component<AppProps> = (props) => {
 
               <Show when={activeTab() === TAB_SETTINGS}>
                 <TabErrorBoundary tabName={tabLabel(TAB_SETTINGS)}>
-                  <SettingsPage />
+                  {/* The native app's Settings is the shell's own pushed
+                      screen, and the web panel's links out, install hints
+                      and badge have no place in a store binary (S6). The
+                      constant folds, so the panel leaves that bundle. */}
+                  {IS_NATIVE_BUILD ? null : <SettingsPage />}
                 </TabErrorBoundary>
               </Show>
 
@@ -4604,7 +4608,10 @@ const AppShell: Component<AppProps> = (props) => {
           )}
         </Show>
 
-        <AuthModal />
+        {/* The native app signs in through the shell's own sheet
+            (openAuthModal hands it there), so the web dialog, with the
+            television's phone row, leaves that bundle (S6, D2). */}
+        {IS_NATIVE_BUILD ? null : <AuthModal />}
         {/* The phone's half of signing a TV in. Beside AuthModal because
             a signed-out phone that scanned the code has to sign in first,
             and then come back to the same request. */}

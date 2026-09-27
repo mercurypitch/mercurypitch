@@ -75,7 +75,19 @@ export function resetTurnstile(): void {
   }
 }
 
-export default function Turnstile(props: { onToken: (token: string) => void }) {
+export interface TurnstileProps {
+  onToken: (token: string) => void
+  /**
+   * How much of the widget to draw. Left unset, Cloudflare's default: always
+   * drawn, which is what every web form shows. The native sign-in sheet
+   * passes 'interaction-only': the check still runs and the worker still
+   * demands its token, but the widget appears only when Cloudflare needs the
+   * person to do something.
+   */
+  appearance?: 'always' | 'execute' | 'interaction-only'
+}
+
+export default function Turnstile(props: TurnstileProps) {
   let el: HTMLDivElement | undefined
   let widgetId: string | undefined
 
@@ -85,6 +97,7 @@ export default function Turnstile(props: { onToken: (token: string) => void }) {
     // added a branch no test could ever take.
     const target = el
     if (SITE_KEY === '' || target == null) return
+    const appearance = untrack(() => props.appearance)
     loadScript()
       .then(() => {
         if (window.turnstile == null) {
@@ -93,6 +106,9 @@ export default function Turnstile(props: { onToken: (token: string) => void }) {
         }
         widgetId = window.turnstile.render(target, {
           sitekey: SITE_KEY,
+          // Only when asked: an unset key and Cloudflare's default are the
+          // same widget, and the web forms keep sending exactly what they did.
+          ...(appearance === undefined ? {} : { appearance }),
           callback: (token: string) => {
             untrack(() => props.onToken(token))
           },

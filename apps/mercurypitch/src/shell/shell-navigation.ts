@@ -22,7 +22,11 @@ import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_PIANO, TAB_PROGRESS, TAB_SINGING
 import { navigateTo } from '@/lib/hash-router'
 import { nativeRunControls } from '@/stores/native-shell-store'
 import { canGoBack } from './history-depth'
-import { closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { clearScreens, closeColumn, closeMore, columnOpen, currentTab, dismissKeepAlert, keepAlertOpen, moreOpen, parkRun, popScreen, pushed, runOwner, runState, } from './run-shell-store'
+import { declineOffer, offerOpen } from './settings/account-offer'
+import { closeLatencySheet, latencySheetOpen } from './settings/latency-sheet'
+import { dismissSettingsAlert, settingsAlertOpen, } from './settings/settings-alert'
+import { signInBack, signInOpen } from './settings/sign-in-state'
 
 export type RailItemId = 'rooms' | 'stage' | 'ear' | 'progress' | 'more'
 
@@ -128,8 +132,9 @@ export function goToTab(tab: ActiveTab): void {
   closeColumn()
   closeMore()
   // A pushed screen covers the whole viewport. Leaving it up while the hash
-  // and the rail's mark both moved is a tab change nobody can see.
-  popScreen()
+  // and the rail's mark both moved is a tab change nobody can see — and
+  // Settings is a stack, so every level of it goes, not only the top one.
+  clearScreens()
   const state = runState()
   const owner = runOwner()
   if ((state === 'active' || state === 'paused') && owner === currentTab()) {
@@ -146,7 +151,7 @@ export function returnToRun(): void {
   cancelDoorOpen()
   closeColumn()
   closeMore()
-  popScreen()
+  clearScreens()
   navigateTo({ type: 'tab', tab: owner })
 }
 
@@ -163,7 +168,15 @@ export type BackOutcome =
 
 /** Everything the SHELL owns that outranks the room's own overlay. */
 function shellOverlayOpen(): boolean {
-  return columnOpen() || keepAlertOpen() || moreOpen()
+  return (
+    columnOpen() ||
+    keepAlertOpen() ||
+    settingsAlertOpen() ||
+    moreOpen() ||
+    signInOpen() ||
+    latencySheetOpen() ||
+    offerOpen()
+  )
 }
 
 /**
@@ -171,8 +184,10 @@ function shellOverlayOpen(): boolean {
  * keyboard's, and Android's hardware button.
  *
  * The pushed screen sits under the sheet because a sheet opens OVER one
- * (More is reachable while Settings is up); the alert is above both because
- * a modal question has to be answerable.
+ * (More is reachable while Settings is up, and the sign-in sheet opens over
+ * Account); an alert (the run's Keep, or a question Settings asks) is above
+ * both because a modal question has to be answerable. Pushed screens are a stack (Settings
+ * and the screens its rows push), and one press pops one level of it.
  *
  * The room's own overlay sits between the sheet and a pushed screen, and it
  * is NOT resolved here: the only way to ask a room whether it has one is to
@@ -181,8 +196,10 @@ function shellOverlayOpen(): boolean {
  */
 export function resolveBack(hasSomewhereToGo: boolean): BackOutcome {
   if (columnOpen()) return 'column'
-  if (keepAlertOpen()) return 'alert'
-  if (moreOpen()) return 'sheet'
+  if (keepAlertOpen() || settingsAlertOpen()) return 'alert'
+  if (moreOpen() || signInOpen() || latencySheetOpen() || offerOpen()) {
+    return 'sheet'
+  }
   if (pushed() !== null) return 'pushed'
   if (hasSomewhereToGo) return 'history'
   return 'minimize'
@@ -240,10 +257,21 @@ export function performBack(host: BackHost): BackOutcome {
       closeColumn()
       break
     case 'alert':
-      dismissKeepAlert()
+      // Back is Cancel, for the run's Keep question and for Settings' own.
+      if (settingsAlertOpen()) dismissSettingsAlert()
+      else dismissKeepAlert()
       break
     case 'sheet':
-      closeMore()
+      // The sign-in and latency sheets open over More's screens, and the
+      // account offer over the Sing room, never beside the More sheet
+      // itself, so whichever is up is the one this press is for. The
+      // sign-in sheet steps back a pane before it closes; closing the
+      // latency sheet ends a run in flight; the offer, which has no close
+      // button, takes Back as Later.
+      if (signInOpen()) signInBack()
+      else if (latencySheetOpen()) closeLatencySheet()
+      else if (offerOpen()) declineOffer()
+      else closeMore()
       break
     case 'room-overlay':
       // Already closed by the ask above.

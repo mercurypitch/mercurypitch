@@ -54,6 +54,14 @@
 //            outlived the guard on the panels. A check that names one string
 //            asserts one string, not the property in its header.
 //
+//   NATIVE   The web Settings panel is not in the binary. The native app has
+//            its own Settings, pushed by the shell; the web panel it used to
+//            push instead carried links out to web-only pages, install hints
+//            for a browser, a directory badge and an admin link (S6 audit,
+//            D3 to D8). The panel is folded out behind IS_NATIVE_BUILD in
+//            two places, and one static import anywhere would bring every
+//            line of it back without a visible change on the web.
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -110,6 +118,26 @@ const FORBIDDEN = [
   ['stripe.com', 'a Stripe host: checkout, a buy link, or their SDK'],
   ['Stripe', 'Stripe named in prose, which is how the changelog sold packs'],
   ['credit packs', 'the credit-pack copy'],
+]
+
+/**
+ * Present in the web SettingsPanel and nowhere else the native bundle has any
+ * business reaching. Each is what the panel is, when it shows up.
+ */
+const WEB_SETTINGS = [
+  ['peerpush.com', 'the web Settings panel (SettingsPanel, its About badge)'],
+]
+
+/**
+ * Present in the web sign-in dialog and nowhere else. The phone signs in
+ * through its own sheet (apps/mercurypitch/src/shell/settings/SignInSheet),
+ * which has no television row (audit D2).
+ */
+const WEB_SIGN_IN = [
+  [
+    'Sign in with your phone',
+    'the web sign-in dialog (AuthModal, its television phone row)',
+  ],
 ]
 
 const failures = []
@@ -303,6 +331,33 @@ function main(argv) {
       selling.length === 0,
       `${label}: no built file offers a way to pay`,
       `Found ${selling.join('; ')}. Something reaches a paid surface from a path CAN_TAKE_PAYMENT does not guard (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. A store binary that carries a payment page, its link or its prose is rejected, not warned.`,
+    )
+
+    // NATIVE
+    const webSettings = []
+    for (const file of assets) {
+      for (const [needle, what] of WEB_SETTINGS) {
+        if (contains(file, needle))
+          webSettings.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      webSettings.length === 0,
+      `${label}: the web Settings panel is not in the bundle`,
+      `Found ${webSettings.join('; ')}. Something imports the web SettingsPanel without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native Settings is apps/mercurypitch/src/shell/settings.`,
+    )
+
+    const webSignIn = []
+    for (const file of assets) {
+      for (const [needle, what] of WEB_SIGN_IN) {
+        if (contains(file, needle))
+          webSignIn.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      webSignIn.length === 0,
+      `${label}: the web sign-in dialog is not in the bundle`,
+      `Found ${webSignIn.join('; ')}. Something renders the web AuthModal without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native way in is the shell's sign-in sheet; openAuthModal routes to it.`,
     )
   }
 

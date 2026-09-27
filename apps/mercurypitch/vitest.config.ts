@@ -44,6 +44,9 @@ export default defineConfig({
     // One copy of Solid, or reactivity stops crossing the boundary.
     dedupe: ['solid-js'],
   },
+  // The build measures the pitch engine; the suites get a fixed size, so a
+  // Storage test can say what the row reads.
+  define: { __PITCH_ENGINE_BYTES__: JSON.stringify(12_812_345) },
   test: {
     // The shell is developed against a TEST build, which is the one with the
     // developer screen in it. Without this the suites would run as a store

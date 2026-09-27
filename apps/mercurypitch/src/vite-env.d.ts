@@ -17,6 +17,12 @@
  */
 declare const __APP_CHANNEL__: 'dev' | 'ci' | 'release'
 
+/**
+ * The bytes the pitch engine's wasm pair and model add to the app, measured
+ * when it was built (scripts/sync-ort-assets.mjs). Only the shell reads it.
+ */
+declare const __PITCH_ENGINE_BYTES__: number
+
 // Build-time configuration this shell reads. Declared rather than left to
 // Vite's `[key: string]: any` index signature, so a typo in the name is a
 // compile error here instead of an empty string on a phone.

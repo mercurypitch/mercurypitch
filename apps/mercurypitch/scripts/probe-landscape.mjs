@@ -559,8 +559,41 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible('[data-testid="sing-take-sheet"]', runTimeoutMs)
     await settle(300)
     await measure('sing-take', '[data-testid="sing-take-sheet"]', { end: true })
-    await page.locator('[data-testid="sing-take-discard"]').click()
+    // Kept, so the account offer rises over the room a beat later (S6 2a):
+    // on its side it sits in the middle, 560 wide, the room at both ends.
+    await page.locator('[data-testid="sing-take-keep"]').click()
     await hidden('[data-testid="sing-take-sheet"]')
+    at = 'on the way to the account offer'
+    await visible('[data-testid="account-offer"]')
+    await settle()
+    const offer = '[data-testid="sheet-panel"]'
+    await measure('account-offer', offer, { end: true })
+    const placed = await page.evaluate((selector) => {
+      const r = document.querySelector(selector)?.getBoundingClientRect()
+      return r === undefined
+        ? null
+        : {
+            width: r.width,
+            left: r.left,
+            right: window.innerWidth - r.right,
+          }
+    }, offer)
+    if (
+      placed === null ||
+      placed.width > 560.5 ||
+      Math.abs(placed.left - placed.right) > 1
+    ) {
+      failures.push(`account offer on its side: ${JSON.stringify(placed)}`)
+    } else {
+      steps.push(
+        `landscape account offer: ${Math.round(placed.width)} px wide, centred, the room showing ${Math.round(placed.left)} px at each end`,
+      )
+    }
+    // Sign in, not Later, so Settings below still has the card to measure.
+    await page.locator('[data-testid="offer-sign-in"]').click()
+    await visible('[data-testid="signin-sheet"]')
+    await page.keyboard.press('Escape')
+    await hidden('[data-testid="signin-sheet"]')
 
     // ── The Ear Lab: the bench, its three racks, a drill and the report ──
     at = 'on the way to the Ear Lab'
@@ -638,20 +671,36 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
     await visible(pushed)
     await settle()
     await measure('settings', pushed, { end: true })
+    // Settings is a stack now (S6): a row pushes a screen of its own over it,
+    // and each level is measured the same way before Back walks down it.
+    at = 'on the way to Appearance'
+    await page.locator('[data-settings-row="appearance"]').click()
+    await visible('[data-testid="appearance-screen"]')
+    await settle()
+    await measure('appearance', pushed)
+    await back('[data-testid="appearance-screen"]')
+    await visible('[data-testid="settings-screen"]')
     await back(pushed)
 
+    // More's Account tile lands on Account, with Settings under it.
+    at = 'on the way to Account'
     await more('account')
-    await visible(pushed)
+    await visible('[data-testid="account-screen"]')
     await settle()
     await measure('account', pushed)
-    await page.locator('[data-testid="show-login"]').first().click()
-    await visible('[data-testid="auth-modal-overlay"]')
+    // Its one button opens the sign-in sheet over it (S6 step 3), measured
+    // the way the web dialog it replaced was.
+    at = 'on the way to the sign-in sheet'
+    await page.locator('[data-testid="account-sign-in"]').click()
+    await visible('[data-testid="signin-sheet"]')
     await settle()
-    await measure('sign-in', '[data-testid="auth-modal-overlay"]', {
+    await measure('sign-in', '[role="dialog"][aria-label="Sign in"]', {
       end: true,
     })
-    await page.locator('[data-testid="auth-modal-close"]').click()
-    await hidden('[data-testid="auth-modal-overlay"]')
+    await page.keyboard.press('Escape')
+    await hidden('[data-testid="signin-sheet"]')
+    await back('[data-testid="account-screen"]')
+    await visible('[data-testid="settings-screen"]')
     await back(pushed)
 
     await more('developer')

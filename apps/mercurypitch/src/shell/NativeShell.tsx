@@ -14,8 +14,8 @@
 //
 // WHAT IT OWNS: the rail, the transport that replaces it during a run, the
 // corner chip and its column, the session pill, the More sheet, the room
-// header on a room that registered controls, and Settings inside a pushed
-// screen. WHAT IT DOES NOT: the run itself. The room owns Start, the engine
+// header on a room that registered controls, and the native Settings with
+// the screens it pushes. WHAT IT DOES NOT: the run itself. The room owns Start, the engine
 // and the microphone; the shell only asks it to pause, resume, stop or park
 // (src/stores/native-shell-store.ts).
 
@@ -24,7 +24,6 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import './shell.css'
-import { SettingsPanel } from '@/components/SettingsPanel'
 import { TAB_HOME } from '@/features/tabs/constants'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
@@ -36,13 +35,19 @@ import { Dock } from './Dock'
 import { installHistoryDepth } from './history-depth'
 import { KeepAlert } from './KeepAlert'
 import { MoreSheet } from './MoreSheet'
-import { PushedScreen } from './PushedScreen'
 import { Rail } from './Rail'
 import { RoomHeader } from './RoomHeader'
-import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, popScreen, pushed, pushScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
+import { chipVisible, closeColumn, closeMore, columnOpen, countInBeat, countingIn, currentTab, elapsedMs, finishRun, keepAlertOpen, locked, moreOpen, openMore, parked, pushScreen, pushSettingsScreen, railVisible, requestEnd, roomHeaderVisible, runLabel, runState, shellAnnouncement, toggleColumn, toggleLock, togglePlayPause, touchColumn, transportVisible, } from './run-shell-store'
 import { SessionPill } from './SessionPill'
+import { resumeAfterDeletion } from './settings/account-deletion'
+import { installAccountOffer } from './settings/account-offer'
+import { AccountOfferSheet } from './settings/AccountOffer'
+import { SettingsAlert } from './settings/SettingsAlert'
+import { openSignIn } from './settings/sign-in-state'
+import { SignInSheet } from './settings/SignInSheet'
 import { goToTab, performBack, railItems, returnToRun, selectedRailItem, shellBackHost, } from './shell-navigation'
 import { ShellRoot } from './ShellRoot'
+import { ShellScreens } from './ShellScreens'
 import { Transport } from './Transport'
 
 /** Scroll past this, downward, and the rail folds to the current tab. */
@@ -97,17 +102,30 @@ export const NativeShell: Component = () => {
       document.documentElement.removeAttribute('data-room-header')
     })
 
+    // A deletion restarts the app (account-deletion.ts): it comes back on
+    // Settings, where one line says what happened.
+    resumeAfterDeletion()
+
+    // The account offer (S6 decision 02): once on this phone, a beat after
+    // a take is kept in the Sing room (account-offer.ts).
+    onCleanup(installAccountOffer())
+
     // The shell's half of the bridge: a room's own options sheet ends with an
     // "All settings" row, and this is the only way it can reach a screen the
     // shell pushes.
     onCleanup(
       registerShellApi({
-        pushSettings: () => {
-          pushScreen('settings')
+        // Natively every "open Settings at <section>" lands here
+        // (ui-store's openSettingsSection). Only the account has a screen
+        // of its own to open at; anything else is Settings itself.
+        pushSettings: (section) => {
+          pushSettingsScreen(section === 'account' ? 'account' : undefined)
         },
         // The Sing room's denied state (3d) is the one caller: a refused
         // microphone can only be undone in the system's own Settings.
         openAppSettings: () => openAppSettings(),
+        // Every in-app "Sign in" (ui-store's openAuthModal) lands here.
+        openSignIn,
       }),
     )
 
@@ -286,19 +304,12 @@ export const NativeShell: Component = () => {
             {shellAnnouncement()}
           </span>
 
-          <Show when={pushed() === 'settings'}>
-            <PushedScreen title="Settings" onBack={popScreen}>
-              <div id="settings-panel">
-                <SettingsPanel />
-              </div>
-            </PushedScreen>
-          </Show>
-
-          <Show when={DEVELOPER_AVAILABLE && pushed() === 'developer'}>
-            <PushedScreen title="Developer" onBack={popScreen}>
-              <DeveloperScreen />
-            </PushedScreen>
-          </Show>
+          {/* Settings and the screens its rows push, and Developer: one
+              stack, and only its top screen drawn (ShellScreens.tsx). The
+              web SettingsPanel is not in this bundle at all. */}
+          <ShellScreens
+            developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
+          />
 
           {/* Inside the root, not beside it: the sheet copies the custom
               properties that resolve on its anchor onto its own portal, and
@@ -310,6 +321,9 @@ export const NativeShell: Component = () => {
             onPushSettings={() => {
               pushScreen('settings')
             }}
+            onPushAccount={() => {
+              pushSettingsScreen('account')
+            }}
             onPushDeveloper={() => {
               pushScreen('developer')
             }}
@@ -320,6 +334,19 @@ export const NativeShell: Component = () => {
             onDiscard={finishRun}
             onKeep={finishRun}
           />
+
+          {/* The account offer, over the Sing room after a Keep. Its Sign
+              in hands over to the sign-in sheet. */}
+          <AccountOfferSheet />
+
+          {/* The phone's one way in, over whatever asked for it: the
+              Account screen's button, the offer and every in-app "Sign
+              in". */}
+          <SignInSheet />
+
+          {/* The question a Settings screen is asking, if any. After the
+              sheet, so an alert asked over it is drawn over it. */}
+          <SettingsAlert />
         </ShellRoot>
       </Portal>
     </>
