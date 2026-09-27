@@ -139,6 +139,56 @@ it('holds through the real 2.3-second shatter lifecycle and freezes a paused tra
   expect(adventureCamera.getChallengeMetrics().mode).toBe('restoring')
 })
 
+it('keeps first-person look input owned by the shatter framing', () => {
+  const game = createGlassGame(GLASSWORKS)
+  for (
+    let frame = 0;
+    frame < 500 && game.snapshot().nearbyBreakableId === null;
+    frame++
+  )
+    game.step({ moveX: 0, moveZ: 1, jumpDown: false }, MOVEMENT.fixedStep)
+  expect(game.beginEncounter(GLASSWORKS.breakables[0]!.id, 57)).toBe(true)
+  for (let sequence = 0; sequence <= 48; sequence++)
+    game.feedPitch(
+      {
+        sequence,
+        captureSeconds: sequence * 0.025,
+        capturedAtMs: sequence * 25,
+        confidence: 0.9,
+        midi: 57,
+      },
+      sequence * 25,
+    )
+  const shattering = game.snapshot()
+  expect(shattering.phase).toBe('shattering')
+
+  const adventureCamera = createAdventureCamera(GLASSWORKS, {
+    mode: 'first-person',
+  })
+  adventureCamera.setChallengeSubjects(challengeSubjects(shattering))
+  for (let frame = 0; frame < 30; frame++)
+    adventureCamera.update(shattering, 0.05)
+  const heldYaw = adventureCamera.yaw()
+  const heldQuaternion = adventureCamera.camera.quaternion.clone()
+
+  adventureCamera.setOrbitActive(true)
+  adventureCamera.orbit(0.8, 0.35)
+  adventureCamera.setOrbitActive(false)
+
+  expect(adventureCamera.yaw()).toBeCloseTo(heldYaw, 10)
+  adventureCamera.update(shattering, 0.05)
+  expect(
+    adventureCamera.camera.quaternion.angleTo(heldQuaternion),
+  ).toBeLessThan(1e-7)
+
+  game.step({ moveX: 0, moveZ: 0, jumpDown: false }, SHATTER_LIFECYCLE_SECONDS)
+  expect(game.snapshot().phase).toBe('idle')
+  adventureCamera.update(game.snapshot(), 0.05)
+  const releasedYaw = adventureCamera.yaw()
+  adventureCamera.orbit(0.2, 0)
+  expect(adventureCamera.yaw()).toBeCloseTo(releasedYaw + 0.2, 10)
+})
+
 it('preserves the saved orbit around a player who moves during restoration', () => {
   const snapshot = createGlassGame(GLASSWORKS).snapshot()
   const adventureCamera = createAdventureCamera(GLASSWORKS)

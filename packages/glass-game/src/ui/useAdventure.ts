@@ -88,6 +88,10 @@ export function useAdventure(
   const [challengeCamera, setChallengeCamera] = createSignal<ReturnType<
     GlassRenderer['getChallengeCameraMetrics']
   > | null>(null)
+  const cameraInputLocked = (): boolean =>
+    voiceMode() !== 'off' ||
+    snapshot().phase === 'shattering' ||
+    (challengeCamera()?.mode ?? 'exploration') !== 'exploration'
   const pitch = () => voiceState()?.pitch ?? null
   const target = () => voiceState()?.target ?? null
   const openingNotice = initialAdventureNotice(level, initialSnapshot)
@@ -619,12 +623,12 @@ export function useAdventure(
         handleCameraModeShortcut(
           event,
           viewport,
-          tutorial() || paused() || voiceMode() !== 'off',
+          tutorial() || paused() || cameraInputLocked(),
           () => changeCameraMode(toggleCameraMode(cameraMode())),
         )
       )
         return
-      if (tutorial() || paused()) return
+      if (tutorial() || paused() || cameraInputLocked()) return
       if (input.key(event, true)) {
         gameplayGesture()
         return
@@ -749,6 +753,7 @@ export function useAdventure(
       transientMessages.showNarrationCaption(reaction.caption)
     },
     challengeCamera,
+    cameraInputLocked,
     cameraYaw: () => {
       snapshot()
       return renderer?.getCameraYaw() ?? 0
