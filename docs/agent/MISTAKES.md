@@ -1416,6 +1416,13 @@ If local and CI counts differ, compare the exact tested merge revision with the 
 **Rule:** apply an explicit renderable-mesh allowlist for each view and save that inventory with the proof. Do not infer child visibility from a hidden parent or change materials until the isolated source comparison is clean.
 **See:** `art/glass-adventure/cloudway-laboratory/v1/production/rose_crackle_runtime_visuals.py`.
 
+### Isolate the stable playtest server's dependency cache
+
+**Symptom:** a previously working no-HMR preview becomes blank after browser tests; Solid warns about duplicate runtimes and a mount effect observes an undefined DOM ref.
+**Cause:** the HTTPS preview and HTTP Playwright games server shared Vite's optimizer directory despite different configuration hashes. One server replaced dependencies still referenced by the other.
+**Rule:** give the stable preview a dedicated cache per port. Verify it remains usable while the browser test servers start and stop; do not hide the symptom with a missing-element guard.
+**See:** `apps/beside-cue/scripts/glass-playtest.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

@@ -16,6 +16,13 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535)
 process.env.VITE_BESIDE_CUE_GAMES = '1'
 const server = await createServer({
   root: fileURLToPath(new URL('..', import.meta.url)),
+  // A no-HMR playtest must not share optimized dependencies with Playwright or
+  // the ordinary Vite server. Their config hashes differ; rewriting this cache
+  // underneath a running preview can load duplicate Solid runtimes and mount
+  // effects before their DOM refs exist. Separate ports also isolate previews.
+  cacheDir: fileURLToPath(
+    new URL(`../node_modules/.vite/glass-playtest-${port}`, import.meta.url),
+  ),
   mode: values.https ? 'https' : 'development',
   server: {
     host: values.host,
