@@ -18,6 +18,7 @@ import { MelodyPractice } from './MelodyPractice'
 import { loadMercMelodyExample } from './merc-melody-reference'
 import type { MusicalMemoryState } from './musical-memory'
 import { createMusicalMemory } from './musical-memory'
+import { MusicalMemoryCard } from './MusicalMemoryCard'
 
 function guideFallbackCopy(
   availability: Extract<MercEncoreAvailability, { kind: 'guide' }>,
@@ -229,6 +230,11 @@ export function EncoreDialog(props: {
     void listenAudio(loadExample(variant), true, variant.assetId)
   }
 
+  function hearStoredMerc(variant: MercEncoreVariant): void {
+    if (!playback || !foreground() || practiceActive()) return
+    void listenAudio(loadExample(variant), true, variant.assetId)
+  }
+
   function practiceChanged(snapshot: MelodyPracticeSnapshot): void {
     const isActive = [
       'permission',
@@ -332,53 +338,23 @@ export function EncoreDialog(props: {
     </div>
   )
   const takeControls = (take: MusicalMemory, candidate: boolean) => (
-    <section
-      class={styles.take}
-      aria-label={candidate ? 'New recording' : 'Saved recording'}
-    >
-      <div>
-        <strong>{candidate ? 'Your new take' : 'Your saved take'}</strong>
-        <span>{take.title}</span>
-      </div>
-      <div class={styles.takeActions}>
-        <Show when={playback}>
-          <button
-            type="button"
-            disabled={practiceActive()}
-            onClick={() => void listenAudio(take.audio)}
-          >
-            Listen
-          </button>
-        </Show>
-        <button type="button" onClick={() => download(take)}>
-          Download
-        </button>
-        <Show when={candidate && host.memories}>
-          <button
-            type="button"
-            disabled={state().saving || state().saved === take}
-            onClick={() => void memory.save()}
-          >
-            {state().saved === take
-              ? 'Saved'
-              : state().saved
-                ? 'Replace saved take'
-                : 'Save take'}
-          </button>
-        </Show>
-        <button
-          type="button"
-          disabled={state().saving}
-          onClick={() => {
-            void stopListening()
-            if (candidate) memory.discardCandidate()
-            else void memory.deleteSaved()
-          }}
-        >
-          {candidate ? 'Discard new take' : 'Delete saved take'}
-        </button>
-      </div>
-    </section>
+    <MusicalMemoryCard
+      take={take}
+      candidate={candidate}
+      saving={state().saving}
+      saved={state().saved === take}
+      replacing={candidate && state().saved !== null && state().saved !== take}
+      canPlay={Boolean(playback) && foreground() && !practiceActive()}
+      onListen={() => void listenAudio(take.audio)}
+      onHearMerc={playback ? hearStoredMerc : undefined}
+      onDownload={() => download(take)}
+      onSave={candidate && host.memories ? () => void memory.save() : undefined}
+      onDelete={() => {
+        void stopListening()
+        if (candidate) memory.discardCandidate()
+        else void memory.deleteSaved()
+      }}
+    />
   )
   return (
     <div

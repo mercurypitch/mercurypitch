@@ -1,6 +1,6 @@
 // Cloudway course source — JSON-safe placements for measured linear routes.
 
-import type { Bounds3, PlatformRenderQuarterTurns, Vec3 } from '../contracts'
+import type { Bounds3, CrystalInteriorPresentationDefinition, PlatformRenderQuarterTurns, Vec3, } from '../contracts'
 
 export interface CloudwayCourseDocumentSource {
   schema: 'mercurypitch.cloudway-course'
@@ -33,6 +33,7 @@ export interface CloudwayCourseSource {
   gaps: readonly CloudwayCourseGapSource[]
   checkpoints: readonly CloudwayCourseCheckpointSource[]
   encounters: readonly CloudwayCourseEncounterSource[]
+  rewards?: CloudwayCourseDiscoveryRewardsSource
   camera: CloudwayCourseCameraSource
   exit: CloudwayCourseExitSource
   melodyLesson?: CloudwayMelodyLessonSource
@@ -41,7 +42,17 @@ export interface CloudwayCourseSource {
     worldBounds: Bounds3
     lightBounds: Bounds3
     audioSceneId: 'museum' | 'garden' | 'gallery'
+    crystalInteriors?: readonly CrystalInteriorPresentationDefinition[]
   }
+}
+
+/** Cloudway courses intentionally author only finite optional discoveries. */
+export interface CloudwayCourseDiscoveryRewardsSource {
+  revision: number
+  discoveries: readonly {
+    encounterId: string
+    coinIds: readonly string[]
+  }[]
 }
 
 export interface CloudwayCourseSpawnSource {
@@ -153,6 +164,10 @@ export interface CloudwayMelodyLessonSource {
   profileId: string
   id: string
   revision: number
+  /** Optional duration multiplier from the certified profile's allowed paces. */
+  defaultPace?: number
+  /** Root offset from the singer's comfortable pitch; never a fixed authored key. */
+  comfortableOffsetSemitones?: number
   stations: readonly { encounterId: string; anchorId: string }[]
   finaleEncounterId: string
 }

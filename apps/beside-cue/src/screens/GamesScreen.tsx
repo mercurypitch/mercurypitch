@@ -5,6 +5,8 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import './games.css'
 import { AppHeader } from '@/components/AppHeader'
 import { AdventureScreen } from '@/games/adventure/AdventureScreen'
+import { CreatorAudition } from '@/games/adventure/CreatorAudition'
+import { CreatorGallery } from '@/games/adventure/CreatorGallery'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
@@ -37,6 +39,8 @@ type PlayPick =
   | 'adventure'
   | 'promenade'
   | 'thawing-song'
+  | 'echo-curator'
+  | 'creator-gallery'
   | 'journey'
   | 'trials'
   | 'cabinet3d'
@@ -199,6 +203,12 @@ export function GamesScreen(props: GamesScreenProps) {
               onExit={() => setPlaying(null)}
             />
           </Show>
+          <Show when={playing() === 'creator-gallery'}>
+            <CreatorGallery onExit={() => setPlaying(null)} />
+          </Show>
+          <Show when={playing() === 'echo-curator'}>
+            <CreatorAudition onExit={() => setPlaying(null)} />
+          </Show>
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />
           </Show>
@@ -235,6 +245,8 @@ export function GamesScreen(props: GamesScreenProps) {
               playing() !== 'adventure' &&
               playing() !== 'promenade' &&
               playing() !== 'thawing-song' &&
+              playing() !== 'echo-curator' &&
+              playing() !== 'creator-gallery' &&
               playing() !== 'hallway3d' &&
               playing() !== 'chambers' &&
               playing() !== 'line' &&
@@ -318,6 +330,58 @@ export function GamesScreen(props: GamesScreenProps) {
             <span class="game-card__blurb">
               Wake a frosted garden, one note at a time. Join five little sparks
               into Merc’s song.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('creator-gallery')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              Little discoveries<span class="game-card__chip">Preview</span>
+            </span>
+            <span class="game-card__blurb">
+              An optional pearl alcove and three living crystal studies to
+              explore.
+            </span>
+          </span>
+          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 5 7 7-7 7" />
+          </svg>
+        </button>
+
+        <button
+          class="game-card"
+          type="button"
+          onClick={() => setPlaying('echo-curator')}
+        >
+          <img
+            class="game-card__art"
+            src="games/merc.webp"
+            alt=""
+            width="64"
+            height="64"
+          />
+          <span class="game-card__body">
+            <span class="game-card__name">
+              Echo Curator<span class="game-card__chip">Preview</span>
+            </span>
+            <span class="game-card__blurb">
+              Merc offers a little melody. Echo it back, at your own pace,
+              through three friendly rounds.
             </span>
           </span>
           <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">

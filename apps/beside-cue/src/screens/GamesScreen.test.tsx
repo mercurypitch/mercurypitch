@@ -68,6 +68,20 @@ vi.mock('@/games/glass/JourneyPrototype', () => ({
   JourneyPrototype: () => <div data-testid="legacy-journey" />,
 }))
 vi.mock('./TapTuner', () => ({ TapTuner: () => null }))
+vi.mock('@/games/adventure/CreatorGallery', () => ({
+  CreatorGallery: (props: { onExit(): void }) => (
+    <button data-testid="creator-gallery-host" onClick={() => props.onExit()}>
+      Leave studies
+    </button>
+  ),
+}))
+vi.mock('@/games/adventure/CreatorAudition', () => ({
+  CreatorAudition: (props: { onExit(): void }) => (
+    <button data-testid="curator-host" onClick={() => props.onExit()}>
+      Leave curator
+    </button>
+  ),
+}))
 vi.mock('@/games/adventure/AdventureScreen', () => ({
   AdventureScreen: (props: {
     campaign?: boolean
@@ -123,6 +137,24 @@ describe('the games list warming the detector (P7)', () => {
 })
 
 describe('owner-build adventure entries', () => {
+  it('opens art studies without mounting another game', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Little discoveries/u }))
+    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('adventure-host')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('creator-gallery-host'))
+    expect(
+      screen.getByRole('button', { name: /Little discoveries/u }),
+    ).toBeVisible()
+  })
+  it('opens the optional curator without mounting a movement game and returns cleanly', () => {
+    render(() => <GamesScreen onBack={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Echo Curator/u }))
+    expect(screen.queryByTestId('legacy-journey')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('adventure-host')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('curator-host'))
+    expect(screen.getByRole('button', { name: /Echo Curator/u })).toBeVisible()
+  })
   it('opens the Thawing Song preview without changing the museum campaign', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /The Thawing Song/u }))

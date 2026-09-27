@@ -26,6 +26,11 @@ export interface RoomDecorationRecipe {
 export const ROOM_DECORATION_CATALOG: Readonly<
   Record<string, RoomDecorationRecipe>
 > = {
+  'pearl-ribbon-lantern-v1': {
+    bundle: 'pearl-ribbon-lantern-v1',
+    node: 'Cloudway_PearlRibbonLantern_OptionalExhibitV1',
+    scale: 1,
+  },
   'crystal-planter-v5': {
     bundle: 'museum-decor-v5',
     node: 'decor_crystal_planter',

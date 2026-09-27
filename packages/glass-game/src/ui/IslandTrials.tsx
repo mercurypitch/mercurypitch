@@ -5,6 +5,7 @@ import styles from './IslandTrials.module.css'
 
 export interface IslandTrialView {
   id: string
+  islandId: string
   islandTitle: string
   title: string
   description: string
@@ -17,6 +18,8 @@ export function IslandTrials(props: {
   trials: readonly IslandTrialView[]
   enteringId?: string
   disabled: boolean
+  selectedIslandId?: string
+  onSelectIsland?(id: string): void
   onEnter(id: string): void
 }) {
   return (
@@ -27,10 +30,38 @@ export function IslandTrials(props: {
           <h2 id="cloudway-trials-title">Cloudway Trials</h2>
           <p>Little adventures for an island's brightest voices.</p>
         </header>
+        <nav class={styles.routeRail} aria-label="Island paths">
+          <For each={props.trials}>
+            {(trial, index) => (
+              <a
+                class={styles.routeStop}
+                href={`#trial-${trial.id}`}
+                aria-current={
+                  props.selectedIslandId === trial.islandId
+                    ? 'location'
+                    : undefined
+                }
+                onClick={() => props.onSelectIsland?.(trial.islandId)}
+              >
+                <span class={styles.routeNumber}>
+                  {String(index() + 1).padStart(2, '0')}
+                </span>
+                <span>
+                  <strong>{trial.islandTitle}</strong>
+                  <small>
+                    {trial.unlock.unlocked ? 'Path open' : 'Earn three stars'} ·{' '}
+                    {trial.title}
+                  </small>
+                </span>
+              </a>
+            )}
+          </For>
+        </nav>
         <For each={props.trials}>
           {(trial) => (
             <article
               class={styles.card}
+              id={`trial-${trial.id}`}
               data-trial-id={trial.id}
               data-unlocked={String(trial.unlock.unlocked)}
             >

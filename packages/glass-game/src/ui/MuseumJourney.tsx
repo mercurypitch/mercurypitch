@@ -617,6 +617,17 @@ export function MuseumJourney(props: {
       </section>
       <IslandTrials
         trials={props.trials ?? []}
+        selectedIslandId={
+          props.definition.stages.find(
+            (stage) => stage.id === props.selectedStageId,
+          )?.islandId
+        }
+        onSelectIsland={(islandId) => {
+          const stage = props.definition.stages.find(
+            (candidate) => candidate.islandId === islandId,
+          )
+          if (stage !== undefined) select(stage.id)
+        }}
         enteringId={enteringTrialId()}
         disabled={enteringChapterId() !== undefined}
         onEnter={(id) => void enterTrial(id)}

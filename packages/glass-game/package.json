@@ -13,8 +13,10 @@
     "./browser": "./src/browser/browser-host.ts",
     "./assets": "./src/browser/assets.ts",
     "./encore-examples": "./src/content/encore-examples.ts",
+    "./echo-curator": "./src/echo-curator.ts",
     "./promenade": "./src/content/cloudway-laboratory.ts",
-    "./thawing-song": "./src/content/cloudway-thawing-song.ts"
+    "./thawing-song": "./src/content/cloudway-thawing-song.ts",
+    "./creator-levels": "./src/creator-levels.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

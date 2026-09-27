@@ -87,6 +87,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb',
   'cloudway-lab-frosted-scroll-wall-v1':
     'cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb',
+  'pearl-ribbon-lantern-v1':
+    'cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',

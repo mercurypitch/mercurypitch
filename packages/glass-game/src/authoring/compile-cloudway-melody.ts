@@ -3,7 +3,7 @@
 import type { BreakableDefinition, ChallengeDefinition, CheckpointDefinition, MelodyLessonDefinition, } from '../contracts'
 import { compileMelody } from '../core/melody-contour.ts'
 import type { CloudwayCourseProfileCatalog } from './cloudway-course-profiles'
-import { array, exactKeys, fail, identifierSet, positive, record, string, } from './cloudway-course-validation.ts'
+import { array, exactKeys, fail, finite, identifierSet, positive, record, string, } from './cloudway-course-validation.ts'
 
 const stationHold = {
   requiredSeconds: 1.4,
@@ -82,13 +82,12 @@ export function compileCloudwayMelodyLesson(
 ): MelodyLessonDefinition | undefined {
   if (raw === undefined) return undefined
   const source = record(raw, path)
-  exactKeys(source, path, [
-    'profileId',
-    'id',
-    'revision',
-    'stations',
-    'finaleEncounterId',
-  ])
+  exactKeys(
+    source,
+    path,
+    ['profileId', 'id', 'revision', 'stations', 'finaleEncounterId'],
+    ['defaultPace', 'comfortableOffsetSemitones'],
+  )
   const profileId = string(source.profileId, `${path}.profileId`)
   const profile = catalog.melodyLessons?.[profileId]
   if (profile === undefined)
@@ -118,8 +117,30 @@ export function compileCloudwayMelodyLesson(
     stations.map((s) => s.anchorId),
     `${path}.stations.anchorId`,
   )
-  if (!profile.allowedPaces.includes(profile.defaultPace))
-    fail(path, 'default pace must be allowed.')
+  const defaultPace =
+    source.defaultPace === undefined
+      ? profile.defaultPace
+      : finite(source.defaultPace, `${path}.defaultPace`)
+  if (!profile.allowedPaces.includes(defaultPace))
+    fail(
+      `${path}.defaultPace`,
+      'default pace must be allowed by the selected profile.',
+    )
+  const comfortableOffsetSemitones =
+    source.comfortableOffsetSemitones === undefined
+      ? profile.comfortableOffsetSemitones
+      : finite(
+          source.comfortableOffsetSemitones,
+          `${path}.comfortableOffsetSemitones`,
+        )
+  if (
+    !Number.isInteger(comfortableOffsetSemitones) ||
+    Math.abs(comfortableOffsetSemitones) > 12
+  )
+    fail(
+      `${path}.comfortableOffsetSemitones`,
+      'must be an integer between -12 and 12.',
+    )
   const offsets = profile.melody.phrases.flatMap((phrase) =>
     phrase.anchors.map((anchor) => anchor.offsetSemitones),
   )
@@ -137,6 +158,8 @@ export function compileCloudwayMelodyLesson(
     })
   return {
     ...profile,
+    defaultPace,
+    comfortableOffsetSemitones,
     id: string(source.id, `${path}.id`),
     revision,
     stations,

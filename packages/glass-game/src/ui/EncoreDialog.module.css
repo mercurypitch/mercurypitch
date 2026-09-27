@@ -46,7 +46,6 @@
   font-weight: 400;
 }
 .header button,
-.take button,
 .mercExample button,
 .stop,
 .recordingActive button {
@@ -203,27 +202,6 @@
 }
 .recordingActive button {
   margin-left: auto;
-}
-.take {
-  margin-top: 18px;
-  padding: 14px 0;
-  border-top: 1px solid #d0be96;
-}
-.take > div:first-child {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 13px;
-}
-.take > div:first-child span {
-  color: #6a745f;
-}
-.takeActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
 }
 .stop {
   margin-top: 12px;
