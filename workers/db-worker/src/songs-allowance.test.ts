@@ -355,6 +355,29 @@ describe('a refund the store reversed', () => {
     expect(refundReversal([], null)).toEqual({ period: null, songs: 0 })
   })
 
+  // Review of PR 880 and 882, a nit on finding 4: a reversal no refund here
+  // explains is for a refund still to come, which will take from the latest
+  // period, as clawBack finds it. So it names that period, and owes nothing.
+  it('names the latest period when no refund here owes anything', () => {
+    const renewal: LedgerRow = {
+      delta: 20,
+      reason: 'subscription',
+      jobRef: 'txn-2',
+      idempotencyKey: 'rc:renewal',
+    }
+    expect(refundReversal([grant, sung], null)).toEqual({
+      period: 'rc:purchase',
+      songs: 0,
+    })
+    expect(refundReversal([grant, sung], 'txn-unknown')).toEqual({
+      period: 'rc:purchase',
+      songs: 0,
+    })
+    expect(
+      refundReversal([grant, sung, clawback, restore(15), renewal], null),
+    ).toEqual({ period: 'rc:renewal', songs: 0 })
+  })
+
   // Review of PR 880, finding 4: RevenueCat retries a failed delivery, so a
   // reversal can arrive before the refund it reverses.
   it('is the last word on its period when it arrived before the refund', () => {

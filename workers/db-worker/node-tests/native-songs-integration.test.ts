@@ -878,6 +878,56 @@ describe('a refund the store reversed', () => {
     expect(balance()).toBe(20)
   })
 
+  // A reversal that names no transaction and comes before any refund here
+  // names the period its refund will take from: the latest, as the refund
+  // finds it. It used to name none, and the refund still took the songs
+  // (review of PR 880 and 882, nit on finding 4).
+  it('keeps them too when neither event names its transaction', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    const reversal = await deliver(
+      rcEvent('REFUND_REVERSED', { transaction_id: undefined }),
+    )
+    const refunded = await deliver(
+      rcEvent('CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+        transaction_id: undefined,
+      }),
+    )
+
+    expect(reversal).toMatchObject({ restored: 0 })
+    expect(refunded).toMatchObject({ clawedBack: 0, reversedAlready: true })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: true,
+      left: 20,
+    })
+  })
+
+  it('keeps a later period when an earlier refund was already given back', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(
+      rcEvent('CANCELLATION', { cancel_reason: 'CUSTOMER_SUPPORT' }),
+    )
+    await deliver(rcEvent('REFUND_REVERSED'))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+
+    await deliver(rcEvent('REFUND_REVERSED', { transaction_id: undefined }))
+    const refunded = await deliver(
+      rcEvent('CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+        transaction_id: undefined,
+      }),
+    )
+
+    expect(refunded).toMatchObject({ clawedBack: 0, reversedAlready: true })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: true,
+      left: 40,
+    })
+  })
+
   it('still takes back a later period’s refund, which nothing reversed', async () => {
     const token = await anonymousToken()
     await deliver(rcEvent('INITIAL_PURCHASE'))

@@ -313,7 +313,7 @@ export function subscriptionSongs(
 /** What a reversed refund owes: the songs its refund took from the period,
  *  less any already given back. */
 export interface RefundReversal {
-  /** The period's key (`rc:<event id>`), or null when nothing was refunded. */
+  /** The period's key (`rc:<event id>`), or null when there is none. */
   period: string | null
   songs: number
 }
@@ -322,21 +322,8 @@ function isRefundOf(row: LedgerRow, period: string): boolean {
   return row.reason === SUBSCRIPTION_REFUND && row.jobRef === period
 }
 
-/** The refund a store reversed: the period whose transaction the reversal
- *  names, else the one the latest refund took from, as RevenueCat reports a
- *  refund for the latest period only. It owes back what that period's
- *  refunds took and no reversal has given back yet, so a second reversal of
- *  one refund owes nothing. */
-export function refundReversal(
-  rows: readonly LedgerRow[],
-  transaction: string | null,
-): RefundReversal {
-  const named = subscriptionSongs(rows).periods.find(
-    (period) => transaction !== null && period.transaction === transaction,
-  )
-  const latest = rows.filter((row) => row.reason === SUBSCRIPTION_REFUND).at(-1)
-  const period = named?.key ?? latest?.jobRef ?? null
-  if (period === null) return { period: null, songs: 0 }
+/** What the period's refunds took and no reversal has given back yet. */
+function owedTo(rows: readonly LedgerRow[], period: string): number {
   let owed = 0
   for (const row of rows) {
     if (isRefundOf(row, period)) owed -= Number(row.delta)
@@ -344,7 +331,36 @@ export function refundReversal(
       owed -= Number(row.delta)
     }
   }
-  return { period, songs: Math.max(0, owed) }
+  return Math.max(0, owed)
+}
+
+/** The refund a store reversed: the period whose transaction the reversal
+ *  names, else the one the latest refund took from, as RevenueCat reports a
+ *  refund for the latest period only. It owes back what that period's
+ *  refunds took and no reversal has given back yet, so a second reversal of
+ *  one refund owes nothing.
+ *
+ *  A reversal no refund here explains is for a refund still to come (review
+ *  of PR 880, finding 4, and its nit): it names the period that refund will
+ *  take from, the latest, as clawBack finds it, and owes nothing. Its row
+ *  then makes that refund take nothing (refundReversedFirst). */
+export function refundReversal(
+  rows: readonly LedgerRow[],
+  transaction: string | null,
+): RefundReversal {
+  const { periods } = subscriptionSongs(rows)
+  const named = periods.find(
+    (period) => transaction !== null && period.transaction === transaction,
+  )
+  if (named !== undefined) {
+    return { period: named.key, songs: owedTo(rows, named.key) }
+  }
+  const refunded =
+    rows.filter((row) => row.reason === SUBSCRIPTION_REFUND).at(-1)?.jobRef ??
+    null
+  const owed = refunded === null ? 0 : owedTo(rows, refunded)
+  if (owed > 0) return { period: refunded, songs: owed }
+  return { period: periods.at(-1)?.key ?? refunded, songs: 0 }
 }
 
 /** Whether the store reversed this period's refund before the refund got
