@@ -132,8 +132,8 @@
       "id": "cloudway-lab-rose-hex-crumble-desktop-v3",
       "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
       "node": "Cloudway_RoseCrystalHexCrumble_V3",
-      "bytes": 6296776,
-      "sha256": "6fb888df6a94cd0f7a1fbd69915b16d0d695acab9aaf6f20f63520a90bba69c1",
+      "bytes": 6471632,
+      "sha256": "9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61",
       "requiredExtensions": [
         "EXT_meshopt_compression",
         "KHR_materials_clearcoat",
@@ -147,8 +147,8 @@
       "id": "cloudway-lab-rose-hex-crumble-mobile-v3",
       "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
       "node": "Cloudway_RoseCrystalHexCrumble_V3",
-      "bytes": 2025056,
-      "sha256": "9a35a2ede553ea11f4d48e056973e6eb8c33349c528b95ad63d38fb61932bc2f",
+      "bytes": 2073500,
+      "sha256": "6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd",
       "requiredExtensions": [
         "EXT_meshopt_compression",
         "KHR_materials_clearcoat",

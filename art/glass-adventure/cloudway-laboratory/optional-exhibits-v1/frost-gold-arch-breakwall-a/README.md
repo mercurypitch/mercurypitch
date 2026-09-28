@@ -24,5 +24,12 @@ of decoded texture mips. The mobile tier is 53,641 triangles with the same 32
 shards and about 14.4 MiB of decoded texture mips. Stored shard primitives are
 inactive until fracture and should not be counted as simultaneous renderer calls.
 
+The accepted actual-game evidence uses an 800 by 1100 tablet-size viewport on
+desktop RX 9070 XT hardware and covers the intact, shattering, open, and
+restored states in the mechanics preview. Its receipt is hash-locked in
+`production-receipt.json`. The 390 by 844 phone check established numerical fit
+only; its screenshot timed out, so this package does not claim phone visual
+evidence.
+
 The full private production receipt is stored at
 `<creative-archive>/glass-adventure/modular-kit-v1/finishing/frost-gold-arch-breakwall-a/production-receipt.json`.

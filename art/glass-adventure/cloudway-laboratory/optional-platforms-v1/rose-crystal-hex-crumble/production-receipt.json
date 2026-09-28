@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "assetId": "rose-crystal-hex-crumble-v3",
-  "status": "runtime integration candidate; actual-game capture pending",
+  "status": "runtime-integrated; shipped mobile-byte optics and contact capture accepted",
   "rootNode": "Cloudway_RoseCrystalHexCrumble_V3",
   "roles": {
     "intact": "rose_hex_intact",
     "persistent": "rose_hex_persistent_hardware",
     "shardPrefix": "rose_hex_shard_",
     "shardCount": 24,
-    "contact": "rose_hex_contact",
+    "contact": "rose_hex_support_contact",
     "groundAnchor": "rose_hex_ground_anchor"
   },
   "support": {
@@ -32,15 +32,33 @@
     "fracturedCallsPerPass": 25,
     "storedPrimitives": 28,
     "intactVolume": "closed outward-wound front-sided KHR volume",
-    "shards": "24 closed outward-wound front-sided pieces"
+    "shards": "24 closed outward-wound front-sided pieces",
+    "intactVolumeTopInsetMetres": 0.006,
+    "detailBaseColorDonorBlend": 0.3,
+    "layering": "the donor detail surface remains at the Y=0 landing datum; the separate closed volume begins 6 mm below it to prevent coplanar interference"
+  },
+  "actualGameProof": {
+    "status": "accepted mobile-tier capture at a tablet-size viewport on desktop hardware",
+    "acceptanceScope": "removed detail/volume interference and clearer lineage-preserving rose tint; not reference-identical ornament",
+    "viewportCssPixels": [800, 1100],
+    "renderer": "ANGLE AMD Radeon RX 9070 XT (radeonsi gfx1201 ACO), OpenGL 4.6",
+    "requestedAssetUrl": "http://127.0.0.1:5896/games/cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
+    "overrideHits": 1,
+    "assetBytes": 2073500,
+    "assetSha256": "6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd",
+    "receipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/runtime-audition/proofs/integrated-mechanics-preview/rose-runtime/rose-mobile-final-shipped-hardware-receipt.json",
+      "bytes": 1648,
+      "sha256": "bc63e3629f23c83878ef32cc7d5f9af0d494f8dea9c63a2937f06627b9ed035e"
+    }
   },
   "runtimes": [
     {
       "tier": "desktop",
       "bundle": "cloudway-lab-rose-hex-crumble-desktop-v3",
       "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
-      "bytes": 6296776,
-      "sha256": "6fb888df6a94cd0f7a1fbd69915b16d0d695acab9aaf6f20f63520a90bba69c1",
+      "bytes": 6471632,
+      "sha256": "9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61",
       "triangles": 84213,
       "storedPrimitives": 28,
       "actualRendererCalls": { "intact": 3, "fractured": 25 },
@@ -51,8 +69,8 @@
       "tier": "mobile",
       "bundle": "cloudway-lab-rose-hex-crumble-mobile-v3",
       "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
-      "bytes": 2025056,
-      "sha256": "9a35a2ede553ea11f4d48e056973e6eb8c33349c528b95ad63d38fb61932bc2f",
+      "bytes": 2073500,
+      "sha256": "6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd",
       "triangles": 53358,
       "storedPrimitives": 28,
       "actualRendererCalls": { "intact": 3, "fractured": 25 },
@@ -63,13 +81,13 @@
   "source": {
     "productionScript": {
       "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/rose-crystal-hex-crumble/production/author_rose_hex_v3.py",
-      "bytes": 24198,
-      "sha256": "18c8f4d6332304a5753a2bd8434cd197fd3f9355d2fae3bcbe8e81447af04570"
+      "bytes": 24755,
+      "sha256": "4785816c58ca98d3334d7365e7b6022b341cddd8ae0810dedcc4b129ba2f2d46"
     },
     "fullReceipt": {
       "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/rose-crystal-hex-crumble/production-receipt-v3.json",
-      "bytes": 23518,
-      "sha256": "e840297752716f2ee41119ce3ae0e5d82f0b359c95274d1c3af78fc2e38ed9dd"
+      "bytes": 25513,
+      "sha256": "e0586f595dd3ec350218a937f6946b4feeb05f176cd79dda7c48367db6bd9ba0"
     },
     "policy": "v1, v2, dense donors, maps, packed masters and prior proofs remain unchanged in the creative archive"
   }

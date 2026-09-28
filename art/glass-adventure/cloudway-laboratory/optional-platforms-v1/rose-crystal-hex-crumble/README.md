@@ -24,5 +24,13 @@ The desktop tier is 84,213 triangles with three referenced images and about
 roles and about 12 MiB of decoded mip storage. Every fracture clone owns its
 geometry and the focused lifecycle proof disposes each clone exactly once.
 
+The donor detail geometry and Y=0 landing datum remain unchanged. The separate
+closed volume begins six millimetres below the top, which removes the reviewed
+coplanar interference without changing support or the fractured pieces. The
+accepted mobile-tier capture uses a tablet-size viewport on desktop RX 9070 XT
+hardware and verifies the exact shipped URL and hash. Its visual acceptance
+covers the removed bands and clearer rose tint, rather than a claim that the
+derivative reproduces every reference ornament.
+
 The full private production receipt is stored at
 `<creative-archive>/glass-adventure/modular-kit-v1/finishing/rose-crystal-hex-crumble/production-receipt-v3.json`.
