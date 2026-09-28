@@ -443,6 +443,13 @@
   color: var(--text-muted);
 }
 
+/* Captions read as one status, spaced as the sheet spaces its rows. */
+.mp-signin__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .mp-signin__fine {
   margin: 0;
   text-align: center;

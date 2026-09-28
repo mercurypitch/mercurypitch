@@ -217,10 +217,17 @@ function CodePane(props: { flow: SignInFlow }): JSX.Element {
           {props.flow.busy() ? 'Checking…' : 'Sign in'}
         </button>
       </form>
+      {/* What else to try waits for a second ask: the first code may just
+          be slow, and one that never comes looks the same from here. Both
+          lines are one status, so a screen reader reads the advice too. */}
       <Show when={props.flow.resent()}>
-        <p class="mp-signin__caption" role="status">
-          Another code is on its way.
-        </p>
+        <div class="mp-signin__notes" role="status">
+          <p class="mp-signin__caption">Another code is on its way.</p>
+          <p class="mp-signin__caption">
+            Still nothing? Check the address and your spam folder, or try again
+            in an hour.
+          </p>
+        </div>
       </Show>
       <button
         type="button"
