@@ -34,6 +34,7 @@ import { accountCard, accountDisplayName, accountProviderLine, accountReach, acc
 import { AccountFillNote } from './AccountFillNote'
 import { AccountPromises } from './AccountPromises'
 import { copyText } from './copy-text'
+import { thisDevice } from './device-noun'
 import { askSettings } from './settings-alert'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
@@ -131,8 +132,8 @@ function IdentityCard(): JSX.Element {
 /** "This phone and 1 other", from the account's sessions. */
 export function devicesLine(sessions: readonly AuthSession[]): string {
   const others = sessions.filter((session) => !session.current).length
-  if (others === 0) return 'This phone'
-  return `This phone and ${others} other${others === 1 ? '' : 's'}`
+  if (others === 0) return thisDevice()
+  return `${thisDevice()} and ${others} other${others === 1 ? '' : 's'}`
 }
 
 /** The rows that need the server: drawn once the account has answered. */

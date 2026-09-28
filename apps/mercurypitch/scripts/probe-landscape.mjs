@@ -37,14 +37,15 @@ export const LANDSCAPE_INSET_FRAMES = [
 /**
  * Drawn where one of the rules does not apply, each for its own reason.
  *
- * - The alley's plate is the scene itself, cropped by the alley on purpose.
+ * - The alley's plate is the scene itself, cropped by the alley on purpose,
+ *   and it runs under the status bar the way a room's picture does.
  * - The test build's console handle keeps to the bottom edge. Raised by the
  *   home indicator's inset it would sit on the rail's More, upright.
  */
-const EXEMPT = [
+export const EXEMPT = [
   {
     selector: '[data-testid="alley-plate"]',
-    rules: ['clipped', 'home-indicator', 'covered'],
+    rules: ['clipped', 'home-indicator', 'covered', 'status-bar'],
   },
   {
     selector: '[data-testid="portable-console-handle"]',
@@ -52,8 +53,21 @@ const EXEMPT = [
   },
 ]
 
-/** In the page: every rule above, over one surface. */
-const audit = ({ scope, exempt }) => {
+/**
+ * In the page: every rule above, over one surface.
+ *
+ * `rules`, when given, names the only rules to apply. The safe-area walk
+ * (probe-safe-areas.mjs) asks for the four insets alone: what sits under a
+ * status bar, a notch or a home indicator, and nothing about what covers
+ * what, which is this walk's question. It also passes `controls`, which
+ * measures every control's box as well as the ink inside it.
+ *
+ * The status bar is the top inset, and the same shape as the home
+ * indicator's: ink inside it is a finding unless its scroller has moved, so
+ * that scrolling back brings it out. Not when it is stuck: a sticky row
+ * stays under the bar however far its scroller goes.
+ */
+export const audit = ({ scope, exempt, rules = null, controls = false }) => {
   const vw = window.innerWidth
   const vh = window.innerHeight
   // The insets as the page resolves them, so a walk whose override did not
@@ -66,6 +80,7 @@ const audit = ({ scope, exempt }) => {
   document.body.appendChild(probe)
   const read = getComputedStyle(probe)
   const inset = {
+    top: parseFloat(read.paddingTop),
     right: parseFloat(read.paddingRight),
     bottom: parseFloat(read.paddingBottom),
     left: parseFloat(read.paddingLeft),
@@ -87,6 +102,7 @@ const audit = ({ scope, exempt }) => {
     return `${el.tagName.toLowerCase()}${id ? `[${id}]` : ''}${cls ? `.${cls}` : ''}${text ? ` "${text.slice(0, 32)}"` : ''}`
   }
   const excused = (el, rule) =>
+    (rules !== null && !rules.includes(rule)) ||
     exempt.some((e) => e.rules.includes(rule) && el.closest(e.selector))
   // Visually hidden text (the sr-only pattern) is for a screen reader.
   const srOnly = (el) => {
@@ -126,6 +142,8 @@ const audit = ({ scope, exempt }) => {
     let cutBy = null
     let scroller = null
     let scrollerX = null
+    // Held in place while its scroller moves: sticky, below the scroller.
+    let stuck = getComputedStyle(el).position === 'sticky'
     for (
       let n = el.parentElement;
       n !== null && n !== document.documentElement;
@@ -134,6 +152,7 @@ const audit = ({ scope, exempt }) => {
       const s = getComputedStyle(n)
       const y = scrolls(n, 'y')
       const x = scrolls(n, 'x')
+      if (scroller === null && s.position === 'sticky') stuck = true
       if (scroller === null && y) scroller = n
       if (scrollerX === null && x) scrollerX = n
       if (s.overflowX !== 'visible' || s.overflowY !== 'visible') {
@@ -165,7 +184,7 @@ const audit = ({ scope, exempt }) => {
       r: Math.min(box.r, vw),
       b: Math.min(box.b, vh),
     }
-    return { box, cut, cutBy, scroller, scrollerX }
+    return { box, cut, cutBy, scroller, scrollerX, stuck }
   }
   const area = (b) => Math.max(0, b.r - b.l) * Math.max(0, b.b - b.t)
 
@@ -185,9 +204,15 @@ const audit = ({ scope, exempt }) => {
       if (r.width >= 1 && r.height >= 1) inks.push({ el, r, what: name(el) })
     }
   }
-  for (const el of root.querySelectorAll(
-    'svg, img, input, select, textarea, canvas, video, [role="slider"]',
-  )) {
+  // With `controls`, every control's own box too, whatever it draws: a chip
+  // that shows only a picture, or only its background, is still a thing a
+  // finger has to reach.
+  const pressable =
+    'button, a[href], [role="button"], [role="switch"], [role="tab"], [role="checkbox"], [role="radio"], [role="link"]'
+  const kinds =
+    'svg, img, input, select, textarea, canvas, video, [role="slider"]' +
+    (controls ? `, ${pressable}` : '')
+  for (const el of root.querySelectorAll(kinds)) {
     const tag = el.tagName.toLowerCase()
     if (tag === 'svg' && el.parentElement?.closest('svg')) continue
     if (!showing(el)) continue
@@ -199,6 +224,7 @@ const audit = ({ scope, exempt }) => {
       el,
       r,
       what: tag === 'svg' ? `the icon in ${name(el.parentElement)}` : name(el),
+      control: controls && el.matches(pressable),
     })
   }
 
@@ -227,14 +253,26 @@ const audit = ({ scope, exempt }) => {
     ) {
       flag(ink, 'off-screen', 'runs off the side of the screen')
     }
-    if (inset.left > 0 && d.box.l < inset.left - 0.5) {
+    // A control's own box that runs from one inset to the other is a row
+    // across the whole screen, the iOS table cell: its ground goes edge to
+    // edge and its padding keeps what it draws clear. That ink is measured on
+    // its own, so only the box is let off, and only across the axis it spans.
+    const acrossX =
+      ink.control === true &&
+      d.box.l < inset.left - 0.5 &&
+      d.box.r > vw - inset.right + 0.5
+    const acrossY =
+      ink.control === true &&
+      d.box.t < inset.top - 0.5 &&
+      d.box.b > vh - inset.bottom + 0.5
+    if (inset.left > 0 && d.box.l < inset.left - 0.5 && !acrossX) {
       flag(
         ink,
         'notch',
         `starts at x ${round(d.box.l)}, inside the ${inset.left} px inset`,
       )
     }
-    if (inset.right > 0 && d.box.r > vw - inset.right + 0.5) {
+    if (inset.right > 0 && d.box.r > vw - inset.right + 0.5 && !acrossX) {
       flag(
         ink,
         'notch',
@@ -245,11 +283,28 @@ const audit = ({ scope, exempt }) => {
     const below =
       s !== null && s.scrollTop + s.clientHeight < s.scrollHeight - 1
     const above = s !== null && s.scrollTop > 0
-    if (inset.bottom > 0 && d.box.b > vh - inset.bottom + 0.5 && !below) {
+    if (
+      inset.bottom > 0 &&
+      d.box.b > vh - inset.bottom + 0.5 &&
+      !below &&
+      !acrossY
+    ) {
       flag(
         ink,
         'home-indicator',
         `reaches y ${round(d.box.b)}, into the home indicator's ${inset.bottom} px`,
+      )
+    }
+    if (
+      inset.top > 0 &&
+      d.box.t < inset.top - 0.5 &&
+      (d.stuck || !above) &&
+      !acrossY
+    ) {
+      flag(
+        ink,
+        'status-bar',
+        `starts at y ${round(d.box.t)}, under the status bar's ${inset.top} px`,
       )
     }
     // Under something else. A sliver at a scroller's edge is not a finding,
@@ -269,14 +324,17 @@ const audit = ({ scope, exempt }) => {
     }
   }
   const page = document.scrollingElement
-  if (page.scrollWidth > vw + 0.5) {
+  if (
+    (rules === null || rules.includes('off-screen')) &&
+    page.scrollWidth > vw + 0.5
+  ) {
     problems.add(`the page scrolls sideways by ${page.scrollWidth - vw} px`)
   }
   return { inset, inks: counted, problems: [...problems] }
 }
 
 /** Scrolls every scroller in scope, and the page, to its end. */
-const toEnd = (scope) => {
+export const toEnd = (scope) => {
   const root = scope === null ? document.body : document.querySelector(scope)
   if (root === null) return 0
   let moved = 0

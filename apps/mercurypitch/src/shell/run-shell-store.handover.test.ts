@@ -17,11 +17,17 @@
 // the room's on screen. Nothing is ended: the parked room was parked once,
 // never stopped, and keeps its own place, so going back to it brings the run
 // back paused, and the shell takes it up again from there.
+//
+// The Ear Lab, Piano and Guitar are rooms with runs of their own too, which
+// the shell does not drive: they register no controls. TestFlight 0.7.1 (28
+// Sep): a Sing run parked, then the Ear Lab, and the pill sat on its Today,
+// Calibrate, Instruments and Ear Report and took their taps. They let go of
+// the parked run the same way, and nothing of theirs is ever taken for it.
 
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
+import { TAB_EAR_LAB, TAB_GUITAR, TAB_HOME, TAB_KARAOKE, TAB_PIANO, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
@@ -304,5 +310,102 @@ describe('the room the run belongs to', () => {
     expect(runState()).toBe('paused')
     // The run's own lock came back with it: it was never let go of.
     expect(locked()).toBe(true)
+  })
+})
+
+describe.each([
+  ['the Ear Lab', TAB_EAR_LAB],
+  ['Piano', TAB_PIANO],
+  ['Guitar', TAB_GUITAR],
+])('Sing sang, then %s: a room the shell does not drive', (_name, tab) => {
+  /**
+   * Sung for twenty seconds, then left for `tab` the way the rail leaves:
+   * parked on the way out, the tab moves, and then the room unmounts.
+   */
+  async function singLeftFor(): Promise<void> {
+    sing.enter()
+    sing.play()
+    await settled()
+    vi.advanceTimersByTime(20_000)
+    parkRun()
+    setActiveTab(tab)
+    await settled()
+    sing.unmount()
+    await settled()
+  }
+
+  it('draws no Sing pill over it', async () => {
+    await singLeftFor()
+
+    expect(parked()).toBe(false)
+    expect(runOwner()).toBeNull()
+    expect(runState()).toBe('browsing')
+    expect(railVisible()).toBe(true)
+    expect(transportVisible()).toBe(false)
+  })
+
+  it('never takes the room for the parked run’s', async () => {
+    await singLeftFor()
+    vi.advanceTimersByTime(5_000)
+    await settled()
+
+    expect(runOwner()).not.toBe(tab)
+    expect(runLabel()).toBe('')
+  })
+
+  it('lets go for good: no pill follows the singer on to Progress', async () => {
+    await singLeftFor()
+
+    setActiveTab(TAB_PROGRESS)
+    await settled()
+
+    expect(parked()).toBe(false)
+    expect(runOwner()).toBeNull()
+    expect(runState()).toBe('browsing')
+  })
+
+  it('ends nothing in Sing: the take was parked once and never stopped', async () => {
+    await singLeftFor()
+
+    expect(sing.controls.park).toHaveBeenCalledTimes(1)
+    expect(sing.controls.stop).not.toHaveBeenCalled()
+  })
+
+  it('takes the Sing run back, paused, with its time, when Sing comes back', async () => {
+    await singLeftFor()
+    vi.advanceTimersByTime(45_000)
+    setActiveTab(TAB_PROGRESS)
+    await settled()
+
+    sing.enter()
+    await settled()
+
+    expect(runState()).toBe('paused')
+    expect(runOwner()).toBe(TAB_SINGING)
+    expect(runLabel()).toBe('Retro Analog Studio')
+    expect(transportVisible()).toBe(true)
+    // Twenty seconds sung; none of the forty-five spent away.
+    expect(elapsedMs()).toBeGreaterThanOrEqual(20_000)
+    expect(elapsedMs()).toBeLessThan(21_000)
+  })
+})
+
+describe('a tab with no run of its own', () => {
+  it.each([
+    ['Progress', TAB_PROGRESS],
+    ['the alley', TAB_HOME],
+  ])('keeps the pill on %s', async (_name, tab) => {
+    sing.enter()
+    sing.play()
+    await settled()
+    parkRun()
+    setActiveTab(tab)
+    await settled()
+    sing.unmount()
+    await settled()
+
+    expect(parked()).toBe(true)
+    expect(runOwner()).toBe(TAB_SINGING)
+    expect(runLabel()).toBe('Retro Analog Studio')
   })
 })

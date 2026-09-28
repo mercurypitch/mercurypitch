@@ -21,7 +21,10 @@
 .notificationContainer {
   position: fixed;
   top: calc(env(safe-area-inset-top) + 0.6rem);
-  right: 0.6rem;
+  /* A phone on its side is wider than the phone rule below, and has its
+     notch, or its island, at this end: the toast and its close button sat
+     inside the inset. */
+  right: max(0.6rem, var(--safe-right, 0px));
   z-index: var(--z-toast, 20000);
   display: flex;
   flex-direction: column;
@@ -270,8 +273,8 @@
        and the tab bar's own height is budgeted out below. */
     top: auto;
     bottom: calc(var(--tabbar-total, 54px) + 0.6rem);
-    right: 0.5rem;
-    left: 0.5rem;
+    right: max(0.5rem, var(--safe-right, 0px));
+    left: max(0.5rem, var(--safe-left, 0px));
     width: auto;
     gap: 0.35rem;
 

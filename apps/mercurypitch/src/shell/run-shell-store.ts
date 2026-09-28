@@ -43,11 +43,21 @@
 // Letting go ends nothing. The parked room was paused and never stopped, and
 // it keeps its own place at module scope (the Karaoke song and where it was,
 // the Sing take); going back to it brings that run back paused, and the
-// shell takes it up from there, with its time. The pill still sits on every
-// tab without a run of its own: the alley, Progress, the Ear Lab.
+// shell takes it up from there, with its time.
+//
+// The Ear Lab, Piano and Guitar have runs of their own that the shell does
+// not drive: they register no controls, so there is nothing of theirs to
+// read, but they come first all the same. The pill sat on the Ear Lab's
+// Today, Calibrate, Instruments and Ear Report and took their taps
+// (TestFlight 0.7.1), and on Piano's Start the mic and Play; and each of them
+// takes the microphone or the speaker for a run of its own. They let go of
+// the parked run the same way, and it comes back paused, with its time, when
+// its own room does. The pill still sits on every tab without a run of its
+// own: the alley, Progress, and the screens pushed over them.
 
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
+import { TAB_EAR_LAB, TAB_GUITAR, TAB_PIANO } from '@/features/tabs/constants'
 import { markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
@@ -115,8 +125,13 @@ let accumulatedMs = 0
 let clockTimer: ReturnType<typeof setInterval> | null = null
 let idleTimer: ReturnType<typeof setTimeout> | null = null
 let announcedThisRun = false
-/** What a parked run is, for as long as its room is not mounted. See liveRun. */
-let parkedLatch: 'paused' | null = null
+/**
+ * What a parked run is, for as long as its room is not mounted. See liveRun.
+ * A signal, so that letting go of the run (releaseRun) is read at once by a
+ * tab that registered nothing: a plain value left liveRun answering 'paused'
+ * for a run the shell no longer held.
+ */
+const [parkedLatch, setParkedLatch] = createSignal<'paused' | null>(null)
 /**
  * The time of a run the shell let go of, by the room it belongs to, until
  * that room brings it back (releaseRun, adoptRun).
@@ -214,13 +229,37 @@ const liveRun = createMemo<'active' | 'paused' | 'idle'>(() => {
   //
   // So parking latches. The latch is only ever consulted while no room is
   // registered, and it is dropped the moment the run's owner is let go of.
-  if (parkedLatch !== null && untrack(runOwner) !== null) return parkedLatch
+  const latch = parkedLatch()
+  if (latch !== null && untrack(runOwner) !== null) return latch
 
   const state = playbackState()
   if (state === 'playing') return 'active'
   if (state === 'paused') return 'paused'
   return 'idle'
 })
+
+/**
+ * The rooms with a run of their own that register no controls (the header,
+ * "A room's own run comes first"). A tab, not a component, is what says so:
+ * nothing of theirs reaches the shell.
+ */
+const ROOMS_THE_SHELL_DOES_NOT_DRIVE: ReadonlySet<ActiveTab> = new Set([
+  TAB_EAR_LAB,
+  TAB_PIANO,
+  TAB_GUITAR,
+])
+
+/**
+ * The room on screen with a run of its own, or null on a tab without one.
+ * Controls first: a room that registered them is the one on screen, whatever
+ * the tab says in the moment between the tab moving and the last room going.
+ */
+const roomWithItsOwnRun = (): ActiveTab | null => {
+  const controlled = nativeRunControls()?.tab
+  if (controlled !== undefined) return controlled
+  const tab = activeTab()
+  return ROOMS_THE_SHELL_DOES_NOT_DRIVE.has(tab) ? tab : null
+}
 
 export const runState = createMemo<RunState>(() => {
   const live = liveRun()
@@ -461,7 +500,7 @@ export function parkRun(): void {
   nativeRunControls()?.park()
   // What the run is once the room that owns it unmounts. Held until the
   // singer comes back to it, or until the owner is let go of.
-  parkedLatch = 'paused'
+  setParkedLatch('paused')
 }
 
 export function pauseRun(): void {
@@ -522,7 +561,7 @@ export function resetRunShell(): void {
   stopClockTimer()
   settled = 'idle'
   idlePending = false
-  parkedLatch = null
+  setParkedLatch(null)
   releasedClocks.clear()
   startedAt = null
   accumulatedMs = 0
@@ -589,7 +628,7 @@ function releaseRun(owner: ActiveTab): void {
   releasedClocks.set(owner, accumulatedMs + running)
   settled = 'idle'
   idlePending = false
-  parkedLatch = null
+  setParkedLatch(null)
   startedAt = null
   accumulatedMs = 0
   stopClockTimer()
@@ -615,7 +654,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
       setLocked(false)
     }
     setTakeOnScreen(false)
-    parkedLatch = null
+    setParkedLatch(null)
     adoptRun(false)
     if (!announcedThisRun) {
       announcedThisRun = true
@@ -636,7 +675,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
   // Settled idle: the run is over. The owner is NOT cleared here — `ended`
   // means the take is still on screen, in the room it happened in, and the
   // effect below lets go of it when the singer leaves.
-  parkedLatch = null
+  setParkedLatch(null)
   holdClock()
   if (previous === 'active' || previous === 'paused') setTakeOnScreen(true)
   setLocked(false)
@@ -655,11 +694,18 @@ function settle(next: LiveRun): void {
 
 createRoot(() => {
   createEffect(
-    on([() => nativeRunControls()?.tab ?? null, liveRun], ([room, live]) => {
+    on([roomWithItsOwnRun, liveRun], ([room, live]) => {
       // A room with a run of its own is on screen, and the run held is
       // another room's: let go of it before reading this room's own.
       const owner = untrack(runOwner)
-      if (room !== null && owner !== null && owner !== room) releaseRun(owner)
+      if (room !== null && owner !== null && owner !== room) {
+        releaseRun(owner)
+        // With no controls on screen, `live` was the parked run's latch,
+        // read before the release. A room the shell does not drive has no
+        // run for it to take up, so this pass ends here; the release clears
+        // the latch, and the next pass reads the tab afresh.
+        if (untrack(nativeRunControls) === null) return
+      }
       if (live !== 'idle') {
         idlePending = false
         settle(live)
@@ -685,7 +731,7 @@ createRoot(() => {
       setTakeOnScreen(false)
       setRunOwner(null)
       setRunLabel('')
-      parkedLatch = null
+      setParkedLatch(null)
     }),
   )
 })

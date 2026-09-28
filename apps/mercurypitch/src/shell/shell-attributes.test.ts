@@ -11,11 +11,11 @@
 
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { TAB_KARAOKE, TAB_PROGRESS } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
 import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
-import { resetRunShell } from './run-shell-store'
+import { parkRun, resetRunShell } from './run-shell-store'
 import { mirrorShellChrome } from './shell-attributes'
 
 let dispose: (() => void) | null = null
@@ -72,5 +72,69 @@ describe('the rail, as an attribute', () => {
     dispose?.()
     dispose = null
     expect(document.documentElement.hasAttribute('data-shell-rail')).toBe(false)
+  })
+})
+
+describe('the session pill, as an attribute', () => {
+  // The pill rides above the rail while a run is parked, over the bottom of
+  // whatever scrolls under it, and a scroller keeps clear of it only if it
+  // knows it is there (mobile-kit.css, shell.css). TestFlight 0.7.1: Storage's
+  // Start fresh, and the account's Sign in on its side, sat under it.
+  it('is on while a run is parked, and gone once the singer is back in its room', () => {
+    const [playing, setPlaying] = createSignal(false)
+    const [paused, setPaused] = createSignal(false)
+    const controls: NativeRunControls = {
+      tab: TAB_KARAOKE,
+      roomLabel: 'Broadway Theater',
+      ownsTransport: true,
+      isPlaying: playing,
+      isPaused: paused,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(() => {
+        setPlaying(false)
+        setPaused(true)
+      }),
+    }
+    unregister = registerRunControls(controls)
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    const root = document.documentElement
+    setPlaying(true)
+    expect(root.hasAttribute('data-shell-pill')).toBe(false)
+
+    parkRun()
+    setActiveTab(TAB_PROGRESS)
+    expect(root.getAttribute('data-shell-pill')).toBe('on')
+
+    setActiveTab(TAB_KARAOKE)
+    expect(root.hasAttribute('data-shell-pill')).toBe(false)
+  })
+
+  it('takes the attribute away with the shell', () => {
+    const controls: NativeRunControls = {
+      tab: TAB_KARAOKE,
+      roomLabel: 'Broadway Theater',
+      isPlaying: () => true,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    }
+    unregister = registerRunControls(controls)
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    setActiveTab(TAB_PROGRESS)
+    expect(document.documentElement.getAttribute('data-shell-pill')).toBe('on')
+
+    dispose?.()
+    dispose = null
+    expect(document.documentElement.hasAttribute('data-shell-pill')).toBe(false)
   })
 })

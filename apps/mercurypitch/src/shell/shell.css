@@ -746,6 +746,13 @@
   padding-bottom: calc(var(--tabbar-total) + 16px);
 }
 
+/* The dock is over this screen, the session pill with it while a run is
+   parked (mobile-kit.css, `data-shell-pill`): Storage's Start fresh sat
+   under the pill with no scroll to lift it out (TestFlight 0.7.1). */
+:root[data-shell-pill='on'] .mp-pushed__body {
+  padding-bottom: calc(var(--tabbar-total) + 16px + var(--touch-target) + 8px);
+}
+
 /* ---------- the developer screen ---------- */
 
 .mp-dev {

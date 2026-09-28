@@ -15,6 +15,7 @@ import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
 import { showNotification } from '@/stores/notifications-store'
 import { PhoneIcon, WarnIcon } from '../icons'
+import { thisDevice } from './device-noun'
 import { SettingsGroup } from './SettingsList'
 
 /** "today", "yesterday", "3 days ago": precision nobody needs is noise. */
@@ -110,7 +111,7 @@ export function DevicesScreen(): JSX.Element {
                     <PhoneIcon />
                   </span>
                   <span class="mp-set-row__label">
-                    {session.current ? 'This phone' : session.label}
+                    {session.current ? thisDevice() : session.label}
                     <span class="mp-set-row__sub">
                       {session.current
                         ? `${session.label}, in use now`

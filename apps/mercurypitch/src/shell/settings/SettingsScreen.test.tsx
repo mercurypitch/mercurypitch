@@ -267,6 +267,32 @@ describe('Settings', () => {
     phone.facts = null
   })
 
+  it('names an iPad an iPad: the group and the row, not "This phone"', () => {
+    // iPadOS asks for desktop sites: a Mac, with a touch screen.
+    const ua = vi
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)',
+      )
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    })
+    phone.facts = { model: 'iPad', system: 'iPadOS 26.0', version: null }
+    try {
+      view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+      const text = view.container.textContent ?? ''
+
+      expect(row('this-phone')?.textContent).toContain('This iPad')
+      expect(text).toContain('This iPad')
+      expect(text).not.toContain('This phone')
+    } finally {
+      ua.mockRestore()
+      Reflect.deleteProperty(navigator, 'maxTouchPoints')
+      phone.facts = null
+    }
+  })
+
   it("points to Sing's own options, and pushes Karaoke's (Rooms)", () => {
     const onPush = vi.fn()
     view = renderShell(() => <SettingsScreen onPush={onPush} />)
