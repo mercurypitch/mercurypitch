@@ -17,7 +17,9 @@
 // which is what the web already can; nothing a request says widens what the
 // app can spend. Whether the account gets the free song is the account's
 // own record, never its token's: an anonymous identity that adds a passkey
-// signs in with the provider "passkey" and is still anonymous.
+// signs in with the provider "passkey" and is still anonymous. It is also
+// its confirmed email's, whose record of the month outlives the account
+// (free-song-email.ts).
 //
 // The app's debit spends only what the app can, so it is computed from the
 // ledger as read and written only on that same ledger (ledger.ts): a
@@ -25,12 +27,15 @@
 // Its row says it is the app's (APP_SEPARATION), and the ledger walk spends
 // such a debit from the subscription's songs, then review access's; the
 // write is only made while they cover it. The month's free song goes first,
-// as it does not carry over: its claim is written in the same transaction as
-// the debit, and only if the debit was. A ledger that keeps changing is
-// answered with "try again" (LedgerBusy), and the main worker does, once.
+// as it does not carry over: its claim, and its email's record, are written
+// in the same transaction as the debit, and only if the debit was. A ledger
+// that keeps changing is answered with "try again" (LedgerBusy), and the
+// main worker does, once.
 
 import type { Env } from './auth'
 import { uvrDebitKey } from './billing-core'
+import type { FreeSongEmail } from './free-song-email'
+import { FREE_SONG_EMAIL_UNCLAIMED, readFreeSongEmail, recordFreeSongEmail, } from './free-song-email'
 import type { Ledger } from './ledger'
 import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readLedger, } from './ledger'
 import type { AppSongs } from './songs-allowance'
@@ -47,15 +52,25 @@ export function spenderOf(request: Request, said?: unknown): Spender {
   return said === 'app' ? 'app' : 'web'
 }
 
+interface FreeSongDue {
+  /** getsFreeSong, and the free song not switched off. */
+  monthly: boolean
+  /** The account's email's record of the month, for an account that gets
+   *  the song, while the Worker has the key (free-song-email.ts). */
+  email: FreeSongEmail | null
+}
+
 /** Whether the account gets the month's free song now (getsFreeSong):
  *  read from the account and its subscription, unless the free song is
- *  switched off. */
+ *  switched off; and its email's record of the month. */
 async function freeSongDue(
   env: Env,
   userId: string,
   nowMs: number,
-): Promise<boolean> {
-  if (env.FREE_MONTHLY_SONG?.trim().toLowerCase() === 'off') return false
+): Promise<FreeSongDue> {
+  if (env.FREE_MONTHLY_SONG?.trim().toLowerCase() === 'off') {
+    return { monthly: false, email: null }
+  }
   const account = await env.DB.prepare(
     `SELECT u.authProvider, u.email, u.emailVerified,
             e.userId IS NOT NULL AS cloud, e.expiresAt AS cloudEndsAt
@@ -71,8 +86,8 @@ async function freeSongDue(
       cloud: number
       cloudEndsAt: string | null
     }>()
-  if (account === null) return false
-  return getsFreeSong({
+  if (account === null) return { monthly: false, email: null }
+  const monthly = getsFreeSong({
     authProvider: account.authProvider,
     email: account.email,
     emailVerified: Number(account.emailVerified),
@@ -81,10 +96,15 @@ async function freeSongDue(
       nowMs,
     ),
   })
+  if (!monthly || account.email === null) return { monthly, email: null }
+  return { monthly, email: await readFreeSongEmail(env, account.email, nowMs) }
 }
 
 export interface AppLedger extends AppSongs {
   ledger: Ledger
+  /** The account's email's record of the month's free song, as a claim
+   *  writes it (free-song-email.ts); null while there is none to write. */
+  email: FreeSongEmail | null
 }
 
 /** The songs the app can spend, and the ledger they were read from. */
@@ -93,11 +113,21 @@ export async function readAppSongs(
   userId: string,
   nowMs: number,
 ): Promise<AppLedger> {
-  const [ledger, monthly] = await Promise.all([
+  const [ledger, due] = await Promise.all([
     readLedger(env, userId),
     freeSongDue(env, userId, nowMs),
   ])
-  return { ...appSongs(ledger.rows, userId, nowMs, monthly), ledger }
+  return {
+    ...appSongs(
+      ledger.rows,
+      userId,
+      nowMs,
+      due.monthly,
+      due.email?.had === true,
+    ),
+    ledger,
+    email: due.email,
+  }
 }
 
 export type AppDebit =
@@ -107,6 +137,32 @@ export type AppDebit =
   | { outcome: 'duplicate'; songs: number; left: number }
   /** The app's songs do not cover it. Nothing was written. */
   | { outcome: 'short'; left: number }
+
+/** What a debit that claims the month's free song does about its email's
+ *  record (free-song-email.ts): writes it, only if the debit row `debitId`
+ *  is written, and asks it of that row. Where the read found no record, the
+ *  row is written only while there is still none: another account's claim
+ *  on the email may have made one since. A record the read found, with the
+ *  song still there, is this account's own, from a claim whose song came
+ *  back. That holds while an email is one account's at a time and never
+ *  changes (users.email is unique, and no route changes it): a route that
+ *  changes an account's email must revisit it. */
+function emailRecordFor(
+  env: Env,
+  songs: AppLedger,
+  free: number,
+  debitId: string,
+): { condition: string; binds: string[]; writes: D1PreparedStatement[] } {
+  const email = free > 0 ? songs.email : null
+  if (email === null) return { condition: '', binds: [], writes: [] }
+  const writes = [recordFreeSongEmail(env.DB, email, debitId)]
+  if (email.had) return { condition: '', binds: [], writes }
+  return {
+    condition: ` AND ${FREE_SONG_EMAIL_UNCLAIMED}`,
+    binds: [email.month, email.code],
+    writes,
+  }
+}
 
 /** Debit a separation's `cost` from the songs the app can spend, the month's
  *  free song first. Idempotent per job: a retried debit is reported, never
@@ -141,11 +197,12 @@ export async function debitAppSongs(
 
     const id = crypto.randomUUID()
     const createdAt = new Date(nowMs).toISOString()
+    const record = emailRecordFor(env, songs, free, id)
     const writes = [
       env.DB.prepare(
         `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
          SELECT ?, ?, ?, ?, ?, ?, ?
-          WHERE ${LEDGER_VERSION} = ?`,
+          WHERE ${LEDGER_VERSION} = ?${record.condition}`,
       ).bind(
         id,
         createdAt,
@@ -156,6 +213,7 @@ export async function debitAppSongs(
         key,
         userId,
         version,
+        ...record.binds,
       ),
     ]
     if (free > 0) {
@@ -178,6 +236,7 @@ export async function debitAppSongs(
         ),
       )
     }
+    writes.push(...record.writes)
     await env.DB.batch(writes)
     const written = await env.DB.prepare(
       'SELECT id FROM creditLedger WHERE idempotencyKey = ?',

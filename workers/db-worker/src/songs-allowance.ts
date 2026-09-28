@@ -483,7 +483,10 @@ export function refundReversedFirst(
 // it paid for, under a key unique to the account, the month and the claim's
 // number in that month: at most one claim stands at a time. A failed
 // separation gives it back with a row of its own, and the next claim that
-// month takes the next number.
+// month takes the next number. A claim also records the account's email for
+// the month, and that record outlives the account (free-song-email.ts): an
+// account that has made no claim of its own that month gets no free song
+// while its email has one.
 
 /** A subscription that has not ended: an entitlement with no end, or one
  *  still to come. */
@@ -530,12 +533,17 @@ export interface FreeSong {
 }
 
 /** The month's free song. `monthly` is whether this singer gets one at all
- *  (getsFreeSong, and the free song not switched off). */
+ *  (getsFreeSong, and the free song not switched off). `emailHad` is whether
+ *  the account's email has a record of the month's free song
+ *  (free-song-email.ts). It counts only while the account has made no claim
+ *  of its own that month: after one, the record is that claim's, and the
+ *  account's own rows say whether the song is spent or came back. */
 export function freeSong(
   rows: readonly LedgerRow[],
   userId: string,
   month: string,
   monthly: boolean,
+  emailHad = false,
 ): FreeSong {
   const prefix = `${FREE_SONG}:${userId}:${month}:`
   const claims = rows.filter(
@@ -548,7 +556,10 @@ export function freeSong(
       .filter((row) => row.reason === FREE_SONG_BACK)
       .map((row) => row.jobRef),
   )
-  const spent = claims.some((claim) => !givenBack.has(claim.jobRef))
+  const spent =
+    claims.length === 0
+      ? emailHad
+      : claims.some((claim) => !givenBack.has(claim.jobRef))
   return {
     left: monthly && !spent ? 1 : 0,
     nextKey: `${prefix}${claims.length}`,
@@ -576,11 +587,12 @@ export function appSongs(
   userId: string,
   nowMs: number,
   monthly: boolean,
+  emailHad = false,
 ): AppSongs {
   const songs = subscriptionSongs(rows)
   const held = Math.max(0, songs.held)
   const review = Math.max(0, songs.review)
-  const free = freeSong(rows, userId, songMonth(nowMs), monthly)
+  const free = freeSong(rows, userId, songMonth(nowMs), monthly, emailHad)
   return {
     held,
     review,

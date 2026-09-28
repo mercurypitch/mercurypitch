@@ -194,6 +194,13 @@ export interface Env {
   /** `off` stops the signed-in singer's free song a month in the native app
    *  (owner, S7 D5). Anything else, or unset, leaves it on (app-songs.ts). */
   FREE_MONTHLY_SONG?: string
+  /** The key of the code the month's free song records of a confirmed email
+   *  (free-song-email.ts): a secret of its own, at least 32 random bytes,
+   *  per environment (`wrangler secret put FREE_SONG_EMAIL_SECRET --env
+   *  ...`). Unset or shorter, the free song is bounded per account only, as
+   *  before, and the log says so once. Rotating it forgets the month's
+   *  records. */
+  FREE_SONG_EMAIL_SECRET?: string
   /** Play review access (review-access.ts): the lower-case hex SHA-256 that
    *  make-review-code.ts prints beside the code. A secret, never a var:
    *  unset, the route answers 501 and grants nothing. */
@@ -3602,6 +3609,10 @@ async function handleRevokeSession(
  *   - reviewAccessGrants, revenuecatSandboxGrants — counts that bound what a
  *     grant may give, with no userId column: a deleted account's grant must
  *     go on counting (review-access.ts, revenuecat-sandbox.ts).
+ *   - freeSongEmailClaims — a keyed code of the email that had the month's
+ *     free song, with no email and no userId column: the month's song stays
+ *     taken when the account goes (free-song-email.ts). The cron deletes a
+ *     row once its month is over.
  *   - mirrorEvents — keyed by an unrelated random clientId that is never
  *     linked to an account, so it isn't reachable from here (it has its own
  *     retention story).

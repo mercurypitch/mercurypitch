@@ -27,6 +27,17 @@ TOTP_KEK=dev-only-totp-kek-change-me
 # nothing could have been sent from this environment either.
 NEWSLETTER_LINK_SECRET=dev-only-newsletter-link-secret-change-me
 
+# Keys the code by which the native app's free song of the month is recorded
+# against a confirmed email (free-song-email.ts), so that a new account on
+# that email gets no second one that month. Its own secret, like the ones
+# above: rotating it forgets only the current month's records. At least 32
+# random bytes, different per environment:
+#   openssl rand -base64 48 | tr -d '\n' | tr '+/' '-_'
+#   pnpm exec wrangler secret put FREE_SONG_EMAIL_SECRET --config workers/db-worker/wrangler.jsonc --env dev
+# With this unset the free song is bounded per account only, and the log says
+# so once.
+FREE_SONG_EMAIL_SECRET=dev-only-free-song-email-secret-change-me
+
 # OAuth 2.0 Client ID (Web application) from Google Cloud Console.
 GOOGLE_CLIENT_ID=144271507987-du7ue2880rjbn83felsak0j3fefukkuq.apps.googleusercontent.com
 
