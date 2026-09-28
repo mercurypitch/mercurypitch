@@ -1,0 +1,113 @@
+/*
+ * The account deletion page (delete-account.html): a document to read, not a
+ * room. It carries no script, so everything here has to work as plain HTML.
+ *
+ * Dark in both themes, on the same ground and text colours as the entry
+ * prelude and the 404, so it reads as part of the site. Left-aligned and
+ * narrow, because it is instructions and lists rather than a claim.
+ */
+
+body {
+  margin: 0;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  line-height: 1.6;
+}
+
+.delete-account {
+  box-sizing: border-box;
+  width: min(42rem, 100%);
+  margin: 0 auto;
+  padding: 2.5rem 1rem 4rem;
+}
+
+.delete-account__lockup {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  color: #e6edf3;
+  font-family: Outfit, Inter, system-ui, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+.delete-account__lockup > span > span {
+  background: linear-gradient(120deg, #58a6ff 0%, #2dd4bf 50%, #bc8cff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.delete-account h1 {
+  margin: 2rem 0 0.75rem;
+  color: #f0f6fc;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.25;
+}
+
+.delete-account h2 {
+  margin: 2.25rem 0 0.5rem;
+  color: #f0f6fc;
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+
+.delete-account p,
+.delete-account ul,
+.delete-account ol {
+  margin: 0 0 0.75rem;
+}
+
+.delete-account ul,
+.delete-account ol {
+  padding-left: 1.25rem;
+}
+
+.delete-account li + li {
+  margin-top: 0.5rem;
+}
+
+.delete-account__lead {
+  color: #e6edf3;
+  font-size: 1.0625rem;
+}
+
+.delete-account strong {
+  color: #e6edf3;
+}
+
+.delete-account kbd {
+  padding: 0.05rem 0.35rem;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  background: #161b22;
+  color: #e6edf3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.delete-account a {
+  color: #7dd3c8;
+}
+.delete-account a:focus-visible {
+  outline: 2px solid #7dd3c8;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.delete-account__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #30363d;
+  font-size: 0.9375rem;
+}

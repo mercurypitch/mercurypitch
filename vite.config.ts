@@ -63,6 +63,13 @@ try {
 // (public/_redirects handles prod).
 const TONE_DEAF_PATH = '/tone-deaf-test'
 
+// The account deletion page (delete-account.html): a plain document with no
+// script, like the 404, that Google Play links as the place to ask for
+// deletion without the app. Production serves it at the asset layer through
+// html_handling; the dev and preview servers need the rewrite below, and the
+// service worker must leave it alone (STANDALONE_DOCUMENT_PATHS).
+const DELETE_ACCOUNT_PATH = '/delete-account'
+
 // Clean path -> generated document, straight off the model in
 // src/seo/entry-pages.ts. Production does this at Cloudflare's asset layer
 // (html_handling) plus the alias handling in src/worker.ts; the dev and
@@ -108,6 +115,9 @@ function standaloneEntryRewritePlugin() {
           res.setHeader('Location', `/mirror${search}`)
           res.end()
           return
+        }
+        if (path === DELETE_ACCOUNT_PATH) {
+          req.url = `${DELETE_ACCOUNT_PATH}.html${search}`
         }
         const entry = ENTRY_REWRITES.get(path)
         if (entry !== undefined) req.url = entry
@@ -406,6 +416,8 @@ export default defineConfig(({ command, mode }) => {
           // than a public/ file so it shares the entry-prelude stylesheet
           // instead of carrying its own copy.
           notFound: resolve(__dirname, '404.html'),
+          // Plain, like the 404, but answered with a 200 at its clean path.
+          deleteAccount: resolve(__dirname, 'delete-account.html'),
         },
         output: {
           manualChunks(id) {

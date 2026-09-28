@@ -141,6 +141,10 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/vocal-remover.html',
   '/which-singer-has-my-vocal-range',
   '/which-singer-has-my-vocal-range.html',
+  // The account deletion page. No script and no app, so the shell in its
+  // place would be the studio where somebody came to delete their account.
+  '/delete-account',
+  '/delete-account.html',
 ])
 
 /**

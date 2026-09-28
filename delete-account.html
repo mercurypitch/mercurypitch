@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Delete your account | MercuryPitch</title>
+    <meta
+      name="description"
+      content="How to delete your MercuryPitch account in the app, on the web, or by writing to us. What deleting removes, and what is kept and for how long."
+    />
+    <link rel="canonical" href="https://mercurypitch.com/delete-account" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#0d1117" />
+    <!-- A plain document, like 404.html: no #root and no script. It has to
+         read in full signed out, with nothing booted, because the Play
+         Console links it as the place to ask for deletion without the app.
+         Every claim below is what the Worker's DELETE /api/auth/me does
+         (handleDeleteMe and USER_OWNED_TABLES in workers/db-worker/src/auth.ts);
+         change the page when that changes. -->
+    <link rel="stylesheet" href="/src/styles/delete-account.css" />
+  </head>
+  <body>
+    <main class="delete-account">
+      <a class="delete-account__lockup" href="/">
+        <img src="/brand-mark.svg" width="40" height="40" alt="" />
+        <span>Mercury<span>Pitch</span></span>
+      </a>
+
+      <h1>Delete your MercuryPitch account</h1>
+      <p class="delete-account__lead">
+        You can delete your account yourself, in the app or on this website. It
+        happens straight away and cannot be undone.
+      </p>
+
+      <section id="in-the-app" aria-labelledby="in-the-app-title">
+        <h2 id="in-the-app-title">In the app</h2>
+        <p>
+          Open Settings. Under your account, tap Delete account. The app shows
+          what goes before it asks you to confirm.
+        </p>
+      </section>
+
+      <section id="on-the-web" aria-labelledby="on-the-web-title">
+        <h2 id="on-the-web-title">On the web</h2>
+        <ol>
+          <li>
+            <a href="/#/settings/account" data-testid="delete-account-settings"
+              >Open Settings, Account</a
+            >
+            on mercurypitch.com. On a first visit a welcome screen opens on top:
+            choose Skip.
+          </li>
+          <li>
+            If you are not signed in, choose Sign in or create account, and sign
+            in the way you do in the app.
+          </li>
+          <li>Check that the account shown is the one you want to delete.</li>
+          <li>
+            Open Danger Zone at the bottom, choose Delete, type
+            <kbd>delete</kbd> and choose Delete forever.
+          </li>
+        </ol>
+        <p>
+          Made your account with Sign in with Apple? The website has no Apple
+          sign-in, so delete it in the app on your iPhone, or write to us.
+        </p>
+      </section>
+
+      <section id="cannot-sign-in" aria-labelledby="cannot-sign-in-title">
+        <h2 id="cannot-sign-in-title">If you cannot sign in</h2>
+        <p>
+          <a
+            href="https://about.mercurypitch.com/contact/?topic=privacy&amp;message=Please+delete+my+MercuryPitch+account.+The+email+address+on+it+is%3A+"
+            data-testid="delete-account-contact"
+            >Write to us</a
+          >
+          with the Privacy topic chosen, and give the email address on the
+          account. We confirm the request with that address before we delete the
+          account.
+        </p>
+      </section>
+
+      <section id="removed" aria-labelledby="removed-title">
+        <h2 id="removed-title">What deleting removes</h2>
+        <p>All of this is erased from our servers, in one step:</p>
+        <ul>
+          <li>
+            Your account and every way of signing in to it: email address,
+            password, passkeys, two-step codes, recovery codes, and the devices
+            you are signed in on.
+          </li>
+          <li>
+            Your profile, name and settings, and who you follow and who follows
+            you.
+          </li>
+          <li>
+            Your practice history, scores, voiceprints, badges, challenge and
+            league progress, and leaderboard entries.
+          </li>
+          <li>
+            The list of songs in your library. The song files themselves were
+            never stored with your account.
+          </li>
+          <li>Melodies and sessions you shared, and your survey answers.</li>
+          <li>
+            Unspent credits, supporter status and redeemed promo codes. Credits
+            are not refunded.
+          </li>
+          <li>
+            Your newsletter choice, and the record of what was sent to you.
+          </li>
+          <li>
+            If you connected Google Drive, our key to it. We also ask Google to
+            end MercuryPitch's access.
+          </li>
+          <li>
+            If you signed up with Sign in with Apple, our link to your Apple
+            account. We also ask Apple to revoke it, which ends Sign in with
+            Apple for MercuryPitch.
+          </li>
+        </ul>
+      </section>
+
+      <section id="kept" aria-labelledby="kept-title">
+        <h2 id="kept-title">What is kept, and for how long</h2>
+        <ul>
+          <li>
+            <strong>On your device.</strong> Takes, songs and practice saved in
+            your browser or on your phone stay there, because they were never on
+            our servers. Clear them yourself: on the web in Settings, Account,
+            Danger Zone; in the app in Settings, Storage.
+          </li>
+          <li>
+            <strong>Payments.</strong> If you bought credits or donated, Stripe,
+            our payment processor, keeps its own record of the payment under its
+            own record-keeping rules. We delete our copy and our link to it.
+          </li>
+          <li>
+            <strong>Share links.</strong> A short share link keeps working for
+            up to 60 days from when it was made, and the preview image of a
+            shared result for up to 30. They are not stored with your account,
+            so they run out on that schedule.
+          </li>
+          <li>
+            <strong>Backups.</strong> Our database keeps a restore history for
+            30 days, and one backup copy that is replaced each time we release
+            an update. Your deleted records stay in them until they age out or
+            are replaced.
+          </li>
+          <li>
+            <strong>Records that no longer name you.</strong> Our log of changes
+            to supporter perks keeps each change, with your account and email
+            address removed.
+          </li>
+        </ul>
+      </section>
+
+      <nav class="delete-account__links" aria-label="More">
+        <a href="/">MercuryPitch</a>
+        <a href="https://about.mercurypitch.com/privacy">Privacy notice</a>
+        <a href="https://about.mercurypitch.com/terms">Terms of use</a>
+        <a href="https://about.mercurypitch.com/contact/">Contact</a>
+      </nav>
+    </main>
+  </body>
+</html>
