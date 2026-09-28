@@ -1082,6 +1082,12 @@ input:checked + .settings-slider:before {
   height: 100%;
 }
 
+/* No room header over Piano under the native shell: the panel starts at the
+   top of the screen, and its song bar begins below the status bar. */
+:root[data-native-shell] #falling-notes-panel {
+  padding-top: var(--safe-top, 0px);
+}
+
 #falling-notes-canvas-container {
   flex: 1;
   min-height: 0;

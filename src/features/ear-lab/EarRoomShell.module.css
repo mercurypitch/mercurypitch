@@ -950,13 +950,29 @@
 /* The native rail is reserved at every width (mobile-kit.css), not only
    under the phone rule above: a phone on its side is 844 to 932 px wide,
    and there the rail sat over the bridge and over the rack's last rows
-   (device round 4). */
+   (device round 4).
+
+   And the status bar at the top. The shell draws no header over the Ear
+   Lab, so the bench starts at the top of the screen, and the chips sat
+   under the clock and the battery where nothing could reach them
+   (TestFlight 0.7.1). The room's picture stays under the bar: it is
+   positioned against this box's padding edge, so only the bench moves. */
 :global(:root[data-native-shell]) .shell {
+  padding-top: var(--safe-top, 0px);
   padding-bottom: var(--tabbar-total);
 }
 
 :global(:root[data-native-shell]) .rack {
   bottom: var(--tabbar-total);
+}
+
+/* A side panel from the top of the bench where the bench is wide (an iPad),
+   and that top is the screen's: its heading and Close sat under the status
+   bar. The compact rack is a sheet from the bottom and keeps its own top. */
+@container (width > 860px) {
+  :global(:root[data-native-shell]) .rack {
+    top: var(--safe-top, 0px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

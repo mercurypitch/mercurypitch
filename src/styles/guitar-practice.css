@@ -17,6 +17,13 @@
   overflow-y: auto;
 }
 
+/* The shell draws no room header over the Guitar tab, so the panel starts at
+   the top of the screen, and its song bar sat under the status bar's clock
+   and battery (TestFlight 0.7.1). It starts below it. */
+:root[data-native-shell] #guitar-practice-panel {
+  padding-top: calc(var(--spacing-md) + var(--safe-top, 0px));
+}
+
 #guitar-fretboard-container {
   flex: 1;
   min-height: 300px;

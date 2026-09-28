@@ -11,6 +11,13 @@
   --scrubber-height: 3px;
 }
 
+/* The shell draws no room header over the Piano tab, so on a phone the
+   stage starts at the top of the screen, and its chips sat under the status
+   bar's clock and battery (TestFlight 0.7.1). They start below it. */
+:global(:root[data-native-shell]) .stage {
+  padding-top: var(--safe-top, 0px);
+}
+
 .canvasWrap {
   position: relative;
   flex: 1;

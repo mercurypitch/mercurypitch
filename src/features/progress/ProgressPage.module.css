@@ -50,6 +50,14 @@
     sans-serif;
 }
 
+/* The native shell draws no header over Progress, so the page starts at the
+   top of the screen, and on a phone that is under the status bar: the title
+   sat under the clock and the battery (TestFlight 0.7.1). The ground stays
+   under the bar; what is drawn on it starts below. */
+:global(:root[data-native-shell]) .page {
+  padding-top: var(--safe-top, 0px);
+}
+
 .page *,
 .page *::before,
 .page *::after {
