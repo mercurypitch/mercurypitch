@@ -1576,6 +1576,13 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Rule:** inspect the failing response and hydrate the exact runtime inventory before regenerating art; private source symlinks do not supply public runtime deliveries. The gallery guard names unresolved pointers, while native builds verify their inventory.
 **See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/scripts/native-games.ts`.
 
+### Assert the loaded asset tier in visual comparisons
+
+**Symptom:** changing textures, shadows and glass geometry appeared to leave a platform defect unchanged.
+**Cause:** the comparison intercepted the desktop GLB while the real renderer requested its mobile variant; none of the proposed changes reached the scene.
+**Rule:** record the actual request URL, served hash and override hit count, and fail the comparison if its candidate was not loaded. Compare the same camera and tier before attributing a defect to the donor mesh. Keep invalid captures labelled as non-evidence.
+**See:** `packages/glass-game/src/render/asset-profile-bundles.ts`, `packages/glass-game/src/render/asset-kit.ts`.
+
 ### Inspect the opened passage at the actual floor datum
 
 **Symptom:** a shattered doorway would let Merc walk through a visible 30-centimetre stone sill.

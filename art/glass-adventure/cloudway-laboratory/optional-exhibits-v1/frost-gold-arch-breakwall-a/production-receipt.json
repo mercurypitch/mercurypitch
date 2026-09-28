@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "assetId": "frost-gold-arch-breakwall-a-v1",
-  "status": "runtime integration candidate; actual-game capture pending",
+  "status": "runtime-integrated; accepted tablet-size viewport on desktop hardware for intact, shatter, open and restored proof; phone evidence is numerical fit only",
   "rootNode": "Cloudway_FrostGoldArchBreakwallA_V1",
   "roles": {
     "frame": "frost_arch_frame",
@@ -42,6 +42,22 @@
     "decorativeTrimMinimumY": -0.01131371222436428,
     "physics": "grounded post boxes persist; decorative trim and unreachable crown add no collision"
   },
+  "actualGameProof": {
+    "status": "accepted tablet-size viewport capture on desktop hardware",
+    "viewportCssPixels": [800, 1100],
+    "renderer": "ANGLE AMD Radeon RX 9070 XT (radeonsi gfx1201 ACO), OpenGL 4.6",
+    "route": "cloudway-crystal-promenade-mechanics-preview",
+    "states": ["intact", "shattering", "open", "restored"],
+    "receipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/runtime-audition/proofs/integrated-mechanics-preview/arch-playwright/glass-adventure-frost-prom-c383f-es-its-wall-in-third-person-chromium-adventure/hardware-receipt.json",
+      "bytes": 1564,
+      "sha256": "5f03391b6afa27d96bc68eeac5c4f0ea9cd47775e3e8d50d4b32d1cba66f2000"
+    },
+    "phone": {
+      "viewportCssPixels": [390, 844],
+      "status": "numerical-fit-only; the attempted phone screenshot timed out and is not claimed as visual evidence"
+    }
+  },
   "runtimes": [
     {
       "tier": "desktop",
@@ -75,8 +91,8 @@
     },
     "fullReceipt": {
       "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/frost-gold-arch-breakwall-a/production-receipt.json",
-      "bytes": 33514,
-      "sha256": "6d57d1e29b4aba7b5a55771b0d6c56a2dbf125c3afd0555e7e9deb7d3755b37e"
+      "bytes": 35242,
+      "sha256": "a50b4e132bda87ae2a9062ae775f77160c42f7dddd21f29079eccd7fe56fdce9"
     },
     "policy": "dense donor, packed masters, textures and Blender proofs remain unchanged in the creative archive"
   }

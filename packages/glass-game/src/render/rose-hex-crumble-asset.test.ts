@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { BufferGeometry, Mesh as MeshType, MeshStandardMaterial, } from 'three'
-import { FrontSide, MeshPhysicalMaterial, Texture, Vector3 } from 'three'
+import { Box3, FrontSide, MeshPhysicalMaterial, Texture, Vector3 } from 'three'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it, vi } from 'vitest'
@@ -21,16 +21,18 @@ const deliveries = [
   {
     id: CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleDesktop,
     tier: 'Desktop',
-    bytes: 6_296_776,
-    sha256: '6fb888df6a94cd0f7a1fbd69915b16d0d695acab9aaf6f20f63520a90bba69c1',
+    bytes: 6_471_632,
+    sha256: '9b90b91d5133f186dd9ec531f076cb6787cdc1e3e97a770937dea2e3940e5b61',
   },
   {
     id: CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleMobile,
     tier: 'Mobile',
-    bytes: 2_025_056,
-    sha256: '9a35a2ede553ea11f4d48e056973e6eb8c33349c528b95ad63d38fb61932bc2f',
+    bytes: 2_073_500,
+    sha256: '6e12e9a87b989ac0008fee0cc634e13ef083236291669d2bd5ac1ec755301afd',
   },
 ] as const
+
+const CLOSED_VOLUME_TOP_INSET = 0.006
 
 const platform = CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW.platforms.find(
   (candidate) => candidate.id === 'preview-rose-step',
@@ -130,6 +132,21 @@ describe.each(deliveries)('shipped Rose Hex $tier tier', (delivery) => {
     expect(
       (intactVolume.material as MeshPhysicalMaterial).transmission,
     ).toBeGreaterThan(0.9)
+    scene.updateMatrixWorld(true)
+    const volumeBounds = new Box3().setFromObject(intactVolume)
+    expect(volumeBounds.max.y).toBeCloseTo(-CLOSED_VOLUME_TOP_INSET, 5)
+    expect(volumeBounds.min.y).toBeCloseTo(
+      -ROSE_HEX_CRUMBLE_CONTACT.thickness,
+      5,
+    )
+    const contract = JSON.parse(
+      root.userData.asset_contract_json as string,
+    ) as {
+      optics: { closedVolumeTopInsetMetres: number }
+    }
+    expect(contract.optics.closedVolumeTopInsetMetres).toBe(
+      CLOSED_VOLUME_TOP_INSET,
+    )
     assertClosedOutward(intactVolume.geometry)
     for (const shard of validated.shards) {
       expect((shard as MeshType).isMesh).toBe(true)
