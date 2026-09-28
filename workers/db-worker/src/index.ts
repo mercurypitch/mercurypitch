@@ -27,6 +27,7 @@ import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
+import { sweepFreeSongEmails } from './free-song-email'
 import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendRemove, handleFriendRequest, handleFriendRequests, } from './friends'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
@@ -2271,7 +2272,13 @@ export default {
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    await reconcileBilling(env)
+    // Stripe out of reach makes reconcileBilling throw, and it has no catch
+    // of its own.
+    try {
+      await reconcileBilling(env)
+    } catch (error) {
+      console.error('[cron] billing reconcile failed:', error)
+    }
     await runWeeklyLeagueCut(env)
     // Nothing removes an authSessions row except an explicit sign-out, so
     // without this the table grows by a row per sign-in forever and the
@@ -2282,6 +2289,13 @@ export default {
       await sweepExpiredSessions(env.DB, TOKEN_TTL_SECONDS)
     } catch (error) {
       console.error('[cron] session sweep failed:', error)
+    }
+    // An email's record of the month's free song is for that month only, so
+    // its code is kept a month at most (free-song-email.ts).
+    try {
+      await sweepFreeSongEmails(env.DB, Date.now())
+    } catch (error) {
+      console.error('[cron] free song email sweep failed:', error)
     }
   },
 }
