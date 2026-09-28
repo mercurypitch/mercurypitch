@@ -40,7 +40,7 @@ export class LedgerBusy extends Error {
 
 export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   const { results } = await env.DB.prepare(
-    `SELECT rowid AS seq, delta, reason, jobRef, idempotencyKey
+    `SELECT rowid AS seq, createdAt, delta, reason, jobRef, idempotencyKey
        FROM creditLedger WHERE userId = ? ORDER BY rowid`,
   )
     .bind(userId)

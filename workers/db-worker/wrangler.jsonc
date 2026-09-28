@@ -265,6 +265,10 @@
         "PASSKEY_RP_ID": "mercurypitch.com",
         // Only real store purchases grant songs on prod: a SANDBOX event
         // (TestFlight, a license tester) is acknowledged and changes nothing.
+        // REVENUECAT_SANDBOX_ON_PRODUCTION is deliberately not set here: it
+        // is a secret, put on for a store review and deleted after, in the
+        // order src/revenuecat-sandbox.ts and
+        // docs/plans/mobile-native/store-review-purchases.md give.
         "REVENUECAT_ENVIRONMENT": "PRODUCTION",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what

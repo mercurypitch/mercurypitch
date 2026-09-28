@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LedgerRow } from './songs-allowance'
-import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, REVIEW_ACCESS, refundReversal, refundReversedFirst, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
+import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, periodsFor, REVIEW_ACCESS, refundReversal, refundReversedFirst, sandboxHeld, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
 
 const NOW = Date.parse('2026-09-27T12:00:00.000Z')
 
@@ -407,6 +407,119 @@ describe('a refund the store reversed', () => {
     expect(
       refundReversedFirst([grant, sung, clawback, restore(15)], 'rc:purchase'),
     ).toBe(true)
+  })
+})
+
+describe('sandbox periods, on production while a store review runs', () => {
+  // revenuecat-sandbox.ts: a sandbox purchase's period is a period like any
+  // other to the walk and the cap, marked as the sandbox's, and each kind of
+  // event touches only its own kind of period.
+  const paid: LedgerRow = {
+    delta: 20,
+    reason: 'subscription',
+    jobRef: 'txn-paid',
+    idempotencyKey: 'rc:paid',
+  }
+  const sandbox: LedgerRow = {
+    delta: 20,
+    reason: 'subscription-sandbox',
+    jobRef: 'txn-sandbox',
+    idempotencyKey: 'rc:sandbox',
+  }
+  const movedIn: LedgerRow = {
+    delta: 10,
+    reason: 'subscription-sandbox-transfer-in',
+    jobRef: 'device',
+    idempotencyKey: 'rc:transfer:in-sandbox-songs:device',
+  }
+  const refundOf = (period: string, songs: number, key: string): LedgerRow => ({
+    delta: -songs,
+    reason: 'subscription-refund',
+    jobRef: period,
+    idempotencyKey: key,
+  })
+
+  it('are periods the cap counts, marked as the sandbox’s', () => {
+    const songs = subscriptionSongs([paid, sandbox, movedIn])
+    expect(songs.held).toBe(50)
+    expect(
+      songs.periods.map(({ key, transaction, sandbox: isSandbox }) => ({
+        key,
+        transaction,
+        sandbox: isSandbox,
+      })),
+    ).toEqual([
+      { key: 'rc:paid', transaction: 'txn-paid', sandbox: false },
+      { key: 'rc:sandbox', transaction: 'txn-sandbox', sandbox: true },
+      {
+        key: 'rc:transfer:in-sandbox-songs:device',
+        transaction: null,
+        sandbox: true,
+      },
+    ])
+    expect(periodGrant(songs.held, { perPeriod: 20, cap: 50 })).toBe(0)
+  })
+
+  it('are the only periods a sandbox event touches, and never a paid one’s', () => {
+    const { periods } = subscriptionSongs([paid, sandbox, movedIn])
+    expect(periodsFor(periods, true).map((period) => period.key)).toEqual([
+      'rc:sandbox',
+      'rc:transfer:in-sandbox-songs:device',
+    ])
+    expect(periodsFor(periods, false).map((period) => period.key)).toEqual([
+      'rc:paid',
+    ])
+  })
+
+  it('owe a sandbox reversal only what a sandbox refund took', () => {
+    const rows = [paid, refundOf('rc:paid', 20, 'rc:r1:clawback'), sandbox]
+    expect(refundReversal(rows, null, true)).toEqual({
+      period: 'rc:sandbox',
+      songs: 0,
+    })
+    expect(refundReversal(rows, 'txn-paid', true)).toEqual({
+      period: 'rc:sandbox',
+      songs: 0,
+    })
+    expect(refundReversal(rows, null, false)).toEqual({
+      period: 'rc:paid',
+      songs: 20,
+    })
+  })
+
+  it('are all a sandbox transfer moves out, the oldest first', () => {
+    const bought: LedgerRow = {
+      delta: 5,
+      reason: 'purchase',
+      jobRef: null,
+      idempotencyKey: 'bought',
+    }
+    const out: LedgerRow = {
+      delta: -25,
+      reason: 'subscription-sandbox-transfer-out',
+      jobRef: 'account',
+      idempotencyKey: 'rc:transfer:out-sandbox-songs:device',
+    }
+    const songs = subscriptionSongs([paid, sandbox, bought, movedIn, out])
+    expect(songs.held).toBe(25)
+    expect(songs.periods.map((period) => period.left)).toEqual([20, 0, 5])
+    expect(sandboxHeld(songs.periods)).toBe(5)
+  })
+
+  it('owe a paid reversal nothing a sandbox refund took', () => {
+    const rows = [paid, sandbox, refundOf('rc:sandbox', 20, 'rc:r2:clawback')]
+    expect(refundReversal(rows, null, false)).toEqual({
+      period: 'rc:paid',
+      songs: 0,
+    })
+    expect(refundReversal(rows, 'txn-sandbox', false)).toEqual({
+      period: 'rc:paid',
+      songs: 0,
+    })
+    expect(refundReversal(rows, null, true)).toEqual({
+      period: 'rc:sandbox',
+      songs: 20,
+    })
   })
 })
 

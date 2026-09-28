@@ -16,14 +16,12 @@
 
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import type { SQLInputValue } from 'node:sqlite'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reviewUnlockDigestInput } from '../../../packages/purchase-kit/src/review-unlock'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
-import type { SqliteD1Statement } from './sqlite-d1'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, interleaved, SqliteD1Database } from './sqlite-d1'
 
 const WEBHOOK_AUTH = 'Bearer review-access-webhook-secret'
 const SERVICE_KEY = 'review-access-service-key'
@@ -118,41 +116,6 @@ async function appSongsLeft(who: Phone): Promise<unknown> {
   })
   expect(response.status).toBe(200)
   return ((await response.json()) as { songs: { left: unknown } }).songs.left
-}
-
-/** D1 as two requests at once meet it: every query waits a few
- *  milliseconds for its turn, so their reads and writes interleave, and only
- *  a check made in the same statement or batch as its write holds. */
-function interleaved(db: SqliteD1Database): D1Database {
-  const turn = (): Promise<void> =>
-    new Promise((resolve) => {
-      setTimeout(resolve, 5)
-    })
-  const statement = (inner: SqliteD1Statement): SqliteD1Statement =>
-    new Proxy(inner, {
-      get(target, property, receiver) {
-        if (property === 'bind') {
-          return (...values: SQLInputValue[]) =>
-            statement(target.bind(...values))
-        }
-        const value: unknown = Reflect.get(target, property, receiver)
-        if (property === 'first' || property === 'all' || property === 'run') {
-          const query = value as (...args: unknown[]) => Promise<unknown>
-          return async (...args: unknown[]) => {
-            await turn()
-            return query.apply(target, args)
-          }
-        }
-        return value
-      },
-    })
-  return {
-    prepare: (sql: string) => statement(db.prepare(sql)),
-    batch: async (statements: SqliteD1Statement[]) => {
-      await turn()
-      return db.batch(statements)
-    },
-  } as unknown as D1Database
 }
 
 /** The GPU tier at one credit a song, as dev prices it. */
