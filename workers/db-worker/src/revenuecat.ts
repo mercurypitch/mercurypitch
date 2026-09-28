@@ -28,6 +28,12 @@
 //                              a singer who subscribed before signing in to an
 //                              account they already had. A real account keeps
 //                              its own credits: they may have been bought.
+//   REFUND_REVERSED            Apple took back a refund it had granted (App
+//                              Store only): the songs the refund took go back
+//                              to their period, in full, and the entitlement
+//                              runs to the period's end again. Never more than
+//                              the refund took, so a second reversal of one
+//                              refund gives back nothing.
 // Everything else is acknowledged without action.
 //
 // Every event names its store environment. Only the one this deployment is
@@ -44,8 +50,8 @@
 
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
-import type { LedgerRow } from './songs-allowance'
-import { periodGrant, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, subscriptionSongs, } from './songs-allowance'
+import { readLedger, writeOnLedger } from './ledger'
+import { periodGrant, refundReversal, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, SUBSCRIPTION_REFUND_REVERSED, subscriptionSongs, } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -71,6 +77,7 @@ interface Outcome {
   granted?: number
   moved?: number
   clawedBack?: number
+  restored?: number
 }
 
 const RC_ANONYMOUS_PREFIX = '$RCAnonymousID:'
@@ -178,73 +185,6 @@ async function upsertEntitlement(
     .run()
 }
 
-interface Ledger {
-  rows: LedgerRow[]
-  /** What a write checks the ledger still is: its rows, its last row and its
-   *  balance. */
-  version: string
-}
-
-/** The same fingerprint as Ledger.version, taken by the write itself. */
-const LEDGER_VERSION = `(SELECT COUNT(*) || ':' || COALESCE(MAX(rowid), 0) || ':' || COALESCE(SUM(delta), 0)
-    FROM creditLedger WHERE userId = ?)`
-
-/** Reads before a write that loses to a concurrent one, before giving up
- *  and letting RevenueCat deliver the event again. */
-const LEDGER_ATTEMPTS = 5
-
-async function readLedger(env: Env, userId: string): Promise<Ledger> {
-  const { results } = await env.DB.prepare(
-    `SELECT rowid AS seq, delta, reason, jobRef, idempotencyKey
-       FROM creditLedger WHERE userId = ? ORDER BY rowid`,
-  )
-    .bind(userId)
-    .all<LedgerRow & { seq: number }>()
-  const balance = results.reduce((sum, row) => sum + Number(row.delta), 0)
-  const last = results.length === 0 ? 0 : results[results.length - 1].seq
-  return { rows: results, version: `${results.length}:${last}:${balance}` }
-}
-
-/** Write the row `key` names, as `rowFor` computes it from the ledger as
- *  read, only if the ledger is still what was read; else read it again.
- *  Returns the row's delta, also when an earlier delivery wrote it. */
-async function writeOnLedger(
-  env: Env,
-  userId: string,
-  key: string,
-  reason: string,
-  rowFor: (ledger: Ledger) => { delta: number; jobRef: string | null },
-): Promise<number> {
-  for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
-    const ledger = await readLedger(env, userId)
-    const { delta, jobRef } = rowFor(ledger)
-    await env.DB.prepare(
-      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-       SELECT ?, ?, ?, ?, ?, ?, ?
-        WHERE ${LEDGER_VERSION} = ?`,
-    )
-      .bind(
-        crypto.randomUUID(),
-        new Date().toISOString(),
-        userId,
-        delta,
-        reason,
-        jobRef,
-        key,
-        userId,
-        ledger.version,
-      )
-      .run()
-    const row = await env.DB.prepare(
-      'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
-    )
-      .bind(key)
-      .first<{ delta: number }>()
-    if (row !== null) return row.delta
-  }
-  throw new Error(`${key}: the ledger kept changing under the write`)
-}
-
 /** One period's songs, topping the subscription's songs up to the cap.
  *  Bought, promo and testing credits never count (owner, 28 Sep). The row
  *  names the store transaction the period was bought in, which a refund
@@ -293,6 +233,28 @@ async function clawBack(
     },
   )
   return -taken
+}
+
+/** A reversed refund: give back what the refund took from its period, less
+ *  anything a reversal gave back already (songs-allowance.ts,
+ *  refundReversal). In full, even past the rollover cap: they were the
+ *  singer's before the refund, and the cap only limits what a period grants.
+ *  Returns the songs given back. */
+async function restoreRefund(
+  env: Env,
+  userId: string,
+  event: RevenueCatEvent,
+): Promise<number> {
+  return writeOnLedger(
+    env,
+    userId,
+    `rc:${String(event.id)}:restore`,
+    SUBSCRIPTION_REFUND_REVERSED,
+    (ledger) => {
+      const owed = refundReversal(ledger.rows, text(event.transaction_id))
+      return { delta: owed.songs, jobRef: owed.period }
+    },
+  )
 }
 
 /** Move an anonymous identity's songs to the account, in one transaction:
@@ -385,6 +347,7 @@ async function applyEvent(
     type !== 'INITIAL_PURCHASE' &&
     type !== 'RENEWAL' &&
     type !== 'EXPIRATION' &&
+    type !== 'REFUND_REVERSED' &&
     !refund
   ) {
     return { ignored: type }
@@ -420,6 +383,23 @@ async function applyEvent(
       .bind(now, now, user.id, SONGS_ENTITLEMENT, now)
       .run()
     return { clawedBack: await clawBack(env, user.id, event) }
+  }
+
+  if (type === 'REFUND_REVERSED') {
+    const restored = await restoreRefund(env, user.id, event)
+    // The period runs to its end again. Without an end in the event, the
+    // entitlement is left as the refund left it: an open-ended one would
+    // outlast the period it restores.
+    const end = periodEnd(event)
+    if (end !== null) {
+      await upsertEntitlement(
+        env,
+        user.id,
+        `revenuecat:${text(event.product_id) ?? 'unknown'}`,
+        end,
+      )
+    }
+    return { restored }
   }
 
   const productId = text(event.product_id)
