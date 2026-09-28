@@ -1,6 +1,6 @@
 // Adventure route boundary tests — release builds cannot enter a preview level around campaign locks.
-import type {LevelDefinition} from '@irchiinnuss/glass-game';
-import { GLASSWORKS  } from '@irchiinnuss/glass-game'
+import type { LevelDefinition } from '@irchiinnuss/glass-game'
+import { GLASSWORKS } from '@irchiinnuss/glass-game'
 import { render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BuildInfo } from '@/build-info'
