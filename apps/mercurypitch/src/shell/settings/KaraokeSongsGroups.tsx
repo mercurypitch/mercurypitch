@@ -8,8 +8,10 @@
 // on this phone (how many, their size, Remove imported songs after asking).
 // The status and the songs left are what /me last said; Manage and Restore
 // go to the store through the shell (karaoke-subscription.ts), and Restore
-// says "not available yet" until the store is real. The examples are part
-// of the app and stay.
+// says "not available yet" where the build sells nothing. A restore is said
+// at once; the songs follow when the store's word reaches the server
+// (awaitSubscription keeps asking for a while). The examples are part of
+// the app and stay.
 //
 // Reached only through KaraokeSettingsScreen's stand-in, which a store build
 // folds away with everything this imports.
@@ -17,7 +19,7 @@
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { importedSongs, removeAllImportedSongs, } from '@/features/karaoke-room/karaoke-imported-songs'
-import { karaokeSongs, refreshKaraokeSongs, restoreNote, songsOptionRow, subscriptionStatusLine, } from '@/features/karaoke-room/karaoke-songs'
+import { awaitSubscription, karaokeSongs, refreshKaraokeSongs, restoreNote, songsOptionRow, subscriptionStatusLine, } from '@/features/karaoke-room/karaoke-songs'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { CardIcon, ExternalIcon, NoteGlyphIcon, RefreshIcon, TrashIcon, } from '../icons'
 import { importedSongsValue, removeImportedQuestion, songsStuckLine, } from './imported-songs-copy'
@@ -46,8 +48,12 @@ export function KaraokeSongsGroups(): JSX.Element {
       api === undefined
         ? 'unavailable'
         : await api.restore().catch(() => 'failed' as const)
-    if (outcome === 'restored') await refreshKaraokeSongs({ identify: true })
     if (live) setNote(restoreNote(outcome))
+    if (outcome === 'restored') {
+      await awaitSubscription(async () =>
+        refreshKaraokeSongs({ identify: true }),
+      )
+    }
   }
 
   const removeAll = async (): Promise<void> => {

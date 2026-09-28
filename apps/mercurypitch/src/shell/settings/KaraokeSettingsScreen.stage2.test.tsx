@@ -24,6 +24,8 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
 const server = vi.hoisted(() => ({
   next: null as KaraokeSongs | null,
   asked: [] as ({ identify?: boolean } | undefined)[],
+  // The songs the server has after this many more asks, if it has not heard.
+  heardAfter: 0,
 }))
 vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
   const actual = await importOriginal<typeof Songs>()
@@ -31,9 +33,21 @@ vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
     ...actual,
     refreshKaraokeSongs: vi.fn(async (options?: { identify?: boolean }) => {
       server.asked.push(options)
-      if (server.next !== null) actual.resetKaraokeSongsForTests(server.next)
+      if (server.heardAfter > 0) server.heardAfter -= 1
+      else if (server.next !== null) {
+        actual.resetKaraokeSongsForTests(server.next)
+      }
       return Promise.resolve(actual.karaokeSongs())
     }),
+    // The webhook's few seconds, without the test waiting them.
+    awaitSubscription: async (
+      refresh: () => Promise<KaraokeSongs>,
+      options?: Parameters<typeof actual.awaitSubscription>[1],
+    ) =>
+      actual.awaitSubscription(refresh, {
+        ...options,
+        wait: async () => Promise.resolve(),
+      }),
   }
 })
 
@@ -84,6 +98,7 @@ beforeEach(() => {
   localStorage.clear()
   server.next = null
   server.asked = []
+  server.heardAfter = 0
   phone.removals = 0
   phone.stuck = 0
   phone.set?.({ count: 0, bytes: 0 })
@@ -217,9 +232,41 @@ describe('Settings, Karaoke, in a build with Import', () => {
     await settle()
 
     expect(root.querySelector('[role="status"]')?.textContent).toBe(
-      'Your Karaoke subscription is restored.',
+      'Your Mercury Pitch Cloud subscription is restored.',
     )
     expect(server.asked).toEqual([{ identify: true }])
+    expect(row(root, 'karaoke-subscription')?.textContent).toContain(
+      'Subscribed, renews on 27 October',
+    )
+  })
+
+  it('keeps asking after a restore until the server has heard from the store', async () => {
+    withStore({
+      subscribe: async () => Promise.resolve('cancelled'),
+      restore: async () => Promise.resolve('restored'),
+    })
+    resetKaraokeSongsForTests({
+      left: 0,
+      subscribed: false,
+      renewsAt: null,
+      perPeriod: 20,
+    })
+    const root = await mount()
+    server.asked = []
+    server.next = subscriber
+    server.heardAfter = 2
+
+    row(root, 'karaoke-restore')?.click()
+    await settle()
+
+    expect(root.querySelector('[role="status"]')?.textContent).toBe(
+      'Your Mercury Pitch Cloud subscription is restored.',
+    )
+    expect(server.asked).toEqual([
+      { identify: true },
+      { identify: true },
+      { identify: true },
+    ])
     expect(row(root, 'karaoke-subscription')?.textContent).toContain(
       'Subscribed, renews on 27 October',
     )

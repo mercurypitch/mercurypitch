@@ -8,22 +8,25 @@
 // vocabulary of `@irchiinnuss/mobile-runtime`: plans, snapshots, outcomes.
 //
 // FAIL CLOSED. The app's own composition (infrastructure/mobile-runtime.ts)
-// has no store until the products and the RevenueCat keys exist (owner, 27
-// Sep; plan step 25), so `available` is false and every answer here is
-// "unavailable", which the paywall says as "not available yet". Nothing is
-// bought, and no identity is made for a store that is not there.
+// has a store only where the build carries its platform's RevenueCat key
+// (plan step 25). Without one, `available` is false and every answer here
+// is "unavailable", which the paywall says as "not available yet"; so is a
+// store whose products do not exist yet. Nothing is bought, and no identity
+// is made for a store that is not there.
 //
 // WHO BUYS. The store is told the server's own user id before a purchase or
 // a restore (logIn), because that id is what the RevenueCat webhook reads to
 // know whom to give the songs to (workers/db-worker/src/revenuecat.ts). A
 // phone the server cannot name buys nothing: the songs would go nowhere.
 //
-// WHAT IS BOUGHT. The current offering's monthly plan. With no such plan the
-// store has nothing to sell yet, which is "unavailable" too.
+// WHAT IS BOUGHT. The current offering's monthly plan: Mercury Pitch Cloud
+// (owner, S7 D2). With no such plan the store has nothing to sell yet,
+// which is "unavailable" too. The paywall states its price as the store
+// does, in the singer's own storefront (offer), never a price of our own.
 
-import type { PaywallPort, PurchaseOutcome, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
+import type { PaywallPort, PurchaseOutcome, PurchasePlan, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
 import { PurchasesFailure } from '@irchiinnuss/mobile-runtime'
-import type { KaraokeRestoreOutcome, KaraokeSubscribeOutcome, KaraokeSubscriptionApi, } from '@/stores/native-shell-store'
+import type { KaraokeOffer, KaraokeRestoreOutcome, KaraokeSubscribeOutcome, KaraokeSubscriptionApi, } from '@/stores/native-shell-store'
 
 /**
  * The entitlement the Karaoke subscription unlocks. The db-worker grants the
@@ -77,18 +80,37 @@ export function createKaraokeSubscription(
     return true
   }
 
+  /** The current offering's monthly plan, if the store has one to sell. */
+  async function monthlyPlan(): Promise<PurchasePlan | undefined> {
+    const offerings = await purchases.getOfferings()
+    return offerings.current?.plans.find(
+      (candidate) => candidate.kind === 'monthly',
+    )
+  }
+
   async function subscribe(): Promise<KaraokeSubscribeOutcome> {
     if (!purchases.available) return 'unavailable'
     try {
       if (!(await signInToStore())) return 'failed'
-      const offerings = await purchases.getOfferings()
-      const monthly = offerings.current?.plans.find(
-        (candidate) => candidate.kind === 'monthly',
-      )
+      const monthly = await monthlyPlan()
       if (monthly === undefined) return 'unavailable'
       return purchased(await purchases.purchase(monthly))
     } catch (error) {
       return notThereYet(error) ? 'unavailable' : 'failed'
+    }
+  }
+
+  /** What the paywall states: reading the store's catalogue needs nobody
+   *  named, so nothing is identified for it. */
+  async function offer(): Promise<KaraokeOffer | null> {
+    if (!purchases.available) return null
+    try {
+      const monthly = await monthlyPlan()
+      return monthly === undefined
+        ? null
+        : { priceText: monthly.priceText, title: monthly.title }
+    } catch {
+      return null
     }
   }
 
@@ -108,6 +130,7 @@ export function createKaraokeSubscription(
   return {
     subscribe,
     restore,
+    offer,
     // The store's own subscription page, where a subscriber cancels. Absent
     // with no store, so Settings draws no row that leads nowhere.
     ...(paywall.available

@@ -19,8 +19,16 @@
 // Copy (owner, 27 and 28 Sep): songs, never credits; the singer is asked to
 // open the app within about a day to collect a song, which is what the
 // stems' R2 lifecycle keeps (collectLine, STEMS_KEPT_DAYS), and nothing
-// longer is promised. Subscribe fails closed until the store's products
-// exist.
+// longer is promised. Subscribe fails closed where the build has no store
+// or the store has no product yet.
+//
+// The paywall is the one place the app offers Mercury Pitch Cloud (S7 D2,
+// D13: onboarding will offer this same sheet). It names the subscription,
+// its length and the store's own price in the singer's storefront, with
+// Restore purchases, Terms of Use and the Privacy Policy (App Store 3.1.2).
+// After the store says yes, the songs arrive when RevenueCat's webhook
+// reaches the server, usually within seconds: until then the room says they
+// are on their way rather than showing the paywall again.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
@@ -28,13 +36,14 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { balanceVersion } from '@/stores/billing-store'
+import type { KaraokeOffer } from '@/stores/native-shell-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import type { ImportRefusal } from './karaoke-import-checks'
 import { checkImport, IMPORT_ACCEPT, songTitleOf, } from './karaoke-import-checks'
 import { duplicateOf, enqueueImports, setImportGateHandler, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { KaraokeSongs } from './karaoke-songs'
-import { collectLine, confirmCostLine, importLine, KARAOKE_PLAN, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, } from './karaoke-songs'
+import { awaitSubscription, CLOUD_NAME, collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, restoreNote, songsComeBackLine, songsOnTheWay, } from './karaoke-songs'
 
 /** A song left out of a confirm, and why. */
 interface LeftOut {
@@ -119,6 +128,7 @@ export const KaraokeImport: Component = () => {
   const [checking, setChecking] = createSignal(false)
   const [sending, setSending] = createSignal(false)
   const [note, setNote] = createSignal<string | null>(null)
+  const [offer, setOffer] = createSignal<KaraokeOffer | null>(null)
 
   const close = (): void => {
     setSheet(null)
@@ -127,7 +137,41 @@ export const KaraokeImport: Component = () => {
 
   const openGate = (songs: KaraokeSongs): void => {
     setNote(null)
-    setSheet({ kind: songs.subscribed ? 'no-songs' : 'paywall' })
+    if (songs.subscribed) setSheet({ kind: 'no-songs' })
+    else if (songsOnTheWay()) setSheet({ kind: 'subscribed' })
+    else setSheet({ kind: 'paywall' })
+  }
+
+  // The paywall states the store's own price; asked for once it opens.
+  createEffect(
+    on(
+      () => sheet()?.kind === 'paywall',
+      (paywall) => {
+        if (!paywall || offer() !== null) return
+        const ask = nativeShellApi()?.karaokeSubscription?.offer
+        void ask?.()
+          .then((found) => {
+            if (found !== null) setOffer(found)
+          })
+          .catch(() => undefined)
+      },
+    ),
+  )
+  const planLine = (): string => {
+    const month = `${karaokeSongs().perPeriod} songs a month`
+    const price = offer()?.priceText
+    return price === undefined ? month : `${month} · ${price}`
+  }
+  const waitForSongs = (): Promise<KaraokeSongs> =>
+    awaitSubscription(async () => refreshKaraokeSongs({ identify: true }))
+  /** What the subscribed sheet says of the songs: here, or coming. */
+  const songsArrival = (): string => {
+    if (karaokeSongs().subscribed) {
+      return `${karaokeSongs().perPeriod} songs a month are yours.`
+    }
+    return songsOnTheWay()
+      ? 'Your songs are on their way. They arrive in a moment.'
+      : 'Your songs arrive within a few minutes.'
   }
 
   onMount(() => {
@@ -217,9 +261,9 @@ export const KaraokeImport: Component = () => {
         : await api.subscribe().catch(() => 'failed' as const)
     switch (outcome) {
       case 'purchased':
-        await refreshKaraokeSongs({ identify: true })
         setNote(null)
         setSheet({ kind: 'subscribed' })
+        await waitForSongs()
         return
       case 'pending':
         setNote(
@@ -246,8 +290,13 @@ export const KaraokeImport: Component = () => {
         ? 'unavailable'
         : await api.restore().catch(() => 'failed' as const)
     if (outcome === 'restored') {
-      await refreshKaraokeSongs({ identify: true })
-      close()
+      setNote(restoreNote(outcome))
+      const songs = await waitForSongs()
+      // The singer may have closed the paywall while the songs were asked
+      // for; nothing opens by itself.
+      if (sheet()?.kind !== 'paywall') return
+      if (songs.subscribed) close()
+      else setSheet({ kind: 'subscribed' })
       return
     }
     setNote(restoreNote(outcome))
@@ -450,12 +499,9 @@ export const KaraokeImport: Component = () => {
                   )}
                 </For>
               </ul>
-              <p class={styles.paywallPrice}>
-                {`${karaokeSongs().perPeriod} songs a month · ${KARAOKE_PLAN.price}`}
-              </p>
+              <p class={styles.paywallPrice}>{planLine()}</p>
               <p class={styles.sheetText}>
-                Renews every month until you cancel. Cancel any time in
-                Settings.
+                {`${CLOUD_NAME}, monthly. Renews every month until you cancel. Cancel any time in Settings.`}
               </p>
               <Note />
               <div class={styles.sheetActions}>
@@ -485,18 +531,9 @@ export const KaraokeImport: Component = () => {
             </Match>
             <Match when={sheet()?.kind === 'subscribed'}>
               <SheetHead title="You're subscribed" />
-              <Show
-                when={!hasUpgradedAccount()}
-                fallback={
-                  <p class={styles.sheetText}>
-                    {`${karaokeSongs().perPeriod} songs a month are yours.`}
-                  </p>
-                }
-              >
-                <p class={styles.sheetText}>
-                  {`${karaokeSongs().perPeriod} songs a month are yours. Keep them with an account, so your subscription and your songs follow you to a new phone.`}
-                </p>
-              </Show>
+              <p class={styles.sheetText}>
+                {`${songsArrival()}${hasUpgradedAccount() ? '' : ' Keep them with an account, so your subscription and your songs follow you to a new phone.'}`}
+              </p>
               <div class={styles.sheetActions}>
                 <Show when={!hasUpgradedAccount()}>
                   <button

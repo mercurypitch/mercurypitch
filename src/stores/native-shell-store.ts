@@ -188,9 +188,19 @@ export type KaraokeRestoreOutcome =
   | 'unavailable'
   | 'failed'
 
+/** The plan the paywall offers, as the store states it. */
+export interface KaraokeOffer {
+  /** The price in the singer's own storefront, as the store writes it. */
+  readonly priceText: string
+  /** The product's name in the store. */
+  readonly title: string
+}
+
 export interface KaraokeSubscriptionApi {
   subscribe: () => Promise<KaraokeSubscribeOutcome>
   restore: () => Promise<KaraokeRestoreOutcome>
+  /** The month's plan at the store's own price; null without a store. */
+  offer?: () => Promise<KaraokeOffer | null>
   /** The store's own page for the subscription, where the store has one. */
   manage?: () => Promise<void>
 }

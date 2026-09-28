@@ -3,8 +3,9 @@
 // ============================================================
 //
 // Songs, never credits (plan S8 §6.7). A subscriber reads "18 of 20 songs
-// left this month"; a dev account with credits and no subscription reads
-// its balance as songs; a worker that says nothing leaves what is known.
+// left this month". The server counts only the songs the app can spend,
+// never credits bought on the web (owner, S7 D9), so the balance is never
+// read as songs here; a worker that says nothing leaves them unknown.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -30,7 +31,7 @@ vi.mock('@/db/services/auth-service', () => ({
 }))
 
 import type { KaraokeSongs } from './karaoke-songs'
-import { collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
+import { awaitSubscription, collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
 
 const subscriber: KaraokeSongs = {
   left: 18,
@@ -60,9 +61,10 @@ describe('asking the server', () => {
     expect(karaokeSongs()).toEqual(subscriber)
   })
 
-  it('reads the balance as songs where /me says nothing of them', async () => {
+  it('never reads the balance as songs: web credits are not the app’s', async () => {
+    resetKaraokeSongsForTests(subscriber)
     billing.me = {
-      creditBalance: 5.6,
+      creditBalance: 5,
       entitlements: [],
       stripeConfigured: false,
     }
@@ -70,23 +72,11 @@ describe('asking the server', () => {
     await refreshKaraokeSongs()
 
     expect(karaokeSongs()).toEqual({
-      left: 5,
+      left: null,
       subscribed: false,
       renewsAt: null,
       perPeriod: 20,
     })
-  })
-
-  it('never reads a debt as songs', async () => {
-    billing.me = {
-      creditBalance: -2,
-      entitlements: [],
-      stripeConfigured: false,
-    }
-
-    await refreshKaraokeSongs()
-
-    expect(karaokeSongs().left).toBe(0)
   })
 
   it('keeps what it knew when the server does not answer', async () => {
@@ -187,10 +177,10 @@ describe('the words', () => {
 
   it('say what the store answered to Restore purchases, the same wherever it is asked', () => {
     expect(restoreNote('restored')).toBe(
-      'Your Karaoke subscription is restored.',
+      'Your Mercury Pitch Cloud subscription is restored.',
     )
     expect(restoreNote('nothing')).toBe(
-      'No Karaoke subscription was found to restore.',
+      'No Mercury Pitch Cloud subscription was found to restore.',
     )
     expect(restoreNote('unavailable')).toBe('Purchases are not available yet.')
     expect(restoreNote('failed')).toBe(
@@ -236,5 +226,44 @@ describe('how long a separated song waits', () => {
     expect(runbook).toMatch(
       new RegExp(`\`runpod-dev/\` objects after ${STEMS_KEPT_DAYS} day`, 'u'),
     )
+  })
+})
+
+describe('after the store says yes', () => {
+  // A purchase or a restore reaches the server through RevenueCat's
+  // webhook, usually within seconds, so /me is asked again until it has.
+  const waiting: KaraokeSongs = {
+    left: 0,
+    subscribed: false,
+    renewsAt: null,
+    perPeriod: 20,
+  }
+
+  it('asks again until the server has heard, and says so meanwhile', async () => {
+    const answers = [waiting, waiting, subscriber]
+    const seen: boolean[] = []
+    const refresh = vi.fn(async () => {
+      seen.push(songsOnTheWay())
+      return Promise.resolve(answers.shift() ?? subscriber)
+    })
+    const wait = vi.fn(async () => Promise.resolve())
+
+    await expect(awaitSubscription(refresh, { wait })).resolves.toEqual(
+      subscriber,
+    )
+    expect(refresh).toHaveBeenCalledTimes(3)
+    expect(wait).toHaveBeenCalledTimes(2)
+    expect(seen).toEqual([true, true, true])
+    expect(songsOnTheWay()).toBe(false)
+  })
+
+  it('settles for what it last heard after a few tries', async () => {
+    const refresh = vi.fn(async () => Promise.resolve(waiting))
+
+    await expect(
+      awaitSubscription(refresh, { tries: 3, wait: async () => undefined }),
+    ).resolves.toEqual(waiting)
+    expect(refresh).toHaveBeenCalledTimes(3)
+    expect(songsOnTheWay()).toBe(false)
   })
 })

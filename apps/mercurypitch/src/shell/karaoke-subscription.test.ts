@@ -83,8 +83,36 @@ describe("this app's own composition", () => {
 
     await expect(subscription.subscribe()).resolves.toBe('unavailable')
     await expect(subscription.restore()).resolves.toBe('unavailable')
+    await expect(subscription.offer?.()).resolves.toBeNull()
     expect(subscription.manage).toBeUndefined()
     expect(identify).not.toHaveBeenCalled()
+  })
+})
+
+describe('the offer, with a store', () => {
+  // App Store guideline 3.1.2: the paywall states the subscription's price,
+  // and only the store knows it in the singer's own currency.
+  it("is the month's plan at the store's own price, before anyone is named", async () => {
+    const shop = store()
+
+    await expect(
+      createKaraokeSubscription(shop, asUser).offer?.(),
+    ).resolves.toEqual({ priceText: '€4.99', title: 'Karaoke monthly' })
+    expect(shop.order).toEqual([])
+  })
+
+  it('is nothing while the store has no plan to sell, or cannot say', async () => {
+    const empty = store({ offerings: { all: [] } })
+    const failing = store()
+    failing.purchases.getOfferings = async () =>
+      Promise.reject(new PurchasesFailure('network', 'offline'))
+
+    await expect(
+      createKaraokeSubscription(empty, asUser).offer?.(),
+    ).resolves.toBeNull()
+    await expect(
+      createKaraokeSubscription(failing, asUser).offer?.(),
+    ).resolves.toBeNull()
   })
 })
 
