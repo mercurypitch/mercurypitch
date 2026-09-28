@@ -39,26 +39,38 @@ test('island paths preserve earned routes and fit phone, tablet and desktop @smo
       })),
     },
   }
-  await page.addInitScript((saved) => {
-    // These assertions cover host/UI/save behavior. Separate asset proofs inspect actual rendered pixels.
-    for (const method of [
-      'clear',
-      'drawArrays',
-      'drawArraysInstanced',
-      'drawElements',
-      'drawElementsInstanced',
-    ])
-      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
-        configurable: true,
-        value: () => undefined,
-      })
-    localStorage.setItem(
-      `beside-cue:glass-adventure:progress:${saved.levelId}`,
-      JSON.stringify(saved),
-    )
-    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
-  }, saved)
-  await page.goto('/glass-game/?campaign=1')
+  const earlierVisits = MUSEUM_CAMPAIGN.slice(
+    0,
+    MUSEUM_CAMPAIGN.indexOf(chapter),
+  ).map(({ level }) => ({
+    ...readProgress(level, null),
+    completedBreakableIds: level.breakables.map((item) => item.id),
+    finished: true,
+  }))
+  await page.addInitScript(
+    ({ saved, earlierVisits }) => {
+      // These assertions cover host/UI/save behavior. Separate asset proofs inspect actual rendered pixels.
+      for (const method of [
+        'clear',
+        'drawArrays',
+        'drawArraysInstanced',
+        'drawElements',
+        'drawElementsInstanced',
+      ])
+        Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+          configurable: true,
+          value: () => undefined,
+        })
+      for (const visit of [...earlierVisits, saved])
+        localStorage.setItem(
+          `beside-cue:glass-adventure:progress:${visit.levelId}`,
+          JSON.stringify(visit),
+        )
+      localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+    },
+    { saved, earlierVisits },
+  )
+  await page.goto('/glass-game/?campaign=1&progression=earned')
   const navigation = page.getByRole('navigation', { name: 'Island paths' })
   await expect(navigation.getByRole('link')).toHaveCount(3)
   const twin = page.locator('[data-trial-id="twin-island-promenade"]')

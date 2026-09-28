@@ -169,6 +169,8 @@ test('the enclosed route loads its art, respects both gates and crosses every se
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript(() => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+    // Traverse collision seams freely; automatic circle engagement has its own browser proof.
+    localStorage.setItem('beside-cue:glass-adventure:automatic-singing', 'off')
     localStorage.setItem(
       'beside-cue:glass-adventure:museum-audio:v1',
       JSON.stringify({ muted: true }),

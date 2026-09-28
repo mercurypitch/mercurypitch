@@ -2,143 +2,151 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
+import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { BREAKABLE_RENDER_CATALOG, getBreakableRenderRecipe, getPlatformRenderRecipe, } from './catalog'
 import { getRoomDecorationRecipe } from './room-decoration-catalog'
 import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
 
 describe('data-driven exhibit recipes', () => {
-  it('resolves every authored intact and matching shard prefix in the asset bundles', () => {
-    const v3Manifest = JSON.parse(
-      readFileSync(
-        new URL(
-          '../../../../apps/beside-cue/public/games/adventure-v3/manifest.json',
-          import.meta.url,
+  it.each(['full', 'mobile'] as const)(
+    'resolves every authored intact and matching shard prefix in %s asset bundles',
+    (profile) => {
+      const v3Manifest = JSON.parse(
+        readFileSync(
+          new URL(
+            '../../../../apps/beside-cue/public/games/adventure-v3/manifest.json',
+            import.meta.url,
+          ),
+          'utf8',
         ),
-        'utf8',
-      ),
-    ) as {
-      assets: {
-        id: string
-        file: string
-        sha256: string
-        intactNode?: string
-        shardPrefix?: string
-        shardCount?: number
-        node?: string
-      }[]
-    }
-    const v6Manifest = JSON.parse(
-      readFileSync(
-        new URL(
-          '../../../../apps/beside-cue/public/games/adventure-v6/manifest.json',
-          import.meta.url,
+      ) as {
+        assets: {
+          id: string
+          file: string
+          sha256: string
+          intactNode?: string
+          shardPrefix?: string
+          shardCount?: number
+          node?: string
+        }[]
+      }
+      const v6Manifest = JSON.parse(
+        readFileSync(
+          new URL(
+            '../../../../apps/beside-cue/public/games/adventure-v6/manifest.json',
+            import.meta.url,
+          ),
+          'utf8',
         ),
-        'utf8',
-      ),
-    ) as {
-      models: {
-        id: string
-        file: string
-        sha256: string
-        intactNode?: string
-        shardPrefix?: string
-        shardCount?: number
-        node?: string
-      }[]
-    }
-    const laboratoryManifest = JSON.parse(
-      readFileSync(
-        new URL(
-          '../../../../apps/beside-cue/public/games/cloudway-laboratory-v1/manifest.json',
-          import.meta.url,
+      ) as {
+        models: {
+          id: string
+          file: string
+          sha256: string
+          intactNode?: string
+          shardPrefix?: string
+          shardCount?: number
+          node?: string
+        }[]
+      }
+      const laboratoryManifest = JSON.parse(
+        readFileSync(
+          new URL(
+            '../../../../apps/beside-cue/public/games/cloudway-laboratory-v1/manifest.json',
+            import.meta.url,
+          ),
+          'utf8',
         ),
-        'utf8',
-      ),
-    ) as typeof v3Manifest
-    const receipts = [
-      ...v3Manifest.assets,
-      ...v6Manifest.models,
-      ...laboratoryManifest.assets,
-    ]
-    const files: Record<string, string> = {
-      vessels: 'adventure/vessels.glb',
-      'vessels-v2': 'adventure-v2/vessels-qa-v2.glb',
-      'legend-slab': 'adventure/legend-slab.glb',
-      ...Object.fromEntries(
-        v3Manifest.assets.map((asset) => [
-          asset.id,
-          `adventure-v3/${asset.file}`,
-        ]),
-      ),
-      ...Object.fromEntries(
-        v6Manifest.models.map((asset) => [
-          asset.id,
-          `adventure-v6/${asset.file}`,
-        ]),
-      ),
-      ...Object.fromEntries(
-        laboratoryManifest.assets.map((asset) => [
-          asset.id,
-          `cloudway-laboratory-v1/${asset.file}`,
-        ]),
-      ),
-    }
-    const read = (id: string) => {
-      const bytes = readFileSync(
-        new URL(
-          `../../../../apps/beside-cue/public/games/${files[id]}`,
-          import.meta.url,
+      ) as typeof v3Manifest
+      const receipts = [
+        ...v3Manifest.assets,
+        ...v6Manifest.models,
+        ...laboratoryManifest.assets,
+      ]
+      const files: Record<string, string> = {
+        vessels: 'adventure/vessels.glb',
+        'vessels-v2': 'adventure-v2/vessels-qa-v2.glb',
+        'legend-slab': 'adventure/legend-slab.glb',
+        ...Object.fromEntries(
+          v3Manifest.assets.map((asset) => [
+            asset.id,
+            `adventure-v3/${asset.file}`,
+          ]),
         ),
-      )
-      const receipt = receipts.find((asset) => asset.id === id)
-      if (receipt)
-        expect(createHash('sha256').update(bytes).digest('hex')).toBe(
-          receipt.sha256,
+        ...Object.fromEntries(
+          v6Manifest.models.map((asset) => [
+            asset.id,
+            `adventure-v6/${asset.file}`,
+          ]),
+        ),
+        ...Object.fromEntries(
+          laboratoryManifest.assets.map((asset) => [
+            asset.id,
+            `cloudway-laboratory-v1/${asset.file}`,
+          ]),
+        ),
+      }
+      const read = (id: string) => {
+        const file = files[id] ?? GLASS_GAME_ASSET_FILES[id]
+        expect(file, `Missing runtime asset path for ${id}`).toBeDefined()
+        const bytes = readFileSync(
+          new URL(
+            `../../../../apps/beside-cue/public/games/${file}`,
+            import.meta.url,
+          ),
         )
-      return JSON.parse(
-        bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString(),
-      ) as { nodes: { name?: string }[] }
-    }
-    for (const recipe of Object.values(BREAKABLE_RENDER_CATALOG)) {
-      if (recipe.bundle === undefined) continue
-      const resolved =
-        getMuseumSceneRecipe(GLASSWORKS).preferredBundles?.[recipe.bundle] ??
-        recipe.bundle
-      const gltf = read(resolved)
-      expect(gltf.nodes.some((node) => node.name === recipe.intactNode)).toBe(
-        true,
-      )
-      const count = recipe.bundleShardCounts?.[resolved] ?? recipe.shardCount
-      for (let i = 0; i < count; i++)
+        const receipt = receipts.find((asset) => asset.id === id)
+        if (receipt)
+          expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+            receipt.sha256,
+          )
+        return JSON.parse(
+          bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString(),
+        ) as { nodes: { name?: string }[] }
+      }
+      for (const recipe of Object.values(BREAKABLE_RENDER_CATALOG)) {
+        if (recipe.bundle === undefined) continue
+        const preferred =
+          getMuseumSceneRecipe(GLASSWORKS).preferredBundles?.[recipe.bundle] ??
+          recipe.bundle
+        const resolved = resolveAssetProfileBundle(preferred, profile)
+        const gltf = read(resolved)
+        expect(gltf.nodes.some((node) => node.name === recipe.intactNode)).toBe(
+          true,
+        )
+        const count = recipe.bundleShardCounts?.[resolved] ?? recipe.shardCount
+        for (let i = 0; i < count; i++)
+          expect(
+            gltf.nodes.filter(
+              (node) =>
+                node.name ===
+                `${recipe.shardPrefix}${String(i).padStart(3, '0')}`,
+            ),
+          ).toHaveLength(1)
         expect(
           gltf.nodes.filter(
             (node) =>
-              node.name ===
-              `${recipe.shardPrefix}${String(i).padStart(3, '0')}`,
+              node.name?.startsWith(recipe.shardPrefix ?? 'never') === true,
           ),
-        ).toHaveLength(1)
-      expect(
-        gltf.nodes.filter(
-          (node) =>
-            node.name?.startsWith(recipe.shardPrefix ?? 'never') === true,
-        ),
-      ).toHaveLength(count)
-      const receipt = receipts.find((asset) => asset.id === resolved)
-      if (receipt) {
-        expect(receipt.intactNode).toBe(recipe.intactNode)
-        expect(receipt.shardPrefix).toBe(recipe.shardPrefix)
-        expect(receipt.shardCount).toBe(count)
+        ).toHaveLength(count)
+        const receipt = receipts.find((asset) => asset.id === resolved)
+        if (receipt) {
+          expect(receipt.intactNode).toBe(recipe.intactNode)
+          expect(receipt.shardPrefix).toBe(recipe.shardPrefix)
+          expect(receipt.shardCount).toBe(count)
+        }
       }
-    }
-    for (const asset of v3Manifest.assets.filter(
-      (asset) => asset.node !== undefined,
-    ))
-      expect(
-        read(asset.id).nodes.some((node) => node.name === asset.node),
-      ).toBe(true)
-  })
+      for (const asset of v3Manifest.assets.filter(
+        (asset) => asset.node !== undefined,
+      ))
+        expect(
+          read(asset.id).nodes.some((node) => node.name === asset.node),
+        ).toBe(true)
+    },
+  )
   it('rejects unknown visual IDs instead of silently replacing their design', () => {
     expect(() => getBreakableRenderRecipe('missing-legend')).toThrow(
       'Unknown glass exhibit',
