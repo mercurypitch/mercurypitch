@@ -529,6 +529,8 @@ jobs:
           STAGE: dist
         run: |
           set -euo pipefail
+          # The platform the build was told, for a check that depends on it.
+          export "$PLATFORM_ENV=android"
           export DIST_DIR="$APP_DIR/dist"
           export ANDROID_ASSETS_DIR="$APP_DIR/android/app/src/main/assets/public"
           bash -euo pipefail -c "$VERIFY_ASSETS"
@@ -644,6 +646,7 @@ jobs:
           STAGE: synced
         run: |
           set -euo pipefail
+          export "$PLATFORM_ENV=android"
           export DIST_DIR="$APP_DIR/dist"
           export ANDROID_ASSETS_DIR="$APP_DIR/android/app/src/main/assets/public"
           bash -euo pipefail -c "$VERIFY_ASSETS"
@@ -882,6 +885,8 @@ jobs:
           STAGE: dist
         run: |
           set -euo pipefail
+          # The platform the build was told, for a check that depends on it.
+          export "$PLATFORM_ENV=ios"
           export DIST_DIR="$APP_DIR/dist"
           export ANDROID_ASSETS_DIR=""
           bash -euo pipefail -c "$VERIFY_ASSETS"
@@ -1196,6 +1201,8 @@ jobs:
           STAGE: dist
         run: |
           set -euo pipefail
+          # The platform the build was told, for a check that depends on it.
+          export "$PLATFORM_ENV=ios"
           export DIST_DIR="$APP_DIR/dist"
           export ANDROID_ASSETS_DIR=""
           bash -euo pipefail -c "$VERIFY_ASSETS"
@@ -1315,6 +1322,7 @@ jobs:
           STAGE: dist
         run: |
           set -euo pipefail
+          export "$PLATFORM_ENV=ios"
           export DIST_DIR="$APP_DIR/dist"
           export ANDROID_ASSETS_DIR=""
           bash -euo pipefail -c "$VERIFY_ASSETS"
