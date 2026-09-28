@@ -9,9 +9,11 @@
   //              one line -- there is no copy of `src` under this app.
   //   types      no "vitest/globals": this package has no test suite. Its
   //              behaviour is the web app's, tested where the web app is.
-  //   include    its own entry plus its config files. Everything under the
-  //              root `src` arrives by being imported, which is exactly the
-  //              check that is wanted: what the NATIVE entry point reaches.
+  //   include    its own entry plus its config files, and the store-shot
+  //              harness (shots/, playwright.shots.config.ts), which never
+  //              ships but should not rot. Everything under the root `src`
+  //              arrives by being imported, which is exactly the check that
+  //              is wanted: what the NATIVE entry point reaches.
   //   allowImportingTsExtensions
   //              vite.config.ts imports @irchiinnuss/purchase-kit, whose
   //              package exports point "types" at src/index.ts -- a source
@@ -51,7 +53,9 @@
     "src/**/*.tsx",
     "../../src/vite-env.d.ts",
     "vite.config.ts",
-    "capacitor.config.ts"
+    "capacitor.config.ts",
+    "playwright.shots.config.ts",
+    "shots/**/*.ts"
   ],
   "exclude": ["android", "ios", "dist", "node_modules"]
 }

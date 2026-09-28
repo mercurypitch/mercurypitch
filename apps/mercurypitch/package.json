@@ -10,6 +10,8 @@
     "prebuild": "node scripts/sync-native-assets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "shots": "playwright test -c playwright.shots.config.ts",
+    "shots:serve": "vite build --config shots/vite.config.ts && vite preview --config shots/vite.config.ts",
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
     "cap:sync": "pnpm build && cap sync",
     "cap:sync:ios": "pnpm build && cap sync ios",
