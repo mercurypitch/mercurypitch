@@ -11,6 +11,11 @@
 // requires an active non-zero tier price, and an accepted RunPod job must debit
 // successfully or it is cancelled. Refunds remain best-effort and require
 // BILLING_SERVICE_KEY.
+//
+// A separation the native app asked for spends only the app's songs, never
+// credits bought on the web (plan S7 D9). The db-worker tells the app by its
+// origin, and these calls come from this worker with none, so they say whose
+// spend it is (`from: 'app'`). That can only narrow what is spent.
 
 import type { RunpodTier } from './runpod'
 
@@ -25,6 +30,9 @@ export interface MeteringConfig {
   baseUrl: string
   /** Authorizes refunds (service-to-service); refunds no-op without it. */
   serviceKey?: string
+  /** The request is the native app's: admission and debit spend only the
+   *  app's songs (the db-worker's app-songs.ts). */
+  forApp?: boolean
 }
 
 /** Resolve metering config from env, or null when metering is off. */
@@ -49,21 +57,31 @@ export interface DebitVerdict {
   retryAfter?: number
 }
 
+interface MeteringError {
+  details: Pick<DebitVerdict, 'error' | 'required' | 'balance'>
+  /** The db-worker wrote nothing and says the same call may be made again. */
+  retryable: boolean
+}
+
 async function readMeteringError(
   response: Response,
   fallback: string,
-): Promise<Pick<DebitVerdict, 'error' | 'required' | 'balance'>> {
+): Promise<MeteringError> {
   const body = (await response.json().catch(() => ({}))) as Record<
     string,
     unknown
   >
-  const result: Pick<DebitVerdict, 'error' | 'required' | 'balance'> = {
+  const details: MeteringError['details'] = {
     error: typeof body.error === 'string' ? body.error : fallback,
   }
-  if (typeof body.required === 'number') result.required = body.required
-  if (typeof body.balance === 'number') result.balance = body.balance
-  return result
+  if (typeof body.required === 'number') details.required = body.required
+  if (typeof body.balance === 'number') details.balance = body.balance
+  return { details, retryable: body.retryable === true }
 }
+
+/** How long the debit waits before asking once more, when the db-worker
+ *  says to try again (its ledger kept changing under the app's debit). */
+const DEBIT_RETRY_MS = 250
 
 /** Authenticate, rate-limit, and quote a paid job before any RunPod/R2 spend.
  *  Unlike the post-submit debit, this has no jobRef because no job exists yet. */
@@ -88,17 +106,18 @@ export async function admitUvrJob(
         tier,
         ...(model !== undefined ? { model } : {}),
         ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        ...(cfg.forApp === true ? { from: 'app' } : {}),
       }),
     })
     if (!response.ok) {
-      const error = await readMeteringError(
+      const { details } = await readMeteringError(
         response,
         'Server processing protection is unavailable',
       )
       const verdict: DebitVerdict = {
         allowed: false,
         status: response.status,
-        ...error,
+        ...details,
       }
       const retryAfter = Number(response.headers?.get('Retry-After'))
       if (Number.isFinite(retryAfter) && retryAfter > 0) {
@@ -142,8 +161,8 @@ export async function debitForJob(
   if (authorization !== null && authorization !== '') {
     headers.Authorization = authorization
   }
-  try {
-    const res = await fetch(`${cfg.baseUrl}/api/billing/debit`, {
+  const ask = (): Promise<Response> =>
+    fetch(`${cfg.baseUrl}/api/billing/debit`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -151,17 +170,30 @@ export async function debitForJob(
         jobRef,
         ...(model !== undefined ? { model } : {}),
         ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        ...(cfg.forApp === true ? { from: 'app' } : {}),
       }),
     })
-    if (!res.ok) {
-      const error = await readMeteringError(
-        res,
-        'Server processing billing is unavailable',
-      )
+  try {
+    let res = await ask()
+    let failure = res.ok
+      ? null
+      : await readMeteringError(res, 'Server processing billing is unavailable')
+    if (failure?.retryable === true) {
+      // Nothing was written, and the debit is idempotent per job: once more.
+      await new Promise((resolve) => setTimeout(resolve, DEBIT_RETRY_MS))
+      res = await ask()
+      failure = res.ok
+        ? null
+        : await readMeteringError(
+            res,
+            'Server processing billing is unavailable',
+          )
+    }
+    if (failure !== null) {
       const verdict: DebitVerdict = {
         allowed: false,
         status: res.status,
-        ...error,
+        ...failure.details,
       }
       const retryAfter = Number(res.headers?.get('Retry-After'))
       if (Number.isFinite(retryAfter) && retryAfter > 0) {

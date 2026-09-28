@@ -14,9 +14,16 @@
 // Credits bought on the web, promo credits and testing allowances are the
 // singer's own and never make a period grant less. The ledger has one
 // balance, so which songs a separation spent is a rule, not a record:
-// subscriptionSongs() walks the ledger and spends the subscription's songs
-// first, the oldest period first, and a refunded separation gives back the
-// songs it took.
+// subscriptionSongs() walks the ledger. A separation on the web spends the
+// web's credits first, and the subscription's songs only once they run out
+// (owner, 28 Sep); one in the app spends the subscription's songs, the
+// oldest period first; and a refunded separation gives back what it took.
+//
+// The native app spends only these songs (owner, S7 D9: credits bought on
+// the web are not spendable in the app in V1), plus the one free song a
+// month of a signed-in singer without the subscription (S7 D5), which is
+// never a credit: appSongs() below, and app-songs.ts for the requests that
+// spend them.
 
 /** The RevenueCat entitlement the subscription unlocks, and the server's
  *  `entitlements.feature` that mirrors it (plan S7 §3.9). */
@@ -72,6 +79,27 @@ export const SUBSCRIPTION_MOVED_IN = 'subscription-transfer-in'
  *  refunded period's grant, which the row names by its key (revenuecat.ts). */
 export const SUBSCRIPTION_REFUND = 'subscription-refund'
 
+/** The ledger reason of the songs a reversed refund gives back to the
+ *  period it took them from (revenuecat.ts, REFUND_REVERSED). */
+export const SUBSCRIPTION_REFUND_REVERSED = 'subscription-refund-reversed'
+
+/** The ledger reason of a separation paid for on the web: the web's own
+ *  credits first, the subscription's songs once they run out (billing.ts). */
+export const WEB_SEPARATION = 'uvr-job'
+/** The ledger reason of a separation the native app paid for: the
+ *  subscription's songs only (app-songs.ts). The two share one idempotency
+ *  key per job, so a job is paid for once, by one of them. */
+export const APP_SEPARATION = 'uvr-job-app'
+/** The ledger reason of a failed separation's refund (billing.ts). */
+export const SEPARATION_REFUND = 'uvr-refund'
+
+/** The ledger reason of the month's free song, claimed: a row of no credits
+ *  naming the separation it paid for (app-songs.ts). */
+export const FREE_SONG = 'free-song'
+/** The ledger reason of a free song given back: the separation it paid for
+ *  failed or was cancelled (billing.ts, the refund). */
+export const FREE_SONG_BACK = 'free-song-back'
+
 /** A creditLedger row, as the songs walk reads it. */
 export interface LedgerRow {
   delta: number
@@ -100,6 +128,8 @@ export interface SubscriptionSongs {
 /** The walk's state: every period so far, and what each separation took. */
 interface SongsWalk {
   held: number
+  /** The whole ledger's balance so far, before the row being read. */
+  balance: number
   periods: PeriodSongs[]
   /** Per separation job, the periods it spent and how many songs of each. */
   takenBy: Map<string, Array<[PeriodSongs, number]>>
@@ -125,8 +155,18 @@ function spendSongs(
   return taken
 }
 
+/** A debit on the web's side: the credits that are not subscription songs
+ *  pay first, and the songs only what those do not cover (owner, 28 Sep). */
+function spendOnTheWeb(
+  walk: SongsWalk,
+  songs: number,
+): Array<[PeriodSongs, number]> {
+  const credits = Math.max(0, walk.balance - walk.held)
+  return spendSongs(walk, Math.max(0, songs - credits))
+}
+
 /** A store refund takes back what was left of its own period, and spends
- *  the rest of what it takes like any other debit. */
+ *  the rest of what it takes from the other periods. */
 function refundPeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
   const period = walk.periods.find((entry) => entry.key === row.jobRef)
   const take = Math.min(period?.left ?? 0, songs)
@@ -150,78 +190,310 @@ function giveBack(walk: SongsWalk, row: LedgerRow, songs: number): void {
   walk.takenBy.delete(job)
 }
 
+/** A reversed refund gives its period back the songs the refund took. Where
+ *  that period is not in this ledger, they are a period of their own: they
+ *  stay subscription songs either way. */
+function restorePeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
+  const period = walk.periods.find((entry) => entry.key === row.jobRef)
+  if (period === undefined) {
+    walk.periods.push({
+      key: row.idempotencyKey ?? '',
+      transaction: null,
+      left: songs,
+    })
+  } else {
+    period.left += songs
+  }
+  walk.held += songs
+}
+
 function isPeriodGrant(row: LedgerRow): boolean {
   return (
     row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_MOVED_IN
   )
 }
 
-/** One ledger row's effect on the subscription songs. */
-function readRow(walk: SongsWalk, row: LedgerRow): void {
-  const delta = Number(row.delta)
-  if (isPeriodGrant(row) && delta >= 0) {
+/** A row that adds songs: a period's grant, a reversed refund's, or a
+ *  separation's refund. Other credits are the singer's own. */
+function readCredit(walk: SongsWalk, row: LedgerRow, delta: number): void {
+  if (isPeriodGrant(row)) {
     walk.periods.push({
       key: row.idempotencyKey ?? '',
       transaction: row.reason === SUBSCRIPTION_GRANT ? row.jobRef : null,
       left: delta,
     })
     walk.held += delta
-  } else if (row.reason === SUBSCRIPTION_REFUND && delta < 0) {
-    refundPeriod(walk, row, -delta)
-  } else if (row.reason === 'uvr-job' && delta < 0) {
-    const taken = spendSongs(walk, -delta)
-    if (row.jobRef !== null) walk.takenBy.set(row.jobRef, taken)
-  } else if (row.reason === 'uvr-refund' && delta > 0) {
+  } else if (delta === 0) {
+    return
+  } else if (row.reason === SUBSCRIPTION_REFUND_REVERSED) {
+    restorePeriod(walk, row, delta)
+  } else if (row.reason === SEPARATION_REFUND) {
     giveBack(walk, row, delta)
-  } else if (delta < 0) {
-    spendSongs(walk, -delta)
   }
 }
 
+/** A separation remembers what it took, for its refund to give back. */
+function tookFor(
+  walk: SongsWalk,
+  row: LedgerRow,
+  taken: Array<[PeriodSongs, number]>,
+): void {
+  if (row.jobRef !== null) walk.takenBy.set(row.jobRef, taken)
+}
+
+/** A row that takes songs: a store refund, from its own period first; a
+ *  separation in the app, from the songs; any other debit, on the web's
+ *  side, from the credits first. */
+function readDebit(walk: SongsWalk, row: LedgerRow, songs: number): void {
+  if (row.reason === SUBSCRIPTION_REFUND) {
+    refundPeriod(walk, row, songs)
+  } else if (row.reason === APP_SEPARATION) {
+    tookFor(walk, row, spendSongs(walk, songs))
+  } else if (row.reason === WEB_SEPARATION) {
+    tookFor(walk, row, spendOnTheWeb(walk, songs))
+  } else {
+    spendOnTheWeb(walk, songs)
+  }
+}
+
+/** One ledger row's effect on the subscription songs. */
+function readRow(walk: SongsWalk, row: LedgerRow): void {
+  const delta = Number(row.delta)
+  if (delta < 0) readDebit(walk, row, -delta)
+  else readCredit(walk, row, delta)
+  walk.balance += delta
+}
+
 /** The subscription songs a ledger holds, walking it in the order it was
- *  written. A separation spends the subscription's songs first, the oldest
- *  period first, and its refund gives back exactly the songs it took. A
- *  store refund takes back what was left of its own period. Any other debit
- *  spends them first too, so a move away takes them all. Other
- *  credits never become subscription songs, so the songs held are never
- *  more than the balance. */
+ *  written. A separation on the web spends the web's own credits first, and
+ *  the subscription's songs, the oldest period first, only once they run
+ *  out; one in the app spends the songs; either's refund gives back exactly
+ *  what it took. A store refund takes back what was left of its own period,
+ *  and its reversal gives that back. Any other debit is the web's, credits
+ *  first, so a move away, which takes the whole balance, takes the songs
+ *  too. Other credits never become subscription songs, so the songs held
+ *  are never more than the balance. */
 export function subscriptionSongs(
   rows: readonly LedgerRow[],
 ): SubscriptionSongs {
-  const walk: SongsWalk = { held: 0, periods: [], takenBy: new Map() }
+  const walk: SongsWalk = {
+    held: 0,
+    balance: 0,
+    periods: [],
+    takenBy: new Map(),
+  }
   for (const row of rows) readRow(walk, row)
   return { held: walk.held, periods: walk.periods }
+}
+
+/** What a reversed refund owes: the songs its refund took from the period,
+ *  less any already given back. */
+export interface RefundReversal {
+  /** The period's key (`rc:<event id>`), or null when nothing was refunded. */
+  period: string | null
+  songs: number
+}
+
+function isRefundOf(row: LedgerRow, period: string): boolean {
+  return row.reason === SUBSCRIPTION_REFUND && row.jobRef === period
+}
+
+/** The refund a store reversed: the period whose transaction the reversal
+ *  names, else the one the latest refund took from, as RevenueCat reports a
+ *  refund for the latest period only. It owes back what that period's
+ *  refunds took and no reversal has given back yet, so a second reversal of
+ *  one refund owes nothing. */
+export function refundReversal(
+  rows: readonly LedgerRow[],
+  transaction: string | null,
+): RefundReversal {
+  const named = subscriptionSongs(rows).periods.find(
+    (period) => transaction !== null && period.transaction === transaction,
+  )
+  const latest = rows.filter((row) => row.reason === SUBSCRIPTION_REFUND).at(-1)
+  const period = named?.key ?? latest?.jobRef ?? null
+  if (period === null) return { period: null, songs: 0 }
+  let owed = 0
+  for (const row of rows) {
+    if (isRefundOf(row, period)) owed -= Number(row.delta)
+    if (row.reason === SUBSCRIPTION_REFUND_REVERSED && row.jobRef === period) {
+      owed -= Number(row.delta)
+    }
+  }
+  return { period, songs: Math.max(0, owed) }
+}
+
+/** Whether the store reversed this period's refund before the refund got
+ *  here: the store's last word on the period is a reversal (review of PR
+ *  880, finding 4). RevenueCat retries a failed delivery, so the reversal
+ *  can arrive first; a refund that follows it is already taken back, and
+ *  takes nothing. A refund that took songs after the reversal is the
+ *  store's last word again. The one refund this lets through untaken is a
+ *  second refund of a period after its reversal, which the stores are not
+ *  known to make: the singer keeps that period, rather than a paying singer
+ *  losing theirs to a delivery out of order. */
+export function refundReversedFirst(
+  rows: readonly LedgerRow[],
+  period: string,
+): boolean {
+  let reversed = false
+  for (const row of rows) {
+    if (row.jobRef !== period) continue
+    if (row.reason === SUBSCRIPTION_REFUND_REVERSED) reversed = true
+    else if (isRefundOf(row, period) && Number(row.delta) < 0) reversed = false
+  }
+  return reversed
+}
+
+// ── The month's free song (owner, 28 Sep: S7 D5, and its answers) ──
+//
+// A signed-in singer without the subscription gets one cloud-split song a
+// month, refilling on the 1st (UTC). Signed in means the account, never the
+// token: not anonymous, with its email confirmed. An anonymous identity
+// gets none, and neither does a subscriber, who has the month's songs.
+// Which is decided when the app asks: a subscription that ends mid-month
+// brings the month's free song the moment it ends, unless it was spent that
+// month before subscribing. It is never a credit: the balance, the web and
+// the rollover cap never see it, and an unused one does not carry over.
+// Spending it writes a claim, a row of no credits that names the separation
+// it paid for, under a key unique to the account, the month and the claim's
+// number in that month: at most one claim stands at a time. A failed
+// separation gives it back with a row of its own, and the next claim that
+// month takes the next number.
+
+/** A subscription that has not ended: an entitlement with no end, or one
+ *  still to come. */
+export function isSubscribed(
+  entitlement: { expiresAt: string | null } | null | undefined,
+  nowMs: number,
+): boolean {
+  if (entitlement === null || entitlement === undefined) return false
+  return (
+    entitlement.expiresAt === null || Date.parse(entitlement.expiresAt) > nowMs
+  )
+}
+
+/** The account, as the month's free song asks about it (app-songs.ts). */
+export interface FreeSongAccount {
+  /** users.authProvider: the account's, never a token's. */
+  authProvider: string
+  email: string | null
+  /** users.emailVerified: 1 once the confirm link was opened. */
+  emailVerified: number
+  /** Its subscription has not ended (isSubscribed). */
+  subscribed: boolean
+}
+
+/** Whether an account gets the month's free song (owner, 28 Sep). */
+export function getsFreeSong(account: FreeSongAccount): boolean {
+  if (account.authProvider === 'anonymous') return false
+  // A confirmed email, as a promo code asks too (billing.ts): relaxing it
+  // is this one line.
+  if (account.email === null || account.emailVerified !== 1) return false
+  return !account.subscribed
+}
+
+/** The month a free song belongs to: `YYYY-MM`, in UTC. */
+export function songMonth(nowMs: number): string {
+  return new Date(nowMs).toISOString().slice(0, 7)
+}
+
+export interface FreeSong {
+  /** The month's free song, while it is not spent: 1, else 0. */
+  left: number
+  /** The idempotency key the month's next claim is written under. */
+  nextKey: string
+}
+
+/** The month's free song. `monthly` is whether this singer gets one at all
+ *  (getsFreeSong, and the free song not switched off). */
+export function freeSong(
+  rows: readonly LedgerRow[],
+  userId: string,
+  month: string,
+  monthly: boolean,
+): FreeSong {
+  const prefix = `${FREE_SONG}:${userId}:${month}:`
+  const claims = rows.filter(
+    (row) =>
+      row.reason === FREE_SONG &&
+      row.idempotencyKey?.startsWith(prefix) === true,
+  )
+  const givenBack = new Set(
+    rows
+      .filter((row) => row.reason === FREE_SONG_BACK)
+      .map((row) => row.jobRef),
+  )
+  const spent = claims.some((claim) => !givenBack.has(claim.jobRef))
+  return {
+    left: monthly && !spent ? 1 : 0,
+    nextKey: `${prefix}${claims.length}`,
+  }
+}
+
+/** The songs the native app can spend: the subscription's, and the month's
+ *  free song. Credits bought on the web, promo credits and testing
+ *  allowances are not among them (owner, S7 D9). */
+export interface AppSongs {
+  /** Subscription songs not yet spent. */
+  held: number
+  /** The month's free song, while it is there: 1, else 0. */
+  free: number
+  /** What the app can spend: both together. */
+  left: number
+  /** The key the free song's claim is written under, if the app spends it. */
+  freeKey: string
+}
+
+export function appSongs(
+  rows: readonly LedgerRow[],
+  userId: string,
+  nowMs: number,
+  monthly: boolean,
+): AppSongs {
+  const held = Math.max(0, subscriptionSongs(rows).held)
+  const free = freeSong(rows, userId, songMonth(nowMs), monthly)
+  return {
+    held,
+    free: free.left,
+    left: held + free.left,
+    freeKey: free.nextKey,
+  }
 }
 
 export interface SongsSummary {
   /** A subscription that has not ended. */
   subscribed: boolean
-  /** Songs the singer can still separate: the balance, never below zero. */
+  /** Songs the singer can still separate: on the web the balance, never
+   *  below zero; in the app its own songs (appSongs). */
   left: number
+  /** In the app: the month's free song among the songs left, 1 or 0. */
+  free?: number
   /** When the period ends and the next songs arrive, while subscribed. */
   renewsAt: string | null
   perPeriod: number
   cap: number
 }
 
-/** What `/api/billing/me` says about songs. Without a subscription the
- *  songs left are whatever the account already has (plan S8, owner 27 Sep:
- *  on dev, Import spends the account's existing credits). */
+/** What `/api/billing/me` says about songs. On the web, the songs left are
+ *  whatever the account has. In the app (`app`) they are the songs it can
+ *  spend: never credits bought on the web (owner, S7 D9). */
 export function songsSummary(
   entitlements: ReadonlyArray<{ feature: string; expiresAt: string | null }>,
   balance: number,
   allowance: SongAllowance,
   nowMs: number,
+  app?: Pick<AppSongs, 'left' | 'free'>,
 ): SongsSummary {
   const row = entitlements.find(
     (entitlement) => entitlement.feature === SONGS_ENTITLEMENT,
   )
   const endsAt = row?.expiresAt ?? null
-  const subscribed =
-    row !== undefined && (endsAt === null || Date.parse(endsAt) > nowMs)
+  const subscribed = isSubscribed(row, nowMs)
   return {
     subscribed,
-    left: Math.max(0, balance),
+    left: app === undefined ? Math.max(0, balance) : app.left,
+    ...(app === undefined ? {} : { free: app.free }),
     renewsAt: subscribed ? endsAt : null,
     perPeriod: allowance.perPeriod,
     cap: allowance.cap,

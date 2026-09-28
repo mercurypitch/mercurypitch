@@ -10,7 +10,7 @@
 // the server's own user, which is how the webhook finds whom to give the
 // songs to (db-worker revenuecat.ts).
 
-import type { CustomerSnapshot, PurchaseOfferings, PurchasePlan, PurchasePlanHandle, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
+import type { CustomerSnapshot, PaywallPort, PurchaseOfferings, PurchasePlan, PurchasePlanHandle, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
 import { PurchasesFailure } from '@irchiinnuss/mobile-runtime'
 import type { MobileRuntimeProbeOptions } from '@irchiinnuss/mobile-runtime/testing'
 import { createCustomerSnapshot, createMobileRuntimeProbe, } from '@irchiinnuss/mobile-runtime/testing'
@@ -43,15 +43,27 @@ const subscribed: CustomerSnapshot = createCustomerSnapshot([
   KARAOKE_ENTITLEMENT,
 ])
 
-/** A store that works, with every call it gets written down in order. */
+/** A store that works, with every call it gets written down in order:
+ *  `order` the ones that name or buy, `steps` every one. */
 function store(options: MobileRuntimeProbeOptions = {}) {
   const probe = createMobileRuntimeProbe({ offerings: OFFERINGS, ...options })
   const order: string[] = []
+  const steps: string[] = []
   const inner = probe.runtime.purchases
+  const innerPaywall = probe.runtime.paywall
   const purchases: PurchasesPort = {
     ...inner,
+    initialize: vi.fn(async () => {
+      steps.push('initialize')
+      return inner.initialize()
+    }),
+    getCustomer: vi.fn(async (asked?: { refresh?: boolean }) => {
+      steps.push('getCustomer')
+      return inner.getCustomer(asked)
+    }),
     logIn: vi.fn(async (id: string) => {
       order.push(`logIn ${id}`)
+      steps.push(`logIn ${id}`)
       return inner.logIn(id)
     }),
     purchase: vi.fn(async (chosen: PurchasePlan) => {
@@ -63,12 +75,14 @@ function store(options: MobileRuntimeProbeOptions = {}) {
       return inner.restore()
     }),
   }
-  return {
-    probe,
-    order,
-    purchases,
-    paywall: probe.runtime.paywall,
+  const paywall: PaywallPort = {
+    ...innerPaywall,
+    presentCustomerCenter: vi.fn(async () => {
+      steps.push('customer center')
+      return innerPaywall.presentCustomerCenter()
+    }),
   }
+  return { probe, order, steps, purchases, paywall }
 }
 
 const asUser = vi.fn(async () => Promise.resolve('user-7f3a' as string | null))
@@ -83,8 +97,49 @@ describe("this app's own composition", () => {
 
     await expect(subscription.subscribe()).resolves.toBe('unavailable')
     await expect(subscription.restore()).resolves.toBe('unavailable')
+    await expect(subscription.offer?.()).resolves.toBeNull()
+    await expect(subscription.storeSubscribed?.()).resolves.toBe(false)
     expect(subscription.manage).toBeUndefined()
     expect(identify).not.toHaveBeenCalled()
+  })
+})
+
+describe('the offer, with a store', () => {
+  // App Store guideline 3.1.2: the paywall states the subscription's price,
+  // and only the store knows it in the singer's own currency.
+  it("is the month's plan at the store's own price, before anyone is named", async () => {
+    const shop = store()
+
+    await expect(
+      createKaraokeSubscription(shop, asUser).offer?.(),
+    ).resolves.toEqual({ priceText: '€4.99', title: 'Karaoke monthly' })
+    expect(shop.order).toEqual([])
+  })
+
+  it('is nothing while the store has no plan to sell, or no products yet', async () => {
+    const empty = store({ offerings: { all: [] } })
+    const unset = store()
+    unset.purchases.getOfferings = async () =>
+      Promise.reject(new PurchasesFailure('configuration', 'no products'))
+
+    await expect(
+      createKaraokeSubscription(empty, asUser).offer?.(),
+    ).resolves.toBeNull()
+    await expect(
+      createKaraokeSubscription(unset, asUser).offer?.(),
+    ).resolves.toBeNull()
+  })
+
+  // Review of PR 880, finding 6: the paywall offers Subscribe only with the
+  // price in view, and asks again when the store could not say.
+  it('fails when the store cannot say, so the paywall can ask again', async () => {
+    const failing = store()
+    failing.purchases.getOfferings = async () =>
+      Promise.reject(new PurchasesFailure('network', 'offline'))
+
+    await expect(
+      createKaraokeSubscription(failing, asUser).offer?.(),
+    ).rejects.toThrow('offline')
   })
 })
 
@@ -217,8 +272,92 @@ describe('Manage subscription, with a store', () => {
     const shop = store()
 
     const subscription = createKaraokeSubscription(shop, asUser)
-    await subscription.manage?.()
+    await expect(subscription.manage?.()).resolves.toBe('opened')
 
     expect(shop.probe.calls.customerCenterOpens).toBe(1)
+  })
+
+  // Review of PR 880, finding 2: a subscriber who taps Manage on a cold
+  // start never opened the paywall, so nothing had configured the store,
+  // and its page would run as the store's own anonymous id.
+  it("signs in to the store as the server's user before it opens the page", async () => {
+    const shop = store()
+
+    await createKaraokeSubscription(shop, asUser).manage?.()
+
+    expect(shop.steps).toEqual([
+      'initialize',
+      'logIn user-7f3a',
+      'customer center',
+    ])
+  })
+
+  it('opens nothing for a phone the server cannot name', async () => {
+    const shop = store()
+
+    const outcome = await createKaraokeSubscription(shop, async () =>
+      Promise.resolve(null),
+    ).manage?.()
+
+    expect(outcome).toBe('failed')
+    expect(shop.probe.calls.customerCenterOpens).toBe(0)
+  })
+
+  it('says it failed when the store cannot open its page', async () => {
+    const shop = store()
+    shop.paywall.presentCustomerCenter = async () =>
+      Promise.reject(new PurchasesFailure('unknown', 'no page'))
+
+    await expect(
+      createKaraokeSubscription(shop, asUser).manage?.(),
+    ).resolves.toBe('failed')
+  })
+})
+
+describe("what the store says of this user's subscription", () => {
+  // Review of PR 880, finding 5: the store is the first to know of a
+  // purchase; the server hears through RevenueCat's webhook. The room asks
+  // the store before it offers the subscription again (S7 §3.9: the more
+  // generous of the two).
+  it("is subscribed where the store holds the Karaoke subscription for the server's user", async () => {
+    const shop = store({ customer: subscribed })
+
+    await expect(
+      createKaraokeSubscription(shop, asUser).storeSubscribed?.(),
+    ).resolves.toBe(true)
+    expect(shop.steps).toEqual(['initialize', 'logIn user-7f3a', 'getCustomer'])
+  })
+
+  it('is not, where the store holds another entitlement, or none', async () => {
+    const other = store({ customer: createCustomerSnapshot(['supporter']) })
+    const none = store()
+
+    await expect(
+      createKaraokeSubscription(other, asUser).storeSubscribed?.(),
+    ).resolves.toBe(false)
+    await expect(
+      createKaraokeSubscription(none, asUser).storeSubscribed?.(),
+    ).resolves.toBe(false)
+  })
+
+  it('is not, for a phone the server cannot name, and the store is not asked', async () => {
+    const shop = store({ customer: subscribed })
+
+    await expect(
+      createKaraokeSubscription(shop, async () =>
+        Promise.resolve(null),
+      ).storeSubscribed?.(),
+    ).resolves.toBe(false)
+    expect(shop.steps).not.toContain('getCustomer')
+  })
+
+  it('is not, when the store cannot say', async () => {
+    const shop = store({ customer: subscribed })
+    shop.purchases.getCustomer = async () =>
+      Promise.reject(new PurchasesFailure('network', 'offline'))
+
+    await expect(
+      createKaraokeSubscription(shop, asUser).storeSubscribed?.(),
+    ).resolves.toBe(false)
   })
 })

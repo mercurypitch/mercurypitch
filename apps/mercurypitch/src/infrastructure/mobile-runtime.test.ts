@@ -10,13 +10,27 @@
 import { describe, expect, it } from 'vitest'
 import { createNativeRuntime } from './mobile-runtime'
 
+describe('with its platform’s store key', () => {
+  // Plan S8 step 25: the Cloud subscription is sold through RevenueCat. The
+  // key is fake; nothing here reaches a store, since the SDK is configured
+  // only when a purchase or a restore first asks for it.
+  const runtime = createNativeRuntime({ apiKey: 'appl_notarealkey' })
+
+  it('sells through the store, and has the store’s own pages', () => {
+    expect(runtime.purchases.available).toBe(true)
+    expect(runtime.paywall.available).toBe(true)
+  })
+})
+
 describe('this app’s own composition', () => {
+  // Off a device the platform is the web, where no key applies: this is
+  // also what a build without its platform's key composes.
   const runtime = createNativeRuntime()
 
   it('reports purchases as unavailable rather than pretending', () => {
-    // The only assertion that fails if someone adds a store to V1-1.
     expect(runtime.purchases.available).toBe(false)
     expect(runtime.paywall.available).toBe(false)
+    expect(createNativeRuntime({}).purchases.available).toBe(false)
   })
 
   it('reads resolve, so a locked state renders without branching', async () => {

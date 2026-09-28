@@ -8,6 +8,9 @@
 //   POST /api/billing/webhook   — Stripe; signature-verified, idempotent
 //   POST /api/billing/uvr-admit — auth; pre-dispatch credit + rate-limit gate
 //   POST /api/billing/debit     — auth; meter a server UVR job (idempotent)
+//                                 From the native app, /me, the admission and
+//                                 the debit see only the app's songs: never
+//                                 web credits (S7 D9, app-songs.ts)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
 //   POST /api/billing/promo/redeem — auth + verified email; { code } → credits
 //   POST /api/billing/revenuecat — RevenueCat; secret header, idempotent: the
@@ -32,6 +35,9 @@
 import type { Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
 import { sendBillingAlert, sendPurchaseThankYou } from './email'
+import type { AppDebit } from './app-songs'
+import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
+import { LedgerBusy } from './ledger'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
 import type { PricingRow } from './billing-core'
@@ -146,11 +152,18 @@ async function handleMe(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
-  const ledger = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE userId = ?',
-  )
-    .bind(auth.userId)
-    .all<{ delta: number }>()
+  // The native app sees the songs it can spend, in every field that says
+  // what can be spent, and never credits bought on the web (S7 D9).
+  const app =
+    spenderOf(request) === 'app'
+      ? await readAppSongs(env, auth.userId, Date.now())
+      : null
+  const ledger =
+    app === null
+      ? await env.DB.prepare('SELECT delta FROM creditLedger WHERE userId = ?')
+          .bind(auth.userId)
+          .all<{ delta: number }>()
+      : null
   // sourceLabel resolves `donation:<planId>` to that tier's display name, so
   // the badge can say "Voice supporter" from this one call. It stays editable
   // in the DB — the client never hardcodes a tier name.
@@ -182,13 +195,19 @@ async function handleMe(
     redeemedPromos = []
   }
 
-  const balance = creditBalance(ledger.results)
+  const balance = app?.left ?? creditBalance(ledger?.results ?? [])
   return respond({
     creditBalance: balance,
     entitlements,
     // The same balance in the native app's words, with the Karaoke
     // subscription around it (songs-allowance.ts).
-    songs: songsSummary(entitlements, balance, songAllowance(env), Date.now()),
+    songs: songsSummary(
+      entitlements,
+      balance,
+      songAllowance(env),
+      Date.now(),
+      app ?? undefined,
+    ),
     redeemedPromos,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
@@ -630,6 +649,9 @@ interface DebitBody {
    *  rejects a job whose actual factor exceeds the declared one, so this
    *  can only over-pay, never under-pay. Absent = base factor. */
   durationSeconds?: number
+  /** `app`: the main worker spends for the native app, which spends only
+   *  its own songs (app-songs.ts). Anything else is the web's spend. */
+  from?: unknown
 }
 
 const MODEL_NAME_RE = /^[A-Za-z0-9._-]{1,80}$/
@@ -641,6 +663,20 @@ const isValidDuration = (value: unknown): value is number =>
   value > 0 &&
   value < 86_400
 
+async function getUvrCost(
+  env: Env,
+  tier: 'gpu' | 'cpu',
+  model?: string,
+  durationSeconds?: number,
+): Promise<number> {
+  const plan = await env.DB.prepare(
+    'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
+  )
+    .bind(UVR_TIER_PLAN_IDS[tier])
+    .first<{ credits: number | null }>()
+  return uvrJobCost(plan?.credits ?? 0, model, durationSeconds)
+}
+
 async function getUvrQuote(
   env: Env,
   userId: string,
@@ -648,12 +684,7 @@ async function getUvrQuote(
   model?: string,
   durationSeconds?: number,
 ): Promise<{ cost: number; balance: number }> {
-  const plan = await env.DB.prepare(
-    'SELECT credits FROM pricingPlans WHERE id = ? AND active = 1',
-  )
-    .bind(UVR_TIER_PLAN_IDS[tier])
-    .first<{ credits: number | null }>()
-  const cost = uvrJobCost(plan?.credits ?? 0, model, durationSeconds)
+  const cost = await getUvrCost(env, tier, model, durationSeconds)
   const ledger = await env.DB.prepare(
     'SELECT delta FROM creditLedger WHERE userId = ?',
   )
@@ -676,11 +707,11 @@ async function handleUvrAdmission(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
+  let body: Pick<DebitBody, 'tier' | 'model' | 'durationSeconds' | 'from'>
   try {
     body =
       await request.json<
-        Pick<DebitBody, 'tier' | 'model' | 'durationSeconds'>
+        Pick<DebitBody, 'tier' | 'model' | 'durationSeconds' | 'from'>
       >()
   } catch {
     return respond({ error: 'Invalid JSON body' }, { status: 400 })
@@ -715,13 +746,24 @@ async function handleUvrAdmission(
     }
   }
 
-  const quote = await getUvrQuote(
-    env,
-    auth.userId,
-    body.tier,
-    body.model,
-    body.durationSeconds,
-  )
+  const quote =
+    spenderOf(request, body.from) === 'app'
+      ? {
+          cost: await getUvrCost(
+            env,
+            body.tier,
+            body.model,
+            body.durationSeconds,
+          ),
+          balance: (await readAppSongs(env, auth.userId, Date.now())).left,
+        }
+      : await getUvrQuote(
+          env,
+          auth.userId,
+          body.tier,
+          body.model,
+          body.durationSeconds,
+        )
   if (quote.cost <= 0) {
     return respond(
       { error: 'Server processing metering is unavailable' },
@@ -775,6 +817,14 @@ async function handleDebit(
     !isValidDuration(body.durationSeconds)
   ) {
     return respond({ error: 'Invalid durationSeconds' }, { status: 400 })
+  }
+  if (spenderOf(request, body.from) === 'app') {
+    return handleAppDebit(
+      env,
+      auth,
+      { ...body, tier: body.tier, jobRef: body.jobRef },
+      respond,
+    )
   }
 
   const { cost, balance } = await getUvrQuote(
@@ -841,6 +891,70 @@ async function handleDebit(
   return respond({ debited: cost, cost, balance: balance - cost })
 }
 
+interface AppJob {
+  tier: 'gpu' | 'cpu'
+  jobRef: string
+}
+
+/** The native app's debit: its songs only, the month's free song first
+ *  (app-songs.ts). Same answers as the web's, in the same shape. */
+async function handleAppDebit(
+  env: Env,
+  auth: { userId: string },
+  body: DebitBody & AppJob,
+  respond: Respond,
+): Promise<Response> {
+  const cost = await getUvrCost(
+    env,
+    body.tier,
+    body.model,
+    body.durationSeconds,
+  )
+  if (cost <= 0) {
+    const { left } = await readAppSongs(env, auth.userId, Date.now())
+    return respond({ debited: 0, cost: 0, balance: left })
+  }
+  let spent: AppDebit
+  try {
+    spent = await debitAppSongs(env, auth.userId, body.jobRef, cost)
+  } catch (error) {
+    if (!(error instanceof LedgerBusy)) throw error
+    // Nothing was written, and the debit is idempotent per job: the main
+    // worker asks again (uvr-metering.ts) rather than cancel the job.
+    console.warn(`[billing] app debit ${body.jobRef}: ${error.message}`)
+    return respond(
+      { error: 'Billing is busy. Try again.', retryable: true },
+      { status: 503, headers: { 'Retry-After': '1' } },
+    )
+  }
+  if (spent.outcome === 'duplicate') {
+    return respond({
+      debited: spent.songs,
+      cost,
+      balance: spent.left,
+      duplicate: true,
+    })
+  }
+  if (spent.outcome === 'short') {
+    console.warn(
+      `[billing] app debit ${body.jobRef}: refused (user=${auth.userId} songs=${spent.left} required=${cost})`,
+    )
+    return respond(
+      { error: 'Insufficient credits', required: cost, balance: spent.left },
+      { status: 402 },
+    )
+  }
+  console.log(
+    `[billing] app debit ${body.jobRef}: -${cost}${spent.free > 0 ? ' (free song)' : ''} user=${auth.userId} songs=${spent.left}`,
+  )
+  return respond({
+    debited: cost,
+    cost,
+    balance: spent.left,
+    ...(spent.free > 0 ? { freeSong: true } : {}),
+  })
+}
+
 /** Refund a failed/cancelled job's debit.
  *
  *  Service-to-service only (X-Service-Key must match BILLING_SERVICE_KEY —
@@ -876,9 +990,15 @@ async function handleRefund(
   )
     .bind(uvrDebitKey(body.jobRef))
     .first<{ userId: string; delta: number }>()
-  if (!debit || debit.delta >= 0) {
+  if (!debit) {
     // Never debited (unmetered job or unknown ref) — nothing to refund.
     return respond({ refunded: 0 })
+  }
+  if (debit.delta >= 0) {
+    // No credits taken: the month's free song paid for all of it, in the
+    // native app (app-songs.ts). It comes back; there is nothing else to.
+    const freeSong = await giveFreeSongBack(env, debit.userId, body.jobRef)
+    return respond({ refunded: 0, ...(freeSong ? { freeSong: true } : {}) })
   }
 
   const amount = -debit.delta
@@ -900,6 +1020,8 @@ async function handleRefund(
       `[billing] refund ${body.jobRef}: +${amount} user=${debit.userId}`,
     )
   }
+  // A longer song the free song paid part of: that part comes back too.
+  await giveFreeSongBack(env, debit.userId, body.jobRef)
   return respond({ refunded: amount, duplicate: res.meta.changes === 0 })
 }
 

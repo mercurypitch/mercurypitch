@@ -76,9 +76,9 @@
 //            store build. The switch is a build constant (KARAOKE_IMPORT,
 //            src/lib/native-build.ts) that api-base.mjs's karaokeImportFor
 //            decides from the same target as the worker, so a store build
-//            must carry none of the import, its queue, its paywall or its
-//            Settings rows -- absent, not hidden -- and every other build
-//            must carry all of them.
+//            must carry none of the import, its queue, its paywall, the
+//            store SDK it buys through, or its Settings rows -- absent, not
+//            hidden -- and every other build must carry all of them.
 //
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
@@ -173,6 +173,7 @@ const KARAOKE_STAGE_2 = [
   ['karaoke-room-imports', 'the import queue'],
   ['Remove imported songs', 'Settings and Storage for imported songs'],
   ['Songs this month', 'the songs left, in the room and in Settings'],
+  ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
 ]
 
 const failures = []

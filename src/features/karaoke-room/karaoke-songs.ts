@@ -3,12 +3,13 @@
 // ============================================================
 //
 // The singer sees songs, never credits. Under the hood a song up to twelve
-// minutes is one credit in the ledger, and the Karaoke subscription grants a
-// number of them each month into it (db-worker revenuecat.ts), so "songs
-// left" is the balance `/api/billing/me` reports. A worker that does not
-// yet say `songs` is read as its balance with no subscription: on a dev
-// build the account's existing credits are what Import spends (owner, 27
-// Sep), and nothing is known to renew.
+// minutes is one credit in the ledger, and the Mercury Pitch Cloud
+// subscription grants a number of them each month into it (db-worker
+// revenuecat.ts). "Songs left" is what `/api/billing/me` says the app can
+// spend: the subscription's songs and a signed-in singer's free song of the
+// month, never credits bought on the web (owner, S7 D9 and D5; the server
+// decides, db-worker app-songs.ts). The balance is never read as songs
+// here, so a worker that does not say `songs` leaves them unknown.
 //
 // Nothing here buys anything. The paywall is KaraokeImport's, and its
 // Subscribe goes through the shell (nativeShellApi().karaokeSubscription).
@@ -19,14 +20,16 @@ import { fetchBillingMe } from '@/db/services/billing-service'
 import type { KaraokeRestoreOutcome } from '@/stores/native-shell-store'
 
 /**
- * The subscription as the paywall states it, until the store's own product
- * says otherwise (owner, 27 Sep: 20 songs a month at 4.99; S7 still owns the
- * yearly price). The server's `perPeriod` wins wherever it is known.
+ * The songs a month the subscription grants, until the server says (owner,
+ * 27 Sep: 20). The server's `perPeriod` wins wherever it is known. The price
+ * is never ours to state: the paywall shows the store's own.
  */
 export const KARAOKE_PLAN = Object.freeze({
   songsPerMonth: 20,
-  price: '€4.99',
 })
+
+/** The subscription's name, in the stores and in the app (owner, S7 D2). */
+export const CLOUD_NAME = 'Mercury Pitch Cloud'
 
 /**
  * The days a separated song waits on the server for this phone to collect
@@ -83,12 +86,7 @@ export async function refreshKaraokeSongs(
   if (me === null) return songs()
   const next: KaraokeSongs =
     me.songs === undefined
-      ? {
-          left: Math.max(0, Math.floor(me.creditBalance)),
-          subscribed: false,
-          renewsAt: null,
-          perPeriod: KARAOKE_PLAN.songsPerMonth,
-        }
+      ? UNKNOWN
       : {
           left: me.songs.left,
           subscribed: me.songs.subscribed,
@@ -97,6 +95,47 @@ export async function refreshKaraokeSongs(
         }
   setSongs(next)
   return next
+}
+
+const [onTheWay, setOnTheWay] = createSignal(false)
+
+/**
+ * The store has said yes to a purchase or a restore, and the server has not
+ * heard yet: it hears from RevenueCat's webhook, usually within seconds.
+ * Meanwhile the room says the songs are on their way rather than showing
+ * the paywall again.
+ */
+export const songsOnTheWay = onTheWay
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+/**
+ * Ask the server again until it says subscribed, a few times, and settle
+ * for what it last said. `refresh` is how to ask (refreshKaraokeSongs).
+ */
+export async function awaitSubscription(
+  refresh: () => Promise<KaraokeSongs>,
+  options: {
+    tries?: number
+    everyMs?: number
+    wait?: (ms: number) => Promise<void>
+  } = {},
+): Promise<KaraokeSongs> {
+  const { tries = 10, everyMs = 3_000, wait = sleep } = options
+  setOnTheWay(true)
+  try {
+    let heard = await refresh()
+    for (let asked = 1; asked < tries && !heard.subscribed; asked += 1) {
+      await wait(everyMs)
+      heard = await refresh()
+    }
+    return heard
+  } finally {
+    setOnTheWay(false)
+  }
 }
 
 export function resetKaraokeSongsForTests(next: KaraokeSongs = UNKNOWN): void {
@@ -196,9 +235,9 @@ export function subscriptionStatusLine(state: KaraokeSongs): string {
 export function restoreNote(outcome: KaraokeRestoreOutcome): string {
   switch (outcome) {
     case 'restored':
-      return 'Your Karaoke subscription is restored.'
+      return `Your ${CLOUD_NAME} subscription is restored.`
     case 'nothing':
-      return 'No Karaoke subscription was found to restore.'
+      return `No ${CLOUD_NAME} subscription was found to restore.`
     case 'unavailable':
       return 'Purchases are not available yet.'
     case 'failed':

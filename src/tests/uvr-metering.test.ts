@@ -100,6 +100,51 @@ describe('debitForJob', () => {
     expect(verdict.status).toBe(500)
   })
 
+  // The db-worker answers 503 with `retryable` when the ledger kept
+  // changing under the app's debit: nothing was written, and the debit is
+  // idempotent per job, so it is asked once more before the job is cancelled.
+  it('asks once more when the db-worker says to try again', async () => {
+    const answers = [
+      {
+        ok: false,
+        status: 503,
+        headers: new Headers({ 'Retry-After': '1' }),
+        json: () => Promise.resolve({ error: 'busy', retryable: true }),
+      },
+      {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve({ debited: 1, balance: 19 }),
+      },
+    ]
+    const fetchMock = vi
+      .spyOn(global, 'fetch')
+      .mockImplementation(async () => answers.shift() as Response)
+
+    const verdict = await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_busy')
+
+    expect(verdict).toEqual({ allowed: true, status: 200 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('asks only once more, and then fails closed', async () => {
+    const fetchMock = mockFetch({ error: 'busy', retryable: true }, false, 503)
+
+    const verdict = await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_busy2')
+
+    expect(verdict).toMatchObject({ allowed: false, status: 503 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('never asks again for a refusal that is not a retry', async () => {
+    const fetchMock = mockFetch({ error: 'down' }, false, 503)
+
+    await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_down')
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('fails closed when the db-worker is unreachable', async () => {
     vi.spyOn(global, 'fetch').mockRejectedValue(new Error('down'))
     const verdict = await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')
@@ -172,5 +217,39 @@ describe('refundJob', () => {
   it('swallows transport errors', async () => {
     vi.spyOn(global, 'fetch').mockRejectedValue(new Error('down'))
     await expect(refundJob(KEYED, 'rp_gpu_j1')).resolves.toBeUndefined()
+  })
+})
+
+describe('spending for the native app', () => {
+  // S7 D9: the db-worker lets the native app spend only its own songs. The
+  // main worker calls it from a server, with no origin of its own, so it
+  // says whose spend it is.
+  it('tells the admission and the debit the spend is the app’s', async () => {
+    const spy = mockFetch({ allowed: true, debited: 1 })
+    const forApp: MeteringConfig = { ...CFG, forApp: true }
+
+    await admitUvrJob(forApp, 'Bearer tok', 'gpu')
+    await debitForJob(forApp, 'Bearer tok', 'gpu', 'rp_gpu_j1')
+
+    const bodies = spy.mock.calls.map(([, init]) =>
+      JSON.parse(String((init as RequestInit).body)),
+    )
+    expect(bodies).toEqual([
+      { tier: 'gpu', from: 'app' },
+      { tier: 'gpu', jobRef: 'rp_gpu_j1', from: 'app' },
+    ])
+  })
+
+  it('says nothing of the kind for the web', async () => {
+    const spy = mockFetch({ allowed: true, debited: 1 })
+
+    await admitUvrJob(CFG, 'Bearer tok', 'gpu')
+    await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')
+
+    for (const [, init] of spy.mock.calls) {
+      expect(JSON.parse(String((init as RequestInit).body))).not.toHaveProperty(
+        'from',
+      )
+    }
   })
 })

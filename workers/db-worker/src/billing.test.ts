@@ -171,6 +171,33 @@ class FakeStatement {
       return { meta: { changes: 1 } }
     }
 
+    // The month's free song given back with a failed job's refund: a row of
+    // no credits, and only for a job a free song paid for (app-songs.ts).
+    if (
+      sql.startsWith('INSERT OR IGNORE INTO creditLedger') &&
+      sql.includes('WHERE userId = ? AND reason = ? AND jobRef = ?')
+    ) {
+      const [id, , reason, key, userId, claimReason, jobRef] = values
+      const claimed = db.ledger.some(
+        (r) =>
+          r.userId === userId &&
+          r.reason === claimReason &&
+          r.jobRef === jobRef,
+      )
+      if (!claimed || db.ledger.some((r) => r.idempotencyKey === key)) {
+        return { meta: { changes: 0 } }
+      }
+      db.ledger.push({
+        id: String(id),
+        userId: String(userId),
+        delta: 0,
+        reason: String(reason),
+        jobRef: String(jobRef),
+        idempotencyKey: String(key),
+      })
+      return { meta: { changes: 1 } }
+    }
+
     if (sql.startsWith('INSERT OR IGNORE INTO billingEvents')) {
       const id = String(values[0])
       const fresh = !db.billingEvents.has(id)

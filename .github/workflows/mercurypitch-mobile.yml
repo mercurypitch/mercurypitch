@@ -162,8 +162,11 @@ jobs:
       distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
       platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
       testflight-upload-from: tags
-      # V1-1 sells nothing. The purchase scaffold is inert and reports itself
-      # unavailable, so there is no mock to label and no StoreKit to sandbox.
+      # Real StoreKit, never the mock: a TestFlight build sells Mercury Pitch
+      # Cloud through RevenueCat with the iOS key, and TestFlight runs every
+      # purchase against the App Store sandbox (plan S8 step 25). A build
+      # without its platform's key sells nothing and says "not available
+      # yet" (apps/mercurypitch/src/infrastructure/purchases-setup.ts).
       testflight-purchase-mode: store
       # What a store binary has to be true of: the wasm runtime and the model
       # are vendored AND referenced, and nothing sells anything. The checks

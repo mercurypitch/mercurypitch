@@ -181,6 +181,9 @@ export interface Env {
   SONGS_PER_PERIOD?: string
   /** The balance unused songs roll over to, at most. Default 50. */
   SONGS_ROLLOVER_CAP?: string
+  /** `off` stops the signed-in singer's free song a month in the native app
+   *  (owner, S7 D5). Anything else, or unset, leaves it on (app-songs.ts). */
+  FREE_MONTHLY_SONG?: string
   /** Shared secret authorizing service-to-service billing calls (the main
    *  worker's job refunds via X-Service-Key). Set the SAME value on both
    *  workers; refunds return 503 while unset. */

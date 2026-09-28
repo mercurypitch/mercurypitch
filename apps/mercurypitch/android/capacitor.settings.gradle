@@ -29,5 +29,11 @@ project(':capacitor-status-bar').projectDir = new File('../../../node_modules/.p
 include ':capgo-capacitor-social-login'
 project(':capgo-capacitor-social-login').projectDir = new File('../../../node_modules/.pnpm/@capgo+capacitor-social-login@8.5.7_@capacitor+core@8.5.0/node_modules/@capgo/capacitor-social-login/android')
 
+include ':revenuecat-purchases-capacitor'
+project(':revenuecat-purchases-capacitor').projectDir = new File('../../../node_modules/.pnpm/@revenuecat+purchases-capacitor@13.4.0_@capacitor+core@8.5.0/node_modules/@revenuecat/purchases-capacitor/android')
+
+include ':revenuecat-purchases-capacitor-ui'
+project(':revenuecat-purchases-capacitor-ui').projectDir = new File('../../../node_modules/.pnpm/@revenuecat+purchases-capacitor-ui@13.4.0_@capacitor+core@8.5.0_@revenuecat+purchases-c_52656dc8f7054b6a8a9be9cf6f9a3d98/node_modules/@revenuecat/purchases-capacitor-ui/android')
+
 include ':capacitor-native-settings'
 project(':capacitor-native-settings').projectDir = new File('../../../node_modules/.pnpm/capacitor-native-settings@8.2.0_@capacitor+core@8.5.0/node_modules/capacitor-native-settings/android')
