@@ -185,6 +185,7 @@ beforeEach(() => {
 afterEach(() => {
   logSpy.mockRestore()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
   sqlite.close()
   perksSqlite.close()
 })
@@ -320,19 +321,71 @@ describe('what a sign-up request tells the world', () => {
     expect(codeRowsFor('ghost@example.com')).toBe(0)
   })
 
-  it('mints no sign-up code past the per-address budget', async () => {
-    // Five an hour per address, whichever addresses the requests come from:
-    // rotating IPs must not be able to bomb one inbox.
-    for (let i = 1; i <= 5; i += 1) {
-      await askForCode('budget@example.com', { ip: `203.0.113.${i}` })
-    }
+  // The sign-up budget is tighter than the sign-in one. A sign-up code goes to
+  // an address nobody holds, and an unclaimed address never becomes "taken",
+  // so this is the one mail a stranger can have sent to anybody again and
+  // again. A real new singer needs one code, two at most (S6 security review,
+  // finding 1). Each request below comes from a different IP: rotating them
+  // must not buy a single extra mail.
+  it('mints two sign-up codes an hour for an address, and refuses the third', async () => {
+    const first = await askForCode('budget@example.com', {
+      ip: '203.0.113.1',
+    })
+    const second = await askForCode('budget@example.com', {
+      ip: '203.0.113.2',
+    })
+    expect(codesLogged('sign-up')).toHaveLength(2)
 
-    const sixth = await askForCode('budget@example.com', {
-      ip: '203.0.113.99',
+    const third = await askForCode('budget@example.com', {
+      ip: '203.0.113.3',
     })
 
-    expect(sixth.status).toBe(200)
-    expect(codesLogged('sign-up')).toHaveLength(5)
+    // Refused silently, in the same shape as the two that were sent: a
+    // visible refusal would say that the address has no account.
+    expect(codesLogged('sign-up')).toHaveLength(2)
+    expect(codeRowsFor('budget@example.com')).toBe(2)
+    expect(third.status).toBe(200)
+    expect(Object.keys(third.body).sort()).toEqual(
+      Object.keys(first.body).sort(),
+    )
+    expect(second.status).toBe(200)
+  })
+
+  it('mints sign-up codes again once the hour is over', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    for (let i = 1; i <= 3; i += 1) {
+      await askForCode('budget@example.com', { ip: `203.0.113.${i}` })
+    }
+    expect(codesLogged('sign-up')).toHaveLength(2)
+
+    vi.setSystemTime(Date.now() + 60 * 60 * 1000)
+    const afterTheHour = await askForCode('budget@example.com', {
+      ip: '203.0.113.4',
+    })
+
+    expect(afterTheHour.status).toBe(200)
+    expect(codesLogged('sign-up')).toHaveLength(3)
+    const { status } = await verify(
+      afterTheHour.body.ceremony,
+      lastCode('sign-up'),
+    )
+    expect(status).toBe(200)
+  })
+
+  it('leaves a known address its five sign-in codes an hour', async () => {
+    // The phone always asks with `signUp: true`, so a singer who already has
+    // an account signs in through this same request. The tighter budget is
+    // for addresses nobody holds, and must not reach them.
+    await register('known@example.com')
+    for (let i = 1; i <= 5; i += 1) {
+      await askForCode('known@example.com', { ip: `203.0.113.${i}` })
+    }
+    expect(codesLogged('sign-in')).toHaveLength(5)
+
+    await askForCode('known@example.com', { ip: '203.0.113.99' })
+
+    expect(codesLogged('sign-in')).toHaveLength(5)
+    expect(codesLogged('sign-up')).toEqual([])
   })
 
   it('mails the sign-up wording to a new address and the sign-in wording to a known one', async () => {

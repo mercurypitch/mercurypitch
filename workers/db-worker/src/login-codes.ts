@@ -14,7 +14,9 @@
 //      a token for a code they cannot read.
 //   2. Five wrong guesses burn the row permanently.
 //   3. Ten minutes, single use, claimed by an atomic UPDATE.
-//   4. Rate limits per address and per IP, on top of all of that.
+//   4. Rate limits per address and per IP, on top of all of that. A code
+//      that sets an account up has a tighter one still: two an hour per
+//      address, against five for signing in (RATE_LIMITS in auth.ts).
 //
 // A code can also SET UP an account, when the client asks for one and the
 // address has none yet (the native sheet; S6 decision 05). That row carries

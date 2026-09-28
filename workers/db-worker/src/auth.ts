@@ -740,6 +740,11 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // actually bounds guessing.
   'email-code/request': { max: 5, windowMs: 600_000 }, // 5/10min per IP
   'email-code-address': { max: 5, windowMs: 3_600_000 }, // 5/h per address
+  // Codes that SET UP an account, per address, inside the budget above. The
+  // address has no account, and an unclaimed address never becomes "taken",
+  // so this is the one mail a stranger can have sent to anybody over and
+  // over. A real new singer needs one code, two at most.
+  'email-code-sign-up': { max: 2, windowMs: 3_600_000 }, // 2/h per address
   'email-code/verify': { max: 30, windowMs: 900_000 }, // 30/15min per IP
   // Passkeys. Adding and removing one is ordinary settings traffic; the
   // sign-in ceremony is not, and its two halves are budgeted apart. Conditional
@@ -1822,12 +1827,21 @@ async function handleEmailCodeRequest(
     `email:${email}`,
     'email-code-address',
   )
+  // The sign-up budget is spent by every request that asks for one, known
+  // address or not, before the lookup. Spending it only for an unknown
+  // address would be one more query on exactly that path, and a known address
+  // is never gated by it: it gets a sign-in code within the budget above.
+  const signUpRl =
+    body.signUp === true && addressRl.allowed
+      ? await checkRateLimit(env.DB, `email:${email}`, 'email-code-sign-up')
+      : null
   const user = addressRl.allowed ? await findUserByEmail(env.DB, email) : null
   // A code that sets an account up: only when the client asked for one, and
-  // only within the address's budget. Asked that way, a known and an unknown
-  // address both get a row and a mail, so the two answers stay alike in work
-  // as well as in shape.
-  const signUp = body.signUp === true && addressRl.allowed && user === null
+  // only within both of the address's budgets. Asked that way, a known and an
+  // unknown address both get a row and a mail, so the two answers stay alike
+  // in work as well as in shape. Past the sign-up budget it is the decoy, as
+  // silent as the per-address cap above and for the same reason.
+  const signUp = signUpRl?.allowed === true && user === null
 
   let codeId = 0
   let work: Promise<void> | null = null
@@ -1937,6 +1951,11 @@ async function handleEmailCodeVerify(
       `email:${outcome.claim.email}`,
       'email-code-address',
     ),
+    clearRateLimit(
+      env.DB,
+      `email:${outcome.claim.email}`,
+      'email-code-sign-up',
+    ),
   ])
 
   const challenge = await twofaChallenge(env, row.id, 'emailcode')
@@ -1989,6 +2008,7 @@ async function finishSignUpCode(
   await Promise.all([
     clearRateLimit(env.DB, ip, 'email-code/verify'),
     clearRateLimit(env.DB, `email:${email}`, 'email-code-address'),
+    clearRateLimit(env.DB, `email:${email}`, 'email-code-sign-up'),
   ])
   await sendWelcomeEmail(env, email, null)
 
