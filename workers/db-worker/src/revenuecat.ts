@@ -21,8 +21,11 @@
 //   CANCELLATION, when its     a refund, which RevenueCat reports for the
 //   cancel_reason is           latest period only: the entitlement ends now,
 //   CUSTOMER_SUPPORT           and what is left of that period's songs is
-//                              taken back. Any other cancellation only stops
-//                              the renewal; the period runs to its end
+//                              taken back, unless the store already reversed
+//                              it (a reversal delivered first: nothing is
+//                              taken, nothing ends). Any other cancellation
+//                              only stops the renewal; the period runs to
+//                              its end
 //   TRANSFER                   the entitlement moves to the account it names,
 //                              and so do the songs of an anonymous identity:
 //                              a singer who subscribed before signing in to an
@@ -33,7 +36,10 @@
 //                              to their period, in full, and the entitlement
 //                              runs to the period's end again. Never more than
 //                              the refund took, so a second reversal of one
-//                              refund gives back nothing.
+//                              refund gives back nothing. One that arrives
+//                              before its refund gives back nothing either,
+//                              and its row names the period, so the refund
+//                              that follows takes nothing.
 // Everything else is acknowledged without action.
 //
 // Every event names its store environment. Only the one this deployment is
@@ -51,7 +57,7 @@
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
 import { readLedger, writeOnLedger } from './ledger'
-import { periodGrant, refundReversal, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, SUBSCRIPTION_REFUND_REVERSED, subscriptionSongs, } from './songs-allowance'
+import { periodGrant, refundReversal, refundReversedFirst, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, SUBSCRIPTION_REFUND_REVERSED, subscriptionSongs, } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -77,6 +83,8 @@ interface Outcome {
   granted?: number
   moved?: number
   clawedBack?: number
+  /** A refund whose reversal was delivered first: it took nothing. */
+  reversedAlready?: boolean
   restored?: number
 }
 
@@ -210,14 +218,17 @@ async function grantPeriod(
 
 /** A refund: take back what is left of the refunded period's songs, the
  *  period the event's transaction names. RevenueCat reports a refund for
- *  the latest period only, so without a transaction it is the latest.
- *  Returns the songs taken back. */
+ *  the latest period only, so without a transaction it is the latest. A
+ *  refund the store reversed before it got here takes nothing
+ *  (refundReversedFirst). Returns the songs taken back, and whether it was
+ *  reversed already. */
 async function clawBack(
   env: Env,
   userId: string,
   event: RevenueCatEvent,
-): Promise<number> {
+): Promise<{ songs: number; reversed: boolean }> {
   const transaction = text(event.transaction_id)
+  let reversed = false
   const taken = await writeOnLedger(
     env,
     userId,
@@ -229,10 +240,15 @@ async function clawBack(
         periods.find(
           (entry) => transaction !== null && entry.transaction === transaction,
         ) ?? periods[periods.length - 1]
-      return { delta: -(period?.left ?? 0), jobRef: period?.key ?? null }
+      reversed =
+        period !== undefined && refundReversedFirst(ledger.rows, period.key)
+      return {
+        delta: reversed ? 0 : -(period?.left ?? 0),
+        jobRef: period?.key ?? null,
+      }
     },
   )
-  return -taken
+  return { songs: -taken, reversed }
 }
 
 /** A reversed refund: give back what the refund took from its period, less
@@ -373,6 +389,8 @@ async function applyEvent(
   }
 
   if (refund) {
+    const back = await clawBack(env, user.id, event)
+    if (back.reversed) return { clawedBack: 0, reversedAlready: true }
     // The refunded period is over now, whatever it would have run to.
     const now = new Date().toISOString()
     await env.DB.prepare(
@@ -382,7 +400,7 @@ async function applyEvent(
     )
       .bind(now, now, user.id, SONGS_ENTITLEMENT, now)
       .run()
-    return { clawedBack: await clawBack(env, user.id, event) }
+    return { clawedBack: back.songs }
   }
 
   if (type === 'REFUND_REVERSED') {

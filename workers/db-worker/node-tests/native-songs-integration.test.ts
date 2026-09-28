@@ -3,8 +3,9 @@
 // ── The songs the native app can spend (plan S7 D9 and D5, owner 28 Sep) ──
 //
 // Credits bought on the web are not spendable in the native app in V1: the
-// app sees and spends the Karaoke subscription's songs, and a signed-in
-// singer's one free song a month. The web keeps spending the whole balance.
+// app sees and spends the Karaoke subscription's songs, and the one free
+// song a month of a signed-in singer without the subscription. The web
+// keeps spending the whole balance, its own credits first (owner, 28 Sep).
 // The server decides which: the app's own origin says a request is the
 // app's, and so does the main worker when it spends on the app's behalf.
 // Either only ever narrows what can be spent.
@@ -65,8 +66,11 @@ async function anonymousToken(): Promise<string> {
   return ((await response.json()) as { token: string }).token
 }
 
-/** The same identity, signed up: an account, the same user id. */
-async function signedInToken(): Promise<string> {
+/** The same identity, signed up: an account, the same user id, with its
+ *  email confirmed unless `confirmed` is false (the link not opened yet). */
+async function signedInToken(
+  { confirmed }: { confirmed: boolean } = { confirmed: true },
+): Promise<string> {
   await anonymousToken()
   const response = await call('/api/auth/register', {
     body: {
@@ -77,7 +81,13 @@ async function signedInToken(): Promise<string> {
     },
   })
   expect(response.status).toBe(200)
+  if (confirmed) confirmTheEmail()
   return ((await response.json()) as { token: string }).token
+}
+
+/** What opening the confirm link does to the account (auth.ts). */
+function confirmTheEmail(): void {
+  sqlite.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(DEVICE)
 }
 
 function seedRow(delta: number, reason: string, key: string): void {
@@ -119,6 +129,19 @@ function raceTheNextWrite(write: () => void): void {
       raced = true
       write()
     }
+    return batch(statements)
+  }
+}
+
+/** Another write lands between every ledger read and the write after it:
+ *  a ledger too busy for the app's debit to ever land on. */
+function raceEveryWrite(): void {
+  const db = env.DB as unknown as SqliteD1Database
+  const batch = db.batch.bind(db)
+  let raced = 0
+  db.batch = async (statements) => {
+    raced += 1
+    seedRow(1, 'promo', `busy-${raced}`)
     return batch(statements)
   }
 }
@@ -382,7 +405,9 @@ describe('what the app can spend', () => {
     expect(first.status).toBe(200)
     expect(retry.status).toBe(200)
     expect(await retry.json()).toMatchObject({ debited: 1, duplicate: true })
-    expect(rows('uvr-job')).toEqual([{ delta: -1, jobRef: 'rp_gpu_retried' }])
+    expect(rows('uvr-job-app')).toEqual([
+      { delta: -1, jobRef: 'rp_gpu_retried' },
+    ])
   })
 
   it('spends one song once when two separations race for it', async () => {
@@ -415,6 +440,21 @@ describe('what the app can spend', () => {
     expect(balance()).toBe(0)
   })
 
+  // Review of PR 880, nit 12: a ledger that keeps changing is a reason to
+  // try again, not a refusal: the main worker asks once more.
+  it('asks to be tried again when the ledger stays busy', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    raceEveryWrite()
+
+    const response = await debit(token, 'rp_gpu_busy', { origin: IOS })
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('Retry-After')).toBe('1')
+    expect(await response.json()).toMatchObject({ retryable: true })
+    expect(rows('uvr-job-app')).toEqual([])
+  })
+
   it('leaves the rollover cap counting subscription songs only', async () => {
     const token = await anonymousToken()
     seedRow(30, 'purchase', 'bought-pack')
@@ -441,6 +481,66 @@ describe('the web', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({ debited: 1, balance: 2 })
     expect(balance()).toBe(2)
+  })
+
+  // Owner, 28 Sep: on the web, credits bought there are spent first; the
+  // subscription's songs only once they run out (review of PR 880, 7).
+  it('spends its own credits first, and leaves the app its songs', async () => {
+    const token = await anonymousToken()
+    seedRow(100, 'purchase', 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    expect((await debit(token, 'rp_gpu_web-first')).status).toBe(200)
+
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 20 })
+    expect((await me(token)).creditBalance).toBe(119)
+  })
+
+  it('spends the subscription’s songs once its credits run out', async () => {
+    const token = await anonymousToken()
+    seedRow(2, 'purchase', 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    for (const job of ['rp_gpu_web-a', 'rp_gpu_web-b', 'rp_gpu_web-c']) {
+      expect((await debit(token, job)).status).toBe(200)
+    }
+
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 19 })
+    expect(balance()).toBe(19)
+  })
+
+  it('keeps the rollover cap counting subscription songs only', async () => {
+    const token = await anonymousToken()
+    seedRow(30, 'purchase', 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    for (let job = 0; job < 5; job += 1) {
+      await debit(token, `rp_gpu_web-cap-${job}`)
+    }
+
+    await deliver(rcEvent('RENEWAL'))
+
+    expect(rows('subscription').map((row) => row.delta)).toEqual([20, 20, 10])
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 50 })
+    expect(balance()).toBe(75)
+  })
+
+  it('gives a failed job’s credits and songs back where they came from', async () => {
+    const token = await anonymousToken()
+    seedRow(1, 'purchase', 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    const response = await debit(token, 'rp_gpu_web-failed', {
+      durationSeconds: TWO_SONGS_LONG,
+    })
+    expect(await response.json()).toMatchObject({ debited: 2, balance: 19 })
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 19 })
+
+    expect(await refund('rp_gpu_web-failed')).toMatchObject({ refunded: 2 })
+
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 20 })
+    expect(balance()).toBe(21)
+    expect((await debit(token, 'rp_gpu_web-after')).status).toBe(200)
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 20 })
   })
 })
 
@@ -470,16 +570,87 @@ describe('the month’s free song', () => {
     expect(rows('free-song')).toEqual([])
   })
 
-  it('goes first, and the rollover cap never counts it', async () => {
+  it('is none for an account whose email is not confirmed yet', async () => {
+    const token = await signedInToken({ confirmed: false })
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+    expect(
+      (await debit(token, 'rp_gpu_unconfirmed', { origin: IOS })).status,
+    ).toBe(402)
+
+    confirmTheEmail()
+
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 1, free: 1 })
+  })
+
+  // Owner, 28 Sep: a subscriber has the month's songs, and sees 20, not 21.
+  it('is none for a subscriber, who sees the month’s 20', async () => {
     const token = await signedInToken()
     await deliver(rcEvent('INITIAL_PURCHASE'))
-    expect((await me(token, IOS)).songs).toMatchObject({ left: 21, free: 1 })
 
-    await debit(token, 'rp_gpu_free-first', { origin: IOS })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: true,
+      left: 20,
+      free: 0,
+    })
+    await debit(token, 'rp_gpu_subscriber', { origin: IOS })
+    expect(rows('free-song')).toEqual([])
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 19, free: 0 })
+  })
+
+  // A subscription that ends mid-month: the account is a signed-in one
+  // without the subscription from then on, so the month's free song is
+  // there at once, unless it was spent that month before subscribing. The
+  // songs the subscription left are still the app's; the free one goes
+  // first, as it does not carry over.
+  it('comes the day a subscription ends, the same month', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.parse('2026-10-05T12:00:00.000Z'))
+    const token = await signedInToken()
+    await deliver(
+      rcEvent('INITIAL_PURCHASE', {
+        expiration_at_ms: Date.parse('2026-10-15T00:00:00.000Z'),
+      }),
+    )
     expect((await me(token, IOS)).songs).toMatchObject({ left: 20, free: 0 })
 
+    vi.setSystemTime(Date.parse('2026-10-16T12:00:00.000Z'))
+
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: false,
+      left: 21,
+      free: 1,
+    })
+    await debit(token, 'rp_gpu_lapsed', { origin: IOS })
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 20, free: 0 })
+    expect(rows('free-song')).toEqual([{ delta: 0, jobRef: 'rp_gpu_lapsed' }])
+  })
+
+  it('is not there again when a subscription ends in the month it was spent', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.parse('2026-10-02T12:00:00.000Z'))
+    const token = await signedInToken()
+    await debit(token, 'rp_gpu_before', { origin: IOS })
+    await deliver(
+      rcEvent('INITIAL_PURCHASE', {
+        expiration_at_ms: Date.parse('2026-10-15T00:00:00.000Z'),
+      }),
+    )
+
+    vi.setSystemTime(Date.parse('2026-10-16T12:00:00.000Z'))
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 20, free: 0 })
+
+    vi.setSystemTime(Date.parse('2026-11-01T00:00:01.000Z'))
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 21, free: 1 })
+  })
+
+  it('never counts toward the rollover cap', async () => {
+    const token = await signedInToken()
+    await debit(token, 'rp_gpu_free-first', { origin: IOS })
+
+    await deliver(rcEvent('INITIAL_PURCHASE'))
     await deliver(rcEvent('RENEWAL'))
     await deliver(rcEvent('RENEWAL'))
+
     expect(rows('subscription').map((row) => row.delta)).toEqual([20, 20, 10])
     expect(balance()).toBe(50)
   })
@@ -501,7 +672,12 @@ describe('the month’s free song', () => {
 
   it('pays for one song of a longer one, and both come back', async () => {
     const token = await signedInToken()
+    // A subscription that has ended, whose songs the app still spends.
     await deliver(rcEvent('INITIAL_PURCHASE'))
+    sqlite
+      .prepare('UPDATE entitlements SET expiresAt = ? WHERE userId = ?')
+      .run(new Date(Date.now() - 60_000).toISOString(), DEVICE)
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 21, free: 1 })
 
     const response = await debit(token, 'rp_gpu_long', {
       origin: IOS,
@@ -563,7 +739,7 @@ describe('the month’s free song', () => {
     expect(rows('free-song')).toEqual([
       { delta: 0, jobRef: 'rp_gpu_other-job' },
     ])
-    expect(rows('uvr-job')).toEqual([])
+    expect(rows('uvr-job-app')).toEqual([])
   })
 
   it('is never a credit on the web', async () => {
@@ -666,6 +842,47 @@ describe('a refund the store reversed', () => {
     expect(rows('subscription').map((row) => row.delta)).toEqual([20, 20])
     expect((await me(token, IOS)).songs).toMatchObject({ left: 35 })
     expect(balance()).toBe(65)
+  })
+
+  // RevenueCat retries a failed delivery, so the reversal can arrive before
+  // the refund it reverses (review of PR 880, finding 4). The refund that
+  // follows is one the store has already taken back: it takes nothing.
+  it('keeps the songs and the subscription when the reversal comes first', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+
+    const reversal = await deliver(rcEvent('REFUND_REVERSED'))
+    const refunded = await deliver(
+      rcEvent('CANCELLATION', { cancel_reason: 'CUSTOMER_SUPPORT' }),
+    )
+
+    expect(reversal).toMatchObject({ restored: 0 })
+    expect(refunded).toMatchObject({ clawedBack: 0, reversedAlready: true })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: true,
+      left: 20,
+    })
+    expect(balance()).toBe(20)
+  })
+
+  it('still takes back a later period’s refund, which nothing reversed', async () => {
+    const token = await anonymousToken()
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('REFUND_REVERSED'))
+    await deliver(rcEvent('RENEWAL', { transaction_id: 'txn-2' }))
+
+    const refunded = await deliver(
+      rcEvent('CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+        transaction_id: 'txn-2',
+      }),
+    )
+
+    expect(refunded).toMatchObject({ clawedBack: 20 })
+    expect((await me(token, IOS)).songs).toMatchObject({
+      subscribed: false,
+      left: 20,
+    })
   })
 
   it('changes nothing for a reversal from another store environment', async () => {

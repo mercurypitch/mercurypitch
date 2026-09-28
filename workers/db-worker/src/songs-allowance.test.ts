@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LedgerRow } from './songs-allowance'
-import { appSongs, freeSong, periodGrant, refundReversal, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
+import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, refundReversal, refundReversedFirst, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
 
 const NOW = Date.parse('2026-09-27T12:00:00.000Z')
 
@@ -54,8 +54,10 @@ describe('a period’s grant', () => {
 
 describe('the subscription songs a ledger holds', () => {
   // What the rollover cap counts (owner, 28 Sep): songs granted by the
-  // subscription and not yet spent. Spending takes them first, oldest period
-  // first; every other credit is the singer's own and never counts.
+  // subscription and not yet spent, the oldest period spent first; every
+  // other credit is the singer's own and never counts. The app spends the
+  // songs; the web spends its own credits first, and the songs only once
+  // they run out (owner, 28 Sep).
   let n = 0
   const row = (
     delta: number,
@@ -85,24 +87,69 @@ describe('the subscription songs a ledger holds', () => {
     ])
   })
 
-  it('spends them first, the oldest period first', () => {
+  it('are what a separation in the app spends, the oldest period first', () => {
     const songs = subscriptionSongs([
       row(10, 'purchase'),
       grant(20),
       grant(20),
-      row(-25, 'uvr-job', 'job-a'),
+      row(-25, 'uvr-job-app', 'job-a'),
     ])
     expect(songs.held).toBe(15)
     expect(songs.periods.map((period) => period.left)).toEqual([0, 15])
   })
 
-  it('spends the singer’s own credits once the songs run out', () => {
+  it('are left alone by the web while its own credits last', () => {
     const songs = subscriptionSongs([
       row(10, 'purchase'),
       grant(5),
       row(-8, 'uvr-job', 'job-b'),
       grant(20),
     ])
+    expect(songs.held).toBe(25)
+  })
+
+  it('are spent by the web once its credits run out, the oldest first', () => {
+    const songs = subscriptionSongs([
+      row(10, 'purchase'),
+      grant(20),
+      grant(20),
+      row(-25, 'uvr-job', 'job-a'),
+    ])
+    expect(songs.held).toBe(25)
+    expect(songs.periods.map((period) => period.left)).toEqual([5, 20])
+  })
+
+  it('keep the app to its songs, and the web to its credits first', () => {
+    const songs = subscriptionSongs([
+      row(3, 'purchase'),
+      grant(20),
+      row(-2, 'uvr-job-app', 'job-app'),
+      row(-5, 'uvr-job', 'job-web'),
+    ])
+    // The app's two songs, then the web's three credits and two songs.
+    expect(songs.held).toBe(16)
+  })
+
+  it('are spent by any other debit only once the credits run out', () => {
+    const songs = subscriptionSongs([
+      row(7, 'promo'),
+      grant(20),
+      row(-5, 'Managed testing allowance'),
+      row(-4, 'adjustment'),
+    ])
+    expect(songs.held).toBe(18)
+  })
+
+  it('give a web job’s refund back where it came from', () => {
+    const songs = subscriptionSongs([
+      row(2, 'purchase'),
+      grant(20),
+      row(-5, 'uvr-job', 'job-g'),
+      row(5, 'uvr-refund', 'job-g'),
+      row(-2, 'uvr-job', 'job-h'),
+    ])
+    // Job g took the two credits and three songs, and gave both back; job h
+    // then finds the credits again.
     expect(songs.held).toBe(20)
   })
 
@@ -307,6 +354,84 @@ describe('a refund the store reversed', () => {
     })
     expect(refundReversal([], null)).toEqual({ period: null, songs: 0 })
   })
+
+  // Review of PR 880, finding 4: RevenueCat retries a failed delivery, so a
+  // reversal can arrive before the refund it reverses.
+  it('is the last word on its period when it arrived before the refund', () => {
+    expect(refundReversedFirst([grant, sung, restore(0)], 'rc:purchase')).toBe(
+      true,
+    )
+    expect(refundReversedFirst([grant, sung], 'rc:purchase')).toBe(false)
+    expect(
+      refundReversedFirst([grant, sung, restore(0)], 'rc:another-period'),
+    ).toBe(false)
+  })
+
+  it('stays the last word after the refund it voided, of no songs', () => {
+    const voided: LedgerRow = { ...clawback, delta: 0 }
+    expect(
+      refundReversedFirst([grant, restore(0), voided], 'rc:purchase'),
+    ).toBe(true)
+  })
+
+  it('is no longer the last word once a refund took songs after it', () => {
+    expect(
+      refundReversedFirst(
+        [grant, sung, clawback, restore(15), { ...clawback, delta: -15 }],
+        'rc:purchase',
+      ),
+    ).toBe(false)
+    expect(
+      refundReversedFirst([grant, sung, clawback, restore(15)], 'rc:purchase'),
+    ).toBe(true)
+  })
+})
+
+describe('a subscription that has not ended', () => {
+  it('is an entitlement with no end, or an end still to come', () => {
+    expect(isSubscribed({ expiresAt: null }, NOW)).toBe(true)
+    expect(
+      isSubscribed({ expiresAt: new Date(NOW + 1000).toISOString() }, NOW),
+    ).toBe(true)
+  })
+
+  it('is not one that ended, or none at all', () => {
+    expect(isSubscribed({ expiresAt: new Date(NOW).toISOString() }, NOW)).toBe(
+      false,
+    )
+    expect(isSubscribed(null, NOW)).toBe(false)
+    expect(isSubscribed(undefined, NOW)).toBe(false)
+  })
+})
+
+describe('who gets the month’s free song', () => {
+  // Owner, 28 Sep: an account that is not anonymous, with its email
+  // confirmed, and no subscription that has not ended. Asked of the account:
+  // a token can say "passkey" for an anonymous one (review of PR 880, 1).
+  const signedIn = {
+    authProvider: 'password',
+    email: 'singer@example.com',
+    emailVerified: 1,
+    subscribed: false,
+  }
+
+  it('is a signed-in account with its email confirmed and no subscription', () => {
+    expect(getsFreeSong(signedIn)).toBe(true)
+    expect(getsFreeSong({ ...signedIn, authProvider: 'google' })).toBe(true)
+  })
+
+  it('is never an anonymous account, whatever it has', () => {
+    expect(getsFreeSong({ ...signedIn, authProvider: 'anonymous' })).toBe(false)
+  })
+
+  it('is never an account without a confirmed email', () => {
+    expect(getsFreeSong({ ...signedIn, emailVerified: 0 })).toBe(false)
+    expect(getsFreeSong({ ...signedIn, email: null })).toBe(false)
+  })
+
+  it('is never a subscriber, who has the month’s songs', () => {
+    expect(getsFreeSong({ ...signedIn, subscribed: true })).toBe(false)
+  })
 })
 
 describe('the month’s free song', () => {
@@ -395,7 +520,14 @@ describe('the songs the app can spend', () => {
       jobRef: 'txn',
       idempotencyKey: 'rc:p',
     },
-    { delta: -4, reason: 'uvr-job', jobRef: 'job', idempotencyKey: 'uvr:job' },
+    {
+      delta: -4,
+      reason: 'uvr-job-app',
+      jobRef: 'job',
+      idempotencyKey: 'uvr:job',
+    },
+    // A web separation, paid for with the bought credits.
+    { delta: -3, reason: 'uvr-job', jobRef: 'web', idempotencyKey: 'uvr:web' },
   ]
 
   it('are the subscription songs and the free song, never bought credits', () => {
@@ -407,7 +539,7 @@ describe('the songs the app can spend', () => {
     })
   })
 
-  it('are only the subscription songs for an anonymous singer', () => {
+  it('are only the subscription songs for a singer without the free song', () => {
     expect(appSongs(rows, USER, NOW_MS, false)).toMatchObject({
       held: 16,
       free: 0,
@@ -418,7 +550,7 @@ describe('the songs the app can spend', () => {
   it('say so in /me: the songs left, and the free one among them', () => {
     const app = appSongs(rows, USER, NOW_MS, true)
     expect(
-      songsSummary([], 46, { perPeriod: 20, cap: 50 }, NOW_MS, app),
+      songsSummary([], 43, { perPeriod: 20, cap: 50 }, NOW_MS, app),
     ).toEqual({
       subscribed: false,
       left: 17,

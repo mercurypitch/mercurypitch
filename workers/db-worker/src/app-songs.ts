@@ -2,8 +2,9 @@
 //
 // Credits bought on the web are not spendable in the native app in V1. A
 // request the app makes sees and spends the Karaoke subscription's songs,
-// and a signed-in singer's one free song a month (songs-allowance.ts). The
-// web keeps seeing and spending the whole balance, exactly as before.
+// and the one free song a month of a signed-in singer without the
+// subscription (songs-allowance.ts). The web keeps seeing and spending the
+// whole balance, its own credits first.
 //
 // Which requests are the app's is the server's call, from two signals. The
 // app is a page on capacitor://localhost (iOS) or https://localhost
@@ -14,23 +15,26 @@
 // of the balance, and the free song is the account's to spend from the app
 // in any case. A request with neither signal spends the whole balance,
 // which is what the web already can; nothing a request says widens what the
-// app can spend.
+// app can spend. Whether the account gets the free song is the account's
+// own record, never its token's: an anonymous identity that adds a passkey
+// signs in with the provider "passkey" and is still anonymous.
 //
 // The app's debit spends only what the app can, so it is computed from the
 // ledger as read and written only on that same ledger (ledger.ts): a
 // separation, a grant or a web debit written in between makes it read again.
-// The subscription songs it spends are the ones the ledger walk says the
-// debit took, because the walk spends them first, and the write is only made
-// while they cover it. The month's free song goes first, as it does not
-// carry over: its claim is written in the same transaction as the debit, and
-// only if the debit was.
+// Its row says it is the app's (APP_SEPARATION), and the ledger walk spends
+// such a debit from the subscription's songs; the write is only made while
+// they cover it. The month's free song goes first, as it does not carry
+// over: its claim is written in the same transaction as the debit, and only
+// if the debit was. A ledger that keeps changing is answered with "try
+// again" (LedgerBusy), and the main worker does, once.
 
 import type { Env } from './auth'
 import { uvrDebitKey } from './billing-core'
 import type { Ledger } from './ledger'
-import { LEDGER_ATTEMPTS, LEDGER_VERSION, readLedger } from './ledger'
+import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readLedger, } from './ledger'
 import type { AppSongs } from './songs-allowance'
-import { appSongs, FREE_SONG, FREE_SONG_BACK } from './songs-allowance'
+import { APP_SEPARATION, appSongs, FREE_SONG, FREE_SONG_BACK, getsFreeSong, isSubscribed, SONGS_ENTITLEMENT, } from './songs-allowance'
 import { CAPACITOR_ORIGINS } from './turnstile'
 
 export type Spender = 'web' | 'app'
@@ -43,14 +47,40 @@ export function spenderOf(request: Request, said?: unknown): Spender {
   return said === 'app' ? 'app' : 'web'
 }
 
-/** Whether the singer gets the month's free song: signed in (an anonymous
- *  identity gets none), and the free song not switched off. `provider` is
- *  the token's, as the promo codes read it. */
-function getsFreeSong(env: Env, provider: string): boolean {
-  return (
-    provider !== 'anonymous' &&
-    env.FREE_MONTHLY_SONG?.trim().toLowerCase() !== 'off'
+/** Whether the account gets the month's free song now (getsFreeSong):
+ *  read from the account and its subscription, unless the free song is
+ *  switched off. */
+async function freeSongDue(
+  env: Env,
+  userId: string,
+  nowMs: number,
+): Promise<boolean> {
+  if (env.FREE_MONTHLY_SONG?.trim().toLowerCase() === 'off') return false
+  const account = await env.DB.prepare(
+    `SELECT u.authProvider, u.email, u.emailVerified,
+            e.userId IS NOT NULL AS cloud, e.expiresAt AS cloudEndsAt
+       FROM users u
+       LEFT JOIN entitlements e ON e.userId = u.id AND e.feature = ?
+      WHERE u.id = ?`,
   )
+    .bind(SONGS_ENTITLEMENT, userId)
+    .first<{
+      authProvider: string
+      email: string | null
+      emailVerified: number
+      cloud: number
+      cloudEndsAt: string | null
+    }>()
+  if (account === null) return false
+  return getsFreeSong({
+    authProvider: account.authProvider,
+    email: account.email,
+    emailVerified: Number(account.emailVerified),
+    subscribed: isSubscribed(
+      Number(account.cloud) === 1 ? { expiresAt: account.cloudEndsAt } : null,
+      nowMs,
+    ),
+  })
 }
 
 export interface AppLedger extends AppSongs {
@@ -61,14 +91,13 @@ export interface AppLedger extends AppSongs {
 export async function readAppSongs(
   env: Env,
   userId: string,
-  provider: string,
   nowMs: number,
 ): Promise<AppLedger> {
-  const ledger = await readLedger(env, userId)
-  return {
-    ...appSongs(ledger.rows, userId, nowMs, getsFreeSong(env, provider)),
-    ledger,
-  }
+  const [ledger, monthly] = await Promise.all([
+    readLedger(env, userId),
+    freeSongDue(env, userId, nowMs),
+  ])
+  return { ...appSongs(ledger.rows, userId, nowMs, monthly), ledger }
 }
 
 export type AppDebit =
@@ -85,14 +114,13 @@ export type AppDebit =
 export async function debitAppSongs(
   env: Env,
   userId: string,
-  provider: string,
   jobRef: string,
   cost: number,
 ): Promise<AppDebit> {
   const key = uvrDebitKey(jobRef)
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const nowMs = Date.now()
-    const songs = await readAppSongs(env, userId, provider, nowMs)
+    const songs = await readAppSongs(env, userId, nowMs)
     const { rows, version } = songs.ledger
     const earlier = rows.find((row) => row.idempotencyKey === key)
     if (earlier !== undefined) {
@@ -114,13 +142,14 @@ export async function debitAppSongs(
     const writes = [
       env.DB.prepare(
         `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-         SELECT ?, ?, ?, ?, 'uvr-job', ?, ?
+         SELECT ?, ?, ?, ?, ?, ?, ?
           WHERE ${LEDGER_VERSION} = ?`,
       ).bind(
         id,
         createdAt,
         userId,
         0 - fromSongs,
+        APP_SEPARATION,
         jobRef,
         key,
         userId,
@@ -157,7 +186,7 @@ export async function debitAppSongs(
       return { outcome: 'debited', free, left: songs.left - cost }
     }
   }
-  throw new Error(`${key}: the ledger kept changing under the app's debit`)
+  throw new LedgerBusy(`${key}: the ledger kept changing under the app's debit`)
 }
 
 /** Give the month's free song back when the separation it paid for failed:

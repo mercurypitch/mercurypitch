@@ -35,7 +35,9 @@
 import type { Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
 import { sendBillingAlert, sendPurchaseThankYou } from './email'
+import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
+import { LedgerBusy } from './ledger'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
 import type { PricingRow } from './billing-core'
@@ -154,7 +156,7 @@ async function handleMe(
   // what can be spent, and never credits bought on the web (S7 D9).
   const app =
     spenderOf(request) === 'app'
-      ? await readAppSongs(env, auth.userId, auth.provider, Date.now())
+      ? await readAppSongs(env, auth.userId, Date.now())
       : null
   const ledger =
     app === null
@@ -753,9 +755,7 @@ async function handleUvrAdmission(
             body.model,
             body.durationSeconds,
           ),
-          balance: (
-            await readAppSongs(env, auth.userId, auth.provider, Date.now())
-          ).left,
+          balance: (await readAppSongs(env, auth.userId, Date.now())).left,
         }
       : await getUvrQuote(
           env,
@@ -900,7 +900,7 @@ interface AppJob {
  *  (app-songs.ts). Same answers as the web's, in the same shape. */
 async function handleAppDebit(
   env: Env,
-  auth: { userId: string; provider: string },
+  auth: { userId: string },
   body: DebitBody & AppJob,
   respond: Respond,
 ): Promise<Response> {
@@ -911,21 +911,22 @@ async function handleAppDebit(
     body.durationSeconds,
   )
   if (cost <= 0) {
-    const { left } = await readAppSongs(
-      env,
-      auth.userId,
-      auth.provider,
-      Date.now(),
-    )
+    const { left } = await readAppSongs(env, auth.userId, Date.now())
     return respond({ debited: 0, cost: 0, balance: left })
   }
-  const spent = await debitAppSongs(
-    env,
-    auth.userId,
-    auth.provider,
-    body.jobRef,
-    cost,
-  )
+  let spent: AppDebit
+  try {
+    spent = await debitAppSongs(env, auth.userId, body.jobRef, cost)
+  } catch (error) {
+    if (!(error instanceof LedgerBusy)) throw error
+    // Nothing was written, and the debit is idempotent per job: the main
+    // worker asks again (uvr-metering.ts) rather than cancel the job.
+    console.warn(`[billing] app debit ${body.jobRef}: ${error.message}`)
+    return respond(
+      { error: 'Billing is busy. Try again.', retryable: true },
+      { status: 503, headers: { 'Retry-After': '1' } },
+    )
+  }
   if (spent.outcome === 'duplicate') {
     return respond({
       debited: spent.songs,

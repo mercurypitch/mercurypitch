@@ -494,18 +494,33 @@ describe('the rollover cap', () => {
     expect(grantedFor(DEVICE)).toEqual([20, 20])
   })
 
-  it('spends the subscription’s songs before bought ones', async () => {
+  it('counts the songs the app sang as spent', async () => {
     await anonymousToken()
     seedCredits(DEVICE, 40, 'bought-pack')
     await deliver(rcEvent('INITIAL_PURCHASE'))
     await deliver(rcEvent('RENEWAL'))
-    // Ten songs sung: all ten from the 40 subscription songs.
-    seedRow(DEVICE, -10, 'uvr-job', 'debit-ten', 'job-ten')
+    // Ten songs sung in the app: all ten from the 40 subscription songs.
+    seedRow(DEVICE, -10, 'uvr-job-app', 'debit-ten', 'job-ten')
 
     await deliver(rcEvent('RENEWAL'))
 
     expect(grantedFor(DEVICE)).toEqual([20, 20, 20])
     expect(balanceOf(DEVICE)).toBe(90)
+  })
+
+  it('counts the songs the web sang only once its bought credits ran out', async () => {
+    await anonymousToken()
+    seedCredits(DEVICE, 4, 'bought-pack')
+    await deliver(rcEvent('INITIAL_PURCHASE'))
+    await deliver(rcEvent('RENEWAL'))
+    // Ten songs sung on the web (owner, 28 Sep): the four bought credits
+    // first, then six of the 40 subscription songs.
+    seedRow(DEVICE, -10, 'uvr-job', 'debit-ten', 'job-ten')
+
+    await deliver(rcEvent('RENEWAL'))
+
+    expect(grantedFor(DEVICE)).toEqual([20, 20, 16])
+    expect(balanceOf(DEVICE)).toBe(50)
   })
 
   it('gives a failed separation’s song back to the subscription', async () => {
