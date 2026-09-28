@@ -29,7 +29,7 @@ import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
-import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
+import { DELETE_ACCOUNT_URL, PRIVACY_URL, TERMS_URL, WEBSITE_URL, } from '@/lib/legal-links'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
@@ -2426,6 +2426,24 @@ export const SettingsPanel: Component = () => {
                     />
                   </svg>
                   Privacy Notice
+                </a>
+                {/* Beside the privacy notice because it answers the question
+                    that notice raises: how to have all of it erased, even
+                    without the app. */}
+                <a
+                  href={DELETE_ACCOUNT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={styles.aboutLink}
+                  data-testid="about-delete-account-link"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path
+                      fill="currentColor"
+                      d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                    />
+                  </svg>
+                  Account deletion
                 </a>
                 <Show when={hasAnyTag()}>
                   <button

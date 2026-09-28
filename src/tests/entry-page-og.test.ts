@@ -32,6 +32,10 @@ const pages = readdirSync(repo)
   // pasting a link to a page that does not exist, and giving it a designed
   // card would make a dead link unfurl as though it led somewhere.
   .filter((name) => name !== '404.html')
+  // Nor is the account deletion page a room. It is where a store listing and
+  // the privacy links send somebody who wants to leave, and a marketing card
+  // for it would say the opposite of what the page is for.
+  .filter((name) => name !== 'delete-account.html')
   .sort()
 
 function read(name: string): string {

@@ -120,6 +120,22 @@ describe('standalone entry routing', () => {
     }
   })
 
+  it('leaves the account deletion page to the asset layer', async () => {
+    // A plain document: html_handling serves delete-account.html for the
+    // clean path, so the Worker has nothing to add and is not in
+    // run_worker_first for it. A request that reaches it anyway must go to
+    // the asset layer untouched, not to the shell or the 404.
+    const { env, fetch } = entryEnv()
+    const response = await worker.fetch(
+      new Request('https://mercurypitch.test/delete-account'),
+      env,
+    )
+
+    await expect(response.text()).resolves.toBe('/delete-account')
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(new URL(fetch.mock.calls[0][0].url).pathname).toBe('/delete-account')
+  })
+
   it('serves the mirror document at the unlinked /free-sing entry', async () => {
     const { env } = entryEnv()
     const response = await worker.fetch(

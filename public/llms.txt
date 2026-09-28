@@ -66,6 +66,8 @@ does it.
 - [Privacy notice](https://about.mercurypitch.com/privacy/): What is collected,
   and what never leaves the device.
 - [Terms of use](https://about.mercurypitch.com/terms/)
+- [Delete your account](https://mercurypitch.com/delete-account): How to delete
+  an account in the app or on the web, and what deleting keeps.
 
 ## What MercuryPitch does not do
 

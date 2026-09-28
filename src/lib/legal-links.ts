@@ -37,3 +37,11 @@ export const CONTENT_POLICY_URL = `${LANDING_ORIGIN}/terms#your-content`
  * that actually matters.
  */
 export const PAYMENTS_TERMS_URL = `${LANDING_ORIGIN}/terms#donations`
+
+/**
+ * How to delete an account, and what deleting keeps (delete-account.html).
+ * On the app's own origin, not the landing site, because it describes what
+ * this app's Worker erases; absolute for the same reason as the links above.
+ * Google Play's Data safety form links it as the deletion URL.
+ */
+export const DELETE_ACCOUNT_URL = 'https://mercurypitch.com/delete-account'

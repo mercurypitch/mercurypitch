@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { CONTACT_FORM_URL } from '@/lib/contact-links'
+import { DELETE_ACCOUNT_URL } from '@/lib/legal-links'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 
 function repoFile(path: string): string {
@@ -499,6 +501,84 @@ describe('unmatched paths', () => {
     ]) {
       expect(links).toContain(path)
     }
+  })
+})
+
+// ── The account deletion page ─────────────────────────────────
+//
+// Google Play asks for a public web address where somebody can have their
+// account deleted without the app, and the Play Console links it. So the page
+// has to load signed out, on a hard load, with nothing booted: a real document
+// of its own, built as an input and served by the asset layer for its clean
+// path, never the app shell and never the 404.
+describe('the account deletion page', () => {
+  const page = () => repoHtml('delete-account.html')
+
+  it('is built as a document of its own and rewritten in dev and preview', () => {
+    const vite = repoFile('vite.config.ts')
+
+    expect(vite).toContain(
+      "deleteAccount: resolve(__dirname, 'delete-account.html')",
+    )
+    // Cloudflare's html_handling maps the clean path to the file in
+    // production; the dev and preview servers need the same table.
+    expect(vite).toContain("const DELETE_ACCOUNT_PATH = '/delete-account'")
+  })
+
+  it('needs nothing booted to read: no app root, no script', () => {
+    const document = page()
+
+    expect(document.querySelector('#root')).toBeNull()
+    expect(document.querySelector('script')).toBeNull()
+    expect(document.title).toBe('Delete your account | MercuryPitch')
+    expect(
+      document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    ).toBe('https://mercurypitch.com/delete-account')
+    // Indexable like any real page; only the 404 says noindex.
+    expect(document.querySelector('meta[name="robots"]')).toBeNull()
+  })
+
+  it('offers all three ways: the app, the web flow, and writing to us', () => {
+    const document = page()
+    const text = document.body.textContent?.replace(/\s+/g, ' ') ?? ''
+
+    expect(text).toContain('Under your account, tap Delete account.')
+    // The web flow is Settings, Account, Danger Zone, and a signed-out
+    // visitor reaches it through the sign-in button on the same tab.
+    expect(
+      document
+        .querySelector('[data-testid="delete-account-settings"]')
+        ?.getAttribute('href'),
+    ).toBe('/#/settings/account')
+    expect(text).toContain('Sign in or create account')
+    const contact = new URL(
+      document
+        .querySelector('[data-testid="delete-account-contact"]')
+        ?.getAttribute('href') ?? '',
+    )
+    expect(`${contact.origin}${contact.pathname}`).toBe(CONTACT_FORM_URL)
+    expect(contact.searchParams.get('topic')).toBe('privacy')
+  })
+
+  it('says what goes, what stays, and that Apple is told', () => {
+    const text =
+      page().body.textContent?.replace(/\s+/g, ' ').toLowerCase() ?? ''
+
+    expect(text).toContain('what deleting removes')
+    expect(text).toContain('what is kept, and for how long')
+    expect(text).toContain('we also ask apple to revoke it')
+    expect(text).toContain('credits are not refunded')
+    // The retention figures come from the code: share links (60 days) and
+    // share cards (30 days) in KV, and D1 Time Travel (30 days).
+    expect(text).toContain('up to 60 days')
+    expect(text).toContain('restore history for 30 days')
+  })
+
+  it('is linked from Settings, About beside the privacy notice', () => {
+    const settings = repoFile('src/components/SettingsPanel.tsx')
+
+    expect(DELETE_ACCOUNT_URL).toBe('https://mercurypitch.com/delete-account')
+    expect(settings).toContain('href={DELETE_ACCOUNT_URL}')
   })
 })
 
