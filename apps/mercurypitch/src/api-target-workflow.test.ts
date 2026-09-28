@@ -310,18 +310,24 @@ describe('the store binary check', () => {
   const BUNDLE = 'apps/mercurypitch/scripts/assert-bundle.mjs'
   const CONSOLE = 'scripts/assert-no-portable-console.mjs'
 
-  it('asserts the production store dist carries no console, before and after cap sync', () => {
+  // `--store-binary` is what adds the floating developer console to the
+  // check. Without it the store dist is held only to what a web build is,
+  // and the web ships the floating console on purpose.
+  it('asserts the production store dist carries no console, the floating one included, before and after cap sync', () => {
     expect(
       verify({ STAGE: 'dist', MERCURYPITCH_API_TARGET: 'production' }),
-    ).toEqual({ status: 0, ran: [`${BUNDLE} DIST`, `${CONSOLE} DIST`] })
+    ).toEqual({
+      status: 0,
+      ran: [`${BUNDLE} DIST`, `${CONSOLE} DIST --store-binary`],
+    })
     expect(
       verify({ STAGE: 'synced', MERCURYPITCH_API_TARGET: 'production' }),
     ).toEqual({
       status: 0,
       ran: [
         `${BUNDLE} DIST --android-assets ANDROID`,
-        `${CONSOLE} DIST`,
-        `${CONSOLE} ANDROID`,
+        `${CONSOLE} DIST --store-binary`,
+        `${CONSOLE} ANDROID --store-binary`,
       ],
     })
   })
