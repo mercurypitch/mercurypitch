@@ -177,6 +177,16 @@ export interface Env {
    *  RevenueCat marks every event with one; an event from the other is
    *  acknowledged and changes nothing. Unset means PRODUCTION. */
   REVENUECAT_ENVIRONMENT?: string
+  /** The word `bounded`, case and surrounding spaces ignored, lets a
+   *  PRODUCTION deployment apply SANDBOX events too, for its own users and
+   *  within bounds, while a store build is in review (revenuecat-sandbox.ts).
+   *  Unset, or anything else, and a sandbox event changes nothing there. No
+   *  effect on a SANDBOX deployment. */
+  REVENUECAT_SANDBOX_ON_PRODUCTION?: string
+  /** The songs sandbox period grants may add up to in one UTC day, across
+   *  the deployment, while the above is on: a plain number of up to four
+   *  digits. Default 200, which anything else falls back to, with a warning. */
+  REVENUECAT_SANDBOX_DAILY_SONGS?: string
   /** Songs a Karaoke subscription period grants. Default 20 (songs-allowance.ts). */
   SONGS_PER_PERIOD?: string
   /** The balance unused songs roll over to, at most. Default 50. */
@@ -3589,6 +3599,9 @@ async function handleRevokeSession(
  * Deliberately absent:
  *   - billingEvents — Stripe event ids for webhook idempotency, no personal
  *     data and no userId column.
+ *   - reviewAccessGrants, revenuecatSandboxGrants — counts that bound what a
+ *     grant may give, with no userId column: a deleted account's grant must
+ *     go on counting (review-access.ts, revenuecat-sandbox.ts).
  *   - mirrorEvents — keyed by an unrelated random clientId that is never
  *     linked to an account, so it isn't reachable from here (it has its own
  *     retention story).

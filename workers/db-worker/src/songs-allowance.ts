@@ -78,6 +78,20 @@ export const SUBSCRIPTION_GRANT = 'subscription'
  *  they stay subscription songs on the account (revenuecat.ts, TRANSFER). */
 export const SUBSCRIPTION_MOVED_IN = 'subscription-transfer-in'
 
+/** The ledger reason of a period's grant for a store sandbox purchase, which
+ *  production applies only while that is switched on, and bounded
+ *  (revenuecat-sandbox.ts). A period like any other to the walk and the cap;
+ *  the reason is what tells a report that nobody paid for it. */
+export const SUBSCRIPTION_SANDBOX = 'subscription-sandbox'
+/** The ledger reason of sandbox songs moved in from another identity: sandbox
+ *  songs still, on the account (revenuecat.ts, TRANSFER). */
+export const SUBSCRIPTION_SANDBOX_MOVED_IN = 'subscription-sandbox-transfer-in'
+/** The ledger reason of the songs a sandbox transfer moves out: the sandbox
+ *  periods' only. Paid songs and credits stay, for a paid transfer to move
+ *  (revenuecat.ts, TRANSFER). */
+export const SUBSCRIPTION_SANDBOX_MOVED_OUT =
+  'subscription-sandbox-transfer-out'
+
 /** The ledger reason of the songs a refund takes back: what was left of the
  *  refunded period's grant, which the row names by its key (revenuecat.ts). */
 export const SUBSCRIPTION_REFUND = 'subscription-refund'
@@ -113,6 +127,9 @@ export interface LedgerRow {
   reason: string | null
   jobRef: string | null
   idempotencyKey: string | null
+  /** When it was written, in UTC: what the sandbox's one grant a day reads
+   *  (revenuecat-sandbox.ts). The walk never needs it. */
+  createdAt?: string
 }
 
 /** One period's grant, and what is left of it. */
@@ -123,6 +140,10 @@ export interface PeriodSongs {
   transaction: string | null
   /** Its songs not yet spent. */
   left: number
+  /** Granted for a store sandbox purchase (SUBSCRIPTION_SANDBOX): the only
+   *  periods a sandbox event may take from, or give back to, and the ones a
+   *  paid event never does (periodsFor). */
+  sandbox: boolean
 }
 
 export interface SubscriptionSongs {
@@ -181,6 +202,20 @@ function spendOnTheWeb(
   return spendSongs(walk, Math.max(0, songs - credits))
 }
 
+/** A sandbox transfer's move out takes the sandbox periods' songs, the
+ *  oldest first, and no others. */
+function moveSandboxOut(walk: SongsWalk, songs: number): void {
+  let owed = songs
+  for (const period of walk.periods) {
+    if (owed <= 0) break
+    if (!period.sandbox) continue
+    const take = Math.min(period.left, owed)
+    period.left -= take
+    owed -= take
+    walk.held -= take
+  }
+}
+
 /** A store refund takes back what was left of its own period, and spends
  *  the rest of what it takes from the other periods. */
 function refundPeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
@@ -220,6 +255,7 @@ function restorePeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
       key: row.idempotencyKey ?? '',
       transaction: null,
       left: songs,
+      sandbox: false,
     })
   } else {
     period.left += songs
@@ -227,9 +263,29 @@ function restorePeriod(walk: SongsWalk, row: LedgerRow, songs: number): void {
   walk.held += songs
 }
 
+const PERIOD_GRANTS: ReadonlySet<string | null> = new Set([
+  SUBSCRIPTION_GRANT,
+  SUBSCRIPTION_MOVED_IN,
+  SUBSCRIPTION_SANDBOX,
+  SUBSCRIPTION_SANDBOX_MOVED_IN,
+])
+
 function isPeriodGrant(row: LedgerRow): boolean {
+  return PERIOD_GRANTS.has(row.reason)
+}
+
+/** A store purchase's own period names the transaction it was bought in; a
+ *  period moved in from another identity names none. */
+function isPurchase(row: LedgerRow): boolean {
   return (
-    row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_MOVED_IN
+    row.reason === SUBSCRIPTION_GRANT || row.reason === SUBSCRIPTION_SANDBOX
+  )
+}
+
+function isSandbox(row: LedgerRow): boolean {
+  return (
+    row.reason === SUBSCRIPTION_SANDBOX ||
+    row.reason === SUBSCRIPTION_SANDBOX_MOVED_IN
   )
 }
 
@@ -239,8 +295,9 @@ function readCredit(walk: SongsWalk, row: LedgerRow, delta: number): void {
   if (isPeriodGrant(row)) {
     walk.periods.push({
       key: row.idempotencyKey ?? '',
-      transaction: row.reason === SUBSCRIPTION_GRANT ? row.jobRef : null,
+      transaction: isPurchase(row) ? row.jobRef : null,
       left: delta,
+      sandbox: isSandbox(row),
     })
     walk.held += delta
   } else if (delta === 0) {
@@ -264,11 +321,14 @@ function tookFor(
 }
 
 /** A row that takes songs: a store refund, from its own period first; a
+ *  sandbox transfer's move out, from the sandbox's periods only; a
  *  separation in the app, from the songs; any other debit, on the web's
  *  side, from the credits first. */
 function readDebit(walk: SongsWalk, row: LedgerRow, songs: number): void {
   if (row.reason === SUBSCRIPTION_REFUND) {
     refundPeriod(walk, row, songs)
+  } else if (row.reason === SUBSCRIPTION_SANDBOX_MOVED_OUT) {
+    moveSandboxOut(walk, songs)
   } else if (row.reason === APP_SEPARATION) {
     tookFor(walk, row, spendSongs(walk, songs))
   } else if (row.reason === WEB_SEPARATION) {
@@ -313,7 +373,7 @@ export function subscriptionSongs(
 /** What a reversed refund owes: the songs its refund took from the period,
  *  less any already given back. */
 export interface RefundReversal {
-  /** The period's key (`rc:<event id>`), or null when nothing was refunded. */
+  /** The period's key (`rc:<event id>`), or null when there is none. */
   period: string | null
   songs: number
 }
@@ -322,21 +382,8 @@ function isRefundOf(row: LedgerRow, period: string): boolean {
   return row.reason === SUBSCRIPTION_REFUND && row.jobRef === period
 }
 
-/** The refund a store reversed: the period whose transaction the reversal
- *  names, else the one the latest refund took from, as RevenueCat reports a
- *  refund for the latest period only. It owes back what that period's
- *  refunds took and no reversal has given back yet, so a second reversal of
- *  one refund owes nothing. */
-export function refundReversal(
-  rows: readonly LedgerRow[],
-  transaction: string | null,
-): RefundReversal {
-  const named = subscriptionSongs(rows).periods.find(
-    (period) => transaction !== null && period.transaction === transaction,
-  )
-  const latest = rows.filter((row) => row.reason === SUBSCRIPTION_REFUND).at(-1)
-  const period = named?.key ?? latest?.jobRef ?? null
-  if (period === null) return { period: null, songs: 0 }
+/** What the period's refunds took and no reversal has given back yet. */
+function owedTo(rows: readonly LedgerRow[], period: string): number {
   let owed = 0
   for (const row of rows) {
     if (isRefundOf(row, period)) owed -= Number(row.delta)
@@ -344,7 +391,60 @@ export function refundReversal(
       owed -= Number(row.delta)
     }
   }
-  return { period, songs: Math.max(0, owed) }
+  return Math.max(0, owed)
+}
+
+/** The songs the sandbox's periods hold (revenuecat-sandbox.ts). */
+export function sandboxHeld(periods: readonly PeriodSongs[]): number {
+  return periods
+    .filter((period) => period.sandbox)
+    .reduce((sum, period) => sum + period.left, 0)
+}
+
+/** The periods an event may touch: a sandbox event only sandbox periods
+ *  (revenuecat-sandbox.ts), a paid one only paid periods. Neither kind of
+ *  refund, or its reversal, ever lands on the other kind's songs. */
+export function periodsFor(
+  periods: readonly PeriodSongs[],
+  sandbox: boolean,
+): PeriodSongs[] {
+  return periods.filter((period) => period.sandbox === sandbox)
+}
+
+/** The refund a store reversed: the period whose transaction the reversal
+ *  names, else the one the latest refund took from, as RevenueCat reports a
+ *  refund for the latest period only; among the periods of the event's own
+ *  kind, sandbox or paid (periodsFor). It owes back what that period's
+ *  refunds took and no reversal has given back yet, so a second reversal of
+ *  one refund owes nothing.
+ *
+ *  A reversal no refund here explains is for a refund still to come (review
+ *  of PR 880, finding 4, and its nit): it names the period that refund will
+ *  take from, the latest, as clawBack finds it, and owes nothing. Its row
+ *  then makes that refund take nothing (refundReversedFirst). */
+export function refundReversal(
+  rows: readonly LedgerRow[],
+  transaction: string | null,
+  sandbox = false,
+): RefundReversal {
+  const periods = periodsFor(subscriptionSongs(rows).periods, sandbox)
+  const named = periods.find(
+    (period) => transaction !== null && period.transaction === transaction,
+  )
+  if (named !== undefined) {
+    return { period: named.key, songs: owedTo(rows, named.key) }
+  }
+  const ours = new Set(periods.map((period) => period.key))
+  const refunded =
+    rows
+      .filter(
+        (row) =>
+          row.reason === SUBSCRIPTION_REFUND && ours.has(row.jobRef ?? ''),
+      )
+      .at(-1)?.jobRef ?? null
+  const owed = refunded === null ? 0 : owedTo(rows, refunded)
+  if (owed > 0) return { period: refunded, songs: owed }
+  return { period: periods.at(-1)?.key ?? refunded, songs: 0 }
 }
 
 /** Whether the store reversed this period's refund before the refund got

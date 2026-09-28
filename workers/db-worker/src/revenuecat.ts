@@ -45,7 +45,14 @@
 // Every event names its store environment. Only the one this deployment is
 // for (REVENUECAT_ENVIRONMENT: SANDBOX on dev, PRODUCTION on prod, and
 // PRODUCTION when unset) changes anything; an event from the other, such as
-// a TestFlight purchase reaching prod, is acknowledged and ignored.
+// a TestFlight purchase reaching prod, is acknowledged and ignored. The one
+// exception is switched on for a store review only: production applying
+// sandbox events, for its own users and bounded, with a ledger reason and an
+// entitlement source of their own (revenuecat-sandbox.ts, which says how it
+// is switched on and off). A sandbox event there takes or moves only the
+// songs of sandbox periods, ends or moves only a sandbox entitlement, and
+// never takes over a live paid one (KEEPS_PAID); a paid event never takes a
+// sandbox period's songs.
 //
 // Idempotent on the event id, as the Stripe webhook is on Stripe's: `rc:<id>`
 // goes into billingEvents once the event is processed, and every ledger write
@@ -57,7 +64,9 @@
 import type { Env } from './auth'
 import { timingSafeEqualStr } from './billing-core'
 import { readLedger, writeOnLedger } from './ledger'
-import { periodGrant, refundReversal, refundReversedFirst, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, SUBSCRIPTION_REFUND_REVERSED, subscriptionSongs, } from './songs-allowance'
+import type { SandboxWithheld } from './revenuecat-sandbox'
+import { grantSandboxPeriod, SANDBOX_SOURCE, sandboxOnProduction, } from './revenuecat-sandbox'
+import { periodGrant, periodsFor, refundReversal, refundReversedFirst, sandboxHeld, songAllowance, SONGS_ENTITLEMENT, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX_MOVED_IN, SUBSCRIPTION_SANDBOX_MOVED_OUT, subscriptionSongs, } from './songs-allowance'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -81,6 +90,8 @@ interface RevenueCatEvent {
 interface Outcome {
   ignored?: string
   granted?: number
+  /** A sandbox period that gave no songs, and the bound that is why. */
+  withheld?: SandboxWithheld
   moved?: number
   clawedBack?: number
   /** A refund whose reversal was delivered first: it took nothing. */
@@ -142,6 +153,12 @@ async function firstKnownUser(
 /** In an upsert: the incoming end is at or after the stored one. */
 const LATER_END = `(excluded.expiresAt IS NULL OR (entitlements.expiresAt IS NOT NULL AND excluded.expiresAt >= entitlements.expiresAt))`
 
+/** In an upsert: a sandbox entitlement meets a live one of any other kind,
+ *  which it never replaces, whatever its end. A sandbox refund or expiration
+ *  ends only a sandbox row, so a paid row it took over would end with it
+ *  (review of PR 885). Once the other has ended, the sandbox's may follow. */
+const KEEPS_PAID = `(COALESCE(excluded.source, '') LIKE '${SANDBOX_SOURCE}:%' AND COALESCE(entitlements.source, '') NOT LIKE '${SANDBOX_SOURCE}:%' AND (entitlements.expiresAt IS NULL OR entitlements.expiresAt > excluded.updatedAt))`
+
 /** The store environment this deployment grants for. Anything but an
  *  explicit SANDBOX is PRODUCTION, so a deployment nobody configured never
  *  grants songs for a test purchase. */
@@ -149,6 +166,34 @@ function deploymentEnvironment(env: Env): 'SANDBOX' | 'PRODUCTION' {
   return env.REVENUECAT_ENVIRONMENT?.trim().toUpperCase() === 'SANDBOX'
     ? 'SANDBOX'
     : 'PRODUCTION'
+}
+
+/** How this deployment takes an event from `environment`: as its own; as a
+ *  sandbox event on production, while that is switched on
+ *  (revenuecat-sandbox.ts); or not at all. */
+function takes(env: Env, environment: string | null): 'own' | 'sandbox' | null {
+  const own = deploymentEnvironment(env)
+  if (environment === own) return 'own'
+  return own === 'PRODUCTION' &&
+    environment === 'SANDBOX' &&
+    sandboxOnProduction(env)
+    ? 'sandbox'
+    : null
+}
+
+/** An entitlement's source: the product, and whether the sandbox sold it. */
+function sourceOf(event: RevenueCatEvent, sandbox: boolean): string {
+  return `${sandbox ? SANDBOX_SOURCE : 'revenuecat'}:${text(event.product_id) ?? 'unknown'}`
+}
+
+function isSandboxSource(source: string | null): boolean {
+  return source?.startsWith(`${SANDBOX_SOURCE}:`) === true
+}
+
+/** In an entitlement update a sandbox event makes: its own kind only, so it
+ *  never ends a paid subscription. */
+function entitlementsFor(sandbox: boolean): string {
+  return sandbox ? `AND source LIKE '${SANDBOX_SOURCE}:%'` : ''
 }
 
 function unlocksSongs(event: RevenueCatEvent): boolean {
@@ -165,7 +210,8 @@ function periodEnd(event: RevenueCatEvent): string | null {
 /** The entitlement until `expiresAt`, never shorter than it already is.
  *  RevenueCat retries a failed delivery, so an older period's event can
  *  arrive after a newer one (review S3): the later end wins, and with it the
- *  product that set it. No end at all (null) is the latest there is. */
+ *  product that set it. No end at all (null) is the latest there is. A
+ *  sandbox period never takes the row from a live paid one (KEEPS_PAID). */
 async function upsertEntitlement(
   env: Env,
   userId: string,
@@ -178,8 +224,8 @@ async function upsertEntitlement(
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(userId, feature) DO UPDATE SET
        updatedAt = excluded.updatedAt,
-       source    = CASE WHEN ${LATER_END} THEN excluded.source ELSE entitlements.source END,
-       expiresAt = CASE WHEN ${LATER_END} THEN excluded.expiresAt ELSE entitlements.expiresAt END`,
+       source    = CASE WHEN ${LATER_END} AND NOT ${KEEPS_PAID} THEN excluded.source ELSE entitlements.source END,
+       expiresAt = CASE WHEN ${LATER_END} AND NOT ${KEEPS_PAID} THEN excluded.expiresAt ELSE entitlements.expiresAt END`,
   )
     .bind(
       crypto.randomUUID(),
@@ -220,12 +266,14 @@ async function grantPeriod(
  *  period the event's transaction names. RevenueCat reports a refund for
  *  the latest period only, so without a transaction it is the latest. A
  *  refund the store reversed before it got here takes nothing
- *  (refundReversedFirst). Returns the songs taken back, and whether it was
- *  reversed already. */
+ *  (refundReversedFirst). A sandbox refund looks among sandbox periods only,
+ *  and a paid one among paid periods (periodsFor). Returns the songs taken
+ *  back, and whether it was reversed already. */
 async function clawBack(
   env: Env,
   userId: string,
   event: RevenueCatEvent,
+  sandbox: boolean,
 ): Promise<{ songs: number; reversed: boolean }> {
   const transaction = text(event.transaction_id)
   let reversed = false
@@ -235,7 +283,10 @@ async function clawBack(
     `rc:${String(event.id)}:clawback`,
     SUBSCRIPTION_REFUND,
     (ledger) => {
-      const { periods } = subscriptionSongs(ledger.rows)
+      const periods = periodsFor(
+        subscriptionSongs(ledger.rows).periods,
+        sandbox,
+      )
       const period =
         periods.find(
           (entry) => transaction !== null && entry.transaction === transaction,
@@ -260,6 +311,7 @@ async function restoreRefund(
   env: Env,
   userId: string,
   event: RevenueCatEvent,
+  sandbox: boolean,
 ): Promise<number> {
   return writeOnLedger(
     env,
@@ -267,7 +319,11 @@ async function restoreRefund(
     `rc:${String(event.id)}:restore`,
     SUBSCRIPTION_REFUND_REVERSED,
     (ledger) => {
-      const owed = refundReversal(ledger.rows, text(event.transaction_id))
+      const owed = refundReversal(
+        ledger.rows,
+        text(event.transaction_id),
+        sandbox,
+      )
       return { delta: owed.songs, jobRef: owed.period }
     },
   )
@@ -275,8 +331,9 @@ async function restoreRefund(
 
 /** Move an anonymous identity's songs to the account, in one transaction:
  *  out of one, and exactly that many into the other. The subscription songs
- *  among them stay subscription songs there, for its cap to count; the rest
- *  arrive as the account's own credits. */
+ *  among them stay subscription songs there, for its cap to count, and the
+ *  sandbox's stay the sandbox's; the rest arrive as the account's own
+ *  credits. */
 async function moveSongs(
   env: Env,
   eventId: string,
@@ -287,7 +344,11 @@ async function moveSongs(
   const outKey = `rc:${eventId}:out:${fromId}`
   const inKey = `rc:${eventId}:in:${fromId}`
   const songsInKey = `rc:${eventId}:in-songs:${fromId}`
-  const held = subscriptionSongs((await readLedger(env, fromId)).rows).held
+  const sandboxInKey = `rc:${eventId}:in-sandbox-songs:${fromId}`
+  const songs = subscriptionSongs((await readLedger(env, fromId)).rows)
+  const held = songs.held
+  const sandboxSongs = sandboxHeld(songs.periods)
+  const paidHeld = Math.max(0, held - sandboxSongs)
   await env.DB.batch([
     env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
@@ -297,12 +358,28 @@ async function moveSongs(
     env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
        SELECT ?, ?, ?, MIN(?, -delta), ?, ?, ?
+         FROM creditLedger WHERE idempotencyKey = ? AND ? > 0`,
+    ).bind(
+      crypto.randomUUID(),
+      now,
+      toId,
+      sandboxSongs,
+      SUBSCRIPTION_SANDBOX_MOVED_IN,
+      fromId,
+      sandboxInKey,
+      outKey,
+      sandboxSongs,
+    ),
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       SELECT ?, ?, ?, MIN(?, -delta - MIN(?, -delta)), ?, ?, ?
          FROM creditLedger WHERE idempotencyKey = ?`,
     ).bind(
       crypto.randomUUID(),
       now,
       toId,
-      held,
+      paidHeld,
+      sandboxSongs,
       SUBSCRIPTION_MOVED_IN,
       fromId,
       songsInKey,
@@ -315,14 +392,62 @@ async function moveSongs(
     ).bind(crypto.randomUUID(), now, toId, held, fromId, inKey, outKey),
   ])
   const row = await env.DB.prepare(
-    'SELECT COALESCE(SUM(delta), 0) AS moved FROM creditLedger WHERE idempotencyKey IN (?, ?)',
+    'SELECT COALESCE(SUM(delta), 0) AS moved FROM creditLedger WHERE idempotencyKey IN (?, ?, ?)',
   )
-    .bind(inKey, songsInKey)
+    .bind(inKey, songsInKey, sandboxInKey)
     .first<{ moved: number }>()
   return Number(row?.moved ?? 0)
 }
 
-async function transfer(env: Env, event: RevenueCatEvent): Promise<Outcome> {
+/** A sandbox transfer moves the sandbox's songs only: out of the sandbox
+ *  periods of one identity, and exactly that many into the other, still the
+ *  sandbox's. Paid songs and credits stay where they are, for a paid
+ *  transfer to move. The move out lands only on the ledger it was computed
+ *  from (writeOnLedger), and the move in copies it, so a redelivery
+ *  finishes a move that stopped between the two. */
+async function moveSandboxSongs(
+  env: Env,
+  eventId: string,
+  fromId: string,
+  toId: string,
+): Promise<number> {
+  const outKey = `rc:${eventId}:out-sandbox-songs:${fromId}`
+  const inKey = `rc:${eventId}:in-sandbox-songs:${fromId}`
+  const out = await writeOnLedger(
+    env,
+    fromId,
+    outKey,
+    SUBSCRIPTION_SANDBOX_MOVED_OUT,
+    (ledger) => {
+      const songs = sandboxHeld(subscriptionSongs(ledger.rows).periods)
+      return { delta: songs > 0 ? -songs : 0, jobRef: toId }
+    },
+  )
+  const songs = -Number(out)
+  if (songs <= 0) return 0
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+     SELECT ?, ?, ?, -delta, ?, ?, ?
+       FROM creditLedger WHERE idempotencyKey = ?`,
+  )
+    .bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      toId,
+      SUBSCRIPTION_SANDBOX_MOVED_IN,
+      fromId,
+      inKey,
+      outKey,
+    )
+    .run()
+  return songs
+}
+
+async function transfer(
+  env: Env,
+  event: RevenueCatEvent,
+  sandbox: boolean,
+): Promise<Outcome> {
   const eventId = String(event.id)
   const to = await firstKnownUser(env, strings(event.transferred_to))
   if (to === null) return { ignored: 'unknown user' }
@@ -336,7 +461,8 @@ async function transfer(env: Env, event: RevenueCatEvent): Promise<Outcome> {
     )
       .bind(from.id, SONGS_ENTITLEMENT)
       .first<{ source: string | null; expiresAt: string | null }>()
-    if (held !== null) {
+    // A sandbox transfer moves the sandbox's entitlement, never a paid one.
+    if (held !== null && (!sandbox || isSandboxSource(held.source))) {
       await upsertEntitlement(env, to.id, held.source, held.expiresAt)
       await env.DB.prepare(
         'DELETE FROM entitlements WHERE userId = ? AND feature = ?',
@@ -345,7 +471,9 @@ async function transfer(env: Env, event: RevenueCatEvent): Promise<Outcome> {
         .run()
     }
     if (from.authProvider === 'anonymous') {
-      moved += await moveSongs(env, eventId, from.id, to.id)
+      moved += sandbox
+        ? await moveSandboxSongs(env, eventId, from.id, to.id)
+        : await moveSongs(env, eventId, from.id, to.id)
     }
   }
   return { moved }
@@ -355,8 +483,9 @@ async function applyEvent(
   env: Env,
   event: RevenueCatEvent,
   type: string,
+  sandbox: boolean,
 ): Promise<Outcome> {
-  if (type === 'TRANSFER') return transfer(env, event)
+  if (type === 'TRANSFER') return transfer(env, event, sandbox)
   const refund =
     type === 'CANCELLATION' && text(event.cancel_reason) === 'CUSTOMER_SUPPORT'
   if (
@@ -381,7 +510,7 @@ async function applyEvent(
     await env.DB.prepare(
       `UPDATE entitlements SET expiresAt = ?, updatedAt = ?
         WHERE userId = ? AND feature = ?
-          AND (expiresAt IS NULL OR expiresAt <= ?)`,
+          AND (expiresAt IS NULL OR expiresAt <= ?) ${entitlementsFor(sandbox)}`,
     )
       .bind(ended, now, user.id, SONGS_ENTITLEMENT, ended)
       .run()
@@ -389,14 +518,14 @@ async function applyEvent(
   }
 
   if (refund) {
-    const back = await clawBack(env, user.id, event)
+    const back = await clawBack(env, user.id, event, sandbox)
     if (back.reversed) return { clawedBack: 0, reversedAlready: true }
     // The refunded period is over now, whatever it would have run to.
     const now = new Date().toISOString()
     await env.DB.prepare(
       `UPDATE entitlements SET expiresAt = ?, updatedAt = ?
         WHERE userId = ? AND feature = ?
-          AND (expiresAt IS NULL OR expiresAt > ?)`,
+          AND (expiresAt IS NULL OR expiresAt > ?) ${entitlementsFor(sandbox)}`,
     )
       .bind(now, now, user.id, SONGS_ENTITLEMENT, now)
       .run()
@@ -404,30 +533,33 @@ async function applyEvent(
   }
 
   if (type === 'REFUND_REVERSED') {
-    const restored = await restoreRefund(env, user.id, event)
+    const restored = await restoreRefund(env, user.id, event, sandbox)
     // The period runs to its end again. Without an end in the event, the
     // entitlement is left as the refund left it: an open-ended one would
     // outlast the period it restores.
     const end = periodEnd(event)
     if (end !== null) {
-      await upsertEntitlement(
-        env,
-        user.id,
-        `revenuecat:${text(event.product_id) ?? 'unknown'}`,
-        end,
-      )
+      await upsertEntitlement(env, user.id, sourceOf(event, sandbox), end)
     }
     return { restored }
   }
 
-  const productId = text(event.product_id)
   await upsertEntitlement(
     env,
     user.id,
-    `revenuecat:${productId ?? 'unknown'}`,
+    sourceOf(event, sandbox),
     periodEnd(event),
   )
-  return { granted: await grantPeriod(env, user.id, event) }
+  if (!sandbox) return { granted: await grantPeriod(env, user.id, event) }
+  const grant = await grantSandboxPeriod(
+    env,
+    user.id,
+    `rc:${String(event.id)}`,
+    text(event.transaction_id) ?? text(event.product_id),
+  )
+  return grant.withheld === undefined
+    ? { granted: grant.granted }
+    : { granted: grant.granted, withheld: grant.withheld }
 }
 
 export async function handleRevenueCatWebhook(
@@ -463,19 +595,29 @@ export async function handleRevenueCatWebhook(
     .first<{ id: string }>()
   if (seen !== null) return respond({ received: true, duplicate: true })
 
+  const taken = takes(env, text(event.environment))
+  const sandbox = taken === 'sandbox'
   const outcome: Outcome =
-    text(event.environment) === deploymentEnvironment(env)
-      ? await applyEvent(env, event, type)
-      : { ignored: 'another store environment' }
+    taken === null
+      ? { ignored: 'another store environment' }
+      : await applyEvent(env, event, type, sandbox)
   await env.DB.prepare(
     'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
   )
-    .bind(eventKey, new Date().toISOString(), `revenuecat:${type}`)
+    .bind(
+      eventKey,
+      new Date().toISOString(),
+      `${sandbox ? SANDBOX_SOURCE : 'revenuecat'}:${type}`,
+    )
     .run()
   if (outcome.ignored !== undefined) {
     console.info(
       `[billing] revenuecat ${eventId} (${type}): ${outcome.ignored}`,
     )
   }
-  return respond({ received: true, ...outcome })
+  return respond({
+    received: true,
+    ...(sandbox ? { sandbox: true } : {}),
+    ...outcome,
+  })
 }

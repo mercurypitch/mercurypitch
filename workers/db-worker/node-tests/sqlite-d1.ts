@@ -96,6 +96,41 @@ export class SqliteD1Database {
   }
 }
 
+/** D1 as two requests at once meet it: every query waits a few
+ *  milliseconds for its turn, so their reads and writes interleave, and only
+ *  a check made in the same statement or batch as its write holds. */
+export function interleaved(db: SqliteD1Database): D1Database {
+  const turn = (): Promise<void> =>
+    new Promise((resolve) => {
+      setTimeout(resolve, 5)
+    })
+  const statement = (inner: SqliteD1Statement): SqliteD1Statement =>
+    new Proxy(inner, {
+      get(target, property, receiver) {
+        if (property === 'bind') {
+          return (...values: SQLInputValue[]) =>
+            statement(target.bind(...values))
+        }
+        const value: unknown = Reflect.get(target, property, receiver)
+        if (property === 'first' || property === 'all' || property === 'run') {
+          const query = value as (...args: unknown[]) => Promise<unknown>
+          return async (...args: unknown[]) => {
+            await turn()
+            return query.apply(target, args)
+          }
+        }
+        return value
+      },
+    })
+  return {
+    prepare: (sql: string) => statement(db.prepare(sql)),
+    batch: async (statements: SqliteD1Statement[]) => {
+      await turn()
+      return db.batch(statements)
+    },
+  } as unknown as D1Database
+}
+
 const MIGRATIONS_DIR = join(import.meta.dirname, '../migrations')
 
 /** Migration filenames in the order the worker applies them. */

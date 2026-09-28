@@ -16,15 +16,16 @@ studio users graduate to.
 
 ## Plan documents
 
-| Doc | Contents |
-| --- | --- |
-| [mobile-kit.md](mobile-kit.md) | The modular mobile design system: tokens, primitives extracted from `KaraokeMobileStage`, conventions |
-| [page-singing.md](page-singing.md) | Singing mobile stage spec |
-| [page-piano.md](page-piano.md) | Piano (falling notes) mobile stage spec |
-| [page-exercises.md](page-exercises.md) | Exercises alignment spec |
-| [capacitor-readiness.md](capacitor-readiness.md) | Native-app preparation checklist + WKWebView spike |
-| [native-feel-research.md](native-feel-research.md) | Research: what makes web apps feel native (sourced) |
-| [mockups.html](mockups.html) | Phone-frame mockups of the redesigned screens |
+| Doc                                                    | Contents                                                                                              |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| [mobile-kit.md](mobile-kit.md)                         | The modular mobile design system: tokens, primitives extracted from `KaraokeMobileStage`, conventions |
+| [page-singing.md](page-singing.md)                     | Singing mobile stage spec                                                                             |
+| [page-piano.md](page-piano.md)                         | Piano (falling notes) mobile stage spec                                                               |
+| [page-exercises.md](page-exercises.md)                 | Exercises alignment spec                                                                              |
+| [capacitor-readiness.md](capacitor-readiness.md)       | Native-app preparation checklist + WKWebView spike                                                    |
+| [native-feel-research.md](native-feel-research.md)     | Research: what makes web apps feel native (sourced)                                                   |
+| [store-review-purchases.md](store-review-purchases.md) | Sandbox purchases on production for a store review: the switch, its bounds, and the on/off order      |
+| [mockups.html](mockups.html)                           | Phone-frame mockups of the redesigned screens                                                         |
 
 ## Decisions (2026-07-18, interview)
 
