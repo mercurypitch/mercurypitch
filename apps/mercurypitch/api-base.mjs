@@ -166,3 +166,28 @@ export function resolveUvrOrigin(api, processEnv) {
 export function karaokeImportFor(api) {
   return api.target !== 'production'
 }
+
+// ============================================================
+// Whether a native build carries the portable console
+// ============================================================
+//
+// The console, and the Developer screen that goes with it (More, then
+// Developer: the native sign-in buttons and their masked token readout, the
+// audio record, the Karaoke audio switches), are a TEST build's. The
+// committed `.env` turns them on, so TestFlight, the debug APK and a laptop
+// build carry them. The store build shipped them too: turning them off was a
+// line in a checklist. The switch that picks the production worker is now
+// the switch that takes them out, so no line has to be remembered.
+
+/**
+ * Whether a native build compiles the portable console and the Developer
+ * screen in: what the env says, and never in the store build.
+ *
+ * @param {{ target: string }} api what `resolveApiBase` answered
+ * @param {Record<string, string | undefined>} env the `VITE_` variables the
+ *   build reads (`readEnvFiles`: the env files, with the process over them)
+ * @returns {boolean}
+ */
+export function portableConsoleFor(api, env) {
+  return api.target !== 'production' && env.VITE_PORTABLE_CONSOLE === 'true'
+}

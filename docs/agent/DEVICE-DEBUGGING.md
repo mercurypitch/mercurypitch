@@ -70,6 +70,13 @@ fingerprints and fails the build if it finds them. Every script that writes
 `dist` runs it — `build`, `build:dev`, `build:tours`, `build:e2e`,
 `build:e2e:devices`. **A new build script must run it too.**
 
+The native app is the one exception, on purpose. `apps/mercurypitch/.env`
+turns the console on, so every test build (TestFlight, the debug APK, a
+laptop build) carries it and the Developer screen behind it. The store build
+carries neither: `MERCURYPITCH_API_TARGET=production` compiles them out
+whatever the env says (`portableConsoleFor` in `apps/mercurypitch/api-base.mjs`),
+and `mercurypitch-mobile.yml` runs the same assert over that store binary.
+
 The one thing that breaks the elimination is a call site that stops being a
 plain `if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')` — assigning it
 to a variable first, or hiding it behind a function, leaves the bundler
