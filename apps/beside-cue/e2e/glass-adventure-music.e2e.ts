@@ -168,7 +168,7 @@ test('packaged exploration music plays at native status zero and stays quiet dur
   expect(errors).toEqual([])
 })
 
-for (const width of [390, 820, 1280]) {
+for (const width of [320, 390, 820, 1280]) {
   test(`sound controls fit and save at ${width}px @smoke`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await openMuseum(page)
@@ -186,6 +186,8 @@ for (const width of [390, 820, 1280]) {
     await expect(ambience).toBeFocused()
     await page.keyboard.press('Tab')
     await expect(dialog.getByLabel('Merc voice', { exact: true })).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(dialog.getByLabel('Automatic singing')).toBeFocused()
     await dialog.getByLabel('Mute music and ambience').focus()
     await page.keyboard.press('Shift+Tab')
     await expect(
@@ -240,5 +242,7 @@ for (const width of [390, 820, 1280]) {
     await expect(
       dialog.getByLabel('Merc voice', { exact: true }),
     ).not.toBeChecked()
+    await dialog.getByRole('button', { name: 'Back to the museum' }).click()
+    await expect(dialog).toHaveCount(0)
   })
 }

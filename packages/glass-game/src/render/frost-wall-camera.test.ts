@@ -3,6 +3,7 @@
 import { Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
+import { FROST_GOLD_ARCH_PANE } from '../content/frost-gold-arch-profile'
 import { FROST_WALL_PANE } from '../content/frost-wall-profile'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
@@ -14,6 +15,7 @@ const FRAME = 1 / 60
 const SAFE_BOTTOM_FRACTION = 0.42
 
 const VIEWPORTS = [
+  { viewport: 'phone-320x740', aspect: 320 / 740 },
   { viewport: 'phone-390x844', aspect: 390 / 844 },
   { viewport: 'tablet-800x1100', aspect: 800 / 1100 },
 ] as const
@@ -23,11 +25,13 @@ const COURSES = [
     level: CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     supportId: 'wall-approach-entry',
     wallId: 'voice-fifth',
+    pane: FROST_WALL_PANE,
   },
   {
     level: CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     supportId: 'preview-wall-approach-entry',
     wallId: 'preview-voice-fifth',
+    pane: FROST_GOLD_ARCH_PANE,
   },
 ] as const
 
@@ -146,7 +150,7 @@ describe('Frost Promenade wall camera', () => {
 
   it.each(COURSE_VIEWPORT_MODES)(
     'ignores manual $mode camera input during $wallId singing at $viewport',
-    ({ aspect, level, mode, supportId, wallId }) => {
+    ({ aspect, level, mode, pane, supportId, wallId }) => {
       const { camera, snapshot } = settledWallCamera(
         level,
         wallId,
@@ -175,9 +179,9 @@ describe('Frost Promenade wall camera', () => {
         wallId,
         snapshot,
       ).target.getSize(new Vector3())
-      expect(size.x).toBeCloseTo(FROST_WALL_PANE.width, 10)
-      expect(size.y).toBeCloseTo(FROST_WALL_PANE.height, 10)
-      expect(size.z).toBeCloseTo(FROST_WALL_PANE.depth, 10)
+      expect(size.x).toBeCloseTo(pane.width, 10)
+      expect(size.y).toBeCloseTo(pane.height, 10)
+      expect(size.z).toBeCloseTo(pane.depth, 10)
     },
   )
 })

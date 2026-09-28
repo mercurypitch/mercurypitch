@@ -82,7 +82,9 @@ const HORIZONTAL_LIMIT = 0.88
 const TOP_LIMIT = 0.86
 const BOTTOM_MARGIN = 0.07
 const MINIMUM_DISTANCE = 1.45
-const MAXIMUM_DISTANCE = 8.5
+// Wide barriers need more retreat at portrait aspect ratios; candidates still
+// stop at the nearest complete fit and authored obstructions constrain travel.
+const MAXIMUM_DISTANCE = 10
 const DISTANCE_STEP = 0.18
 const THREE_QUARTER_BIASES = [0.3, 0.95, 1.25] as const
 const PLANAR_THREE_QUARTER_BIASES = [0.48, 0.62, 0.76] as const
