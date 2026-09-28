@@ -14,6 +14,7 @@ import { resolveReplayProfile } from '../core/replay-profile'
 import { canEnterReplay, highestReplayTier } from '../core/replay-progress'
 import { evaluateTrialUnlock } from '../core/trial-unlock'
 import type { GlassGameHost } from '../host'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 import { createCampaignSessionHost } from './campaign-session-host'
 import { nextReplayDifficulty } from './completion-progression'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
@@ -30,6 +31,8 @@ export function GlassCampaign(props: {
   chapters?: readonly GalleryChapter[]
   /** Host build policy only; this never writes earned progress or stars. */
   developmentUnlock?: boolean
+  /** Fixed startup bundle tier supplied by a size-bounded native host. */
+  assetProfile?: GlassAssetQualityProfile
 }) {
   const [activeVisit, setActiveVisit] = createSignal<{
     id: string
@@ -420,6 +423,7 @@ export function GlassCampaign(props: {
           <GlassAdventure
             host={selection.replayVisit?.host ?? visitHost()}
             level={selection.profile?.level ?? chapter.level}
+            assetProfile={props.assetProfile}
             freshStart={selection.replay}
             onRestart={
               selection.profile

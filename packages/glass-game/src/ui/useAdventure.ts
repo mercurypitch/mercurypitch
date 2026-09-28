@@ -9,7 +9,7 @@ import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
-import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from '../render/render-quality'
+import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, } from '../render/render-quality'
 import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { initialAdventureNotice } from './adventure-notice'
@@ -37,6 +37,7 @@ export function useAdventure(
   level: LevelDefinition,
   mount: () => HTMLElement,
   presentationCovered: () => boolean = () => false,
+  assetProfile?: GlassAssetQualityProfile,
 ) {
   const game = createGlassGame(level, host.loadProgress(level.id))
   const initialSnapshot = game.snapshot()
@@ -536,6 +537,7 @@ export function useAdventure(
         followSmoothnessSeconds: cameraComfort().followSmoothnessSeconds,
         cameraMode: cameraMode(),
         renderQuality: renderQualityPreference(),
+        assetProfile,
         onLoadingProgress: (progress) => {
           loading.reportProgress(generation, progress)
         },

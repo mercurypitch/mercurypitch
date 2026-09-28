@@ -39,6 +39,8 @@ export interface GlassRendererOptions {
   followSmoothnessSeconds?: number
   cameraMode?: AdventureCameraMode
   renderQuality?: GlassRenderQualityPreference
+  /** Host-packaged startup tier; display quality remains independently tunable. */
+  assetProfile?: GlassAssetQualityProfile
   onAssetError?: (id: string, error: unknown) => void
   onLoadingProgress?: (progress: LoadingProgress) => void
   onContextLost?: () => void
@@ -197,7 +199,7 @@ function createGlassRendererInstance(
     renderQualityPreference,
     qualityEnvironment,
   )
-  const loadedAssetProfile = renderQuality.assetProfile
+  const loadedAssetProfile = options.assetProfile ?? renderQuality.assetProfile
   const shadowCadence = createShadowUpdateCadence(
     renderQuality.shadowFrameInterval,
   )

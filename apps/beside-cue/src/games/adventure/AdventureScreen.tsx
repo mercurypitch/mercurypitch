@@ -7,7 +7,9 @@ import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
 import { subscribeAppForeground } from '@/infrastructure/app-foreground'
+import { getBesideCuePlatform } from '@/infrastructure/mobile-runtime'
 import { hasDevelopmentGalleryAccess } from './development-access'
+import { nativeGameAssetProfile } from './native-game-asset-profile'
 
 interface AdventureScreenProps {
   onExit(): void
@@ -16,6 +18,10 @@ interface AdventureScreenProps {
   campaign?: boolean
 }
 export function AdventureScreen(props: AdventureScreenProps) {
+  const assetProfile = nativeGameAssetProfile(
+    import.meta.env.VITE_BESIDE_CUE_NATIVE_PLATFORM,
+    getBesideCuePlatform(),
+  )
   const host = createBrowserGlassHost({
     storagePrefix: 'beside-cue:glass-adventure',
     microphonePreferenceKey: 'beside-cue:input-device',
@@ -29,10 +35,17 @@ export function AdventureScreen(props: AdventureScreenProps) {
         !hasDevelopmentGalleryAccess(BUILD.channel, window.location.search) ||
         (props.campaign === true && props.level === undefined)
       }
-      fallback={<GlassAdventure host={host} level={props.level} />}
+      fallback={
+        <GlassAdventure
+          host={host}
+          level={props.level}
+          assetProfile={assetProfile}
+        />
+      }
     >
       <GlassCampaign
         host={host}
+        assetProfile={assetProfile}
         developmentUnlock={hasDevelopmentGalleryAccess(
           BUILD.channel,
           window.location.search,

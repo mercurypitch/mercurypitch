@@ -6,6 +6,7 @@
 // cannot own these files. The module alias removes game code; this plugin
 // handles public assets, which Vite otherwise copies regardless of imports.
 
+import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS } from '@irchiinnuss/glass-game/assets'
 import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -28,10 +29,20 @@ export const NATIVE_STANDALONE_ONLY_GAME_ASSETS = [
   'games/adventure-v3/observatory-canopy.glb',
 ] as const
 
-/** Remove web-preview-only output without changing its public source bytes. */
-export function pruneNativeStandaloneGameAssets(output: string): void {
+/** Desktop alternatives whose reviewed mobile counterpart is packaged native. */
+export const NATIVE_DESKTOP_ONLY_GAME_ASSETS = Object.freeze(
+  GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(({ desktop }) => `games/${desktop}`),
+)
+
+export const NATIVE_EXCLUDED_GAME_ASSETS = Object.freeze([
+  ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
+  ...NATIVE_DESKTOP_ONLY_GAME_ASSETS,
+])
+
+/** Remove output that the native host cannot select, preserving public bytes. */
+export function pruneNativeGameAssets(output: string): void {
   rmSync(resolve(output, 'glass-game'), { recursive: true, force: true })
-  for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+  for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
     rmSync(resolve(output, asset), { force: true })
 }
 
@@ -104,7 +115,7 @@ export function gameAssetsPlugin(
         throw new Error('Games build is missing models/swiftf0.onnx')
       }
       copyRuntime(resolve(output, 'ort'))
-      if (nativeProfile) pruneNativeStandaloneGameAssets(output)
+      if (nativeProfile) pruneNativeGameAssets(output)
     },
   }
 }

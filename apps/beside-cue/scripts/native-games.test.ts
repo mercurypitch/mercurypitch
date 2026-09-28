@@ -2,14 +2,14 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
-import { GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
+import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { NATIVE_STANDALONE_ONLY_GAME_ASSETS } from './game-assets.ts'
+import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
@@ -52,13 +52,22 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
-  it('subtracts exactly the standalone Glassworks dressing from the web inventory', () => {
+  it('subtracts exactly native-ineligible bytes and keeps each mobile alternative', () => {
     const native = new Set(requiredGameAssets)
     const webOnly = GLASS_GAME_REQUIRED_FILES.map(
       (asset) => `games/${asset}`,
     ).filter((asset) => !native.has(asset))
 
-    expect(webOnly).toEqual([...NATIVE_STANDALONE_ONLY_GAME_ASSETS])
+    expect([...webOnly].sort()).toEqual([...NATIVE_EXCLUDED_GAME_ASSETS].sort())
+    expect(NATIVE_DESKTOP_ONLY_GAME_ASSETS).toEqual(
+      GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(
+        ({ desktop }) => `games/${desktop}`,
+      ),
+    )
+    for (const { desktop, mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS) {
+      expect(native.has(`games/${desktop}`)).toBe(false)
+      expect(native.has(`games/${mobile}`)).toBe(true)
+    }
     expect(native.has(`games/${glassGameAssetPath('merc')}`)).toBe(true)
   })
 
@@ -209,7 +218,7 @@ describe('explicit native games profile', () => {
   it('prunes a prebuilt web preview without removing in-app game assets', () => {
     const directory = fixture()
     for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
-    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+    for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
       put(directory, `dist/${asset}`, 'web-only dressing')
     put(directory, 'dist/glass-game/index.html', '<main>Museum preview</main>')
     put(directory, 'dist/games/glass3d/glass.glb', 'cabinet game asset')
@@ -217,7 +226,7 @@ describe('explicit native games profile', () => {
     stageGamesProfile(directory, 'android', false)
 
     expect(existsSync(resolve(directory, 'dist/glass-game'))).toBe(false)
-    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+    for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
       expect(existsSync(resolve(directory, 'dist', asset))).toBe(false)
     expect(
       readFileSync(resolve(directory, 'dist/games/glass3d/glass.glb'), 'utf8'),

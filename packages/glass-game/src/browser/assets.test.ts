@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { GLASS_GAME_ASSET_FILES, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
+import { GLASS_GAME_ASSET_FILES, GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
 
 describe('Glassworks asset contract', () => {
   it('loads the same inventory directly in Node for native and web packaging', () => {
@@ -110,5 +110,16 @@ describe('Glassworks asset contract', () => {
     expect(glassGameAssetPath('results-discovery-medal-v1')).toBe(
       'results-ui-v1/discovery-medal.webp',
     )
+  })
+
+  it('pairs every native-excluded desktop GLB with a distinct shipped mobile GLB', () => {
+    expect(GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS).toHaveLength(3)
+    for (const pair of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS) {
+      expect(pair.desktop).toMatch(/-desktop-v\d+\.glb$/u)
+      expect(pair.mobile).toMatch(/-mobile-v\d+\.glb$/u)
+      expect(pair.mobile).not.toBe(pair.desktop)
+      expect(GLASS_GAME_REQUIRED_FILES).toContain(pair.desktop)
+      expect(GLASS_GAME_REQUIRED_FILES).toContain(pair.mobile)
+    }
   })
 })
