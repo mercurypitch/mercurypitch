@@ -2,9 +2,9 @@
 // Arming the in-app developer console, without dragging it in
 // ============================================================
 //
-// Every entry calls `armDeveloperConsole()`, and for almost everybody the
+// Every web entry calls `armDeveloperConsole()`, and for almost everybody the
 // answer is "not today" — so this is deliberately NOT an unconditional
-// `import('@/components/ConsoleLog')`. That version pulled the panel, its
+// `import('@/components/FloatingConsole')`. That version pulled the panel, its
 // stylesheet and its icons into every production page load, and appended a
 // host to `<body>` on a page that would never show one. The standalone rooms
 // spend real effort keeping their first paint empty; a debug panel is the
@@ -19,10 +19,16 @@
 //
 // Reading once is enough HERE: a standalone room has no Settings panel, so
 // the flag cannot change while one is open. In the studio it can, and
-// SettingsPanel mounts the panel itself on the press that turns it on —
-// which is also where `ConsoleLog` is already imported.
+// SettingsPanel mounts the panel itself on the press that turns it on.
+//
+// The native app imports this module only inside
+// `if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')`, as it does the
+// Developer screen's sections: a store build folds that branch away, and with
+// it this module and the key below, which is how
+// `scripts/assert-no-portable-console.mjs --store-binary` recognises the
+// floating console. A static import there would put both back.
 
-/** Shared with the persisted signal in src/stores/console-store.ts. */
+/** Shared with the persisted signal in src/stores/developer-console-store.ts. */
 export const DEVELOPER_CONSOLE_KEY = 'pitchperfect_developer_console'
 
 export function armDeveloperConsole(): void {
@@ -34,7 +40,7 @@ export function armDeveloperConsole(): void {
     return
   }
   if (!on) return
-  void import('@/components/ConsoleLog').then((m) => {
+  void import('@/components/FloatingConsole').then((m) => {
     m.setupDeveloperConsole()
   })
 }

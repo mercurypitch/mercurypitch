@@ -1,37 +1,25 @@
 // ============================================================
-// ConsoleLog — the developer console, in the app, on every page
+// ConsoleLog — the developer console's log, shown in place
 // ============================================================
 //
-// Two presentations of one buffer. `inline` sits in Settings' danger zone
-// where the toggle lives, and `floating` is the same log as a panel over
-// whatever page you are on — because the bug worth reading is rarely on the
-// Settings screen, and walking there to look at it is walking away from it.
+// Two presentations of one buffer. This file is the inline one, and the only
+// one every build carries: Settings' danger zone shows it under the toggle
+// that turns the console on, and the crash card shows it under its log
+// button. The floating one, the same log as a panel over whatever page you
+// are on, is FloatingConsole.tsx, built from `ConsoleLogView` below.
 //
-// The floating one is mounted per DOCUMENT by `setupDeveloperConsole`, the
-// same way the portable console does it: Karaoke Night, the Mirror and each
-// Night entry are separate documents with their own roots and no shared shell,
-// so there is no one component tree to put this in. The visibility flag is
-// persisted for the same reason.
-//
-// Two traps this file is shaped around, both paid for once already:
-//
-//   • `position: fixed` is captured by any transformed ancestor, which parked
-//     an earlier overlay 37px ABOVE the viewport while `getComputedStyle`
-//     still read `bottom: 0`. Mounting into a host appended to <body> is what
-//     keeps that from happening again.
-//   • A debug panel that covers the control under test is worse than no
-//     panel. Collapsed it is a small button; open, the backdrop takes no
-//     pointer events and only the panel's own controls do.
+// Apart on purpose. The crash card imports this file into every build, the
+// native store binary included, and that binary carries no floating console
+// (`scripts/assert-no-portable-console.mjs --store-binary`). So nothing here
+// may import FloatingConsole, or the switch that arms it
+// (src/stores/developer-console-store.ts).
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, Show } from 'solid-js'
-import { render } from 'solid-js/web'
 import { Copy, Trash2, X } from '@/components/icons'
 import { developerSections } from '@/lib/developer-sections'
-import { clearConsoleLogs, consoleLogs, formatConsoleLogs, showConsoleLog, } from '@/stores/console-store'
+import { clearConsoleLogs, consoleLogs, formatConsoleLogs, } from '@/stores/console-store'
 import styles from '@/styles/ConsoleLog.module.css'
-
-const HOST_ID = 'mp-developer-console-host'
 
 const LEVEL_COLOR: Record<string, string> = {
   error: '#ff6b6b',
@@ -164,82 +152,33 @@ const Messages: Component = () => {
   )
 }
 
-/** The log as it appears in Settings, under the toggle that turns it on. */
-export const ConsoleLog: Component = () => (
-  <div class={`${styles.consoleLogContainer} ${styles.consoleLogInline}`}>
-    <div class={styles.consoleLogHeader}>
-      <h4 class={styles.consoleLogTitle}>Developer Console</h4>
-      <Controls />
-    </div>
-    <Sections />
-    <Messages />
-  </div>
-)
+interface ConsoleLogViewProps {
+  /** How this presentation sizes the box. */
+  class: string
+  /** A hide button beside Copy and Clear, for a panel that can fold away. */
+  onHide?: () => void
+}
 
 /**
- * The same log, over whatever page you are on.
- *
- * Collapsed to a button by default: it is turned on to catch something that
- * has not happened yet, and until it does the console has no business taking
- * the screen. The count on the button is the reason to open it.
+ * The log in its box: the title and its controls, whatever this build
+ * registered, then the messages. Both presentations are this, sized their
+ * own way; the floating panel passes `onHide`.
  */
-export const FloatingConsole: Component = () => {
-  const [open, setOpen] = createSignal(false)
-
+export function ConsoleLogView(props: ConsoleLogViewProps) {
   return (
-    <Show when={showConsoleLog()}>
-      <div class={styles.consoleLogFloat} data-testid="floating-console">
-        <Show
-          when={open()}
-          fallback={
-            <button
-              type="button"
-              class={styles.consoleLogFab}
-              data-testid="floating-console-open"
-              onClick={() => setOpen(true)}
-            >
-              Console
-              <Show when={consoleLogs().length > 0}>
-                <span class={styles.consoleLogCount}>
-                  {consoleLogs().length}
-                </span>
-              </Show>
-            </button>
-          }
-        >
-          <div
-            class={`${styles.consoleLogContainer} ${styles.consoleLogPanel}`}
-          >
-            <div class={styles.consoleLogHeader}>
-              <h4 class={styles.consoleLogTitle}>Developer Console</h4>
-              <Controls onHide={() => setOpen(false)} />
-            </div>
-            <Sections />
-            <Messages />
-          </div>
-        </Show>
+    <div class={`${styles.consoleLogContainer} ${props.class}`}>
+      <div class={styles.consoleLogHeader}>
+        <h4 class={styles.consoleLogTitle}>Developer Console</h4>
+        <Controls onHide={props.onHide} />
       </div>
-    </Show>
+      <Sections />
+      <Messages />
+    </div>
   )
 }
 
-/**
- * Mount the floating console for THIS document.
- *
- * Called from every entry point, because each is its own document with its own
- * root and there is no shared shell to hang this off. Appending the host to
- * <body> also keeps `position: fixed` out of reach of any transformed ancestor
- * in the app's own tree.
- *
- * Unlike the portable console this ships: it is reachable only from Settings'
- * danger zone, behind a toggle that defaults to off, and it wraps nothing —
- * `initGlobalErrorHandlers` already feeds the buffer.
- */
-export function setupDeveloperConsole(): void {
-  if (typeof document === 'undefined') return
-  if (document.getElementById(HOST_ID) !== null) return
-  const host = document.createElement('div')
-  host.id = HOST_ID
-  document.body.appendChild(host)
-  render(() => <FloatingConsole />, host)
-}
+/** The log as it appears in Settings, under the toggle that turns it on,
+ *  and on the crash card. */
+export const ConsoleLog: Component = () => (
+  <ConsoleLogView class={styles.consoleLogInline} />
+)

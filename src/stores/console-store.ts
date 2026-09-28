@@ -7,10 +7,13 @@
 // Entries are stringified defensively: circular refs and BigInt both throw
 // under plain JSON.stringify, and a logging path must never be the thing that
 // crashes the app.
+//
+// Every build carries this buffer, the native store binary included: the
+// global error handler writes to it and the crash card shows it. The switch
+// that floats it over the page is developer-console-store.ts, a store of its
+// own because a store binary must carry none of the floating console.
 
 import { createSignal } from 'solid-js'
-import { DEVELOPER_CONSOLE_KEY } from '@/lib/developer-console'
-import { createPersistedSignal } from '@/lib/storage'
 
 export interface LogEntry {
   id: string
@@ -20,20 +23,6 @@ export interface LogEntry {
 }
 
 export const [consoleLogs, setConsoleLogs] = createSignal<LogEntry[]>([])
-
-/**
- * Persisted, because "on every page" includes the pages that are their own
- * document. Karaoke Night, the Mirror and each Night entry are separate
- * documents; a plain signal would switch the console off the moment you walked
- * through a door, which is exactly when a phone bug tends to show itself.
- *
- * Device-local despite the prefix: it is listed in `EXCLUDED_KEYS` in
- * src/db/services/settings-service.ts, because the console is switched on to
- * read what THIS device is saying and syncing it grew a debug panel on every
- * other signed-in device.
- */
-export const [showConsoleLog, setShowConsoleLog] =
-  createPersistedSignal<boolean>(DEVELOPER_CONSOLE_KEY, false)
 
 // Safe stringify to handle circular references and BigInt
 function safeStringify(obj: unknown): string {
@@ -103,10 +92,6 @@ export function addConsoleLog(type: LogEntry['type'], args: unknown[]): void {
 
 export function clearConsoleLogs(): void {
   setConsoleLogs([])
-}
-
-export function toggleConsoleLog(): void {
-  setShowConsoleLog((prev) => !prev)
 }
 
 /** The whole buffer as one block of text, for a Copy that a phone can paste

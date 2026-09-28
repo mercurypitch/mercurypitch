@@ -22,6 +22,7 @@ import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
 import { API_BASE_URL } from '@/lib/defaults'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 
 /** Preference keys all share this prefix (see src/stores/*.ts). */
@@ -40,11 +41,6 @@ const EXCLUDED_KEYS = new Set([
   'pitchperfect_session_history',
   'pitchperfect_usage_ms',
   'pitchperfect_activity_count',
-  // The in-app developer console is device-local by nature: it is switched on
-  // to read what THIS device is saying, usually a phone that cannot be
-  // plugged in. Syncing it put a debug panel on every other signed-in device
-  // and wrote a cloud row for a debugging affordance.
-  'pitchperfect_developer_console',
   // The native app's two first-run facts are about THIS install: that its
   // welcome has been walked through, and that its operating system granted
   // the microphone. Synced, a second phone would skip its own welcome and
@@ -52,6 +48,23 @@ const EXCLUDED_KEYS = new Set([
   'pitchperfect_native_welcome_seen',
   'pitchperfect_sing_mic_granted',
 ])
+
+// The in-app developer console is device-local by nature: it is switched on
+// to read what THIS device is saying, usually a phone that cannot be
+// plugged in. Syncing it put a debug panel on every other signed-in device
+// and wrote a cloud row for a debugging affordance.
+//
+// Named only in a build that has the floating console: the web, and a native
+// test build. A native store build has none, and naming the key would put the
+// console's fingerprint back into that binary
+// (`scripts/assert-no-portable-console.mjs --store-binary`). Nothing there
+// reads the key or pushes it; a pull can still copy an account's row for it
+// into this device's storage, where only a test build installed over the
+// store build would read it. Both sides of the condition are build constants,
+// so a store build drops the branch and the string with it.
+if (!IS_NATIVE_BUILD || import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+  EXCLUDED_KEYS.add('pitchperfect_developer_console')
+}
 
 /**
  * Unprefixed keys that ARE account state and must follow the user across

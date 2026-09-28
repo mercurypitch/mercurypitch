@@ -88,6 +88,27 @@ function isKaraokeStage2(id: string): boolean {
   return KARAOKE_STAGE_2.some((module) => path.endsWith(module))
 }
 
+/**
+ * The floating developer console: its panel and the switch that shows it. A
+ * test build's, like the portable console, so main.tsx arms it only behind
+ * VITE_PORTABLE_CONSOLE, which a store build folds away. The rest of the app
+ * reaches these modules only from the web SettingsPanel, and App.tsx folds
+ * that out of this build too, but a folded import still runs the module it
+ * names: the switch is a persisted signal, made as its module loads, and it
+ * kept its storage key in the store binary. Declared free of side effects
+ * here, a module nothing uses is dropped whole, as with KARAOKE_STAGE_2.
+ * `assert-no-portable-console.mjs --store-binary` checks the store build.
+ */
+const FLOATING_CONSOLE = [
+  '/src/components/FloatingConsole.tsx',
+  '/src/stores/developer-console-store.ts',
+]
+
+function isFloatingConsole(id: string): boolean {
+  const path = id.replace(/\?.*$/u, '').replace(/\\/gu, '/')
+  return FLOATING_CONSOLE.some((module) => path.endsWith(module))
+}
+
 export default defineConfig(({ mode, command }) => {
   // Fail before producing a bundle, not after shipping one. The Cloud
   // subscription sells through RevenueCat wherever the build carries its
@@ -265,9 +286,11 @@ export default defineConfig(({ mode, command }) => {
           'index.html',
         ),
         treeshake: {
-          // A Karaoke Stage 2 module that nothing uses is dropped whole, its
-          // module-level state included (KARAOKE_STAGE_2, above).
-          moduleSideEffects: (id) => !isKaraokeStage2(id),
+          // A Karaoke Stage 2 or floating console module that nothing uses is
+          // dropped whole, its module-level state included (KARAOKE_STAGE_2
+          // and FLOATING_CONSOLE, above).
+          moduleSideEffects: (id) =>
+            !isKaraokeStage2(id) && !isFloatingConsole(id),
         },
       },
     },
