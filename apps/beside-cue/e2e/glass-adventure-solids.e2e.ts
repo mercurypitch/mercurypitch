@@ -1,7 +1,7 @@
 // Museum solid contact — real keyboard landings, missed-edge separation and plinth traversal.
 import { writeFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
-import { installCloudwayVisit, setHeading, } from './helpers/cloudway-platform-proof'
+import { driveTo, installCloudwayVisit, setHeading, } from './helpers/cloudway-platform-proof'
 
 const EDGE_RENDER_PROOF = process.env.GLASS_EDGE_RENDER_PROOF === '1'
 
@@ -161,6 +161,7 @@ test('Merc walks across the small arrival join without jumping @smoke', async ({
 }) => {
   await page.addInitScript(() => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+    localStorage.setItem('beside-cue:glass-adventure:automatic-singing', 'off')
     localStorage.setItem(
       'beside-cue:glass-adventure:museum-audio:v1',
       JSON.stringify({ muted: true }),
@@ -193,6 +194,7 @@ test('Merc lands on the actual exhibit support instead of passing through @smoke
   await page.addInitScript(() => {
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     localStorage.setItem(
       `${prefix}museum-audio:v1`,
       JSON.stringify({ muted: true }),
@@ -248,4 +250,85 @@ test('Merc lands on the actual exhibit support instead of passing through @smoke
     'data-completed',
     '0',
   )
+})
+
+async function enterMechanicsWall(page: Page, cleared: boolean): Promise<void> {
+  await installCloudwayVisit(page, { realRendering: EDGE_RENDER_PROOF })
+  await page.addInitScript((cleared) => {
+    const prefix = 'beside-cue:glass-adventure:'
+    const levelId = 'cloudway-crystal-promenade-mechanics-preview'
+    localStorage.setItem(`${prefix}camera-mode:v1`, 'first-person')
+    localStorage.setItem(`${prefix}narration`, 'off')
+    // Restore only a real route checkpoint. Movement and contacts use the
+    // production level and its measured asset profiles without test geometry.
+    localStorage.setItem(
+      `${prefix}progress:${levelId}`,
+      JSON.stringify({
+        version: 2,
+        levelId,
+        checkpointId: 'preview-wall-save',
+        completedBreakableIds: [
+          'preview-voice-home',
+          'preview-voice-third',
+          ...(cleared ? ['preview-voice-fifth'] : []),
+        ],
+        finished: false,
+      }),
+    )
+  }, cleared)
+  await page.clock.install()
+  await page.goto('/glass-game/?layout=cloudway-mechanics-preview')
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 60_000 },
+  )
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+  await page.getByLabel('Glass museum; drag to look around').focus()
+}
+
+for (const cleared of [false, true]) {
+  test(`mechanics arch ${cleared ? 'opens after a saved shatter' : 'blocks the unbroken passage'} @smoke`, async ({
+    page,
+  }) => {
+    await enterMechanicsWall(page, cleared)
+    await setHeading(page, Math.PI)
+    await page.keyboard.down('KeyW')
+    for (let frame = 0; frame < 90; frame++) {
+      await page.clock.runFor(32)
+      if (cleared && (await coordinate(page, 'z')) >= 9.92) break
+    }
+    await page.keyboard.up('KeyW')
+    await page.clock.runFor(160)
+    expect(await coordinate(page, 'x')).toBeCloseTo(3.45, 2)
+    expect(await coordinate(page, 'y')).toBeCloseTo(0, 3)
+    if (cleared) {
+      expect(await coordinate(page, 'z')).toBeGreaterThan(9.9)
+    } else {
+      // Measured pane centre 9.64, depth .07, Merc radius .16.
+      expect(await coordinate(page, 'z')).toBeCloseTo(9.445, 3)
+    }
+  })
+}
+
+test('mechanics Rose Hex supports a real landing then gives way after its warning @smoke', async ({
+  page,
+}) => {
+  await enterMechanicsWall(page, false)
+  await driveTo(page, { x: 3.45, z: 4.99 }, { jump: true })
+  await driveTo(page, { x: 3, z: 3.12 }, { jump: true })
+  expect(await coordinate(page, 'y')).toBeCloseTo(0, 3)
+  await page.clock.runFor(500)
+  expect(await coordinate(page, 'y')).toBeCloseTo(0, 3)
+  // Its two-second crack warning is followed by physical loss of support,
+  // rather than a permanent invisible slab underneath the falling art.
+  let fell = false
+  for (let frame = 0; frame < 90; frame++) {
+    await page.clock.runFor(32)
+    if ((await coordinate(page, 'y')) < -0.2) {
+      fell = true
+      break
+    }
+  }
+  expect(fell).toBe(true)
 })

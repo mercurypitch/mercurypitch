@@ -18,8 +18,18 @@ import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress
 import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 import { getActiveCourseSolids } from './solid-activation'
 
-const INTERACTION_RADIUS = 1.1
+export const BREAKABLE_INTERACTION_RADIUS = 1.1
 const EXIT_GUIDANCE_RADIUS = 1.35
+
+export function isWithinBreakableInteractionCircle(
+  position: Pick<GameSnapshot['player']['position'], 'x' | 'z'>,
+  anchor: Pick<BreakableDefinition['anchor'], 'x' | 'z'>,
+): boolean {
+  return (
+    Math.hypot(position.x - anchor.x, position.z - anchor.z) <=
+    BREAKABLE_INTERACTION_RADIUS
+  )
+}
 
 interface ActiveEncounter {
   target: BreakableDefinition
@@ -126,10 +136,7 @@ export function createGlassGame(
   const withinSafeInteractionArea = (target: BreakableDefinition): boolean =>
     !completed.has(target.id) &&
     Math.abs(player.position.y - target.anchor.y) < 0.05 &&
-    Math.hypot(
-      player.position.x - target.anchor.x,
-      player.position.z - target.anchor.z,
-    ) <= INTERACTION_RADIUS &&
+    isWithinBreakableInteractionCircle(player.position, target.anchor) &&
     player.grounded &&
     platforms().some(
       (p) => p.kind === 'deck' && containsBody(player.position, MOVEMENT, p),

@@ -1,0 +1,475 @@
+/* Completion results — a compact museum score card and two clear onward choices. */
+
+.scrim,
+.scrim * {
+  box-sizing: border-box;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 50% 10%, rgb(217 239 226 / 28%), transparent 44%),
+    rgb(18 53 62 / 76%);
+  backdrop-filter: blur(7px);
+  touch-action: pan-y;
+}
+
+.panel {
+  width: min(590px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 17px;
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 24px;
+  background: #f7f3e7;
+  color: #173f43;
+  box-shadow: 0 24px 90px rgb(10 37 43 / 48%);
+  text-align: left;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.header h2 {
+  margin: 0;
+  overflow: hidden;
+  color: #183f42;
+  font-size: clamp(20px, 4.2vw, 27px);
+  font-weight: 620;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.panel .iconButton {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #bac6b9;
+  border-radius: 50%;
+  background: #fffdf5;
+  color: #245a58;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel .iconButton::-webkit-details-marker {
+  display: none;
+}
+
+.panel .iconButton svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overflow {
+  position: relative;
+}
+
+.panel .overflowMenu {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 2;
+  width: max-content;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid #bac6b9;
+  border-radius: 13px;
+  background: #fffdf5;
+  box-shadow: 0 12px 30px rgb(19 54 57 / 24%);
+}
+
+.panel .overflowMenu button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #244f4c;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+}
+
+.panel .overflowMenu button:hover {
+  background: #edf1e6;
+}
+
+.panel .overflowMenu svg {
+  width: 20px;
+  height: 20px;
+}
+
+.scoreCard {
+  margin-top: 13px;
+  padding: 15px;
+  border: 1px solid #cfbd8f;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 76%), transparent 55%), #eee9d6;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 48%);
+}
+
+.scoreTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scoreTopline strong {
+  display: block;
+  margin-top: 2px;
+  color: #183f42;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.scoreIdentity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.eyebrow {
+  display: block;
+  color: #75806f;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.panel .encore {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid #a9bcae;
+  border-radius: 999px;
+  background: #f9f7ed;
+  color: #2c625d;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.panel .encore svg {
+  width: 18px;
+  height: 18px;
+}
+
+.panel .difficultyStars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 11px;
+}
+
+.panel .difficultyStars svg {
+  width: 26px;
+  height: 26px;
+  fill: #f6f3e7;
+  stroke: #9ba599;
+  stroke-width: 1.35;
+}
+
+.panel .difficultyStars svg.earned {
+  fill: #e3b84f;
+  stroke: #a57920;
+}
+
+.panel .difficultyStars span {
+  margin-left: 5px;
+  color: #586d62;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.scoreBody {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.badges {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.panel .badge {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #adc0b1;
+  border-radius: 999px;
+  background: #f9f7ed;
+  color: #285853;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.panel .badgeOpen {
+  border-color: #43847a;
+  background: #e0eee5;
+}
+
+.badgeMedal {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgb(70 57 24 / 18%));
+}
+
+.info {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.panel .portrait {
+  width: 78px;
+  flex: 0 0 78px;
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3a5a50;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.panel .portrait img {
+  width: 58px;
+  height: 66px;
+  justify-self: center;
+  display: block;
+  object-fit: cover;
+  border: 3px ridge #b88f3e;
+  background: #dce6db;
+  box-shadow: 0 4px 10px rgb(75 58 23 / 18%);
+}
+
+.portraitWaiting {
+  max-width: 78px;
+  flex: 0 0 auto;
+  color: #758174;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.explanation {
+  margin: 11px 0 0;
+  padding: 10px 11px;
+  border-left: 3px solid #4f8c80;
+  border-radius: 0 9px 9px 0;
+  background: #f9f7ed;
+  color: #49665d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.actions > :only-child {
+  grid-column: 1 / -1;
+}
+
+.panel .primary,
+.panel .secondary {
+  min-height: 52px;
+  border-radius: 15px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.panel .primary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 11px 8px 16px;
+  border: 1px solid #b4a56d;
+  background: #174c56;
+  color: #fff9e6;
+  font-weight: 750;
+  box-shadow: 0 6px 17px rgb(23 76 86 / 22%);
+}
+
+.panel .primary svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+}
+
+.levelPill {
+  min-width: 0;
+  max-width: 210px;
+  overflow: hidden;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 11%);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel .secondary {
+  display: grid;
+  place-content: center;
+  padding: 7px 14px;
+  border: 1px solid #78988e;
+  background: transparent;
+  color: #285751;
+  text-align: center;
+}
+
+.panel .secondary span {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.panel .secondary small {
+  max-width: 150px;
+  overflow: hidden;
+  color: #65786f;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel .iconButton:focus-visible,
+.panel .overflowMenu button:focus-visible,
+.panel .encore:focus-visible,
+.panel .badge:focus-visible,
+.panel .portrait:focus-visible,
+.panel .primary:focus-visible,
+.panel .secondary:focus-visible {
+  outline: 3px solid #b4832c;
+  outline-offset: 3px;
+}
+
+.inspection {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+}
+
+@media (width < 500px) {
+  .panel {
+    padding: 13px;
+    border-radius: 20px;
+  }
+
+  .header {
+    gap: 7px;
+  }
+
+  .scoreCard {
+    margin-top: 10px;
+    padding: 13px;
+  }
+
+  .panel .difficultyStars {
+    margin-top: 9px;
+  }
+
+  .panel .difficultyStars svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  .scoreBody {
+    margin-top: 9px;
+  }
+
+  .actions {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 10px;
+  }
+
+  .panel .primary {
+    grid-row: 2;
+  }
+
+  .panel .primary:only-child {
+    grid-row: auto;
+  }
+
+  .panel .secondary small {
+    max-width: none;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .scrim {
+    place-items: start center;
+  }
+
+  .panel {
+    max-height: calc(100dvh - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim {
+    backdrop-filter: none;
+  }
+}

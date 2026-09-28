@@ -4,8 +4,9 @@ import type { Mesh, Object3D } from 'three'
 import { Quaternion, Vector3 } from 'three'
 
 const MAXIMUM_DELTA_SECONDS = 0.25
-const MAXIMUM_SPEECH_MORPH = 0.72
-const SPEECH_ATTACK_SECONDS = 0.055
+const SPEECH_INPUT_GAIN = 1.25
+const MAXIMUM_SPEECH_MORPH = 0.8
+const SPEECH_ATTACK_SECONDS = 0.045
 const SPEECH_RELEASE_SECONDS = 0.12
 const IDLE_ATTACK_SECONDS = 0.7
 const IDLE_RELEASE_SECONDS = 0.22
@@ -104,7 +105,9 @@ export function createMercPresentationPose(
       ? Math.max(0, Math.min(MAXIMUM_DELTA_SECONDS, deltaSeconds))
       : 0
     if (dt > 0) {
-      const speechTarget = finiteUnit(narrationLevel) * MAXIMUM_SPEECH_MORPH
+      const speechTarget =
+        finiteUnit(finiteUnit(narrationLevel) * SPEECH_INPUT_GAIN) *
+        MAXIMUM_SPEECH_MORPH
       speechMorph = response(
         speechMorph,
         speechTarget,

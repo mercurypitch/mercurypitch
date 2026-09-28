@@ -8,7 +8,7 @@ import { createBrowserMercNarration } from './merc-narration'
 import { createBrowserMicrophoneInput } from './microphone-input'
 import { createBrowserMuseumAudio } from './museum-audio'
 import { createBrowserMemoryStore } from './musical-memory-store'
-import { createBrowserVoice } from './voice-session'
+import { createBrowserVoice, prepareBrowserVoiceGesture } from './voice-session'
 
 export interface BrowserHostOptions {
   assetUrl(id: string): string
@@ -41,6 +41,7 @@ export function createBrowserGlassHost(
   }
   return {
     assetUrl: options.assetUrl,
+    prepareVoiceGesture: prepareBrowserVoiceGesture,
     createVoice: () => createBrowserVoice(microphone.forStart()),
     microphoneInput: microphone.input,
     takeOverMicrophone: () => micManager.takeOverFromOtherTab(),

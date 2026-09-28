@@ -400,3 +400,131 @@ describe('Glassworks floor contact', () => {
     },
   )
 })
+
+describe('convex platform contact', () => {
+  const polygon = [
+    { x: -1, z: 0 },
+    { x: -0.5, z: -0.866 },
+    { x: 0.5, z: -0.866 },
+    { x: 1, z: 0 },
+    { x: 0.5, z: 0.866 },
+    { x: -0.5, z: 0.866 },
+  ] as const
+  const platform: PlatformDefinition = {
+    id: 'hex',
+    minX: -1,
+    maxX: 1,
+    minZ: -0.866,
+    maxZ: 0.866,
+    supportPolygon: polygon,
+    top: 0,
+    thickness: 0.48,
+    kind: 'deck',
+    material: 'stone',
+  }
+
+  const translatedPolygonPlatform = (
+    id: string,
+    offsetX: number,
+  ): PlatformDefinition => ({
+    ...platform,
+    id,
+    minX: platform.minX + offsetX,
+    maxX: platform.maxX + offsetX,
+    supportPolygon: polygon.map((point) => ({
+      x: point.x + offsetX,
+      z: point.z,
+    })),
+  })
+
+  it.each([30, 60] as const)(
+    'lands on the measured hex but not its empty AABB corner at %dHz',
+    (framesPerSecond) => {
+      const supported = settleAt(
+        edgeLandingLevel({ x: 0.65, y: 0.04, z: 0.4 }, [platform]),
+        framesPerSecond,
+      )
+      const corner = settleAt(
+        edgeLandingLevel({ x: 0.82, y: 0.04, z: 0.5 }, [platform]),
+        framesPerSecond,
+      )
+
+      expect(supported.player.grounded).toBe(true)
+      expect(supported.player.supportPlatformId).toBe(platform.id)
+      expect(corner.player.grounded).toBe(false)
+      expect(corner.player.position.y).toBeLessThan(platform.top)
+      expect(corner.player.supportPlatformId).toBeNull()
+    },
+  )
+
+  it('sweeps a body across the whole polygon without tunnelling at high displacement', () => {
+    const result = FLAT_COURSE_COLLIDER.move(
+      { x: -2, y: -0.2, z: 0.4 },
+      { x: 4, y: 0, z: 0 },
+      [platform],
+      MOVEMENT,
+    )
+
+    expect(result.blockedX).toBe(true)
+    expect(result.position.x).toBeLessThan(-0.5)
+    expect(result.position.x + MOVEMENT.radius).toBeLessThanOrEqual(-0.5)
+  })
+
+  it('keeps a shortened rectangle-to-polygon sweep at the nearest contact in either solid order', () => {
+    const farRectangle: PlatformDefinition = {
+      ...platform,
+      id: 'far-rectangle',
+      minX: 1.2,
+      maxX: 1.8,
+      minZ: -0.5,
+      maxZ: 0.5,
+      supportPolygon: undefined,
+    }
+    const move = (solids: readonly PlatformDefinition[]) =>
+      FLAT_COURSE_COLLIDER.move(
+        { x: -3, y: -0.2, z: 0 },
+        { x: 6, y: 0, z: 0 },
+        solids,
+        MOVEMENT,
+      )
+    const farFirst = move([farRectangle, platform])
+    const nearFirst = move([platform, farRectangle])
+
+    expect(farFirst.position.x).toBeCloseTo(-1 - MOVEMENT.radius, 8)
+    expect(farFirst.position.x).toBeCloseTo(nearFirst.position.x, 10)
+    expect(farFirst.blockedX).toBe(true)
+    expect(nearFirst.blockedX).toBe(true)
+  })
+
+  it('keeps a shortened polygon-to-polygon sweep at the nearest contact in either solid order', () => {
+    const farPolygon = translatedPolygonPlatform('far-hex', 2)
+    const move = (solids: readonly PlatformDefinition[]) =>
+      FLAT_COURSE_COLLIDER.move(
+        { x: -3, y: -0.2, z: 0 },
+        { x: 6, y: 0, z: 0 },
+        solids,
+        MOVEMENT,
+      )
+    const farFirst = move([farPolygon, platform])
+    const nearFirst = move([platform, farPolygon])
+
+    expect(farFirst.position.x).toBeCloseTo(-1 - MOVEMENT.radius, 8)
+    expect(farFirst.position.x).toBeCloseTo(nearFirst.position.x, 10)
+    expect(farFirst.blockedX).toBe(true)
+    expect(nearFirst.blockedX).toBe(true)
+  })
+
+  it('separates a missed diagonal landing from the physical edge', () => {
+    const result = FLAT_COURSE_COLLIDER.move(
+      { x: 0.82, y: 0.04, z: 0.5 },
+      { x: 0, y: -0.08, z: 0 },
+      [platform],
+      MOVEMENT,
+    )
+
+    expect(result.support).toBeNull()
+    expect(result.position.y).toBeLessThan(0)
+    expect(result.position.x).toBeGreaterThan(0.82)
+    expect(result.position.z).toBeGreaterThan(0.5)
+  })
+})

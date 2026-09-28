@@ -3,10 +3,30 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { CapturedPitchFrame, F0Stream } from '@irchiinnuss/pitch-engine'
 import { createF0Stream, micManager } from '@irchiinnuss/pitch-engine'
 import type { PitchObservation } from '../contracts'
-import type { GlassVoiceSession, GlassVoiceTake } from '../host'
+import type { GlassVoicePreparation, GlassVoiceSession, GlassVoiceTake, } from '../host'
 import { createBrowserVoiceTake } from './voice-take'
 
 let nextSession = 0
+let nextPreparation = 0
+
+export function prepareBrowserVoiceGesture(): GlassVoicePreparation {
+  const lease = acquireSharedAudioContext(
+    `glass-adventure:voice-preparation:${++nextPreparation}`,
+  )
+  let released = false
+  // unlock() reaches AudioContext construction and resume() before its first
+  // await, so keep this call directly in the originating gameplay gesture.
+  const ready = lease.unlock()
+  return {
+    ready,
+    release() {
+      if (released) return
+      released = true
+      lease.release()
+    },
+  }
+}
+
 export function createBrowserVoice(
   options: {
     prepareMicrophone?(): Promise<void>

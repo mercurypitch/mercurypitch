@@ -38,6 +38,18 @@ const showCampaignLoadFailure = (): void => {
 // while preserving the same campaign mount as soon as the chunk is ready.
 void import('@irchiinnuss/glass-game/campaign')
   .then(({ GlassCampaign }) => {
-    render(() => <GlassCampaign host={host} />, root)
+    render(
+      () => (
+        <GlassCampaign
+          host={host}
+          developmentUnlock={
+            import.meta.env.DEV &&
+            new URLSearchParams(window.location.search).get('progression') !==
+              'earned'
+          }
+        />
+      ),
+      root,
+    )
   })
   .catch(showCampaignLoadFailure)

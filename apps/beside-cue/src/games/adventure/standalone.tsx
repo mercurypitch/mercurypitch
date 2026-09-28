@@ -151,6 +151,7 @@ async function mount(): Promise<void> {
         assetBase="../games/"
         level={level}
         campaign={
+          !import.meta.env.DEV ||
           new URLSearchParams(window.location.search).get('campaign') === '1'
         }
         onExit={() => {

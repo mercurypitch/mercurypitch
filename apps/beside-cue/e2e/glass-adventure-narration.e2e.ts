@@ -37,6 +37,7 @@ test('Merc packaged voice plays at native status zero, quiets before capture, an
     }
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     localStorage.setItem(
       `${prefix}museum-audio:v1`,
       JSON.stringify({ muted: true }),

@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "assetId": "frost-gold-arch-breakwall-a-v1",
+  "status": "runtime integration candidate; actual-game capture pending",
+  "rootNode": "Cloudway_FrostGoldArchBreakwallA_V1",
+  "roles": {
+    "frame": "frost_arch_frame",
+    "frameVisual": "frost_arch_frame_visual",
+    "frameTrim": "frost_arch_inner_trim",
+    "intact": "frost_arch_intact",
+    "intactVolume": "frost_arch_intact_volume",
+    "shardPrefix": "frost_arch_shard_",
+    "shardCount": 32,
+    "contact": "frost_arch_pane_contact"
+  },
+  "pane": {
+    "kind": "closed-arched-prism",
+    "coordinates": "metres; glTF +Y up; local X/Y outline",
+    "width": 2.1285,
+    "shoulderHeight": 1.7096342782974243,
+    "archRise": 0.99,
+    "height": 2.6996342782974243,
+    "depth": 0.07,
+    "collision": "one lower box plus 15 narrowing measured crown bands; apex omission below 0.005 metres"
+  },
+  "frameContact": {
+    "depth": 0.7205088034272193,
+    "posts": [
+      {
+        "id": "left-post",
+        "centerX": -1.3173790016174316,
+        "width": 0.5056449098587037,
+        "height": 1.7096342782974243
+      },
+      {
+        "id": "right-post",
+        "centerX": 1.316765908241272,
+        "width": 0.5056449098587037,
+        "height": 1.7096342782974243
+      }
+    ],
+    "decorativeTrimMinimumY": -0.01131371222436428,
+    "physics": "grounded post boxes persist; decorative trim and unreachable crown add no collision"
+  },
+  "runtimes": [
+    {
+      "tier": "desktop",
+      "bundle": "cloudway-lab-frost-gold-arch-desktop-v1",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb",
+      "bytes": 9391800,
+      "sha256": "f40a74c9c200f7b86e19cf8c2139e6084e11ff9775919dc96265b7b4e1f71ec3",
+      "triangles": 106801,
+      "storedPrimitives": 68,
+      "materials": 4,
+      "images": 5,
+      "decodedTextureMipBytes": 60336811
+    },
+    {
+      "tier": "mobile",
+      "bundle": "cloudway-lab-frost-gold-arch-mobile-v1",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb",
+      "bytes": 3035104,
+      "sha256": "6a2562578f04363ed5225b1792b69561e626a4ca9666bf27724d16223372cdfa",
+      "triangles": 53641,
+      "storedPrimitives": 68,
+      "materials": 4,
+      "images": 5,
+      "decodedTextureMipBytes": 15084203
+    }
+  ],
+  "source": {
+    "productionScript": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/frost-gold-arch-breakwall-a/production/author_frost_arch.py",
+      "sha256": "9434bc246f852d67cd47ae9269b9db6f14459e57d9ef937abc3eb50a6f3fa8a4"
+    },
+    "fullReceipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/frost-gold-arch-breakwall-a/production-receipt.json",
+      "bytes": 33514,
+      "sha256": "6d57d1e29b4aba7b5a55771b0d6c56a2dbf125c3afd0555e7e9deb7d3755b37e"
+    },
+    "policy": "dense donor, packed masters, textures and Blender proofs remain unchanged in the creative archive"
+  }
+}

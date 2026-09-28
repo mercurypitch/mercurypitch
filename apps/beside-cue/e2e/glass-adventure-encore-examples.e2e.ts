@@ -198,9 +198,7 @@ async function openEncore(page: Page) {
     'true',
     { timeout: 60_000 },
   )
-  await page
-    .getByRole('button', { name: 'Sing an optional encore', exact: true })
-    .tap()
+  await page.getByRole('button', { name: 'Encore', exact: true }).tap()
   const dialog = page.getByRole('dialog', { name: 'Leave a little light.' })
   await expect(dialog).toBeVisible()
   return dialog
@@ -512,7 +510,7 @@ test('keeps a reopened microphone lease over the old dialog fade @smoke', async 
       )
     button('Back to completion card')?.click()
     await Promise.resolve()
-    button('Sing an optional encore')?.click()
+    button('Encore')?.click()
     await Promise.resolve()
     button('Sing the melody')?.click()
   })

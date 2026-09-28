@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_LABORATORY_COURSE_PROFILES } from '../content/cloudway-laboratory-profiles'
 import courseDocument from '../content/data/cloudway-crystal-promenade.course.json' with { type: 'json' }
+import { FROSTED_SCROLL_WALL_PROFILE } from '../content/frost-wall-profile'
 import { compileCloudwayCourseDocument } from './compile-cloudway-course'
 
 type MutableRecord = Record<string, unknown>
@@ -79,7 +80,7 @@ describe('Cloudway course compiler', () => {
     })
     expect(first[1]?.authored).toMatchObject({
       layoutId: 'crystal-promenade-mechanics-preview',
-      contentRevision: 1,
+      contentRevision: 2,
     })
   })
 
@@ -166,6 +167,23 @@ describe('Cloudway course compiler', () => {
       })
     }
     expect(lintel.top - lintel.thickness).toBeCloseTo(2.44, 10)
+  })
+
+  it('rejects an empty gateParts declaration instead of dropping an existing gate', () => {
+    const profiles = {
+      ...CLOUDWAY_LABORATORY_COURSE_PROFILES,
+      barriers: {
+        ...CLOUDWAY_LABORATORY_COURSE_PROFILES.barriers,
+        [FROSTED_SCROLL_WALL_PROFILE.id]: {
+          ...FROSTED_SCROLL_WALL_PROFILE,
+          gateParts: [],
+        },
+      },
+    }
+
+    expect(() => compileCloudwayCourseDocument(source(), profiles)).toThrow(
+      'must declare exactly one of gate or gateParts',
+    )
   })
 
   it.each([

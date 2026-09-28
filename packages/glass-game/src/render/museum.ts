@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Material, Object3D, PerspectiveCamera, Scene, Texture, WebGLRenderer, } from 'three'
-import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, ExtrudeGeometry, Group, Mesh, Shape, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
@@ -83,21 +83,31 @@ function createFloor(platform: PlatformDefinition, materials: MuseumMaterials) {
   const cx = (platform.minX + platform.maxX) / 2
   const cz = (platform.minZ + platform.maxZ) / 2
   group.position.set(cx, platform.top, cz)
-  box(
-    group,
-    proxyMaterial(
-      platform.presentation?.material,
-      materials,
-      materials[recipe.body],
-    ),
-    w,
-    h,
-    d,
-    0,
-    -h / 2,
-    0,
+  const material = proxyMaterial(
+    platform.presentation?.material,
+    materials,
+    materials[recipe.body],
   )
+  if (platform.supportPolygon === undefined) {
+    box(group, material, w, h, d, 0, -h / 2, 0)
+  } else {
+    const [first, ...rest] = platform.supportPolygon
+    const shape = new Shape()
+    shape.moveTo(first!.x - cx, first!.z - cz)
+    for (const point of rest) shape.lineTo(point.x - cx, point.z - cz)
+    shape.closePath()
+    const geometry = new ExtrudeGeometry(shape, {
+      depth: h,
+      bevelEnabled: false,
+      steps: 1,
+    })
+    geometry.rotateX(Math.PI / 2)
+    const mesh = new Mesh(geometry, material)
+    mesh.castShadow = mesh.receiveShadow = true
+    group.add(mesh)
+  }
   if (!recipe.outline) return group
+  if (platform.supportPolygon !== undefined) return group
   // The whole rectangle remains an honest floor. Inlays have no protruding rails.
   for (const sign of [-1, 1]) {
     box(group, materials.gold, w, 0.014, 0.025, 0, 0.006, sign * (d / 2 - 0.04))

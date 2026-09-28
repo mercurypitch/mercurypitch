@@ -51,6 +51,7 @@ async function openMuseum(page: Page): Promise<void> {
     }
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     localStorage.setItem(
       `${prefix}progress:glassworks`,
       JSON.stringify({

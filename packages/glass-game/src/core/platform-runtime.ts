@@ -5,6 +5,7 @@
 import type { Bounds3, CourseSolid, PlatformBehaviorDefinition, PlatformDefinition, PlatformPhase, PlatformRuntimeSnapshot, PlatformSurfaceDefinition, Vec3, } from '../contracts'
 import { LEVEL_MOVEMENT_LIMITS, PLATFORM_BEHAVIOR_LIMITS, } from '../contracts.ts'
 import type { MovingPlatformCollision } from './collision'
+import { convexPolygonError, polygonBounds } from './convex-polygon.ts'
 
 const ZERO: Readonly<Vec3> = { x: 0, y: 0, z: 0 }
 const NO_MOTIONS: readonly MovingPlatformCollision[] = []
@@ -86,6 +87,18 @@ export function platformRuntimeDefinitionError(
 ): string | undefined {
   if (usesReservedScrollComponentSuffix(platform.id))
     return 'platform id uses a reserved runtime scroll component suffix'
+  if (platform.supportPolygon !== undefined) {
+    const error = convexPolygonError(platform.supportPolygon)
+    if (error !== undefined) return error
+    const bounds = polygonBounds(platform.supportPolygon)
+    if (
+      Math.abs(bounds.minX - platform.minX) > 1e-6 ||
+      Math.abs(bounds.maxX - platform.maxX) > 1e-6 ||
+      Math.abs(bounds.minZ - platform.minZ) > 1e-6 ||
+      Math.abs(bounds.maxZ - platform.maxZ) > 1e-6
+    )
+      return 'support polygon bounds must match the platform broad-phase envelope'
+  }
   const surface = platform.surface
   if (
     surface !== undefined &&
@@ -102,6 +115,8 @@ export function platformRuntimeDefinitionError(
   const behavior = platform.behavior
   if (behavior === undefined) return undefined
   if (behavior.kind === 'glide') {
+    if (platform.supportPolygon !== undefined)
+      return 'glide platforms do not support polygon contacts'
     const translation = behavior.translation
     const values = [translation.x, translation.y, translation.z]
     const distance = Math.hypot(...values)
@@ -133,6 +148,8 @@ export function platformRuntimeDefinitionError(
     return undefined
   }
   if (behavior.kind === 'scroll') {
+    if (platform.supportPolygon !== undefined)
+      return 'scroll platforms do not support polygon contacts'
     if (
       (behavior.axis !== 'x' && behavior.axis !== 'z') ||
       (behavior.initialState !== 'extended' &&
@@ -369,6 +386,10 @@ function translatedPlatform(
     maxX: platform.maxX + offset.x,
     minZ: platform.minZ + offset.z,
     maxZ: platform.maxZ + offset.z,
+    supportPolygon: platform.supportPolygon?.map((point) => ({
+      x: point.x + offset.x,
+      z: point.z + offset.z,
+    })),
     top: platform.top + offset.y,
   }
 }

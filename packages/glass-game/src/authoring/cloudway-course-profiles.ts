@@ -1,6 +1,6 @@
 // Cloudway course profiles — certified contacts stay outside editable route JSON.
 
-import type { MelodyLessonDefinition, PlatformBehaviorDefinition, PlatformScrollEdgeSupportDefinition, PlatformSurfaceDefinition, SolidMaterialRole, SolidProxyRole, Vec3, } from '../contracts'
+import type { MelodyLessonDefinition, PlatformBehaviorDefinition, PlatformScrollEdgeSupportDefinition, PlatformSurfaceDefinition, PointXZ, SolidMaterialRole, SolidProxyRole, Vec3, } from '../contracts'
 
 export type CloudwayPlatformBehaviorKind = PlatformBehaviorDefinition['kind']
 
@@ -11,6 +11,8 @@ export interface CloudwayPlatformProfile {
   top: number
   thickness: number
   renderId: string
+  /** Certified donor-local convex contact outline; width/depth must match it. */
+  supportPolygon?: readonly PointXZ[]
   behaviorKind?: CloudwayPlatformBehaviorKind
   surface?: PlatformSurfaceDefinition
   /** Donor-local extension axis, rotated cardinally by the course compiler. */
@@ -45,7 +47,10 @@ export interface CloudwayBarrierBoxProfile {
 export interface CloudwayBarrierProfile {
   id: string
   variant: string
-  gate: CloudwayBarrierBoxProfile
+  /** One rectangular pane, retained for existing certified barriers. */
+  gate?: CloudwayBarrierBoxProfile
+  /** Non-overclaiming decomposition for a non-rectangular intact barrier. */
+  gateParts?: readonly CloudwayBarrierBoxProfile[]
   /** Permanent physical frame pieces. At least two are required. */
   frameSides: readonly CloudwayBarrierBoxProfile[]
 }

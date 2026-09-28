@@ -3,7 +3,7 @@ import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } 
 import type { GalleryArtwork } from '../content/gallery-artworks'
 import { galleryArtwork } from '../content/gallery-artworks'
 import { museumSoundscape } from '../content/soundscapes'
-import type { GameEvent, LevelDefinition } from '../contracts'
+import type { GameEvent, GameSnapshot, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { LoadingProgress } from '../loading-progress'
@@ -17,6 +17,7 @@ import { createAdventureTransientMessages } from './adventure-transient-messages
 import type { AdventureVoiceSnapshot } from './adventure-voice-challenge'
 import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
 import { createAdventureVoicePresentation } from './adventure-voice-presentation'
+import { AUTOMATIC_SINGING_PREFERENCE, createAutomaticVoiceEngagement, createAutomaticVoicePreparationOwner, readAutomaticSingingPreference, serializeAutomaticSingingPreference, } from './automatic-voice-engagement'
 import { createCameraComfortPreference } from './camera-comfort-preference'
 import { handleCameraModeShortcut, toggleCameraMode } from './camera-mode'
 import { createCameraModePreference } from './camera-mode-preference'
@@ -98,6 +99,37 @@ export function useAdventure(
   const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
   const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
   const [tutorial, setTutorial] = createSignal(!hasSeenTutorial(host, level))
+  const automaticSingingAvailable = level.presentation?.theme !== 'cloudway'
+  const automaticVoiceEngagement = createAutomaticVoiceEngagement(level)
+  const [automaticSingingEnabled, setAutomaticSingingEnabled] = createSignal(
+    readAutomaticSingingPreference(host),
+  )
+  const automaticVoicePreparation = createAutomaticVoicePreparationOwner(
+    host,
+    () => automaticVoiceEngagement.disarm(),
+  )
+
+  function releaseAutomaticVoicePreparation(): void {
+    automaticVoicePreparation.release()
+  }
+
+  function disarmAutomaticVoice(): void {
+    automaticVoiceEngagement.disarm()
+    releaseAutomaticVoicePreparation()
+  }
+
+  function prepareAutomaticVoiceFromGesture(): void {
+    if (!automaticSingingAvailable || !automaticSingingEnabled() || !ready())
+      return
+    automaticVoiceEngagement.arm()
+    try {
+      // This reaches AudioContext.resume() before the event handler yields.
+      // The microphone remains closed until an eligible circle is entered.
+      automaticVoicePreparation.prepare()
+    } catch {
+      automaticVoiceEngagement.disarm()
+    }
+  }
   const music = host.createMusic?.()
   const [audioPreferences, setAudioPreferences] = createSignal(
     music?.preferences(),
@@ -139,8 +171,10 @@ export function useAdventure(
   })
   game.setPaused(untrack(tutorial))
 
-  function refresh(): void {
-    setSnapshot(game.snapshot())
+  function refresh(): GameSnapshot {
+    const next = game.snapshot()
+    setSnapshot(next)
+    return next
   }
 
   function cancel(): void {
@@ -238,10 +272,9 @@ export function useAdventure(
     voiceChallenge,
   )
 
-  async function start(): Promise<void> {
-    const id = game.snapshot().nearbyBreakableId
+  async function startEncounter(id: string): Promise<void> {
     if (
-      id === null ||
+      game.snapshot().nearbyBreakableId !== id ||
       !ready() ||
       paused() ||
       tutorial() ||
@@ -252,7 +285,41 @@ export function useAdventure(
     setError(null)
     setMicrophoneIssue(null)
     input.clear()
-    await voiceChallenge.start(id)
+    const preparation = automaticVoicePreparation.current()
+    try {
+      await voiceChallenge.start(id)
+    } finally {
+      // The capture session now owns the shared context, or startup ended.
+      // Either result retires the earlier gesture-only preparation.
+      automaticVoicePreparation.release(preparation)
+    }
+  }
+
+  async function start(): Promise<void> {
+    const id = game.snapshot().nearbyBreakableId
+    if (id === null) return
+    automaticVoiceEngagement.consume(id)
+    await startEncounter(id)
+  }
+
+  function startAutomaticVoice(next: GameSnapshot): void {
+    const id = automaticVoiceEngagement.observe({
+      enabled: automaticSingingAvailable && automaticSingingEnabled(),
+      eligible:
+        ready() &&
+        !paused() &&
+        !tutorial() &&
+        inspection() === null &&
+        voiceMode() === 'off' &&
+        next.phase === 'idle' &&
+        next.player.grounded &&
+        !next.paused &&
+        !next.complete &&
+        (challengeCamera()?.mode ?? 'exploration') === 'exploration',
+      nearbyEncounterId: next.nearbyBreakableId,
+      playerPosition: next.player.position,
+    })
+    if (id !== null) void startEncounter(id)
   }
 
   function microphoneRecoveryAction(): MicrophoneRecoveryAction {
@@ -312,6 +379,7 @@ export function useAdventure(
   }
 
   function pause(): void {
+    disarmAutomaticVoice()
     setInspection(null)
     soundscape.pause()
     setPaused(true)
@@ -327,6 +395,7 @@ export function useAdventure(
     game.setPaused(tutorial())
     lastTime = 0
     refresh()
+    prepareAutomaticVoiceFromGesture()
     soundscape.activate()
     const viewport = ready() && !tutorial() ? mount() : null
     queueMicrotask(() => {
@@ -373,6 +442,7 @@ export function useAdventure(
   }
 
   function showTutorial(): void {
+    disarmAutomaticVoice()
     setInspection(null)
     soundscape.pause()
     setTutorial(true)
@@ -401,13 +471,24 @@ export function useAdventure(
     if (profile !== undefined) setRenderQualityProfile(profile)
   }
 
+  function changeAutomaticSinging(enabled: boolean): void {
+    setAutomaticSingingEnabled(enabled)
+    if (!enabled) disarmAutomaticVoice()
+    host.writePreference(
+      AUTOMATIC_SINGING_PREFERENCE,
+      serializeAutomaticSingingPreference(enabled),
+    )
+  }
+
   function gameplayGesture(): void {
     if (!ready()) return
+    prepareAutomaticVoiceFromGesture()
     soundscape.activate()
     narration.welcomeGesture()
   }
 
   function prepareForLoading(): void {
+    disarmAutomaticVoice()
     setInspection(null)
     setNearbyArtwork(null)
     soundscape.pause()
@@ -432,7 +513,10 @@ export function useAdventure(
       setNearbyArtwork(null)
     },
     pauseSoundscape: soundscape.pause,
-    cancelInteraction: cancel,
+    cancelInteraction: () => {
+      disarmAutomaticVoice()
+      cancel()
+    },
     pauseGame: () => game.setPaused(true),
     refresh,
   })
@@ -572,8 +656,9 @@ export function useAdventure(
         events(
           game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )
-        refresh()
+        const next = refresh()
         soundscape.update()
+        startAutomaticVoice(next)
       }
       const activeRenderer = renderer
       const phase = loadingPhase()
@@ -690,6 +775,7 @@ export function useAdventure(
   })
   onCleanup(() => {
     alive = false
+    disarmAutomaticVoice()
     loading.dispose()
     cancelAnimationFrame(frameId)
     transientMessages.clear()
@@ -728,6 +814,9 @@ export function useAdventure(
     inspectAt: (x: number, y: number) =>
       inspectArtwork(renderer?.pickArtwork(x, y) ?? null),
     tutorial,
+    automaticSingingAvailable,
+    automaticSingingEnabled,
+    changeAutomaticSinging,
     input,
     start,
     cancel,

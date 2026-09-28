@@ -24,6 +24,8 @@ export interface MuseumJourneyChapterView {
   historicalGrade: boolean
   notGraded: boolean
   portrait?: { title: string; imageUrl: string }
+  /** Previewing a map stop never authorizes entering a locked gallery. */
+  lockedReason?: string
 }
 
 export interface MuseumJourneyAudio {
@@ -57,6 +59,7 @@ export function MuseumJourney(props: {
   onExit(): void
   onOpenCollection?(): void
   covered?: boolean
+  developmentUnlock?: boolean
   onAudioReady?(audio: MuseumJourneyAudio | undefined): void
 }) {
   let mapContainer: HTMLDivElement | undefined
@@ -114,7 +117,8 @@ export function MuseumJourney(props: {
   }
 
   async function enter(chapter: MuseumJourneyChapterView): Promise<void> {
-    if (enteringChapterId() !== undefined) return
+    if (enteringChapterId() !== undefined || chapter.lockedReason !== undefined)
+      return
     const entryLifetime = lifetime
     const onEnter = props.onEnter
     setEnteringChapterId(chapter.chapterId)
@@ -506,7 +510,7 @@ export function MuseumJourney(props: {
                 </div>
                 <div class={styles.selectedContent}>
                   <span class={styles.selectedTopline}>
-                    {chapter.progressLabel}
+                    {chapter.lockedReason ?? chapter.progressLabel}
                   </span>
                   <p class={styles.lesson}>{chapter.lesson}</p>
                   <h2>{chapter.title}</h2>
@@ -550,14 +554,19 @@ export function MuseumJourney(props: {
                   <button
                     type="button"
                     class={styles.enterSelected}
-                    disabled={enteringChapterId() !== undefined}
+                    disabled={
+                      enteringChapterId() !== undefined ||
+                      chapter.lockedReason !== undefined
+                    }
                     aria-label={`Open selected gallery: ${chapter.title}`}
                     onClick={() => void enter(chapter)}
                   >
                     <span>
                       {enteringChapterId() === chapter.chapterId
                         ? 'Opening gallery…'
-                        : `${chapter.action} selected gallery`}
+                        : chapter.lockedReason !== undefined
+                          ? 'Gallery locked'
+                          : `${chapter.action} selected gallery`}
                     </span>
                   </button>
                 </div>
@@ -572,6 +581,11 @@ export function MuseumJourney(props: {
           <span>Direct gallery access</span>
           <h2 id="gallery-list-title">The museum catalogue</h2>
           <p>The list stays open even when the live map is unavailable.</p>
+          <Show when={props.developmentUnlock}>
+            <p data-testid="development-gallery-access">
+              Preview build · All galleries and trials are open for testing.
+            </p>
+          </Show>
         </div>
         <div class={styles.chapters}>
           <For each={props.chapters}>
@@ -600,14 +614,19 @@ export function MuseumJourney(props: {
                   </span>
                 </button>
                 <div class={styles.chapterStatus}>
-                  <span>{chapter.progressLabel}</span>
+                  <span>{chapter.lockedReason ?? chapter.progressLabel}</span>
                   <button
                     type="button"
-                    disabled={enteringChapterId() !== undefined}
-                    aria-label={`${chapter.action} ${chapter.title}`}
+                    disabled={
+                      enteringChapterId() !== undefined ||
+                      chapter.lockedReason !== undefined
+                    }
+                    aria-label={`${chapter.lockedReason === undefined ? chapter.action : 'Locked:'} ${chapter.title}`}
                     onClick={() => void enter(chapter)}
                   >
-                    {chapter.action}
+                    {chapter.lockedReason === undefined
+                      ? chapter.action
+                      : 'Locked'}
                   </button>
                 </div>
               </article>

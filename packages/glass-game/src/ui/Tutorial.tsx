@@ -7,6 +7,7 @@ import styles from './GlassAdventure.module.css'
 interface TutorialProps {
   content?: LevelTutorialDefinition
   autoRun?: boolean
+  automaticSinging?: boolean
   onClose(): void
 }
 export function Tutorial(props: TutorialProps) {
@@ -110,8 +111,17 @@ export function Tutorial(props: TutorialProps) {
           {props.content?.pages[page()].body ??
             (page() === 0
               ? 'Move Merc with WASD or the arrows. Press Space to jump. Drag the view to look around. On a phone, use the thumbstick and Jump.'
-              : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}
+              : props.automaticSinging === true
+                ? 'Walk onto a glowing circle and the microphone opens automatically. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.'
+                : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}
         </p>
+        <Show when={page() === 1 && props.automaticSinging !== undefined}>
+          <p class={styles.tutorialAside}>
+            {props.automaticSinging === true
+              ? 'Automatic singing is on. You can turn it off from Pause whenever you prefer the Sing button.'
+              : 'Automatic singing is off. Choose Sing when you are ready, or turn it on from Pause.'}
+          </p>
+        </Show>
         <p class={styles.tutorialAside}>
           {props.content?.pages[page()].aside ??
             (page() === 0

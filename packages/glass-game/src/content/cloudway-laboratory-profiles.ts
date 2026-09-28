@@ -2,16 +2,20 @@
 
 import type { CloudwayCourseProfileCatalog } from '../authoring/cloudway-course-profiles'
 import { CLOUDWAY_LAB_PLATFORM_RENDER_IDS } from '../render/cloudway-laboratory-catalog.ts'
+import { FROST_GOLD_ARCH_PROFILE } from './frost-gold-arch-profile.ts'
 import { FROSTED_SCROLL_WALL_PROFILE } from './frost-wall-profile.ts'
+import { ROSE_HEX_CRUMBLE_PROFILE } from './rose-hex-crumble-profile.ts'
 
 export const CLOUDWAY_LABORATORY_PROFILE_IDS = {
   pearlRest: 'pearl-rest',
   scroll: 'gilt-scroll',
   roseCrackle: 'rose-crackle',
+  roseHexCrumble: ROSE_HEX_CRUMBLE_PROFILE.id,
   amethystCrackle: 'amethyst-crackle',
   frostLily: 'frost-lily',
   auroraGlide: 'aurora-glide',
   frostWall: FROSTED_SCROLL_WALL_PROFILE.id,
+  frostGoldArch: FROST_GOLD_ARCH_PROFILE.id,
 } as const
 
 export const CLOUDWAY_LABORATORY_COURSE_PROFILES = {
@@ -59,6 +63,7 @@ export const CLOUDWAY_LABORATORY_COURSE_PROFILES = {
       renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle,
       behaviorKind: 'crackle',
     },
+    [ROSE_HEX_CRUMBLE_PROFILE.id]: ROSE_HEX_CRUMBLE_PROFILE,
     [CLOUDWAY_LABORATORY_PROFILE_IDS.amethystCrackle]: {
       id: CLOUDWAY_LABORATORY_PROFILE_IDS.amethystCrackle,
       width: 1.64,
@@ -94,6 +99,7 @@ export const CLOUDWAY_LABORATORY_COURSE_PROFILES = {
   },
   barriers: {
     [FROSTED_SCROLL_WALL_PROFILE.id]: FROSTED_SCROLL_WALL_PROFILE,
+    [FROST_GOLD_ARCH_PROFILE.id]: FROST_GOLD_ARCH_PROFILE,
   },
   encounterVariants: ['cloudway-lab-voice'],
 } as const satisfies CloudwayCourseProfileCatalog

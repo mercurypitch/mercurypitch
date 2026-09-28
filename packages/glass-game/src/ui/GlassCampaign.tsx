@@ -7,12 +7,15 @@ import { GALLERY_ENCORES } from '../content/encores'
 import { galleryArtworkForAsset } from '../content/gallery-artworks'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { replayProfilesForLevel } from '../content/replay-profiles'
+import { campaignChapterAccess } from '../core/campaign-access'
 import { collectionEntry } from '../core/collection'
 import { readProgress } from '../core/progress'
 import { resolveReplayProfile } from '../core/replay-profile'
 import { canEnterReplay, highestReplayTier } from '../core/replay-progress'
 import { evaluateTrialUnlock } from '../core/trial-unlock'
 import type { GlassGameHost } from '../host'
+import { createCampaignSessionHost } from './campaign-session-host'
+import { nextReplayDifficulty } from './completion-progression'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import { GlassAdventure } from './GlassAdventure'
 import { MuseumCollection } from './MuseumCollection'
@@ -25,6 +28,8 @@ import { ReplaySelection } from './ReplaySelection'
 export function GlassCampaign(props: {
   host: GlassGameHost
   chapters?: readonly GalleryChapter[]
+  /** Host build policy only; this never writes earned progress or stars. */
+  developmentUnlock?: boolean
 }) {
   const [activeVisit, setActiveVisit] = createSignal<{
     id: string
@@ -46,6 +51,7 @@ export function GlassCampaign(props: {
     FLOATING_MUSEUM_JOURNEY.stages[0]!.id,
   )
   const [progressRevision, setProgressRevision] = createSignal(0)
+  const campaignHost = createMemo(() => createCampaignSessionHost(props.host))
   const chapters = () => props.chapters ?? MUSEUM_CAMPAIGN
   const current = createMemo(() => {
     const selection = activeVisit()
@@ -80,16 +86,25 @@ export function GlassCampaign(props: {
       const stage = FLOATING_MUSEUM_JOURNEY.stages.find((candidate) =>
         candidate.chapterIds.includes(chapter.id),
       )
-      const view = projectMuseumJourneyChapter(
+      const projected = projectMuseumJourneyChapter(
         chapter,
         stage?.id ?? FLOATING_MUSEUM_JOURNEY.stages[0]!.id,
-        props.host.loadProgress(chapter.level.id),
-        props.host.assetUrl,
+        campaignHost().loadProgress(chapter.level.id),
+        campaignHost().assetUrl,
       )
+      const access = chapterAccess(chapter.id)
+      const view = {
+        ...projected,
+        ...(access.unlocked
+          ? {}
+          : {
+              lockedReason: `Finish ${access.blockedBy?.title ?? 'the previous gallery'} first`,
+            }),
+      }
       const profiles = profilesFor(chapter)
       if (profiles.length === 0) return view
       const stars = highestReplayTier(
-        loadReplayProgress(props.host, chapter.level, profiles),
+        loadReplayProgress(campaignHost(), chapter.level, profiles),
       )
       return {
         ...view,
@@ -101,7 +116,7 @@ export function GlassCampaign(props: {
     })
   })
   const visitHost = createMemo<GlassGameHost>(() => ({
-    ...props.host,
+    ...campaignHost(),
     onExit: () => {
       setProgressRevision((value) => value + 1)
       setActiveVisit(null)
@@ -114,6 +129,15 @@ export function GlassCampaign(props: {
     )
   }
 
+  function chapterAccess(chapterId: string) {
+    return campaignChapterAccess(
+      chapterId,
+      chapters(),
+      campaignHost().loadProgress,
+      props.developmentUnlock === true,
+    )
+  }
+
   const replayChoice = createMemo(() => {
     const chapter = chapters().find((item) => item.id === replayChapterId())
     if (!chapter) return undefined
@@ -121,7 +145,7 @@ export function GlassCampaign(props: {
     return {
       chapter,
       profiles,
-      progress: loadReplayProgress(props.host, chapter.level, profiles),
+      progress: loadReplayProgress(campaignHost(), chapter.level, profiles),
     }
   })
 
@@ -130,7 +154,7 @@ export function GlassCampaign(props: {
     return chapters().flatMap((chapter) => {
       const entry = collectionEntry(
         chapter.level,
-        loadReplayProgress(props.host, chapter.level, profilesFor(chapter)),
+        loadReplayProgress(campaignHost(), chapter.level, profilesFor(chapter)),
       )
       return entry === undefined
         ? []
@@ -152,12 +176,12 @@ export function GlassCampaign(props: {
   function progressFor(chapter: GalleryChapter) {
     return readProgress(
       chapter.level,
-      props.host.loadProgress(chapter.level.id),
+      campaignHost().loadProgress(chapter.level.id),
     )
   }
 
   function unlockFor(islandId: string) {
-    const host = props.host
+    const host = campaignHost()
     const currentChapters = chapters()
     const requirements = currentChapters.map((chapter) => ({
       chapterId: chapter.id,
@@ -169,7 +193,7 @@ export function GlassCampaign(props: {
       requirements,
       (id) => loadPreReplayProgress(host, id),
     )
-    return evaluateTrialUnlock(
+    const earned = evaluateTrialUnlock(
       islandChapterIds(FLOATING_MUSEUM_JOURNEY, islandId),
       chapters().map((chapter) => ({
         chapterId: chapter.id,
@@ -192,6 +216,16 @@ export function GlassCampaign(props: {
         }
       },
     )
+    const earlierRouteComplete = islandChapterIds(
+      FLOATING_MUSEUM_JOURNEY,
+      islandId,
+    ).every((chapterId) => chapterAccess(chapterId).unlocked)
+    return {
+      ...earned,
+      unlocked:
+        props.developmentUnlock === true ||
+        (earned.unlocked && earlierRouteComplete),
+    }
   }
 
   const trials = createMemo(() => {
@@ -202,9 +236,10 @@ export function GlassCampaign(props: {
       islandTitle: trial.islandTitle,
       title: trial.chapter.level.title,
       description: trial.chapter.description,
-      imageUrl: props.host.assetUrl(trial.chapter.imageAsset),
+      imageUrl: campaignHost().assetUrl(trial.chapter.imageAsset),
       replay: progressFor(trial.chapter).finished === true,
       unlock: unlockFor(trial.islandId),
+      previewUnlocked: props.developmentUnlock === true,
     }))
   })
 
@@ -224,6 +259,10 @@ export function GlassCampaign(props: {
   }
 
   function enter(chapter: GalleryChapter): void {
+    if (!chapterAccess(chapter.id).unlocked) {
+      setProgressRevision((value) => value + 1)
+      return
+    }
     const progress = progressFor(chapter)
     const stage = FLOATING_MUSEUM_JOURNEY.stages.find((candidate) =>
       candidate.chapterIds.includes(chapter.id),
@@ -231,7 +270,7 @@ export function GlassCampaign(props: {
     if (stage !== undefined) setSelectedStageId(stage.id)
     const profiles = profilesFor(chapter)
     if (profiles.length > 0) {
-      const saved = loadReplayProgress(props.host, chapter.level, profiles)
+      const saved = loadReplayProgress(campaignHost(), chapter.level, profiles)
       if (saved.legacyCompleted || saved.clears.length > 0) {
         setActiveVisit(null)
         setProgressRevision((value) => value + 1)
@@ -256,12 +295,17 @@ export function GlassCampaign(props: {
     profileId: string,
     fresh: boolean,
   ): void {
+    if (!chapterAccess(chapter.id).unlocked) {
+      setReplayChapterId(undefined)
+      setProgressRevision((value) => value + 1)
+      return
+    }
     const profiles = profilesFor(chapter)
     const profile = profiles.find((item) => item.profile.id === profileId)
     if (
       !profile ||
       !canEnterReplay(
-        loadReplayProgress(props.host, chapter.level, profiles),
+        loadReplayProgress(campaignHost(), chapter.level, profiles),
         profile,
       )
     )
@@ -285,19 +329,20 @@ export function GlassCampaign(props: {
           <div inert={replayChoice() !== undefined || collectionOpen()}>
             <MuseumJourney
               definition={FLOATING_MUSEUM_JOURNEY}
+              developmentUnlock={props.developmentUnlock}
               chapters={journeyChapters()}
               trials={trials()}
               onEnterTrial={enterTrial}
               selectedStageId={selectedStageId()}
-              assetUrl={props.host.assetUrl}
-              createMusic={props.host.createMusic}
-              subscribeForeground={props.host.subscribeForeground}
+              assetUrl={campaignHost().assetUrl}
+              createMusic={campaignHost().createMusic}
+              subscribeForeground={campaignHost().subscribeForeground}
               onSelect={setSelectedStageId}
               onEnter={(chapterId) => {
                 const chapter = chapters().find((item) => item.id === chapterId)
                 if (chapter !== undefined) enter(chapter)
               }}
-              onExit={() => props.host.onExit()}
+              onExit={() => campaignHost().onExit()}
               onOpenCollection={() => setCollectionOpen(true)}
               covered={collectionOpen() || replayChoice() !== undefined}
               onAudioReady={(audio) => {
@@ -309,7 +354,7 @@ export function GlassCampaign(props: {
             {(choice) => (
               <ReplaySelection
                 title={choice.chapter.level.title}
-                imageUrl={props.host.assetUrl(choice.chapter.imageAsset)}
+                imageUrl={campaignHost().assetUrl(choice.chapter.imageAsset)}
                 profiles={choice.profiles}
                 progress={choice.progress}
                 onChoose={(id, fresh) => beginReplay(choice.chapter, id, fresh)}
@@ -320,9 +365,9 @@ export function GlassCampaign(props: {
           <Show when={collectionOpen()}>
             <MuseumCollection
               entries={collection()}
-              host={props.host}
+              host={campaignHost()}
               audioLeases={collectionEncoreAudioLeases}
-              assetUrl={props.host.assetUrl}
+              assetUrl={campaignHost().assetUrl}
               onClose={() => setCollectionOpen(false)}
               onVisit={(levelId) => {
                 setCollectionOpen(false)
@@ -338,6 +383,7 @@ export function GlassCampaign(props: {
     >
       {(selection) => {
         const chapter = selection.chapter
+        const replayProfiles = profilesFor(chapter)
         const next = () =>
           selection.trial
             ? undefined
@@ -350,6 +396,25 @@ export function GlassCampaign(props: {
           const verb =
             progressFor(destination).finished === true ? 'Replay' : 'Visit'
           return `${verb} ${destination.level.title}`
+        }
+        const nextDifficulty = () => {
+          const currentProfile = selection.profile
+          if (currentProfile === undefined) return undefined
+          const earned = highestReplayTier(
+            loadReplayProgress(campaignHost(), chapter.level, replayProfiles),
+          )
+          const profile = nextReplayDifficulty(
+            replayProfiles,
+            currentProfile.profile.tier,
+            earned,
+          )
+          if (profile === undefined || profile.profile.tier === 1)
+            return undefined
+          return {
+            label: profile.profile.title,
+            tier: profile.profile.tier,
+            onSelect: () => beginReplay(chapter, profile.profile.id, true),
+          }
         }
         return (
           <GlassAdventure
@@ -379,6 +444,8 @@ export function GlassCampaign(props: {
                 : undefined
             }
             continueLabel={nextLabel()}
+            nextLevelName={next()?.level.title}
+            nextDifficulty={nextDifficulty()}
           />
         )
       }}

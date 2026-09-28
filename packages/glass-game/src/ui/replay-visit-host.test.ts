@@ -29,6 +29,7 @@ function fixture(legacy?: SavedProgress) {
   let saved: unknown = legacy ?? null
   const host: GlassGameHost = {
     assetUrl: (id) => id,
+    prepareVoiceGesture: vi.fn(),
     createVoice: vi.fn(),
     createSound: vi.fn(),
     loadProgress: () => saved,

@@ -755,6 +755,24 @@ describe('authored platform runtime', () => {
     ).toContain('translation')
     expect(
       platformRuntimeDefinitionError(
+        platform('polygon-glide', {
+          supportPolygon: [
+            { x: -1, z: -1 },
+            { x: 1, z: -1 },
+            { x: 1, z: 1 },
+            { x: -1, z: 1 },
+          ],
+          behavior: {
+            kind: 'glide',
+            translation: { x: 1, y: 0, z: 0 },
+            travelSeconds: 1,
+            dwellSeconds: 0.1,
+          },
+        }),
+      ),
+    ).toContain('glide platforms do not support polygon contacts')
+    expect(
+      platformRuntimeDefinitionError(
         platform('unbounded-frost', {
           surface: {
             kind: 'frost',

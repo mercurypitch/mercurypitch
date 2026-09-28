@@ -63,7 +63,7 @@ describe('standalone development route', () => {
     expect(level?.id).toBe('cloudway-crystal-promenade-mechanics-preview')
     expect(level?.authored).toMatchObject({
       layoutId: 'crystal-promenade-mechanics-preview',
-      contentRevision: 1,
+      contentRevision: 2,
     })
   })
 

@@ -2,12 +2,13 @@
 
 import type { BoundsXZ, IntentionalGapDefinition, PlatformDefinition, PlatformRenderQuarterTurns, Vec3, } from '../contracts'
 import { intentionalGapDefinitionError } from '../core/collision.ts'
+import { convexPolygonError, normalizeConvexPolygon, polygonBounds, } from '../core/convex-polygon.ts'
 import { platformRuntimeDefinitionError } from '../core/platform-runtime.ts'
 import type { CloudwayCourseProfileCatalog, CloudwayPlatformProfile, } from './cloudway-course-profiles'
 import type { CloudwayCourseGapSource, CloudwayCourseGapState, } from './cloudway-course-source'
 import type { JsonRecord } from './cloudway-course-validation.ts'
 import { CLOUDWAY_GAP_TOLERANCE, exactKeys, fail, finite, positive, quarterTurns, record, string, vec3, } from './cloudway-course-validation.ts'
-import { transformPlatformScrollAxis } from './transform.ts'
+import { transformPlatformScrollAxis, transformPoint } from './transform.ts'
 
 function validatePlatformProfile(
   profile: CloudwayPlatformProfile,
@@ -23,6 +24,27 @@ function validatePlatformProfile(
   if (!Number.isFinite(profile.top)) fail(`${path}.top`, 'must be finite.')
   if (profile.renderId.length === 0)
     fail(`${path}.renderId`, 'must be a non-empty string.')
+  if (profile.supportPolygon !== undefined) {
+    const polygonError = convexPolygonError(profile.supportPolygon)
+    if (polygonError !== undefined)
+      fail(`${path}.supportPolygon`, `${polygonError}.`)
+    const bounds = polygonBounds(profile.supportPolygon)
+    if (
+      Math.abs(bounds.maxX - bounds.minX - profile.width) >
+        CLOUDWAY_GAP_TOLERANCE ||
+      Math.abs(bounds.maxZ - bounds.minZ - profile.depth) >
+        CLOUDWAY_GAP_TOLERANCE
+    )
+      fail(
+        `${path}.supportPolygon`,
+        'must match the certified profile width and depth.',
+      )
+    if (profile.behaviorKind === 'glide' || profile.behaviorKind === 'scroll')
+      fail(
+        `${path}.supportPolygon`,
+        'is not supported by moving or retractable platform profiles.',
+      )
+  }
   if (profile.behaviorKind === 'scroll') {
     if (profile.scrollLocalAxis === undefined)
       fail(`${path}.scrollLocalAxis`, 'is required for a scroll profile.')
@@ -176,14 +198,35 @@ export function compilePlatform(
   const center = vec3(source.center, `${path}.center`)
   const turns = quarterTurns(source.quarterTurns, `${path}.quarterTurns`)
   const profile = platformProfile(catalog, profileId, `${path}.profileId`)
-  const width = turns % 2 === 0 ? profile.width : profile.depth
-  const depth = turns % 2 === 0 ? profile.depth : profile.width
+  const supportPolygon =
+    profile.supportPolygon === undefined
+      ? undefined
+      : normalizeConvexPolygon(
+          profile.supportPolygon.map((point) => {
+            const transformed = transformPoint(
+              { x: point.x, y: 0, z: point.z },
+              { translate: center, yawQuarterTurns: turns },
+            )
+            return { x: transformed.x, z: transformed.z }
+          }),
+        )
+  const bounds =
+    supportPolygon === undefined
+      ? {
+          minX:
+            center.x - (turns % 2 === 0 ? profile.width : profile.depth) / 2,
+          maxX:
+            center.x + (turns % 2 === 0 ? profile.width : profile.depth) / 2,
+          minZ:
+            center.z - (turns % 2 === 0 ? profile.depth : profile.width) / 2,
+          maxZ:
+            center.z + (turns % 2 === 0 ? profile.depth : profile.width) / 2,
+        }
+      : polygonBounds(supportPolygon)
   const definition: PlatformDefinition = {
     id,
-    minX: center.x - width / 2,
-    maxX: center.x + width / 2,
-    minZ: center.z - depth / 2,
-    maxZ: center.z + depth / 2,
+    ...bounds,
+    supportPolygon,
     top: center.y + profile.top,
     thickness: profile.thickness,
     kind: 'deck',

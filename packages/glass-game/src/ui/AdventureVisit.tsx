@@ -8,6 +8,8 @@ import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { AdventureMessageStack } from './AdventureMessageStack'
 import { AdventureVoicePanel } from './AdventureVoicePanel'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
+import type { CompletionDifficultyAction } from './CompletionResults'
+import { CompletionResults } from './CompletionResults'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import styles from './GlassAdventure.module.css'
@@ -15,7 +17,6 @@ import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
 import { MelodyRouteProgress } from './MelodyRouteProgress'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
-import { ReplayCompletion, RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
@@ -32,6 +33,8 @@ export interface AdventureVisitProps {
   level?: LevelDefinition
   onContinue?(): void
   continueLabel?: string
+  nextLevelName?: string
+  nextDifficulty?: CompletionDifficultyAction
   onRestart(): void
   replayGoal?: { title: string; tier: 1 | 2 | 3 }
 }
@@ -134,14 +137,6 @@ export function AdventureVisit(props: AdventureVisitProps) {
       ).length,
   )
   const total = level.breakables.filter((item) => !item.optional).length
-  const optionalCount = createMemo(
-    () =>
-      level.breakables.filter(
-        (item) =>
-          item.optional &&
-          adventure.snapshot().completedBreakableIds.includes(item.id),
-      ).length,
-  )
   const cameraInputBlocked = (): boolean =>
     !adventure.ready() ||
     adventure.paused() ||
@@ -226,6 +221,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
       data-camera-mode={adventure.cameraMode()}
       data-render-quality-preference={adventure.renderQualityPreference()}
       data-render-quality-profile={adventure.renderQualityProfile()}
+      data-automatic-singing={adventure.automaticSingingEnabled()}
       data-challenge-camera-mode={
         adventure.challengeCamera()?.mode ?? 'exploration'
       }
@@ -482,6 +478,11 @@ export function AdventureVisit(props: AdventureVisitProps) {
           <Tutorial
             onClose={adventure.closeTutorial}
             content={level.guidance?.tutorial}
+            automaticSinging={
+              adventure.automaticSingingAvailable
+                ? adventure.automaticSingingEnabled()
+                : undefined
+            }
             autoRun={
               (level.movement?.runSpeed ?? 0) > (level.movement?.walkSpeed ?? 0)
             }
@@ -615,6 +616,27 @@ export function AdventureVisit(props: AdventureVisitProps) {
                   </Show>
                 </fieldset>
               </Show>
+              <Show when={adventure.automaticSingingAvailable}>
+                <fieldset class={styles.audioSettings}>
+                  <legend>Singing</legend>
+                  <label class={styles.audioMute}>
+                    <input
+                      type="checkbox"
+                      checked={adventure.automaticSingingEnabled()}
+                      onChange={(event) =>
+                        adventure.changeAutomaticSinging(
+                          event.currentTarget.checked,
+                        )
+                      }
+                    />
+                    Automatic singing
+                  </label>
+                  <small>
+                    Start when Merc enters a glowing circle. Turn this off to
+                    choose Sing yourself.
+                  </small>
+                </fieldset>
+              </Show>
               <fieldset class={styles.cameraModeSettings}>
                 <legend>Camera view</legend>
                 <div class={styles.cameraModeOptions}>
@@ -679,98 +701,47 @@ export function AdventureVisit(props: AdventureVisitProps) {
             !adventure.tutorial()
           }
         >
-          <div class={styles.scrim}>
-            <section
-              class={styles.pausePanel}
-              ref={focusDialog}
-              onKeyDown={trapDialogKeys}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="glass-complete-title"
-              inert={encoreOpen()}
-            >
-              <div class={styles.completionMark} aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
-                </svg>
-              </div>
-              <h2 id="glass-complete-title">
-                {level.guidance?.completionTitle ?? 'You made the museum sing.'}
-              </h2>
-              <p>
-                {total} required exhibits, opened with your voice.
-                {optionalCount() > 0
-                  ? ` And ${optionalCount()} extra ${optionalCount() === 1 ? 'treasure' : 'treasures'} along the way.`
-                  : ''}
-              </p>
-              <Show when={props.replayGoal}>
-                {(goal) => (
-                  <ReplayCompletion title={goal().title} tier={goal().tier} />
-                )}
-              </Show>
-              <Show when={adventure.snapshot().rewardSummary}>
-                {(summary) => (
-                  <RewardSummary
-                    level={level}
-                    summary={summary()}
-                    assetUrl={(id) => props.host.assetUrl(id)}
-                    replayGoal={props.replayGoal}
-                  />
-                )}
-              </Show>
-              <p class={styles.tutorialAside}>
-                {level.guidance?.completionNext ??
-                  'The next gallery will teach notes that rise and fall.'}
-              </p>
-              <Show when={encore && props.host.createMelodyReference}>
-                <button
-                  class={styles.textButton}
-                  type="button"
-                  onClick={(event) => {
-                    encoreOpener = event.currentTarget
-                    setEncoreOpen(true)
-                  }}
-                >
-                  Sing an optional encore
-                </button>
-              </Show>
-              <Show when={props.onContinue}>
-                <button
-                  class={styles.primary}
-                  type="button"
-                  onClick={() => props.onContinue?.()}
-                >
-                  {props.continueLabel ?? 'Visit the next gallery'}
-                </button>
-              </Show>
-              <button
-                class={props.onContinue ? styles.textButton : styles.primary}
-                type="button"
-                onClick={() => props.host.onExit()}
-              >
-                Leave with a little sparkle
-              </button>
-              <button
-                class={styles.textButton}
-                type="button"
-                onClick={() => props.onRestart()}
-              >
-                Play this gallery again
-              </button>
-            </section>
-            <Show when={encoreOpen() && encore}>
-              {(definition) => (
-                <EncoreDialog
-                  host={props.host}
-                  levelId={level.id}
-                  encore={definition()}
-                  audioLeases={encoreAudioLeases}
-                  onComplete={adventure.celebrateEncore}
-                  onClose={closeEncore}
-                />
-              )}
-            </Show>
-          </div>
+          <CompletionResults
+            level={level}
+            summary={adventure.snapshot().rewardSummary}
+            replayGoal={props.replayGoal}
+            nextDifficulty={props.nextDifficulty}
+            nextLevel={
+              props.onContinue === undefined
+                ? undefined
+                : {
+                    label:
+                      props.nextLevelName ??
+                      props.continueLabel ??
+                      'Next gallery',
+                    onSelect: props.onContinue,
+                  }
+            }
+            assetUrl={(id) => props.host.assetUrl(id)}
+            covered={encoreOpen()}
+            encoreAvailable={
+              encore !== undefined &&
+              props.host.createMelodyReference !== undefined
+            }
+            onEncore={(opener) => {
+              encoreOpener = opener
+              setEncoreOpen(true)
+            }}
+            onReplay={props.onRestart}
+            onBack={() => props.host.onExit()}
+          />
+          <Show when={encoreOpen() && encore}>
+            {(definition) => (
+              <EncoreDialog
+                host={props.host}
+                levelId={level.id}
+                encore={definition()}
+                audioLeases={encoreAudioLeases}
+                onComplete={adventure.celebrateEncore}
+                onClose={closeEncore}
+              />
+            )}
+          </Show>
         </Show>
       </Show>
     </div>

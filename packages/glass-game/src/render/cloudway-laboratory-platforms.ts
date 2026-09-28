@@ -33,7 +33,7 @@ interface InstalledCrackle {
   readonly platform: PlatformDefinition
 }
 
-type CrackleKey = 'roseCrackle' | 'amethystCrackle'
+type CrackleKey = 'roseCrackle' | 'roseHexCrumble' | 'amethystCrackle'
 
 const EPSILON = 1e-6
 
@@ -134,11 +134,12 @@ function crackleMaterialBindings(
     motion?: { materials?: Record<string, unknown> }
   }
   const declared = Object.values(declaration.motion?.materials ?? {})
-  const expected = Object.keys(kinds)
   if (
-    declared.length !== expected.length ||
-    new Set(declared).size !== expected.length ||
-    expected.some((name) => !declared.includes(name))
+    declared.length === 0 ||
+    new Set(declared).size !== declared.length ||
+    declared.some(
+      (name) => typeof name !== 'string' || kinds[name] === undefined,
+    )
   )
     fail('crackle material metadata must match the reviewed binding set.')
 
@@ -155,9 +156,9 @@ function crackleMaterialBindings(
       if (Array.isArray(mesh.material))
         fail(`crackle mesh "${mesh.name}" must use one material.`)
       const kind = kinds[mesh.material.name]
-      if (kind === undefined)
+      if (kind === undefined || !declared.includes(mesh.material.name))
         fail(
-          `crackle mesh "${mesh.name}" uses unreviewed material "${mesh.material.name}".`,
+          `crackle mesh "${mesh.name}" uses undeclared or unreviewed material "${mesh.material.name}".`,
         )
       const material = materialLibrary.clone(
         mesh.material,
@@ -167,7 +168,9 @@ function crackleMaterialBindings(
       represented.add(mesh.material.name)
       bindings.push({ mesh: mesh.name, kind, material })
     })
-  if (expected.some((name) => !represented.has(name)))
+  if (
+    declared.some((name) => typeof name !== 'string' || !represented.has(name))
+  )
     fail('crackle donor does not render every reviewed material region.')
   return bindings
 }
@@ -190,6 +193,10 @@ export function createCloudwayLaboratoryPlatformRenderer(
     (platform) =>
       platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle,
   )
+  const roseHexPlatforms = level.platforms.filter(
+    (platform) =>
+      platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseHexCrumble,
+  )
   const amethystPlatforms = level.platforms.filter(
     (platform) =>
       platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle,
@@ -209,6 +216,8 @@ export function createCloudwayLaboratoryPlatformRenderer(
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.scroll)
   if (rosePlatforms.length > 0)
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
+  if (roseHexPlatforms.length > 0)
+    expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumble)
   if (amethystPlatforms.length > 0)
     expectedBundles.add(CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle)
   if (frostPlatforms.length > 0)
@@ -221,6 +230,7 @@ export function createCloudwayLaboratoryPlatformRenderer(
     ...auroraPlatforms.map((platform) => platform.id),
     ...scrollPlatforms.map((platform) => platform.id),
     ...rosePlatforms.map((platform) => platform.id),
+    ...roseHexPlatforms.map((platform) => platform.id),
     ...amethystPlatforms.map((platform) => platform.id),
   ])
   const runtimeById = new Map<string, PlatformRuntimeSnapshot>()
@@ -445,6 +455,8 @@ export function createCloudwayLaboratoryPlatformRenderer(
         stageScroll(sourceScene)
       else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
         stageCrackle(sourceScene, 'roseCrackle', rosePlatforms)
+      else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumble)
+        stageCrackle(sourceScene, 'roseHexCrumble', roseHexPlatforms)
       else if (bundle === CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle)
         stageCrackle(sourceScene, 'amethystCrackle', amethystPlatforms)
       else return new Set()

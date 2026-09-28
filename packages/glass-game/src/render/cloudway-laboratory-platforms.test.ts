@@ -3,7 +3,8 @@
 import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, ShaderMaterial, } from 'three'
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
+import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
+import { FROST_GOLD_ARCH_BUNDLE_IDS } from '../content/frost-gold-arch-profile'
 import { FROST_WALL_BUNDLE } from '../content/frost-wall-profile'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
@@ -426,7 +427,14 @@ describe('Cloudway laboratory platform renderer', () => {
 
   it('declares six platform donors plus the wall bundle exactly once', () => {
     const plan = createMuseumAssetLoadPlan(CLOUDWAY_CRYSTAL_PROMENADE_STUDY)
-    for (const bundle of Object.values(CLOUDWAY_LAB_BUNDLE_IDS)) {
+    for (const bundle of [
+      CLOUDWAY_LAB_BUNDLE_IDS.pearlRest,
+      CLOUDWAY_LAB_BUNDLE_IDS.scroll,
+      CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle,
+      CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle,
+      CLOUDWAY_LAB_BUNDLE_IDS.frostLily,
+      CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide,
+    ]) {
       expect(plan.bundles.filter((id) => id === bundle)).toEqual([bundle])
       expect(plan.taskIds.filter((id) => id === `bundle:${bundle}`)).toEqual([
         `bundle:${bundle}`,
@@ -435,6 +443,32 @@ describe('Cloudway laboratory platform renderer', () => {
     expect(plan.bundles.filter((id) => id === FROST_WALL_BUNDLE)).toEqual([
       FROST_WALL_BUNDLE,
     ])
+    expect(plan.bundles).toHaveLength(7)
+  })
+
+  it('loads only logical Rose Hex and Frost Arch bundles for the mechanics preview', () => {
+    const plan = createMuseumAssetLoadPlan(
+      CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
+    )
+    for (const bundle of [
+      CLOUDWAY_LAB_BUNDLE_IDS.pearlRest,
+      CLOUDWAY_LAB_BUNDLE_IDS.scroll,
+      CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumble,
+      CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle,
+      CLOUDWAY_LAB_BUNDLE_IDS.frostLily,
+      CLOUDWAY_LAB_BUNDLE_IDS.auroraGlide,
+      FROST_GOLD_ARCH_BUNDLE_IDS.logical,
+    ])
+      expect(plan.bundles.filter((id) => id === bundle)).toEqual([bundle])
+    for (const excluded of [
+      CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle,
+      CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleDesktop,
+      CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumbleMobile,
+      FROST_WALL_BUNDLE,
+      FROST_GOLD_ARCH_BUNDLE_IDS.desktop,
+      FROST_GOLD_ARCH_BUNDLE_IDS.mobile,
+    ])
+      expect(plan.bundles).not.toContain(excluded)
     expect(plan.bundles).toHaveLength(7)
   })
 
@@ -578,5 +612,38 @@ describe('Cloudway laboratory platform renderer', () => {
     renderer.dispose()
     floorById.forEach((floor) => disposeObject(floor))
     disposeTestScene(scene, [pearl, scroll], palette, library)
+  })
+
+  it('rejects a rendered crackle material omitted from the donor declaration', () => {
+    const platform = CLOUDWAY_CRYSTAL_PROMENADE_STUDY.platforms.find(
+      (candidate) => candidate.id === 'rose-step',
+    )!
+    const level: LevelDefinition = {
+      ...CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
+      platforms: [platform],
+    }
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const scene = new Group()
+    const donor = crackleDonor('roseCrackle')
+    const declaration = JSON.parse(
+      donor.userData.platform_adapter_json as string,
+    ) as { motion: { materials: Record<string, string> } }
+    delete declaration.motion.materials.region0
+    donor.userData.platform_adapter_json = JSON.stringify(declaration)
+    const renderer = createCloudwayLaboratoryPlatformRenderer(
+      level,
+      scene,
+      fallbacks(level),
+      palette,
+      library,
+    )
+
+    expect(() =>
+      renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle),
+    ).toThrow('uses undeclared or unreviewed material')
+
+    renderer.dispose()
+    disposeTestScene(scene, [donor], palette, library)
   })
 })

@@ -60,6 +60,7 @@ async function installSyntheticMicrophone(
         })
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     if (setup.preferredInput)
       localStorage.setItem('beside-cue:input-device', setup.preferredInput)
     localStorage.setItem(

@@ -111,6 +111,7 @@ async function openMuseum(
   await page.addInitScript((museum) => {
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}${museum.tutorialPreference}`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     // A legitimate reached checkpoint shortens traversal covered by controls tests.
     // This grants no break, bridge or target note; all singing below is real PCM.
     if (localStorage.getItem(`${prefix}progress:${museum.levelId}`) === null) {

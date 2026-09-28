@@ -99,6 +99,7 @@ test('captures the upright final portrait before, during and after its picture-b
   await page.addInitScript(() => {
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     localStorage.setItem(
       `${prefix}museum-audio:v1`,
       JSON.stringify({ muted: true }),
