@@ -43,6 +43,11 @@
 // what the singer left in the first room is still there when they go back.
 // `--handover-only` walks that alone.
 //
+// UNDER THE STATUS BAR (probe-safe-areas.mjs): every surface again, upright
+// under a notch's and an island's status bar and on its side both ways
+// round, measured for text or a control in the top, side or bottom insets.
+// `--safe-areas-only` walks that alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -56,6 +61,7 @@ import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
+import { frameName, SAFE_AREA_FRAMES, walkSafeAreas, } from './probe-safe-areas.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
@@ -104,6 +110,7 @@ function parseArgs(argv) {
     landscapeOnly: false,
     karaokeOnly: false,
     handoverOnly: false,
+    safeAreasOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -116,6 +123,7 @@ function parseArgs(argv) {
     else if (flag === '--landscape-only') args.landscapeOnly = true
     else if (flag === '--karaoke-only') args.karaokeOnly = true
     else if (flag === '--handover-only') args.handoverOnly = true
+    else if (flag === '--safe-areas-only') args.safeAreasOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -4979,6 +4987,15 @@ async function main() {
     }
   }
 
+  /** Every surface under one phone's insets. */
+  const walkSafeAreaFrame = async (frame) => {
+    try {
+      steps.push(...(await walkSafeAreas(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+
   /** Sing and Karaoke, one after the other, on one frame. */
   const walkHandoverFrame = async (frame) => {
     try {
@@ -5013,9 +5030,13 @@ async function main() {
     for (const frame of args.karaokeOnly ? FRAMES : []) {
       await walkKaraokeFrame(frame)
     }
+    for (const frame of args.safeAreasOnly ? SAFE_AREA_FRAMES : []) {
+      await walkSafeAreaFrame(frame)
+    }
     for (const frame of args.landscapeOnly ||
     args.karaokeOnly ||
-    args.handoverOnly
+    args.handoverOnly ||
+    args.safeAreasOnly
       ? []
       : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -5060,7 +5081,12 @@ async function main() {
       await walkKaraokeFrame(frame)
       await walkHandoverFrame(frame)
     }
-    if (!args.chromeOnly && !args.karaokeOnly && !args.handoverOnly) {
+    if (
+      !args.chromeOnly &&
+      !args.karaokeOnly &&
+      !args.handoverOnly &&
+      !args.safeAreasOnly
+    ) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
           steps.push(...(await walkAlleyLandscape(browser, args, frame)))
@@ -5091,6 +5117,9 @@ async function main() {
         }
         await walkHandoverFrame(frame)
       }
+      for (const frame of args.landscapeOnly ? [] : SAFE_AREA_FRAMES) {
+        await walkSafeAreaFrame(frame)
+      }
     }
   } finally {
     await browser.close()
@@ -5110,7 +5139,9 @@ async function main() {
       ? `the Karaoke room only, ${FRAMES.length} frames`
       : args.handoverOnly
         ? `the rooms handing over only, ${FRAMES.length} frames and ${LANDSCAPE_INSET_FRAMES.length} sideways`
-        : `${FRAMES.length} frames`
+        : args.safeAreasOnly
+          ? `the safe areas only, ${SAFE_AREA_FRAMES.map(frameName).join(', ')}`
+          : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 
