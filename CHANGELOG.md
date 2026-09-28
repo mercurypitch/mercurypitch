@@ -5,6 +5,49 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.14] - 2026-09-28
+
+A jam room can now send an instrument as well as a voice, and a new page
+explains how to delete your account.
+
+### Added
+
+- **Send your voice or an instrument in a jam room.** Voice keeps echo
+  cancellation on, for speakers. Instrument sends your interface untouched.
+  Choose under **Your sound** in the room's sidebar.
+- **The microphone button asks first.** The first time you go live in a jam
+  room, it asks what you are sending. Hold the button or tap its corner to
+  change it later.
+- **A warning before an instrument feeds back.** Sending an instrument from
+  the built-in microphone turns the button red.
+- **How to delete your account, even without the app.** A new page, linked
+  as Account deletion under About in Settings, gives the steps and lists what
+  is erased. It also says what is kept: files on your device, songs in your
+  Google Drive, the payment record, and share links for up to 60 days.
+
+### Changed
+
+- **You can see when you are on air.** A jam room's microphone button is a
+  solid disc while you are live and an empty ring while you are not.
+- **Each player's delay in a jam room keeps up.** It is measured every few
+  seconds, not once as the room connected.
+- **A Sign in with Apple account shows as signed in on the web.** If Apple
+  gave you a private address, Settings shows a note: an emailed code to it
+  signs you in here.
+
+### Fixed
+
+- **Signing in with Google or Apple keeps the name you chose** before you had
+  an account.
+- **Google joins an existing account only once its address is confirmed.** A
+  password account that never confirmed its email is no longer opened by a
+  Google sign-in.
+- **Cloud separation rides out a hiccup.** A brief error from the separation
+  service could end a song as expired mid-split. It now keeps waiting.
+- **Smaller things.** A Linux playback monitor is listed last in a jam room,
+  marked "(playback)". On an iPhone on its side, toolbars, Ear Lab and
+  Progress keep clear of the notch.
+
 ## [0.9.13] - 2026-09-21
 
 ### Added
