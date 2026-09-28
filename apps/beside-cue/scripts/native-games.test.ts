@@ -460,6 +460,14 @@ describe('explicit native games profile', () => {
     expect(
       reusable.match(/run-with-optional-profile-argument\.sh/gu),
     ).toHaveLength(4)
+    const releaseBuild = reusable
+      .split('name: Build release bundle and APK')[1]
+      ?.split('\n      - name:')[0]
+    expect(releaseBuild).toContain('-Dorg.gradle.jvmargs=-Xmx3072m')
+    expect(releaseBuild).toContain(
+      'bundleRelease assembleRelease --no-daemon --stacktrace',
+    )
+    expect(reusable.match(/-Dorg\.gradle\.jvmargs=-Xmx3072m/gu)).toHaveLength(1)
     expect(reusable).toContain('Upload signed native testing APK')
     const apkUpload = reusable
       .split('name: Upload signed native testing APK')[1]
