@@ -28,9 +28,12 @@
 //
 // Bounded three ways: the songs per grant (REVIEW_ACCESS_SONGS, 1 to 5,
 // default 3), one grant per account (a UNIQUE ledger key), and the accounts
-// ever granted (REVIEW_ACCESS_ACCOUNTS, default 20), checked in the same
-// statement that writes the grant. A leaked code is worth that much at most,
-// and a new digest retires it.
+// ever granted (REVIEW_ACCESS_ACCOUNTS, default 20). Every grant is counted
+// in reviewAccessGrants (migration 0051), a record that names no account and
+// that deleting one does not touch: counting the ledger's rows instead let a
+// deleted account's slot be taken again (review of PR 882, finding 3). The
+// bound is checked, and the grant and its record written, in one batch. A
+// leaked code is worth that much at most, and a new digest retires it.
 //
 // The songs are the app's to spend, after the subscription's, and the
 // rollover cap never counts them (songs-allowance.ts, REVIEW_ACCESS). They
@@ -148,28 +151,35 @@ export async function handleReviewAccess(
 
   const { songs, accounts } = reviewAccessLimits(env)
   const key = `${REVIEW_ACCESS}:${auth.userId}`
+  const id = crypto.randomUUID()
   const now = Date.now()
-  // One statement: the account's one grant, and only while fewer accounts
-  // than the limit have had theirs. The UNIQUE key makes a second grant to
-  // one account, or a race with itself, write nothing.
-  const written = await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     SELECT ?, ?, ?, ?, ?, NULL, ?
-      WHERE (SELECT COUNT(*) FROM creditLedger WHERE reason = ?) < ?`,
-  )
-    .bind(
-      crypto.randomUUID(),
+  // One batch, one transaction: the account's one grant, only while fewer
+  // grants than the limit were ever made, and the record that counts it.
+  // The UNIQUE key makes a second grant to one account, or a race with
+  // itself, write nothing, and then the record has no new row to count.
+  const [written] = await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       SELECT ?, ?, ?, ?, ?, NULL, ?
+        WHERE (SELECT COUNT(*) FROM reviewAccessGrants) < ?`,
+    ).bind(
+      id,
       new Date(now).toISOString(),
       auth.userId,
       songs,
       REVIEW_ACCESS,
       key,
-      REVIEW_ACCESS,
       accounts,
-    )
-    .run()
+    ),
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO reviewAccessGrants (grantId, createdAt)
+       SELECT id, createdAt FROM creditLedger WHERE id = ?`,
+    ).bind(id),
+  ])
   const { left } = await readAppSongs(env, auth.userId, now)
-  if (written.meta.changes > 0) return respond({ granted: songs, left })
+  if ((written?.meta.changes ?? 0) > 0) {
+    return respond({ granted: songs, left })
+  }
 
   const earlier = await env.DB.prepare(
     'SELECT id FROM creditLedger WHERE idempotencyKey = ?',

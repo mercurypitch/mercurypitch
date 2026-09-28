@@ -15,11 +15,14 @@
 // issues is a code this route takes.
 
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import type { SQLInputValue } from 'node:sqlite'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reviewUnlockDigestInput } from '../../../packages/purchase-kit/src/review-unlock'
 import type { Env } from '../src/auth'
 import worker from '../src/index'
+import type { SqliteD1Statement } from './sqlite-d1'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
 
 const WEBHOOK_AUTH = 'Bearer review-access-webhook-secret'
@@ -38,6 +41,7 @@ let events = 0
 let devices = 0
 
 interface Call {
+  method?: string
   token?: string
   origin?: string
   ip?: string
@@ -53,7 +57,7 @@ function call(path: string, init: Call = {}): Promise<Response> {
   if (init.body !== undefined) headers['Content-Type'] = 'application/json'
   return worker.fetch(
     new Request(`https://api.test${path}`, {
-      method: init.body === undefined ? 'GET' : 'POST',
+      method: init.method ?? (init.body === undefined ? 'GET' : 'POST'),
       headers,
       ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     }),
@@ -114,6 +118,41 @@ async function appSongsLeft(who: Phone): Promise<unknown> {
   })
   expect(response.status).toBe(200)
   return ((await response.json()) as { songs: { left: unknown } }).songs.left
+}
+
+/** D1 as two requests at once meet it: every query waits a few
+ *  milliseconds for its turn, so their reads and writes interleave, and only
+ *  a check made in the same statement or batch as its write holds. */
+function interleaved(db: SqliteD1Database): D1Database {
+  const turn = (): Promise<void> =>
+    new Promise((resolve) => {
+      setTimeout(resolve, 5)
+    })
+  const statement = (inner: SqliteD1Statement): SqliteD1Statement =>
+    new Proxy(inner, {
+      get(target, property, receiver) {
+        if (property === 'bind') {
+          return (...values: SQLInputValue[]) =>
+            statement(target.bind(...values))
+        }
+        const value: unknown = Reflect.get(target, property, receiver)
+        if (property === 'first' || property === 'all' || property === 'run') {
+          const query = value as (...args: unknown[]) => Promise<unknown>
+          return async (...args: unknown[]) => {
+            await turn()
+            return query.apply(target, args)
+          }
+        }
+        return value
+      },
+    })
+  return {
+    prepare: (sql: string) => statement(db.prepare(sql)),
+    batch: async (statements: SqliteD1Statement[]) => {
+      await turn()
+      return db.batch(statements)
+    },
+  } as unknown as D1Database
 }
 
 /** The GPU tier at one credit a song, as dev prices it. */
@@ -297,6 +336,99 @@ describe('Play review access', () => {
       first.userId,
       second.userId,
     ])
+  })
+
+  it('grants the last place to one account when two ask at once', async () => {
+    env = {
+      ...env,
+      DB: interleaved(new SqliteD1Database(sqlite)),
+      REVIEW_ACCESS_ACCOUNTS: '1',
+    }
+    const first = await phone()
+    const second = await phone()
+
+    const answers = await Promise.all([
+      redeem(first, TEST_CODE, { ip: '203.0.113.1' }),
+      redeem(second, TEST_CODE, { ip: '203.0.113.2' }),
+    ])
+
+    expect(answers.map((answer) => answer.status).sort()).toEqual([200, 409])
+    expect(reviewRows()).toHaveLength(1)
+  })
+
+  // Review of PR 882, finding 3: deleting an account deletes its ledger
+  // rows, which the bound used to count, so each deletion gave a place back.
+  it('still counts the grant of an account that was deleted', async () => {
+    env = { ...env, REVIEW_ACCESS_ACCOUNTS: '1' }
+    const first = await phone()
+    const second = await phone()
+    expect((await redeem(first, TEST_CODE, { ip: '203.0.113.1' })).status).toBe(
+      200,
+    )
+    expect(
+      (await redeem(second, TEST_CODE, { ip: '203.0.113.2' })).status,
+    ).toBe(409)
+
+    const deleted = await call('/api/auth/me', {
+      method: 'DELETE',
+      token: first.token,
+      ip: '203.0.113.1',
+    })
+    expect(deleted.status).toBe(200)
+    expect(reviewRows()).toEqual([])
+
+    const after = await redeem(second, TEST_CODE, { ip: '203.0.113.2' })
+    expect(after.status).toBe(409)
+    expect(reviewRows()).toEqual([])
+  })
+
+  it('counts each grant in a record that names no account', async () => {
+    const first = await phone()
+    const second = await phone()
+    await redeem(first, TEST_CODE)
+    await redeem(second, TEST_CODE)
+    await redeem(first, TEST_CODE)
+
+    const grants = sqlite
+      .prepare(
+        "SELECT id, createdAt FROM creditLedger WHERE reason = 'review-access' ORDER BY rowid",
+      )
+      .all()
+    const record = sqlite
+      .prepare(
+        'SELECT grantId AS id, createdAt FROM reviewAccessGrants ORDER BY rowid',
+      )
+      .all()
+    const columns = sqlite
+      .prepare("SELECT name FROM pragma_table_info('reviewAccessGrants')")
+      .all()
+
+    expect(grants).toHaveLength(2)
+    expect(record).toEqual(grants)
+    expect(columns.map((column) => column.name)).toEqual([
+      'grantId',
+      'createdAt',
+    ])
+  })
+
+  it('counts the grants made before the record existed', async () => {
+    env = { ...env, REVIEW_ACCESS_ACCOUNTS: '1' }
+    const earlier = await phone()
+    const later = await phone()
+    await redeem(earlier, TEST_CODE)
+    sqlite.prepare('DELETE FROM reviewAccessGrants').run()
+
+    sqlite.exec(
+      readFileSync(
+        new URL('../migrations/0051_review_access_grants.sql', import.meta.url),
+        'utf8',
+      ),
+    )
+
+    expect(
+      sqlite.prepare('SELECT COUNT(*) AS grants FROM reviewAccessGrants').get(),
+    ).toEqual({ grants: 1 })
+    expect((await redeem(later, TEST_CODE)).status).toBe(409)
   })
 
   it('limits the tries an account gets, the right code included', async () => {
