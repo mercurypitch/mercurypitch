@@ -20,11 +20,26 @@
 // would, and then goes back for what was left: the Karaoke song at its
 // place, and the Sing take, which ends on its own card.
 //
-// Walked upright on each frame, and on each phone turned sideways with its
-// notch and home-indicator insets (probe-landscape.mjs). Wired into
+// THE PILL ON EVERY TAB (TestFlight 0.7.1, owner, 28 Sep): a Sing run parked,
+// then the Ear Lab, and the "<room> · paused" pill sat on the bench's Today,
+// Calibrate, Instruments and Ear Report and took their taps. The Ear Lab,
+// Piano and Guitar have runs of their own that the shell does not drive, and
+// let go of the parked run the same way. So the third walk parks a Sing run
+// and takes it everywhere the pill can go: the alley at rest and with a door
+// picked, Progress, Settings and every screen it pushes, the account and
+// Developer. On none of them may the pill lie over a control, unless the
+// control's scroller can still lift it out from under it; each is measured
+// where it opens and again at its end. Then the Ear Lab, Piano and Guitar in
+// turn: no pill there, and back in Sing the take is paused under its own
+// transport, every time.
+//
+// Walked upright on each frame, with the phone's own status bar and home
+// indicator (probe-safe-areas.mjs), and on each phone turned sideways with
+// its notch and home-indicator insets (probe-landscape.mjs). Wired into
 // probe-bundle.mjs, which owns the browser and passes its helpers in.
 
 import { readStage } from './probe-karaoke.mjs'
+import { toEnd } from './probe-landscape.mjs'
 
 const PILL = '[data-testid="shell-session-pill"]'
 const STAGE = '[data-testid="karaoke-mobile-stage"]'
@@ -74,6 +89,79 @@ const readPill = (scope) => {
   }
 }
 
+/**
+ * In the page: every control the pill lies over in `scope`, and what a finger
+ * at the overlap would hit. A control whose scroller can still scroll on is
+ * not one: scrolling lifts it out from under the pill, and the reading at
+ * the end of the scroll is the one that counts. A sliver under a pixel is
+ * not an overlap.
+ */
+const readPillOver = (scope) => {
+  const pill = document.querySelector('[data-testid="shell-session-pill"]')
+  if (pill === null) return { pill: null, label: null, covers: [], lifted: 0 }
+  const p = pill.getBoundingClientRect()
+  const root = document.querySelector(scope) ?? document.body
+  const name = (el) =>
+    el.getAttribute('data-testid') ??
+    el.getAttribute('aria-label') ??
+    ((el.textContent ?? '').trim().replace(/\s+/gu, ' ').slice(0, 32) ||
+      el.tagName.toLowerCase())
+  const scrollerOf = (el) => {
+    for (
+      let n = el.parentElement;
+      n !== null && n !== document.documentElement;
+      n = n.parentElement
+    ) {
+      const s = getComputedStyle(n)
+      if (
+        /(auto|scroll)/u.test(s.overflowY) &&
+        n.scrollHeight > n.clientHeight + 1
+      ) {
+        return n
+      }
+    }
+    return null
+  }
+  const covers = []
+  let lifted = 0
+  for (const el of root.querySelectorAll(
+    'button, a[href], input, select, textarea, [role="button"], [role="slider"], [role="switch"], [role="tab"], [role="link"], [role="checkbox"], [role="radio"]',
+  )) {
+    if (pill.contains(el)) continue
+    if (
+      !el.checkVisibility({ visibilityProperty: true, opacityProperty: true })
+    )
+      continue
+    if (el.closest('[inert], [aria-hidden="true"]') !== null) continue
+    if (getComputedStyle(el).pointerEvents === 'none') continue
+    const r = el.getBoundingClientRect()
+    const w = Math.min(r.right, p.right) - Math.max(r.left, p.left)
+    const h = Math.min(r.bottom, p.bottom) - Math.max(r.top, p.top)
+    if (w <= 1 || h <= 1) continue
+    const s = scrollerOf(el)
+    if (s !== null && s.scrollTop + s.clientHeight < s.scrollHeight - 1) {
+      lifted += 1
+      continue
+    }
+    const hit = document.elementFromPoint(
+      Math.max(r.left, p.left) + w / 2,
+      Math.max(r.top, p.top) + h / 2,
+    )
+    if (hit === null) continue
+    if (pill.contains(hit)) covers.push(`${name(el)} (the pill takes its tap)`)
+    else if (el.contains(hit)) covers.push(`${name(el)} (drawn over the pill)`)
+  }
+  return {
+    pill: [p.left, p.top, p.width, p.height].map((n) => Math.round(n)),
+    label:
+      pill
+        .querySelector('[data-testid="shell-session-pill-name"]')
+        ?.textContent?.trim() ?? null,
+    covers,
+    lifted,
+  }
+}
+
 /** In the page: the shell's bottom edge, as a singer sees it. */
 const readEdge = () => ({
   rail: document.documentElement.getAttribute('data-shell-rail') === 'on',
@@ -92,10 +180,22 @@ const readHit = ([x, y]) => {
   return named?.getAttribute('data-testid') ?? hit?.tagName ?? null
 }
 
+/**
+ * The two phones' own insets upright: the status bar, and the home indicator
+ * the dock and its pill sit above (probe-safe-areas.mjs).
+ */
+const UPRIGHT_INSETS = new Map([
+  ['393x852', { top: 59, right: 0, bottom: 34, left: 0 }],
+  ['390x844', { top: 47, right: 0, bottom: 34, left: 0 }],
+])
+
 async function openPage(browser, args, frame, kit, failures) {
   const { isolate, seed, bootTimeoutMs, stepTimeoutMs } = kit
   const sideways = frame.side !== undefined
   const viewport = { width: frame.width, height: frame.height }
+  const insets = sideways
+    ? { top: 0, left: frame.side, right: frame.side, bottom: frame.bottom }
+    : (UPRIGHT_INSETS.get(`${frame.width}x${frame.height}`) ?? null)
   const context = await isolate(
     await browser.newContext({
       viewport,
@@ -110,16 +210,9 @@ async function openPage(browser, args, frame, kit, failures) {
   page.on('pageerror', (error) => {
     failures.push(`page error: ${error.message}`)
   })
-  if (sideways) {
+  if (insets !== null) {
     const cdp = await context.newCDPSession(page)
-    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
-      insets: {
-        top: 0,
-        left: frame.side,
-        right: frame.side,
-        bottom: frame.bottom,
-      },
-    })
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets })
   }
   await page.addInitScript(seed, args.theme)
   await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
@@ -162,6 +255,24 @@ function verbs(page, args, frame, kit) {
     shot: (name) => shoot(page, ctx, name),
     edge: () => page.evaluate(readEdge),
     pill: (scope) => page.evaluate(readPill, scope),
+    over: (scope) => page.evaluate(readPillOver, scope),
+    /** Every scroller back to its top, so the rail unfolds again. */
+    toTop: async () => {
+      await page.evaluate(() => {
+        for (const el of document.querySelectorAll('*')) {
+          if (el.scrollTop > 0) el.scrollTop = 0
+        }
+      })
+      await settle(300)
+    },
+    toEnd: (scope) => page.evaluate(toEnd, scope),
+    /** A destination behind More. */
+    more: async (item) => {
+      await page.locator('[data-rail-item="more"]').click()
+      await visible(`[data-more-item="${item}"]`)
+      await settle(300)
+      await page.locator(`[data-more-item="${item}"]`).click()
+    },
     stage: () => page.evaluate(readStage),
     sing: () => page.evaluate(() => window.mpSingRoom?.() ?? null),
     rail: async (id) => {
@@ -376,8 +487,173 @@ async function singThenKaraoke(browser, args, frame, kit) {
 }
 
 /**
- * Both sequences on one frame. Both are walked even when the first fails,
- * and the error names every problem found.
+ * A Sing run parked, then every tab the pill may sit on, and then the three
+ * rooms that let go of it (the header, THE PILL ON EVERY TAB).
+ */
+async function pillEverywhere(browser, args, frame, kit) {
+  const failures = []
+  const clear = []
+  let line = null
+  const { context, page } = await openPage(browser, args, frame, kit, failures)
+  const pushed = '[data-testid="shell-pushed"]'
+  try {
+    const go = verbs(page, args, frame, kit)
+    /** Nothing under the pill here, where it opens and at its end. */
+    const nothingUnder = async (where, scope, { end = false } = {}) => {
+      const first = await go.over(scope)
+      if (first.pill === null) {
+        failures.push(`${where}: no pill, with a Sing run parked`)
+        return
+      }
+      const covers = [...first.covers]
+      if (end && (await go.toEnd(scope)) > 0) {
+        await go.settle(300)
+        const last = await go.over(scope)
+        covers.push(...last.covers.map((c) => `${c} at its end`))
+        await go.toTop()
+      }
+      if (covers.length > 0) {
+        failures.push(
+          `${where}: the "${first.label}" pill at ${first.pill.join(',')} is over ${covers.join(', ')}`,
+        )
+      } else clear.push(where)
+    }
+    const pop = async (under = null) => {
+      await page.locator('[data-testid="shell-pushed-back"]').click()
+      if (under === null) {
+        await page
+          .locator(pushed)
+          .waitFor({ state: 'hidden', timeout: kit.stepTimeoutMs })
+      } else await go.visible(under)
+      await go.settle(300)
+    }
+
+    await go.rail('stage')
+    await go.visible(SING)
+    await go.startSinging(1)
+    await go.leaveSing()
+    const parkedPill = await go.pill('body')
+
+    await nothingUnder('the alley', 'body')
+    await kit.tapDoor(page, 'sing')
+    await kit.waitPhase(page, 'alive', 'sing', 'a door picked, the pill up')
+    await go.visible('[data-testid="alley-enter"]')
+    await go.settle()
+    await nothingUnder('the alley with a door picked', 'body')
+    await page.evaluate(() => window.mpShellBack?.())
+    await kit.waitPhase(page, 'rest', null, 'the door put back, the pill up')
+
+    await go.rail('progress')
+    await page.waitForFunction(
+      () =>
+        document.querySelector('section[aria-busy="true"]') === null &&
+        [...document.querySelectorAll('h1')].some(
+          (h) => (h.textContent ?? '').trim() === 'Progress',
+        ),
+      undefined,
+      { timeout: kit.stepTimeoutMs },
+    )
+    await go.settle()
+    await nothingUnder('Progress', 'body', { end: true })
+
+    await go.more('settings')
+    await go.visible('[data-testid="settings-screen"]')
+    await go.settle()
+    await nothingUnder('Settings', pushed, { end: true })
+    for (const [row, screen, where] of [
+      ['microphone', 'microphone-screen', 'Microphone'],
+      ['storage', 'storage-screen', 'Storage'],
+      ['this-phone', 'this-phone-screen', 'This phone'],
+      ['appearance', 'appearance-screen', 'Appearance'],
+      ['rooms-karaoke', 'karaoke-settings-screen', 'Karaoke settings'],
+      ['about', 'about-screen', 'About'],
+    ]) {
+      await go.toTop()
+      await page.locator(`[data-settings-row="${row}"]`).click()
+      await go.visible(`[data-testid="${screen}"]`)
+      await go.settle()
+      await nothingUnder(where, pushed, { end: true })
+      await pop('[data-testid="settings-screen"]')
+    }
+    await pop()
+    await go.more('account')
+    await go.visible('[data-testid="account-screen"]')
+    await go.settle()
+    await nothingUnder('Account', pushed, { end: true })
+    await pop('[data-testid="settings-screen"]')
+    await pop()
+    await page.locator('[data-rail-item="more"]').click()
+    await go.visible('[data-more-item="settings"]')
+    await go.settle(300)
+    if ((await page.locator('[data-more-item="developer"]').count()) > 0) {
+      await page.locator('[data-more-item="developer"]').click()
+      await go.visible('[data-testid="shell-developer"]')
+      await go.settle()
+      await nothingUnder('Developer', pushed, { end: true })
+      await pop()
+    } else {
+      await page.keyboard.press('Escape')
+      await page
+        .locator('[data-more-item="settings"]')
+        .waitFor({ state: 'hidden', timeout: kit.stepTimeoutMs })
+    }
+
+    // The rooms with runs of their own: the pill goes, and the take comes
+    // back paused under its own transport each time.
+    const letGo = []
+    for (const [where, open, ready] of [
+      ['the Ear Lab', () => go.rail('ear'), '[data-testid="ear-room-shell"]'],
+      [
+        'Piano',
+        () => go.more('piano'),
+        '[data-testid="piano-mobile-stage"]:visible, [data-testid="practice-view-toolbar"]:visible',
+      ],
+      [
+        'Guitar',
+        () => go.more('guitar'),
+        '[data-testid="gp-song-status-bar"]:visible',
+      ],
+    ]) {
+      await open()
+      await go.visible(ready)
+      await go.settle(800)
+      const there = await go.over('body')
+      await go.shot(
+        `handover-pill-${where.replace(/^the /u, '').replaceAll(' ', '-').toLowerCase()}`,
+      )
+      if (there.pill !== null) {
+        failures.push(
+          `the "${there.label}" pill is drawn over ${where} at ${there.pill.join(',')}${there.covers.length > 0 ? `, over ${there.covers.join(', ')}` : ''}`,
+        )
+      }
+      await go.toTop()
+      await go.rail('stage')
+      await go.visible(SING)
+      await go.settle(600)
+      const room = await go.sing()
+      const back = await go.edge()
+      if (room?.state !== 'paused' || back.pill || !back.transport) {
+        failures.push(
+          `after ${where}, the Sing take did not come back paused under its own transport: ${JSON.stringify({ room, edge: back })}`,
+        )
+        break
+      }
+      letGo.push(where)
+      await go.leaveSing()
+    }
+    line = `Sing sang and parked under the "${parkedPill.label}" pill; it is over no control on ${clear.length} surfaces (${clear.join(', ')}); ${letGo.join(', ')} each let go of it, and Sing took the take back paused under its own transport every time`
+  } catch (error) {
+    failures.push(error.message.split('\n')[0])
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [line]
+}
+
+/**
+ * Every sequence on one frame. Each is walked even when an earlier one
+ * fails, and the error names every problem found.
  */
 export async function walkRoomHandover(browser, args, frame, kit) {
   const where = `${frame.width}x${frame.height}`
@@ -386,6 +662,7 @@ export async function walkRoomHandover(browser, args, frame, kit) {
   for (const [name, walk] of [
     ['Karaoke, then Sing', karaokeThenSing],
     ['Sing, then Karaoke', singThenKaraoke],
+    ['Sing parked, then every tab', pillEverywhere],
   ]) {
     try {
       steps.push(
