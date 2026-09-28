@@ -577,6 +577,9 @@
   color: #658478;
 }
 .pausePanel {
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   text-align: center;
   padding-top: 35px;
   padding-bottom: 32px;

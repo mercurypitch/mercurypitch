@@ -466,6 +466,8 @@ for (const route of ROUTES) {
     await page.addInitScript(() => {
       const prefix = 'beside-cue:glass-adventure:'
       localStorage.setItem(`${prefix}tutorial`, 'seen')
+      // This fixture walks the authored route without starting an encounter.
+      localStorage.setItem(`${prefix}automatic-singing`, 'off')
       localStorage.setItem(
         `${prefix}museum-audio:v1`,
         JSON.stringify({ muted: true }),
