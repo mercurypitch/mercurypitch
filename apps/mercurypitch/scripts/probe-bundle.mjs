@@ -1352,7 +1352,9 @@ async function walkRun(page, ctx, steps) {
     () => window.mpSingRoom?.().elapsedSeconds ?? 0,
   )
   await page.waitForTimeout(5000)
-  for (const tab of ['ear', 'rooms']) {
+  // Not the Ear Lab: it has a run of its own and lets go of this one, and the
+  // pill with it (probe-room-handover.mjs, THE PILL ON EVERY TAB).
+  for (const tab of ['rooms']) {
     await page.locator(`[data-rail-item="${tab}"]`).click()
     await page
       .locator(`[data-rail-item="${tab}"][aria-current="page"]`)
@@ -1362,7 +1364,7 @@ async function walkRun(page, ctx, steps) {
       `the session pill on ${tab}`,
     )
   }
-  steps.push('run: parked, with the pill on every tab the run is not')
+  steps.push('run: parked, with the pill on Progress and the alley')
 
   await page.locator('[data-testid="shell-session-pill"]').click()
   await expectVisible(
