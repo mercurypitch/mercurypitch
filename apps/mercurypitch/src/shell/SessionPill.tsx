@@ -10,10 +10,12 @@
 //
 // Nor in another room with a run of its own. The slot is where Sing keeps
 // its Sing a note and Karaoke its bar, and the pill there took their taps
-// (TestFlight 0.7.0). Such a room coming on screen is where the shell lets
+// (TestFlight 0.7.0), and in the Ear Lab it sat on the bench's Today,
+// Calibrate, Instruments and Ear Report (0.7.1). Such a room coming on
+// screen, whether or not the shell drives its run, is where the shell lets
 // go of the run it held (run-shell-store.ts, "A room's own run comes
 // first"), so the pill only ever sits on a tab without a run of its own, as
-// the alley, Progress and the Ear Lab are.
+// the alley and Progress are, and on the screens pushed over them.
 //
 // "<room> · <state>" is the kit's grammar for this pill, and the state is
 // never in doubt: the pill exists only while a run is parked, and parking

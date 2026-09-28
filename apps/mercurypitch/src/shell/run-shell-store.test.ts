@@ -289,7 +289,9 @@ describe('parking', () => {
     unregister?.()
     unregister = null
 
-    for (const tab of [TAB_PROGRESS, TAB_EAR_LAB, TAB_HOME]) {
+    // Every tab WITHOUT a run of its own. The Ear Lab has one, and lets go
+    // of the parked run instead (run-shell-store.handover.test.ts).
+    for (const tab of [TAB_PROGRESS, TAB_HOME, TAB_PROGRESS]) {
       setActiveTab(tab)
       await settled()
       expect(runState()).toBe('paused')
