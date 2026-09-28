@@ -627,6 +627,25 @@ describe('the month’s free song', () => {
     expect(freeSong([], USER, '2026-09', false).left).toBe(0)
   })
 
+  // free-song-email.ts: the email's record of the month outlives the account
+  // that made it, so an account that has claimed nothing this month and
+  // whose email has a record gets none.
+  it('is not there while its email had it this month on another account', () => {
+    expect(freeSong([], USER, '2026-09', true, true)).toEqual({
+      left: 0,
+      nextKey: `free-song:${USER}:2026-09:0`,
+    })
+  })
+
+  it('is the account’s own once it has claimed it, the email’s record too', () => {
+    const rows = [claim('2026-09', 0, 'job-1')]
+
+    expect(freeSong(rows, USER, '2026-09', true, true).left).toBe(0)
+    expect(
+      freeSong([...rows, back('job-1')], USER, '2026-09', true, true),
+    ).toEqual({ left: 1, nextKey: `free-song:${USER}:2026-09:1` })
+  })
+
   it('is never a credit, so the cap never counts it', () => {
     const songs = subscriptionSongs([
       {
