@@ -86,6 +86,15 @@
   padding-bottom: calc(var(--tabbar-total) + 8px);
 }
 
+/* And the session pill while a run is parked: it rides above the rail in the
+   dock's accessory slot, a touch target high and the dock's 8 px gap above
+   it, over the bottom of whatever scrolls under it. The scroller keeps that
+   clear too, so its last control can always be lifted out from under the
+   pill. The shell says it is there on <html>, as it says the rail is. */
+:root[data-native-shell][data-shell-pill='on'] .main-content {
+  padding-bottom: calc(var(--tabbar-total) + 8px + var(--touch-target) + 8px);
+}
+
 /* The room header is fixed chrome the shell draws over the top of a room, so
    the room's own scroller has to start below it. Only the rooms that get a
    header carry the attribute. */
