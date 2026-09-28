@@ -75,12 +75,43 @@ turns the console on, so every test build (TestFlight, the debug APK, a
 laptop build) carries it and the Developer screen behind it. The store build
 carries neither: `MERCURYPITCH_API_TARGET=production` compiles them out
 whatever the env says (`portableConsoleFor` in `apps/mercurypitch/api-base.mjs`),
-and `mercurypitch-mobile.yml` runs the same assert over that store binary.
+and `mercurypitch-mobile.yml` runs the same assert over that store binary,
+with `--store-binary` (below).
 
 The one thing that breaks the elimination is a call site that stops being a
 plain `if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true')` — assigning it
 to a variable first, or hiding it behind a function, leaves the bundler
 unable to prove the branch is dead. The assert is what catches that.
+
+## Which console is in which build
+
+Three consoles and a screen, easy to confuse. Only the inline log ships
+everywhere.
+
+| What                                                      | Web                                   | Native test build | Native store build |
+| --------------------------------------------------------- | ------------------------------------- | ----------------- | ------------------ |
+| Portable console (`PortableConsole.tsx`)                  | `pnpm run dev:portable` only          | yes               | no                 |
+| Developer screen (`DeveloperScreen.tsx`)                  | no                                    | yes               | no                 |
+| Floating developer console (`FloatingConsole.tsx`)        | yes, armed from its switch            | yes               | no                 |
+| Inline log (`ConsoleLog.tsx`), the crash card's View Logs | yes, and in Settings under the switch | yes               | yes                |
+
+The floating console's switch is `pitchperfect_developer_console`, turned on
+in Settings' developer tools (a development build) and read by
+`armDeveloperConsole()` on every web entry. The native entry arms it only
+inside its `VITE_PORTABLE_CONSOLE` branch, with a dynamic import, like the
+Developer screen's sections. The native app's own Settings has no switch for
+it, so on a test build it is not mounted unless the key is set by hand.
+
+The web ships the floating console, so the default assert cannot name it.
+`assert-no-portable-console.mjs --store-binary` adds its fingerprints (its
+test id, its `<body>` host, the switch's key), and the store binary's CI step
+passes that flag. Four things keep it green; each one was needed:
+`ConsoleLog.tsx` must not import `FloatingConsole.tsx`, since the crash card
+brings it into every build; the switch lives in its own store, apart from
+the log the error handler feeds; settings sync names the key only where the
+panel exists; and the native Vite config declares the panel and its switch
+free of side effects, because `App.tsx` folds the web Settings panel out of
+the native build but a folded import still runs the module it names.
 
 ## Serving over plain HTTP
 

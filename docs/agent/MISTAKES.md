@@ -1430,6 +1430,13 @@ If local and CI counts differ, compare the exact tested merge revision with the 
 **Rule:** give the stable preview a dedicated cache per port. Verify it remains usable while the browser test servers start and stop; do not hide the symptom with a missing-element guard.
 **See:** `apps/beside-cue/scripts/glass-playtest.ts`.
 
+### A folded branch still runs the modules its imports name
+
+**Symptom:** the native store build carried the floating developer console's storage key, though everything that shows the console sits behind a build constant that build folds to false. Karaoke Stage 2's import queue had reached the store build the same way.
+**Cause:** folding a branch drops the code inside it, not the modules the file imports for it. Rollup keeps such a module, and runs it, unless it can prove the module free of side effects, and a module-level persisted signal reads storage as it is made.
+**Rule:** import a build-only module dynamically inside its constant's branch, or declare it free of side effects in the native Vite config (`KARAOKE_STAGE_2`, `FLOATING_CONSOLE`). Then hold the built output to it with an assert, not the source.
+**See:** `apps/mercurypitch/vite.config.ts`, `apps/mercurypitch/scripts/assert-bundle.mjs`, `scripts/assert-no-portable-console.mjs --store-binary`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
