@@ -288,7 +288,8 @@ describe('a song the room cannot play on this phone', () => {
       status: 0,
       body: null,
       headers: new Headers(),
-      arrayBuffer: async () => new ArrayBuffer(5 * 1024 * 1024),
+      // Past the 12 MiB a stem the room still decodes whole (stem-memory.ts).
+      arrayBuffer: async () => new ArrayBuffer(16 * 1024 * 1024),
     }))
     const { host } = hosting()
     mountHosted(host)

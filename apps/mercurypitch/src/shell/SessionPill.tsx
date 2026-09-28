@@ -8,6 +8,13 @@
 // this app is a module-level global, so without the owner check it would
 // light up in the room it belongs to as well.
 //
+// Nor in another room with a run of its own. The slot is where Sing keeps
+// its Sing a note and Karaoke its bar, and the pill there took their taps
+// (TestFlight 0.7.0). Such a room coming on screen is where the shell lets
+// go of the run it held (run-shell-store.ts, "A room's own run comes
+// first"), so the pill only ever sits on a tab without a run of its own, as
+// the alley, Progress and the Ear Lab are.
+//
 // "<room> · <state>" is the kit's grammar for this pill, and the state is
 // never in doubt: the pill exists only while a run is parked, and parking
 // pauses (`parkRun`), so the run behind it is paused by construction. The

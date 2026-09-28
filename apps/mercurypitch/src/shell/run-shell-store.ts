@@ -31,6 +31,20 @@
 // releases the microphone on the same frame (REQ-NHR-017). It must not stop:
 // a parked run comes back paused, with the singer's place kept, and a stop
 // would put the shell in `ended` the moment somebody tapped Progress.
+//
+// A ROOM'S OWN RUN COMES FIRST. Sing and Karaoke each have a run, and the
+// shell holds one. A room with a run of its own that comes on screen (it
+// registers controls) lets go of a run the shell holds for ANOTHER room: the
+// pill goes, and the transport, the rail and the next run are that room's.
+// Holding on is what TestFlight 0.7.0 walked into: the Karaoke pill sat over
+// the Sing room's Sing a note and took its tap, a Sing run that did start
+// was taken for the parked song (so no transport), and the Sing pill sat on
+// Karaoke's own bar and took its Play (probe-room-handover.mjs).
+// Letting go ends nothing. The parked room was paused and never stopped, and
+// it keeps its own place at module scope (the Karaoke song and where it was,
+// the Sing take); going back to it brings that run back paused, and the
+// shell takes it up from there, with its time. The pill still sits on every
+// tab without a run of its own: the alley, Progress, the Ear Lab.
 
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -103,6 +117,11 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null
 let announcedThisRun = false
 /** What a parked run is, for as long as its room is not mounted. See liveRun. */
 let parkedLatch: 'paused' | null = null
+/**
+ * The time of a run the shell let go of, by the room it belongs to, until
+ * that room brings it back (releaseRun, adoptRun).
+ */
+const releasedClocks = new Map<ActiveTab, number>()
 
 function stopClockTimer(): void {
   if (clockTimer !== null) clearInterval(clockTimer)
@@ -504,6 +523,7 @@ export function resetRunShell(): void {
   settled = 'idle'
   idlePending = false
   parkedLatch = null
+  releasedClocks.clear()
   startedAt = null
   accumulatedMs = 0
   announcedThisRun = false
@@ -541,6 +561,49 @@ type LiveRun = 'active' | 'paused' | 'idle'
 let settled: LiveRun = 'idle'
 let idlePending = false
 
+/**
+ * A run with no owner is the room's that reports it: the room on screen, or
+ * the tab where nothing registered. `resumed` is a run that was already going
+ * when the shell took it up (a room brought back after `releaseRun`), and it
+ * keeps the time it had.
+ */
+function adoptRun(resumed: boolean): void {
+  if (untrack(runOwner) !== null) return
+  const controls = nativeRunControls()
+  const tab = controls?.tab ?? untrack(activeTab)
+  const kept = releasedClocks.get(tab)
+  releasedClocks.delete(tab)
+  if (resumed && kept !== undefined) accumulatedMs = kept
+  setRunOwner(tab)
+  setRunLabel(controls?.roomLabel ?? 'Practice')
+}
+
+/**
+ * Let go of the run held for `owner`, because another room with a run of
+ * its own is on screen (the header, "A room's own run comes first"). Nothing
+ * is asked of the owner's room: it was parked, and it keeps its own place.
+ * Only its time is kept here, for the return.
+ */
+function releaseRun(owner: ActiveTab): void {
+  const running = startedAt === null ? 0 : Date.now() - startedAt
+  releasedClocks.set(owner, accumulatedMs + running)
+  settled = 'idle'
+  idlePending = false
+  parkedLatch = null
+  startedAt = null
+  accumulatedMs = 0
+  stopClockTimer()
+  setTick((n) => n + 1)
+  announcedThisRun = false
+  setAnnouncement('')
+  setRunOwner(null)
+  setRunLabel('')
+  setTakeOnScreen(false)
+  setLocked(false)
+  closeColumn()
+  setKeepAlertOpen(false)
+}
+
 function applyTransition(previous: LiveRun, next: LiveRun): void {
   if (next === 'active') {
     if (previous === 'paused') {
@@ -553,11 +616,7 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
     }
     setTakeOnScreen(false)
     parkedLatch = null
-    if (untrack(runOwner) === null) {
-      const controls = nativeRunControls()
-      setRunOwner(controls?.tab ?? untrack(activeTab))
-      setRunLabel(controls?.roomLabel ?? 'Practice')
-    }
+    adoptRun(false)
     if (!announcedThisRun) {
       announcedThisRun = true
       setAnnouncement('Tabs hidden while you practice')
@@ -566,6 +625,9 @@ function applyTransition(previous: LiveRun, next: LiveRun): void {
   }
 
   if (next === 'paused') {
+    // Paused with no owner: a room brought back after the shell let go of
+    // its run. It is that room's run again, with the time it had.
+    adoptRun(previous === 'idle')
     holdClock()
     closeColumn()
     return
@@ -593,7 +655,11 @@ function settle(next: LiveRun): void {
 
 createRoot(() => {
   createEffect(
-    on(liveRun, (live) => {
+    on([() => nativeRunControls()?.tab ?? null, liveRun], ([room, live]) => {
+      // A room with a run of its own is on screen, and the run held is
+      // another room's: let go of it before reading this room's own.
+      const owner = untrack(runOwner)
+      if (room !== null && owner !== null && owner !== room) releaseRun(owner)
       if (live !== 'idle') {
         idlePending = false
         settle(live)

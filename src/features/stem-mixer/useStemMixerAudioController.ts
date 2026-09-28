@@ -916,7 +916,8 @@ export const useStemMixerAudioController = (
         }
         // No AudioDecoder at all, in a room that asked for the stream. A song
         // decoded whole is what kills the phone (plan S8 §7 rule 2), so only a
-        // small stem is, and a song is refused with the reason.
+        // stem up to the guard is (stem-memory.ts), and a song with a bigger
+        // one is refused with the reason.
         if (
           deps.forceStream === true &&
           !canStreamStems() &&

@@ -88,6 +88,15 @@ describe('the switches', () => {
     expect(localStorage.getItem(FORCE_NO_STREAM_KEY)).toBe('1')
   })
 
+  it('say where the no-streaming path draws the line: 12 MB a stem', () => {
+    open()
+    expect(
+      el('[data-settings-row="karaoke-force-no-stream"]').textContent,
+    ).toContain(
+      'A song with a stem over 12 MB is refused; a smaller stem is decoded whole.',
+    )
+  })
+
   it('let a song past the guard only when the crash test is turned on', () => {
     open()
     expect(decodePastGuard()).toBe(false)

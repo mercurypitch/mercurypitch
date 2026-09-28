@@ -136,18 +136,24 @@ export function fitStems(input: StemFitInput): StemFit {
 //
 // Streaming needs WebCodecs' AudioDecoder, and a WKWebView from before it
 // arrived has none. The web mixer then decodes the song whole, as it always
-// has. A room that asked for the stream must not (plan S8 §7 rule 2): a whole
-// song decoded is the ~180 MiB that killed iOS. There a stem is decoded whole
-// only while it is small, and a song is refused with the reason.
+// has. A room that asked for the stream must not do that blindly (plan S8 §7
+// rule 2): a whole song decoded is the ~180 MiB that killed iOS. There a stem
+// is decoded whole only up to a size, and a song with a bigger one is refused
+// with the reason.
 
 /**
  * The largest compressed stem a room that asked for the stream decodes whole
- * when this platform cannot stream at all. The room's stems are AAC at 128
+ * when this platform cannot stream at all: 12 MiB (owner, 28 Sep; it was
+ * 2 MiB, which refused every full song). The room's stems are AAC at 128
  * kbps or more (the examples, about 137) or MP3 at 320 (a separation), so
- * 2 MiB is at most about two minutes: some 48 MiB each at 48 kHz stereo, and
- * two of them well under what killed iOS. Every full song is bigger.
+ * 12 MiB is about five minutes of a separation and twelve of an example.
+ * Decoded at 48 kHz stereo a stem holds some 22 MiB a minute, so a
+ * four-minute song's two stems hold about 180 MiB whole: the size of the
+ * kill on record (useStemMixerAudioController.streaming.test.ts). The
+ * Developer screen's "Force the no-streaming path" takes a phone that has
+ * AudioDecoder down this path, to see whether it survives (stream-switches.ts).
  */
-export const HOSTED_WHOLE_DECODE_MAX_BYTES = 2 * 1024 * 1024
+export const HOSTED_WHOLE_DECODE_MAX_BYTES = 12 * 1024 * 1024
 
 /** What the room says instead of decoding a song it cannot hold. */
 export const NEEDS_STREAMING_MESSAGE =

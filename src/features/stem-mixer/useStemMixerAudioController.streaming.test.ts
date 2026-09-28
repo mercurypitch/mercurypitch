@@ -302,8 +302,12 @@ function harness(overrides: Partial<StemMixerAudioDeps> = {}) {
   }
 }
 
-/** Every stem the fetch answers is this big. */
-let stemBytes = 10 * 1024 * 1024
+/**
+ * Every stem the fetch answers is this big: a long song's, past the line a
+ * phone with no AudioDecoder decodes whole (12 MiB), so that phone refuses it.
+ */
+const PAST_THE_GUARD = 16 * 1024 * 1024
+let stemBytes = PAST_THE_GUARD
 
 beforeEach(() => {
   decodeCalls = 0
@@ -313,7 +317,7 @@ beforeEach(() => {
   chunkIterations = 0
   decoderPresent = true
   streamable = true
-  stemBytes = 10 * 1024 * 1024
+  stemBytes = PAST_THE_GUARD
   vi.stubGlobal(
     'fetch',
     vi.fn(
@@ -494,15 +498,40 @@ describe('the Karaoke room on a phone that cannot stream (no AudioDecoder)', () 
     h.dispose()
   })
 
+  // The line is 12 MiB a stem (owner, 28 Sep; it was 2 MiB).
+  it('decodes a stem right at the line whole', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    stemBytes = 12 * 1024 * 1024
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
+    h.dispose()
+  })
+
   it('refuses the song once a stem is past the line, not before', async () => {
+    deviceClass = 'mobile'
+    decoderPresent = false
+    stemBytes = 12 * 1024 * 1024 + 1
+    const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
+    await h.controller.loadStems()
+
+    expect(decodeCalls).toBe(0)
+    expect(h.controller.loadErrorRetryable()).toBe(false)
+    h.dispose()
+  })
+
+  it('no longer refuses a stem past the old 2 MiB line', async () => {
     deviceClass = 'mobile'
     decoderPresent = false
     stemBytes = 2 * 1024 * 1024 + 1
     const h = harness({ forceStream: true } as Partial<StemMixerAudioDeps>)
     await h.controller.loadStems()
 
-    expect(decodeCalls).toBe(0)
-    expect(h.controller.loadErrorRetryable()).toBe(false)
+    expect(decodeCalls).toBe(2)
+    expect(h.controller.loadError()).toBe('')
     h.dispose()
   })
 

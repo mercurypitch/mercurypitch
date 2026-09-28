@@ -603,13 +603,22 @@ export async function walkKaraoke(browser, args, frame, kit) {
 }
 
 /**
- * A phone that cannot stream: a WKWebView with no WebCodecs AudioDecoder.
- * The room asked for the stream, so it must refuse a song it would have to
- * decode whole (the ~180 MiB that killed iOS), say why, and offer no Try
- * again, since a second try lands on the same refusal (review item 3, plan
- * S8 §7 rule 2). Every decode the page asks for is weighed on the way.
+ * The largest stem a room that asked for the stream decodes whole on a phone
+ * with no AudioDecoder: src/features/stem-mixer/stem-memory.ts,
+ * HOSTED_WHOLE_DECODE_MAX_BYTES (owner, 28 Sep; it was 2 MiB).
  */
-export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
+const WHOLE_DECODE_MAX_BYTES = 12 * 1024 * 1024
+
+const NEEDS_STREAMING =
+  "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
+
+/**
+ * The room opened on a phone with no AudioDecoder, until its song is cued or
+ * refused. `stemBytes` answers every stem the room downloads with that many
+ * bytes; null leaves the room its own song. Every decode the page asks for is
+ * weighed on the way.
+ */
+async function openWithoutDecoder(browser, args, frame, kit, name, stemBytes) {
   const { isolate, seed, tapDoor, waitPhase, walkOpen, bootTimeoutMs } = kit
   const ctx = { ...args, frame }
   const context = await isolate(
@@ -621,8 +630,13 @@ export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
       colorScheme: args.theme,
     }),
   )
-  const where = `${frame.width}x${frame.height}`
   try {
+    if (stemBytes !== null) {
+      const body = Buffer.alloc(stemBytes)
+      await context.route(/\.m4a(?:\?|$)/u, (route) =>
+        route.fulfill({ status: 200, contentType: 'audio/mp4', body }),
+      )
+    }
     const page = await context.newPage()
     await page.addInitScript(seed, args.theme)
     await page.addInitScript(() => {
@@ -645,63 +659,113 @@ export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
     await page.waitForTimeout(600)
     await tapDoor(page, 'karaoke')
     await waitPhase(page, 'alive', 'karaoke', 'select Karaoke')
-    await walkOpen(
-      page,
-      ctx,
-      'karaoke-nodecoder-open',
-      '[data-testid="karaoke-room"]',
-    )
-    const card = page.locator(
-      '[data-testid="karaoke-mobile-stage"] [role="alert"]',
-    )
-    await card
-      .first()
-      .waitFor({ state: 'visible', timeout: kit.runTimeoutMs })
+    await walkOpen(page, ctx, name, '[data-testid="karaoke-room"]')
+    await page
+      .waitForFunction(cueReady, null, { timeout: kit.runTimeoutMs })
       .catch(async () => {
         const decodes = await page.evaluate(() => window.__probeDecodes ?? [])
         throw new Error(
-          `no refusal showed; the stage reads ${JSON.stringify(await page.evaluate(readStage))}; decodes asked for: ${JSON.stringify(decodes)} bytes`,
+          `the song was neither cued nor refused; the stage reads ${JSON.stringify(await page.evaluate(readStage))}; decodes asked for: ${JSON.stringify(decodes)} bytes`,
         )
       })
-    const seen = await page.evaluate(() => {
-      const alert = document.querySelector(
-        '[data-testid="karaoke-mobile-stage"] [role="alert"]',
+    return await page.evaluate(() => {
+      const stage = document.querySelector(
+        '[data-testid="karaoke-mobile-stage"]',
       )
+      const alert = stage?.querySelector('[role="alert"]') ?? null
+      const play = stage?.querySelector('button[aria-label="Play"]') ?? null
       return {
         decoderGone: typeof window.AudioDecoder === 'undefined',
+        refused: alert !== null,
         text: alert?.querySelector('p')?.textContent?.trim() ?? null,
         buttons: [...(alert?.querySelectorAll('button') ?? [])].map((b) =>
           (b.textContent ?? '').trim(),
         ),
+        playable: play !== null && !play.disabled,
         decodes: window.__probeDecodes ?? [],
       }
     })
-    const problems = []
-    if (!seen.decoderGone) problems.push('AudioDecoder was still there')
-    if (
-      seen.text !==
-      "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
-    ) {
-      problems.push(`the card reads ${JSON.stringify(seen.text)}`)
+  } finally {
+    await context.close()
+  }
+}
+
+/**
+ * A phone that cannot stream: a WKWebView with no WebCodecs AudioDecoder.
+ * The room asked for the stream, so it decodes a stem whole only up to the
+ * guard, and refuses a song with a bigger one (the ~180 MiB that killed iOS),
+ * says why, and offers no Try again, since a second try lands on the same
+ * refusal (review item 3, plan S8 §7 rule 2).
+ *
+ * Both sides of the line. The room's own song has stems under it, so it is
+ * decoded whole and cued. The same song with every stem answered one byte
+ * past the line is refused before anything is decoded.
+ */
+export async function walkKaraokeNoDecoder(browser, args, frame, kit) {
+  const where = `${frame.width}x${frame.height}`
+  const mib = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
+  try {
+    const under = await openWithoutDecoder(
+      browser,
+      args,
+      frame,
+      kit,
+      'karaoke-nodecoder-open',
+      null,
+    )
+    const underProblems = []
+    if (!under.decoderGone) underProblems.push('AudioDecoder was still there')
+    if (under.refused) {
+      underProblems.push(`the song was refused: ${JSON.stringify(under.text)}`)
     }
-    if (seen.buttons.includes('Try again')) {
-      problems.push('the card offers Try again')
+    if (!under.playable) underProblems.push('Play never became pressable')
+    if (under.decodes.length === 0) {
+      underProblems.push('no stem was decoded whole')
     }
-    const whole = seen.decodes.filter((bytes) => bytes > 2 * 1024 * 1024)
+    const pastUnder = under.decodes.filter(
+      (bytes) => bytes > WHOLE_DECODE_MAX_BYTES,
+    )
+    if (pastUnder.length > 0) {
+      underProblems.push(
+        `it decoded ${pastUnder.length} stem(s) past the guard whole (${pastUnder.join(', ')} bytes)`,
+      )
+    }
+    if (underProblems.length > 0) {
+      throw new Error(`under the guard: ${underProblems.join('; ')}`)
+    }
+
+    const past = await openWithoutDecoder(
+      browser,
+      args,
+      frame,
+      kit,
+      'karaoke-nodecoder-past',
+      WHOLE_DECODE_MAX_BYTES + 1,
+    )
+    const pastProblems = []
+    if (!past.decoderGone) pastProblems.push('AudioDecoder was still there')
+    if (past.text !== NEEDS_STREAMING) {
+      pastProblems.push(`the card reads ${JSON.stringify(past.text)}`)
+    }
+    if (past.buttons.includes('Try again')) {
+      pastProblems.push('the card offers Try again')
+    }
+    const whole = past.decodes.filter((bytes) => bytes > WHOLE_DECODE_MAX_BYTES)
     if (whole.length > 0) {
-      problems.push(
+      pastProblems.push(
         `it decoded ${whole.length} stem(s) whole (${whole.join(', ')} bytes)`,
       )
     }
-    if (problems.length > 0) throw new Error(problems.join('; '))
+    if (pastProblems.length > 0) {
+      throw new Error(`past the guard: ${pastProblems.join('; ')}`)
+    }
     return [
-      `[${where}] karaoke without AudioDecoder: the song is refused, not decoded whole: "${seen.text}"; no Try again; ${seen.decodes.length} decode(s) asked for, none over 2 MiB`,
+      `[${where}] karaoke without AudioDecoder, stems under the 12 MiB guard: decoded whole and cued (${under.decodes.map(mib).join(' + ')} MiB)`,
+      `[${where}] karaoke without AudioDecoder, a stem past it: the song is refused, not decoded whole: "${past.text}"; no Try again; ${past.decodes.length} decode(s) asked for, none past 12 MiB`,
     ]
   } catch (error) {
     throw new Error(
       `[${where}] without AudioDecoder: ${error.message.split('\n')[0]}`,
     )
-  } finally {
-    await context.close()
   }
 }
