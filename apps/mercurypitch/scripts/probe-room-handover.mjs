@@ -79,15 +79,45 @@ const readPill = (scope) => {
       `${name(el)}${pill.contains(hit) ? ' (the pill takes its tap)' : ''}`,
     )
   }
+  // The space before the dot, as drawn: from the name's last glyph to the
+  // dot's left edge. A collapsed space reads "Retro Analog Studio· paused".
+  let gap = null
+  const nameEl = pill.querySelector('[data-testid="shell-session-pill-name"]')
+  const stateText = pill.querySelector(
+    '[data-testid="shell-session-pill-state"]',
+  )?.firstChild
+  const dot = stateText?.textContent?.indexOf('\u00b7') ?? -1
+  if (nameEl !== null && stateText != null && dot >= 0) {
+    const name = document.createRange()
+    name.selectNodeContents(nameEl)
+    const mark = document.createRange()
+    mark.setStart(stateText, dot)
+    mark.setEnd(stateText, dot + 1)
+    gap =
+      Math.round(
+        (mark.getBoundingClientRect().left -
+          name.getBoundingClientRect().right) *
+          10,
+      ) / 10
+  }
   return {
     pill: [p.left, p.top, p.width, p.height].map((n) => Math.round(n)),
     label:
       pill
         .querySelector('[data-testid="shell-session-pill-name"]')
         ?.textContent?.trim() ?? null,
+    gap,
     covers,
   }
 }
+
+/** A space is about a quarter of an em: at 14 px, under 2 is none at all. */
+const spaceProblem = (read) =>
+  read.gap !== null && read.gap < 2
+    ? [
+        `the "${read.label}" pill has no space before its dot (${read.gap} px from the name to the dot)`,
+      ]
+    : []
 
 /**
  * In the page: every control the pill lies over in `scope`, and what a finger
@@ -369,6 +399,7 @@ async function karaokeThenSing(browser, args, frame, kit) {
     }
     await go.leaveKaraoke()
     const parkedPill = await go.pill('body')
+    failures.push(...spaceProblem(parkedPill))
 
     await go.rail('stage')
     await go.visible(SING)
@@ -426,6 +457,7 @@ async function singThenKaraoke(browser, args, frame, kit) {
     await go.startSinging(4.5)
     await go.leaveSing()
     const parkedPill = await go.pill('body')
+    failures.push(...spaceProblem(parkedPill))
 
     await go.karaoke()
     const inKaraoke = await go.pill(KARAOKE)
@@ -533,6 +565,7 @@ async function pillEverywhere(browser, args, frame, kit) {
     await go.startSinging(1)
     await go.leaveSing()
     const parkedPill = await go.pill('body')
+    failures.push(...spaceProblem(parkedPill))
 
     await nothingUnder('the alley', 'body')
     await kit.tapDoor(page, 'sing')
