@@ -8,12 +8,16 @@
 // appending a host to `<body>` on a page that would never show one. The
 // standalone rooms spend real effort keeping their first paint empty; a debug
 // panel is the last thing that should undo it.
+//
+// What it loads is the floating panel's own module, not the inline log the
+// crash card ships in every build: that split is what lets a native store
+// binary carry the one without the other.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const loaded = vi.hoisted(() => ({ count: 0 }))
 
-vi.mock('@/components/ConsoleLog', () => ({
+vi.mock('@/components/FloatingConsole', () => ({
   setupDeveloperConsole: () => {
     loaded.count += 1
   },

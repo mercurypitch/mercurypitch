@@ -12,9 +12,11 @@
 // registers "Native sign-in" there, which is where the Turnstile hostname a
 // failure reports is printed.
 //
-// The floating console keeps its own switch in Settings and is not moved or
-// duplicated here: it is a live log over whatever page you are on, which is a
-// different thing from a screen you navigate to.
+// The floating console is not moved or duplicated here: it is a live log over
+// whatever page you are on, which is a different thing from a screen you
+// navigate to. Its switch is in the web Settings' developer tools only; this
+// app's Settings has none, so a test build mounts it only when the key is set
+// by hand (docs/agent/DEVICE-DEBUGGING.md, "Which console is in which build").
 //
 // NOTHING IMPORTS THIS DIRECTLY. `NativeShell` reaches it through a lazy
 // import behind `VITE_PORTABLE_CONSOLE`, the same constant the tile and the

@@ -7,7 +7,8 @@ import { createEffect, createMemo, createSignal, For, lazy, Show, Suspense, } fr
 import { AccountSection } from '@/components/account/AccountSection'
 import { DeleteAccountRow } from '@/components/account/DeleteAccountRow'
 import { ChangelogModalSlot, HAS_CHANGELOG, } from '@/components/ChangelogModalSlot'
-import { ConsoleLog, setupDeveloperConsole } from '@/components/ConsoleLog'
+import { ConsoleLog } from '@/components/ConsoleLog'
+import { setupDeveloperConsole } from '@/components/FloatingConsole'
 import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
 import { BusyButton, BusyLink } from '@/components/shared'
@@ -36,7 +37,7 @@ import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
 import { adsr, gridLinesVisible, playbackSpeed, reverbConfig, setAttack, setBand, setDecay, setDetectionThreshold, setGridLinesVisible, setMinAmplitude, setMinConfidence, setPlaybackSpeed, setRelease, setReverbType, setReverbWetness, setSensitivity, setShowFocusBall, setShowHistoryPanel, setShowMascot, setShowPitchDisplay, setShowPlaybackBall, setShowPlaybackSetup, setShowPlayhead, setShowStats, setSustain, settings, setTonicAnchor, showFocusBall, showHistoryPanel, showMascot, showPitchDisplay, showPlaybackBall, showPlaybackSetupInfo, showPlayhead, showStats, } from '@/stores'
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, startVoiceTour, } from '@/stores'
-import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
+import { showConsoleLog, toggleConsoleLog, } from '@/stores/developer-console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
 import { karaokeAutoIndexShazam, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
@@ -2214,8 +2215,10 @@ export const SettingsPanel: Component = () => {
                       // Mount the floating panel on the press that turns it
                       // on, rather than at the next page load. The entries
                       // only read the flag at boot (see lib/developer-console
-                      // — a room cannot reach this switch), and `ConsoleLog`
-                      // is already imported here for the inline log below.
+                      // — a room cannot reach this switch). The native build
+                      // folds this panel out, and its Vite config drops
+                      // FloatingConsole with it (FLOATING_CONSOLE in
+                      // apps/mercurypitch/vite.config.ts).
                       if (showConsoleLog()) setupDeveloperConsole()
                     }}
                   />

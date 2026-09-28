@@ -253,6 +253,52 @@ describe('the in-app developer console is device-local', () => {
     expect(state.creates).toHaveLength(0)
     expect(state.updates).toHaveLength(0)
   })
+
+  describe('in the native app', () => {
+    // Vitest runs the web build, so each native build's branch of the
+    // exclusion is read from a copy of the module built as that build is.
+    async function pullAsNative(
+      portableConsole: 'true' | 'false',
+    ): Promise<void> {
+      vi.resetModules()
+      vi.doMock('@/lib/native-build', async (importOriginal) => ({
+        ...(await importOriginal<Record<string, unknown>>()),
+        IS_NATIVE_BUILD: true,
+      }))
+      vi.stubEnv('VITE_PORTABLE_CONSOLE', portableConsole)
+      try {
+        const service = await import('@/db/services/settings-service')
+        await service.pullCloudSettings()
+        await settle()
+      } finally {
+        vi.doUnmock('@/lib/native-build')
+        vi.unstubAllEnvs()
+      }
+    }
+
+    it('is not applied from the account in a test build, which has the console', async () => {
+      state.rows = [
+        { id: 'r1', userId: 'u', key: CONSOLE_KEY, value: 'true' },
+        { id: 'r2', userId: 'u', key: THEME, value: '"midnight"' },
+      ]
+
+      await pullAsNative('true')
+
+      expect(localStorage.getItem(CONSOLE_KEY)).toBeNull()
+      expect(localStorage.getItem(THEME)).toBe('"midnight"')
+    })
+
+    it('is not named in a store build, which has no console to switch', async () => {
+      // Naming it would put the console's fingerprint back into the store
+      // binary (scripts/assert-no-portable-console.mjs --store-binary). The
+      // pull copies the account's row, which nothing in that build reads.
+      state.rows = [{ id: 'r1', userId: 'u', key: CONSOLE_KEY, value: 'true' }]
+
+      await pullAsNative('false')
+
+      expect(localStorage.getItem(CONSOLE_KEY)).toBe('true')
+    })
+  })
 })
 
 describe("the native app's install facts are device-local", () => {

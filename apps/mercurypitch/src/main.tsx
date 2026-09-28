@@ -50,9 +50,13 @@
 //   installForegroundSessionRefresh()
 //                                  A thirty-day token with no renewal path is
 //                                  a re-login on a phone with no passkey.
-//   armDeveloperConsole()          The web entry calls it; this one has more
-//                                  reason to. There are no devtools behind a
-//                                  TestFlight build.
+//   armDeveloperConsole()          The web entry calls it; a test build has
+//                                  more reason to, with no devtools behind
+//                                  TestFlight. Behind the console flag and
+//                                  imported inside it, like the Developer
+//                                  sections: a store build carries no
+//                                  floating console at all. The crash card's
+//                                  own log is not that, and stays.
 //   <NativeShell />                The chrome this app wears instead of the
 //                                  web header, sidebar and bottom bar: the
 //                                  rail, the transport that replaces it
@@ -87,7 +91,6 @@ import { App } from '@/App'
 import { registerSocialLoginBridge } from '@/features/account/native-sign-in'
 import { installForegroundSessionRefresh } from '@/features/account/session-refresh'
 import { installChunkLoadRecovery } from '@/lib/chunk-load-recovery'
-import { armDeveloperConsole } from '@/lib/developer-console'
 import { registerDeveloperSection } from '@/lib/developer-sections'
 import { initDeviceTier } from '@/lib/device-tier'
 import { initGlobalErrorHandlers } from '@/lib/global-error-handler'
@@ -186,8 +189,14 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   void import('./shell/viewport-diagnostics').then((module) => {
     module.installViewportDiagnostics()
   })
+  // The floating developer console, armed from its persisted switch as on
+  // the web. Same gate, same reason: called unconditionally, it put the
+  // panel, its host and its switch into the store binary, which
+  // `assert-no-portable-console.mjs --store-binary` now fails.
+  void import('@/lib/developer-console').then((module) => {
+    module.armDeveloperConsole()
+  })
 }
-armDeveloperConsole()
 
 const root = document.getElementById('root')
 

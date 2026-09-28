@@ -12,7 +12,8 @@
 // a host for a floating panel that renders nothing while its own Settings
 // toggle is off — so on the build it exists for, the tap did nothing, every
 // time (device round 1, P3). It pushes the developer screen now. The floating
-// console keeps its switch in Settings, where it already was.
+// console has no switch in this app's Settings (docs/agent/DEVICE-DEBUGGING.md,
+// "Which console is in which build").
 //
 // THE ROOMS ARE TABS HERE, NOT DOORS. The web bar sends Karaoke, Piano and
 // Guitar to `/karaoke`, `/piano-night` and `/guitar-night` — standalone HTML
