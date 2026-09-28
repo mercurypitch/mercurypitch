@@ -9,6 +9,288 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.14] - 2026-09-28
+
+283 commits since `v0.9.13` (73 on `main`'s first-parent line): PRs #859,
+#860, #863, #864, #865, #866, #867, #869, #870, #872, #873, #875, #876, #877,
+#879, #881 and #883, plus direct commits for the Jam audio work and most of
+Glassworks. Most of it is the
+native app (`apps/mercurypitch`, and root `src/` code folded in or out by
+`IS_NATIVE_BUILD` / `__NATIVE_BUILD__`), which a visitor to mercurypitch.com
+never runs. The sections below say which build each change reaches.
+
+### Web: Glassworks is served at `/glass-game`, unlisted on production (3076872d5, #863, #867, #869, #872, #883)
+
+**Not announced in `CHANGELOG.md`.** Glassworks belongs to Beside Cue for
+now (owner, 28 Sep). #883 (f17b5649f) keeps the production web build serving
+`/glass-game` (entry page, service-worker rule, staged assets) while nothing
+points at it: no Home card, no Home tour step, no `sitemap.xml`, `llms.txt`
+or prelude link, and the entry page carries `noindex`. The switch is
+`VITE_GLASSWORKS_LISTED`, set per Vite mode (`1` in `.env.development` for
+`pnpm dev`, `build:dev`, the dev deploy and PR previews; `0` in
+`.env.production` for `build`, `build:tours` and the `v*` tag deploy;
+`build:e2e` forces `1`). `vite.config.ts` pins it with a `define`, so
+`GLASSWORKS_LISTED` (`src/lib/glassworks-listing.ts`) folds and an unlisted
+bundle carries no card or tour step. `scripts/assert-glassworks-listing.mjs`
+checks every surface on the finished `dist/` of each of those builds.
+
+What follows describes the listed build, which is what dev shows.
+
+A new standalone entry, `src/features/glass-adventure/main.tsx`, mounts the
+shared `@irchiinnuss/glass-game` campaign (the same package BesideCue's
+games-enabled builds use) behind its own host (`host.ts`: storage prefix
+`mercurypitch:glass-adventure`, assets from `/glass-game-assets/`). The entry
+paints the accessible prelude first and only then imports the campaign
+chunk (2db7aac73), so the Three.js renderer is not in the entry's static
+graph; `vite.config.ts` files Three under its own `vendor-three` chunk so the
+other standalone rooms do not download it.
+
+Where it surfaces on the web:
+
+- a **Home card** (`DestinationGallery.tsx`, second after live practice,
+  `data-tour="home.glassworks"`) and a new **Home tour step** ("A museum that
+  listens") in `HOME_TOUR_STEPS`, whose first step lost the "keep an eye on
+  the last card" teaser;
+- an **entry page** in `src/seo/entry-pages.ts` (slug `glass-game`), a
+  `sitemap.xml` URL, an `llms.txt` line and a link in `index.html`'s prelude;
+- `STANDALONE_DOCUMENT_PATHS` in `sw-runtime.ts` gains `/glass-game`.
+
+Assets: `tools/glass-game-assets.ts` (`glassGameAssetsPlugin`) stages the
+package's assets into `dist/glass-game-assets/` at build time and refuses a
+Git LFS pointer. A local build therefore needs the same
+`git lfs pull --include="apps/beside-cue/public/games/**,..."` that
+`build.yml`'s "Hydrate runtime game assets" step runs. Measured on this
+release's `build:tours` output: `dist/` is 469 MiB and 1787 files, of which
+`glass-game-assets/` is 331,836,234 bytes. The largest single file is
+`journey-map-v10/floating-museum-botanical-kit-v10.glb` at 25,596,100 bytes,
+under Workers static assets' 25 MiB (26,214,400 bytes) per-file limit with
+about 600 KB to spare. There is no Glassworks-specific social card: the
+entry page uses the shared `og-image.png`.
+
+Content across the merges: the floating museum and Cloudway platform trial
+(3076872d5), Crystal Promenade and the floating touch pad (#863), tablet
+navigation and singing-startup fixes (#867), The Thawing Song teaching a
+whole melody (#869), frost courses and shatter variants, creator studies
+and course authoring, bounded mobile rendering quality (eaf7eb060), and
+mobile playback plus Merc art and song auditions (#872). 3076872d5's own
+message records that real mobile play "exposed performance and
+interaction-discovery work that remains a dedicated follow-up; this merge is
+not release approval". That is why the production build does not list it.
+
+### Web: Jam rooms send an instrument, and measure the connection (direct commits)
+
+- **Capture profiles** (303257373, e30d80cbf). `voice` is the old behaviour;
+  `instrument` takes a named input and transmits the raw capture, with no
+  processed clone. The capture itself is raw for both, because it also feeds
+  the pitch detector and `makeTransmitTrack`'s echo-cancellation guard. What
+  the browser actually granted is read back from `getSettings()` and
+  reported, including resampling from a 44.1 kHz interface.
+  `voiceIsolation: false` is set explicitly. A change of input or profile
+  re-captures (new device opened first, mute carried across, `replaceTrack`
+  on the live senders, pitch detector restarted); before this, a capture
+  could not be replaced short of leaving the room.
+- **Inputs** (b600abf8b, da3e3407a, 3e88ae4d7). PulseAudio/PipeWire
+  "Monitor of ..." sources sort last as "(playback)" and are never resolved
+  to by label (Chromium already hides them; Firefox does not). The remembered
+  input is keyed by id, then by label, because a PipeWire profile switch
+  changes the id. Capture no longer asks for `channelCount: { ideal: 1 }`,
+  matching Guitar Night; unnamed devices read "Device N", not "Input N".
+- **The control** (2f1401634, 95c5d8e1c, fb767ded8, 3f930739d, a557dbe08).
+  The mute button is a 36 px split control: a press transmits, a corner
+  badge, right click or 450 ms long press opens the source menu. The first
+  press on a device opens the chooser instead of going live (persisted, asks
+  once). Instrument + live + default input turns it red. The menu is
+  positioned by measurement (`menuPosition`), portalled to the page root at
+  z 9000 with an opaque `--jam-menu` token, capped to the room it has, and
+  keyboard-navigable. On state is a filled disc drawn with a literal colour,
+  not the alpha-bearing `--bg-primary` a room redefines.
+- **Latency readout** (0175ee8ca, 864d7f86b). `service.ts` polls every 3 s
+  on one timer, reads the transport's `selectedCandidatePairId` (freshest
+  packet on a tie), and adds a DataChannel ping/pong that expires after five
+  unanswered rounds. `leaveRoom` now stops the poll and clears pending pings.
+- **10 ms Opus frames** (e9199f2b9, e30d80cbf). `jam-sdp.ts` sets
+  ptime/maxptime/minptime 10, `usedtx=0`, mono, a bitrate cap via
+  `setParameters`, and a 20 ms playout target. The first cut never landed:
+  the rewritten SDP gained a blank line libwebrtc stops reading at, and a
+  deferred `onnegotiationneeded` was dropped. Both fixed in e30d80cbf;
+  whether two real peers now measure 100 packets/s has not been recorded in
+  a commit since, so the user notes do not claim it.
+- **Diagnostics, not for everyone.** The network panel (`JamNetworkPanel`,
+  `jam-diagnostics-store.ts`, markdown and CSV export with `kbps out`,
+  `packetsPerSecond`, `frameMs` and a NOT SENDING line) and the per-channel
+  input check render only where `IS_DIAGNOSTIC_BUILD` is true **or** the
+  browser has opened the app once with `?jamdiag=1` (remembered in
+  `mp_jam_diagnostics_unlocked`, cleared by `?jamdiag=0`). That second door
+  works on production too; it shows a person their own connection stats. The
+  component ships in every bundle and only its render is withheld.
+
+### Web and API: accounts (#864, #865, #870)
+
+- **Federated linking** (#864). `resolveFederatedUser` step 2 adopts an
+  existing account by address only when that account's own `emailVerified`
+  is 1; otherwise the identity gets a new account without the address
+  (e30283018). The first provider's `providerId` is kept on adoption
+  (a648b1fa3). Migration **0050_apple_sub.sql** adds `users.appleSub` with a
+  unique partial index, written with `UPDATE OR IGNORE` on every Apple
+  sign-in, and matched by Apple's step 1 and by the server-to-server
+  notification route (6791cf172, c0aace3ab), so consent-revoked and
+  account-delete find an account Google linked first.
+- **Names** (37d99c487, 71190ed57, f1ea96116, 1cc79178b). Apple's
+  first-authorization name fills a default handle (four- or six-character
+  form) only; Google no longer renames a returning account; neither
+  provider overwrites a name chosen while anonymous (`replaceDefaultHandle`).
+- **Apple accounts on the web** (#865, 3eb699769, a36825c93). Four surfaces
+  (`AccountSection`, `HeaderAccount`, `DonatePanel`, `ReturningSignIn`)
+  allow-listed password and Google, so an Apple account read as anonymous.
+  They share `isRegisteredProvider` now. The account card names Apple and,
+  for a private-relay address (`apple-relay.ts`, shared with the worker),
+  says to keep a note of it. `ReturningSignIn` knows an `apple` last method
+  but blocks it where `appleSignInOffered()` is false, which is the web.
+- **Email-code sign-up** (#870, 28bdb0327, e490cbd55). `/api/auth/email-code/request`
+  accepts `signUp: true` and then mints a sign-up code (`NO_ACCOUNT_YET`
+  row) for an address with no account; verifying it creates a confirmed
+  account, upgrading the device's anonymous account in place when
+  `deviceId`/`deviceSecret` are sent. Only the native sheet sends the flag.
+  The web `AuthModal` still calls `requestLoginCode(email, token)` without
+  it, so the web behaves as before. Turnstile, rate limits, five attempts,
+  ten minutes and single use all still apply. Stale sign-up codes are swept
+  on every mint. #879 (737bedc7a) gives sign-up codes their own budget of two
+  an hour per address, inside the existing five-an-hour one: a sign-up code
+  goes to an address nobody holds, so it is the one mail a stranger could
+  have sent to anybody repeatedly (S6 security review, finding 1). Every
+  request that asks for a sign-up code spends it, known address or not, and
+  the refusal is the same silent decoy ceremony, so it says nothing about
+  whether the address has an account. Sign-in codes and the per-IP limit are
+  unchanged.
+- **A public page for deleting an account** (#876, 6c2242856, 4c530871d).
+  Google Play asks for a web address where somebody can have their account
+  and data deleted without the app. `/delete-account` is a plain document
+  with no script, like `404.html`: a Rollup input, served by the asset
+  layer's `html_handling` for its clean path so a signed-out hard load
+  answers 200, and skipped by the service worker so a returning visitor is
+  not handed the cached studio shell. It names the three ways (Settings in
+  the app; Settings, Account, Danger Zone on the web; the contact form with
+  the Privacy topic for anyone who cannot sign in), and says what
+  `DELETE /api/auth/me` erases (`handleDeleteMe`, `USER_OWNED_TABLES`) and
+  what stays: files on the device, songs backed up to the person's own
+  Google Drive, Stripe's payment record, share links (60 days) and their
+  preview cards (30). The follow-up corrected a claim that practice on the
+  device "was never on our servers", which is not true of history and
+  voiceprints, which sync. Linked as "Account deletion" in web Settings,
+  About (`DELETE_ACCOUNT_URL` in `legal-links.ts`) and from `llms.txt`; not
+  in the sitemap, as the other legal pages live on the landing site.
+  `entry-page-og.test.ts` leaves it out of the share-card check.
+- `readMe()` distinguishes signed-out from unreachable (a3de22c25);
+  `fetchMe()` keeps its old null-either-way answer for existing callers.
+
+### Web and API: separation and billing (#873)
+
+- **RunPod blips** (3c2e4dfea). `fetchJobStatus` throws `RunpodJobGoneError`
+  for a 404 only; any other failure to answer reports the job as still
+  processing, so the client keeps polling inside its 30-minute bound and a
+  blip neither expires the song nor refunds it. Reaches the web through the
+  pages Worker (`src/worker.ts`).
+- **Native separation calls** (fa2033429, 91f3a025b). The pages Worker
+  answers CORS preflight for `capacitor://localhost` and `https://localhost`
+  only, and serves a finished stem to those origins as bytes from R2 instead
+  of a redirect. Every other caller, the web included, gets what it got
+  before. Native builds ask the handler for MP3 (`output_format` in
+  `uvr-api.ts`); the web still asks for WAV. The RunPod handler is unchanged.
+- **The Karaoke songs subscription** (07ee68399, fca02be8c, adc153b04,
+  b2509a5a4, a74f417c9, d52625dde, 0c6da9a72). The new route
+  `/api/billing/revenuecat` (secret header `REVENUECAT_WEBHOOK_AUTH`, already
+  set on prod) grants songs from RevenueCat events, only for the store
+  environment named by the new `REVENUECAT_ENVIRONMENT` var (`SANDBOX` on
+  dev, `PRODUCTION` on prod). Allowance 20 a period with a rollover cap of
+  50 (`SONGS_PER_PERIOD`, `SONGS_ROLLOVER_CAP`, optional, defaults in
+  `songs-allowance.ts`); the cap counts subscription songs only; a late event
+  never shortens a subscription; a store refund ends the month and takes its
+  songs back. `/api/billing/me` gains a `songs` summary the web ignores.
+- `StemMixer` gains a `hosted` mode for the native room; the web mixer never
+  sets it and is unchanged, including its whole-decode path. The refusal of
+  a stem that would have to be decoded whole (6213e39cf) applies only in a
+  room that asked to stream. Its limit went from 2 MiB to 12 MiB a stem in
+  #877 (473a19f29, owner's call): at 2 MiB it refused every full song on an
+  iPhone before iOS 26, which has no `AudioDecoder`.
+
+### Native app only (not in the web build)
+
+- **Round 3 (#859).** The night alley is the Rooms tab and the first-run
+  welcome: a plate with six door quads, a door-state reducer, room ambients
+  on a looping buffer, the Sing door clip, arrival holds, keyboard and screen
+  reader access, reduced-motion crossfade, landscape layout. No First Light
+  and no opening curtain in the app; the launch draws the brand mark. The
+  Sing room keeps one cover (the -b and -mock takes and their eight
+  `public/sing/` files are gone, 9a1784e8a). CI: production reaches only the
+  store binaries and only from a tag (e2fd4a4a5); every iOS web bundle is
+  checked; the API base reads env files through Vite's loader.
+- **Round 4 (#865).** Every screen turns with the phone and keeps inside its
+  insets; iOS packaged media answering status 0 is read through a shared
+  rule (`@irchiinnuss/mobile-runtime/asset-fetch`, used for the alley, the
+  guitar cabinet, stem peaks and stems); voice control and its floating pill
+  are off in the app; native Apple sign-in fixes (authorization code,
+  scopes, remembered method); an Audio section on the Developer screen.
+- **Round 5 (#866).** Alley open/cancel edge cases, the Sing room's pitch
+  band on a phone on its side (`pitch-plot-band.ts`: 11 px of trace to
+  60 px at 844x390), the first-run coach mark hung from the pitch pill.
+- **Phase 6, account and Settings (#870).** Settings is a native screen
+  stack; a native sign-in sheet (Turnstile `interaction-only`), the Account
+  screen, account deletion, "what the account brought" after sign-in, a
+  phone's takes carried into a new account, Storage (with a device-only
+  voiceprint clear), a Microphone screen, This phone and About. The web
+  Settings panel is folded out of the native bundle.
+- **The Karaoke room (#873).** The Karaoke tab is a room (the Broadway
+  Theater, free and packaged in the app, still a supporter room on the web)
+  hosting the zen player, with three bundled example songs, a library that
+  names songs, options behind a gear, a studio pushed from the room, and the
+  import queue with checks, sheets and upload progress behind
+  `__KARAOKE_IMPORT__` (compiled in for native test builds only; false in
+  the web build and the store build). Developer switches for the
+  no-streaming path read only with `VITE_PORTABLE_CONSOLE`, which
+  `assert-no-portable-console` keeps out of `dist/`.
+- **BesideCue games (#860)** in Android and TestFlight testing builds.
+- **The store build carries no portable console (#875, 3d11f52cb).** A
+  store binary is built with `MERCURYPITCH_API_TARGET=production`, and the
+  committed `.env` turned `VITE_PORTABLE_CONSOLE` on, so the App Store build
+  carried the console and the Developer screen. `vite.config.ts` forces the
+  flag off for a production API target (`portableConsoleFor` in
+  `api-base.mjs`), the store workflow sets it false on a production
+  dispatch, `verify-assets` runs `assert-no-portable-console` over the store
+  `dist` and its synced Android assets, and the assert now also
+  fingerprints the Developer screen and each of its sections. The More
+  sheet's Developer tile is a ternary so it folds out.
+- **A room's own run comes first (#877, 958027093).** The session pill held
+  a run parked in one room over the other room's own (TestFlight 0.7.0):
+  after Karaoke the pill sat over Sing's note and took its tap; after Sing
+  it sat on Karaoke's bar. A room with a run of its own now lets go of a
+  run held for another; nothing is ended, and going back brings the parked
+  run back paused. `probe-room-handover.mjs` walks both orders, upright and
+  on the phone's side.
+- **Store screenshots from the store build (#881, d73cad32b).** A local
+  Playwright config, never run by PR Gate, builds the native bundle with the
+  store's values and captures eight screens at the stores' pixel sizes on an
+  iPhone 6.9, an iPad 13, an Android phone and two Android tablets, against
+  a seeded phone, a stand-in API and a synthesised voice
+  (`apps/mercurypitch/shots/README.md`).
+- CI: signed APK downloads separated from Play bundles (899d55ad4); the
+  ad-hoc IPA is no longer a public artifact (b21333177); the signing
+  certificate's holder name is masked in iOS logs (bbbf95d29).
+
+### Shared code that reaches the web build without a visible change
+
+- Safe-area padding (`max(design, var(--safe-*))`) on the practice toolbar,
+  song status bar, UVR header, Ear Lab, Progress and the portable console
+  handle. `mobile-kit.css` maps `--safe-*` to `env(safe-area-inset-*)` and
+  `index.html` has `viewport-fit=cover`, so an iPhone browser in landscape
+  does get the insets; everywhere else they are 0.
+- Entry pages' `<noscript>` lines drop "and never uploaded" (e0d9f4762).
+- `@irchiinnuss/pitch-engine`'s mic lock stops capture before releasing and
+  its errors carry a `diagnostic`; the web's own `src/lib/mic-manager.ts` is
+  untouched, so on the web this reaches only the unlisted Glassworks page.
+- `public/rooms/alley/` (4.7 MB: the alley plate, two ambients and the Sing
+  door loop) is served from the web origin too, unused there and not in the
+  service worker's precache.
+
 ## [0.9.13] - 2026-09-21
 
 ### The PeerPush badge was somewhere their crawler cannot reach (#852)
