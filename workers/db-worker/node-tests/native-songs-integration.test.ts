@@ -570,6 +570,19 @@ describe('the month’s free song', () => {
     expect(rows('free-song')).toEqual([])
   })
 
+  it('is none for an anonymous account, even one with an email on it', async () => {
+    const token = await anonymousToken()
+    // No sign-in flow leaves an anonymous account with a confirmed email;
+    // the account's provider is asked all the same (owner, 28 Sep).
+    sqlite
+      .prepare(
+        "UPDATE users SET email = 'singer@example.com', emailVerified = 1 WHERE id = ?",
+      )
+      .run(DEVICE)
+
+    expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
+  })
+
   it('is none for an account whose email is not confirmed yet', async () => {
     const token = await signedInToken({ confirmed: false })
     expect((await me(token, IOS)).songs).toMatchObject({ left: 0, free: 0 })
