@@ -46,4 +46,7 @@ interface ImportMetaEnv {
   readonly VITE_REVENUECAT_ANDROID_KEY?: string
   /** `1` marks a debug artifact, the only kind that may use a Test Store key. */
   readonly VITE_REVENUECAT_ALLOW_TEST_STORE?: string
+  /** The platform a native build is made for, `ios` or `android`, as CI
+   *  names it (capacitor-app.yml). Unset in a local build. */
+  readonly VITE_MERCURYPITCH_NATIVE_PLATFORM?: string
 }

@@ -9,6 +9,7 @@
 // of the app and stay. Restore fails closed until the store is real.
 // KaraokeSettingsScreen.test.tsx pins the store build, which has neither.
 
+import type * as CapacitorCore from '@capacitor/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
 import type * as Songs from '@/features/karaoke-room/karaoke-songs'
@@ -20,6 +21,15 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
   IS_NATIVE_BUILD: true,
   KARAOKE_IMPORT: true,
 }))
+
+const device = vi.hoisted(() => ({ platform: 'web' }))
+vi.mock('@capacitor/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof CapacitorCore>()
+  return {
+    ...actual,
+    Capacitor: { ...actual.Capacitor, getPlatform: () => device.platform },
+  }
+})
 
 const server = vi.hoisted(() => ({
   next: null as KaraokeSongs | null,
@@ -96,6 +106,7 @@ let unregister: () => void = () => undefined
 
 beforeEach(() => {
   localStorage.clear()
+  device.platform = 'web'
   server.next = null
   server.asked = []
   server.heardAfter = 0
@@ -161,6 +172,24 @@ describe('Settings, Karaoke, in a build with Import', () => {
     expect(root.textContent).toContain(
       'The example songs are part of the app and stay.',
     )
+  })
+
+  it('adds Play review access under the subscription on Android, and only there', async () => {
+    device.platform = 'android'
+    const android = await mount()
+    expect(groups(android)).toEqual([
+      'Subscription',
+      'App review',
+      'Songs on this phone',
+      'Lyrics',
+      'Playback',
+    ])
+    expect(row(android, 'karaoke-review-access')).not.toBeNull()
+    view?.unmount()
+
+    device.platform = 'ios'
+    const ios = await mount()
+    expect(row(ios, 'karaoke-review-access')).toBeNull()
   })
 
   it('says how the subscription stands, and the songs left', async () => {

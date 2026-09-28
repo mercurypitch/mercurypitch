@@ -78,7 +78,9 @@
 //            decides from the same target as the worker, so a store build
 //            must carry none of the import, its queue, its paywall, the
 //            store SDK it buys through, or its Settings rows -- absent, not
-//            hidden -- and every other build must carry all of them.
+//            hidden -- and every other build must carry all of them. Play's
+//            review access is Stage 2 in an Android build only, so a store
+//            build is held to carrying none of it and no build to having it.
 //
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
@@ -174,6 +176,16 @@ const KARAOKE_STAGE_2 = [
   ['Remove imported songs', 'Settings and Storage for imported songs'],
   ['Songs this month', 'the songs left, in the room and in Settings'],
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
+]
+
+/**
+ * Stage 2 as well, but only in a build made for Android: an iOS build folds it
+ * away on purpose (KaraokeReviewAccess.tsx), and nothing here knows which
+ * platform a bundle was built for. So a store build must carry none of it,
+ * and an importing build may carry it or not.
+ */
+const KARAOKE_STAGE_2_ANDROID = [
+  ['api/billing/review-access', "Play's review access (Settings, Android)"],
 ]
 
 const failures = []
@@ -433,8 +445,8 @@ function main(argv) {
     // asked once the requested base resolved.
     if (api !== undefined) {
       const importing = karaokeImportFor(api)
-      const carried = KARAOKE_STAGE_2.filter(([needle]) =>
-        assets.some((file) => contains(file, needle)),
+      const carried = [...KARAOKE_STAGE_2, ...KARAOKE_STAGE_2_ANDROID].filter(
+        ([needle]) => assets.some((file) => contains(file, needle)),
       )
       const wrong = importing
         ? KARAOKE_STAGE_2.filter((piece) => !carried.includes(piece))
