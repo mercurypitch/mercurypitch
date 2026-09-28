@@ -549,19 +549,36 @@ test.describe('phone', () => {
     const resume = pause.getByRole('button', { name: 'Back to the museum' })
     await expect(pause).toBeVisible()
     await expect(resume).not.toBeInViewport()
-    const beforeScroll = await pause.evaluate(
-      (dialog) => dialog.parentElement?.scrollTop ?? -1,
-    )
+    const bounds = await pause.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.y).toBeGreaterThanOrEqual(0)
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(568)
+    // The bounded panel owns scrolling. Start on its padding, clear of the
+    // range inputs and the backdrop, so this is a real native pan gesture.
+    const start = {
+      id: 61,
+      x: bounds!.x + 8,
+      y: bounds!.y + bounds!.height - 48,
+    }
+    const endY = bounds!.y + 48
+    expect(
+      await pause.evaluate(
+        (dialog, point) =>
+          document.elementFromPoint(point.x, point.y) === dialog,
+        start,
+      ),
+    ).toBe(true)
+    const beforeScroll = await pause.evaluate((dialog) => dialog.scrollTop)
 
     const cdp = await context.newCDPSession(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
-      touchPoints: [{ id: 61, x: 10, y: 500 }],
+      touchPoints: [start],
     })
-    for (const y of [420, 330, 240, 150, 80])
+    for (const fraction of [0.2, 0.4, 0.6, 0.8, 1])
       await cdp.send('Input.dispatchTouchEvent', {
         type: 'touchMove',
-        touchPoints: [{ id: 61, x: 10, y }],
+        touchPoints: [{ ...start, y: start.y - (start.y - endY) * fraction }],
       })
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
@@ -569,15 +586,13 @@ test.describe('phone', () => {
     })
 
     await expect
-      .poll(() =>
-        pause.evaluate((dialog) => dialog.parentElement?.scrollTop ?? -1),
-      )
+      .poll(() => pause.evaluate((dialog) => dialog.scrollTop))
       .toBeGreaterThan(beforeScroll)
     await expect(firstPerson).toBeInViewport()
     await expect(resume).toBeInViewport()
-    await firstPerson.check()
+    await firstPerson.tap()
     await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
-    await resume.click()
+    await resume.tap()
     await expect(pause).toBeHidden()
     await cdp.detach()
   })
