@@ -37,6 +37,12 @@
 // stand-in for the two hosts it would reach (probe-karaoke-import.mjs).
 // `--karaoke-only` walks those alone.
 //
+// THE TWO ROOMS WITH A RUN, TOGETHER (probe-room-handover.mjs): Karaoke
+// played and then Sing, and Sing sung and then Karaoke, upright and on each
+// phone's side. Neither room may have the other's session pill over it, and
+// what the singer left in the first room is still there when they go back.
+// `--handover-only` walks that alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -49,6 +55,7 @@ import { chromium } from '@playwright/test'
 import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
+import { walkRoomHandover } from './probe-room-handover.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
@@ -96,6 +103,7 @@ function parseArgs(argv) {
     chromeOnly: false,
     landscapeOnly: false,
     karaokeOnly: false,
+    handoverOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -107,6 +115,7 @@ function parseArgs(argv) {
     else if (flag === '--chrome-only') args.chromeOnly = true
     else if (flag === '--landscape-only') args.landscapeOnly = true
     else if (flag === '--karaoke-only') args.karaokeOnly = true
+    else if (flag === '--handover-only') args.handoverOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -4970,6 +4979,15 @@ async function main() {
     }
   }
 
+  /** Sing and Karaoke, one after the other, on one frame. */
+  const walkHandoverFrame = async (frame) => {
+    try {
+      steps.push(...(await walkRoomHandover(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+
   const steps = [
     imports.importing
       ? `karaoke import: on, a ${imports.target} build (separating on ${imports.uvr === '' ? 'the page origin' : imports.uvr}); walked against a stand-in`
@@ -4987,10 +5005,19 @@ async function main() {
     // Every frame is walked even when an earlier one failed: "it broke at 390"
     // and "it broke at both" are different reports, and the second one is the
     // one that says the fix is not a width rule.
+    for (const frame of args.handoverOnly
+      ? [...FRAMES, ...LANDSCAPE_INSET_FRAMES]
+      : []) {
+      await walkHandoverFrame(frame)
+    }
     for (const frame of args.karaokeOnly ? FRAMES : []) {
       await walkKaraokeFrame(frame)
     }
-    for (const frame of args.landscapeOnly || args.karaokeOnly ? [] : FRAMES) {
+    for (const frame of args.landscapeOnly ||
+    args.karaokeOnly ||
+    args.handoverOnly
+      ? []
+      : FRAMES) {
       const result = await walkFrame(browser, args, frame)
       steps.push(...result.steps)
       failures.push(...result.failures)
@@ -5031,8 +5058,9 @@ async function main() {
         )
       }
       await walkKaraokeFrame(frame)
+      await walkHandoverFrame(frame)
     }
-    if (!args.chromeOnly && !args.karaokeOnly) {
+    if (!args.chromeOnly && !args.karaokeOnly && !args.handoverOnly) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
           steps.push(...(await walkAlleyLandscape(browser, args, frame)))
@@ -5061,6 +5089,7 @@ async function main() {
             `[${frame.width}x${frame.height}] on its side: ${error.message}`,
           )
         }
+        await walkHandoverFrame(frame)
       }
     }
   } finally {
@@ -5079,7 +5108,9 @@ async function main() {
     ? 'landscape only'
     : args.karaokeOnly
       ? `the Karaoke room only, ${FRAMES.length} frames`
-      : `${FRAMES.length} frames`
+      : args.handoverOnly
+        ? `the rooms handing over only, ${FRAMES.length} frames and ${LANDSCAPE_INSET_FRAMES.length} sideways`
+        : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 
