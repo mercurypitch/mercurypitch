@@ -174,3 +174,37 @@ describe('refundJob', () => {
     await expect(refundJob(KEYED, 'rp_gpu_j1')).resolves.toBeUndefined()
   })
 })
+
+describe('spending for the native app', () => {
+  // S7 D9: the db-worker lets the native app spend only its own songs. The
+  // main worker calls it from a server, with no origin of its own, so it
+  // says whose spend it is.
+  it('tells the admission and the debit the spend is the app’s', async () => {
+    const spy = mockFetch({ allowed: true, debited: 1 })
+    const forApp: MeteringConfig = { ...CFG, forApp: true }
+
+    await admitUvrJob(forApp, 'Bearer tok', 'gpu')
+    await debitForJob(forApp, 'Bearer tok', 'gpu', 'rp_gpu_j1')
+
+    const bodies = spy.mock.calls.map(([, init]) =>
+      JSON.parse(String((init as RequestInit).body)),
+    )
+    expect(bodies).toEqual([
+      { tier: 'gpu', from: 'app' },
+      { tier: 'gpu', jobRef: 'rp_gpu_j1', from: 'app' },
+    ])
+  })
+
+  it('says nothing of the kind for the web', async () => {
+    const spy = mockFetch({ allowed: true, debited: 1 })
+
+    await admitUvrJob(CFG, 'Bearer tok', 'gpu')
+    await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')
+
+    for (const [, init] of spy.mock.calls) {
+      expect(JSON.parse(String((init as RequestInit).body))).not.toHaveProperty(
+        'from',
+      )
+    }
+  })
+})

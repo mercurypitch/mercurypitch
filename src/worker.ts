@@ -175,16 +175,18 @@ async function validateDbSession(
 }
 
 /**
- * Everything under `/api/uvr/*`. `inlineStems` is for the native app, which
- * cannot follow a finished stem's redirect to storage on another origin: the
- * worker hands it the bytes instead (runpod-bridge.ts).
+ * Everything under `/api/uvr/*`. `native` is a request from the native app,
+ * which cannot follow a finished stem's redirect to storage on another
+ * origin, so the worker hands it the bytes instead (runpod-bridge.ts); and
+ * whose separations spend only the app's songs, never web credits (plan S7
+ * D9, uvr-metering.ts).
  */
 async function routeUvr(
   request: Request,
   env: Env,
   url: URL,
   method: string,
-  inlineStems: boolean,
+  native: boolean,
 ): Promise<Response> {
   // Gate state-changing / expensive operations (process, delete-session)
   // behind a valid app JWT; reads (models/status/output) stay open so
@@ -223,7 +225,9 @@ async function routeUvr(
   // reads still fall through below.
   const runpod = getRunpodConfig(env)
   if (runpod) {
-    const meter = getMeteringConfig(env)
+    const metering = getMeteringConfig(env)
+    const meter =
+      metering !== null && native ? { ...metering, forApp: true } : metering
     // A configured GPU without its billing/admission service is an unsafe
     // state: accepting jobs would bypass both credits and rate limits.
     // Refuse new RunPod work, while keeping status/output reads available
@@ -248,7 +252,7 @@ async function routeUvr(
         // bridge's minimal interface; the runtime shape is compatible.
         (env.UVR_INPUT_BUCKET ?? null) as UvrInputBucket | null,
         env.RUNPOD_STEM_PREFIX ?? 'runpod',
-        { inlineStems },
+        { inlineStems: native },
       )
       if (handled !== null) return handled
       // A valid process request can still be unhandled when the selected

@@ -11,6 +11,11 @@
 // requires an active non-zero tier price, and an accepted RunPod job must debit
 // successfully or it is cancelled. Refunds remain best-effort and require
 // BILLING_SERVICE_KEY.
+//
+// A separation the native app asked for spends only the app's songs, never
+// credits bought on the web (plan S7 D9). The db-worker tells the app by its
+// origin, and these calls come from this worker with none, so they say whose
+// spend it is (`from: 'app'`). That can only narrow what is spent.
 
 import type { RunpodTier } from './runpod'
 
@@ -25,6 +30,9 @@ export interface MeteringConfig {
   baseUrl: string
   /** Authorizes refunds (service-to-service); refunds no-op without it. */
   serviceKey?: string
+  /** The request is the native app's: admission and debit spend only the
+   *  app's songs (the db-worker's app-songs.ts). */
+  forApp?: boolean
 }
 
 /** Resolve metering config from env, or null when metering is off. */
@@ -88,6 +96,7 @@ export async function admitUvrJob(
         tier,
         ...(model !== undefined ? { model } : {}),
         ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        ...(cfg.forApp === true ? { from: 'app' } : {}),
       }),
     })
     if (!response.ok) {
@@ -151,6 +160,7 @@ export async function debitForJob(
         jobRef,
         ...(model !== undefined ? { model } : {}),
         ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        ...(cfg.forApp === true ? { from: 'app' } : {}),
       }),
     })
     if (!res.ok) {

@@ -330,6 +330,51 @@ describe('separation for the native app', () => {
     })
   }
 
+  it('spends the app’s songs for the app, and the whole balance for the web', async () => {
+    // S7 D9: from the app, only the songs the app can spend. The db-worker
+    // hears it from the main worker, which spends for the app from a server.
+    const secret = 'test-secret'
+    const admitted: Array<Record<string, unknown>> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).endsWith('/api/billing/uvr-admit')) {
+          admitted.push(JSON.parse(String(init?.body)))
+          return new Response(JSON.stringify({ error: 'Not enough credits' }), {
+            status: 402,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        return new Response('{}', {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }),
+    )
+
+    for (const origin of ['capacitor://localhost', 'https://localhost', null]) {
+      const response = await worker.fetch(
+        new Request('https://app.test/api/uvr/process', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${await bearer(secret)}`,
+            'X-UVR-Provider': 'runpod',
+            ...(origin === null ? {} : { Origin: origin }),
+          },
+        }),
+        {
+          JWT_SECRET: secret,
+          DB_API_URL: 'https://db.test',
+          RUNPOD_API_KEY: 'runpod-key',
+          RUNPOD_ENDPOINT_ID_GPU: 'ep-gpu',
+          UVR_SERVICE: { getByName: vi.fn() },
+        } as unknown as Env,
+      )
+      expect(response.status).toBe(402)
+    }
+
+    expect(admitted.map((body) => body.from)).toEqual(['app', 'app', undefined])
+  })
+
   it('lets the native app read a refusal, so it can say why', async () => {
     const getByName = vi.fn()
     const response = await worker.fetch(
