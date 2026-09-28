@@ -100,6 +100,14 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   // same moment for different purposes.
   const [codeCeremony, setCodeCeremony] = createSignal('')
   const [mailedCode, setMailedCode] = createSignal('')
+  // The addresses this dialog has asked a code for since it last signed
+  // somebody in. The code pane has no "send another" of its own: asking again
+  // is asking for the same address again, and only then does the pane say
+  // what else to try. The first code may just be slow. It lasts while the
+  // dialog stays mounted, which App.tsx keeps it; a room that mounts it per
+  // open forgets on close, and only misses the line.
+  const codeAskedFor = new Set<string>()
+  const [codeAskedAgain, setCodeAskedAgain] = createSignal(false)
   // Both halves have to be true before the passkey button exists: an RP id in
   // this deployment (PR previews on workers.dev never have one) and an
   // authenticator in this browser. A button that opens a dialog saying no
@@ -168,6 +176,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     setError('')
     setTurnstileToken('')
     resetTurnstile()
+  }
+
+  /** A sign-in or sign-up that landed: said, handed on, and the dialog
+   *  closed. Whoever signs in next, their first code is a first ask again. */
+  function signedIn(message = 'Signed in'): void {
+    codeAskedFor.clear()
+    showNotification(message, 'info')
+    props.onAuthenticated?.()
+    close()
   }
 
   /**
@@ -266,9 +283,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         // dismissed meanwhile: the store already shows the sign-in, and
         // onAuthenticated starts work the surface no longer wants.
         if (authModalMode() == null) return
-        showNotification('Signed in', 'info')
-        props.onAuthenticated?.()
-        close()
+        signedIn()
       } catch (err) {
         // An abort is this effect tidying up; anything else is worth a line,
         // but only if the form is still the thing being looked at.
@@ -298,9 +313,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     try {
       await signInWithPasskey()
       if (request !== requestGeneration) return
-      showNotification('Signed in', 'info')
-      props.onAuthenticated?.()
-      close()
+      signedIn()
     } catch (err) {
       if (request !== requestGeneration) return
       setError(describeWebAuthnError(err))
@@ -359,9 +372,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         switchPane('twofa')
         return
       }
-      showNotification('Signed in', 'info')
-      props.onAuthenticated?.()
-      close()
+      signedIn()
     } catch (err) {
       if (request !== requestGeneration) return
       if (err instanceof NativeSignInError) {
@@ -425,9 +436,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
           // brand-new account right away. Signing in to an EXISTING
           // account stays prompt-gated (spec REQ-VPR-014).
           void adoptDeviceVoiceprints()
-          showNotification('Account created — progress is now synced', 'info')
-          props.onAuthenticated?.()
-          close()
+          signedIn('Account created — progress is now synced')
         } else if (current === 'login') {
           const outcome = await loginWithPassword(
             credentials.email,
@@ -444,18 +453,17 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
             switchPane('twofa')
             return
           }
-          showNotification('Signed in', 'info')
-          props.onAuthenticated?.()
-          close()
+          signedIn()
         } else if (current === 'twofa') {
           await verifyTwofa(ceremony(), twofaCode())
           if (request !== requestGeneration) return
-          showNotification('Signed in', 'info')
-          props.onAuthenticated?.()
-          close()
+          signedIn()
         } else if (current === 'email-code') {
           const issued = await requestLoginCode(credentials.email, token)
           if (request !== requestGeneration) return
+          const address = credentials.email.toLowerCase()
+          setCodeAskedAgain(codeAskedFor.has(address))
+          codeAskedFor.add(address)
           setCodeCeremony(issued)
           setSentTo(credentials.email)
           switchPane('email-code-sent')
@@ -469,9 +477,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
             switchPane('twofa')
             return
           }
-          showNotification('Signed in', 'info')
-          props.onAuthenticated?.()
-          close()
+          signedIn()
         } else if (current === 'forgot') {
           await requestPasswordReset(credentials.email, token)
           if (request !== requestGeneration) return
@@ -540,9 +546,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                 onLinked={() => {
                   // Signing in to an EXISTING account, so voiceprint
                   // adoption stays prompt-gated (see the register path).
-                  showNotification('Signed in', 'info')
-                  props.onAuthenticated?.()
-                  close()
+                  signedIn()
                 }}
               />
               <p class={styles.switchRow}>
@@ -624,6 +628,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   {busy() ? 'Checking\u2026' : 'Sign in'}
                 </button>
               </form>
+              <Show when={codeAskedAgain()}>
+                <p class={styles.codeHint}>
+                  Still nothing? Check the address and your spam folder, or try
+                  again in an hour.
+                </p>
+              </Show>
               <p class={styles.switchRow}>
                 <button
                   type="button"

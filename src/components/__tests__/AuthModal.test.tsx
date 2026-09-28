@@ -801,6 +801,83 @@ describe('signing in with a mailed code', () => {
   })
 })
 
+// ── When the code does not come ──────────────────────────────────────
+//
+// The pane has no "send another" of its own: asking again is going back and
+// asking for the same address. That second ask is when the pane says what
+// else to try, and never the first, when the code may simply be on its way.
+
+const STILL_NOTHING =
+  'Still nothing? Check the address and your spam folder, or try again in an hour.'
+
+/** From the sign-in form, ask for a code and land on the code pane. */
+async function askForCode(address: string): Promise<void> {
+  fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+  fireEvent.input(screen.getByTestId('auth-email'), {
+    target: { value: address },
+  })
+  fireEvent.click(screen.getByTestId('auth-submit'))
+  await screen.findByTestId('auth-email-code-form')
+}
+
+describe('a code that does not come', () => {
+  beforeEach(() => {
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+  })
+
+  it('says nothing about a missing code on the first ask', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    await askForCode('maff@example.com')
+
+    expect(screen.getByRole('dialog')).not.toHaveTextContent(STILL_NOTHING)
+  })
+
+  it('points at the spam folder and the hour when the same address asks again', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+    await askForCode('maff@example.com')
+    fireEvent.click(screen.getByTestId('auth-email-code-back'))
+
+    await askForCode('Maff@Example.com')
+
+    expect(screen.getByRole('dialog')).toHaveTextContent(STILL_NOTHING)
+  })
+
+  it('treats a different address as a first ask', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+    await askForCode('maff@example.com')
+    fireEvent.click(screen.getByTestId('auth-email-code-back'))
+
+    await askForCode('someone-else@example.com')
+
+    expect(screen.getByRole('dialog')).not.toHaveTextContent(STILL_NOTHING)
+  })
+
+  it('treats an ask after a sign-in in the same page as a first ask', async () => {
+    // The dialog stays mounted in the app, and signing out does not reload
+    // the page. The last code came, so the next one is not a second ask.
+    codeMocks.verifyLoginCode.mockResolvedValue({ token: 'jwt' })
+    render(() => <AuthModal />)
+    openAuthModal('login')
+    await askForCode('maff@example.com')
+    fireEvent.input(screen.getByTestId('auth-email-code-input'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-submit'))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+
+    openAuthModal('login')
+    await askForCode('maff@example.com')
+
+    expect(screen.getByRole('dialog')).not.toHaveTextContent(STILL_NOTHING)
+  })
+})
+
 // ── Signing in with a passkey ────────────────────────────────────────
 //
 // The button must not exist unless BOTH the deployment and the browser can do

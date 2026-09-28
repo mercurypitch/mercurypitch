@@ -41,6 +41,9 @@ vi.mock('./account-state', async (importOriginal) => ({
 
 const SESSION = { token: 'h.b.s', userId: 'user-1', isNew: true, user: {} }
 
+const STILL_NOTHING =
+  'Still nothing? Check the address and your spam folder, or try again in an hour.'
+
 let view: RenderedShell | null = null
 
 function q(testId: string): HTMLElement | null {
@@ -173,6 +176,24 @@ describe('a code by email', () => {
     expect(stand.verify).toHaveBeenCalledWith('ceremony-2', '222222', {
       proveDevice: true,
     })
+  })
+
+  it('says nothing about a missing code after the first send', async () => {
+    await codeSentTo('new@example.test')
+
+    expect(q('signin-sheet')?.textContent).not.toContain(STILL_NOTHING)
+  })
+
+  it('points at the spam folder and the hour once another code is asked for', async () => {
+    await codeSentTo('new@example.test')
+
+    q('signin-resend')?.click()
+    await settle()
+
+    // In the status that says another code is coming, so it is read out too.
+    const status = q('signin-sheet')?.querySelector('[role="status"]')
+    expect(status?.textContent).toContain('Another code is on its way.')
+    expect(status?.textContent).toContain(STILL_NOTHING)
   })
 
   it('steps back from the code to the address, keeping it', async () => {
