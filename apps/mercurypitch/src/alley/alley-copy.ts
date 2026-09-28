@@ -17,7 +17,7 @@ import type { DoorKey } from './alley-plate'
 export const ALLEY_COPY = {
   /** First run only: the welcome's headline and its one supporting line. */
   headline: 'Pick a room. Make a sound.',
-  subline: 'Six places to practice, all on your phone.',
+  subline: 'Three rooms open tonight, three more on the way.',
   /** A return visit: the compact title in the headline's place. */
   returnTitle: 'Rooms',
   /** The mark's accessible name. */
