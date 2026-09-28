@@ -51,11 +51,27 @@ function structuredData(page: EntryPage): unknown[] {
   return nodes
 }
 
-export function renderEntryPage(page: EntryPage): string {
+export interface RenderEntryPageOptions {
+  /**
+   * Slugs this build serves but keeps out of discovery: no other entry links
+   * to them, and their own document asks not to be indexed. See
+   * tools/glassworks-listing.ts.
+   */
+  unlisted?: readonly string[]
+}
+
+export function renderEntryPage(
+  page: EntryPage,
+  options: RenderEntryPageOptions = {},
+): string {
+  const unlisted = options.unlisted ?? []
   const canonical = `${SITE_ORIGIN}${canonicalPath(page)}`
   const image = page.og.image ?? OG_IMAGE
   const ld = structuredData(page)
-  const nav = navLinksFor(page)
+  const robots = unlisted.includes(page.slug)
+    ? 'noindex, follow'
+    : 'index, follow'
+  const nav = navLinksFor(page, unlisted)
     .map((link) => `        <a href="${esc(link.href)}">${esc(link.label)}</a>`)
     .join('\n')
 
@@ -88,7 +104,7 @@ ${page.faq
         : ''
     }
     <meta name="author" content="MercuryPitch" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="${robots}" />
     <link rel="canonical" href="${canonical}" />
 
     <!-- Open Graph -->

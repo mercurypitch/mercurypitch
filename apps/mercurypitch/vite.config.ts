@@ -238,6 +238,11 @@ export default defineConfig(({ mode, command }) => {
       // them, which goes with the worker above (api-base.mjs).
       __KARAOKE_IMPORT__: JSON.stringify(karaokeImport),
       __UVR_ORIGIN__: JSON.stringify(uvrOrigin),
+      // Always "0". The web build's Glassworks listing switch
+      // (tools/glassworks-listing.ts) decides whether Home and its tour offer
+      // the museum; this app renders neither, and the museum ships in Beside
+      // Cue, not here.
+      'import.meta.env.VITE_GLASSWORKS_LISTED': JSON.stringify('0'),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')
           ? 'release'

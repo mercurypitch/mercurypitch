@@ -13,6 +13,7 @@ import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
 import { writeEntryPages } from './tools/generate-entry-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
+import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -220,12 +221,23 @@ function removeWasmAssetsPlugin() {
 }
 
 export default defineConfig(({ command, mode }) => {
+  const modeEnv = loadEnv(mode, __dirname, '')
+
+  // Whether this build offers Glassworks anywhere a visitor or a crawler
+  // could find it. On for development mode (`pnpm dev`, `build:dev`: the dev
+  // deploy and PR previews), off for production mode (the `v*` tag deploy).
+  // The museum is served either way. See tools/glassworks-listing.ts.
+  const glassworksListed = isGlassworksListed(
+    process.env[GLASSWORKS_LISTED_ENV] ?? modeEnv[GLASSWORKS_LISTED_ENV],
+  )
+
   // Written before Vite resolves the inputs below, so dev, preview, build and
   // the tests all read the same documents. Git-ignored; the model is the
   // reviewable artefact.
-  const entryInputs = writeEntryPages(__dirname)
+  const entryInputs = writeEntryPages(__dirname, {
+    unlisted: unlistedEntrySlugs(glassworksListed),
+  })
 
-  const modeEnv = loadEnv(mode, __dirname, '')
   const configuredApiBase =
     process.env.VITE_API_BASE_URL ?? modeEnv.VITE_API_BASE_URL
   const guidedMediaTarget =
@@ -255,6 +267,7 @@ export default defineConfig(({ command, mode }) => {
       qrcode(),
       solidPlugin(),
       glassGameAssetsPlugin(),
+      glassworksListingPlugin(glassworksListed),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),
@@ -787,6 +800,12 @@ export default defineConfig(({ command, mode }) => {
       // own upload, and separates on its own origin: `/api/uvr` as it was.
       __KARAOKE_IMPORT__: JSON.stringify(false),
       __UVR_ORIGIN__: JSON.stringify(''),
+      // Normalized to exactly "1" or "0" so the client's comparison folds
+      // and agrees with the build-side decision above, whatever spelling the
+      // env file used (src/lib/glassworks-listing.ts).
+      [`import.meta.env.${GLASSWORKS_LISTED_ENV}`]: JSON.stringify(
+        glassworksListed ? '1' : '0',
+      ),
     },
     optimizeDeps: {
       exclude: ['onnxruntime-web'],

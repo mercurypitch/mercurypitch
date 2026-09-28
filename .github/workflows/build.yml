@@ -176,6 +176,13 @@ jobs:
       # PR Gate owns pull-request build validation. Direct main, tag, and
       # manual deployments keep a pre-deploy gate; PR previews skip it because
       # `wrangler versions upload` builds the exact artifact it uploads below.
+      #
+      # The script also sets the Glassworks listing switch through its Vite
+      # mode, here and in wrangler.jsonc's build commands alike: `build:dev`
+      # reads .env.development (listed: dev.mercurypitch.com and previews),
+      # `build` reads .env.production (served but unlisted on
+      # mercurypitch.com). Each script asserts its state on the finished dist.
+      # See tools/glassworks-listing.ts.
       - name: Build app before direct deployment
         if: steps.preview-scope.outputs.deploy == 'true' && github.event_name != 'pull_request'
         shell: bash

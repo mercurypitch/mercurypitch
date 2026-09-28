@@ -55,6 +55,14 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 - GA-33: While a scroll platform extends or retracts, its visible deck and physical roller contacts shall use the same platform transform and motion state. Merc shall collide with solid roller sides and be supported by their upper surfaces. Decorative details shall not create invisible support across an authored gap.
 - GA-34: When a platform's dimensions or course placement change, the game shall validate saved checkpoint safety against the revised content while preserving earned encounter completion. Simulation traversal and contact probes shall cover full extension, retraction and rotated placement; loaded visual comparison shall establish contact alignment.
 
+## Web listing
+
+Owner decision 2026-09-28: Glassworks belongs to Beside Cue for now. mercurypitch.com serves it without advertising it; dev.mercurypitch.com keeps it listed for testing.
+
+- GA-35: While the web build's Glassworks listing switch (`VITE_GLASSWORKS_LISTED`) is off, as in the production web build, Home shall offer no Glassworks card, the Home tour shall have no step for it, and sitemap.xml, llms.txt and every other document's prelude navigation shall not link `/glass-game`.
+- GA-36: While the switch is off, `/glass-game` shall still answer a hard load with the museum document, its staged assets and its service-worker rule, and that document shall ask not to be indexed.
+- GA-37: While the switch is on, as in the dev deploy, PR previews and the local dev server, the web build shall list Glassworks on every surface named in GA-35 and its document shall be indexable. The switch shall not affect Beside Cue builds.
+
 ## Evidence
 
-Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest.
+Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest. GA-35 to GA-37: `scripts/assert-glassworks-listing.mjs` on every web build, `tools/glassworks-listing.test.ts`, `src/tests/home-destinations.test.tsx` and `src/e2e/glass-game.spec.ts`.
