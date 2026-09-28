@@ -367,6 +367,12 @@ importers:
       '@irchiinnuss/purchase-kit':
         specifier: workspace:*
         version: link:../../packages/purchase-kit
+      '@revenuecat/purchases-capacitor':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)
+      '@revenuecat/purchases-capacitor-ui':
+        specifier: ^13.4.0
+        version: 13.4.0(@capacitor/core@8.5.0)(@revenuecat/purchases-capacitor@13.4.0(@capacitor/core@8.5.0))
       capacitor-native-settings:
         specifier: ^8.2.0
         version: 8.2.0(@capacitor/core@8.5.0)

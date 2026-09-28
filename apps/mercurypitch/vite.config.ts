@@ -87,10 +87,10 @@ function isKaraokeStage2(id: string): boolean {
 }
 
 export default defineConfig(({ mode, command }) => {
-  // Fail before producing a bundle, not after shipping one. V1-1 composes no
-  // store at all (src/infrastructure/mobile-runtime.ts), so today this can
-  // only refuse a nonsensical distribution -- but it is wired now, while the
-  // answer is obvious, rather than on the day a key is first pasted in.
+  // Fail before producing a bundle, not after shipping one. The Cloud
+  // subscription sells through RevenueCat wherever the build carries its
+  // platform's key (src/infrastructure/purchases-setup.ts), so a store build
+  // without that key, or with a Test Store one, stops here.
   //
   // process.env last: CI exports these directly and must win over a stray
   // .env.local on whoever's machine ran the build.

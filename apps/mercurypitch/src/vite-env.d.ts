@@ -40,4 +40,10 @@ interface ImportMetaEnv {
   /** The db-worker, resolved by api-base.mjs: the dev one unless the build
    *  was switched to production on purpose. Empty in a local-only build. */
   readonly VITE_API_BASE_URL?: string
+  /** RevenueCat's public SDK keys, `appl_` and `goog_` (purchases-setup.ts).
+   *  CI compiles in the platform's own; a build without it sells nothing. */
+  readonly VITE_REVENUECAT_IOS_KEY?: string
+  readonly VITE_REVENUECAT_ANDROID_KEY?: string
+  /** `1` marks a debug artifact, the only kind that may use a Test Store key. */
+  readonly VITE_REVENUECAT_ALLOW_TEST_STORE?: string
 }
