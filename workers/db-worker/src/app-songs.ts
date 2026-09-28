@@ -23,11 +23,11 @@
 // ledger as read and written only on that same ledger (ledger.ts): a
 // separation, a grant or a web debit written in between makes it read again.
 // Its row says it is the app's (APP_SEPARATION), and the ledger walk spends
-// such a debit from the subscription's songs; the write is only made while
-// they cover it. The month's free song goes first, as it does not carry
-// over: its claim is written in the same transaction as the debit, and only
-// if the debit was. A ledger that keeps changing is answered with "try
-// again" (LedgerBusy), and the main worker does, once.
+// such a debit from the subscription's songs, then review access's; the
+// write is only made while they cover it. The month's free song goes first,
+// as it does not carry over: its claim is written in the same transaction as
+// the debit, and only if the debit was. A ledger that keeps changing is
+// answered with "try again" (LedgerBusy), and the main worker does, once.
 
 import type { Env } from './auth'
 import { uvrDebitKey } from './billing-core'
@@ -135,7 +135,9 @@ export async function debitAppSongs(
     }
     const free = Math.min(songs.free, cost)
     const fromSongs = cost - free
-    if (fromSongs > songs.held) return { outcome: 'short', left: songs.left }
+    if (fromSongs > songs.held + songs.review) {
+      return { outcome: 'short', left: songs.left }
+    }
 
     const id = crypto.randomUUID()
     const createdAt = new Date(nowMs).toISOString()
