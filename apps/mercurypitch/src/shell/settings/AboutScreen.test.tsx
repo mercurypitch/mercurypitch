@@ -2,13 +2,14 @@
 // About: the app's own, without the web's rows
 // ============================================================
 //
-// S6 step 9 (8b). The mark, the version and build, the two policies and a
-// way to write, then the privacy line. The web's GitHub link, the third-party
-// badge and the pills for rooms the app does not have stay on the web.
+// S6 step 9 (8b). The mark, the version and build, the two policies, the web
+// page for deleting an account and a way to write, then the privacy line. The
+// web's GitHub link, the third-party badge and the pills for rooms the app
+// does not have stay on the web.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CONTACT_FORM_URL } from '@/lib/contact-links'
-import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
+import { DELETE_ACCOUNT_URL, PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { AboutScreen } from './AboutScreen'
@@ -66,6 +67,18 @@ describe('About', () => {
     expect(link('about-terms')?.getAttribute('href')).toBe(TERMS_URL)
     expect(link('about-contact')?.getAttribute('href')).toBe(CONTACT_FORM_URL)
     expect(link('about-privacy')?.getAttribute('target')).toBe('_blank')
+  })
+
+  it('links the web page for deleting an account, drawn and opened like the policies', async () => {
+    view = renderShell(() => <AboutScreen />)
+    await settle()
+    const row = link('about-delete-account')
+
+    expect(row?.getAttribute('href')).toBe(DELETE_ACCOUNT_URL)
+    expect(row?.textContent).toBe('Account deletion')
+    expect(row?.getAttribute('target')).toBe('_blank')
+    expect(row?.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(row?.className).toBe(link('about-terms')?.className)
   })
 
   it("carries none of the web's rows", async () => {
