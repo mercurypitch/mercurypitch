@@ -100,6 +100,51 @@ describe('debitForJob', () => {
     expect(verdict.status).toBe(500)
   })
 
+  // The db-worker answers 503 with `retryable` when the ledger kept
+  // changing under the app's debit: nothing was written, and the debit is
+  // idempotent per job, so it is asked once more before the job is cancelled.
+  it('asks once more when the db-worker says to try again', async () => {
+    const answers = [
+      {
+        ok: false,
+        status: 503,
+        headers: new Headers({ 'Retry-After': '1' }),
+        json: () => Promise.resolve({ error: 'busy', retryable: true }),
+      },
+      {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: () => Promise.resolve({ debited: 1, balance: 19 }),
+      },
+    ]
+    const fetchMock = vi
+      .spyOn(global, 'fetch')
+      .mockImplementation(async () => answers.shift() as Response)
+
+    const verdict = await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_busy')
+
+    expect(verdict).toEqual({ allowed: true, status: 200 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('asks only once more, and then fails closed', async () => {
+    const fetchMock = mockFetch({ error: 'busy', retryable: true }, false, 503)
+
+    const verdict = await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_busy2')
+
+    expect(verdict).toMatchObject({ allowed: false, status: 503 })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('never asks again for a refusal that is not a retry', async () => {
+    const fetchMock = mockFetch({ error: 'down' }, false, 503)
+
+    await debitForJob(CFG, 'Bearer t', 'gpu', 'rp_gpu_down')
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('fails closed when the db-worker is unreachable', async () => {
     vi.spyOn(global, 'fetch').mockRejectedValue(new Error('down'))
     const verdict = await debitForJob(CFG, 'Bearer tok', 'gpu', 'rp_gpu_j1')

@@ -28,8 +28,15 @@ export const LEDGER_VERSION = `(SELECT COUNT(*) || ':' || COALESCE(MAX(rowid), 0
 
 /** Reads before a write that loses to a concurrent one, before giving up
  *  and leaving it to the caller's retry: RevenueCat delivers the event
- *  again, and a separation the app could not pay for is cancelled. */
+ *  again, and the main worker asks for the app's debit again, once
+ *  (billing.ts answers LedgerBusy with a 503 that says so). */
 export const LEDGER_ATTEMPTS = 5
+
+/** The ledger kept changing under a write, LEDGER_ATTEMPTS times: nothing
+ *  was written, and the same write may be tried again. */
+export class LedgerBusy extends Error {
+  override name = 'LedgerBusy'
+}
 
 export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   const { results } = await env.DB.prepare(
@@ -80,5 +87,5 @@ export async function writeOnLedger(
       .first<{ delta: number }>()
     if (row !== null) return row.delta
   }
-  throw new Error(`${key}: the ledger kept changing under the write`)
+  throw new LedgerBusy(`${key}: the ledger kept changing under the write`)
 }
