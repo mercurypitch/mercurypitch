@@ -105,8 +105,11 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
     page.getByRole('heading', { name: 'Glassworks', exact: true }),
   ).toBeVisible()
   await expect(
-    page.getByRole('button', { name: 'Enter Resonance Conservatory' }),
-  ).toBeVisible()
+    page.getByRole('button', { name: 'Locked: Resonance Conservatory' }),
+  ).toBeDisabled()
+  await expect(
+    page.getByRole('button', { name: 'Enter First Light Gallery' }),
+  ).toBeEnabled()
 
   // Decode the card while the museum models are still loading. Once the
   // multi-million-triangle map is animating, SwiftShader can starve an

@@ -377,49 +377,9 @@ async function traceClockedMovement(
   return trace
 }
 
-async function minimizeMuseumRaster(page: Page): Promise<void> {
-  // Selected behavior-only cases use this after genuine scene initialization.
-  // Keep real RAF, controls, audio and CSS hit targets while avoiding costly
-  // full-size SwiftShader output. These cases make no visual-rendering claim.
-  const viewport = page.getByLabel('Glass museum; drag to look around')
-  const canvas = page.locator('canvas[aria-label="Floating glass museum"]')
-  const before = {
-    viewport: await viewport.boundingBox(),
-    canvas: await canvas.boundingBox(),
-  }
-  expect(before.viewport).not.toBeNull()
-  expect(before.canvas).not.toBeNull()
-
-  // Keep both axes valid for half-resolution transmission targets.
-  await canvas.evaluate((element) => {
-    element.width = 2
-    element.height = 2
-  })
-
-  expect(await viewport.boundingBox()).toEqual(before.viewport)
-  expect(await canvas.boundingBox()).toEqual(before.canvas)
-  await animationFrames(page, 4)
-  expect(
-    await canvas.evaluate((element) => {
-      const context = element.getContext('webgl2')
-      return {
-        canvasWidth: element.width,
-        canvasHeight: element.height,
-        drawingBufferWidth: context?.drawingBufferWidth,
-        drawingBufferHeight: context?.drawingBufferHeight,
-      }
-    }),
-  ).toEqual({
-    canvasWidth: 2,
-    canvasHeight: 2,
-    drawingBufferWidth: 2,
-    drawingBufferHeight: 2,
-  })
-}
-
 async function omitMuseumRasterOutput(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    // Twin voice cases assert the real scene lifecycle, controls and Web Audio
+    // Behavior cases assert the real scene lifecycle, controls and Web Audio
     // pipeline, while visual rendering has dedicated browser coverage.
     for (const method of [
       'clear',
@@ -1334,8 +1294,10 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
 test('visible-window blur releases held movement and orbit without opening Pause', async ({
   page,
 }) => {
+  // This case measures input release, not pixels. Tiny canvas dimensions do
+  // not shrink Three.js shadow/transmission targets and still starve CI RAF.
+  await omitMuseumRasterOutput(page)
   await openMuseum(page)
-  await minimizeMuseumRaster(page)
   const before = await playerPosition(page)
   await page.keyboard.down('KeyW')
   await expectPlayerMovement(page, before, 0.05)

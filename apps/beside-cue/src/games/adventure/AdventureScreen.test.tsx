@@ -1,4 +1,6 @@
 // Adventure route boundary tests — release builds cannot enter a preview level around campaign locks.
+import type {LevelDefinition} from '@irchiinnuss/glass-game';
+import { GLASSWORKS  } from '@irchiinnuss/glass-game'
 import { render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BuildInfo } from '@/build-info'
@@ -17,7 +19,9 @@ vi.mock('@irchiinnuss/glass-game/campaign', () => ({
   ),
 }))
 vi.mock('@irchiinnuss/glass-game/solid', () => ({
-  GlassAdventure: () => <div data-testid="direct-preview" />,
+  GlassAdventure: (props: { level?: LevelDefinition }) => (
+    <div data-testid="direct-preview" data-level={props.level?.id} />
+  ),
 }))
 
 import { AdventureScreen } from './AdventureScreen'
@@ -40,9 +44,14 @@ describe('Glassworks build access', () => {
     },
   )
 
-  it('keeps a development direct audition available', () => {
-    render(() => <AdventureScreen onExit={() => undefined} />)
-    expect(screen.getByTestId('direct-preview')).toBeInTheDocument()
+  it('opens the requested development audition without the campaign wrapper', () => {
+    const level = { ...GLASSWORKS, id: 'test-audition' }
+    render(() => <AdventureScreen level={level} onExit={() => undefined} />)
+    expect(screen.getByTestId('direct-preview')).toHaveAttribute(
+      'data-level',
+      'test-audition',
+    )
+    expect(screen.queryByTestId('campaign')).toBeNull()
   })
 
   it('can exercise normal campaign locks in a development preview', () => {
