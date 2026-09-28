@@ -4,6 +4,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { PANEL_WIDTH } from './alley-geometry'
 
 const CSS = readFileSync(
   new URL('./alley.css', import.meta.url),
@@ -27,6 +28,35 @@ describe('every color-mix() in alley.css', () => {
         'mu',
       )
       expect(before, `${property} at offset ${use.index}`).toMatch(fallback)
+    }
+  })
+})
+
+describe('the column on a screen on its side', () => {
+  const landscape = (): string => {
+    const start = CSS.indexOf('@media (orientation: landscape)')
+    expect(start).toBeGreaterThan(-1)
+    // The block runs to its own closing brace, the first at a line's start.
+    return CSS.slice(start, CSS.indexOf('\n}', start))
+  }
+
+  it("is the card's own width, so the card never reaches the doors", () => {
+    // placePanelInColumn puts a PANEL_WIDTH card at the column's padding
+    // edge, and alleyFit keeps the doors right of the column's own edge.
+    expect(landscape()).toContain(
+      `width: calc(max(16px, var(--safe-left, 0px)) + ${PANEL_WIDTH}px + 16px);`,
+    )
+    expect(landscape()).toMatch(/padding-right:\s*16px/u)
+  })
+
+  it('gives the welcome up to the card while a door is picked', () => {
+    for (const phase of ['selected', 'alive']) {
+      expect(landscape()).toMatch(
+        new RegExp(
+          `\\.mp-alley\\[data-phase='${phase}'\\] \\.mp-alley__intro(?![\\w-])[^{]*\\{[^}]*opacity:\\s*0`,
+          'u',
+        ),
+      )
     }
   })
 })
