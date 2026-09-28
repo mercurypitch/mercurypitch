@@ -177,13 +177,15 @@ export interface Env {
    *  RevenueCat marks every event with one; an event from the other is
    *  acknowledged and changes nothing. Unset means PRODUCTION. */
   REVENUECAT_ENVIRONMENT?: string
-  /** `bounded` lets a PRODUCTION deployment apply SANDBOX events too, for
-   *  its own users and within bounds, while a store build is in review
-   *  (revenuecat-sandbox.ts). Unset, or anything else, and a sandbox event
-   *  changes nothing there. No effect on a SANDBOX deployment. */
+  /** The word `bounded`, case and surrounding spaces ignored, lets a
+   *  PRODUCTION deployment apply SANDBOX events too, for its own users and
+   *  within bounds, while a store build is in review (revenuecat-sandbox.ts).
+   *  Unset, or anything else, and a sandbox event changes nothing there. No
+   *  effect on a SANDBOX deployment. */
   REVENUECAT_SANDBOX_ON_PRODUCTION?: string
   /** The songs sandbox period grants may add up to in one UTC day, across
-   *  the deployment, while the above is on. Default 200. */
+   *  the deployment, while the above is on: a plain number of up to four
+   *  digits. Default 200, which anything else falls back to, with a warning. */
   REVENUECAT_SANDBOX_DAILY_SONGS?: string
   /** Songs a Karaoke subscription period grants. Default 20 (songs-allowance.ts). */
   SONGS_PER_PERIOD?: string

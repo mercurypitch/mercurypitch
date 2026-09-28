@@ -50,8 +50,9 @@
 // sandbox events, for its own users and bounded, with a ledger reason and an
 // entitlement source of their own (revenuecat-sandbox.ts, which says how it
 // is switched on and off). A sandbox event there takes or moves only the
-// songs of sandbox periods, and ends or moves only a sandbox entitlement; a
-// paid event never takes a sandbox period's songs.
+// songs of sandbox periods, ends or moves only a sandbox entitlement, and
+// never takes over a live paid one (KEEPS_PAID); a paid event never takes a
+// sandbox period's songs.
 //
 // Idempotent on the event id, as the Stripe webhook is on Stripe's: `rc:<id>`
 // goes into billingEvents once the event is processed, and every ledger write
@@ -152,6 +153,12 @@ async function firstKnownUser(
 /** In an upsert: the incoming end is at or after the stored one. */
 const LATER_END = `(excluded.expiresAt IS NULL OR (entitlements.expiresAt IS NOT NULL AND excluded.expiresAt >= entitlements.expiresAt))`
 
+/** In an upsert: a sandbox entitlement meets a live one of any other kind,
+ *  which it never replaces, whatever its end. A sandbox refund or expiration
+ *  ends only a sandbox row, so a paid row it took over would end with it
+ *  (review of PR 885). Once the other has ended, the sandbox's may follow. */
+const KEEPS_PAID = `(COALESCE(excluded.source, '') LIKE '${SANDBOX_SOURCE}:%' AND COALESCE(entitlements.source, '') NOT LIKE '${SANDBOX_SOURCE}:%' AND (entitlements.expiresAt IS NULL OR entitlements.expiresAt > excluded.updatedAt))`
+
 /** The store environment this deployment grants for. Anything but an
  *  explicit SANDBOX is PRODUCTION, so a deployment nobody configured never
  *  grants songs for a test purchase. */
@@ -203,7 +210,8 @@ function periodEnd(event: RevenueCatEvent): string | null {
 /** The entitlement until `expiresAt`, never shorter than it already is.
  *  RevenueCat retries a failed delivery, so an older period's event can
  *  arrive after a newer one (review S3): the later end wins, and with it the
- *  product that set it. No end at all (null) is the latest there is. */
+ *  product that set it. No end at all (null) is the latest there is. A
+ *  sandbox period never takes the row from a live paid one (KEEPS_PAID). */
 async function upsertEntitlement(
   env: Env,
   userId: string,
@@ -216,8 +224,8 @@ async function upsertEntitlement(
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(userId, feature) DO UPDATE SET
        updatedAt = excluded.updatedAt,
-       source    = CASE WHEN ${LATER_END} THEN excluded.source ELSE entitlements.source END,
-       expiresAt = CASE WHEN ${LATER_END} THEN excluded.expiresAt ELSE entitlements.expiresAt END`,
+       source    = CASE WHEN ${LATER_END} AND NOT ${KEEPS_PAID} THEN excluded.source ELSE entitlements.source END,
+       expiresAt = CASE WHEN ${LATER_END} AND NOT ${KEEPS_PAID} THEN excluded.expiresAt ELSE entitlements.expiresAt END`,
   )
     .bind(
       crypto.randomUUID(),

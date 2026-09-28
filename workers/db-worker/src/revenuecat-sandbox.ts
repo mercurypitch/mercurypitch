@@ -20,16 +20,17 @@
 // `revenuecat-sandbox:<product>`, so a report can tell them from paid ones.
 // Refunds, reversals, expiration and transfer work as they do for paid
 // periods, except that a sandbox event only ever takes or moves the songs of
-// sandbox periods, and only ever ends or moves a sandbox entitlement; a paid
-// event never takes a sandbox period's songs (songs-allowance.ts,
-// periodsFor).
+// sandbox periods, only ever ends or moves a sandbox entitlement, and never
+// takes over a live paid one (revenuecat.ts, KEEPS_PAID); a paid event never
+// takes a sandbox period's songs (songs-allowance.ts, periodsFor).
 //
 // The switch is REVENUECAT_SANDBOX_ON_PRODUCTION=bounded on the production
-// Worker. wrangler.jsonc leaves it unset, which is the behaviour without this
-// file; on a SANDBOX deployment it changes nothing. Turned on for a review, in
-// this order (docs/plans/mobile-native/store-review-purchases.md):
+// Worker (the word `bounded`, case and surrounding spaces ignored).
+// wrangler.jsonc leaves it unset, which is the behaviour without this file;
+// on a SANDBOX deployment it changes nothing. Turned on for a review, in this
+// order (docs/plans/mobile-native/store-review-purchases.md):
 //   1. the production Worker runs a release that has this file and
-//      migration 0052;
+//      migration 0052, and the tag's "Deploy DB Worker" run has finished;
 //   2. `pnpm exec wrangler secret put REVENUECAT_SANDBOX_ON_PRODUCTION
 //      --config workers/db-worker/wrangler.jsonc --env prod`, value `bounded`;
 //   3. RevenueCat's production webhook sends "Production and Sandbox" events;
@@ -44,7 +45,8 @@ import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readLedger, } from './ledg
 import type { LedgerRow } from './songs-allowance'
 import { periodGrant, songAllowance, SUBSCRIPTION_SANDBOX, subscriptionSongs, } from './songs-allowance'
 
-/** The one value of REVENUECAT_SANDBOX_ON_PRODUCTION that turns it on. */
+/** The word REVENUECAT_SANDBOX_ON_PRODUCTION turns it on with, case and
+ *  surrounding spaces ignored. */
 export const SANDBOX_SWITCH = 'bounded'
 
 export const SANDBOX_DAILY_SONGS_DEFAULT = 200
@@ -52,8 +54,9 @@ export const SANDBOX_DAILY_SONGS_DEFAULT = 200
 /** The entitlement source a sandbox period writes, before `:<product>`. */
 export const SANDBOX_SOURCE = 'revenuecat-sandbox'
 
-/** Whether this deployment takes sandbox events on production. Only the
- *  exact word: anything else, or nothing, leaves it off. */
+/** Whether this deployment takes sandbox events on production: the word
+ *  `bounded`, case and surrounding spaces ignored (a secret piped in can end
+ *  in a newline). Anything else, or nothing, leaves it off. */
 export function sandboxOnProduction(
   env: Pick<Env, 'REVENUECAT_SANDBOX_ON_PRODUCTION'>,
 ): boolean {
@@ -63,19 +66,24 @@ export function sandboxOnProduction(
   )
 }
 
-/** The day's budget of sandbox songs: a whole number from config, zero
- *  included, else the default. */
+/** A budget config may be: plain decimal digits, up to four of them. */
+const DAILY_SONGS_CONFIG = /^[0-9]{1,4}$/
+
+/** The day's budget of sandbox songs: from config, a plain number of up to
+ *  four digits, zero included, spaces around it ignored (a secret piped in
+ *  can end in a newline). Anything else is a mistake: it says so in the log,
+ *  and the budget is the default. Unset, it is the default. */
 export function sandboxDailySongs(
   env: Pick<Env, 'REVENUECAT_SANDBOX_DAILY_SONGS'>,
 ): number {
   const value = env.REVENUECAT_SANDBOX_DAILY_SONGS
-  if (value === undefined || value.trim() === '') {
-    return SANDBOX_DAILY_SONGS_DEFAULT
-  }
-  const songs = Number(value)
-  return Number.isInteger(songs) && songs >= 0
-    ? songs
-    : SANDBOX_DAILY_SONGS_DEFAULT
+  if (value === undefined) return SANDBOX_DAILY_SONGS_DEFAULT
+  const digits = value.trim()
+  if (DAILY_SONGS_CONFIG.test(digits)) return Number(digits)
+  console.warn(
+    `[billing] revenuecat sandbox: REVENUECAT_SANDBOX_DAILY_SONGS is not a number of up to four digits; the budget is ${SANDBOX_DAILY_SONGS_DEFAULT}`,
+  )
+  return SANDBOX_DAILY_SONGS_DEFAULT
 }
 
 /** The UTC day a moment falls on: `YYYY-MM-DD`. */

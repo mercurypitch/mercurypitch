@@ -3,7 +3,7 @@
 // node-tests/revenuecat-sandbox-integration.test.ts runs them through the
 // webhook, with every migration applied.
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SANDBOX_DAILY_SONGS_DEFAULT, sandboxDailySongs, sandboxDay, sandboxGrantedOn, sandboxOnProduction, } from './revenuecat-sandbox'
 import type { LedgerRow } from './songs-allowance'
 
@@ -41,23 +41,59 @@ describe('the switch', () => {
 })
 
 describe('the day’s budget of sandbox songs', () => {
-  it('is 200 unless config says', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('is 200 unless config says, and says nothing about it', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     expect(SANDBOX_DAILY_SONGS_DEFAULT).toBe(200)
     expect(sandboxDailySongs({})).toBe(200)
     expect(sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: '60' })).toBe(60)
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('may be none at all', () => {
     expect(sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: '0' })).toBe(0)
   })
 
-  it('ignores config that is not a whole number of songs', () => {
-    for (const bad of ['', ' ', 'many', '-20', '2.5', 'NaN', 'Infinity']) {
+  it('is a plain number of up to four digits, spaces around it ignored', () => {
+    expect(sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: '9999' })).toBe(
+      9999,
+    )
+    expect(sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: ' 30\n' })).toBe(
+      30,
+    )
+  })
+
+  it('is 200 for anything else, with a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const bad = [
+      '',
+      ' ',
+      'twenty',
+      '1e3',
+      '0x10',
+      '99999999999999999999',
+      '10000',
+      '-20',
+      '-0',
+      '+5',
+      '2.5',
+      '200.0',
+      'NaN',
+      'Infinity',
+    ]
+    for (const value of bad) {
       expect(
-        sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: bad }),
-        bad,
+        sandboxDailySongs({ REVENUECAT_SANDBOX_DAILY_SONGS: value }),
+        value,
       ).toBe(200)
     }
+    expect(warn).toHaveBeenCalledTimes(bad.length)
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('REVENUECAT_SANDBOX_DAILY_SONGS'),
+    )
   })
 })
 

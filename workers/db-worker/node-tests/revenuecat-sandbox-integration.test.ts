@@ -763,6 +763,153 @@ describe('the rest of a sandbox subscription, on production', () => {
   })
 })
 
+describe('a live paid subscription, beside the sandbox', () => {
+  // Review of PR 885: a sandbox period that ended later than a live paid one,
+  // or named no end, took over the paid entitlement's row, and the sandbox's
+  // own refund or expiration then ended the paid subscription with it.
+  const PAID_UNTIL = '2026-10-05T12:20:00.000Z'
+  const paidRow = { source: `revenuecat:${PRODUCT}`, expiresAt: PAID_UNTIL }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-05T12:00:00.000Z'))
+  })
+
+  it('keeps its entitlement when a sandbox period outlasts it, and the sandbox refunds', async () => {
+    const singer = await phone()
+    // Paid monthly, twenty minutes before it renews.
+    await deliver(
+      paidEvent(singer.userId, 'RENEWAL', {
+        expiration_at_ms: Date.parse(PAID_UNTIL),
+      }),
+    )
+    // A sandbox annual from a test build: an hour long in the sandbox.
+    await deliver(
+      sandboxEvent(singer.userId, 'INITIAL_PURCHASE', {
+        product_id: 'annual',
+        expiration_at_ms: Date.parse('2026-10-05T13:00:00.000Z'),
+      }),
+    )
+    expect(entitlementOf(singer.userId)).toEqual(paidRow)
+
+    vi.setSystemTime(new Date('2026-10-05T12:05:00.000Z'))
+    const refunded = await deliver(
+      sandboxEvent(singer.userId, 'CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+        product_id: 'annual',
+      }),
+    )
+
+    expect(refunded).toMatchObject({ clawedBack: 20 })
+    expect(entitlementOf(singer.userId)).toEqual(paidRow)
+    expect(await appSongs(singer)).toMatchObject({
+      subscribed: true,
+      left: 20,
+    })
+  })
+
+  it('keeps its entitlement when a sandbox period names no end, and expires', async () => {
+    const singer = await phone()
+    await deliver(paidEvent(singer.userId, 'INITIAL_PURCHASE'))
+    const paid = entitlementOf(singer.userId)
+    await deliver(
+      sandboxEvent(singer.userId, 'INITIAL_PURCHASE', {
+        expiration_at_ms: undefined,
+      }),
+    )
+    expect(entitlementOf(singer.userId)).toEqual(paid)
+
+    vi.setSystemTime(new Date('2026-10-05T13:00:00.000Z'))
+    await deliver(
+      sandboxEvent(singer.userId, 'EXPIRATION', {
+        expiration_at_ms: Date.now(),
+      }),
+    )
+
+    expect(entitlementOf(singer.userId)).toEqual(paid)
+    expect(await appSongs(singer)).toMatchObject({ subscribed: true })
+  })
+
+  it('keeps an account’s entitlement when a sandbox transfer brings a later end', async () => {
+    const device = await phone()
+    const signedIn = '00000000-0000-4000-8000-00000000ac05'
+    account(signedIn)
+    await deliver(
+      paidEvent(signedIn, 'RENEWAL', {
+        expiration_at_ms: Date.parse(PAID_UNTIL),
+      }),
+    )
+    await deliver(
+      sandboxEvent(device.userId, 'INITIAL_PURCHASE', {
+        expiration_at_ms: Date.parse('2026-10-05T13:00:00.000Z'),
+      }),
+    )
+    await deliver(
+      sandboxEvent(signedIn, 'TRANSFER', {
+        transferred_from: [device.userId],
+        transferred_to: [signedIn],
+      }),
+    )
+    expect(entitlementOf(signedIn)).toEqual(paidRow)
+
+    vi.setSystemTime(new Date('2026-10-05T12:05:00.000Z'))
+    const refunded = await deliver(
+      sandboxEvent(signedIn, 'CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+      }),
+    )
+
+    expect(refunded).toMatchObject({ clawedBack: 20 })
+    expect(entitlementOf(signedIn)).toEqual(paidRow)
+    expect(balanceOf(signedIn)).toBe(20)
+  })
+
+  it('keeps its entitlement when the sandbox reverses a refund with a later end', async () => {
+    const singer = await phone()
+    await deliver(
+      paidEvent(singer.userId, 'RENEWAL', {
+        expiration_at_ms: Date.parse(PAID_UNTIL),
+      }),
+    )
+    await deliver(sandboxEvent(singer.userId, 'INITIAL_PURCHASE'))
+    await deliver(
+      sandboxEvent(singer.userId, 'CANCELLATION', {
+        cancel_reason: 'CUSTOMER_SUPPORT',
+      }),
+    )
+
+    const reversed = await deliver(
+      sandboxEvent(singer.userId, 'REFUND_REVERSED', {
+        expiration_at_ms: Date.parse('2026-10-05T13:00:00.000Z'),
+      }),
+    )
+
+    expect(reversed).toMatchObject({ restored: 20 })
+    expect(entitlementOf(singer.userId)).toEqual(paidRow)
+  })
+
+  it('gives way to the sandbox once it has ended', async () => {
+    const singer = await phone()
+    await deliver(
+      paidEvent(singer.userId, 'RENEWAL', {
+        expiration_at_ms: Date.parse(PAID_UNTIL),
+      }),
+    )
+
+    vi.setSystemTime(new Date('2026-10-05T12:30:00.000Z'))
+    await deliver(
+      sandboxEvent(singer.userId, 'INITIAL_PURCHASE', {
+        expiration_at_ms: Date.parse('2026-10-05T12:35:00.000Z'),
+      }),
+    )
+
+    expect(entitlementOf(singer.userId)).toEqual({
+      source: `revenuecat-sandbox:${PRODUCT}`,
+      expiresAt: '2026-10-05T12:35:00.000Z',
+    })
+  })
+})
+
 describe('a sandbox event beside a paid subscription', () => {
   // A paid subscriber may buy in the sandbox too, from a test build: the
   // sandbox's events never take a paid period's songs or end a paid
@@ -922,6 +1069,34 @@ describe('a sandbox event beside a paid subscription', () => {
     )
     expect(refunded).toMatchObject({ clawedBack: 20 })
     expect(balanceOf(signedIn)).toBe(20)
+  })
+
+  it('moves each kind as itself with a paid transfer: sandbox songs, paid songs, credits', async () => {
+    const device = await phone()
+    const signedIn = '00000000-0000-4000-8000-00000000ac06'
+    account(signedIn)
+    await deliver(paidEvent(device.userId, 'INITIAL_PURCHASE'))
+    await deliver(sandboxEvent(device.userId, 'INITIAL_PURCHASE'))
+    credits(device.userId, 5, 'bought-before-the-move')
+
+    const moved = await deliver(
+      paidEvent(signedIn, 'TRANSFER', {
+        transferred_from: [device.userId],
+        transferred_to: [signedIn],
+      }),
+    )
+
+    expect(moved).toEqual({ received: true, moved: 45 })
+    expect(rowsOf(signedIn).filter((row) => row.delta !== 0)).toEqual([
+      {
+        reason: 'subscription-sandbox-transfer-in',
+        delta: 20,
+        jobRef: device.userId,
+      },
+      { reason: 'subscription-transfer-in', delta: 20, jobRef: device.userId },
+      { reason: 'transfer-in', delta: 5, jobRef: device.userId },
+    ])
+    expect([balanceOf(device.userId), balanceOf(signedIn)]).toEqual([0, 45])
   })
 
   it('moves only the sandbox’s songs, and leaves the rest for a paid transfer', async () => {
