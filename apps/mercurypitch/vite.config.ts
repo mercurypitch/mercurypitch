@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 // @ts-expect-error -- the same kind of plain .mjs helper, shared with
 // scripts/assert-bundle.mjs, which must stay dependency-free.
-import { karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from './api-base.mjs'
+import { karaokeImportFor, portableConsoleFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from './api-base.mjs'
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
 import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
@@ -109,20 +109,31 @@ export default defineConfig(({ mode, command }) => {
   // MERCURYPITCH_API_TARGET=production on purpose (api-base.mjs says why).
   // Compiled in through `define` so the switch wins over the env files, and
   // printed on every build so a log answers the question without the binary.
-  const api = resolveApiBase(
-    readEnvFiles(fileURLToPath(new URL('.', import.meta.url)), mode),
-    process.env,
-  ) as { base: string; target: string; source: string }
+  const env = readEnvFiles(
+    fileURLToPath(new URL('.', import.meta.url)),
+    mode,
+  ) as Record<string, string>
+  const api = resolveApiBase(env, process.env) as {
+    base: string
+    target: string
+    source: string
+  }
   // Stage 2 of the Karaoke room: where songs are separated, and whether the
   // room offers to import them at all. Both follow the same switch.
   const uvrOrigin = resolveUvrOrigin(api, process.env) as string
   const karaokeImport = karaokeImportFor(api) as boolean
+  // The portable console and the Developer screen: what the env says (the
+  // committed .env turns them on), and never in the store build.
+  const portableConsole = portableConsoleFor(api, env) as boolean
   if (command === 'build') {
     console.log(
       `[mercurypitch] API base compiled in: ${api.base === '' ? '(none: a local-only build, sign-in is off)' : api.base} [${api.target}; ${api.source}]`,
     )
     console.log(
       `[mercurypitch] Karaoke import: ${karaokeImport ? 'on' : 'off'}; songs separated on ${uvrOrigin === '' ? '(no host: this build cannot separate)' : uvrOrigin}`,
+    )
+    console.log(
+      `[mercurypitch] Portable console and Developer screen: ${portableConsole ? 'in (a test build)' : 'out'}`,
     )
   }
 
@@ -215,6 +226,13 @@ export default defineConfig(({ mode, command }) => {
       // The resolved worker, over whatever the env files said: this is how
       // the production switch outranks the dev default in `.env`.
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(api.base),
+      // Same move for the console the committed `.env` turns on: a store
+      // build compiles it out, and the Developer screen with it, whatever
+      // the env files or the process said. Every gate reads it as a plain
+      // `=== 'true'`, so the branch folds and the dynamic imports go with it.
+      'import.meta.env.VITE_PORTABLE_CONSOLE': JSON.stringify(
+        portableConsole ? 'true' : 'false',
+      ),
       // The Karaoke room's own songs (plan S8, Stage 2): compiled in for a
       // test build and out of the store build, and the host that separates
       // them, which goes with the worker above (api-base.mjs).

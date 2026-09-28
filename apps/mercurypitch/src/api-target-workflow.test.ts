@@ -9,9 +9,13 @@
 // every build is dev, the store binaries take the dispatch's pick on top, and
 // a production dispatch that is not on a tag fails before it builds.
 //
-// Read off the workflow text: nothing runs these jobs locally.
+// Read off the workflow text: nothing runs these jobs locally. Where a step's
+// own shell decides something, that shell is run here, with `node` stubbed.
 
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -154,5 +158,181 @@ describe('every iOS web build is checked, as the Android ones are', () => {
       'Verify the release bundle',
       "env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true' && inputs.verify-assets != ''",
     )
+  })
+})
+
+/** A YAML block scalar's text as the parser hands it over: dedented. */
+function dedent(text: string): string {
+  const lines = text.split('\n')
+  const indent = Math.min(
+    ...lines
+      .filter((line) => line.trim() !== '')
+      .map((line) => /^ */u.exec(line)?.[0].length ?? 0),
+  )
+  return lines.map((line) => line.slice(indent)).join('\n')
+}
+
+// The store binary of a production dispatch is the one a reviewer installs,
+// and it shipped the portable console and the Developer screen: the flag
+// that turns them on is a line in the committed .env, and turning it off was
+// a line in a checklist. A TestFlight build is a dev build and keeps both.
+describe('the portable console in the store binary', () => {
+  /**
+   * The caller's store-build-env as GitHub renders it for a dispatch pick.
+   * An expression this does not know fails the test rather than guessing.
+   */
+  const render = (target: 'dev' | 'production'): string => {
+    const values: Record<string, string> = {
+      "inputs.api-target || 'dev'": target,
+      "inputs.api-target == 'production' && 'VITE_PORTABLE_CONSOLE=false' || ''":
+        target === 'production' ? 'VITE_PORTABLE_CONSOLE=false' : '',
+    }
+    return dedent(block(CALLER, 'store-build-env')).replace(
+      /\$\{\{ (.*?) \}\}/gu,
+      (_, expression: string) => {
+        const value = values[expression]
+        if (value === undefined) {
+          throw new Error(`no rendering for \${{ ${expression} }}`)
+        }
+        return value
+      },
+    )
+  }
+
+  /** What a job's store export step writes to GITHUB_ENV, by running it. */
+  const exported = (id: string, rendered: string): string[] => {
+    // A step's text ends where the next one starts, without its newline.
+    const script = dedent(block(`${stepText(job(id), STORE_EXPORT)}\n`, 'run'))
+    const dir = mkdtempSync(join(tmpdir(), 'mp-store-env-'))
+    try {
+      const githubEnv = join(dir, 'github-env')
+      writeFileSync(githubEnv, '')
+      const result = spawnSync('bash', ['-c', script], {
+        env: {
+          PATH: process.env.PATH,
+          STORE_BUILD_ENV: rendered,
+          GITHUB_ENV: githubEnv,
+        },
+        encoding: 'utf8',
+      })
+      expect(result.stderr).toBe('')
+      expect(result.status).toBe(0)
+      return readFileSync(githubEnv, 'utf8').split('\n').filter(Boolean)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  for (const id of ['android', 'ios-testflight']) {
+    it(`${id}: a production dispatch turns it off in the store binary`, () => {
+      expect(exported(id, render('production'))).toEqual([
+        'MERCURYPITCH_API_TARGET=production',
+        'VITE_PORTABLE_CONSOLE=false',
+      ])
+    })
+
+    it(`${id}: a TestFlight build leaves it to the committed .env`, () => {
+      // Nothing at all, not an empty value: a VITE_ variable in the process
+      // wins over the env files, so `VITE_PORTABLE_CONSOLE=` would turn the
+      // console off in every TestFlight build.
+      expect(exported(id, render('dev'))).toEqual([
+        'MERCURYPITCH_API_TARGET=dev',
+      ])
+    })
+  }
+})
+
+describe('the store binary check', () => {
+  interface Verified {
+    status: number | null
+    ran: string[]
+  }
+
+  /**
+   * Runs the caller's verify-assets as the reusable workflow does, with
+   * `node` stubbed to record each script it was asked to run, and to fail
+   * the one named by `failing`.
+   */
+  const verify = (env: Record<string, string>, failing = ''): Verified => {
+    const dir = mkdtempSync(join(tmpdir(), 'mp-verify-'))
+    try {
+      const log = join(dir, 'ran')
+      writeFileSync(
+        join(dir, 'node'),
+        [
+          '#!/bin/sh',
+          'echo "$*" >> "$NODE_LOG"',
+          'if [ -n "$NODE_FAILS" ]; then',
+          '  case "$*" in *"$NODE_FAILS"*) exit 1 ;; esac',
+          'fi',
+          'exit 0',
+          '',
+        ].join('\n'),
+      )
+      chmodSync(join(dir, 'node'), 0o755)
+      const result = spawnSync(
+        'bash',
+        ['-euo', 'pipefail', '-c', dedent(block(CALLER, 'verify-assets'))],
+        {
+          env: {
+            PATH: `${dir}:${process.env.PATH ?? ''}`,
+            NODE_LOG: log,
+            NODE_FAILS: failing,
+            DIST_DIR: 'DIST',
+            ANDROID_ASSETS_DIR: 'ANDROID',
+            ...env,
+          },
+          encoding: 'utf8',
+        },
+      )
+      const ran = existsSync(log)
+        ? readFileSync(log, 'utf8').split('\n').filter(Boolean)
+        : []
+      return { status: result.status, ran }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  const BUNDLE = 'apps/mercurypitch/scripts/assert-bundle.mjs'
+  const CONSOLE = 'scripts/assert-no-portable-console.mjs'
+
+  it('asserts the production store dist carries no console, before and after cap sync', () => {
+    expect(
+      verify({ STAGE: 'dist', MERCURYPITCH_API_TARGET: 'production' }),
+    ).toEqual({ status: 0, ran: [`${BUNDLE} DIST`, `${CONSOLE} DIST`] })
+    expect(
+      verify({ STAGE: 'synced', MERCURYPITCH_API_TARGET: 'production' }),
+    ).toEqual({
+      status: 0,
+      ran: [
+        `${BUNDLE} DIST --android-assets ANDROID`,
+        `${CONSOLE} DIST`,
+        `${CONSOLE} ANDROID`,
+      ],
+    })
+  })
+
+  it('fails the store build when the console is there', () => {
+    expect(
+      verify({ STAGE: 'dist', MERCURYPITCH_API_TARGET: 'production' }, CONSOLE)
+        .status,
+    ).not.toBe(0)
+  })
+
+  it('leaves a test build its console', () => {
+    expect(verify({ STAGE: 'dist', MERCURYPITCH_API_TARGET: 'dev' })).toEqual({
+      status: 0,
+      ran: [`${BUNDLE} DIST`],
+    })
+    expect(verify({ STAGE: 'synced', MERCURYPITCH_API_TARGET: 'dev' })).toEqual(
+      { status: 0, ran: [`${BUNDLE} DIST --android-assets ANDROID`] },
+    )
+    // The check runs under `set -u`: a job with no target at all is a test
+    // build, not an unbound variable.
+    expect(verify({ STAGE: 'dist' })).toEqual({
+      status: 0,
+      ran: [`${BUNDLE} DIST`],
+    })
   })
 })

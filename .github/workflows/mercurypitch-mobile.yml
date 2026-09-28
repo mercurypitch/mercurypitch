@@ -145,10 +145,20 @@ jobs:
       # APK, the simulator app, the ad-hoc IPA -- and the store binaries take
       # the dispatch's pick on top (store-build-env). `inputs` is empty outside
       # a dispatch, which is what makes every other trigger a dev build.
+      #
+      # The second store line is the portable console: the committed .env
+      # turns it on, a process variable wins over an env file in Vite, and a
+      # production store binary must not carry it or the Developer screen.
+      # Every other pick renders it as an empty line, which the export skips,
+      # so a TestFlight build keeps what .env says. Never `=` with an empty
+      # value: that would win over .env too, and take it out of TestFlight.
+      # vite.config.ts takes it out of a production build on its own as well
+      # (api-base.mjs portableConsoleFor); this is the belt to that brace.
       web-build-env: |
         MERCURYPITCH_API_TARGET=dev
       store-build-env: |
         MERCURYPITCH_API_TARGET=${{ inputs.api-target || 'dev' }}
+        ${{ inputs.api-target == 'production' && 'VITE_PORTABLE_CONSOLE=false' || '' }}
       distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
       platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
       testflight-upload-from: tags
@@ -163,12 +173,22 @@ jobs:
       #
       # --android-assets only after cap sync has run; before that the
       # directory is last run's leftovers or nothing at all.
+      #
+      # A production store binary is also held to carrying no portable
+      # console and no Developer screen, in each tree it will ship from. A
+      # test build carries both on purpose, so only production is checked.
       verify-assets: |
         if [ "$STAGE" = synced ]; then
           node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR" \
             --android-assets "$ANDROID_ASSETS_DIR"
         else
           node apps/mercurypitch/scripts/assert-bundle.mjs "$DIST_DIR"
+        fi
+        if [ "${MERCURYPITCH_API_TARGET:-}" = production ]; then
+          node scripts/assert-no-portable-console.mjs "$DIST_DIR"
+          if [ "$STAGE" = synced ]; then
+            node scripts/assert-no-portable-console.mjs "$ANDROID_ASSETS_DIR"
+          fi
         fi
     secrets:
       keystore-base64: ${{ secrets.MERCURYPITCH_KEYSTORE_BASE64 }}

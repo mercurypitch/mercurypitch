@@ -22,6 +22,30 @@ import { describe, expect, it } from 'vitest'
  *  its purchase-policy assertion only for a build. */
 const BUILD_ENV = { command: 'build', mode: 'production' } as const
 
+/**
+ * This app's define block for a build run with `env` in the process, which
+ * is restored afterwards: the switches it reads come from there.
+ */
+const nativeDefine = async (
+  env: Record<string, string>,
+): Promise<Record<string, unknown>> => {
+  const saved = Object.fromEntries(
+    Object.keys(env).map((key) => [key, process.env[key]]),
+  )
+  Object.assign(process.env, env)
+  try {
+    const path = fileURLToPath(new URL('../vite.config.ts', import.meta.url))
+    const loaded = await loadConfigFromFile(BUILD_ENV, path)
+    if (loaded == null) throw new Error(`no vite config at ${path}`)
+    return (loaded.config.define ?? {}) as Record<string, unknown>
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+}
+
 const defineKeys = async (relativePath: string): Promise<string[]> => {
   const path = fileURLToPath(new URL(relativePath, import.meta.url))
   const loaded = await loadConfigFromFile(BUILD_ENV, path)
@@ -59,25 +83,9 @@ describe('vite define parity with the web build', () => {
 // constant folds, and a store build carries none of it (plan S8, owner
 // 27 Sep). Keyed on the same switch that picks the worker.
 describe('the Karaoke import constant', () => {
-  const nativeDefine = async (
-    target: string,
-  ): Promise<Record<string, unknown>> => {
-    const saved = process.env.MERCURYPITCH_API_TARGET
-    process.env.MERCURYPITCH_API_TARGET = target
-    try {
-      const path = fileURLToPath(new URL('../vite.config.ts', import.meta.url))
-      const loaded = await loadConfigFromFile(BUILD_ENV, path)
-      if (loaded == null) throw new Error(`no vite config at ${path}`)
-      return (loaded.config.define ?? {}) as Record<string, unknown>
-    } finally {
-      if (saved === undefined) delete process.env.MERCURYPITCH_API_TARGET
-      else process.env.MERCURYPITCH_API_TARGET = saved
-    }
-  }
-
   it('is on in a dev-target build and off in the store build', async () => {
-    const dev = await nativeDefine('dev')
-    const store = await nativeDefine('production')
+    const dev = await nativeDefine({ MERCURYPITCH_API_TARGET: 'dev' })
+    const store = await nativeDefine({ MERCURYPITCH_API_TARGET: 'production' })
 
     expect([dev.__KARAOKE_IMPORT__, dev.__UVR_ORIGIN__]).toEqual([
       'true',
@@ -101,5 +109,33 @@ describe('the Karaoke import constant', () => {
       'false',
       '""',
     ])
+  }, 60000)
+})
+
+// The portable console and the Developer screen are a test build's, and the
+// committed .env turns them on -- so the store build shipped both, the log
+// viewer and the developer sign-in screen with its token readout. The switch
+// that picks the production worker compiles them out, whatever the env says.
+describe('the portable console constant', () => {
+  const KEY = 'import.meta.env.VITE_PORTABLE_CONSOLE'
+
+  it('is off in the store build, even when the env turns it on', async () => {
+    const store = await nativeDefine({
+      MERCURYPITCH_API_TARGET: 'production',
+      VITE_PORTABLE_CONSOLE: 'true',
+    })
+    expect(store[KEY]).toBe('"false"')
+  }, 60000)
+
+  it('follows the env in a dev-target build', async () => {
+    const on = await nativeDefine({
+      MERCURYPITCH_API_TARGET: 'dev',
+      VITE_PORTABLE_CONSOLE: 'true',
+    })
+    const off = await nativeDefine({
+      MERCURYPITCH_API_TARGET: 'dev',
+      VITE_PORTABLE_CONSOLE: 'false',
+    })
+    expect([on[KEY], off[KEY]]).toEqual(['"true"', '"false"'])
   }, 60000)
 })

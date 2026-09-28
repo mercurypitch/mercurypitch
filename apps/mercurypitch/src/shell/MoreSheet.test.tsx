@@ -56,4 +56,26 @@ describe('the More sheet', () => {
 
     expect(onPushSettings).toHaveBeenCalledTimes(1)
   })
+
+  // The suite runs as a test build (vitest.config.ts turns the console on).
+  // A store build compiles the tile out altogether, which only a built
+  // bundle can show.
+  it('offers a test build the Developer tile, which pushes the Developer screen', () => {
+    const onClose = vi.fn()
+    const onPushDeveloper = vi.fn()
+    view = renderShell(() => (
+      <MoreSheet
+        open={() => true}
+        onClose={onClose}
+        onPushSettings={vi.fn()}
+        onPushAccount={vi.fn()}
+        onPushDeveloper={onPushDeveloper}
+      />
+    ))
+
+    tile('developer')?.click()
+
+    expect(onPushDeveloper).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })

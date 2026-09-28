@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 // @ts-expect-error -- a plain .mjs module with no types, shared with a Vite
 // config and with a bare-node script that runs before any install.
-import { API_BASES, karaokeImportFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from '../api-base.mjs'
+import { API_BASES, karaokeImportFor, portableConsoleFor, readEnvFiles, resolveApiBase, resolveUvrOrigin, } from '../api-base.mjs'
 
 interface Resolved {
   base: string
@@ -210,6 +210,52 @@ describe('importing songs into the Karaoke room', () => {
     expect(karaokeImportFor({ target: 'dev' })).toBe(true)
     expect(karaokeImportFor({ target: 'configured' })).toBe(true)
     expect(karaokeImportFor({ target: 'production' })).toBe(false)
+  })
+})
+
+// The portable console and the Developer screen are a test build's. The
+// committed .env turns them on; the store build shipped them anyway, because
+// turning them off was a line in a checklist. The switch that picks the
+// production worker now turns them off too.
+describe('the portable console and the Developer screen', () => {
+  const on = { VITE_PORTABLE_CONSOLE: 'true' }
+
+  it('follow the env in every build that is not the store build', () => {
+    expect(portableConsoleFor({ target: 'dev' }, on)).toBe(true)
+    expect(portableConsoleFor({ target: 'configured' }, on)).toBe(true)
+    expect(
+      portableConsoleFor({ target: 'dev' }, { VITE_PORTABLE_CONSOLE: 'false' }),
+    ).toBe(false)
+    expect(portableConsoleFor({ target: 'dev' }, {})).toBe(false)
+  })
+
+  it('are out of the store build, whatever the env says', () => {
+    expect(portableConsoleFor({ target: 'production' }, on)).toBe(false)
+  })
+
+  it('are on in the committed .env, so a test build carries them', () => {
+    // Only the committed file, as for the worker above: what TestFlight,
+    // the debug APK and a laptop build read.
+    const dir = mkdtempSync(join(tmpdir(), 'mp-committed-'))
+    const saved = process.env.VITE_PORTABLE_CONSOLE
+    // This suite's config sets the flag in the process, which Vite lets win
+    // over the files: out of the process while the files are read.
+    delete process.env.VITE_PORTABLE_CONSOLE
+    try {
+      copyFileSync(join(APP_DIR, '.env'), join(dir, '.env'))
+      const files = readEnvFiles(dir, 'production') as Record<string, string>
+      expect(portableConsoleFor(resolve(files, {}), files)).toBe(true)
+      expect(
+        portableConsoleFor(
+          resolve(files, { MERCURYPITCH_API_TARGET: 'production' }),
+          files,
+        ),
+      ).toBe(false)
+    } finally {
+      if (saved === undefined) delete process.env.VITE_PORTABLE_CONSOLE
+      else process.env.VITE_PORTABLE_CONSOLE = saved
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 

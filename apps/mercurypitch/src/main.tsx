@@ -244,8 +244,9 @@ void Promise.race([hydrateStoragePort(), hydrationDeadline])
 
 // The in-app console, on every page of a test build. Captured from the first
 // line, so a boot that goes wrong on a phone can be read on the phone. The
-// flag is a committed build constant in this package's .env; it is switched
-// off before a store submission (checklist).
+// flag is a committed build constant in this package's .env; a store build
+// (MERCURYPITCH_API_TARGET=production) compiles it out whatever .env says
+// (vite.config.ts, api-base.mjs portableConsoleFor).
 if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
   void import('@/components/PortableConsole').then((m) => {
     m.setupPortableConsole()

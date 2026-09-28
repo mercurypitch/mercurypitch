@@ -21,7 +21,6 @@
 // the in-app tabs instead.
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { TAB_GUITAR, TAB_KARAOKE, TAB_PIANO } from '@/features/tabs/constants'
 import { AccountIcon, ConsoleIcon, GearIcon, GuitarIcon, KaraokeIcon, PianoIcon, } from './icons'
@@ -99,7 +98,10 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
             <AccountIcon />
             Account
           </button>
-          <Show when={DEVELOPER_AVAILABLE}>
+          {/* A ternary, not a Show: the constant folds, so a store build
+              keeps only the null arm and carries no tile at all. Behind a
+              Show the tile's markup stayed in the bundle, never drawn. */}
+          {DEVELOPER_AVAILABLE ? (
             <button
               type="button"
               class="mp-itile"
@@ -112,7 +114,7 @@ export const MoreSheet: Component<MoreSheetProps> = (props) => {
               <ConsoleIcon />
               Developer
             </button>
-          </Show>
+          ) : null}
           <button
             type="button"
             class="mp-itile mp-itile--settings"
