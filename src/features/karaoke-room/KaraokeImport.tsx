@@ -26,9 +26,14 @@
 // D13: onboarding will offer this same sheet). It names the subscription,
 // its length and the store's own price in the singer's storefront, with
 // Restore purchases, Terms of Use and the Privacy Policy (App Store 3.1.2).
-// After the store says yes, the songs arrive when RevenueCat's webhook
-// reaches the server, usually within seconds: until then the room says they
-// are on their way rather than showing the paywall again.
+// Subscribe is there to tap only with that price in view; a store that
+// could not say gets a Retry. After the store says yes, the songs arrive
+// when RevenueCat's webhook reaches the server, usually within seconds:
+// until then the room says they are on their way rather than showing the
+// paywall again. Before it offers the subscription at all it asks the
+// store, which knows of a purchase first: a subscriber whose songs the
+// server has not heard of yet is told they are coming (S7 §3.9, the more
+// generous of the two).
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
@@ -122,48 +127,128 @@ const PAYWALL_LINES = [
   'Your songs stay on this phone and play offline',
 ] as const
 
+/** The store's price for the paywall, asked for when it opens. */
+type Price =
+  | { readonly kind: 'asking' }
+  | { readonly kind: 'priced'; readonly offer: KaraokeOffer }
+  /** No store here, or none with a plan to sell yet. */
+  | { readonly kind: 'unavailable' }
+  /** The store could not say: Retry asks again. */
+  | { readonly kind: 'failed' }
+
+/** How long the gate waits for the store's word on a subscription before it
+ *  offers one anyway. */
+const STORE_WORD_MS = 3_000
+
+/** Whether the store holds the subscription for this singer; false without
+ *  a store, when it cannot say, or when it does not say in time. */
+async function storeHoldsSubscription(): Promise<boolean> {
+  const ask = nativeShellApi()?.karaokeSubscription?.storeSubscribed
+  if (ask === undefined) return false
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), STORE_WORD_MS)
+  })
+  try {
+    return await Promise.race([ask().catch(() => false), late])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export const KaraokeImport: Component = () => {
   let input: HTMLInputElement | undefined
   const [sheet, setSheet] = createSignal<ImportSheet | null>(null)
   const [checking, setChecking] = createSignal(false)
   const [sending, setSending] = createSignal(false)
   const [note, setNote] = createSignal<string | null>(null)
-  const [offer, setOffer] = createSignal<KaraokeOffer | null>(null)
+  const [price, setPrice] = createSignal<Price>({ kind: 'asking' })
+  const [askingStore, setAskingStore] = createSignal(false)
 
   const close = (): void => {
     setSheet(null)
     setNote(null)
   }
 
+  const waitForSongs = (): Promise<KaraokeSongs> =>
+    awaitSubscription(async () => refreshKaraokeSongs({ identify: true }))
+
+  // The latest gate opened is the one that decides, should two overlap.
+  let gates = 0
   const openGate = (songs: KaraokeSongs): void => {
     setNote(null)
-    if (songs.subscribed) setSheet({ kind: 'no-songs' })
-    else if (songsOnTheWay()) setSheet({ kind: 'subscribed' })
-    else setSheet({ kind: 'paywall' })
+    if (songs.subscribed) {
+      setSheet({ kind: 'no-songs' })
+      return
+    }
+    if (songsOnTheWay()) {
+      setSheet({ kind: 'subscribed' })
+      return
+    }
+    gates += 1
+    const gate = gates
+    setAskingStore(true)
+    void storeHoldsSubscription().then((held) => {
+      if (gate !== gates) return
+      setAskingStore(false)
+      if (!held) {
+        setSheet({ kind: 'paywall' })
+        return
+      }
+      setSheet({ kind: 'subscribed' })
+      void waitForSongs()
+    })
   }
 
-  // The paywall states the store's own price; asked for once it opens.
+  // The paywall states the store's own price, asked for once it opens, and
+  // again on Retry; the latest answer is the one that stands.
+  let asks = 0
+  const askPrice = (): void => {
+    const ask = nativeShellApi()?.karaokeSubscription?.offer
+    if (ask === undefined) {
+      setPrice({ kind: 'unavailable' })
+      return
+    }
+    asks += 1
+    const mine = asks
+    setPrice({ kind: 'asking' })
+    void ask().then(
+      (found) => {
+        if (mine !== asks) return
+        setPrice(
+          found === null
+            ? { kind: 'unavailable' }
+            : { kind: 'priced', offer: found },
+        )
+      },
+      () => {
+        if (mine === asks) setPrice({ kind: 'failed' })
+      },
+    )
+  }
   createEffect(
     on(
       () => sheet()?.kind === 'paywall',
       (paywall) => {
-        if (!paywall || offer() !== null) return
-        const ask = nativeShellApi()?.karaokeSubscription?.offer
-        void ask?.()
-          .then((found) => {
-            if (found !== null) setOffer(found)
-          })
-          .catch(() => undefined)
+        if (paywall && price().kind !== 'priced') askPrice()
       },
     ),
   )
   const planLine = (): string => {
     const month = `${karaokeSongs().perPeriod} songs a month`
-    const price = offer()?.priceText
-    return price === undefined ? month : `${month} · ${price}`
+    const now = price()
+    return now.kind === 'priced' ? `${month} · ${now.offer.priceText}` : month
   }
-  const waitForSongs = (): Promise<KaraokeSongs> =>
-    awaitSubscription(async () => refreshKaraokeSongs({ identify: true }))
+  const priceLine = (): string | null => {
+    switch (price().kind) {
+      case 'unavailable':
+        return 'Subscriptions are not available yet.'
+      case 'failed':
+        return 'The price could not be loaded. Check the connection and try again.'
+      default:
+        return null
+    }
+  }
   /** What the subscribed sheet says of the songs: here, or coming. */
   const songsArrival = (): string => {
     if (karaokeSongs().subscribed) {
@@ -362,8 +447,8 @@ export const KaraokeImport: Component = () => {
       <button
         type="button"
         class={styles.importButton}
-        disabled={checking()}
-        aria-busy={checking() ? 'true' : undefined}
+        disabled={checking() || askingStore()}
+        aria-busy={checking() || askingStore() ? 'true' : undefined}
         onClick={choose}
       >
         <span class={styles.importGlyph} aria-hidden="true">
@@ -503,15 +588,28 @@ export const KaraokeImport: Component = () => {
               <p class={styles.sheetText}>
                 {`${CLOUD_NAME}, monthly. Renews every month until you cancel. Cancel any time in Settings.`}
               </p>
+              <Show when={priceLine()}>
+                {(line) => <p class={styles.sheetNote}>{line()}</p>}
+              </Show>
               <Note />
               <div class={styles.sheetActions}>
                 <button
                   type="button"
                   class={styles.primaryButton}
+                  disabled={price().kind !== 'priced'}
                   onClick={() => void subscribe()}
                 >
                   Subscribe
                 </button>
+                <Show when={price().kind === 'failed'}>
+                  <button
+                    type="button"
+                    class={styles.secondaryButton}
+                    onClick={askPrice}
+                  >
+                    Retry
+                  </button>
+                </Show>
                 <button
                   type="button"
                   class={styles.secondaryButton}

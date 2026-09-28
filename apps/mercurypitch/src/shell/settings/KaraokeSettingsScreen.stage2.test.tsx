@@ -273,7 +273,7 @@ describe('Settings, Karaoke, in a build with Import', () => {
   })
 
   it('offers Manage subscription to a subscriber, where the store has a page for it', async () => {
-    const manage = vi.fn(async () => Promise.resolve())
+    const manage = vi.fn(async () => Promise.resolve('opened' as const))
     withStore({
       subscribe: async () => Promise.resolve('cancelled'),
       restore: async () => Promise.resolve('nothing'),
@@ -282,15 +282,33 @@ describe('Settings, Karaoke, in a build with Import', () => {
     const root = await mount()
 
     row(root, 'karaoke-manage')?.click()
+    await settle()
 
     expect(manage).toHaveBeenCalledTimes(1)
+    expect(root.querySelector('[role="status"]')).toBeNull()
+  })
+
+  it('says so when the store’s page could not be opened', async () => {
+    withStore({
+      subscribe: async () => Promise.resolve('cancelled'),
+      restore: async () => Promise.resolve('nothing'),
+      manage: async () => Promise.resolve('failed' as const),
+    })
+    const root = await mount()
+
+    row(root, 'karaoke-manage')?.click()
+    await settle()
+
+    expect(root.querySelector('[role="status"]')?.textContent).toBe(
+      'The subscription page could not be opened. Try again in a moment.',
+    )
   })
 
   it('offers no Manage subscription with no subscription, or no store page', async () => {
     withStore({
       subscribe: async () => Promise.resolve('cancelled'),
       restore: async () => Promise.resolve('nothing'),
-      manage: vi.fn(async () => Promise.resolve()),
+      manage: vi.fn(async () => Promise.resolve('opened' as const)),
     })
     resetKaraokeSongsForTests({ ...subscriber, subscribed: false })
     const unsubscribed = await mount()

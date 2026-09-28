@@ -188,6 +188,9 @@ export type KaraokeRestoreOutcome =
   | 'unavailable'
   | 'failed'
 
+/** How Manage subscription ended: the store's page opened, or it did not. */
+export type KaraokeManageOutcome = 'opened' | 'failed'
+
 /** The plan the paywall offers, as the store states it. */
 export interface KaraokeOffer {
   /** The price in the singer's own storefront, as the store writes it. */
@@ -199,10 +202,15 @@ export interface KaraokeOffer {
 export interface KaraokeSubscriptionApi {
   subscribe: () => Promise<KaraokeSubscribeOutcome>
   restore: () => Promise<KaraokeRestoreOutcome>
-  /** The month's plan at the store's own price; null without a store. */
+  /** The month's plan at the store's own price; null while the store has
+   *  none to sell, or there is no store. Rejects when the store cannot say. */
   offer?: () => Promise<KaraokeOffer | null>
   /** The store's own page for the subscription, where the store has one. */
-  manage?: () => Promise<void>
+  manage?: () => Promise<KaraokeManageOutcome>
+  /** Whether the store holds the subscription for this singer: it knows of
+   *  a purchase before the server does. False without a store, or when it
+   *  cannot say. */
+  storeSubscribed?: () => Promise<boolean>
 }
 
 /**

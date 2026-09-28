@@ -14,10 +14,12 @@
 // store whose products do not exist yet. Nothing is bought, and no identity
 // is made for a store that is not there.
 //
-// WHO BUYS. The store is told the server's own user id before a purchase or
-// a restore (logIn), because that id is what the RevenueCat webhook reads to
-// know whom to give the songs to (workers/db-worker/src/revenuecat.ts). A
-// phone the server cannot name buys nothing: the songs would go nowhere.
+// WHO BUYS. The store is told the server's own user id before a purchase, a
+// restore, its subscription page, or the question whether it holds the
+// subscription (logIn), because that id is what the RevenueCat webhook reads
+// to know whom to give the songs to (workers/db-worker/src/revenuecat.ts).
+// A phone the server cannot name buys nothing: the songs would go nowhere.
+// Signing in happens when one of those is asked for, never at app start.
 //
 // WHAT IS BOUGHT. The current offering's monthly plan: Mercury Pitch Cloud
 // (owner, S7 D2). With no such plan the store has nothing to sell yet,
@@ -26,7 +28,7 @@
 
 import type { PaywallPort, PurchaseOutcome, PurchasePlan, PurchasesPort, } from '@irchiinnuss/mobile-runtime'
 import { PurchasesFailure } from '@irchiinnuss/mobile-runtime'
-import type { KaraokeOffer, KaraokeRestoreOutcome, KaraokeSubscribeOutcome, KaraokeSubscriptionApi, } from '@/stores/native-shell-store'
+import type { KaraokeManageOutcome, KaraokeOffer, KaraokeRestoreOutcome, KaraokeSubscribeOutcome, KaraokeSubscriptionApi, } from '@/stores/native-shell-store'
 
 /**
  * The entitlement the Karaoke subscription unlocks. The db-worker grants the
@@ -101,7 +103,9 @@ export function createKaraokeSubscription(
   }
 
   /** What the paywall states: reading the store's catalogue needs nobody
-   *  named, so nothing is identified for it. */
+   *  named, so nothing is identified for it. Null while the store has no
+   *  plan to sell yet; a store that cannot say rejects, so the paywall can
+   *  ask again. */
   async function offer(): Promise<KaraokeOffer | null> {
     if (!purchases.available) return null
     try {
@@ -109,8 +113,9 @@ export function createKaraokeSubscription(
       return monthly === undefined
         ? null
         : { priceText: monthly.priceText, title: monthly.title }
-    } catch {
-      return null
+    } catch (error) {
+      if (notThereYet(error)) return null
+      throw error
     }
   }
 
@@ -127,14 +132,37 @@ export function createKaraokeSubscription(
     }
   }
 
+  /** The store's own subscription page, where a subscriber cancels, as the
+   *  server's user: never the store's anonymous id, whose restore there
+   *  could move the subscription to an id the webhook does not know. */
+  async function manage(): Promise<KaraokeManageOutcome> {
+    try {
+      if (!(await signInToStore())) return 'failed'
+      await paywall.presentCustomerCenter()
+      return 'opened'
+    } catch {
+      return 'failed'
+    }
+  }
+
+  /** Whether the store holds the subscription for the server's user. */
+  async function storeSubscribed(): Promise<boolean> {
+    if (!purchases.available) return false
+    try {
+      if (!(await signInToStore())) return false
+      const customer = await purchases.getCustomer()
+      return customer.activeEntitlementIds.includes(KARAOKE_ENTITLEMENT)
+    } catch {
+      return false
+    }
+  }
+
   return {
     subscribe,
     restore,
     offer,
-    // The store's own subscription page, where a subscriber cancels. Absent
-    // with no store, so Settings draws no row that leads nowhere.
-    ...(paywall.available
-      ? { manage: async () => paywall.presentCustomerCenter() }
-      : {}),
+    storeSubscribed,
+    // Absent with no store, so Settings draws no row that leads nowhere.
+    ...(paywall.available && purchases.available ? { manage } : {}),
   }
 }

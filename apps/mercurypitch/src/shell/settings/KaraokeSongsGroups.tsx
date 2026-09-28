@@ -76,6 +76,18 @@ export function KaraokeSongsGroups(): JSX.Element {
     return karaokeSongs().subscribed ? api?.manage : undefined
   }
 
+  const openManage = async (
+    open: NonNullable<ReturnType<typeof manage>>,
+  ): Promise<void> => {
+    setNote(null)
+    const outcome = await open().catch(() => 'failed' as const)
+    if (live && outcome === 'failed') {
+      setNote(
+        'The subscription page could not be opened. Try again in a moment.',
+      )
+    }
+  }
+
   return (
     <>
       <SettingsGroup title="Subscription">
@@ -104,7 +116,7 @@ export function KaraokeSongsGroups(): JSX.Element {
               id="karaoke-manage"
               icon={<ExternalIcon />}
               label="Manage subscription"
-              onPress={() => void open()()}
+              onPress={() => void openManage(open())}
             />
           )}
         </Show>
