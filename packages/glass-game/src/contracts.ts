@@ -18,6 +18,12 @@ export interface BoundsXZ {
   maxZ: number
 }
 
+/** One horizontal contact point in world space. */
+export interface PointXZ {
+  x: number
+  z: number
+}
+
 export interface Bounds3 extends BoundsXZ {
   minY: number
   maxY: number
@@ -129,6 +135,11 @@ export interface PlatformDefinition extends BoundsXZ {
   thickness: number
   kind: 'deck' | 'bridge' | 'catch'
   material: 'stone' | 'brass'
+  /**
+   * Certified convex support outline. Bounds remain its broad-phase envelope;
+   * landing and side contact use this exact polygon.
+   */
+  supportPolygon?: readonly PointXZ[]
   /** Runtime compound parts retain one public platform identity. */
   parentPlatformId?: string
   /** Optional renderer catalog recipe; has no effect on this solid proxy. */

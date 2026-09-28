@@ -4,11 +4,13 @@ import { CLOUDWAY_THAWING_SONG } from '@irchiinnuss/glass-game/thawing-song'
 import { preloadF0Detector, releasePreloadedDetector, } from '@irchiinnuss/pitch-engine'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import './games.css'
+import { BUILD } from '@/build-info'
 import { AppHeader } from '@/components/AppHeader'
 import { AdventureScreen } from '@/games/adventure/AdventureScreen'
 import { CreatorAudition } from '@/games/adventure/CreatorAudition'
 import { CreatorGallery } from '@/games/adventure/CreatorGallery'
 import { CreatorSongbook } from '@/games/adventure/CreatorSongbook'
+import { hasDevelopmentGalleryAccess } from '@/games/adventure/development-access'
 import { JOURNEY_CONFIG } from '@/games/glass/journey-config'
 import { JourneyPrototype } from '@/games/glass/JourneyPrototype'
 import { SONGBOOK } from '@/games/glass/levels'
@@ -325,59 +327,61 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
-        <button
-          class="game-card"
-          type="button"
-          onClick={() => setPlaying('thawing-song')}
-        >
-          <img
-            class="game-card__art"
-            src="games/merc.webp"
-            alt=""
-            width="64"
-            height="64"
-          />
-          <span class="game-card__body">
-            <span class="game-card__name">
-              The Thawing Song<span class="game-card__chip">Preview</span>
+        <Show when={hasDevelopmentGalleryAccess(BUILD.channel)}>
+          <button
+            class="game-card"
+            type="button"
+            onClick={() => setPlaying('thawing-song')}
+          >
+            <img
+              class="game-card__art"
+              src="games/merc.webp"
+              alt=""
+              width="64"
+              height="64"
+            />
+            <span class="game-card__body">
+              <span class="game-card__name">
+                The Thawing Song<span class="game-card__chip">Preview</span>
+              </span>
+              <span class="game-card__blurb">
+                Wake a frosted garden, one note at a time. Join five little
+                sparks into Merc’s song.
+              </span>
             </span>
-            <span class="game-card__blurb">
-              Wake a frosted garden, one note at a time. Join five little sparks
-              into Merc’s song.
-            </span>
-          </span>
-          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m9 5 7 7-7 7" />
-          </svg>
-        </button>
+            <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 5 7 7-7 7" />
+            </svg>
+          </button>
 
-        <CreatorPreviewCards onOpen={setPlaying} />
+          <CreatorPreviewCards onOpen={setPlaying} />
 
-        <button
-          class="game-card"
-          type="button"
-          onClick={() => setPlaying('promenade')}
-        >
-          <img
-            class="game-card__art"
-            src="games/merc.webp"
-            alt=""
-            width="64"
-            height="64"
-          />
-          <span class="game-card__body">
-            <span class="game-card__name">
-              Crystal Promenade<span class="game-card__chip">Preview</span>
+          <button
+            class="game-card"
+            type="button"
+            onClick={() => setPlaying('promenade')}
+          >
+            <img
+              class="game-card__art"
+              src="games/merc.webp"
+              alt=""
+              width="64"
+              height="64"
+            />
+            <span class="game-card__body">
+              <span class="game-card__name">
+                Crystal Promenade<span class="game-card__chip">Preview</span>
+              </span>
+              <span class="game-card__blurb">
+                Time your jumps across crystal platforms. Sing on the resting
+                islands to open the way home.
+              </span>
             </span>
-            <span class="game-card__blurb">
-              Time your jumps across crystal platforms. Sing on the resting
-              islands to open the way home.
-            </span>
-          </span>
-          <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m9 5 7 7-7 7" />
-          </svg>
-        </button>
+            <svg class="game-card__go" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 5 7 7-7 7" />
+            </svg>
+          </button>
+        </Show>
 
         <button
           class="game-card"

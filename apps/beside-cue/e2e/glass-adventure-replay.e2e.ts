@@ -104,23 +104,77 @@ test('an input-driven exit awards the selected tier once and presents separate p
   await expect(page.getByTestId('portrait-summary')).toContainText(
     level.rewards!.portrait!.title,
   )
-  for (const width of [320, 1024]) {
-    await page.setViewportSize({ width, height: 820 })
-    const summary = page.getByRole('dialog', {
-      name: /sing|beautiful|museum|resonat/i,
-    })
+  await expect(
+    page.getByRole('button', { name: /Earn [23] stars:/ }),
+  ).toHaveCount(0)
+  const result = page.getByTestId('completion-results')
+  for (const viewport of [
+    { label: 'small-phone', width: 320, height: 740 },
+    { label: 'phone', width: 390, height: 844 },
+    { label: 'tablet', width: 820, height: 1180 },
+    { label: 'desktop', width: 1280, height: 800 },
+  ]) {
+    await page.setViewportSize(viewport)
     await page.screenshot({
-      path: testInfo.outputPath(`replay-complete-${width}.png`),
+      path: testInfo.outputPath(`results-${viewport.label}.png`),
     })
-    expect(
-      await summary.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true)
+    const layout = await result.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      controls: [...element.querySelectorAll('button, summary')]
+        .map((control) => control.getBoundingClientRect())
+        .filter((bounds) => bounds.width > 0 && bounds.height > 0)
+        .map((bounds) => bounds.height),
+    }))
+    const scoreLayout = await result.evaluate((element) => {
+      const badge = element.querySelector('[data-testid="discovery-summary"]')!
+      const portrait = element.querySelector(
+        '[data-testid="portrait-summary"]',
+      )!
+      return {
+        badgeRight: badge.getBoundingClientRect().right,
+        portraitLeft: portrait.getBoundingClientRect().left,
+        badgeFontSize: getComputedStyle(badge).fontSize,
+      }
+    })
+    expect(scoreLayout.badgeRight).toBeLessThanOrEqual(scoreLayout.portraitLeft)
+    expect(scoreLayout.badgeFontSize).toBe('12px')
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth)
+    expect(layout.controls.every((height) => height >= 44)).toBe(true)
+    if (viewport.width <= 390)
+      expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight)
   }
+  const accuracy = page.getByTestId('singing-quality-summary')
+  await accuracy.focus()
+  await page.keyboard.press('Enter')
+  await expect(
+    page.getByRole('region', { name: 'Accuracy explanation' }),
+  ).toBeVisible()
+  await expect(accuracy).toHaveCSS('background-color', 'rgb(224, 238, 229)')
+  await accuracy.click()
+  await page.getByTestId('discovery-summary').tap()
+  await expect(
+    page.getByRole('region', { name: 'Discovery explanation' }),
+  ).toContainText('one-time discovery tokens')
   await page
-    .getByRole('button', { name: 'Leave with a little sparkle' })
+    .getByRole('button', {
+      name: `View ${level.rewards!.portrait!.title} portrait`,
+    })
     .click()
+  await expect(page.getByText('From the museum collection')).toBeVisible()
+  await page.getByRole('button', { name: 'Back to the gallery' }).click()
+  await page.getByLabel('More result actions').click()
+  await expect(
+    page.getByRole('button', { name: 'Replay same difficulty' }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', {
+      name: `Next level: ${MUSEUM_CAMPAIGN[2]!.level.title}`,
+    }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Back to museum' }).click()
   const saved = await page.evaluate(
     (id) =>
       JSON.parse(
@@ -132,6 +186,121 @@ test('an input-driven exit awards the selected tier once and presents separate p
   expect(saved.clears[0].tier).toBe(3)
   await page.getByRole('button', { name: 'Open museum collection' }).click()
   await expect(page.getByLabel('3 of 3 gallery challenge stars')).toBeVisible()
+})
+
+test('results advance to the next unearned difficulty with a fresh exact profile @smoke', async ({
+  page,
+}, testInfo) => {
+  const level = MUSEUM_CAMPAIGN[1]!.level
+  const profiles = replayProfilesForLevel(level).map((profile) =>
+    resolveReplayProfile(level, profile),
+  )
+  const medium = profiles[1]!
+  const completeIds = level.breakables
+    .filter((item) => !item.optional)
+    .map((item) => item.id)
+  const legacy = {
+    ...readProgress(level, null),
+    completedBreakableIds: completeIds,
+    finished: true,
+  }
+  const checkpoint = level.checkpoints.find((item) =>
+    item.id.endsWith('/checkpoint/panorama'),
+  )!
+  let replay = beginReplayAttempt(
+    readReplayProgress(level, profiles, null, legacy),
+    medium,
+    true,
+  )
+  replay = saveReplayAttempt(
+    replay,
+    medium,
+    {
+      ...readProgress(level, null),
+      checkpointId: checkpoint.id,
+      completedBreakableIds: completeIds,
+      finished: false,
+    },
+    100,
+  )
+  await page.addInitScript(
+    ({ legacy, replay }) => {
+      for (const method of [
+        'clear',
+        'drawArrays',
+        'drawArraysInstanced',
+        'drawElements',
+        'drawElementsInstanced',
+      ])
+        Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+          configurable: true,
+          value: () => undefined,
+        })
+      localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+      localStorage.setItem(
+        `beside-cue:glass-adventure:progress:${legacy.levelId}`,
+        JSON.stringify(legacy),
+      )
+      localStorage.setItem(
+        `beside-cue:glass-adventure:replays:v1:${legacy.levelId}`,
+        JSON.stringify(replay),
+      )
+    },
+    { legacy, replay },
+  )
+  await page.goto('/glass-game/?campaign=1')
+  await page
+    .getByRole('button', { name: 'Replay Glassworks Journey', exact: true })
+    .click()
+  await page
+    .getByRole('button', { name: 'Two-star challenge', exact: true })
+    .click()
+  await page
+    .getByRole('button', { name: 'Continue this challenge', exact: true })
+    .click()
+  const game = page.getByTestId('glass-adventure')
+  await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 60_000 })
+  await page.keyboard.down('KeyW')
+  try {
+    await expect(
+      page.getByRole('button', {
+        name: 'Earn 3 stars: Three-star challenge',
+      }),
+    ).toBeVisible({ timeout: 20_000 })
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+  await expect(page.getByTestId('level-star-summary')).toContainText(
+    '2 stars earned',
+  )
+  const result = page.getByTestId('completion-results')
+  const compact = await result.evaluate((element) => ({
+    width: element.clientWidth,
+    contentWidth: element.scrollWidth,
+    height: element.clientHeight,
+    contentHeight: element.scrollHeight,
+  }))
+  expect(compact.contentWidth).toBeLessThanOrEqual(compact.width)
+  expect(compact.contentHeight).toBeLessThanOrEqual(compact.height)
+  await page.screenshot({
+    path: testInfo.outputPath('results-two-actions-320.png'),
+  })
+  await page
+    .getByRole('button', { name: 'Earn 3 stars: Three-star challenge' })
+    .click()
+  await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 60_000 })
+  await expect(game).toContainText('Three-star challenge')
+  await expect(game).toHaveAttribute('data-completed', '0')
+  const saved = await page.evaluate(
+    (id) =>
+      JSON.parse(
+        localStorage.getItem(`beside-cue:glass-adventure:replays:v1:${id}`)!,
+      ),
+    level.id,
+  )
+  expect(saved.clears).toHaveLength(1)
+  expect(saved.clears[0].tier).toBe(2)
+  expect(saved.attempts.at(-1).identity.profileId).toBe('three-star')
 })
 
 test('replay goals fit phone/tablet/desktop and resume only the selected tier @smoke', async ({

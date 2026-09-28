@@ -312,11 +312,11 @@ it('animates the actual sing morph from narration at equal 30/60 fps poses witho
   try {
     for (let frame = 0; frame < 30; frame++) {
       thirtySnapshot.elapsedSeconds += 1 / 30
-      thirty.update(thirtySnapshot, 1 / 30, false, { narrationLevel: 1 })
+      thirty.update(thirtySnapshot, 1 / 30, false, { narrationLevel: 0.25 })
     }
     for (let frame = 0; frame < 60; frame++) {
       sixtySnapshot.elapsedSeconds += 1 / 60
-      sixty.update(sixtySnapshot, 1 / 60, false, { narrationLevel: 1 })
+      sixty.update(sixtySnapshot, 1 / 60, false, { narrationLevel: 0.25 })
       silentSnapshot.elapsedSeconds += 1 / 60
       silent.update(silentSnapshot, 1 / 60, false, { narrationLevel: 0 })
     }
@@ -326,10 +326,10 @@ it('animates the actual sing morph from narration at equal 30/60 fps poses witho
       6,
     )
     expect(sixtyFace.morphTargetInfluences![indices.sing!]).toBeGreaterThan(
-      0.68,
+      0.245,
     )
     expect(sixtyFace.morphTargetInfluences![indices.sing!]).toBeLessThanOrEqual(
-      0.72,
+      0.25,
     )
     for (const name of ['blink', 'wide'] as const)
       expect(sixtyFace.morphTargetInfluences![indices[name]!]).toBeCloseTo(

@@ -39,6 +39,10 @@ function transformPlatform(
   return {
     ...platform,
     ...transformBoundsXZ(platform, placement),
+    supportPolygon: platform.supportPolygon?.map((point) => {
+      const transformed = transformPoint({ ...point, y: 0 }, placement)
+      return { x: transformed.x, z: transformed.z }
+    }),
     ...(renderQuarterTurns === undefined ? {} : { renderQuarterTurns }),
     id: runtimeRoomId(source, placement.id, 'platform', platform.id),
     top: platform.top + placement.translate.y,

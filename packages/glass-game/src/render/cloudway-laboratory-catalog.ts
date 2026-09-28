@@ -4,6 +4,7 @@ export const CLOUDWAY_LAB_PLATFORM_RENDER_IDS = {
   pearlRest: 'cloudway-lab-pearl-rest',
   scroll: 'cloudway-lab-gilt-scroll',
   roseCrackle: 'cloudway-lab-rose-crackle',
+  roseHexCrumble: 'cloudway-lab-rose-hex-crumble',
   amethystCrackle: 'cloudway-lab-amethyst-crackle',
   frostLily: 'cloudway-lab-frost-lily',
   auroraGlide: 'cloudway-lab-aurora-glide',
@@ -16,6 +17,9 @@ export const CLOUDWAY_LAB_BUNDLE_IDS = {
   pearlRest: 'cloudway-lab-pearl-marble-long-v1',
   scroll: 'gilt-scroll-bridge-runtime-v1',
   roseCrackle: 'cloudway-lab-rose-crackle-v1',
+  roseHexCrumble: 'cloudway-lab-rose-hex-crumble-v3',
+  roseHexCrumbleDesktop: 'cloudway-lab-rose-hex-crumble-desktop-v3',
+  roseHexCrumbleMobile: 'cloudway-lab-rose-hex-crumble-mobile-v3',
   amethystCrackle: 'cloudway-lab-amethyst-crackle-v1',
   frostLily: 'cloudway-lab-frost-lily-step-v1',
   auroraGlide: 'cloudway-lab-aurora-glide-raft-v1',
@@ -25,6 +29,7 @@ export const CLOUDWAY_LAB_ROOT_NAMES = {
   pearlRest: 'CloudwayLab_PearlMarbleLong',
   scroll: 'Cloudway_GiltScrollBridge_RuntimeV1',
   roseCrackle: 'CloudwayLab_RoseQuartzCrackleFast',
+  roseHexCrumble: 'Cloudway_RoseCrystalHexCrumble_V3',
   amethystCrackle: 'CloudwayLab_AmethystCrackleSlow',
   frostLily: 'CloudwayLab_FrostLilyStep',
   auroraGlide: 'CloudwayLab_AuroraGlideRaft',
@@ -55,6 +60,16 @@ export const CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS = {
     CloudwayLab_RoseQuartz__corner_provider_pbr: 'opaque',
     CloudwayLab_RoseQuartz__ivory: 'opaque',
   },
+  roseHexCrumble: {
+    RoseHex_DetailSurface_Desktop: 'glass',
+    RoseHex_ClosedVolume_Desktop: 'glass',
+    RoseHex_Hardware_Desktop: 'opaque',
+    RoseHex_ClosedShard_Desktop: 'glass',
+    RoseHex_DetailSurface_Mobile: 'glass',
+    RoseHex_ClosedVolume_Mobile: 'glass',
+    RoseHex_Hardware_Mobile: 'opaque',
+    RoseHex_ClosedShard_Mobile: 'glass',
+  },
   amethystCrackle: {
     CloudwayLab_Amethyst__glass: 'glass',
     CloudwayLab_Amethyst__framework: 'opaque',
@@ -64,7 +79,7 @@ export const CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS = {
   },
 } as const satisfies Readonly<
   Record<
-    'roseCrackle' | 'amethystCrackle',
+    'roseCrackle' | 'roseHexCrumble' | 'amethystCrackle',
     Readonly<Record<string, 'glass' | 'opaque'>>
   >
 >

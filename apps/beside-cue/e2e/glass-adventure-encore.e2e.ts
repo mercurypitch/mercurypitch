@@ -150,7 +150,7 @@ test('optional encore records only with consent, preserves completion and fits m
   )
   expect(await page.evaluate(() => window.encoreFixture.recordings)).toBe(0)
   await reviewCompletedVisit(page, level.title)
-  await page.getByRole('button', { name: 'Sing an optional encore' }).click()
+  await page.getByRole('button', { name: 'Encore', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Leave a little light.' })
   await expect(dialog).toBeVisible()
   const consent = dialog.getByRole('checkbox', {
@@ -174,8 +174,14 @@ test('optional encore records only with consent, preserves completion and fits m
   await dialog.evaluate((element) => {
     element.scrollTop = 0
   })
+  const ribbon = dialog.getByRole('img', { name: /Melody ribbon/ })
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
+    const ribbonBox = await ribbon.boundingBox()
+    if (ribbonBox === null) throw new Error('Missing encore melody ribbon.')
+    expect(ribbonBox.width).toBeGreaterThan(200)
+    expect(ribbonBox.height).toBeGreaterThan(60)
+    expect(ribbonBox.width / ribbonBox.height).toBeCloseTo(720 / 220, 1)
     await page.screenshot({ path: testInfo.outputPath(`encore-${width}.png`) })
     expect(
       await dialog.evaluate(
@@ -236,6 +242,18 @@ test('optional encore records only with consent, preserves completion and fits m
     return true
   })
   await page.evaluate(() => window.encoreFixture.sing())
+  await expect
+    .poll(async () =>
+      Number(
+        await dialog
+          .getByRole('progressbar', { name: 'Melody progress' })
+          .getAttribute('aria-valuenow'),
+      ),
+    )
+    .toBeGreaterThan(5)
+  await page.screenshot({
+    path: testInfo.outputPath('encore-live-progress-phone.png'),
+  })
   try {
     await expect(practice).toHaveAttribute('data-mode', 'complete', {
       timeout: 15_000,
@@ -299,11 +317,11 @@ test('optional encore records only with consent, preserves completion and fits m
   await dialog.getByRole('button', { name: 'Back to completion card' }).click()
   await expect(dialog).not.toBeVisible()
   await expect(
-    page.getByRole('button', { name: 'Sing an optional encore' }),
+    page.getByRole('button', { name: 'Encore', exact: true }),
   ).toBeFocused()
   await page.reload()
   await reviewCompletedVisit(page, level.title)
-  await page.getByRole('button', { name: 'Sing an optional encore' }).click()
+  await page.getByRole('button', { name: 'Encore', exact: true }).click()
   await expect(
     dialog.getByRole('region', { name: 'Saved musical memory' }),
   ).toBeVisible()

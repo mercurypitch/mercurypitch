@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "date": "2026-09-28",
+  "assets": [
+    {
+      "id": "singing",
+      "generation": "ChatGPT image generation tool",
+      "prompt": "Use case: stylized-concept. Asset type: a single premium game UI medal, usable at 48\u201372 pixels, for MercuryPitch / BesideCue Glassworks, a whimsical floating marble-and-glass museum vocal-learning game. Generate one centered front-facing circular singing medal on a genuinely transparent background, isolated with generous clean transparent margin. The medal is a beautiful small jewel: antique warm champagne-gold thin raised rim, translucent celadon/sea-glass enamel center, one bold sculpted golden musical quaver, tiny restrained pearl inset at the top. A few art nouveau curves engraved into the rim, but keep the central musical note very legible at tiny size. Polished handcrafted museum artifact with delicate realistic bevels and restrained highlights, no glitter cloud or external glow. Orthographic front view, symmetrical silhouette, crisp alpha edge. Palette deep teal, pale celadon, champagne gold; compatible with an ivory results card. No text, letters, grade, star count, ribbon tails, scenery, mockup, watermark, extra medals or drop shadow outside the object.",
+      "master": "singing-medal-master.png",
+      "masterSha256": "86dcab9607e086db4ff520cc6962bbb8437824bda1d9acd425c999dd8ddaa81e",
+      "runtime": "apps/beside-cue/public/games/results-ui-v1/singing-medal.webp",
+      "runtimeSha256": "c8d72da27b916f68aa993a612e275b97eb585208af38d8233d4a9cdba135fa04",
+      "runtimeBytes": 9144,
+      "derivative": "ImageMagick resize 192x192, strip metadata, WebP quality 88, alpha retained",
+      "purpose": "Decorative alongside accessible text, not an encoded score."
+    },
+    {
+      "id": "discovery",
+      "generation": "ChatGPT image generation tool",
+      "prompt": "Generate one premium collectible discovery medal for the Glassworks floating museum game. A SINGLE circular front-facing medal isolated on genuinely transparent background with generous clean margin. Antique champagne-gold thin raised rim, pale celadon translucent sea-glass enamel center. Central bold sculpted faceted champagne crystal with a tiny restrained gold four-point sparkle, legible at 48\u201372 pixels; a pearl inset at top and delicate art nouveau engraved rim. Same look as a handcrafted museum treasure. Orthographic front view, perfectly round, symmetrical silhouette, crisp alpha edge, delicate realistic bevel and highlights, deep teal/celadon/gold palette to fit an ivory result card. No text, letters, grade or star count. No ribbon tails, extra medals, scenery, watermark, glitter cloud or external drop shadow. The crystal must read as an exploration discovery, not an award for singing accuracy.",
+      "master": "discovery-medal-master.png",
+      "masterSha256": "84fa7b2eeb73c47d0959c59f9835034e967949a55d64bc359d5efa4e4919a8a6",
+      "runtime": "apps/beside-cue/public/games/results-ui-v1/discovery-medal.webp",
+      "runtimeSha256": "5c29c0b78d1997482d36f8872ae2a45272f0d0371a31a02f7bf06dba77e05138",
+      "runtimeBytes": 14942,
+      "derivative": "ImageMagick resize 192x192, strip metadata, WebP quality 88, alpha retained",
+      "purpose": "Decorative alongside accessible text, not an encoded score."
+    }
+  ]
+}

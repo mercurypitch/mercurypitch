@@ -98,5 +98,17 @@ describe('Glassworks asset contract', () => {
     expect(glassGameAssetPath('living-crystal-platform-v2')).toBe(
       'crystal-interiors-v2/living-crystal-platform-v2.glb',
     )
+    expect(glassGameAssetPath('cloudway-lab-rose-hex-crumble-mobile-v3')).toBe(
+      'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb',
+    )
+    expect(glassGameAssetPath('cloudway-lab-frost-gold-arch-desktop-v1')).toBe(
+      'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb',
+    )
+    expect(glassGameAssetPath('results-singing-medal-v1')).toBe(
+      'results-ui-v1/singing-medal.webp',
+    )
+    expect(glassGameAssetPath('results-discovery-medal-v1')).toBe(
+      'results-ui-v1/discovery-medal.webp',
+    )
   })
 })

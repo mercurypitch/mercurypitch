@@ -51,8 +51,8 @@ it('smooths a bounded speaking mouth equally at 30 and 60 fps without touching b
 
   expect(thirty.face.morphTargetInfluences![0]).toBe(0.22)
   expect(thirty.face.morphTargetInfluences![1]).toBe(0.31)
-  expect(thirty.face.morphTargetInfluences![2]).toBeGreaterThan(0.68)
-  expect(thirty.face.morphTargetInfluences![2]).toBeLessThanOrEqual(0.72)
+  expect(thirty.face.morphTargetInfluences![2]).toBeGreaterThan(0.78)
+  expect(thirty.face.morphTargetInfluences![2]).toBeLessThanOrEqual(0.8)
   expect(thirty.face.morphTargetInfluences![2]).toBeCloseTo(
     sixty.face.morphTargetInfluences![2]!,
     7,
@@ -65,6 +65,22 @@ it('smooths a bounded speaking mouth equally at 30 and 60 fps without touching b
     7,
   )
   expect(thirty.face.morphTargetInfluences![2]).toBeCloseTo(0.14, 2)
+})
+
+it('lifts ordinary narration energy while reserving the full mouth pose for louder syllables', () => {
+  const ordinary = fixture()
+  const louder = fixture()
+  const firstSyllable = fixture()
+
+  advance(ordinary, 60, 1 / 60, 0.25)
+  advance(louder, 60, 1 / 60, 0.5)
+  advance(firstSyllable, 2, 1 / 60, 0.5)
+
+  expect(ordinary.face.morphTargetInfluences![2]).toBeGreaterThan(0.245)
+  expect(ordinary.face.morphTargetInfluences![2]).toBeLessThanOrEqual(0.25)
+  expect(louder.face.morphTargetInfluences![2]).toBeGreaterThan(0.495)
+  expect(louder.face.morphTargetInfluences![2]).toBeLessThanOrEqual(0.5)
+  expect(firstSyllable.face.morphTargetInfluences![2]).toBeGreaterThan(0.25)
 })
 
 it('adds the same long-cadence attentive pose at 30 and 60 fps and restores the authored mixer result', () => {

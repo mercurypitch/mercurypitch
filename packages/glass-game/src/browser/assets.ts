@@ -80,6 +80,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb',
   'cloudway-lab-rose-crackle-v1':
     'cloudway-laboratory-v1/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb',
+  'cloudway-lab-rose-hex-crumble-desktop-v3':
+    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb',
+  'cloudway-lab-rose-hex-crumble-mobile-v3':
+    'cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb',
   'cloudway-lab-amethyst-crackle-v1':
     'cloudway-laboratory-v1/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb',
   'cloudway-lab-frost-lily-step-v1':
@@ -88,6 +92,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/aurora-glide-raft/aurora-glide-raft-runtime-v2.glb',
   'cloudway-lab-frosted-scroll-wall-v1':
     'cloudway-laboratory-v1/frosted-scroll-wall/frosted-scroll-wall-runtime-v1.glb',
+  'cloudway-lab-frost-gold-arch-desktop-v1':
+    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb',
+  'cloudway-lab-frost-gold-arch-mobile-v1':
+    'cloudway-laboratory-v1/optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb',
   'pearl-ribbon-lantern-v1':
     'cloudway-laboratory-v1/optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb',
   'cloudway-lab-pearl-quarter-turn-a-desktop-v1':
@@ -96,6 +104,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb',
   'living-crystal-platform-v2':
     'crystal-interiors-v2/living-crystal-platform-v2.glb',
+  'results-singing-medal-v1': 'results-ui-v1/singing-medal.webp',
+  'results-discovery-medal-v1': 'results-ui-v1/discovery-medal.webp',
   ...Object.fromEntries(
     MERC_SONGBOOK_ASSETS.map((asset) => [asset.id, asset.path]),
   ),

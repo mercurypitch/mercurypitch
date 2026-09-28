@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "assetId": "rose-crystal-hex-crumble-v3",
+  "status": "runtime integration candidate; actual-game capture pending",
+  "rootNode": "Cloudway_RoseCrystalHexCrumble_V3",
+  "roles": {
+    "intact": "rose_hex_intact",
+    "persistent": "rose_hex_persistent_hardware",
+    "shardPrefix": "rose_hex_shard_",
+    "shardCount": 24,
+    "contact": "rose_hex_contact",
+    "groundAnchor": "rose_hex_ground_anchor"
+  },
+  "support": {
+    "kind": "convex-polygon",
+    "coordinates": "metres; glTF +Y up; local X/Z",
+    "topY": 0,
+    "thickness": 0.47975290078992844,
+    "polygonXZ": [
+      [-0.9845005, 0],
+      [-0.4922505, 0.869],
+      [0.4922505, 0.869],
+      [0.9845005, 0],
+      [0.4922505, -0.869],
+      [-0.4922505, -0.869]
+    ],
+    "aabbCornersSupported": false,
+    "runtimeRestriction": "static or crackle behavior only; scroll and glide are rejected"
+  },
+  "materials": {
+    "intactCallsPerPass": 3,
+    "fracturedCallsPerPass": 25,
+    "storedPrimitives": 28,
+    "intactVolume": "closed outward-wound front-sided KHR volume",
+    "shards": "24 closed outward-wound front-sided pieces"
+  },
+  "runtimes": [
+    {
+      "tier": "desktop",
+      "bundle": "cloudway-lab-rose-hex-crumble-desktop-v3",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
+      "bytes": 6296776,
+      "sha256": "6fb888df6a94cd0f7a1fbd69915b16d0d695acab9aaf6f20f63520a90bba69c1",
+      "triangles": 84213,
+      "storedPrimitives": 28,
+      "actualRendererCalls": { "intact": 3, "fractured": 25 },
+      "referencedImages": 3,
+      "decodedTextureMipBytes": 50331648
+    },
+    {
+      "tier": "mobile",
+      "bundle": "cloudway-lab-rose-hex-crumble-mobile-v3",
+      "file": "apps/beside-cue/public/games/cloudway-laboratory-v1/optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
+      "bytes": 2025056,
+      "sha256": "9a35a2ede553ea11f4d48e056973e6eb8c33349c528b95ad63d38fb61932bc2f",
+      "triangles": 53358,
+      "storedPrimitives": 28,
+      "actualRendererCalls": { "intact": 3, "fractured": 25 },
+      "referencedImages": 3,
+      "decodedTextureMipBytes": 12582912
+    }
+  ],
+  "source": {
+    "productionScript": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/rose-crystal-hex-crumble/production/author_rose_hex_v3.py",
+      "bytes": 24198,
+      "sha256": "18c8f4d6332304a5753a2bd8434cd197fd3f9355d2fae3bcbe8e81447af04570"
+    },
+    "fullReceipt": {
+      "file": "<creative-archive>/glass-adventure/modular-kit-v1/finishing/rose-crystal-hex-crumble/production-receipt-v3.json",
+      "bytes": 23518,
+      "sha256": "e840297752716f2ee41119ce3ae0e5d82f0b359c95274d1c3af78fc2e38ed9dd"
+    },
+    "policy": "v1, v2, dense donors, maps, packed masters and prior proofs remain unchanged in the creative archive"
+  }
+}

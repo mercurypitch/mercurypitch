@@ -2,8 +2,9 @@
 
 import type { Mesh, Object3D } from 'three'
 import { Matrix4 } from 'three'
-import type { PlatformDefinition } from '../contracts'
+import type { PlatformDefinition, PointXZ } from '../contracts'
 import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
+import { convexPolygonError, polygonBounds } from '../core/convex-polygon.ts'
 
 function check(condition: unknown, detail: string): asserts condition {
   if (condition !== true) throw new Error(`Cloudway crackle donor: ${detail}`)
@@ -48,6 +49,39 @@ function names(value: unknown): string[] {
     )
     return name
   })
+}
+
+function polygon(value: unknown): readonly PointXZ[] {
+  check(Array.isArray(value), 'support polygon must be an array.')
+  const points = value.map((entry) => {
+    check(
+      Array.isArray(entry) &&
+        entry.length === 2 &&
+        entry.every(
+          (coordinate) =>
+            typeof coordinate === 'number' && Number.isFinite(coordinate),
+        ),
+      'support polygon points must contain two finite coordinates.',
+    )
+    return { x: entry[0] as number, z: entry[1] as number }
+  })
+  check(
+    convexPolygonError(points) === undefined,
+    'support polygon must be convex.',
+  )
+  return points
+}
+
+function rotatedPoint(
+  point: PointXZ,
+  turns: number,
+  centerX: number,
+  centerZ: number,
+): PointXZ {
+  if (turns === 0) return { x: centerX + point.x, z: centerZ + point.z }
+  if (turns === 1) return { x: centerX + point.z, z: centerZ - point.x }
+  if (turns === 2) return { x: centerX - point.x, z: centerZ - point.z }
+  return { x: centerX - point.z, z: centerZ + point.x }
 }
 
 function role(source: Object3D, name: unknown): Object3D {
@@ -96,17 +130,37 @@ export function validateCloudwayCrackleDonor(
     support.state === 'intact' && support.topY === 0,
     'support must describe the intact top datum.',
   )
-  const width = positive(support.width),
-    depth = positive(support.depth)
   const collider = extra(source, 'collider_json')
   const height = positive(collider.height)
-  check(
-    collider.shape === 'box' &&
-      collider.topY === 0 &&
-      near(collider.width, width) &&
-      near(collider.depth, depth),
-    'collider must match certified support.',
-  )
+  const polygonContact = support.kind === 'convex-polygon'
+  const supportPolygon = polygonContact ? polygon(support.points) : undefined
+  const bounds =
+    supportPolygon === undefined ? undefined : polygonBounds(supportPolygon)
+  const width =
+    bounds === undefined ? positive(support.width) : bounds.maxX - bounds.minX
+  const depth =
+    bounds === undefined ? positive(support.depth) : bounds.maxZ - bounds.minZ
+  if (supportPolygon === undefined)
+    check(
+      collider.shape === 'box' &&
+        collider.topY === 0 &&
+        near(collider.width, width) &&
+        near(collider.depth, depth),
+      'collider must match certified support.',
+    )
+  else {
+    const colliderPolygon = polygon(collider.points)
+    check(
+      collider.shape === 'convex-polygon' &&
+        collider.topY === 0 &&
+        colliderPolygon.length === supportPolygon.length &&
+        colliderPolygon.every((point, index) => {
+          const expected = supportPolygon[index]!
+          return near(point.x, expected.x) && near(point.z, expected.z)
+        }),
+      'collider polygon must match certified support.',
+    )
+  }
   check(
     Array.isArray(collider.center) &&
       collider.center.length === 3 &&
@@ -120,6 +174,8 @@ export function validateCloudwayCrackleDonor(
     PLATFORM_RENDER_QUARTER_TURNS.includes(turns),
     'unsupported quarter turns.',
   )
+  const platformCenterX = (platform.minX + platform.maxX) / 2
+  const platformCenterZ = (platform.minZ + platform.maxZ) / 2
   check(
     near(platform.maxX - platform.minX, turns % 2 ? depth : width) &&
       near(platform.maxZ - platform.minZ, turns % 2 ? width : depth) &&
@@ -133,6 +189,29 @@ export function validateCloudwayCrackleDonor(
       ].every(Number.isFinite),
     'platform bounds must match certified contact without stretching.',
   )
+  if (supportPolygon !== undefined) {
+    check(
+      platform.supportPolygon !== undefined &&
+        platform.supportPolygon.length === supportPolygon.length &&
+        supportPolygon.every((point) => {
+          const world = rotatedPoint(
+            point,
+            turns,
+            platformCenterX,
+            platformCenterZ,
+          )
+          return platform.supportPolygon!.some(
+            (candidate) =>
+              near(candidate.x, world.x) && near(candidate.z, world.z),
+          )
+        }),
+      'platform polygon must match certified contact at its cardinal turn.',
+    )
+  } else
+    check(
+      platform.supportPolygon === undefined,
+      'box donor cannot use a polygon platform.',
+    )
   const motion = record(metadata.motion)
   check(motion.kind === 'crackle', 'motion must be crackle.')
   const roles = record(motion.roles)
@@ -209,5 +288,6 @@ export function validateCloudwayCrackleDonor(
     width,
     depth,
     height,
+    supportPolygon,
   }
 }

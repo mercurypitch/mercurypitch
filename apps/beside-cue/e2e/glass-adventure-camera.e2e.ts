@@ -102,6 +102,7 @@ async function installCameraVoice(page: Page): Promise<void> {
       })
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
     localStorage.setItem(`${prefix}comfortable-note`, '57')
     localStorage.setItem(
       `${prefix}progress:glassworks`,

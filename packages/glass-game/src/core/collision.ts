@@ -1,6 +1,7 @@
 // Flat-course collision — swept stable body against floor boxes and round solid props.
 
 import type { CourseSolid, IntentionalGapDefinition, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
+import { circleInsideConvexPolygon, circleOverlapsConvexPolygon, pointInConvexPolygon, separateCircleFromConvexPolygon, sweepCircleIntoConvexPolygon, } from './convex-polygon.ts'
 
 export interface BodyShape {
   radius: number
@@ -80,6 +81,7 @@ function bordersBridgedIntentionalGap(
   solid: PlatformDefinition,
   gaps: readonly IntentionalGapDefinition[],
 ): boolean {
+  if (solid.supportPolygon !== undefined) return false
   return gaps.some((gap) => {
     if (
       Math.abs(gap.top - solid.top) > 0.02 ||
@@ -129,6 +131,18 @@ function recoverSideOverlap(
     bordersBridgedIntentionalGap(next, shape, solid, intentionalGaps)
   )
     return
+  if (solid.kind !== 'prop' && solid.supportPolygon !== undefined) {
+    const separated = separateCircleFromConvexPolygon(
+      next,
+      shape.radius,
+      solid.supportPolygon,
+    )
+    if (separated !== undefined) {
+      next.x = separated.x
+      next.z = separated.z
+    }
+    return
+  }
   if (isRound(solid)) {
     const radius = sideRadius(solid, next.y, shape.height) + shape.radius
     const dx = next.x - solid.x,
@@ -171,6 +185,8 @@ function footprint(
   p: CourseSolid,
   underside: boolean,
 ): boolean {
+  if (p.kind !== 'prop' && p.supportPolygon !== undefined)
+    return circleOverlapsConvexPolygon(position, shape.radius, p.supportPolygon)
   if (isRound(p))
     return (
       Math.hypot(position.x - p.x, position.z - p.z) <
@@ -197,6 +213,8 @@ function supportsFeet(position: Vec3, p: CourseSolid): boolean {
   // Use the foot centre for floors; the full body still collides with solid sides.
   if (isRound(p))
     return Math.hypot(position.x - p.x, position.z - p.z) <= p.radiusTop
+  if (p.kind !== 'prop' && p.supportPolygon !== undefined)
+    return pointInConvexPolygon(position, p.supportPolygon)
   return (
     position.x >= p.minX &&
     position.x <= p.maxX &&
@@ -318,10 +336,12 @@ export function containsBody(
 ): boolean {
   return (
     Math.abs(position.y - p.top) < 0.02 &&
-    position.x - shape.radius >= p.minX &&
-    position.x + shape.radius <= p.maxX &&
-    position.z - shape.radius >= p.minZ &&
-    position.z + shape.radius <= p.maxZ
+    (p.supportPolygon === undefined
+      ? position.x - shape.radius >= p.minX &&
+        position.x + shape.radius <= p.maxX &&
+        position.z - shape.radius >= p.minZ &&
+        position.z + shape.radius <= p.maxZ
+      : circleInsideConvexPolygon(position, shape.radius, p.supportPolygon))
   )
 }
 
@@ -462,6 +482,18 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
         if (!overlap(next.y, next.y + shape.height, p.top - p.thickness, p.top))
           continue
         if (isConnectedWalkableStep(position, shape, p, platforms)) continue
+        if (p.kind !== 'prop' && p.supportPolygon !== undefined) {
+          const target = { ...next, [axis]: end }
+          const contactTime = sweepCircleIntoConvexPolygon(
+            next,
+            target,
+            shape.radius,
+            p.supportPolygon,
+          )
+          if (contactTime !== undefined)
+            end = next[axis] + (target[axis] - next[axis]) * contactTime
+          continue
+        }
         let low: number
         let high: number
         if (isRound(p)) {

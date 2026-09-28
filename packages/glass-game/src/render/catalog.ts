@@ -2,6 +2,7 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import { FROST_GOLD_ARCH_BUNDLE_IDS, FROST_GOLD_ARCH_NODES, FROST_GOLD_ARCH_PANE, } from '../content/frost-gold-arch-profile'
 import { FROST_WALL_BUNDLE, FROST_WALL_PANE, } from '../content/frost-wall-profile'
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_STAGING_RENDER_ID, } from '../content/living-crystal-profile'
 import { PEARL_QUARTER_TURN_BUNDLE_IDS, PEARL_QUARTER_TURN_DOCK_RENDER_ID, PEARL_QUARTER_TURN_RENDER_ID, } from '../content/pearl-quarter-turn-profile'
@@ -89,6 +90,26 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     tint: 0xbdeeff,
     roughness: 0.16,
     thickness: FROST_WALL_PANE.depth,
+  },
+  'frost-gold-arch-breakwall-a': {
+    ...CLEAR_GLASS,
+    shatterProfile: 'ice-wall',
+    barrierEnvelope: {
+      width: FROST_GOLD_ARCH_PANE.width,
+      height: FROST_GOLD_ARCH_PANE.height,
+      depth: FROST_GOLD_ARCH_PANE.depth,
+    },
+    bundle: FROST_GOLD_ARCH_BUNDLE_IDS.logical,
+    intactNode: FROST_GOLD_ARCH_NODES.intact,
+    shardPrefix: FROST_GOLD_ARCH_NODES.shardPrefix,
+    shardCount: 32,
+    persistentPrefix: FROST_GOLD_ARCH_NODES.frame,
+    displayHeight: FROST_GOLD_ARCH_PANE.height,
+    fallbackShape: 'slab',
+    fragmentBudget: 24,
+    tint: 0xcaf5ff,
+    roughness: 0.13,
+    thickness: FROST_GOLD_ARCH_PANE.depth,
   },
   'portrait-awakened-muse': collectedPortrait('painting-portrait-v5'),
   'portrait-interval': collectedPortrait('painting-interval-v6'),
@@ -407,6 +428,12 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
   },
   [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle]: {
     bundle: CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseHexCrumble]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.roseHexCrumble,
     body: 'glass',
     outline: false,
     suspendedHull: false,

@@ -103,7 +103,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
       pages: [
         {
           title: 'Choose two easy notes.',
-          body: 'Movement is familiar: walk, look around and follow the gold path. At the first circle, choose Sing. Merc helps you find one comfortable lower note and one comfortable higher note; neither should feel like a stretch.',
+          body: 'Movement is familiar: walk, look around and follow the gold path. Step into the first circle when you are ready. Merc helps you find one comfortable lower note and one comfortable higher note; neither should feel like a stretch.',
           aside:
             'Jump is optional. Keep moving to ease into a run, and begin with the amber urn.',
         },

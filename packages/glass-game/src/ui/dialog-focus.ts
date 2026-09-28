@@ -7,6 +7,21 @@ export function focusDialog(element: HTMLElement): void {
         ?.focus({ preventScroll: true })
   })
 }
+
+function isInsideClosedDetails(control: HTMLElement): boolean {
+  let details = control.closest('details:not([open])')
+  while (details !== null) {
+    // Closed details can retain layout rectangles. Only its first direct
+    // summary remains visible, and an outer closed details can still hide it.
+    const summary = Array.from(details.children).find(
+      (child) => child.tagName === 'SUMMARY',
+    )
+    if (summary?.contains(control) !== true) return true
+    details = details.parentElement?.closest('details:not([open])') ?? null
+  }
+  return false
+}
+
 export function trapDialogKeys(event: KeyboardEvent): void {
   if (event.key !== 'Tab') return
   const element = event.currentTarget as HTMLElement
@@ -18,7 +33,8 @@ export function trapDialogKeys(event: KeyboardEvent): void {
     (control) =>
       control.tabIndex >= 0 &&
       control.getClientRects().length > 0 &&
-      !control.closest('[inert]'),
+      !control.closest('[inert]') &&
+      !isInsideClosedDetails(control),
   )
   if (controls.length === 0) return
   const first = controls[0]

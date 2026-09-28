@@ -471,8 +471,11 @@ jobs:
           [
             artwork,
             authoring,
+            auto-singing,
             camera,
             campaign,
+            campaign-access,
+            campaign-storage,
             chamber,
             cloudway,
             cloudway-layouts,

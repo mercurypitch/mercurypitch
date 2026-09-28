@@ -12,7 +12,7 @@ export interface GlassVoiceTake {
 }
 
 export interface GlassVoiceSession {
-  /** Called synchronously from the player's Start gesture. */
+  /** Called in a direct Start gesture or while its successful gesture preparation is still owned. */
   start(beforeCapture?: Promise<void>): Promise<void>
   latest(nowMs: number): PitchObservation | null
   /** Deliver detector observations independently of rendering cadence. */
@@ -23,6 +23,13 @@ export interface GlassVoiceSession {
   stop(): void
   /** Optional, explicit recording of the already-open input; never acquires another mic. */
   startRecording?(): GlassVoiceTake
+}
+
+export interface GlassVoicePreparation {
+  /** Resolves after the gesture-scoped audio unlock attempt. */
+  readonly ready: Promise<boolean>
+  /** Release the prepared audio claim without opening the microphone. */
+  release(): void
 }
 
 /** An input choice never opens capture; the player's next Start uses it. */
@@ -95,6 +102,12 @@ export interface GlassMercNarration {
 
 export interface GlassGameHost {
   assetUrl(id: string): string
+  /**
+   * Prepare Web Audio synchronously inside a gameplay gesture. This must not
+   * acquire microphone permission; automatic capture may begin on a later
+   * animation frame while this owned preparation remains alive.
+   */
+  prepareVoiceGesture(): GlassVoicePreparation
   createVoice(): GlassVoiceSession
   microphoneInput?: GlassMicrophoneInput
   /** Ask another cooperating app tab to release its mic before retrying here. */

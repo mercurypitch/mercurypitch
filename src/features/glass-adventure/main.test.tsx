@@ -1,16 +1,20 @@
 // Glassworks entry boundary — the document prelude can paint before the campaign chunk resolves.
 
+import { untrack } from 'solid-js'
+import type * as SolidWeb from 'solid-js/web'
 import { afterEach, expect, it, vi } from 'vitest'
 
 const boundary = vi.hoisted(() => {
   return {
     renderedRoots: [] as HTMLElement[],
+    unlocks: [] as boolean[],
   }
 })
 
-vi.mock('solid-js/web', () => ({
-  createComponent: () => null,
-  render: (_view: () => unknown, root: HTMLElement) => {
+vi.mock('solid-js/web', async (importOriginal) => ({
+  ...(await importOriginal<typeof SolidWeb>()),
+  render: (view: () => unknown, root: HTMLElement) => {
+    view()
     boundary.renderedRoots.push(root)
     return () => undefined
   },
@@ -23,6 +27,8 @@ vi.mock('./host', () => ({
 
 afterEach(() => {
   vi.doUnmock('@irchiinnuss/glass-game/campaign')
+  vi.unstubAllEnvs()
+  window.history.replaceState({}, '', '/')
   document.body.innerHTML = ''
 })
 
@@ -91,3 +97,26 @@ it('keeps the prelude navigation and offers reload when the chunk fails', async 
   expect(alert.querySelector('a')).toHaveAttribute('href', window.location.href)
   expect(boundary.renderedRoots).toEqual([])
 })
+
+it.each([
+  { development: true, search: '', unlocked: true },
+  { development: true, search: '?progression=earned', unlocked: false },
+  { development: false, search: '?progression=unlocked', unlocked: false },
+])(
+  'uses host build policy for campaign access: $development / $search',
+  async ({ development, search, unlocked }) => {
+    vi.resetModules()
+    boundary.unlocks.length = 0
+    vi.stubEnv('DEV', development)
+    window.history.replaceState({}, '', `/glass-game/${search}`)
+    document.body.innerHTML = '<div id="root"></div>'
+    vi.doMock('@irchiinnuss/glass-game/campaign', () => ({
+      GlassCampaign: (props: { developmentUnlock: boolean }) => {
+        untrack(() => boundary.unlocks.push(props.developmentUnlock))
+        return null
+      },
+    }))
+    await import('./main')
+    await vi.waitFor(() => expect(boundary.unlocks).toEqual([unlocked]))
+  },
+)

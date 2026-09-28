@@ -43,14 +43,14 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
         },
         {
           title: 'Your first beautiful mess.',
-          body: 'On a glowing circle, choose Sing and allow the microphone. Hum a comfortable note, listen to it, then hold it gently. A successful break opens the next passage.',
+          body: 'Step into a glowing circle and allow the microphone. Hum a comfortable note, listen to it, then hold it gently. A successful break opens the next passage.',
           aside:
             'No shouting or rushing. Cancel to rest, or use Change note. After the two main exhibits, walk or jump through the shimmering veil.',
         },
       ],
     },
     openingNotice:
-      'Find your feet, then follow the gold path to the goblet. Choose Sing on its glowing circle.',
+      'Find your feet, then follow the gold path to the goblet and step into its glowing circle.',
     encounterSuccessNotices: [
       {
         encounterId: 'threshold-goblet',

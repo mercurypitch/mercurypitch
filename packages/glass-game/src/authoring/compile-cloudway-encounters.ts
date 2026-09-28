@@ -20,8 +20,15 @@ function validateBarrierProfile(
       `${path}.frameSides`,
       'must contain at least two permanent frame solids.',
     )
+  const hasGate = profile.gate !== undefined
+  const hasGateParts = profile.gateParts !== undefined
+  if (hasGate === hasGateParts)
+    fail(path, 'must declare exactly one of gate or gateParts.')
+  if (profile.gateParts?.length === 0)
+    fail(`${path}.gateParts`, 'must contain at least one gate solid.')
+  const gates = barrierGates(profile)
   for (const [name, box] of [
-    ['gate', profile.gate],
+    ...gates.map((gate, index) => [`gateParts[${index}]`, gate] as const),
     ...profile.frameSides.map(
       (side, index) => [`frameSides[${index}]`, side] as const,
     ),
@@ -42,9 +49,19 @@ function validateBarrierProfile(
         )
   }
   identifierSet(
-    [profile.gate.id, ...profile.frameSides.map((side) => side.id)],
+    [
+      ...gates.map((gate) => gate.id),
+      ...profile.frameSides.map((side) => side.id),
+    ],
     path,
   )
+}
+
+function barrierGates(
+  profile: CloudwayBarrierProfile,
+): readonly CloudwayBarrierBoxProfile[] {
+  if (profile.gateParts !== undefined) return profile.gateParts
+  return profile.gate === undefined ? [] : [profile.gate]
 }
 
 function barrierSolid(
@@ -188,8 +205,9 @@ export function compileEncounter(
     )
     barrierFacingYaw = facingYaw
     presentation = { kind: 'barrier', facingYaw }
+    const gates = barrierGates(profile)
     solids = [
-      barrierSolid(id, position, turns, profile.gate, true),
+      ...gates.map((gate) => barrierSolid(id, position, turns, gate, true)),
       ...profile.frameSides.map((side) =>
         barrierSolid(id, position, turns, side, false),
       ),

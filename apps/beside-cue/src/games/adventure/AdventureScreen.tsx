@@ -5,7 +5,9 @@ import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
+import { BUILD } from '@/build-info'
 import { subscribeAppForeground } from '@/infrastructure/app-foreground'
+import { hasDevelopmentGalleryAccess } from './development-access'
 
 interface AdventureScreenProps {
   onExit(): void
@@ -23,10 +25,19 @@ export function AdventureScreen(props: AdventureScreenProps) {
   })
   return (
     <Show
-      when={props.campaign === true && props.level === undefined}
+      when={
+        !hasDevelopmentGalleryAccess(BUILD.channel, window.location.search) ||
+        (props.campaign === true && props.level === undefined)
+      }
       fallback={<GlassAdventure host={host} level={props.level} />}
     >
-      <GlassCampaign host={host} />
+      <GlassCampaign
+        host={host}
+        developmentUnlock={hasDevelopmentGalleryAccess(
+          BUILD.channel,
+          window.location.search,
+        )}
+      />
     </Show>
   )
 }

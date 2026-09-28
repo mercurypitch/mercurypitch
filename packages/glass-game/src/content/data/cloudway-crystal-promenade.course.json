@@ -646,7 +646,7 @@
       "authored": {
         "levelId": "cloudway-crystal-promenade-mechanics-preview",
         "layoutId": "crystal-promenade-mechanics-preview",
-        "contentRevision": 1
+        "contentRevision": 2
       },
       "movement": {
         "walkSpeed": 1.55,
@@ -770,7 +770,7 @@
         },
         {
           "id": "preview-rose-step",
-          "profileId": "rose-crackle",
+          "profileId": "rose-hex-crumble",
           "center": {
             "x": 3,
             "y": 0,
@@ -974,7 +974,7 @@
           "axis": "z",
           "fromState": "base",
           "toState": "base",
-          "distance": 0.5
+          "distance": 0.451
         },
         {
           "id": "preview-crystal-duet",
@@ -983,7 +983,7 @@
           "axis": "z",
           "fromState": "base",
           "toState": "base",
-          "distance": 0.5
+          "distance": 0.451
         },
         {
           "id": "preview-crystal-exit",
@@ -1097,7 +1097,7 @@
         {
           "id": "preview-voice-fifth",
           "label": "The preview frosted threshold",
-          "variant": "frosted-scroll-wall",
+          "variant": "frost-gold-arch-breakwall-a",
           "position": {
             "x": 3.45,
             "y": 0,
@@ -1113,7 +1113,7 @@
           "requiresCompleted": ["preview-voice-third"],
           "presentation": {
             "kind": "barrier",
-            "profileId": "frosted-scroll-wall",
+            "profileId": "frost-gold-arch-breakwall-a",
             "facingYaw": 3.141592653589793
           }
         }

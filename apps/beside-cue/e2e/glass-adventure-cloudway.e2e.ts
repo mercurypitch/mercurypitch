@@ -92,7 +92,7 @@ test('trial requirements fit phone/tablet/desktop without converting old accurac
   page,
 }, testInfo) => {
   await prepare(page, 2)
-  await page.goto('/glass-game/?campaign=1')
+  await page.goto('/glass-game/?campaign=1&progression=earned')
   const trial = page.locator('[data-trial-id="first-island-cloudway"]')
   await expect(trial).toHaveAttribute('data-unlocked', 'false')
   await expect(trial.getByText('0/3 stars', { exact: true })).toBeVisible()
@@ -146,7 +146,7 @@ test('earned access opens the selected route and leaving preserves isolated save
     'cloudway-checkpoint-glide-east',
   )
   await prepare(page, 3, [currentSave, legacySave])
-  await page.goto('/glass-game/?campaign=1')
+  await page.goto('/glass-game/?campaign=1&progression=earned')
   const trial = page.locator('[data-trial-id="first-island-cloudway"]')
   await expect(trial).toHaveAttribute('data-unlocked', 'true')
   const play = trial.getByRole('button', {
@@ -198,7 +198,7 @@ test('a declined trial handoff refreshes the lock and leaves other galleries usa
   page,
 }) => {
   await prepare(page, 3)
-  await page.goto('/glass-game/?campaign=1')
+  await page.goto('/glass-game/?campaign=1&progression=earned')
   const trial = page.locator('[data-trial-id="first-island-cloudway"]')
   await expect(trial).toHaveAttribute('data-unlocked', 'true')
   // Save state can change after the card was rendered, before its route-boundary check.

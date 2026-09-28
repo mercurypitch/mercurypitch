@@ -93,6 +93,72 @@
       "persistentFrameNode": "frost_wall_frame"
     },
     {
+      "id": "cloudway-lab-frost-gold-arch-desktop-v1",
+      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-desktop-v1.glb",
+      "node": "Cloudway_FrostGoldArchBreakwallA_V1",
+      "bytes": 9391800,
+      "sha256": "f40a74c9c200f7b86e19cf8c2139e6084e11ff9775919dc96265b7b4e1f71ec3",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_mesh_quantization"
+      ],
+      "intactNode": "frost_arch_intact",
+      "shardPrefix": "frost_arch_shard_",
+      "shardCount": 32,
+      "persistentFrameNode": "frost_arch_frame"
+    },
+    {
+      "id": "cloudway-lab-frost-gold-arch-mobile-v1",
+      "file": "optional-exhibits/frost-gold-arch-breakwall-a/frost-gold-arch-breakwall-a-mobile-v1.glb",
+      "node": "Cloudway_FrostGoldArchBreakwallA_V1",
+      "bytes": 3035104,
+      "sha256": "6a2562578f04363ed5225b1792b69561e626a4ca9666bf27724d16223372cdfa",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_mesh_quantization"
+      ],
+      "intactNode": "frost_arch_intact",
+      "shardPrefix": "frost_arch_shard_",
+      "shardCount": 32,
+      "persistentFrameNode": "frost_arch_frame"
+    },
+    {
+      "id": "cloudway-lab-rose-hex-crumble-desktop-v3",
+      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-desktop-v3.glb",
+      "node": "Cloudway_RoseCrystalHexCrumble_V3",
+      "bytes": 6296776,
+      "sha256": "6fb888df6a94cd0f7a1fbd69915b16d0d695acab9aaf6f20f63520a90bba69c1",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_materials_volume",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
+      "id": "cloudway-lab-rose-hex-crumble-mobile-v3",
+      "file": "optional-platforms/rose-crystal-hex-crumble/rose-crystal-hex-crumble-mobile-v3.glb",
+      "node": "Cloudway_RoseCrystalHexCrumble_V3",
+      "bytes": 2025056,
+      "sha256": "9a35a2ede553ea11f4d48e056973e6eb8c33349c528b95ad63d38fb61932bc2f",
+      "requiredExtensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_materials_volume",
+        "KHR_mesh_quantization"
+      ]
+    },
+    {
       "id": "pearl-ribbon-lantern-v1",
       "file": "optional-exhibits/pearl-ribbon-lantern/pearl-ribbon-lantern-lod1.glb",
       "node": "Cloudway_PearlRibbonLantern_OptionalExhibitV1",

@@ -1,7 +1,7 @@
 // Voice session tests — cancellation ownership and unsmoothed audio-clock observations.
 import type { CapturedPitchFrame } from '@irchiinnuss/pitch-engine'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createBrowserVoice } from './voice-session'
+import { createBrowserVoice, prepareBrowserVoiceGesture } from './voice-session'
 
 const mocks = vi.hoisted(() => ({
   acquire: vi.fn(),
@@ -71,6 +71,18 @@ beforeEach(() => {
 })
 
 describe('browser voice ownership', () => {
+  it('prepares Web Audio from a gesture without acquiring the microphone', async () => {
+    const preparation = prepareBrowserVoiceGesture()
+
+    expect(leases[0].unlock).toHaveBeenCalledOnce()
+    expect(mocks.acquire).not.toHaveBeenCalled()
+    await expect(preparation.ready).resolves.toBe(true)
+
+    preparation.release()
+    preparation.release()
+    expect(leases[0].release).toHaveBeenCalledOnce()
+  })
+
   it('unlocks audio in the gesture and applies the chosen route before acquiring', async () => {
     const preparation = deferred<undefined>()
     const opened = vi.fn()

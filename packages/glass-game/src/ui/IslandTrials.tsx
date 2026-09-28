@@ -12,6 +12,7 @@ export interface IslandTrialView {
   imageUrl: string
   replay: boolean
   unlock: TrialUnlock
+  previewUnlocked?: boolean
 }
 
 export function IslandTrials(props: {
@@ -49,8 +50,12 @@ export function IslandTrials(props: {
                 <span>
                   <strong>{trial.islandTitle}</strong>
                   <small>
-                    {trial.unlock.unlocked ? 'Path open' : 'Earn three stars'} ·{' '}
-                    {trial.title}
+                    {trial.previewUnlocked === true
+                      ? 'Preview unlocked'
+                      : trial.unlock.unlocked
+                        ? 'Path open'
+                        : 'Earn three stars'}{' '}
+                    · {trial.title}
                   </small>
                 </span>
               </a>
@@ -75,6 +80,9 @@ export function IslandTrials(props: {
                 <span class={styles.island}>{trial.islandTitle}</span>
                 <h3>{trial.title}</h3>
                 <p>{trial.description}</p>
+                <Show when={trial.previewUnlocked}>
+                  <p>Open for testing. Your earned stars stay unchanged.</p>
+                </Show>
                 <ul class={styles.requirements} aria-label="Trial requirements">
                   <For each={trial.unlock.chapters}>
                     {(chapter) => (

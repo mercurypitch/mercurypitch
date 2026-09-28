@@ -692,6 +692,13 @@ import handler, issue #813.
 **Rule:** sample the current view when the normalized keyboard direction changes; ignore repeats and equivalent aliases. Keep unchanged input stable. Do not apply wholesale rebases to small analog angle changes: a large camera/basis difference would become an unintended turn.
 **See:** `packages/glass-game/src/ui/input.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
 
+### Inspect extracted game UI beneath the real host resets
+
+**Symptom:** the encore chart shrank to a 24px strip, and compact result controls inherited large text.
+**Cause:** `.adventure svg` and `.adventure button` outranked single-class CSS-module rules.
+**Rule:** give extracted components explicit scoped sizing and typography; verify computed styles and 320px screenshots inside the actual game, not an isolated component page.
+**See:** `packages/glass-game/src/ui/MelodyRibbon.module.css`, `CompletionResults.module.css` and their host E2E coverage.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

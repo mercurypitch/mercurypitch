@@ -17,12 +17,13 @@
 
 .ribbon {
   display: block;
-  height: clamp(170px, 30vw, 220px);
   overflow: visible;
 }
 
 .ribbonFrame .ribbon {
   width: 100%;
+  height: auto;
+  aspect-ratio: 720 / 220;
 }
 
 .ribbonFrame[data-compact='true'] .ribbon {
@@ -94,10 +95,6 @@
 }
 
 @media (max-width: 560px) {
-  .ribbon {
-    height: 168px;
-  }
-
   .ribbonFrame[data-compact='true'] .ribbon {
     height: 96px;
   }

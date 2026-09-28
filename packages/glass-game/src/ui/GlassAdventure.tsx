@@ -93,6 +93,8 @@ export function GlassAdventure(props: GlassAdventureProps) {
           onRestart={restart}
           onContinue={props.onContinue}
           continueLabel={props.continueLabel}
+          nextLevelName={props.nextLevelName}
+          nextDifficulty={props.nextDifficulty}
           replayGoal={props.replayGoal}
         />
       )}
