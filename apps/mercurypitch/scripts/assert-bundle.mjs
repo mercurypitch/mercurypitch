@@ -78,7 +78,9 @@
 //            decides from the same target as the worker, so a store build
 //            must carry none of the import, its queue, its paywall, the
 //            store SDK it buys through, or its Settings rows -- absent, not
-//            hidden -- and every other build must carry all of them.
+//            hidden -- and every other build must carry all of them. Play's
+//            review access is Stage 2 in an Android build only, so a store
+//            build is held to carrying none of it and no build to having it.
 //
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
@@ -176,6 +178,29 @@ const KARAOKE_STAGE_2 = [
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
 ]
 
+/**
+ * Stage 2 as well, but only in a build not made for iOS: an iOS build folds it
+ * away on purpose (KaraokeReviewAccess.tsx, IN_A_PLAY_BUILD). So a store build
+ * carries none of it, an importing iOS build none either, and any other
+ * importing build all of it (review of PR 882, nit 10).
+ */
+const KARAOKE_STAGE_2_ANDROID = [
+  ['api/billing/review-access', "Play's review access (Settings, Android)"],
+]
+
+/**
+ * The env var a native build is told its platform in (capacitor-app.yml
+ * exports it to each verify step as to the build); unset in a local build and
+ * in the PR gate's.
+ */
+const NATIVE_PLATFORM_ENV = 'VITE_MERCURYPITCH_NATIVE_PLATFORM'
+
+/** The platform this build was made for, read the way the build read it: the
+ *  process first, then the env files for mode production. '' when unset. */
+function nativePlatform() {
+  return (readEnvFiles(APP_DIR, 'production')[NATIVE_PLATFORM_ENV] ?? '').trim()
+}
+
 const failures = []
 
 /** One line per check, whichever way it went. */
@@ -248,6 +273,10 @@ function main(argv) {
       error instanceof Error ? error.message : String(error),
     )
   }
+  const platform = nativePlatform()
+  console.log(
+    `      Native platform: ${platform === '' ? '(unset)' : platform} [${NATIVE_PLATFORM_ENV}]`,
+  )
 
   // Every root gets every check. The Android copy is what `cap sync` left
   // behind, and a sync that did not overwrite the previous build leaves the
@@ -433,20 +462,36 @@ function main(argv) {
     // asked once the requested base resolved.
     if (api !== undefined) {
       const importing = karaokeImportFor(api)
-      const carried = KARAOKE_STAGE_2.filter(([needle]) =>
-        assets.some((file) => contains(file, needle)),
+      const ios = platform === 'ios'
+      const expected = importing
+        ? [...KARAOKE_STAGE_2, ...(ios ? [] : KARAOKE_STAGE_2_ANDROID)]
+        : []
+      const carried = [...KARAOKE_STAGE_2, ...KARAOKE_STAGE_2_ANDROID].filter(
+        ([needle]) => assets.some((file) => contains(file, needle)),
       )
-      const wrong = importing
-        ? KARAOKE_STAGE_2.filter((piece) => !carried.includes(piece))
-        : carried
+      const missing = expected.filter((piece) => !carried.includes(piece))
+      const extra = carried.filter((piece) => !expected.includes(piece))
+      const pieces = (list) =>
+        list.map(([needle, what]) => `${needle} (${what})`).join('; ')
+      const problems = []
+      if (missing.length > 0) {
+        problems.push(
+          `Missing: ${pieces(missing)}. A ${api.target} build compiles KARAOKE_IMPORT in as true (vite.config.ts, api-base.mjs karaokeImportFor), and only an iOS build folds Play's review access away (KaraokeReviewAccess.tsx)${synced ? '; or this is a stale bundle' : ''}.`,
+        )
+      }
+      if (extra.length > 0) {
+        problems.push(
+          importing
+            ? `Found ${pieces(extra)} in a build for ${platform}. An iOS build folds Play's review access away (KaraokeReviewAccess.tsx, ${NATIVE_PLATFORM_ENV}=ios)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`
+            : `Found ${pieces(extra)}. Something reaches Stage 2 from a path KARAOKE_IMPORT does not fold away (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`,
+        )
+      }
       record(
-        wrong.length === 0,
+        problems.length === 0,
         importing
-          ? `${label}: the Karaoke room imports songs in this ${api.target} build (${KARAOKE_STAGE_2.length} pieces)`
+          ? `${label}: the Karaoke room imports songs in this ${api.target} build for ${platform === '' ? 'no named platform' : platform} (${expected.length} pieces)`
           : `${label}: the store build carries no Karaoke import`,
-        importing
-          ? `Missing: ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. A ${api.target} build compiles KARAOKE_IMPORT in as true (vite.config.ts, api-base.mjs karaokeImportFor)${synced ? '; or this is a stale bundle' : ''}.`
-          : `Found ${wrong.map(([needle, what]) => `${needle} (${what})`).join('; ')}. Something reaches Stage 2 from a path KARAOKE_IMPORT does not fold away (src/lib/native-build.ts)${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`,
+        problems.join(' '),
       )
     }
 

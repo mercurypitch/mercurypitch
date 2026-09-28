@@ -13,6 +13,8 @@
 //                                 web credits (S7 D9, app-songs.ts)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
 //   POST /api/billing/promo/redeem — auth + verified email; { code } → credits
+//   POST /api/billing/review-access — auth, Android app; Play's review code →
+//                                     a few songs, once (review-access.ts)
 //   POST /api/billing/revenuecat — RevenueCat; secret header, idempotent: the
 //                                   Karaoke subscription's songs (revenuecat.ts)
 //
@@ -38,6 +40,7 @@ import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
+import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
 import type { PricingRow } from './billing-core'
@@ -1407,6 +1410,9 @@ export async function handleBilling(
   if (route === 'me' && method === 'GET') return handleMe(request, env, respond)
   if (route === 'promo/redeem' && method === 'POST') {
     return handlePromoRedeem(request, env, respond)
+  }
+  if (route === 'review-access' && method === 'POST') {
+    return handleReviewAccess(request, env, respond)
   }
   if (route === 'checkout' && method === 'POST') {
     return handleCheckout(request, env, respond)

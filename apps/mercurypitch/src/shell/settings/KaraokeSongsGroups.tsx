@@ -13,6 +13,9 @@
 // (awaitSubscription keeps asking for a while). The examples are part of
 // the app and stay.
 //
+// On Android, Play's review access sits under the subscription: the code
+// Google's reviewers are given (KaraokeReviewAccess.tsx).
+//
 // Reached only through KaraokeSettingsScreen's stand-in, which a store build
 // folds away with everything this imports.
 
@@ -23,8 +26,18 @@ import { awaitSubscription, karaokeSongs, refreshKaraokeSongs, restoreNote, song
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { CardIcon, ExternalIcon, NoteGlyphIcon, RefreshIcon, TrashIcon, } from '../icons'
 import { importedSongsValue, removeImportedQuestion, songsStuckLine, } from './imported-songs-copy'
+import { IN_A_PLAY_BUILD, KaraokeReviewAccess, reviewAccessShown, } from './KaraokeReviewAccess'
 import { askSettings } from './settings-alert'
 import { SettingsGroup, SettingsRow } from './SettingsList'
+
+/**
+ * Play's review access, on Android. A build made for iOS folds this to
+ * nothing, so none of it is in that bundle (a `<Show>` would keep its
+ * children, as KaraokeSettingsScreen's stand-in says of Stage 2).
+ */
+function ReviewAccess(): JSX.Element {
+  return IN_A_PLAY_BUILD && reviewAccessShown() ? <KaraokeReviewAccess /> : null
+}
 
 /** Stage 2: the subscription, and the songs on this phone. */
 export function KaraokeSongsGroups(): JSX.Element {
@@ -134,6 +147,7 @@ export function KaraokeSongsGroups(): JSX.Element {
           </p>
         )}
       </Show>
+      <ReviewAccess />
       <SettingsGroup title="Songs on this phone">
         <SettingsRow
           id="karaoke-imported-songs"

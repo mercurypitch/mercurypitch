@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LedgerRow } from './songs-allowance'
-import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, refundReversal, refundReversedFirst, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
+import { appSongs, freeSong, getsFreeSong, isSubscribed, periodGrant, REVIEW_ACCESS, refundReversal, refundReversedFirst, songAllowance, songMonth, songsSummary, subscriptionSongs, } from './songs-allowance'
 
 const NOW = Date.parse('2026-09-27T12:00:00.000Z')
 
@@ -533,6 +533,7 @@ describe('the songs the app can spend', () => {
   it('are the subscription songs and the free song, never bought credits', () => {
     expect(appSongs(rows, USER, NOW_MS, true)).toEqual({
       held: 16,
+      review: 0,
       free: 1,
       left: 17,
       freeKey: `free-song:${USER}:2026-09:0`,
@@ -559,5 +560,98 @@ describe('the songs the app can spend', () => {
       perPeriod: 20,
       cap: 50,
     })
+  })
+})
+
+describe('the songs Play review access grants', () => {
+  // review-access.ts: a few songs for Google Play's reviewer, once per
+  // account. The app spends them after the subscription's, the web only
+  // once its own credits run out, and the rollover cap never counts them.
+  const USER = 'user-review'
+  const NOW_MS = Date.parse('2026-09-28T12:00:00.000Z')
+  let n = 0
+  const row = (
+    delta: number,
+    reason: string,
+    jobRef: string | null = null,
+  ): LedgerRow => {
+    n += 1
+    return { delta, reason, jobRef, idempotencyKey: `review-key-${n}` }
+  }
+  const review = (songs: number) => row(songs, REVIEW_ACCESS)
+
+  it('are the app’s to spend, and no subscription songs', () => {
+    const rows = [row(30, 'purchase'), review(3)]
+
+    expect(subscriptionSongs(rows)).toMatchObject({ held: 0, review: 3 })
+    expect(appSongs(rows, USER, NOW_MS, false)).toMatchObject({
+      held: 0,
+      review: 3,
+      left: 3,
+    })
+  })
+
+  it('are spent after the subscription’s songs', () => {
+    const songs = subscriptionSongs([
+      row(20, 'subscription', 'txn'),
+      review(3),
+      row(-1, 'uvr-job-app', 'job-1'),
+    ])
+
+    expect(songs).toMatchObject({ held: 19, review: 3 })
+  })
+
+  it('are spent once the subscription’s run out, and come back to where they were taken from', () => {
+    const spent = [
+      row(2, 'subscription', 'txn'),
+      review(3),
+      row(-4, 'uvr-job-app', 'job-2'),
+    ]
+    expect(subscriptionSongs(spent)).toMatchObject({ held: 0, review: 1 })
+
+    const refunded = [...spent, row(4, 'uvr-refund', 'job-2')]
+    expect(subscriptionSongs(refunded)).toMatchObject({ held: 2, review: 3 })
+  })
+
+  it('are no credits of the web’s, and left alone while its own last', () => {
+    const songs = subscriptionSongs([
+      row(30, 'purchase'),
+      row(20, 'subscription', 'txn'),
+      review(3),
+      row(-33, 'uvr-job', 'job-web'),
+    ])
+
+    expect(songs).toMatchObject({ held: 17, review: 3 })
+  })
+
+  it('are the last the web spends, and come back to where they were taken from', () => {
+    const spent = [
+      row(2, 'purchase'),
+      row(2, 'subscription', 'txn'),
+      review(3),
+      row(-5, 'uvr-job', 'job-web'),
+    ]
+    expect(subscriptionSongs(spent)).toMatchObject({ held: 0, review: 2 })
+
+    const refunded = [...spent, row(5, 'uvr-refund', 'job-web')]
+    expect(subscriptionSongs(refunded)).toMatchObject({ held: 2, review: 3 })
+  })
+
+  it('never count toward the rollover cap', () => {
+    const allowance = { perPeriod: 20, cap: 50 }
+    const songs = subscriptionSongs([
+      row(20, 'subscription', 'txn-1'),
+      row(20, 'subscription', 'txn-2'),
+      row(9, 'subscription', 'txn-3'),
+      review(5),
+    ])
+
+    expect(periodGrant(songs.held, allowance)).toBe(1)
+  })
+
+  it('are never a refund, a grant of the store’s, or anything but credits', () => {
+    // Only a positive row of its own reason adds review songs.
+    expect(subscriptionSongs([row(-3, REVIEW_ACCESS)]).review).toBe(0)
+    expect(subscriptionSongs([row(3, 'promo')]).review).toBe(0)
   })
 })

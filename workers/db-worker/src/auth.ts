@@ -184,6 +184,14 @@ export interface Env {
   /** `off` stops the signed-in singer's free song a month in the native app
    *  (owner, S7 D5). Anything else, or unset, leaves it on (app-songs.ts). */
   FREE_MONTHLY_SONG?: string
+  /** Play review access (review-access.ts): the lower-case hex SHA-256 that
+   *  make-review-code.ts prints beside the code. A secret, never a var:
+   *  unset, the route answers 501 and grants nothing. */
+  REVIEW_ACCESS_CODE_SHA256?: string
+  /** Songs one review access grants: 1 to 5, default 3. */
+  REVIEW_ACCESS_SONGS?: string
+  /** Accounts review access is granted to at most, ever. Default 20. */
+  REVIEW_ACCESS_ACCOUNTS?: string
   /** Shared secret authorizing service-to-service billing calls (the main
    *  worker's job refunds via X-Service-Key). Set the SAME value on both
    *  workers; refunds return 503 while unset. */
@@ -819,6 +827,11 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'billing-checkout': { max: 10, windowMs: 300_000 },
   // Promo code redemptions: bound guessing loops per account.
   'promo-redeem': { max: 10, windowMs: 300_000 },
+  // Play review access (review-access.ts). A reviewer types one code once;
+  // an anonymous identity is free to mint, so the address has a cap of its
+  // own as well as the account.
+  'review-access': { max: 5, windowMs: 3_600_000 }, // 5/h per account
+  'review-access-ip': { max: 20, windowMs: 3_600_000 }, // 20/h per address
   // Device linking. The caps here bound load, not guessing: a poll must
   // present the poll token as well as the code, and 32^8 codes paired with a
   // 43-character secret is not a space anybody walks. Start mints a row, so
