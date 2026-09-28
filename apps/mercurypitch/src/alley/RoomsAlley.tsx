@@ -39,15 +39,16 @@ import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
+import { readBlock } from './alley-block'
 import { ALLEY_COPY, doorLabel } from './alley-copy'
 import type { DoorOpen } from './alley-entry'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { AlleyFrame, DoorLayout } from './alley-geometry'
-import { alleyFit, dimPath, layoutDoors, pickDoor, placePanel, tapBand, } from './alley-geometry'
+import { alleyFit, dimPath, layoutDoors, pickDoor, placePanel, placePanelInColumn, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
 import type { DoorKey } from './alley-plate'
-import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
+import { alleyScene, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
 import { dropRoom, pickRoom, takeRoom } from './alley-room'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
 import { AlleyCard } from './AlleyCard'
@@ -133,6 +134,7 @@ export const RoomsAlley: Component = () => {
   let card: HTMLDivElement | undefined
   let singVideo: HTMLVideoElement | undefined
   let top: HTMLDivElement | undefined
+  let mark: HTMLImageElement | undefined
 
   const [size, setSize] = createSignal({
     w: window.innerWidth,
@@ -146,6 +148,10 @@ export const RoomsAlley: Component = () => {
   // right edge and its top padding (the safe top) bound the band there.
   const [topRight, setTopRight] = createSignal(0)
   const [topPad, setTopPad] = createSignal(0)
+  // And it is the column a picked door's card takes on its side: from the
+  // block's left padding edge, under the mark.
+  const [columnLeft, setColumnLeft] = createSignal(16)
+  const [markBottom, setMarkBottom] = createSignal(0)
   // The dock's top. With the headline's bottom it is the room a landscape
   // screen gives the doors (`alleyFit`).
   const [floor, setFloor] = createSignal(window.innerHeight)
@@ -161,11 +167,14 @@ export const RoomsAlley: Component = () => {
           right: size().w - safeRight(),
         }
       : { top: topBottom(), bottom: floor() }
+  // The picture for this shape of screen, and the doors measured in it: a
+  // rotation swaps both, and the <img> takes the other file.
+  const scene = createMemo(() => alleyScene(size().w, size().h))
   const fit = createMemo(() =>
-    alleyFit(ALLEY_PLATE, DOORS, size().w, size().h, frame()),
+    alleyFit(scene().plate, scene().doors, size().w, size().h, frame()),
   )
   const doors = createMemo(() =>
-    layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h, frame()),
+    layoutDoors(scene().plate, scene().doors, size().w, size().h, frame()),
   )
   /** The plate as `alleyFit` placed it, for every copy of it drawn. */
   const plateStyle = (): Record<string, string> => ({
@@ -188,7 +197,7 @@ export const RoomsAlley: Component = () => {
     doors().find((door) => door.key === key) ?? doors()[0]
   // The 1x file unless it would be upscaled at the scale it is drawn at.
   const plate = createMemo(() =>
-    plateSourceFor(fit().scale, window.devicePixelRatio || 1),
+    plateSourceFor(fit().scale, window.devicePixelRatio || 1, scene().plate),
   )
 
   const reduced = (): boolean =>
@@ -459,21 +468,28 @@ export const RoomsAlley: Component = () => {
 
   // Where the card sits: measured, so a card with no Enter sits lower, and
   // kept above whatever the dock is drawing (the rail, or the pill over it).
+  // Upright it hangs under its door; on its side the dock is under the door,
+  // and the card takes the headline's place in the column beside the doors.
   createEffect(
-    on([cardDoor, doors, safeRight], ([key, , insetRight]) => {
-      if (key === null || panel === undefined) return
-      const dock = document.querySelector('.mp-dock')
-      const floor = dock?.getBoundingClientRect().top ?? size().h
-      const spot = placePanel(
-        layoutOf(key),
-        size().w,
-        floor,
-        panel.offsetHeight,
-        insetRight,
-      )
-      panel.style.left = `${spot.x}px`
-      panel.style.top = `${spot.y}px`
-    }),
+    on(
+      [cardDoor, doors, safeRight, columnLeft, markBottom],
+      ([key, , insetRight, left, mark]) => {
+        if (key === null || panel === undefined) return
+        const dock = document.querySelector('.mp-dock')
+        const floor = dock?.getBoundingClientRect().top ?? size().h
+        const spot = landscape()
+          ? placePanelInColumn(left, mark + 16, floor, panel.offsetHeight)
+          : placePanel(
+              layoutOf(key),
+              size().w,
+              floor,
+              panel.offsetHeight,
+              insetRight,
+            )
+        panel.style.left = `${spot.x}px`
+        panel.style.top = `${spot.y}px`
+      },
+    ),
   )
 
   onMount(() => {
@@ -487,16 +503,7 @@ export const RoomsAlley: Component = () => {
       if (root === undefined) return
       const w = root.clientWidth
       const h = root.clientHeight
-      const block =
-        top === undefined
-          ? null
-          : {
-              bottom: Math.ceil(top.offsetTop + top.offsetHeight),
-              right: Math.ceil(top.offsetLeft + top.offsetWidth),
-              pad: Math.ceil(
-                Number.parseFloat(window.getComputedStyle(top).paddingTop) || 0,
-              ),
-            }
+      const block = top === undefined ? null : readBlock(top, mark)
       const dock = document.querySelector('.mp-dock')
       const dockTop =
         dock === null ? h : Math.floor(dock.getBoundingClientRect().top)
@@ -518,6 +525,8 @@ export const RoomsAlley: Component = () => {
           }
           if (moved(block.right, untrack(topRight))) setTopRight(block.right)
           if (moved(block.pad, untrack(topPad))) setTopPad(block.pad)
+          if (moved(block.left, untrack(columnLeft))) setColumnLeft(block.left)
+          if (moved(block.mark, untrack(markBottom))) setMarkBottom(block.mark)
         }
         if (dockTop > 0 && moved(dockTop, untrack(floor))) setFloor(dockTop)
         if (moved(inset, untrack(safeRight))) setSafeRight(inset)
@@ -664,6 +673,7 @@ export const RoomsAlley: Component = () => {
           app.css styles every header as the web's top bar. */}
       <div ref={top} class="mp-alley__top" data-testid="alley-top">
         <img
+          ref={mark}
           class="mp-alley__mark"
           src="/brand-mark.svg"
           alt={ALLEY_COPY.brand}

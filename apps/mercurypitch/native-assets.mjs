@@ -202,7 +202,7 @@ export const NATIVE_ASSETS = [
   {
     glob: 'rooms/alley/night-rooms-hero*.webp',
     reason:
-      'The night alley plate at 1x and 2x — the Rooms tab and the first-run welcome ARE this picture, and every door quad is measured on it (apps/mercurypitch/src/alley/alley-plate.ts).',
+      'The night alley plate at 1x and 2x, upright and on its side — the Rooms tab and the first-run welcome ARE these pictures, one for each way the phone is held, and every door quad is measured on them (apps/mercurypitch/src/alley/alley-plate.ts).',
   },
   {
     glob: 'rooms/alley/retro-analog-studio-portrait-loop.mp4',

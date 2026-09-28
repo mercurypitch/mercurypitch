@@ -140,15 +140,27 @@
 
 /* On its side the block stands beside the doors, left of them, and the door
    band keeps the full height from the safe top to the dock (alleyFit reads
-   the block's right edge). The compact title shrinks to its own width. */
+   the block's right edge). It is also the column a picked door's card takes
+   there (placePanelInColumn), so it is the card's width, 236 px (PANEL_WIDTH),
+   under the welcome and the compact title alike, and its right padding is the
+   16 px beside the doors: the right safe-area inset is the screen's other end.
+   One caption at a time: the welcome gives the column to the card while a
+   door is picked, and takes it back when the door goes back. */
 @media (orientation: landscape) {
-  .mp-alley__top {
+  .mp-alley__top,
+  .mp-alley[data-first='off'] .mp-alley__top {
     right: auto;
-    width: min(36vw, 300px);
+    width: calc(max(16px, var(--safe-left, 0px)) + 236px + 16px);
+    padding-right: 16px;
   }
 
-  .mp-alley[data-first='off'] .mp-alley__top {
-    width: auto;
+  .mp-alley__intro {
+    transition: opacity var(--alley-sel) var(--alley-ease);
+  }
+
+  .mp-alley[data-phase='selected'] .mp-alley__intro,
+  .mp-alley[data-phase='alive'] .mp-alley__intro {
+    opacity: 0;
   }
 }
 
