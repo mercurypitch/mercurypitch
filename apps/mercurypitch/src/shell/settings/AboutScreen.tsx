@@ -3,16 +3,16 @@
 // ============================================================
 //
 // S6 step 9 (8b). The mark, the name, the version with its build, the two
-// policies and a way to write to us, then the privacy line. The web's About
-// carries a GitHub link, a third-party badge loaded from another site and
-// pills for rooms the app does not have (audit D3 to D7); those stay on the
-// web.
+// policies and the web page for deleting an account, a way to write to us,
+// then the privacy line. The web's About carries a GitHub link, a third-party
+// badge loaded from another site and pills for rooms the app does not have
+// (audit D3 to D7); those stay on the web.
 
 import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, onMount } from 'solid-js'
 import { CONTACT_FORM_URL } from '@/lib/contact-links'
-import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
-import { DocIcon, LockIcon, MailIcon, ShieldIcon } from '../icons'
+import { DELETE_ACCOUNT_URL, PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
+import { DocIcon, LockIcon, MailIcon, ShieldIcon, TrashIcon } from '../icons'
 import { loadDeviceFacts } from './device-facts'
 import { SettingsGroup, SettingsLinkRow } from './SettingsList'
 
@@ -52,6 +52,15 @@ export function AboutScreen(): JSX.Element {
           icon={<DocIcon />}
           label="Terms of use"
           href={TERMS_URL}
+        />
+        {/* Beside the policies because it answers the question they raise:
+            how to have all of it erased, even without the app. The deletion
+            itself stays in Settings > Account. */}
+        <SettingsLinkRow
+          id="about-delete-account"
+          icon={<TrashIcon />}
+          label="Account deletion"
+          href={DELETE_ACCOUNT_URL}
         />
         <SettingsLinkRow
           id="about-contact"
