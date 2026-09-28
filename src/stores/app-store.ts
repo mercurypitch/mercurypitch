@@ -25,6 +25,7 @@ import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, 
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
+import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
 import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
@@ -1795,20 +1796,27 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   // moved into "Keep your streak" instead.
   {
     title: 'Choose your next room',
-    description:
-      'Jump straight into Glassworks, live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room.',
+    description: GLASSWORKS_LISTED
+      ? 'Jump straight into Glassworks, live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room.'
+      : 'Jump straight into live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room.',
     targetSelector: '.home-destinations',
     placement: 'top',
     requiredTab: TAB_HOME,
   },
-  {
-    title: 'A museum that listens',
-    description:
-      'Enter Glassworks with Merc, explore four galleries, and use the comfortable notes in your voice to sing each glass exhibit open.',
-    targetSelector: '[data-tour="home.glassworks"]',
-    placement: 'top',
-    requiredTab: TAB_HOME,
-  },
+  // Only where the Home card exists to be spotlit: dev and `pnpm dev`, not
+  // mercurypitch.com (src/lib/glassworks-listing.ts).
+  ...(GLASSWORKS_LISTED
+    ? [
+        {
+          title: 'A museum that listens',
+          description:
+            'Enter Glassworks with Merc, explore four galleries, and use the comfortable notes in your voice to sing each glass exhibit open.',
+          targetSelector: '[data-tour="home.glassworks"]',
+          placement: 'top',
+          requiredTab: TAB_HOME,
+        } satisfies WalkthroughStep,
+      ]
+    : []),
 ]
 
 const PATH_TOUR_STEPS: WalkthroughStep[] = [

@@ -677,13 +677,22 @@ export function allEntryPaths(): string[] {
   return ENTRY_PAGES.flatMap((page) => [...page.paths])
 }
 
-/** The cross-links shown on `page`: Home, every other entry, then About. */
+/**
+ * The cross-links shown on `page`: Home, every other entry, then About.
+ *
+ * `unlisted` names entries this build serves but does not advertise — today
+ * only Glassworks on the production web build (tools/glassworks-listing.ts).
+ * Nothing links to them; they still link out to everything else.
+ */
 export function navLinksFor(
   page: EntryPage,
+  unlisted: readonly string[] = [],
 ): { href: string; label: string }[] {
   return [
     { href: '/', label: 'Home' },
-    ...ENTRY_PAGES.filter((other) => other.slug !== page.slug).map((other) => ({
+    ...ENTRY_PAGES.filter(
+      (other) => other.slug !== page.slug && !unlisted.includes(other.slug),
+    ).map((other) => ({
       href: canonicalPath(other),
       label: other.navLabel,
     })),

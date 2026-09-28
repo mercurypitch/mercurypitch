@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
 import { TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
@@ -196,5 +196,80 @@ describe('Home destination gallery', () => {
 
     fireEvent.click(teaser)
     expect(activeTab()).toBe(TAB_VOICE_HISTORY)
+  })
+})
+
+// The production web build (mercurypitch.com) serves /glass-game but does not
+// list it: VITE_GLASSWORKS_LISTED is "0" there and "1" everywhere else,
+// including this suite's default (vitest.config.ts). The flag is read at module
+// scope, so each case stubs it and imports fresh copies of the modules.
+describe('Home destination gallery with Glassworks unlisted', () => {
+  async function loadUnlisted() {
+    vi.stubEnv('VITE_GLASSWORKS_LISTED', '0')
+    vi.resetModules()
+    const gallery = await import('@/features/home/DestinationGallery')
+    const store = await import('@/stores/app-store')
+    const tabs = await import('@/features/tabs/constants')
+    return { gallery, store, tabs }
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it('offers no Glassworks card, and every other room in its place', async () => {
+    const { gallery, tabs } = await loadUnlisted()
+
+    expect(
+      gallery.HOME_DESTINATIONS.map((destination) => destination.target),
+    ).toEqual([
+      { kind: 'tab', tab: tabs.TAB_SINGING },
+      { kind: 'page', href: '/karaoke' },
+      { kind: 'page', href: '/piano-night' },
+      { kind: 'page', href: '/guitar-night' },
+      { kind: 'page', href: '/drum-night' },
+      { kind: 'tab', tab: tabs.TAB_JAM },
+      { kind: 'tab', tab: tabs.TAB_EAR_LAB },
+      { kind: 'tab', tab: tabs.TAB_VOICE_HISTORY },
+      { kind: 'tab', tab: tabs.TAB_ANALYSIS },
+      { kind: 'tab', tab: tabs.TAB_EXERCISES },
+    ])
+  })
+
+  it('renders no entrance to /glass-game', async () => {
+    const { gallery } = await loadUnlisted()
+    const { container } = render(() => <gallery.DestinationGallery />)
+
+    expect(container.querySelector('[data-destination]')).not.toBeNull()
+    expect(container.querySelector('[data-destination="glassworks"]')).toBe(
+      null,
+    )
+    expect(container.querySelector('a[href="/glass-game"]')).toBeNull()
+    expect(container.textContent).not.toContain('Glassworks')
+  })
+
+  it('keeps the Home tour to steps that resolve, without the museum', async () => {
+    const { gallery, store, tabs } = await loadUnlisted()
+    const steps = store.PAGE_TOURS[tabs.TAB_HOME] ?? []
+
+    expect(steps.length).toBeGreaterThan(0)
+    expect(steps.map((step) => step.title)).not.toContain(
+      'A museum that listens',
+    )
+    for (const step of steps) {
+      expect(step.targetSelector).not.toContain('glassworks')
+      expect(`${step.title} ${step.description}`).not.toContain('Glassworks')
+    }
+
+    // The gallery step still has its gallery to spotlight.
+    const { container } = render(() => <gallery.DestinationGallery />)
+    const galleryStep = steps.find(
+      (step) => step.title === 'Choose your next room',
+    )
+    expect(galleryStep).toBeDefined()
+    expect(
+      container.querySelector(galleryStep?.targetSelector ?? ':not(*)'),
+    ).not.toBeNull()
   })
 })

@@ -15,17 +15,23 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { ENTRY_PAGES } from '../src/seo/entry-pages'
+import type { RenderEntryPageOptions } from '../src/seo/render-entry-page'
 import { renderEntryPage } from '../src/seo/render-entry-page'
 
 /**
  * Generate every entry document. Returns the absolute paths written, in model
  * order, so the caller can build Vite's `rollupOptions.input` from the same list.
+ * An unlisted entry is still written and still a build input: it is served,
+ * only not advertised (tools/glassworks-listing.ts).
  */
-export function writeEntryPages(root: string): Record<string, string> {
+export function writeEntryPages(
+  root: string,
+  options: RenderEntryPageOptions = {},
+): Record<string, string> {
   const inputs: Record<string, string> = {}
   for (const page of ENTRY_PAGES) {
     const file = resolve(root, `${page.slug}.html`)
-    const next = renderEntryPage(page)
+    const next = renderEntryPage(page, options)
     // Only touch the file when it actually changed: an unconditional write
     // retriggers the dev server's full-reload watcher on every config read.
     let current = ''

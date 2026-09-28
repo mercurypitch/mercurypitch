@@ -15,6 +15,7 @@ import { clickNavigatesThisPage, createPendingAction, } from '@/components/share
 import { Spinner } from '@/components/shared/Spinner'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { isTabVisible, TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
 import { practiceScope, uiMode } from '@/stores/settings-store'
 import { setActiveTab } from '@/stores/ui-store'
 import styles from './DestinationGallery.module.css'
@@ -63,15 +64,22 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
       'Shape every note with live pitch guidance and an instrument-grade practice stage.',
     action: 'Open live practice',
   },
-  {
-    target: { kind: 'page', href: '/glass-game' },
-    visual: 'glassworks',
-    eyebrow: 'A museum that listens',
-    title: 'Glassworks',
-    description:
-      'Explore four galleries with Merc, learn the notes that fit your voice, and sing each glass exhibit open.',
-    action: 'Play Glassworks',
-  },
+  // Listed on dev and in `pnpm dev`, not on mercurypitch.com: the museum is
+  // Beside Cue's for now. The flag is a build constant, so the production
+  // bundle carries no trace of this card (src/lib/glassworks-listing.ts).
+  ...(GLASSWORKS_LISTED
+    ? [
+        {
+          target: { kind: 'page', href: '/glass-game' },
+          visual: 'glassworks',
+          eyebrow: 'A museum that listens',
+          title: 'Glassworks',
+          description:
+            'Explore four galleries with Merc, learn the notes that fit your voice, and sing each glass exhibit open.',
+          action: 'Play Glassworks',
+        } satisfies HomeDestination,
+      ]
+    : []),
   {
     target: { kind: 'page', href: '/karaoke' },
     visual: 'karaoke',

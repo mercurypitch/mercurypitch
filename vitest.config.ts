@@ -61,7 +61,12 @@ export default defineConfig({
     globals: true,
     // Tests must not inherit machine-local API config (.env.local) —
     // they would otherwise run the HybridAdapter against a live worker.
-    env: { VITE_API_BASE_URL: '' },
+    //
+    // Glassworks listed, as on the dev deploy: the suites describe today's
+    // Home. The unlisted production build is covered by stubbing this back to
+    // "0" (src/tests/home-destinations.test.tsx) and by
+    // scripts/assert-glassworks-listing.mjs on every build.
+    env: { VITE_API_BASE_URL: '', VITE_GLASSWORKS_LISTED: '1' },
     // ALL_TESTS is one glob set for src, rather than a per-directory list. The
     // old list silently dropped whole categories: src/components/__tests__
     // matched only .test.tsx, so a .test.ts placed there ran nowhere and
