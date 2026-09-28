@@ -90,6 +90,7 @@ export function GlassAdventure(props: GlassAdventureProps) {
         <AdventureVisit
           host={current.host}
           level={current.level}
+          assetProfile={props.assetProfile}
           onRestart={restart}
           onContinue={props.onContinue}
           continueLabel={props.continueLabel}

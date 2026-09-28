@@ -2,12 +2,13 @@
 // Game asset packaging — exercise Vite's real public-copy lifecycle
 // ============================================================
 
+import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS } from '@irchiinnuss/glass-game/assets'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { build } from 'vite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { gameAssetsPlugin, NATIVE_STANDALONE_ONLY_GAME_ASSETS, } from './game-assets'
+import { gameAssetsPlugin, NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets'
 
 let root: string
 const seed = (file: string, content: string): void => {
@@ -41,8 +42,10 @@ beforeEach(() => {
   seed('index.html', '<main>Beside Cue<img src="/art/record.svg"></main>')
   seed('public/art/record.svg', '<svg/>')
   seed('public/games/glass3d/merc.glb', 'merc source')
-  for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+  for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
     seed(`public/${asset}`, `${asset} source`)
+  for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
+    seed(`public/games/${mobile}`, `${mobile} source`)
   seed('public/models/swiftf0.onnx', 'model source')
   seed('public/ort/stale.wasm', 'stale public runtime')
   seed('runtime/ort-wasm-simd-threaded.mjs', 'runtime module')
@@ -88,20 +91,27 @@ describe('direct Vite game asset packaging', () => {
     )
     expect(contents('output/models/swiftf0.onnx')).toBe('model source')
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
-    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS)
+    for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
       expect(contents(`output/${asset}`)).toBe(`${asset} source`)
+    for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
+      expect(contents(`output/games/${mobile}`)).toBe(`${mobile} source`)
     expect(existsSync(join(root, 'output/ort/stale.wasm'))).toBe(false)
     await compile(false)
     for (const directory of ['games', 'models', 'ort'])
       expect(existsSync(join(root, 'output', directory))).toBe(false)
   })
 
-  it('omits only standalone museum dressing from a native games build', async () => {
+  it('omits only native-excluded bytes and retains every mobile alternative', async () => {
     await compile(true, 'output', undefined, true)
-    for (const asset of NATIVE_STANDALONE_ONLY_GAME_ASSETS) {
+    for (const asset of NATIVE_EXCLUDED_GAME_ASSETS) {
       expect(existsSync(join(root, 'output', asset))).toBe(false)
       expect(contents(`public/${asset}`)).toBe(`${asset} source`)
     }
+    expect(NATIVE_DESKTOP_ONLY_GAME_ASSETS).toHaveLength(
+      GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.length,
+    )
+    for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
+      expect(contents(`output/games/${mobile}`)).toBe(`${mobile} source`)
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
     expect(contents('output/models/swiftf0.onnx')).toBe('model source')
   })

@@ -4,6 +4,7 @@ import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { AdventureMessageStack } from './AdventureMessageStack'
 import { AdventureVoicePanel } from './AdventureVoicePanel'
@@ -31,6 +32,8 @@ const EncoreDialog = lazy(async () => ({
 export interface AdventureVisitProps {
   host: GlassGameHost
   level?: LevelDefinition
+  /** Fixed bundle tier for hosts that package only reviewed mobile assets. */
+  assetProfile?: GlassAssetQualityProfile
   onContinue?(): void
   continueLabel?: string
   nextLevelName?: string
@@ -56,6 +59,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
     level,
     () => canvas,
     encoreOpen,
+    untrack(() => props.assetProfile),
   )
   const encoreAudioLeases = createEncoreAudioLeaseOwner(
     adventure.silenceForEncore,

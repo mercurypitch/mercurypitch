@@ -430,6 +430,48 @@ it('balances Auto on a coarse-pointer tablet without a mobile browser hint', asy
   renderer.dispose()
 })
 
+it('keeps High display settings while a native host fixes the packaged asset tier', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'high', assetProfile: 'mobile' },
+  )
+  await renderer.ready
+
+  expect(renderer.getRenderQuality()).toMatchObject({
+    preference: 'high',
+    profile: 'high',
+    assetProfile: 'mobile',
+  })
+  expect(state.assetLoadOptions).toMatchObject({
+    assetProfile: 'mobile',
+    maximumConcurrentBundleLoads: 2,
+  })
+  renderer.dispose()
+})
+
+it('keeps an unprofiled browser High startup on full assets', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'high' },
+  )
+  await renderer.ready
+
+  expect(renderer.getRenderQuality()).toMatchObject({
+    preference: 'high',
+    profile: 'high',
+    assetProfile: 'full',
+  })
+  expect(state.assetLoadOptions).toMatchObject({
+    assetProfile: 'full',
+    maximumConcurrentBundleLoads: 2,
+  })
+  renderer.dispose()
+})
+
 it('applies balanced pixels and reuses at most one shadow frame', async () => {
   const container = browserFixture()
   vi.stubGlobal('window', {

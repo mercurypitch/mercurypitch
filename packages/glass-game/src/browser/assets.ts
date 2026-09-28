@@ -138,6 +138,28 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   ),
 }
 
+/**
+ * Reviewed mobile deliveries that replace their desktop counterpart in a
+ * native package. Both tiers remain in the web inventory; native staging uses
+ * this canonical pairing to omit bytes its host can never select.
+ */
+export const GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS = Object.freeze([
+  {
+    desktop:
+      GLASS_GAME_ASSET_FILES['cloudway-lab-pearl-quarter-turn-a-desktop-v1'],
+    mobile:
+      GLASS_GAME_ASSET_FILES['cloudway-lab-pearl-quarter-turn-a-mobile-v1'],
+  },
+  {
+    desktop: GLASS_GAME_ASSET_FILES['cloudway-lab-rose-hex-crumble-desktop-v3'],
+    mobile: GLASS_GAME_ASSET_FILES['cloudway-lab-rose-hex-crumble-mobile-v3'],
+  },
+  {
+    desktop: GLASS_GAME_ASSET_FILES['cloudway-lab-frost-gold-arch-desktop-v1'],
+    mobile: GLASS_GAME_ASSET_FILES['cloudway-lab-frost-gold-arch-mobile-v1'],
+  },
+] as const)
+
 const MANIFEST_FILES = [
   'adventure/manifest.json',
   'adventure-v2/manifest.json',

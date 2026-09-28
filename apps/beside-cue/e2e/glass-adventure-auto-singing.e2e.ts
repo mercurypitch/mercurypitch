@@ -1,6 +1,7 @@
 // Automatic museum singing — real host gesture, cancellation, exit and persisted manual mode.
 
 import { expect, test, type Page } from '@playwright/test'
+import { omitRasterOutput } from './helpers/glass-adventure-controls'
 
 interface VoiceSource {
   context: AudioContext
@@ -35,6 +36,7 @@ test.use({
 test.setTimeout(180_000)
 
 async function openRestoredCircle(page: Page): Promise<void> {
+  await omitRasterOutput(page)
   await page.addInitScript(
     ({ prefix }) => {
       localStorage.setItem(`${prefix}tutorial`, 'seen')
@@ -167,22 +169,6 @@ async function armWithCameraDrag(page: Page): Promise<void> {
   await page.mouse.up()
 }
 
-async function omitRasterOutputAfterProof(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    for (const method of [
-      'clear',
-      'drawArrays',
-      'drawArraysInstanced',
-      'drawElements',
-      'drawElementsInstanced',
-    ])
-      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
-        configurable: true,
-        value: () => undefined,
-      })
-  })
-}
-
 async function playerDistanceFromGoblet(page: Page): Promise<number> {
   return page
     .getByTestId('glass-adventure')
@@ -216,7 +202,7 @@ async function cancelVoice(page: Page): Promise<void> {
 
 test('@smoke museum circles engage once, rearm on physical exit and preserve manual mode', async ({
   page,
-}, testInfo) => {
+}) => {
   await openRestoredCircle(page)
   const adventure = page.getByTestId('glass-adventure')
   const sing = page.getByRole('button', { name: 'Sing to the glass' })
@@ -232,15 +218,7 @@ test('@smoke museum circles engage once, rearm on physical exit and preserve man
   expect(
     await page.evaluate(() => window.automaticSingingFixture.gestureUnlocks),
   ).toBeGreaterThan(0)
-  await page.screenshot({
-    path: testInfo.outputPath('automatic-entry.png'),
-    fullPage: true,
-  })
-  // The default-on prompt above is full WebGL proof. The remaining lifecycle
-  // assertions keep the actual host, renderer updates, controls and audio while
-  // avoiding unrelated SwiftShader raster cost.
-  await omitRasterOutputAfterProof(page)
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
 
   await cancelVoice(page)
   await page.clock.runFor(500)
@@ -273,8 +251,8 @@ test('@smoke museum circles engage once, rearm on physical exit and preserve man
   await expect(page.getByLabel('Voice challenge')).toBeVisible()
   await cancelVoice(page)
 
-  await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('button', { name: 'Pause game' }).click()
+  await page.setViewportSize({ width: 390, height: 844 })
   const automatic = page.getByRole('checkbox', {
     name: 'Automatic singing',
   })
@@ -300,9 +278,6 @@ test('@smoke museum circles engage once, rearm on physical exit and preserve man
       `${STORAGE_PREFIX}automatic-singing`,
     ),
   ).toBe('off')
-  await page.getByRole('dialog').screenshot({
-    path: testInfo.outputPath('automatic-setting-mobile.png'),
-  })
   await page.getByRole('button', { name: 'Back to the museum' }).click()
 
   await page.clock.resume()
