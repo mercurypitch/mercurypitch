@@ -16,9 +16,10 @@
 //     bar (and the room's song line says so too), Saving to this phone;
 //   - the song arrives as yours, marked new, and plays in the room from the
 //     stems saved on the phone: streamed, never decoded whole, and then
-//     again with AudioDecoder taken away, decoded whole as a small song may
-//     be. The stems are MP3 as the deployed handler writes them (owner, 28
-//     Sep: no new RunPod image), made from a take in the repository;
+//     again with AudioDecoder taken away, decoded whole as a stem under the
+//     guard may be. The stems are MP3 as the deployed handler writes them
+//     (owner, 28 Sep: no new RunPod image), made from a take in the
+//     repository;
 //   - the room's options and Settings count the songs; Restore purchases
 //     and Subscribe fail closed, since no store is there yet (owner, 27 Sep);
 //   - the song's own menu removes it from this phone;
@@ -943,8 +944,10 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
 
     // ── Again, on a phone without AudioDecoder ────────────────
     // The fallback every WKWebView before iOS 26 takes: the room decodes a
-    // stem whole only while it is small, as these are. Another song first,
-    // so the stems load again; an example is too big, and is refused.
+    // stem whole up to the guard, 12 MiB (stem-memory.ts), as these are.
+    // Another song first, so the stems load again: an example, whose stems
+    // are under the guard too, so it is decoded whole and cued. A song past
+    // the guard is refused; probe-karaoke.mjs walks that.
     at = 'the imported song without AudioDecoder'
     await page.evaluate(() => {
       window.__probeAudioDecoder = window.AudioDecoder
@@ -961,16 +964,43 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       )
       .tap()
     await hidden('[data-testid="karaoke-library"]')
-    await visible(`${stage} [role="alert"]`, runTimeoutMs)
-    const refusedRecord = await page.evaluate(lastSongPath)
+    await page
+      .waitForFunction(
+        (song) => {
+          const stage = document.querySelector(
+            '[data-testid="karaoke-mobile-stage"]',
+          )
+          const title = stage
+            ?.querySelector('[data-testid="karaoke-songline"]')
+            ?.getAttribute('aria-label')
+          const play = stage?.querySelector('button[aria-label="Play"]')
+          return (
+            typeof title === 'string' &&
+            title !== `${song}. Open the songs` &&
+            stage?.querySelector('[role="alert"]') === null &&
+            play !== null &&
+            play !== undefined &&
+            !play.disabled
+          )
+        },
+        SONG,
+        { timeout: runTimeoutMs },
+      )
+      .catch(async () => {
+        throw new Error(
+          `the example without AudioDecoder never cued: ${JSON.stringify(await page.evaluate(readStage))}`,
+        )
+      })
+    const exampleRecord = await page.evaluate(lastSongPath)
     if (
-      refusedRecord?.path !== 'refused' ||
-      refusedRecord.state !== 'done' ||
-      refusedRecord.residentBytes !== null ||
-      !(refusedRecord.wholeDecodeBytes > 0)
+      exampleRecord?.path !== 'whole' ||
+      exampleRecord.state !== 'done' ||
+      !(exampleRecord.residentBytes > 0) ||
+      !(exampleRecord.songBytes > 0) ||
+      exampleRecord.songBytes > 2 * 12 * 1024 * 1024
     ) {
       failures.push(
-        `the example without AudioDecoder: the Developer record reads ${JSON.stringify(refusedRecord)}, not a refusal with a whole decode's cost`,
+        `the example without AudioDecoder: the Developer record reads ${JSON.stringify(exampleRecord)}, not a finished whole decode under the guard`,
       )
     }
     await openLibrary()
@@ -1042,7 +1072,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
       window.AudioDecoder = window.__probeAudioDecoder
     })
     steps.push(
-      `karaoke import: without AudioDecoder, "${example.title}" is refused and "${SONG}" plays again (${whole.elapsed}s to ${decodedPlaying.elapsed}s), each MP3 stem decoded whole once, from the phone`,
+      `karaoke import: without AudioDecoder, "${example.title}" is decoded whole under the guard (${exampleRecord?.songBytes} bytes) and "${SONG}" plays again (${whole.elapsed}s to ${decodedPlaying.elapsed}s), each MP3 stem decoded whole once, from the phone`,
     )
 
     // ── The options and Settings count the songs ──────────────

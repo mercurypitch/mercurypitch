@@ -30,8 +30,9 @@
 // THE KARAOKE ROOM has a walk of its own on each frame (probe-karaoke.mjs):
 // the door, the cued song, play and pause, the library, the options and the
 // pin, and the studio, with nothing anywhere scrolling sideways. Then the
-// room on a phone with no AudioDecoder, which cannot stream: the song is
-// refused with the reason, never decoded whole. A build that imports songs
+// room on a phone with no AudioDecoder, which cannot stream: a stem up to
+// the 12 MiB guard is decoded whole, and a song with a bigger one is refused
+// with the reason, never decoded whole. A build that imports songs
 // (every build but the store's) then walks one import through, against a
 // stand-in for the two hosts it would reach (probe-karaoke-import.mjs).
 // `--karaoke-only` walks those alone.

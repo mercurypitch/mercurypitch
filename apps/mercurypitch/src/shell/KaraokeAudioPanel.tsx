@@ -4,13 +4,14 @@
 //
 // Every iPhone before iOS 26 plays the Karaoke room without AudioDecoder:
 // Safari has had one only since 26.0, and the app supports iOS 16. There the
-// room decodes a small stem whole and refuses a song, and no phone the owner
+// room decodes a stem up to the guard whole and refuses a song with a bigger
+// one (stem-memory.ts, HOSTED_WHOLE_DECODE_MAX_BYTES), and no phone the owner
 // tests on takes that path by itself (owner, 28 Sep). This section is how it
 // is taken on purpose, and read afterwards:
 //
 //   "Force the no-streaming path" makes the room behave as if AudioDecoder
 //   were undefined (stream-switches.ts): songs past the guard are refused,
-//   a small one is decoded whole.
+//   a smaller one is decoded whole.
 //
 //   "Allow full decode past the guard" is the crash test: a song the guard
 //   refuses is decoded whole instead, to learn whether this phone survives
@@ -28,11 +29,15 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Index, on, onCleanup } from 'solid-js'
 import { describeSongPath, PATH_SOURCE, readLastSongPath, } from '@/features/stem-mixer/stem-load-path'
+import { HOSTED_WHOLE_DECODE_MAX_BYTES } from '@/features/stem-mixer/stem-memory'
 import { decodePastGuard, noStreamForced, setDecodePastGuard, setNoStreamForced, } from '@/features/stem-mixer/stream-switches'
 import { onAudioDiagnostic, recordAudioDiagnostic, } from '@/lib/audio-diagnostics'
 import { codecSupport, configLine, decoderRow, lastSongConfig, STREAMED_CODECS, } from './karaoke-audio-readout'
 import { SettingsGroup, SettingsRow } from './settings/SettingsList'
 import { SettingsSwitch } from './settings/SettingsSwitch'
+
+/** The guard as the switch states it, read from the guard itself. */
+const GUARD_MB = Math.round(HOSTED_WHOLE_DECODE_MAX_BYTES / (1024 * 1024))
 
 interface Row {
   id: string
@@ -124,7 +129,7 @@ export const KaraokeAudioPanel: Component = () => {
         <SettingsRow
           id="karaoke-force-no-stream"
           label="Force the no-streaming path"
-          sub="The Karaoke room behaves as if this phone had no AudioDecoder, as every iPhone before iOS 26 has none. A song over 2 MB is refused; a smaller one is decoded whole."
+          sub={`The Karaoke room behaves as if this phone had no AudioDecoder, as every iPhone before iOS 26 has none. A song with a stem over ${GUARD_MB} MB is refused; a smaller stem is decoded whole.`}
           accessory={
             <SettingsSwitch
               checked={noStreamForced()}
