@@ -30,6 +30,7 @@ import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn,
 import { AccountOfferCard } from './AccountOffer'
 import { appearanceLabel } from './AppearanceScreen'
 import { deviceFacts, loadDeviceFacts } from './device-facts'
+import { thisDevice } from './device-noun'
 import { knownInput } from './level-check'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
@@ -130,7 +131,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
           >
             <AccountOfferCard />
           </Show>
-          <SettingsGroup title="This phone">
+          <SettingsGroup title={thisDevice()}>
             <SettingsRow
               id="microphone"
               icon={<MicIcon />}
@@ -156,7 +157,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
             <SettingsRow
               id="this-phone"
               icon={<PhoneIcon />}
-              label="This phone"
+              label={thisDevice()}
               value={deviceFacts()?.model ?? undefined}
               onPress={() => {
                 props.onPush('this-phone')

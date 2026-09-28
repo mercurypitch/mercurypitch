@@ -24,6 +24,7 @@ import { AccountNameScreen } from './settings/AccountNameScreen'
 import { AccountScreen } from './settings/AccountScreen'
 import { AppearanceScreen } from './settings/AppearanceScreen'
 import { DeleteAccountScreen } from './settings/DeleteAccountScreen'
+import { thisDevice } from './settings/device-noun'
 import { DevicesScreen } from './settings/DevicesScreen'
 import { KaraokeSettingsScreen } from './settings/KaraokeSettingsScreen'
 import { MicrophoneScreen } from './settings/MicrophoneScreen'
@@ -41,7 +42,7 @@ export interface ShellScreensProps {
   developer?: Component
 }
 
-const TITLES: Record<PushedScreenId, string> = {
+const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   settings: 'Settings',
   account: 'Account',
   'account-name': 'Name',
@@ -50,12 +51,16 @@ const TITLES: Record<PushedScreenId, string> = {
   microphone: 'Microphone',
   'room-noise': 'Room noise',
   storage: 'Storage',
-  'this-phone': 'This phone',
   appearance: 'Appearance',
   about: 'About',
   karaoke: 'Karaoke',
   'karaoke-studio': 'Karaoke studio',
   developer: 'Developer',
+}
+
+/** The device's own screen is named for what it is: "This iPad" on an iPad. */
+function titleOf(screen: PushedScreenId): string {
+  return screen === 'this-phone' ? thisDevice() : TITLES[screen]
 }
 
 export function ShellScreens(props: ShellScreensProps): JSX.Element {
@@ -97,7 +102,7 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
   return (
     <Show when={pushed()} keyed>
       {(screen) => (
-        <PushedScreen title={TITLES[screen]} onBack={popScreen}>
+        <PushedScreen title={titleOf(screen)} onBack={popScreen}>
           {body(screen)}
         </PushedScreen>
       )}
