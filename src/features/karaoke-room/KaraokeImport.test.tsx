@@ -545,6 +545,39 @@ describe('the paywall', () => {
     }
   })
 
+  it('offers the subscription anyway when the store does not answer in time', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      karaokeSubscription: {
+        subscribe: async () => Promise.resolve('cancelled' as const),
+        restore: async () => Promise.resolve('nothing' as const),
+        offer: offered,
+        storeSubscribed: async () => new Promise<boolean>(() => undefined),
+      },
+    })
+    try {
+      resetKaraokeSongsForTests({
+        left: 0,
+        subscribed: false,
+        renewsAt: null,
+        perPeriod: 20,
+      })
+      mount()
+      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+      await vi.advanceTimersByTimeAsync(2_900)
+      expect(screen.queryByRole('dialog')).toBeNull()
+
+      await vi.advanceTimersByTimeAsync(200)
+      vi.useRealTimers()
+
+      await sheet('Sing your own songs')
+    } finally {
+      vi.useRealTimers()
+      unregister()
+    }
+  })
+
   it('offers the subscription where the store holds none either', async () => {
     const storeSubscribed = vi.fn(async () => Promise.resolve(false))
     const unregister = registerShellApi({
