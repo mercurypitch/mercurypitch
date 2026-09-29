@@ -117,8 +117,8 @@ These are the rules that break things when ignored.
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 550 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
+| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 400 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
-| `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
 | `jam` | [useJamRoomBackground.ts](../../src/features/jam/useJamRoomBackground.ts) | 300 | Jam room background controller — shared host selection and protected bytes A Jam background is room state, not a personal preference. |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 300 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
