@@ -469,14 +469,21 @@ jobs:
           # `bc-v0.2.1` -> versionName 0.2.1. Play rejects a re-used
           # versionCode, and the run number is the only value here that is
           # guaranteed to increase, so it is the code regardless of the tag.
+          # A push or a dispatch that is not a tag is named for its branch:
+          # it has no pull request, and `pr0` read as one.
           if [[ "$IS_RELEASE" == "true" ]]; then
             name="${REF_NAME#"$TAG_PREFIX"}"
-          else
+          elif [[ "$PR_NUMBER" != "0" ]]; then
             name="0.0.0-pr${PR_NUMBER}"
+          else
+            name="0.0.0-${REF_NAME//[^0-9A-Za-z.-]/-}"
           fi
 
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "code=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          # The debug APK's name carries the run, because its code cannot:
+          # see "Test, lint, and package debug".
+          echo "debug-name=$name+run$RUN_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -561,13 +568,22 @@ jobs:
           printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/debug.jks"
           test -s "$RUNNER_TEMP/debug.jks"
 
+      # The debug APK is named for its run -- unnamed, it said the build
+      # script's fallback (Mercury Pitch's 0.1.0), which reads as a real
+      # release several behind TestFlight. Its versionCode stays 1 on
+      # purpose: a lower code than the installed one is a downgrade the
+      # package installer refuses, and uninstalling wipes what the app keeps
+      # only on the device -- the loss the shared debug key exists to spare
+      # (gradle/signing.gradle). So any debug build still replaces any other.
       - name: Test, lint, and package debug
         shell: bash
         env:
           DEBUG_KEYSTORE_FILE: ${{ env.HAS_DEBUG_KEY == 'true' && format('{0}/debug.jks', runner.temp) || '' }}
+          VERSION_NAME: ${{ steps.version.outputs.debug-name }}
         run: |
           set -euo pipefail
           export "${PREFIX}_DEBUG_KEYSTORE_FILE=$DEBUG_KEYSTORE_FILE"
+          export "${PREFIX}_VERSION_NAME=$VERSION_NAME"
           cd "$APP_DIR/android"
           profile_argument=''
           if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
