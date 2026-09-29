@@ -161,6 +161,23 @@ describe('MicManager', () => {
     expect(mgr.getConsumers()).toEqual([])
   })
 
+  it('names a browser that offers no microphone, not its TypeError', async () => {
+    // An insecure origin, an embedded view or a television's browser can
+    // expose no navigator.mediaDevices at all. Reaching through it threw a
+    // TypeError, and "Cannot read properties of undefined" was the copy the
+    // singer got.
+    ;(
+      globalThis.navigator as unknown as { mediaDevices: unknown }
+    ).mediaDevices = undefined
+
+    await expect(mgr.acquire('a')).rejects.toMatchObject({
+      kind: 'no-device',
+      message: 'This browser cannot use a microphone.',
+    })
+    expect(mgr.isActive()).toBe(false)
+    expect(mgr.getConsumers()).toEqual([])
+  })
+
   it('retries once when the device is briefly busy', async () => {
     const stream = makeStream()
     let calls = 0
