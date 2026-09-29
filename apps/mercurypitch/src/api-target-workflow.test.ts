@@ -25,11 +25,16 @@ const WORKFLOWS = fileURLToPath(
 const CALLER = readFileSync(`${WORKFLOWS}mercurypitch-mobile.yml`, 'utf8')
 const REUSABLE = readFileSync(`${WORKFLOWS}capacitor-app.yml`, 'utf8')
 
-/** A `key: |` block's lines, by its key, at the indentation it is written. */
+/**
+ * A `key: |` block's lines, by its key, at the indentation it is written.
+ * A blank line inside the block is part of it, as YAML reads it: a script
+ * that stopped at its first one would run as a script that does nothing.
+ */
 function block(text: string, key: string): string {
-  const match = new RegExp(`\\n( *)${key}: \\|\\n((?:\\1  .*\\n)+)`, 'u').exec(
-    text,
-  )
+  const match = new RegExp(
+    `\\n( *)${key}: \\|\\n((?:\\1  .*\\n|[ \\t]*\\n)+)`,
+    'u',
+  ).exec(text)
   if (match === null) throw new Error(`no ${key} block`)
   return match[2]
 }
@@ -172,6 +177,34 @@ function dedent(text: string): string {
   return lines.map((line) => line.slice(indent)).join('\n')
 }
 
+/**
+ * Runs one step's own shell as its job would, with PATH and `env` only, and
+ * returns the lines it wrote to the file GitHub hands it as `file`.
+ */
+function runStep(
+  id: string,
+  name: string,
+  file: 'GITHUB_ENV' | 'GITHUB_OUTPUT',
+  env: Record<string, string>,
+): string[] {
+  // A step's text ends where the next one starts, without its newline.
+  const script = dedent(block(`${stepText(job(id), name)}\n`, 'run'))
+  const dir = mkdtempSync(join(tmpdir(), 'mp-step-'))
+  try {
+    const written = join(dir, 'written')
+    writeFileSync(written, '')
+    const result = spawnSync('bash', ['-c', script], {
+      env: { PATH: process.env.PATH, [file]: written, ...env },
+      encoding: 'utf8',
+    })
+    expect(result.stderr).toBe('')
+    expect(result.status).toBe(0)
+    return readFileSync(written, 'utf8').split('\n').filter(Boolean)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
 // The store binary of a production dispatch is the one a reviewer installs,
 // and it shipped the portable console and the Developer screen: the flag
 // that turns them on is a line in the committed .env, and turning it off was
@@ -200,28 +233,8 @@ describe('the portable console in the store binary', () => {
   }
 
   /** What a job's store export step writes to GITHUB_ENV, by running it. */
-  const exported = (id: string, rendered: string): string[] => {
-    // A step's text ends where the next one starts, without its newline.
-    const script = dedent(block(`${stepText(job(id), STORE_EXPORT)}\n`, 'run'))
-    const dir = mkdtempSync(join(tmpdir(), 'mp-store-env-'))
-    try {
-      const githubEnv = join(dir, 'github-env')
-      writeFileSync(githubEnv, '')
-      const result = spawnSync('bash', ['-c', script], {
-        env: {
-          PATH: process.env.PATH,
-          STORE_BUILD_ENV: rendered,
-          GITHUB_ENV: githubEnv,
-        },
-        encoding: 'utf8',
-      })
-      expect(result.stderr).toBe('')
-      expect(result.status).toBe(0)
-      return readFileSync(githubEnv, 'utf8').split('\n').filter(Boolean)
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
-  }
+  const exported = (id: string, rendered: string): string[] =>
+    runStep(id, STORE_EXPORT, 'GITHUB_ENV', { STORE_BUILD_ENV: rendered })
 
   for (const id of ['android', 'ios-testflight']) {
     it(`${id}: a production dispatch turns it off in the store binary`, () => {
@@ -334,5 +347,69 @@ describe('the store binary check', () => {
       status: 0,
       ran: [`${BUNDLE} DIST`],
     })
+  })
+})
+
+// The debug APK said 0.1.0 whatever it was built from: nothing named it, so
+// it carried the build script's fallback, and beside a TestFlight on 0.8.1
+// that reads as a stale build. It is named for its run now. Its code stays 1,
+// so any debug build still installs over any other.
+describe('the version each Android build carries', () => {
+  /** What "Resolve release version" writes to GITHUB_OUTPUT, by running it. */
+  const resolved = (env: Record<string, string>): Record<string, string> =>
+    Object.fromEntries(
+      runStep('android', 'Resolve release version', 'GITHUB_OUTPUT', {
+        TAG_PREFIX: 'mp-v',
+        RUN_NUMBER: '441',
+        IS_RELEASE: 'false',
+        PR_NUMBER: '0',
+        ...env,
+      }).map((line) => {
+        const at = line.indexOf('=')
+        return [line.slice(0, at), line.slice(at + 1)]
+      }),
+    )
+
+  it('a tag names the release it is, and the debug APK adds its run', () => {
+    expect(resolved({ IS_RELEASE: 'true', REF_NAME: 'mp-v0.8.1' })).toEqual({
+      name: '0.8.1',
+      code: '441',
+      'debug-name': '0.8.1+run441',
+    })
+  })
+
+  it('a pull request is named for its number', () => {
+    expect(resolved({ PR_NUMBER: '886', REF_NAME: '886/merge' })).toEqual({
+      name: '0.0.0-pr886',
+      code: '441',
+      'debug-name': '0.0.0-pr886+run441',
+    })
+  })
+
+  it('a push is named for its branch, not a pull request 0', () => {
+    expect(resolved({ REF_NAME: 'main' })).toMatchObject({
+      name: '0.0.0-main',
+      'debug-name': '0.0.0-main+run441',
+    })
+    expect(resolved({ REF_NAME: 'feat/some_thing' })).toMatchObject({
+      name: '0.0.0-feat-some-thing',
+    })
+  })
+
+  it('the debug APK takes the name only, and keeps code 1', () => {
+    // A code from the run would make an older build a downgrade the package
+    // installer refuses, and uninstalling loses what only the phone holds.
+    const debug = stepText(job('android'), 'Test, lint, and package debug')
+    expect(debug).toContain(
+      'VERSION_NAME: ${{ steps.version.outputs.debug-name }}',
+    )
+    expect(debug).toContain('export "${PREFIX}_VERSION_NAME=$VERSION_NAME"')
+    expect(debug).not.toContain('VERSION_CODE')
+  })
+
+  it('the store binary keeps the plain name and the run as its code', () => {
+    const release = stepText(job('android'), 'Build release bundle and APK')
+    expect(release).toContain('VERSION_NAME: ${{ steps.version.outputs.name }}')
+    expect(release).toContain('VERSION_CODE: ${{ steps.version.outputs.code }}')
   })
 })
