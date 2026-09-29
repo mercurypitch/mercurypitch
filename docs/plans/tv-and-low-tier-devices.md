@@ -16,6 +16,10 @@ Plus one unrelated finding on desktop: the Karaoke tab's **Guide** modal and
 Status keys: **[shipped]** in this change, **[next]** planned, **[open]** needs
 a decision or hardware to verify.
 
+**Continued in [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md)**
+(2026-09-29): where every open item below stands, what this audit missed, the
+TV platforms and their stores, and the phone as the microphone.
+
 ---
 
 ## 1. Why a television is different
@@ -143,8 +147,11 @@ GPU to fill 8 megapixels of waveform per frame.
   of ~4000 segment-tree queries. This is the one canvas change with real
   upside, and the one with real regression risk (the moiré/zoom-desync class
   of bug this file's history warns about) — its own PR.
-- **[open]** Whether Piano Night's and Guitar Night's stage backgrounds should
-  be swapped for a static image on `low` rather than merely de-blurred.
+- **[next]**, restated 2026-09-29: both stage backgrounds are already static
+  photos, so there is nothing to swap. What `low` still pays for is Guitar
+  Night's `.roomGlow`, a full-viewport blend layer it stops animating but
+  keeps, and art chosen by the raw `devicePixelRatio`
+  ([tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md) §2).
 
 ### 2.5 Would a native app fix this?
 
@@ -191,11 +198,12 @@ while signed in, then open it here from the library.
 - **[shipped]** On a TV the upload view now leads with a notice that the
   browser cannot open files, pointing at the library below and the demo songs
   — before the user discovers the dead button by clicking it.
-- **[deferred]** A "send from your phone" pairing flow (QR code → phone
-  uploads → TV picks it up from the account) is the genuinely good answer.
-  Account/device song sharing is already being built as its own effort in a
-  separate work stream — the TV handoff should ride that, not duplicate it
-  here.
+- **[shipped]**, mostly, 2026-08-12/13: the "send from your phone" flow rode
+  the device-sync work as planned. P2P sync with a QR of `#/sync:CODE`
+  (PR #501), TV sign-in by phone, the account's song list and Drive restore.
+  What is left (an action on the notice above, a QR sized for a room,
+  stream-one-song) is in [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md)
+  §2.
 - **[open]** On-device separation is not viable on TV hardware regardless; the
   Karaoke settings copy now says so.
 
@@ -210,6 +218,12 @@ paired to the TV should work through `getUserMedia` — untested.
 - **[open]** Needs hardware to verify. If it does work, the mic-permission copy
   should mention it on `deviceClass() === 'tv'`; if it does not, the mic-gated
   surfaces should say so up front rather than failing at the permission prompt.
+- 2026-09-29: store apps on LG webOS get no audio at all, Samsung's are
+  unreliable, and Android TV reaches USB microphones device by device; the TV
+  browsers themselves are still untested. A browser with no
+  `navigator.mediaDevices` now gets a sentence instead of a TypeError. The
+  answer that works on every TV is the phone as the microphone:
+  [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md) §1 and §4.
 
 ---
 
@@ -282,6 +296,10 @@ prefixes are down-levelled instead of shipped as syntax those engines drop.
   is BETTER for D-pad), and the Compose toolbar re-stack (admin/compose
   surfaces, not TV paths). None shares a selector list with a valid selector,
   so nothing else is dragged down.
+- **[next]**, found 2026-09-29: the Karaoke mixer's stylesheet is a runtime
+  string, so neither the transform nor Lightning CSS sees it, and the review
+  above did not either ([tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md)
+  §3.2).
 
 ---
 
@@ -363,3 +381,6 @@ pnpm build && grep -o "_loopBtnB[^{]*{[^}]*}" dist/assets/*.css
 | 6   | Offscreen waveform cache                                            | The real canvas win                                                       |
 | 7   | Phone-to-TV song handoff                                            | Needs cross-device sync                                                   |
 | 8   | Native TV shell                                                     | Wants 1–6 done first regardless                                           |
+
+Items 6 to 8, and what has come up since, are sequenced in
+[tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md) §6.
