@@ -68,8 +68,8 @@ export const SIDEBAR_PANELS: Record<SidebarPanelId, Component> = {
 /**
  * The plan's §4 matrix. Character only where a voice character drives the
  * engine; Library only where the melody library feeds the surface;
- * Playback Setup only on musical tabs. Karaoke and Jam gain their own
- * rail panels in later steps; until then they show universal panels only.
+ * Playback Setup only on musical tabs. Karaoke carries its queue, groups
+ * and set lists in the rail, and Jam its room card.
  * The three dev surfaces keep the historical full list — nobody is
  * cleaning up a hidden lab.
  */

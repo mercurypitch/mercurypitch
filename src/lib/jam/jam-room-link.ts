@@ -7,10 +7,10 @@
 // the one that serves jam.html, with the Jam card in its Open Graph tags. A
 // link off `/` unfurls with the generic site image instead.
 //
-// One function because three places hand the link out (the room's code
-// button, the sidebar's, the invite dialog and its QR code), and two of them
-// had kept the old spelling: the same room was invited by two addresses, and
-// only one of them showed the right card when pasted into a chat.
+// One function because the link is handed out from more than one place (the
+// room-code button, wherever it is shown, and the invite dialog), and they
+// had drifted to two spellings: the same room was invited by two addresses,
+// and only one of them showed the right card when pasted into a chat.
 
 /** The link that opens this room, on whatever origin the app is served from. */
 export function jamRoomLink(roomId: string, origin?: string): string {
