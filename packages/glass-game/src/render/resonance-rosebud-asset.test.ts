@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { BufferGeometry, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, } from 'three'
 import { Box3 } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
@@ -29,7 +30,11 @@ async function load(): Promise<Object3D> {
   const bytes = delivery()
   const payload = new Uint8Array(bytes.byteLength)
   payload.set(bytes)
-  return (await new GLTFLoader().parseAsync(payload.buffer, '')).scene
+  return (
+    await new GLTFLoader()
+      .setMeshoptDecoder(MeshoptDecoder)
+      .parseAsync(payload.buffer, '')
+  ).scene
 }
 
 function triangles(node: Object3D): number {

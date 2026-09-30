@@ -3,7 +3,7 @@
   "assetVersion": 2,
   "sourcePolicy": "Blender-authored V2 GLBs validated against preserved receipts; external CC0 texture and environment runtime files match their preserved source hashes.",
   "scope": "All binary assets currently shipped from public/games/adventure-v2; provenance JSON and this manifest are excluded from totalBytes.",
-  "totalBytes": 29202477,
+  "totalBytes": 27642985,
   "provenance": {
     "file": "textures/CC0-SOURCES.json",
     "bytes": 6456,
@@ -37,8 +37,8 @@
     {
       "id": "vessels-v2",
       "file": "vessels-qa-v2.glb",
-      "bytes": 3378428,
-      "sha256": "6b04ecf14ef27b8610d3ee7e37980bb6cda0d0427ce89fc7d691a9827c936393",
+      "bytes": 1818936,
+      "sha256": "1e937bbddb0ffe6278869f2fd0f31cfcd1d1a4b3ada79bf4028ac75ed783c88c",
       "source": "art/glass-adventure/v2/models/vessels.blend",
       "sourceBytes": 1628442,
       "sourceSha256": "d10322b36a64e1f4f8d61dd11e068567364be52a303c723c9784ddb947e8fcf8",

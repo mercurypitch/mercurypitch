@@ -28,8 +28,8 @@ export const LIVING_CRYSTAL_PLATFORM_RUNTIME = {
   triangles: 32_336,
   meshDrawsPerPass: 3,
   textures: 0,
-  bytes: 847_764,
-  sha256: 'aa4febb3ccf8a1e9ab842263a14af9f923e279e0c8e317ac662f5d73a775643b',
+  bytes: 461_664,
+  sha256: 'a0b0c2b8b0186129bbefffef5fb4b935ab20944de20097745d20707225b03c70',
   pathManifestSha256:
     '5e307abf2bcaa9566e8bf668dadd1c7a231e0acdcae169be0915a5800f81552a',
   pathCount: 51,

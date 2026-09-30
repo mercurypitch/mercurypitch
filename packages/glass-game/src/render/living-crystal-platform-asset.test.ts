@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { Mesh } from 'three'
 import { Box3, BoxGeometry, Group, Mesh as ThreeMesh, MeshStandardMaterial, PerspectiveCamera, } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
@@ -29,7 +30,11 @@ async function load() {
   const source = bytes()
   const payload = new Uint8Array(source.byteLength)
   payload.set(source)
-  return (await new GLTFLoader().parseAsync(payload.buffer, '')).scene
+  return (
+    await new GLTFLoader()
+      .setMeshoptDecoder(MeshoptDecoder)
+      .parseAsync(payload.buffer, '')
+  ).scene
 }
 
 function snapshot(
