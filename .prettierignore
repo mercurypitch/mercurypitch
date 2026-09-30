@@ -6,3 +6,6 @@
 # The native Karaoke room's example notes, written compact by their generator
 # (apps/mercurypitch/scripts/generate-karaoke-example-notes.mjs).
 /apps/mercurypitch/native-only/karaoke/examples/*/notes.json
+# Vendored Motion Video Kit, kept byte-identical to its upstream commit so an
+# update is a clean diff (see its VENDORED.md).
+/.claude/skills/motion-designer/kit/

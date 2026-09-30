@@ -1,0 +1,281 @@
+<!doctype html>
+<!--
+  motion-designer smoke test: a 5-second, 1920x1080 composition that exercises
+  the pipeline end to end (local pinned GSAP, a local @font-face, an SVG brand
+  mark, a persistent carried object, a foreground fly-through transition, a
+  music bed and one whoosh). scripts/smoke-test.sh copies it into a fresh
+  HyperFrames project as index.html. It proves the toolchain, not the taste.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/vendor/gsap-3.14.2.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Outfit';
+        src: url('assets/fonts/Outfit-wght.ttf') format('truetype');
+        font-weight: 100 900;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #0d1117;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Outfit', sans-serif;
+        background:
+          radial-gradient(
+            80% 60% at 50% 0%,
+            rgba(88, 166, 255, 0.18),
+            transparent 60%
+          ),
+          #0d1117;
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      .stage {
+        position: absolute;
+        inset: 0;
+        display: block;
+      }
+      #mark {
+        position: absolute;
+        left: 150px;
+        top: 250px;
+        width: 330px;
+        height: 330px;
+        display: block;
+      }
+      #title {
+        position: absolute;
+        left: 540px;
+        top: 300px;
+        width: 1260px;
+        display: block;
+        font-size: 168px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: #e6edf3;
+        transform-origin: 30% 50%;
+      }
+      #title .accent {
+        color: #58a6ff;
+      }
+      #contour {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        display: block;
+      }
+      #headline-b {
+        position: absolute;
+        left: 150px;
+        top: 150px;
+        width: 1600px;
+        display: block;
+        font-size: 132px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: #e6edf3;
+      }
+      #cta {
+        position: absolute;
+        left: 150px;
+        top: 312px;
+        width: 900px;
+        display: block;
+        font-size: 44px;
+        font-weight: 500;
+        color: #a8b3bf;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="5"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Persistent actor: the pitch contour survives the scene change. -->
+      <div
+        id="contour-layer"
+        class="clip"
+        data-start="0"
+        data-duration="5"
+        data-track-index="0"
+      >
+        <svg id="contour" viewBox="0 0 1920 1080">
+          <defs>
+            <linearGradient id="spectrum" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#58a6ff" />
+              <stop offset="0.5" stop-color="#2dd4bf" />
+              <stop offset="1" stop-color="#bc8cff" />
+            </linearGradient>
+          </defs>
+          <path
+            id="trail"
+            d="M 60 860 C 260 860 300 760 460 760 S 700 900 880 820 S 1160 640 1320 700 S 1640 820 1860 720"
+            fill="none"
+            stroke="url(#spectrum)"
+            stroke-width="10"
+            stroke-linecap="round"
+          />
+          <g id="notes">
+            <circle class="note" cx="460" cy="760" r="18" fill="#58a6ff" />
+            <circle class="note" cx="700" cy="846" r="18" fill="#58a6ff" />
+            <circle class="note" cx="1000" cy="760" r="18" fill="#2dd4bf" />
+            <circle class="note" cx="1320" cy="700" r="18" fill="#2dd4bf" />
+            <circle class="note" cx="1640" cy="790" r="18" fill="#bc8cff" />
+          </g>
+        </svg>
+      </div>
+
+      <section
+        id="scene-b"
+        class="clip"
+        data-start="2.2"
+        data-duration="2.8"
+        data-track-index="1"
+      >
+        <div id="stage-b" class="stage">
+          <h1 id="headline-b">See every note.</h1>
+          <p id="cta">mercurypitch.com</p>
+        </div>
+      </section>
+
+      <section
+        id="scene-a"
+        class="clip"
+        data-start="0"
+        data-duration="2.6"
+        data-track-index="2"
+      >
+        <div id="stage-a" class="stage">
+          <img id="mark" src="assets/brand/mark.svg" alt="" />
+          <h1 id="title" data-layout-allow-overflow>
+            Find your <span class="accent">pitch.</span>
+          </h1>
+        </div>
+      </section>
+
+      <audio
+        id="bed"
+        src="assets/audio/bed.wav"
+        data-start="0"
+        data-duration="5"
+        data-volume="1"
+      ></audio>
+      <audio
+        id="whoosh"
+        src="assets/audio/whoosh.wav"
+        data-start="2.15"
+        data-duration="0.45"
+        data-volume="0.8"
+      ></audio>
+    </div>
+    <script>
+      const trail = document.getElementById('trail')
+      const length = trail.getTotalLength()
+      trail.style.strokeDasharray = String(length)
+
+      const tl = gsap.timeline({ paused: true })
+
+      // Frame 0 is a finished picture: the contour is already a third drawn.
+      tl.fromTo(
+        trail,
+        { strokeDashoffset: length * 0.66 },
+        { strokeDashoffset: 0, duration: 3.2, ease: 'power2.inOut' },
+        0,
+      )
+
+      // Scene A: a slow push keeps the hold alive.
+      tl.fromTo(
+        '#stage-a',
+        { scale: 1 },
+        { scale: 1.035, duration: 2.2, ease: 'sine.inOut' },
+        0,
+      )
+      tl.fromTo(
+        '#mark',
+        { rotation: -4 },
+        { rotation: 0, duration: 2.2, ease: 'sine.out' },
+        0,
+      )
+
+      // The foreground becomes the transition: the title flies through the camera
+      // while scene B already waits underneath.
+      tl.fromTo(
+        '#title',
+        { scale: 1, opacity: 1 },
+        { scale: 5, opacity: 0, duration: 0.4, ease: 'power3.in' },
+        2.15,
+      )
+      tl.fromTo(
+        '#mark',
+        { opacity: 1, x: 0 },
+        {
+          opacity: 0,
+          x: -220,
+          duration: 0.35,
+          ease: 'power3.in',
+          immediateRender: false,
+        },
+        2.15,
+      )
+
+      // Scene B: type enters from the opposite side and lands slowly enough to read.
+      tl.fromTo(
+        '#headline-b',
+        { x: 160, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.7, ease: 'expo.out' },
+        2.56,
+      )
+      tl.fromTo(
+        '#cta',
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, ease: 'expo.out' },
+        2.75,
+      )
+
+      // Every action has a visible result: each note lands on the contour.
+      tl.fromTo(
+        '.note',
+        { scale: 0, transformOrigin: '50% 50%' },
+        { scale: 1, duration: 0.45, ease: 'back.out(2.2)', stagger: 0.16 },
+        2.45,
+      )
+
+      // End card drifts so the last second is never frozen.
+      tl.fromTo(
+        '#stage-b',
+        { scale: 1 },
+        { scale: 1.025, duration: 2.8, ease: 'sine.inOut' },
+        2.2,
+      )
+
+      window.__timelines['main'] = tl
+      tl.seek(0)
+    </script>
+  </body>
+</html>
