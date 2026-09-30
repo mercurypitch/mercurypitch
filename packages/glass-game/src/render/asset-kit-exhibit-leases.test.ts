@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs'
 import type { Mesh, Object3D } from 'three'
 import { Box3, BufferGeometry, Group, MeshPhysicalMaterial, Texture, TextureLoader, } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -36,7 +37,9 @@ async function bundle(): Promise<GLTF> {
   )
   const payload = new Uint8Array(bytes.byteLength)
   payload.set(bytes)
-  return new GLTFLoader().parseAsync(payload.buffer, '')
+  return new GLTFLoader()
+    .setMeshoptDecoder(MeshoptDecoder)
+    .parseAsync(payload.buffer, '')
 }
 
 async function setup(failSecond = false) {

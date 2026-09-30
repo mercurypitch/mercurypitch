@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import type { BufferGeometry, Mesh, MeshPhysicalMaterial, Object3D, } from 'three'
 import { Box3, Matrix4, Vector3 } from 'three'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { describe, expect, it } from 'vitest'
 import { getBreakableRenderRecipe } from './catalog'
@@ -17,10 +18,15 @@ async function load(file: string) {
     ),
   )
   return (
-    await new GLTFLoader().parseAsync(
-      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-      '',
-    )
+    await new GLTFLoader()
+      .setMeshoptDecoder(MeshoptDecoder)
+      .parseAsync(
+        bytes.buffer.slice(
+          bytes.byteOffset,
+          bytes.byteOffset + bytes.byteLength,
+        ),
+        '',
+      )
   ).scene
 }
 
@@ -177,6 +183,33 @@ describe('complete indexed exhibit assets', () => {
     duplicate.removeFromParent()
     disposeObject(scene)
   })
+
+  it.each(['vase', 'goblet'])(
+    'imports the preferred v2 %s with its complete 23-piece fracture',
+    async (id) => {
+      const scene = await load('adventure-v2/vessels-qa-v2.glb')
+      const recipe = getBreakableRenderRecipe(id)
+      const source = scene.getObjectByName(recipe.intactNode!)!
+      const library = createMaterialLibrary()
+
+      const asset = prepareExhibitAsset(scene, recipe, 'vessels-v2', library)
+
+      expect(asset.pieces).toHaveLength(23)
+      expect(asset.geometry.index!.count / 3).toBe(triangles(source))
+      for (const geometry of [
+        asset.geometry,
+        ...asset.pieces.map((piece) => piece.geometry),
+      ]) {
+        expect(geometry.index!.count).toBeGreaterThan(0)
+        expect(volume(geometry)).toBeGreaterThan(0)
+        for (const group of geometry.groups)
+          expect(asset.materials[group.materialIndex!]).toBeDefined()
+        geometry.dispose()
+      }
+      library.dispose()
+      disposeObject(scene)
+    },
+  )
 
   it('accepts the declared 16-piece legacy fallback and rejects it as the 23-piece preferred asset', async () => {
     const scene = await load('adventure/vessels.glb')

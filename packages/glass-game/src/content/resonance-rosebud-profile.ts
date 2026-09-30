@@ -37,8 +37,8 @@ export const RESONANCE_ROSEBUD_MATERIAL_OPTICS = {
 } as const
 
 export const RESONANCE_ROSEBUD_RUNTIME = {
-  bytes: 5_766_196,
-  sha256: 'f21d1b9de8651f2de19ead98acc886571453d7d8fb3db50fc7d913c7c1efa23c',
+  bytes: 4_257_288,
+  sha256: '1cc56be7bf247a4217898a2ea8a3071c76d518eb005efdb264bc6802ba559741',
   intactTriangles: 96_736,
   fractureTriangles: 115_850,
 } as const
