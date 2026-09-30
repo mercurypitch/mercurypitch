@@ -10,6 +10,7 @@ function room(
   centreX: number,
   centreZ: number,
   ports: RoomPresentationDefinition['ports'] = [],
+  breakableIds?: readonly string[],
 ): RoomPresentationDefinition {
   return {
     id: `museum/journey/${id}/room/gallery`,
@@ -30,6 +31,7 @@ function room(
       maxZ: centreZ + 1.7,
     },
     ports,
+    breakableIds,
   }
 }
 
@@ -160,4 +162,28 @@ it('maps compiled room-owned IDs without claiming connection gates', () => {
   expect(
     controller.roomIdForRuntimeId('museum/journey/connection/gate/north'),
   ).toBeUndefined()
+})
+
+it('prefers explicit breakable ownership and rejects invalid room mappings', () => {
+  const explicitId = 'museum/journey/second/exhibit/plain'
+  const first = room('first', 0, 0, [], [explicitId])
+  const second = room('second', 5, 0)
+  const controller = createRoomVisibilityController(
+    [first, second],
+    [explicitId],
+  )
+
+  expect(controller.roomIdForRuntimeId(explicitId)).toBe(first.id)
+  expect(() =>
+    createRoomVisibilityController(
+      [first, { ...second, breakableIds: [explicitId] }],
+      [explicitId],
+    ),
+  ).toThrow(/belongs to both/)
+  expect(() =>
+    createRoomVisibilityController(
+      [{ ...first, breakableIds: ['missing-breakable'] }],
+      [explicitId],
+    ),
+  ).toThrow(/unknown breakable/)
 })

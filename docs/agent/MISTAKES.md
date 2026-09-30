@@ -1617,3 +1617,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the exported contact rectangle was inset from a continuous near-horizontal ledge; bounds/metadata checks alone certified the mismatch.
 **Rule:** ray-test the decoded top and corners at the gameplay datum, then inspect both supported landings and side deflection in the actual renderer. Separate a structural ledge from lower ornament before fitting art or changing authored gaps. Compare custom support metadata with decoded anchors in the declared coordinate system: Blender export transforms nodes, but JSON extras need an explicit Blender XY to glTF XZ conversion.
 **See:** `packages/glass-game/src/render/cloudway-laboratory-assets.test.ts`, `apps/beside-cue/e2e/glass-adventure-solids.e2e.ts`.
+
+### Keep authoritative exhibit state current while presentation is hidden
+
+**Symptom:** skipping updates for an invisible exhibit left its late-load guard unaware that the exhibit had already broken.
+**Cause:** an outer visibility check skipped both cheap state ingestion and expensive visual work. The asynchronous asset installer still consulted the stale state.
+**Rule:** always ingest authoritative state and time; defer only presentation writes while hidden. Test late downloads, completion, retry and reveal. Reflection captures need their own temporary visibility with guaranteed restoration, and culling must never remove an otherwise visible walkable surface just to meet a count limit.
+**See:** `packages/glass-game/src/render/vessel-visibility.test.ts`, `packages/glass-game/src/render/glass-renderer.ts`.

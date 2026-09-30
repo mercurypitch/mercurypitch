@@ -3,8 +3,10 @@ import type * as ThreeTypes from 'three'
 import type { PerspectiveCamera, Scene } from 'three'
 import { BoxGeometry, DirectionalLight, Group, Mesh, MeshStandardMaterial, Texture, } from 'three'
 import { afterEach, expect, it, vi } from 'vitest'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
+import type * as VesselModule from './vessels'
 
 const state = vi.hoisted(() => {
   const visibleRoomIds = new Set<string>()
@@ -50,6 +52,10 @@ const state = vi.hoisted(() => {
     canvasRemove: vi.fn(),
     mercDispose: vi.fn(),
     mercUpdate: vi.fn(),
+    vesselUpdates: [] as {
+      id: string
+      presentationVisible: boolean | undefined
+    }[],
     runtimeRoomId: undefined as string | undefined,
     cullCloudwayPlatforms: vi.fn(),
     visibleRoomIds,
@@ -58,7 +64,7 @@ const state = vi.hoisted(() => {
       fallbackAllVisible: false,
       shadowVisibilityChanged: false,
     })),
-    updatePlanarReflection: vi.fn(() => false),
+    updatePlanarReflection: vi.fn((..._args: unknown[]) => false),
   }
 })
 vi.mock('three', async (original) => ({
@@ -143,6 +149,24 @@ vi.mock('./atmosphere', () => ({
 vi.mock('./contact-shadow', () => ({
   createContactShadow: () => ({ mesh: new Group(), update: vi.fn() }),
 }))
+vi.mock('./vessels', async (original) => {
+  const actual = await original<typeof VesselModule>()
+  return {
+    ...actual,
+    createVessel: (...args: Parameters<typeof actual.createVessel>) => {
+      const vessel = actual.createVessel(...args)
+      const update = vessel.update.bind(vessel)
+      vessel.update = ((snapshot, elapsedSeconds, presentationVisible) => {
+        state.vesselUpdates.push({
+          id: snapshot.id,
+          presentationVisible,
+        })
+        update(snapshot, elapsedSeconds, presentationVisible)
+      }) as typeof vessel.update
+      return vessel
+    },
+  }
+})
 vi.mock('./museum', () => ({
   createMuseum: () => {
     if (state.museumFailure) throw state.museumFailure
@@ -254,6 +278,7 @@ afterEach(() => {
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
   state.mercUpdate.mockClear()
+  state.vesselUpdates.length = 0
   state.updateRoomVisibility.mockClear()
   state.updateRoomVisibility.mockReturnValue({
     visibleRoomIds: state.visibleRoomIds,
@@ -976,9 +1001,87 @@ it('applies the selected room visibility to independently rendered vessels', asy
   )
   expect(vessels.length).toBeGreaterThan(0)
   expect(vessels.every((vessel) => !vessel.visible)).toBe(true)
+  expect(state.vesselUpdates).toHaveLength(level.breakables.length)
+  expect(
+    state.vesselUpdates.every((update) => update.presentationVisible === false),
+  ).toBe(true)
 
+  state.vesselUpdates.length = 0
   state.visibleRoomIds.add('hidden-room')
   renderer.render(snapshot, 0.016)
   expect(vessels.every((vessel) => vessel.visible)).toBe(true)
+  expect(state.vesselUpdates).toHaveLength(level.breakables.length)
+  expect(
+    state.vesselUpdates.every((update) => update.presentationVisible === true),
+  ).toBe(true)
+  renderer.dispose()
+})
+
+it('keeps explicitly room-owned Rosebuds hidden during reflection capture', async () => {
+  state.runtimeRoomId = 'hidden-room'
+  const visibilityAtCapture: boolean[][] = []
+  state.updatePlanarReflection.mockImplementation((...args: unknown[]) => {
+    const scene = args[1] as Scene
+    const withAdditionalVisible = args[5] as (capture: () => void) => void
+    withAdditionalVisible(() => {
+      visibilityAtCapture.push(
+        scene.children
+          .filter((child) => child.name.startsWith('vessel-'))
+          .map((vessel) => vessel.visible),
+      )
+    })
+    return false
+  })
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    CLOUDWAY_THAWING_SONG,
+    (id) => id,
+  )
+  await renderer.ready
+
+  renderer.render(createGlassGame(CLOUDWAY_THAWING_SONG).snapshot(), 0.016)
+
+  expect(visibilityAtCapture).toHaveLength(1)
+  expect(visibilityAtCapture[0]).toHaveLength(
+    CLOUDWAY_THAWING_SONG.breakables.length,
+  )
+  expect(visibilityAtCapture[0]!.every((visible) => !visible)).toBe(true)
+  renderer.dispose()
+})
+
+it('temporarily reveals prefix-owned legacy vessels for reflections and restores culling', async () => {
+  state.runtimeRoomId = 'hidden-room'
+  const visibilityAtCapture: boolean[][] = []
+  state.updatePlanarReflection.mockImplementation((...args: unknown[]) => {
+    const scene = args[1] as Scene
+    const withAdditionalVisible = args[5] as (capture: () => void) => void
+    withAdditionalVisible(() => {
+      visibilityAtCapture.push(
+        scene.children
+          .filter((child) => child.name.startsWith('vessel-'))
+          .map((vessel) => vessel.visible),
+      )
+    })
+    return false
+  })
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+
+  renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
+
+  const scene = state.render.mock.calls[0]![0] as Scene
+  const vessels = scene.children.filter((child) =>
+    child.name.startsWith('vessel-'),
+  )
+  expect(visibilityAtCapture[0]!.every((visible) => visible)).toBe(true)
+  expect(vessels.every((vessel) => !vessel.visible)).toBe(true)
+  expect(
+    state.vesselUpdates.filter(
+      (update) => update.presentationVisible === false,
+    ),
+  ).toHaveLength(GLASSWORKS.breakables.length)
+  expect(
+    state.vesselUpdates.filter((update) => update.presentationVisible === true),
+  ).toHaveLength(GLASSWORKS.breakables.length)
   renderer.dispose()
 })

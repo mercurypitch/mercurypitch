@@ -1,13 +1,52 @@
 // Thawing Song presentation tests — route art follows lesson order and every visible blocker has honest contact.
 
+import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { SolidPropDefinition, Vec3 } from '../contracts'
 import { FLAT_COURSE_COLLIDER } from '../core/collision'
 import { MOVEMENT } from '../core/movement'
 import { createMuseumAssetLoadPlan } from '../render/asset-load-plan'
+import { resolveLivingCrystalPlatformPlacements } from '../render/living-crystal-platform-layout'
 import { CLOUDWAY_THAWING_SONG } from './cloudway-thawing-song'
+import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID } from './living-crystal-profile'
+import { RESONANCE_ROSEBUD_BUNDLE_ID } from './resonance-rosebud-profile'
 
 const level = CLOUDWAY_THAWING_SONG
+
+function physicalAndSaveSignature(): string {
+  const projection = {
+    authored: level.authored,
+    platforms: level.platforms,
+    solids: level.solids,
+    intentionalGaps: level.intentionalGaps,
+    checkpoints: level.checkpoints,
+    breakables: level.breakables.map(
+      ({
+        id,
+        position,
+        anchor,
+        optional,
+        requiresCompleted,
+        challenge,
+        presentation,
+        mount,
+      }) => ({
+        id,
+        position,
+        anchor,
+        optional,
+        requiresCompleted,
+        challenge,
+        presentation,
+        mount,
+      }),
+    ),
+    melodyLesson: level.melodyLesson,
+    exit: level.exit,
+    fallBelow: level.fallBelow,
+  }
+  return createHash('sha256').update(JSON.stringify(projection)).digest('hex')
+}
 
 function cylinder(
   id: string,
@@ -33,6 +72,12 @@ function localZ(origin: Vec3, yaw: number, position: Vec3): number {
 }
 
 describe('The Thawing Song presentation', () => {
+  it('preserves the certified physical route and saved-attempt identity', () => {
+    expect(physicalAndSaveSignature()).toBe(
+      'e25cc33a5aa550fa40e726eb200bf7fa8d315a2fa922c2216d1fea1a6bf3a42c',
+    )
+  })
+
   it('derives six bounded render rooms from the authored route sections', () => {
     expect(level.camera?.kind).toBe('route-sections')
     if (level.camera?.kind !== 'route-sections') return
@@ -97,6 +142,108 @@ describe('The Thawing Song presentation', () => {
         marker.id,
       ).toBe(true)
     }
+  })
+
+  it('owns every plain encounter ID in its real route room', () => {
+    expect(
+      level.presentation?.rooms.map((room) => [
+        room.id.split('/').at(-3),
+        room.breakableIds,
+      ]),
+    ).toEqual([
+      ['thaw-north', ['thaw-note-home']],
+      ['thaw-first-gate', ['thaw-gate-rise']],
+      ['thaw-east', ['thaw-note-crown']],
+      ['thaw-second-gate', ['thaw-gate-return']],
+      ['thaw-south', ['thaw-note-homecoming']],
+      ['thaw-finale', ['thaw-portrait-finale']],
+    ])
+  })
+
+  it('derives three grouped Living Crystal supports without changing their nine decks', () => {
+    const placements = resolveLivingCrystalPlatformPlacements(level)
+    expect(placements).toMatchObject([
+      {
+        platformId: 'thaw-current-home',
+        coveredPlatformIds: [
+          'thaw-arrival-2',
+          'thaw-arrival-3',
+          'thaw-arrival-4',
+        ],
+        roomId: `${level.id}/thaw-north/room/route`,
+        position: { x: -6, y: 0, z: -10 },
+        turns: 0,
+        contactWidth: 3.2,
+        contactDepth: 2.16,
+      },
+      {
+        platformId: 'thaw-current-crown',
+        coveredPlatformIds: [
+          'thaw-lantern-1',
+          'thaw-lantern-2',
+          'thaw-lantern-3',
+        ],
+        roomId: `${level.id}/thaw-east/room/route`,
+        position: { x: -5.4, y: 0, z: 2.63 },
+        turns: 0,
+        contactWidth: 3.2,
+        contactDepth: 2.16,
+      },
+      {
+        platformId: 'thaw-current-homecoming',
+        coveredPlatformIds: ['thaw-home-1', 'thaw-home-2', 'thaw-home-3'],
+        roomId: `${level.id}/thaw-south/room/route`,
+        position: { x: 8.38, y: 0, z: 3.35 },
+        turns: 1,
+        contactWidth: 2.16,
+        contactDepth: 3.2,
+      },
+    ])
+    const covered = new Set(
+      placements.flatMap((placement) => placement.coveredPlatformIds),
+    )
+    expect(covered.size).toBe(9)
+    expect(
+      level.presentation?.floorArt?.some((art) => covered.has(art.platformId)),
+    ).toBe(false)
+  })
+
+  it('uses three tuned Rosebuds while retaining only the existing plinth collision', () => {
+    expect(
+      level.breakables
+        .filter((target) =>
+          [
+            'thaw-note-home',
+            'thaw-note-crown',
+            'thaw-note-homecoming',
+          ].includes(target.id),
+        )
+        .map((target) => [target.id, target.variant]),
+    ).toEqual([
+      ['thaw-note-home', 'resonance-rosebud-v1'],
+      ['thaw-note-crown', 'resonance-rosebud-v1'],
+      ['thaw-note-homecoming', 'resonance-rosebud-v1'],
+    ])
+    expect(level.presentation?.resonanceExhibits).toEqual([
+      expect.objectContaining({
+        encounterId: 'thaw-note-home',
+        seed: 20_260_930,
+        intensity: 0.78,
+        cohesion: 0.95,
+      }),
+      expect.objectContaining({
+        encounterId: 'thaw-note-crown',
+        seed: 20_260_931,
+        intensity: 1,
+        cohesion: 0.8824,
+      }),
+      expect.objectContaining({
+        encounterId: 'thaw-note-homecoming',
+        seed: 20_260_932,
+        intensity: 0.88,
+        cohesion: 0.93,
+      }),
+    ])
   })
 
   it('closes both frost-wall side lips with four visible planter bowls', () => {
@@ -188,6 +335,14 @@ describe('The Thawing Song presentation', () => {
       ]),
     )
     expect(plan.bundles).toContain('museum-decor-v5')
+    expect(
+      plan.bundles.filter(
+        (bundle) => bundle === LIVING_CRYSTAL_PLATFORM_BUNDLE_ID,
+      ),
+    ).toEqual([LIVING_CRYSTAL_PLATFORM_BUNDLE_ID])
+    expect(
+      plan.bundles.filter((bundle) => bundle === RESONANCE_ROSEBUD_BUNDLE_ID),
+    ).toEqual([RESONANCE_ROSEBUD_BUNDLE_ID])
     expect(plan.bundles).not.toContain('museum-screen-v4')
     expect(plan.bundles).not.toEqual(
       expect.arrayContaining([

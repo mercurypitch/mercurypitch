@@ -2,6 +2,7 @@
 // Museum asset load plan — declare stable logical install units before loading starts.
 // ============================================================
 
+import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID } from '../content/living-crystal-profile'
 import type { LevelDefinition } from '../contracts'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe, MUSEUM_MATERIAL_CATALOG, } from './catalog'
 import { getRoomDecorationRecipe, roomDecorationTextureAssets, } from './room-decoration-catalog'
@@ -53,6 +54,8 @@ export function createMuseumAssetLoadPlan(
       (decoration) => getRoomDecorationRecipe(decoration.recipeId).bundle,
     ),
   ])
+  if ((level.presentation?.livingCrystalSupports?.length ?? 0) > 0)
+    bundles.add(LIVING_CRYSTAL_PLATFORM_BUNDLE_ID)
   const decorationTextures = new Set(
     (level.presentation?.decorations ?? []).flatMap((decoration) =>
       roomDecorationTextureAssets(getRoomDecorationRecipe(decoration.recipeId)),

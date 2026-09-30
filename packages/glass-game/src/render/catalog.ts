@@ -26,6 +26,8 @@ export interface BreakableRenderRecipe {
   persistentPrefix?: string
   /** Optional reviewed source height; rejects an unexpected donor export. */
   sourceHeight?: number
+  /** Identical prepared donor geometry may be leased across vessel instances. */
+  sharedGeometry?: boolean
   displayHeight: number
   /** Physical glTF materials whose metre-valued optics scale with geometry. */
   scaleImportedMaterialUnits?: readonly string[]
@@ -210,6 +212,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     shardPrefix: RESONANCE_ROSEBUD_NODES.shardPrefix,
     shardCount: RESONANCE_ROSEBUD_SHARD_COUNT,
     sourceHeight: RESONANCE_ROSEBUD_SOURCE_HEIGHT,
+    sharedGeometry: true,
     displayHeight: RESONANCE_ROSEBUD_DISPLAY_HEIGHT,
     scaleImportedMaterialUnits: [
       RESONANCE_ROSEBUD_MATERIALS.glass,

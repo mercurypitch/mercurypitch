@@ -28,6 +28,7 @@ import { createMuseum } from './museum'
 import { precompileRendererPrograms } from './program-precompile'
 import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
+import { resolveResonanceExhibitPresentations } from './resonance-exhibit-layout'
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
 import { fitSkyBackdrop } from './sky-backdrop'
@@ -318,9 +319,13 @@ function createGlassRendererInstance(
   scene.add(portal.root)
   const contact = createContactShadow(level)
   scene.add(contact.mesh)
+  const resonancePresentations = resolveResonanceExhibitPresentations(level)
   const vessels = new Map(
     level.breakables.map((target) => {
-      const vessel = createVessel(target, options.reducedMotion ?? false)
+      const resonancePresentation = resonancePresentations.get(target.id)
+      const vessel = createVessel(target, options.reducedMotion ?? false, {
+        resonancePresentation,
+      })
       scene.add(vessel.root)
       return [target.id, vessel]
     }),
@@ -334,6 +339,11 @@ function createGlassRendererInstance(
       target.id,
       museum.roomIdForRuntimeId(target.id),
     ]),
+  )
+  const explicitlyRoomOwnedVesselIds = new Set(
+    (level.presentation?.rooms ?? []).flatMap(
+      (room) => room.breakableIds ?? [],
+    ),
   )
   registerPartialCleanup(() => vessels.forEach((vessel) => vessel.dispose()))
   let merc: Awaited<ReturnType<typeof loadAdventureMerc>> | undefined
@@ -570,11 +580,19 @@ function createGlassRendererInstance(
         turnDeltaSeconds: presentationPaused ? 0 : cameraDt,
         narrationLevel: presentationPaused ? 0 : presentation?.narrationLevel,
       })
-      for (const state of snapshot.breakables)
-        vessels.get(state.id)?.update(state, snapshot.elapsedSeconds)
       camera.setOccluders(museum.cameraOccluders())
       const challengeVessel =
         challengeId === null ? undefined : vessels.get(challengeId)
+      const updatedVesselIds = new Set<string>()
+      if (challengeId !== null && challengeVessel !== undefined) {
+        const challengeState = snapshot.breakables.find(
+          (state) => state.id === challengeId,
+        )
+        if (challengeState !== undefined) {
+          challengeVessel.update(challengeState, snapshot.elapsedSeconds, true)
+          updatedVesselIds.add(challengeId)
+        }
+      }
       if (
         challengeId !== null &&
         challengeId !== boundsEncounterId &&
@@ -615,6 +633,11 @@ function createGlassRendererInstance(
         const roomId = vesselRoomIds.get(id)
         vessel.root.visible = roomId === undefined || visibleRooms.has(roomId)
       })
+      for (const state of snapshot.breakables) {
+        const vessel = vessels.get(state.id)
+        if (vessel === undefined || updatedVesselIds.has(state.id)) continue
+        vessel.update(state, snapshot.elapsedSeconds, vessel.root.visible)
+      }
       museum.updatePlanarReflection(
         renderer,
         scene,
@@ -622,17 +645,21 @@ function createGlassRendererInstance(
         container.clientWidth,
         container.clientHeight,
         (capture) => {
-          const vesselVisibility = new Map(
-            [...vessels].map(([id, vessel]) => [id, vessel.root.visible]),
-          )
+          const legacyVisibility = new Map<string, boolean>()
           try {
-            vessels.forEach((vessel) => {
+            for (const state of snapshot.breakables) {
+              if (explicitlyRoomOwnedVesselIds.has(state.id)) continue
+              const vessel = vessels.get(state.id)
+              if (vessel === undefined) continue
+              legacyVisibility.set(state.id, vessel.root.visible)
+              vessel.update(state, snapshot.elapsedSeconds, true)
               vessel.root.visible = true
-            })
+            }
             capture()
           } finally {
-            vessels.forEach((vessel, id) => {
-              vessel.root.visible = vesselVisibility.get(id) ?? true
+            legacyVisibility.forEach((visible, id) => {
+              const vessel = vessels.get(id)
+              if (vessel !== undefined) vessel.root.visible = visible
             })
           }
         },

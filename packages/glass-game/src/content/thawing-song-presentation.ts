@@ -1,6 +1,6 @@
 // Thawing Song presentation — open-air garden rooms, honest gate planters and five ordered melody cues.
 
-import type { LevelDefinition, MelodyStationMarkerDefinition, PlatformDefinition, RoomDecorationInstanceDefinition, RoomPresentationDefinition, SolidPropDefinition, Vec3, } from '../contracts'
+import type { LevelDefinition, LivingCrystalSupportPresentationDefinition, MelodyStationMarkerDefinition, PlatformDefinition, ResonanceExhibitPresentationDefinition, RoomDecorationInstanceDefinition, RoomPresentationDefinition, SolidPropDefinition, Vec3, } from '../contracts'
 import { crystalPlanter } from './museum-room-dressings.ts'
 
 const ROOM_SECTION_IDS = [
@@ -13,6 +13,95 @@ const ROOM_SECTION_IDS = [
 ] as const
 
 type ThawingSongRoomSectionId = (typeof ROOM_SECTION_IDS)[number]
+
+const BREAKABLE_IDS_BY_SECTION: Readonly<
+  Record<ThawingSongRoomSectionId, readonly string[]>
+> = {
+  'thaw-north': ['thaw-note-home'],
+  'thaw-first-gate': ['thaw-gate-rise'],
+  'thaw-east': ['thaw-note-crown'],
+  'thaw-second-gate': ['thaw-gate-return'],
+  'thaw-south': ['thaw-note-homecoming'],
+  'thaw-finale': ['thaw-portrait-finale'],
+}
+
+export const THAWING_SONG_LIVING_GLASS = {
+  home: {
+    current: {
+      seed: 20_260_930,
+      quality: 'balanced',
+      fullness: 0.82,
+      intensity: 0.72,
+      speed: 0.48,
+      palette: { primary: 0xffe7c4, secondary: 0xe5b7cd, accent: 0xfff6e8 },
+    },
+    resonance: {
+      seed: 20_260_930,
+      quality: 'balanced',
+      intensity: 0.78,
+      cohesion: 0.95,
+      palette: {
+        crack: 0xffdfbd,
+        crackGlow: 0xfff4dc,
+        heart: 0xb98592,
+        heartGlow: 0xffd7c8,
+        spray: 0xdd9eb1,
+        droplets: [0xffdda1, 0xf0b9c8, 0xe6c2dd],
+        dust: 0xd2ad8b,
+      },
+    },
+  },
+  crown: {
+    current: {
+      seed: 20_260_931,
+      quality: 'balanced',
+      fullness: 0.9824,
+      intensity: 1,
+      speed: 0.65,
+      palette: { primary: 0xc8f5e5, secondary: 0xc8b8ec, accent: 0xfff2cf },
+    },
+    resonance: {
+      seed: 20_260_931,
+      quality: 'balanced',
+      intensity: 1,
+      cohesion: 0.8824,
+      palette: {
+        crack: 0xc8ffef,
+        crackGlow: 0xecfff9,
+        heart: 0x8f7bc2,
+        heartGlow: 0xdccfff,
+        spray: 0x99dcca,
+        droplets: [0xc8ffef, 0xc5b6f3, 0xf5e4ff],
+        dust: 0xc7badd,
+      },
+    },
+  },
+  homecoming: {
+    current: {
+      seed: 20_260_932,
+      quality: 'balanced',
+      fullness: 0.9,
+      intensity: 0.86,
+      speed: 0.54,
+      palette: { primary: 0xe8efff, secondary: 0xb7c8e8, accent: 0xd9cbed },
+    },
+    resonance: {
+      seed: 20_260_932,
+      quality: 'balanced',
+      intensity: 0.88,
+      cohesion: 0.93,
+      palette: {
+        crack: 0xd9e5ff,
+        crackGlow: 0xf2f6ff,
+        heart: 0x7e91bd,
+        heartGlow: 0xcad8ff,
+        spray: 0xaebfe3,
+        droplets: [0xe5ecff, 0xbcccf0, 0xd9c9ee],
+        dust: 0xaab5cf,
+      },
+    },
+  },
+} as const
 
 const ROOM_HORIZONTAL_MARGIN = 0.55
 const ROOM_TOP = 3.9
@@ -82,6 +171,65 @@ function roomId(level: LevelDefinition, sectionId: string): string {
   return `${roomPrefix(level, sectionId)}/room/route`
 }
 
+function createLivingCrystalSupports(
+  level: LevelDefinition,
+): readonly LivingCrystalSupportPresentationDefinition[] {
+  return [
+    {
+      id: 'thaw-current-home',
+      roomId: roomId(level, 'thaw-north'),
+      coveredPlatformIds: [
+        'thaw-arrival-2',
+        'thaw-arrival-3',
+        'thaw-arrival-4',
+      ],
+      variant: 'pearl-roots',
+      effect: 'pearl-current',
+      responseExhibitId: 'thaw-note-home',
+      ...THAWING_SONG_LIVING_GLASS.home.current,
+    },
+    {
+      id: 'thaw-current-crown',
+      roomId: roomId(level, 'thaw-east'),
+      coveredPlatformIds: [
+        'thaw-lantern-1',
+        'thaw-lantern-2',
+        'thaw-lantern-3',
+      ],
+      variant: 'pearl-roots',
+      effect: 'pearl-current',
+      responseExhibitId: 'thaw-note-crown',
+      ...THAWING_SONG_LIVING_GLASS.crown.current,
+    },
+    {
+      id: 'thaw-current-homecoming',
+      roomId: roomId(level, 'thaw-south'),
+      coveredPlatformIds: ['thaw-home-1', 'thaw-home-2', 'thaw-home-3'],
+      variant: 'pearl-roots',
+      effect: 'pearl-current',
+      responseExhibitId: 'thaw-note-homecoming',
+      ...THAWING_SONG_LIVING_GLASS.homecoming.current,
+    },
+  ]
+}
+
+function createResonanceExhibits(): readonly ResonanceExhibitPresentationDefinition[] {
+  return [
+    {
+      encounterId: 'thaw-note-home',
+      ...THAWING_SONG_LIVING_GLASS.home.resonance,
+    },
+    {
+      encounterId: 'thaw-note-crown',
+      ...THAWING_SONG_LIVING_GLASS.crown.resonance,
+    },
+    {
+      encounterId: 'thaw-note-homecoming',
+      ...THAWING_SONG_LIVING_GLASS.homecoming.resonance,
+    },
+  ]
+}
+
 function createRooms(
   level: LevelDefinition,
 ): readonly RoomPresentationDefinition[] {
@@ -110,6 +258,7 @@ function createRooms(
     )
     return {
       id: roomId(level, sectionId),
+      breakableIds: BREAKABLE_IDS_BY_SECTION[sectionId],
       bounds: {
         minX: minX - ROOM_HORIZONTAL_MARGIN,
         maxX: maxX + ROOM_HORIZONTAL_MARGIN,
@@ -246,7 +395,6 @@ function createMelodyMarkers(
 
 function floorArt() {
   return [
-    { platformId: 'thaw-arrival-2', recipeId: 'sound-wave', palette: 'garden' },
     { platformId: 'thaw-rise-1', recipeId: 'quiet-marble', palette: 'garden' },
     { platformId: 'thaw-east-1-2', recipeId: 'hero-petal', palette: 'garden' },
     { platformId: 'thaw-east-2-2', recipeId: 'hero-petal', palette: 'garden' },
@@ -278,6 +426,8 @@ export function dressThawingSong(level: LevelDefinition): LevelDefinition {
       ],
       melodyMarkers: createMelodyMarkers(level),
       floorArt: [...(presentation.floorArt ?? []), ...floorArt()],
+      livingCrystalSupports: createLivingCrystalSupports(level),
+      resonanceExhibits: createResonanceExhibits(),
       assetRecipeIds: [
         ...new Set([...presentation.assetRecipeIds, 'crystal-planter-v5']),
       ].sort(),

@@ -13,6 +13,7 @@ import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage,
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { prepareExhibitAsset } from './exhibit-asset'
+import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
@@ -276,35 +277,53 @@ export async function loadMuseumAssets(
     bundle: string,
     resolvedBundle: string,
   ) => {
-    for (const target of level.breakables) {
-      const recipe = getBreakableRenderRecipe(target.variant)
-      if (recipe.bundle !== bundle || recipe.intactNode === undefined) continue
-      const vessel = vessels.get(target.id)
-      if (!vessel) continue
-      // No vessel mutation until the full declared intact/fracture set is ready.
-      const prepared = prepareExhibitAsset(
-        scene,
-        recipe,
-        resolvedBundle,
-        vessel.materialLibrary,
-      )
-      vessel.setGeometry(prepared.geometry, prepared.pieces, prepared.materials)
-      if (recipe.persistentPrefix !== undefined)
-        scene.traverse((node) => {
-          if (
-            !node.name.startsWith(recipe.persistentPrefix!) ||
-            node.parent?.name.startsWith(recipe.persistentPrefix!) === true
+    let pool: ReturnType<typeof createExhibitGeometryPool> | undefined
+    try {
+      for (const target of level.breakables) {
+        const recipe = getBreakableRenderRecipe(target.variant)
+        if (recipe.bundle !== bundle || recipe.intactNode === undefined)
+          continue
+        const vessel = vessels.get(target.id)
+        if (!vessel) continue
+        // No vessel mutation until the full declared intact/fracture set is ready.
+        const prepared =
+          recipe.sharedGeometry === true
+            ? (pool ??= createExhibitGeometryPool(
+                scene,
+                resolvedBundle,
+              )).acquire(recipe, vessel.materialLibrary)
+            : prepareExhibitAsset(
+                scene,
+                recipe,
+                resolvedBundle,
+                vessel.materialLibrary,
+              )
+        if ('release' in prepared) vessel.setGeometryLease(prepared)
+        else
+          vessel.setGeometry(
+            prepared.geometry,
+            prepared.pieces,
+            prepared.materials,
           )
-            return
-          const part = createKitInstance(
-            node,
-            materials,
-            {},
-            vessel.materialLibrary,
-          )
-          part.applyMatrix4(prepared.transform)
-          vessels.get(target.id)?.addPersistent(part)
-        })
+        if (recipe.persistentPrefix !== undefined)
+          scene.traverse((node) => {
+            if (
+              !node.name.startsWith(recipe.persistentPrefix!) ||
+              node.parent?.name.startsWith(recipe.persistentPrefix!) === true
+            )
+              return
+            const part = createKitInstance(
+              node,
+              materials,
+              {},
+              vessel.materialLibrary,
+            )
+            part.applyMatrix4(prepared.transform)
+            vessels.get(target.id)?.addPersistent(part)
+          })
+      }
+    } finally {
+      pool?.close()
     }
   }
   const materialLoads = new Map<string, Promise<boolean>[]>()
