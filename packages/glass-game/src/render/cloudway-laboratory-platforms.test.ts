@@ -4,6 +4,7 @@ import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, ShaderMateri
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { FROST_GOLD_ARCH_BUNDLE_IDS } from '../content/frost-gold-arch-profile'
 import { FROST_WALL_BUNDLE } from '../content/frost-wall-profile'
 import type { LevelDefinition } from '../contracts'
@@ -444,6 +445,57 @@ describe('Cloudway laboratory platform renderer', () => {
       FROST_WALL_BUNDLE,
     ])
     expect(plan.bundles).toHaveLength(7)
+  })
+
+  it('leaves grouped Living Crystal contacts out of the Pearl Rest batch', () => {
+    const level = CLOUDWAY_THAWING_SONG
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const scene = new Group()
+    const floorById = fallbacks(level)
+    const donor = pearlDonor()
+    const frost = rigidGlassDonor('frostLily')
+    const renderer = createCloudwayLaboratoryPlatformRenderer(
+      level,
+      scene,
+      floorById,
+      palette,
+      library,
+    )
+    const reserved = new Set(
+      level.presentation!.livingCrystalSupports!.flatMap(
+        (support) => support.coveredPlatformIds,
+      ),
+    )
+    const remainingPearlIds = level.platforms
+      .filter(
+        (platform) =>
+          platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest &&
+          !reserved.has(platform.id),
+      )
+      .map((platform) => platform.id)
+
+    renderer.install(donor, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
+    renderer.install(frost, CLOUDWAY_LAB_BUNDLE_IDS.frostLily)
+    renderer.update({
+      ...createGlassGame(level).snapshot(),
+      enabledPlatformIds: level.platforms.map((platform) => platform.id),
+    })
+
+    const owner = scene.getObjectByName('cloudway-laboratory-platform-art')!
+    const pearlBatch = owner.children.find(
+      (child): child is InstancedMeshType =>
+        child instanceof InstancedMesh &&
+        child.name.startsWith('PearlDenseGeometry'),
+    )!
+    expect(pearlBatch.count).toBe(remainingPearlIds.length)
+    for (const id of reserved)
+      expect(floorById.get(id)!.children, id).toHaveLength(1)
+    for (const id of remainingPearlIds)
+      expect(floorById.get(id)!.children, id).toHaveLength(0)
+
+    renderer.dispose()
+    disposeTestScene(scene, [donor, frost], palette, library)
   })
 
   it('loads only logical Rose Hex and Frost Arch bundles for the mechanics preview', () => {

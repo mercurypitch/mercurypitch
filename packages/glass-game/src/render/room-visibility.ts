@@ -55,7 +55,24 @@ function portsConnect(
 
 export function createRoomVisibilityController(
   rooms: readonly RoomPresentationDefinition[],
+  knownBreakableIds?: Iterable<string>,
 ) {
+  const knownBreakables =
+    knownBreakableIds === undefined ? undefined : new Set(knownBreakableIds)
+  const explicitBreakableRooms = new Map<string, string>()
+  for (const room of rooms)
+    for (const id of room.breakableIds ?? []) {
+      if (knownBreakables !== undefined && !knownBreakables.has(id))
+        throw new Error(
+          `Room visibility: room "${room.id}" references unknown breakable "${id}".`,
+        )
+      const previous = explicitBreakableRooms.get(id)
+      if (previous !== undefined)
+        throw new Error(
+          `Room visibility: breakable "${id}" belongs to both "${previous}" and "${room.id}".`,
+        )
+      explicitBreakableRooms.set(id, room.id)
+    }
   const prepared: PreparedRoom[] = rooms.map((definition) => {
     const bounds = boxFromBounds(definition.bounds)
     const cameraBounds = boxFromBounds(
@@ -107,6 +124,8 @@ export function createRoomVisibilityController(
     },
     roomIdForRuntimeId(id: string): string | undefined {
       if (allRoomIds.has(id)) return id
+      const explicitRoomId = explicitBreakableRooms.get(id)
+      if (explicitRoomId !== undefined) return explicitRoomId
       let best: PreparedRoom | undefined
       for (const room of prepared) {
         if (

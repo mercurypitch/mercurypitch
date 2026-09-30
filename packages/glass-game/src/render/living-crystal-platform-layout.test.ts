@@ -1,6 +1,7 @@
 // Living-crystal layout tests — every static box placement needs one palette and exact cardinal contact.
 
 import { describe, expect, it } from 'vitest'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_PLATFORM_SUPPORT, } from '../content/living-crystal-profile'
 import { LIVING_CRYSTAL_PEARL_ROOTS_STUDY } from '../content/living-crystal-study'
 import { LIVING_GLASS_ROSEBUD_ID, LIVING_GLASS_TRIAL, } from '../content/living-glass-trial'
@@ -136,5 +137,85 @@ describe('living-crystal platform placement collection', () => {
         },
       }),
     ).toThrow(/has no response exhibit/)
+  })
+
+  it('rejects malformed grouped supports before replacing any deck art', () => {
+    const level = CLOUDWAY_THAWING_SONG
+    const support = level.presentation!.livingCrystalSupports![0]!
+    const withSupports = (
+      supports: NonNullable<
+        NonNullable<LevelDefinition['presentation']>['livingCrystalSupports']
+      >,
+      platforms = level.platforms,
+    ): LevelDefinition => ({
+      ...level,
+      platforms,
+      presentation: { ...level.presentation!, livingCrystalSupports: supports },
+    })
+
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([{ ...support, coveredPlatformIds: [] }]),
+      ),
+    ).toThrow(/at least one platform/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(withSupports([support, support])),
+    ).toThrow(/duplicate grouped settings/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([
+          {
+            ...support,
+            coveredPlatformIds: ['thaw-arrival-2', 'thaw-arrival-2'],
+          },
+        ]),
+      ),
+    ).toThrow(/repeats platform/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([
+          {
+            ...support,
+            coveredPlatformIds: ['thaw-arrival-2', 'thaw-arrival-4'],
+          },
+        ]),
+      ),
+    ).toThrow(/gap-free rectangle/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([{ ...support, roomId: 'missing-room' }]),
+      ),
+    ).toThrow(/missing room/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([
+          {
+            ...support,
+            effect: undefined,
+            responseExhibitId: 'thaw-note-home',
+          },
+        ]),
+      ),
+    ).toThrow(/without a pearl-current effect/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports([support, { ...support, id: 'other-support' }]),
+      ),
+    ).toThrow(/shared by multiple/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements(
+        withSupports(
+          [support],
+          level.platforms.map((platform) =>
+            platform.id === 'thaw-arrival-3'
+              ? {
+                  ...platform,
+                  activation: { allCompleted: ['thaw-note-home'] },
+                }
+              : platform,
+          ),
+        ),
+      ),
+    ).toThrow(/always-active static deck/)
   })
 })

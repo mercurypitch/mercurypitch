@@ -182,9 +182,15 @@ export function createCloudwayLaboratoryPlatformRenderer(
   materials: MuseumMaterials,
   materialLibrary: MaterialLibrary,
 ) {
+  const livingCrystalSupportPlatformIds = new Set(
+    (level.presentation?.livingCrystalSupports ?? []).flatMap(
+      (support) => support.coveredPlatformIds,
+    ),
+  )
   const pearlPlatforms = level.platforms.filter(
     (platform) =>
-      platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+      platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest &&
+      !livingCrystalSupportPlatformIds.has(platform.id),
   )
   const scrollPlatforms = level.platforms.filter(
     (platform) => platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll,

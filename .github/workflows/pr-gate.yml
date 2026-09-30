@@ -500,6 +500,7 @@ jobs:
             songbook,
             solids,
             thawing-song,
+            thawing-living-art,
             voice,
           ]
     steps:

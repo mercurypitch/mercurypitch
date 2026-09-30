@@ -3,11 +3,16 @@
 import type { CloudwayCourseProfileCatalog } from '../authoring/cloudway-course-profiles'
 import { CLOUDWAY_LABORATORY_COURSE_PROFILES } from './cloudway-laboratory-profiles.ts'
 import { glassMelody } from './melodies.ts'
+import { RESONANCE_ROSEBUD_VARIANT_ID } from './resonance-rosebud-profile.ts'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from './solid-props.ts'
 
 export const THAWING_SONG_PROFILES = {
   ...CLOUDWAY_LABORATORY_COURSE_PROFILES,
-  encounterVariants: ['cloudway-lab-voice', 'portrait-awakened-muse'],
+  encounterVariants: [
+    'cloudway-lab-voice',
+    'portrait-awakened-muse',
+    RESONANCE_ROSEBUD_VARIANT_ID,
+  ],
   intactExhibits: {
     'portrait-awakened-muse': {
       ...PORTRAIT_EXHIBIT_ENVELOPE,

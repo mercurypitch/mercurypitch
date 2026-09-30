@@ -191,6 +191,7 @@ export function createMuseum(
   const sceneRecipe = getMuseumSceneRecipe(level)
   const roomVisibility = createRoomVisibilityController(
     level.presentation?.rooms ?? [],
+    level.breakables.map((target) => target.id),
   )
   const roomGroups = new Map(
     [...roomVisibility.roomIds].map((id) => {
@@ -624,9 +625,13 @@ export function createMuseum(
         roomRenderBoundsDirty = false
       }
       const selection = roomVisibility.select(player, camera)
+      const roomGroupsChanged = setVisibleRooms(selection.visibleRoomIds)
+      const livingCrystalChanged = livingCrystalPlatforms.setVisibleRooms(
+        selection.visibleRoomIds,
+      )
       return {
         ...selection,
-        shadowVisibilityChanged: setVisibleRooms(selection.visibleRoomIds),
+        shadowVisibilityChanged: roomGroupsChanged || livingCrystalChanged,
       }
     },
     planarReflectionMetrics: planarReflections.metrics,

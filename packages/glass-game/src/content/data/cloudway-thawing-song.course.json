@@ -572,7 +572,7 @@
         {
           "id": "thaw-note-home",
           "label": "A tiny spark",
-          "variant": "cloudway-lab-voice",
+          "variant": "resonance-rosebud-v1",
           "position": {
             "x": -6,
             "y": 0,
@@ -622,7 +622,7 @@
         {
           "id": "thaw-note-crown",
           "label": "A little brighter",
-          "variant": "cloudway-lab-voice",
+          "variant": "resonance-rosebud-v1",
           "position": {
             "x": -6.25,
             "y": 0,
@@ -673,7 +673,7 @@
         {
           "id": "thaw-note-homecoming",
           "label": "Home again",
-          "variant": "cloudway-lab-voice",
+          "variant": "resonance-rosebud-v1",
           "position": {
             "x": 8.95,
             "y": 0,

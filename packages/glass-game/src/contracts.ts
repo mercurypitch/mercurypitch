@@ -285,6 +285,8 @@ export interface RoomPresentationDefinition {
   bounds: Bounds3
   cameraBounds?: Bounds3
   ports?: readonly CompiledRoomPortDefinition[]
+  /** Existing breakables whose runtime IDs do not carry the compiled room prefix. */
+  breakableIds?: readonly string[]
 }
 
 export interface CompiledRoomPortDefinition {
@@ -398,6 +400,8 @@ export interface LevelPresentationDefinition {
   floorArt?: readonly PlatformFloorArtDefinition[]
   crystalInteriors?: readonly CrystalInteriorPresentationDefinition[]
   livingCrystalInteriors?: readonly LivingCrystalInteriorPresentationDefinition[]
+  livingCrystalSupports?: readonly LivingCrystalSupportPresentationDefinition[]
+  resonanceExhibits?: readonly ResonanceExhibitPresentationDefinition[]
   assetRecipeIds: readonly string[]
 }
 
@@ -411,9 +415,8 @@ export interface CrystalInteriorPresentationDefinition {
   palette?: { primary: number; secondary: number; accent: number }
 }
 
-/** A thick crystal donor with one contained, opaque animated branch sculpture. */
-export interface LivingCrystalInteriorPresentationDefinition {
-  platformId: string
+/** Shared tuning for one thick crystal donor and its contained sculpture. */
+export interface LivingCrystalInteriorTuningDefinition {
   variant: 'pearl-roots' | 'living-amber'
   /** Optional authored replacement for the donor's embedded root sculpture. */
   effect?: 'pearl-current'
@@ -425,6 +428,36 @@ export interface LivingCrystalInteriorPresentationDefinition {
   intensity?: number
   speed?: number
   palette?: { primary: number; secondary: number; accent: number }
+}
+
+/** A thick crystal donor replacing one exact certified platform contact. */
+export interface LivingCrystalInteriorPresentationDefinition extends LivingCrystalInteriorTuningDefinition {
+  platformId: string
+}
+
+/** One crystal donor spanning a validated rectangular union of static decks. */
+export interface LivingCrystalSupportPresentationDefinition extends LivingCrystalInteriorTuningDefinition {
+  id: string
+  roomId: string
+  coveredPlatformIds: readonly string[]
+}
+
+/** Per-encounter Resonance treatment; room ownership remains on the room. */
+export interface ResonanceExhibitPresentationDefinition {
+  encounterId: string
+  seed?: number
+  quality?: 'balanced' | 'high'
+  intensity?: number
+  cohesion?: number
+  palette?: {
+    crack?: number
+    crackGlow?: number
+    heart?: number
+    heartGlow?: number
+    spray?: number
+    droplets?: readonly [number, number, number]
+    dust?: number
+  }
 }
 
 /** A finite authored exploration reward attached to one optional exhibit. */

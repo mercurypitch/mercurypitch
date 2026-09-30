@@ -1,8 +1,8 @@
 // Living-crystal platform renderer — install shared donor geometry with transmissive shell and contained travelling roots.
 
 import type { BufferGeometry, Object3D, PerspectiveCamera } from 'three'
-import { Box3, Color, Group, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
-import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
+import { Box3, BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, } from 'three'
+import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_PLATFORM_SUPPORT, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
 import type { BreakableSnapshot, GameSnapshot, LevelDefinition, } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
@@ -10,6 +10,7 @@ import { removeKitGeometry } from './kit-instance'
 import type { LivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
+import type { LivingCrystalPlatformPlacement } from './living-crystal-platform-layout'
 import { resolveLivingCrystalPlatformPlacements } from './living-crystal-platform-layout'
 import type { PearlCurrentInterior } from './pearl-current'
 import { createPearlCurrentInterior } from './pearl-current'
@@ -20,8 +21,11 @@ interface LivingCrystalPlatformRendererOptions {
 
 interface InstalledLivingCrystalPlatform {
   readonly platformId: string
+  readonly coveredPlatformIds: readonly string[]
+  readonly roomId?: string
   readonly art: Group
   readonly bounds: Box3
+  readonly apronTriangles: number
   readonly interior:
     | {
         readonly kind: 'roots'
@@ -34,9 +38,15 @@ interface InstalledLivingCrystalPlatform {
       }
   selected: boolean
   active: boolean
+  roomVisible: boolean
   reducedMotion: boolean
   resetPending: boolean
 }
+
+const APRON_HEIGHT = 0.08
+const SEAM_HEIGHT = 0.012
+const SEAM_WIDTH = 0.018
+const DIMENSION_EPSILON = 1e-6
 
 function disposeInterior(
   interior: InstalledLivingCrystalPlatform['interior'],
@@ -127,6 +137,96 @@ function defaultReducedMotion(): boolean {
   )
 }
 
+function addSupportApron(
+  art: Group,
+  placement: LivingCrystalPlatformPlacement,
+  marble: MeshStandardMaterial,
+  gold: MeshStandardMaterial,
+  geometries: BufferGeometry[],
+): number {
+  const contactWidth =
+    placement.turns % 2 === 0 ? placement.contactWidth : placement.contactDepth
+  const contactDepth =
+    placement.turns % 2 === 0 ? placement.contactDepth : placement.contactWidth
+  const marginX = (contactWidth - LIVING_CRYSTAL_PLATFORM_SUPPORT.width) / 2
+  const marginZ = (contactDepth - LIVING_CRYSTAL_PLATFORM_SUPPORT.depth) / 2
+  if (marginX <= DIMENSION_EPSILON && marginZ <= DIMENSION_EPSILON) return 0
+  const firstGeometry = geometries.length
+
+  function strip(
+    name: string,
+    width: number,
+    height: number,
+    depth: number,
+    x: number,
+    y: number,
+    z: number,
+    material: MeshStandardMaterial,
+  ): void {
+    const geometry = new BoxGeometry(width, height, depth)
+    geometries.push(geometry)
+    const mesh = new Mesh(geometry, material)
+    mesh.name = name
+    mesh.position.set(x, y, z)
+    mesh.userData.excludeFromCameraCollision = true
+    mesh.castShadow = false
+    mesh.receiveShadow = true
+    art.add(mesh)
+  }
+
+  if (marginX > DIMENSION_EPSILON)
+    for (const side of [-1, 1] as const)
+      strip(
+        `LivingCrystalV2_Apron_X_${side}`,
+        marginX,
+        APRON_HEIGHT,
+        contactDepth,
+        side * (LIVING_CRYSTAL_PLATFORM_SUPPORT.width / 2 + marginX / 2),
+        -APRON_HEIGHT / 2,
+        0,
+        marble,
+      )
+  if (marginZ > DIMENSION_EPSILON)
+    for (const side of [-1, 1] as const)
+      strip(
+        `LivingCrystalV2_Apron_Z_${side}`,
+        LIVING_CRYSTAL_PLATFORM_SUPPORT.width,
+        APRON_HEIGHT,
+        marginZ,
+        0,
+        -APRON_HEIGHT / 2,
+        side * (LIVING_CRYSTAL_PLATFORM_SUPPORT.depth / 2 + marginZ / 2),
+        marble,
+      )
+  if (marginX > DIMENSION_EPSILON)
+    for (const side of [-1, 1] as const)
+      strip(
+        `LivingCrystalV2_Seam_X_${side}`,
+        SEAM_WIDTH,
+        SEAM_HEIGHT,
+        LIVING_CRYSTAL_PLATFORM_SUPPORT.depth,
+        side * (LIVING_CRYSTAL_PLATFORM_SUPPORT.width / 2 + SEAM_WIDTH / 2),
+        SEAM_HEIGHT / 2,
+        0,
+        gold,
+      )
+  if (marginZ > DIMENSION_EPSILON)
+    for (const side of [-1, 1] as const)
+      strip(
+        `LivingCrystalV2_Seam_Z_${side}`,
+        LIVING_CRYSTAL_PLATFORM_SUPPORT.width,
+        SEAM_HEIGHT,
+        SEAM_WIDTH,
+        0,
+        SEAM_HEIGHT / 2,
+        side * (LIVING_CRYSTAL_PLATFORM_SUPPORT.depth / 2 + SEAM_WIDTH / 2),
+        gold,
+      )
+  return geometries
+    .slice(firstGeometry)
+    .reduce((total, geometry) => total + geometryTriangles(geometry), 0)
+}
+
 export function createLivingCrystalPlatformRenderer(
   level: LevelDefinition,
   sceneRoot: Group,
@@ -134,7 +234,9 @@ export function createLivingCrystalPlatformRenderer(
   options: LivingCrystalPlatformRendererOptions = {},
 ) {
   const placements = resolveLivingCrystalPlatformPlacements(level)
-  const covered = new Set(placements.map((placement) => placement.platformId))
+  const covered = new Set(
+    placements.flatMap((placement) => placement.coveredPlatformIds),
+  )
   const root = new Group()
   root.name = 'living-crystal-platform-art'
   const viewSelector = createCloudwayPlatformViewSelector({
@@ -145,13 +247,15 @@ export function createLivingCrystalPlatformRenderer(
   let installed: InstalledLivingCrystalPlatform[] | undefined
   let geometries: BufferGeometry[] = []
   let hardwareMaterial: MeshStandardMaterial | undefined
+  let apronMaterial: MeshStandardMaterial | undefined
   let shellMaterials: MeshPhysicalMaterial[] = []
+  let apronGeometries: BufferGeometry[] = []
   let previousSeconds: number | undefined
   let latestSnapshot: GameSnapshot | undefined
   let disposed = false
 
   function updateVisibility(item: InstalledLivingCrystalPlatform): boolean {
-    const visible = item.active && item.selected
+    const visible = item.active && item.selected && item.roomVisible
     if (item.art.visible === visible) return false
     item.art.visible = visible
     return true
@@ -202,7 +306,6 @@ export function createLivingCrystalPlatformRenderer(
       const source = exactRoot(sourceScene)
       const donor = validateLivingCrystalPlatformDonor(source)
       source.updateWorldMatrix(true, true)
-      const localBounds = new Box3().setFromObject(source, true)
       const stagedGeometries = [
         donor.shell.geometry.clone(),
         donor.hardware.geometry.clone(),
@@ -220,6 +323,13 @@ export function createLivingCrystalPlatformRenderer(
         emissive: 0x3a1600,
         emissiveIntensity: 0.18,
       })
+      const stagedApronMaterial = new MeshStandardMaterial({
+        name: 'LivingCrystalV2_RuntimePearlMarble',
+        color: 0xf3e9e3,
+        metalness: 0.03,
+        roughness: 0.32,
+      })
+      const stagedApronGeometries: BufferGeometry[] = []
       const stagedShellMaterials: MeshPhysicalMaterial[] = []
       const staged: InstalledLivingCrystalPlatform[] = []
       try {
@@ -315,28 +425,30 @@ export function createLivingCrystalPlatformRenderer(
             mesh.receiveShadow = false
           })
           art.add(shell, hardware, interiorObject)
+          const apronTriangles = addSupportApron(
+            art,
+            placement,
+            stagedApronMaterial,
+            stagedHardwareMaterial,
+            stagedApronGeometries,
+          )
           // Program precompile runs before the first museum snapshot update.
           // Keep the authored subtree traversable until that update applies
           // authoritative platform activity and camera selection.
           art.visible = true
           root.add(art)
           art.updateWorldMatrix(true, true)
-          const matrix = new Matrix4()
-            .makeRotationY(placement.rotationY)
-            .setPosition(
-              new Vector3(
-                placement.position.x,
-                placement.position.y,
-                placement.position.z,
-              ),
-            )
           staged.push({
             platformId: placement.platformId,
+            coveredPlatformIds: placement.coveredPlatformIds,
+            roomId: placement.roomId,
             art,
-            bounds: localBounds.clone().applyMatrix4(matrix),
+            bounds: new Box3().setFromObject(art, true),
+            apronTriangles,
             interior,
             selected: true,
             active: false,
+            roomVisible: true,
             reducedMotion,
             resetPending: false,
           })
@@ -345,7 +457,9 @@ export function createLivingCrystalPlatformRenderer(
         staged.forEach((item) => disposeInterior(item.interior))
         stagedShellMaterials.forEach((material) => material.dispose())
         stagedHardwareMaterial.dispose()
+        stagedApronMaterial.dispose()
         stagedGeometries.forEach((geometry) => geometry.dispose())
+        stagedApronGeometries.forEach((geometry) => geometry.dispose())
         root.clear()
         throw error
       }
@@ -353,7 +467,9 @@ export function createLivingCrystalPlatformRenderer(
       sceneRoot.add(root)
       geometries = stagedGeometries
       hardwareMaterial = stagedHardwareMaterial
+      apronMaterial = stagedApronMaterial
       shellMaterials = stagedShellMaterials
+      apronGeometries = stagedApronGeometries
       installed = staged
       return covered
     },
@@ -374,7 +490,7 @@ export function createLivingCrystalPlatformRenderer(
       const active = new Set(snapshot.enabledPlatformIds)
       const motionDisabled = readReducedMotion()
       for (const item of installed) {
-        item.active = active.has(item.platformId)
+        item.active = item.coveredPlatformIds.every((id) => active.has(id))
         if (item.interior.kind === 'roots') {
           if (item.reducedMotion !== motionDisabled) {
             item.reducedMotion = motionDisabled
@@ -401,9 +517,31 @@ export function createLivingCrystalPlatformRenderer(
       viewSelector.update(camera, [])
       let changed = false
       for (const item of installed) {
-        const selected = viewSelector.includes(item.bounds)
-        if (item.selected !== selected) {
-          item.selected = selected
+        const itemSelected = viewSelector.includes(item.bounds)
+        if (item.selected !== itemSelected) {
+          item.selected = itemSelected
+          changed = true
+        }
+        const visibilityChanged = updateVisibility(item)
+        changed = visibilityChanged || changed
+        if (
+          visibilityChanged &&
+          item.art.visible &&
+          item.interior.kind === 'pearl-current' &&
+          latestSnapshot !== undefined
+        )
+          updatePearlCurrent(item, latestSnapshot, 0, readReducedMotion())
+      }
+      return changed
+    },
+    setVisibleRooms(visibleRoomIds: ReadonlySet<string>): boolean {
+      if (disposed || installed === undefined) return false
+      let changed = false
+      for (const item of installed) {
+        const roomVisible =
+          item.roomId === undefined || visibleRoomIds.has(item.roomId)
+        if (item.roomVisible !== roomVisible) {
+          item.roomVisible = roomVisible
           changed = true
         }
         const visibilityChanged = updateVisibility(item)
@@ -438,12 +576,13 @@ export function createLivingCrystalPlatformRenderer(
           (sum, item) =>
             sum +
             shellAndHardwareTriangles +
+            item.apronTriangles +
             (item.interior.kind === 'pearl-current'
               ? item.interior.animation.snapshot().renderedTriangles
               : geometryTriangles(geometries[2]!)),
           0,
         ),
-        sharedGeometryBytes: geometryBytes(geometries),
+        sharedGeometryBytes: geometryBytes([...geometries, ...apronGeometries]),
         textures: 0,
         interiors:
           installed?.map((item) => item.interior.animation.snapshot()) ?? [],
@@ -455,12 +594,15 @@ export function createLivingCrystalPlatformRenderer(
       installed?.forEach((item) => disposeInterior(item.interior))
       shellMaterials.forEach((material) => material.dispose())
       hardwareMaterial?.dispose()
+      apronMaterial?.dispose()
       geometries.forEach((geometry) => geometry.dispose())
+      apronGeometries.forEach((geometry) => geometry.dispose())
       root.clear()
       root.removeFromParent()
       installed = undefined
       shellMaterials = []
       geometries = []
+      apronGeometries = []
       latestSnapshot = undefined
     },
   }

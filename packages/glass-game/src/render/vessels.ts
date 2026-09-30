@@ -9,11 +9,13 @@ import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
+import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
 import { createMaterialLibrary } from './material-library'
 import type { ResonancePresentation, ResonanceRewardVisualFactory, } from './resonance-release'
 import { createResonancePresentation } from './resonance-release'
+import type { ResonancePresentationConfig } from './resonance-release-config'
 import { RESONANCE_PEARL_PALETTE } from './resonance-release-config'
 import type { ShatterBurst } from './shatter-burst'
 import { createShatterBurst } from './shatter-burst'
@@ -120,6 +122,8 @@ export function createVesselGeometry(variant: string): BufferGeometry {
 }
 
 export interface VesselPresentationOptions {
+  /** Encounter tuning layers over the certified recipe defaults. */
+  readonly resonancePresentation?: ResonancePresentationConfig
   /** Purely visual replacement for the recipe's default inner reward. */
   readonly resonanceRewardFactory?: ResonanceRewardVisualFactory
 }
@@ -139,6 +143,7 @@ interface VesselShardPresentation {
 }
 
 interface VesselInstallation {
+  readonly releaseGeometry: () => void
   readonly intact: Mesh
   readonly bounds: Box3
   readonly shardGroup: Group
@@ -154,12 +159,27 @@ export function createVessel(
   options: VesselPresentationOptions = {},
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
+  const resonanceSettings =
+    recipe.resonancePresentation === undefined
+      ? undefined
+      : {
+          ...recipe.resonancePresentation,
+          ...options.resonancePresentation,
+          palette: {
+            ...recipe.resonancePresentation.palette,
+            ...options.resonancePresentation?.palette,
+          },
+          tremor: {
+            ...recipe.resonancePresentation.tremor,
+            ...options.resonancePresentation?.tremor,
+          },
+        }
   const shatterProfile =
     recipe.shatterProfile ?? fallbackShatterProfile(recipe.fallbackShape)
   const pictureBearingPortrait = recipe.portraitFracture === 'picture-bearing'
   const stressEmissive =
-    recipe.resonancePresentation?.palette?.crackGlow ??
-    (recipe.resonancePresentation === undefined
+    resonanceSettings?.palette?.crackGlow ??
+    (resonanceSettings === undefined
       ? 0x3fccbe
       : RESONANCE_PEARL_PALETTE.crackGlow)
   const root = new Group()
@@ -237,6 +257,7 @@ export function createVessel(
   let resonance: ResonancePresentation | undefined
   let shardGroup: Group
   let installation: VesselInstallation | undefined
+  let disposed = false
   const crackMaterial = new LineBasicMaterial({
     color: 0xcaffee,
     transparent: true,
@@ -251,11 +272,7 @@ export function createVessel(
       crack.removeFromParent()
       crack.geometry.dispose()
     }
-    const geometries = new Set<BufferGeometry>([
-      current.intact.geometry,
-      ...current.shardMeshes.map((shard) => shard.mesh.geometry),
-    ])
-    geometries.forEach((geometry) => geometry.dispose())
+    current.releaseGeometry()
     current.intact.removeFromParent()
     current.shardGroup.removeFromParent()
     current.shardGroup.clear()
@@ -263,15 +280,17 @@ export function createVessel(
 
   function stageInstallation(
     geometry: BufferGeometry,
-    authoredPieces?: FracturePiece[],
+    authoredPieces?: readonly FracturePiece[],
     authoredMaterials?: readonly Material[],
     nextIntactMaterial: Material | Material[] = intactMaterial,
     nextShardMaterial: Material | Material[] = shardMaterial,
+    releaseSharedGeometry?: () => void,
   ): VesselInstallation {
     const nextIntact = new Mesh(geometry, nextIntactMaterial)
     nextIntact.name = `vessel-intact-${target.id}`
     nextIntact.castShadow = true
-    geometry.computeBoundingBox()
+    if (releaseSharedGeometry === undefined || geometry.boundingBox === null)
+      geometry.computeBoundingBox()
     const nextBounds = (geometry.boundingBox ?? new Box3()).clone()
     const nextShardGroup = new Group()
     nextShardGroup.name = `vessel-shards-${target.id}`
@@ -279,12 +298,24 @@ export function createVessel(
     const nextShardMeshes: VesselShardPresentation[] = []
     const nextCracks: LineSegments[] = []
     let nextPieces = authoredPieces
+    let geometryReleased = false
+    const releaseGeometry = () => {
+      if (geometryReleased) return
+      geometryReleased = true
+      if (releaseSharedGeometry !== undefined) releaseSharedGeometry()
+      else {
+        const owned = new Set([
+          geometry,
+          ...(nextPieces ?? []).map((piece) => piece.geometry),
+        ])
+        owned.forEach((item) => item.dispose())
+      }
+    }
     let nextResonance: ResonancePresentation | undefined
     let nextBurst: ShatterBurst | undefined
     try {
       const glassMaterialIndices =
-        recipe.resonancePresentation === undefined ||
-        authoredMaterials === undefined
+        resonanceSettings === undefined || authoredMaterials === undefined
           ? undefined
           : (recipe.resonanceGlassMaterials ?? []).map((name) => {
               const index = authoredMaterials.findIndex(
@@ -296,9 +327,9 @@ export function createVessel(
                 )
               return index
             })
-      if (recipe.resonancePresentation !== undefined)
+      if (resonanceSettings !== undefined)
         nextResonance = createResonancePresentation({
-          ...recipe.resonancePresentation,
+          ...resonanceSettings,
           reducedMotion,
           surfaceGeometry: geometry,
           intactVisual: nextIntact,
@@ -345,6 +376,7 @@ export function createVessel(
           recipe.tint,
         )
       return {
+        releaseGeometry,
         intact: nextIntact,
         bounds: nextBounds,
         shardGroup: nextShardGroup,
@@ -360,11 +392,7 @@ export function createVessel(
         crack.removeFromParent()
         crack.geometry.dispose()
       }
-      const geometries = new Set<BufferGeometry>([
-        geometry,
-        ...(nextPieces ?? []).map((piece) => piece.geometry),
-      ])
-      geometries.forEach((owned) => owned.dispose())
+      releaseGeometry()
       nextIntact.clear()
       nextShardGroup.clear()
       throw error
@@ -373,18 +401,28 @@ export function createVessel(
 
   function install(
     geometry: BufferGeometry,
-    authoredPieces?: FracturePiece[],
+    authoredPieces?: readonly FracturePiece[],
     authoredMaterials?: readonly Material[],
     nextIntactMaterial: Material | Material[] = intactMaterial,
     nextShardMaterial: Material | Material[] = shardMaterial,
+    releaseSharedGeometry?: () => void,
   ): void {
-    const next = stageInstallation(
-      geometry,
-      authoredPieces,
-      authoredMaterials,
-      nextIntactMaterial,
-      nextShardMaterial,
-    )
+    let next: VesselInstallation
+    try {
+      next = stageInstallation(
+        geometry,
+        authoredPieces,
+        authoredMaterials,
+        nextIntactMaterial,
+        nextShardMaterial,
+        releaseSharedGeometry,
+      )
+    } catch (error) {
+      // The lease also covers failures before stageInstallation enters its
+      // presentation transaction, such as invalid incoming geometry bounds.
+      releaseSharedGeometry?.()
+      throw error
+    }
     const previous = installation
     root.add(next.intact, next.shardGroup)
     if (next.resonance !== undefined) root.add(next.resonance.root)
@@ -434,6 +472,67 @@ export function createVessel(
   root.add(wave)
   let latest: BreakableSnapshot | undefined
   let previousNow: number | undefined
+  let resetPending = false
+
+  function setGeometry(
+    geometry: BufferGeometry,
+    authoredPieces?: readonly FracturePiece[],
+    authoredMaterials?: Material[],
+    releaseSharedGeometry?: () => void,
+  ): void {
+    // A late cosmetic download cannot rewind an already presented break.
+    if (
+      disposed ||
+      (latest?.brokenAt !== null && latest?.brokenAt !== undefined)
+    ) {
+      if (releaseSharedGeometry !== undefined) releaseSharedGeometry()
+      else {
+        const geometries = new Set([
+          geometry,
+          ...(authoredPieces ?? []).map((piece) => piece.geometry),
+        ])
+        geometries.forEach((owned) => owned.dispose())
+      }
+      return
+    }
+    let nextIntactMaterial = intactMaterial
+    let nextShardMaterial = shardMaterial
+    if (authoredMaterials) {
+      if (recipe.persistentPortrait === undefined) {
+        nextIntactMaterial = authoredMaterials
+        nextShardMaterial = authoredMaterials
+      } else if (pictureBearingPortrait) {
+        nextIntactMaterial = authoredMaterials.map((imported) =>
+          imported.name === recipe.portraitMaterial ? glass : imported,
+        )
+        nextShardMaterial = authoredMaterials
+      } else {
+        nextIntactMaterial = authoredMaterials.map((imported) =>
+          imported.name === recipe.portraitMaterial ? glass : imported,
+        )
+        nextShardMaterial = nextIntactMaterial
+      }
+    }
+    install(
+      geometry,
+      authoredPieces,
+      authoredMaterials,
+      nextIntactMaterial,
+      nextShardMaterial,
+      releaseSharedGeometry,
+    )
+    if (
+      authoredMaterials &&
+      portraitSurface.map &&
+      (recipe.persistentPortrait === undefined || pictureBearingPortrait)
+    )
+      for (const imported of authoredMaterials) {
+        if (imported.name !== recipe.portraitMaterial) continue
+        const face = imported as MeshPhysicalMaterial
+        face.map = portraitSurface.map
+        face.needsUpdate = true
+      }
+  }
   return {
     root,
     materialLibrary,
@@ -449,54 +548,14 @@ export function createVessel(
     },
     setGeometry(
       geometry: BufferGeometry,
-      authoredPieces?: FracturePiece[],
+      authoredPieces?: readonly FracturePiece[],
       authoredMaterials?: Material[],
     ) {
-      // A late cosmetic download cannot rewind an already presented break.
-      if (latest?.brokenAt !== null && latest?.brokenAt !== undefined) {
-        const geometries = new Set<BufferGeometry>([
-          geometry,
-          ...(authoredPieces ?? []).map((piece) => piece.geometry),
-        ])
-        geometries.forEach((owned) => owned.dispose())
-        return
-      }
-      let nextIntactMaterial = intactMaterial
-      let nextShardMaterial = shardMaterial
-      if (authoredMaterials) {
-        if (recipe.persistentPortrait === undefined) {
-          nextIntactMaterial = authoredMaterials
-          nextShardMaterial = authoredMaterials
-        } else if (pictureBearingPortrait) {
-          nextIntactMaterial = authoredMaterials.map((imported) =>
-            imported.name === recipe.portraitMaterial ? glass : imported,
-          )
-          nextShardMaterial = authoredMaterials
-        } else {
-          nextIntactMaterial = authoredMaterials.map((imported) =>
-            imported.name === recipe.portraitMaterial ? glass : imported,
-          )
-          nextShardMaterial = nextIntactMaterial
-        }
-      }
-      install(
-        geometry,
-        authoredPieces,
-        authoredMaterials,
-        nextIntactMaterial,
-        nextShardMaterial,
-      )
-      if (
-        authoredMaterials &&
-        portraitSurface.map &&
-        (recipe.persistentPortrait === undefined || pictureBearingPortrait)
-      )
-        for (const imported of authoredMaterials) {
-          if (imported.name !== recipe.portraitMaterial) continue
-          const face = imported as MeshPhysicalMaterial
-          face.map = portraitSurface.map
-          face.needsUpdate = true
-        }
+      setGeometry(geometry, authoredPieces, authoredMaterials)
+    },
+    /** Consumes the lease even when replacement fails or the vessel is already broken. */
+    setGeometryLease(lease: PreparedExhibitAssetLease) {
+      setGeometry(lease.geometry, lease.pieces, lease.materials, lease.release)
     },
     setPortrait(texture: Texture) {
       // Loaded portraits use the glTF texture convention. The separate artwork
@@ -525,15 +584,21 @@ export function createVessel(
         face.needsUpdate = true
       }
     },
-    update(state: BreakableSnapshot, now: number) {
+    /** Hidden vessels ingest lifecycle state without animating their presentation. */
+    update(state: BreakableSnapshot, now: number, presentationVisible = true) {
+      if (disposed) return
       latest = state
-      const reset = previousNow !== undefined && now < previousNow
+      resetPending ||= previousNow !== undefined && now < previousNow
       const deltaSeconds =
         previousNow === undefined
           ? 0
           : Math.max(0, Math.min(0.1, now - previousNow))
       previousNow = now
-      if (reset) resonance?.resetCharge()
+      if (!presentationVisible) return
+      if (resetPending) {
+        resonance?.resetCharge()
+        resetPending = false
+      }
       const restored = state.phase === 'complete' && state.brokenAt === null
       const age =
         state.brokenAt === null ? -1 : Math.max(0, now - state.brokenAt)
@@ -550,7 +615,7 @@ export function createVessel(
             ? 1.5
             : Math.max(0, 0.45 - (age - delay) * 3)
       const surfaceStress =
-        recipe.resonancePresentation === undefined
+        resonanceSettings === undefined
           ? stress
           : Math.min(
               RESONANCE_SURFACE_STRESS_TUNING.maximumEmissiveIntensity,
@@ -634,9 +699,11 @@ export function createVessel(
       waveMaterial.opacity = wave.visible ? (1 - flight / 0.55) * 0.65 : 0
     },
     dispose() {
-      resonance?.dispose()
+      if (disposed) return
+      disposed = true
+      if (installation !== undefined) disposeInstallation(installation)
+      installation = undefined
       resonance = undefined
-      burst?.dispose()
       burst = undefined
       glass.envMap = null
       disposeObject(

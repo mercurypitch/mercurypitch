@@ -3,10 +3,11 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { Mesh } from 'three'
-import { BoxGeometry, Group, Mesh as ThreeMesh, MeshStandardMaterial, PerspectiveCamera, } from 'three'
+import { Box3, BoxGeometry, Group, Mesh as ThreeMesh, MeshStandardMaterial, PerspectiveCamera, } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
+import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_PLATFORM_RUNTIME, LIVING_CRYSTAL_PLATFORM_SUPPORT, } from '../content/living-crystal-profile'
 import { LIVING_CRYSTAL_PEARL_ROOTS_STUDY } from '../content/living-crystal-study'
 import { LIVING_GLASS_ROSEBUD_ID, LIVING_GLASS_TRIAL, } from '../content/living-glass-trial'
@@ -343,5 +344,120 @@ describe('shipped living-crystal platform', () => {
 
     renderer.dispose()
     disposeObject(source)
+  })
+
+  it('replaces grouped Pearl Rest art with exact donor contacts and non-overlapping aprons', async () => {
+    const source = await load()
+    const level = CLOUDWAY_THAWING_SONG
+    const scene = new Group()
+    const fallbackById = fallbacks(level)
+    const renderer = createLivingCrystalPlatformRenderer(
+      level,
+      scene,
+      fallbackById,
+    )
+    const covered = renderer.install(source, LIVING_CRYSTAL_PLATFORM_BUNDLE_ID)
+    const expectedCovered = new Set([
+      'thaw-arrival-2',
+      'thaw-arrival-3',
+      'thaw-arrival-4',
+      'thaw-lantern-1',
+      'thaw-lantern-2',
+      'thaw-lantern-3',
+      'thaw-home-1',
+      'thaw-home-2',
+      'thaw-home-3',
+    ])
+    expect(covered).toEqual(expectedCovered)
+    for (const id of expectedCovered)
+      expect(fallbackById.get(id)!.children, id).toHaveLength(0)
+    expect(fallbackById.get('thaw-arrival-1')!.children).toHaveLength(1)
+
+    const owner = scene.getObjectByName('living-crystal-platform-art')!
+    expect(owner.children).toHaveLength(3)
+    const expected = [
+      {
+        id: 'thaw-current-home',
+        position: [-6, 0, -10],
+        rotationY: 0,
+        bounds: [-7.6, -4.4, -11.08, -8.92],
+      },
+      {
+        id: 'thaw-current-crown',
+        position: [-5.4, 0, 2.63],
+        rotationY: 0,
+        bounds: [-7, -3.8, 1.55, 3.71],
+      },
+      {
+        id: 'thaw-current-homecoming',
+        position: [8.38, 0, 3.35],
+        rotationY: Math.PI / 2,
+        bounds: [7.3, 9.46, 1.75, 4.95],
+      },
+    ] as const
+    for (const item of expected) {
+      const art = owner.getObjectByName(`living-crystal-${item.id}`)!
+      expect(art.position.toArray()).toEqual(item.position)
+      expect(art.rotation.y).toBe(item.rotationY)
+      const apronBounds = new Box3().makeEmpty()
+      let apronCount = 0
+      let seamCount = 0
+      art.traverse((object) => {
+        const mesh = object as Mesh
+        if (!mesh.isMesh) return
+        if (mesh.name.startsWith('LivingCrystalV2_Apron_')) {
+          mesh.geometry.computeBoundingBox()
+          expect(
+            mesh.position.y + mesh.geometry.boundingBox!.max.y,
+          ).toBeCloseTo(0, 8)
+          apronBounds.union(new Box3().setFromObject(mesh, true))
+          apronCount++
+        }
+        if (mesh.name.startsWith('LivingCrystalV2_Seam_')) seamCount++
+      })
+      expect(apronCount).toBe(4)
+      expect(seamCount).toBe(4)
+      expect(apronBounds.min.x).toBeCloseTo(item.bounds[0], 6)
+      expect(apronBounds.max.x).toBeCloseTo(item.bounds[1], 6)
+      expect(apronBounds.min.z).toBeCloseTo(item.bounds[2], 6)
+      expect(apronBounds.max.z).toBeCloseTo(item.bounds[3], 6)
+    }
+    expect(renderer.install(source, LIVING_CRYSTAL_PLATFORM_BUNDLE_ID)).toEqual(
+      new Set(),
+    )
+    expect(owner.children).toHaveLength(3)
+
+    const enabled = [...expectedCovered]
+    const state = (charge: number, elapsedSeconds: number): GameSnapshot => ({
+      ...snapshot(enabled, elapsedSeconds),
+      breakables: [
+        'thaw-note-home',
+        'thaw-note-crown',
+        'thaw-note-homecoming',
+      ].map((id) => ({
+        id,
+        charge,
+        phase: charge > 0 ? ('charging' as const) : ('idle' as const),
+        brokenAt: null,
+      })),
+    })
+    renderer.update(state(0.2, 1))
+    renderer.setVisibleRooms(new Set([`${level.id}/thaw-north/room/route`]))
+    renderer.update(state(0.9, 1.1))
+    expect(renderer.snapshot().interiors).toEqual([
+      expect.objectContaining({ progress: 0.9 }),
+      expect.objectContaining({ progress: 0.2 }),
+      expect.objectContaining({ progress: 0.2 }),
+    ])
+    renderer.setVisibleRooms(new Set([`${level.id}/thaw-east/room/route`]))
+    expect(renderer.snapshot().interiors).toEqual([
+      expect.objectContaining({ progress: 0.9 }),
+      expect.objectContaining({ progress: 0.9 }),
+      expect.objectContaining({ progress: 0.2 }),
+    ])
+
+    renderer.dispose()
+    disposeObject(source)
+    fallbackById.forEach((fallback) => disposeObject(fallback))
   })
 })
