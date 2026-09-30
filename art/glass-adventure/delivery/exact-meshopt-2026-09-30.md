@@ -75,13 +75,13 @@ production/proof JSON files, `expanded-proof-summary.json`,
 `apk-replacements.json`, `apk-measurement.json` and the audit README:
 
 ```text
-/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/glassware-audition-v1/delivery-audit-2026-09-30
+<creative-archive>/glass-adventure/glassware-audition-v1/delivery-audit-2026-09-30
 ```
 
 The reproducible producer, prover and APK measurement scripts are preserved at:
 
 ```text
-/home/maff/.dotfiles/personal/besidecue/glass-adventure/glassware-audition-v1/production/delivery
+<user-dotfiles>/personal/besidecue/glass-adventure/glassware-audition-v1/production/delivery
 ```
 
 Receipt/tool hashes at integration:

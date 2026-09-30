@@ -10,6 +10,7 @@ import { RESONANCE_ROSEBUD_BUNDLE_ID, RESONANCE_ROSEBUD_DISPLAY_HEIGHT, RESONANC
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
+import { GLASSWARE_TRIO_RENDER_CATALOG } from './glassware-trio-catalog'
 import type { ResonancePresentationConfig } from './resonance-release-config'
 import type { SurfaceTextures } from './texture-recipe'
 
@@ -87,6 +88,7 @@ function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
 export const BREAKABLE_RENDER_CATALOG: Readonly<
   Record<string, BreakableRenderRecipe>
 > = {
+  ...GLASSWARE_TRIO_RENDER_CATALOG,
   'frosted-scroll-wall': {
     ...CLEAR_GLASS,
     shatterProfile: 'ice-wall',

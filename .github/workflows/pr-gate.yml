@@ -501,6 +501,7 @@ jobs:
             solids,
             thawing-song,
             thawing-living-art,
+            glassware-trio,
             voice,
           ]
     steps:

@@ -1,0 +1,72 @@
+{
+  "schema": "glassware-trio-v1",
+  "version": 1,
+  "created": "2026-10-01",
+  "assets": [
+    {
+      "id": "g01-sunlit-diadem",
+      "file": "g01-sunlit-diadem.glb",
+      "bytes": 4725956,
+      "sha256": "adfeded52cb5d388f932f23dac28af8b1eb1d787e11d032bce17816c85ce471e",
+      "sourceHeightMeters": 0.45,
+      "intactTriangles": 125000,
+      "shards": 33,
+      "source": {
+        "provider": "Meshy",
+        "model": "7.1",
+        "jobId": "01a0f446-649d-75ca-aa5d-4cea4fe4a142"
+      },
+      "compression": {
+        "extension": "EXT_meshopt_compression",
+        "quantization": false,
+        "geometryChanged": false
+      },
+      "fracturedTriangles": 152800
+    },
+    {
+      "id": "g14-tidal-wave-carafe",
+      "file": "g14-tidal-wave-carafe.glb",
+      "bytes": 3245184,
+      "sha256": "223c7c3cb99589c54689b0d6fa1188df97c5885759f41518d8d1e9f6d0e3f647",
+      "sourceHeightMeters": 0.45,
+      "intactTriangles": 93332,
+      "shards": 21,
+      "source": {
+        "provider": "Meshy",
+        "model": "7.1",
+        "jobId": "01a0f446-84ee-7017-b299-06dbcefa7249"
+      },
+      "compression": {
+        "extension": "EXT_meshopt_compression",
+        "quantization": false,
+        "geometryChanged": false
+      },
+      "fracturedTriangles": 111776
+    },
+    {
+      "id": "g22-aurora-lotus-bowl",
+      "file": "g22-aurora-lotus-bowl.glb",
+      "bytes": 7522444,
+      "sha256": "1f6b40876f6498670af652f52a4fef412ebbf1e7d1affbf5f2d314e062e5853f",
+      "sourceHeightMeters": 0.45,
+      "intactTriangles": 226756,
+      "shards": 20,
+      "source": {
+        "provider": "Meshy",
+        "model": "7.1",
+        "jobId": "01a0f459-9b6d-76d7-a463-6b1cc8f86c97"
+      },
+      "compression": {
+        "extension": "EXT_meshopt_compression",
+        "quantization": false,
+        "geometryChanged": false
+      }
+    }
+  ],
+  "productionArchive": "<creative-archive>/glass-adventure/glassware-audition-v1/shape-comparison-v2/final",
+  "notes": [
+    "Shape-only Meshy donors; measured Blender derivatives with separate glass and gold materials.",
+    "Each fracture is closed and assembled against the intact bounds. Original dense donors and packed Blender masters are archived.",
+    "Lossless Meshopt delivery preserves decoded runtime positions, normals and indices."
+  ]
+}

@@ -34,9 +34,20 @@ export const NATIVE_DESKTOP_ONLY_GAME_ASSETS = Object.freeze(
   GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(({ desktop }) => `games/${desktop}`),
 )
 
+/**
+ * Retired exports kept in public for historical art comparison. Runtime
+ * resolves the Cloudway v7 buffers and museum v8/v10 kits through its asset
+ * registry; neither old bundle is a fallback or an external glTF dependency.
+ */
+export const NATIVE_RETIRED_GAME_ASSETS = [
+  'games/cloudway-v3/cloudway-platform-kit-v3.glb',
+  'games/journey-map-v3/floating-museum-sculpture-kit-v3.glb',
+] as const
+
 export const NATIVE_EXCLUDED_GAME_ASSETS = Object.freeze([
   ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
   ...NATIVE_DESKTOP_ONLY_GAME_ASSETS,
+  ...NATIVE_RETIRED_GAME_ASSETS,
 ])
 
 /** Remove output that the native host cannot select, preserving public bytes. */
