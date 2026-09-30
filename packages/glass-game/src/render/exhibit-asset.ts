@@ -2,12 +2,17 @@
 // Exhibit asset — validate a complete authored fracture before preparing an atomic replacement.
 // ============================================================
 
-import type { BufferGeometry, Object3D } from 'three'
+import type { BufferGeometry, Material, MeshPhysicalMaterial, Object3D, } from 'three'
 import { Box3, Matrix4, Vector3 } from 'three'
 import { createMaterialTable, flattenGeometry } from './asset-geometry'
 import type { BreakableRenderRecipe } from './catalog'
 import type { FracturePiece } from './fracture'
 import type { MaterialLibrary } from './material-library'
+
+const importedMaterialUnits = new WeakMap<
+  Material,
+  { readonly thickness: number; readonly attenuationDistance: number }
+>()
 
 export function prepareExhibitAsset(
   scene: Object3D,
@@ -61,6 +66,13 @@ export function prepareExhibitAsset(
   const height = bounds.max.y - bounds.min.y
   if (bounds.isEmpty() || !Number.isFinite(height) || height <= 0)
     throw new Error(`Invalid intact bounds in ${resolvedBundle}`)
+  if (
+    recipe.sourceHeight !== undefined &&
+    Math.abs(height - recipe.sourceHeight) > 0.0001
+  )
+    throw new Error(
+      `Unexpected ${height} m source height in ${resolvedBundle}; expected ${recipe.sourceHeight} m`,
+    )
   const scale = recipe.displayHeight / height
   const envelope = recipe.barrierEnvelope
   if (
@@ -95,6 +107,27 @@ export function prepareExhibitAsset(
       part.translate(-centre.x, -centre.y, -centre.z)
       return { geometry: part, centre }
     })
+    const scaledMaterialNames = new Set(recipe.scaleImportedMaterialUnits ?? [])
+    for (const material of table.materials) {
+      if (!scaledMaterialNames.has(material.name)) continue
+      const physical = material as MeshPhysicalMaterial
+      if (!physical.isMeshPhysicalMaterial)
+        throw new Error(
+          `Material ${material.name} in ${resolvedBundle} must be physical to scale metre-valued optics`,
+        )
+      const sourceUnits = importedMaterialUnits.get(material) ?? {
+        thickness: physical.thickness,
+        attenuationDistance: physical.attenuationDistance,
+      }
+      importedMaterialUnits.set(material, sourceUnits)
+      physical.thickness = sourceUnits.thickness * scale
+      physical.attenuationDistance = Number.isFinite(
+        sourceUnits.attenuationDistance,
+      )
+        ? sourceUnits.attenuationDistance * scale
+        : sourceUnits.attenuationDistance
+      physical.needsUpdate = true
+    }
     return { geometry, pieces, materials: table.materials, transform }
   } catch (error) {
     owned.forEach((geometry) => geometry.dispose())

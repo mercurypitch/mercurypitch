@@ -2,14 +2,17 @@
 
 import type { BufferGeometry, Object3D, PerspectiveCamera } from 'three'
 import { Box3, Color, Group, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
-import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_PLATFORM_RUNTIME, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
-import type { GameSnapshot, LevelDefinition } from '../contracts'
+import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
+import type { BreakableSnapshot, GameSnapshot, LevelDefinition, } from '../contracts'
+import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
 import { removeKitGeometry } from './kit-instance'
 import type { LivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
 import { resolveLivingCrystalPlatformPlacements } from './living-crystal-platform-layout'
+import type { PearlCurrentInterior } from './pearl-current'
+import { createPearlCurrentInterior } from './pearl-current'
 
 interface LivingCrystalPlatformRendererOptions {
   readonly reducedMotion?: () => boolean
@@ -19,10 +22,58 @@ interface InstalledLivingCrystalPlatform {
   readonly platformId: string
   readonly art: Group
   readonly bounds: Box3
-  readonly interior: LivingCrystalInteriorAnimation
+  readonly interior:
+    | {
+        readonly kind: 'roots'
+        readonly animation: LivingCrystalInteriorAnimation
+      }
+    | {
+        readonly kind: 'pearl-current'
+        readonly animation: PearlCurrentInterior
+        readonly responseExhibitId: string
+      }
   selected: boolean
   active: boolean
   reducedMotion: boolean
+  resetPending: boolean
+}
+
+function disposeInterior(
+  interior: InstalledLivingCrystalPlatform['interior'],
+): void {
+  interior.animation.dispose()
+}
+
+function pearlCurrentResponse(
+  state: BreakableSnapshot | undefined,
+  elapsedSeconds: number,
+  reducedMotion: boolean,
+) {
+  if (
+    state === undefined ||
+    (state.phase === 'complete' && state.brokenAt === null)
+  )
+    return { response: 'rest' as const, progress: 0, strength: 0 }
+  if (state.brokenAt === null)
+    return state.charge > 0
+      ? {
+          response: 'charge' as const,
+          progress: state.charge,
+          strength: state.charge,
+        }
+      : { response: 'rest' as const, progress: 0, strength: 0 }
+  const timing = reducedMotion
+    ? SHATTER_PRESENTATION_TIMING.reducedMotion
+    : SHATTER_PRESENTATION_TIMING.normal
+  const age = Math.max(0, elapsedSeconds - state.brokenAt)
+  if (age < timing.anticipationSeconds)
+    return { response: 'charge' as const, progress: 1, strength: 1 }
+  const flight = age - timing.anticipationSeconds
+  return {
+    response: 'release' as const,
+    progress: Math.min(1, flight / timing.visibleFlightSeconds),
+    strength: 1,
+  }
 }
 
 function exactRoot(source: Object3D): Object3D {
@@ -53,6 +104,22 @@ function geometryBytes(geometries: readonly BufferGeometry[]): number {
   }, 0)
 }
 
+function geometryTriangles(geometry: BufferGeometry): number {
+  return (
+    (geometry.getIndex()?.count ??
+      geometry.getAttribute('position')?.count ??
+      0) / 3
+  )
+}
+
+function visibleMeshPrimitives(root: Object3D): number {
+  let count = 0
+  root.traverseVisible((object) => {
+    if ((object as Mesh).isMesh) count++
+  })
+  return count
+}
+
 function defaultReducedMotion(): boolean {
   return (
     typeof globalThis.matchMedia === 'function' &&
@@ -80,6 +147,7 @@ export function createLivingCrystalPlatformRenderer(
   let hardwareMaterial: MeshStandardMaterial | undefined
   let shellMaterials: MeshPhysicalMaterial[] = []
   let previousSeconds: number | undefined
+  let latestSnapshot: GameSnapshot | undefined
   let disposed = false
 
   function updateVisibility(item: InstalledLivingCrystalPlatform): boolean {
@@ -87,6 +155,34 @@ export function createLivingCrystalPlatformRenderer(
     if (item.art.visible === visible) return false
     item.art.visible = visible
     return true
+  }
+
+  function updatePearlCurrent(
+    item: InstalledLivingCrystalPlatform,
+    snapshot: GameSnapshot,
+    deltaSeconds: number,
+    motionDisabled: boolean,
+  ): void {
+    if (item.interior.kind !== 'pearl-current') return
+    if (item.reducedMotion !== motionDisabled) {
+      item.interior.animation.configure({ reducedMotion: motionDisabled })
+      item.reducedMotion = motionDisabled
+    }
+    if (item.resetPending) {
+      item.interior.animation.reset()
+      item.resetPending = false
+    }
+    const responseExhibitId = item.interior.responseExhibitId
+    const response = pearlCurrentResponse(
+      snapshot.breakables.find((state) => state.id === responseExhibitId),
+      snapshot.elapsedSeconds,
+      motionDisabled,
+    )
+    item.interior.animation.update({
+      deltaSeconds,
+      paused: snapshot.paused,
+      ...response,
+    })
   }
 
   return {
@@ -110,7 +206,11 @@ export function createLivingCrystalPlatformRenderer(
       const stagedGeometries = [
         donor.shell.geometry.clone(),
         donor.hardware.geometry.clone(),
-        donor.interior.geometry.clone(),
+        ...(placements.some(
+          (placement) => placement.interior.effect !== 'pearl-current',
+        )
+          ? [donor.interior.geometry.clone()]
+          : []),
       ]
       const stagedHardwareMaterial = new MeshStandardMaterial({
         name: 'LivingCrystalV2_RuntimeGold',
@@ -143,10 +243,38 @@ export function createLivingCrystalPlatformRenderer(
             depthWrite: true,
           })
           stagedShellMaterials.push(shellMaterial)
-          const animation = createLivingCrystalInteriorAnimation({
-            ...placement.interior,
-            reducedMotion: readReducedMotion(),
-          })
+          const reducedMotion = readReducedMotion()
+          const interior =
+            placement.interior.effect === 'pearl-current'
+              ? {
+                  kind: 'pearl-current' as const,
+                  animation: createPearlCurrentInterior({
+                    seed: placement.interior.seed,
+                    quality: placement.interior.quality,
+                    speed: placement.interior.speed,
+                    intensity: placement.interior.intensity,
+                    fullness: placement.interior.fullness,
+                    reducedMotion,
+                    palette:
+                      placement.interior.palette === undefined
+                        ? undefined
+                        : {
+                            streams: [
+                              placement.interior.palette.primary,
+                              placement.interior.palette.secondary,
+                              placement.interior.palette.accent,
+                            ],
+                          },
+                  }),
+                  responseExhibitId: placement.interior.responseExhibitId!,
+                }
+              : {
+                  kind: 'roots' as const,
+                  animation: createLivingCrystalInteriorAnimation({
+                    ...placement.interior,
+                    reducedMotion,
+                  }),
+                }
           const art = new Group()
           art.name = `living-crystal-${placement.platformId}`
           art.position.set(
@@ -160,20 +288,37 @@ export function createLivingCrystalPlatformRenderer(
             stagedGeometries[1]!,
             stagedHardwareMaterial,
           )
-          const interior = new Mesh(stagedGeometries[2]!, animation.material)
+          const interiorObject =
+            interior.kind === 'pearl-current'
+              ? interior.animation.group
+              : new Mesh(stagedGeometries[2]!, interior.animation.material)
           copyTransform(donor.shell, shell)
           copyTransform(donor.hardware, hardware)
-          copyTransform(donor.interior, interior)
+          if (interior.kind === 'roots')
+            copyTransform(donor.interior, interiorObject)
           shell.name = LIVING_CRYSTAL_PLATFORM_NODES.shell
           hardware.name = LIVING_CRYSTAL_PLATFORM_NODES.hardware
-          interior.name = LIVING_CRYSTAL_PLATFORM_NODES.interior
-          for (const mesh of [shell, hardware, interior]) {
+          interiorObject.name =
+            interior.kind === 'pearl-current'
+              ? `${LIVING_CRYSTAL_PLATFORM_NODES.interior}_PearlCurrent`
+              : LIVING_CRYSTAL_PLATFORM_NODES.interior
+          for (const mesh of [shell, hardware]) {
             mesh.userData.excludeFromCameraCollision = true
             mesh.castShadow = false
-            mesh.receiveShadow = mesh !== interior
+            mesh.receiveShadow = true
           }
-          art.add(shell, hardware, interior)
-          art.visible = false
+          interiorObject.traverse((object) => {
+            const mesh = object as Mesh
+            if (!mesh.isMesh) return
+            mesh.userData.excludeFromCameraCollision = true
+            mesh.castShadow = false
+            mesh.receiveShadow = false
+          })
+          art.add(shell, hardware, interiorObject)
+          // Program precompile runs before the first museum snapshot update.
+          // Keep the authored subtree traversable until that update applies
+          // authoritative platform activity and camera selection.
+          art.visible = true
           root.add(art)
           art.updateWorldMatrix(true, true)
           const matrix = new Matrix4()
@@ -189,14 +334,15 @@ export function createLivingCrystalPlatformRenderer(
             platformId: placement.platformId,
             art,
             bounds: localBounds.clone().applyMatrix4(matrix),
-            interior: animation,
+            interior,
             selected: true,
             active: false,
-            reducedMotion: readReducedMotion(),
+            reducedMotion,
+            resetPending: false,
           })
         }
       } catch (error) {
-        staged.forEach((item) => item.interior.dispose())
+        staged.forEach((item) => disposeInterior(item.interior))
         stagedShellMaterials.forEach((material) => material.dispose())
         stagedHardwareMaterial.dispose()
         stagedGeometries.forEach((geometry) => geometry.dispose())
@@ -213,6 +359,7 @@ export function createLivingCrystalPlatformRenderer(
     },
     update(snapshot: GameSnapshot): void {
       if (disposed || installed === undefined) return
+      latestSnapshot = snapshot
       const reset =
         previousSeconds !== undefined &&
         snapshot.elapsedSeconds < previousSeconds
@@ -228,13 +375,25 @@ export function createLivingCrystalPlatformRenderer(
       const motionDisabled = readReducedMotion()
       for (const item of installed) {
         item.active = active.has(item.platformId)
-        if (item.reducedMotion !== motionDisabled) {
-          item.reducedMotion = motionDisabled
-          item.interior.configure({ reducedMotion: motionDisabled })
+        if (item.interior.kind === 'roots') {
+          if (item.reducedMotion !== motionDisabled) {
+            item.reducedMotion = motionDisabled
+            item.interior.animation.configure({
+              reducedMotion: motionDisabled,
+            })
+          }
+          if (reset) item.interior.animation.reset()
+          item.interior.animation.update({
+            deltaSeconds,
+            paused: snapshot.paused,
+          })
+          updateVisibility(item)
+          continue
         }
-        if (reset) item.interior.reset()
-        item.interior.update({ deltaSeconds, paused: snapshot.paused })
+        if (reset) item.resetPending = true
         updateVisibility(item)
+        if (!item.art.visible) continue
+        updatePearlCurrent(item, snapshot, deltaSeconds, motionDisabled)
       }
     },
     cullForView(camera: PerspectiveCamera | undefined): boolean {
@@ -247,29 +406,53 @@ export function createLivingCrystalPlatformRenderer(
           item.selected = selected
           changed = true
         }
-        changed = updateVisibility(item) || changed
+        const visibilityChanged = updateVisibility(item)
+        changed = visibilityChanged || changed
+        if (
+          visibilityChanged &&
+          item.art.visible &&
+          item.interior.kind === 'pearl-current' &&
+          latestSnapshot !== undefined
+        )
+          updatePearlCurrent(item, latestSnapshot, 0, readReducedMotion())
       }
       return changed
     },
     snapshot() {
-      const visible = installed?.filter((item) => item.art.visible).length ?? 0
+      const visibleItems = installed?.filter((item) => item.art.visible) ?? []
+      const visible = visibleItems.length
+      const shellAndHardwareTriangles =
+        geometries.length < 2
+          ? 0
+          : geometryTriangles(geometries[0]!) +
+            geometryTriangles(geometries[1]!)
       return {
         installed: installed?.length ?? 0,
         visible,
         // Primitive inventory; transmission can add renderer passes.
-        visibleMeshPrimitives:
-          visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.meshDrawsPerPass,
-        visibleGeometryTriangles:
-          visible * LIVING_CRYSTAL_PLATFORM_RUNTIME.triangles,
+        visibleMeshPrimitives: visibleItems.reduce(
+          (sum, item) => sum + visibleMeshPrimitives(item.art),
+          0,
+        ),
+        visibleGeometryTriangles: visibleItems.reduce(
+          (sum, item) =>
+            sum +
+            shellAndHardwareTriangles +
+            (item.interior.kind === 'pearl-current'
+              ? item.interior.animation.snapshot().renderedTriangles
+              : geometryTriangles(geometries[2]!)),
+          0,
+        ),
         sharedGeometryBytes: geometryBytes(geometries),
         textures: 0,
-        interiors: installed?.map((item) => item.interior.snapshot()) ?? [],
+        interiors:
+          installed?.map((item) => item.interior.animation.snapshot()) ?? [],
       }
     },
     dispose(): void {
       if (disposed) return
       disposed = true
-      installed?.forEach((item) => item.interior.dispose())
+      installed?.forEach((item) => disposeInterior(item.interior))
       shellMaterials.forEach((material) => material.dispose())
       hardwareMaterial?.dispose()
       geometries.forEach((geometry) => geometry.dispose())
@@ -278,6 +461,7 @@ export function createLivingCrystalPlatformRenderer(
       installed = undefined
       shellMaterials = []
       geometries = []
+      latestSnapshot = undefined
     },
   }
 }

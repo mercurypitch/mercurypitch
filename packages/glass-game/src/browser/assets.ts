@@ -104,6 +104,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/optional-platforms/pearl-teal-quarter-turn-a/pearl-teal-quarter-turn-a-mobile-v1.glb',
   'living-crystal-platform-v2':
     'crystal-interiors-v2/living-crystal-platform-v2.glb',
+  'resonance-rosebud-v1': 'resonance/assets/resonance-rosebud-v1.glb',
   'results-singing-medal-v1': 'results-ui-v1/singing-medal.webp',
   'results-discovery-medal-v1': 'results-ui-v1/discovery-medal.webp',
   ...Object.fromEntries(

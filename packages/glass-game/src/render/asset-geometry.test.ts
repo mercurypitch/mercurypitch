@@ -214,6 +214,19 @@ describe('authored museum materials', () => {
       [{ geometry: intact.clone(), centre: new Vector3() }],
       table.materials,
     )
+    const classicCharge = 0.93
+    vessel.update(
+      {
+        id: GLASSWORKS.breakables[0].id,
+        charge: classicCharge,
+        phase: 'charging',
+        brokenAt: null,
+      },
+      0.1,
+    )
+    expect(
+      (table.materials[0] as MeshPhysicalMaterial).emissiveIntensity,
+    ).toBeCloseTo(classicCharge * classicCharge * 0.8)
     vessel.update(
       {
         id: GLASSWORKS.breakables[0].id,

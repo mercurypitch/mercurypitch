@@ -79,6 +79,24 @@ export function resolveLivingCrystalPlatformPlacements(
     const interior = byPlatform.get(platform.id)
     if (interior === undefined)
       fail(`platform "${platform.id}" has no interior presentation.`)
+    if (interior.effect === 'pearl-current') {
+      if (interior.responseExhibitId === undefined)
+        fail(
+          `platform "${platform.id}" pearl-current effect has no response exhibit.`,
+        )
+      if (
+        !level.breakables.some(
+          (target) => target.id === interior.responseExhibitId,
+        )
+      )
+        fail(
+          `platform "${platform.id}" pearl-current effect references missing exhibit "${interior.responseExhibitId}".`,
+        )
+    } else if (interior.responseExhibitId !== undefined) {
+      fail(
+        `platform "${platform.id}" has a response exhibit without a pearl-current effect.`,
+      )
+    }
     byPlatform.delete(platform.id)
     return {
       platformId: platform.id,

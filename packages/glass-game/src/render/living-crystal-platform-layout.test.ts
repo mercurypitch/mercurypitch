@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_PLATFORM_SUPPORT, } from '../content/living-crystal-profile'
 import { LIVING_CRYSTAL_PEARL_ROOTS_STUDY } from '../content/living-crystal-study'
+import { LIVING_GLASS_ROSEBUD_ID, LIVING_GLASS_TRIAL, } from '../content/living-glass-trial'
 import type { LevelDefinition, PlatformDefinition } from '../contracts'
 import { resolveLivingCrystalPlatformPlacements } from './living-crystal-platform-layout'
 
@@ -100,5 +101,40 @@ describe('living-crystal platform placement collection', () => {
         },
       }),
     ).toThrow(/orphan interior presentations/)
+  })
+
+  it('binds a pearl current only to an authored response exhibit', () => {
+    expect(
+      resolveLivingCrystalPlatformPlacements(LIVING_GLASS_TRIAL)[0],
+    ).toMatchObject({
+      interior: {
+        effect: 'pearl-current',
+        responseExhibitId: LIVING_GLASS_ROSEBUD_ID,
+      },
+    })
+    const interior =
+      LIVING_GLASS_TRIAL.presentation!.livingCrystalInteriors![0]!
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements({
+        ...LIVING_GLASS_TRIAL,
+        presentation: {
+          ...LIVING_GLASS_TRIAL.presentation,
+          livingCrystalInteriors: [
+            { ...interior, responseExhibitId: 'missing-exhibit' },
+          ],
+        },
+      }),
+    ).toThrow(/references missing exhibit/)
+    expect(() =>
+      resolveLivingCrystalPlatformPlacements({
+        ...LIVING_GLASS_TRIAL,
+        presentation: {
+          ...LIVING_GLASS_TRIAL.presentation,
+          livingCrystalInteriors: [
+            { ...interior, responseExhibitId: undefined },
+          ],
+        },
+      }),
+    ).toThrow(/has no response exhibit/)
   })
 })

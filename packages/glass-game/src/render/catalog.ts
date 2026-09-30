@@ -6,9 +6,11 @@ import { FROST_GOLD_ARCH_BUNDLE_IDS, FROST_GOLD_ARCH_NODES, FROST_GOLD_ARCH_PANE
 import { FROST_WALL_BUNDLE, FROST_WALL_PANE, } from '../content/frost-wall-profile'
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_RENDER_ID, LIVING_CRYSTAL_STAGING_RENDER_ID, } from '../content/living-crystal-profile'
 import { PEARL_QUARTER_TURN_BUNDLE_IDS, PEARL_QUARTER_TURN_DOCK_RENDER_ID, PEARL_QUARTER_TURN_RENDER_ID, } from '../content/pearl-quarter-turn-profile'
+import { RESONANCE_ROSEBUD_BUNDLE_ID, RESONANCE_ROSEBUD_DISPLAY_HEIGHT, RESONANCE_ROSEBUD_MATERIAL_OPTICS, RESONANCE_ROSEBUD_MATERIALS, RESONANCE_ROSEBUD_NODES, RESONANCE_ROSEBUD_SHARD_COUNT, RESONANCE_ROSEBUD_SOURCE_HEIGHT, RESONANCE_ROSEBUD_VARIANT_ID, } from '../content/resonance-rosebud-profile'
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
+import type { ResonancePresentationConfig } from './resonance-release-config'
 import type { SurfaceTextures } from './texture-recipe'
 
 export interface BreakableRenderRecipe {
@@ -22,7 +24,15 @@ export interface BreakableRenderRecipe {
   /** A preferred bundle may contain a newer fracture than its legacy fallback. */
   bundleShardCounts?: Readonly<Record<string, number>>
   persistentPrefix?: string
+  /** Optional reviewed source height; rejects an unexpected donor export. */
+  sourceHeight?: number
   displayHeight: number
+  /** Physical glTF materials whose metre-valued optics scale with geometry. */
+  scaleImportedMaterialUnits?: readonly string[]
+  /** Opt-in charge and release treatment layered around standard rigid shards. */
+  resonancePresentation?: ResonancePresentationConfig
+  /** Imported surfaces eligible for authored crack raycasts. */
+  resonanceGlassMaterials?: readonly string[]
   tint: number
   roughness: number
   transmission: number
@@ -191,6 +201,35 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     displayHeight: 0.92,
     fallbackShape: 'rounded',
     fragmentBudget: 18,
+  },
+  [RESONANCE_ROSEBUD_VARIANT_ID]: {
+    ...CLEAR_GLASS,
+    shatterProfile: 'radial',
+    bundle: RESONANCE_ROSEBUD_BUNDLE_ID,
+    intactNode: RESONANCE_ROSEBUD_NODES.intact,
+    shardPrefix: RESONANCE_ROSEBUD_NODES.shardPrefix,
+    shardCount: RESONANCE_ROSEBUD_SHARD_COUNT,
+    sourceHeight: RESONANCE_ROSEBUD_SOURCE_HEIGHT,
+    displayHeight: RESONANCE_ROSEBUD_DISPLAY_HEIGHT,
+    scaleImportedMaterialUnits: [
+      RESONANCE_ROSEBUD_MATERIALS.glass,
+      RESONANCE_ROSEBUD_MATERIALS.fractureInterior,
+    ],
+    resonancePresentation: {
+      seed: 20_260_929,
+      quality: 'balanced',
+      intensity: 1,
+      cohesion: 0.8824,
+    },
+    resonanceGlassMaterials: [RESONANCE_ROSEBUD_MATERIALS.glass],
+    tint: 0xf3c9dc,
+    roughness: 0.08,
+    transmission: 0.96,
+    thickness:
+      RESONANCE_ROSEBUD_MATERIAL_OPTICS[RESONANCE_ROSEBUD_MATERIALS.glass]
+        .displayThickness,
+    fallbackShape: 'rounded',
+    fragmentBudget: RESONANCE_ROSEBUD_SHARD_COUNT,
   },
   'celadon-lark-decanter-fracture-v4': {
     ...CLEAR_GLASS,

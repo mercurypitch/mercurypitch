@@ -38,6 +38,24 @@ async function mountAt(development: boolean, layout: string) {
 }
 
 describe('standalone development route', () => {
+  it('opens the contained singing Rosebud trial only in development', async () => {
+    const level = await mountAt(true, 'living-glass')
+    expect(level?.id).toBe('living-glass')
+    expect(level?.breakables.map((exhibit) => exhibit.id)).toEqual([
+      'living-glass/rosebud',
+    ])
+    expect(level?.presentation?.livingCrystalInteriors).toEqual([
+      expect.objectContaining({
+        effect: 'pearl-current',
+        responseExhibitId: 'living-glass/rosebud',
+      }),
+    ])
+  })
+
+  it('ignores the contained trial query in a production host', async () => {
+    expect(await mountAt(false, 'living-glass')).toBeUndefined()
+  })
+
   it('opens the separately saved Thawing Song only in development', async () => {
     const level = await mountAt(true, 'thawing-song')
     expect(level?.id).toBe('cloudway-thawing-song-audition')

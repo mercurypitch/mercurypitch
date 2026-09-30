@@ -415,7 +415,13 @@ export interface CrystalInteriorPresentationDefinition {
 export interface LivingCrystalInteriorPresentationDefinition {
   platformId: string
   variant: 'pearl-roots' | 'living-amber'
+  /** Optional authored replacement for the donor's embedded root sculpture. */
+  effect?: 'pearl-current'
+  /** Exhibit whose authoritative singing state drives the replacement response. */
+  responseExhibitId?: string
   seed: number
+  quality?: 'balanced' | 'high'
+  fullness?: number
   intensity?: number
   speed?: number
   palette?: { primary: number; secondary: number; accent: number }
