@@ -1,11 +1,18 @@
 // Creator gallery — native-accessible art studies keep separate identities from the campaign.
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
-import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
+import { CLOUDWAY_THAWING_SONG_ALCOVE, crystalInteriorStudy, GLASSWARE_TRIO_STUDY, livingCrystalStudy, } from '@irchiinnuss/glass-game/creator-levels'
 import { createSignal, For, Show } from 'solid-js'
 import { AdventureScreen } from './AdventureScreen'
 import styles from './CreatorGallery.module.css'
 
 const studies = [
+  {
+    id: 'glassware-trio',
+    title: 'Three notes in glass',
+    description:
+      'Sing to a gilded goblet, an aqua carafe and a lotus bowl. Watch each one crack and scatter.',
+    create: () => GLASSWARE_TRIO_STUDY,
+  },
   {
     id: 'alcove',
     title: 'The pearl alcove',

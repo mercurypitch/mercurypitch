@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets.ts'
+import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, } from './game-assets.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
@@ -58,7 +58,24 @@ describe('explicit native games profile', () => {
       (asset) => `games/${asset}`,
     ).filter((asset) => !native.has(asset))
 
-    expect([...webOnly].sort()).toEqual([...NATIVE_EXCLUDED_GAME_ASSETS].sort())
+    const declaredWeb = new Set(
+      GLASS_GAME_REQUIRED_FILES.map((asset) => `games/${asset}`),
+    )
+    expect([...webOnly].sort()).toEqual(
+      NATIVE_EXCLUDED_GAME_ASSETS.filter((asset) =>
+        declaredWeb.has(asset),
+      ).sort(),
+    )
+    for (const asset of NATIVE_RETIRED_GAME_ASSETS) {
+      expect(declaredWeb.has(asset)).toBe(false)
+      expect(native.has(asset)).toBe(false)
+    }
+    for (const id of [
+      'cloudway-platform-kit-v1',
+      'floating-museum-architecture-kit-v6',
+      'floating-museum-twin-finish-kit-v4',
+    ])
+      expect(native.has(`games/${glassGameAssetPath(id)}`)).toBe(true)
     expect(NATIVE_DESKTOP_ONLY_GAME_ASSETS).toEqual(
       GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(
         ({ desktop }) => `games/${desktop}`,

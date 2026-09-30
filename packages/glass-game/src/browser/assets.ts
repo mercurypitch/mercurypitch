@@ -105,6 +105,9 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'living-crystal-platform-v2':
     'crystal-interiors-v2/living-crystal-platform-v2.glb',
   'resonance-rosebud-v1': 'resonance/assets/resonance-rosebud-v1.glb',
+  'g01-sunlit-diadem': 'glassware-trio-v1/g01-sunlit-diadem.glb',
+  'g14-tidal-wave-carafe': 'glassware-trio-v1/g14-tidal-wave-carafe.glb',
+  'g22-aurora-lotus-bowl': 'glassware-trio-v1/g22-aurora-lotus-bowl.glb',
   'results-singing-medal-v1': 'results-ui-v1/singing-medal.webp',
   'results-discovery-medal-v1': 'results-ui-v1/discovery-medal.webp',
   ...Object.fromEntries(
@@ -179,6 +182,7 @@ const MANIFEST_FILES = [
   'adventure-voice-v2/manifest.json',
   'adventure-voice-v6/manifest.json',
   'adventure-voice-v7/manifest.json',
+  'glassware-trio-v1/manifest.json',
 ] as const
 
 // Standard glTF external buffers preserve the accepted source bytes while

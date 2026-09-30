@@ -1486,6 +1486,23 @@ Prove the fix at the same pose before changing geometry or renderer quality.
 **See:** `packages/glass-game/src/render/planar-reflections.ts`,
 `art/glass-adventure/v5/proofs/mirror-backing-sept20/`.
 
+### Use fixed viewports for hidden-browser art comparisons
+
+**Symptom:** a desktop screenshot cropped Merc and the singing instructions after
+the same hidden browser page had previously rendered at phone width, even though
+the canvas dimensions, camera projection and DOM bounds were correct.
+**Cause:** the hidden Chrome session retained a stale compositor crop across the
+viewport switch. A fresh context at the final desktop size rendered correctly.
+Separately, a screenshot taken during the entrance camera blend looked occluded;
+the settled camera had both subjects in view.
+**Rule:** use a fresh, fixed-size context for each final art comparison and wait
+for the production camera's settled state before diagnosing composition. Keep
+resize behavior tests separate. Do not change camera geometry to compensate for
+a stale capture or assume wall-clock delay equals simulated camera time in an
+occluded window.
+**See:** `packages/glass-game/src/render/challenge-camera.ts`,
+`apps/beside-cue/e2e/glass-adventure-thawing-living-art.e2e.ts`.
+
 ### Separate rendering cost from input and microphone interaction tests
 
 **Symptom:** a restored player appeared blocked after moving only 0.6–0.8 metres in eight test seconds.

@@ -29,6 +29,7 @@ async function selectedDevelopmentLevel() {
     layout !== 'crystal-interiors' &&
     layout !== 'living-crystal' &&
     layout !== 'living-glass' &&
+    layout !== 'glassware-trio' &&
     layout !== 'cloudway-laboratory' &&
     layout !== 'cloudway-mechanics-preview' &&
     layout !== 'quarter-turn-art' &&
@@ -48,6 +49,7 @@ async function selectedDevelopmentLevel() {
     crystalInteriorStudy,
     livingCrystalStudy,
     LIVING_GLASS_TRIAL,
+    GLASSWARE_TRIO_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_STUDY,
     CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW,
     CLOUDWAY_QUARTER_TURN_ART_STUDY,
@@ -80,6 +82,7 @@ async function selectedDevelopmentLevel() {
     )
   }
   if (layout === 'living-glass') return LIVING_GLASS_TRIAL
+  if (layout === 'glassware-trio') return GLASSWARE_TRIO_STUDY
   if (layout === 'cloudway-laboratory') return CLOUDWAY_CRYSTAL_PROMENADE_STUDY
   if (layout === 'cloudway-mechanics-preview')
     return CLOUDWAY_CRYSTAL_PROMENADE_MECHANICS_PREVIEW

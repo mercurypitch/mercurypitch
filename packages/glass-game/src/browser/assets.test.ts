@@ -89,6 +89,15 @@ describe('Glassworks asset contract', () => {
     expect(required.has('cloudway-v3/cloudway-ribbon-preview.webp')).toBe(true)
     expect(required.has('cloudway-v3/manifest.json')).toBe(true)
     expect(required.has('adventure-voice-v2/manifest.json')).toBe(true)
+    expect(required.has('glassware-trio-v1/manifest.json')).toBe(true)
+    for (const id of [
+      'g01-sunlit-diadem',
+      'g14-tidal-wave-carafe',
+      'g22-aurora-lotus-bowl',
+    ]) {
+      expect(glassGameAssetPath(id)).toBe(`glassware-trio-v1/${id}.glb`)
+      expect(required.has(glassGameAssetPath(id))).toBe(true)
+    }
     expect(glassGameAssetPath('merc-encore-light-v5')).toBe(
       'adventure-voice/merc-encore-light-v5.mp3',
     )
