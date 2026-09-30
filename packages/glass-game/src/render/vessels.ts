@@ -12,6 +12,9 @@ import { disposeObject } from './dispose'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
 import { createMaterialLibrary } from './material-library'
+import type { ResonancePresentation, ResonanceRewardVisualFactory, } from './resonance-release'
+import { createResonancePresentation } from './resonance-release'
+import { RESONANCE_PEARL_PALETTE } from './resonance-release-config'
 import type { ShatterBurst } from './shatter-burst'
 import { createShatterBurst } from './shatter-burst'
 import { fallbackShatterProfile, planShatterShardMotion, } from './shatter-motion'
@@ -116,14 +119,49 @@ export function createVesselGeometry(variant: string): BufferGeometry {
   return fitDisplayHeight(geometry, recipe.displayHeight)
 }
 
+export interface VesselPresentationOptions {
+  /** Purely visual replacement for the recipe's default inner reward. */
+  readonly resonanceRewardFactory?: ResonanceRewardVisualFactory
+}
+
+/** Keeps authored RoseGlass readable while the projected fracture carries charge. */
+export const RESONANCE_SURFACE_STRESS_TUNING = {
+  emissiveScale: 0.18,
+  maximumEmissiveIntensity: 0.12,
+} as const
+
+interface VesselShardPresentation {
+  readonly delay: number
+  readonly mesh: Mesh
+  readonly origin: Vector3
+  readonly velocity: Vector3
+  readonly spin: Vector3
+}
+
+interface VesselInstallation {
+  readonly intact: Mesh
+  readonly bounds: Box3
+  readonly shardGroup: Group
+  readonly shardMeshes: VesselShardPresentation[]
+  readonly cracks: LineSegments[]
+  readonly burst?: ShatterBurst
+  readonly resonance?: ResonancePresentation
+}
+
 export function createVessel(
   target: BreakableDefinition,
   reducedMotion: boolean,
+  options: VesselPresentationOptions = {},
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
   const shatterProfile =
     recipe.shatterProfile ?? fallbackShatterProfile(recipe.fallbackShape)
   const pictureBearingPortrait = recipe.portraitFracture === 'picture-bearing'
+  const stressEmissive =
+    recipe.resonancePresentation?.palette?.crackGlow ??
+    (recipe.resonancePresentation === undefined
+      ? 0x3fccbe
+      : RESONANCE_PEARL_PALETTE.crackGlow)
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
@@ -151,7 +189,7 @@ export function createVessel(
     clearcoat: 1,
     envMapIntensity: 1.5,
     side: DoubleSide,
-    emissive: 0x3fccbe,
+    emissive: stressEmissive,
     emissiveIntensity: 0,
   })
   const portraitPlane = new MeshPhysicalMaterial({
@@ -192,85 +230,176 @@ export function createVessel(
     root.add(persistentPortrait)
   }
   let intact: Mesh
-  const intactLocalBounds = new Box3()
-  let shardMeshes: {
-    delay: number
-    mesh: Mesh
-    origin: Vector3
-    velocity: Vector3
-    spin: Vector3
-  }[] = []
+  let intactLocalBounds = new Box3()
+  let shardMeshes: VesselShardPresentation[] = []
   let cracks: LineSegments[] = []
   let burst: ShatterBurst | undefined
+  let resonance: ResonancePresentation | undefined
+  let shardGroup: Group
+  let installation: VesselInstallation | undefined
   const crackMaterial = new LineBasicMaterial({
     color: 0xcaffee,
     transparent: true,
     opacity: 0,
     depthWrite: false,
   })
-  const shardGroup = new Group()
-  shardGroup.name = `vessel-shards-${target.id}`
-  root.add(shardGroup)
 
-  function install(geometry: BufferGeometry, authoredPieces?: FracturePiece[]) {
-    if (intact !== undefined) {
-      intact.geometry.dispose()
-      root.remove(intact)
-    }
-    for (const shard of shardMeshes) shard.mesh.geometry.dispose()
-    for (const crack of cracks) {
+  function disposeInstallation(current: VesselInstallation): void {
+    current.resonance?.dispose()
+    current.burst?.dispose()
+    for (const crack of current.cracks) {
+      crack.removeFromParent()
       crack.geometry.dispose()
-      root.remove(crack)
     }
-    burst?.dispose()
-    burst = undefined
-    shardGroup.clear()
-    shardMeshes = []
-    cracks = []
-    intact = new Mesh(geometry, intactMaterial)
-    intact.name = `vessel-intact-${target.id}`
-    intact.castShadow = true
-    root.add(intact)
+    const geometries = new Set<BufferGeometry>([
+      current.intact.geometry,
+      ...current.shardMeshes.map((shard) => shard.mesh.geometry),
+    ])
+    geometries.forEach((geometry) => geometry.dispose())
+    current.intact.removeFromParent()
+    current.shardGroup.removeFromParent()
+    current.shardGroup.clear()
+  }
+
+  function stageInstallation(
+    geometry: BufferGeometry,
+    authoredPieces?: FracturePiece[],
+    authoredMaterials?: readonly Material[],
+    nextIntactMaterial: Material | Material[] = intactMaterial,
+    nextShardMaterial: Material | Material[] = shardMaterial,
+  ): VesselInstallation {
+    const nextIntact = new Mesh(geometry, nextIntactMaterial)
+    nextIntact.name = `vessel-intact-${target.id}`
+    nextIntact.castShadow = true
     geometry.computeBoundingBox()
-    intactLocalBounds.copy(geometry.boundingBox ?? new Box3())
-    const pieces =
-      authoredPieces ?? fractureGeometry(geometry, recipe.fragmentBudget)
-    pieces.forEach((piece, i) => {
-      const mesh = new Mesh(piece.geometry, shardMaterial)
-      mesh.position.copy(piece.centre)
-      mesh.castShadow = true
-      const motion = planShatterShardMotion(
-        target.id,
-        shatterProfile,
-        intactLocalBounds,
-        piece.centre,
-        i,
-      )
-      shardMeshes.push({
-        delay: motion.delay,
-        mesh,
-        origin: piece.centre,
-        velocity: motion.velocity,
-        spin: motion.spin,
+    const nextBounds = (geometry.boundingBox ?? new Box3()).clone()
+    const nextShardGroup = new Group()
+    nextShardGroup.name = `vessel-shards-${target.id}`
+    nextShardGroup.visible = false
+    const nextShardMeshes: VesselShardPresentation[] = []
+    const nextCracks: LineSegments[] = []
+    let nextPieces = authoredPieces
+    let nextResonance: ResonancePresentation | undefined
+    let nextBurst: ShatterBurst | undefined
+    try {
+      const glassMaterialIndices =
+        recipe.resonancePresentation === undefined ||
+        authoredMaterials === undefined
+          ? undefined
+          : (recipe.resonanceGlassMaterials ?? []).map((name) => {
+              const index = authoredMaterials.findIndex(
+                (material) => material.name === name,
+              )
+              if (index < 0)
+                throw new Error(
+                  `Resonance exhibit "${target.id}" is missing glass material "${name}".`,
+                )
+              return index
+            })
+      if (recipe.resonancePresentation !== undefined)
+        nextResonance = createResonancePresentation({
+          ...recipe.resonancePresentation,
+          reducedMotion,
+          surfaceGeometry: geometry,
+          intactVisual: nextIntact,
+          bounds: nextBounds,
+          glassMaterialIndices,
+          rewardFactory: options.resonanceRewardFactory,
+        })
+      nextPieces ??= fractureGeometry(geometry, recipe.fragmentBudget)
+      nextPieces.forEach((piece, index) => {
+        const mesh = new Mesh(piece.geometry, nextShardMaterial)
+        mesh.position.copy(piece.centre)
+        mesh.castShadow = true
+        const motion = planShatterShardMotion(
+          target.id,
+          shatterProfile,
+          nextBounds,
+          piece.centre,
+          index,
+        )
+        nextShardMeshes.push({
+          delay: motion.delay,
+          mesh,
+          origin: piece.centre,
+          velocity: motion.velocity,
+          spin: motion.spin,
+        })
+        nextShardGroup.add(mesh)
+        if (nextResonance === undefined) {
+          const crack = new LineSegments(
+            new EdgesGeometry(piece.geometry, 22),
+            crackMaterial,
+          )
+          crack.position.copy(piece.centre)
+          nextCracks.push(crack)
+          // The visible fracture inherits the exact bounded intact tremor.
+          nextIntact.add(crack)
+        }
       })
-      shardGroup.add(mesh)
-      const crack = new LineSegments(
-        new EdgesGeometry(piece.geometry, 22),
-        crackMaterial,
-      )
-      crack.position.copy(piece.centre)
-      cracks.push(crack)
-      root.add(crack)
-    })
-    if (!reducedMotion) {
-      burst = createShatterBurst(
-        target.id,
-        shatterProfile,
-        intactLocalBounds,
-        recipe.tint,
-      )
-      root.add(burst.root)
+      if (!reducedMotion && nextResonance === undefined)
+        nextBurst = createShatterBurst(
+          target.id,
+          shatterProfile,
+          nextBounds,
+          recipe.tint,
+        )
+      return {
+        intact: nextIntact,
+        bounds: nextBounds,
+        shardGroup: nextShardGroup,
+        shardMeshes: nextShardMeshes,
+        cracks: nextCracks,
+        burst: nextBurst,
+        resonance: nextResonance,
+      }
+    } catch (error) {
+      nextResonance?.dispose()
+      nextBurst?.dispose()
+      for (const crack of nextCracks) {
+        crack.removeFromParent()
+        crack.geometry.dispose()
+      }
+      const geometries = new Set<BufferGeometry>([
+        geometry,
+        ...(nextPieces ?? []).map((piece) => piece.geometry),
+      ])
+      geometries.forEach((owned) => owned.dispose())
+      nextIntact.clear()
+      nextShardGroup.clear()
+      throw error
     }
+  }
+
+  function install(
+    geometry: BufferGeometry,
+    authoredPieces?: FracturePiece[],
+    authoredMaterials?: readonly Material[],
+    nextIntactMaterial: Material | Material[] = intactMaterial,
+    nextShardMaterial: Material | Material[] = shardMaterial,
+  ): void {
+    const next = stageInstallation(
+      geometry,
+      authoredPieces,
+      authoredMaterials,
+      nextIntactMaterial,
+      nextShardMaterial,
+    )
+    const previous = installation
+    root.add(next.intact, next.shardGroup)
+    if (next.resonance !== undefined) root.add(next.resonance.root)
+    if (next.burst !== undefined) root.add(next.burst.root)
+    installation = next
+    intact = next.intact
+    intactLocalBounds = next.bounds
+    shardGroup = next.shardGroup
+    shardMeshes = next.shardMeshes
+    cracks = next.cracks
+    burst = next.burst
+    resonance = next.resonance
+    intactMaterial = nextIntactMaterial
+    shardMaterial = nextShardMaterial
+    if (previous !== undefined) disposeInstallation(previous)
   }
   const initialGeometry = createVesselGeometry(target.variant)
   if (
@@ -280,8 +409,18 @@ export function createVessel(
     initialGeometry.groups.forEach((group) => {
       group.materialIndex = (group.materialIndex ?? 0) >= 4 ? 1 : 0
     })
-  install(initialGeometry)
-  shardGroup.visible = false
+  try {
+    install(initialGeometry)
+  } catch (error) {
+    root.clear()
+    persistentPortrait?.geometry.dispose()
+    materialLibrary.dispose()
+    glass.dispose()
+    portraitPlane.dispose()
+    portraitSurface.dispose()
+    crackMaterial.dispose()
+    throw error
+  }
   const waveMaterial = new MeshBasicMaterial({
     color: 0xb9fff2,
     transparent: true,
@@ -294,6 +433,7 @@ export function createVessel(
   wave.position.y = 0.015
   root.add(wave)
   let latest: BreakableSnapshot | undefined
+  let previousNow: number | undefined
   return {
     root,
     materialLibrary,
@@ -304,6 +444,9 @@ export function createVessel(
       root.updateWorldMatrix(true, false)
       return box.copy(intactLocalBounds).applyMatrix4(root.matrixWorld)
     },
+    resonanceSnapshot() {
+      return resonance?.snapshot()
+    },
     setGeometry(
       geometry: BufferGeometry,
       authoredPieces?: FracturePiece[],
@@ -311,47 +454,49 @@ export function createVessel(
     ) {
       // A late cosmetic download cannot rewind an already presented break.
       if (latest?.brokenAt !== null && latest?.brokenAt !== undefined) {
-        geometry.dispose()
-        authoredPieces?.forEach((piece) => piece.geometry.dispose())
+        const geometries = new Set<BufferGeometry>([
+          geometry,
+          ...(authoredPieces ?? []).map((piece) => piece.geometry),
+        ])
+        geometries.forEach((owned) => owned.dispose())
         return
       }
+      let nextIntactMaterial = intactMaterial
+      let nextShardMaterial = shardMaterial
       if (authoredMaterials) {
         if (recipe.persistentPortrait === undefined) {
-          intactMaterial = authoredMaterials
-          shardMaterial = authoredMaterials
-          for (const imported of authoredMaterials) {
-            if (
-              imported.name !== recipe.portraitMaterial ||
-              !portraitSurface.map
-            )
-              continue
-            const face = imported as MeshPhysicalMaterial
-            face.map = portraitSurface.map
-            face.needsUpdate = true
-          }
+          nextIntactMaterial = authoredMaterials
+          nextShardMaterial = authoredMaterials
         } else if (pictureBearingPortrait) {
-          intactMaterial = authoredMaterials.map((imported) =>
+          nextIntactMaterial = authoredMaterials.map((imported) =>
             imported.name === recipe.portraitMaterial ? glass : imported,
           )
-          shardMaterial = authoredMaterials
-          for (const imported of authoredMaterials) {
-            if (
-              imported.name !== recipe.portraitMaterial ||
-              !portraitSurface.map
-            )
-              continue
-            const face = imported as MeshPhysicalMaterial
-            face.map = portraitSurface.map
-            face.needsUpdate = true
-          }
+          nextShardMaterial = authoredMaterials
         } else {
-          intactMaterial = authoredMaterials.map((imported) =>
+          nextIntactMaterial = authoredMaterials.map((imported) =>
             imported.name === recipe.portraitMaterial ? glass : imported,
           )
-          shardMaterial = intactMaterial
+          nextShardMaterial = nextIntactMaterial
         }
       }
-      install(geometry, authoredPieces)
+      install(
+        geometry,
+        authoredPieces,
+        authoredMaterials,
+        nextIntactMaterial,
+        nextShardMaterial,
+      )
+      if (
+        authoredMaterials &&
+        portraitSurface.map &&
+        (recipe.persistentPortrait === undefined || pictureBearingPortrait)
+      )
+        for (const imported of authoredMaterials) {
+          if (imported.name !== recipe.portraitMaterial) continue
+          const face = imported as MeshPhysicalMaterial
+          face.map = portraitSurface.map
+          face.needsUpdate = true
+        }
     },
     setPortrait(texture: Texture) {
       // Loaded portraits use the glTF texture convention. The separate artwork
@@ -382,6 +527,13 @@ export function createVessel(
     },
     update(state: BreakableSnapshot, now: number) {
       latest = state
+      const reset = previousNow !== undefined && now < previousNow
+      const deltaSeconds =
+        previousNow === undefined
+          ? 0
+          : Math.max(0, Math.min(0.1, now - previousNow))
+      previousNow = now
+      if (reset) resonance?.resetCharge()
       const restored = state.phase === 'complete' && state.brokenAt === null
       const age =
         state.brokenAt === null ? -1 : Math.max(0, now - state.brokenAt)
@@ -397,12 +549,19 @@ export function createVessel(
           : age < delay
             ? 1.5
             : Math.max(0, 0.45 - (age - delay) * 3)
-      glass.emissiveIntensity = stress
+      const surfaceStress =
+        recipe.resonancePresentation === undefined
+          ? stress
+          : Math.min(
+              RESONANCE_SURFACE_STRESS_TUNING.maximumEmissiveIntensity,
+              stress * RESONANCE_SURFACE_STRESS_TUNING.emissiveScale,
+            )
+      glass.emissiveIntensity = surfaceStress
       for (const imported of materialLibrary.materials) {
         const surface = imported as MeshPhysicalMaterial
         if (!(surface.transmission > 0)) continue
-        surface.emissive.setHex(0x3fccbe)
-        surface.emissiveIntensity = stress
+        surface.emissive.setHex(stressEmissive)
+        surface.emissiveIntensity = surfaceStress
       }
       const anticipation =
         age < 0 ? 0 : delay <= 0 ? 1 : Math.max(0, Math.min(1, age / delay))
@@ -413,9 +572,14 @@ export function createVessel(
       crackMaterial.opacity = Math.min(1, crackReveal) * 0.92
       for (const crack of cracks)
         crack.visible = intact.visible && crackReveal > 0
-      if (!reducedMotion && intact.visible && state.charge > 0.6) {
+      if (
+        resonance === undefined &&
+        !reducedMotion &&
+        intact.visible &&
+        state.charge > 0.6
+      ) {
         intact.rotation.z = Math.sin(now * 48) * (state.charge - 0.6) * 0.018
-      } else intact.rotation.z = 0
+      } else if (resonance === undefined) intact.rotation.z = 0
       const flight = Math.max(0, age - delay)
       shardGroup.visible =
         shattered && !restored && flight < timing.visibleFlightSeconds
@@ -429,6 +593,22 @@ export function createVessel(
         !restored &&
         flight < SHATTER_PRESENTATION_TIMING.normal.visibleFlightSeconds
       burst?.update(flight, fade, microVisible)
+      resonance?.update({
+        deltaSeconds,
+        phase: restored
+          ? 'restored'
+          : shattered
+            ? flight < timing.visibleFlightSeconds
+              ? 'releasing'
+              : 'completed'
+            : state.charge > 0
+              ? 'charging'
+              : 'idle',
+        chargeProgress: shattered ? 1 : state.charge,
+        releaseProgress: shattered
+          ? Math.min(1, flight / timing.visibleFlightSeconds)
+          : 0,
+      })
       if (persistentPortrait !== undefined)
         persistentPortrait.visible =
           portraitReady && (!pictureBearingPortrait || !shardGroup.visible)
@@ -448,11 +628,14 @@ export function createVessel(
           )
           shard.mesh.scale.setScalar(Math.max(0.001, 1 - fade))
         }
-      wave.visible = !reducedMotion && shattered && flight < 0.55
+      wave.visible =
+        resonance === undefined && !reducedMotion && shattered && flight < 0.55
       wave.scale.setScalar(1 + flight * 4)
       waveMaterial.opacity = wave.visible ? (1 - flight / 0.55) * 0.65 : 0
     },
     dispose() {
+      resonance?.dispose()
+      resonance = undefined
       burst?.dispose()
       burst = undefined
       glass.envMap = null

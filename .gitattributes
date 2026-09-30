@@ -30,3 +30,6 @@ apps/beside-cue/public/games/cloudway-laboratory-v1/**/*.glb filter=lfs diff=lfs
 # Reviewed character and optional original songbook delivery.
 apps/beside-cue/public/games/glass3d/merc-v2.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/adventure-voice-v7/*.mp3 filter=lfs diff=lfs merge=lfs -text
+
+# Reviewed Living Glass runtime exhibit; dense masters stay in the creative archive.
+apps/beside-cue/public/games/resonance/assets/*.glb filter=lfs diff=lfs merge=lfs -text

@@ -170,7 +170,7 @@ describe('picture-bearing portrait fracture', () => {
     expect(intact.visible).toBe(true)
     expect(shards.visible).toBe(false)
     expect(
-      vessel.root.children.some(
+      intact.children.some(
         (child) => child.type === 'LineSegments' && child.visible,
       ),
     ).toBe(true)

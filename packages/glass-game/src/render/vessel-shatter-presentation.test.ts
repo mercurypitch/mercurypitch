@@ -1,10 +1,12 @@
 // Vessel shatter presentation regressions — authored pieces, micro debris and save restoration share one bounded beat.
 
-import type { BufferGeometry, Group, InstancedMesh, Material, Mesh, } from 'three'
-import { Box3, BoxGeometry, LineSegments, Vector3 } from 'three'
+import type { BufferGeometry, InstancedMesh, Mesh } from 'three'
+import { Box3, BoxGeometry, Group, LineBasicMaterial, LineSegments, Material, MeshPhysicalMaterial, Quaternion, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { FROST_WALL_PANE } from '../content/frost-wall-profile'
 import { GLASSWORKS } from '../content/glassworks'
+import { LIVING_GLASS_ROSEBUD_ID, LIVING_GLASS_TRIAL, } from '../content/living-glass-trial'
+import { RESONANCE_ROSEBUD_MATERIALS } from '../content/resonance-rosebud-profile'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_LIFECYCLE_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { createVessel } from './vessels'
@@ -65,7 +67,7 @@ describe('vessel shatter presentation', () => {
       `vessel-shards-${subject.id}`,
     ) as Group
     const burst = vessel.root.getObjectByName(`shatter-burst-${subject.id}`)!
-    const cracks = vessel.root.children.filter(
+    const cracks = intact.children.filter(
       (child): child is LineSegments => child instanceof LineSegments,
     )
 
@@ -135,6 +137,220 @@ describe('vessel shatter presentation', () => {
     ) as Group
     expect(shards.visible).toBe(true)
     vessel.dispose()
+  })
+
+  it('layers the Rosebud response around standard rigid shards and accepts a replaceable visual reward', () => {
+    const subject = LIVING_GLASS_TRIAL.breakables[0]!
+    const reward = new Group()
+    reward.name = 'test-resonance-reward'
+    const disposeReward = vi.fn()
+    const vessel = createVessel(subject, false, {
+      resonanceRewardFactory: () => ({
+        object: reward,
+        dispose: disposeReward,
+      }),
+    })
+    const intact = vessel.root.getObjectByName(
+      `vessel-intact-${LIVING_GLASS_ROSEBUD_ID}`,
+    )!
+    const shards = vessel.root.getObjectByName(
+      `vessel-shards-${LIVING_GLASS_ROSEBUD_ID}`,
+    ) as Group
+    const cracks = intact.getObjectByName('resonance-surface-fracture-lines')!
+
+    expect(vessel.root.getObjectByName('resonance-release')).toBeDefined()
+    expect(vessel.root.getObjectByName('test-resonance-reward')).toBe(reward)
+    expect(
+      vessel.root.getObjectByName(`shatter-burst-${LIVING_GLASS_ROSEBUD_ID}`),
+    ).toBeUndefined()
+    expect(cracks.parent?.parent).toBe(intact)
+
+    vessel.update(snapshot(subject.id, 'charging', null, 0.2), 0)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'charging',
+      chargeProgress: 0.2,
+      crackStage: 0,
+    })
+    vessel.update(snapshot(subject.id, 'charging', null, 0.7), 0.1)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'charging',
+      chargeProgress: 0.7,
+      crackStage: 2,
+    })
+    expect(intact.quaternion.angleTo(new Quaternion())).toBeLessThanOrEqual(
+      0.01,
+    )
+
+    vessel.update(snapshot(subject.id, 'shattering', 1), 1.2)
+    expect(shards.visible).toBe(true)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'releasing',
+      rewardVisible: true,
+    })
+    vessel.update(snapshot(subject.id, 'complete', 1), 3.31)
+    expect(shards.visible).toBe(false)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'completed',
+      releaseProgress: 1,
+      rewardVisible: true,
+    })
+    vessel.update(snapshot(subject.id, 'complete', null), 40)
+    expect(intact.visible).toBe(false)
+    expect(shards.visible).toBe(false)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'restored',
+      rewardVisible: false,
+    })
+
+    vessel.dispose()
+    expect(disposeReward).toHaveBeenCalledOnce()
+  })
+
+  it('reclaims outer vessel materials when first reward construction throws', () => {
+    const materialDispose = vi.spyOn(Material.prototype, 'dispose')
+    try {
+      expect(() =>
+        createVessel(LIVING_GLASS_TRIAL.breakables[0]!, false, {
+          resonanceRewardFactory: () => {
+            throw new Error('initial reward failed')
+          },
+        }),
+      ).toThrow('initial reward failed')
+
+      const disposed = materialDispose.mock.instances as Material[]
+      expect(
+        disposed.filter(
+          (material) =>
+            material instanceof MeshPhysicalMaterial &&
+            material.color.getHex() === 0xf3c9dc &&
+            material.transmission === 0.96 &&
+            material.emissive.getHex() === 0xfff0c6,
+        ),
+      ).toHaveLength(1)
+      expect(
+        disposed.filter((material) => material.name === 'portrait-surface'),
+      ).toHaveLength(1)
+      expect(
+        disposed.filter(
+          (material) =>
+            material instanceof MeshPhysicalMaterial &&
+            material.name === '' &&
+            material.color.getHex() === 0xffffff &&
+            material.roughness === 0.24 &&
+            material.metalness === 0.14,
+        ),
+      ).toHaveLength(1)
+      expect(
+        disposed.filter(
+          (material) =>
+            material instanceof LineBasicMaterial &&
+            material.name === '' &&
+            material.color.getHex() === 0xcaffee,
+        ),
+      ).toHaveLength(1)
+    } finally {
+      materialDispose.mockRestore()
+    }
+  })
+
+  it('keeps the installed Rosebud when a replacement omits its glass material', () => {
+    const subject = LIVING_GLASS_TRIAL.breakables[0]!
+    const vessel = createVessel(subject, false)
+    const previousIntact = vessel.root.getObjectByName(
+      `vessel-intact-${LIVING_GLASS_ROSEBUD_ID}`,
+    )!
+    const previousResonance = vessel.root.getObjectByName('resonance-release')!
+    const geometry = new BoxGeometry(0.6, 0.8, 0.4)
+    const pieceGeometry = new BoxGeometry(0.2, 0.3, 0.15)
+    const geometryDisposed = vi.fn()
+    const pieceDisposed = vi.fn()
+    geometry.addEventListener('dispose', geometryDisposed)
+    pieceGeometry.addEventListener('dispose', pieceDisposed)
+    const wrongMaterial = new MeshPhysicalMaterial()
+    wrongMaterial.name = 'NotRoseGlass'
+
+    expect(() =>
+      vessel.setGeometry(
+        geometry,
+        [{ geometry: pieceGeometry, centre: new Vector3() }],
+        [wrongMaterial],
+      ),
+    ).toThrow('missing glass material')
+
+    expect(
+      vessel.root.getObjectByName(`vessel-intact-${LIVING_GLASS_ROSEBUD_ID}`),
+    ).toBe(previousIntact)
+    expect(vessel.root.getObjectByName('resonance-release')).toBe(
+      previousResonance,
+    )
+    expect(previousIntact.parent).toBe(vessel.root)
+    expect(previousResonance.parent).toBe(vessel.root)
+    expect(geometryDisposed).toHaveBeenCalledOnce()
+    expect(pieceDisposed).toHaveBeenCalledOnce()
+    vessel.update(snapshot(subject.id, 'charging', null, 0.6), 0.1)
+    expect(vessel.resonanceSnapshot()).toMatchObject({
+      phase: 'charging',
+      chargeProgress: 0.6,
+    })
+
+    vessel.dispose()
+    wrongMaterial.dispose()
+  })
+
+  it('keeps the installed Rosebud and reward when a replacement reward fails', () => {
+    const subject = LIVING_GLASS_TRIAL.breakables[0]!
+    const disposeReward = vi.fn()
+    let rewardCalls = 0
+    const vessel = createVessel(subject, false, {
+      resonanceRewardFactory: () => {
+        rewardCalls++
+        if (rewardCalls > 1) throw new Error('replacement reward failed')
+        const object = new Group()
+        object.name = 'stable-resonance-reward'
+        return { object, dispose: disposeReward }
+      },
+    })
+    const previousIntact = vessel.root.getObjectByName(
+      `vessel-intact-${LIVING_GLASS_ROSEBUD_ID}`,
+    )!
+    const previousResonance = vessel.root.getObjectByName('resonance-release')!
+    const previousReward = vessel.root.getObjectByName(
+      'stable-resonance-reward',
+    )!
+    const geometry = new BoxGeometry(0.6, 0.8, 0.4)
+    const pieceGeometry = new BoxGeometry(0.2, 0.3, 0.15)
+    const geometryDisposed = vi.fn()
+    const pieceDisposed = vi.fn()
+    geometry.addEventListener('dispose', geometryDisposed)
+    pieceGeometry.addEventListener('dispose', pieceDisposed)
+    const roseGlass = new MeshPhysicalMaterial()
+    roseGlass.name = RESONANCE_ROSEBUD_MATERIALS.glass
+
+    expect(() =>
+      vessel.setGeometry(
+        geometry,
+        [{ geometry: pieceGeometry, centre: new Vector3() }],
+        [roseGlass],
+      ),
+    ).toThrow('replacement reward failed')
+
+    expect(rewardCalls).toBe(2)
+    expect(disposeReward).not.toHaveBeenCalled()
+    expect(
+      vessel.root.getObjectByName(`vessel-intact-${LIVING_GLASS_ROSEBUD_ID}`),
+    ).toBe(previousIntact)
+    expect(vessel.root.getObjectByName('resonance-release')).toBe(
+      previousResonance,
+    )
+    expect(vessel.root.getObjectByName('stable-resonance-reward')).toBe(
+      previousReward,
+    )
+    expect(geometryDisposed).toHaveBeenCalledOnce()
+    expect(pieceDisposed).toHaveBeenCalledOnce()
+
+    vessel.dispose()
+    expect(disposeReward).toHaveBeenCalledOnce()
+    roseGlass.dispose()
   })
 
   it('returns cached intact-only world bounds after debris has moved', () => {
