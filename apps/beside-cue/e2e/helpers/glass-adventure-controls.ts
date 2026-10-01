@@ -1,6 +1,6 @@
 // Glass adventure control helpers — shared scene setup, metrics and native pointer-ownership proof.
 
-import { expect, type BrowserContext, type Page } from '@playwright/test'
+import { expect, type BrowserContext, type Page, type TestInfo, } from '@playwright/test'
 
 const RASTER_METHODS = [
   'blitFramebuffer',
@@ -69,6 +69,7 @@ export async function verifyLookFirstMovementReacquisition(
   context: BrowserContext,
 ): Promise<void> {
   await openMuseum(page)
+  await observeControlTouches(page)
   await page.evaluate(() => {
     const trace: {
       pointerId: number
@@ -132,6 +133,12 @@ export async function verifyLookFirstMovementReacquisition(
     type: 'touchMove',
     touchPoints: [lookMoved, movement],
   })
+  // Native touch moves may be coalesced after CDP acknowledges dispatch.
+  // Start the movement window only after the control has received this move.
+  await expect(page.getByTestId('floating-stick-knob')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, 30, -20)',
+  )
   const firstStart = {
     x: await value(page, 'player-x'),
     z: await value(page, 'player-z'),
@@ -191,6 +198,10 @@ export async function verifyLookFirstMovementReacquisition(
     type: 'touchMove',
     touchPoints: [lookMoved, secondMovement],
   })
+  await expect(page.getByTestId('floating-stick-knob')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, -26, -24)',
+  )
   const secondStart = {
     x: await value(page, 'player-x'),
     z: await value(page, 'player-z'),
@@ -221,6 +232,22 @@ export async function verifyLookFirstMovementReacquisition(
     firstMovementPointer!.pointerId,
   )
 
+  const jumpBounds = (await page
+    .getByRole('button', { name: 'Jump', exact: true })
+    .boundingBox())!
+  const jumpContact = {
+    id: 4,
+    x: jumpBounds.x + jumpBounds.width / 2,
+    y: jumpBounds.y + jumpBounds.height / 2,
+  }
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [lookMoved, secondMovement, jumpContact],
+  })
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-jump-contact',
+    'held',
+  )
   const yawBeforeConcurrentLook = await value(page, 'camera-yaw')
   const positionBeforeConcurrentLook = {
     x: await value(page, 'player-x'),
@@ -229,9 +256,14 @@ export async function verifyLookFirstMovementReacquisition(
   const lookAfterReacquire = { ...lookMoved, x: lookMoved.x - 38 }
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchMove',
-    touchPoints: [lookAfterReacquire, secondMovement],
+    touchPoints: [lookAfterReacquire, secondMovement, jumpContact],
   })
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-look-touch-position',
+    `${lookAfterReacquire.x},${lookAfterReacquire.y}`,
+  )
   await page.clock.runFor(140)
+  expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
   expect(
     Math.abs((await value(page, 'camera-yaw')) - yawBeforeConcurrentLook),
   ).toBeGreaterThan(0.1)
@@ -245,5 +277,177 @@ export async function verifyLookFirstMovementReacquisition(
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchCancel',
     touchPoints: [],
+  })
+}
+
+export async function verifyMovementFirstThreeContacts(
+  page: Page,
+  context: BrowserContext,
+  testInfo: TestInfo,
+): Promise<void> {
+  await openMuseum(page)
+  await observeControlTouches(page)
+  const cdp = await context.newCDPSession(page)
+  const stick = await page
+    .getByRole('group', { name: 'Move Merc' })
+    .boundingBox()
+  const jump = await page
+    .getByRole('button', { name: 'Jump', exact: true })
+    .boundingBox()
+  expect(stick).not.toBeNull()
+  expect(jump).not.toBeNull()
+  const origin = {
+    x: stick!.x + Math.min(60, stick!.width * 0.36),
+    y: stick!.y + stick!.height - 64,
+  }
+  const beforeContact = [
+    await value(page, 'player-x'),
+    await value(page, 'player-z'),
+  ]
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ id: 1, ...origin }],
+  })
+  await page.clock.runFor(120)
+  expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
+  expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ id: 1, x: origin.x + 4, y: origin.y - 2 }],
+  })
+  await expect(page.getByTestId('floating-stick-knob')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, 4, -2)',
+  )
+  await page.clock.runFor(120)
+  expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
+  expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
+  const movement = { id: 1, x: origin.x + 30, y: origin.y - 16 }
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [movement],
+  })
+  await expect(page.getByTestId('floating-stick-knob')).toHaveCSS(
+    'transform',
+    'matrix(1, 0, 0, 1, 30, -16)',
+  )
+  const x = await value(page, 'player-x')
+  const z = await value(page, 'player-z')
+  await page.clock.runFor(100)
+  expect(
+    Math.hypot(
+      (await value(page, 'player-x')) - x,
+      (await value(page, 'player-z')) - z,
+    ),
+  ).toBeGreaterThan(0.03)
+  if (process.env.GLASS_CONTROLS_PROOF === '1')
+    await page.screenshot({
+      path: testInfo.outputPath('floating-stick-active.png'),
+    })
+  const yaw = await value(page, 'camera-yaw')
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [movement, { id: 2, x: 220, y: 380 }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [movement, { id: 2, x: 265, y: 390 }],
+  })
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-look-touch-position',
+    '265,390',
+  )
+  await page.clock.runFor(32)
+  expect(Math.abs((await value(page, 'camera-yaw')) - yaw)).toBeGreaterThan(0.1)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      movement,
+      { id: 2, x: 265, y: 390 },
+      { id: 3, x: jump!.x + jump!.width / 2, y: jump!.y + jump!.height / 2 },
+    ],
+  })
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-jump-contact',
+    'held',
+  )
+  const jumpingStart = [
+    await value(page, 'player-x'),
+    await value(page, 'player-z'),
+    await value(page, 'camera-yaw'),
+  ]
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      movement,
+      { id: 2, x: 300, y: 400 },
+      { id: 3, x: jump!.x + jump!.width / 2, y: jump!.y + jump!.height / 2 },
+    ],
+  })
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-look-touch-position',
+    '300,400',
+  )
+  await page.clock.runFor(100)
+  expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
+  expect(
+    Math.hypot(
+      (await value(page, 'player-x')) - jumpingStart[0],
+      (await value(page, 'player-z')) - jumpingStart[1],
+    ),
+  ).toBeGreaterThan(0.03)
+  expect(
+    Math.abs((await value(page, 'camera-yaw')) - jumpingStart[2]),
+  ).toBeGreaterThan(0.1)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchCancel',
+    touchPoints: [],
+  })
+  await page.clock.runFor(200)
+  const released = [
+    await value(page, 'player-x'),
+    await value(page, 'player-z'),
+    await value(page, 'camera-yaw'),
+  ]
+  await page.clock.runFor(200)
+  expect(await value(page, 'player-x')).toBeCloseTo(released[0], 4)
+  expect(await value(page, 'player-z')).toBeCloseTo(released[1], 4)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(released[2], 5)
+  expect(
+    await page.evaluate(() => ({
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+    })),
+  ).toEqual({ width: 390, height: 844 })
+}
+
+async function observeControlTouches(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    for (const type of [
+      'pointerdown',
+      'pointermove',
+      'pointerup',
+      'pointercancel',
+    ]) {
+      document.addEventListener(
+        type,
+        (event) => {
+          const pointer = event as PointerEvent
+          if (pointer.pointerType !== 'touch') return
+          const target = event.target as Element
+          if (target.closest('[aria-label="Jump"]')) {
+            if (type !== 'pointermove')
+              document.documentElement.dataset.jumpContact =
+                type === 'pointerdown' ? 'held' : 'released'
+          } else if (
+            type === 'pointermove' &&
+            !target.closest('[aria-label="Movement controls"]')
+          ) {
+            document.documentElement.dataset.lookTouchPosition = `${pointer.clientX},${pointer.clientY}`
+          }
+        },
+        true,
+      )
+    }
   })
 }

@@ -1451,6 +1451,13 @@ If local and CI counts differ, compare the exact tested merge revision with the 
 **Rule:** import a build-only module dynamically inside its constant's branch, or declare it free of side effects in the native Vite config (`KARAOKE_STAGE_2`, `FLOATING_CONSOLE`). Then hold the built output to it with an assert, not the source.
 **See:** `apps/mercurypitch/vite.config.ts`, `apps/mercurypitch/scripts/assert-bundle.mjs`, `scripts/assert-no-portable-console.mjs --store-binary`.
 
+### Wait for delivered touch input before measuring movement
+
+**Symptom:** a real-touch joystick test intermittently travelled too little during its fixed 140 ms simulation window.
+**Cause:** CDP acknowledged touch movement before the coalesced pointer event updated the control, so the measurement sometimes started before movement input arrived.
+**Rule:** await the published knob position before advancing the unchanged clock window. Do not loosen the displacement assertion or add a blind delay to hide delivery latency.
+**See:** `apps/beside-cue/e2e/helpers/glass-adventure-controls.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
