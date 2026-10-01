@@ -4,16 +4,14 @@
 
 import type { Material, Texture } from 'three'
 import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
-import type { GameSnapshot, LevelDefinition, MovementReferenceKind, Vec3, } from '../contracts'
+import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { getRequiredRouteBreakableIds } from '../core/progress'
-import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { releaseAssetImage } from './asset-texture-profile'
 import { createAtmosphere } from './atmosphere'
 import { installBackdropFog } from './backdrop-fog'
-import type { AdventureCameraMode, ChallengeCameraMetrics } from './camera'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
 import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR, isCloudwayLevel, } from './cloudway-scene'
@@ -22,12 +20,12 @@ import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
 import { createGalleryInspection } from './gallery-inspection'
+import type { GlassRenderer, GlassRendererOptions, } from './glass-renderer-contracts'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { precompileRendererPrograms } from './program-precompile'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from './render-performance-governor'
-import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, GlassShadowFrameInterval, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
 import { resolveResonanceExhibitPresentations } from './resonance-exhibit-layout'
@@ -37,94 +35,11 @@ import { fitSkyBackdrop } from './sky-backdrop'
 import { createVessel } from './vessels'
 import { canRenderViewport } from './viewport'
 
-export interface GlassRendererOptions {
-  reducedMotion?: boolean
-  followSmoothnessSeconds?: number
-  cameraMode?: AdventureCameraMode
-  renderQuality?: GlassRenderQualityPreference
-  /** Host-packaged startup tier; display quality remains independently tunable. */
-  assetProfile?: GlassAssetQualityProfile
-  onAssetError?: (id: string, error: unknown) => void
-  onLoadingProgress?: (progress: LoadingProgress) => void
-  onContextLost?: () => void
-  onExitCelebrationComplete?: () => void
-}
-
-export interface GlassRendererPresentation {
-  /** Optional narrated speech energy for Merc's mouth; no microphone access. */
-  narrationLevel?: number
-  challengeEncounterId: string | null
-  /** Host pause or tutorial state; voice setup pause remains camera-active. */
-  paused: boolean
-  /** Fraction of the viewport covered by the live voice panel and its margin. */
-  safeBottomFraction?: number
-}
-
-export interface GlassRenderer {
-  /** Required assets are installed; the host still owns the first-frame gate. */
-  ready: Promise<void>
-  /**
-   * `dt` is the uncapped visible-frame interval. Each presentation system
-   * applies its own safety bound; camera response must not truncate Merc's
-   * animation clock after an ordinary dropped mobile frame.
-   */
-  render(
-    snapshot: GameSnapshot,
-    dt: number,
-    presentation?: GlassRendererPresentation,
-  ): boolean
-  resize(): void
-  orbit(dxRadians: number, dyRadians: number): void
-  setOrbitActive(active: boolean): void
-  zoom(delta: number): void
-  recenter(): void
-  setCameraMode(mode: AdventureCameraMode): void
-  getCameraMode(): AdventureCameraMode
-  /** Actual rendered view heading, used for presentation and diagnostics. */
-  getCameraYaw(): number
-  /** Actual rendered Merc heading, used only by development diagnostics. */
-  getMercYaw(): number | null
-  /** Stable camera-relative movement basis for the current held input. */
-  getMovementYaw(): number
-  setFollowSmoothness(seconds: number): void
-  setRenderQuality(preference: GlassRenderQualityPreference): void
-  getRenderQuality(): {
-    preference: GlassRenderQualityPreference
-    profile: GlassRenderQualityProfile
-    /** Startup asset profile; changing display quality does not reload a world. */
-    assetProfile: GlassAssetQualityProfile
-    pixelRatio: number
-    shadowFrameInterval: GlassShadowFrameInterval
-  }
-  setMovementActive(active: boolean): void
-  rebaseMovement(
-    kind?: MovementReferenceKind,
-    travelOffsetRadians?: number,
-  ): void
-  cancelHeadingFollow(): void
-  pickArtwork(clientX: number, clientY: number): string | null
-  nearbyArtwork(position: Vec3): string | null
-  getChallengeCameraMetrics(): ChallengeCameraMetrics
-  getMetrics(): {
-    drawCalls: number
-    triangles: number
-    textures: number
-    geometries: number
-    colorBufferFloat: boolean
-    floatLinear: boolean
-    reflectionCaptures: number
-    reflectionTargetPixels: number
-    adaptiveQualityActive: boolean
-    performanceSampleCount: number
-    performanceSampleWindowSeconds: number
-    performanceSlowSampleCount: number
-    actualPixelRatio: number
-    actualShadowFrameInterval: GlassShadowFrameInterval
-    shadowUpdates: number
-    shadowReuses: number
-  }
-  dispose(): void
-}
+export type {
+  GlassRenderer,
+  GlassRendererOptions,
+  GlassRendererPresentation,
+} from './glass-renderer-contracts'
 
 /** Synchronous handle permits disposal even while the required GLB is loading. */
 export function createGlassRenderer(

@@ -11,6 +11,8 @@ const LATERAL_HEADING_MAXIMUM = (Math.PI * 2) / 3
 
 export interface CameraHeadingIntentSample {
   allowForwardDiagonalFollow?: boolean
+  /** Reacquire a manually displaced view after any sustained travel heading. */
+  reacquireManualView?: boolean
   /** Stable world heading captured from the keyboard contact, before physics. */
   keyboardHeading?: number | null
   /** Post-collision travel heading, used only after it stays corridor-stable. */
@@ -25,9 +27,9 @@ export interface CameraHeadingIntentSample {
 /**
  * Direct camera integrations retain immediate heading follow. A movement-basis
  * rebase marks a real player direction change: forward-biased key chords then
- * act as steering. Stick contact keeps the view fixed for the complete held
- * gesture; only its final direction becomes eligible after a sustained gesture
- * ends, so a continuously steered thumb cannot make the camera autocircle.
+ * act as steering. Stick contact keeps the view fixed in open navigation;
+ * framed corridors may adopt a stable post-collision heading while held, and
+ * release can commit the final direction without feeding camera yaw into travel.
  */
 export function createCameraHeadingIntent() {
   let mode: 'immediate' | 'keyboard' | 'stick' | 'confirmed' | 'settled' =
@@ -35,6 +37,7 @@ export function createCameraHeadingIntent() {
   let lateralSeconds = 0
   let stickSeconds = 0
   let stickHeading: number | null = null
+  let stickFollowHeading: number | null = null
   let keyboardHeading: number | null = null
   let effectiveHeadingCandidate: number | null = null
   let effectiveHeadingSeconds = 0
@@ -50,6 +53,7 @@ export function createCameraHeadingIntent() {
       lateralSeconds = 0
       stickSeconds = 0
       stickHeading = null
+      stickFollowHeading = null
       keyboardHeading = null
       resetEffectiveHeading()
     },
@@ -58,23 +62,60 @@ export function createCameraHeadingIntent() {
       lateralSeconds = 0
       stickSeconds = 0
       stickHeading = null
+      stickFollowHeading = null
       keyboardHeading = null
       resetEffectiveHeading()
     },
     target(sample: CameraHeadingIntentSample): number | null {
       if (mode === 'stick') {
         if (sample.movementActive) {
-          if (sample.moving) {
+          if (sample.moving || sample.reacquireManualView === true) {
             stickSeconds += sample.elapsedSeconds
             stickHeading = sample.facingYaw
           }
-          return null
+          const effectiveHeading =
+            sample.allowForwardDiagonalFollow === true &&
+            sample.effectiveHeading !== null &&
+            sample.effectiveHeading !== undefined &&
+            Number.isFinite(sample.effectiveHeading)
+              ? sample.effectiveHeading
+              : null
+          const currentHeading =
+            stickFollowHeading ?? sample.movementReferenceYaw
+          if (
+            effectiveHeading === null ||
+            Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
+              ENCLOSED_DIAGONAL_HEADING_MINIMUM
+          ) {
+            resetEffectiveHeading()
+            return stickFollowHeading
+          }
+          if (
+            effectiveHeadingCandidate === null ||
+            Math.abs(
+              shortestAngleDelta(effectiveHeadingCandidate, effectiveHeading),
+            ) >= ENCLOSED_DIAGONAL_HEADING_MINIMUM
+          ) {
+            effectiveHeadingCandidate = effectiveHeading
+            effectiveHeadingSeconds = sample.elapsedSeconds
+          } else {
+            effectiveHeadingSeconds += sample.elapsedSeconds
+          }
+          if (effectiveHeadingSeconds >= LATERAL_FOLLOW_DWELL_SECONDS) {
+            stickFollowHeading = effectiveHeading
+            resetEffectiveHeading()
+          }
+          return stickFollowHeading
         }
         mode = 'settled'
         if (stickSeconds < STICK_COMMIT_SECONDS) return null
         return stickHeading
       }
-      if (!sample.movementActive || !sample.moving) return null
+      if (
+        !sample.movementActive ||
+        (!sample.moving && sample.reacquireManualView !== true)
+      )
+        return null
       if (mode === 'immediate') return sample.facingYaw
 
       if (mode === 'confirmed') {
@@ -127,7 +168,10 @@ export function createCameraHeadingIntent() {
         sample.allowForwardDiagonalFollow === true
           ? ENCLOSED_DIAGONAL_HEADING_MINIMUM
           : LATERAL_HEADING_MINIMUM
-      if (offset >= minimumHeading && offset <= LATERAL_HEADING_MAXIMUM)
+      if (
+        sample.reacquireManualView === true ||
+        (offset >= minimumHeading && offset <= LATERAL_HEADING_MAXIMUM)
+      )
         lateralSeconds += sample.elapsedSeconds
       else lateralSeconds = 0
 

@@ -90,6 +90,7 @@ const THREE_QUARTER_BIASES = [0.3, 0.95, 1.25] as const
 const PLANAR_THREE_QUARTER_BIASES = [0.48, 0.62, 0.76] as const
 const ENTRY_SECONDS = 0.82
 const RESTORE_SECONDS = 0.72
+const MAXIMUM_PRESENTATION_CATCH_UP_SECONDS = 0.25
 const MAXIMUM_PORTRAIT_FOV_BOOST = 10
 
 const corners = Array.from({ length: 8 }, () => new Vector3())
@@ -521,7 +522,11 @@ export function createChallengeCameraDirector(options: {
         return currentPose === null ? null : copyPose(currentPose)
 
       const safeDelta = Number.isFinite(input.deltaSeconds)
-        ? MathUtils.clamp(input.deltaSeconds, 0, 0.05)
+        ? MathUtils.clamp(
+            input.deltaSeconds,
+            0,
+            MAXIMUM_PRESENTATION_CATCH_UP_SECONDS,
+          )
         : 0
       if (mode === 'holding') {
         progress = 1

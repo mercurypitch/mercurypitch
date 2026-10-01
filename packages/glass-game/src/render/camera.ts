@@ -78,7 +78,6 @@ export function createAdventureCamera(
   let orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
   let committedHeading: number | null = null
   let movementHeading: number | null = null
-  let movementReferenceKind: MovementReferenceKind = 'keyboard'
   let movementActive = false
   let orbitActive = false
   let manualOrbitOverride = false
@@ -337,7 +336,6 @@ export function createAdventureCamera(
       if (!manualOrbitOverride)
         movementReferenceYaw =
           cameraMode === 'first-person' ? firstPerson.yaw() : yaw
-      movementReferenceKind = kind
       movementHeading =
         typeof travelOffsetRadians === 'number' &&
         Number.isFinite(travelOffsetRadians)
@@ -486,7 +484,7 @@ export function createAdventureCamera(
       const cinematicPose = challengeDirector.update({
         encounterId: challengeId,
         paused: presentationPaused,
-        deltaSeconds: safeDt,
+        deltaSeconds: followDt,
         explorationPose: {
           position: camera.position,
           target,
@@ -570,24 +568,40 @@ export function createAdventureCamera(
       const effectiveHeading = moving
         ? Math.atan2(-snapshot.player.velocity.x, -snapshot.player.velocity.z)
         : null
-      if (
-        manualOrbitOverride &&
-        movementActive &&
-        !orbitActive &&
-        orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
-      ) {
-        manualOrbitOverride = false
-        committedHeading =
-          movementReferenceKind === 'keyboard'
-            ? (movementHeading ?? facing)
-            : facing
-        headingIntent.rebase(movementReferenceKind)
+      const headingSample = {
+        allowForwardDiagonalFollow: framedTarget,
+        elapsedSeconds: followDt,
+        effectiveHeading,
+        facingYaw: facing,
+        keyboardHeading: movementHeading,
+        movementActive,
+        movementReferenceYaw,
+        moving,
       }
       const followsHeading =
         options.reducedMotion !== true &&
         !snapshot.paused &&
         snapshot.phase === 'idle' &&
         !teleport
+      let headingSampled = false
+      if (followsHeading && manualOrbitOverride && !orbitActive) {
+        headingSampled = true
+        const requestedHeading = headingIntent.target({
+          ...headingSample,
+          reacquireManualView: true,
+        })
+        if (requestedHeading !== null) committedHeading = requestedHeading
+      }
+      if (
+        followsHeading &&
+        manualOrbitOverride &&
+        !orbitActive &&
+        orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS &&
+        committedHeading !== null
+      ) {
+        manualOrbitOverride = false
+        if (!moving && committedHeading !== null) committedHeading = facing
+      }
       const routeHeadingFrozen =
         activeRouteSection !== null && !snapshot.player.grounded
       if (!followsHeading) {
@@ -598,17 +612,8 @@ export function createAdventureCamera(
         const routeYaw = validRouteYaw(activeRouteSection)
         if (routeYaw !== null) {
           if (routeUpdate.changed || movementActive) committedHeading = routeYaw
-        } else {
-          const requestedHeading = headingIntent.target({
-            allowForwardDiagonalFollow: framedTarget,
-            elapsedSeconds: followDt,
-            effectiveHeading,
-            facingYaw: facing,
-            keyboardHeading: movementHeading,
-            movementActive,
-            movementReferenceYaw,
-            moving,
-          })
+        } else if (!headingSampled) {
+          const requestedHeading = headingIntent.target(headingSample)
           if (requestedHeading !== null) committedHeading = requestedHeading
         }
       }
