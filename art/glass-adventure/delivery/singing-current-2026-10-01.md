@@ -30,6 +30,8 @@ Streamed targets start directly from their authored asset, without constructing
 and discarding a procedural replacement first. Immutable crack outlines are
 shared by bundle leases; per-target materials and animation remain independent,
 and the final owner releases the shared geometry.
+Completion and checkpoint recovery flush their final scene once even when
+capture or input reaches the boundary before the pending animation frame.
 References and backing are synthesized for this first course; they are not
 newly recorded Merc singing performances.
 

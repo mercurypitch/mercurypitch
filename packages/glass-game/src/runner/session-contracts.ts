@@ -50,7 +50,7 @@ export interface RunnerSessionState {
 export interface RunnerSessionFrame {
   readonly state: RunnerSessionState
   readonly events: readonly RunnerEvent[]
-  /** Only the session's animation frame permits GPU presentation; evidence remains immediate. */
+  /** Session frames and one authoritative terminal flush permit GPU presentation; evidence remains immediate. */
   readonly presentation?: boolean
 }
 
