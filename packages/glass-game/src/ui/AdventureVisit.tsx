@@ -741,6 +741,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
                 levelId={level.id}
                 encore={definition()}
                 audioLeases={encoreAudioLeases}
+                melodyTier={props.replayGoal?.tier ?? 1}
                 onComplete={adventure.celebrateEncore}
                 onClose={closeEncore}
               />

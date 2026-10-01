@@ -1,10 +1,28 @@
 // Merc encore bank tests — playback must match the compiled key, pace and melody version exactly.
 import { describe, expect, it } from 'vitest'
 import { compileMelody } from '../core/melody-contour'
-import { MERC_ENCORE_VARIANTS, mercEncoreAvailability } from './encore-examples'
+import { MERC_ENCORE_VARIANTS, mercEncoreAvailability, mercEncoreJudgePolicy, } from './encore-examples'
 import { glassMelody } from './melodies'
 
 describe('Merc encore examples', () => {
+  it('keeps lyric evidence fixed while completed-visit tiers tighten correction time', () => {
+    expect(mercEncoreJudgePolicy(1)).toEqual({
+      dropoutGraceSeconds: 0.8,
+      minimumAnchorEvidenceSeconds: 0.12,
+      mismatchGraceSeconds: 1.2,
+    })
+    expect(mercEncoreJudgePolicy(2)).toEqual({
+      dropoutGraceSeconds: 0.4,
+      minimumAnchorEvidenceSeconds: 0.12,
+      mismatchGraceSeconds: 0.75,
+    })
+    expect(mercEncoreJudgePolicy(3)).toEqual({
+      dropoutGraceSeconds: 0.4,
+      minimumAnchorEvidenceSeconds: 0.12,
+      mismatchGraceSeconds: 0.45,
+    })
+  })
+
   it('selects the exact effective key and pace after transposition', () => {
     const contour = compileMelody(glassMelody('gallery-arch'), {
       rootMidi: 61,

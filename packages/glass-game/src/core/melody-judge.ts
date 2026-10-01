@@ -10,6 +10,7 @@ import type { MelodyJudgeFeedback, MelodyJudgePhase, MelodyJudgePolicy, MelodyJu
 import { createMelodyAnchorEvidenceGuard } from './melody-anchor-evidence'
 import type { CompiledMelody, CompiledMelodyAnchor, CompiledMelodyPhrase, CompiledMelodySegment, MelodyContourPoint, } from './melody-contour'
 import { sampleMelodyAtTime } from './melody-contour'
+import { MELODY_MISMATCH_GRACE_SECONDS } from './melody-policy'
 
 export type {
   MelodyJudgeFeedback,
@@ -25,7 +26,7 @@ export const DEFAULT_MELODY_JUDGE_POLICY: MelodyJudgePolicy = {
   maximumSampleAgeMs: 150,
   maximumSampleGapSeconds: 0.1,
   dropoutGraceSeconds: 0.18,
-  mismatchGraceSeconds: 0.45,
+  mismatchGraceSeconds: MELODY_MISMATCH_GRACE_SECONDS[3],
   acquisitionSeconds: 0.12,
   minimumAnchorEvidenceSeconds: 0,
   minimumPace: 0.65,

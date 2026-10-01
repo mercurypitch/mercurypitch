@@ -7,27 +7,7 @@ import type { MelodyJudgeSnapshot } from '../melody-contracts'
 import type { AdventureVoiceMode } from './adventure-voice-challenge'
 import styles from './GlassAdventure.module.css'
 import panelStyles from './MelodyChallengePanel.module.css'
-import { MelodyRibbon } from './MelodyRibbon'
-
-const NOTE_NAMES = [
-  'C',
-  'C♯',
-  'D',
-  'E♭',
-  'E',
-  'F',
-  'F♯',
-  'G',
-  'A♭',
-  'A',
-  'B♭',
-  'B',
-]
-
-function noteName(midi: number): string {
-  const rounded = Math.round(midi)
-  return `${NOTE_NAMES[((rounded % 12) + 12) % 12]}${Math.floor(rounded / 12) - 1}`
-}
+import { MelodyRibbon, melodyNoteName } from './MelodyRibbon'
 
 function paceLabel(pace: number): string {
   if (pace === 0.8) return 'Brisk'
@@ -97,11 +77,11 @@ export function MelodyChallengePanel(props: {
               aria-label={
                 props.target === null
                   ? 'Lesson key not selected'
-                  : `Target note: ${noteName(props.target)}`
+                  : `Target note: ${melodyNoteName(props.target)}`
               }
             >
               <span aria-hidden="true">
-                {props.target === null ? '—' : noteName(props.target)}
+                {props.target === null ? '—' : melodyNoteName(props.target)}
               </span>
             </div>
             <div class={styles.voiceReadout}>
@@ -112,7 +92,7 @@ export function MelodyChallengePanel(props: {
                     ? 'Your turn in a moment…'
                     : props.pitch === null
                       ? 'Sing or hum gently.'
-                      : `${noteName(props.pitch)} · ${percent()}%`}
+                      : `${melodyNoteName(props.pitch)} · ${percent()}%`}
               </span>
               <div
                 class={styles.chargeTrack}
@@ -142,7 +122,9 @@ export function MelodyChallengePanel(props: {
           <span>
             Key{' '}
             <strong>
-              {props.rootMidi === null ? 'Not set' : noteName(props.rootMidi)}
+              {props.rootMidi === null
+                ? 'Not set'
+                : melodyNoteName(props.rootMidi)}
             </strong>
           </span>
           <span>

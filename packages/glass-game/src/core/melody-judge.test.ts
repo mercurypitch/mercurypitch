@@ -8,6 +8,7 @@ import type { MelodyDefinition } from './melody-contour'
 import { compileMelody, sampleMelodyAtTime } from './melody-contour'
 import type { MelodyJudge, MelodyJudgeEvent } from './melody-judge'
 import { createMelodyJudge } from './melody-judge'
+import { melodyJudgePolicyForTier } from './melody-policy'
 
 interface CaptureState {
   sequence: number
@@ -128,6 +129,78 @@ function singPhrase(
 }
 
 describe('live melody judge', () => {
+  it('gives one-star singers more correction time without advancing the contour', () => {
+    expect(melodyJudgePolicyForTier(1)).toEqual({
+      dropoutGraceSeconds: 0.8,
+      mismatchGraceSeconds: 1.2,
+    })
+    expect(melodyJudgePolicyForTier(2)).toEqual({
+      dropoutGraceSeconds: 0.4,
+      mismatchGraceSeconds: 0.75,
+    })
+    expect(melodyJudgePolicyForTier(3)).toEqual({
+      dropoutGraceSeconds: 0.4,
+      mismatchGraceSeconds: 0.45,
+    })
+
+    const melody = compiled('first-arc')
+    const oneStar = createMelodyJudge(melody, melodyJudgePolicyForTier(1))
+    const oneStarState = { sequence: 0, captureSeconds: 0 }
+    while (oneStar.snapshot().phase === 'acquiring')
+      emit(oneStar, oneStarState, 60)
+    const beforeMismatch = oneStar.snapshot().progress
+    for (let index = 0; index < 41; index++) emit(oneStar, oneStarState, 65)
+    expect(oneStar.snapshot()).toMatchObject({
+      progress: beforeMismatch,
+      retryCount: 0,
+      complete: false,
+    })
+    emit(oneStar, oneStarState, oneStar.snapshot().targetMidi)
+    expect(oneStar.snapshot().retryCount).toBe(0)
+
+    const twoStar = createMelodyJudge(melody, melodyJudgePolicyForTier(2))
+    const twoStarState = { sequence: 0, captureSeconds: 0 }
+    while (twoStar.snapshot().phase === 'acquiring')
+      emit(twoStar, twoStarState, 60)
+    for (let index = 0; index < 32; index++) emit(twoStar, twoStarState, 65)
+    expect(twoStar.snapshot().retryCount).toBeGreaterThan(0)
+  })
+
+  it('lets one-star singers pause briefly to find the next note without granting progress', () => {
+    const melody = compiled('first-arc')
+    const oneStar = createMelodyJudge(melody, melodyJudgePolicyForTier(1))
+    const oneStarState = { sequence: 0, captureSeconds: 0 }
+    while (oneStarState.captureSeconds < 0.5) {
+      const target = sampleMelodyAtTime(
+        melody,
+        oneStarState.captureSeconds,
+      ).midi!
+      emit(oneStar, oneStarState, target)
+    }
+    const beforePause = oneStar.snapshot().progress
+    for (let index = 0; index < 27; index++) emit(oneStar, oneStarState, null)
+    expect(oneStar.snapshot()).toMatchObject({
+      progress: beforePause,
+      retryCount: 0,
+      complete: false,
+    })
+    for (let index = 0; index < 8; index++) emit(oneStar, oneStarState, 62)
+    expect(oneStar.snapshot().retryCount).toBe(0)
+    expect(oneStar.snapshot().progress).toBeGreaterThan(beforePause)
+
+    const twoStar = createMelodyJudge(melody, melodyJudgePolicyForTier(2))
+    const twoStarState = { sequence: 0, captureSeconds: 0 }
+    while (twoStarState.captureSeconds < 0.5) {
+      const target = sampleMelodyAtTime(
+        melody,
+        twoStarState.captureSeconds,
+      ).midi!
+      emit(twoStar, twoStarState, target)
+    }
+    for (let index = 0; index < 27; index++) emit(twoStar, twoStarState, null)
+    expect(twoStar.snapshot().retryCount).toBeGreaterThan(0)
+  })
+
   it.each([0.7, 1, 1.5])(
     'accepts the full ascending and descending contour at %sx reference pace',
     (pace) => {
@@ -461,9 +534,12 @@ describe('live melody judge', () => {
       expect(constantJudge.snapshot().complete).toBe(false)
     })
 
-    it('retries after silence beyond the Encore lyrical grace', () => {
+    it('retries after silence beyond the strict Encore lyrical grace', () => {
       const melody = compiled('first-arc')
-      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const judge = createMelodyJudge(melody, {
+        ...LYRIC_EVIDENCE_POLICY,
+        ...melodyJudgePolicyForTier(2),
+      })
       const state = { sequence: 0, captureSeconds: 0 }
       while (state.captureSeconds < 0.7) {
         const target = sampleMelodyAtTime(melody, state.captureSeconds).midi!

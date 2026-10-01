@@ -94,8 +94,54 @@
   background: var(--brass);
 }
 
+.pitchTracker {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px 8px;
+  background: rgb(255 255 255 / 46%);
+  color: var(--case-deep);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.pitchTracker button {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgb(16 51 47 / 28%);
+  border-radius: 999px;
+  background: #fffaf0;
+  color: var(--case-deep);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pitchTracker button:focus-visible {
+  outline: 3px solid #af8638;
+  outline-offset: 2px;
+}
+
+.pitchTracker output {
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
 @media (max-width: 560px) {
   .ribbonFrame[data-compact='true'] .ribbon {
     height: 96px;
+  }
+
+  .pitchTracker {
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .pitchTracker output {
+    flex: 1 1 160px;
+    text-align: center;
   }
 }

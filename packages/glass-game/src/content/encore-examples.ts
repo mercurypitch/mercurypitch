@@ -1,6 +1,8 @@
 // Merc encore examples — exact authored contours in the player's selected key and pace.
 import type { CompiledMelody } from '../core/melody-contour'
-import type { MelodyJudgePolicy } from '../core/melody-judge'
+import type { MelodyDifficultyTier } from '../core/melody-policy.ts'
+import { melodyJudgePolicyForTier } from '../core/melody-policy.ts'
+import type { MelodyJudgePolicy } from '../melody-contracts.ts'
 import type { GlassMelodyId } from './melodies'
 
 export interface MercEncorePhrase {
@@ -16,12 +18,27 @@ export interface MercEncoreVariant extends MercEncorePhrase {
   pace: number
 }
 
-export const MERC_ENCORE_JUDGE_POLICY = {
-  // The exact-lyric natural `sparks` consonants span 0.36267s at 48 kHz.
-  // Heard-anchor evidence still rejects the former 0.768s stretched gap.
-  dropoutGraceSeconds: 0.4,
+const MERC_ENCORE_EVIDENCE_POLICY = {
+  // The shared strict 0.4s dropout policy accommodates the exact-lyric natural
+  // `sparks` consonants, which span 0.36267s at 48 kHz.
   minimumAnchorEvidenceSeconds: 0.12,
 } as const satisfies Partial<MelodyJudgePolicy>
+
+export function mercEncoreJudgePolicy(
+  tier: MelodyDifficultyTier,
+): Partial<MelodyJudgePolicy> {
+  const timing = melodyJudgePolicyForTier(tier)
+  return {
+    // Preserve the lesson's serialized key order while sourcing both timings
+    // from the shared tier policy.
+    dropoutGraceSeconds: timing.dropoutGraceSeconds,
+    ...MERC_ENCORE_EVIDENCE_POLICY,
+    mismatchGraceSeconds: timing.mismatchGraceSeconds,
+  }
+}
+
+/** First visits and one-star encores use the forgiving shared baseline. */
+export const MERC_ENCORE_JUDGE_POLICY = mercEncoreJudgePolicy(1)
 
 export type MercEncoreFallbackReason =
   | 'find-note'

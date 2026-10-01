@@ -120,8 +120,76 @@ test('the complete sung curve shatters the portrait and opens the exit without m
     '/games/adventure-voice-v6/sunlit-steps/r58-p125.mp3',
   )
   await expect(game).toHaveAttribute('data-completed', '5')
-  await page.evaluate(() => window.thawingInput.tone(58))
-  await page.waitForTimeout(2200)
+  const pitchGuideButton = panel.getByRole('button', {
+    name: 'Show pitch guide',
+    exact: true,
+  })
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await pitchGuideButton.scrollIntoViewIfNeeded()
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(width)
+    expect(await panel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    )
+    expect(
+      (await pitchGuideButton.boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(44)
+    await page.screenshot({
+      path: testInfo.outputPath(`thawing-pitch-guide-closed-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await pitchGuideButton.tap()
+  const pitchGuide = panel.locator(
+    'output[aria-label="Live pitch compared with target"]',
+  )
+  await singCompiledPhrase(page, resolved.melody)
+  await expect(pitchGuide).toContainText('You B♭3 · Target B♭3')
+  await expect(pitchGuide).toContainText('Target C4')
+  await page.evaluate(() => window.thawingInput.silent())
+  await expect(pitchGuide).toContainText('Listening · Target')
+  const progressBeforePause = Number(
+    await panel
+      .getByRole('progressbar', { name: 'Melody progress' })
+      .getAttribute('aria-valuenow'),
+  )
+  await page.waitForTimeout(650)
+  await expect(
+    panel.getByRole('button', { name: 'Hear example', exact: true }),
+  ).toBeVisible()
+  await expect(
+    panel.getByRole('progressbar', { name: 'Melody progress' }),
+  ).toHaveAttribute('aria-valuenow', String(progressBeforePause))
+  await page.evaluate(() => window.thawingInput.tone(60))
+  await expect(pitchGuide).toContainText('You C4 · Target')
+  await expect
+    .poll(async () =>
+      Number(
+        await panel
+          .getByRole('progressbar', { name: 'Melody progress' })
+          .getAttribute('aria-valuenow'),
+      ),
+    )
+    .toBeGreaterThan(progressBeforePause)
+  await page.evaluate(() => window.thawingInput.tone(64))
+  await expect(pitchGuide).toContainText(/You E4 · Target .* cents high/u)
+  const frozenProgress = Number(
+    await panel
+      .getByRole('progressbar', { name: 'Melody progress' })
+      .getAttribute('aria-valuenow'),
+  )
+  await page.waitForTimeout(900)
+  await expect(
+    panel.getByRole('button', { name: 'Hear example', exact: true }),
+  ).toBeVisible()
+  await expect(
+    panel.getByRole('progressbar', { name: 'Melody progress' }),
+  ).toHaveAttribute('aria-valuenow', String(frozenProgress))
+  await expect(
+    panel.getByRole('button', { name: 'Try again', exact: true }),
+  ).toBeVisible({ timeout: 5000 })
   await expect(game).toHaveAttribute('data-completed', '5')
   const ribbon = panel.getByRole('img', { name: /Melody ribbon/u })
   for (const width of [320, 768, 1440]) {
@@ -139,8 +207,13 @@ test('the complete sung curve shatters the portrait and opens the exit without m
     expect(panelBox).not.toBeNull()
     expect(ribbonBox).not.toBeNull()
     expect(ribbonBox!.width).toBeGreaterThan(panelBox!.width * 0.8)
+    expect(
+      (await panel
+        .getByRole('button', { name: 'Hide pitch guide', exact: true })
+        .boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(44)
     await page.screenshot({
-      path: testInfo.outputPath(`thawing-finale-${width}.png`),
+      path: testInfo.outputPath(`thawing-pitch-guide-open-${width}.png`),
     })
   }
   await page.setViewportSize({ width: 390, height: 844 })

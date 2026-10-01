@@ -5,6 +5,7 @@ import type { CompiledMelody, MelodyCompileOptions, MelodyDefinition, } from '..
 import { compileMelody, DEFAULT_MELODY_COMPILE_LIMITS, } from '../core/melody-contour'
 import type { MelodyJudge, MelodyJudgePolicy, MelodyJudgeSnapshot, } from '../core/melody-judge'
 import { createMelodyJudge } from '../core/melody-judge'
+import { melodyJudgePolicyForTier } from '../core/melody-policy'
 import type { MelodyReferencePlayer } from '../core/melody-reference'
 import type { GlassGameHost, GlassVoiceSession } from '../host'
 import type { MelodyPracticeRecordingAdapter } from './melody-microphone-lifecycle'
@@ -320,7 +321,10 @@ export function createMelodyPractice(
     if (disposed || run !== generation || contour === null || voice === null)
       return
     markEvidenceBoundary()
-    judge = createMelodyJudge(contour, options.judgePolicy)
+    judge = createMelodyJudge(contour, {
+      ...melodyJudgePolicyForTier(1),
+      ...options.judgePolicy,
+    })
     const session = voice
     recording.start(session)
     const judgeSnapshot = judge.snapshot()
