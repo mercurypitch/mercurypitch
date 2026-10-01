@@ -6,9 +6,11 @@ import { shortestAngleDelta } from './angular-response'
 const LATERAL_FOLLOW_DWELL_SECONDS = 0.4
 const STICK_COMMIT_SECONDS = 0.4
 const LATERAL_HEADING_MINIMUM = Math.PI / 3
+const ENCLOSED_DIAGONAL_HEADING_MINIMUM = Math.PI / 6
 const LATERAL_HEADING_MAXIMUM = (Math.PI * 2) / 3
 
 export interface CameraHeadingIntentSample {
+  allowForwardDiagonalFollow?: boolean
   elapsedSeconds: number
   facingYaw: number
   movementActive: boolean
@@ -64,10 +66,10 @@ export function createCameraHeadingIntent() {
       const offset = Math.abs(
         shortestAngleDelta(sample.movementReferenceYaw, sample.facingYaw),
       )
-      if (
-        offset >= LATERAL_HEADING_MINIMUM &&
-        offset <= LATERAL_HEADING_MAXIMUM
-      )
+      const minimumHeading = sample.allowForwardDiagonalFollow
+        ? ENCLOSED_DIAGONAL_HEADING_MINIMUM
+        : LATERAL_HEADING_MINIMUM
+      if (offset >= minimumHeading && offset <= LATERAL_HEADING_MAXIMUM)
         lateralSeconds += sample.elapsedSeconds
       else lateralSeconds = 0
 

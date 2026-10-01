@@ -27,4 +27,27 @@ describe('camera heading intent', () => {
     // new contact; it cannot reuse the old direction on its own.
     expect(intent.target(SAMPLE)).toBeNull()
   })
+
+  it('commits a sustained forward diagonal only in enclosed navigation', () => {
+    const open = createCameraHeadingIntent()
+    const enclosed = createCameraHeadingIntent()
+    const diagonal = {
+      ...SAMPLE,
+      facingYaw: Math.PI / 4,
+      movementReferenceYaw: 0,
+    }
+    open.rebase('keyboard')
+    enclosed.rebase('keyboard')
+
+    for (let index = 0; index < 3; index++)
+      expect(
+        open.target({ ...diagonal, allowForwardDiagonalFollow: false }),
+      ).toBeNull()
+    expect(
+      enclosed.target({ ...diagonal, allowForwardDiagonalFollow: true }),
+    ).toBeNull()
+    expect(
+      enclosed.target({ ...diagonal, allowForwardDiagonalFollow: true }),
+    ).toBeCloseTo(Math.PI / 4)
+  })
 })
