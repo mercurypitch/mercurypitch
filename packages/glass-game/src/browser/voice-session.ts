@@ -3,7 +3,7 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { CapturedPitchFrame, F0Stream } from '@irchiinnuss/pitch-engine'
 import { createF0Stream, micManager } from '@irchiinnuss/pitch-engine'
 import type { PitchObservation } from '../contracts'
-import type { GlassVoicePreparation, GlassVoiceSession, GlassVoiceTake, } from '../host'
+import type { GlassVoiceInputSettings, GlassVoicePreparation, GlassVoiceSession, GlassVoiceTake, } from '../host'
 import { createBrowserVoiceTake } from './voice-take'
 
 let nextSession = 0
@@ -41,6 +41,8 @@ export function createBrowserVoice(
   let starting: Promise<void> | null = null
   let microphoneStream: MediaStream | null = null
   let take: GlassVoiceTake | null = null
+  let tracks: readonly MediaStreamTrack[] = []
+  let settings: GlassVoiceInputSettings | null = null
   const stoppedListeners = new Set<() => void>()
   const releaseMic = (): void => {
     if (holding) micManager.release(id)
@@ -52,12 +54,25 @@ export function createBrowserVoice(
     take?.discard()
     take = null
     microphoneStream = null
+    for (const track of tracks) {
+      track.removeEventListener('mute', trackInterrupted)
+      track.removeEventListener('ended', trackInterrupted)
+    }
+    tracks = []
+    settings = null
     lease.peek()?.removeEventListener('statechange', changed)
     stream?.dispose()
     stream = null
     stoppedListeners.clear()
     releaseMic()
     lease.release()
+  }
+
+  function trackInterrupted(): void {
+    if (stopped) return
+    const listeners = [...stoppedListeners]
+    stop()
+    for (const listener of listeners) listener()
   }
 
   function changed(): void {
@@ -87,6 +102,7 @@ export function createBrowserVoice(
     }
   }
   return {
+    inputSettings: () => settings,
     start(beforeCapture = Promise.resolve()) {
       if (stopped)
         return Promise.reject(new Error('This microphone session has ended.'))
@@ -137,6 +153,40 @@ export function createBrowserVoice(
           if (!silence.ok) throw silence.error
           if (ctx.state !== 'running')
             throw new Error('Audio was interrupted. Tap Start to try again.')
+          tracks = acquired.getAudioTracks()
+          if (
+            tracks.length === 0 ||
+            tracks.some((track) => track.muted || track.readyState === 'ended')
+          )
+            throw new Error(
+              'The microphone input was interrupted. Choose an input and try again.',
+            )
+          const actual = tracks[0]!.getSettings()
+          settings = Object.freeze({
+            ...(Number.isFinite(actual.sampleRate) &&
+            actual.sampleRate! > 0 &&
+            actual.sampleRate! <= 384000
+              ? { sampleRate: actual.sampleRate }
+              : {}),
+            ...(Number.isInteger(actual.channelCount) &&
+            actual.channelCount! > 0 &&
+            actual.channelCount! <= 32
+              ? { channelCount: actual.channelCount }
+              : {}),
+            ...(typeof actual.echoCancellation === 'boolean'
+              ? { echoCancellation: actual.echoCancellation }
+              : {}),
+            ...(typeof actual.noiseSuppression === 'boolean'
+              ? { noiseSuppression: actual.noiseSuppression }
+              : {}),
+            ...(typeof actual.autoGainControl === 'boolean'
+              ? { autoGainControl: actual.autoGainControl }
+              : {}),
+          })
+          for (const track of tracks) {
+            track.addEventListener('mute', trackInterrupted)
+            track.addEventListener('ended', trackInterrupted)
+          }
           stream = createF0Stream(ctx, acquired)
           microphoneStream = acquired
           stream.startTask()
@@ -153,7 +203,10 @@ export function createBrowserVoice(
       return captured ? observation(captured, nowMs) : null
     },
     subscribe(listener, onStopped) {
-      if (!stream || stopped) return () => undefined
+      if (!stream || stopped) {
+        if (stopped) onStopped?.()
+        return () => undefined
+      }
       if (onStopped) stoppedListeners.add(onStopped)
       const unsubscribe = stream.subscribeCaptured((capture) => {
         const nowMs = performance.now()

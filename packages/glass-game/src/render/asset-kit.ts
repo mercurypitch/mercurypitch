@@ -3,13 +3,12 @@
 // ============================================================
 
 import type { Object3D, Texture } from 'three'
-import { LoadingManager, TextureLoader } from 'three'
-import type { MeshoptDecoder as MeshoptDecoderValue } from 'three/addons/libs/meshopt_decoder.module.js'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { TextureLoader } from 'three'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
-import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage, releaseAssetTextureImages, } from './asset-texture-profile'
+import { loadProfiledAssetScene } from './asset-scene-loader'
+import { releaseAssetImage } from './asset-texture-profile'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { prepareExhibitAsset } from './exhibit-asset'
@@ -21,38 +20,6 @@ import type { GlassAssetQualityProfile } from './render-quality'
 import type { TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
 import type { createVessel } from './vessels'
-
-type MeshoptDecoder = typeof MeshoptDecoderValue
-type LoaderMeshoptDecoder = Pick<
-  MeshoptDecoder,
-  'decodeGltfBufferAsync' | 'supported'
->
-type MeshoptDecodeArguments = Parameters<
-  MeshoptDecoder['decodeGltfBufferAsync']
->
-
-let decoderReady: Promise<MeshoptDecoder> | undefined
-
-function loadMeshoptDecoder(): Promise<MeshoptDecoder> {
-  decoderReady ??= import('three/addons/libs/meshopt_decoder.module.js')
-    .then((module) => module.MeshoptDecoder)
-    .catch((error: unknown) => {
-      decoderReady = undefined
-      throw error
-    })
-  return decoderReady
-}
-
-const lazyMeshoptDecoder = {
-  supported: typeof WebAssembly !== 'undefined',
-  decodeGltfBufferAsync: (...args: MeshoptDecodeArguments) => {
-    return loadMeshoptDecoder().then((decoder) => {
-      if (!decoder.supported)
-        throw new Error('Meshopt decoding is unsupported in this runtime.')
-      return decoder.decodeGltfBufferAsync(...args)
-    })
-  },
-} satisfies LoaderMeshoptDecoder
 
 export class RequiredMuseumAssetError extends Error {
   readonly assetId: string
@@ -78,10 +45,6 @@ export interface MuseumAssetLoadOptions {
 }
 
 const DEFAULT_MAXIMUM_CONCURRENT_BUNDLE_LOADS = 2
-
-function abortError(): DOMException {
-  return new DOMException('Museum asset loading was aborted.', 'AbortError')
-}
 
 async function forEachConcurrent<T>(
   values: readonly T[],
@@ -140,56 +103,12 @@ export async function loadMuseumAssets(
     if (!unavailable()) onError?.(id, required)
     return required
   }
-  const loadScene = async (id: string) => {
-    if (attempt.signal.aborted) throw abortError()
-    const failedDependencies: string[] = []
-    const manager = new LoadingManager()
-    manager.onError = (url) => failedDependencies.push(url)
-    const abort = () => manager.abort()
-    attempt.signal.addEventListener('abort', abort, { once: true })
-    try {
-      const scene = (
-        await new GLTFLoader(manager)
-          .setMeshoptDecoder(lazyMeshoptDecoder as MeshoptDecoder)
-          .loadAsync(assetUrl(id))
-      ).scene
-      if (attempt.signal.aborted) {
-        releaseAssetTextureImages(scene)
-        disposeObject(scene)
-        throw abortError()
-      }
-      if (failedDependencies.length > 0) {
-        releaseAssetTextureImages(scene)
-        disposeObject(scene)
-        throw new Error(
-          `GLB "${id}" has unavailable dependencies: ${failedDependencies.join(', ')}`,
-        )
-      }
-      try {
-        await applyAssetTextureProfile(
-          scene,
-          options.assetProfile ?? 'full',
-          undefined,
-          attempt.signal,
-        )
-      } catch (error) {
-        releaseAssetTextureImages(scene)
-        disposeObject(scene)
-        throw error
-      }
-      if (attempt.signal.aborted) {
-        releaseAssetTextureImages(scene)
-        disposeObject(scene)
-        throw abortError()
-      }
-      collectAssetTextureImages(scene).forEach((image) =>
-        options.onDecodedImage?.(image),
-      )
-      return scene
-    } finally {
-      attempt.signal.removeEventListener('abort', abort)
-    }
-  }
+  const loadScene = (id: string) =>
+    loadProfiledAssetScene(assetUrl(id), {
+      signal: attempt.signal,
+      assetProfile: options.assetProfile,
+      onDecodedImage: options.onDecodedImage,
+    })
   const loadBundle = async (
     id: string,
     beforeInstall: Promise<unknown>,

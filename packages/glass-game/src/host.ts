@@ -11,7 +11,17 @@ export interface GlassVoiceTake {
   discard(): void
 }
 
+export interface GlassVoiceInputSettings {
+  readonly sampleRate?: number
+  readonly channelCount?: number
+  readonly echoCancellation?: boolean
+  readonly noiseSuppression?: boolean
+  readonly autoGainControl?: boolean
+}
+
 export interface GlassVoiceSession {
+  /** Actual selected-track processing; never includes device identifiers. */
+  inputSettings?(): GlassVoiceInputSettings | null
   /** Called in a direct Start gesture or while its successful gesture preparation is still owned. */
   start(beforeCapture?: Promise<void>): Promise<void>
   latest(nowMs: number): PitchObservation | null

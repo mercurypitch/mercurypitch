@@ -19,7 +19,8 @@
     "./creator-levels": "./src/creator-levels.ts",
     "./songbook": "./src/songbook.ts",
     "./songbook-content": "./src/content/merc-songbook.ts",
-    "./quarter-turn": "./src/quarter-turn.ts"
+    "./quarter-turn": "./src/quarter-turn.ts",
+    "./runner": "./src/ui/SongRunnerScreen.tsx"
   },
   "scripts": {
     "check": "tsc --noEmit",

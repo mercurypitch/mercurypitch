@@ -129,12 +129,15 @@ test('creator studies remain readable and selectable at phone and tablet widths 
   ).toBeVisible()
   await expect(
     page.getByRole('region', { name: 'Art studies' }).getByRole('button'),
-  ).toHaveCount(6)
+  ).toHaveCount(7)
   await expect(
     page.getByRole('button', { name: /The living pearl/ }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: /The living amber/ }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /Three notes in glass/ }),
   ).toBeVisible()
   for (const width of [320, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 })

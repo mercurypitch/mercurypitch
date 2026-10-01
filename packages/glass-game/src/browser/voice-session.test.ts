@@ -38,6 +38,11 @@ let captured: CapturedPitchFrame | null
 let callback: ((capture: CapturedPitchFrame) => void) | undefined
 let unsubscribe: ReturnType<typeof vi.fn>
 let dispose: ReturnType<typeof vi.fn>
+let track: EventTarget & { muted: boolean; readyState: string }
+
+function microphone(): MediaStream {
+  return { getAudioTracks: () => [track] } as unknown as MediaStream
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -58,7 +63,20 @@ beforeEach(() => {
     leases.push(lease)
     return lease
   })
-  mocks.acquire.mockResolvedValue({})
+  track = Object.assign(new EventTarget(), {
+    muted: false,
+    readyState: 'live',
+    getSettings: () => ({
+      sampleRate: 48000,
+      channelCount: 1,
+      echoCancellation: true,
+      noiseSuppression: false,
+      autoGainControl: false,
+      deviceId: 'private-device',
+      groupId: 'private-group',
+    }),
+  })
+  mocks.acquire.mockResolvedValue(microphone())
   mocks.create.mockImplementation(() => ({
     startTask: vi.fn(),
     latestCaptured: () => captured,
@@ -139,7 +157,7 @@ describe('browser voice ownership', () => {
   })
 
   it('records only by explicit request and reuses the one already-open capture stream', async () => {
-    const acquired = {} as MediaStream
+    const acquired = microphone()
     mocks.acquire.mockResolvedValue(acquired)
     const discard = vi.fn()
     const finish = vi.fn().mockResolvedValue(new Blob(['take']))
@@ -223,7 +241,7 @@ describe('browser voice ownership', () => {
     old.stop()
     const newest = createBrowserVoice()
     await newest.start()
-    late.resolve({} as MediaStream)
+    late.resolve(microphone())
     await pending
     expect(mocks.create).toHaveBeenCalledTimes(1)
     expect(mocks.release).toHaveBeenCalledWith(mocks.acquire.mock.calls[0][0])
@@ -243,7 +261,7 @@ describe('browser voice ownership', () => {
     const first = voice.start()
     expect(voice.start()).toBe(first)
     expect(mocks.acquire).toHaveBeenCalledTimes(1)
-    gate.resolve({} as MediaStream)
+    gate.resolve(microphone())
     await first
     voice.stop()
     voice.stop()
@@ -349,4 +367,54 @@ describe('browser voice ownership', () => {
     context.dispatchEvent(new Event('statechange'))
     expect(stopped).not.toHaveBeenCalled()
   })
+})
+
+describe('browser voice track interruptions', () => {
+  it.each(['mute', 'ended'])(
+    'closes capture once for a track %s without automatic reacquisition',
+    async (event) => {
+      const voice = createBrowserVoice()
+      await voice.start()
+      const stopped = vi.fn()
+      voice.subscribe(vi.fn(), stopped)
+      track.dispatchEvent(new Event(event))
+      track.dispatchEvent(new Event(event))
+      expect(stopped).toHaveBeenCalledOnce()
+      expect(mocks.release).toHaveBeenCalledOnce()
+      expect(dispose).toHaveBeenCalledOnce()
+      expect(mocks.acquire).toHaveBeenCalledOnce()
+      await expect(voice.start()).rejects.toThrow('ended')
+    },
+  )
+  it('rejects an already muted input and releases its lease', async () => {
+    track.muted = true
+    await expect(createBrowserVoice().start()).rejects.toThrow(
+      'microphone input was interrupted',
+    )
+    expect(mocks.release).toHaveBeenCalledOnce()
+    expect(mocks.create).not.toHaveBeenCalled()
+  })
+  it('reports interruption when the track stops before subscription attaches', async () => {
+    const voice = createBrowserVoice()
+    await voice.start()
+    track.dispatchEvent(new Event('ended'))
+    const stopped = vi.fn()
+    voice.subscribe(vi.fn(), stopped)
+    expect(stopped).toHaveBeenCalledOnce()
+  })
+})
+
+it('exposes only bounded actual track settings and clears them on close', async () => {
+  const voice = createBrowserVoice()
+  expect(voice.inputSettings?.()).toBeNull()
+  await voice.start()
+  expect(voice.inputSettings?.()).toEqual({
+    sampleRate: 48000,
+    channelCount: 1,
+    echoCancellation: true,
+    noiseSuppression: false,
+    autoGainControl: false,
+  })
+  voice.stop()
+  expect(voice.inputSettings?.()).toBeNull()
 })

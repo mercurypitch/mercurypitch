@@ -8,53 +8,13 @@ import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_RENDER_ID, L
 import { PEARL_QUARTER_TURN_BUNDLE_IDS, PEARL_QUARTER_TURN_DOCK_RENDER_ID, PEARL_QUARTER_TURN_RENDER_ID, } from '../content/pearl-quarter-turn-profile'
 import { RESONANCE_ROSEBUD_BUNDLE_ID, RESONANCE_ROSEBUD_DISPLAY_HEIGHT, RESONANCE_ROSEBUD_MATERIAL_OPTICS, RESONANCE_ROSEBUD_MATERIALS, RESONANCE_ROSEBUD_NODES, RESONANCE_ROSEBUD_SHARD_COUNT, RESONANCE_ROSEBUD_SOURCE_HEIGHT, RESONANCE_ROSEBUD_VARIANT_ID, } from '../content/resonance-rosebud-profile'
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
+import type { BreakableRenderRecipe } from './breakable-render-recipe'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
 import { GLASSWARE_TRIO_RENDER_CATALOG } from './glassware-trio-catalog'
-import type { ResonancePresentationConfig } from './resonance-release-config'
 import type { SurfaceTextures } from './texture-recipe'
 
-export interface BreakableRenderRecipe {
-  shatterProfile?: 'crown' | 'radial' | 'sheet' | 'ice-wall'
-  /** Local pane bounds: centred in X/Z, resting at Y=0. */
-  barrierEnvelope?: { width: number; height: number; depth: number }
-  bundle?: string
-  intactNode?: string
-  shardPrefix?: string
-  shardCount: number
-  /** A preferred bundle may contain a newer fracture than its legacy fallback. */
-  bundleShardCounts?: Readonly<Record<string, number>>
-  persistentPrefix?: string
-  /** Optional reviewed source height; rejects an unexpected donor export. */
-  sourceHeight?: number
-  /** Identical prepared donor geometry may be leased across vessel instances. */
-  sharedGeometry?: boolean
-  displayHeight: number
-  /** Physical glTF materials whose metre-valued optics scale with geometry. */
-  scaleImportedMaterialUnits?: readonly string[]
-  /** Opt-in charge and release treatment layered around standard rigid shards. */
-  resonancePresentation?: ResonancePresentationConfig
-  /** Imported surfaces eligible for authored crack raycasts. */
-  resonanceGlassMaterials?: readonly string[]
-  tint: number
-  roughness: number
-  transmission: number
-  thickness: number
-  portraitTexture?: string
-  portraitMaterial?: string
-  /** Whether the image remains protected or travels on the authored shards. */
-  portraitFracture?: 'protective-glazing' | 'picture-bearing'
-  /** Separate art plane used before fracture and for the collected reward. */
-  persistentPortrait?: {
-    width: number
-    height: number
-    centerY: number
-    z: number
-  }
-  faceAnchor?: boolean
-  fallbackShape: 'goblet' | 'rounded' | 'fluted' | 'slab'
-  fragmentBudget: number
-}
+export type { BreakableRenderRecipe } from './breakable-render-recipe'
 
 const CLEAR_GLASS = {
   shatterProfile: 'radial' as const,

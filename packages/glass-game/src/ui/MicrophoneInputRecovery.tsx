@@ -7,7 +7,7 @@ import styles from './MicrophoneInputRecovery.module.css'
 
 interface MicrophoneInputRecoveryProps {
   microphoneInput?: GlassMicrophoneInput
-  issue: MicrophoneIssue
+  issue?: MicrophoneIssue | null
 }
 
 interface MicrophoneChoice {
@@ -169,7 +169,7 @@ export function MicrophoneInputRecovery(props: MicrophoneInputRecoveryProps) {
   })
 
   return (
-    <Show when={props.issue.action === 'retry'}>
+    <Show when={props.issue == null || props.issue.action === 'retry'}>
       <div class={styles.recovery} data-testid="microphone-input-recovery">
         <Show when={props.microphoneInput !== undefined}>
           <label class={styles.field} for={selectId}>
@@ -209,7 +209,7 @@ export function MicrophoneInputRecovery(props: MicrophoneInputRecoveryProps) {
             </p>
           </Show>
         </Show>
-        <Show when={props.issue.diagnostic}>
+        <Show when={props.issue?.diagnostic}>
           {(diagnostic) => (
             <details class={styles.details}>
               <summary>Technical details</summary>

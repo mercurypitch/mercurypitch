@@ -36,8 +36,16 @@ const VERTEX_SHADER = /* glsl */ `
 
   void main() {
     vPathData = color;
-    vViewNormal = normalize(normalMatrix * normal);
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    vec3 objectNormal = normal;
+    vec4 objectPosition = vec4(position, 1.0);
+    #ifdef USE_INSTANCING
+      mat3 instanceNormal = mat3(instanceMatrix);
+      objectNormal /= vec3(dot(instanceNormal[0], instanceNormal[0]), dot(instanceNormal[1], instanceNormal[1]), dot(instanceNormal[2], instanceNormal[2]));
+      objectNormal = instanceNormal * objectNormal;
+      objectPosition = instanceMatrix * objectPosition;
+    #endif
+    vViewNormal = normalize(normalMatrix * objectNormal);
+    vec4 mvPosition = modelViewMatrix * objectPosition;
     vViewPosition = mvPosition.xyz;
     gl_Position = projectionMatrix * mvPosition;
     #include <fog_vertex>
