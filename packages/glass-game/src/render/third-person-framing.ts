@@ -92,13 +92,21 @@ export function createThirdPersonFraming() {
     update(options: {
       requestedReach: number
       contextualReach: number
+      minimumReadableReach?: number
       safeReach: number
       deltaSeconds: number
       snap: boolean
     }): number {
+      const minimumReadableReach = Number.isFinite(options.minimumReadableReach)
+        ? Math.max(0, options.minimumReadableReach!)
+        : 0
+      const contextualReach = Math.max(
+        options.contextualReach,
+        Math.min(minimumReadableReach, options.safeReach),
+      )
       const desired = Math.min(
         options.requestedReach,
-        options.contextualReach,
+        contextualReach,
         options.safeReach,
       )
       if (options.snap || renderedReach === null) renderedReach = desired

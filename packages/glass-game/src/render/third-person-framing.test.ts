@@ -103,4 +103,27 @@ describe('contextual third-person reach', () => {
     expect(recovering).toBeGreaterThan(1.1)
     expect(recovering).toBeLessThan(4)
   })
+
+  it('preserves readable passage distance only up to physical clearance', () => {
+    const framing = createThirdPersonFraming()
+    const readable = framing.update({
+      requestedReach: 4,
+      contextualReach: 1.2,
+      minimumReadableReach: 1.55,
+      safeReach: 4,
+      deltaSeconds: 1 / 60,
+      snap: true,
+    })
+    const physicallyBlocked = framing.update({
+      requestedReach: 4,
+      contextualReach: 1.2,
+      minimumReadableReach: 1.55,
+      safeReach: 0.9,
+      deltaSeconds: 1 / 60,
+      snap: false,
+    })
+
+    expect(readable).toBe(1.55)
+    expect(physicallyBlocked).toBe(0.9)
+  })
 })

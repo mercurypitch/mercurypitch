@@ -6,7 +6,39 @@ import { FROST_WALL_PANE } from '../content/frost-wall-profile'
 import { GLASSWORKS } from '../content/glassworks'
 import type { BreakableDefinition, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
-import { createFallbackChallengeSubjects } from './camera-policy'
+import { createFallbackChallengeSubjects, enclosureCompositionPitch, ENCLOSURE_EYE_LEVEL_PITCH, ENCLOSURE_READABLE_BOOM_DISTANCE, } from './camera-policy'
+
+describe('enclosure composition pitch', () => {
+  it('blends continuously into an eye-level view near the readable boom distance', () => {
+    const selectedPitch = 0.5
+    const samples = [1.1, 1.2, 1.3, 1.4, 1.5, 1.55, 1.6].map((reach) =>
+      enclosureCompositionPitch(selectedPitch, reach),
+    )
+
+    expect(samples[0]).toBeCloseTo(ENCLOSURE_EYE_LEVEL_PITCH)
+    expect(samples.at(-1)).toBeCloseTo(selectedPitch)
+    for (let index = 1; index < samples.length; index++) {
+      expect(samples[index]).toBeGreaterThanOrEqual(samples[index - 1]!)
+      expect(samples[index]! - samples[index - 1]!).toBeLessThan(0.13)
+    }
+    expect(
+      enclosureCompositionPitch(
+        selectedPitch,
+        ENCLOSURE_READABLE_BOOM_DISTANCE - 0.001,
+      ),
+    ).toBeCloseTo(selectedPitch, 4)
+    expect(
+      enclosureCompositionPitch(
+        selectedPitch,
+        ENCLOSURE_READABLE_BOOM_DISTANCE + 0.001,
+      ),
+    ).toBeCloseTo(selectedPitch, 4)
+  })
+
+  it('does not raise an already lower player-selected pitch', () => {
+    expect(enclosureCompositionPitch(0.18, 1.1)).toBeCloseTo(0.18)
+  })
+})
 
 describe('fallback challenge subjects', () => {
   it('frames a rotated barrier from its certified floor-based envelope', () => {

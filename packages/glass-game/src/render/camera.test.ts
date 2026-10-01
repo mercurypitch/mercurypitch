@@ -5,6 +5,7 @@ import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY } from '../content/cloudway-laboratory
 import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASS_FOUNDATION_STRAIGHT } from '../content/foundation-routes'
 import { GLASSWORKS } from '../content/glassworks'
+import { GLASSWORKS_JOURNEY, GLASSWORKS_JOURNEY_ROUTE, } from '../content/glassworks-journey'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { cameraRelativeMovement, createAdventureCamera } from './camera'
@@ -440,6 +441,16 @@ function cameraBoomDistance(
   return rig.camera.position.distanceTo(
     new Vector3(framedTarget.x, framedTarget.y, framedTarget.z),
   )
+}
+
+function cameraBoomPitch(
+  rig: ReturnType<typeof createAdventureCamera>,
+): number {
+  const framedTarget = rig.getChallengeMetrics().target
+  const offset = rig.camera.position
+    .clone()
+    .sub(new Vector3(framedTarget.x, framedTarget.y, framedTarget.z))
+  return Math.atan2(offset.y, Math.hypot(offset.x, offset.z))
 }
 
 function createTestMaterials(): MuseumMaterials {
@@ -1174,6 +1185,96 @@ describe('camera-relative traversal', () => {
       }
     },
   )
+  it('keeps a readable eye-level third-person frame through the Journey north turn', () => {
+    const prefix = 'glassworks-journey/journey'
+    const game = createGlassGame(GLASSWORKS_JOURNEY, {
+      version: 1,
+      levelId: prefix,
+      checkpointId: `${prefix}/garden/checkpoint/entry`,
+      completedBreakableIds: [
+        `${prefix}/vestibule/encounter/vestibule-goblet`,
+        `${prefix}/garden/encounter/garden-decanter`,
+      ],
+      finished: false,
+    })
+    const base = game.snapshot()
+    const turn = GLASSWORKS_JOURNEY_ROUTE.northTurn
+    const rig = createAdventureCamera(GLASSWORKS_JOURNEY)
+    rig.camera.aspect = 16 / 9
+    rig.camera.updateProjectionMatrix()
+    const snapshotAt = (
+      x: number,
+      z: number,
+      facingYaw: number,
+    ): GameSnapshot => ({
+      ...base,
+      player: {
+        ...base.player,
+        position: { x, y: 0, z },
+        facingYaw,
+        velocity: {
+          x: -Math.sin(facingYaw),
+          y: 0,
+          z: -Math.cos(facingYaw),
+        },
+      },
+    })
+
+    rig.update(snapshotAt(turn.x - 2.4, turn.z, -Math.PI / 2), FRAME)
+    rig.recenter()
+    rig.setMovementActive(true)
+    rig.rebaseMovement('keyboard')
+    for (let frame = 1; frame <= 90; frame++) {
+      const progress = frame / 90
+      rig.update(
+        snapshotAt(turn.x - 2.4 + progress * 1.6, turn.z, -Math.PI / 2),
+        FRAME,
+      )
+    }
+    rig.rebaseMovement('keyboard')
+    for (let frame = 1; frame <= 60; frame++) {
+      const progress = frame / 60
+      rig.update(
+        snapshotAt(
+          turn.x - 0.8 + progress * 0.8,
+          turn.z + progress * 0.8,
+          (-3 * Math.PI) / 4,
+        ),
+        FRAME,
+      )
+    }
+    rig.rebaseMovement('keyboard')
+    let settled = snapshotAt(turn.x, turn.z + 3.4, Math.PI)
+    for (let frame = 1; frame <= 120; frame++) {
+      const progress = frame / 120
+      settled = snapshotAt(turn.x, turn.z + 0.8 + progress * 2.6, Math.PI)
+      rig.update(settled, FRAME)
+    }
+    rig.camera.updateMatrixWorld()
+
+    const target = rig.getChallengeMetrics().target
+    const offset = rig.camera.position
+      .clone()
+      .sub(new Vector3(target.x, target.y, target.z))
+    const horizontalReach = Math.hypot(offset.x, offset.z)
+    const elevation = Math.atan2(offset.y, horizontalReach)
+    const feet = new Vector3(
+      settled.player.position.x,
+      0.02,
+      settled.player.position.z,
+    ).project(rig.camera)
+    const head = new Vector3(
+      settled.player.position.x,
+      0.58,
+      settled.player.position.z,
+    ).project(rig.camera)
+
+    expect(rig.mode()).toBe('third-person')
+    expect(horizontalReach).toBeGreaterThanOrEqual(1.45)
+    expect(elevation).toBeLessThanOrEqual(0.28)
+    expect(feet.y).toBeGreaterThan(-0.95)
+    expect(head.y).toBeGreaterThan(feet.y)
+  })
   it.each([
     ['landscape', 16 / 9],
     ['portrait', 9 / 16],
@@ -1251,6 +1352,8 @@ describe('camera-relative traversal', () => {
         let maximumFrameChange = 0
         let maximumFrame = 0
         let previousDistance = openDistance
+        let maximumPitchFrameChange = 0
+        let previousPitch = cameraBoomPitch(rig)
 
         for (let frame = 1; frame <= 240; frame++) {
           const progress = frame / 240
@@ -1264,6 +1367,12 @@ describe('camera-relative traversal', () => {
             maximumFrame = frame
           }
           previousDistance = distance
+          const pitch = cameraBoomPitch(rig)
+          maximumPitchFrameChange = Math.max(
+            maximumPitchFrameChange,
+            Math.abs(pitch - previousPitch),
+          )
+          previousPitch = pitch
           expect(rig.movementYaw()).toBeCloseTo(stableMovementBasis)
         }
         updateFor(rig, passageSnapshot(base, endZ, facingYaw), 1.5)
@@ -1276,6 +1385,7 @@ describe('camera-relative traversal', () => {
           maximumFrameChange,
           `largest boom step occurred at travel frame ${maximumFrame}`,
         ).toBeLessThan(0.16)
+        expect(maximumPitchFrameChange).toBeLessThan(0.04)
       }
     },
   )

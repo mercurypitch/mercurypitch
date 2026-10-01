@@ -24,6 +24,8 @@ export const OBSTRUCTION_TRIGGER_DISTANCE = 0.9
 export const ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE = 1.6
 export const ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE = 1.15
 export const ENCLOSURE_READABLE_BOOM_DISTANCE = 1.55
+export const ENCLOSURE_EYE_LEVEL_PITCH = 0.24
+export const ENCLOSURE_PITCH_BLEND_DISTANCE = 0.35
 export const ENCLOSURE_DISTANCE_RECOVERY_RESPONSE = 7
 
 export const CAMERA_FOLLOW_SMOOTHNESS = {
@@ -80,6 +82,21 @@ export function validFollowSmoothness(value: number | undefined): number {
     CAMERA_FOLLOW_SMOOTHNESS.minimum,
     CAMERA_FOLLOW_SMOOTHNESS.maximum,
   )
+}
+
+export function enclosureCompositionPitch(
+  selectedPitch: number,
+  contextualReach: number,
+): number {
+  const eyeLevelPitch = Math.min(selectedPitch, ENCLOSURE_EYE_LEVEL_PITCH)
+  const compression =
+    1 -
+    MathUtils.smoothstep(
+      contextualReach,
+      ENCLOSURE_READABLE_BOOM_DISTANCE - ENCLOSURE_PITCH_BLEND_DISTANCE,
+      ENCLOSURE_READABLE_BOOM_DISTANCE,
+    )
+  return MathUtils.lerp(selectedPitch, eyeLevelPitch, compression)
 }
 
 export function validRouteYaw(

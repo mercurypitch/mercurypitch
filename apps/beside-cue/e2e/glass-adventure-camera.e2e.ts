@@ -148,6 +148,48 @@ async function openComfortMuseum(page: Page): Promise<void> {
   )
 }
 
+async function openJourneyGarden(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    // This input regression keeps the complete scene/controller path while
+    // omitting raster work; the affected hallway has separate pixel proof.
+    for (const method of [
+      'clear',
+      'drawArrays',
+      'drawArraysInstanced',
+      'drawElements',
+      'drawElementsInstanced',
+    ])
+      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+        configurable: true,
+        value: () => undefined,
+      })
+    const prefix = 'beside-cue:glass-adventure:'
+    const levelId = 'glassworks-journey/journey'
+    localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}automatic-singing`, 'off')
+    localStorage.setItem(
+      `${prefix}progress:${levelId}`,
+      JSON.stringify({
+        version: 1,
+        levelId,
+        checkpointId: `${levelId}/garden/checkpoint/entry`,
+        completedBreakableIds: [
+          `${levelId}/vestibule/encounter/vestibule-goblet`,
+          `${levelId}/garden/encounter/garden-decanter`,
+        ],
+        finished: false,
+      }),
+    )
+  })
+  const response = await page.goto('/glass-game/?layout=journey')
+  expect(response?.status()).toBe(200)
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 40_000 },
+  )
+}
+
 async function numericAttribute(page: Page, name: string): Promise<number> {
   const value = await page
     .getByTestId('glass-adventure')
@@ -307,6 +349,37 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
     'data-follow-smoothness',
     '0.32',
   )
+})
+
+test('Journey enclosure anticipates a diagonal keyboard turn and yields to mouse and touch orbit @smoke', async ({
+  page,
+  context,
+}) => {
+  await openJourneyGarden(page)
+  const adventure = page.getByTestId('glass-adventure')
+  const initialYaw = await numericAttribute(page, 'camera-yaw')
+
+  await page.keyboard.down('KeyW')
+  await page.keyboard.down('KeyD')
+  try {
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            angleDelta(initialYaw, await numericAttribute(page, 'camera-yaw')),
+          ),
+        { timeout: 5_000 },
+      )
+      .toBeGreaterThan(0.35)
+  } finally {
+    await page.keyboard.up('KeyD')
+    await page.keyboard.up('KeyW')
+  }
+  await page.waitForTimeout(100)
+
+  expect(await dragMuseumWithMouse(page, 80)).toBeGreaterThan(0.1)
+  expect(await dragMuseumWithTouch(page, context, -80)).toBeGreaterThan(0.1)
+  await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
 })
 
 test('real keyboard chords and brief side taps steer without swinging the view @smoke', async ({

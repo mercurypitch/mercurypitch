@@ -46,6 +46,54 @@ const OPEN_ROOM: LevelDefinition = {
   fallBelow: -2,
 }
 
+const ENCLOSED_ROOM: LevelDefinition = {
+  ...OPEN_ROOM,
+  id: 'camera-input-follow-enclosed-room',
+  title: 'Camera input follow enclosed room',
+  presentation: {
+    worldBounds: {
+      minX: -20,
+      maxX: 20,
+      minY: -1,
+      maxY: 4,
+      minZ: -20,
+      maxZ: 20,
+    },
+    lightBounds: {
+      minX: -20,
+      maxX: 20,
+      minY: -1,
+      maxY: 4,
+      minZ: -20,
+      maxZ: 20,
+    },
+    rooms: [
+      {
+        id: 'enclosed-navigation',
+        bounds: {
+          minX: -8,
+          maxX: 8,
+          minY: -0.4,
+          maxY: 3.6,
+          minZ: -8,
+          maxZ: 1.2,
+        },
+        cameraBounds: {
+          minX: -8,
+          maxX: 8,
+          minY: 0,
+          maxY: 3.4,
+          minZ: -8,
+          maxZ: 1.2,
+        },
+      },
+    ],
+    audioRegions: [],
+    visuals: [],
+    assetRecipeIds: [],
+  },
+}
+
 function keyboardEvent(code: string): KeyboardEvent {
   return {
     code,
@@ -58,21 +106,30 @@ function keyboardEvent(code: string): KeyboardEvent {
   } as unknown as KeyboardEvent
 }
 
-function createHarness(zoom = 0, mode: AdventureCameraMode = 'third-person') {
-  const game = createGlassGame(OPEN_ROOM)
-  const camera = createAdventureCamera(OPEN_ROOM, { mode })
+function createHarness(
+  zoom = 0,
+  mode: AdventureCameraMode = 'third-person',
+  level: LevelDefinition = OPEN_ROOM,
+  options: { frameSeconds?: number; reducedMotion?: boolean } = {},
+) {
+  const game = createGlassGame(level)
+  const camera = createAdventureCamera(level, {
+    mode,
+    reducedMotion: options.reducedMotion,
+  })
   const input = createAdventureInput()
+  const frame = options.frameSeconds ?? FRAME
   camera.zoom(zoom)
   const key = (code: string, down: boolean) =>
     input.key(keyboardEvent(code), down)
   const step = (seconds: number) => {
-    for (let elapsed = 0; elapsed < seconds - FRAME / 2; elapsed += FRAME) {
+    for (let elapsed = 0; elapsed < seconds - frame / 2; elapsed += frame) {
       const active = input.hasMovementIntent()
       const changed = input.consumeMovementReferenceChange()
       camera.setMovementActive(active)
       if (active && changed !== null) camera.rebaseMovement(changed)
-      game.step(input.read(camera.movementYaw()), FRAME)
-      camera.update(game.snapshot(), FRAME)
+      game.step(input.read(camera.movementYaw()), frame)
+      camera.update(game.snapshot(), frame)
     }
   }
   return { camera, game, input, key, step }
@@ -107,6 +164,69 @@ describe('camera follow from real movement contacts', () => {
       expect(harness.input.hasMovementIntent()).toBe(true)
     },
   )
+
+  it.each([30, 60, 120])(
+    'anticipates a held forward-right turn inside an enclosure at %i Hz',
+    (framesPerSecond) => {
+      const harness = createHarness(0, 'third-person', ENCLOSED_ROOM, {
+        frameSeconds: 1 / framesPerSecond,
+      })
+      harness.key('KeyW', true)
+      harness.step(0.3)
+      const beforeChord = harness.camera.yaw()
+      harness.key('KeyD', true)
+
+      harness.step(0.3)
+      expect(yawDistance(beforeChord, harness.camera.yaw())).toBeLessThan(0.02)
+      harness.step(1.7)
+
+      const playerHeading = harness.game.snapshot().player.facingYaw
+      expect(yawDistance(beforeChord, harness.camera.yaw())).toBeGreaterThan(
+        0.4,
+      )
+      expect(yawDistance(harness.camera.yaw(), playerHeading)).toBeLessThan(
+        0.08,
+      )
+      expect(harness.camera.movementYaw()).toBeCloseTo(beforeChord)
+    },
+  )
+
+  it('keeps enclosed diagonal follow disabled for reduced motion', () => {
+    const harness = createHarness(0, 'third-person', ENCLOSED_ROOM, {
+      reducedMotion: true,
+    })
+    const startYaw = harness.camera.yaw()
+    harness.key('KeyW', true)
+    harness.key('KeyD', true)
+
+    harness.step(2)
+    expect(yawDistance(startYaw, harness.camera.yaw())).toBeLessThan(0.001)
+
+    harness.camera.orbit(0.4, 0)
+    expect(yawDistance(startYaw, harness.camera.yaw())).toBeCloseTo(0.4)
+  })
+
+  it('finishes an enclosed diagonal turn after crossing its room boundary', () => {
+    const harness = createHarness(0, 'third-person', ENCLOSED_ROOM)
+    harness.key('KeyW', true)
+    harness.key('KeyD', true)
+    const startYaw = harness.camera.yaw()
+
+    harness.step(1)
+    const insideYaw = harness.camera.yaw()
+    expect(harness.game.snapshot().player.position.z).toBeGreaterThan(-1.2)
+    expect(yawDistance(startYaw, insideYaw)).toBeGreaterThan(0.02)
+
+    harness.step(1.4)
+    const outsideYaw = harness.camera.yaw()
+    expect(harness.game.snapshot().player.position.z).toBeLessThan(-1.2)
+    expect(yawDistance(startYaw, outsideYaw)).toBeGreaterThan(
+      yawDistance(startYaw, insideYaw),
+    )
+    expect(
+      yawDistance(outsideYaw, harness.game.snapshot().player.facingYaw),
+    ).toBeLessThan(0.08)
+  })
 
   it.each([-2, 0, 2])(
     'leaves the view steady after a brief lateral tap at zoom delta %s',

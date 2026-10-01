@@ -10,7 +10,7 @@ import { createCameraHeadingIntent } from './camera-heading-intent'
 import { measureChallengeCamera } from './camera-metrics'
 import { createCameraObstruction } from './camera-obstruction'
 import type { AdventureCameraMode, AdventureCameraOptions, ChallengeCameraMetrics, } from './camera-policy'
-import { addFiniteOffset, createFallbackChallengeSubjects, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw, } from './camera-policy'
+import { addFiniteOffset, createFallbackChallengeSubjects, enclosureCompositionPitch, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, EXPLORATION_FOV_DEGREES, FOLLOW_COMPLETE_RADIANS, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, MAXIMUM_OBSTRUCTION_PITCH, MOVING_SPEED, OBSTRUCTION_LIFT_RESPONSE, OBSTRUCTION_RELEASE_DISTANCE, OBSTRUCTION_TRIGGER_DISTANCE, ORBIT_FOLLOW_GRACE_SECONDS, selectFocusedChallengeId, validFollowSmoothness, validRouteYaw, } from './camera-policy'
 import type { ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
@@ -565,6 +565,7 @@ export function createAdventureCamera(
           if (routeUpdate.changed || movementActive) committedHeading = routeYaw
         } else {
           const requestedHeading = headingIntent.target({
+            allowForwardDiagonalFollow: framedTarget,
             elapsedSeconds: safeDt,
             facingYaw: facing,
             movementActive,
@@ -624,10 +625,14 @@ export function createAdventureCamera(
             ),
           })
         : reach
+      const preferredPitch =
+        framedTarget && !manualOrbitOverride
+          ? enclosureCompositionPitch(pitch, contextualReach)
+          : pitch
       const normalDistance = obstruction.safeBoomDistance(
         target,
         yaw,
-        pitch,
+        preferredPitch,
         reach,
         snapshot.enabledPlatformIds,
         activeSolidIds,
@@ -648,7 +653,7 @@ export function createAdventureCamera(
         obstructionLifted = false
       const targetPitch = obstructionLifted
         ? obstruction.chooseLiftedPitch({
-            basePitch: pitch,
+            basePitch: preferredPitch,
             origin: target,
             yaw,
             reach,
@@ -659,7 +664,7 @@ export function createAdventureCamera(
             useMeshOccluders,
             boomDirection: direction,
           })
-        : pitch
+        : preferredPitch
       renderedPitch = snapPitch
         ? targetPitch
         : MathUtils.lerp(
@@ -683,6 +688,7 @@ export function createAdventureCamera(
         renderedDistance = thirdPersonFraming.update({
           requestedReach: reach,
           contextualReach,
+          minimumReadableReach: ENCLOSURE_READABLE_BOOM_DISTANCE,
           safeReach: safeDistance,
           deltaSeconds: safeDt,
           snap: snapPitch || zoomChanged,
