@@ -1,12 +1,12 @@
 // Adventure vessel regressions — persistent artwork survives its breakable glazing.
 
-import type { Group, Mesh, MeshPhysicalMaterial } from 'three'
-import { Texture } from 'three'
-import { describe, expect, it } from 'vitest'
+import type { Group, LineSegments, Mesh, MeshPhysicalMaterial } from 'three'
+import { BoxGeometry, EdgesGeometry, Matrix4, MeshPhysicalMaterial as PhysicalMaterial, Texture, Vector3, } from 'three'
+import { describe, expect, it, vi } from 'vitest'
 import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
 import { SHATTER_LIFECYCLE_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
-import { createVessel } from './vessels'
+import { createAuthoredVessel, createVessel } from './vessels'
 
 describe('persistent glazed artwork', () => {
   it('uses plane texture orientation only for the separate artwork plane', () => {
@@ -156,5 +156,80 @@ describe('persistent glazed artwork', () => {
     expect(runnerIntact.castShadow).toBe(true)
     expect(runnerShards.children.every((child) => !child.castShadow)).toBe(true)
     runner.dispose()
+  })
+})
+
+describe('authored vessel installation', () => {
+  it('starts from the prepared asset and borrows its pooled crack outlines', () => {
+    const base = GLASSWORKS_JOURNEY.breakables[0]!
+    const target = {
+      ...base,
+      id: `${base.id}-authored-first`,
+      variant: 'frost-gold-arch-breakwall-a',
+    }
+    const intactGeometry = new BoxGeometry(0.8, 1, 0.08)
+    const shardGeometry = new BoxGeometry(0.2, 0.3, 0.08)
+    const crackGeometry = new EdgesGeometry(shardGeometry, 22)
+    const crackDispose = vi.spyOn(crackGeometry, 'dispose')
+    const sourceMaterial = new PhysicalMaterial({ transmission: 0.9 })
+    const release = vi.fn()
+
+    const vessel = createAuthoredVessel(target, false, (library) => ({
+      geometry: intactGeometry,
+      pieces: [{ geometry: shardGeometry, centre: new Vector3() }],
+      crackGeometries: [crackGeometry],
+      materials: [library.clone(sourceMaterial)],
+      transform: new Matrix4(),
+      release,
+    }))
+    const intact = vessel.root.getObjectByName(
+      `vessel-intact-${target.id}`,
+    ) as Mesh
+    const shards = vessel.root.getObjectByName(
+      `vessel-shards-${target.id}`,
+    ) as Group
+    const crack = intact.children[0] as LineSegments
+
+    expect(intact.geometry).toBe(intactGeometry)
+    expect(shards.children).toHaveLength(1)
+    expect(crack.geometry).toBe(crackGeometry)
+    vessel.dispose()
+    vessel.dispose()
+    expect(release).toHaveBeenCalledOnce()
+    expect(crackDispose).not.toHaveBeenCalled()
+
+    intactGeometry.dispose()
+    shardGeometry.dispose()
+    crackGeometry.dispose()
+    sourceMaterial.dispose()
+  })
+
+  it('releases an authored lease when its crack contract is invalid', () => {
+    const base = GLASSWORKS_JOURNEY.breakables[0]!
+    const target = {
+      ...base,
+      id: `${base.id}-invalid-authored-cracks`,
+      variant: 'frost-gold-arch-breakwall-a',
+    }
+    const intactGeometry = new BoxGeometry(0.8, 1, 0.08)
+    const shardGeometry = new BoxGeometry(0.2, 0.3, 0.08)
+    const sourceMaterial = new PhysicalMaterial({ transmission: 0.9 })
+    const release = vi.fn()
+
+    expect(() =>
+      createAuthoredVessel(target, false, (library) => ({
+        geometry: intactGeometry,
+        pieces: [{ geometry: shardGeometry, centre: new Vector3() }],
+        crackGeometries: [],
+        materials: [library.clone(sourceMaterial)],
+        transform: new Matrix4(),
+        release,
+      })),
+    ).toThrow('0 crack outlines for 1 fracture pieces')
+    expect(release).toHaveBeenCalledOnce()
+
+    intactGeometry.dispose()
+    shardGeometry.dispose()
+    sourceMaterial.dispose()
   })
 })

@@ -3,7 +3,10 @@
 import { expect, test, type BrowserContext, type Locator, type Page, type Route, } from '@playwright/test'
 import { MUSEUM_CAMPAIGN } from '../../../packages/glass-game/src/content/campaign'
 import { SINGING_CURRENT } from '../../../packages/glass-game/src/runner/first-course'
+import { readSavedRunnerProgress } from '../../../packages/glass-game/src/runner/progress'
 import { omitRasterOutput } from './helpers/glass-adventure-controls'
+import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
+import { verifyRunnerRendererStreaming } from './helpers/runner-renderer-smoke'
 
 interface RunnerVoiceSource {
   context: AudioContext
@@ -391,6 +394,12 @@ test('runner controls keep real mouse and simultaneous touch edges independent @
   await page.evaluate(() => window.runnerVoiceFixture.dispose())
 })
 
+test('the real renderer installs and retires streamed chunks without graphics errors', async ({
+  page,
+}) => {
+  await verifyRunnerRendererStreaming(page)
+})
+
 test('pause traps focus and resumed controls are rearmed @smoke', async ({
   page,
 }) => {
@@ -565,10 +574,17 @@ test('runner unlock follows First Light and Leave returns to the campaign @smoke
   await expect(runner).toHaveCount(0)
 })
 
-test('the complete course judges sung targets and clears each obstacle without recovery', async ({
+test('the complete audio and control course judges every phrase and obstacle without recovery', async ({
   page,
 }, testInfo) => {
+  // Keep real PCM, capture, audio time, UI input, movement, judging and saves.
+  // Software raster throughput is not an audio/control contract. The other
+  // cases keep the real renderer; streaming and full hardware art have their
+  // own checks, without weakening the production 250ms recovery threshold.
+  await useRunnerControlsRenderer(page)
   const runner = await openRunningCourse(page, true)
+  const presentation = page.getByTestId('runner-controls-presentation')
+  await expect(presentation).toHaveCount(1)
   await runner.evaluate((element) => {
     const phases = [element.dataset.phase ?? 'unknown']
     const frameGaps: { courseSeconds: number; duration: number }[] = []
@@ -634,9 +650,38 @@ test('the complete course judges sung targets and clears each obstacle without r
     timeout: 100_000,
   })
   await expect(runner).toHaveAttribute('data-course-status', 'finished')
+  await expect(presentation).toHaveAttribute('data-status', 'finished')
+  expect(
+    Number(await presentation.getAttribute('data-course-seconds')),
+  ).toBeCloseTo(SINGING_CURRENT.lengthCourseSeconds, 3)
   await expect(runner).toHaveAttribute('data-resolved-targets', '8')
   await expect(runner).toHaveAttribute('data-hit-targets', '8')
   await expect(runner).toHaveAttribute('data-run-stars', '24')
+  const saved = readSavedRunnerProgress(
+    SINGING_CURRENT,
+    await page.evaluate(
+      (id) =>
+        JSON.parse(
+          localStorage.getItem(
+            `beside-cue:glass-adventure:runner-progress:v1:${id}`,
+          ) ?? 'null',
+        ),
+      SINGING_CURRENT.id,
+    ),
+  )
+  expect(saved.completed).toBe(true)
+  expect(
+    saved.bestTargetQualities.map((quality) => quality.targetId).sort(),
+  ).toEqual(SINGING_CURRENT.targets.map((target) => target.id).sort())
+  expect(
+    saved.bestTargetQualities.every((quality) => quality.grade === 3),
+  ).toBe(true)
+  expect(saved.collectedRewardIds).toEqual(
+    expect.arrayContaining(SINGING_CURRENT.rewards.finishRewardIds),
+  )
+  expect(saved.collectedRewardIds).toHaveLength(
+    SINGING_CURRENT.rewards.finishRewardIds.length + 1,
+  )
   const timing = await page.evaluate(() => window.runnerCourseProbe)
   const phases = timing?.phases ?? []
   expect(phases).not.toContain('recovering')

@@ -26,8 +26,12 @@ within the course's certified range. Rendering speed does not determine singing
 duration or progression. Loading draws the resident crack and shatter variants
 once, restores their visibility and paints the genuine initial scene before
 enabling play, so deferred GPU setup is paid before continuous judging.
-References and backing are synthesized for this first
-course; they are not newly recorded Merc singing performances.
+Streamed targets start directly from their authored asset, without constructing
+and discarding a procedural replacement first. Immutable crack outlines are
+shared by bundle leases; per-target materials and animation remain independent,
+and the final owner releases the shared geometry.
+References and backing are synthesized for this first course; they are not
+newly recorded Merc singing performances.
 
 ## Chosen tradeoffs
 
@@ -64,17 +68,24 @@ does not change release progression. The mini-game returns to the same journey.
 
 ## Verification boundary
 
-All 1,484 shared-game tests and all seven runner browser cases pass locally,
-along with the package typecheck and scoped lint/format checks. Independent
-reviews found no remaining shipping blocker.
+The shared-game suite, scoped typechecks and independent reviews cover the
+simulation, browser session and presentation separately. Final-head CI results
+are recorded on the pull request; physical-device acceptance remains separate.
 
 Automated coverage includes compiler rejection, reproducible simulation at
 30/60/120 Hz, stale/late voice evidence, silence, collision and missed-jump
 recovery, rewards across replay, microphone interruption, cancelled asynchronous
 work and GPU resource disposal. Browser checks use actual pointer/touch input
 and PCM through the shared pitch detector, not fabricated target outcomes.
-The software-rendered controls suite omits pixel generation (drawing, clearing,
-multisample resolves and mipmaps); full real-pixel checks run separately on hardware OpenGL.
+The full-course browser case keeps real PCM, capture timestamps, audio time,
+pointer input, simulation, judging, result layout and persisted rewards while
+substituting only the presentation module. It asserts the substitute is active
+and receives the completed course snapshot. This prevents software-GPU scheduling
+from turning an audio/control test into an emulator performance benchmark.
+The other browser cases keep the real renderer while omitting pixel draws,
+clears, multisample resolves and mipmaps. A separate real-GL streaming smoke
+checks initial loading, chunk turnover and disposal without a wall-clock speed
+assertion. No game timing threshold is widened for these checks.
 
 Actual rendering is inspected separately with the real AMD/OpenGL path at fixed
 desktop and phone viewports. Both full 90.88-second hardware runs completed eight hits and 24/24 singing
