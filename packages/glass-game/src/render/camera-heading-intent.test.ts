@@ -119,6 +119,37 @@ describe('camera heading intent', () => {
     ).toBeCloseTo(keyboardHeading)
   })
 
+  it('requires the existing stable-heading dwell before adopting a blocked corridor facing', () => {
+    const intent = createCameraHeadingIntent()
+    intent.rebase('keyboard')
+    const requestedHeading = Math.PI / 4
+    const confirmed = {
+      ...SAMPLE,
+      allowForwardDiagonalFollow: true,
+      elapsedSeconds: 0.4,
+      keyboardHeading: requestedHeading,
+    }
+    expect(intent.target(confirmed)).toBeCloseTo(requestedHeading)
+    const blocked = {
+      ...confirmed,
+      elapsedSeconds: 0.2,
+      moving: false,
+      effectiveHeading: null,
+      facingYaw: Math.PI / 2,
+    }
+    expect(intent.target(blocked)).toBeCloseTo(requestedHeading)
+    expect(intent.target({ ...blocked, facingYaw: 0 })).toBeCloseTo(
+      requestedHeading,
+    )
+    expect(intent.target(blocked)).toBeCloseTo(requestedHeading)
+    expect(intent.target(blocked)).toBeCloseTo(Math.PI / 2)
+    expect(intent.target(blocked)).toBeCloseTo(Math.PI / 2)
+    expect(
+      intent.target({ ...blocked, allowForwardDiagonalFollow: false }),
+    ).toBeNull()
+    expect(intent.target({ ...blocked, movementActive: false })).toBeNull()
+  })
+
   it('adopts a sustained effective corridor heading without following transient collision noise', () => {
     const intent = createCameraHeadingIntent()
     intent.rebase('keyboard')

@@ -263,6 +263,67 @@ describe('camera follow from real movement contacts', () => {
     expect(yawDistance(manualYaw, harness.camera.yaw())).toBeGreaterThan(0.4)
   })
 
+  it.each([10, 30, 60])(
+    'settles behind a fully blocked Journey chord without changing its held basis at %i Hz',
+    (framesPerSecond) => {
+      const frame = 1 / framesPerSecond
+      const levelId = GLASSWORKS_JOURNEY.id
+      const game = createGlassGame(GLASSWORKS_JOURNEY, {
+        version: 1,
+        levelId,
+        checkpointId: `${levelId}/garden/checkpoint/entry`,
+        completedBreakableIds: [
+          `${levelId}/vestibule/encounter/vestibule-goblet`,
+          `${levelId}/garden/encounter/garden-decanter`,
+        ],
+        finished: false,
+      })
+      const camera = createAdventureCamera(GLASSWORKS_JOURNEY)
+      const input = createAdventureInput()
+      camera.update(game.snapshot(), frame)
+      camera.recenter()
+      const step = () => {
+        camera.setMovementActive(input.hasMovementIntent())
+        const changed = input.consumeMovementReferenceChange()
+        if (changed !== null)
+          camera.rebaseMovement(changed, input.desiredTravelYaw(0) ?? undefined)
+        game.step(input.read(camera.movementYaw()), frame)
+        camera.update(game.snapshot(), frame)
+      }
+      input.key(keyboardEvent('KeyW'), true)
+      for (let elapsed = 0; elapsed < 0.05; elapsed += frame) step()
+      input.key(keyboardEvent('KeyD'), true)
+      step()
+      const heldBasis = camera.movementYaw()
+      const requestedHeading = input.desiredTravelYaw(heldBasis)!
+      for (let elapsed = 0; elapsed < 12; elapsed += frame) {
+        step()
+        const player = game.snapshot().player
+        if (
+          player.position.x < 8 &&
+          Math.hypot(player.velocity.x, player.velocity.z) === 0
+        )
+          break
+      }
+      const blocked = game.snapshot().player
+      expect(blocked.position.x).toBeCloseTo(7.912274158)
+      expect(blocked.position.z).toBeCloseTo(13.476945732)
+      expect(Math.hypot(blocked.velocity.x, blocked.velocity.z)).toBe(0)
+      expect(yawDistance(blocked.facingYaw, requestedHeading)).toBeCloseTo(
+        Math.PI / 4,
+      )
+      expect(yawDistance(camera.yaw(), requestedHeading)).toBeLessThan(0.02)
+      for (let elapsed = 0; elapsed < 2; elapsed += frame) step()
+      expect(yawDistance(camera.yaw(), blocked.facingYaw)).toBeLessThan(0.08)
+      expect(camera.movementYaw()).toBeCloseTo(heldBasis)
+      expect(game.snapshot().player.position).toEqual(blocked.position)
+      expect(input.hasMovementIntent()).toBe(true)
+      const settledYaw = camera.yaw()
+      for (let elapsed = 0; elapsed < 2; elapsed += frame) step()
+      expect(yawDistance(camera.yaw(), settledYaw)).toBeLessThan(0.02)
+    },
+  )
+
   it('reacquires behind Merc rather than a stale diagonal after collision stops movement', () => {
     const game = createGlassGame(ENCLOSED_ROOM)
     const camera = createAdventureCamera(ENCLOSED_ROOM)

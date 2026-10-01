@@ -111,9 +111,22 @@ export function createCameraHeadingIntent() {
         if (stickSeconds < STICK_COMMIT_SECONDS) return null
         return stickHeading
       }
+      // A brief wall slide can end before the corridor-heading dwell completes.
+      // Keep that same dwell for the final blocked facing, so a held chord does
+      // not leave Merc permanently diagonal to the view after reaching a corner.
+      const blockedHeading =
+        mode === 'confirmed' &&
+        sample.allowForwardDiagonalFollow === true &&
+        sample.reacquireManualView !== true &&
+        !sample.moving &&
+        Number.isFinite(sample.facingYaw)
+          ? sample.facingYaw
+          : null
       if (
         !sample.movementActive ||
-        (!sample.moving && sample.reacquireManualView !== true)
+        (!sample.moving &&
+          sample.reacquireManualView !== true &&
+          blockedHeading === null)
       )
         return null
       if (mode === 'immediate') return sample.facingYaw
@@ -121,11 +134,13 @@ export function createCameraHeadingIntent() {
       if (mode === 'confirmed') {
         const currentHeading = keyboardHeading ?? sample.facingYaw
         const effectiveHeading =
-          sample.effectiveHeading !== null &&
-          sample.effectiveHeading !== undefined &&
-          Number.isFinite(sample.effectiveHeading)
-            ? sample.effectiveHeading
-            : null
+          blockedHeading !== null
+            ? blockedHeading
+            : sample.effectiveHeading !== null &&
+                sample.effectiveHeading !== undefined &&
+                Number.isFinite(sample.effectiveHeading)
+              ? sample.effectiveHeading
+              : null
         if (
           sample.allowForwardDiagonalFollow !== true ||
           effectiveHeading === null ||
