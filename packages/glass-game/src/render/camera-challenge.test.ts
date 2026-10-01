@@ -99,6 +99,40 @@ it('ignores orbit and zoom during the shot, then restores the exact prior view',
   ).toBeLessThan(1e-10)
 })
 
+it('uses bounded presentation time for sparse challenge frames and freezes while paused', () => {
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  const adventureCamera = createAdventureCamera(GLASSWORKS)
+  adventureCamera.update(snapshot, 0.05)
+  const priorPosition = adventureCamera.camera.position.clone()
+  const subjects = challengeSubjects(snapshot)
+  adventureCamera.setChallengeEncounter(subjects.encounterId)
+  adventureCamera.setChallengeSubjects(subjects)
+
+  adventureCamera.update(snapshot, 0.25)
+  const beforePause = adventureCamera.camera.position.clone()
+  const beforePauseProgress = adventureCamera.getChallengeMetrics().progress
+  adventureCamera.update(snapshot, 0.25, true)
+  expect(adventureCamera.camera.position.toArray()).toEqual(
+    beforePause.toArray(),
+  )
+  expect(adventureCamera.getChallengeMetrics().progress).toBe(
+    beforePauseProgress,
+  )
+
+  for (let frame = 0; frame < 3; frame++) adventureCamera.update(snapshot, 0.25)
+  expect(adventureCamera.getChallengeMetrics().mode).toBe('holding')
+
+  adventureCamera.setChallengeEncounter(null)
+  adventureCamera.update(snapshot, 0.25)
+  adventureCamera.update(snapshot, 0.25)
+  expect(adventureCamera.getChallengeMetrics().mode).toBe('restoring')
+  adventureCamera.update(snapshot, 0.25)
+  expect(adventureCamera.getChallengeMetrics().mode).toBe('exploration')
+  expect(
+    adventureCamera.camera.position.distanceTo(priorPosition),
+  ).toBeLessThan(1e-10)
+})
+
 it('holds through the real 2.3-second shatter lifecycle and freezes a paused transition', () => {
   const game = createGlassGame(GLASSWORKS)
   for (

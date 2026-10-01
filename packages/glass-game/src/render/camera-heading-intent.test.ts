@@ -28,6 +28,50 @@ describe('camera heading intent', () => {
     expect(intent.target(SAMPLE)).toBeNull()
   })
 
+  it('follows only a stable effective stick heading inside an enclosure', () => {
+    const open = createCameraHeadingIntent()
+    open.rebase('stick')
+    for (let index = 0; index < 4; index++)
+      expect(
+        open.target({
+          ...SAMPLE,
+          allowForwardDiagonalFollow: false,
+          effectiveHeading: Math.PI / 2,
+        }),
+      ).toBeNull()
+
+    const enclosed = createCameraHeadingIntent()
+    enclosed.rebase('stick')
+    expect(
+      enclosed.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        effectiveHeading: Math.PI / 2,
+      }),
+    ).toBeNull()
+    expect(
+      enclosed.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        effectiveHeading: 0,
+      }),
+    ).toBeNull()
+    expect(
+      enclosed.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        effectiveHeading: Math.PI / 2,
+      }),
+    ).toBeNull()
+    expect(
+      enclosed.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        effectiveHeading: Math.PI / 2,
+      }),
+    ).toBeCloseTo(Math.PI / 2)
+  })
+
   it('commits a sustained forward diagonal only in enclosed navigation', () => {
     const open = createCameraHeadingIntent()
     const enclosed = createCameraHeadingIntent()

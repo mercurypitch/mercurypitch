@@ -1,8 +1,10 @@
 // Camera input follow regression — stable input bases cannot feed camera turns back into travel.
 
 import { describe, expect, it, vi } from 'vitest'
+import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
+import { MOVEMENT } from '../core/movement'
 import { createAdventureInput } from '../ui/input'
 import { shortestAngleDelta } from './angular-response'
 import { createAdventureCamera } from './camera'
@@ -120,6 +122,7 @@ function createHarness(
   const input = createAdventureInput()
   const frame = options.frameSeconds ?? FRAME
   camera.zoom(zoom)
+  camera.update(game.snapshot(), frame)
   const key = (code: string, down: boolean) =>
     input.key(keyboardEvent(code), down)
   const step = (seconds: number) => {
@@ -222,26 +225,160 @@ describe('camera follow from real movement contacts', () => {
     expect(harness.input.hasMovementIntent()).toBe(true)
   })
 
-  it('reacquires behind a held keyboard contact after collision stops Merc', () => {
+  it('queues a sustained turn that ends inside the manual-look quiet window', () => {
+    const harness = createHarness()
+    harness.camera.orbit(0.8, 0)
+    const manualYaw = harness.camera.yaw()
+    const start = harness.game.snapshot().player.position
+
+    harness.key('KeyA', true)
+    harness.step(0.45)
+    harness.key('KeyA', false)
+    harness.step(0.2)
+    expect(yawDistance(manualYaw, harness.camera.yaw())).toBeLessThan(0.02)
+
+    harness.step(2.2)
+    const end = harness.game.snapshot().player.position
+    const travelHeading = Math.atan2(start.x - end.x, start.z - end.z)
+    expect(Math.hypot(end.x - start.x, end.z - start.z)).toBeGreaterThan(0.2)
+    expect(yawDistance(harness.camera.yaw(), travelHeading)).toBeLessThan(0.04)
+  })
+
+  it('keeps normal lateral dwell after an idle manual view', () => {
+    const harness = createHarness()
+    harness.camera.orbit(0.8, 0)
+    harness.step(1.2)
+    const manualYaw = harness.camera.yaw()
+
+    harness.key('KeyA', true)
+    harness.step(0.6)
+    harness.key('KeyA', false)
+
+    const releasedTurn = yawDistance(manualYaw, harness.camera.yaw())
+    expect(releasedTurn).toBeGreaterThan(0.05)
+    expect(releasedTurn).toBeLessThan(0.3)
+    harness.step(0.9)
+    expect(yawDistance(manualYaw, harness.camera.yaw())).toBeGreaterThan(0.4)
+  })
+
+  it('reacquires behind Merc rather than a stale diagonal after collision stops movement', () => {
     const game = createGlassGame(ENCLOSED_ROOM)
     const camera = createAdventureCamera(ENCLOSED_ROOM)
+    const blockedFacing = Math.PI / 2
     const blocked = {
       ...game.snapshot(),
       player: {
         ...game.snapshot().player,
+        facingYaw: blockedFacing,
         velocity: { x: 0, y: 0, z: 0 },
       },
     }
     camera.update(blocked, FRAME)
     camera.setMovementActive(true)
-    camera.rebaseMovement('keyboard', 0)
-    const travelHeading = camera.movementYaw()
+    camera.rebaseMovement('keyboard', Math.PI / 4)
+    const stableMovementBasis = camera.movementYaw()
+    const requestedHeading = stableMovementBasis + Math.PI / 4
     camera.orbit(Math.PI, 0)
 
     for (let frame = 0; frame < 300; frame++) camera.update(blocked, FRAME)
 
-    expect(yawDistance(camera.yaw(), travelHeading)).toBeLessThan(0.08)
+    expect(yawDistance(camera.yaw(), blockedFacing)).toBeLessThan(0.08)
+    expect(yawDistance(camera.yaw(), requestedHeading)).toBeGreaterThan(0.5)
+    expect(camera.movementYaw()).toBeCloseTo(stableMovementBasis)
   })
+
+  it('reacquires behind a fully blocked Merc after the manual quiet window already expired', () => {
+    const game = createGlassGame(ENCLOSED_ROOM)
+    const camera = createAdventureCamera(ENCLOSED_ROOM)
+    const blockedFacing = Math.PI / 2
+    const blocked = {
+      ...game.snapshot(),
+      player: {
+        ...game.snapshot().player,
+        facingYaw: blockedFacing,
+        velocity: { x: 0, y: 0, z: 0 },
+      },
+    }
+    camera.update(blocked, FRAME)
+    camera.orbit(Math.PI, 0)
+    for (let frame = 0; frame < 90; frame++) camera.update(blocked, FRAME)
+
+    camera.setMovementActive(true)
+    camera.rebaseMovement('keyboard', Math.PI / 4)
+    for (let frame = 0; frame < 300; frame++) camera.update(blocked, FRAME)
+
+    expect(yawDistance(camera.yaw(), blockedFacing)).toBeLessThan(0.08)
+  })
+
+  it.each([10, 60])(
+    'follows Merc through the Journey corner during one held stick contact at %i Hz',
+    (framesPerSecond) => {
+      const frameSeconds = 1 / framesPerSecond
+      const levelId = GLASSWORKS_JOURNEY.id
+      const game = createGlassGame(GLASSWORKS_JOURNEY, {
+        version: 1,
+        levelId,
+        checkpointId: `${levelId}/garden/checkpoint/entry`,
+        completedBreakableIds: [
+          `${levelId}/vestibule/encounter/vestibule-goblet`,
+          `${levelId}/garden/encounter/garden-decanter`,
+        ],
+        finished: false,
+      })
+      const camera = createAdventureCamera(GLASSWORKS_JOURNEY)
+      const input = createAdventureInput()
+      const start = game.snapshot().player.position
+      camera.update(game.snapshot(), frameSeconds)
+      const initialMovementBasis = camera.movementYaw()
+      const advanceUntil = (reached: () => boolean, seconds: number): void => {
+        const movementSecondsPerFrame = Math.min(
+          frameSeconds,
+          MOVEMENT.fixedStep * MOVEMENT.maximumSteps,
+        )
+        for (
+          let frame = 0;
+          frame < seconds / movementSecondsPerFrame;
+          frame++
+        ) {
+          const active = input.hasMovementIntent()
+          const changed = input.consumeMovementReferenceChange()
+          camera.setMovementActive(active)
+          if (active && changed !== null)
+            camera.rebaseMovement(
+              changed,
+              input.desiredTravelYaw(0) ?? undefined,
+            )
+          game.step(input.read(camera.movementYaw()), frameSeconds)
+          camera.update(game.snapshot(), frameSeconds)
+          if (reached()) return
+        }
+        throw new Error(
+          'Held stick did not reach the Journey route checkpoint.',
+        )
+      }
+
+      input.setStick(1, 0)
+      advanceUntil(() => start.x - game.snapshot().player.position.x > 1.25, 4)
+      input.setStick(0, -1)
+      advanceUntil(() => game.snapshot().player.position.z - start.z > 5.3, 5)
+      input.setStick(-1, 0)
+      advanceUntil(() => game.snapshot().player.position.x > start.x - 0.2, 4)
+      input.setStick(0, -1)
+      advanceUntil(() => game.snapshot().player.position.z - start.z > 13.35, 6)
+      input.setStick(-1, -1)
+      const chordHeading = input.desiredTravelYaw(camera.movementYaw())
+      expect(chordHeading).not.toBeNull()
+      advanceUntil(() => game.snapshot().player.position.x - start.x > 4.5, 7)
+
+      const end = game.snapshot().player
+      expect(input.hasMovementIntent()).toBe(true)
+      expect(camera.movementYaw()).toBeCloseTo(initialMovementBasis)
+      expect(end.position.z - start.z).toBeGreaterThan(15.5)
+      expect(end.position.z).toBeLessThan(25.9)
+      expect(yawDistance(camera.yaw(), end.facingYaw)).toBeLessThan(0.16)
+      expect(yawDistance(camera.yaw(), chordHeading!)).toBeGreaterThan(0.3)
+    },
+  )
 
   it('keeps enclosed diagonal follow disabled for reduced motion', () => {
     const harness = createHarness(0, 'third-person', ENCLOSED_ROOM, {
@@ -353,6 +490,33 @@ describe('camera follow from real movement contacts', () => {
       yawDistance(chosenView, stableBasis),
     )
     expect(harness.camera.movementYaw()).toBeCloseTo(stableBasis)
+  })
+
+  it('returns behind Merc after a front orbit during one held corridor stick contact', () => {
+    const harness = createHarness(0, 'third-person', ENCLOSED_ROOM)
+    harness.input.setStick(0, -1)
+    harness.step(0.6)
+    const stableBasis = harness.camera.movementYaw()
+
+    harness.camera.setOrbitActive(true)
+    harness.camera.orbit(Math.PI, 0)
+    harness.camera.setOrbitActive(false)
+    const frontYaw = harness.camera.yaw()
+    expect(
+      yawDistance(frontYaw, harness.game.snapshot().player.facingYaw),
+    ).toBeGreaterThan(3)
+
+    harness.step(0.8)
+    expect(yawDistance(frontYaw, harness.camera.yaw())).toBeLessThan(0.02)
+    harness.step(3.4)
+    expect(
+      yawDistance(
+        harness.camera.yaw(),
+        harness.game.snapshot().player.facingYaw,
+      ),
+    ).toBeLessThan(0.08)
+    expect(harness.camera.movementYaw()).toBeCloseTo(stableBasis)
+    expect(harness.input.hasMovementIntent()).toBe(true)
   })
 
   it('keeps first-person view yaw player-owned while strafe changes body facing', () => {
