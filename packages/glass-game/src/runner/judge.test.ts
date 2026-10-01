@@ -95,13 +95,30 @@ describe('song runner judge', () => {
     )!
     const note = target.notes[0]!
     const judge = createRunnerJudge(course, 60)
+    const longGap = course.voice.judge.maximumEvidenceGapSeconds
+    const shortGap = longGap / 3
+    const gaps: number[] = []
+    let reliableSeconds = 0
+    while (reliableSeconds < note.minimumReliableSeconds) {
+      const gap = gaps.length % 2 === 0 ? longGap : shortGap
+      gaps.push(gap)
+      reliableSeconds += gap
+    }
+    if (gaps.length % 2 !== 0) {
+      gaps.push(shortGap)
+      reliableSeconds += shortGap
+    }
+    const lowErrorIntervals = gaps.length / 2
     const samples: { time: number; error: number }[] = [
       { time: note.startCourseSeconds, error: 10 },
     ]
     let time = note.startCourseSeconds
-    for (let index = 0; index < 18; index++) {
-      time += index % 2 === 0 ? 0.12 : 0.04
-      samples.push({ time, error: index < 9 ? 10 : 50 })
+    for (const [index, gap] of gaps.entries()) {
+      time += gap
+      samples.push({
+        time,
+        error: index < lowErrorIntervals ? 10 : 50,
+      })
     }
     for (const sample of samples)
       judge.observe(evidence(target, sample.time, sample.error))
@@ -115,12 +132,17 @@ describe('song runner judge', () => {
         )
       }, 0)
     const expectedReliable = samples.at(-1)!.time - samples[0]!.time
+    const unweightedIntervalMean =
+      samples.slice(1).reduce((total, sample, index) => {
+        const previous = samples[index]!
+        return total + (previous.error + sample.error) / 2
+      }, 0) / gaps.length
+    const expectedMean = expectedCentSeconds / expectedReliable
+    expect(expectedReliable).toBeCloseTo(reliableSeconds, 10)
+    expect(expectedMean).not.toBeCloseTo(unweightedIntervalMean, 4)
     const result = judge.result(target)
     expect(result.reliableSeconds).toBeCloseTo(expectedReliable, 10)
-    expect(result.meanAbsoluteCents).toBeCloseTo(
-      expectedCentSeconds / expectedReliable,
-      10,
-    )
+    expect(result.meanAbsoluteCents).toBeCloseTo(expectedMean, 10)
     expect(result).toMatchObject({ outcome: 'hit', grade: 2 })
   })
 

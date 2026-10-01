@@ -1,7 +1,32 @@
 // Runner transport tests — shared audio epochs and bounded audible/resource teardown.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RunnerCourseFixturePace } from './__fixtures__/runner-course'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
 import { createBrowserRunnerTransport } from './runner-transport'
+
+const pacingVariants: readonly {
+  name: string
+  pace: RunnerCourseFixturePace
+  bpms: readonly [number, number, number]
+  secondCheckpointSeconds: number
+}[] = [
+  {
+    name: 'current',
+    pace: 'current',
+    bpms: [96, 108, 116],
+    secondCheckpointSeconds: 40,
+  },
+  {
+    name: 'learning',
+    pace: 'learning',
+    bpms: [84, 96, 104],
+    secondCheckpointSeconds: 320 / 7,
+  },
+]
+
+const checkpointTempoCases = pacingVariants.flatMap(({ name, pace, bpms }) =>
+  bpms.map((bpm, index) => ({ name, pace, bpm, index })),
+)
 
 const mocks = vi.hoisted(() => ({ acquire: vi.fn() }))
 vi.mock('@irchiinnuss/audio-io', () => ({
@@ -77,40 +102,51 @@ afterEach(() => {
 })
 
 describe('runner audio transport', () => {
-  it('stays inert until the gesture and schedules finite music after a tempo-correct count-in', async () => {
-    const fixture = setup()
-    const course = runnerCourseFixture()
-    const transport = createBrowserRunnerTransport(course, 60)
-    expect(mocks.acquire).not.toHaveBeenCalled()
-    const ready = transport.unlock()
-    expect(fixture.lease.unlock).toHaveBeenCalledOnce()
-    expect(await ready).toBe(true)
-    const scheduled = transport.schedule(course.checkpoints[1]!)
-    expect(scheduled.secondsPerBeat).toBe(60 / 108)
-    expect(scheduled.audioStartSeconds).toBeCloseTo(10.08 + (4 * 60) / 108)
-    expect(scheduled.courseStartSeconds).toBe(40)
-    expect(
-      fixture.sources.map((source) => source.start.mock.calls[0][0]),
-    ).toEqual([scheduled.countInStartAudioSeconds, scheduled.audioStartSeconds])
-    expect(() => transport.schedule(course.checkpoints[0]!)).toThrow(
-      'already has an epoch',
-    )
-    transport.dispose()
-    await vi.advanceTimersByTimeAsync(240)
-    await transport.finished
-    expect(fixture.lease.release).toHaveBeenCalledOnce()
-  })
+  it.each(pacingVariants)(
+    'stays inert until the gesture and schedules finite $name music after a tempo-correct count-in',
+    async ({ pace, bpms, secondCheckpointSeconds }) => {
+      const fixture = setup()
+      const course = runnerCourseFixture(pace)
+      const transport = createBrowserRunnerTransport(course, 60)
+      expect(mocks.acquire).not.toHaveBeenCalled()
+      const ready = transport.unlock()
+      expect(fixture.lease.unlock).toHaveBeenCalledOnce()
+      expect(await ready).toBe(true)
+      const scheduled = transport.schedule(course.checkpoints[1]!)
+      expect(scheduled.secondsPerBeat).toBe(60 / bpms[1])
+      expect(scheduled.audioStartSeconds).toBeCloseTo(
+        10.08 + (4 * 60) / bpms[1],
+      )
+      expect(scheduled.courseStartSeconds).toBeCloseTo(
+        secondCheckpointSeconds,
+        12,
+      )
+      expect(
+        fixture.sources.map((source) => source.start.mock.calls[0][0]),
+      ).toEqual([
+        scheduled.countInStartAudioSeconds,
+        scheduled.audioStartSeconds,
+      ])
+      expect(() => transport.schedule(course.checkpoints[0]!)).toThrow(
+        'already has an epoch',
+      )
+      transport.dispose()
+      await vi.advanceTimersByTimeAsync(240)
+      await transport.finished
+      expect(fixture.lease.release).toHaveBeenCalledOnce()
+    },
+  )
 
-  it.each([0, 1, 2])(
-    'uses the exact checkpoint %i half-open tempo',
-    async (index) => {
+  it.each(checkpointTempoCases)(
+    'uses the exact $name checkpoint $index half-open tempo',
+    async ({ pace, bpm, index }) => {
       const fixture = setup(),
-        course = runnerCourseFixture()
+        course = runnerCourseFixture(pace)
       const transport = createBrowserRunnerTransport(course, 60)
       await transport.unlock()
       expect(
         transport.schedule(course.checkpoints[index]!).secondsPerBeat,
-      ).toBe(60 / [96, 108, 116][index]!)
+      ).toBe(60 / bpm)
       transport.dispose()
       await vi.advanceTimersByTimeAsync(240)
       expect(fixture.lease.release).toHaveBeenCalledOnce()

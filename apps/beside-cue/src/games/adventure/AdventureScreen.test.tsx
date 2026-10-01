@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BuildInfo } from '@/build-info'
 
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
+const runnerTrials = vi.hoisted(() => ({
+  current: { id: 'the-singing-current-trial-current-v1' },
+  learning: { id: 'the-singing-current-trial-learning-v1' },
+}))
 vi.mock('@/build-info', () => ({ BUILD: build }))
 vi.mock('@irchiinnuss/glass-game/browser', () => ({
   createBrowserGlassHost: () => ({}),
@@ -21,6 +25,12 @@ vi.mock('@irchiinnuss/glass-game/campaign', () => ({
 vi.mock('@irchiinnuss/glass-game/solid', () => ({
   GlassAdventure: (props: { level?: LevelDefinition }) => (
     <div data-testid="direct-preview" data-level={props.level?.id} />
+  ),
+}))
+vi.mock('@irchiinnuss/glass-game/runner', () => ({
+  SINGING_CURRENT_TRIALS: runnerTrials,
+  SongRunnerScreen: (props: { course?: { id: string } }) => (
+    <div data-testid="runner" data-course={props.course?.id ?? 'canonical'} />
   ),
 }))
 
@@ -54,22 +64,64 @@ describe('Glassworks build access', () => {
     expect(screen.queryByTestId('campaign')).toBeNull()
   })
 
+  it.each([
+    ['dev', 'current', 'the-singing-current-trial-current-v1'],
+    ['ci', 'learning', 'the-singing-current-trial-learning-v1'],
+  ] as const)(
+    'opens the isolated %s %s pace trial',
+    (channel, pace, courseId) => {
+      build.channel = channel
+      render(() => (
+        <AdventureScreen runner runnerPace={pace} onExit={() => undefined} />
+      ))
+      expect(screen.getByTestId('runner')).toHaveAttribute(
+        'data-course',
+        courseId,
+      )
+      expect(screen.queryByTestId('campaign')).toBeNull()
+    },
+  )
+
+  it('keeps the canonical course when no trial pace is selected', () => {
+    render(() => <AdventureScreen runner onExit={() => undefined} />)
+    expect(screen.getByTestId('runner')).toHaveAttribute(
+      'data-course',
+      'canonical',
+    )
+  })
+
   it('can exercise normal campaign locks in a development preview', () => {
     window.history.replaceState({}, '', '/glass-game/?progression=earned')
-    render(() => <AdventureScreen campaign onExit={() => undefined} />)
+    render(() => (
+      <AdventureScreen
+        campaign
+        runner
+        runnerPace="current"
+        onExit={() => undefined}
+      />
+    ))
     expect(screen.getByTestId('campaign')).toHaveAttribute(
       'data-unlocked',
       'false',
     )
+    expect(screen.queryByTestId('runner')).toBeNull()
   })
 
   it('routes a release direct entry through the locked campaign', () => {
     build.channel = 'release'
-    render(() => <AdventureScreen onExit={() => undefined} />)
+    window.history.replaceState(
+      {},
+      '',
+      '/glass-game/?layout=singing-current&pace=current',
+    )
+    render(() => (
+      <AdventureScreen runner runnerPace="current" onExit={() => undefined} />
+    ))
     expect(screen.getByTestId('campaign')).toHaveAttribute(
       'data-unlocked',
       'false',
     )
     expect(screen.queryByTestId('direct-preview')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('runner')).not.toBeInTheDocument()
   })
 })

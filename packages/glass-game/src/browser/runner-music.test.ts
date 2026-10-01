@@ -1,78 +1,105 @@
 // Runner music tests — exact finite timing, safe previews and silence independent of gain automation.
 import { describe, expect, it } from 'vitest'
-import { SINGING_CURRENT } from '../runner/first-course'
+import type { CompiledRunnerCourse } from '../runner/contracts'
+import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, } from '../runner/first-course'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
 import { planRunnerPhraseGuides, renderRunnerMusic, runnerVoiceSpans, } from './runner-music'
 
-describe('runner score', () => {
-  it('renders the authored 96/108/116 course exactly once with finite bounded samples', () => {
-    const score = renderRunnerMusic(SINGING_CURRENT, 60)
-    expect(SINGING_CURRENT.tempoSegments.map((segment) => segment.bpm)).toEqual(
-      [96, 108, 116],
-    )
-    expect(score.samples.length / score.sampleRate).toBeCloseTo(90.881226, 4)
-    let peak = 0
-    expect(score.samples.every(Number.isFinite)).toBe(true)
-    for (const value of score.samples) peak = Math.max(peak, Math.abs(value))
-    expect(peak).toBeGreaterThan(0.1)
-    expect(peak).toBeLessThanOrEqual(0.9)
-    expect(score.samples[0]).toBe(0)
-    expect(score.samples.at(-1)).toBe(0)
-  })
+const pacingVariants: readonly {
+  name: string
+  course: CompiledRunnerCourse
+  bpms: readonly number[]
+  duration: number
+}[] = [
+  {
+    name: 'current',
+    course: SINGING_CURRENT_CURRENT,
+    bpms: [96, 108, 116],
+    duration: 90.88122605363984,
+  },
+  {
+    name: 'learning',
+    course: SINGING_CURRENT_LEARNING,
+    bpms: [84, 96, 104],
+    duration: 102.63736263736264,
+  },
+]
 
-  it('contains absolute silence in every protected capture window, including checkpoint renders', () => {
-    for (const checkpoint of SINGING_CURRENT.checkpoints) {
-      const score = renderRunnerMusic(
-        SINGING_CURRENT,
-        60,
-        checkpoint.courseSeconds,
-      )
-      for (const guard of runnerVoiceSpans(SINGING_CURRENT)) {
-        const start = Math.max(
-          0,
-          Math.floor(
-            (guard.start - checkpoint.courseSeconds) * score.sampleRate,
+describe('runner score', () => {
+  it.each(pacingVariants)(
+    'renders the authored $name course exactly once with finite bounded samples',
+    ({ course, bpms, duration }) => {
+      const score = renderRunnerMusic(course, 60)
+      expect(course.tempoSegments.map((segment) => segment.bpm)).toEqual(bpms)
+      expect(score.samples.length / score.sampleRate).toBeCloseTo(duration, 4)
+      expect(score.samples.length).toBe(Math.ceil(duration * score.sampleRate))
+      let peak = 0
+      expect(score.samples.every(Number.isFinite)).toBe(true)
+      for (const value of score.samples) peak = Math.max(peak, Math.abs(value))
+      expect(peak).toBeGreaterThan(0.1)
+      expect(peak).toBeLessThanOrEqual(0.9)
+      expect(score.samples[0]).toBe(0)
+      expect(score.samples.at(-1)).toBe(0)
+    },
+  )
+
+  it.each(pacingVariants)(
+    'contains absolute silence in every $name protected capture window, including checkpoint renders',
+    ({ course }) => {
+      for (const checkpoint of course.checkpoints) {
+        const score = renderRunnerMusic(course, 60, checkpoint.courseSeconds)
+        for (const guard of runnerVoiceSpans(course)) {
+          const start = Math.max(
+            0,
+            Math.floor(
+              (guard.start - checkpoint.courseSeconds) * score.sampleRate,
+            ),
+          )
+          const end = Math.min(
+            score.samples.length,
+            Math.ceil(
+              (guard.end - checkpoint.courseSeconds) * score.sampleRate,
+            ),
+          )
+          expect(
+            score.samples
+              .slice(start, Math.max(start, end))
+              .some((sample) => sample !== 0),
+          ).toBe(false)
+        }
+        expect(score.samples.every(Number.isFinite)).toBe(true)
+      }
+    },
+  )
+
+  it.each(pacingVariants)(
+    'keeps complete $name previews at the authored rhythm outside singing and certified movement',
+    ({ course }) => {
+      const guides = planRunnerPhraseGuides(course)
+      expect(guides.length).toBeGreaterThan(0)
+      for (const guide of guides) {
+        expect(guide.end - guide.start).toBeCloseTo(
+          guide.target.endCourseSeconds - guide.target.onsetCourseSeconds,
+          10,
+        )
+        expect(guide.end).toBeLessThan(guide.target.protectedFromCourseSeconds)
+        const forbidden = [
+          ...runnerVoiceSpans(course),
+          ...course.obstacles.flatMap((obstacle) =>
+            obstacle.certifiedActions.map((action) => ({
+              start: action.launchOpenCourseSeconds,
+              end: action.landingCloseCourseSeconds,
+            })),
           ),
-        )
-        const end = Math.min(
-          score.samples.length,
-          Math.ceil((guard.end - checkpoint.courseSeconds) * score.sampleRate),
-        )
+        ]
         expect(
-          score.samples
-            .slice(start, Math.max(start, end))
-            .some((sample) => sample !== 0),
+          forbidden.some(
+            (span) => guide.start < span.end && guide.end > span.start,
+          ),
         ).toBe(false)
       }
-      expect(score.samples.every(Number.isFinite)).toBe(true)
-    }
-  })
-
-  it('keeps complete previews at the authored rhythm outside singing and certified movement', () => {
-    const guides = planRunnerPhraseGuides(SINGING_CURRENT)
-    expect(guides.length).toBeGreaterThan(0)
-    for (const guide of guides) {
-      expect(guide.end - guide.start).toBeCloseTo(
-        guide.target.endCourseSeconds - guide.target.onsetCourseSeconds,
-        10,
-      )
-      expect(guide.end).toBeLessThan(guide.target.protectedFromCourseSeconds)
-      const forbidden = [
-        ...runnerVoiceSpans(SINGING_CURRENT),
-        ...SINGING_CURRENT.obstacles.flatMap((obstacle) =>
-          obstacle.certifiedActions.map((action) => ({
-            start: action.launchOpenCourseSeconds,
-            end: action.landingCloseCourseSeconds,
-          })),
-        ),
-      ]
-      expect(
-        forbidden.some(
-          (span) => guide.start < span.end && guide.end > span.start,
-        ),
-      ).toBe(false)
-    }
-  })
+    },
+  )
 
   it('transposes the preview while leaving the accompaniment unchanged and skips partial restart previews', () => {
     const course = runnerCourseFixture()

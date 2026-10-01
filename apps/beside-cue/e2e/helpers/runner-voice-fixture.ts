@@ -1,5 +1,6 @@
 // Runner voice fixture — real oscillator PCM with explicit tone, silence and compiled-contour controls.
 import type { Page } from '@playwright/test'
+import type { CompiledRunnerCourse } from '../../../../packages/glass-game/src/runner/contracts'
 import { SINGING_CURRENT } from '../../../../packages/glass-game/src/runner/first-course'
 import { omitRasterOutput } from './glass-adventure-controls'
 
@@ -11,16 +12,6 @@ interface RunnerVoiceSource {
 }
 
 const RUNNER_ROOT_MIDI = 57
-const RUNNER_TONE_TARGETS = SINGING_CURRENT.targets.map((target) => ({
-  judgeOpenCourseSeconds: target.judgeOpenCourseSeconds,
-  judgeCloseCourseSeconds: target.judgeCloseCourseSeconds,
-  notes: target.notes.map((note) => ({
-    startCourseSeconds: note.startCourseSeconds,
-    endCourseSeconds: note.endCourseSeconds,
-    startOffsetSemitones: note.startOffsetSemitones,
-    endOffsetSemitones: note.endOffsetSemitones,
-  })),
-}))
 
 declare global {
   interface Window {
@@ -38,8 +29,18 @@ declare global {
 export async function installRunnerVoice(
   page: Page,
   followCourse = false,
-  options: { omitRaster?: boolean } = {},
+  options: { omitRaster?: boolean; course?: CompiledRunnerCourse } = {},
 ): Promise<void> {
+  const targets = (options.course ?? SINGING_CURRENT).targets.map((target) => ({
+    judgeOpenCourseSeconds: target.judgeOpenCourseSeconds,
+    judgeCloseCourseSeconds: target.judgeCloseCourseSeconds,
+    notes: target.notes.map((note) => ({
+      startCourseSeconds: note.startCourseSeconds,
+      endCourseSeconds: note.endCourseSeconds,
+      startOffsetSemitones: note.startOffsetSemitones,
+      endOffsetSemitones: note.endOffsetSemitones,
+    })),
+  }))
   if (options.omitRaster !== false) await omitRasterOutput(page)
   await page.addInitScript(
     ({ follow, rootMidi, targets }) => {
@@ -185,7 +186,7 @@ export async function installRunnerVoice(
     {
       follow: followCourse,
       rootMidi: RUNNER_ROOT_MIDI,
-      targets: RUNNER_TONE_TARGETS,
+      targets,
     },
   )
 }

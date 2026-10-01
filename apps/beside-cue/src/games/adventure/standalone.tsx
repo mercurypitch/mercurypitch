@@ -1,8 +1,11 @@
 // Standalone museum preview — the exact shared game used by the BesideCue entry.
+import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
 import '@fontsource-variable/gabarito'
+import { BUILD } from '@/build-info'
 import { AdventureScreen } from './AdventureScreen'
+import { hasDevelopmentGalleryAccess } from './development-access'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('The museum mount is missing.')
@@ -95,6 +98,13 @@ async function selectedDevelopmentLevel() {
     : GLASS_FOUNDATION_QUARTER_TURN
 }
 
+function selectedRunnerPace(
+  query: URLSearchParams,
+): SingingCurrentTrialPace | undefined {
+  const pace = query.get('pace')
+  return pace === 'current' || pace === 'learning' ? pace : undefined
+}
+
 async function mount(): Promise<void> {
   if (
     import.meta.env.DEV &&
@@ -151,16 +161,18 @@ async function mount(): Promise<void> {
     return
   }
   const level = await selectedDevelopmentLevel()
+  const search = window.location.search
+  const query = new URLSearchParams(search)
+  const runner =
+    hasDevelopmentGalleryAccess(BUILD.channel, search) &&
+    query.get('layout') === 'singing-current'
   render(
     () => (
       <AdventureScreen
         assetBase="../games/"
         level={level}
-        runner={
-          import.meta.env.DEV &&
-          new URLSearchParams(window.location.search).get('layout') ===
-            'singing-current'
-        }
+        runner={runner}
+        runnerPace={runner ? selectedRunnerPace(query) : undefined}
         campaign={
           !import.meta.env.DEV ||
           new URLSearchParams(window.location.search).get('campaign') === '1'

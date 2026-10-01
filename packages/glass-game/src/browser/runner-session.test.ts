@@ -1,7 +1,29 @@
 // Runner session tests — microphone ownership, raw capture evidence and explicit interrupted recovery.
 import { describe, expect, it, vi } from 'vitest'
 import type { RunnerSessionFrame } from '../runner/session-contracts'
+import type { RunnerCourseFixturePace } from './__fixtures__/runner-course'
+import { runnerCourseFixture } from './__fixtures__/runner-course'
 import { deferred, flush, runnerSessionHarness, } from './__fixtures__/runner-session'
+
+const resumePacingVariants: readonly {
+  name: string
+  pace: RunnerCourseFixturePace
+  checkpointSeconds: number
+  checkpointBpm: number
+}[] = [
+  {
+    name: 'current',
+    pace: 'current',
+    checkpointSeconds: 40,
+    checkpointBpm: 108,
+  },
+  {
+    name: 'learning',
+    pace: 'learning',
+    checkpointSeconds: 320 / 7,
+    checkpointBpm: 96,
+  },
+]
 
 describe('runner session readiness and clock', () => {
   it.each([48_000, 96_000])(
@@ -280,26 +302,32 @@ describe('runner interruption and cancellation', () => {
     h.session.dispose()
   })
 
-  it('resumes at the last checkpoint with its tempo and restarts at beat zero on request', async () => {
-    const h = runnerSessionHarness()
-    await h.running()
-    for (let t = 0.2; t <= 40.2; t += 0.2) h.courseTick(t)
-    h.session.pause()
-    await h.session.resume()
-    h.ready()
-    const schedule = h.audio.at(-1)!.anchor!
-    expect(schedule.courseStartSeconds).toBe(40)
-    expect(schedule.secondsPerBeat).toBe(60 / 108)
-    h.tick(schedule.audioStartSeconds)
-    expect(h.session.state().game.courseSeconds).toBe(40)
-    expect(h.session.state().game.resolvedTargets).toHaveLength(1)
-    await h.session.restart()
-    h.ready()
-    h.tick(h.audio.at(-1)!.anchor!.audioStartSeconds)
-    expect(h.session.state().game.courseSeconds).toBe(0)
-    expect(h.session.state().game.resolvedTargets).toEqual([])
-    h.session.dispose()
-  })
+  it.each(resumePacingVariants)(
+    'resumes the $name pace at the last checkpoint with its tempo and restarts at beat zero on request',
+    async ({ pace, checkpointSeconds, checkpointBpm }) => {
+      const h = runnerSessionHarness(runnerCourseFixture(pace))
+      await h.running()
+      for (let t = 0.2; t < checkpointSeconds + 0.4; t += 0.2) h.courseTick(t)
+      h.session.pause()
+      await h.session.resume()
+      h.ready()
+      const schedule = h.audio.at(-1)!.anchor!
+      expect(schedule.courseStartSeconds).toBeCloseTo(checkpointSeconds, 12)
+      expect(schedule.secondsPerBeat).toBe(60 / checkpointBpm)
+      h.tick(schedule.audioStartSeconds)
+      expect(h.session.state().game.courseSeconds).toBeCloseTo(
+        checkpointSeconds,
+        12,
+      )
+      expect(h.session.state().game.resolvedTargets).toHaveLength(1)
+      await h.session.restart()
+      h.ready()
+      h.tick(h.audio.at(-1)!.anchor!.audioStartSeconds)
+      expect(h.session.state().game.courseSeconds).toBe(0)
+      expect(h.session.state().game.resolvedTargets).toEqual([])
+      h.session.dispose()
+    },
+  )
 
   it('cleans a successful late takeover after cancellation and coalesces takeover requests', async () => {
     const h = runnerSessionHarness()
