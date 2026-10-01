@@ -734,6 +734,13 @@ import handler, issue #813.
 **Rule:** isolate pointer-owning controls and dynamic neighbors inside a stable DOM boundary. Reproduce with a real held pointer and observe removed nodes, capture and movement across sibling transitions; component cleanup alone cannot detect this.
 **See:** `packages/glass-game/src/ui/AdventureVisit.tsx`, `apps/beside-cue/e2e/glass-adventure-camera.e2e.ts`.
 
+### Separate blocked camera follow from browser observation gaps
+
+**Symptom:** a Journey camera check stayed exactly 45 degrees off Merc, while retries failed an initial 200 ms turn or a later quiet-window assertion.
+**Cause:** a brief collision slide ended before the heading dwell, leaving the blocked keyboard view stale. Separately, two remote DOM reads missed real angle crossings under 6x CPU slowdown, and a remote 800 ms wait sampled after legitimate follow resumed. The original 200 ms retries lacked frame evidence; their exact cause remains unproved.
+**Rule:** reproduce contact behavior with the real level first. Observe both headings on one browser frame; anchor quiet-window evidence to trusted keyup and the preceding held-frame interval, preserving the angle and grace limits. Report missing in-window frames as scheduling starvation.
+**See:** `packages/glass-game/src/render/camera-input-follow.test.ts`, `apps/beside-cue/e2e/helpers/glass-adventure-camera-observation.ts`.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

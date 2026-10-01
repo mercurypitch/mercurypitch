@@ -1,6 +1,7 @@
 // Journey camera route probes — physical traversal, rendered turn timing and lifecycle cleanup.
 
 import { expect, type BrowserContext, type Page } from '@playwright/test'
+import { observeReleasedArrowQuietWindow, waitForCameraAngle, waitForJourneyCornerStop, } from './glass-adventure-camera-observation'
 
 export interface PlayerPosition {
   x: number
@@ -295,8 +296,11 @@ export async function verifyBlockedJourneyCameraReacquisition(
   const initialPosition = await adventurePlayerPosition(page)
 
   await page.keyboard.down('ArrowRight')
-  await page.waitForTimeout(200)
-  await page.keyboard.up('ArrowRight')
+  try {
+    await waitForCameraAngle(page, initialYaw, 'above', 0.2, 5_000)
+  } finally {
+    await page.keyboard.up('ArrowRight')
+  }
   expect(
     Math.abs(
       cameraAngleDelta(
@@ -317,18 +321,7 @@ export async function verifyBlockedJourneyCameraReacquisition(
   await page.keyboard.down('KeyW')
   await page.keyboard.down('KeyD')
   try {
-    await expect
-      .poll(
-        async () =>
-          Math.abs(
-            cameraAngleDelta(
-              initialYaw,
-              await numericAdventureAttribute(page, 'camera-yaw'),
-            ),
-          ),
-        { timeout: 5_000 },
-      )
-      .toBeGreaterThan(0.35)
+    await waitForCameraAngle(page, initialYaw, 'above', 0.35, 5_000)
     await expect
       .poll(
         async () =>
@@ -345,59 +338,19 @@ export async function verifyBlockedJourneyCameraReacquisition(
         { timeout: 7_000 },
       )
       .toBeGreaterThan(3)
-    await expect
-      .poll(
-        async () =>
-          Math.abs(
-            cameraAngleDelta(
-              await numericAdventureAttribute(page, 'camera-yaw'),
-              (await numericAdventureAttribute(page, 'merc-yaw')) + Math.PI,
-            ),
-          ),
-        { timeout: 7_000 },
-      )
-      .toBeLessThan(0.16)
+    await waitForJourneyCornerStop(page)
+    await waitForCameraAngle(page, 'behind-merc', 'below', 0.16, 7_000)
 
     await page.keyboard.down('ArrowRight')
     try {
-      await expect
-        .poll(
-          async () =>
-            Math.abs(
-              cameraAngleDelta(
-                await numericAdventureAttribute(page, 'camera-yaw'),
-                (await numericAdventureAttribute(page, 'merc-yaw')) + Math.PI,
-              ),
-            ),
-          { timeout: 8_000, intervals: [16] },
-        )
-        .toBeGreaterThan(3)
+      await waitForCameraAngle(page, 'behind-merc', 'above', 3, 8_000)
+      await observeReleasedArrowQuietWindow(page, () =>
+        page.keyboard.up('ArrowRight'),
+      )
     } finally {
       await page.keyboard.up('ArrowRight')
     }
-    const frontFacingYaw = await numericAdventureAttribute(page, 'camera-yaw')
-
-    await page.waitForTimeout(800)
-    expect(
-      Math.abs(
-        cameraAngleDelta(
-          frontFacingYaw,
-          await numericAdventureAttribute(page, 'camera-yaw'),
-        ),
-      ),
-    ).toBeLessThan(0.04)
-    await expect
-      .poll(
-        async () =>
-          Math.abs(
-            cameraAngleDelta(
-              await numericAdventureAttribute(page, 'camera-yaw'),
-              (await numericAdventureAttribute(page, 'merc-yaw')) + Math.PI,
-            ),
-          ),
-        { timeout: 6_000 },
-      )
-      .toBeLessThan(0.16)
+    await waitForCameraAngle(page, 'behind-merc', 'below', 0.16, 6_000)
   } finally {
     await page.keyboard.up('KeyD')
     await page.keyboard.up('KeyW')
