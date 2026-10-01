@@ -280,6 +280,8 @@ describe('runner renderer ownership', () => {
     expect(state.render).toHaveBeenCalledTimes(2)
     expect(state.worldUpdate).toHaveBeenCalledTimes(2)
     expect(state.targetUpdate).toHaveBeenCalledTimes(2)
+    expect(state.targetUpdate).toHaveBeenNthCalledWith(1, expect.any(Object), 0)
+    expect(state.targetUpdate).toHaveBeenNthCalledWith(2, expect.any(Object), 0)
     expect(state.verifyFirstFrame).toHaveBeenCalledOnce()
     expect(state.precompile.mock.invocationCallOrder[0]).toBeLessThan(
       state.render.mock.invocationCallOrder[0]!,
@@ -287,6 +289,16 @@ describe('runner renderer ownership', () => {
     expect(state.render.mock.invocationCallOrder[1]).toBeLessThan(
       state.verifyFirstFrame.mock.invocationCallOrder[0]!,
     )
+  })
+
+  it('forwards presentation elapsed time to target feedback', async () => {
+    const { renderer, snapshot } = fixture()
+    await renderer.ready
+    state.targetUpdate.mockClear()
+
+    expect(renderer.render(snapshot, 0.075)).toBe(true)
+
+    expect(state.targetUpdate).toHaveBeenCalledExactlyOnceWith(snapshot, 0.075)
   })
 
   it('retires the renderer when the loading warmup draw fails', async () => {

@@ -101,3 +101,36 @@ Physical iPhone/Android frame pacing and speaker-to-microphone leakage still
 require device testing. A browser screenshot and synthetic microphone cannot
 establish those properties. The future TypeGPU renderer and endless-course
 generator remain outside this delivery.
+
+## R1: live pitch and glass response
+
+During an approaching phrase, the compact staff panel shows **Target** and
+**You**, with a live pitch rail. Fresh wrong input says **Sing higher** or
+**Sing lower** and adds a rose double-dashed edge and arrow to the pane.
+Accepted input says **Matched** and shows a continuous mint edge. Shape and
+text carry the distinction as well as colour. Silence removes the actual-note
+marker and returns the pane to neutral.
+
+These are projections of the capture-time judge result, not another pitch
+threshold. A bounded observation history keeps the newest eligible reading
+visible when the fixed-step simulation trails a microphone capture. Readings
+from the future, old notes, paused sessions and old epochs cannot light the
+pane. Earned cracks persist, but new surface stress and tremor require fresh
+accepted input. Retry clears presentation charge; retained checkpoint hits
+remain completed. Reduced motion retains static edges and direction cues.
+
+The pane edges use preallocated triangle strips, with no additional render
+pass, texture or per-frame geometry upload. Their colours, 0.05m width,
+0.72-second wrong-note pulse and 0.10-second completion pop live in
+`render/runner-target-feedback-config.ts`. The display-only pitch rail spans
+600 cents in `ui/runner-pitch-readout.ts`; changing it does not change the judge.
+
+R1 verification: 58 focused judge/session tests, seven formatter tests and 39
+renderer/vessel tests pass. Five compact viewport checks and a real-PCM
+wrong/matched/silent/pause sequence pass. The full course passes all eight
+phrases and 24 singing stars, with accepted labels asserted across sequential
+notes, glides and the finale. Separate actual AMD/OpenGL checks at phone,
+tablet and desktop sizes, including reduced motion, pass with no graphics
+errors or post-start shader compilation. Raw evidence is in the synced
+`glass-adventure/song-runner/r1-live-pitch-2026-10-01` archive. Physical mobile
+frame pacing remains device verification.

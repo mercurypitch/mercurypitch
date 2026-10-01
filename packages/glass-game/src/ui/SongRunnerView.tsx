@@ -4,7 +4,7 @@
 
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { GlassMicrophoneInput } from '../host'
-import type { CompiledRunnerCourse, RunnerEvent, RunnerTargetSnapshot, } from '../runner/contracts'
+import type { CompiledRunnerCourse, RunnerEvent } from '../runner/contracts'
 import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
 import type { RunnerSessionFrame, RunnerSessionPhase, SongRunnerSession, } from '../runner/session-contracts'
@@ -153,13 +153,6 @@ function pauseMessage(
 function clampedPercent(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.round(Math.min(1, Math.max(0, value)) * 100)
-}
-
-function pitchCue(target: RunnerTargetSnapshot | null): string | null {
-  const error = target?.latestPitchErrorCents
-  if (error == null || !Number.isFinite(error)) return null
-  if (Math.abs(error) <= 10) return 'On pitch'
-  return error > 0 ? 'Ease lower' : 'Lift higher'
 }
 
 function setupNote(midi: number, fillProgress = 0): RunnerNotationNote {
@@ -437,7 +430,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           notes={notationNotes()}
           activeNoteIndex={activeTarget()?.noteIndex ?? 0}
           instruction={notationInstruction()}
-          pitchCue={pitchCue(activeTarget())}
+          target={activeTarget()}
         />
       </Show>
 

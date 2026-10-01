@@ -2,7 +2,7 @@
 // Song runner judge — capture-time note evidence with bounded late settlement.
 // ============================================================
 
-import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerTargetResult, RunnerTargetSnapshot, RunnerVoiceEvidence, } from './contracts'
+import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerTargetResult, RunnerTargetSnapshot, RunnerVoiceEvidence, } from './contracts'
 import { runnerTargetMidiAt, runnerTargetNoteAt } from './pitch'
 
 const EPSILON = 1e-9
@@ -18,10 +18,20 @@ interface ReliableEndpoint {
   absoluteErrorCents: number
 }
 
+interface PitchFeedbackCandidate {
+  readonly noteIndex: number
+  readonly captureCourseSeconds: number
+  readonly observedMidi: number
+  readonly comparedTargetMidi: number
+  readonly errorCents: number
+  readonly state: 'accepted' | 'wrong'
+}
+
 interface TargetEvidence {
   readonly notes: NoteEvidence[]
   previousReliable: ReliableEndpoint | null
-  latestPitchErrorCents: number | null
+  pitchFeedbackCandidate: PitchFeedbackCandidate | null
+  readonly pendingPitchFeedbackCandidates: PitchFeedbackCandidate[]
 }
 
 export interface RunnerJudge {
@@ -37,6 +47,74 @@ export interface RunnerJudge {
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
+}
+
+function neutralPitchFeedback(): RunnerPitchFeedback {
+  return {
+    state: 'neutral',
+    observedMidi: null,
+    comparedTargetMidi: null,
+    errorCents: null,
+    correction: null,
+  }
+}
+
+function projectPitchFeedback(
+  target: CompiledRunnerTarget,
+  accumulated: TargetEvidence,
+  phase: RunnerTargetSnapshot['phase'],
+  courseSeconds: number,
+  maximumEvidenceGapSeconds: number,
+): RunnerPitchFeedback {
+  let latestEligibleIndex = -1
+  for (
+    let index = 0;
+    index < accumulated.pendingPitchFeedbackCandidates.length;
+    index++
+  ) {
+    if (
+      accumulated.pendingPitchFeedbackCandidates[index]!.captureCourseSeconds >
+      courseSeconds + EPSILON
+    )
+      break
+    latestEligibleIndex = index
+  }
+  if (latestEligibleIndex >= 0) {
+    accumulated.pitchFeedbackCandidate =
+      accumulated.pendingPitchFeedbackCandidates[latestEligibleIndex]!
+    accumulated.pendingPitchFeedbackCandidates.splice(
+      0,
+      latestEligibleIndex + 1,
+    )
+  }
+  const candidate = accumulated.pitchFeedbackCandidate
+  const activeNote = runnerTargetNoteAt(target.notes, courseSeconds)
+  if (
+    phase !== 'judging' ||
+    candidate === null ||
+    candidate.captureCourseSeconds > courseSeconds + EPSILON ||
+    courseSeconds - candidate.captureCourseSeconds >
+      maximumEvidenceGapSeconds + EPSILON ||
+    activeNote?.index !== candidate.noteIndex
+  )
+    return neutralPitchFeedback()
+
+  if (candidate.state === 'accepted') {
+    return {
+      state: 'accepted',
+      observedMidi: candidate.observedMidi,
+      comparedTargetMidi: candidate.comparedTargetMidi,
+      errorCents: candidate.errorCents,
+      correction: null,
+    }
+  }
+  return {
+    state: 'wrong',
+    observedMidi: candidate.observedMidi,
+    comparedTargetMidi: candidate.comparedTargetMidi,
+    errorCents: candidate.errorCents,
+    correction: candidate.errorCents < 0 ? 'higher' : 'lower',
+  }
 }
 
 function phaseForTarget(
@@ -86,6 +164,16 @@ export function createRunnerJudge(
   const targetById = new Map(
     course.targets.map((target) => [target.id, target]),
   )
+  // The simulation may trail an accepted capture by one fixed step. Retain a
+  // bounded delivery window so newer future captures cannot hide the latest
+  // eligible one, including when several detector hops arrive before a read.
+  const maximumPendingPitchFeedbackCandidates = Math.max(
+    2,
+    Math.ceil(
+      course.voice.judge.maximumDeliveryLatencySeconds /
+        course.movement.fixedStepSeconds,
+    ) + 2,
+  )
   const evidenceByTarget = new Map<string, TargetEvidence>()
   let continuityTargetId: string | null = null
 
@@ -98,7 +186,8 @@ export function createRunnerJudge(
         absoluteCentSeconds: 0,
       })),
       previousReliable: null,
-      latestPitchErrorCents: null,
+      pitchFeedbackCandidate: null,
+      pendingPitchFeedbackCandidates: [],
     }
     evidenceByTarget.set(target.id, created)
     return created
@@ -107,7 +196,11 @@ export function createRunnerJudge(
   const clearContinuity = (): void => {
     if (continuityTargetId !== null) {
       const evidence = evidenceByTarget.get(continuityTargetId)
-      if (evidence !== undefined) evidence.previousReliable = null
+      if (evidence !== undefined) {
+        evidence.previousReliable = null
+        evidence.pitchFeedbackCandidate = null
+        evidence.pendingPitchFeedbackCandidates.length = 0
+      }
     }
     continuityTargetId = null
   }
@@ -139,7 +232,8 @@ export function createRunnerJudge(
         observation.confidence < course.voice.judge.minimumConfidence
       ) {
         accumulated.previousReliable = null
-        accumulated.latestPitchErrorCents = null
+        accumulated.pitchFeedbackCandidate = null
+        accumulated.pendingPitchFeedbackCandidates.length = 0
         return
       }
       const targetMidi = runnerTargetMidiAt(
@@ -149,8 +243,27 @@ export function createRunnerJudge(
       )
       const errorCents = (observation.midi - targetMidi) * 100
       const absoluteErrorCents = Math.abs(errorCents)
-      accumulated.latestPitchErrorCents = errorCents
-      if (absoluteErrorCents > course.voice.judge.centsTolerance + EPSILON) {
+      const accepted =
+        absoluteErrorCents <= course.voice.judge.centsTolerance + EPSILON
+      const feedbackCandidate: PitchFeedbackCandidate = {
+        noteIndex: note.index,
+        captureCourseSeconds: observation.captureCourseSeconds,
+        observedMidi: observation.midi,
+        comparedTargetMidi: targetMidi,
+        errorCents,
+        state: accepted ? 'accepted' : 'wrong',
+      }
+      accumulated.pendingPitchFeedbackCandidates.push(feedbackCandidate)
+      if (
+        accumulated.pendingPitchFeedbackCandidates.length >
+        maximumPendingPitchFeedbackCandidates
+      )
+        accumulated.pendingPitchFeedbackCandidates.splice(
+          0,
+          accumulated.pendingPitchFeedbackCandidates.length -
+            maximumPendingPitchFeedbackCandidates,
+        )
+      if (!accepted) {
         accumulated.previousReliable = null
         return
       }
@@ -221,6 +334,7 @@ export function createRunnerJudge(
     },
     targetSnapshot(target, courseSeconds) {
       const accumulated = targetEvidence(target)
+      const phase = phaseForTarget(target, courseSeconds)
       const activeNote =
         runnerTargetNoteAt(target.notes, courseSeconds) ??
         (courseSeconds < target.onsetCourseSeconds
@@ -228,14 +342,20 @@ export function createRunnerJudge(
           : target.notes.at(-1)!)
       return {
         id: target.id,
-        ...phaseForTarget(target, courseSeconds),
+        ...phase,
         noteIndex: activeNote.index,
         currentTargetMidi: runnerTargetMidiAt(
           target.notes,
           courseSeconds,
           rootMidi,
         ),
-        latestPitchErrorCents: accumulated.latestPitchErrorCents,
+        pitchFeedback: projectPitchFeedback(
+          target,
+          accumulated,
+          phase.phase,
+          courseSeconds,
+          course.voice.judge.maximumEvidenceGapSeconds,
+        ),
         notes: target.notes.map((note) => {
           const fillProgress = clamp01(
             accumulated.notes[note.index]!.reliableSeconds /

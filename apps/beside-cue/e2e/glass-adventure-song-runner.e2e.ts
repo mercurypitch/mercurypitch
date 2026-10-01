@@ -5,27 +5,9 @@ import { MUSEUM_CAMPAIGN } from '../../../packages/glass-game/src/content/campai
 import { SINGING_CURRENT } from '../../../packages/glass-game/src/runner/first-course'
 import { readSavedRunnerProgress } from '../../../packages/glass-game/src/runner/progress'
 import { omitRasterOutput } from './helpers/glass-adventure-controls'
-import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
+import { installRunnerVoice } from './helpers/runner-voice-fixture'
+import { createRunnerCourseProbe, useRunnerControlsRenderer, } from './helpers/runner-controls-renderer'
 import { verifyRunnerRendererStreaming } from './helpers/runner-renderer-smoke'
-
-interface RunnerVoiceSource {
-  context: AudioContext
-  gain: GainNode
-  oscillator: OscillatorNode
-  track: MediaStreamTrack
-}
-
-const RUNNER_ROOT_MIDI = 57
-const RUNNER_TONE_TARGETS = SINGING_CURRENT.targets.map((target) => ({
-  judgeOpenCourseSeconds: target.judgeOpenCourseSeconds,
-  judgeCloseCourseSeconds: target.judgeCloseCourseSeconds,
-  notes: target.notes.map((note) => ({
-    startCourseSeconds: note.startCourseSeconds,
-    endCourseSeconds: note.endCourseSeconds,
-    startOffsetSemitones: note.startOffsetSemitones,
-    endOffsetSemitones: note.endOffsetSemitones,
-  })),
-}))
 
 function runnerActionSecond(
   obstacleId: string,
@@ -50,21 +32,6 @@ const RUNNER_ACTIONS = {
   secondJump: runnerActionSecond('second-jump', 'jump'),
 } as const
 
-declare global {
-  interface Window {
-    runnerVoiceFixture: {
-      readonly requests: number
-      readonly stoppedTracks: number
-      dispose(): Promise<void>
-    }
-    runnerCourseProbe?: {
-      phases: string[]
-      frameGaps: { courseSeconds: number; duration: number }[]
-      longTasks: { courseSeconds: number; duration: number }[]
-    }
-  }
-}
-
 test.use({
   viewport: { width: 390, height: 844 },
   hasTouch: true,
@@ -82,143 +49,6 @@ test.use({
   },
 })
 test.setTimeout(180_000)
-
-async function installRunnerVoice(
-  page: Page,
-  followCourse = false,
-): Promise<void> {
-  await omitRasterOutput(page)
-  await page.addInitScript(
-    ({ follow, rootMidi, targets }) => {
-      const prefix = 'beside-cue:glass-adventure:'
-      localStorage.setItem(`${prefix}comfortable-note`, '57')
-      localStorage.setItem(`${prefix}runner-music-muted:v1`, 'true')
-
-      let requests = 0
-      let stoppedTracks = 0
-      const sources: RunnerVoiceSource[] = []
-      Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
-        configurable: true,
-        value: async (constraints: MediaStreamConstraints) => {
-          if (!constraints.audio) return new MediaStream()
-          requests++
-          const context = new AudioContext()
-          await context.resume()
-          const oscillator = context.createOscillator()
-          oscillator.frequency.value = 220
-          const gain = context.createGain()
-          gain.gain.value = 0.22
-          const destination = context.createMediaStreamDestination()
-          oscillator.connect(gain).connect(destination)
-          oscillator.start()
-          const track = destination.stream.getAudioTracks()[0]!
-          const frequency = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
-          const targetMidiAt = (courseSeconds: number): number => {
-            const target = targets.find(
-              (candidate) =>
-                courseSeconds >= candidate.judgeOpenCourseSeconds &&
-                courseSeconds <= candidate.judgeCloseCourseSeconds,
-            )
-            if (target === undefined || target.notes.length === 0)
-              return rootMidi
-            const first = target.notes[0]!
-            if (courseSeconds <= first.startCourseSeconds)
-              return rootMidi + first.startOffsetSemitones
-            const last = target.notes.at(-1)!
-            if (courseSeconds >= last.endCourseSeconds)
-              return rootMidi + last.endOffsetSemitones
-            const note =
-              target.notes.find(
-                (candidate) =>
-                  courseSeconds >= candidate.startCourseSeconds &&
-                  courseSeconds <= candidate.endCourseSeconds,
-              ) ?? last
-            const duration = note.endCourseSeconds - note.startCourseSeconds
-            const progress =
-              duration <= 0
-                ? 1
-                : Math.min(
-                    1,
-                    Math.max(
-                      0,
-                      (courseSeconds - note.startCourseSeconds) / duration,
-                    ),
-                  )
-            return (
-              rootMidi +
-              note.startOffsetSemitones +
-              (note.endOffsetSemitones - note.startOffsetSemitones) * progress
-            )
-          }
-          const followTimer = follow
-            ? window.setInterval(() => {
-                const runner = document.querySelector<HTMLElement>(
-                  '[data-testid="song-runner"]',
-                )
-                const courseSeconds = Number(runner?.dataset.courseSeconds)
-                const midi = Number.isFinite(courseSeconds)
-                  ? targetMidiAt(courseSeconds)
-                  : rootMidi
-                oscillator.frequency.setValueAtTime(
-                  frequency(midi),
-                  context.currentTime,
-                )
-              }, 10)
-            : undefined
-          const stop = track.stop.bind(track)
-          track.stop = () => {
-            if (track.readyState === 'ended') return
-            stoppedTracks++
-            if (followTimer !== undefined) window.clearInterval(followTimer)
-            stop()
-            oscillator.stop()
-            oscillator.disconnect()
-            gain.disconnect()
-            void context.close()
-          }
-          sources.push({ context, gain, oscillator, track })
-          return destination.stream
-        },
-      })
-      Object.defineProperty(navigator.mediaDevices, 'enumerateDevices', {
-        configurable: true,
-        value: async () => [
-          {
-            deviceId: 'runner-test-input',
-            groupId: 'runner-test-group',
-            kind: 'audioinput',
-            label: 'Runner test microphone',
-            toJSON: () => ({}),
-          },
-        ],
-      })
-      window.runnerVoiceFixture = {
-        get requests() {
-          return requests
-        },
-        get stoppedTracks() {
-          return stoppedTracks
-        },
-        async dispose() {
-          for (const source of sources)
-            if (source.track.readyState === 'live') source.track.stop()
-          await Promise.all(
-            sources.map((source) =>
-              source.context.state === 'closed'
-                ? Promise.resolve()
-                : source.context.close(),
-            ),
-          )
-        },
-      }
-    },
-    {
-      follow: followCourse,
-      rootMidi: RUNNER_ROOT_MIDI,
-      targets: RUNNER_TONE_TARGETS,
-    },
-  )
-}
 
 async function openRunningCourse(
   page: Page,
@@ -269,7 +99,21 @@ async function clickAtCourseSecond(
     )
     .then((handle) => handle.jsonValue())
   if (!sample.ready) {
-    const diagnostics = await page.evaluate(() => window.runnerCourseProbe)
+    const diagnostics = await page.evaluate(() => {
+      const probe = window.runnerCourseProbe
+      if (probe === undefined) return undefined
+      return {
+        phases: probe.phases,
+        frameGaps: probe.frameGaps.slice(-8),
+        longTasks: probe.longTasks.slice(-8),
+        pitchFeedbackSamples: probe.pitchFeedback.length,
+        pitchFeedbackDropped: probe.pitchFeedbackDropped,
+        lastPitchFeedback: probe.pitchFeedback.at(-1),
+        runnerElementConnected: probe.runnerElementConnected,
+        runnerDisconnectedAtCourseSeconds:
+          probe.runnerDisconnectedAtCourseSeconds,
+      }
+    })
     throw new Error(
       `Course stopped at ${sample.currentSeconds}s (${sample.phase}${sample.reason ? `: ${sample.reason}` : ''}); timing=${JSON.stringify(diagnostics)}.`,
     )
@@ -399,6 +243,94 @@ test('the real renderer installs and retires streamed chunks without graphics er
 }) => {
   await verifyRunnerRendererStreaming(page)
 })
+
+test('live singing shows wrong, accepted and silent PCM without stale feedback after pause @smoke', async ({
+  page,
+}) => {
+  await useRunnerControlsRenderer(page)
+  const runner = await openRunningCourse(page)
+  const feedback = page.getByLabel('Your voice and target')
+  const presentation = page.getByTestId('runner-controls-presentation')
+  await page.evaluate(() => window.runnerVoiceFixture.tone(60))
+  await expect(feedback).toHaveAttribute('data-pitch-state', 'wrong', {
+    timeout: 15_000,
+  })
+  await expect(feedback.locator('[data-pitch-target]')).toHaveText('A3')
+  await expect(feedback.locator('[data-pitch-observed]')).toHaveText('C4')
+  await expect(feedback).toContainText('Sing lower')
+  expect(Number(await presentation.getAttribute('data-fill'))).toBe(0)
+  await expect(feedback).toHaveAttribute('aria-live', 'off')
+
+  await page.evaluate(() => window.runnerVoiceFixture.tone(57))
+  await expect(feedback).toHaveAttribute('data-pitch-state', 'accepted')
+  await expect(feedback.locator('[data-pitch-observed]')).toHaveText('A3')
+  await expect(feedback).toContainText('Matched')
+  await expect
+    .poll(async () => Number(await presentation.getAttribute('data-fill')))
+    .toBeGreaterThan(0)
+
+  await page.evaluate(() => window.runnerVoiceFixture.silent())
+  await expect(feedback).toHaveAttribute('data-pitch-state', 'neutral')
+  await expect(feedback.locator('[data-pitch-observed]')).toHaveCount(0)
+  await expect(feedback).toContainText('Listening')
+  await page.getByRole('button', { name: 'Pause course' }).click()
+  await expect(runner).toHaveAttribute('data-phase', 'paused')
+  await page.evaluate(() => window.runnerVoiceFixture.followTarget())
+  await page.getByRole('button', { name: 'Resume', exact: true }).click()
+  await expect(runner).toHaveAttribute('data-phase', 'running', {
+    timeout: 60_000,
+  })
+  // Resume rewinds to the safe checkpoint before this phrase. No captured
+  // note from the previous microphone epoch may survive that restart.
+  await expect(page.locator('[data-pitch-observed]')).toHaveCount(0)
+  await expect(feedback).toHaveAttribute('data-pitch-state', 'neutral')
+  await page.evaluate(() => window.runnerVoiceFixture.dispose())
+})
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1440, height: 900 },
+  { width: 740, height: 360 },
+]) {
+  test(`pitch readout leaves the course and controls clear at ${viewport.width}x${viewport.height} @smoke`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await useRunnerControlsRenderer(page)
+    await openRunningCourse(page)
+    await page.evaluate(() => window.runnerVoiceFixture.tone(60))
+    const feedback = page.getByLabel('Your voice and target')
+    await expect(feedback).toHaveAttribute('data-pitch-state', 'wrong', {
+      timeout: 15_000,
+    })
+    const boxes = await page.evaluate(() => {
+      const box = (selector: string) =>
+        document.querySelector(selector)!.getBoundingClientRect().toJSON()
+      return {
+        notation: box('[aria-label="Current melody"]'),
+        controls: box('[aria-label="Course controls"]'),
+        readout: box('[aria-label="Your voice and target"]'),
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      }
+    })
+    expect(boxes.overflow).toBeLessThanOrEqual(0)
+    expect(boxes.readout.left).toBeGreaterThanOrEqual(0)
+    expect(boxes.readout.right).toBeLessThanOrEqual(viewport.width)
+    expect(
+      boxes.notation.bottom < boxes.controls.top ||
+        boxes.notation.right < boxes.controls.left,
+    ).toBe(true)
+    expect(boxes.notation.height).toBeLessThan(viewport.height * 0.48)
+    await page.screenshot({
+      path: test
+        .info()
+        .outputPath(`pitch-${viewport.width}x${viewport.height}.png`),
+    })
+    await page.evaluate(() => window.runnerVoiceFixture.dispose())
+  })
+}
 
 test('pause traps focus and resumed controls are rearmed @smoke', async ({
   page,
@@ -577,6 +509,7 @@ test('runner unlock follows First Light and Leave returns to the campaign @smoke
 test('the complete audio and control course judges every phrase and obstacle without recovery', async ({
   page,
 }, testInfo) => {
+  const courseProbe = createRunnerCourseProbe(page)
   // Keep real PCM, capture, audio time, UI input, movement, judging and saves.
   // Software raster throughput is not an audio/control contract. The other
   // cases keep the real renderer; streaming and full hardware art have their
@@ -585,43 +518,7 @@ test('the complete audio and control course judges every phrase and obstacle wit
   const runner = await openRunningCourse(page, true)
   const presentation = page.getByTestId('runner-controls-presentation')
   await expect(presentation).toHaveCount(1)
-  await runner.evaluate((element) => {
-    const phases = [element.dataset.phase ?? 'unknown']
-    const frameGaps: { courseSeconds: number; duration: number }[] = []
-    const longTasks: { courseSeconds: number; duration: number }[] = []
-    const courseSeconds = () => Number(element.dataset.courseSeconds)
-    new MutationObserver(() => {
-      const phase = element.dataset.phase ?? 'unknown'
-      if (phases.at(-1) !== phase) phases.push(phase)
-    }).observe(element, {
-      attributes: true,
-      attributeFilter: ['data-phase'],
-    })
-    let previousFrame = performance.now()
-    const trackFrame = (now: number) => {
-      const duration = now - previousFrame
-      previousFrame = now
-      if (duration >= 100)
-        frameGaps.push({ courseSeconds: courseSeconds(), duration })
-      requestAnimationFrame(trackFrame)
-    }
-    requestAnimationFrame(trackFrame)
-    if ('PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((entries) => {
-        for (const entry of entries.getEntries())
-          longTasks.push({
-            courseSeconds: courseSeconds(),
-            duration: entry.duration,
-          })
-      })
-      try {
-        observer.observe({ type: 'longtask', buffered: true })
-      } catch {
-        /* Chromium may omit long-task timing in constrained CI sandboxes. */
-      }
-    }
-    window.runnerCourseProbe = { phases, frameGaps, longTasks }
-  })
+  await courseProbe.install(runner)
 
   const left = page.getByRole('button', { name: 'Left lane' })
   const right = page.getByRole('button', { name: 'Right lane' })
@@ -629,26 +526,39 @@ test('the complete audio and control course judges every phrase and obstacle wit
   const movementHint = page.getByTestId('runner-movement-hint')
   const notation = page.getByLabel('Current melody')
 
-  await expect(movementHint).toContainText('Change lane', { timeout: 30_000 })
-  await expect(notation).toHaveCount(0)
-  await clickAtCourseSecond(page, runner, right, RUNNER_ACTIONS.firstLaneChange)
-  await expect(movementHint).toHaveCount(0)
-  await expect(movementHint).toContainText('Jump the gap', { timeout: 10_000 })
-  await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.firstJump)
-  await expect(movementHint).toHaveCount(0)
-  await expect(notation).toBeVisible({ timeout: 10_000 })
-  await clickAtCourseSecond(page, runner, left, RUNNER_ACTIONS.returnToMiddle)
-  await clickAtCourseSecond(
-    page,
-    runner,
-    right,
-    RUNNER_ACTIONS.secondLaneChange,
-  )
-  await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.secondJump)
+  try {
+    await expect(movementHint).toContainText('Change lane', { timeout: 30_000 })
+    await expect(notation).toHaveCount(0)
+    await clickAtCourseSecond(
+      page,
+      runner,
+      right,
+      RUNNER_ACTIONS.firstLaneChange,
+    )
+    await expect(movementHint).toHaveCount(0)
+    await expect(movementHint).toContainText('Jump the gap', {
+      timeout: 10_000,
+    })
+    await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.firstJump)
+    await expect(movementHint).toHaveCount(0)
+    await expect(notation).toBeVisible({ timeout: 10_000 })
+    await clickAtCourseSecond(page, runner, left, RUNNER_ACTIONS.returnToMiddle)
+    await clickAtCourseSecond(
+      page,
+      runner,
+      right,
+      RUNNER_ACTIONS.secondLaneChange,
+    )
+    await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.secondJump)
 
-  await expect(runner).toHaveAttribute('data-phase', 'finished', {
-    timeout: 100_000,
-  })
+    await expect(runner).toHaveAttribute('data-phase', 'finished', {
+      timeout: 100_000,
+    })
+  } catch (error) {
+    await courseProbe.attach(testInfo)
+    throw error
+  }
+  const timing = await courseProbe.attach(testInfo)
   await expect(runner).toHaveAttribute('data-course-status', 'finished')
   await expect(presentation).toHaveAttribute('data-status', 'finished')
   expect(
@@ -682,15 +592,63 @@ test('the complete audio and control course judges every phrase and obstacle wit
   expect(saved.collectedRewardIds).toHaveLength(
     SINGING_CURRENT.rewards.finishRewardIds.length + 1,
   )
-  const timing = await page.evaluate(() => window.runnerCourseProbe)
   const phases = timing?.phases ?? []
   expect(phases).not.toContain('recovering')
   expect(phases).not.toContain('paused')
   expect(phases).not.toContain('error')
-  await testInfo.attach('runner-timing.json', {
-    body: JSON.stringify(timing, null, 2),
-    contentType: 'application/json',
-  })
+  expect(timing?.runnerElementConnected).toBe(true)
+  expect(timing?.runnerDisconnectedAtCourseSeconds).toBeNull()
+  expect(timing?.pitchFeedbackDropped).toBe(0)
+
+  const acceptedPitchFeedback = (timing?.pitchFeedback ?? []).filter(
+    (sample) =>
+      sample.state === 'accepted' &&
+      sample.targetPhase === 'judging' &&
+      sample.targetLabel !== '' &&
+      sample.observedLabel !== '' &&
+      sample.comparedTargetMidi !== null &&
+      sample.observedMidi !== null,
+  )
+  for (const target of SINGING_CURRENT.targets)
+    expect(
+      acceptedPitchFeedback.filter((sample) => sample.targetId === target.id),
+      `${target.id} should publish accepted pitch labels during judging`,
+    ).not.toHaveLength(0)
+
+  const sequentialPitchFeedback = acceptedPitchFeedback.filter(
+    (sample) => sample.targetId === 'two-note-window',
+  )
+  expect(
+    new Set(sequentialPitchFeedback.map((sample) => sample.noteIndex)),
+  ).toEqual(new Set([0, 1]))
+  expect(
+    new Set(sequentialPitchFeedback.map((sample) => sample.targetLabel)).size,
+  ).toBeGreaterThanOrEqual(2)
+
+  const glideTarget = SINGING_CURRENT.targets.find(
+    (target) => target.id === 'arc-diadem',
+  )
+  expect(glideTarget).toBeDefined()
+  const glideNoteIndices = new Set(
+    glideTarget!.notes
+      .filter((note) => note.connection === 'glide')
+      .map((note) => note.index),
+  )
+  const glidePitchFeedback = acceptedPitchFeedback.filter(
+    (sample) =>
+      sample.targetId === glideTarget!.id &&
+      sample.noteIndex !== null &&
+      glideNoteIndices.has(sample.noteIndex),
+  )
+  expect(glidePitchFeedback.length).toBeGreaterThan(1)
+  expect(
+    new Set(
+      glidePitchFeedback.map((sample) => sample.comparedTargetMidi!.toFixed(2)),
+    ).size,
+  ).toBeGreaterThan(1)
+  expect(
+    acceptedPitchFeedback.some((sample) => sample.targetId === 'melody-finale'),
+  ).toBe(true)
 
   await expect(page.getByText('Portrait collected')).toBeVisible()
   await expect(
