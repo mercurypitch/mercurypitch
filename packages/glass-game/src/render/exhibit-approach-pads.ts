@@ -3,6 +3,7 @@
 import type { Material } from 'three'
 import { CircleGeometry, Group, Mesh, MeshBasicMaterial, RingGeometry, TorusGeometry, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
+import { EXHIBIT_APPROACH_RING_INNER_RADIUS, EXHIBIT_APPROACH_RING_OUTER_RADIUS, } from '../core/exhibit-interaction'
 
 export function createExhibitApproachPads(
   level: LevelDefinition,
@@ -11,7 +12,11 @@ export function createExhibitApproachPads(
 ) {
   const discGeometry = new CircleGeometry(0.23, 48)
   const rimGeometry = new TorusGeometry(0.24, 0.012, 5, 48)
-  const approachGeometry = new RingGeometry(0.42, 0.46, 48)
+  const approachGeometry = new RingGeometry(
+    EXHIBIT_APPROACH_RING_INNER_RADIUS,
+    EXHIBIT_APPROACH_RING_OUTER_RADIUS,
+    48,
+  )
   const pads = level.breakables.map((target) => {
     const root = new Group()
     root.name = `approach-pad-${target.id}`
