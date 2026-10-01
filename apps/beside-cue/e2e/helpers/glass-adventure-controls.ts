@@ -3,16 +3,19 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test'
 
 const RASTER_METHODS = [
+  'blitFramebuffer',
   'clear',
   'drawArrays',
   'drawArraysInstanced',
   'drawElements',
   'drawElementsInstanced',
+  'generateMipmap',
 ] as const
 
 export async function omitRasterOutput(page: Page): Promise<void> {
   // Control specs assert controller state and accessible UI. Keep the real
-  // scene graph, input, RAF and physics paths while omitting only pixel output.
+  // scene graph, resources, input, RAF and physics paths while omitting pixel
+  // draws plus GPU-side multisample resolves and mipmap generation.
   await page.addInitScript((methods) => {
     for (const name of methods)
       Object.defineProperty(WebGL2RenderingContext.prototype, name, {

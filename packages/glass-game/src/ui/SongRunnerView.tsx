@@ -226,7 +226,9 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     return 'Your note'
   })
   const showNotation = createMemo(
-    () => state().phase !== 'running' || activeTarget() !== null,
+    () =>
+      ['readiness', 'count-in'].includes(state().phase) ||
+      (state().phase === 'running' && activeTarget() !== null),
   )
   const movementHint = createMemo(() => {
     if (state().phase !== 'running' || activeTarget() !== null) return null
@@ -401,7 +403,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <span style={{ width: `${progress()}%` }} />
         </div>
         <Show when={game().combo > 1}>
-          <span class={styles.combo}>{game().combo} note run</span>
+          <span class={styles.combo}>{game().combo} in a row</span>
         </Show>
         <button
           type="button"

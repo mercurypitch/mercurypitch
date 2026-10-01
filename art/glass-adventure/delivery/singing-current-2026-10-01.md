@@ -61,15 +61,23 @@ does not change release progression. The mini-game returns to the same journey.
 
 ## Verification boundary
 
+All 1,484 shared-game tests and all seven runner browser cases pass locally,
+along with the package typecheck and scoped lint/format checks. Independent
+reviews found no remaining shipping blocker.
+
 Automated coverage includes compiler rejection, reproducible simulation at
 30/60/120 Hz, stale/late voice evidence, silence, collision and missed-jump
 recovery, rewards across replay, microphone interruption, cancelled asynchronous
 work and GPU resource disposal. Browser checks use actual pointer/touch input
 and PCM through the shared pitch detector, not fabricated target outcomes.
+The software-rendered controls suite omits pixel generation (drawing, clearing,
+multisample resolves and mipmaps); full real-pixel checks run separately on hardware OpenGL.
 
 Actual rendering is inspected separately with the real AMD/OpenGL path at fixed
-desktop and phone viewports. Raw screenshots and reports live in the synced
-creative archive under `glass-adventure/song-runner/runtime-proof-v1`.
+desktop and phone viewports. Both full 90.88-second hardware runs completed eight hits and 24/24 singing
+stars, collected the finale portrait and reported no graphics errors or overflow.
+Raw screenshots and reports live in the synced creative archive under
+`glass-adventure/song-runner/runtime-proof-v2`.
 
 Physical iPhone/Android frame pacing and speaker-to-microphone leakage still
 require device testing. A browser screenshot and synthetic microphone cannot
