@@ -4,8 +4,12 @@ import type { Object3D } from 'three'
 import { Ray, Raycaster, Vector3 } from 'three'
 import type { LevelDefinition } from '../contracts'
 import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
-import { ENCLOSURE_READABLE_BOOM_DISTANCE, OBSTRUCTION_LIFT_PITCHES, } from './camera-policy'
+import { ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_LATERAL_BOOM_MAX_YAW, ENCLOSURE_LATERAL_BOOM_RETRY_ANGLE, ENCLOSURE_LATERAL_BOOM_RETRY_DISTANCE, ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS, ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, FOLLOW_COMPLETE_RADIANS, OBSTRUCTION_LIFT_PITCHES, } from './camera-policy'
 import type { createEnclosureFraming, EnclosureRayPurpose, } from './enclosure-framing'
+import { MINIMUM_THIRD_PERSON_REACH } from './third-person-framing'
+
+const PLACEMENT_COMPARISON_EPSILON = 0.0001
+const PLACEMENT_EPSILON = 0.05
 
 export function createCameraObstruction(
   level: LevelDefinition,
@@ -16,7 +20,38 @@ export function createCameraObstruction(
   const hit = new Vector3()
   const ray = new Ray()
   const raycaster = new Raycaster()
+  const candidatePosition = new Vector3()
+  const lateralDirection = new Vector3()
+  const chosenLateralDirection = new Vector3()
+  const failedRecoveryOrigin = new Vector3()
+  const retainedDirection = new Vector3()
+  const retainedPosition = new Vector3()
+  let hasRetainedPosition = false
+  let lateralYawOffset = 0
+  let preferredLateralSign: -1 | 1 = 1
+  let failedRecoveryActiveSolidIds: readonly string[] = []
+  let failedRecoveryEnabledPlatformIds: readonly string[] = []
+  let failedRecoveryElapsed = ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS
+  let failedRecoveryPitch = 0
+  let failedRecoveryReach = 0
+  let failedRecoveryValid = false
+  let failedRecoveryYaw = 0
   let occluders: Object3D[] = []
+
+  function sameIds(
+    first: readonly string[],
+    second: readonly string[],
+  ): boolean {
+    return (
+      first.length === second.length &&
+      first.every((value, index) => value === second[index])
+    )
+  }
+
+  function clearFailedRecovery(): void {
+    failedRecoveryElapsed = ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS
+    failedRecoveryValid = false
+  }
 
   function safeRayDistance(
     origin: Vector3,
@@ -101,9 +136,289 @@ export function createCameraObstruction(
     )
   }
 
+  function recoverLateralBoomDistance(options: {
+    origin: Vector3
+    yaw: number
+    pitch: number
+    reach: number
+    enabledPlatformIds: readonly string[]
+    activeSolidIds: readonly string[]
+    constrainToEnclosure: boolean
+    useMeshOccluders: boolean
+    canonicalDistance: number
+    deltaSeconds: number
+    boomDirection: Vector3
+  }): number {
+    if (!options.constrainToEnclosure) {
+      lateralYawOffset = 0
+      clearFailedRecovery()
+      return options.canonicalDistance
+    }
+    const readableDistance = Math.min(
+      options.reach,
+      ENCLOSURE_READABLE_BOOM_DISTANCE,
+    )
+    const probe = (offset: number): number => {
+      const boundsDistance = safeBoomDistance(
+        options.origin,
+        options.yaw + offset,
+        options.pitch,
+        options.reach,
+        options.enabledPlatformIds,
+        options.activeSolidIds,
+        true,
+        false,
+        lateralDirection,
+      )
+      if (!options.useMeshOccluders || boundsDistance < readableDistance)
+        return boundsDistance
+      return safeBoomDistance(
+        options.origin,
+        options.yaw + offset,
+        options.pitch,
+        options.reach,
+        options.enabledPlatformIds,
+        options.activeSolidIds,
+        true,
+        true,
+        lateralDirection,
+      )
+    }
+    if (lateralYawOffset !== 0) {
+      const releaseDistance = Math.min(
+        options.reach,
+        ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE,
+      )
+      if (options.canonicalDistance >= releaseDistance) {
+        const easedOffset =
+          lateralYawOffset *
+          Math.exp(-ENCLOSURE_DISTANCE_RECOVERY_RESPONSE * options.deltaSeconds)
+        if (Math.abs(easedOffset) <= FOLLOW_COMPLETE_RADIANS) {
+          lateralYawOffset = 0
+          clearFailedRecovery()
+          return options.canonicalDistance
+        }
+        const easedDistance = probe(easedOffset)
+        if (easedDistance >= readableDistance) {
+          lateralYawOffset = easedOffset
+          clearFailedRecovery()
+          options.boomDirection.copy(lateralDirection)
+          return easedDistance
+        }
+      }
+      const retainedDistance = probe(lateralYawOffset)
+      if (retainedDistance >= readableDistance) {
+        clearFailedRecovery()
+        options.boomDirection.copy(lateralDirection)
+        return retainedDistance
+      }
+      lateralYawOffset = 0
+      clearFailedRecovery()
+      if (options.canonicalDistance >= MINIMUM_THIRD_PERSON_REACH)
+        return options.canonicalDistance
+    }
+    if (options.canonicalDistance >= MINIMUM_THIRD_PERSON_REACH) {
+      clearFailedRecovery()
+      return options.canonicalDistance
+    }
+
+    const poseUnchanged =
+      failedRecoveryValid &&
+      failedRecoveryOrigin.distanceToSquared(options.origin) <=
+        ENCLOSURE_LATERAL_BOOM_RETRY_DISTANCE ** 2 &&
+      Math.abs(failedRecoveryYaw - options.yaw) <=
+        ENCLOSURE_LATERAL_BOOM_RETRY_ANGLE &&
+      Math.abs(failedRecoveryPitch - options.pitch) <=
+        ENCLOSURE_LATERAL_BOOM_RETRY_ANGLE &&
+      Math.abs(failedRecoveryReach - options.reach) <=
+        ENCLOSURE_LATERAL_BOOM_RETRY_DISTANCE &&
+      sameIds(failedRecoveryEnabledPlatformIds, options.enabledPlatformIds) &&
+      sameIds(failedRecoveryActiveSolidIds, options.activeSolidIds)
+    if (poseUnchanged) {
+      failedRecoveryElapsed += Math.max(0, options.deltaSeconds)
+      if (failedRecoveryElapsed < ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS)
+        return options.canonicalDistance
+    }
+
+    const stepYaw =
+      ENCLOSURE_LATERAL_BOOM_MAX_YAW / ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS
+    const signs: readonly (-1 | 1)[] = [
+      preferredLateralSign,
+      preferredLateralSign === 1 ? -1 : 1,
+    ]
+    for (let step = 1; step <= ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS; step++) {
+      let chosenDistance = -Infinity
+      let chosenOffset = 0
+      for (const sign of signs) {
+        const offset = sign * stepYaw * step
+        const distance = probe(offset)
+        if (distance < readableDistance || distance <= chosenDistance) continue
+        chosenDistance = distance
+        chosenOffset = offset
+        chosenLateralDirection.copy(lateralDirection)
+      }
+      if (chosenOffset === 0) continue
+      lateralYawOffset = chosenOffset
+      preferredLateralSign = chosenOffset < 0 ? -1 : 1
+      clearFailedRecovery()
+      options.boomDirection.copy(chosenLateralDirection)
+      return chosenDistance
+    }
+    failedRecoveryOrigin.copy(options.origin)
+    failedRecoveryYaw = options.yaw
+    failedRecoveryPitch = options.pitch
+    failedRecoveryReach = options.reach
+    failedRecoveryEnabledPlatformIds = [...options.enabledPlatformIds]
+    failedRecoveryActiveSolidIds = [...options.activeSolidIds]
+    failedRecoveryElapsed = 0
+    failedRecoveryValid = true
+    return options.canonicalDistance
+  }
+
+  function resolveBoomDistance(
+    origin: Vector3,
+    yaw: number,
+    pitch: number,
+    reach: number,
+    enabledPlatformIds: readonly string[],
+    activeSolidIds: readonly string[],
+    constrainToEnclosure: boolean,
+    useMeshOccluders: boolean,
+    deltaSeconds: number,
+    boomDirection: Vector3,
+  ): number {
+    const canonicalDistance = safeBoomDistance(
+      origin,
+      yaw,
+      pitch,
+      reach,
+      enabledPlatformIds,
+      activeSolidIds,
+      constrainToEnclosure,
+      useMeshOccluders,
+      boomDirection,
+    )
+    return recoverLateralBoomDistance({
+      origin,
+      yaw,
+      pitch,
+      reach,
+      enabledPlatformIds,
+      activeSolidIds,
+      constrainToEnclosure,
+      useMeshOccluders,
+      canonicalDistance,
+      deltaSeconds,
+      boomDirection,
+    })
+  }
+
+  function meshPathClear(
+    origin: Vector3,
+    rayDirection: Vector3,
+    reach: number,
+    useMeshOccluders: boolean,
+  ): boolean {
+    if (!useMeshOccluders) return true
+    raycaster.set(origin, rayDirection)
+    raycaster.far = reach
+    return raycaster.intersectObjects(occluders, false).length === 0
+  }
+
+  function placeCameraPosition(options: {
+    position: Vector3
+    target: Vector3
+    boomDirection: Vector3
+    renderedDistance: number
+    safeDistance: number
+    activeSolidIds: readonly string[]
+    constrainToEnclosure: boolean
+    useMeshOccluders: boolean
+  }): number | null {
+    options.position
+      .copy(options.target)
+      .addScaledVector(options.boomDirection, options.renderedDistance)
+    if (!options.constrainToEnclosure || enclosure === null) {
+      hasRetainedPosition = false
+      return null
+    }
+    if (
+      options.renderedDistance > PLACEMENT_EPSILON &&
+      enclosure.cameraPositionSafe(
+        options.target,
+        options.position,
+        options.activeSolidIds,
+      )
+    ) {
+      retainedPosition.copy(options.position)
+      hasRetainedPosition = true
+      return null
+    }
+
+    const minimumRecoveryDistance = Math.min(
+      options.safeDistance,
+      ENCLOSURE_READABLE_BOOM_DISTANCE,
+    )
+    const recoverAt = (distance: number): boolean => {
+      if (distance <= options.renderedDistance + PLACEMENT_COMPARISON_EPSILON)
+        return false
+      candidatePosition
+        .copy(options.target)
+        .addScaledVector(options.boomDirection, distance)
+      if (
+        !enclosure.cameraPositionSafe(
+          options.target,
+          candidatePosition,
+          options.activeSolidIds,
+        )
+      )
+        return false
+      options.position.copy(candidatePosition)
+      retainedPosition.copy(candidatePosition)
+      hasRetainedPosition = true
+      return true
+    }
+    if (recoverAt(minimumRecoveryDistance)) return minimumRecoveryDistance
+    if (recoverAt(options.safeDistance)) return options.safeDistance
+
+    if (
+      hasRetainedPosition &&
+      enclosure.cameraPositionSafe(
+        options.target,
+        retainedPosition,
+        options.activeSolidIds,
+      )
+    ) {
+      retainedDirection.copy(retainedPosition).sub(options.target)
+      const retainedDistance = retainedDirection.length()
+      if (retainedDistance > PLACEMENT_EPSILON) {
+        retainedDirection.multiplyScalar(1 / retainedDistance)
+        if (
+          meshPathClear(
+            options.target,
+            retainedDirection,
+            retainedDistance,
+            options.useMeshOccluders,
+          )
+        ) {
+          options.position.copy(retainedPosition)
+          return null
+        }
+      }
+    }
+    return null
+  }
+
+  function resetCameraPlacement(): void {
+    hasRetainedPosition = false
+  }
+
   return {
     safeRayDistance,
     safeBoomDistance,
+    resolveBoomDistance,
+    placeCameraPosition,
+    resetCameraPlacement,
     chooseLiftedPitch(options: {
       basePitch: number
       origin: Vector3
@@ -143,19 +458,14 @@ export function createCameraObstruction(
       }
       return bestPitch
     },
-    meshPathClear(
-      origin: Vector3,
-      rayDirection: Vector3,
-      reach: number,
-      useMeshOccluders: boolean,
-    ): boolean {
-      if (!useMeshOccluders) return true
-      raycaster.set(origin, rayDirection)
-      raycaster.far = reach
-      return raycaster.intersectObjects(occluders, false).length === 0
-    },
+    meshPathClear,
     setOccluders(objects: Object3D[]): void {
+      if (objects === occluders) return
+      const changed =
+        objects.length !== occluders.length ||
+        objects.some((object, index) => object !== occluders[index])
       occluders = objects
+      if (changed) clearFailedRecovery()
     },
     updatePlatformStates,
     useMeshOccludersAt,

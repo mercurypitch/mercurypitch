@@ -6,8 +6,8 @@ import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_SOURCE, GLASS_ENCLOSED_CHAMBER, } from './enclosed-chamber'
-import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
-import { MUSEUM_WALL_TOP, MUSEUM_WINDOW_APERTURE_HALF_WIDTH, MUSEUM_WINDOW_LINTEL_BOTTOM, MUSEUM_WINDOW_SILL_TOP, } from './enclosed-wall-kit'
+import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_ROOM, ENCLOSED_ENTRY_ROOM, } from './enclosed-museum-kit'
+import { MUSEUM_SCREEN_DEPTH, MUSEUM_SEAM_OVERLAP, MUSEUM_WALL_TOP, MUSEUM_WINDOW_APERTURE_HALF_WIDTH, MUSEUM_WINDOW_LINTEL_BOTTOM, MUSEUM_WINDOW_SILL_TOP, } from './enclosed-wall-kit'
 import { GLASSWORKS } from './glassworks'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
@@ -210,6 +210,29 @@ describe('enclosed chamber content', () => {
         solid.thickness === MUSEUM_WALL_TOP,
     )
     expect(fullHeightBarrier).toBe(false)
+  })
+
+  it('keeps both entry corridor wall seams flush along their playable faces', () => {
+    const solids = new Map(
+      ENCLOSED_ENTRY_ROOM.solids.map((solid) => [solid.id, solid]),
+    )
+    const seams = [
+      ['west-south-screen-body', 'west-north-filler', 'maxX'],
+      ['east-south-screen-body', 'east-north-filler', 'minX'],
+    ] as const
+
+    for (const [screenId, fillerId, playableFace] of seams) {
+      const screen = solids.get(screenId)
+      const filler = solids.get(fillerId)
+      expect(screen?.shape, screenId).toBe('box')
+      expect(filler?.shape, fillerId).toBe('box')
+      if (screen?.shape !== 'box' || filler?.shape !== 'box')
+        throw new Error(`Expected box solids at ${screenId} and ${fillerId}.`)
+
+      expect(filler[playableFace]).toBeCloseTo(screen[playableFace], 12)
+      expect(filler.maxX - filler.minX).toBeCloseTo(MUSEUM_SCREEN_DEPTH, 12)
+      expect(screen.maxZ - filler.minZ).toBeCloseTo(MUSEUM_SEAM_OVERLAP, 12)
+    }
   })
 
   it('publishes convex camera volumes with every route handoff overlapping by 0.72m', () => {

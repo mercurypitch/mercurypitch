@@ -430,53 +430,55 @@ export function AdventureVisit(props: AdventureVisitProps) {
             !adventure.snapshot().complete
           }
         >
-          <TouchControls
-            input={adventure.input}
-            onActivity={adventure.gameplayGesture}
-            disabled={
-              adventure.voiceMode() !== 'off' ||
-              adventure.snapshot().phase === 'shattering'
-            }
-          />
-          <Show when={showEncounterOffer()}>
-            <div class={styles.encounterOffer}>
-              <span>
-                {nearby()?.optional === true
-                  ? 'Just for the joy of it'
-                  : nearby()?.label}
-              </span>
-              <button
-                class={styles.primary}
-                type="button"
-                data-testid="glass-sing-action"
-                onClick={() => void adventure.start()}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="9" y="3" width="6" height="12" rx="3" />
-                  <path d="M6 11v1a6 6 0 0 0 12 0v-1m-6 7v3m-3 0h6" />
-                </svg>
-                Sing to the glass <kbd>F</kbd>
-              </button>
-            </div>
-          </Show>
-          <Show when={adventure.voiceMode() !== 'off'}>
-            <AdventureVoicePanel
-              adventure={adventure}
-              active={active()}
-              onStartFresh={props.onRestart}
+          <div style={{ display: 'contents' }}>
+            <TouchControls
+              input={adventure.input}
+              onActivity={adventure.gameplayGesture}
+              disabled={
+                adventure.voiceMode() !== 'off' ||
+                adventure.snapshot().phase === 'shattering'
+              }
             />
-          </Show>
-          <Show
-            when={
-              adventure.voiceMode() === 'off' &&
-              adventure.snapshot().phase !== 'shattering'
-            }
-          >
-            <div class={styles.desktopHint}>
-              WASD move <span>Space jump</span>
-              <span>Arrows / drag look</span>
-            </div>
-          </Show>
+            <Show when={showEncounterOffer()}>
+              <div class={styles.encounterOffer}>
+                <span>
+                  {nearby()?.optional === true
+                    ? 'Just for the joy of it'
+                    : nearby()?.label}
+                </span>
+                <button
+                  class={styles.primary}
+                  type="button"
+                  data-testid="glass-sing-action"
+                  onClick={() => void adventure.start()}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="12" rx="3" />
+                    <path d="M6 11v1a6 6 0 0 0 12 0v-1m-6 7v3m-3 0h6" />
+                  </svg>
+                  Sing to the glass <kbd>F</kbd>
+                </button>
+              </div>
+            </Show>
+            <Show when={adventure.voiceMode() !== 'off'}>
+              <AdventureVoicePanel
+                adventure={adventure}
+                active={active()}
+                onStartFresh={props.onRestart}
+              />
+            </Show>
+            <Show
+              when={
+                adventure.voiceMode() === 'off' &&
+                adventure.snapshot().phase !== 'shattering'
+              }
+            >
+              <div class={styles.desktopHint}>
+                WASD move <span>Space jump</span>
+                <span>Arrows / drag look</span>
+              </div>
+            </Show>
+          </div>
         </Show>
         <Show when={adventure.tutorial()}>
           <Tutorial

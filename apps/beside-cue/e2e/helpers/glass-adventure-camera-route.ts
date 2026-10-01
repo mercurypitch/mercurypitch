@@ -1,11 +1,119 @@
-// Journey camera route probes — physical keyboard traversal and lifecycle cleanup.
+// Journey camera route probes — physical traversal, rendered turn timing and lifecycle cleanup.
 
-import { expect, type Page } from '@playwright/test'
+import { expect, type BrowserContext, type Page } from '@playwright/test'
 
 export interface PlayerPosition {
   x: number
   y: number
   z: number
+}
+
+interface MercTurnSample {
+  at: number
+  yaw: number
+}
+
+interface MercTurnWindow {
+  start: MercTurnSample
+  end: MercTurnSample
+}
+
+interface MercTurnProbeWindow extends Window {
+  cameraMercTurnProbe?: {
+    ready: boolean
+    receipt: MercTurnWindow | null
+    error: string | null
+    stop: () => void
+  }
+}
+
+export async function measureDeliveredMercTurn(
+  page: Page,
+  deliverTouchTurn: () => Promise<unknown>,
+): Promise<MercTurnWindow> {
+  await page.evaluate(() => {
+    const state = window as MercTurnProbeWindow
+    state.cameraMercTurnProbe?.stop()
+    let frameId = 0
+    let previousFrame: number | null = null
+    let delivered = false
+    let start: MercTurnSample | null = null
+    const probe = {
+      ready: false,
+      receipt: null as MercTurnWindow | null,
+      error: null as string | null,
+      stop: () => {
+        cancelAnimationFrame(frameId)
+        document.removeEventListener('pointermove', receiveTurn, true)
+      },
+    }
+    state.cameraMercTurnProbe = probe
+    function receiveTurn(event: PointerEvent): void {
+      if (
+        !event.isTrusted ||
+        event.pointerType !== 'touch' ||
+        !(event.target instanceof Element) ||
+        event.target.closest('[aria-label="Move Merc"]') === null
+      )
+        return
+      delivered = true
+      document.removeEventListener('pointermove', receiveTurn, true)
+    }
+    const sample = (timestamp: number) => {
+      if (previousFrame !== null) {
+        const rawYaw = document
+          .querySelector('[data-testid="glass-adventure"]')
+          ?.getAttribute('data-merc-yaw')
+        if (rawYaw == null || !Number.isFinite(Number(rawYaw))) {
+          probe.error = 'Missing rendered Merc yaw.'
+          probe.stop()
+          return
+        }
+        // This observer follows the game RAF. refresh() publishes Merc's
+        // existing yaw before render() advances him, so this DOM sample
+        // belongs to the preceding render timestamp, not the event/current RAF.
+        const current = { at: previousFrame, yaw: Number(rawYaw) }
+        probe.ready = true
+        if (delivered) {
+          start ??= current
+          if (current.at - start.at >= 50) {
+            probe.receipt = { start, end: current }
+            probe.stop()
+            return
+          }
+        }
+      }
+      previousFrame = timestamp
+      frameId = requestAnimationFrame(sample)
+    }
+    document.addEventListener('pointermove', receiveTurn, true)
+    frameId = requestAnimationFrame(sample)
+  })
+  const status = () =>
+    page.evaluate(() => {
+      const probe = (window as MercTurnProbeWindow).cameraMercTurnProbe
+      if (probe === undefined || probe.error !== null)
+        throw new Error(probe?.error ?? 'Missing Merc turn observer.')
+      return { ready: probe.ready, receipt: probe.receipt }
+    })
+  try {
+    await expect
+      .poll(async () => (await status()).ready, { timeout: 5_000 })
+      .toBe(true)
+    await deliverTouchTurn()
+    await expect
+      .poll(async () => (await status()).receipt !== null, { timeout: 5_000 })
+      .toBe(true)
+    const receipt = (await status()).receipt
+    if (receipt === null) throw new Error('Missing Merc turn frame window.')
+    return receipt
+  } finally {
+    await page.evaluate(() => {
+      const state = window as MercTurnProbeWindow
+      state.cameraMercTurnProbe?.stop()
+      delete state.cameraMercTurnProbe
+    })
+  }
 }
 
 export async function numericAdventureAttribute(
@@ -140,7 +248,7 @@ export async function traverseJourneyPassageAndCorner(
           (await numericAdventureAttribute(page, 'player-x')) - start.x,
         { timeout: 7_000, intervals: [16] },
       )
-      .toBeGreaterThan(4.5)
+      .toBeGreaterThan(7)
     await expect
       .poll(
         async () =>
@@ -167,9 +275,17 @@ export async function traverseJourneyPassageAndCorner(
   }
 
   const afterCorner = await adventurePlayerPosition(page)
-  expect(afterCorner.x - start.x).toBeGreaterThan(4.5)
+  expect(afterCorner.x - start.x).toBeGreaterThan(7)
   expect(afterCorner.z - start.z).toBeGreaterThan(15.5)
   expect(afterCorner.z).toBeLessThan(25.9)
+  expect(
+    Math.abs(
+      cameraAngleDelta(
+        await numericAdventureAttribute(page, 'camera-yaw'),
+        (await numericAdventureAttribute(page, 'merc-yaw')) + Math.PI,
+      ),
+    ),
+  ).toBeLessThan(0.16)
 }
 
 export async function verifyBlockedJourneyCameraReacquisition(
@@ -286,6 +402,197 @@ export async function verifyBlockedJourneyCameraReacquisition(
     await page.keyboard.up('KeyD')
     await page.keyboard.up('KeyW')
   }
+}
+
+export async function verifyHeldJourneyTouchContinuity(
+  page: Page,
+  context: BrowserContext,
+): Promise<void> {
+  const start = await adventurePlayerPosition(page)
+  await pointCameraAt(page, await numericAdventureAttribute(page, 'merc-yaw'))
+  await page.waitForTimeout(650)
+  await page.evaluate(() => {
+    const original = document.querySelector<HTMLElement>(
+      '[aria-label="Move Merc"]',
+    )!
+    const continuity = {
+      original,
+      pointerId: null as number | null,
+      removed: false,
+      lostCapture: false,
+      offerVisible: false,
+      sawOfferWhileHeld: false,
+      sawOfferExitWhileHeld: false,
+      cleanup: (): void => undefined,
+    }
+    ;(
+      window as typeof window & { journeyTouchContinuity?: typeof continuity }
+    ).journeyTouchContinuity = continuity
+    const recordOffer = (): void => {
+      const visible =
+        document.querySelector('[data-testid="glass-sing-action"]') !== null
+      if (continuity.pointerId !== null) {
+        if (visible) continuity.sawOfferWhileHeld = true
+        if (continuity.offerVisible && !visible)
+          continuity.sawOfferExitWhileHeld = true
+      }
+      continuity.offerVisible = visible
+    }
+    const observer = new MutationObserver((mutations) => {
+      const containsOriginal = (node: Node): boolean =>
+        node === original ||
+        (node instanceof Element && node.contains(original))
+      if (
+        mutations.some(
+          (mutation) =>
+            mutation.type === 'childList' &&
+            [...mutation.removedNodes].some(containsOriginal),
+        )
+      )
+        continuity.removed = true
+      recordOffer()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    const receivePointer = (event: PointerEvent): void => {
+      continuity.pointerId = event.pointerId
+      recordOffer()
+    }
+    const loseCapture = (): void => {
+      continuity.lostCapture = true
+    }
+    original.addEventListener('pointerdown', receivePointer)
+    original.addEventListener('lostpointercapture', loseCapture)
+    continuity.cleanup = () => {
+      observer.disconnect()
+      original.removeEventListener('pointerdown', receivePointer)
+      original.removeEventListener('lostpointercapture', loseCapture)
+    }
+  })
+
+  const cdp = await context.newCDPSession(page)
+  const stick = await page
+    .getByRole('group', { name: 'Move Merc' })
+    .boundingBox()
+  expect(stick).not.toBeNull()
+  const origin = {
+    x: stick!.x + Math.min(60, stick!.width * 0.36),
+    y: stick!.y + stick!.height - 64,
+  }
+  try {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 20, ...origin }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 20, x: origin.x - 38, y: origin.y }],
+    })
+    await expect
+      .poll(
+        async () =>
+          start.x - (await numericAdventureAttribute(page, 'player-x')),
+        { timeout: 8_000, intervals: [16] },
+      )
+      .toBeGreaterThan(1.25)
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 20, x: origin.x, y: origin.y + 38 }],
+    })
+    await expect
+      .poll(
+        async () =>
+          (await numericAdventureAttribute(page, 'player-z')) - start.z,
+        { timeout: 12_000, intervals: [16] },
+      )
+      .toBeGreaterThan(5.3)
+    await page.waitForTimeout(300)
+    expect(
+      await page.evaluate(() => {
+        const continuity = (
+          window as typeof window & {
+            journeyTouchContinuity?: {
+              original: HTMLElement
+              pointerId: number | null
+              removed: boolean
+              lostCapture: boolean
+              sawOfferWhileHeld: boolean
+              sawOfferExitWhileHeld: boolean
+            }
+          }
+        ).journeyTouchContinuity!
+        return {
+          removed: continuity.removed,
+          lostCapture: continuity.lostCapture,
+          currentIsOriginal:
+            document.querySelector('[aria-label="Move Merc"]') ===
+            continuity.original,
+          captured:
+            continuity.pointerId !== null &&
+            continuity.original.hasPointerCapture(continuity.pointerId),
+        }
+      }),
+    ).toEqual({
+      removed: false,
+      lostCapture: false,
+      currentIsOriginal: true,
+      captured: true,
+    })
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 20, x: origin.x + 38, y: origin.y }],
+    })
+    await expect(page.getByTestId('floating-stick-knob')).toHaveCSS(
+      'transform',
+      'matrix(1, 0, 0, 1, 38, 0)',
+    )
+    await expect
+      .poll(async () => await numericAdventureAttribute(page, 'player-x'), {
+        timeout: 8_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(start.x - 0.2)
+    expect(
+      await page.evaluate(() => {
+        const continuity = (
+          window as typeof window & {
+            journeyTouchContinuity?: {
+              sawOfferWhileHeld: boolean
+              sawOfferExitWhileHeld: boolean
+            }
+          }
+        ).journeyTouchContinuity!
+        return {
+          sawOfferWhileHeld: continuity.sawOfferWhileHeld,
+          sawOfferExitWhileHeld: continuity.sawOfferExitWhileHeld,
+        }
+      }),
+    ).toEqual({ sawOfferWhileHeld: true, sawOfferExitWhileHeld: true })
+  } finally {
+    try {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+    } finally {
+      try {
+        await page.evaluate(() => {
+          ;(
+            window as typeof window & {
+              journeyTouchContinuity?: { cleanup: () => void }
+            }
+          ).journeyTouchContinuity?.cleanup()
+        })
+      } finally {
+        await cdp.detach()
+      }
+    }
+  }
+  await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+    'data-active',
+    'false',
+  )
 }
 
 export async function verifyHeldArrowLifecycleCleanup(

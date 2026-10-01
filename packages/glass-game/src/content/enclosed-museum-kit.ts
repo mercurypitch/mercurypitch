@@ -357,7 +357,7 @@ export const ENCLOSED_ENTRY_ROOM: RoomPrefab = {
         platformId: 'floor',
       },
       MUSEUM_WINDOW_WIDTH,
-      MUSEUM_WINDOW_DEPTH,
+      MUSEUM_SCREEN_DEPTH,
     ),
     museumStoneWall(
       'east-north-filler',
@@ -368,7 +368,7 @@ export const ENCLOSED_ENTRY_ROOM: RoomPrefab = {
         platformId: 'floor',
       },
       MUSEUM_WINDOW_WIDTH,
-      MUSEUM_WINDOW_DEPTH,
+      MUSEUM_SCREEN_DEPTH,
     ),
     museumPortSeal('south-seal', {
       axis: 'x',

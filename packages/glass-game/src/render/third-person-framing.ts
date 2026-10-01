@@ -89,6 +89,9 @@ export function createThirdPersonFraming() {
     reset(): void {
       renderedReach = null
     },
+    snap(reach: number): void {
+      renderedReach = Number.isFinite(reach) ? Math.max(0, reach) : null
+    },
     update(options: {
       requestedReach: number
       contextualReach: number
