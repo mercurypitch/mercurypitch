@@ -474,7 +474,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
           >
             <div class={styles.desktopHint}>
               WASD move <span>Space jump</span>
-              <span>Drag to look</span>
+              <span>Arrows / drag look</span>
             </div>
           </Show>
         </Show>

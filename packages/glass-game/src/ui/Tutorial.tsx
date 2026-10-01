@@ -110,7 +110,7 @@ export function Tutorial(props: TutorialProps) {
         <p>
           {props.content?.pages[page()].body ??
             (page() === 0
-              ? 'Move Merc with WASD or the arrows. Press Space to jump. Drag the view to look around. On a phone, use the thumbstick and Jump.'
+              ? 'Move Merc with WASD. Use the arrow keys or drag to look around. Press Space to jump. On a phone, use the thumbstick and Jump.'
               : props.automaticSinging === true
                 ? 'Walk onto a glowing circle and the microphone opens automatically. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.'
                 : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}

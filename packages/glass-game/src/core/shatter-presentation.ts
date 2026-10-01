@@ -17,6 +17,9 @@ export const SHATTER_PRESENTATION_TIMING = {
   },
 } as const
 
+/** A slow rendered frame cannot consume more visible release than this. */
+export const MAXIMUM_SHATTER_FRAME_SECONDS = 0.1
+
 /** Gameplay, input and the cinematic camera retain ownership through every normal-motion shard frame. */
 export const SHATTER_LIFECYCLE_SECONDS =
   SHATTER_PRESENTATION_TIMING.normal.anticipationSeconds +

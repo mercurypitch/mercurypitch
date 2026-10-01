@@ -290,8 +290,6 @@ export function stepMovement(
   state.velocity.z += deltaZ * mix
   state.inheritedSupportVelocity.x *= 1 - mix
   state.inheritedSupportVelocity.z *= 1 - mix
-  if (Math.hypot(state.velocity.x, state.velocity.z) > 0.01)
-    state.facingYaw = Math.atan2(-state.velocity.x, -state.velocity.z)
 
   if (!input.jumpDown) state.requireJumpRelease = false
   const pressed =
@@ -341,6 +339,8 @@ export function stepMovement(
     state.velocity.z = 0
     state.inheritedSupportVelocity.z = 0
   }
+  if (Math.hypot(state.velocity.x, state.velocity.z) > 0.01)
+    state.facingYaw = Math.atan2(-state.velocity.x, -state.velocity.z)
   if (collision.ceiling || collision.support !== null) state.velocity.y = 0
   if (canRun && direction !== null) {
     const progress =

@@ -127,7 +127,8 @@ function createHarness(
       const active = input.hasMovementIntent()
       const changed = input.consumeMovementReferenceChange()
       camera.setMovementActive(active)
-      if (active && changed !== null) camera.rebaseMovement(changed)
+      if (active && changed !== null)
+        camera.rebaseMovement(changed, input.desiredTravelYaw(0) ?? undefined)
       game.step(input.read(camera.movementYaw()), frame)
       camera.update(game.snapshot(), frame)
     }
@@ -165,7 +166,7 @@ describe('camera follow from real movement contacts', () => {
     },
   )
 
-  it.each([30, 60, 120])(
+  it.each([4, 30, 60, 120])(
     'anticipates a held forward-right turn inside an enclosure at %i Hz',
     (framesPerSecond) => {
       const harness = createHarness(0, 'third-person', ENCLOSED_ROOM, {
@@ -180,16 +181,67 @@ describe('camera follow from real movement contacts', () => {
       expect(yawDistance(beforeChord, harness.camera.yaw())).toBeLessThan(0.02)
       harness.step(1.7)
 
-      const playerHeading = harness.game.snapshot().player.facingYaw
+      const requestedHeading = harness.input.desiredTravelYaw(
+        harness.camera.movementYaw(),
+      )
+      expect(requestedHeading).not.toBeNull()
       expect(yawDistance(beforeChord, harness.camera.yaw())).toBeGreaterThan(
         0.4,
       )
-      expect(yawDistance(harness.camera.yaw(), playerHeading)).toBeLessThan(
+      expect(yawDistance(harness.camera.yaw(), requestedHeading!)).toBeLessThan(
         0.08,
       )
       expect(harness.camera.movementYaw()).toBeCloseTo(beforeChord)
     },
   )
+
+  it('returns behind held keyboard travel after a front-facing manual orbit', () => {
+    const harness = createHarness(0, 'third-person', ENCLOSED_ROOM)
+    harness.key('KeyW', true)
+    harness.step(0.3)
+    const travelHeading = harness.input.desiredTravelYaw(
+      harness.camera.movementYaw(),
+    )
+    expect(travelHeading).not.toBeNull()
+
+    harness.camera.orbit(Math.PI, 0)
+    const frontFacingYaw = harness.camera.yaw()
+    expect(yawDistance(frontFacingYaw, travelHeading!)).toBeGreaterThan(3)
+
+    harness.key('KeyD', true)
+    harness.step(FRAME)
+    expect(harness.camera.movementYaw()).toBeCloseTo(travelHeading!)
+    harness.key('KeyD', false)
+    harness.step(FRAME)
+
+    harness.step(0.8)
+    expect(yawDistance(frontFacingYaw, harness.camera.yaw())).toBeLessThan(0.02)
+
+    harness.step(3.2)
+    expect(yawDistance(harness.camera.yaw(), travelHeading!)).toBeLessThan(0.08)
+    expect(harness.input.hasMovementIntent()).toBe(true)
+  })
+
+  it('reacquires behind a held keyboard contact after collision stops Merc', () => {
+    const game = createGlassGame(ENCLOSED_ROOM)
+    const camera = createAdventureCamera(ENCLOSED_ROOM)
+    const blocked = {
+      ...game.snapshot(),
+      player: {
+        ...game.snapshot().player,
+        velocity: { x: 0, y: 0, z: 0 },
+      },
+    }
+    camera.update(blocked, FRAME)
+    camera.setMovementActive(true)
+    camera.rebaseMovement('keyboard', 0)
+    const travelHeading = camera.movementYaw()
+    camera.orbit(Math.PI, 0)
+
+    for (let frame = 0; frame < 300; frame++) camera.update(blocked, FRAME)
+
+    expect(yawDistance(camera.yaw(), travelHeading)).toBeLessThan(0.08)
+  })
 
   it('keeps enclosed diagonal follow disabled for reduced motion', () => {
     const harness = createHarness(0, 'third-person', ENCLOSED_ROOM, {

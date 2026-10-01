@@ -48,20 +48,27 @@ describe('adventure movement reference intent', () => {
     expect(input.consumeMovementReferenceChange()).toBe('keyboard')
   })
 
-  it('ignores key aliases that leave the normalized net direction unchanged', () => {
+  it('reserves the arrow keys for camera input', () => {
     const input = createAdventureInput()
 
-    input.key(keyboardEvent('KeyW'), true)
-    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
-    input.key(keyboardEvent('ArrowUp'), true)
+    const arrow = keyboardEvent('ArrowUp')
+    expect(input.key(arrow, true)).toBe(true)
+    expect(input.hasMovementIntent()).toBe(false)
     expect(input.consumeMovementReferenceChange()).toBeNull()
-    input.key(keyboardEvent('KeyW'), false)
-    expect(input.consumeMovementReferenceChange()).toBeNull()
+    expect(input.cameraOrbitAxes()).toEqual({ yaw: 0, pitch: -1 })
+    expect(arrow.preventDefault).toHaveBeenCalledOnce()
+  })
 
-    input.key(keyboardEvent('ArrowUp'), false)
-    expect(input.consumeMovementReferenceChange()).toBeNull()
-    input.key(keyboardEvent('KeyW'), true)
-    expect(input.consumeMovementReferenceChange()).toBe('keyboard')
+  it('normalizes diagonal camera keys and clears them with other contacts', () => {
+    const input = createAdventureInput()
+
+    input.key(keyboardEvent('ArrowRight'), true)
+    input.key(keyboardEvent('ArrowUp'), true)
+    expect(input.cameraOrbitAxes().yaw).toBeCloseTo(Math.SQRT1_2)
+    expect(input.cameraOrbitAxes().pitch).toBeCloseTo(-Math.SQRT1_2)
+
+    input.clear()
+    expect(input.cameraOrbitAxes()).toEqual({ yaw: 0, pitch: 0 })
   })
 
   it('rebases a newly engaged stick but keeps a continuous sweep on one basis', () => {

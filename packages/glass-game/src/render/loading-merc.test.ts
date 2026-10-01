@@ -12,6 +12,9 @@ const state = vi.hoisted(() => ({
   environmentDispose: vi.fn(),
   environmentFailure: null as Error | null,
   sourceDispose: vi.fn(),
+  reflectionOptions: [] as unknown[],
+  floatRenderTargets: true,
+  glError: 0,
   observerDisconnect: vi.fn(),
   visibility: 'visible' as DocumentVisibilityState,
   documentListeners: new Map<string, EventListener>(),
@@ -36,6 +39,17 @@ vi.mock('three', async (original) => ({
     toneMapping = 0
     toneMappingExposure = 1
     shadowMap = { enabled: true }
+    getContext = () => ({
+      drawingBufferHeight: 260,
+      drawingBufferWidth: 320,
+      getError: () => state.glError,
+      getExtension: (name: string) =>
+        state.floatRenderTargets ||
+        (name !== 'EXT_color_buffer_float' &&
+          name !== 'OES_texture_float_linear')
+          ? {}
+          : null,
+    })
     setClearColor = vi.fn()
     setPixelRatio = vi.fn()
     setSize = vi.fn()
@@ -49,7 +63,8 @@ vi.mock('./materials', async () => {
   const { Texture: ThreeTexture } =
     await vi.importActual<typeof ThreeTypes>('three')
   return {
-    createReflectionTexture: () => {
+    createReflectionTexture: (options?: unknown) => {
+      state.reflectionOptions.push(options)
       const texture = new ThreeTexture()
       texture.dispose = state.sourceDispose
       return texture
@@ -157,9 +172,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   state.visibility = 'visible'
   state.environmentFailure = null
+  state.floatRenderTargets = true
+  state.glError = 0
   state.documentListeners.clear()
   state.rafCallbacks.clear()
   state.nextRaf = 1
+  state.reflectionOptions.length = 0
 })
 
 afterEach(() => {
@@ -204,6 +222,40 @@ it('rolls back the renderer and procedural source when studio setup fails', () =
   expect(state.loadModel).not.toHaveBeenCalled()
 })
 
+it('retains the artwork before loading when float render targets are unavailable', () => {
+  const { canvas } = browserFixture()
+  state.floatRenderTargets = false
+
+  expect(() =>
+    createLoadingMerc(canvas, {
+      modelUrl: 'merc.glb',
+      reducedMotion: false,
+      onFirstFrame: vi.fn(),
+      onError: vi.fn(),
+    }),
+  ).toThrow('retaining the artwork fallback')
+  expect(state.loadModel).not.toHaveBeenCalled()
+  expect(state.rendererDispose).toHaveBeenCalledOnce()
+  expect(state.forceContextLoss).toHaveBeenCalledOnce()
+})
+
+it('lights the loading studio floor while retaining the shared Merc finish', () => {
+  const { canvas } = browserFixture()
+  state.loadModel.mockReturnValueOnce(new Promise(() => undefined))
+
+  const controller = createLoadingMerc(canvas, {
+    modelUrl: 'merc.glb',
+    reducedMotion: false,
+    onFirstFrame: vi.fn(),
+    onError: vi.fn(),
+  })
+
+  expect(state.reflectionOptions).toEqual([
+    { lowerHemisphereFill: [0.14, 0.18, 0.22] },
+  ])
+  controller.dispose()
+})
+
 it('renders once, stops scheduling while hidden, and resumes without hidden elapsed time', async () => {
   const pending = deferred<ReturnType<typeof fakeAsset>>()
   state.loadModel.mockReturnValueOnce(pending.promise)
@@ -244,6 +296,36 @@ it('renders once, stops scheduling while hidden, and resumes without hidden elap
   expect(state.observerDisconnect).toHaveBeenCalledTimes(1)
   expect(state.rafCallbacks.size).toBe(0)
   expect(state.documentListeners.size).toBe(0)
+})
+
+it('retains the artwork when the first rendered frame has a WebGL failure', async () => {
+  const pending = deferred<ReturnType<typeof fakeAsset>>()
+  state.loadModel.mockReturnValueOnce(pending.promise)
+  const { canvas } = browserFixture()
+  const onFirstFrame = vi.fn()
+  const onError = vi.fn()
+  createLoadingMerc(canvas, {
+    modelUrl: 'merc.glb',
+    reducedMotion: false,
+    onFirstFrame,
+    onError,
+  })
+  const loaded = fakeAsset()
+  pending.resolve(loaded)
+  await flushLoad()
+  state.glError = 0x0506
+
+  runFrame(0)
+
+  expect(onFirstFrame).not.toHaveBeenCalled()
+  expect(onError).toHaveBeenCalledWith(
+    expect.objectContaining({
+      message: expect.stringContaining('WebGL 0x506'),
+    }),
+  )
+  expect(loaded.dispose).toHaveBeenCalledOnce()
+  expect(state.rendererDispose).toHaveBeenCalledOnce()
+  expect(state.rafCallbacks.size).toBe(0)
 })
 
 it('retires a model that resolves after disposal without rendering or signalling', async () => {

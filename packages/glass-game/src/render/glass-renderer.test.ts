@@ -24,7 +24,10 @@ const state = vi.hoisted(() => {
     reflectionProbeRender: Symbol('reflection-probe-render'),
     shadowNeedsUpdateAtProbeRender: [] as boolean[],
     shadowNeedsUpdateAtRender: [] as boolean[],
+    shadowNeedsUpdateAtWarmup: [] as boolean[],
     mercVisibleAtRender: [] as boolean[],
+    warmupScene: undefined as Scene | undefined,
+    warmupRenders: 0,
     getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
     loseContext: false,
@@ -92,12 +95,31 @@ vi.mock('three', async (original) => ({
     getContext = () => ({
       drawingBufferWidth: 800,
       drawingBufferHeight: 600,
+      getExtension: (name: string) =>
+        name === 'EXT_color_buffer_float' || name === 'OES_texture_float_linear'
+          ? {}
+          : null,
       getError: state.getError,
     })
     render = (...args: unknown[]) => {
       if (args[0] === state.reflectionProbeRender) {
         state.shadowNeedsUpdateAtProbeRender.push(this.shadowMap.needsUpdate)
         // Three consumes a requested shadow update inside the probe render.
+        this.shadowMap.needsUpdate = false
+        return
+      }
+      const scene = args[0] as Scene
+      const shardGroups: ThreeTypes.Object3D[] = []
+      scene.traverse((object) => {
+        if (object.name.startsWith('vessel-shards-')) shardGroups.push(object)
+      })
+      if (
+        shardGroups.length > 0 &&
+        shardGroups.every((group) => group.visible)
+      ) {
+        state.warmupRenders++
+        state.warmupScene = scene
+        state.shadowNeedsUpdateAtWarmup.push(this.shadowMap.needsUpdate)
         this.shadowMap.needsUpdate = false
         return
       }
@@ -271,7 +293,10 @@ afterEach(() => {
   state.setPixelRatio.mockClear()
   state.shadowNeedsUpdateAtProbeRender.length = 0
   state.shadowNeedsUpdateAtRender.length = 0
+  state.shadowNeedsUpdateAtWarmup.length = 0
   state.mercVisibleAtRender.length = 0
+  state.warmupScene = undefined
+  state.warmupRenders = 0
   state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
   state.forceContextLoss.mockClear()
@@ -311,7 +336,7 @@ it('hides Merc only for the primary first-person render', async () => {
   renderer.dispose()
 })
 
-it('keeps Merc animation on elapsed presentation time across a dropped mobile frame', async () => {
+it('keeps Merc animation and turning on elapsed presentation time across a dropped mobile frame', async () => {
   const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
   await renderer.ready
   state.mercUpdate.mockClear()
@@ -322,7 +347,7 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
   expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.12, false, {
     narrationLevel: undefined,
     facingYaw: undefined,
-    turnDeltaSeconds: 0.05,
+    turnDeltaSeconds: 0.12,
   })
 
   state.mercUpdate.mockClear()
@@ -330,7 +355,7 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
   expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0.25, false, {
     narrationLevel: undefined,
     facingYaw: undefined,
-    turnDeltaSeconds: 0.05,
+    turnDeltaSeconds: 0.25,
   })
 
   state.mercUpdate.mockClear()
@@ -340,6 +365,17 @@ it('keeps Merc animation on elapsed presentation time across a dropped mobile fr
     narrationLevel: 0,
     facingYaw: undefined,
     turnDeltaSeconds: 0,
+  })
+
+  state.mercUpdate.mockClear()
+  renderer.render(snapshot, 0.12, {
+    paused: false,
+    challengeEncounterId: null,
+  })
+  expect(state.mercUpdate).toHaveBeenCalledWith(snapshot, 0, false, {
+    narrationLevel: undefined,
+    facingYaw: undefined,
+    turnDeltaSeconds: 0.12,
   })
   renderer.dispose()
 })
@@ -370,6 +406,27 @@ it('passes voice energy to the mascot and suppresses it during a host pause', as
     false,
     expect.objectContaining({ narrationLevel: 0 }),
   )
+  renderer.dispose()
+})
+
+it('advances the challenge camera on presentation time while voice setup pauses gameplay', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  snapshot.paused = true
+  const presentation = {
+    paused: false,
+    challengeEncounterId: GLASSWORKS.breakables[0]!.id,
+  }
+
+  renderer.render(snapshot, 0.12, presentation)
+  const firstProgress = renderer.getChallengeCameraMetrics().progress
+  renderer.render(snapshot, 0.12, presentation)
+  const secondProgress = renderer.getChallengeCameraMetrics().progress
+  expect(secondProgress).toBeGreaterThan(firstProgress)
+
+  renderer.render(snapshot, 0.12, { ...presentation, paused: true })
+  expect(renderer.getChallengeCameraMetrics().progress).toBe(secondProgress)
   renderer.dispose()
 })
 
@@ -497,7 +554,7 @@ it('keeps an unprofiled browser High startup on full assets', async () => {
   renderer.dispose()
 })
 
-it('applies balanced pixels and reuses at most one shadow frame', async () => {
+it('applies Balanced first, then spends bounded pixels after sustained slow frames', async () => {
   const container = browserFixture()
   vi.stubGlobal('window', {
     devicePixelRatio: 3,
@@ -524,9 +581,39 @@ it('applies balanced pixels and reuses at most one shadow frame', async () => {
   renderer.render(snapshot, 0.016)
   expect(state.shadowNeedsUpdateAtRender).toEqual([true, false, true])
   expect(renderer.getMetrics()).toMatchObject({
+    colorBufferFloat: true,
+    floatLinear: true,
     shadowUpdates: 2,
     shadowReuses: 1,
+    adaptiveQualityActive: false,
+    performanceSampleCount: 3,
+    performanceSlowSampleCount: 0,
+    actualPixelRatio: 1.25,
+    actualShadowFrameInterval: 2,
   })
+
+  for (let frame = 0; frame < 21; frame++) renderer.render(snapshot, 1 / 15)
+  expect(renderer.getRenderQuality()).toMatchObject({
+    pixelRatio: 1,
+    shadowFrameInterval: 4,
+  })
+  expect(renderer.getMetrics()).toMatchObject({
+    adaptiveQualityActive: true,
+    performanceSampleCount: 24,
+    performanceSlowSampleCount: 21,
+    actualPixelRatio: 1,
+    actualShadowFrameInterval: 4,
+  })
+  expect(state.setPixelRatio).toHaveBeenLastCalledWith(1)
+  state.shadowNeedsUpdateAtRender.length = 0
+  for (let frame = 0; frame < 5; frame++) renderer.render(snapshot, 1 / 60)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([
+    false,
+    false,
+    false,
+    true,
+    false,
+  ])
 
   renderer.dispose()
 })
@@ -661,6 +748,74 @@ it('invalidates a balanced shadow when Merc starts moving or glass starts shatte
   renderer.dispose()
 })
 
+it('collects new performance evidence only after the challenge camera restores', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  const challengeEncounterId = GLASSWORKS.breakables[0]!.id
+
+  for (let frame = 0; frame < 23; frame++) renderer.render(snapshot, 0.07)
+  renderer.render(snapshot, 0.07, {
+    challengeEncounterId,
+    paused: false,
+  })
+  expect(renderer.getMetrics().performanceSampleCount).toBe(0)
+
+  for (let frame = 0; frame < 40; frame++)
+    renderer.render(snapshot, 0.05, {
+      challengeEncounterId,
+      paused: false,
+    })
+  expect(renderer.getChallengeCameraMetrics().mode).not.toBe('exploration')
+
+  renderer.render(snapshot, 0.05, {
+    challengeEncounterId: null,
+    paused: false,
+  })
+  expect(renderer.getMetrics().performanceSampleCount).toBe(0)
+
+  for (let frame = 0; frame < 80; frame++) {
+    if (renderer.getChallengeCameraMetrics().mode === 'exploration') break
+    renderer.render(snapshot, 0.05, {
+      challengeEncounterId: null,
+      paused: false,
+    })
+  }
+  expect(renderer.getChallengeCameraMetrics().mode).toBe('exploration')
+  expect(renderer.getMetrics().performanceSampleCount).toBe(0)
+
+  renderer.render(snapshot, 0.05, {
+    challengeEncounterId: null,
+    paused: false,
+  })
+  expect(renderer.getMetrics().performanceSampleCount).toBe(1)
+  renderer.dispose()
+})
+
+it('advances the voice challenge camera while gameplay simulation is paused', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  snapshot.paused = true
+  const challengeEncounterId = GLASSWORKS.breakables[0]!.id
+
+  for (let frame = 0; frame < 30; frame++) {
+    if (renderer.getChallengeCameraMetrics().mode === 'holding') break
+    renderer.render(snapshot, 0.12, {
+      challengeEncounterId,
+      paused: false,
+    })
+  }
+
+  expect(renderer.getChallengeCameraMetrics().mode).toBe('holding')
+  renderer.dispose()
+})
+
 it('switches an explicit quality choice without changing the accepted high profile', async () => {
   const container = browserFixture()
   vi.stubGlobal('window', { devicePixelRatio: 3 })
@@ -668,6 +823,10 @@ it('switches an explicit quality choice without changing the accepted high profi
     renderQuality: 'balanced',
   })
   await renderer.ready
+
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  for (let frame = 0; frame < 24; frame++) renderer.render(snapshot, 1 / 15)
+  expect(renderer.getMetrics().adaptiveQualityActive).toBe(true)
 
   renderer.setRenderQuality('high')
   expect(renderer.getRenderQuality()).toEqual({
@@ -677,9 +836,14 @@ it('switches an explicit quality choice without changing the accepted high profi
     pixelRatio: 1.5,
     shadowFrameInterval: 1,
   })
+  expect(renderer.getMetrics()).toMatchObject({
+    adaptiveQualityActive: false,
+    performanceSampleCount: 0,
+    performanceSlowSampleCount: 0,
+  })
   expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.5)
 
-  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  state.shadowNeedsUpdateAtRender.length = 0
   renderer.render(snapshot, 0.016)
   renderer.render(snapshot, 0.016)
   expect(state.shadowNeedsUpdateAtRender).toEqual([true, true])
@@ -766,6 +930,30 @@ it('keeps the loading gate until hidden shatter programs are compiled', async ()
   state.programIsReady.mockReturnValue(true)
   await renderer.ready
   expect(ready).toBe(true)
+  renderer.dispose()
+})
+
+it('draws resident shatter variants behind loading and restores their visibility', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+
+  await renderer.ready
+
+  expect(state.warmupRenders).toBe(1)
+  expect(state.shadowNeedsUpdateAtWarmup).toEqual([true])
+  const shards: ThreeTypes.Object3D[] = []
+  state.warmupScene?.traverse((object) => {
+    if (object.name.startsWith('vessel-shards-')) shards.push(object)
+  })
+  expect(shards.length).toBeGreaterThan(0)
+  expect(shards.every((group) => group.visible === false)).toBe(true)
+
+  renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true])
   renderer.dispose()
 })
 

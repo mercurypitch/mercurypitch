@@ -11,6 +11,10 @@ const LATERAL_HEADING_MAXIMUM = (Math.PI * 2) / 3
 
 export interface CameraHeadingIntentSample {
   allowForwardDiagonalFollow?: boolean
+  /** Stable world heading captured from the keyboard contact, before physics. */
+  keyboardHeading?: number | null
+  /** Post-collision travel heading, used only after it stays corridor-stable. */
+  effectiveHeading?: number | null
   elapsedSeconds: number
   facingYaw: number
   movementActive: boolean
@@ -31,6 +35,14 @@ export function createCameraHeadingIntent() {
   let lateralSeconds = 0
   let stickSeconds = 0
   let stickHeading: number | null = null
+  let keyboardHeading: number | null = null
+  let effectiveHeadingCandidate: number | null = null
+  let effectiveHeadingSeconds = 0
+
+  const resetEffectiveHeading = (): void => {
+    effectiveHeadingCandidate = null
+    effectiveHeadingSeconds = 0
+  }
 
   return {
     rebase(kind: MovementReferenceKind) {
@@ -38,12 +50,16 @@ export function createCameraHeadingIntent() {
       lateralSeconds = 0
       stickSeconds = 0
       stickHeading = null
+      keyboardHeading = null
+      resetEffectiveHeading()
     },
     reset() {
       mode = 'immediate'
       lateralSeconds = 0
       stickSeconds = 0
       stickHeading = null
+      keyboardHeading = null
+      resetEffectiveHeading()
     },
     target(sample: CameraHeadingIntentSample): number | null {
       if (mode === 'stick') {
@@ -59,12 +75,53 @@ export function createCameraHeadingIntent() {
         return stickHeading
       }
       if (!sample.movementActive || !sample.moving) return null
-      if (mode === 'immediate' || mode === 'confirmed') return sample.facingYaw
+      if (mode === 'immediate') return sample.facingYaw
+
+      if (mode === 'confirmed') {
+        const currentHeading = keyboardHeading ?? sample.facingYaw
+        const effectiveHeading =
+          sample.effectiveHeading !== null &&
+          sample.effectiveHeading !== undefined &&
+          Number.isFinite(sample.effectiveHeading)
+            ? sample.effectiveHeading
+            : null
+        if (
+          sample.allowForwardDiagonalFollow !== true ||
+          effectiveHeading === null ||
+          Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
+            ENCLOSED_DIAGONAL_HEADING_MINIMUM
+        ) {
+          resetEffectiveHeading()
+          return currentHeading
+        }
+        if (
+          effectiveHeadingCandidate === null ||
+          Math.abs(
+            shortestAngleDelta(effectiveHeadingCandidate, effectiveHeading),
+          ) >= ENCLOSED_DIAGONAL_HEADING_MINIMUM
+        ) {
+          effectiveHeadingCandidate = effectiveHeading
+          effectiveHeadingSeconds = sample.elapsedSeconds
+        } else {
+          effectiveHeadingSeconds += sample.elapsedSeconds
+        }
+        if (effectiveHeadingSeconds >= LATERAL_FOLLOW_DWELL_SECONDS) {
+          keyboardHeading = effectiveHeading
+          resetEffectiveHeading()
+        }
+        return keyboardHeading ?? currentHeading
+      }
 
       if (mode === 'settled') return null
 
+      const requestedHeading =
+        sample.keyboardHeading !== null &&
+        sample.keyboardHeading !== undefined &&
+        Number.isFinite(sample.keyboardHeading)
+          ? sample.keyboardHeading
+          : sample.facingYaw
       const offset = Math.abs(
-        shortestAngleDelta(sample.movementReferenceYaw, sample.facingYaw),
+        shortestAngleDelta(sample.movementReferenceYaw, requestedHeading),
       )
       const minimumHeading =
         sample.allowForwardDiagonalFollow === true
@@ -76,7 +133,8 @@ export function createCameraHeadingIntent() {
 
       if (lateralSeconds < LATERAL_FOLLOW_DWELL_SECONDS) return null
       mode = 'confirmed'
-      return sample.facingYaw
+      keyboardHeading = requestedHeading
+      return keyboardHeading
     },
   }
 }

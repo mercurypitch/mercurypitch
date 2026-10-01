@@ -6,7 +6,7 @@ import type { GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../c
 import { createGlassGame } from './game'
 import { MOVEMENT } from './movement'
 import { exitRequirementsMet, getRequiredRouteBreakableIds } from './progress'
-import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from './shatter-presentation'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 const goblet = GLASSWORKS.breakables[0].id
@@ -197,7 +197,7 @@ describe('Glassworks simulation', () => {
     expect(sing(game)).toEqual([])
 
     const shatterPosition = game.snapshot().player.position
-    game.step(idle, SHATTER_LIFECYCLE_SECONDS - MOVEMENT.fixedStep / 2)
+    steps(game, Math.round(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) - 1)
     expect(game.snapshot().phase).toBe('shattering')
     expect(game.snapshot().breakables[0]?.phase).toBe('shattering')
     expect(game.snapshot().player.position).toEqual(shatterPosition)
@@ -212,6 +212,40 @@ describe('Glassworks simulation', () => {
       brokenAt: null,
     })
     expect(restored.snapshot().enabledPlatformIds).toContain('arch-bridge')
+  })
+
+  it('keeps a hitched shatter, camera hold and movement lock on one bounded clock', () => {
+    const game = createGlassGame(GLASSWORKS)
+    walkToGoblet(game)
+    expect(game.beginEncounter(goblet, 57)).toBe(true)
+    sing(game)
+    const started = game.snapshot()
+    const position = started.player.position
+    const move = { ...idle, moveX: 1 }
+
+    game.step(move, 1)
+
+    expect(game.snapshot().elapsedSeconds - started.elapsedSeconds).toBeCloseTo(
+      MAXIMUM_SHATTER_FRAME_SECONDS,
+    )
+    expect(game.snapshot().phase).toBe('shattering')
+    expect(game.snapshot().player.position).toEqual(position)
+
+    const remainingFrames = Math.round(
+      (SHATTER_LIFECYCLE_SECONDS - MAXIMUM_SHATTER_FRAME_SECONDS) /
+        MAXIMUM_SHATTER_FRAME_SECONDS,
+    )
+    for (let frame = 1; frame < remainingFrames; frame++) {
+      game.step(move, MAXIMUM_SHATTER_FRAME_SECONDS)
+      expect(game.snapshot().phase).toBe('shattering')
+      expect(game.snapshot().player.position).toEqual(position)
+    }
+    game.step(move, MAXIMUM_SHATTER_FRAME_SECONDS)
+    expect(game.snapshot().phase).toBe('idle')
+    expect(game.snapshot().player.position).toEqual(position)
+
+    game.step(move, MOVEMENT.fixedStep)
+    expect(game.snapshot().player.position.x).toBeGreaterThan(position.x)
   })
 
   it('breaks and saves an ordered pair only after both steps complete', () => {

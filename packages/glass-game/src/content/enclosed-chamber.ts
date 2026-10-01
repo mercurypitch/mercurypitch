@@ -37,7 +37,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       pages: [
         {
           title: 'Meet Merc. Make yourself at home.',
-          body: 'Move with WASD or the arrows. On a phone, use the thumbstick. Drag to look around; the camera follows as you move. Space or Jump takes a little hop.',
+          body: 'Move with WASD. Use the arrow keys or drag to look around. On a phone, use the thumbstick. Space or Jump takes a little hop.',
           aside:
             'Keep moving to ease into a run. Follow the gold path to the goblet; the window coupe is an optional discovery.',
         },

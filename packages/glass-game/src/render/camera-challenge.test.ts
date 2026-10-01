@@ -4,10 +4,10 @@ import { Box3, Vector3 } from 'three'
 import { expect, it } from 'vitest'
 import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
 import { GLASSWORKS } from '../content/glassworks'
-import type { GameSnapshot } from '../contracts'
+import type { GameSnapshot, GlassGame } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from '../core/shatter-presentation'
 import { createAdventureCamera } from './camera'
 
 function challengeSubjects(snapshot: GameSnapshot) {
@@ -41,6 +41,15 @@ function enterChallenge(
     mode: 'holding',
     settled: true,
   })
+}
+
+function advanceShatter(game: GlassGame, seconds: number): void {
+  let remaining = seconds
+  while (remaining > 1e-9) {
+    const delta = Math.min(remaining, MAXIMUM_SHATTER_FRAME_SECONDS)
+    game.step({ moveX: 0, moveZ: 0, jumpDown: false }, delta)
+    remaining -= delta
+  }
 }
 
 it('ignores orbit and zoom during the shot, then restores the exact prior view', () => {
@@ -127,10 +136,7 @@ it('holds through the real 2.3-second shatter lifecycle and freezes a paused tra
     )
   expect(game.snapshot().phase).toBe('shattering')
   adventureCamera.setChallengeEncounter(null)
-  game.step(
-    { moveX: 0, moveZ: 0, jumpDown: false },
-    SHATTER_LIFECYCLE_SECONDS - MOVEMENT.fixedStep / 2,
-  )
+  advanceShatter(game, SHATTER_LIFECYCLE_SECONDS - MOVEMENT.fixedStep / 2)
   adventureCamera.update(game.snapshot(), 0.05)
   expect(adventureCamera.getChallengeMetrics().mode).toBe('holding')
 
@@ -181,7 +187,7 @@ it('keeps first-person look input owned by the shatter framing', () => {
     adventureCamera.camera.quaternion.angleTo(heldQuaternion),
   ).toBeLessThan(1e-7)
 
-  game.step({ moveX: 0, moveZ: 0, jumpDown: false }, SHATTER_LIFECYCLE_SECONDS)
+  advanceShatter(game, SHATTER_LIFECYCLE_SECONDS)
   expect(game.snapshot().phase).toBe('idle')
   adventureCamera.update(game.snapshot(), 0.05)
   const releasedYaw = adventureCamera.yaw()

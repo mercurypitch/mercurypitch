@@ -902,8 +902,9 @@ describe('camera-relative traversal', () => {
     rig.orbit(0.1, 0)
     expect(rig.movementYaw()).toBeCloseTo(rig.yaw())
   })
-  it('bounds a long resume frame and a teleported target without snapping heading', () => {
+  it('bounds a long active frame at the movement catch-up budget without snapping heading', () => {
     const rig = createAdventureCamera(GLASSWORKS)
+    const boundedRig = createAdventureCamera(GLASSWORKS)
     const state = createGlassGame(GLASSWORKS).snapshot()
     const teleported = withMotion(
       {
@@ -918,16 +919,15 @@ describe('camera-relative traversal', () => {
     const start = rig.yaw()
 
     rig.setMovementActive(true)
+    boundedRig.setMovementActive(true)
     rig.update({ ...teleported, paused: true }, 30)
+    boundedRig.update({ ...teleported, paused: true }, 30)
     expect(rig.yaw()).toBe(start)
     rig.update(teleported, 30)
-    // A delayed frame is clamped to 50ms, then ramps from rest under the
-    // default 4.36rad/s² acceleration budget rather than jumping to the
-    // 80-degree/s cap.
-    const acceleration = (80 * Math.PI) / 180 / 0.32
-    expect(Math.abs(rig.yaw() - start)).toBeCloseTo(
-      (acceleration * 0.05 ** 2) / 2,
-    )
+    boundedRig.update(teleported, 0.25)
+    expect(rig.yaw()).toBeCloseTo(boundedRig.yaw())
+    expect(Math.abs(rig.yaw() - start)).toBeGreaterThan(0.1)
+    expect(Math.abs(rig.yaw() - start)).toBeLessThan(0.2)
     const target = new Vector3(12, 0.42, -9)
     expect(rig.camera.position.distanceTo(target)).toBeCloseTo(4)
   })

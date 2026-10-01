@@ -126,5 +126,13 @@ describe('shadow update cadence', () => {
       false,
       true,
     ])
+    cadence.setInterval(4)
+    expect([
+      cadence.next(),
+      cadence.next(),
+      cadence.next(),
+      cadence.next(),
+      cadence.next(),
+    ]).toEqual([true, false, false, false, true])
   })
 })
