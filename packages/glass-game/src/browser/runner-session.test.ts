@@ -1,5 +1,6 @@
 // Runner session tests — microphone ownership, raw capture evidence and explicit interrupted recovery.
 import { describe, expect, it, vi } from 'vitest'
+import { SINGING_CURRENT } from '../runner/first-course'
 import type { RunnerSessionFrame } from '../runner/session-contracts'
 import type { RunnerCourseFixturePace } from './__fixtures__/runner-course'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
@@ -26,6 +27,92 @@ const resumePacingVariants: readonly {
 ]
 
 describe('runner session readiness and clock', () => {
+  it('keeps delayed continuous capture alive across faster presentation frames', async () => {
+    const h = runnerSessionHarness(SINGING_CURRENT)
+    h.session.setPresentationReady(true)
+    await h.session.start()
+    const startedAt = h.clock()
+    const captureHopSeconds = 1024 / 48_000
+    const deliveryLatencySeconds = 0.15
+    const frameSeconds = 1 / 60
+    let captureAt = startedAt + captureHopSeconds
+    let frameAt = startedAt + frameSeconds
+    const finishAt = startedAt + 0.9
+
+    while (
+      h.session.state().phase === 'readiness' &&
+      Math.min(captureAt + deliveryLatencySeconds, frameAt) <= finishAt
+    ) {
+      if (frameAt <= captureAt + deliveryLatencySeconds) {
+        h.tick(frameAt)
+        frameAt += frameSeconds
+      } else {
+        h.emit(captureAt, 60, deliveryLatencySeconds)
+        captureAt += captureHopSeconds
+      }
+    }
+
+    expect(h.session.state()).toMatchObject({
+      phase: 'count-in',
+      readiness: null,
+    })
+    h.session.dispose()
+  })
+
+  it('reports readiness input and semantic pitch feedback with independent freshness', async () => {
+    const h = runnerSessionHarness()
+    await h.session.start()
+    expect(h.session.state()).toMatchObject({
+      readiness: {
+        receivingInput: false,
+        pitchFeedback: { state: 'neutral' },
+      },
+    })
+
+    h.emit(h.clock() + 0.01, 61)
+    expect(h.session.state()).toMatchObject({
+      readiness: {
+        receivingInput: true,
+        fillProgress: 0,
+        pitchFeedback: {
+          state: 'wrong',
+          observedMidi: 61,
+          comparedTargetMidi: 60,
+          errorCents: 100,
+          correction: 'lower',
+        },
+      },
+    })
+
+    h.tick(h.clock() + h.course.voice.judge.maximumEvidenceGapSeconds + 0.001)
+    expect(h.session.state()).toMatchObject({
+      readiness: {
+        receivingInput: true,
+        fillProgress: 0,
+        pitchFeedback: { state: 'neutral' },
+      },
+    })
+    h.tick(
+      h.clock() + h.course.voice.judge.maximumDeliveryLatencySeconds + 0.001,
+    )
+    expect(h.session.state()).toMatchObject({
+      readiness: {
+        receivingInput: false,
+        pitchFeedback: { state: 'neutral' },
+      },
+    })
+
+    h.emit(h.clock() + 0.01, null)
+    expect(h.session.state()).toMatchObject({
+      readiness: {
+        receivingInput: true,
+        fillProgress: 0,
+        pitchFeedback: { state: 'neutral' },
+      },
+    })
+    h.session.dispose()
+  })
+
   it.each([48_000, 96_000])(
     'judges %i Hz capture callbacks immediately while presenting only on animation frames',
     async (sampleRate) => {
@@ -64,7 +151,7 @@ describe('runner session readiness and clock', () => {
     },
   )
 
-  it('keeps readiness and count-in presentation on the existing session animation frame', async () => {
+  it('presents checkpoint staging immediately and keeps later readiness on its animation frame', async () => {
     const h = runnerSessionHarness()
     const phases: string[] = []
     h.session.subscribe(({ state, presentation }) => {
@@ -73,14 +160,14 @@ describe('runner session readiness and clock', () => {
     h.session.setPresentationReady(true)
     await h.session.start()
     h.tick(h.clock() + 0.01)
-    expect(phases).toEqual(['readiness'])
+    expect(phases).toEqual(['preparing', 'readiness'])
     h.ready()
     expect(h.session.state().phase).toBe('count-in')
-    expect(phases).toEqual(['readiness'])
+    expect(phases).toEqual(['preparing', 'readiness'])
     const anchor = h.audio[0]!.anchor!
     h.tick(anchor.audioStartSeconds - 0.1)
     h.tick(anchor.audioStartSeconds)
-    expect(phases).toEqual(['readiness', 'count-in', 'running'])
+    expect(phases).toEqual(['preparing', 'readiness', 'count-in', 'running'])
     h.session.pause()
     expect(h.frames.size).toBe(0)
     h.session.dispose()
@@ -122,7 +209,11 @@ describe('runner session readiness and clock', () => {
     h.emit(10.1, 60, -0.01)
     h.emit(10.2, 60, 0.2)
     for (let i = 0; i < 20; i++) h.tick(10.5 + i / 100)
-    expect(h.session.state().readiness?.fillProgress).toBe(0)
+    expect(h.session.state().readiness).toMatchObject({
+      fillProgress: 0,
+      receivingInput: false,
+      pitchFeedback: { state: 'neutral' },
+    })
     h.ready()
     expect(h.session.state().phase).toBe('count-in')
     h.session.dispose()

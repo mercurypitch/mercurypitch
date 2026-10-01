@@ -120,6 +120,14 @@ describe('enclosure framing', () => {
     expect(
       framing.cameraPositionSafe(origin, new Vector3(0, 0.42, 2), []),
     ).toBe(true)
+    expect(
+      framing.cameraViewSafe(origin, new Vector3(0, 0.42, 2), [
+        'progress-gate',
+      ]),
+    ).toBe(false)
+    expect(framing.cameraViewSafe(origin, new Vector3(0, 0.42, 2), [])).toBe(
+      true,
+    )
     // Outdoor walls have a finite height; only enclosed doorway gates suppress reveals above them.
     expect(
       framing.solidDistance(new Vector3(0, 3, 0), direction, 4, [
@@ -261,6 +269,47 @@ describe('enclosure framing', () => {
     ).toBe(0)
   })
 
+  it('rejects camera-centre travel that cuts an expanded solid corner', () => {
+    const room: Bounds3 = {
+      minX: -5,
+      maxX: 5,
+      minY: 0,
+      maxY: 3.4,
+      minZ: -5,
+      maxZ: 5,
+    }
+    const level: LevelDefinition = {
+      ...levelWithVolumes([room]),
+      solids: [
+        {
+          id: 'corner-solid',
+          kind: 'prop',
+          shape: 'box',
+          minX: 1,
+          maxX: 2,
+          minZ: 1,
+          maxZ: 2,
+          top: 2,
+          thickness: 2,
+          presentation: { role: 'gate', material: 'brass' },
+        },
+      ],
+    }
+    const framing = createEnclosureFraming(level)!
+    const from = new Vector3(0.759, 1, 1)
+    const destination = new Vector3(1, 1, 0.759)
+
+    // The boom sightline misses the raw corner and both endpoints are valid,
+    // but the moving camera sphere crosses the solid's clearance shell.
+    expect(
+      framing.cameraPositionSafe(from, destination, ['corner-solid']),
+    ).toBe(true)
+    expect(framing.cameraTravelSafe(from, destination, [])).toBe(true)
+    expect(framing.cameraTravelSafe(from, destination, ['corner-solid'])).toBe(
+      false,
+    )
+  })
+
   it('clips a smoothed L-corner target before it crosses the missing quadrant', () => {
     const horizontal: Bounds3 = {
       minX: -4,
@@ -290,6 +339,16 @@ describe('enclosure framing', () => {
     ).toBe(true)
     expect(constrained.distanceTo(smoothedFromNextRoom)).toBeGreaterThan(2)
     expect(constrained.z).toBeLessThan(1)
+
+    const seamTarget = new Vector3(1.2, 0.42, 0.5)
+    const retainedCamera = new Vector3(0.5, 0.8, 2)
+    expect(framing.cameraPositionSafe(seamTarget, retainedCamera, [])).toBe(
+      false,
+    )
+    expect(framing.cameraViewSafe(seamTarget, retainedCamera, [])).toBe(true)
+    expect(
+      framing.cameraViewSafe(seamTarget, new Vector3(1.2, 0.8, 2), []),
+    ).toBe(false)
   })
 
   it('adds stable look-ahead but falls back at a respawn outside authored volumes', () => {

@@ -1,6 +1,7 @@
 // Camera heading intent — distinguish steady steering from a deliberate sustained lateral turn.
 
 import type { MovementReferenceKind } from '../contracts'
+import { MOVEMENT } from '../core/movement'
 import { shortestAngleDelta } from './angular-response'
 
 const LATERAL_FOLLOW_DWELL_SECONDS = 0.4
@@ -17,6 +18,8 @@ export interface CameraHeadingIntentSample {
   keyboardHeading?: number | null
   /** Post-collision travel heading, used only after it stays corridor-stable. */
   effectiveHeading?: number | null
+  /** Actual horizontal player displacement since the previous camera sample. */
+  displacementDistance: number
   elapsedSeconds: number
   facingYaw: number
   movementActive: boolean
@@ -40,11 +43,39 @@ export function createCameraHeadingIntent() {
   let stickFollowHeading: number | null = null
   let keyboardHeading: number | null = null
   let effectiveHeadingCandidate: number | null = null
+  let effectiveHeadingDistance = 0
   let effectiveHeadingSeconds = 0
 
   const resetEffectiveHeading = (): void => {
     effectiveHeadingCandidate = null
+    effectiveHeadingDistance = 0
     effectiveHeadingSeconds = 0
+  }
+
+  const confirmEffectiveHeading = (
+    sample: CameraHeadingIntentSample,
+    effectiveHeading: number,
+    confirmFromDisplacement: boolean,
+  ): boolean => {
+    if (
+      effectiveHeadingCandidate === null ||
+      Math.abs(
+        shortestAngleDelta(effectiveHeadingCandidate, effectiveHeading),
+      ) >= ENCLOSED_DIAGONAL_HEADING_MINIMUM
+    ) {
+      effectiveHeadingCandidate = effectiveHeading
+      effectiveHeadingDistance = sample.displacementDistance
+      effectiveHeadingSeconds = sample.elapsedSeconds
+    } else {
+      effectiveHeadingDistance += sample.displacementDistance
+      effectiveHeadingSeconds += sample.elapsedSeconds
+    }
+    // Physics has already removed the blocked axis and turned Merc toward the
+    // corridor. One collision footprint of real travel confirms that redirect
+    // without making slow devices carry a time-based stale diagonal farther.
+    return confirmFromDisplacement
+      ? effectiveHeadingDistance >= MOVEMENT.radius
+      : effectiveHeadingSeconds >= LATERAL_FOLLOW_DWELL_SECONDS
   }
 
   return {
@@ -91,17 +122,12 @@ export function createCameraHeadingIntent() {
             return stickFollowHeading
           }
           if (
-            effectiveHeadingCandidate === null ||
-            Math.abs(
-              shortestAngleDelta(effectiveHeadingCandidate, effectiveHeading),
-            ) >= ENCLOSED_DIAGONAL_HEADING_MINIMUM
+            confirmEffectiveHeading(
+              sample,
+              effectiveHeading,
+              stickFollowHeading !== null,
+            )
           ) {
-            effectiveHeadingCandidate = effectiveHeading
-            effectiveHeadingSeconds = sample.elapsedSeconds
-          } else {
-            effectiveHeadingSeconds += sample.elapsedSeconds
-          }
-          if (effectiveHeadingSeconds >= LATERAL_FOLLOW_DWELL_SECONDS) {
             stickFollowHeading = effectiveHeading
             resetEffectiveHeading()
           }
@@ -151,17 +177,12 @@ export function createCameraHeadingIntent() {
           return currentHeading
         }
         if (
-          effectiveHeadingCandidate === null ||
-          Math.abs(
-            shortestAngleDelta(effectiveHeadingCandidate, effectiveHeading),
-          ) >= ENCLOSED_DIAGONAL_HEADING_MINIMUM
+          confirmEffectiveHeading(
+            sample,
+            effectiveHeading,
+            blockedHeading === null,
+          )
         ) {
-          effectiveHeadingCandidate = effectiveHeading
-          effectiveHeadingSeconds = sample.elapsedSeconds
-        } else {
-          effectiveHeadingSeconds += sample.elapsedSeconds
-        }
-        if (effectiveHeadingSeconds >= LATERAL_FOLLOW_DWELL_SECONDS) {
           keyboardHeading = effectiveHeading
           resetEffectiveHeading()
         }

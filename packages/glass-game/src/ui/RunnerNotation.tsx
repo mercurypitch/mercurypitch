@@ -13,7 +13,10 @@ interface RunnerNotationProps {
   notes: readonly RunnerNotationNote[]
   activeNoteIndex: number | null
   instruction: string
-  target: RunnerTargetSnapshot | null
+  target: Pick<
+    RunnerTargetSnapshot,
+    'currentTargetMidi' | 'pitchFeedback'
+  > | null
 }
 
 export function RunnerNotation(props: RunnerNotationProps) {

@@ -311,6 +311,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** await the exact asset request/count as its own asynchronous observation. Keep no-prefetch and final exact-count assertions; a visible playback button is not a network-event barrier.
 **See:** `packages/glass-game/src/ui/EncoreDialog.tsx`, `apps/beside-cue/e2e/glass-adventure-encore-examples.e2e.ts`.
 
+### Separate capture continuity from receipt freshness
+
+**Symptom:** a correct starting note repeatedly lost its hold progress on delayed microphone delivery.
+**Cause:** readiness accepted frames up to 180 ms late but cleared the hold when the latest capture was 120 ms old, including continuously delivered valid frames.
+**Rule:** accumulate only consecutive capture timestamps; evaluate arriving-input health separately from capture gaps. Interleave delayed captures with animation ticks in regressions instead of testing each stream alone.
+**See:** `packages/glass-game/src/browser/runner-session.test.ts` and `runner-session-course.test.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -1723,5 +1730,5 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 
 **Symptom:** a canvas artwork click missed even though the requested camera yaw was correct; mouse and touch dialog assertions failed.
 **Cause:** pointer input updates the yaw target synchronously, while enclosure framing and the camera used for raycasting continue moving during subsequent rendered frames.
-**Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Do not retry clicks or increase dialog timeouts to hide a miss.
-**See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`.
+**Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Align measured position and camera yaw to the same frame: `step → refresh → render` can publish a current position with the preceding rendered yaw. Do not retry clicks or widen distance/time limits to hide mismatched observations.
+**See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`, `apps/beside-cue/e2e/helpers/glass-adventure-camera-route.ts`.

@@ -385,6 +385,8 @@ export type RunnerBeginEpochResult =
     }
 
 export interface SongRunnerGame {
+  /** Rewind presentation to a safe checkpoint before capture readiness begins. */
+  prepareCheckpoint(checkpointId?: string): RunnerBeginEpochResult
   beginEpoch(epoch: RunnerEpoch, checkpointId?: string): RunnerBeginEpochResult
   pause(): void
   input(input: RunnerInput): boolean

@@ -6,6 +6,7 @@ import { createSongRunnerGame } from '../runner/game'
 import { runnerTargetMidiAt } from '../runner/pitch'
 import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerPauseReason, RunnerSessionFrame, RunnerSessionState, SongRunnerHost, SongRunnerSession, } from '../runner/session-contracts'
 import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
+import { createRunnerReadinessTracker } from './runner-readiness'
 
 const READINESS_SECONDS = 0.35
 const MUSIC_PREFERENCE = 'runner-music-muted:v1'
@@ -35,6 +36,11 @@ export function createBrowserRunnerSession(
   const game = createSongRunnerGame(course, {
     comfortableMidi,
     progress: host.loadRunnerProgress(course.id),
+  })
+  const readiness = createRunnerReadinessTracker({
+    targetMidi: comfortableMidi,
+    judge: course.voice.judge,
+    requiredAcceptedSeconds: READINESS_SECONDS,
   })
   let muted = false
   try {
@@ -71,11 +77,6 @@ export function createBrowserRunnerSession(
   let intent: 'fresh' | 'resume' = 'fresh'
   let checkpointId = course.checkpoints[0]!.id
   let inputSequence = 0
-  let readinessSince = 0,
-    readinessAccepted = 0,
-    lastSequence = -1,
-    lastCapture = -Infinity,
-    previousCompatible = false
   let lastVoiceReceipt = -Infinity
   let publishing = false
   const frames: RunnerSessionFrame[] = []
@@ -241,16 +242,11 @@ export function createBrowserRunnerSession(
       state.phase !== 'readiness' ||
       !audio ||
       !presentationReady ||
-      !foreground ||
-      readinessAccepted < READINESS_SECONDS
+      !foreground
     )
       return
     const now = audio.currentAudioSeconds()
-    if (
-      now === null ||
-      now - lastCapture > course.voice.judge.maximumDeliveryLatencySeconds
-    )
-      return
+    if (now === null || !readiness.canStart(now)) return
     const checkpoint = course.checkpoints.find(
       (item) => item.id === checkpointId,
     )!
@@ -279,14 +275,10 @@ export function createBrowserRunnerSession(
       return
     }
     if (state.phase === 'readiness') {
-      if (
-        now - lastCapture > course.voice.judge.maximumEvidenceGapSeconds &&
-        readinessAccepted > 0
-      ) {
-        readinessAccepted = 0
-        previousCompatible = false
-        publish({ readiness: { targetMidi: comfortableMidi, fillProgress: 0 } })
-      }
+      const currentReadiness = state.readiness!
+      const nextReadiness = readiness.advance(now)
+      if (nextReadiness !== currentReadiness)
+        publish({ readiness: nextReadiness })
       maybeCountIn()
       publish({}, [], true)
     } else if (state.phase === 'count-in' && schedule) {
@@ -352,42 +344,9 @@ export function createBrowserRunnerSession(
       return
     }
     if (state.phase === 'readiness') {
-      const latency = now - value.captureSeconds
-      if (
-        !Number.isInteger(value.sequence) ||
-        value.sequence <= lastSequence ||
-        !Number.isFinite(value.captureSeconds) ||
-        value.captureSeconds <= lastCapture ||
-        value.captureSeconds < readinessSince ||
-        latency < 0 ||
-        latency > course.voice.judge.maximumDeliveryLatencySeconds
-      )
-        return
-      const compatible =
-        value.midi !== null &&
-        Number.isFinite(value.midi) &&
-        Number.isFinite(value.confidence) &&
-        value.confidence >= course.voice.judge.minimumConfidence &&
-        value.confidence <= 1 &&
-        Math.abs(value.midi - comfortableMidi) * 100 <=
-          course.voice.judge.centsTolerance
-      const gap = value.captureSeconds - lastCapture
-      if (
-        compatible &&
-        previousCompatible &&
-        gap <= course.voice.judge.maximumEvidenceGapSeconds
-      )
-        readinessAccepted += gap
-      else readinessAccepted = 0
-      previousCompatible = compatible
-      lastSequence = value.sequence
-      lastCapture = value.captureSeconds
-      publish({
-        readiness: {
-          targetMidi: comfortableMidi,
-          fillProgress: Math.min(1, readinessAccepted / READINESS_SECONDS),
-        },
-      })
+      const nextReadiness = readiness.observe(value, now)
+      if (nextReadiness === null) return
+      publish({ readiness: nextReadiness })
       maybeCountIn()
       ensureFrame()
       return
@@ -473,14 +432,31 @@ export function createBrowserRunnerSession(
       wanted === 'fresh'
         ? course.checkpoints[0]!.id
         : (snapshot.recoveryCheckpointId ?? snapshot.lastCheckpointId)
-    publish({
-      phase: 'preparing',
-      microphone: 'opening',
-      error: null,
-      pauseReason: null,
-      readiness: null,
-      countIn: null,
-    })
+    const preparedCheckpoint = game.prepareCheckpoint(
+      wanted === 'fresh' ? undefined : checkpointId,
+    )
+    if (!preparedCheckpoint.ok) {
+      prepared?.release()
+      fail({
+        code: 'start-failed',
+        message: 'The run could not restart. Start a new run.',
+        canRetry: true,
+      })
+      return Promise.resolve()
+    }
+    checkpointId = preparedCheckpoint.checkpointId
+    publish(
+      {
+        phase: 'preparing',
+        microphone: 'opening',
+        error: null,
+        pauseReason: null,
+        readiness: null,
+        countIn: null,
+      },
+      [],
+      true,
+    )
     if (!current(token)) {
       prepared?.release()
       return Promise.resolve()
@@ -543,11 +519,6 @@ export function createBrowserRunnerSession(
       }
       preparation?.release()
       preparation = null
-      readinessSince = now
-      readinessAccepted = 0
-      lastSequence = -1
-      lastCapture = -Infinity
-      previousCompatible = false
       unsubscribeVoice = localVoice.subscribe(
         (value) => observation(value, token),
         () => pause('microphone-interrupted'),
@@ -556,7 +527,7 @@ export function createBrowserRunnerSession(
       publish({
         phase: 'readiness',
         microphone: 'ready',
-        readiness: { targetMidi: comfortableMidi, fillProgress: 0 },
+        readiness: readiness.reset(now),
       })
       ensureFrame()
     })()

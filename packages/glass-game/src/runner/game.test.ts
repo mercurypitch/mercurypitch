@@ -525,6 +525,39 @@ describe('song runner game', () => {
       stopCourseSeconds + course.movement.maxCatchUpSeconds + 0.01,
     )
     expect(trace.game.snapshot().status).toBe('recovering')
+    trace.game.drainEvents()
+    expect(trace.game.prepareCheckpoint('melody')).toEqual({
+      ok: true,
+      checkpointId: 'melody',
+      startCourseSeconds: course.checkpoints[2]!.courseSeconds,
+    })
+    const prepared = trace.game.snapshot()
+    expect(prepared).toMatchObject({
+      status: 'paused',
+      epoch: null,
+      courseSeconds: course.checkpoints[2]!.courseSeconds,
+      recoveryCheckpointId: null,
+      combo: 0,
+      player: {
+        targetLane: course.checkpoints[2]!.respawnLane,
+        feetY: course.checkpoints[2]!.respawnFeetY,
+        grounded: true,
+      },
+    })
+    expect(prepared.resolvedTargets.map((result) => result.targetId)).toEqual(
+      course.targets
+        .filter(
+          (target) =>
+            target.settleAfterCourseSeconds <=
+            course.checkpoints[2]!.courseSeconds + EPSILON,
+        )
+        .map((target) => target.id),
+    )
+    expect(prepared.collectedRewardIds).toContain('pearl-right-114')
+    expect(
+      prepared.bestTargetQualities.map((quality) => quality.targetId),
+    ).toContain('two-note-revisit')
+
     expect(trace.game.beginEpoch('checkpoint-two', 'melody')).toEqual({
       ok: true,
       checkpointId: 'melody',
@@ -545,6 +578,53 @@ describe('song runner game', () => {
     expect(
       recovered.bestTargetQualities.map((quality) => quality.targetId),
     ).toContain('two-note-revisit')
+  })
+
+  it('stages the initial checkpoint after a no-wall fall and permits repeated retries', () => {
+    const game = createSongRunnerGame(course, { comfortableMidi })
+    expect(game.beginEpoch(epoch)).toMatchObject({ ok: true })
+    for (const input of safeInputs().filter(
+      (candidate) =>
+        candidate.atCourseSeconds !== actionTime('first-lane-gate'),
+    ))
+      expect(game.input(input)).toBe(true)
+    advanceInFrames(game, epoch, course.lengthCourseSeconds)
+    expect(game.snapshot()).toMatchObject({
+      status: 'recovering',
+      recoveryCheckpointId: 'start',
+    })
+    expect(game.snapshot().courseSeconds).toBeGreaterThan(0)
+    game.drainEvents()
+
+    for (let retry = 0; retry < 2; retry++) {
+      expect(game.prepareCheckpoint('start')).toEqual({
+        ok: true,
+        checkpointId: 'start',
+        startCourseSeconds: 0,
+      })
+      expect(game.snapshot()).toMatchObject({
+        status: 'paused',
+        epoch: null,
+        courseSeconds: 0,
+        recoveryCheckpointId: null,
+        resolvedTargets: [],
+        player: {
+          targetLane: course.checkpoints[0]!.respawnLane,
+          feetY: course.checkpoints[0]!.respawnFeetY,
+          grounded: true,
+        },
+      })
+    }
+    expect(game.beginEpoch('retry-one', 'start')).toEqual({
+      ok: true,
+      checkpointId: 'start',
+      startCourseSeconds: 0,
+    })
+    expect(game.snapshot()).toMatchObject({
+      status: 'running',
+      epoch: 'retry-one',
+      courseSeconds: 0,
+    })
   })
 
   it.each([

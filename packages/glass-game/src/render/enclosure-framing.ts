@@ -187,6 +187,18 @@ export interface EnclosureFraming {
     position: Vector3,
     activeSolidIds: readonly string[],
   ): boolean
+  /** Checks the swept camera centre between two already-safe view poses. */
+  cameraTravelSafe(
+    from: Vector3,
+    position: Vector3,
+    activeSolidIds: readonly string[],
+  ): boolean
+  /** Checks a stationary camera centre and its unswept subject sightline. */
+  cameraViewSafe(
+    target: Vector3,
+    position: Vector3,
+    activeSolidIds: readonly string[],
+  ): boolean
 }
 
 export function createEnclosureFraming(
@@ -372,6 +384,88 @@ export function createEnclosureFraming(
           targetDirection,
           candidateDistance,
           activeSolidIds,
+        ) >=
+        candidateDistance - INTERVAL_EPSILON
+      )
+    },
+    cameraTravelSafe(from, position, activeSolidIds) {
+      targetDirection.copy(position).sub(from)
+      const candidateDistance = targetDirection.length()
+      if (candidateDistance <= INTERVAL_EPSILON) return true
+      targetDirection.multiplyScalar(1 / candidateDistance)
+      const volumeDistance = this.volumeDistance(
+        from,
+        targetDirection,
+        candidateDistance,
+      )
+      if (
+        (volumeDistance === null && cameraVolumes.length > 0) ||
+        (volumeDistance !== null &&
+          volumeDistance < candidateDistance - INTERVAL_EPSILON)
+      )
+        return false
+      for (const obstacle of solidObstacles) {
+        if (!activeSolidIds.includes(obstacle.id)) continue
+        const interval = rayBoxInterval(
+          from,
+          targetDirection,
+          obstacle.cameraBox,
+        )
+        if (
+          interval !== null &&
+          interval.maximum >= -INTERVAL_EPSILON &&
+          interval.minimum <= candidateDistance + INTERVAL_EPSILON
+        )
+          return false
+      }
+      return true
+    },
+    cameraViewSafe(target, position, activeSolidIds) {
+      if (
+        cameraVolumes.length > 0 &&
+        !cameraVolumes.some((volume) => containsPoint(volume, position))
+      )
+        return false
+      for (const obstacle of solidObstacles) {
+        if (
+          activeSolidIds.includes(obstacle.id) &&
+          containsPoint(obstacle.cameraBox, position)
+        )
+          return false
+      }
+
+      targetDirection.copy(position).sub(target)
+      const candidateDistance = targetDirection.length()
+      if (candidateDistance <= INTERVAL_EPSILON) return false
+      targetDirection.multiplyScalar(1 / candidateDistance)
+      if (rawVolumes.length > 0) {
+        const containingRawVolumes = new Set<number>()
+        for (let index = 0; index < rawVolumes.length; index++) {
+          if (containsPoint(rawVolumes[index], target))
+            containingRawVolumes.add(index)
+        }
+        if (containingRawVolumes.size === 0) return false
+        const visibleDistance = continuousDistanceThroughVolumes(
+          rawVolumes,
+          target,
+          targetDirection,
+          candidateDistance,
+          INTERVAL_EPSILON,
+          containingRawVolumes,
+        )
+        if (
+          visibleDistance === null ||
+          visibleDistance < candidateDistance - INTERVAL_EPSILON
+        )
+          return false
+      }
+      return (
+        this.solidDistance(
+          target,
+          targetDirection,
+          candidateDistance,
+          activeSolidIds,
+          'subject-visibility',
         ) >=
         candidateDistance - INTERVAL_EPSILON
       )

@@ -49,13 +49,47 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
 }
 
-function neutralPitchFeedback(): RunnerPitchFeedback {
+export function neutralRunnerPitchFeedback(): RunnerPitchFeedback {
   return {
     state: 'neutral',
     observedMidi: null,
     comparedTargetMidi: null,
     errorCents: null,
     correction: null,
+  }
+}
+
+export function classifyRunnerPitchFeedback(
+  observedMidi: number | null,
+  comparedTargetMidi: number,
+  confidence: number,
+  minimumConfidence: number,
+  centsTolerance: number,
+): RunnerPitchFeedback {
+  if (
+    observedMidi === null ||
+    !Number.isFinite(observedMidi) ||
+    !Number.isFinite(comparedTargetMidi) ||
+    !Number.isFinite(confidence) ||
+    confidence < minimumConfidence ||
+    confidence > 1
+  )
+    return neutralRunnerPitchFeedback()
+  const errorCents = (observedMidi - comparedTargetMidi) * 100
+  if (Math.abs(errorCents) <= centsTolerance + EPSILON)
+    return {
+      state: 'accepted',
+      observedMidi,
+      comparedTargetMidi,
+      errorCents,
+      correction: null,
+    }
+  return {
+    state: 'wrong',
+    observedMidi,
+    comparedTargetMidi,
+    errorCents,
+    correction: errorCents < 0 ? 'higher' : 'lower',
   }
 }
 
@@ -97,7 +131,7 @@ function projectPitchFeedback(
       maximumEvidenceGapSeconds + EPSILON ||
     activeNote?.index !== candidate.noteIndex
   )
-    return neutralPitchFeedback()
+    return neutralRunnerPitchFeedback()
 
   if (candidate.state === 'accepted') {
     return {
@@ -241,17 +275,28 @@ export function createRunnerJudge(
         observation.captureCourseSeconds,
         rootMidi,
       )
-      const errorCents = (observation.midi - targetMidi) * 100
-      const absoluteErrorCents = Math.abs(errorCents)
-      const accepted =
-        absoluteErrorCents <= course.voice.judge.centsTolerance + EPSILON
+      const feedback = classifyRunnerPitchFeedback(
+        observation.midi,
+        targetMidi,
+        observation.confidence,
+        course.voice.judge.minimumConfidence,
+        course.voice.judge.centsTolerance,
+      )
+      if (feedback.state === 'neutral') {
+        accumulated.previousReliable = null
+        accumulated.pitchFeedbackCandidate = null
+        accumulated.pendingPitchFeedbackCandidates.length = 0
+        return
+      }
+      const absoluteErrorCents = Math.abs(feedback.errorCents)
+      const accepted = feedback.state === 'accepted'
       const feedbackCandidate: PitchFeedbackCandidate = {
         noteIndex: note.index,
         captureCourseSeconds: observation.captureCourseSeconds,
-        observedMidi: observation.midi,
-        comparedTargetMidi: targetMidi,
-        errorCents,
-        state: accepted ? 'accepted' : 'wrong',
+        observedMidi: feedback.observedMidi,
+        comparedTargetMidi: feedback.comparedTargetMidi,
+        errorCents: feedback.errorCents,
+        state: feedback.state,
       }
       accumulated.pendingPitchFeedbackCandidates.push(feedbackCandidate)
       if (

@@ -4,7 +4,7 @@ import type { CompiledRunnerCourse, RunnerEvent, RunnerInput, } from '../runner/
 import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, } from '../runner/first-course'
 import { runnerTargetMidiAt } from '../runner/pitch'
 import { runnerBeatToSeconds } from '../runner/tempo'
-import { runnerSessionHarness } from './__fixtures__/runner-session'
+import { deferred, runnerSessionHarness } from './__fixtures__/runner-session'
 
 type Harness = ReturnType<typeof runnerSessionHarness>
 interface ScheduledAction {
@@ -184,7 +184,17 @@ async function resumeAt(
   )!
   await h.session.resume()
   expect(h.session.state().phase).toBe('readiness')
-  expect(h.session.state().game.epoch).toBe(previousEpoch)
+  expect(h.session.state().game).toMatchObject({
+    epoch: null,
+    status: 'paused',
+    courseSeconds: checkpoint.courseSeconds,
+    recoveryCheckpointId: null,
+    player: {
+      targetLane: checkpoint.respawnLane,
+      feetY: checkpoint.respawnFeetY,
+      grounded: true,
+    },
+  })
   h.ready()
   expect(h.session.state().phase).toBe('count-in')
   const anchor = h.audio.at(-1)!.anchor!
@@ -310,6 +320,91 @@ describe.each(pacingVariants)('$name authored runner session', ({ course }) => {
         completed: true,
       }),
     )
+    h.session.dispose()
+  })
+
+  it('rewinds an early fall before readiness and supports repeated gesture retries', async () => {
+    const h = runnerSessionHarness(course)
+    await h.running()
+    trace(h, { omitAction: 'first-lane-gate' })
+    expect(h.session.state()).toMatchObject({
+      phase: 'recovering',
+      game: {
+        status: 'recovering',
+        recoveryCheckpointId: 'start',
+      },
+    })
+    expect(h.session.state().game.courseSeconds).toBeGreaterThan(0)
+
+    const acquisition = deferred<undefined>()
+    h.setPermission(acquisition.promise)
+    let preparingPresentation = false
+    const unsubscribe = h.session.subscribe((frame) => {
+      if (frame.state.phase === 'preparing' && frame.presentation === true)
+        preparingPresentation = true
+    })
+    const resume = h.session.resume()
+    expect(h.session.state()).toMatchObject({
+      phase: 'preparing',
+      game: {
+        status: 'paused',
+        epoch: null,
+        courseSeconds: 0,
+        recoveryCheckpointId: null,
+        player: { grounded: true },
+      },
+    })
+    expect(preparingPresentation).toBe(true)
+    expect(h.frames.size).toBe(0)
+    acquisition.resolve(undefined)
+    await resume
+    unsubscribe()
+    expect(h.session.state()).toMatchObject({
+      phase: 'readiness',
+      game: {
+        status: 'paused',
+        epoch: null,
+        courseSeconds: 0,
+        recoveryCheckpointId: null,
+        resolvedTargets: [],
+        player: { grounded: true },
+      },
+    })
+    expect(h.host.prepareVoiceGesture).toHaveBeenCalledTimes(2)
+    expect(h.audio[1]!.unlock).toHaveBeenCalledOnce()
+
+    h.session.pause()
+    await h.session.resume()
+    expect(h.session.state()).toMatchObject({
+      phase: 'readiness',
+      game: { status: 'paused', courseSeconds: 0 },
+    })
+    expect(h.host.prepareVoiceGesture).toHaveBeenCalledTimes(3)
+    expect(h.audio[2]!.unlock).toHaveBeenCalledOnce()
+    h.ready()
+    h.tick(h.audio[2]!.anchor!.audioStartSeconds)
+    expect(h.session.state()).toMatchObject({
+      phase: 'running',
+      game: { status: 'running', courseSeconds: 0 },
+    })
+
+    trace(h, { omitAction: 'first-lane-gate' })
+    expect(h.session.state()).toMatchObject({
+      phase: 'recovering',
+      game: { recoveryCheckpointId: 'start' },
+    })
+    await h.session.restart()
+    expect(h.session.state()).toMatchObject({
+      phase: 'readiness',
+      game: {
+        status: 'paused',
+        epoch: null,
+        courseSeconds: 0,
+        recoveryCheckpointId: null,
+      },
+    })
+    expect(h.host.prepareVoiceGesture).toHaveBeenCalledTimes(4)
+    expect(h.audio[3]!.unlock).toHaveBeenCalledOnce()
     h.session.dispose()
   })
 

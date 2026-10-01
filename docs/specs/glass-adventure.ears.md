@@ -49,6 +49,7 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 ## Tablet navigation and physical platform support
 
 - GA-30: When Merc travels through an enclosed narrow passage in third-person, the camera shall smoothly frame the path ahead from behind his facing and shorten its follow distance as needed to avoid walls and ceilings. Returning to open space shall restore distance gradually. This framing shall not continuously rotate held movement input.
+- GA-30a: When collision redirects established corridor travel, camera follow shall confirm the redirected heading from actual movement before following it. A stationary or teleported player shall not satisfy that travel confirmation; deliberate camera override and the held movement reference shall remain intact.
 - GA-31: When the player selects first-person or third-person in the pause/settings controls, the game shall persist the preference separately from campaign progress. V shall invoke the same selection only when gameplay owns keyboard focus. The initial preference shall be third-person.
 - GA-32: While first-person is selected, the exploration view shall use a stable eye-height pivot without animated-head bob or self-occlusion. Starting a voice encounter shall frame its target without forcing the third-person side shot. Returning to third-person shall restore usable exploration framing.
 - GA-32a: While first-person is selected, lateral movement shall strafe without turning the view. Deliberate look input shall update camera-relative movement; automatic third-person heading changes shall still not steer a held movement direction.
@@ -71,6 +72,11 @@ Owner decision 2026-09-28: Glassworks belongs to Beside Cue for now. mercurypitc
 - GA-41: Museum automatic singing shall default on and expose a persisted pause-menu preference and a tutorial explanation. It shall not request microphone access during loading, a tutorial, pause or artwork inspection. A cancelled or failed encounter shall not automatically restart until Merc physically leaves and re-enters its circle. Audio preparation shall originate in a user gesture, own no microphone, and release its audio claim when capture takes ownership or the visit stops.
 - GA-42: Development and branch-test builds shall permit entering every gallery and island trial without fabricating progress. Release builds shall require completed preceding galleries, beginning with the prologue, and retain island-trial star requirements. Previewing a future island or using a direct URL shall not bypass release progression. A local earned-progression option may remove preview access but shall not grant release access.
 - GA-43: Completion shall present earned difficulty stars, singing accuracy, discoveries and a tappable collected portrait in a compact result card. The primary action shall identify the next level; an available secondary action shall offer the next unearned difficulty. Exact-difficulty replay shall remain in the overflow menu and optional Encore shall remain available without crowding the main actions. Its melody ribbon shall retain readable height in the real game layout at phone, tablet and desktop widths.
+
+## Moving-course readiness and recovery
+
+- GA-44: While a moving course waits for its starting note, the game shall show the comfortable target, the fresh observed note and a direction cue, and distinguish missing detector input from captured silence. Valid capture duration shall accumulate independently of permitted delivery delay; stale, duplicate, future or missing evidence shall not earn duration.
+- GA-45: When the player resumes a moving course after falling, including before breaking any glass, the game shall immediately present the safe checkpoint while acquiring audio. Movement and scoring shall stay paused until fresh starting-note evidence and count-in succeed. Retry shall retain earned discoveries and shall not reuse an audio epoch.
 
 ## Evidence
 

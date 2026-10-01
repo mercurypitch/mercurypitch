@@ -28,6 +28,105 @@ interface MercTurnProbeWindow extends Window {
   }
 }
 
+interface JourneyCornerFollowReceipt {
+  contactError: number
+  firstCorrectionDistance: number | null
+  oneMetreError: number | null
+}
+
+interface JourneyCornerProbeWindow extends Window {
+  journeyCornerFollowProbe?: {
+    receipt: JourneyCornerFollowReceipt
+    stop: () => void
+  }
+}
+
+async function startJourneyCornerFollowProbe(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const state = window as JourneyCornerProbeWindow
+    state.journeyCornerFollowProbe?.stop()
+    let frameId = 0
+    let publishedPosition: { x: number; z: number } | null = null
+    let previous: { x: number; z: number } | null = null
+    let contact: { x: number; z: number } | null = null
+    const receipt: JourneyCornerFollowReceipt = {
+      contactError: 0,
+      firstCorrectionDistance: null,
+      oneMetreError: null,
+    }
+    const probe = {
+      receipt,
+      stop: () => cancelAnimationFrame(frameId),
+    }
+    state.journeyCornerFollowProbe = probe
+    const frame = () => {
+      const adventure = document.querySelector(
+        '[data-testid="glass-adventure"]',
+      )
+      const x = Number(adventure?.getAttribute('data-player-x') ?? NaN)
+      const z = Number(adventure?.getAttribute('data-player-z') ?? NaN)
+      const cameraYaw = Number(
+        adventure?.getAttribute('data-camera-yaw') ?? NaN,
+      )
+      // The game RAF runs step → refresh → render. refresh publishes the new
+      // position with the preceding render's yaw. Pair that yaw with the prior
+      // published position, then measure both heading and travel on that frame.
+      const aligned = publishedPosition
+      if (previous !== null && aligned !== null && Number.isFinite(cameraYaw)) {
+        const dx = aligned.x - previous.x
+        const dz = aligned.z - previous.z
+        if (
+          aligned.z >= 25.45 &&
+          Math.abs(dx) > 0.001 &&
+          Math.abs(dz) < 0.001
+        ) {
+          const effectiveHeading = Math.atan2(-dx, -dz)
+          const error = Math.abs(
+            Math.atan2(
+              Math.sin(effectiveHeading - cameraYaw),
+              Math.cos(effectiveHeading - cameraYaw),
+            ),
+          )
+          if (contact === null) {
+            contact = aligned
+            receipt.contactError = error
+          }
+          const distance = Math.hypot(
+            aligned.x - contact.x,
+            aligned.z - contact.z,
+          )
+          if (
+            receipt.firstCorrectionDistance === null &&
+            // Match the unit probe's onset, not a later 0.02-radian turn.
+            error < receipt.contactError - 0.002
+          )
+            receipt.firstCorrectionDistance = distance
+          if (receipt.oneMetreError === null && distance >= 1)
+            receipt.oneMetreError = error
+        }
+      }
+      previous = aligned
+      publishedPosition =
+        Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null
+      frameId = requestAnimationFrame(frame)
+    }
+    frameId = requestAnimationFrame(frame)
+  })
+}
+
+async function finishJourneyCornerFollowProbe(
+  page: Page,
+): Promise<JourneyCornerFollowReceipt> {
+  return page.evaluate(() => {
+    const state = window as JourneyCornerProbeWindow
+    const probe = state.journeyCornerFollowProbe
+    if (probe === undefined) throw new Error('Missing Journey corner probe.')
+    probe.stop()
+    delete state.journeyCornerFollowProbe
+    return probe.receipt
+  })
+}
+
 export async function measureDeliveredMercTurn(
   page: Page,
   deliverTouchTurn: () => Promise<unknown>,
@@ -238,8 +337,10 @@ export async function traverseJourneyPassageAndCorner(
   // north wall redirects Merc east, so the follow camera must settle on the
   // stable effective route heading without feeding that yaw back into WASD.
   await pointCameraAt(page, north)
+  await startJourneyCornerFollowProbe(page)
   await page.keyboard.down('KeyW')
   await page.keyboard.down('KeyA')
+  let followReceipt: JourneyCornerFollowReceipt | null = null
   try {
     await page.waitForTimeout(50)
     const chordHeading = await numericAdventureAttribute(page, 'travel-yaw')
@@ -271,9 +372,21 @@ export async function traverseJourneyPassageAndCorner(
       ),
     ).toBeGreaterThan(0.3)
   } finally {
+    followReceipt = await finishJourneyCornerFollowProbe(page)
     await page.keyboard.up('KeyA')
     await page.keyboard.up('KeyW')
   }
+
+  expect(followReceipt.contactError).toBeGreaterThan(0.5)
+  expect(followReceipt.firstCorrectionDistance).not.toBeNull()
+  // 0.16 m footprint + one maximum diagonal wall-slide frame:
+  // 2.7 m/s / sqrt(2) × (5 physics steps / 120 Hz) < 0.08 m.
+  expect(
+    followReceipt.firstCorrectionDistance!,
+    JSON.stringify(followReceipt),
+  ).toBeLessThanOrEqual(0.24)
+  expect(followReceipt.oneMetreError).not.toBeNull()
+  expect(followReceipt.oneMetreError!).toBeLessThan(0.6)
 
   const afterCorner = await adventurePlayerPosition(page)
   expect(afterCorner.x - start.x).toBeGreaterThan(7)
