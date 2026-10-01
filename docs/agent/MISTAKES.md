@@ -743,6 +743,13 @@ import handler, issue #813.
 
 ## Performance
 
+### Finish document checks before starting a software-rendered scene
+
+**Symptom:** the Glassworks delivery smoke spent over 100 seconds clicking an enabled entrance and then exhausted its total budget on a document request.
+**Cause:** SwiftShader rendering starved Playwright's physical-click actionability loop; the same test also retried on unchanged main. Asset responses were successful.
+**Rule:** finish document-only HTTP assertions before starting WebGL. For a delivery smoke, assert the entrance is visible, enabled and focused, then use real keyboard activation. Keep separate pointer tests for pointer behavior; do not widen game or test timing to hide renderer starvation.
+**See:** `src/e2e/glass-game.spec.ts`.
+
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
 
 **Symptom:** severe frame drops on long files.

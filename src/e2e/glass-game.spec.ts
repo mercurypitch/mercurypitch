@@ -98,6 +98,21 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
       failedAssets.push(`${response.status()} ${response.url()}`)
   })
 
+  const legacyDocument = await (await page.request.get('/glass')).text()
+  const campaignDocument = await (await page.request.get('/glass-game')).text()
+  expect(legacyDocument).toContain(
+    '<link rel="canonical" href="https://mercurypitch.com/glass"',
+  )
+  expect(campaignDocument).toContain(
+    '<link rel="canonical" href="https://mercurypitch.com/glass-game"',
+  )
+  expect(campaignDocument).not.toBe(legacyDocument)
+  expect(campaignDocument).toContain(
+    (await glassworksListed(page.request))
+      ? '<meta name="robots" content="index, follow" />'
+      : '<meta name="robots" content="noindex, follow" />',
+  )
+
   await page.goto('/glass-game')
   await expect(page).toHaveURL(/\/glass-game$/u)
   await expect(page.getByTestId('glass-campaign')).toBeVisible()
@@ -107,9 +122,11 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
   await expect(
     page.getByRole('button', { name: 'Locked: Resonance Conservatory' }),
   ).toBeDisabled()
-  await expect(
-    page.getByRole('button', { name: 'Enter First Light Gallery' }),
-  ).toBeEnabled()
+  const entrance = page.getByRole('button', {
+    name: 'Enter First Light Gallery',
+  })
+  await expect(entrance).toBeVisible()
+  await expect(entrance).toBeEnabled()
 
   // Decode the card while the museum models are still loading. Once the
   // multi-million-triangle map is animating, SwiftShader can starve an
@@ -137,26 +154,13 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
     page.getByTestId('glass-campaign').locator('[data-map-state]'),
   ).toHaveAttribute('data-map-state', 'ready', { timeout: 60_000 })
 
-  await page.getByRole('button', { name: 'Enter First Light Gallery' }).click()
+  await entrance.focus()
+  await expect(entrance).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(
     page.locator('[data-testid="glass-adventure"][data-ready="true"]'),
   ).toBeVisible({ timeout: 150_000 })
   await expect(page.locator('canvas')).toBeVisible()
-
-  const legacyDocument = await (await page.request.get('/glass')).text()
-  const campaignDocument = await (await page.request.get('/glass-game')).text()
-  expect(legacyDocument).toContain(
-    '<link rel="canonical" href="https://mercurypitch.com/glass"',
-  )
-  expect(campaignDocument).toContain(
-    '<link rel="canonical" href="https://mercurypitch.com/glass-game"',
-  )
-  expect(campaignDocument).not.toBe(legacyDocument)
-  expect(campaignDocument).toContain(
-    (await glassworksListed(page.request))
-      ? '<meta name="robots" content="index, follow" />'
-      : '<meta name="robots" content="noindex, follow" />',
-  )
   expect(failedAssets).toEqual([])
   expect(pageErrors).toEqual([])
 })

@@ -58,6 +58,7 @@ interface ResourceCounts {
 
 interface StageReport {
   readonly glError: number
+  readonly courseBeat: number
   readonly metrics: {
     readonly drawCalls: number
     readonly triangles: number
@@ -95,7 +96,7 @@ let failure;
 
 try {
   const Three = await import('/@id/three');
-  const [{ createSongRunnerRenderer }, { SINGING_CURRENT }, { createSongRunnerGame }, { runnerBeatToSeconds }, { glassGameAssetUrl }] = await Promise.all([
+  const [{ createSongRunnerRenderer }, { SINGING_CURRENT }, { createSongRunnerGame }, { runnerBeatToSeconds, runnerSecondsToBeat }, { glassGameAssetUrl }] = await Promise.all([
     import(${JSON.stringify(rendererUrl)}),
     import(${JSON.stringify(courseUrl)}),
     import(${JSON.stringify(gameUrl)}),
@@ -166,6 +167,7 @@ try {
   });
   const stage = () => ({
     glError: gl.getError(),
+    courseBeat: game.snapshot().courseBeat,
     metrics: renderer.metrics(),
     resources: resourceProbe.snapshot(),
     scene: sceneSummary(),
@@ -178,7 +180,10 @@ try {
   };
   let requestedCourseSeconds = 0;
   const advanceToBeat = (beat) => {
-    const destination = runnerBeatToSeconds(SINGING_CURRENT.tempoSegments, beat);
+    const boundary = runnerBeatToSeconds(SINGING_CURRENT.tempoSegments, beat);
+    // The simulation completes whole fixed steps. A musical boundary may lie
+    // between them, so render the first completed step across that boundary.
+    const destination = boundary + SINGING_CURRENT.movement.fixedStepSeconds;
     while (requestedCourseSeconds < destination - 1e-9) {
       requestedCourseSeconds = Math.min(
         destination,
@@ -188,6 +193,10 @@ try {
       if (game.snapshot().status !== 'running')
         throw new Error('The deterministic renderer smoke entered ' + game.snapshot().status + '.');
     }
+    const actualBeat = game.snapshot().courseBeat;
+    const latestBeat = runnerSecondsToBeat(SINGING_CURRENT.tempoSegments, destination);
+    if (actualBeat < beat - 1e-8 || actualBeat > latestBeat + 1e-8)
+      throw new Error('The renderer smoke missed its completed-step beat range: ' + JSON.stringify({ beat, actualBeat, latestBeat }));
   };
 
   renderCurrent(0);
@@ -196,8 +205,6 @@ try {
   renderCurrent(SINGING_CURRENT.movement.maxCatchUpSeconds);
   const beat16 = stage();
   advanceToBeat(32);
-  requestedCourseSeconds += SINGING_CURRENT.movement.fixedStepSeconds;
-  game.advanceTo(epoch, requestedCourseSeconds);
   renderCurrent(SINGING_CURRENT.movement.maxCatchUpSeconds);
   const beat32 = stage();
 
