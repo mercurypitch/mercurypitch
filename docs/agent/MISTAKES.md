@@ -1641,3 +1641,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** an outer visibility check skipped both cheap state ingestion and expensive visual work. The asynchronous asset installer still consulted the stale state.
 **Rule:** always ingest authoritative state and time; defer only presentation writes while hidden. Test late downloads, completion, retry and reveal. Reflection captures need their own temporary visibility with guaranteed restoration, and culling must never remove an otherwise visible walkable surface just to meet a count limit.
 **See:** `packages/glass-game/src/render/vessel-visibility.test.ts`, `packages/glass-game/src/render/glass-renderer.ts`.
+
+### Draw hidden effect variants during loading, not their first interaction
+
+**Symptom:** a continuous singing course enters frame-gap recovery at the first visible cracks, although shader precompile completed during loading.
+**Cause:** Three compiles hidden materials but defers geometry uploads and program first-use reflection until a visible draw; without parallel shader compilation, readiness does not force every first-use cost.
+**Rule:** warm resident effect renderables through the real framebuffer path behind the loader, restore visibility/culling in `finally`, then paint and verify the genuine initial scene before enabling play. Do not advance gameplay, weaken timing limits or instantiate an entire streamed course for warmup.
+**See:** `packages/glass-game/src/render/render-warmup.ts`, `packages/glass-game/src/render/runner-renderer.ts`.

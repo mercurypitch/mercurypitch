@@ -13,6 +13,7 @@ import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
 import type { GlassAssetQualityProfile } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
+import { withResidentRenderablesVisible } from './render-warmup'
 import { createRunnerTargets } from './runner-targets'
 import { createRunnerWorld } from './runner-world'
 import { runnerCameraPose } from './runner-world-layout'
@@ -236,7 +237,15 @@ export function createSongRunnerRenderer(
       installBackdropFog(scene, sky)
       await precompileRendererPrograms(renderer, scene, camera, abort.signal)
       if (disposed) return
+      renderer.shadowMap.needsUpdate = true
+      withResidentRenderablesVisible(scene, () =>
+        renderer.render(scene, camera),
+      )
+      if (disposed) return
+      shadowCadence.invalidate()
       loaded = true
+      if (!render(options.initialSnapshot, 0))
+        throw new Error('Runner initial frame could not be rendered.')
     } catch (error) {
       if (disposed) return
       dispose()
