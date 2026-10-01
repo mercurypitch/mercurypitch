@@ -1,5 +1,5 @@
 // Runner glass targets — the existing reviewed frost fracture follows authoritative voice results.
-import type { Object3D } from 'three'
+import type { Matrix4, Object3D } from 'three'
 import { CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import type { BreakableSnapshot } from '../contracts'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerSnapshot, } from '../runner/contracts'
@@ -8,7 +8,7 @@ import { getBreakableRenderRecipe } from './catalog'
 import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
 import type { VesselDefinition } from './vessels'
-import { createVessel } from './vessels'
+import { createAuthoredVessel } from './vessels'
 
 const VARIANT = 'frost-gold-arch-breakwall-a'
 
@@ -190,20 +190,29 @@ export function createRunnerTargets(
   const items = new Map<
     string,
     {
-      vessel: ReturnType<typeof createVessel>
+      vessel: ReturnType<typeof createAuthoredVessel>
       card: ReturnType<typeof createScoreCard>
     }
   >()
   let disposed = false
 
   function install(target: CompiledRunnerTarget) {
-    const vessel = createVessel(targetDefinition(target), reducedMotion, {
-      castShardShadows: false,
-    })
+    let assetTransform: Matrix4 | undefined
+    const vessel = createAuthoredVessel(
+      targetDefinition(target),
+      reducedMotion,
+      (library) => {
+        const lease = pool.acquire(recipe, library)
+        assetTransform = lease.transform.clone()
+        return lease
+      },
+      { castShardShadows: false },
+    )
     let card: ReturnType<typeof createScoreCard> | undefined
     try {
-      const lease = pool.acquire(recipe, vessel.materialLibrary)
-      vessel.setGeometryLease(lease)
+      if (assetTransform === undefined)
+        throw new Error(`Runner target "${target.id}" has no asset transform.`)
+      const transform = assetTransform
       source.traverse((node) => {
         if (
           recipe.persistentPrefix !== undefined &&
@@ -211,7 +220,7 @@ export function createRunnerTargets(
           node.parent?.name.startsWith(recipe.persistentPrefix) !== true
         ) {
           const frame = createKitInstance(node, {}, {}, vessel.materialLibrary)
-          frame.applyMatrix4(lease.transform)
+          frame.applyMatrix4(transform)
           vessel.addPersistent(frame)
         }
       })

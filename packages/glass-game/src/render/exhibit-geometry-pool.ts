@@ -7,6 +7,7 @@
 // its bundle installation, and published vertex data must never be mutated.
 
 import type { BufferGeometry, Material, Matrix4, Object3D } from 'three'
+import { EdgesGeometry } from 'three'
 import type { BreakableRenderRecipe } from './catalog'
 import { prepareExhibitAsset } from './exhibit-asset'
 import type { FracturePiece } from './fracture'
@@ -16,6 +17,8 @@ import { createMaterialLibrary } from './material-library'
 export interface PreparedExhibitAssetLease {
   readonly geometry: BufferGeometry
   readonly pieces: readonly FracturePiece[]
+  /** Immutable fracture outlines shared by non-resonant presentations. */
+  readonly crackGeometries: readonly BufferGeometry[]
   readonly materials: Material[]
   readonly transform: Matrix4
   /** Transfer this lease to exactly one vessel, or release it if unused. */
@@ -26,9 +29,12 @@ type PreparedExhibit = ReturnType<typeof prepareExhibitAsset>
 
 interface SharedExhibit {
   readonly prepared: PreparedExhibit
+  readonly crackGeometries: readonly BufferGeometry[]
   readonly templates: MaterialLibrary
   owners: number
 }
+
+const CRACK_EDGE_THRESHOLD_DEGREES = 22
 
 function geometryContract(
   recipe: BreakableRenderRecipe,
@@ -58,21 +64,23 @@ function geometryContract(
     recipe.barrierEnvelope?.width,
     recipe.barrierEnvelope?.height,
     recipe.barrierEnvelope?.depth,
+    recipe.resonancePresentation === undefined,
     [...new Set(recipe.scaleImportedMaterialUnits ?? [])].sort(),
   ])
 }
 
-function geometries(prepared: PreparedExhibit): Set<BufferGeometry> {
+function geometries(entry: SharedExhibit): Set<BufferGeometry> {
   return new Set([
-    prepared.geometry,
-    ...prepared.pieces.map((piece) => piece.geometry),
+    entry.prepared.geometry,
+    ...entry.prepared.pieces.map((piece) => piece.geometry),
+    ...entry.crackGeometries,
   ])
 }
 
 function releaseOwner(entry: SharedExhibit): void {
   entry.owners--
   if (entry.owners === 0)
-    geometries(entry.prepared).forEach((geometry) => geometry.dispose())
+    geometries(entry).forEach((geometry) => geometry.dispose())
 }
 
 function prepareSharedExhibit(
@@ -82,16 +90,27 @@ function prepareSharedExhibit(
 ): SharedExhibit {
   const templates = createMaterialLibrary()
   let prepared: PreparedExhibit | undefined
+  const crackGeometries: BufferGeometry[] = []
   try {
     prepared = prepareExhibitAsset(scene, recipe, resolvedBundle, templates)
-    for (const geometry of geometries(prepared)) {
+    if (recipe.resonancePresentation === undefined)
+      for (const piece of prepared.pieces)
+        crackGeometries.push(
+          new EdgesGeometry(piece.geometry, CRACK_EDGE_THRESHOLD_DEGREES),
+        )
+    const entry = { prepared, crackGeometries, templates, owners: 1 }
+    for (const geometry of geometries(entry)) {
       geometry.computeBoundingBox()
       geometry.computeBoundingSphere()
     }
-    return { prepared, templates, owners: 1 }
+    return entry
   } catch (error) {
+    crackGeometries.forEach((geometry) => geometry.dispose())
     if (prepared !== undefined)
-      geometries(prepared).forEach((geometry) => geometry.dispose())
+      new Set([
+        prepared.geometry,
+        ...prepared.pieces.map((piece) => piece.geometry),
+      ]).forEach((geometry) => geometry.dispose())
     templates.dispose()
     throw error
   }
@@ -132,6 +151,7 @@ export function createExhibitGeometryPool(
       return {
         geometry: prepared.geometry,
         pieces,
+        crackGeometries: owner.crackGeometries,
         materials,
         transform,
         release(): void {

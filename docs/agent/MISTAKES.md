@@ -1648,3 +1648,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** Three compiles hidden materials but defers geometry uploads and program first-use reflection until a visible draw; without parallel shader compilation, readiness does not force every first-use cost.
 **Rule:** warm resident effect renderables through the real framebuffer path behind the loader, restore visibility/culling in `finally`, then paint and verify the genuine initial scene before enabling play. Do not advance gameplay, weaken timing limits or instantiate an entire streamed course for warmup.
 **See:** `packages/glass-game/src/render/render-warmup.ts`, `packages/glass-game/src/render/runner-renderer.ts`.
+
+### Separate real-time audio contracts from software-GPU throughput
+
+**Symptom:** a complete audio/control course passes on hardware but enters frame-gap recovery in shared CI even after draw calls are omitted.
+**Cause:** SwiftShader still pays geometry uploads, program reflection, state changes and resource churn; suppressing pixels does not create a deterministic presentation boundary.
+**Rule:** use a typed, test-scoped presentation substitute for the long PCM/input/judging test, keeping its real clock and recovery threshold. Retain separate real-renderer loading/streaming/disposal tests and full hardware-rendered course proof. Fix measured production construction costs rather than widening timing tolerances or claiming software tests establish phone performance.
+**See:** `apps/beside-cue/e2e/helpers/runner-controls-renderer.ts`, `apps/beside-cue/e2e/helpers/runner-renderer-smoke.ts`.

@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { BufferGeometry, Material, Texture, Vector3 } from 'three'
-import { Box3, BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, } from 'three'
-import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from '../content/solid-props'
+import { Box3, DoubleSide, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, } from 'three'
+import { DEFAULT_EXHIBIT_MOUNT_HEIGHT } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
@@ -12,6 +12,7 @@ import { disposeObject } from './dispose'
 import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
+import type { MaterialLibrary } from './material-library'
 import { createMaterialLibrary } from './material-library'
 import type { ResonancePresentation, ResonanceRewardVisualFactory, } from './resonance-release'
 import { createResonancePresentation } from './resonance-release'
@@ -20,106 +21,9 @@ import { RESONANCE_PEARL_PALETTE } from './resonance-release-config'
 import type { ShatterBurst } from './shatter-burst'
 import { createShatterBurst } from './shatter-burst'
 import { fallbackShatterProfile, planShatterShardMotion, } from './shatter-motion'
+import { createVesselGeometry } from './vessel-fallback-geometry'
 
-/** Fallbacks and authored GLBs share the same recipe-sized, floor-based envelope. */
-function fitDisplayHeight(
-  geometry: BufferGeometry,
-  height: number,
-): BufferGeometry {
-  geometry.computeBoundingBox()
-  const bounds = geometry.boundingBox!
-  const scale = height / Math.max(0.001, bounds.max.y - bounds.min.y)
-  geometry.translate(0, -bounds.min.y, 0)
-  geometry.scale(scale, scale, scale)
-  return geometry
-}
-
-export function createVesselGeometry(variant: string): BufferGeometry {
-  const recipe = getBreakableRenderRecipe(variant)
-  const shape = recipe.fallbackShape
-  if (shape === 'slab') {
-    const envelope = recipe.barrierEnvelope ?? PORTRAIT_EXHIBIT_ENVELOPE
-    const geometry = new BoxGeometry(
-      envelope.width,
-      envelope.height,
-      envelope.depth,
-      6,
-      8,
-      1,
-    )
-    geometry.translate(0, envelope.height / 2, 0)
-    return fitDisplayHeight(geometry, recipe.displayHeight)
-  }
-  const profile =
-    shape === 'goblet'
-      ? [
-          [0, 0],
-          [0.14, 0],
-          [0.16, 0.025],
-          [0.055, 0.05],
-          [0.025, 0.09],
-          [0.025, 0.3],
-          [0.095, 0.33],
-          [0.17, 0.4],
-          [0.2, 0.53],
-          [0.19, 0.66],
-          [0.177, 0.66],
-          [0.185, 0.53],
-          [0.155, 0.41],
-          [0.08, 0.35],
-          [0, 0.34],
-        ]
-      : shape === 'fluted'
-        ? [
-            [0, 0],
-            [0.12, 0],
-            [0.17, 0.05],
-            [0.13, 0.18],
-            [0.11, 0.42],
-            [0.13, 0.65],
-            [0.19, 0.78],
-            [0.173, 0.78],
-            [0.115, 0.64],
-            [0.095, 0.42],
-            [0.115, 0.18],
-            [0.15, 0.065],
-            [0, 0.035],
-          ]
-        : [
-            [0, 0],
-            [0.11, 0],
-            [0.19, 0.045],
-            [0.25, 0.19],
-            [0.235, 0.35],
-            [0.15, 0.45],
-            [0.085, 0.49],
-            [0.085, 0.57],
-            [0.11, 0.6],
-            [0.092, 0.6],
-            [0.07, 0.56],
-            [0.07, 0.485],
-            [0.135, 0.435],
-            [0.218, 0.34],
-            [0.232, 0.19],
-            [0.17, 0.06],
-            [0, 0.03],
-          ]
-  const geometry = new LatheGeometry(
-    profile.map(([x, y]) => new Vector2(x, y)),
-    48,
-  )
-  if (shape === 'fluted') {
-    const attribute = geometry.getAttribute('position')
-    for (let i = 0; i < attribute.count; i++) {
-      const angle = Math.atan2(attribute.getX(i), attribute.getZ(i))
-      const scale = 1 + Math.cos(angle * 12) * 0.055
-      attribute.setX(i, attribute.getX(i) * scale)
-      attribute.setZ(i, attribute.getZ(i) * scale)
-    }
-    geometry.computeVertexNormals()
-  }
-  return fitDisplayHeight(geometry, recipe.displayHeight)
-}
+export { createVesselGeometry } from './vessel-fallback-geometry'
 
 export interface VesselPresentationOptions {
   /** Encounter tuning layers over the certified recipe defaults. */
@@ -146,6 +50,7 @@ interface VesselShardPresentation {
 
 interface VesselInstallation {
   readonly releaseGeometry: () => void
+  readonly ownsCrackGeometries: boolean
   readonly intact: Mesh
   readonly bounds: Box3
   readonly shardGroup: Group
@@ -160,10 +65,33 @@ export type VesselDefinition = Pick<
   'id' | 'position' | 'anchor' | 'mount' | 'presentation' | 'variant'
 >
 
+export type VesselAssetLeaseFactory = (
+  library: MaterialLibrary,
+) => PreparedExhibitAssetLease
+
 export function createVessel(
   target: VesselDefinition,
   reducedMotion: boolean,
   options: VesselPresentationOptions = {},
+) {
+  return createVesselPresentation(target, reducedMotion, options)
+}
+
+/** Builds directly from an authored lease without constructing a discarded fallback. */
+export function createAuthoredVessel(
+  target: VesselDefinition,
+  reducedMotion: boolean,
+  acquire: VesselAssetLeaseFactory,
+  options: VesselPresentationOptions = {},
+) {
+  return createVesselPresentation(target, reducedMotion, options, acquire)
+}
+
+function createVesselPresentation(
+  target: VesselDefinition,
+  reducedMotion: boolean,
+  options: VesselPresentationOptions,
+  acquireInitialLease?: VesselAssetLeaseFactory,
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
   const resonanceSettings =
@@ -277,7 +205,7 @@ export function createVessel(
     current.burst?.dispose()
     for (const crack of current.cracks) {
       crack.removeFromParent()
-      crack.geometry.dispose()
+      if (current.ownsCrackGeometries) crack.geometry.dispose()
     }
     current.releaseGeometry()
     current.intact.removeFromParent()
@@ -288,6 +216,7 @@ export function createVessel(
   function stageInstallation(
     geometry: BufferGeometry,
     authoredPieces?: readonly FracturePiece[],
+    authoredCrackGeometries?: readonly BufferGeometry[],
     authoredMaterials?: readonly Material[],
     nextIntactMaterial: Material | Material[] = intactMaterial,
     nextShardMaterial: Material | Material[] = shardMaterial,
@@ -345,6 +274,14 @@ export function createVessel(
           rewardFactory: options.resonanceRewardFactory,
         })
       nextPieces ??= fractureGeometry(geometry, recipe.fragmentBudget)
+      if (
+        nextResonance === undefined &&
+        authoredCrackGeometries !== undefined &&
+        authoredCrackGeometries.length !== nextPieces.length
+      )
+        throw new Error(
+          `Exhibit "${target.id}" has ${authoredCrackGeometries.length} crack outlines for ${nextPieces.length} fracture pieces.`,
+        )
       nextPieces.forEach((piece, index) => {
         const mesh = new Mesh(piece.geometry, nextShardMaterial)
         mesh.position.copy(piece.centre)
@@ -366,7 +303,8 @@ export function createVessel(
         nextShardGroup.add(mesh)
         if (nextResonance === undefined) {
           const crack = new LineSegments(
-            new EdgesGeometry(piece.geometry, 22),
+            authoredCrackGeometries?.[index] ??
+              new EdgesGeometry(piece.geometry, 22),
             crackMaterial,
           )
           crack.position.copy(piece.centre)
@@ -384,6 +322,7 @@ export function createVessel(
         )
       return {
         releaseGeometry,
+        ownsCrackGeometries: authoredCrackGeometries === undefined,
         intact: nextIntact,
         bounds: nextBounds,
         shardGroup: nextShardGroup,
@@ -397,7 +336,7 @@ export function createVessel(
       nextBurst?.dispose()
       for (const crack of nextCracks) {
         crack.removeFromParent()
-        crack.geometry.dispose()
+        if (authoredCrackGeometries === undefined) crack.geometry.dispose()
       }
       releaseGeometry()
       nextIntact.clear()
@@ -409,25 +348,36 @@ export function createVessel(
   function install(
     geometry: BufferGeometry,
     authoredPieces?: readonly FracturePiece[],
+    authoredCrackGeometries?: readonly BufferGeometry[],
     authoredMaterials?: readonly Material[],
     nextIntactMaterial: Material | Material[] = intactMaterial,
     nextShardMaterial: Material | Material[] = shardMaterial,
     releaseSharedGeometry?: () => void,
   ): void {
+    let released = false
+    const releaseLease =
+      releaseSharedGeometry === undefined
+        ? undefined
+        : () => {
+            if (released) return
+            released = true
+            releaseSharedGeometry()
+          }
     let next: VesselInstallation
     try {
       next = stageInstallation(
         geometry,
         authoredPieces,
+        authoredCrackGeometries,
         authoredMaterials,
         nextIntactMaterial,
         nextShardMaterial,
-        releaseSharedGeometry,
+        releaseLease,
       )
     } catch (error) {
       // The lease also covers failures before stageInstallation enters its
       // presentation transaction, such as invalid incoming geometry bounds.
-      releaseSharedGeometry?.()
+      releaseLease?.()
       throw error
     }
     const previous = installation
@@ -446,16 +396,46 @@ export function createVessel(
     shardMaterial = nextShardMaterial
     if (previous !== undefined) disposeInstallation(previous)
   }
-  const initialGeometry = createVesselGeometry(target.variant)
-  if (
-    recipe.portraitTexture !== undefined &&
-    (recipe.persistentPortrait === undefined || pictureBearingPortrait)
-  )
-    initialGeometry.groups.forEach((group) => {
-      group.materialIndex = (group.materialIndex ?? 0) >= 4 ? 1 : 0
-    })
+
+  function authoredMaterialSelection(authoredMaterials: Material[]): {
+    intact: Material | Material[]
+    shards: Material | Material[]
+  } {
+    if (recipe.persistentPortrait === undefined)
+      return { intact: authoredMaterials, shards: authoredMaterials }
+    const withoutPortrait = authoredMaterials.map((imported) =>
+      imported.name === recipe.portraitMaterial ? glass : imported,
+    )
+    return {
+      intact: withoutPortrait,
+      shards: pictureBearingPortrait ? authoredMaterials : withoutPortrait,
+    }
+  }
+
   try {
-    install(initialGeometry)
+    if (acquireInitialLease === undefined) {
+      const initialGeometry = createVesselGeometry(target.variant)
+      if (
+        recipe.portraitTexture !== undefined &&
+        (recipe.persistentPortrait === undefined || pictureBearingPortrait)
+      )
+        initialGeometry.groups.forEach((group) => {
+          group.materialIndex = (group.materialIndex ?? 0) >= 4 ? 1 : 0
+        })
+      install(initialGeometry)
+    } else {
+      const lease = acquireInitialLease(materialLibrary)
+      const materials = authoredMaterialSelection(lease.materials)
+      install(
+        lease.geometry,
+        lease.pieces,
+        lease.crackGeometries,
+        lease.materials,
+        materials.intact,
+        materials.shards,
+        lease.release,
+      )
+    }
   } catch (error) {
     root.clear()
     persistentPortrait?.geometry.dispose()
@@ -484,6 +464,7 @@ export function createVessel(
   function setGeometry(
     geometry: BufferGeometry,
     authoredPieces?: readonly FracturePiece[],
+    authoredCrackGeometries?: readonly BufferGeometry[],
     authoredMaterials?: Material[],
     releaseSharedGeometry?: () => void,
   ): void {
@@ -505,24 +486,14 @@ export function createVessel(
     let nextIntactMaterial = intactMaterial
     let nextShardMaterial = shardMaterial
     if (authoredMaterials) {
-      if (recipe.persistentPortrait === undefined) {
-        nextIntactMaterial = authoredMaterials
-        nextShardMaterial = authoredMaterials
-      } else if (pictureBearingPortrait) {
-        nextIntactMaterial = authoredMaterials.map((imported) =>
-          imported.name === recipe.portraitMaterial ? glass : imported,
-        )
-        nextShardMaterial = authoredMaterials
-      } else {
-        nextIntactMaterial = authoredMaterials.map((imported) =>
-          imported.name === recipe.portraitMaterial ? glass : imported,
-        )
-        nextShardMaterial = nextIntactMaterial
-      }
+      const materials = authoredMaterialSelection(authoredMaterials)
+      nextIntactMaterial = materials.intact
+      nextShardMaterial = materials.shards
     }
     install(
       geometry,
       authoredPieces,
+      authoredCrackGeometries,
       authoredMaterials,
       nextIntactMaterial,
       nextShardMaterial,
@@ -558,11 +529,17 @@ export function createVessel(
       authoredPieces?: readonly FracturePiece[],
       authoredMaterials?: Material[],
     ) {
-      setGeometry(geometry, authoredPieces, authoredMaterials)
+      setGeometry(geometry, authoredPieces, undefined, authoredMaterials)
     },
     /** Consumes the lease even when replacement fails or the vessel is already broken. */
     setGeometryLease(lease: PreparedExhibitAssetLease) {
-      setGeometry(lease.geometry, lease.pieces, lease.materials, lease.release)
+      setGeometry(
+        lease.geometry,
+        lease.pieces,
+        lease.crackGeometries,
+        lease.materials,
+        lease.release,
+      )
     },
     setPortrait(texture: Texture) {
       // Loaded portraits use the glTF texture convention. The separate artwork

@@ -5,6 +5,7 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Text
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LIVING_GLASS_TRIAL } from '../content/living-glass-trial'
 import { RESONANCE_ROSEBUD_BUNDLE_ID, RESONANCE_ROSEBUD_MATERIALS, RESONANCE_ROSEBUD_NODES, RESONANCE_ROSEBUD_VARIANT_ID, } from '../content/resonance-rosebud-profile'
+import type { BreakableRenderRecipe } from './catalog'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
@@ -48,7 +49,10 @@ function fixture(physical = true) {
   cleanup.push(() => disposeObject(scene))
   const pool = createExhibitGeometryPool(scene, RESONANCE_ROSEBUD_BUNDLE_ID)
   cleanup.push(() => pool.close())
-  const acquire = (override = recipe, library = createMaterialLibrary()) => {
+  const acquire = (
+    override: BreakableRenderRecipe = recipe,
+    library = createMaterialLibrary(),
+  ) => {
     cleanup.push(() => library.dispose())
     const lease = pool.acquire(override, library)
     cleanup.push(() => lease.release())
@@ -58,7 +62,11 @@ function fixture(physical = true) {
 }
 
 function ownedGeometries(lease: PreparedExhibitAssetLease): BufferGeometry[] {
-  return [lease.geometry, ...lease.pieces.map((piece) => piece.geometry)]
+  return [
+    lease.geometry,
+    ...lease.pieces.map((piece) => piece.geometry),
+    ...lease.crackGeometries,
+  ]
 }
 
 function disposalCounts(lease: PreparedExhibitAssetLease) {
@@ -206,6 +214,33 @@ describe('bundle-scoped exhibit geometry leases', () => {
     first.release()
     expect(
       disposals.every((disposed) => disposed.mock.calls.length === 1),
+    ).toBe(true)
+  })
+
+  it('shares non-resonant crack outlines until the final lease releases them', () => {
+    const { acquire, pool } = fixture()
+    const nonResonantRecipe: BreakableRenderRecipe = {
+      ...recipe,
+      resonancePresentation: undefined,
+    }
+    const first = acquire(nonResonantRecipe)
+    const second = acquire(nonResonantRecipe)
+    const crackDisposals = first.crackGeometries.map((geometry) => {
+      const disposed = vi.fn()
+      geometry.addEventListener('dispose', disposed)
+      return disposed
+    })
+
+    expect(first.crackGeometries).toHaveLength(first.pieces.length)
+    expect(second.crackGeometries).toEqual(first.crackGeometries)
+    pool.close()
+    first.release()
+    expect(
+      crackDisposals.every((disposed) => !disposed.mock.calls.length),
+    ).toBe(true)
+    second.release()
+    expect(
+      crackDisposals.every((disposed) => disposed.mock.calls.length === 1),
     ).toBe(true)
   })
 })

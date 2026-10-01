@@ -35,6 +35,7 @@ describe('culled vessel lifecycle', () => {
     vessel.setGeometryLease({
       geometry: incoming,
       pieces: [],
+      crackGeometries: [],
       materials: [],
       transform: new Matrix4(),
       release,
