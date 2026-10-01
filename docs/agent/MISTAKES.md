@@ -1730,5 +1730,5 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 
 **Symptom:** a canvas artwork click missed even though the requested camera yaw was correct; mouse and touch dialog assertions failed.
 **Cause:** pointer input updates the yaw target synchronously, while enclosure framing and the camera used for raycasting continue moving during subsequent rendered frames.
-**Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Do not retry clicks or increase dialog timeouts to hide a miss.
-**See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`.
+**Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Align measured position and camera yaw to the same frame: `step → refresh → render` can publish a current position with the preceding rendered yaw. Do not retry clicks or widen distance/time limits to hide mismatched observations.
+**See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`, `apps/beside-cue/e2e/helpers/glass-adventure-camera-route.ts`.

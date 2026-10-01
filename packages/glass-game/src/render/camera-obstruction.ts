@@ -4,12 +4,18 @@ import type { Object3D } from 'three'
 import { Ray, Raycaster, Vector3 } from 'three'
 import type { LevelDefinition } from '../contracts'
 import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
-import { ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_LATERAL_BOOM_MAX_YAW, ENCLOSURE_LATERAL_BOOM_RETRY_ANGLE, ENCLOSURE_LATERAL_BOOM_RETRY_DISTANCE, ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS, ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, FOLLOW_COMPLETE_RADIANS, OBSTRUCTION_LIFT_PITCHES, } from './camera-policy'
+import { ENCLOSURE_DISTANCE_RECOVERY_RESPONSE, ENCLOSURE_LATERAL_BOOM_MAX_YAW, ENCLOSURE_LATERAL_BOOM_RETRY_ANGLE, ENCLOSURE_LATERAL_BOOM_RETRY_DISTANCE, ENCLOSURE_LATERAL_BOOM_RETRY_SECONDS, ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS, ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE, ENCLOSURE_READABLE_BOOM_DISTANCE, FOLLOW_COMPLETE_RADIANS, MAXIMUM_FOLLOW_RADIANS_PER_SECOND, OBSTRUCTION_LIFT_PITCHES, } from './camera-policy'
 import type { createEnclosureFraming, EnclosureRayPurpose, } from './enclosure-framing'
 import { MINIMUM_THIRD_PERSON_REACH } from './third-person-framing'
 
 const PLACEMENT_COMPARISON_EPSILON = 0.0001
 const PLACEMENT_EPSILON = 0.05
+const RETAINED_WAYPOINT_AXES = [
+  { x: 1, z: 0 },
+  { x: 0, z: 1 },
+  { x: -1, z: 0 },
+  { x: 0, z: -1 },
+] as const
 
 export function createCameraObstruction(
   level: LevelDefinition,
@@ -20,14 +26,26 @@ export function createCameraObstruction(
   const hit = new Vector3()
   const ray = new Ray()
   const raycaster = new Raycaster()
+  const candidateCameraDelta = new Vector3()
   const candidatePosition = new Vector3()
+  const candidateRetainedPosition = new Vector3()
+  const candidateRetainedTarget = new Vector3()
+  const chosenRetainedPosition = new Vector3()
+  const desiredRetainedPosition = new Vector3()
+  const desiredRetainedTarget = new Vector3()
   const lateralDirection = new Vector3()
   const chosenLateralDirection = new Vector3()
   const failedRecoveryOrigin = new Vector3()
   const retainedDirection = new Vector3()
   const retainedPosition = new Vector3()
+  const retainedSubjectTarget = new Vector3()
+  const retainedTarget = new Vector3()
+  const retainedTargetDelta = new Vector3()
   let hasRetainedPosition = false
+  let retainedViewActive = false
+  let retainedWaypointAxisIndex = -1
   let lateralYawOffset = 0
+  let readableRecoveryPending = false
   let preferredLateralSign: -1 | 1 = 1
   let failedRecoveryActiveSolidIds: readonly string[] = []
   let failedRecoveryEnabledPlatformIds: readonly string[] = []
@@ -151,6 +169,7 @@ export function createCameraObstruction(
   }): number {
     if (!options.constrainToEnclosure) {
       lateralYawOffset = 0
+      readableRecoveryPending = false
       clearFailedRecovery()
       return options.canonicalDistance
     }
@@ -184,6 +203,7 @@ export function createCameraObstruction(
         lateralDirection,
       )
     }
+    let lostReadableLateralBoom = false
     if (lateralYawOffset !== 0) {
       const releaseDistance = Math.min(
         options.reach,
@@ -195,12 +215,14 @@ export function createCameraObstruction(
           Math.exp(-ENCLOSURE_DISTANCE_RECOVERY_RESPONSE * options.deltaSeconds)
         if (Math.abs(easedOffset) <= FOLLOW_COMPLETE_RADIANS) {
           lateralYawOffset = 0
+          readableRecoveryPending = false
           clearFailedRecovery()
           return options.canonicalDistance
         }
         const easedDistance = probe(easedOffset)
         if (easedDistance >= readableDistance) {
           lateralYawOffset = easedOffset
+          readableRecoveryPending = false
           clearFailedRecovery()
           options.boomDirection.copy(lateralDirection)
           return easedDistance
@@ -208,16 +230,26 @@ export function createCameraObstruction(
       }
       const retainedDistance = probe(lateralYawOffset)
       if (retainedDistance >= readableDistance) {
+        readableRecoveryPending = false
         clearFailedRecovery()
         options.boomDirection.copy(lateralDirection)
         return retainedDistance
       }
       lateralYawOffset = 0
       clearFailedRecovery()
-      if (options.canonicalDistance >= MINIMUM_THIRD_PERSON_REACH)
-        return options.canonicalDistance
+      readableRecoveryPending = true
+      lostReadableLateralBoom = true
     }
-    if (options.canonicalDistance >= MINIMUM_THIRD_PERSON_REACH) {
+    if (options.canonicalDistance >= readableDistance) {
+      readableRecoveryPending = false
+      clearFailedRecovery()
+      return options.canonicalDistance
+    }
+    if (
+      options.canonicalDistance >= MINIMUM_THIRD_PERSON_REACH &&
+      !lostReadableLateralBoom &&
+      !readableRecoveryPending
+    ) {
       clearFailedRecovery()
       return options.canonicalDistance
     }
@@ -259,6 +291,7 @@ export function createCameraObstruction(
       }
       if (chosenOffset === 0) continue
       lateralYawOffset = chosenOffset
+      readableRecoveryPending = false
       preferredLateralSign = chosenOffset < 0 ? -1 : 1
       clearFailedRecovery()
       options.boomDirection.copy(chosenLateralDirection)
@@ -331,8 +364,10 @@ export function createCameraObstruction(
     boomDirection: Vector3
     renderedDistance: number
     safeDistance: number
+    subjectTarget: Vector3
     activeSolidIds: readonly string[]
     constrainToEnclosure: boolean
+    deltaSeconds: number
     useMeshOccluders: boolean
   }): number | null {
     options.position
@@ -342,75 +377,284 @@ export function createCameraObstruction(
       hasRetainedPosition = false
       return null
     }
-    if (
+    const viewSafeFrom = (
+      viewTarget: Vector3,
+      position: Vector3,
+      minimumDistance: number,
+    ): boolean => {
+      retainedDirection.copy(position).sub(viewTarget)
+      const distance = retainedDirection.length()
+      if (
+        distance < minimumDistance ||
+        !enclosure.cameraViewSafe(viewTarget, position, options.activeSolidIds)
+      )
+        return false
+      retainedDirection.multiplyScalar(1 / distance)
+      if (
+        !meshPathClear(
+          viewTarget,
+          retainedDirection,
+          distance,
+          options.useMeshOccluders,
+        )
+      )
+        return false
+      return true
+    }
+    const retainedOutputSafe = (
+      viewTarget: Vector3,
+      position: Vector3,
+    ): boolean =>
+      viewSafeFrom(viewTarget, position, ENCLOSURE_READABLE_BOOM_DISTANCE) &&
+      viewSafeFrom(options.subjectTarget, position, PLACEMENT_EPSILON)
+    const retainedCameraPathSafe = (position: Vector3): boolean => {
+      candidateCameraDelta.copy(position).sub(retainedPosition)
+      const distance = candidateCameraDelta.length()
+      if (distance <= PLACEMENT_COMPARISON_EPSILON) return true
+      candidateCameraDelta.multiplyScalar(1 / distance)
+      return (
+        enclosure.cameraTravelSafe(
+          retainedPosition,
+          position,
+          options.activeSolidIds,
+        ) &&
+        meshPathClear(
+          retainedPosition,
+          candidateCameraDelta,
+          distance,
+          options.useMeshOccluders,
+        )
+      )
+    }
+    const retain = (viewTarget: Vector3, position: Vector3): void => {
+      retainedPosition.copy(position)
+      retainedSubjectTarget.copy(options.subjectTarget)
+      retainedTarget.copy(viewTarget)
+      hasRetainedPosition = true
+    }
+    const maximumRetainedPlacementStep = (): number =>
+      retainedSubjectTarget.distanceTo(options.subjectTarget) +
+      options.safeDistance *
+        MAXIMUM_FOLLOW_RADIANS_PER_SECOND *
+        Math.max(0, options.deltaSeconds)
+    const retainedHandoffRequired = (
+      requestedTarget: Vector3,
+      requestedPosition: Vector3,
+    ): boolean => {
+      if (!hasRetainedPosition) return false
+      const maximumStep = maximumRetainedPlacementStep()
+      return (
+        retainedViewActive ||
+        retainedTarget.distanceTo(requestedTarget) > maximumStep ||
+        retainedPosition.distanceTo(requestedPosition) > maximumStep
+      )
+    }
+    const placeRetainedToward = (
+      requestedTarget: Vector3,
+      requestedPosition: Vector3,
+      canonicalDestination: boolean,
+    ): boolean => {
+      if (!hasRetainedPosition) return false
+      desiredRetainedTarget.copy(requestedTarget)
+      desiredRetainedPosition.copy(requestedPosition)
+      retainedTargetDelta.copy(desiredRetainedTarget).sub(retainedTarget)
+      candidateCameraDelta.copy(desiredRetainedPosition).sub(retainedPosition)
+      const targetDistance = retainedTargetDelta.length()
+      const cameraDistance = candidateCameraDelta.length()
+      const maximumPlacementStep = maximumRetainedPlacementStep()
+      const maximumTargetAlpha =
+        targetDistance <= PLACEMENT_COMPARISON_EPSILON
+          ? 1
+          : Math.min(1, maximumPlacementStep / targetDistance)
+      const maximumCameraAlpha =
+        cameraDistance <= PLACEMENT_COMPARISON_EPSILON
+          ? 1
+          : Math.min(1, maximumPlacementStep / cameraDistance)
+      for (
+        let targetStep = ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS;
+        targetStep > 0;
+        targetStep--
+      ) {
+        const targetAlpha =
+          (maximumTargetAlpha * targetStep) /
+          ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS
+        candidateRetainedTarget.lerpVectors(
+          retainedTarget,
+          desiredRetainedTarget,
+          targetAlpha,
+        )
+        for (
+          let cameraStep = ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS;
+          cameraStep > 0;
+          cameraStep--
+        ) {
+          const cameraAlpha =
+            (maximumCameraAlpha * cameraStep) /
+            ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS
+          candidateRetainedPosition.lerpVectors(
+            retainedPosition,
+            desiredRetainedPosition,
+            cameraAlpha,
+          )
+          if (
+            !retainedCameraPathSafe(candidateRetainedPosition) ||
+            !retainedOutputSafe(
+              candidateRetainedTarget,
+              candidateRetainedPosition,
+            )
+          )
+            continue
+          const reachedDesired =
+            candidateRetainedTarget.distanceTo(desiredRetainedTarget) <=
+              PLACEMENT_EPSILON &&
+            candidateRetainedPosition.distanceTo(desiredRetainedPosition) <=
+              PLACEMENT_EPSILON
+          options.target.copy(candidateRetainedTarget)
+          options.position.copy(candidateRetainedPosition)
+          retain(candidateRetainedTarget, candidateRetainedPosition)
+          retainedViewActive = !canonicalDestination || !reachedDesired
+          retainedWaypointAxisIndex = -1
+          return true
+        }
+      }
+      if (maximumPlacementStep > PLACEMENT_COMPARISON_EPSILON) {
+        for (
+          let targetStep = ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS;
+          targetStep > 0;
+          targetStep--
+        ) {
+          const targetAlpha =
+            (maximumTargetAlpha * targetStep) /
+            ENCLOSURE_LATERAL_BOOM_SEARCH_STEPS
+          candidateRetainedTarget.lerpVectors(
+            retainedTarget,
+            desiredRetainedTarget,
+            targetAlpha,
+          )
+          let chosenDistance = Infinity
+          let chosenAxisIndex = -1
+          for (
+            let axisIndex = 0;
+            axisIndex < RETAINED_WAYPOINT_AXES.length;
+            axisIndex++
+          ) {
+            const axis = RETAINED_WAYPOINT_AXES[axisIndex]
+            candidateRetainedPosition.set(
+              retainedPosition.x + axis.x * maximumPlacementStep,
+              retainedPosition.y,
+              retainedPosition.z + axis.z * maximumPlacementStep,
+            )
+            if (
+              !retainedCameraPathSafe(candidateRetainedPosition) ||
+              !retainedOutputSafe(
+                candidateRetainedTarget,
+                candidateRetainedPosition,
+              )
+            )
+              continue
+            if (axisIndex === retainedWaypointAxisIndex) {
+              chosenAxisIndex = axisIndex
+              chosenRetainedPosition.copy(candidateRetainedPosition)
+              break
+            }
+            const distance = candidateRetainedPosition.distanceToSquared(
+              desiredRetainedPosition,
+            )
+            if (distance >= chosenDistance) continue
+            chosenDistance = distance
+            chosenAxisIndex = axisIndex
+            chosenRetainedPosition.copy(candidateRetainedPosition)
+          }
+          if (chosenAxisIndex < 0) continue
+          options.target.copy(candidateRetainedTarget)
+          options.position.copy(chosenRetainedPosition)
+          retain(candidateRetainedTarget, chosenRetainedPosition)
+          retainedViewActive = true
+          retainedWaypointAxisIndex = chosenAxisIndex
+          return true
+        }
+      }
+      if (!retainedOutputSafe(retainedTarget, retainedPosition)) return false
+      options.target.copy(retainedTarget)
+      options.position.copy(retainedPosition)
+      retainedSubjectTarget.copy(options.subjectTarget)
+      retainedViewActive = true
+      return true
+    }
+    const recoveryPositionAt = (distance: number): boolean => {
+      candidatePosition
+        .copy(options.target)
+        .addScaledVector(options.boomDirection, distance)
+      return enclosure.cameraPositionSafe(
+        options.target,
+        candidatePosition,
+        options.activeSolidIds,
+      )
+    }
+    const readableDistance = Math.min(
+      options.safeDistance,
+      ENCLOSURE_READABLE_BOOM_DISTANCE,
+    )
+    const candidateSafe =
       options.renderedDistance > PLACEMENT_EPSILON &&
       enclosure.cameraPositionSafe(
         options.target,
         options.position,
         options.activeSolidIds,
       )
-    ) {
-      retainedPosition.copy(options.position)
-      hasRetainedPosition = true
-      return null
-    }
-
-    const minimumRecoveryDistance = Math.min(
-      options.safeDistance,
-      ENCLOSURE_READABLE_BOOM_DISTANCE,
-    )
-    const recoverAt = (distance: number): boolean => {
-      if (distance <= options.renderedDistance + PLACEMENT_COMPARISON_EPSILON)
-        return false
-      candidatePosition
-        .copy(options.target)
-        .addScaledVector(options.boomDirection, distance)
-      if (
-        !enclosure.cameraPositionSafe(
-          options.target,
-          candidatePosition,
-          options.activeSolidIds,
+    if (candidateSafe) {
+      if (options.renderedDistance >= ENCLOSURE_READABLE_BOOM_DISTANCE) {
+        if (
+          retainedHandoffRequired(options.target, options.position) &&
+          placeRetainedToward(options.target, options.position, true)
         )
-      )
-        return false
-      options.position.copy(candidatePosition)
-      retainedPosition.copy(candidatePosition)
-      hasRetainedPosition = true
-      return true
+          return null
+        if (retainedOutputSafe(options.target, options.position))
+          retain(options.target, options.position)
+        retainedViewActive = false
+        retainedWaypointAxisIndex = -1
+        return null
+      }
     }
-    if (recoverAt(minimumRecoveryDistance)) return minimumRecoveryDistance
-    if (recoverAt(options.safeDistance)) return options.safeDistance
 
     if (
-      hasRetainedPosition &&
-      enclosure.cameraPositionSafe(
-        options.target,
-        retainedPosition,
-        options.activeSolidIds,
-      )
+      readableDistance >= ENCLOSURE_READABLE_BOOM_DISTANCE &&
+      recoveryPositionAt(readableDistance)
     ) {
-      retainedDirection.copy(retainedPosition).sub(options.target)
-      const retainedDistance = retainedDirection.length()
-      if (retainedDistance > PLACEMENT_EPSILON) {
-        retainedDirection.multiplyScalar(1 / retainedDistance)
-        if (
-          meshPathClear(
-            options.target,
-            retainedDirection,
-            retainedDistance,
-            options.useMeshOccluders,
-          )
-        ) {
-          options.position.copy(retainedPosition)
-          return null
-        }
-      }
+      if (placeRetainedToward(options.target, candidatePosition, true))
+        return retainedViewActive ? null : readableDistance
+      options.position.copy(candidatePosition)
+      if (retainedOutputSafe(options.target, candidatePosition))
+        retain(options.target, candidatePosition)
+      retainedViewActive = false
+      retainedWaypointAxisIndex = -1
+      return readableDistance
+    }
+
+    if (hasRetainedPosition) {
+      desiredRetainedPosition
+        .copy(retainedPosition)
+        .add(options.target)
+        .sub(retainedTarget)
+      if (placeRetainedToward(options.target, desiredRetainedPosition, false))
+        return null
+    }
+    if (candidateSafe) return null
+    if (
+      options.safeDistance >
+        options.renderedDistance + PLACEMENT_COMPARISON_EPSILON &&
+      recoveryPositionAt(options.safeDistance)
+    ) {
+      options.position.copy(candidatePosition)
+      return options.safeDistance
     }
     return null
   }
 
   function resetCameraPlacement(): void {
     hasRetainedPosition = false
+    retainedViewActive = false
+    retainedWaypointAxisIndex = -1
   }
 
   return {

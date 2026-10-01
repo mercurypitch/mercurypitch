@@ -760,8 +760,10 @@ export function createAdventureCamera(
         boomDirection: direction,
         renderedDistance,
         safeDistance,
+        subjectTarget: bodyTarget,
         activeSolidIds,
         constrainToEnclosure: framedTarget,
+        deltaSeconds: safeDt,
         useMeshOccluders,
       })
       if (rebasedDistance !== null) thirdPersonFraming.snap(rebasedDistance)
