@@ -126,6 +126,8 @@ export interface VesselPresentationOptions {
   readonly resonancePresentation?: ResonancePresentationConfig
   /** Purely visual replacement for the recipe's default inner reward. */
   readonly resonanceRewardFactory?: ResonanceRewardVisualFactory
+  /** Keep intact shadowing while omitting the multiplied cost of flying shards. */
+  readonly castShardShadows?: boolean
 }
 
 /** Keeps authored RoseGlass readable while the projected fracture carries charge. */
@@ -153,8 +155,13 @@ interface VesselInstallation {
   readonly resonance?: ResonancePresentation
 }
 
+export type VesselDefinition = Pick<
+  BreakableDefinition,
+  'id' | 'position' | 'anchor' | 'mount' | 'presentation' | 'variant'
+>
+
 export function createVessel(
-  target: BreakableDefinition,
+  target: VesselDefinition,
   reducedMotion: boolean,
   options: VesselPresentationOptions = {},
 ) {
@@ -341,7 +348,7 @@ export function createVessel(
       nextPieces.forEach((piece, index) => {
         const mesh = new Mesh(piece.geometry, nextShardMaterial)
         mesh.position.copy(piece.centre)
-        mesh.castShadow = true
+        mesh.castShadow = options.castShardShadows !== false
         const motion = planShatterShardMotion(
           target.id,
           shatterProfile,

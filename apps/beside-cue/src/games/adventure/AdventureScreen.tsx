@@ -3,6 +3,7 @@ import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
+import { SongRunnerScreen } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
@@ -16,6 +17,7 @@ interface AdventureScreenProps {
   assetBase?: string
   level?: LevelDefinition
   campaign?: boolean
+  runner?: boolean
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   const assetProfile = nativeGameAssetProfile(
@@ -32,25 +34,38 @@ export function AdventureScreen(props: AdventureScreenProps) {
   return (
     <Show
       when={
-        !hasDevelopmentGalleryAccess(BUILD.channel, window.location.search) ||
-        (props.campaign === true && props.level === undefined)
+        props.runner === true &&
+        hasDevelopmentGalleryAccess(BUILD.channel, window.location.search)
       }
       fallback={
-        <GlassAdventure
-          host={host}
-          level={props.level}
-          assetProfile={assetProfile}
-        />
+        <Show
+          when={
+            !hasDevelopmentGalleryAccess(
+              BUILD.channel,
+              window.location.search,
+            ) ||
+            (props.campaign === true && props.level === undefined)
+          }
+          fallback={
+            <GlassAdventure
+              host={host}
+              level={props.level}
+              assetProfile={assetProfile}
+            />
+          }
+        >
+          <GlassCampaign
+            host={host}
+            assetProfile={assetProfile}
+            developmentUnlock={hasDevelopmentGalleryAccess(
+              BUILD.channel,
+              window.location.search,
+            )}
+          />
+        </Show>
       }
     >
-      <GlassCampaign
-        host={host}
-        assetProfile={assetProfile}
-        developmentUnlock={hasDevelopmentGalleryAccess(
-          BUILD.channel,
-          window.location.search,
-        )}
-      />
+      <SongRunnerScreen host={host} assetProfile={assetProfile} />
     </Show>
   )
 }

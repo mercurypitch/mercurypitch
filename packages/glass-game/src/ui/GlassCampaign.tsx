@@ -25,6 +25,7 @@ import { MuseumJourney } from './MuseumJourney'
 import { projectMuseumJourneyChapter } from './MuseumJourneyProgress'
 import { createReplayVisitHost, loadPreReplayProgress, loadReplayProgress, } from './replay-visit-host'
 import { ReplaySelection } from './ReplaySelection'
+import { SongRunnerScreen } from './SongRunnerScreen'
 
 export function GlassCampaign(props: {
   host: GlassGameHost
@@ -44,6 +45,7 @@ export function GlassCampaign(props: {
   } | null>(null)
   const [replayChapterId, setReplayChapterId] = createSignal<string>()
   const [collectionOpen, setCollectionOpen] = createSignal(false)
+  const [runnerOpen, setRunnerOpen] = createSignal(false)
   let visitSequence = 0
   let mapAudio: MuseumJourneyAudio | undefined
   const collectionEncoreAudioLeases = createEncoreAudioLeaseOwner(
@@ -246,6 +248,17 @@ export function GlassCampaign(props: {
     }))
   })
 
+  function runnerUnlocked(): boolean {
+    progressRevision()
+    if (props.developmentUnlock === true) return true
+    const prologue = chapters().find((chapter) => chapter.id === 'first-light')
+    return prologue !== undefined && progressFor(prologue).finished === true
+  }
+
+  function enterRunner(): void {
+    if (runnerUnlocked()) setRunnerOpen(true)
+  }
+
   function enterTrial(id: string): void {
     const trial = MUSEUM_TRIALS.find((candidate) => candidate.id === id)
     // Enforce again at the route boundary, independently of the disabled button.
@@ -325,134 +338,164 @@ export function GlassCampaign(props: {
 
   return (
     <Show
-      when={current()}
-      keyed
+      when={runnerOpen()}
       fallback={
-        <>
-          <div inert={replayChoice() !== undefined || collectionOpen()}>
-            <MuseumJourney
-              definition={FLOATING_MUSEUM_JOURNEY}
-              developmentUnlock={props.developmentUnlock}
-              chapters={journeyChapters()}
-              trials={trials()}
-              onEnterTrial={enterTrial}
-              selectedStageId={selectedStageId()}
-              assetUrl={campaignHost().assetUrl}
-              createMusic={campaignHost().createMusic}
-              subscribeForeground={campaignHost().subscribeForeground}
-              onSelect={setSelectedStageId}
-              onEnter={(chapterId) => {
-                const chapter = chapters().find((item) => item.id === chapterId)
-                if (chapter !== undefined) enter(chapter)
-              }}
-              onExit={() => campaignHost().onExit()}
-              onOpenCollection={() => setCollectionOpen(true)}
-              covered={collectionOpen() || replayChoice() !== undefined}
-              onAudioReady={(audio) => {
-                mapAudio = audio
-              }}
-            />
-          </div>
-          <Show when={replayChoice()} keyed>
-            {(choice) => (
-              <ReplaySelection
-                title={choice.chapter.level.title}
-                imageUrl={campaignHost().assetUrl(choice.chapter.imageAsset)}
-                profiles={choice.profiles}
-                progress={choice.progress}
-                onChoose={(id, fresh) => beginReplay(choice.chapter, id, fresh)}
-                onClose={() => setReplayChapterId(undefined)}
+        <Show
+          when={current()}
+          keyed
+          fallback={
+            <>
+              <div inert={replayChoice() !== undefined || collectionOpen()}>
+                <MuseumJourney
+                  definition={FLOATING_MUSEUM_JOURNEY}
+                  developmentUnlock={props.developmentUnlock}
+                  chapters={journeyChapters()}
+                  trials={trials()}
+                  onEnterTrial={enterTrial}
+                  runnerUnlocked={runnerUnlocked()}
+                  onEnterRunner={enterRunner}
+                  selectedStageId={selectedStageId()}
+                  assetUrl={campaignHost().assetUrl}
+                  createMusic={campaignHost().createMusic}
+                  subscribeForeground={campaignHost().subscribeForeground}
+                  onSelect={setSelectedStageId}
+                  onEnter={(chapterId) => {
+                    const chapter = chapters().find(
+                      (item) => item.id === chapterId,
+                    )
+                    if (chapter !== undefined) enter(chapter)
+                  }}
+                  onExit={() => campaignHost().onExit()}
+                  onOpenCollection={() => setCollectionOpen(true)}
+                  covered={collectionOpen() || replayChoice() !== undefined}
+                  onAudioReady={(audio) => {
+                    mapAudio = audio
+                  }}
+                />
+              </div>
+              <Show when={replayChoice()} keyed>
+                {(choice) => (
+                  <ReplaySelection
+                    title={choice.chapter.level.title}
+                    imageUrl={campaignHost().assetUrl(
+                      choice.chapter.imageAsset,
+                    )}
+                    profiles={choice.profiles}
+                    progress={choice.progress}
+                    onChoose={(id, fresh) =>
+                      beginReplay(choice.chapter, id, fresh)
+                    }
+                    onClose={() => setReplayChapterId(undefined)}
+                  />
+                )}
+              </Show>
+              <Show when={collectionOpen()}>
+                <MuseumCollection
+                  entries={collection()}
+                  host={campaignHost()}
+                  audioLeases={collectionEncoreAudioLeases}
+                  assetUrl={campaignHost().assetUrl}
+                  onClose={() => setCollectionOpen(false)}
+                  onVisit={(levelId) => {
+                    setCollectionOpen(false)
+                    const chapter = chapters().find(
+                      (item) => item.level.id === levelId,
+                    )
+                    if (chapter !== undefined) enter(chapter)
+                  }}
+                />
+              </Show>
+            </>
+          }
+        >
+          {(selection) => {
+            const chapter = selection.chapter
+            const replayProfiles = profilesFor(chapter)
+            const next = () =>
+              selection.trial
+                ? undefined
+                : chapters().at(
+                    chapters().findIndex((item) => item.id === chapter.id) + 1,
+                  )
+            const nextLabel = () => {
+              const destination = next()
+              if (destination === undefined) return undefined
+              const verb =
+                progressFor(destination).finished === true ? 'Replay' : 'Visit'
+              return `${verb} ${destination.level.title}`
+            }
+            const nextDifficulty = () => {
+              const currentProfile = selection.profile
+              if (currentProfile === undefined) return undefined
+              const earned = highestReplayTier(
+                loadReplayProgress(
+                  campaignHost(),
+                  chapter.level,
+                  replayProfiles,
+                ),
+              )
+              const profile = nextReplayDifficulty(
+                replayProfiles,
+                currentProfile.profile.tier,
+                earned,
+              )
+              if (profile === undefined || profile.profile.tier === 1)
+                return undefined
+              return {
+                label: profile.profile.title,
+                tier: profile.profile.tier,
+                onSelect: () => beginReplay(chapter, profile.profile.id, true),
+              }
+            }
+            return (
+              <GlassAdventure
+                host={selection.replayVisit?.host ?? visitHost()}
+                level={selection.profile?.level ?? chapter.level}
+                assetProfile={props.assetProfile}
+                freshStart={selection.replay}
+                onRestart={
+                  selection.profile
+                    ? () =>
+                        beginReplay(
+                          chapter,
+                          selection.profile!.profile.id,
+                          true,
+                        )
+                    : undefined
+                }
+                replayGoal={
+                  selection.profile
+                    ? {
+                        title: selection.profile.profile.title,
+                        tier: selection.profile.profile.tier,
+                      }
+                    : undefined
+                }
+                onContinue={
+                  next() !== undefined
+                    ? () => {
+                        const destination = next()
+                        if (destination !== undefined) enter(destination)
+                      }
+                    : undefined
+                }
+                continueLabel={nextLabel()}
+                nextLevelName={next()?.level.title}
+                nextDifficulty={nextDifficulty()}
               />
-            )}
-          </Show>
-          <Show when={collectionOpen()}>
-            <MuseumCollection
-              entries={collection()}
-              host={campaignHost()}
-              audioLeases={collectionEncoreAudioLeases}
-              assetUrl={campaignHost().assetUrl}
-              onClose={() => setCollectionOpen(false)}
-              onVisit={(levelId) => {
-                setCollectionOpen(false)
-                const chapter = chapters().find(
-                  (item) => item.level.id === levelId,
-                )
-                if (chapter !== undefined) enter(chapter)
-              }}
-            />
-          </Show>
-        </>
+            )
+          }}
+        </Show>
       }
     >
-      {(selection) => {
-        const chapter = selection.chapter
-        const replayProfiles = profilesFor(chapter)
-        const next = () =>
-          selection.trial
-            ? undefined
-            : chapters().at(
-                chapters().findIndex((item) => item.id === chapter.id) + 1,
-              )
-        const nextLabel = () => {
-          const destination = next()
-          if (destination === undefined) return undefined
-          const verb =
-            progressFor(destination).finished === true ? 'Replay' : 'Visit'
-          return `${verb} ${destination.level.title}`
-        }
-        const nextDifficulty = () => {
-          const currentProfile = selection.profile
-          if (currentProfile === undefined) return undefined
-          const earned = highestReplayTier(
-            loadReplayProgress(campaignHost(), chapter.level, replayProfiles),
-          )
-          const profile = nextReplayDifficulty(
-            replayProfiles,
-            currentProfile.profile.tier,
-            earned,
-          )
-          if (profile === undefined || profile.profile.tier === 1)
-            return undefined
-          return {
-            label: profile.profile.title,
-            tier: profile.profile.tier,
-            onSelect: () => beginReplay(chapter, profile.profile.id, true),
-          }
-        }
-        return (
-          <GlassAdventure
-            host={selection.replayVisit?.host ?? visitHost()}
-            level={selection.profile?.level ?? chapter.level}
-            assetProfile={props.assetProfile}
-            freshStart={selection.replay}
-            onRestart={
-              selection.profile
-                ? () =>
-                    beginReplay(chapter, selection.profile!.profile.id, true)
-                : undefined
-            }
-            replayGoal={
-              selection.profile
-                ? {
-                    title: selection.profile.profile.title,
-                    tier: selection.profile.profile.tier,
-                  }
-                : undefined
-            }
-            onContinue={
-              next() !== undefined
-                ? () => {
-                    const destination = next()
-                    if (destination !== undefined) enter(destination)
-                  }
-                : undefined
-            }
-            continueLabel={nextLabel()}
-            nextLevelName={next()?.level.title}
-            nextDifficulty={nextDifficulty()}
-          />
-        )
-      }}
+      <SongRunnerScreen
+        host={campaignHost()}
+        assetProfile={props.assetProfile}
+        onExit={() => {
+          setProgressRevision((value) => value + 1)
+          setRunnerOpen(false)
+        }}
+      />
     </Show>
   )
 }

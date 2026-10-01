@@ -1,0 +1,60 @@
+/* The earned painting has its own frame inside the scrolling results card. */
+.portrait {
+  display: grid;
+  grid-template-columns: minmax(88px, 132px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgb(171 124 54 / 32%);
+  border-radius: 16px;
+  background: #fff8e9;
+}
+
+.portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 3px solid #b58b4c;
+  border-radius: 8px;
+  box-shadow: 0 5px 14px rgb(78 57 30 / 18%);
+}
+
+.portrait figcaption {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.portrait span {
+  color: #715022;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.portrait strong {
+  color: #3e4c42;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.portrait p {
+  color: #52645f;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 380px) {
+  .portrait {
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 11px;
+    padding: 10px;
+  }
+
+  .portrait strong {
+    font-size: 17px;
+  }
+}

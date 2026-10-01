@@ -8,6 +8,7 @@ import type { MuseumJourneyScene, MuseumJourneyStageLabelProjection, } from '../
 import type { IslandTrialView } from './IslandTrials'
 import { IslandTrials } from './IslandTrials'
 import styles from './MuseumJourney.module.css'
+import { SongRunnerJourneyCard } from './SongRunnerJourneyCard'
 
 export interface MuseumJourneyChapterView {
   stageId: string
@@ -50,6 +51,8 @@ export function MuseumJourney(props: {
   chapters: readonly MuseumJourneyChapterView[]
   trials?: readonly IslandTrialView[]
   onEnterTrial?(id: string): void
+  runnerUnlocked?: boolean
+  onEnterRunner?(): void
   selectedStageId: string
   assetUrl(id: string): string
   createMusic?: () => GlassMuseumAudio
@@ -154,6 +157,24 @@ export function MuseumJourney(props: {
       }
     }
     finishEntry(entryLifetime, onEnter, id)
+  }
+
+  async function enterRunner(): Promise<void> {
+    if (
+      props.runnerUnlocked !== true ||
+      !props.onEnterRunner ||
+      enteringChapterId() !== undefined
+    )
+      return
+    const onEnter = props.onEnterRunner
+    const entryLifetime = lifetime
+    setEnteringChapterId('singing-current')
+    try {
+      await music?.silenceForVoice()
+    } catch {
+      /* Unavailable output is silent. */
+    }
+    finishEntry(entryLifetime, () => onEnter(), 'singing-current')
   }
 
   function exit(): void {
@@ -634,6 +655,14 @@ export function MuseumJourney(props: {
           </For>
         </div>
       </section>
+      <Show when={props.onEnterRunner}>
+        <SongRunnerJourneyCard
+          unlocked={props.runnerUnlocked === true}
+          disabled={enteringChapterId() !== undefined}
+          imageUrl={props.assetUrl('painting-garden-v5')}
+          onEnter={() => void enterRunner()}
+        />
+      </Show>
       <IslandTrials
         trials={props.trials ?? []}
         selectedIslandId={

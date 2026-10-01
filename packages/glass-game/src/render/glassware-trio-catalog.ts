@@ -2,7 +2,7 @@
 
 import type { GlasswareTrioVariant } from '../content/glassware-trio-profile'
 import { GLASSWARE_TRIO_PROFILES, GLASSWARE_TRIO_SOURCE_HEIGHT, } from '../content/glassware-trio-profile'
-import type { BreakableRenderRecipe } from './catalog'
+import type { BreakableRenderRecipe } from './breakable-render-recipe'
 import type { ResonancePalette } from './resonance-release-config'
 
 const accents: Readonly<

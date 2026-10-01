@@ -6,7 +6,7 @@
 
 import type { AnimationAction } from 'three'
 import { AnimationMixer, Group, LoopOnce, LoopRepeat, Vector3 } from 'three'
-import type { GameSnapshot } from '../contracts'
+import type { BreakableSnapshot, PlayerState } from '../contracts'
 import { MOVEMENT } from '../core/movement'
 import { stepAngularResponse } from './angular-response'
 import { loadMercModel } from './merc-model'
@@ -16,6 +16,16 @@ const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
 const MAXIMUM_TURN_ACCELERATION = 72
 const MINIMUM_MOVE_TIME_SCALE = 0.35
 const MAXIMUM_MOVE_TIME_SCALE = 2.4
+
+/** Narrow presentation contract shared by gallery and runner; no game-state casting. */
+export interface AdventureMercSnapshot {
+  readonly player: Pick<
+    PlayerState,
+    'position' | 'velocity' | 'grounded' | 'facingYaw'
+  >
+  readonly elapsedSeconds: number
+  readonly breakables: readonly Pick<BreakableSnapshot, 'phase'>[]
+}
 
 export interface AdventureMercPresentation {
   /** Audio-clock narration envelope, distinct from the player's microphone. */
@@ -79,7 +89,7 @@ export async function loadAdventureMerc(url: string) {
   return {
     root,
     update(
-      snapshot: GameSnapshot,
+      snapshot: AdventureMercSnapshot,
       dt: number,
       reducedMotion: boolean,
       presentation: AdventureMercPresentation = {},

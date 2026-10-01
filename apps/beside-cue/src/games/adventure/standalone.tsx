@@ -156,6 +156,11 @@ async function mount(): Promise<void> {
       <AdventureScreen
         assetBase="../games/"
         level={level}
+        runner={
+          import.meta.env.DEV &&
+          new URLSearchParams(window.location.search).get('layout') ===
+            'singing-current'
+        }
         campaign={
           !import.meta.env.DEV ||
           new URLSearchParams(window.location.search).get('campaign') === '1'

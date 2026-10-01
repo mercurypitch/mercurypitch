@@ -125,4 +125,36 @@ describe('persistent glazed artwork', () => {
     expect(SHATTER_LIFECYCLE_SECONDS).toBeCloseTo(2.3)
     vessel.dispose()
   })
+
+  it('keeps intact shadows while allowing a presentation to omit flying-shard shadows', () => {
+    const target = GLASSWORKS_JOURNEY.breakables.find((item) =>
+      item.id.endsWith('/archive/encounter/archive-glazing'),
+    )!
+    const standard = createVessel(target, false)
+    const standardIntact = standard.root.getObjectByName(
+      `vessel-intact-${target.id}`,
+    ) as Mesh
+    const standardShards = standard.root.getObjectByName(
+      `vessel-shards-${target.id}`,
+    ) as Group
+    expect(standardIntact.castShadow).toBe(true)
+    expect(standardShards.children.every((child) => child.castShadow)).toBe(
+      true,
+    )
+    standard.dispose()
+
+    const runnerTarget = { ...target, id: `${target.id}-runner` }
+    const runner = createVessel(runnerTarget, false, {
+      castShardShadows: false,
+    })
+    const runnerIntact = runner.root.getObjectByName(
+      `vessel-intact-${runnerTarget.id}`,
+    ) as Mesh
+    const runnerShards = runner.root.getObjectByName(
+      `vessel-shards-${runnerTarget.id}`,
+    ) as Group
+    expect(runnerIntact.castShadow).toBe(true)
+    expect(runnerShards.children.every((child) => !child.castShadow)).toBe(true)
+    runner.dispose()
+  })
 })

@@ -497,6 +497,7 @@ jobs:
             render-quality,
             replay,
             resonance,
+            song-runner,
             songbook,
             solids,
             thawing-song,
