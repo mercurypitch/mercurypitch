@@ -6,7 +6,7 @@ import type { BufferGeometry, Material, Texture, Vector3 } from 'three'
 import { Box3, DoubleSide, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, } from 'three'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
-import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
@@ -576,7 +576,10 @@ function createVesselPresentation(
       const deltaSeconds =
         previousNow === undefined
           ? 0
-          : Math.max(0, Math.min(0.1, now - previousNow))
+          : Math.max(
+              0,
+              Math.min(MAXIMUM_SHATTER_FRAME_SECONDS, now - previousNow),
+            )
       previousNow = now
       if (!presentationVisible) return
       if (resetPending) {

@@ -14,6 +14,8 @@ import { createMercPresentationPose } from './merc-presentation-pose'
 
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
 const MAXIMUM_TURN_ACCELERATION = 72
+const MAXIMUM_TURN_CATCH_UP_SECONDS = 0.25
+const TURN_RESPONSE_SLICE_SECONDS = 0.05
 const MINIMUM_MOVE_TIME_SCALE = 0.35
 const MAXIMUM_MOVE_TIME_SCALE = 2.4
 
@@ -146,13 +148,21 @@ export async function loadAdventureMerc(url: string) {
       root.position.copy(player.position)
       const desiredYaw = presentation.facingYaw ?? player.facingYaw + Math.PI
       const requestedTurnDt = presentation.turnDeltaSeconds ?? dt
-      const turnDt = Number.isFinite(requestedTurnDt)
-        ? Math.max(0, Math.min(0.05, requestedTurnDt))
+      let remainingTurnSeconds = Number.isFinite(requestedTurnDt)
+        ? Math.max(0, Math.min(MAXIMUM_TURN_CATCH_UP_SECONDS, requestedTurnDt))
         : 0
-      stepAngularResponse(facingResponse, desiredYaw, turnDt, {
-        maximumSpeed: MAXIMUM_TURN_RADIANS_PER_SECOND,
-        maximumAcceleration: MAXIMUM_TURN_ACCELERATION,
-      })
+      while (remainingTurnSeconds > 1e-9) {
+        const slice = Math.min(
+          remainingTurnSeconds,
+          TURN_RESPONSE_SLICE_SECONDS,
+        )
+        const settled = stepAngularResponse(facingResponse, desiredYaw, slice, {
+          maximumSpeed: MAXIMUM_TURN_RADIANS_PER_SECOND,
+          maximumAcceleration: MAXIMUM_TURN_ACCELERATION,
+        })
+        remainingTurnSeconds -= slice
+        if (settled) break
+      }
       root.rotation.y = facingResponse.angle
     },
     dispose() {

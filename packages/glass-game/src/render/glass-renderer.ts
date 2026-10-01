@@ -26,8 +26,10 @@ import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { precompileRendererPrograms } from './program-precompile'
-import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
+import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from './render-performance-governor'
+import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, GlassShadowFrameInterval, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
+import { withResidentRenderablesVisible } from './render-warmup'
 import { resolveResonanceExhibitPresentations } from './resonance-exhibit-layout'
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
@@ -92,10 +94,13 @@ export interface GlassRenderer {
     /** Startup asset profile; changing display quality does not reload a world. */
     assetProfile: GlassAssetQualityProfile
     pixelRatio: number
-    shadowFrameInterval: 1 | 2
+    shadowFrameInterval: GlassShadowFrameInterval
   }
   setMovementActive(active: boolean): void
-  rebaseMovement(kind?: MovementReferenceKind): void
+  rebaseMovement(
+    kind?: MovementReferenceKind,
+    travelOffsetRadians?: number,
+  ): void
   cancelHeadingFollow(): void
   pickArtwork(clientX: number, clientY: number): string | null
   nearbyArtwork(position: Vec3): string | null
@@ -105,8 +110,16 @@ export interface GlassRenderer {
     triangles: number
     textures: number
     geometries: number
+    colorBufferFloat: boolean
+    floatLinear: boolean
     reflectionCaptures: number
     reflectionTargetPixels: number
+    adaptiveQualityActive: boolean
+    performanceSampleCount: number
+    performanceSampleWindowSeconds: number
+    performanceSlowSampleCount: number
+    actualPixelRatio: number
+    actualShadowFrameInterval: GlassShadowFrameInterval
     shadowUpdates: number
     shadowReuses: number
   }
@@ -200,10 +213,14 @@ function createGlassRendererInstance(
     renderQualityPreference,
     qualityEnvironment,
   )
-  const loadedAssetProfile = options.assetProfile ?? renderQuality.assetProfile
-  const shadowCadence = createShadowUpdateCadence(
-    renderQuality.shadowFrameInterval,
+  const performanceGovernor = createRenderPerformanceGovernor(
+    renderQualityPreference,
+    renderQuality.profile,
   )
+  registerPartialCleanup(() => performanceGovernor.dispose())
+  const loadedAssetProfile = options.assetProfile ?? renderQuality.assetProfile
+  let shadowFrameInterval = renderQuality.shadowFrameInterval
+  const shadowCadence = createShadowUpdateCadence(shadowFrameInterval)
   let shadowUpdates = 0
   let shadowReuses = 0
   const renderer = new WebGLRenderer({
@@ -214,11 +231,18 @@ function createGlassRendererInstance(
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.9
+  const renderContext = renderer.getContext()
+  const renderCapabilities = {
+    colorBufferFloat:
+      renderContext.getExtension('EXT_color_buffer_float') !== null,
+    floatLinear:
+      renderContext.getExtension('OES_texture_float_linear') !== null,
+  }
   renderer.transmissionResolutionScale =
     renderQuality.transmissionResolutionScale
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFShadowMap
-  renderer.shadowMap.autoUpdate = renderQuality.shadowFrameInterval === 1
+  renderer.shadowMap.autoUpdate = shadowFrameInterval === 1
   // The reflection probe renders before the playable-frame cadence runs.
   // Prime a manual shadow map so Balanced never samples Three's placeholder
   // texture during that first offscreen pass.
@@ -379,6 +403,29 @@ function createGlassRendererInstance(
     camera.camera.updateProjectionMatrix()
     shadowCadence.invalidate()
   }
+  const applyPresentationQuality = (): void => {
+    const adapted = performanceGovernor.metrics().adapted
+    const nextPixelRatio = adapted
+      ? Math.min(
+          effectiveGlassPixelRatio(window.devicePixelRatio, renderQuality),
+          ADAPTIVE_PIXEL_RATIO,
+        )
+      : effectiveGlassPixelRatio(window.devicePixelRatio, renderQuality)
+    const nextShadowFrameInterval = adapted
+      ? ADAPTIVE_SHADOW_FRAME_INTERVAL
+      : renderQuality.shadowFrameInterval
+    const pixelRatioChanged = nextPixelRatio !== pixelRatio
+    pixelRatio = nextPixelRatio
+    shadowFrameInterval = nextShadowFrameInterval
+    renderer.transmissionResolutionScale =
+      renderQuality.transmissionResolutionScale
+    renderer.shadowMap.autoUpdate = shadowFrameInterval === 1
+    shadowCadence.setInterval(shadowFrameInterval)
+    if (pixelRatioChanged) {
+      renderer.setPixelRatio(pixelRatio)
+      resize()
+    }
+  }
   resize()
   const observer = new ResizeObserver(resize)
   registerPartialCleanup(() => observer.disconnect())
@@ -485,7 +532,17 @@ function createGlassRendererInstance(
         camera.camera,
         programPrecompile.signal,
       )
-      if (!disposed && !contextLost) loading.complete('gpu:programs')
+      if (disposed || contextLost) return
+      // compile() cannot upload hidden buffers or complete a program's first
+      // real use. Exercise every resident effect behind the loading cover on
+      // the same framebuffer used during play, then restore its exact state.
+      renderer.shadowMap.needsUpdate = true
+      withResidentRenderablesVisible(scene, () =>
+        renderer.render(scene, camera.camera),
+      )
+      shadowCadence.invalidate()
+      performanceGovernor.activate()
+      loading.complete('gpu:programs')
     })
     .catch((error: unknown) => {
       loading.freeze()
@@ -507,25 +564,16 @@ function createGlassRendererInstance(
     setRenderQuality(preference) {
       const next = resolveGlassRenderQuality(preference, qualityEnvironment)
       renderQualityPreference = preference
-      if (next === renderQuality) return
       renderQuality = next
-      pixelRatio = effectiveGlassPixelRatio(
-        window.devicePixelRatio,
-        renderQuality,
-      )
-      renderer.transmissionResolutionScale =
-        renderQuality.transmissionResolutionScale
-      renderer.shadowMap.autoUpdate = renderQuality.shadowFrameInterval === 1
-      shadowCadence.setInterval(renderQuality.shadowFrameInterval)
-      renderer.setPixelRatio(pixelRatio)
-      resize()
+      performanceGovernor.configure(preference, next.profile)
+      applyPresentationQuality()
     },
     getRenderQuality: () => ({
       preference: renderQualityPreference,
       profile: renderQuality.profile,
       assetProfile: loadedAssetProfile,
       pixelRatio,
-      shadowFrameInterval: renderQuality.shadowFrameInterval,
+      shadowFrameInterval,
     }),
     setMovementActive: camera.setMovementActive,
     rebaseMovement: camera.rebaseMovement,
@@ -533,27 +581,49 @@ function createGlassRendererInstance(
     pickArtwork: gallery.pick,
     nearbyArtwork: gallery.nearby,
     getChallengeCameraMetrics: camera.getChallengeMetrics,
-    getMetrics: () => ({
-      drawCalls: renderer.info.render.calls,
-      triangles: renderer.info.render.triangles,
-      textures: renderer.info.memory.textures,
-      geometries: renderer.info.memory.geometries,
-      reflectionCaptures: museum.planarReflectionMetrics.captures,
-      reflectionTargetPixels:
-        museum.planarReflectionMetrics.targetWidth *
-        museum.planarReflectionMetrics.targetHeight,
-      shadowUpdates,
-      shadowReuses,
-    }),
+    getMetrics: () => {
+      const performance = performanceGovernor.metrics()
+      return {
+        drawCalls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        textures: renderer.info.memory.textures,
+        geometries: renderer.info.memory.geometries,
+        ...renderCapabilities,
+        reflectionCaptures: museum.planarReflectionMetrics.captures,
+        reflectionTargetPixels:
+          museum.planarReflectionMetrics.targetWidth *
+          museum.planarReflectionMetrics.targetHeight,
+        adaptiveQualityActive: performance.adapted,
+        performanceSampleCount: performance.sampleCount,
+        performanceSampleWindowSeconds: performance.sampleWindowSeconds,
+        performanceSlowSampleCount: performance.slowSampleCount,
+        actualPixelRatio: pixelRatio,
+        actualShadowFrameInterval: shadowFrameInterval,
+        shadowUpdates,
+        shadowReuses,
+      }
+    },
     render(snapshot, delta, presentation) {
       if (disposed || contextLost || !drawable) return false
       latest = snapshot
       const elapsedDt = Number.isFinite(delta) ? Math.max(0, delta) : 0
-      const cameraDt = Math.min(0.05, elapsedDt)
+      const performanceEligible =
+        snapshot.phase === 'idle' &&
+        !snapshot.complete &&
+        !snapshot.paused &&
+        presentation?.paused !== true &&
+        (presentation?.challengeEncounterId ?? null) === null &&
+        !camera.challengePresentationActive() &&
+        (typeof document === 'undefined' ||
+          document.visibilityState === 'visible')
+      if (performanceGovernor.observe(elapsedDt, performanceEligible))
+        applyPresentationQuality()
       // A slow mobile frame cannot be redrawn, but dropping its elapsed time
       // here made Merc's mixer lag behind the game's wall clock afterward.
       // Keep a suspension bound while allowing ordinary hitches to catch up.
       const animationDt = snapshot.paused ? 0 : Math.min(0.25, elapsedDt)
+      const presentationDt = Math.min(0.25, elapsedDt)
+      const cameraDt = Math.min(0.05, elapsedDt)
       const simulationDt = snapshot.paused ? 0 : cameraDt
       const presentationPaused = presentation?.paused ?? snapshot.paused
       camera.setChallengeEncounter(presentation?.challengeEncounterId ?? null)
@@ -577,7 +647,7 @@ function createGlassRendererInstance(
       contact.update(snapshot)
       merc?.update(snapshot, animationDt, options.reducedMotion ?? false, {
         facingYaw: presentationFacingYaw,
-        turnDeltaSeconds: presentationPaused ? 0 : cameraDt,
+        turnDeltaSeconds: presentationPaused ? 0 : presentationDt,
         narrationLevel: presentationPaused ? 0 : presentation?.narrationLevel,
       })
       camera.setOccluders(museum.cameraOccluders())
@@ -620,7 +690,7 @@ function createGlassRendererInstance(
         }
       }
       if (challengeId === null) boundsEncounterId = null
-      camera.update(snapshot, cameraDt, presentationPaused)
+      camera.update(snapshot, presentationDt, presentationPaused)
       const cloudwaySelectionChanged = museum.cullCloudwayPlatforms(
         camera.camera,
       )
@@ -713,6 +783,7 @@ function createGlassRendererInstance(
       assetLoads.abort()
       programPrecompile.abort()
       loading.freeze()
+      performanceGovernor.dispose()
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()
       camera.clearChallenge()

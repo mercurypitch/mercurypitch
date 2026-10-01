@@ -16,7 +16,7 @@ import { createPlatformRuntime } from './platform-runtime'
 import { findCheckpoint, getRequiredRouteBreakableIds, readProgress, requirementsMet, } from './progress'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
-import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from './shatter-presentation'
 import { getActiveCourseSolids } from './solid-activation'
 
 const EXIT_GUIDANCE_RADIUS = 1.35
@@ -246,7 +246,13 @@ export function createGlassGame(
       const events: GameEvent[] = []
       if (paused || complete || !Number.isFinite(delta) || delta <= 0)
         return events
-      elapsedSeconds += delta
+      // The shatter is an input-locked cinematic owned by this same clock.
+      // Bound a slow rendered frame so shards, camera hold and input release
+      // cannot skip ahead or disagree about when the beat has finished.
+      elapsedSeconds +=
+        shattering === null
+          ? delta
+          : Math.min(delta, MAXIMUM_SHATTER_FRAME_SECONDS)
       if (shattering !== null) {
         if (elapsedSeconds >= shattering.until) {
           shattering = null

@@ -28,6 +28,12 @@ export type {
   ChallengeCameraMetrics,
 } from './camera-policy'
 
+// Match the movement clock's maximum foreground catch-up while keeping the
+// obstruction/framing solve on one bounded render step. Angular response has
+// its own 50 ms stability bound, so delayed frames are advanced in slices.
+const MAXIMUM_CAMERA_CATCH_UP_SECONDS = 0.25
+const CAMERA_RESPONSE_SLICE_SECONDS = 0.05
+
 export function createAdventureCamera(
   level: LevelDefinition,
   options: AdventureCameraOptions = {},
@@ -71,6 +77,8 @@ export function createAdventureCamera(
   let movementReferenceYaw = yaw
   let orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
   let committedHeading: number | null = null
+  let movementHeading: number | null = null
+  let movementReferenceKind: MovementReferenceKind = 'keyboard'
   let movementActive = false
   let orbitActive = false
   let manualOrbitOverride = false
@@ -238,6 +246,7 @@ export function createAdventureCamera(
       movementReferenceYaw = yaw
       manualOrbitOverride = false
       committedHeading = null
+      movementHeading = null
       headingIntent.reset()
       challengeDirector.clear()
       challengeShot = null
@@ -290,6 +299,7 @@ export function createAdventureCamera(
       challengePlanKey = ''
     },
     focusedChallengeId,
+    challengePresentationActive: challengeInputLocked,
     getChallengeMetrics: metrics,
     clearChallenge() {
       requestedChallengeId = null
@@ -317,11 +327,23 @@ export function createAdventureCamera(
         movementReferenceYaw =
           cameraMode === 'first-person' ? firstPerson.yaw() : yaw
     },
-    rebaseMovement(kind: MovementReferenceKind = 'keyboard') {
-      movementReferenceYaw =
-        cameraMode === 'first-person' ? firstPerson.yaw() : yaw
+    rebaseMovement(
+      kind: MovementReferenceKind = 'keyboard',
+      travelOffsetRadians?: number,
+    ) {
+      // A deliberate look while moving owns only the view. Direction changes
+      // inside that same held contact stay on its original world-space basis;
+      // an idle orbit has already kept the basis aligned to the latest view.
+      if (!manualOrbitOverride)
+        movementReferenceYaw =
+          cameraMode === 'first-person' ? firstPerson.yaw() : yaw
+      movementReferenceKind = kind
+      movementHeading =
+        typeof travelOffsetRadians === 'number' &&
+        Number.isFinite(travelOffsetRadians)
+          ? movementReferenceYaw + travelOffsetRadians
+          : null
       committedHeading = null
-      manualOrbitOverride = false
       headingIntent.rebase(kind)
       const routeYaw = validRouteYaw(activeRouteSection)
       if (routeYaw !== null && options.reducedMotion !== true)
@@ -333,6 +355,7 @@ export function createAdventureCamera(
       movementReferenceYaw =
         cameraMode === 'first-person' ? firstPerson.yaw() : yaw
       manualOrbitOverride = false
+      movementHeading = null
       headingIntent.reset()
       stopAngularResponse(followResponse, yaw)
     },
@@ -397,16 +420,20 @@ export function createAdventureCamera(
       movementReferenceYaw = yaw
       orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
       committedHeading = null
+      movementHeading = null
       manualOrbitOverride = false
       headingIntent.reset()
       stopAngularResponse(followResponse, yaw)
     },
     update(snapshot: GameSnapshot, dt: number, presentationPaused = false) {
       obstruction.updatePlatformStates(snapshot.platformStates)
+      const elapsed =
+        !presentationPaused && Number.isFinite(dt) ? Math.max(0, dt) : 0
       const safeDt =
         !presentationPaused && Number.isFinite(dt)
           ? MathUtils.clamp(dt, 0, 0.05)
           : 0
+      const followDt = Math.min(elapsed, MAXIMUM_CAMERA_CATCH_UP_SECONDS)
       if (Number.isFinite(snapshot.player.facingYaw))
         facing = snapshot.player.facingYaw
       const challengeId = focusedChallengeId(snapshot)
@@ -535,19 +562,27 @@ export function createAdventureCamera(
       if (!snapshot.paused && !orbitActive)
         orbitQuietSeconds = Math.min(
           ORBIT_FOLLOW_GRACE_SECONDS,
-          orbitQuietSeconds + safeDt,
+          orbitQuietSeconds + followDt,
         )
       const moving =
         Math.hypot(snapshot.player.velocity.x, snapshot.player.velocity.z) >
         MOVING_SPEED
+      const effectiveHeading = moving
+        ? Math.atan2(-snapshot.player.velocity.x, -snapshot.player.velocity.z)
+        : null
       if (
         manualOrbitOverride &&
         movementActive &&
-        moving &&
         !orbitActive &&
         orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
-      )
+      ) {
         manualOrbitOverride = false
+        committedHeading =
+          movementReferenceKind === 'keyboard'
+            ? (movementHeading ?? facing)
+            : facing
+        headingIntent.rebase(movementReferenceKind)
+      }
       const followsHeading =
         options.reducedMotion !== true &&
         !snapshot.paused &&
@@ -566,8 +601,10 @@ export function createAdventureCamera(
         } else {
           const requestedHeading = headingIntent.target({
             allowForwardDiagonalFollow: framedTarget,
-            elapsedSeconds: safeDt,
+            elapsedSeconds: followDt,
+            effectiveHeading,
             facingYaw: facing,
+            keyboardHeading: movementHeading,
             movementActive,
             movementReferenceYaw,
             moving,
@@ -575,9 +612,9 @@ export function createAdventureCamera(
           if (requestedHeading !== null) committedHeading = requestedHeading
         }
       }
-      // Input intent, rather than velocity, defines one movement contact. A
-      // collision can stop Merc without releasing the held key/stick; keeping
-      // the basis there avoids turning a wall contact into camera feedback.
+      // Input intent defines one stable movement contact. The camera may adopt
+      // a confirmed corridor slide, but its turn never changes this basis and
+      // therefore cannot feed back into the held world-space travel direction.
       if (!movementActive) movementReferenceYaw = yaw
       if (routeHeadingFrozen) stopAngularResponse(followResponse, yaw)
       if (
@@ -588,17 +625,26 @@ export function createAdventureCamera(
         !routeHeadingFrozen &&
         orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
       ) {
-        const settled = stepAngularResponse(
-          followResponse,
-          committedHeading,
-          safeDt,
-          {
-            maximumSpeed: MAXIMUM_FOLLOW_RADIANS_PER_SECOND,
-            maximumAcceleration:
-              MAXIMUM_FOLLOW_RADIANS_PER_SECOND / followSmoothnessSeconds,
-            completeRadians: FOLLOW_COMPLETE_RADIANS,
-          },
-        )
+        let remainingFollowSeconds = followDt
+        let settled = false
+        while (remainingFollowSeconds > 1e-9 && !settled) {
+          const slice = Math.min(
+            remainingFollowSeconds,
+            CAMERA_RESPONSE_SLICE_SECONDS,
+          )
+          settled = stepAngularResponse(
+            followResponse,
+            committedHeading,
+            slice,
+            {
+              maximumSpeed: MAXIMUM_FOLLOW_RADIANS_PER_SECOND,
+              maximumAcceleration:
+                MAXIMUM_FOLLOW_RADIANS_PER_SECOND / followSmoothnessSeconds,
+              completeRadians: FOLLOW_COMPLETE_RADIANS,
+            },
+          )
+          remainingFollowSeconds -= slice
+        }
         yaw = followResponse.angle
         if (settled) {
           committedHeading = null

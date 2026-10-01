@@ -338,6 +338,39 @@ describe('manual adventure movement', () => {
     expect(state.position.y).toBe(0)
   })
 
+  it('faces the surviving wall-slide velocity and keeps that heading when fully blocked', () => {
+    const wall = {
+      ...floor,
+      id: 'wall',
+      minX: 1,
+      maxX: 1.05,
+      top: 1,
+      thickness: 1,
+    }
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    moveFor(state, { ...idle, moveX: 1, moveZ: 1 }, 1, MOVEMENT.fixedStep, [
+      floor,
+      wall,
+    ])
+
+    expect(state.velocity.x).toBe(0)
+    expect(state.velocity.z).toBeGreaterThan(0)
+    expect(
+      Math.abs(
+        Math.atan2(
+          Math.sin(state.facingYaw - Math.PI),
+          Math.cos(state.facingYaw - Math.PI),
+        ),
+      ),
+    ).toBeLessThan(1e-8)
+
+    const slideHeading = state.facingYaw
+    moveFor(state, { ...idle, moveX: 1 }, 1, MOVEMENT.fixedStep, [floor, wall])
+    expect(state.velocity.x).toBe(0)
+    expect(Math.abs(state.velocity.z)).toBeLessThan(0.01)
+    expect(state.facingYaw).toBe(slideHeading)
+  })
+
   it.each([
     [
       'arch-bridge',

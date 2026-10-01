@@ -32,6 +32,18 @@ import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
 
 const LOADING_PRESENTATION_MS = 2000
+const MAXIMUM_KEYBOARD_CAMERA_FRAME_SECONDS = 0.25
+const KEYBOARD_CAMERA_YAW_RADIANS_PER_SECOND = 1.6
+const KEYBOARD_CAMERA_PITCH_RADIANS_PER_SECOND = 1
+const KEYBOARD_CAMERA_ORBIT: Readonly<
+  Partial<Record<KeyboardEvent['code'], readonly [number, number]>>
+> = {
+  KeyQ: [-0.08, 0],
+  KeyE: [0.08, 0],
+  KeyI: [0, -0.05],
+  KeyK: [0, 0.05],
+}
+
 export function useAdventure(
   host: GlassGameHost,
   level: LevelDefinition,
@@ -598,6 +610,8 @@ export function useAdventure(
     beginRendererAttempt()
   }
 
+  const getRenderMetrics = () => renderer?.getMetrics() ?? null
+
   onMount(() => {
     const viewport = mount()
     let voicePanel: HTMLElement | null = null
@@ -650,11 +664,32 @@ export function useAdventure(
       // the main thread for pitch capture and the visible melody ribbon.
       const covered = presentationCovered()
       if (!covered && ready() && !paused() && !tutorial()) {
+        const cameraOrbit = input.cameraOrbitAxes()
+        const cameraFrameSeconds = Math.min(
+          Math.max(0, elapsed),
+          MAXIMUM_KEYBOARD_CAMERA_FRAME_SECONDS,
+        )
+        if (cameraOrbit.yaw !== 0 || cameraOrbit.pitch !== 0) {
+          const lookSensitivity = cameraComfort().lookSensitivity
+          renderer?.orbit(
+            cameraOrbit.yaw *
+              KEYBOARD_CAMERA_YAW_RADIANS_PER_SECOND *
+              cameraFrameSeconds *
+              lookSensitivity,
+            cameraOrbit.pitch *
+              KEYBOARD_CAMERA_PITCH_RADIANS_PER_SECOND *
+              cameraFrameSeconds *
+              lookSensitivity,
+          )
+        }
         const movementActive = input.hasMovementIntent()
         const movementReferenceChanged = input.consumeMovementReferenceChange()
         renderer?.setMovementActive(movementActive)
         if (movementActive && movementReferenceChanged)
-          renderer?.rebaseMovement(movementReferenceChanged)
+          renderer?.rebaseMovement(
+            movementReferenceChanged,
+            input.desiredTravelYaw(0) ?? undefined,
+          )
         events(
           game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )
@@ -735,21 +770,11 @@ export function useAdventure(
         void start()
       }
       if (event.code === 'KeyR') renderer?.recenter()
-      if (event.code === 'KeyQ') {
+      const keyboardOrbit = KEYBOARD_CAMERA_ORBIT[event.code]
+      if (keyboardOrbit !== undefined) {
+        event.preventDefault()
         gameplayGesture()
-        renderer?.orbit(-0.08, 0)
-      }
-      if (event.code === 'KeyE') {
-        gameplayGesture()
-        renderer?.orbit(0.08, 0)
-      }
-      if (event.code === 'KeyI') {
-        gameplayGesture()
-        renderer?.orbit(0, -0.05)
-      }
-      if (event.code === 'KeyK') {
-        gameplayGesture()
-        renderer?.orbit(0, 0.05)
+        renderer?.orbit(...keyboardOrbit)
       }
     }
     const keyUp = (event: KeyboardEvent): void => {
@@ -796,6 +821,7 @@ export function useAdventure(
     loadingGeneration,
     loadError,
     retryLoading,
+    getRenderMetrics,
     ready,
     error,
     microphoneIssue,

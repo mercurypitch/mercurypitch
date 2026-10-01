@@ -47,8 +47,15 @@ export function createMarbleTexture(): CanvasTexture {
   return texture
 }
 
+export interface ReflectionTextureOptions {
+  /** Adds a cool reflected floor without changing the authored sky or key. */
+  readonly lowerHemisphereFill?: readonly [number, number, number]
+}
+
 /** The same warm upper-left key and teal side-light as the scene's lamps. */
-export function createReflectionTexture(): DataTexture {
+export function createReflectionTexture(
+  options: ReflectionTextureOptions = {},
+): DataTexture {
   const width = 512
   const height = 256
   const data = new Float32Array(width * height * 4)
@@ -60,15 +67,34 @@ export function createReflectionTexture(): DataTexture {
       const dx = Math.cos(latitude) * Math.cos(longitude)
       const dz = Math.cos(latitude) * Math.sin(longitude)
       const sky = Math.max(0, dy)
+      const ground = Math.max(0, -dy)
       const horizon = Math.exp(-Math.abs(dy) * 9)
       const key =
         Math.pow(Math.max(0, dx * -0.57 + dy * 0.74 + dz * 0.35), 45) * 8
       const rim =
         Math.pow(Math.max(0, dx * 0.8 + dy * 0.35 + dz * -0.48), 25) * 3
       const i = (y * width + x) * 4
-      data[i] = 0.018 + sky * 0.16 + horizon * 0.9 + key + rim * 0.12
-      data[i + 1] = 0.03 + sky * 0.3 + horizon * 0.55 + key * 0.79 + rim * 0.65
-      data[i + 2] = 0.045 + sky * 0.42 + horizon * 0.29 + key * 0.5 + rim * 0.85
+      data[i] =
+        0.018 +
+        sky * 0.16 +
+        horizon * 0.9 +
+        key +
+        rim * 0.12 +
+        ground * (options.lowerHemisphereFill?.[0] ?? 0)
+      data[i + 1] =
+        0.03 +
+        sky * 0.3 +
+        horizon * 0.55 +
+        key * 0.79 +
+        rim * 0.65 +
+        ground * (options.lowerHemisphereFill?.[1] ?? 0)
+      data[i + 2] =
+        0.045 +
+        sky * 0.42 +
+        horizon * 0.29 +
+        key * 0.5 +
+        rim * 0.85 +
+        ground * (options.lowerHemisphereFill?.[2] ?? 0)
       data[i + 3] = 1
     }
   }

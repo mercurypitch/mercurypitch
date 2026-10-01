@@ -8,6 +8,11 @@ interface MovementAxes {
   forward: number
 }
 
+export interface CameraOrbitAxes {
+  yaw: number
+  pitch: number
+}
+
 export function isAdventureEditableTarget(target: EventTarget | null): boolean {
   if (target === null || typeof target !== 'object') return false
   const element = target as HTMLElement
@@ -38,6 +43,7 @@ export interface AdventureInput {
   read(yaw: number): MovementInput
   /** World-space heading requested by the current contact, before acceleration. */
   desiredTravelYaw(yaw: number): number | null
+  cameraOrbitAxes(): CameraOrbitAxes
   hasMovementIntent(): boolean
   consumeMovementReferenceChange(): MovementReferenceKind | null
   setStick(x: number, y: number): void
@@ -53,15 +59,15 @@ export function createAdventureInput(): AdventureInput {
   let touchJump = false
   let referenceChange: MovementReferenceKind | null = null
   const movementAxes = () => ({
-    x:
-      stickX +
-      Number(held.has('KeyD') || held.has('ArrowRight')) -
-      Number(held.has('KeyA') || held.has('ArrowLeft')),
-    forward:
-      -stickY +
-      Number(held.has('KeyW') || held.has('ArrowUp')) -
-      Number(held.has('KeyS') || held.has('ArrowDown')),
+    x: stickX + Number(held.has('KeyD')) - Number(held.has('KeyA')),
+    forward: -stickY + Number(held.has('KeyW')) - Number(held.has('KeyS')),
   })
+  const cameraOrbitAxes = (): CameraOrbitAxes => {
+    const yaw = Number(held.has('ArrowRight')) - Number(held.has('ArrowLeft'))
+    const pitch = Number(held.has('ArrowDown')) - Number(held.has('ArrowUp'))
+    const length = Math.max(1, Math.hypot(yaw, pitch))
+    return { yaw: yaw / length, pitch: pitch / length }
+  }
   const movementInput = (yaw: number): MovementInput => {
     const { x, forward } = movementAxes()
     const magnitude = Math.hypot(x, forward)
@@ -127,6 +133,7 @@ export function createAdventureInput(): AdventureInput {
         return null
       return Math.atan2(-movement.moveX, -movement.moveZ)
     },
+    cameraOrbitAxes,
     hasMovementIntent() {
       return hasMovementIntent(movementAxes())
     },

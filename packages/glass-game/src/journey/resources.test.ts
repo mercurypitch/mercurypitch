@@ -2,7 +2,7 @@
 
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
 import { describe, expect, it, vi } from 'vitest'
-import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, } from './resources'
+import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, MAXIMUM_JOURNEY_FRAME_SECONDS, } from './resources'
 
 describe('journey glTF loading', () => {
   it('loads an ordinary glTF document through the real parser and default fetch', async () => {
@@ -294,12 +294,37 @@ describe('journey frame loop', () => {
     run(100)
     run(120)
     expect(updates).toHaveBeenLastCalledWith(0.02, 0.02)
+    run(620)
+    expect(updates).toHaveBeenLastCalledWith(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+      MAXIMUM_JOURNEY_FRAME_SECONDS,
+    )
+    run(600)
+    expect(updates).toHaveBeenLastCalledWith(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+      0,
+    )
+    run(Number.NaN)
+    expect(updates).toHaveBeenLastCalledWith(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+      0,
+    )
+    run(900)
+    expect(updates).toHaveBeenLastCalledWith(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+      0,
+    )
     loop.setForeground(false)
     expect(callbacks.size).toBe(0)
     loop.setForeground(true)
     run(10_000)
-    expect(updates).toHaveBeenLastCalledWith(0.02, 0)
-    expect(loop.visibleSeconds()).toBeCloseTo(0.02)
+    expect(updates).toHaveBeenLastCalledWith(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+      0,
+    )
+    expect(loop.visibleSeconds()).toBeCloseTo(
+      0.02 + MAXIMUM_JOURNEY_FRAME_SECONDS,
+    )
     loop.dispose()
     expect(callbacks.size).toBe(0)
     expect(cancel).toHaveBeenCalled()

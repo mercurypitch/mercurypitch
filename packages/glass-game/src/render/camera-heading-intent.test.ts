@@ -50,4 +50,72 @@ describe('camera heading intent', () => {
       enclosed.target({ ...diagonal, allowForwardDiagonalFollow: true }),
     ).toBeCloseTo(Math.PI / 4)
   })
+
+  it('keeps a committed keyboard target independent of collision-facing changes', () => {
+    const intent = createCameraHeadingIntent()
+    intent.rebase('keyboard')
+    const keyboardHeading = Math.PI / 4
+
+    expect(
+      intent.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        elapsedSeconds: 0.4,
+        facingYaw: 0.2,
+        keyboardHeading,
+      }),
+    ).toBeCloseTo(keyboardHeading)
+    expect(
+      intent.target({
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        facingYaw: Math.PI / 2,
+        keyboardHeading,
+      }),
+    ).toBeCloseTo(keyboardHeading)
+  })
+
+  it('adopts a sustained effective corridor heading without following transient collision noise', () => {
+    const intent = createCameraHeadingIntent()
+    intent.rebase('keyboard')
+    const requestedHeading = Math.PI / 4
+    const corridorHeading = Math.PI / 2
+    const confirmed = {
+      ...SAMPLE,
+      allowForwardDiagonalFollow: true,
+      elapsedSeconds: 0.4,
+      keyboardHeading: requestedHeading,
+    }
+    expect(intent.target(confirmed)).toBeCloseTo(requestedHeading)
+
+    expect(
+      intent.target({
+        ...confirmed,
+        elapsedSeconds: 0.2,
+        effectiveHeading: corridorHeading,
+      }),
+    ).toBeCloseTo(requestedHeading)
+    expect(
+      intent.target({
+        ...confirmed,
+        elapsedSeconds: 0.1,
+        effectiveHeading: 0,
+      }),
+    ).toBeCloseTo(requestedHeading)
+
+    expect(
+      intent.target({
+        ...confirmed,
+        elapsedSeconds: 0.2,
+        effectiveHeading: corridorHeading,
+      }),
+    ).toBeCloseTo(requestedHeading)
+    expect(
+      intent.target({
+        ...confirmed,
+        elapsedSeconds: 0.2,
+        effectiveHeading: corridorHeading,
+      }),
+    ).toBeCloseTo(corridorHeading)
+  })
 })

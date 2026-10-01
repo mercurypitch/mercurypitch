@@ -8,6 +8,7 @@ export type GlassRenderQualityProfile = Exclude<
   'auto'
 >
 export type GlassAssetQualityProfile = 'full' | 'mobile'
+export type GlassShadowFrameInterval = 1 | 2 | 4
 
 export interface GlassRenderQualityEnvironment {
   cssWidth: number
@@ -21,7 +22,7 @@ export interface GlassRenderQualityPolicy {
   assetProfile: GlassAssetQualityProfile
   maximumConcurrentBundleLoads: 1 | 2
   maximumPixelRatio: number
-  shadowFrameInterval: 1 | 2
+  shadowFrameInterval: GlassShadowFrameInterval
   shadowMapSize: 1024
   transmissionResolutionScale: 0.5
 }
@@ -73,7 +74,9 @@ export function effectiveGlassPixelRatio(
 }
 
 /** First frame and every Nth frame update; invalidation always updates next. */
-export function createShadowUpdateCadence(initialInterval: 1 | 2) {
+export function createShadowUpdateCadence(
+  initialInterval: GlassShadowFrameInterval,
+) {
   let interval = initialInterval
   let reusedFrames = 0
   let invalidated = true
@@ -90,7 +93,7 @@ export function createShadowUpdateCadence(initialInterval: 1 | 2) {
     invalidate(): void {
       invalidated = true
     },
-    setInterval(next: 1 | 2): void {
+    setInterval(next: GlassShadowFrameInterval): void {
       if (interval === next) return
       interval = next
       reusedFrames = 0

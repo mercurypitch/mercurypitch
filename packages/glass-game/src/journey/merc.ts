@@ -6,6 +6,8 @@ import type { MuseumJourneyStage } from '../content/museum-journey'
 import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
 import type { JourneyGltfDocument } from './resources'
 
+const MAXIMUM_MERC_FRAME_SECONDS = 0.25
+
 export function createJourneyMerc(
   document: JourneyGltfDocument,
   first: MuseumJourneyStage,
@@ -61,7 +63,9 @@ export function createJourneyMerc(
     },
     update(dt: number, reducedMotion: boolean) {
       if (disposed) return
-      const safeDt = Math.max(0, Math.min(0.05, dt))
+      const safeDt = Number.isFinite(dt)
+        ? Math.max(0, Math.min(MAXIMUM_MERC_FRAME_SECONDS, dt))
+        : 0
       mixer.update(reducedMotion ? 0 : safeDt)
       if (reducedMotion) root.position.copy(target)
       else {

@@ -5,6 +5,7 @@
 import type { AnimationAction, AnimationClip, Object3D, SkinnedMesh, WebGLRenderTarget, } from 'three'
 import { ACESFilmicToneMapping, AnimationMixer, Box3, CircleGeometry, DirectionalLight, Group, HemisphereLight, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, PerspectiveCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import { disposeObject } from './dispose'
+import { verifyFirstFrame } from './first-frame'
 import { createReflectionTexture } from './materials'
 import type { MercModelAsset } from './merc-model'
 import { loadMercModel } from './merc-model'
@@ -38,6 +39,17 @@ const MAXIMUM_DEVICE_PIXEL_RATIO = 1.5
 const PRESENTATION_HEIGHT = 1.7
 const PRESENTATION_GROUND_Y = -0.82
 const PREVIEW_CLIP_NAMES = new Set(['welcome', 'listen', 'laugh'])
+
+function requireStudioRenderTargets(renderer: WebGLRenderer): void {
+  const context = renderer.getContext()
+  if (
+    context.getExtension('EXT_color_buffer_float') === null ||
+    context.getExtension('OES_texture_float_linear') === null
+  )
+    throw new Error(
+      'Loading Merc needs float render targets; retaining the artwork fallback.',
+    )
+}
 
 function updateSkinnedBounds(root: Object3D, target: Box3): void {
   root.updateMatrixWorld(true)
@@ -86,7 +98,9 @@ function createStudioEnvironment(renderer: WebGLRenderer): {
   target: WebGLRenderTarget
   root: Group
 } {
-  const source = createReflectionTexture()
+  const source = createReflectionTexture({
+    lowerHemisphereFill: [0.14, 0.18, 0.22],
+  })
   let generator: PMREMGenerator | undefined
   let target: WebGLRenderTarget
   try {
@@ -360,6 +374,8 @@ export function createLoadingMerc(
     }
     try {
       renderer.render(scene, camera)
+      if (!firstFrameRendered && asset !== undefined)
+        verifyFirstFrame(renderer.getContext())
     } catch (error) {
       fail(error)
       return
@@ -406,6 +422,7 @@ export function createLoadingMerc(
     renderer.toneMappingExposure = 1.02
     renderer.shadowMap.enabled = false
     renderer.setClearColor(0x000000, 0)
+    requireStudioRenderTargets(renderer)
     environment = createStudioEnvironment(renderer)
     scene.environment = environment.target.texture
     scene.add(environment.root)

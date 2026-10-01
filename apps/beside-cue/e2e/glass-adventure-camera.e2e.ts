@@ -18,6 +18,12 @@ interface CameraMetrics {
   safeBottomNdc: number | null
 }
 
+interface PlayerPosition {
+  x: number
+  y: number
+  z: number
+}
+
 // Keep this browser-level timing assertion aligned with Merc's presentation
 // turn cap; the exact acceleration curve remains covered by merc.test.ts.
 const MAXIMUM_MERC_TURN_RADIANS_PER_SECOND = 6
@@ -199,8 +205,39 @@ async function numericAttribute(page: Page, name: string): Promise<number> {
   return Number(value)
 }
 
+async function playerPosition(page: Page): Promise<PlayerPosition> {
+  return {
+    x: await numericAttribute(page, 'player-x'),
+    y: await numericAttribute(page, 'player-y'),
+    z: await numericAttribute(page, 'player-z'),
+  }
+}
+
 function angleDelta(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+}
+
+async function pointCameraAt(page: Page, targetYaw: number): Promise<void> {
+  const initialDelta = angleDelta(
+    await numericAttribute(page, 'camera-yaw'),
+    targetYaw,
+  )
+  if (Math.abs(initialDelta) < 0.08) return
+  const key = initialDelta > 0 ? 'ArrowRight' : 'ArrowLeft'
+  await page.keyboard.down(key)
+  try {
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            angleDelta(await numericAttribute(page, 'camera-yaw'), targetYaw),
+          ),
+        { timeout: 4_000, intervals: [16] },
+      )
+      .toBeLessThan(0.08)
+  } finally {
+    await page.keyboard.up(key)
+  }
 }
 
 async function dragMuseumWithMouse(
@@ -351,13 +388,138 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
   )
 })
 
-test('Journey enclosure anticipates a diagonal keyboard turn and yields to mouse and touch orbit @smoke', async ({
+test('physical keys carry Merc through the real Journey passage and corner @smoke', async ({
+  page,
+}) => {
+  await openJourneyGarden(page)
+  const start = await playerPosition(page)
+  const north = Math.PI
+
+  // Step around the central decanter, then return to the route spine before
+  // crossing the garden's visible north threshold.
+  await pointCameraAt(page, north)
+  await page.keyboard.down('KeyD')
+  try {
+    await expect
+      .poll(async () => start.x - (await numericAttribute(page, 'player-x')), {
+        timeout: 4_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(1.25)
+  } finally {
+    await page.keyboard.up('KeyD')
+  }
+
+  await pointCameraAt(page, north)
+  await page.keyboard.down('KeyW')
+  try {
+    await expect
+      .poll(async () => (await numericAttribute(page, 'player-z')) - start.z, {
+        timeout: 5_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(5.3)
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+
+  await pointCameraAt(page, north)
+  await page.keyboard.down('KeyA')
+  try {
+    await expect
+      .poll(async () => await numericAttribute(page, 'player-x'), {
+        timeout: 4_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(start.x - 0.2)
+  } finally {
+    await page.keyboard.up('KeyA')
+  }
+
+  await pointCameraAt(page, north)
+  await page.keyboard.down('KeyW')
+  try {
+    await expect
+      .poll(async () => (await numericAttribute(page, 'player-z')) - start.z, {
+        timeout: 6_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(13.35)
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+  const beyondGardenThreshold = await playerPosition(page)
+  expect(beyondGardenThreshold.z - start.z).toBeGreaterThan(13.35)
+
+  // At the authored right turn, W+A initially asks for the diagonal. The
+  // north wall redirects Merc east, so the follow camera must settle on the
+  // stable effective route heading without feeding that yaw back into WASD.
+  await pointCameraAt(page, north)
+  await page.keyboard.down('KeyW')
+  await page.keyboard.down('KeyA')
+  try {
+    await page.waitForTimeout(50)
+    const chordHeading = await numericAttribute(page, 'travel-yaw')
+    await expect
+      .poll(async () => (await numericAttribute(page, 'player-x')) - start.x, {
+        timeout: 7_000,
+        intervals: [16],
+      })
+      .toBeGreaterThan(4.5)
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            angleDelta(
+              await numericAttribute(page, 'camera-yaw'),
+              (await numericAttribute(page, 'merc-yaw')) + Math.PI,
+            ),
+          ),
+        { timeout: 6_000 },
+      )
+      .toBeLessThan(0.16)
+    expect(
+      Math.abs(
+        angleDelta(await numericAttribute(page, 'camera-yaw'), chordHeading),
+      ),
+    ).toBeGreaterThan(0.3)
+  } finally {
+    await page.keyboard.up('KeyA')
+    await page.keyboard.up('KeyW')
+  }
+
+  const afterCorner = await playerPosition(page)
+  expect(afterCorner.x - start.x).toBeGreaterThan(4.5)
+  expect(afterCorner.z - start.z).toBeGreaterThan(15.5)
+  expect(afterCorner.z).toBeLessThan(25.9)
+})
+
+test('Journey enclosure settles a blocked W+D chord and yields to mouse and touch orbit @smoke', async ({
   page,
   context,
 }) => {
   await openJourneyGarden(page)
   const adventure = page.getByTestId('glass-adventure')
   const initialYaw = await numericAttribute(page, 'camera-yaw')
+  const initialPosition = await playerPosition(page)
+
+  await page.keyboard.down('ArrowRight')
+  await page.waitForTimeout(200)
+  await page.keyboard.up('ArrowRight')
+  expect(
+    Math.abs(
+      angleDelta(initialYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeGreaterThan(0.2)
+  expect(
+    Math.hypot(
+      (await numericAttribute(page, 'player-x')) - initialPosition.x,
+      (await numericAttribute(page, 'player-z')) - initialPosition.z,
+    ),
+  ).toBeLessThan(0.02)
+
+  await page.getByRole('button', { name: 'Recenter camera' }).click()
+  await page.waitForTimeout(50)
 
   await page.keyboard.down('KeyW')
   await page.keyboard.down('KeyD')
@@ -371,6 +533,64 @@ test('Journey enclosure anticipates a diagonal keyboard turn and yields to mouse
         { timeout: 5_000 },
       )
       .toBeGreaterThan(0.35)
+    await expect
+      .poll(
+        async () =>
+          initialPosition.x - (await numericAttribute(page, 'player-x')),
+        { timeout: 7_000 },
+      )
+      .toBeGreaterThan(2.5)
+    await expect
+      .poll(
+        async () =>
+          (await numericAttribute(page, 'player-z')) - initialPosition.z,
+        { timeout: 7_000 },
+      )
+      .toBeGreaterThan(3)
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            angleDelta(
+              await numericAttribute(page, 'camera-yaw'),
+              (await numericAttribute(page, 'merc-yaw')) + Math.PI,
+            ),
+          ),
+        { timeout: 7_000 },
+      )
+      .toBeLessThan(0.16)
+
+    await page.keyboard.down('ArrowRight')
+    await page.waitForTimeout(1_960)
+    await page.keyboard.up('ArrowRight')
+    const frontFacingYaw = await numericAttribute(page, 'camera-yaw')
+    expect(
+      Math.abs(
+        angleDelta(
+          frontFacingYaw,
+          (await numericAttribute(page, 'merc-yaw')) + Math.PI,
+        ),
+      ),
+    ).toBeGreaterThan(3)
+
+    await page.waitForTimeout(800)
+    expect(
+      Math.abs(
+        angleDelta(frontFacingYaw, await numericAttribute(page, 'camera-yaw')),
+      ),
+    ).toBeLessThan(0.04)
+    await expect
+      .poll(
+        async () =>
+          Math.abs(
+            angleDelta(
+              await numericAttribute(page, 'camera-yaw'),
+              (await numericAttribute(page, 'merc-yaw')) + Math.PI,
+            ),
+          ),
+        { timeout: 6_000 },
+      )
+      .toBeLessThan(0.16)
   } finally {
     await page.keyboard.up('KeyD')
     await page.keyboard.up('KeyW')
@@ -380,6 +600,33 @@ test('Journey enclosure anticipates a diagonal keyboard turn and yields to mouse
   expect(await dragMuseumWithMouse(page, 80)).toBeGreaterThan(0.1)
   expect(await dragMuseumWithTouch(page, context, -80)).toBeGreaterThan(0.1)
   await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+
+  await page.keyboard.down('ArrowRight')
+  await page.waitForTimeout(200)
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  const blurReleasedYaw = await numericAttribute(page, 'camera-yaw')
+  await page.waitForTimeout(250)
+  expect(
+    Math.abs(
+      angleDelta(blurReleasedYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeLessThan(0.02)
+  await page.keyboard.up('ArrowRight')
+
+  await page.keyboard.down('ArrowLeft')
+  await page.waitForTimeout(200)
+  await page.getByRole('button', { name: 'Pause game' }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Take a little breath.' }),
+  ).toBeVisible()
+  const modalReleasedYaw = await numericAttribute(page, 'camera-yaw')
+  await page.waitForTimeout(250)
+  expect(
+    Math.abs(
+      angleDelta(modalReleasedYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeLessThan(0.02)
+  await page.keyboard.up('ArrowLeft')
 })
 
 test('real keyboard chords and brief side taps steer without swinging the view @smoke', async ({

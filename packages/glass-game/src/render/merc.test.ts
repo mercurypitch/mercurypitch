@@ -419,11 +419,15 @@ it('turns toward a side step smoothly and independently of frame cadence', async
   }
 
   const firstLongFrame = await turnFor(0.05, 1)
+  const lowRateFrame = await turnFor(0.25, 1)
+  const matchingSlices = await turnFor(0.05, 5)
   const sixtyFps = await turnFor(1 / 60, 12)
   const thirtyFps = await turnFor(1 / 30, 6)
 
   expect(firstLongFrame).toBeGreaterThan(0)
   expect(firstLongFrame).toBeLessThan(0.1)
+  expect(lowRateFrame).toBeCloseTo(matchingSlices, 5)
+  expect(lowRateFrame).toBeGreaterThan(1)
   expect(sixtyFps).toBeGreaterThan(0.9)
   expect(sixtyFps).toBeLessThan(1.05)
   expect(thirtyFps).toBeCloseTo(sixtyFps, 5)

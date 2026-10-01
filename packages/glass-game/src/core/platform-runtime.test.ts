@@ -990,7 +990,10 @@ describe('authored platform runtime', () => {
     expect(shatterGame.beginEncounter('voice-glass', 57)).toBe(true)
     finishVoiceGlass(shatterGame)
     const beforeShatter = stateFor(shatterGame, 'raft')!.offset.x
-    shatterGame.step(idle, SHATTER_LIFECYCLE_SECONDS)
+    fixedSteps(
+      shatterGame,
+      Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep),
+    )
     expect(shatterGame.snapshot().phase).toBe('idle')
     expect(stateFor(shatterGame, 'raft')!.offset.x).toBe(beforeShatter)
     shatterGame.step(idle, MOVEMENT.fixedStep)

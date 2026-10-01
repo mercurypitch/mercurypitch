@@ -80,4 +80,49 @@ describe('journey mascot standing position', () => {
     expect(merc.root.position.z).toBe(first.position[2])
     merc.dispose()
   })
+
+  it('advances a slow foreground frame without dropping Merc travel time', () => {
+    const singleFrame = createJourneyMerc(
+      mascot(),
+      FLOATING_MUSEUM_JOURNEY.stages[0]!,
+    )
+    const fiveFrames = createJourneyMerc(
+      mascot(),
+      FLOATING_MUSEUM_JOURNEY.stages[0]!,
+    )
+    const destination = FLOATING_MUSEUM_JOURNEY.stages[1]!
+    singleFrame.setTarget(destination, false)
+    fiveFrames.setTarget(destination, false)
+
+    singleFrame.update(0.25, false)
+    for (let frame = 0; frame < 5; frame++) fiveFrames.update(0.05, false)
+
+    expect(singleFrame.root.position.x).toBeCloseTo(
+      fiveFrames.root.position.x,
+      10,
+    )
+    expect(singleFrame.root.position.y).toBeCloseTo(
+      fiveFrames.root.position.y,
+      10,
+    )
+    expect(singleFrame.root.position.z).toBeCloseTo(
+      fiveFrames.root.position.z,
+      10,
+    )
+    singleFrame.dispose()
+    fiveFrames.dispose()
+  })
+
+  it('ignores invalid or backwards frame deltas', () => {
+    const merc = createJourneyMerc(mascot(), FLOATING_MUSEUM_JOURNEY.stages[0]!)
+    merc.setTarget(FLOATING_MUSEUM_JOURNEY.stages[1]!, false)
+    const before = merc.root.position.clone()
+
+    merc.update(Number.NaN, false)
+    merc.update(Number.POSITIVE_INFINITY, false)
+    merc.update(-1, false)
+
+    expect(merc.root.position.toArray()).toEqual(before.toArray())
+    merc.dispose()
+  })
 })
