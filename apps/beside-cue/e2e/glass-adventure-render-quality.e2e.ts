@@ -464,14 +464,26 @@ test('compact touch Promenade downsizes its GLB images before forward movement @
   }))
   await page.getByLabel('Glass museum; drag to look around').focus()
   await page.keyboard.down('KeyW')
-  await page.waitForTimeout(600)
-  await page.keyboard.up('KeyW')
-  const moved = await game.evaluate((element) => ({
-    x: Number(element.getAttribute('data-player-x')),
-    z: Number(element.getAttribute('data-player-z')),
-  }))
-
-  expect(Math.hypot(moved.x - start.x, moved.z - start.z)).toBeGreaterThan(0.2)
+  try {
+    // This is a functional movement check, so wait for movement rather than a
+    // fixed number of host milliseconds under software rendering.
+    await expect
+      .poll(
+        () =>
+          game.evaluate(
+            (element, origin) =>
+              Math.hypot(
+                Number(element.getAttribute('data-player-x')) - origin.x,
+                Number(element.getAttribute('data-player-z')) - origin.z,
+              ),
+            start,
+          ),
+        { timeout: 5_000 },
+      )
+      .toBeGreaterThan(0.2)
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
   await expect(game).toHaveAttribute('data-ready', 'true')
   expect(errors).toEqual([])
 })
