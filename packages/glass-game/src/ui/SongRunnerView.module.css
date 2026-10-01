@@ -205,17 +205,15 @@
   font-size: 18px;
 }
 
-.pitchCue {
-  color: #24736e;
-  font-size: 13px;
-  font-weight: 800;
-}
-
 .staff {
   display: block;
   width: 100%;
   height: 134px;
   overflow: visible;
+}
+
+.withPitchReadout .staff {
+  height: 114px;
 }
 
 .staffLines line,
@@ -672,6 +670,10 @@
     height: 126px;
   }
 
+  .withPitchReadout .staff {
+    height: 106px;
+  }
+
   .notationHeading strong {
     font-size: 16px;
   }
@@ -737,6 +739,10 @@
 
   .staff {
     height: 92px;
+  }
+
+  .withPitchReadout .staff {
+    height: 72px;
   }
 
   .notationHeading {

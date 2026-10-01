@@ -233,7 +233,7 @@ export function createSongRunnerRenderer(
       await environment.load(assetUrl('museum-environment-v2'), () => disposed)
       if (disposed) return
       world.update(options.initialSnapshot, 0)
-      targets.update(options.initialSnapshot)
+      targets.update(options.initialSnapshot, 0)
       installBackdropFog(scene, sky)
       await precompileRendererPrograms(renderer, scene, camera, abort.signal)
       if (disposed) return
@@ -267,7 +267,7 @@ export function createSongRunnerRenderer(
     )
       return false
     world!.update(snapshot, dt)
-    targets!.update(snapshot)
+    targets!.update(snapshot, dt)
     merc!.update(
       {
         player: {

@@ -2,15 +2,24 @@
 import type { Matrix4, Object3D } from 'three'
 import { CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import type { BreakableSnapshot } from '../contracts'
-import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerSnapshot, } from '../runner/contracts'
+import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
 import { layoutRunnerNotation } from '../runner/notation'
 import { getBreakableRenderRecipe } from './catalog'
 import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
+import { createRunnerTargetFeedback } from './runner-target-feedback'
+import { RUNNER_TARGET_FEEDBACK_PRESENTATION } from './runner-target-feedback-config'
 import type { VesselDefinition } from './vessels'
 import { createAuthoredVessel } from './vessels'
 
 const VARIANT = 'frost-gold-arch-breakwall-a'
+const NEUTRAL_FEEDBACK: RunnerPitchFeedback = {
+  state: 'neutral',
+  observedMidi: null,
+  comparedTargetMidi: null,
+  errorCents: null,
+  correction: null,
+}
 
 function targetDefinition(target: CompiledRunnerTarget): VesselDefinition {
   return {
@@ -38,6 +47,7 @@ function createScoreCard() {
     toneMapped: false,
   })
   const plane = new Mesh(new PlaneGeometry(1.8, 0.9), material)
+  plane.name = 'runner-target-scorecard'
   plane.position.set(0, 1.36, 0.055)
   let previous = ''
   return {
@@ -192,9 +202,12 @@ export function createRunnerTargets(
     {
       vessel: ReturnType<typeof createAuthoredVessel>
       card: ReturnType<typeof createScoreCard>
+      feedback: ReturnType<typeof createRunnerTargetFeedback>
+      displayCharge: number
     }
   >()
   let disposed = false
+  let previousEpoch: RunnerSnapshot['epoch'] | undefined
 
   function install(target: CompiledRunnerTarget) {
     let assetTransform: Matrix4 | undefined
@@ -209,6 +222,7 @@ export function createRunnerTargets(
       { castShardShadows: false },
     )
     let card: ReturnType<typeof createScoreCard> | undefined
+    let feedback: ReturnType<typeof createRunnerTargetFeedback> | undefined
     try {
       if (assetTransform === undefined)
         throw new Error(`Runner target "${target.id}" has no asset transform.`)
@@ -225,12 +239,14 @@ export function createRunnerTargets(
         }
       })
       card = createScoreCard()
-      vessel.root.add(card.plane)
+      feedback = createRunnerTargetFeedback(reducedMotion)
+      vessel.root.add(card.plane, feedback.root)
       root.add(vessel.root)
-      const item = { vessel, card }
+      const item = { vessel, card, feedback, displayCharge: 0 }
       items.set(target.id, item)
       return item
     } catch (error) {
+      feedback?.dispose()
       card?.dispose()
       vessel.dispose()
       throw error
@@ -238,12 +254,16 @@ export function createRunnerTargets(
   }
   return {
     root,
-    update(snapshot: RunnerSnapshot) {
+    update(snapshot: RunnerSnapshot, deltaSeconds: number) {
       if (disposed) return
+      const epochChanged =
+        previousEpoch !== undefined && previousEpoch !== snapshot.epoch
+      previousEpoch = snapshot.epoch
       const resident = new Set(snapshot.residentChunkIds)
       for (const [id, item] of items) {
         const target = course.targets.find((target) => target.id === id)!
         if (!resident.has(target.chunkId)) {
+          item.feedback.dispose()
           item.card.dispose()
           item.vessel.dispose()
           items.delete(id)
@@ -257,12 +277,20 @@ export function createRunnerTargets(
         )
         const active =
           snapshot.activeTarget?.id === target.id ? snapshot.activeTarget : null
-        const charge =
+        const scoreCharge =
           active === null
             ? 0
             : active.notes.reduce((sum, note) => sum + note.fillProgress, 0) /
               active.notes.length
         const hit = result?.outcome === 'hit'
+        if (epochChanged) item.displayCharge = 0
+        if (hit) item.displayCharge = 1
+        else if (active !== null) {
+          if (scoreCharge < item.displayCharge) item.displayCharge = scoreCharge
+          else if (active.pitchFeedback.state === 'accepted')
+            item.displayCharge = scoreCharge
+        }
+        const charge = hit ? 1 : item.displayCharge
         const state: BreakableSnapshot = {
           id: target.id,
           charge: hit ? 1 : charge,
@@ -280,10 +308,24 @@ export function createRunnerTargets(
           result?.outcome !== 'miss' &&
           snapshot.courseSeconds >= target.visibleFromCourseSeconds &&
           (!hit || snapshot.courseSeconds - result.resolvedAtCourseSeconds < 2)
+        const feedback = active?.pitchFeedback ?? NEUTRAL_FEEDBACK
+        item.feedback.update({
+          feedback,
+          outcome: result?.outcome ?? null,
+          resultAgeSeconds:
+            result === undefined
+              ? null
+              : snapshot.courseSeconds - result.resolvedAtCourseSeconds,
+          deltaSeconds,
+          visible: item.vessel.root.visible,
+        })
         item.vessel.update(
           state,
           snapshot.courseSeconds,
           item.vessel.root.visible,
+          hit || feedback.state === 'accepted'
+            ? RUNNER_TARGET_FEEDBACK_PRESENTATION.vessel.accepted
+            : RUNNER_TARGET_FEEDBACK_PRESENTATION.vessel.held,
         )
         item.card.plane.visible = !hit
         if (item.vessel.root.visible && !hit)
@@ -300,6 +342,7 @@ export function createRunnerTargets(
       if (disposed) return
       disposed = true
       for (const item of items.values()) {
+        item.feedback.dispose()
         item.card.dispose()
         item.vessel.dispose()
       }

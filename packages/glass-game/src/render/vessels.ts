@@ -34,6 +34,12 @@ export interface VesselPresentationOptions {
   readonly castShardShadows?: boolean
 }
 
+/** Per-frame opt-in for encounters whose earned charge can outlive live input. */
+export interface VesselChargePresentation {
+  readonly surfaceStressActive: boolean
+  readonly tremorActive: boolean
+}
+
 /** Keeps authored RoseGlass readable while the projected fracture carries charge. */
 export const RESONANCE_SURFACE_STRESS_TUNING = {
   emissiveScale: 0.18,
@@ -569,7 +575,12 @@ function createVesselPresentation(
       }
     },
     /** Hidden vessels ingest lifecycle state without animating their presentation. */
-    update(state: BreakableSnapshot, now: number, presentationVisible = true) {
+    update(
+      state: BreakableSnapshot,
+      now: number,
+      presentationVisible = true,
+      chargePresentation?: VesselChargePresentation,
+    ) {
       if (disposed) return
       latest = state
       resetPending ||= previousNow !== undefined && now < previousNow
@@ -595,9 +606,14 @@ function createVesselPresentation(
       const delay = timing.anticipationSeconds
       const shattered = age >= delay && age >= 0
       intact.visible = !restored && !shattered
+      const surfaceStressActive =
+        chargePresentation?.surfaceStressActive !== false
+      const tremorActive = chargePresentation?.tremorActive !== false
       const stress =
         age < 0
-          ? state.charge * state.charge * 0.8
+          ? surfaceStressActive
+            ? state.charge * state.charge * 0.8
+            : 0
           : age < delay
             ? 1.5
             : Math.max(0, 0.45 - (age - delay) * 3)
@@ -627,6 +643,7 @@ function createVesselPresentation(
       if (
         resonance === undefined &&
         !reducedMotion &&
+        tremorActive &&
         intact.visible &&
         state.charge > 0.6
       ) {

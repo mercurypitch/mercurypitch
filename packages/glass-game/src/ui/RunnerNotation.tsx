@@ -3,15 +3,17 @@
 // ============================================================
 
 import { createMemo, createUniqueId, For, Show } from 'solid-js'
+import type { RunnerTargetSnapshot } from '../runner/contracts'
 import type { RunnerNotationNote } from '../runner/notation'
 import { layoutRunnerNotation } from '../runner/notation'
+import { RunnerPitchReadout } from './RunnerPitchReadout'
 import styles from './SongRunnerView.module.css'
 
 interface RunnerNotationProps {
   notes: readonly RunnerNotationNote[]
   activeNoteIndex: number | null
   instruction: string
-  pitchCue: string | null
+  target: RunnerTargetSnapshot | null
 }
 
 export function RunnerNotation(props: RunnerNotationProps) {
@@ -28,13 +30,21 @@ export function RunnerNotation(props: RunnerNotationProps) {
   )
 
   return (
-    <section class={styles.notationPanel} aria-label="Current melody">
-      <div class={styles.notationHeading}>
-        <strong>{props.instruction}</strong>
-        <Show when={props.pitchCue}>
-          {(cue) => <span class={styles.pitchCue}>{cue()}</span>}
-        </Show>
-      </div>
+    <section
+      class={styles.notationPanel}
+      classList={{ [styles.withPitchReadout]: props.target !== null }}
+      aria-label="Current melody"
+    >
+      <Show
+        when={props.target}
+        fallback={
+          <div class={styles.notationHeading}>
+            <strong>{props.instruction}</strong>
+          </div>
+        }
+      >
+        {(target) => <RunnerPitchReadout target={target()} />}
+      </Show>
       <svg
         class={styles.staff}
         viewBox={`0 0 ${layout().width} ${layout().height}`}

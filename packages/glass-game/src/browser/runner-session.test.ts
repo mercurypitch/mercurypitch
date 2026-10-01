@@ -130,6 +130,84 @@ describe('runner session readiness and clock', () => {
     h.session.dispose()
   })
 
+  it('publishes fresh feedback immediately, expires it on course time, and does not revive it after resume', async () => {
+    const h = runnerSessionHarness()
+    await h.running()
+    const target = h.course.targets[0]!
+    const captureCourseSeconds = target.onsetCourseSeconds + 0.05
+    const anchor = h.audio[0]!.anchor!
+    for (let time = 0.2; time < captureCourseSeconds; time += 0.2)
+      h.courseTick(time)
+
+    h.emit(anchor.audioStartSeconds + captureCourseSeconds)
+    expect(h.session.state().game.activeTarget?.pitchFeedback).toMatchObject({
+      state: 'accepted',
+      observedMidi: 60,
+      comparedTargetMidi: 60,
+      correction: null,
+    })
+
+    h.courseTick(
+      captureCourseSeconds +
+        h.course.voice.judge.maximumEvidenceGapSeconds +
+        0.02,
+    )
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'neutral',
+    )
+    h.emit(h.clock() + 0.01)
+    h.courseTick(
+      h.session.state().game.courseSeconds +
+        h.course.movement.fixedStepSeconds * 2,
+    )
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'accepted',
+    )
+
+    h.session.pause()
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'neutral',
+    )
+    await h.session.resume()
+    h.ready()
+    h.tick(h.audio.at(-1)!.anchor!.audioStartSeconds)
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'neutral',
+    )
+    h.session.dispose()
+  })
+
+  it('keeps eligible feedback visible while the next capture waits for the fixed-step clock', async () => {
+    const h = runnerSessionHarness()
+    await h.running()
+    const target = h.course.targets[0]!
+    const anchor = h.audio[0]!.anchor!
+    const step = h.course.movement.fixedStepSeconds
+    const firstCapture = target.onsetCourseSeconds + 0.001
+    for (let time = 0.2; time < firstCapture; time += 0.2) h.courseTick(time)
+
+    h.emit(anchor.audioStartSeconds + firstCapture)
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'neutral',
+    )
+    h.courseTick(firstCapture + step)
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'accepted',
+    )
+
+    const futureCapture = firstCapture + step + 0.001
+    h.emit(anchor.audioStartSeconds + futureCapture, 61)
+    expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+      'accepted',
+    )
+    h.courseTick(futureCapture + step)
+    expect(h.session.state().game.activeTarget?.pitchFeedback).toMatchObject({
+      state: 'wrong',
+      correction: 'lower',
+    })
+    h.session.dispose()
+  })
+
   it('keeps music mute independent of capture, movement and progress', async () => {
     const h = runnerSessionHarness()
     await h.running()
@@ -158,8 +236,8 @@ describe('runner interruption and cancellation', () => {
       expect(h.session.state().game.courseSeconds).toBeCloseTo(5.2416667)
       if (kind === 'capture') {
         h.emit(anchor.audioStartSeconds + 5.499, 60)
-        expect(h.session.state().game.activeTarget?.latestPitchErrorCents).toBe(
-          0,
+        expect(h.session.state().game.activeTarget?.pitchFeedback.state).toBe(
+          'neutral',
         )
       } else {
         h.setAudioTime(anchor.audioStartSeconds + 5.499)
@@ -167,6 +245,12 @@ describe('runner interruption and cancellation', () => {
       }
       expect(h.session.state().phase).toBe('running')
       expect(h.session.state().game.courseSeconds).toBeCloseTo(5.4916667)
+      if (kind === 'capture') {
+        h.courseTick(5.51)
+        expect(
+          h.session.state().game.activeTarget?.pitchFeedback,
+        ).toMatchObject({ state: 'accepted', errorCents: 0 })
+      }
       h.courseTick(5.8)
       expect(h.session.state().phase).toBe('recovering')
       expect(h.frames.size).toBe(0)

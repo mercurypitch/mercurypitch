@@ -237,6 +237,29 @@ export type RunnerTargetPhase =
   | 'judging'
   | 'settling'
 
+export type RunnerPitchFeedback =
+  | {
+      readonly state: 'neutral'
+      readonly observedMidi: null
+      readonly comparedTargetMidi: null
+      readonly errorCents: null
+      readonly correction: null
+    }
+  | {
+      readonly state: 'accepted'
+      readonly observedMidi: number
+      readonly comparedTargetMidi: number
+      readonly errorCents: number
+      readonly correction: null
+    }
+  | {
+      readonly state: 'wrong'
+      readonly observedMidi: number
+      readonly comparedTargetMidi: number
+      readonly errorCents: number
+      readonly correction: 'higher' | 'lower'
+    }
+
 export interface RunnerTargetSnapshot {
   readonly id: string
   readonly phase: RunnerTargetPhase
@@ -245,7 +268,7 @@ export interface RunnerTargetSnapshot {
   readonly phaseProgress: number
   readonly noteIndex: number
   readonly currentTargetMidi: number
-  readonly latestPitchErrorCents: number | null
+  readonly pitchFeedback: RunnerPitchFeedback
   readonly notes: readonly {
     readonly index: number
     readonly startMidi: number

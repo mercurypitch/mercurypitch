@@ -51,6 +51,27 @@ function fillNote(
 }
 
 describe('song runner judge', () => {
+  it('publishes detached neutral feedback before reliable judging evidence', () => {
+    const target = course.targets[0]!
+    const judge = createRunnerJudge(course, 60)
+
+    const first = judge.targetSnapshot(target, target.visibleFromCourseSeconds)
+    const second = judge.targetSnapshot(
+      target,
+      target.judgeOpenCourseSeconds + 0.001,
+    )
+
+    expect(first.pitchFeedback).toEqual({
+      state: 'neutral',
+      observedMidi: null,
+      comparedTargetMidi: null,
+      errorCents: null,
+      correction: null,
+    })
+    expect(second.pitchFeedback).toEqual(first.pitchFeedback)
+    expect(second.pitchFeedback).not.toBe(first.pitchFeedback)
+  })
+
   it('requires every note even when repeated pitches have ample aggregate evidence', () => {
     const target = course.targets.find(
       (candidate) => candidate.id === 'melody-finale',
@@ -117,22 +138,201 @@ describe('song runner judge', () => {
     expect(judge.result(target).reliableSeconds).toBeCloseTo(0.2, 10)
   })
 
-  it('exposes resolved contour MIDI, live error, and immutable fill state', () => {
+  it('clears fresh feedback immediately on silence and weak confidence without clearing fill', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const start = target.notes[0]!.startCourseSeconds
+    const judge = createRunnerJudge(course, 60)
+    judge.observe(evidence(target, start))
+    judge.observe(evidence(target, start + 0.1))
+    const filled = judge.targetSnapshot(target, start + 0.1)
+    expect(filled.pitchFeedback.state).toBe('accepted')
+    expect(filled.notes[0]!.fillProgress).toBeGreaterThan(0)
+
+    judge.observe(evidence(target, start + 0.11, 0, { midi: null }))
+    const silent = judge.targetSnapshot(target, start + 0.11)
+    expect(silent.pitchFeedback.state).toBe('neutral')
+    expect(silent.notes[0]!.fillProgress).toBe(filled.notes[0]!.fillProgress)
+
+    judge.observe(evidence(target, start + 0.12))
+    expect(judge.targetSnapshot(target, start + 0.12).pitchFeedback.state).toBe(
+      'accepted',
+    )
+    judge.observe(
+      evidence(target, start + 0.13, 0, {
+        confidence: course.voice.judge.minimumConfidence - 0.01,
+      }),
+    )
+    const uncertain = judge.targetSnapshot(target, start + 0.13)
+    expect(uncertain.pitchFeedback.state).toBe('neutral')
+    expect(uncertain.notes[0]!.fillProgress).toBe(filled.notes[0]!.fillProgress)
+  })
+
+  it('classifies the tolerance boundary and gives wrong notes a correction direction', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const capture = target.notes[0]!.startCourseSeconds
+    const tolerance = course.voice.judge.centsTolerance
+    const judge = createRunnerJudge(course, 60)
+
+    judge.observe(evidence(target, capture, tolerance))
+    const accepted = judge.targetSnapshot(target, capture).pitchFeedback
+    expect(accepted).toMatchObject({
+      state: 'accepted',
+      correction: null,
+    })
+    expect(accepted.errorCents).toBeCloseTo(tolerance, 8)
+
+    judge.observe(evidence(target, capture + 0.01, tolerance + 1))
+    const high = judge.targetSnapshot(target, capture + 0.01).pitchFeedback
+    expect(high).toMatchObject({
+      state: 'wrong',
+      correction: 'lower',
+    })
+    expect(high.errorCents).toBeCloseTo(tolerance + 1, 8)
+
+    judge.observe(evidence(target, capture + 0.02, -tolerance - 1))
+    const low = judge.targetSnapshot(target, capture + 0.02).pitchFeedback
+    expect(low).toMatchObject({
+      state: 'wrong',
+      correction: 'higher',
+    })
+    expect(low.errorCents).toBeCloseTo(-tolerance - 1, 8)
+  })
+
+  it('retains the capture-time target while a glide advances', () => {
     const target = course.targets.find(
       (candidate) => candidate.id === 'arc-diadem',
     )!
     const note = target.notes[1]!
-    const capture = (note.startCourseSeconds + note.endCourseSeconds) / 2
+    const capture =
+      note.startCourseSeconds +
+      (note.endCourseSeconds - note.startCourseSeconds) * 0.25
+    const snapshotAt = Math.min(
+      note.endCourseSeconds - 1e-6,
+      capture + course.voice.judge.maximumEvidenceGapSeconds / 2,
+    )
     const judge = createRunnerJudge(course, 60)
     judge.observe(evidence(target, capture, -15))
-    const snapshot = judge.targetSnapshot(target, capture)
-    expect(snapshot.currentTargetMidi).toBeCloseTo(rootMidi + 1, 10)
-    expect(snapshot.latestPitchErrorCents).toBeCloseTo(-15, 8)
+    const snapshot = judge.targetSnapshot(target, snapshotAt)
+    const captureTargetMidi = runnerTargetMidiAt(
+      target.notes,
+      capture,
+      rootMidi,
+    )
+    expect(snapshot.currentTargetMidi).not.toBeCloseTo(captureTargetMidi, 8)
+    expect(snapshot.pitchFeedback).toMatchObject({
+      state: 'accepted',
+      observedMidi: captureTargetMidi - 0.15,
+      comparedTargetMidi: captureTargetMidi,
+      correction: null,
+    })
+    expect(snapshot.pitchFeedback.errorCents).toBeCloseTo(-15, 8)
     expect(snapshot.notes[1]).toMatchObject({
       startMidi: rootMidi,
       endMidi: rootMidi + 2,
       targetMidi: rootMidi + 2,
       state: 'hollow',
     })
+  })
+
+  it('retains eligible feedback while a newer capture waits for the snapshot clock', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const capture = target.notes[0]!.startCourseSeconds + 0.2
+    const futureCapture = capture + 0.02
+    const judge = createRunnerJudge(course, 60)
+
+    judge.observe(evidence(target, capture))
+    const accepted = judge.targetSnapshot(target, capture).pitchFeedback
+    expect(accepted.state).toBe('accepted')
+
+    judge.observe(evidence(target, futureCapture, 100))
+    expect(
+      judge.targetSnapshot(target, futureCapture - 0.01).pitchFeedback,
+    ).toEqual(accepted)
+    expect(
+      judge.targetSnapshot(target, futureCapture).pitchFeedback,
+    ).toMatchObject({
+      state: 'wrong',
+      errorCents: 100,
+      correction: 'lower',
+    })
+  })
+
+  it('selects the newest eligible capture from a burst before projection', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const start = target.notes[0]!.startCourseSeconds
+    const judge = createRunnerJudge(course, 60)
+
+    judge.observe(evidence(target, start + 0.01, 100))
+    judge.observe(evidence(target, start + 0.14))
+
+    expect(
+      judge.targetSnapshot(target, start + 0.15).pitchFeedback,
+    ).toMatchObject({
+      state: 'accepted',
+      errorCents: 0,
+      correction: null,
+    })
+  })
+
+  it('expires feedback by capture course time at the existing evidence gap', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const capture = target.notes[0]!.startCourseSeconds + 0.2
+    const gap = course.voice.judge.maximumEvidenceGapSeconds
+    const judge = createRunnerJudge(course, 60)
+    judge.observe(evidence(target, capture))
+
+    expect(
+      judge.targetSnapshot(target, capture + gap).pitchFeedback.state,
+    ).toBe('accepted')
+    expect(
+      judge.targetSnapshot(target, capture + gap + 1e-6).pitchFeedback.state,
+    ).toBe('neutral')
+  })
+
+  it('clears a prior-note candidate at the exact half-open note boundary', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'arc-diadem',
+    )!
+    const prior = target.notes[0]!
+    const next = target.notes[1]!
+    const capture = prior.endCourseSeconds - 1e-6
+    const judge = createRunnerJudge(course, 60)
+    judge.observe(evidence(target, capture))
+
+    expect(judge.targetSnapshot(target, capture).pitchFeedback.state).toBe(
+      'accepted',
+    )
+    const transitioned = judge.targetSnapshot(target, next.startCourseSeconds)
+    expect(transitioned.noteIndex).toBe(next.index)
+    expect(transitioned.pitchFeedback.state).toBe('neutral')
+  })
+
+  it('keeps settlement neutral while preserving the accumulated result', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const note = target.notes[0]!
+    const judge = createRunnerJudge(course, 60)
+    fillNote(judge, target, note)
+    const resultBeforeSettlement = judge.result(target)
+
+    const snapshot = judge.targetSnapshot(
+      target,
+      target.judgeCloseCourseSeconds + 1e-6,
+    )
+
+    expect(snapshot.phase).toBe('settling')
+    expect(snapshot.pitchFeedback.state).toBe('neutral')
+    expect(judge.result(target)).toEqual(resultBeforeSettlement)
   })
 })
