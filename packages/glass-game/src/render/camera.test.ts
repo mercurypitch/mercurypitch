@@ -9,6 +9,7 @@ import { GLASSWORKS_JOURNEY, GLASSWORKS_JOURNEY_ROUTE, } from '../content/glassw
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { cameraRelativeMovement, createAdventureCamera } from './camera'
+import { createEnclosureFraming } from './enclosure-framing'
 import type { MuseumMaterials } from './materials'
 import { createMuseum } from './museum'
 
@@ -265,6 +266,89 @@ const PRESSED_EAST_WALL_ROOM: LevelDefinition = {
       facingYaw: -Math.PI / 2,
     },
   ],
+}
+
+const LATERAL_RECOVERY_ROOM: LevelDefinition = {
+  ...OPEN_ROOM,
+  id: 'camera-lateral-recovery-room',
+  title: 'Camera lateral recovery room',
+  spawn: {
+    position: { x: 0.45, y: 0, z: 0.84 },
+    facingYaw: Math.PI / 2,
+  },
+  platforms: [
+    {
+      ...OPEN_ROOM.platforms[0],
+      minX: -5,
+      maxX: 5,
+      minZ: -1,
+      maxZ: 1,
+    },
+  ],
+  solids: [
+    {
+      id: 'north-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: -5,
+      maxX: 5,
+      minZ: 1,
+      maxZ: 1.2,
+      top: 3.4,
+      thickness: 3.4,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+  ],
+  checkpoints: [
+    {
+      id: 'wall-spawn',
+      position: { x: 0.45, y: 0, z: 0.84 },
+      radius: 1,
+      facingYaw: Math.PI / 2,
+    },
+  ],
+  presentation: {
+    worldBounds: {
+      minX: -5,
+      maxX: 5,
+      minY: 0,
+      maxY: 3.4,
+      minZ: -1,
+      maxZ: 1.2,
+    },
+    lightBounds: {
+      minX: -5,
+      maxX: 5,
+      minY: 0,
+      maxY: 3.4,
+      minZ: -1,
+      maxZ: 1.2,
+    },
+    rooms: [
+      {
+        id: 'wall-room',
+        bounds: {
+          minX: -5,
+          maxX: 5,
+          minY: 0,
+          maxY: 3.4,
+          minZ: -1,
+          maxZ: 1.2,
+        },
+        cameraBounds: {
+          minX: -5,
+          maxX: 5,
+          minY: 0,
+          maxY: 3.4,
+          minZ: -1,
+          maxZ: 1,
+        },
+      },
+    ],
+    audioRegions: [],
+    visuals: [],
+    assetRecipeIds: [],
+  },
 }
 
 const ENCLOSED_GATE_ROOM: LevelDefinition = {
@@ -1413,6 +1497,57 @@ describe('camera-relative traversal', () => {
       expect(Math.abs(projected.y)).toBeLessThan(1)
       expect(Math.abs(projected.z)).toBeLessThan(1)
     }
+  })
+  it('keeps a smoothed lateral recovery outside the wall clearance shell', () => {
+    const rig = createAdventureCamera(LATERAL_RECOVERY_ROOM, {
+      reducedMotion: true,
+    })
+    const snapshot = createGlassGame(LATERAL_RECOVERY_ROOM).snapshot()
+    const enclosure = createEnclosureFraming(LATERAL_RECOVERY_ROOM)!
+    const cameraSafe = (): boolean => {
+      const framedTarget = rig.getChallengeMetrics().target
+      return enclosure.cameraPositionSafe(
+        new Vector3(framedTarget.x, framedTarget.y, framedTarget.z),
+        rig.camera.position,
+        snapshot.activeSolidIds ?? [],
+      )
+    }
+
+    rig.orbit(Math.PI / 2, 0)
+    rig.update(snapshot, FRAME)
+    expect(cameraSafe()).toBe(true)
+    const safePosition = rig.camera.position.clone()
+
+    rig.orbit(-Math.PI, 0)
+    rig.update(snapshot, FRAME)
+    expect(rig.camera.position.distanceTo(safePosition)).toBeLessThan(0.001)
+    expect(cameraSafe()).toBe(true)
+
+    rig.orbit(Math.PI / 2, 0)
+    rig.update(snapshot, FRAME)
+    expect(cameraBoomDistance(rig)).toBeGreaterThanOrEqual(1.55)
+    expect(cameraSafe()).toBe(true)
+    for (let frame = 0; frame < 30; frame++) {
+      rig.update(snapshot, FRAME)
+      expect(cameraBoomDistance(rig)).toBeGreaterThanOrEqual(1.55)
+      expect(cameraSafe()).toBe(true)
+    }
+
+    const inset: GameSnapshot = {
+      ...snapshot,
+      player: {
+        ...snapshot.player,
+        position: { ...snapshot.player.position, z: 0 },
+      },
+    }
+    for (let frame = 0; frame < 120; frame++) {
+      rig.update(inset, FRAME)
+      expect(cameraSafe()).toBe(true)
+    }
+    const releasedTarget = rig.getChallengeMetrics().target
+    expect(Math.abs(rig.camera.position.z - releasedTarget.z)).toBeLessThan(
+      0.05,
+    )
   })
   it.each([30, 60, 120])(
     'eases outward monotonically after an active gate opens at %sfps',

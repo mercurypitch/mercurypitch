@@ -1,5 +1,6 @@
 // Camera input follow regression — stable input bases cannot feed camera turns back into travel.
 
+import { Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
 import type { LevelDefinition } from '../contracts'
@@ -9,6 +10,7 @@ import { createAdventureInput } from '../ui/input'
 import { shortestAngleDelta } from './angular-response'
 import { createAdventureCamera } from './camera'
 import type { AdventureCameraMode } from './camera-policy'
+import { createEnclosureFraming } from './enclosure-framing'
 
 const FRAME = 1 / 60
 const OPEN_ROOM: LevelDefinition = {
@@ -326,8 +328,10 @@ describe('camera follow from real movement contacts', () => {
         finished: false,
       })
       const camera = createAdventureCamera(GLASSWORKS_JOURNEY)
+      const enclosure = createEnclosureFraming(GLASSWORKS_JOURNEY)!
       const input = createAdventureInput()
       const start = game.snapshot().player.position
+      let assertReadableWallFollow = false
       camera.update(game.snapshot(), frameSeconds)
       const initialMovementBasis = camera.movementYaw()
       const advanceUntil = (reached: () => boolean, seconds: number): void => {
@@ -350,6 +354,33 @@ describe('camera follow from real movement contacts', () => {
             )
           game.step(input.read(camera.movementYaw()), frameSeconds)
           camera.update(game.snapshot(), frameSeconds)
+          if (assertReadableWallFollow) {
+            const snapshot = game.snapshot()
+            const target = camera.getChallengeMetrics().target
+            const targetPosition = new Vector3(target.x, target.y, target.z)
+            expect(
+              enclosure.cameraPositionSafe(
+                targetPosition,
+                camera.camera.position,
+                snapshot.activeSolidIds ?? [],
+              ),
+            ).toBe(true)
+            if (snapshot.player.position.z >= 25.45)
+              expect(
+                camera.camera.position.distanceTo(targetPosition),
+              ).toBeGreaterThanOrEqual(1.45)
+            camera.camera.updateMatrixWorld()
+            for (const height of [0.02, 0.58]) {
+              const projected = new Vector3(
+                snapshot.player.position.x,
+                height,
+                snapshot.player.position.z,
+              ).project(camera.camera)
+              expect(Math.abs(projected.x)).toBeLessThan(0.95)
+              expect(Math.abs(projected.y)).toBeLessThan(0.95)
+              expect(Math.abs(projected.z)).toBeLessThan(1)
+            }
+          }
           if (reached()) return
         }
         throw new Error(
@@ -368,15 +399,35 @@ describe('camera follow from real movement contacts', () => {
       input.setStick(-1, -1)
       const chordHeading = input.desiredTravelYaw(camera.movementYaw())
       expect(chordHeading).not.toBeNull()
-      advanceUntil(() => game.snapshot().player.position.x - start.x > 4.5, 7)
+      assertReadableWallFollow = true
+      advanceUntil(() => game.snapshot().player.position.x - start.x > 7, 7)
 
       const end = game.snapshot().player
       expect(input.hasMovementIntent()).toBe(true)
       expect(camera.movementYaw()).toBeCloseTo(initialMovementBasis)
+      expect(end.position.x - start.x).toBeGreaterThan(7)
       expect(end.position.z - start.z).toBeGreaterThan(15.5)
       expect(end.position.z).toBeLessThan(25.9)
       expect(yawDistance(camera.yaw(), end.facingYaw)).toBeLessThan(0.16)
       expect(yawDistance(camera.yaw(), chordHeading!)).toBeGreaterThan(0.3)
+      camera.camera.updateMatrixWorld()
+      const target = camera.getChallengeMetrics().target
+      const boom = camera.camera.position.distanceTo(
+        new Vector3(target.x, target.y, target.z),
+      )
+      const feet = new Vector3(end.position.x, 0.02, end.position.z).project(
+        camera.camera,
+      )
+      const head = new Vector3(end.position.x, 0.58, end.position.z).project(
+        camera.camera,
+      )
+      expect(boom).toBeGreaterThanOrEqual(1.45)
+      for (const point of [feet, head]) {
+        expect(Math.abs(point.x)).toBeLessThan(0.95)
+        expect(Math.abs(point.y)).toBeLessThan(0.95)
+        expect(Math.abs(point.z)).toBeLessThan(1)
+      }
+      expect(head.y).toBeGreaterThan(feet.y)
     },
   )
 

@@ -1,7 +1,7 @@
 // Challenge camera browser smoke — live panel-safe framing, input lock and return.
 
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
-import { cameraAngleDelta as angleDelta, numericAdventureAttribute as numericAttribute, traverseJourneyPassageAndCorner, verifyBlockedJourneyCameraReacquisition, verifyHeldArrowLifecycleCleanup, } from './helpers/glass-adventure-camera-route'
+import { cameraAngleDelta as angleDelta, measureDeliveredMercTurn, numericAdventureAttribute as numericAttribute, traverseJourneyPassageAndCorner, verifyBlockedJourneyCameraReacquisition, verifyHeldArrowLifecycleCleanup, verifyHeldJourneyTouchContinuity, } from './helpers/glass-adventure-camera-route'
 
 interface CameraMetrics {
   mode: 'exploration' | 'entering' | 'holding' | 'restoring'
@@ -355,6 +355,14 @@ test('physical keys carry Merc through the real Journey passage and corner @smok
   await traverseJourneyPassageAndCorner(page)
 })
 
+test('one held thumb survives Journey guidance changes @smoke', async ({
+  context,
+  page,
+}) => {
+  await openJourneyGarden(page)
+  await verifyHeldJourneyTouchContinuity(page, context)
+})
+
 test('Journey enclosure settles a blocked W+D chord and yields to mouse and touch orbit @smoke', async ({
   page,
   context,
@@ -467,23 +475,16 @@ test('phone tuner fits and a held thumb turns Merc without autocircling the came
     touchPoints: [{ id: 20, x: origin.x, y: origin.y - 38 }],
   })
   await page.waitForTimeout(450)
-  const settledYaw = await numericAttribute(page, 'merc-yaw')
   const settledCameraYaw = await numericAttribute(page, 'camera-yaw')
-  const turnStartedAt = await page.evaluate(() => performance.now())
-  await cdp.send('Input.dispatchTouchEvent', {
-    type: 'touchMove',
-    touchPoints: [{ id: 20, x: origin.x + 38, y: origin.y }],
-  })
-  await page.waitForTimeout(50)
-  const firstSample = await page.evaluate(() => ({
-    at: performance.now(),
-    yaw: Number(
-      document
-        .querySelector('[data-testid="glass-adventure"]')
-        ?.getAttribute('data-merc-yaw'),
-    ),
-  }))
-  const firstTurn = Math.abs(angleDelta(settledYaw, firstSample.yaw))
+  const turnWindow = await measureDeliveredMercTurn(page, () =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 20, x: origin.x + 38, y: origin.y }],
+    }),
+  )
+  const firstTurn = Math.abs(
+    angleDelta(turnWindow.start.yaw, turnWindow.end.yaw),
+  )
   expect(
     Math.abs(
       angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
@@ -491,12 +492,13 @@ test('phone tuner fits and a held thumb turns Merc without autocircling the came
   ).toBeLessThan(0.04)
   expect(firstTurn).toBeGreaterThan(0)
   expect(firstTurn).toBeLessThanOrEqual(
-    (MAXIMUM_MERC_TURN_RADIANS_PER_SECOND * (firstSample.at - turnStartedAt)) /
+    (MAXIMUM_MERC_TURN_RADIANS_PER_SECOND *
+      (turnWindow.end.at - turnWindow.start.at)) /
       1_000,
   )
   await page.waitForTimeout(300)
   const sustainedTurn = Math.abs(
-    angleDelta(settledYaw, await numericAttribute(page, 'merc-yaw')),
+    angleDelta(turnWindow.start.yaw, await numericAttribute(page, 'merc-yaw')),
   )
   expect(sustainedTurn).toBeGreaterThan(firstTurn)
   expect(

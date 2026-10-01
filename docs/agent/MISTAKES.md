@@ -713,6 +713,20 @@ import handler, issue #813.
 **Rule:** give extracted components explicit scoped sizing and typography; verify computed styles and 320px screenshots inside the actual game, not an isolated component page.
 **See:** `packages/glass-game/src/ui/MelodyRibbon.module.css`, `CompletionResults.module.css` and their host E2E coverage.
 
+### Validate the rendered camera centre after smoothing
+
+**Symptom:** corridor yaw checks passed while the real image showed only a wall or a huge close-up of Merc.
+**Cause:** the body could enter the camera-radius clearance shell; the boom collapsed to its target. A valid alternate endpoint also had an unsafe short prefix when distance easing resumed from zero.
+**Rule:** traverse the real route with held input and inspect pixels. Assert actual camera centre, subject projection and clearance on acquisition and release frames, not only requested yaw or final ray reach. Revalidate after smoothing and synchronize its state when safety overrides placement.
+**See:** `packages/glass-game/src/render/camera.ts`, `camera-input-follow.test.ts`, `camera-obstruction.test.ts`.
+
+### Keep captured controls inside a stable DOM boundary
+
+**Symptom:** a held joystick stops when a nearby action disappears, without unmount, blur or pointer release.
+**Cause:** Solid reconciles flattened reactive siblings by temporarily removing and reinserting the same controls node; native pointer capture is lost even though its identity and final `isConnected` stay unchanged.
+**Rule:** isolate pointer-owning controls and dynamic neighbors inside a stable DOM boundary. Reproduce with a real held pointer and observe removed nodes, capture and movement across sibling transitions; component cleanup alone cannot detect this.
+**See:** `packages/glass-game/src/ui/AdventureVisit.tsx`, `apps/beside-cue/e2e/glass-adventure-camera.e2e.ts`.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

@@ -2,6 +2,7 @@
 
 import { writeFileSync } from 'node:fs'
 import { expect, test, type BrowserContext, type Locator, type Page, } from '@playwright/test'
+import { MOVEMENT } from '../../../packages/glass-game/src/core/movement'
 
 type QualityPreference = 'auto' | 'high' | 'balanced'
 
@@ -43,6 +44,97 @@ interface FrameReceipt {
 const QUALITY_KEY = 'beside-cue:glass-adventure:render-quality:v1'
 const FIXED_TIME = Date.UTC(2026, 8, 24, 12)
 const PROOF_ENABLED = process.env.GLASS_RENDER_QUALITY_PROOF === '1'
+
+interface MovementFrameReceipt {
+  deliveredSeconds: number
+  frames: number
+  inputPrevented: boolean
+  inputTrusted: boolean
+  x: number
+  z: number
+}
+
+interface MovementFrameWindow extends Window {
+  renderQualityMovement?: Promise<MovementFrameReceipt>
+}
+
+async function armRenderedMovementWindow(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ maximumFrameSeconds, requiredSeconds, watchdogMs }) => {
+      const state = window as MovementFrameWindow
+      state.renderQualityMovement = new Promise((resolve, reject) => {
+        let frameId = 0
+        let frames = 0
+        let deliveredSeconds = 0
+        let previousTimestamp = 0
+        let input: KeyboardEvent | undefined
+        const cleanup = () => {
+          clearTimeout(watchdog)
+          cancelAnimationFrame(frameId)
+          window.removeEventListener('keydown', begin, true)
+        }
+        const watchdog = setTimeout(() => {
+          cleanup()
+          reject(
+            new Error(
+              `Movement frame delivery stalled: ${frames} frames, ` +
+                `${deliveredSeconds.toFixed(3)} seconds offered to physics; ` +
+                `input=${input?.isTrusted === true}, visibility=${document.visibilityState}.`,
+            ),
+          )
+        }, watchdogMs)
+        const sample = (timestamp: number) => {
+          // This observer is queued after the live game callback, which
+          // schedules its next callback before we schedule ours. Credit only
+          // post-keydown time that its bounded fixed-step loop can consume.
+          const elapsed = Math.max(0, (timestamp - previousTimestamp) / 1_000)
+          previousTimestamp = Math.max(previousTimestamp, timestamp)
+          deliveredSeconds += Math.min(elapsed, maximumFrameSeconds)
+          frames++
+          if (deliveredSeconds < requiredSeconds) {
+            frameId = requestAnimationFrame(sample)
+            return
+          }
+          cleanup()
+          const game = document.querySelector('[data-testid="glass-adventure"]')
+          const x = game?.getAttribute('data-player-x')
+          const z = game?.getAttribute('data-player-z')
+          if (
+            x == null ||
+            z == null ||
+            ![Number(x), Number(z)].every(Number.isFinite)
+          ) {
+            reject(new Error('The rendered game lost its player position.'))
+            return
+          }
+          resolve({
+            deliveredSeconds,
+            frames,
+            inputPrevented: input?.defaultPrevented === true,
+            inputTrusted: input?.isTrusted === true,
+            x: Number(x),
+            z: Number(z),
+          })
+        }
+        function begin(event: KeyboardEvent): void {
+          if (event.code !== 'KeyW') return
+          window.removeEventListener('keydown', begin, true)
+          input = event
+          previousTimestamp = performance.now()
+          frameId = requestAnimationFrame(sample)
+        }
+        window.addEventListener('keydown', begin, true)
+      })
+    },
+    {
+      maximumFrameSeconds: MOVEMENT.fixedStep * MOVEMENT.maximumSteps,
+      requiredSeconds: 0.4,
+      // Reuse the real renderer's readiness budget as a starvation watchdog;
+      // this is not a minimum frame-rate or wall-time movement assertion.
+      watchdogMs: 90_000,
+    },
+  )
+}
 
 test.use({
   deviceScaleFactor: 3,
@@ -463,24 +555,21 @@ test('compact touch Promenade downsizes its GLB images before forward movement @
     z: Number(element.getAttribute('data-player-z')),
   }))
   await page.getByLabel('Glass museum; drag to look around').focus()
+  await armRenderedMovementWindow(page)
   await page.keyboard.down('KeyW')
   try {
-    // This is a functional movement check, so wait for movement rather than a
-    // fixed number of host milliseconds under software rendering.
-    await expect
-      .poll(
-        () =>
-          game.evaluate(
-            (element, origin) =>
-              Math.hypot(
-                Number(element.getAttribute('data-player-x')) - origin.x,
-                Number(element.getAttribute('data-player-z')) - origin.z,
-              ),
-            start,
-          ),
-        { timeout: 5_000 },
-      )
-      .toBeGreaterThan(0.2)
+    // Native decoding, actual raster output and trusted input remain live.
+    // Judge displacement after a fixed delivered simulation opportunity,
+    // rather than treating a software GPU's throughput as movement behavior.
+    const movement = await page.evaluate(
+      () => (window as MovementFrameWindow).renderQualityMovement!,
+    )
+    expect(movement.inputTrusted).toBe(true)
+    expect(movement.inputPrevented).toBe(true)
+    expect(movement.deliveredSeconds).toBeGreaterThanOrEqual(0.4)
+    expect(
+      Math.hypot(movement.x - start.x, movement.z - start.z),
+    ).toBeGreaterThan(0.2)
   } finally {
     await page.keyboard.up('KeyW')
   }

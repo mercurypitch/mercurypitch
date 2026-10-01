@@ -49,8 +49,6 @@ export function createAdventureCamera(
   const bodyTarget = new Vector3()
   const desired = new Vector3()
   const direction = new Vector3()
-  const retainedDirection = new Vector3()
-  const retainedPosition = new Vector3()
   const challengeDirection = new Vector3()
   const challengePosition = new Vector3()
   const challengeReturnOffset = new Vector3()
@@ -83,7 +81,6 @@ export function createAdventureCamera(
   let manualOrbitOverride = false
   let obstructionLifted = false
   let zoomChanged = false
-  let hasRetainedPosition = false
   let firstFrame = true
   let requestedChallengeId: string | null = null
   let challengeSubjects: ChallengeCameraSubjects | null = null
@@ -238,6 +235,7 @@ export function createAdventureCamera(
         }
         firstFrame = true
         thirdPersonFraming.reset()
+        obstruction.resetCameraPlacement()
       }
       cameraMode = mode
       firstPersonChallengeId = null
@@ -539,7 +537,7 @@ export function createAdventureCamera(
       }
       const teleport = desired.distanceToSquared(target) > 9
       const snapPitch = firstFrame || teleport
-      if (teleport) hasRetainedPosition = false
+      if (teleport) obstruction.resetCameraPlacement()
       if (snapPitch) target.copy(desired)
       else {
         const horizontalResponse = activeRouteSection === null ? 12 : 5.5
@@ -723,7 +721,7 @@ export function createAdventureCamera(
             targetPitch,
             1 - Math.exp(-OBSTRUCTION_LIFT_RESPONSE * safeDt),
           )
-      const safeDistance = obstruction.safeBoomDistance(
+      const safeDistance = obstruction.resolveBoomDistance(
         target,
         yaw,
         renderedPitch,
@@ -732,6 +730,7 @@ export function createAdventureCamera(
         activeSolidIds,
         framedTarget,
         useMeshOccluders,
+        safeDt,
         direction,
       )
       let renderedDistance = safeDistance
@@ -746,44 +745,19 @@ export function createAdventureCamera(
         })
       } else {
         thirdPersonFraming.reset()
-        hasRetainedPosition = false
       }
       zoomChanged = false
-      let retained = false
-      if (
-        framedTarget &&
-        renderedDistance <= 0.05 &&
-        hasRetainedPosition &&
-        enclosure!.cameraPositionSafe(target, retainedPosition, activeSolidIds)
-      ) {
-        retainedDirection.copy(retainedPosition).sub(target)
-        const retainedDistance = retainedDirection.length()
-        retainedDirection.multiplyScalar(1 / retainedDistance)
-        if (
-          obstruction.meshPathClear(
-            target,
-            retainedDirection,
-            retainedDistance,
-            useMeshOccluders,
-          )
-        ) {
-          camera.position.copy(retainedPosition)
-          retained = true
-        }
-      }
-      if (!retained) {
-        camera.position
-          .copy(target)
-          .addScaledVector(direction, renderedDistance)
-        if (
-          framedTarget &&
-          renderedDistance > 0.05 &&
-          enclosure!.cameraPositionSafe(target, camera.position, activeSolidIds)
-        ) {
-          retainedPosition.copy(camera.position)
-          hasRetainedPosition = true
-        }
-      }
+      const rebasedDistance = obstruction.placeCameraPosition({
+        position: camera.position,
+        target,
+        boomDirection: direction,
+        renderedDistance,
+        safeDistance,
+        activeSolidIds,
+        constrainToEnclosure: framedTarget,
+        useMeshOccluders,
+      })
+      if (rebasedDistance !== null) thirdPersonFraming.snap(rebasedDistance)
       renderedTarget.copy(target)
       camera.lookAt(renderedTarget)
     },

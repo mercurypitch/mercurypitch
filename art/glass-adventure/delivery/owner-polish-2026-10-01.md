@@ -49,9 +49,24 @@ leave Merc facing the requested diagonal instead of the surviving movement.
 Movement now preserves a stable world-space input basis while the camera can
 follow a sustained corridor slide. Merc faces his actual post-collision
 velocity; stopping against a wall preserves his last heading. Camera angular
-response catches up through bounded slices on slow frames. These changes are
-being verified on the complete rendered route, including entry after a
-front-facing orbit and held forward-plus-left/right inputs.
+response catches up through bounded slices on slow frames. The full corridor
+replay also found a geometry defect: two fillers used window depth instead
+of screen depth, projecting 7.74 cm into the north passage and catching Merc
+during a held diagonal wall slide. Matching their rendered and collision
+depth to the screen removes that ledge without weakening collision checks.
+The verification route keeps the diagonal input held beyond this seam,
+including entry after a front-facing orbit.
+
+An additional edge case occurred when Merc's body could slide closer to a
+wall than the camera's clearance radius allowed. A parallel camera boom then
+collapsed to its look-at target despite having the correct heading. Enclosed
+framing now searches a small, validated sideways boom offset when the normal
+reach falls below 0.72 m. It retains a safe side and eases back when the normal
+reach clears 1.6 m; room bounds, closed gates and actual occluders still apply.
+The offset never changes Merc's movement basis. Bounds reject impossible
+candidates before mesh queries, and unchanged failed searches have a 0.25 s
+retry interval. Regression tests check actual camera clearance and Merc's
+screen projection throughout the outer-wall slide, rather than yaw alone.
 
 The results card presents accuracy, discoveries and portrait as three compact
 collection tiles. Medals are up to 84 pixels on phones, 76 in short landscape
@@ -103,6 +118,12 @@ including their descendants. The viewport, dialogs and tuning inputs retain
 their normal pointer ownership. Chromium exercises long presses and both
 three-contact movement/look/jump orders; Linux WebKit verifies native taps
 and actual slider changes. Physical iOS callouts remain a device check.
+
+The active joystick also stays inside a stable DOM boundary while nearby
+Sing prompts and guidance change. Previously, sibling reconciliation briefly
+removed and reinserted the same controls node, cancelling native capture even
+though the component never unmounted. The fix preserves the existing release
+behavior on pause, tutorial, completion and disabled input.
 
 ## Playtest
 
