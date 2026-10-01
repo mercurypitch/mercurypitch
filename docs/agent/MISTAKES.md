@@ -1662,3 +1662,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** microphone or input callbacks can finish the authoritative simulation before RAF; resource cleanup then cancels RAF while the terminal state is published without presentation permission.
 **Rule:** keep ordinary evidence updates independent of GPU rendering, but publish one authoritative finish/recovery frame after stopping the loop. Test capture, input and RAF as terminal triggers, including late callbacks and exactly-once cleanup.
 **See:** `packages/glass-game/src/browser/runner-session.ts`, `packages/glass-game/src/browser/runner-session.test.ts`.
+
+### Wait for the rendered camera before clicking a projected surface
+
+**Symptom:** a canvas artwork click missed even though the requested camera yaw was correct; mouse and touch dialog assertions failed.
+**Cause:** pointer input updates the yaw target synchronously, while enclosure framing and the camera used for raycasting continue moving during subsequent rendered frames.
+**Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Do not retry clicks or increase dialog timeouts to hide a miss.
+**See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`.

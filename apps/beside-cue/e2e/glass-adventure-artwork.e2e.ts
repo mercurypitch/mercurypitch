@@ -71,6 +71,49 @@ function gapBetween(a: Bounds, b: Bounds): number {
   return Math.hypot(horizontal, vertical)
 }
 
+async function waitForExplorationCameraToSettle(page: Page): Promise<void> {
+  let previous: { x: number; y: number; z: number } | null = null
+  let stableSamples = 0
+  await expect
+    .poll(
+      async () => {
+        // Sample after a real presentation frame. The camera yaw target changes
+        // synchronously, while enclosure framing settles during rendering.
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() => resolve()),
+            ),
+        )
+        const raw = await page
+          .getByTestId('glass-adventure')
+          .getAttribute('data-challenge-camera')
+        if (raw === null || raw === 'null')
+          throw new Error('Missing camera metrics.')
+        const current = JSON.parse(raw) as {
+          mode: string
+          position: { x: number; y: number; z: number }
+        }
+        const distance =
+          previous === null
+            ? Number.POSITIVE_INFINITY
+            : Math.hypot(
+                current.position.x - previous.x,
+                current.position.y - previous.y,
+                current.position.z - previous.z,
+              )
+        previous = current.position
+        stableSamples =
+          current.mode === 'exploration' && distance < 0.002
+            ? stableSamples + 1
+            : 0
+        return stableSamples
+      },
+      { timeout: 10_000, intervals: [150] },
+    )
+    .toBeGreaterThanOrEqual(2)
+}
+
 test('artwork offer shares the top header row above guidance and leaves controls reachable @smoke', async ({
   page,
 }) => {
@@ -182,6 +225,7 @@ test('a visible painting opens from its canvas surface with mouse and touch @smo
   await expect
     .poll(async () => Number(await game.getAttribute('data-camera-yaw')))
     .toBeCloseTo(Math.PI / 2, 2)
+  await waitForExplorationCameraToSettle(page)
   // Unobscured point on the real inset at this checkpoint and explicit yaw.
   const artwork = { x: 250, y: 115 }
   const dialog = page.getByRole('dialog', { name: 'The garden between notes' })
