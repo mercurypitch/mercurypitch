@@ -100,37 +100,6 @@ function stableCourseTruth(course: CompiledRunnerCourse) {
   }
 }
 
-function expectCertifiedSafety(course: CompiledRunnerCourse): void {
-  for (const obstacle of course.obstacles) {
-    expect(obstacle.certifiedActions.length).toBeGreaterThan(0)
-    for (const action of obstacle.certifiedActions) {
-      expect(action.launchCloseCourseSeconds).toBeGreaterThan(
-        action.launchOpenCourseSeconds,
-      )
-      expect(action.landingCloseCourseSeconds).toBeGreaterThan(
-        action.landingOpenCourseSeconds,
-      )
-      for (const target of course.targets) {
-        const overlaps =
-          action.launchOpenCourseSeconds < target.protectedUntilCourseSeconds &&
-          action.landingCloseCourseSeconds > target.protectedFromCourseSeconds
-        expect(overlaps).toBe(false)
-      }
-    }
-  }
-  for (const checkpoint of course.checkpoints) {
-    const runwayStart = checkpoint.courseDistanceMeters
-    const runwayEnd = checkpoint.runwayEndBeat * course.metersPerBeat
-    for (const obstacle of course.obstacles) {
-      if (obstacle.kind !== 'gap') continue
-      const overlaps =
-        runwayStart < obstacle.landingEndCourseDistanceMeters &&
-        runwayEnd > obstacle.minCourseDistanceMeters
-      expect(overlaps).toBe(false)
-    }
-  }
-}
-
 function expectBoundaries(
   course: CompiledRunnerCourse,
   bpms: readonly number[],
@@ -232,7 +201,10 @@ describe('Singing Current pacing variants', () => {
       'living-crystal-platform-v2',
       'merc',
       'museum-environment-v2',
+      'museum-garden-v2',
+      'museum-kit-v2',
       'museum-sky',
+      'painting-garden-v5',
     ])
   })
 
@@ -326,10 +298,44 @@ describe('Singing Current pacing variants', () => {
     ).toBeCloseTo(((4 * 60) / 84) * 0.52, 12)
   })
 
-  it('keeps both compiled presets certified around voice windows and checkpoints', () => {
-    expectCertifiedSafety(SINGING_CURRENT_CURRENT)
-    expectCertifiedSafety(SINGING_CURRENT_LEARNING)
-  })
+  it.each([
+    ['current', SINGING_CURRENT_CURRENT],
+    ['learning', SINGING_CURRENT_LEARNING],
+  ] as const)(
+    'keeps %s certified around voice windows and checkpoints',
+    (_name, course) => {
+      for (const obstacle of course.obstacles) {
+        expect(obstacle.certifiedActions.length).toBeGreaterThan(0)
+        for (const action of obstacle.certifiedActions) {
+          expect(action.launchCloseCourseSeconds).toBeGreaterThan(
+            action.launchOpenCourseSeconds,
+          )
+          expect(action.landingCloseCourseSeconds).toBeGreaterThan(
+            action.landingOpenCourseSeconds,
+          )
+          for (const target of course.targets) {
+            const overlaps =
+              action.launchOpenCourseSeconds <
+                target.protectedUntilCourseSeconds &&
+              action.landingCloseCourseSeconds >
+                target.protectedFromCourseSeconds
+            expect(overlaps).toBe(false)
+          }
+        }
+      }
+      for (const checkpoint of course.checkpoints) {
+        const runwayStart = checkpoint.courseDistanceMeters
+        const runwayEnd = checkpoint.runwayEndBeat * course.metersPerBeat
+        for (const obstacle of course.obstacles) {
+          if (obstacle.kind !== 'gap') continue
+          const overlaps =
+            runwayStart < obstacle.landingEndCourseDistanceMeters &&
+            runwayEnd > obstacle.minCourseDistanceMeters
+          expect(overlaps).toBe(false)
+        }
+      }
+    },
+  )
 
   it('uses isolated trial identities while the selected aliases remain canonical learning', () => {
     expect(SINGING_CURRENT_CURRENT_TRIAL).toMatchObject({

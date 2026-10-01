@@ -10,6 +10,12 @@ import { build } from 'vite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { gameAssetsPlugin, NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, } from './game-assets'
 
+const R3_NATIVE_GAME_ASSETS = [
+  'games/adventure-v2/platform-kit.glb',
+  'games/adventure-v2/garden-kit.glb',
+  'games/adventure-v5/painting-garden.webp',
+] as const
+
 let root: string
 const seed = (file: string, content: string): void => {
   const path = join(root, file)
@@ -43,6 +49,8 @@ beforeEach(() => {
   seed('public/art/record.svg', '<svg/>')
   seed('public/games/glass3d/merc.glb', 'merc source')
   for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
+    seed(`public/${asset}`, `${asset} source`)
+  for (const asset of R3_NATIVE_GAME_ASSETS)
     seed(`public/${asset}`, `${asset} source`)
   for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
     seed(`public/games/${mobile}`, `${mobile} source`)
@@ -112,6 +120,8 @@ describe('direct Vite game asset packaging', () => {
     )
     for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
       expect(contents(`output/games/${mobile}`)).toBe(`${mobile} source`)
+    for (const asset of R3_NATIVE_GAME_ASSETS)
+      expect(contents(`output/${asset}`)).toBe(`${asset} source`)
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
     expect(contents('output/models/swiftf0.onnx')).toBe('model source')
   })
