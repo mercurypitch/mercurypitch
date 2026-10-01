@@ -23,6 +23,8 @@ const state = vi.hoisted(() => ({
   mercDispose: vi.fn(),
   worldUpdate: vi.fn(),
   targetUpdate: vi.fn(),
+  precompile: vi.fn(),
+  verifyFirstFrame: vi.fn(),
   decoded: undefined as ((image: TexImageSource) => void) | undefined,
   observer: undefined as (() => void) | undefined,
 }))
@@ -75,9 +77,9 @@ vi.mock('./environment', () => ({
     dispose: state.environmentDispose,
   }),
 }))
-vi.mock('./first-frame', () => ({ verifyFirstFrame: vi.fn() }))
+vi.mock('./first-frame', () => ({ verifyFirstFrame: state.verifyFirstFrame }))
 vi.mock('./program-precompile', () => ({
-  precompileRendererPrograms: vi.fn().mockResolvedValue(undefined),
+  precompileRendererPrograms: state.precompile,
 }))
 vi.mock('./sky-backdrop', () => ({ fitSkyBackdrop: vi.fn() }))
 vi.mock('./backdrop-fog', () => ({ installBackdropFog: vi.fn() }))
@@ -150,6 +152,7 @@ beforeEach(() => {
   })
   state.texture.mockImplementation(async () => new Texture())
   state.model.mockImplementation(async () => new Group())
+  state.precompile.mockResolvedValue(undefined)
 })
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -243,6 +246,7 @@ describe('runner renderer ownership', () => {
   it('notifies context loss, retires interactions and disposes every owner once', async () => {
     const { renderer, lost, snapshot } = fixture()
     await renderer.ready
+    expect(state.render).toHaveBeenCalledTimes(2)
     expect(renderer.render(snapshot, 0)).toBe(true)
     lost.mockImplementation(() => renderer.dispose())
     const event = new Event('webglcontextlost', { cancelable: true })
@@ -252,7 +256,7 @@ describe('runner renderer ownership', () => {
     renderer.dispose()
     state.observer?.()
     expect(renderer.render(snapshot, 0.1)).toBe(false)
-    expect(state.render).toHaveBeenCalledOnce()
+    expect(state.render).toHaveBeenCalledTimes(3)
     for (const disposer of [
       state.dispose,
       state.loseContext,
@@ -265,5 +269,37 @@ describe('runner renderer ownership', () => {
     ])
       expect(disposer).toHaveBeenCalledOnce()
     expect(state.listeners.size).toBe(0)
+  })
+
+  it('warms resident variants and paints the verified initial snapshot before readiness', async () => {
+    const { renderer } = fixture()
+
+    await renderer.ready
+
+    expect(state.precompile).toHaveBeenCalledOnce()
+    expect(state.render).toHaveBeenCalledTimes(2)
+    expect(state.worldUpdate).toHaveBeenCalledTimes(2)
+    expect(state.targetUpdate).toHaveBeenCalledTimes(2)
+    expect(state.verifyFirstFrame).toHaveBeenCalledOnce()
+    expect(state.precompile.mock.invocationCallOrder[0]).toBeLessThan(
+      state.render.mock.invocationCallOrder[0]!,
+    )
+    expect(state.render.mock.invocationCallOrder[1]).toBeLessThan(
+      state.verifyFirstFrame.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  it('retires the renderer when the loading warmup draw fails', async () => {
+    state.render.mockImplementationOnce(() => {
+      throw new Error('warmup draw failed')
+    })
+    const { renderer } = fixture()
+
+    await expect(renderer.ready).rejects.toThrow('warmup draw failed')
+
+    expect(state.dispose).toHaveBeenCalledOnce()
+    expect(state.loseContext).toHaveBeenCalledOnce()
+    expect(state.worldDispose).toHaveBeenCalledOnce()
+    expect(state.targetDispose).toHaveBeenCalledOnce()
   })
 })

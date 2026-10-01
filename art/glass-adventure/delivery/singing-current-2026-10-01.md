@@ -23,7 +23,10 @@ readiness, count-in and any checkpoint recovery.
 
 The melody is relative to the player's comfortable note. Range controls remain
 within the course's certified range. Rendering speed does not determine singing
-duration or progression. References and backing are synthesized for this first
+duration or progression. Loading draws the resident crack and shatter variants
+once, restores their visibility and paints the genuine initial scene before
+enabling play, so deferred GPU setup is paid before continuous judging.
+References and backing are synthesized for this first
 course; they are not newly recorded Merc singing performances.
 
 ## Chosen tradeoffs
