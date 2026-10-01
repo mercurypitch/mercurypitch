@@ -1,7 +1,7 @@
 // Automatic voice engagement — consumes one museum circle until Merc physically leaves it.
 
 import type { LevelDefinition, Vec3 } from '../contracts'
-import { isWithinBreakableInteractionCircle } from '../core/game'
+import { isWithinAutomaticSingingContact, isWithinAutomaticSingingFootprint, } from '../core/exhibit-interaction'
 import type { GlassGameHost, GlassVoicePreparation } from '../host'
 
 export const AUTOMATIC_SINGING_PREFERENCE = 'automatic-singing'
@@ -72,7 +72,7 @@ interface AutomaticVoiceObservation {
   enabled: boolean
   eligible: boolean
   nearbyEncounterId: string | null
-  playerPosition: Pick<Vec3, 'x' | 'z'>
+  playerPosition: Pick<Vec3, 'x' | 'y' | 'z'>
 }
 
 export interface AutomaticVoiceEngagement {
@@ -93,13 +93,24 @@ export function createAutomaticVoiceEngagement(
   let blockedEncounterId: string | null = null
 
   const stillInsideBlockedCircle = (
-    position: Pick<Vec3, 'x' | 'z'>,
+    position: Pick<Vec3, 'x' | 'y' | 'z'>,
   ): boolean => {
     if (blockedEncounterId === null) return false
     const anchor = anchors.get(blockedEncounterId)
     return (
       anchor !== undefined &&
-      isWithinBreakableInteractionCircle(position, anchor)
+      isWithinAutomaticSingingFootprint(position, anchor)
+    )
+  }
+
+  const insideNearbyCircle = (
+    encounterId: string | null,
+    position: Pick<Vec3, 'x' | 'y' | 'z'>,
+  ): boolean => {
+    if (encounterId === null) return false
+    const anchor = anchors.get(encounterId)
+    return (
+      anchor !== undefined && isWithinAutomaticSingingContact(position, anchor)
     )
   }
 
@@ -125,6 +136,10 @@ export function createAutomaticVoiceEngagement(
         !observation.enabled ||
         !observation.eligible ||
         observation.nearbyEncounterId === null ||
+        !insideNearbyCircle(
+          observation.nearbyEncounterId,
+          observation.playerPosition,
+        ) ||
         blockedEncounterId !== null
       )
         return null

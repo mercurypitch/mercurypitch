@@ -2,13 +2,20 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
+import { AUTOMATIC_SINGING_CONTACT_RADIUS } from '../core/exhibit-interaction'
 import { BREAKABLE_INTERACTION_RADIUS } from '../core/game'
 import { AUTOMATIC_SINGING_PREFERENCE, createAutomaticVoiceEngagement, createAutomaticVoicePreparationOwner, parseAutomaticSingingPreference, serializeAutomaticSingingPreference, } from './automatic-voice-engagement'
 
 const first = GLASSWORKS.breakables[0]!
-const inside = { x: first.anchor.x, z: first.anchor.z }
+const inside = { ...first.anchor }
 const outside = {
   x: first.anchor.x + BREAKABLE_INTERACTION_RADIUS + 0.01,
+  y: first.anchor.y,
+  z: first.anchor.z,
+}
+const outsideAutomaticContact = {
+  x: first.anchor.x + AUTOMATIC_SINGING_CONTACT_RADIUS + 0.01,
+  y: first.anchor.y,
   z: first.anchor.z,
 }
 
@@ -55,6 +62,26 @@ describe('automatic voice engagement', () => {
     })
   })
 
+  it('waits for Merc to touch the visible ring inside the larger manual range', () => {
+    const engagement = createAutomaticVoiceEngagement(GLASSWORKS)
+    engagement.arm()
+
+    expect(
+      eligible(engagement, {
+        x: first.anchor.x + AUTOMATIC_SINGING_CONTACT_RADIUS + 0.001,
+        y: first.anchor.y,
+        z: first.anchor.z,
+      }),
+    ).toBeNull()
+    expect(
+      eligible(engagement, {
+        x: first.anchor.x + AUTOMATIC_SINGING_CONTACT_RADIUS,
+        y: first.anchor.y,
+        z: first.anchor.z,
+      }),
+    ).toBe(first.id)
+  })
+
   it('requires a fresh gesture after pause without forgetting the consumed circle', () => {
     const engagement = createAutomaticVoiceEngagement(GLASSWORKS)
     engagement.arm()
@@ -92,7 +119,22 @@ describe('automatic voice engagement', () => {
     expect(eligible(engagement)).toBeNull()
   })
 
-  it('rearms only after a real exit beyond the core interaction radius', () => {
+  it('does not rearm from an elevation change without stepping away', () => {
+    const engagement = createAutomaticVoiceEngagement(GLASSWORKS)
+    engagement.arm()
+    expect(eligible(engagement)).toBe(first.id)
+
+    expect(
+      eligible(engagement, {
+        ...inside,
+        y: first.anchor.y + 0.06,
+      }),
+    ).toBeNull()
+    expect(engagement.snapshot().blockedEncounterId).toBe(first.id)
+    expect(eligible(engagement)).toBeNull()
+  })
+
+  it('rearms after leaving visible contact while still inside manual range', () => {
     const engagement = createAutomaticVoiceEngagement(GLASSWORKS)
     engagement.arm()
     expect(eligible(engagement)).toBe(first.id)
@@ -100,11 +142,15 @@ describe('automatic voice engagement', () => {
     expect(
       engagement.observe({
         enabled: true,
-        eligible: false,
-        nearbyEncounterId: null,
-        playerPosition: outside,
+        eligible: true,
+        nearbyEncounterId: first.id,
+        playerPosition: outsideAutomaticContact,
       }),
     ).toBeNull()
+    expect(outsideAutomaticContact.x - first.anchor.x).toBeLessThan(
+      BREAKABLE_INTERACTION_RADIUS,
+    )
+    expect(engagement.snapshot().blockedEncounterId).toBeNull()
     expect(eligible(engagement)).toBe(first.id)
   })
 

@@ -1,6 +1,7 @@
 // Automatic museum singing — real host gesture, cancellation, exit and persisted manual mode.
 
 import { expect, test, type Page } from '@playwright/test'
+import { AUTOMATIC_SINGING_CONTACT_RADIUS, BREAKABLE_INTERACTION_RADIUS, } from '../../../packages/glass-game/src/core/exhibit-interaction'
 import { omitRasterOutput } from './helpers/glass-adventure-controls'
 
 interface VoiceSource {
@@ -200,7 +201,7 @@ async function cancelVoice(page: Page): Promise<void> {
   )
 }
 
-test('@smoke museum circles engage once, rearm on physical exit and preserve manual mode', async ({
+test('@smoke museum circles engage at visible contact, rearm on exit and preserve manual mode', async ({
   page,
 }) => {
   await openRestoredCircle(page)
@@ -229,26 +230,60 @@ test('@smoke museum circles engage once, rearm on physical exit and preserve man
   await page.keyboard.down('KeyS')
   try {
     for (let frame = 0; frame < 60; frame++) {
-      if ((await playerDistanceFromGoblet(page)) > 1.12) break
+      if (
+        (await playerDistanceFromGoblet(page)) >
+        AUTOMATIC_SINGING_CONTACT_RADIUS + 0.06
+      )
+        break
       await page.clock.runFor(64)
     }
-    expect(await playerDistanceFromGoblet(page)).toBeGreaterThan(1.12)
+    const distance = await playerDistanceFromGoblet(page)
+    expect(distance).toBeGreaterThan(AUTOMATIC_SINGING_CONTACT_RADIUS + 0.06)
+    expect(distance).toBeLessThan(BREAKABLE_INTERACTION_RADIUS)
   } finally {
     await page.keyboard.up('KeyS')
   }
   expect(await voiceRequests(page)).toBe(1)
+  await expect(sing).toBeVisible()
 
   await page.keyboard.down('KeyW')
+  let engagedDistance: number | null = null
   try {
     for (let frame = 0; frame < 60; frame++) {
-      if ((await voiceRequests(page)) === 2) break
-      await page.clock.runFor(64)
+      await page.clock.runFor(32)
+      const distance = await playerDistanceFromGoblet(page)
+      const challengeVisible =
+        (await page.getByLabel('Voice challenge').count()) === 1
+      if (challengeVisible) {
+        engagedDistance = distance
+        break
+      }
     }
-    expect(await voiceRequests(page)).toBe(2)
+    if (engagedDistance === null)
+      throw new Error('Automatic singing did not re-engage at the goblet ring.')
+    expect(engagedDistance).toBeLessThanOrEqual(
+      AUTOMATIC_SINGING_CONTACT_RADIUS,
+    )
   } finally {
     await page.keyboard.up('KeyW')
   }
   await expect(page.getByLabel('Voice challenge')).toBeVisible()
+  // Quick re-entry can reuse the mic manager's live stream during its linger
+  // window. Assert resumed capture rather than a second getUserMedia call.
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(64)
+      return page.getByLabel('Voice challenge').getAttribute('data-voice-mode')
+    })
+    .toBe('singing')
+  expect(
+    await page.evaluate(
+      () =>
+        window.automaticSingingFixture.sources.filter(
+          (source) => source.track.readyState === 'live',
+        ).length,
+    ),
+  ).toBe(1)
   await cancelVoice(page)
 
   await page.getByRole('button', { name: 'Pause game' }).click()
