@@ -113,6 +113,7 @@ test('an input-driven exit awards the selected tier once and presents separate p
     { label: 'phone', width: 390, height: 844 },
     { label: 'tablet', width: 820, height: 1180 },
     { label: 'desktop', width: 1280, height: 800 },
+    { label: 'phone-landscape', width: 844, height: 390 },
   ]) {
     await page.setViewportSize(viewport)
     await page.screenshot({
@@ -136,14 +137,19 @@ test('an input-driven exit awards the selected tier once and presents separate p
       return {
         badgeRight: badge.getBoundingClientRect().right,
         portraitLeft: portrait.getBoundingClientRect().left,
-        badgeFontSize: getComputedStyle(badge).fontSize,
+        badgeFontSize: Number.parseFloat(getComputedStyle(badge).fontSize),
+        medalSize: badge.querySelector('img')!.getBoundingClientRect().width,
+        portraitSize: portrait.querySelector('img')!.getBoundingClientRect()
+          .width,
       }
     })
     expect(scoreLayout.badgeRight).toBeLessThanOrEqual(scoreLayout.portraitLeft)
-    expect(scoreLayout.badgeFontSize).toBe('12px')
+    expect(scoreLayout.badgeFontSize).toBeGreaterThanOrEqual(12)
+    expect(scoreLayout.medalSize).toBeGreaterThanOrEqual(48)
+    expect(scoreLayout.portraitSize).toBeGreaterThanOrEqual(60)
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth)
     expect(layout.controls.every((height) => height >= 44)).toBe(true)
-    if (viewport.width <= 390)
+    if (viewport.width <= 390 || viewport.height <= 390)
       expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight)
   }
   const accuracy = page.getByTestId('singing-quality-summary')
@@ -435,4 +441,82 @@ test('replay goals fit phone/tablet/desktop and resume only the selected tier @s
     `${storagePrefix}:progress:${level.id}`,
   )
   expect(saved.finished).toBe(true)
+})
+
+test.describe('completion portrait interaction', () => {
+  test.use({ hasTouch: false, viewport: { width: 1280, height: 800 } })
+
+  test('portrait responds to a real mouse, keyboard and reduced motion @smoke', async ({
+    page,
+  }, testInfo) => {
+    const level = MUSEUM_CAMPAIGN[1]!.level
+    const complete = {
+      ...readProgress(level, null),
+      completedBreakableIds: level.breakables.map((item) => item.id),
+      finished: true,
+      rewards: {
+        version: 1,
+        discoveredEncounterIds: level.rewards!.discoveries.map(
+          (item) => item.encounterId,
+        ),
+        collectedCoinIds: level.rewards!.discoveries.flatMap(
+          (item) => item.coinIds,
+        ),
+        collectedPortraitIds: [level.rewards!.portrait!.portraitId],
+        qualityResults: [],
+      },
+    }
+    await page.addInitScript((complete) => {
+      // Actual host/DOM interaction is under test; separate raster proofs own the world.
+      for (const method of [
+        'clear',
+        'drawArrays',
+        'drawArraysInstanced',
+        'drawElements',
+        'drawElementsInstanced',
+      ])
+        Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+          configurable: true,
+          value: () => undefined,
+        })
+      localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+      localStorage.setItem(
+        `beside-cue:glass-adventure:progress:${complete.levelId}`,
+        JSON.stringify(complete),
+      )
+    }, complete)
+    await page.goto('/glass-game/?layout=journey')
+    await page
+      .getByRole('button', { name: 'Review completion', exact: true })
+      .click()
+    const result = page.getByTestId('completion-results')
+    await expect(result).toBeVisible({ timeout: 60_000 })
+    const portrait = result.getByTestId('portrait-summary')
+    const picture = portrait.locator('img')
+    await page.mouse.move(0, 0)
+    await expect(picture).toHaveCSS('transform', 'none')
+    await portrait.hover()
+    await expect(picture).not.toHaveCSS('transform', 'none')
+    await page.screenshot({
+      path: testInfo.outputPath('results-portrait-hover.png'),
+    })
+    await portrait.click()
+    await expect(page.getByText('From the museum collection')).toBeVisible()
+    await page.getByRole('button', { name: 'Back to the gallery' }).click()
+    await expect(portrait).toBeFocused()
+    await page.mouse.move(0, 0)
+    // A keyboard focus ring and lift provide the same invitation as mouse hover.
+    await result.getByTestId('discovery-summary').focus()
+    await page.keyboard.press('Tab')
+    await expect(portrait).toBeFocused()
+    await expect(picture).not.toHaveCSS('transform', 'none')
+    await page.keyboard.press('Enter')
+    await expect(page.getByText('From the museum collection')).toBeVisible()
+    await page.getByRole('button', { name: 'Back to the gallery' }).click()
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await portrait.hover()
+    await expect(picture).toHaveCSS('transform', 'none')
+    await expect(picture).toHaveCSS('transition-duration', '0s')
+    await expect(portrait).toHaveCSS('outline-style', 'solid')
+  })
 })
