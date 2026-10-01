@@ -55,6 +55,7 @@ declare global {
       grantPermission(): Promise<void>
       denyPermission(): void
       pendingPermissionCount(): number
+      dropAmplitudeFor(durationSeconds: number): number
       setAmplitude(value: number): void
       setMidi(value: number): void
       glideMidi(value: number, durationSeconds: number): void
@@ -212,6 +213,25 @@ async function openMuseum(
         pending.reject(new DOMException('Permission denied', 'NotAllowedError'))
       },
       pendingPermissionCount: () => pendingPermissions.length,
+      dropAmplitudeFor(durationSeconds) {
+        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
+          throw new Error('Dropout duration must be positive.')
+        // Keep both edges on the audio clock. Two host calls can drift far
+        // enough apart under CI load to turn a brief dropout into a reset.
+        let restoreAt: number | null = null
+        for (const source of sources) {
+          if (source.track.readyState !== 'live') continue
+          const now = source.context.currentTime
+          const parameter = source.gain.gain
+          parameter.cancelScheduledValues(now)
+          parameter.setValueAtTime(0, now)
+          parameter.setValueAtTime(amplitude, now + durationSeconds)
+          restoreAt = now + durationSeconds
+        }
+        if (restoreAt === null)
+          throw new Error('No live microphone source is available.')
+        return restoreAt
+      },
       setAmplitude(value) {
         amplitude = value
         for (const source of sources)
@@ -439,6 +459,27 @@ async function holdForAudioSeconds(page: Page, seconds: number): Promise<void> {
     .toBeGreaterThan(startedAt + seconds)
 }
 
+async function dropVoiceForAudioSeconds(
+  page: Page,
+  seconds: number,
+): Promise<void> {
+  const restoreAt = await page.evaluate(
+    (durationSeconds) =>
+      window.glassVoiceFixture.dropAmplitudeFor(durationSeconds),
+    seconds,
+  )
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            window.glassVoiceFixture.sources.at(-1)?.context.currentTime ?? 0,
+        ),
+      { timeout: Math.max(6000, seconds * 4000) },
+    )
+    .toBeGreaterThan(restoreAt)
+}
+
 async function approachRestoredEncounter(
   page: Page,
   checkpointId: string,
@@ -605,6 +646,10 @@ async function expectChallengeCameraFitsPanel(
     'holding',
     { timeout: 20_000 },
   )
+  // Let resize observers and the render loop publish the new camera plan,
+  // then require two fitting samples across the 100 ms metrics cadence.
+  await animationFrames(page, 2)
+  let consecutiveFits = 0
   await expect
     .poll(
       async () => {
@@ -613,7 +658,7 @@ async function expectChallengeCameraFitsPanel(
           voicePanelTopNdc(page),
         ])
         const frame = metrics?.combinedFrame
-        return (
+        const fits =
           metrics?.encounterId === encounterId &&
           metrics.settled &&
           metrics.mercFrame !== null &&
@@ -625,22 +670,15 @@ async function expectChallengeCameraFitsPanel(
           frame.maxX <= 0.9 &&
           frame.minY >= panelTopNdc &&
           frame.maxY <= 0.88
-        )
+        if (!fits) {
+          consecutiveFits = 0
+          return 0
+        }
+        return ++consecutiveFits
       },
-      { timeout: 20_000, intervals: [100] },
+      { timeout: 20_000, intervals: [150] },
     )
-    .toBe(true)
-
-  const metrics = await challengeCameraMetrics(page)
-  const panelTopNdc = await voicePanelTopNdc(page)
-  expect(metrics?.encounterId).toBe(encounterId)
-  expect(metrics?.mercFrame).not.toBeNull()
-  expect(metrics?.targetFrame).not.toBeNull()
-  expect(metrics?.combinedFrame?.minX).toBeGreaterThanOrEqual(-0.9)
-  expect(metrics?.combinedFrame?.maxX).toBeLessThanOrEqual(0.9)
-  expect(panelTopNdc).not.toBeNull()
-  expect(metrics?.combinedFrame?.minY).toBeGreaterThanOrEqual(panelTopNdc ?? 1)
-  expect(metrics?.combinedFrame?.maxY).toBeLessThanOrEqual(0.88)
+    .toBeGreaterThanOrEqual(2)
 }
 
 async function savedProgress(
@@ -1271,9 +1309,7 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
   await page.setViewportSize({ width: 640, height: 480 })
 
   for (const midi of [59, 57, 55, 57]) await glideVoice(page, midi, 0.35)
-  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0))
-  await holdForAudioSeconds(page, 0.075)
-  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0.1))
+  await dropVoiceForAudioSeconds(page, 0.075)
   for (const midi of [59, 57, 55]) await glideVoice(page, midi, 0.35)
   await holdForAudioSeconds(page, 0.15)
   await expect(

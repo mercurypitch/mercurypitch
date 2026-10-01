@@ -290,6 +290,20 @@ which does not resolve extensionless relative imports like Vite does.
 data and keep its runtime dependencies Node-loadable. The asset contract test
 must import the inventory in a child Node process as well as through Vitest.
 
+### Verify resumed capture rather than counting microphone requests
+
+**Symptom:** a quick return to a singing circle reached singing mode, but its test expected a second `getUserMedia` call and failed.
+**Cause:** MicManager retains its live stream for a two-second release window; a new consumer legitimately reuses it.
+**Rule:** assert resumed capture and live track ownership. Count acquisitions only when explicitly testing teardown after the linger deadline.
+**See:** `packages/pitch-engine/src/mic-manager.ts`, `apps/beside-cue/e2e/glass-adventure-auto-singing.e2e.ts`.
+
+### Schedule brief microphone probes on the audio clock
+
+**Symptom:** a browser regression reset a melody during a supposedly allowed 650 ms pause.
+**Cause:** separate automation calls and assertions stretched the pause to 789 ms before capture could reacquire the tone.
+**Rule:** schedule short PCM transitions in one AudioContext timeline, observe inside the browser, and require actual samples within the interruption. Keep responsive screenshot work separate from timing-sensitive consent/capture scenarios.
+**See:** `apps/beside-cue/e2e/helpers/thawing-song-input.ts`, `apps/beside-cue/e2e/glass-adventure-thawing-song.e2e.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
