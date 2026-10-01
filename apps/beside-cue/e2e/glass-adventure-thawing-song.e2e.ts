@@ -65,24 +65,116 @@ async function observeTierOneGraceSequence(
         throw new Error('Melody progress lost its current value.')
       return Number(value)
     }
+    const contourTail = (
+      recoveryMidi: number,
+      fromProgress: number,
+    ): ScheduledPitchPoint[] => {
+      const maximumPhase = Math.min(1, (fromProgress + 0.5) / 100)
+      const voiced = melody.samples.filter(
+        (point) => point.midi !== null && point.phase <= maximumPhase,
+      )
+      if (voiced.length === 0)
+        throw new Error('Melody recovery lost its voiced contour.')
+      const matches: Array<{
+        phase: number
+        timeSeconds: number
+        midi: number
+      }> = []
+      for (let index = 0; index < melody.samples.length; index++) {
+        const point = melody.samples[index]!
+        if (point.midi === null || point.phase > maximumPhase) continue
+        if (Math.abs(point.midi - recoveryMidi) <= 0.01)
+          matches.push({
+            phase: point.phase,
+            timeSeconds: point.timeSeconds,
+            midi: point.midi,
+          })
+        const next = melody.samples[index + 1]
+        if (
+          next?.midi === null ||
+          next === undefined ||
+          next.segmentId !== point.segmentId
+        )
+          continue
+        const midiDelta = next.midi - point.midi
+        if (Math.abs(midiDelta) <= 1e-9) continue
+        const ratio = (recoveryMidi - point.midi) / midiDelta
+        if (ratio <= 0 || ratio >= 1) continue
+        const phase = point.phase + (next.phase - point.phase) * ratio
+        if (phase > maximumPhase) continue
+        matches.push({
+          phase,
+          timeSeconds:
+            point.timeSeconds + (next.timeSeconds - point.timeSeconds) * ratio,
+          midi: recoveryMidi,
+        })
+      }
+      const start =
+        matches.length > 0
+          ? matches.reduce((latest, candidate) =>
+              candidate.phase > latest.phase ? candidate : latest,
+            )
+          : voiced.reduce((nearest, candidate) => {
+              const nearestError = Math.abs(nearest.midi! - recoveryMidi)
+              const candidateError = Math.abs(candidate.midi! - recoveryMidi)
+              return candidateError < nearestError ||
+                (Math.abs(candidateError - nearestError) <= 1e-9 &&
+                  candidate.phase > nearest.phase)
+                ? candidate
+                : nearest
+            })
+      const points: ScheduledPitchPoint[] = [
+        { afterSeconds: 0, midi: recoveryMidi },
+      ]
+      for (const point of melody.samples) {
+        if (point.timeSeconds <= start.timeSeconds) continue
+        points.push({
+          afterSeconds: point.timeSeconds - start.timeSeconds,
+          midi: point.midi,
+        })
+      }
+      return points
+    }
     const waitFor = async (
       predicate: () => boolean,
       description: string,
     ): Promise<void> => {
-      const deadline = performance.now() + 5_000
-      while (!predicate()) {
-        if (performance.now() >= deadline)
-          throw new Error(`Timed out waiting for ${description}.`)
-        await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => resolve()),
-        )
-      }
+      await new Promise<void>((resolve, reject) => {
+        let timeout: number | undefined
+        const observer = new MutationObserver(check)
+        const finish = (): void => {
+          observer.disconnect()
+          if (timeout !== undefined) clearTimeout(timeout)
+        }
+        function check(): void {
+          try {
+            if (!predicate()) return
+            finish()
+            resolve()
+          } catch (error) {
+            finish()
+            reject(error)
+          }
+        }
+        observer.observe(root, {
+          attributes: true,
+          characterData: true,
+          childList: true,
+          subtree: true,
+        })
+        timeout = window.setTimeout(() => {
+          finish()
+          reject(new Error(`Timed out waiting for ${description}.`))
+        }, 5_000)
+        check()
+      })
     }
     const observeRecovery = async (
       points: ScheduledPitchPoint[],
       recoveryAfterSeconds: number,
       interruptionText: string,
       recoveryText: string,
+      recoveryMidi: number,
     ): Promise<ScheduledInterruptionObservation> => {
       const startedAudioAt = window.thawingInput.sequence(points)
       const recoveryAudioAt = startedAudioAt + recoveryAfterSeconds
@@ -102,10 +194,11 @@ async function observeTierOneGraceSequence(
         if (window.thawingInput.audioTime() < recoveryAudioAt)
           observed.push(progressValue())
       }
-      await waitFor(
-        () => (guide.textContent ?? '').includes(recoveryText),
-        `pitch guide to show ${recoveryText}`,
-      )
+      await waitFor(() => {
+        const text = guide.textContent ?? ''
+        return text.includes(recoveryText) && text.includes('centered')
+      }, `pitch guide to show ${recoveryText}`)
+      window.thawingInput.sequence(contourTail(recoveryMidi, progressValue()))
       await waitFor(
         () => progressValue() > frozenProgress,
         `melody progress to resume after ${interruptionText}`,
@@ -138,6 +231,7 @@ async function observeTierOneGraceSequence(
       0.65,
       'Listening · Target',
       'You C4 · Target',
+      60,
     )
     const wrongMidi = 64
     const mismatchStartedAudioAt = window.thawingInput.sequence([
@@ -170,6 +264,18 @@ async function observeTierOneGraceSequence(
       if (window.thawingInput.audioTime() < mismatchRecoveryAudioAt)
         mismatchObserved.push(progressValue())
     }
+    const targetName = interruptionGuideText
+      .match(/Target ([^·]+)/u)?.[1]
+      ?.trim()
+    if (targetName === undefined)
+      throw new Error(
+        `Wrong-note guide did not expose its target: ${interruptionGuideText}`,
+      )
+    await waitFor(() => {
+      const text = guide.textContent ?? ''
+      return text.includes(`Target ${targetName}`) && text.includes('centered')
+    }, `pitch guide to recover on Target ${targetName}`)
+    window.thawingInput.sequence(contourTail(recoveryMidi, progressValue()))
     await waitFor(
       () => progressValue() > mismatchFrozenProgress,
       'melody progress to resume after You E4 · Target',

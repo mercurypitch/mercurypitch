@@ -301,8 +301,15 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** a browser regression reset a melody during a supposedly allowed 650 ms pause.
 **Cause:** separate automation calls and assertions stretched the pause to 789 ms before capture could reacquire the tone.
-**Rule:** schedule short PCM transitions in one AudioContext timeline, observe inside the browser, and require actual samples within the interruption. Keep responsive screenshot work separate from timing-sensitive consent/capture scenarios.
+**Rule:** schedule short PCM transitions in one AudioContext timeline, observe inside the browser, and require actual samples within the interruption. Resume the compiled contour after a pause: a tone matching its frozen point can become wrong as the melody advances. Observe brief DOM states at their mutation, not only the next rendered frame. Keep responsive screenshots separate from capture timing.
 **See:** `apps/beside-cue/e2e/helpers/thawing-song-input.ts`, `apps/beside-cue/e2e/glass-adventure-thawing-song.e2e.ts`.
+
+### Await the audio request independently of the playback button
+
+**Symptom:** an encore browser test saw Stop listening but still counted zero requests for the selected voice variant.
+**Cause:** the browser starts fetch and publishes playback ownership synchronously; Playwright delivers the network event to its Node-side observer later.
+**Rule:** await the exact asset request/count as its own asynchronous observation. Keep no-prefetch and final exact-count assertions; a visible playback button is not a network-event barrier.
+**See:** `packages/glass-game/src/ui/EncoreDialog.tsx`, `apps/beside-cue/e2e/glass-adventure-encore-examples.e2e.ts`.
 
 ## Framework
 

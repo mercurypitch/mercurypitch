@@ -414,7 +414,7 @@ test('cancels a delayed voice, follows key pace and shape, then starts capture a
   await expect(
     dialog.getByRole('button', { name: 'Stop listening', exact: true }),
   ).toBeVisible({ timeout: 15_000 })
-  expect(count(requests, BRISK_VARIANT)).toBe(1)
+  await expect.poll(() => count(requests, BRISK_VARIANT)).toBe(1)
 
   await dialog.getByLabel('Starting height').selectOption({ label: 'Lower 1' })
   await expect(
@@ -425,7 +425,7 @@ test('cancels a delayed voice, follows key pace and shape, then starts capture a
   await expect(
     dialog.getByRole('button', { name: 'Stop listening', exact: true }),
   ).toBeVisible({ timeout: 15_000 })
-  expect(count(requests, LOWER_BRISK_VARIANT)).toBe(1)
+  await expect.poll(() => count(requests, LOWER_BRISK_VARIANT)).toBe(1)
 
   await dialog.getByLabel('Melody shape').selectOption('sunlit-steps')
   await expect(dialog.getByLabel('Pace')).toHaveValue('1')
@@ -435,7 +435,7 @@ test('cancels a delayed voice, follows key pace and shape, then starts capture a
   await expect(
     dialog.getByRole('button', { name: 'Stop listening', exact: true }),
   ).toBeVisible({ timeout: 15_000 })
-  expect(count(requests, SUNLIT_VARIANT)).toBe(1)
+  await expect.poll(() => count(requests, SUNLIT_VARIANT)).toBe(1)
 
   await dialog
     .getByRole('button', { name: 'Sing the melody', exact: true })
