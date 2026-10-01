@@ -47,6 +47,7 @@ export function createAdventureCamera(
   addFiniteOffset(target, activeRouteSection?.targetOffset)
   const renderedTarget = target.clone()
   const bodyTarget = new Vector3()
+  const previousPlayerPosition = new Vector3().copy(level.spawn.position)
   const desired = new Vector3()
   const direction = new Vector3()
   const challengeDirection = new Vector3()
@@ -423,6 +424,11 @@ export function createAdventureCamera(
     },
     update(snapshot: GameSnapshot, dt: number, presentationPaused = false) {
       obstruction.updatePlatformStates(snapshot.platformStates)
+      const displacementDistance = Math.hypot(
+        snapshot.player.position.x - previousPlayerPosition.x,
+        snapshot.player.position.z - previousPlayerPosition.z,
+      )
+      previousPlayerPosition.copy(snapshot.player.position)
       const elapsed =
         !presentationPaused && Number.isFinite(dt) ? Math.max(0, dt) : 0
       const safeDt =
@@ -568,6 +574,7 @@ export function createAdventureCamera(
         : null
       const headingSample = {
         allowForwardDiagonalFollow: framedTarget,
+        displacementDistance: teleport ? 0 : displacementDistance,
         elapsedSeconds: followDt,
         effectiveHeading,
         facingYaw: facing,

@@ -92,6 +92,85 @@ export function createSongRunnerGame(
   const checkpoint = (id: string): CompiledRunnerCheckpoint | undefined =>
     course.checkpoints.find((candidate) => candidate.id === id)
 
+  const restoreCheckpoint = (
+    resumeCheckpoint: CompiledRunnerCheckpoint,
+    fresh: boolean,
+    nextStatus: 'paused' | 'running',
+  ): void => {
+    epoch = null
+    epochStartCourseSeconds = resumeCheckpoint.courseSeconds
+    courseSeconds = resumeCheckpoint.courseSeconds
+    lastRequestedCourseSeconds = resumeCheckpoint.courseSeconds
+    movement = createRunnerMovementState(
+      course,
+      resumeCheckpoint.respawnLane,
+      resumeCheckpoint.respawnFeetY,
+    )
+    queuedInputs = []
+    lastInputSequence = -1
+    lastEvidenceSequence = -1
+    lastEvidenceCaptureCourseSeconds = -Infinity
+    events = []
+    combo = 0
+    recoveryCheckpointId = null
+    status = nextStatus
+
+    const resetTargetIds = new Set<string>()
+    if (fresh) {
+      sessionResults.clear()
+      reachedCheckpointIds.clear()
+      reachedCheckpointIds.add(initialCheckpoint.id)
+      lastCheckpointId = initialCheckpoint.id
+      for (const target of course.targets) resetTargetIds.add(target.id)
+    } else {
+      for (const target of course.targets) {
+        if (
+          target.settleAfterCourseSeconds >
+          resumeCheckpoint.courseSeconds + EPSILON
+        ) {
+          sessionResults.delete(target.id)
+          resetTargetIds.add(target.id)
+        }
+      }
+      lastCheckpointId = resumeCheckpoint.id
+    }
+    judge.resetTargets(resetTargetIds)
+    judge.clearContinuity()
+  }
+
+  const checkpointFor = (
+    checkpointId?: string,
+  ):
+    | {
+        readonly ok: true
+        readonly checkpoint: CompiledRunnerCheckpoint
+        readonly fresh: boolean
+      }
+    | {
+        readonly ok: false
+        readonly reason:
+          | 'invalid-state'
+          | 'unknown-checkpoint'
+          | 'checkpoint-not-reached'
+      } => {
+    if (status === 'running') return { ok: false, reason: 'invalid-state' }
+    const fresh = checkpointId === undefined
+    if (!fresh && status === 'finished')
+      return { ok: false, reason: 'invalid-state' }
+    const resumeCheckpoint = fresh
+      ? initialCheckpoint
+      : checkpoint(checkpointId)
+    if (resumeCheckpoint === undefined)
+      return { ok: false, reason: 'unknown-checkpoint' }
+    if (
+      !fresh &&
+      resumeCheckpoint.id !== initialCheckpoint.id &&
+      !reachedCheckpointIds.has(resumeCheckpoint.id)
+    )
+      return { ok: false, reason: 'checkpoint-not-reached' }
+    return { ok: true, checkpoint: resumeCheckpoint, fresh }
+  }
+
   const emit = (event: PendingRunnerEvent): void => {
     if (epoch === null) return
     eventSequence++
@@ -276,66 +355,16 @@ export function createSongRunnerGame(
     if (typeof nextEpoch !== 'string' || nextEpoch.trim().length === 0)
       return { ok: false, reason: 'invalid-state' }
     if (usedEpochs.has(nextEpoch)) return { ok: false, reason: 'epoch-reused' }
-    if (status === 'running') return { ok: false, reason: 'invalid-state' }
-    const fresh = checkpointId === undefined
-    if (!fresh && status === 'finished')
-      return { ok: false, reason: 'invalid-state' }
-    const resumeCheckpoint = fresh
-      ? initialCheckpoint
-      : checkpoint(checkpointId)
-    if (resumeCheckpoint === undefined)
-      return { ok: false, reason: 'unknown-checkpoint' }
-    if (
-      !fresh &&
-      resumeCheckpoint.id !== initialCheckpoint.id &&
-      !reachedCheckpointIds.has(resumeCheckpoint.id)
-    )
-      return { ok: false, reason: 'checkpoint-not-reached' }
+    const selected = checkpointFor(checkpointId)
+    if (!selected.ok) return selected
 
     usedEpochs.add(nextEpoch)
+    restoreCheckpoint(selected.checkpoint, selected.fresh, 'running')
     epoch = nextEpoch
-    epochStartCourseSeconds = resumeCheckpoint.courseSeconds
-    courseSeconds = resumeCheckpoint.courseSeconds
-    lastRequestedCourseSeconds = resumeCheckpoint.courseSeconds
-    movement = createRunnerMovementState(
-      course,
-      resumeCheckpoint.respawnLane,
-      resumeCheckpoint.respawnFeetY,
-    )
-    queuedInputs = []
-    lastInputSequence = -1
-    lastEvidenceSequence = -1
-    lastEvidenceCaptureCourseSeconds = -Infinity
-    events = []
-    combo = 0
-    recoveryCheckpointId = null
-    status = 'running'
-
-    const resetTargetIds = new Set<string>()
-    if (fresh) {
-      sessionResults.clear()
-      reachedCheckpointIds.clear()
-      reachedCheckpointIds.add(initialCheckpoint.id)
-      lastCheckpointId = initialCheckpoint.id
-      for (const target of course.targets) resetTargetIds.add(target.id)
-    } else {
-      for (const target of course.targets) {
-        if (
-          target.settleAfterCourseSeconds >
-          resumeCheckpoint.courseSeconds + EPSILON
-        ) {
-          sessionResults.delete(target.id)
-          resetTargetIds.add(target.id)
-        }
-      }
-      lastCheckpointId = resumeCheckpoint.id
-    }
-    judge.resetTargets(resetTargetIds)
-    judge.clearContinuity()
     return {
       ok: true,
-      checkpointId: resumeCheckpoint.id,
-      startCourseSeconds: resumeCheckpoint.courseSeconds,
+      checkpointId: selected.checkpoint.id,
+      startCourseSeconds: selected.checkpoint.courseSeconds,
     }
   }
 
@@ -524,6 +553,16 @@ export function createSongRunnerGame(
   }
 
   return {
+    prepareCheckpoint(checkpointId) {
+      const selected = checkpointFor(checkpointId)
+      if (!selected.ok) return selected
+      restoreCheckpoint(selected.checkpoint, selected.fresh, 'paused')
+      return {
+        ok: true,
+        checkpointId: selected.checkpoint.id,
+        startCourseSeconds: selected.checkpoint.courseSeconds,
+      }
+    },
     beginEpoch,
     pause() {
       if (status === 'running') {

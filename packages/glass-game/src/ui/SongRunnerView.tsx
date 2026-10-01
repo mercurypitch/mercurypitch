@@ -184,7 +184,20 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   const progress = createMemo(() =>
     clampedPercent(game().courseBeat / props.course.lengthBeats),
   )
-  const activeTarget = createMemo(() => game().activeTarget)
+  // The frozen game can still describe the previous wall while restarting.
+  // Readiness always listens for the comfortable note, not that wall's pitch.
+  const activeTarget = createMemo(() =>
+    state().phase === 'running' ? game().activeTarget : null,
+  )
+  const pitchTarget = createMemo(() => {
+    const readiness = state().readiness
+    if (state().phase === 'readiness' && readiness !== null)
+      return {
+        currentTargetMidi: readiness.targetMidi,
+        pitchFeedback: readiness.pitchFeedback,
+      }
+    return activeTarget()
+  })
   const compiledTarget = createMemo(() => {
     const target = activeTarget()
     return target === null
@@ -430,7 +443,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           notes={notationNotes()}
           activeNoteIndex={activeTarget()?.noteIndex ?? 0}
           instruction={notationInstruction()}
-          target={activeTarget()}
+          target={pitchTarget()}
         />
       </Show>
 
@@ -463,7 +476,16 @@ export function SongRunnerView(props: SongRunnerViewProps) {
 
       <Show when={state().phase === 'readiness'}>
         <section class={styles.readinessPanel}>
-          <p>Hold the note until it fills.</p>
+          <p>Match the target to start.</p>
+          <p
+            class={styles.readinessInput}
+            data-testid="runner-readiness-input"
+            data-receiving={String(state().readiness?.receivingInput ?? false)}
+          >
+            {state().readiness?.receivingInput === true
+              ? 'Microphone responding'
+              : 'Waiting for microphone input'}
+          </p>
           <div
             class={styles.readinessTrack}
             role="progressbar"

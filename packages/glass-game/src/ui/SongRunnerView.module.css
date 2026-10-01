@@ -563,6 +563,12 @@
   height: 10px;
 }
 
+.readinessPanel .readinessInput {
+  color: #49696c;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .spinner {
   width: 32px;
   height: 32px;

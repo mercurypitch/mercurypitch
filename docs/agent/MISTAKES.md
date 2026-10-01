@@ -311,6 +311,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** await the exact asset request/count as its own asynchronous observation. Keep no-prefetch and final exact-count assertions; a visible playback button is not a network-event barrier.
 **See:** `packages/glass-game/src/ui/EncoreDialog.tsx`, `apps/beside-cue/e2e/glass-adventure-encore-examples.e2e.ts`.
 
+### Separate capture continuity from receipt freshness
+
+**Symptom:** a correct starting note repeatedly lost its hold progress on delayed microphone delivery.
+**Cause:** readiness accepted frames up to 180 ms late but cleared the hold when the latest capture was 120 ms old, including continuously delivered valid frames.
+**Rule:** accumulate only consecutive capture timestamps; evaluate arriving-input health separately from capture gaps. Interleave delayed captures with animation ticks in regressions instead of testing each stream alone.
+**See:** `packages/glass-game/src/browser/runner-session.test.ts` and `runner-session-course.test.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

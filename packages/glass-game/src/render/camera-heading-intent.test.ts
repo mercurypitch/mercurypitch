@@ -1,10 +1,12 @@
 // Camera heading intent policy — held and interrupted contacts never leak stale view turns.
 
 import { describe, expect, it } from 'vitest'
+import { MOVEMENT } from '../core/movement'
 import type { CameraHeadingIntentSample } from './camera-heading-intent'
 import { createCameraHeadingIntent } from './camera-heading-intent'
 
 const SAMPLE: CameraHeadingIntentSample = {
+  displacementDistance: 0,
   elapsedSeconds: 0.2,
   facingYaw: Math.PI / 2,
   movementActive: true,
@@ -150,7 +152,7 @@ describe('camera heading intent', () => {
     expect(intent.target({ ...blocked, movementActive: false })).toBeNull()
   })
 
-  it('adopts a sustained effective corridor heading without following transient collision noise', () => {
+  it('adopts a physically sustained corridor redirect without following transient collision noise', () => {
     const intent = createCameraHeadingIntent()
     intent.rebase('keyboard')
     const requestedHeading = Math.PI / 4
@@ -166,14 +168,14 @@ describe('camera heading intent', () => {
     expect(
       intent.target({
         ...confirmed,
-        elapsedSeconds: 0.2,
+        displacementDistance: MOVEMENT.radius / 2,
         effectiveHeading: corridorHeading,
       }),
     ).toBeCloseTo(requestedHeading)
     expect(
       intent.target({
         ...confirmed,
-        elapsedSeconds: 0.1,
+        displacementDistance: MOVEMENT.radius / 4,
         effectiveHeading: 0,
       }),
     ).toBeCloseTo(requestedHeading)
@@ -181,16 +183,39 @@ describe('camera heading intent', () => {
     expect(
       intent.target({
         ...confirmed,
-        elapsedSeconds: 0.2,
+        displacementDistance: MOVEMENT.radius / 2,
         effectiveHeading: corridorHeading,
       }),
     ).toBeCloseTo(requestedHeading)
     expect(
       intent.target({
         ...confirmed,
-        elapsedSeconds: 0.2,
+        displacementDistance: MOVEMENT.radius / 2,
         effectiveHeading: corridorHeading,
       }),
     ).toBeCloseTo(corridorHeading)
+  })
+
+  it('cannot confirm a moving corridor redirect without actual displacement', () => {
+    const intent = createCameraHeadingIntent()
+    intent.rebase('keyboard')
+    const requestedHeading = Math.PI / 4
+    const corridorHeading = Math.PI / 2
+    const confirmed = {
+      ...SAMPLE,
+      allowForwardDiagonalFollow: true,
+      elapsedSeconds: 0.4,
+      keyboardHeading: requestedHeading,
+    }
+    expect(intent.target(confirmed)).toBeCloseTo(requestedHeading)
+
+    for (let index = 0; index < 8; index++)
+      expect(
+        intent.target({
+          ...confirmed,
+          displacementDistance: 0,
+          effectiveHeading: corridorHeading,
+        }),
+      ).toBeCloseTo(requestedHeading)
   })
 })

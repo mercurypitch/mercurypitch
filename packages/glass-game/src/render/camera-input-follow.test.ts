@@ -373,9 +373,16 @@ describe('camera follow from real movement contacts', () => {
     expect(yawDistance(camera.yaw(), blockedFacing)).toBeLessThan(0.08)
   })
 
-  it.each([10, 60])(
-    'follows Merc through the Journey corner during one held stick contact at %i Hz',
-    (framesPerSecond) => {
+  it.each([
+    [10, 'keyboard'],
+    [30, 'keyboard'],
+    [60, 'keyboard'],
+    [10, 'stick'],
+    [30, 'stick'],
+    [60, 'stick'],
+  ] as const)(
+    'follows Merc during displacement through the Journey corner at %i Hz with held %s input',
+    (framesPerSecond, contactKind) => {
       const frameSeconds = 1 / framesPerSecond
       const levelId = GLASSWORKS_JOURNEY.id
       const game = createGlassGame(GLASSWORKS_JOURNEY, {
@@ -393,6 +400,11 @@ describe('camera follow from real movement contacts', () => {
       const input = createAdventureInput()
       const start = game.snapshot().player.position
       let assertReadableWallFollow = false
+      let redirectedPosition: { x: number; z: number } | null = null
+      let redirectedYaw: number | null = null
+      let firstCorrectionDistance: number | null = null
+      let oneMetreError: number | null = null
+      let chordHeading: number | null = null
       camera.update(game.snapshot(), frameSeconds)
       const initialMovementBasis = camera.movementYaw()
       const advanceUntil = (reached: () => boolean, seconds: number): void => {
@@ -415,6 +427,31 @@ describe('camera follow from real movement contacts', () => {
             )
           game.step(input.read(camera.movementYaw()), frameSeconds)
           camera.update(game.snapshot(), frameSeconds)
+          if (chordHeading !== null) {
+            const player = game.snapshot().player
+            if (
+              player.position.z >= 25.45 &&
+              Math.abs(player.velocity.x) > 0.05 &&
+              Math.abs(player.velocity.z) < 0.05
+            ) {
+              redirectedPosition ??= {
+                x: player.position.x,
+                z: player.position.z,
+              }
+              redirectedYaw ??= camera.yaw()
+              const redirectedDistance = Math.hypot(
+                player.position.x - redirectedPosition.x,
+                player.position.z - redirectedPosition.z,
+              )
+              if (
+                firstCorrectionDistance === null &&
+                yawDistance(camera.yaw(), redirectedYaw) > 0.002
+              )
+                firstCorrectionDistance = redirectedDistance
+              if (oneMetreError === null && redirectedDistance >= 1)
+                oneMetreError = yawDistance(camera.yaw(), player.facingYaw)
+            }
+          }
           if (assertReadableWallFollow) {
             const snapshot = game.snapshot()
             const target = camera.getChallengeMetrics().target
@@ -457,8 +494,12 @@ describe('camera follow from real movement contacts', () => {
       advanceUntil(() => game.snapshot().player.position.x > start.x - 0.2, 4)
       input.setStick(0, -1)
       advanceUntil(() => game.snapshot().player.position.z - start.z > 13.35, 6)
-      input.setStick(-1, -1)
-      const chordHeading = input.desiredTravelYaw(camera.movementYaw())
+      if (contactKind === 'keyboard') {
+        input.setStick(0, 0)
+        input.key(keyboardEvent('KeyW'), true)
+        input.key(keyboardEvent('KeyA'), true)
+      } else input.setStick(-1, -1)
+      chordHeading = input.desiredTravelYaw(camera.movementYaw())
       expect(chordHeading).not.toBeNull()
       assertReadableWallFollow = true
       advanceUntil(() => game.snapshot().player.position.x - start.x > 7, 7)
@@ -469,6 +510,12 @@ describe('camera follow from real movement contacts', () => {
       expect(end.position.x - start.x).toBeGreaterThan(7)
       expect(end.position.z - start.z).toBeGreaterThan(15.5)
       expect(end.position.z).toBeLessThan(25.9)
+      expect(firstCorrectionDistance).not.toBeNull()
+      expect(firstCorrectionDistance!).toBeLessThanOrEqual(
+        MOVEMENT.radius * 1.25,
+      )
+      expect(oneMetreError).not.toBeNull()
+      expect(oneMetreError!).toBeLessThan(0.6)
       expect(yawDistance(camera.yaw(), end.facingYaw)).toBeLessThan(0.16)
       expect(yawDistance(camera.yaw(), chordHeading!)).toBeGreaterThan(0.3)
       camera.camera.updateMatrixWorld()

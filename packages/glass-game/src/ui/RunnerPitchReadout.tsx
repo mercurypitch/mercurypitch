@@ -5,7 +5,7 @@ import { runnerPitchReadout } from './runner-pitch-readout'
 import styles from './RunnerPitchReadout.module.css'
 
 interface RunnerPitchReadoutProps {
-  target: RunnerTargetSnapshot
+  target: Pick<RunnerTargetSnapshot, 'currentTargetMidi' | 'pitchFeedback'>
 }
 
 export function RunnerPitchReadout(props: RunnerPitchReadoutProps) {

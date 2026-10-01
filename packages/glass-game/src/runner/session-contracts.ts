@@ -1,7 +1,7 @@
 // Runner session boundary — UI and rendering observe one microphone and audio-clock owner.
 import type { GlassGameHost } from '../host'
 import type { MicrophoneIssue } from '../ui/mic-error'
-import type { CompiledRunnerCheckpoint, CompiledRunnerCourse, RunnerEvent, RunnerInput, RunnerSnapshot, SavedRunnerProgress, } from './contracts'
+import type { CompiledRunnerCheckpoint, CompiledRunnerCourse, RunnerEvent, RunnerInput, RunnerPitchFeedback, RunnerSnapshot, SavedRunnerProgress, } from './contracts'
 
 export type RunnerSessionPhase =
   | 'idle'
@@ -28,6 +28,8 @@ export interface RunnerSessionState {
   readonly readiness: {
     readonly targetMidi: number
     readonly fillProgress: number
+    readonly receivingInput: boolean
+    readonly pitchFeedback: RunnerPitchFeedback
   } | null
   readonly countIn: {
     readonly beatsRemaining: number
