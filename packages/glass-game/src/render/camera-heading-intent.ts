@@ -66,9 +66,10 @@ export function createCameraHeadingIntent() {
       const offset = Math.abs(
         shortestAngleDelta(sample.movementReferenceYaw, sample.facingYaw),
       )
-      const minimumHeading = sample.allowForwardDiagonalFollow
-        ? ENCLOSED_DIAGONAL_HEADING_MINIMUM
-        : LATERAL_HEADING_MINIMUM
+      const minimumHeading =
+        sample.allowForwardDiagonalFollow === true
+          ? ENCLOSED_DIAGONAL_HEADING_MINIMUM
+          : LATERAL_HEADING_MINIMUM
       if (offset >= minimumHeading && offset <= LATERAL_HEADING_MAXIMUM)
         lateralSeconds += sample.elapsedSeconds
       else lateralSeconds = 0
