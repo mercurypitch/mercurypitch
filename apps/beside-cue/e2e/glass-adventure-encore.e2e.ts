@@ -211,6 +211,67 @@ for (const tier of [2, 3] as const) {
   })
 }
 
+for (const pitchGuideOpen of [false, true]) {
+  const pitchGuideState = pitchGuideOpen ? 'open' : 'closed'
+  test(`optional encore ${pitchGuideState} pitch guide fits phone, tablet and desktop`, async ({
+    page,
+  }, testInfo) => {
+    await installTieredEncoreVisit(page, 2)
+    await page.goto('/glass-game/?campaign=1')
+    await page.getByRole('button', { name: 'Open museum collection' }).click()
+    const album = page.getByRole('dialog', {
+      name: 'Your museum collection',
+      exact: true,
+    })
+    const card = album
+      .locator('article')
+      .filter({ hasText: GLASSWORKS_JOURNEY.title })
+    await card
+      .getByRole('button', { name: 'Sing or hear your encore', exact: true })
+      .click()
+    const dialog = page.getByRole('dialog', { name: 'Leave a little light.' })
+    await dialog
+      .getByRole('button', { name: 'Sing the melody', exact: true })
+      .click()
+    await expect(dialog.locator('section[data-mode]')).toHaveAttribute(
+      'data-mode',
+      'singing',
+      { timeout: 15_000 },
+    )
+    if (pitchGuideOpen) {
+      await dialog
+        .getByRole('button', { name: 'Show pitch guide', exact: true })
+        .click()
+      await expect(
+        dialog.locator('output[aria-label="Live pitch compared with target"]'),
+      ).toHaveText('Listening · Target C4')
+    }
+    const pitchGuideButton = dialog.getByRole('button', {
+      name: pitchGuideOpen ? 'Hide pitch guide' : 'Show pitch guide',
+      exact: true,
+    })
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      await pitchGuideButton.scrollIntoViewIfNeeded()
+      expect(
+        await dialog.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true)
+      expect(
+        (await pitchGuideButton.boundingBox())!.height,
+      ).toBeGreaterThanOrEqual(44)
+      await page.screenshot({
+        path: testInfo.outputPath(
+          `encore-pitch-guide-${pitchGuideState}-${width}.png`,
+        ),
+      })
+    }
+    await page.evaluate(() => window.encoreFixture.silent())
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  })
+}
+
 test('optional encore records only with consent, preserves completion and fits mobile @smoke', async ({
   page,
 }, testInfo) => {
@@ -374,46 +435,10 @@ test('optional encore records only with consent, preserves completion and fits m
     name: 'Show pitch guide',
     exact: true,
   })
-  for (const width of [320, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 })
-    await showPitchGuide.scrollIntoViewIfNeeded()
-    expect(
-      await dialog.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true)
-    expect((await showPitchGuide.boundingBox())!.height).toBeGreaterThanOrEqual(
-      44,
-    )
-    await page.screenshot({
-      path: testInfo.outputPath(`encore-pitch-guide-closed-${width}.png`),
-    })
-  }
-  await page.setViewportSize({ width: 390, height: 900 })
   await showPitchGuide.click()
   await expect(
     dialog.locator('output[aria-label="Live pitch compared with target"]'),
   ).toHaveText('Listening · Target C4')
-  const hidePitchGuide = dialog.getByRole('button', {
-    name: 'Hide pitch guide',
-    exact: true,
-  })
-  for (const width of [320, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 })
-    await hidePitchGuide.scrollIntoViewIfNeeded()
-    expect(
-      await dialog.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true)
-    expect((await hidePitchGuide.boundingBox())!.height).toBeGreaterThanOrEqual(
-      44,
-    )
-    await page.screenshot({
-      path: testInfo.outputPath(`encore-pitch-guide-open-${width}.png`),
-    })
-  }
-  await page.setViewportSize({ width: 390, height: 900 })
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect
     .poll(() =>

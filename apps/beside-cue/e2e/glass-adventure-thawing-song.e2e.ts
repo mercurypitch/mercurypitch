@@ -1,9 +1,11 @@
 // Thawing Song browser proof — saved lesson identity and real microphone PCM judge the portrait.
 
 import { expect, test } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 import { CLOUDWAY_THAWING_SONG } from '../../../packages/glass-game/src/content/cloudway-thawing-song'
 import { createGlassGame } from '../../../packages/glass-game/src/core/game'
 import { resolveMelodyAttempt } from '../../../packages/glass-game/src/core/melody-attempt'
+import type { CompiledMelody } from '../../../packages/glass-game/src/core/melody-contour'
 import { installThawingInput, singCompiledPhrase, } from './helpers/thawing-song-input'
 
 const level = CLOUDWAY_THAWING_SONG
@@ -21,6 +23,184 @@ const finaleSave = {
   ...prepared.saveProgress(),
   checkpointId: 'thaw-portrait-save',
   completedBreakableIds: level.melodyLesson!.stations.map((s) => s.encounterId),
+}
+
+interface ScheduledPitchPoint {
+  afterSeconds: number
+  midi: number | null
+}
+
+interface ScheduledInterruptionObservation {
+  frozenProgress: number
+  minimumDuringInterruption: number
+  maximumDuringInterruption: number
+  recoveredProgress: number
+  interruptionGuideText: string
+  scheduledSeconds: number
+  samplesDuringInterruption: number
+}
+
+interface TierOneGraceObservation {
+  dropout: ScheduledInterruptionObservation
+  mismatch: ScheduledInterruptionObservation
+  resetProgress: number
+}
+
+async function observeTierOneGraceSequence(
+  panel: Locator,
+  melody: Pick<CompiledMelody, 'durationSeconds' | 'samples'>,
+): Promise<TierOneGraceObservation> {
+  return panel.evaluate(async (root, melody) => {
+    const progress = root.querySelector<HTMLElement>(
+      '[role="progressbar"][aria-label="Melody progress"]',
+    )
+    const guide = root.querySelector<HTMLOutputElement>(
+      'output[aria-label="Live pitch compared with target"]',
+    )
+    if (!progress || !guide)
+      throw new Error('Melody grace proof lost its progress or pitch guide.')
+    const progressValue = (): number => {
+      const value = progress.getAttribute('aria-valuenow')
+      if (value === null)
+        throw new Error('Melody progress lost its current value.')
+      return Number(value)
+    }
+    const waitFor = async (
+      predicate: () => boolean,
+      description: string,
+    ): Promise<void> => {
+      const deadline = performance.now() + 5_000
+      while (!predicate()) {
+        if (performance.now() >= deadline)
+          throw new Error(`Timed out waiting for ${description}.`)
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        )
+      }
+    }
+    const observeRecovery = async (
+      points: ScheduledPitchPoint[],
+      recoveryAfterSeconds: number,
+      interruptionText: string,
+      recoveryText: string,
+    ): Promise<ScheduledInterruptionObservation> => {
+      const startedAudioAt = window.thawingInput.sequence(points)
+      const recoveryAudioAt = startedAudioAt + recoveryAfterSeconds
+      await waitFor(
+        () => (guide.textContent ?? '').includes(interruptionText),
+        `pitch guide to show ${interruptionText}`,
+      )
+      if (window.thawingInput.audioTime() >= recoveryAudioAt)
+        throw new Error(
+          `${interruptionText} appeared after its scheduled recovery time.`,
+        )
+      const frozenProgress = progressValue()
+      const interruptionGuideText = guide.textContent ?? ''
+      const observed = [frozenProgress]
+      while (window.thawingInput.audioTime() < recoveryAudioAt) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 20))
+        if (window.thawingInput.audioTime() < recoveryAudioAt)
+          observed.push(progressValue())
+      }
+      await waitFor(
+        () => (guide.textContent ?? '').includes(recoveryText),
+        `pitch guide to show ${recoveryText}`,
+      )
+      await waitFor(
+        () => progressValue() > frozenProgress,
+        `melody progress to resume after ${interruptionText}`,
+      )
+      return {
+        frozenProgress,
+        minimumDuringInterruption: Math.min(...observed),
+        maximumDuringInterruption: Math.max(...observed),
+        recoveredProgress: progressValue(),
+        interruptionGuideText,
+        scheduledSeconds: recoveryAudioAt - startedAudioAt,
+        samplesDuringInterruption: observed.length,
+      }
+    }
+
+    window.thawingInput.phrase(melody.samples, melody.durationSeconds)
+    await waitFor(
+      () => (guide.textContent ?? '').includes('You B♭3 · Target B♭3'),
+      'pitch guide to show the opening note',
+    )
+    await waitFor(
+      () => (guide.textContent ?? '').includes('Target C4'),
+      'compiled contour to reach the next note',
+    )
+    const dropout = await observeRecovery(
+      [
+        { afterSeconds: 0, midi: null },
+        { afterSeconds: 0.65, midi: 60 },
+      ],
+      0.65,
+      'Listening · Target',
+      'You C4 · Target',
+    )
+    const wrongMidi = 64
+    const mismatchStartedAudioAt = window.thawingInput.sequence([
+      { afterSeconds: 0, midi: wrongMidi },
+    ])
+    const mismatchRecoveryAudioAt = mismatchStartedAudioAt + 0.9
+    await waitFor(
+      () => (guide.textContent ?? '').includes('You E4 · Target'),
+      'pitch guide to show You E4 · Target',
+    )
+    const interruptionGuideText = guide.textContent ?? ''
+    const error = interruptionGuideText.match(/· (\d+) cents (high|low)$/u)
+    if (!error)
+      throw new Error(
+        `Wrong-note guide did not expose a measured error: ${interruptionGuideText}`,
+      )
+    const signedErrorCents = Number(error[1]) * (error[2] === 'high' ? 1 : -1)
+    const recoveryMidi = wrongMidi - signedErrorCents / 100
+    const remainingWrongSeconds =
+      mismatchRecoveryAudioAt - window.thawingInput.audioTime()
+    if (remainingWrongSeconds <= 0)
+      throw new Error('Wrong-note observation arrived after its recovery time.')
+    window.thawingInput.sequence([
+      { afterSeconds: remainingWrongSeconds, midi: recoveryMidi },
+    ])
+    const mismatchFrozenProgress = progressValue()
+    const mismatchObserved = [mismatchFrozenProgress]
+    while (window.thawingInput.audioTime() < mismatchRecoveryAudioAt) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 20))
+      if (window.thawingInput.audioTime() < mismatchRecoveryAudioAt)
+        mismatchObserved.push(progressValue())
+    }
+    await waitFor(
+      () => progressValue() > mismatchFrozenProgress,
+      'melody progress to resume after You E4 · Target',
+    )
+    const mismatch: ScheduledInterruptionObservation = {
+      frozenProgress: mismatchFrozenProgress,
+      minimumDuringInterruption: Math.min(...mismatchObserved),
+      maximumDuringInterruption: Math.max(...mismatchObserved),
+      recoveredProgress: progressValue(),
+      interruptionGuideText,
+      scheduledSeconds: mismatchRecoveryAudioAt - mismatchStartedAudioAt,
+      samplesDuringInterruption: mismatchObserved.length,
+    }
+    window.thawingInput.tone(64)
+    await waitFor(
+      () => (guide.textContent ?? '').includes('You E4 · Target'),
+      'pitch guide to show the continuous wrong pitch',
+    )
+    await waitFor(
+      () =>
+        [...root.querySelectorAll('button')].some(
+          (button) => button.textContent?.trim() === 'Try again',
+        ),
+      'continuous wrong pitch to request a retry',
+    )
+    return {
+      dropout,
+      mismatch,
+      resetProgress: progressValue(),
+    }
+  }, melody)
 }
 
 test.use({
@@ -145,48 +325,33 @@ test('the complete sung curve shatters the portrait and opens the exit without m
   const pitchGuide = panel.locator(
     'output[aria-label="Live pitch compared with target"]',
   )
-  await singCompiledPhrase(page, resolved.melody)
-  await expect(pitchGuide).toContainText('You B♭3 · Target B♭3')
-  await expect(pitchGuide).toContainText('Target C4')
-  await page.evaluate(() => window.thawingInput.silent())
-  await expect(pitchGuide).toContainText('Listening · Target')
-  const progressBeforePause = Number(
-    await panel
-      .getByRole('progressbar', { name: 'Melody progress' })
-      .getAttribute('aria-valuenow'),
+  const grace = await observeTierOneGraceSequence(panel, resolved.melody)
+  expect(grace.dropout.scheduledSeconds).toBeCloseTo(0.65, 5)
+  expect(grace.dropout.interruptionGuideText).toContain('Listening · Target')
+  expect(grace.dropout.samplesDuringInterruption).toBeGreaterThanOrEqual(2)
+  expect(grace.dropout.minimumDuringInterruption).toBe(
+    grace.dropout.frozenProgress,
   )
-  await page.waitForTimeout(650)
-  await expect(
-    panel.getByRole('button', { name: 'Hear example', exact: true }),
-  ).toBeVisible()
-  await expect(
-    panel.getByRole('progressbar', { name: 'Melody progress' }),
-  ).toHaveAttribute('aria-valuenow', String(progressBeforePause))
-  await page.evaluate(() => window.thawingInput.tone(60))
-  await expect(pitchGuide).toContainText('You C4 · Target')
-  await expect
-    .poll(async () =>
-      Number(
-        await panel
-          .getByRole('progressbar', { name: 'Melody progress' })
-          .getAttribute('aria-valuenow'),
-      ),
-    )
-    .toBeGreaterThan(progressBeforePause)
-  await page.evaluate(() => window.thawingInput.tone(64))
+  expect(grace.dropout.maximumDuringInterruption).toBe(
+    grace.dropout.frozenProgress,
+  )
+  expect(grace.dropout.recoveredProgress).toBeGreaterThan(
+    grace.dropout.frozenProgress,
+  )
+  expect(grace.mismatch.scheduledSeconds).toBeCloseTo(0.9, 5)
+  expect(grace.mismatch.interruptionGuideText).toContain('You E4 · Target')
+  expect(grace.mismatch.samplesDuringInterruption).toBeGreaterThanOrEqual(2)
+  expect(grace.mismatch.minimumDuringInterruption).toBe(
+    grace.mismatch.frozenProgress,
+  )
+  expect(grace.mismatch.maximumDuringInterruption).toBe(
+    grace.mismatch.frozenProgress,
+  )
+  expect(grace.mismatch.recoveredProgress).toBeGreaterThan(
+    grace.mismatch.frozenProgress,
+  )
   await expect(pitchGuide).toContainText(/You E4 · Target .* cents high/u)
-  const frozenProgress = Number(
-    await panel
-      .getByRole('progressbar', { name: 'Melody progress' })
-      .getAttribute('aria-valuenow'),
-  )
-  await page.waitForTimeout(900)
-  await expect(
-    panel.getByRole('button', { name: 'Hear example', exact: true }),
-  ).toBeVisible()
-  await expect(
-    panel.getByRole('progressbar', { name: 'Melody progress' }),
-  ).toHaveAttribute('aria-valuenow', String(frozenProgress))
+  expect(grace.resetProgress).toBe(0)
   await expect(
     panel.getByRole('button', { name: 'Try again', exact: true }),
   ).toBeVisible({ timeout: 5000 })

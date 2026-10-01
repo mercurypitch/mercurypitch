@@ -13,6 +13,8 @@ declare global {
         samples: { timeSeconds: number; midi: number | null }[],
         duration: number,
       ): void
+      sequence(samples: { afterSeconds: number; midi: number | null }[]): number
+      audioTime(): number
       silent(): void
     }
   }
@@ -119,6 +121,22 @@ export async function installThawingInput(
             )
           }
           s.gain.gain.setValueAtTime(0, at + lead + duration + 0.5)
+        },
+        sequence(samples) {
+          const s = sources.at(-1)!
+          const at = s.context.currentTime
+          s.oscillator.frequency.cancelScheduledValues(at)
+          s.gain.gain.cancelScheduledValues(at)
+          for (const point of samples) {
+            const when = at + point.afterSeconds
+            if (point.midi !== null)
+              s.oscillator.frequency.setValueAtTime(frequency(point.midi), when)
+            s.gain.gain.setValueAtTime(point.midi === null ? 0 : 0.22, when)
+          }
+          return at
+        },
+        audioTime() {
+          return sources.at(-1)!.context.currentTime
         },
         silent() {
           for (const s of sources)
