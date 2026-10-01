@@ -2,7 +2,10 @@
 import { expect, test, type Page } from '@playwright/test'
 import { stat, writeFile } from 'node:fs/promises'
 import { GLASSWORKS_JOURNEY } from '../../../packages/glass-game/src/content/glassworks-journey'
+import { replayProfilesForLevel } from '../../../packages/glass-game/src/content/replay-profiles'
 import { readProgress } from '../../../packages/glass-game/src/core/progress'
+import { resolveReplayProfile } from '../../../packages/glass-game/src/core/replay-profile'
+import { beginReplayAttempt, readReplayProgress, saveReplayAttempt, } from '../../../packages/glass-game/src/core/replay-progress'
 
 declare global {
   interface Window {
@@ -12,6 +15,7 @@ declare global {
       recordings: number
       sing(): void
       silent(): void
+      tone?(midi: number): void
     }
   }
 }
@@ -39,6 +43,172 @@ async function reviewCompletedVisit(
     'true',
     { timeout: 60_000 },
   )
+}
+
+async function installTieredEncoreVisit(
+  page: Page,
+  tier: 2 | 3,
+): Promise<void> {
+  const level = GLASSWORKS_JOURNEY
+  const profiles = replayProfilesForLevel(level).map((profile) =>
+    resolveReplayProfile(level, profile),
+  )
+  const profile = profiles.find((candidate) => candidate.profile.tier === tier)!
+  const completedBreakableIds = level.breakables
+    .filter((item) => !item.optional)
+    .map((item) => item.id)
+  const legacy = {
+    ...readProgress(level, null),
+    completedBreakableIds,
+    finished: true,
+  }
+  let replay = beginReplayAttempt(
+    readReplayProgress(level, profiles, null, legacy),
+    profile,
+    true,
+  )
+  replay = saveReplayAttempt(
+    replay,
+    profile,
+    {
+      ...readProgress(profile.level, null),
+      completedBreakableIds,
+      finished: true,
+    },
+    100,
+  )
+  await page.addInitScript(
+    ({ legacy, replay }) => {
+      for (const method of [
+        'clear',
+        'drawArrays',
+        'drawArraysInstanced',
+        'drawElements',
+        'drawElementsInstanced',
+      ])
+        Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+          configurable: true,
+          value: () => undefined,
+        })
+      const prefix = 'beside-cue:glass-adventure'
+      localStorage.setItem(`${prefix}:tutorial`, 'seen')
+      localStorage.setItem(`${prefix}:comfortable-note`, '60')
+      localStorage.setItem(
+        `${prefix}:progress:${legacy.levelId}`,
+        JSON.stringify(legacy),
+      )
+      localStorage.setItem(
+        `${prefix}:replays:v1:${legacy.levelId}`,
+        JSON.stringify(replay),
+      )
+      const streams: MediaStream[] = []
+      const sources: Array<{
+        context: AudioContext
+        oscillator: OscillatorNode
+        gain: GainNode
+      }> = []
+      const frequency = (midi: number) => 440 * 2 ** ((midi - 69) / 12)
+      navigator.mediaDevices.getUserMedia = async () => {
+        const context = new AudioContext()
+        await context.resume()
+        const oscillator = context.createOscillator()
+        oscillator.frequency.value = frequency(60)
+        const gain = context.createGain()
+        gain.gain.value = 0
+        const output = context.createMediaStreamDestination()
+        oscillator.connect(gain).connect(output)
+        oscillator.start()
+        const track = output.stream.getAudioTracks()[0]!
+        const stop = track.stop.bind(track)
+        track.stop = () => {
+          stop()
+          oscillator.stop()
+          oscillator.disconnect()
+          gain.disconnect()
+          void context.close()
+        }
+        sources.push({ context, oscillator, gain })
+        streams.push(output.stream)
+        return output.stream
+      }
+      const tone = (midi: number) => {
+        const source = sources.at(-1)!
+        const at = source.context.currentTime
+        source.oscillator.frequency.cancelScheduledValues(at)
+        source.oscillator.frequency.setValueAtTime(frequency(midi), at)
+        source.gain.gain.cancelScheduledValues(at)
+        source.gain.gain.setValueAtTime(0.25, at)
+      }
+      window.encoreFixture = {
+        streams,
+        recordings: 0,
+        sing: () => tone(60),
+        tone,
+        silent() {
+          for (const source of sources)
+            if (source.context.state !== 'closed')
+              source.gain.gain.setValueAtTime(0, source.context.currentTime)
+        },
+      }
+    },
+    { legacy, replay },
+  )
+}
+
+for (const tier of [2, 3] as const) {
+  test(`collection Encore inherits the completed ${tier}-star correction policy`, async ({
+    page,
+  }) => {
+    await installTieredEncoreVisit(page, tier)
+    await page.goto('/glass-game/?campaign=1')
+    await page.getByRole('button', { name: 'Open museum collection' }).click()
+    const album = page.getByRole('dialog', {
+      name: 'Your museum collection',
+      exact: true,
+    })
+    await expect(album).toBeVisible()
+    const card = album
+      .locator('article')
+      .filter({ hasText: GLASSWORKS_JOURNEY.title })
+    await expect(card).toBeVisible()
+    await card
+      .getByRole('button', { name: 'Sing or hear your encore', exact: true })
+      .click()
+    const dialog = page.getByRole('dialog', { name: 'Leave a little light.' })
+    await expect(dialog).toHaveAttribute('data-melody-tier', String(tier))
+    await dialog
+      .getByRole('button', { name: 'Sing the melody', exact: true })
+      .click()
+    const practice = dialog.locator('section[data-mode]')
+    await expect(practice).toHaveAttribute('data-mode', 'singing', {
+      timeout: 15_000,
+    })
+    await dialog
+      .getByRole('button', { name: 'Show pitch guide', exact: true })
+      .click()
+    const guide = dialog.locator(
+      'output[aria-label="Live pitch compared with target"]',
+    )
+    await page.evaluate(() => window.encoreFixture.tone!(60))
+    await expect(guide).toContainText('You C4 · Target C4')
+    const progress = dialog.getByRole('progressbar', {
+      name: 'Melody progress',
+    })
+    await expect
+      .poll(async () => Number(await progress.getAttribute('aria-valuenow')))
+      .toBeGreaterThan(5)
+    await page.evaluate(() => window.encoreFixture.tone!(66))
+    await expect(guide).toContainText(/You F♯4 · Target .* cents high/u)
+    const frozenProgress = await progress.getAttribute('aria-valuenow')
+    await page.waitForTimeout(tier === 2 ? 500 : 250)
+    await expect(progress).toHaveAttribute('aria-valuenow', frozenProgress!)
+    await expect
+      .poll(async () => Number(await progress.getAttribute('aria-valuenow')), {
+        timeout: 3000,
+      })
+      .toBe(0)
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  })
 }
 
 test('optional encore records only with consent, preserves completion and fits mobile @smoke', async ({
@@ -200,6 +370,50 @@ test('optional encore records only with consent, preserves completion and fits m
   await expect(
     dialog.getByRole('progressbar', { name: 'Melody progress' }),
   ).toHaveAttribute('aria-valuenow', '0')
+  const showPitchGuide = dialog.getByRole('button', {
+    name: 'Show pitch guide',
+    exact: true,
+  })
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await showPitchGuide.scrollIntoViewIfNeeded()
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true)
+    expect((await showPitchGuide.boundingBox())!.height).toBeGreaterThanOrEqual(
+      44,
+    )
+    await page.screenshot({
+      path: testInfo.outputPath(`encore-pitch-guide-closed-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 390, height: 900 })
+  await showPitchGuide.click()
+  await expect(
+    dialog.locator('output[aria-label="Live pitch compared with target"]'),
+  ).toHaveText('Listening · Target C4')
+  const hidePitchGuide = dialog.getByRole('button', {
+    name: 'Hide pitch guide',
+    exact: true,
+  })
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await hidePitchGuide.scrollIntoViewIfNeeded()
+    expect(
+      await dialog.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true)
+    expect((await hidePitchGuide.boundingBox())!.height).toBeGreaterThanOrEqual(
+      44,
+    )
+    await page.screenshot({
+      path: testInfo.outputPath(`encore-pitch-guide-open-${width}.png`),
+    })
+  }
+  await page.setViewportSize({ width: 390, height: 900 })
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect
     .poll(() =>
@@ -242,6 +456,9 @@ test('optional encore records only with consent, preserves completion and fits m
     return true
   })
   await page.evaluate(() => window.encoreFixture.sing())
+  await expect(
+    dialog.locator('output[aria-label="Live pitch compared with target"]'),
+  ).toContainText('You C4 · Target')
   await expect
     .poll(async () =>
       Number(

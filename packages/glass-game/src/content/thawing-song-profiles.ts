@@ -2,6 +2,7 @@
 
 import type { CloudwayCourseProfileCatalog } from '../authoring/cloudway-course-profiles'
 import { CLOUDWAY_LABORATORY_COURSE_PROFILES } from './cloudway-laboratory-profiles.ts'
+import { MERC_ENCORE_JUDGE_POLICY } from './encore-examples.ts'
 import { glassMelody } from './melodies.ts'
 import { RESONANCE_ROSEBUD_VARIANT_ID } from './resonance-rosebud-profile.ts'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from './solid-props.ts'
@@ -26,11 +27,8 @@ export const THAWING_SONG_PROFILES = {
       defaultPace: 1.25,
       allowedPaces: [0.8, 1, 1.25],
       allowedRange: { minimumMidi: 36, maximumMidi: 84 },
-      // Matches the validated Merc lyric's consonant gaps, with heard-anchor evidence.
-      judgePolicy: {
-        dropoutGraceSeconds: 0.4,
-        minimumAnchorEvidenceSeconds: 0.12,
-      },
+      // The first-visit portrait and Encore share lyric evidence and correction time.
+      judgePolicy: MERC_ENCORE_JUDGE_POLICY,
       referenceProfileId: 'merc-encore-v6',
     },
   },

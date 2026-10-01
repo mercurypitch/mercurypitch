@@ -4,6 +4,7 @@ import type { LevelDefinition, MelodyAttemptConfiguration, MelodyAttemptIdentity
 import type { CompiledMelody } from './melody-contour'
 import { compileMelody } from './melody-contour'
 import { createMelodyJudge } from './melody-judge'
+import { melodyJudgePolicyForTier } from './melody-policy'
 
 export interface ResolvedMelodyAttempt {
   identity: MelodyAttemptIdentity
@@ -25,10 +26,23 @@ function anchors(lesson: MelodyLessonDefinition) {
   return lesson.melody.phrases.flatMap((phrase) => phrase.anchors)
 }
 
+function withFirstVisitMelodyPolicy(
+  lesson: MelodyLessonDefinition,
+): MelodyLessonDefinition {
+  return {
+    ...lesson,
+    judgePolicy: {
+      ...melodyJudgePolicyForTier(1),
+      ...lesson.judgePolicy,
+    },
+  }
+}
+
 /** Stable content identity; attempts differ without changing authored lesson truth. */
 export function melodyChallengeSignature(level: LevelDefinition): string {
-  const lesson = level.melodyLesson
-  if (lesson === undefined) return ''
+  const authoredLesson = level.melodyLesson
+  if (authoredLesson === undefined) return ''
+  const lesson = withFirstVisitMelodyPolicy(authoredLesson)
   const lessonEncounterIds = new Set([
     ...lesson.stations.map((station) => station.encounterId),
     lesson.finaleEncounterId,
@@ -43,8 +57,9 @@ export function melodyChallengeSignature(level: LevelDefinition): string {
 }
 
 export function melodyLessonError(level: LevelDefinition): string | undefined {
-  const lesson = level.melodyLesson
-  if (lesson === undefined) return undefined
+  const authoredLesson = level.melodyLesson
+  if (authoredLesson === undefined) return undefined
+  const lesson = withFirstVisitMelodyPolicy(authoredLesson)
   if (
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(lesson.id) ||
     !Number.isSafeInteger(lesson.revision) ||
@@ -135,8 +150,10 @@ export function resolveMelodyAttempt(
   level: LevelDefinition,
   configuration: MelodyAttemptConfiguration,
 ): ResolvedMelodyAttempt {
-  const lesson = level.melodyLesson
-  if (lesson === undefined) throw new Error('Level has no melody lesson.')
+  const authoredLesson = level.melodyLesson
+  if (authoredLesson === undefined)
+    throw new Error('Level has no melody lesson.')
+  const lesson = withFirstVisitMelodyPolicy(authoredLesson)
   const lessonError = melodyLessonError(level)
   if (lessonError !== undefined) throw new Error(lessonError)
   if (!ATTEMPT_ID.test(configuration.attemptId))

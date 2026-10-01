@@ -116,8 +116,6 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
-  'merc-encore-light-v5': 'adventure-voice/merc-encore-light-v5.mp3',
-  'merc-encore-home-v5': 'adventure-voice/merc-encore-home-v5.mp3',
   ...Object.fromEntries(
     MERC_ENCORE_VARIANTS.map((variant) => [variant.assetId, variant.assetPath]),
   ),

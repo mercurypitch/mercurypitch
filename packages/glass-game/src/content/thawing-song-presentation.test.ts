@@ -74,7 +74,7 @@ function localZ(origin: Vec3, yaw: number, position: Vec3): number {
 describe('The Thawing Song presentation', () => {
   it('preserves the certified physical route and saved-attempt identity', () => {
     expect(physicalAndSaveSignature()).toBe(
-      'e25cc33a5aa550fa40e726eb200bf7fa8d315a2fa922c2216d1fea1a6bf3a42c',
+      '4a72a24b7e007b5b076da31b7de6df77a08745c4c29a0087c22c419bc36015f7',
     )
   })
 

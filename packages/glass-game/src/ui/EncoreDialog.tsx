@@ -1,10 +1,11 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
 import { createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { MercEncoreAvailability, MercEncoreVariant, } from '../content/encore-examples'
-import { MERC_ENCORE_JUDGE_POLICY, MERC_ENCORE_PHRASES, mercEncoreAvailability, } from '../content/encore-examples'
+import { MERC_ENCORE_PHRASES, mercEncoreAvailability, mercEncoreJudgePolicy, } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
 import type { GlassMelodyId } from '../content/melodies'
 import { GLASS_MELODIES, glassMelody } from '../content/melodies'
+import type { MelodyDifficultyTier } from '../core/melody-policy'
 import type { MusicalMemory } from '../core/musical-memory'
 import { memoryFileName } from '../core/musical-memory'
 import type { GlassGameHost } from '../host'
@@ -47,10 +48,13 @@ export function EncoreDialog(props: {
   onComplete?(): void
   onClose(): void
   returnLabel?: string
+  melodyTier?: MelodyDifficultyTier
 }) {
   const host = untrack(() => props.host)
   const encore = untrack(() => props.encore)
   const levelId = untrack(() => props.levelId)
+  const melodyTier = untrack(() => props.melodyTier ?? 1)
+  const judgePolicy = mercEncoreJudgePolicy(melodyTier)
   const sealKey = `encore:${levelId}:${encore.id}:${encore.revision}`
   const [selected, setSelected] = createSignal<GlassMelodyId>(encore.melodyId)
   const [sealed, setSealed] = createSignal(
@@ -365,6 +369,7 @@ export function EncoreDialog(props: {
     >
       <section
         class={styles.dialog}
+        data-melody-tier={melodyTier}
         role="dialog"
         aria-modal="true"
         aria-labelledby="encore-title"
@@ -493,7 +498,7 @@ export function EncoreDialog(props: {
                   onComplete={completed}
                   onChange={practiceChanged}
                   recording={memory.recording}
-                  judgePolicy={MERC_ENCORE_JUDGE_POLICY}
+                  judgePolicy={judgePolicy}
                   showConfigurationControls
                 />
               )}

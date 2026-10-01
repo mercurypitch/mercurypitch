@@ -98,12 +98,11 @@ describe('Glassworks asset contract', () => {
       expect(glassGameAssetPath(id)).toBe(`glassware-trio-v1/${id}.glb`)
       expect(required.has(glassGameAssetPath(id))).toBe(true)
     }
-    expect(glassGameAssetPath('merc-encore-light-v5')).toBe(
-      'adventure-voice/merc-encore-light-v5.mp3',
-    )
-    expect(glassGameAssetPath('merc-encore-home-v5')).toBe(
-      'adventure-voice/merc-encore-home-v5.mp3',
-    )
+    expect(
+      GLASS_GAME_REQUIRED_FILES.some((path) =>
+        path.includes('adventure-voice/merc-encore-'),
+      ),
+    ).toBe(false)
     expect(glassGameAssetPath('living-crystal-platform-v2')).toBe(
       'crystal-interiors-v2/living-crystal-platform-v2.glb',
     )

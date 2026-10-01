@@ -242,6 +242,7 @@ export function MuseumCollection(props: {
             levelId={entry.levelId}
             encore={entry.encore!}
             audioLeases={props.audioLeases!}
+            melodyTier={entry.stars === 0 ? 1 : entry.stars}
             onClose={closeEncore}
             returnLabel="Back to collection"
           />

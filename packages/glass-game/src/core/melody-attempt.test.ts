@@ -8,6 +8,7 @@ import { resolveMelodyAttempt } from './melody-attempt'
 import { sampleMelodyAtTime } from './melody-contour'
 import { mergeSavedProgress, readProgress } from './progress'
 import { resolveReplayProfile } from './replay-profile'
+import { beginReplayAttempt, readReplayProgress, saveReplayAttempt, } from './replay-progress'
 
 const HOLD: HoldDefinition = {
   requiredSeconds: 0.1,
@@ -254,24 +255,187 @@ describe('melody attempt resolution', () => {
     ).toThrow(/does not match/)
   })
 
-  it('keeps pitch replay profiles from rewriting melody lesson evidence', () => {
+  it('uses the replay tier for correction timing without rewriting melody evidence', () => {
     const source = level()
+    const encounters = Object.fromEntries(
+      source.breakables.map((item) => [item.id, {}]),
+    )
+    const resolved = [1, 2, 3].map((tier) =>
+      resolveReplayProfile(source, {
+        id: `melody-replay-${tier}`,
+        revision: 1,
+        tier: tier as 1 | 2 | 3,
+        title: 'Melody replay',
+        description: 'A melody attempt.',
+        encounters,
+      }),
+    )
+    expect(
+      resolved.map(
+        (item) => item.level.melodyLesson!.judgePolicy.mismatchGraceSeconds,
+      ),
+    ).toEqual([1.2, 0.75, 0.45])
+    expect(
+      resolved.map(
+        (item) => item.level.melodyLesson!.judgePolicy.dropoutGraceSeconds,
+      ),
+    ).toEqual([0.8, 0.4, 0.4])
+    for (const item of resolved)
+      expect(item.level.melodyLesson!.judgePolicy).toMatchObject({
+        minimumAnchorEvidenceSeconds: 0.12,
+      })
+    expect(
+      new Set(resolved.map((item) => item.identity.challengeSignature)),
+    ).toHaveLength(3)
+
     expect(() =>
       resolveReplayProfile(source, {
-        id: 'pitch-replay',
+        id: 'melody-replay-invalid',
         revision: 1,
         tier: 1,
-        title: 'Pitch replay',
-        description: 'Not a melody attempt.',
-        encounters: Object.fromEntries(
-          source.breakables.map((item) => [item.id, {}]),
-        ),
+        title: 'Melody replay',
+        description: 'A melody attempt.',
+        encounters: {
+          ...encounters,
+          [source.breakables[0]!.id]: { holdSeconds: 1 },
+        },
       }),
-    ).toThrow(/cannot override melody lessons/)
+    ).toThrow(/profile tier/)
   })
 })
 
 describe('melody attempt progress', () => {
+  it('moves a stale melody replay clear to history while retaining its collection reward', () => {
+    const source = level()
+    source.rewards = {
+      revision: 1,
+      discoveries: [],
+      grading: [],
+      portrait: {
+        portraitId: 'thawing-test-portrait',
+        legendId: 'thawing-test-legend',
+        title: 'Thawing test portrait',
+        collectionIndex: 1,
+        imageAssetId: 'thawing-test-image',
+        awardAfterEncounterId: FINALE,
+        representationStatus: 'review',
+      },
+    }
+    const replayProfile = {
+      id: 'melody-one-star',
+      revision: 1,
+      tier: 1 as const,
+      title: 'Melody replay',
+      description: 'A melody attempt.',
+      encounters: Object.fromEntries(
+        source.breakables.map((item) => [item.id, {}]),
+      ),
+    }
+    const resolved = resolveReplayProfile(source, replayProfile)
+    let state = beginReplayAttempt(
+      readReplayProgress(source, [resolved], null),
+      resolved,
+      false,
+    )
+    const attempt = resolveMelodyAttempt(resolved.level, {
+      attemptId: 'completed-replay',
+      comfortableMidi: 57,
+    })
+    state = saveReplayAttempt(
+      state,
+      resolved,
+      {
+        ...readProgress(resolved.level, null),
+        completedBreakableIds: resolved.level.breakables.map((item) => item.id),
+        finished: true,
+        melodyAttempt: attempt.identity,
+      },
+      100,
+    )
+    expect(state.clears).toHaveLength(1)
+    expect(state.collection.collectedPortraitIds).toEqual([
+      'thawing-test-portrait',
+    ])
+
+    for (const change of ['version', 'unversioned-anchor'] as const) {
+      const changed = level()
+      changed.rewards = source.rewards
+      const lesson = changed.melodyLesson!
+      changed.melodyLesson = {
+        ...lesson,
+        melody: {
+          ...lesson.melody,
+          ...(change === 'version'
+            ? { version: lesson.melody.version + 1 }
+            : {
+                phrases: lesson.melody.phrases.map((phrase, phraseIndex) => ({
+                  ...phrase,
+                  anchors: phrase.anchors.map((anchor, anchorIndex) =>
+                    phraseIndex === 0 && anchorIndex === 0
+                      ? {
+                          ...anchor,
+                          offsetSemitones: anchor.offsetSemitones + 1,
+                        }
+                      : anchor,
+                  ),
+                })),
+              }),
+        },
+      }
+      const changedReplay = resolveReplayProfile(changed, replayProfile)
+      const restored = readReplayProgress(changed, [changedReplay], state)
+      expect(restored.clears, change).toEqual([])
+      expect(restored.historicalClears, change).toHaveLength(1)
+      expect(restored.collection.collectedPortraitIds, change).toEqual([
+        'thawing-test-portrait',
+      ])
+    }
+  })
+
+  it('invalidates saved route evidence when correction policy changes but keeps earned rewards', () => {
+    const source = level()
+    source.rewards = {
+      revision: 1,
+      discoveries: [],
+      grading: [],
+      portrait: {
+        portraitId: 'thawing-test-portrait',
+        legendId: 'thawing-test-legend',
+        title: 'Thawing test portrait',
+        collectionIndex: 1,
+        imageAssetId: 'thawing-test-image',
+        awardAfterEncounterId: FINALE,
+        representationStatus: 'review',
+      },
+    }
+    const stored = save(source, identity(source, 'policy-change'), [
+      STATIONS[0][0],
+    ])
+    stored.rewards = {
+      version: 1,
+      discoveredEncounterIds: [],
+      collectedCoinIds: [],
+      qualityResults: [],
+      collectedPortraitIds: ['thawing-test-portrait'],
+    }
+    const changed = level()
+    changed.rewards = source.rewards
+    changed.melodyLesson = {
+      ...changed.melodyLesson!,
+      judgePolicy: {
+        ...changed.melodyLesson!.judgePolicy,
+        mismatchGraceSeconds: 0.75,
+      },
+    }
+
+    const restored = readProgress(changed, stored)
+    expect(restored.melodyAttempt).toBeUndefined()
+    expect(restored.completedBreakableIds).toEqual([])
+    expect(restored.rewards?.collectedPortraitIds).toEqual([
+      'thawing-test-portrait',
+    ])
+  })
+
   it('does not restore melody evidence without an exact v3 identity', () => {
     const source = level()
     const raw = {

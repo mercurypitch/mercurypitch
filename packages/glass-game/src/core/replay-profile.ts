@@ -1,6 +1,8 @@
 // Replay profiles — resolve authored lesson goals without changing movement or capture quality.
 
 import type { ChallengeDefinition, LevelDefinition, PitchStepDefinition, } from '../contracts'
+import { melodyChallengeSignature } from './melody-attempt'
+import { melodyJudgePolicyForTier } from './melody-policy'
 
 export type LevelStarTier = 1 | 2 | 3
 
@@ -57,8 +59,16 @@ function resolveChallenge(
     throw new Error(
       'Replay lesson values must be finite and within the authored practice bounds.',
     )
-  if (challenge.kind === 'melody-anchor' || challenge.kind === 'melody-contour')
-    throw new Error('Pitch replay profiles cannot override melody lessons.')
+  if (
+    challenge.kind === 'melody-anchor' ||
+    challenge.kind === 'melody-contour'
+  ) {
+    if (Object.values(patch).some((value) => value !== undefined))
+      throw new Error(
+        'Melody replay encounters use the profile tier, not pitch-step overrides.',
+      )
+    return challenge
+  }
   if (
     challenge.kind !== 'settle-wave' &&
     (patch.waveCycles !== undefined || patch.waveSeconds !== undefined)
@@ -148,7 +158,26 @@ export function resolveReplayProfile(
       ? item
       : { ...item, challenge: resolveChallenge(item.challenge, patch) }
   })
-  const resolved = { ...level, breakables }
+  const melodyLesson =
+    level.melodyLesson === undefined
+      ? undefined
+      : {
+          ...level.melodyLesson,
+          judgePolicy: {
+            ...level.melodyLesson.judgePolicy,
+            ...melodyJudgePolicyForTier(profile.tier),
+          },
+        }
+  const resolved = {
+    ...level,
+    breakables,
+    ...(melodyLesson === undefined ? {} : { melodyLesson }),
+  }
+  const challengeSummary = breakables.map((item) => [
+    item.id,
+    item.optional === true,
+    item.challenge,
+  ])
   return {
     level: resolved,
     profile,
@@ -158,11 +187,12 @@ export function resolveReplayProfile(
       profileId: profile.id,
       profileRevision: profile.revision,
       challengeSignature: JSON.stringify(
-        breakables.map((item) => [
-          item.id,
-          item.optional === true,
-          item.challenge,
-        ]),
+        melodyLesson === undefined
+          ? challengeSummary
+          : {
+              challenges: challengeSummary,
+              melodyLesson: melodyChallengeSignature(resolved),
+            },
       ),
     },
   }
