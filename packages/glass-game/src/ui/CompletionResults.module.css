@@ -23,7 +23,7 @@
 }
 
 .panel {
-  width: min(590px, 100%);
+  width: min(620px, 100%);
   max-height: calc(100dvh - 24px);
   overflow: auto;
   overscroll-behavior: contain;
@@ -219,33 +219,50 @@
 }
 
 .scoreBody {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 15px;
 }
 
 .badges {
   min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.panel .badge {
-  min-height: 44px;
-  display: inline-flex;
+.scoreBody > .badges:only-child,
+.badges > :only-child {
+  grid-column: 1 / -1;
+}
+
+.panel .badge,
+.panel .portrait {
+  position: relative;
+  min-width: 0;
+  min-height: 145px;
+  display: grid;
+  grid-template-rows: 94px auto;
   align-items: center;
+  justify-items: center;
   gap: 7px;
-  padding: 7px 10px;
+  padding: 9px 6px 10px;
   border: 1px solid #adc0b1;
-  border-radius: 999px;
+  border-radius: 14px;
   background: #f9f7ed;
   color: #285853;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .panel .badgeOpen {
@@ -254,16 +271,30 @@
 }
 
 .badgeMedal {
-  width: 27px;
-  height: 27px;
-  flex: 0 0 27px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 3px rgb(70 57 24 / 18%));
+  filter: drop-shadow(0 4px 5px rgb(70 57 24 / 22%));
+}
+
+.badgeLabel {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+
+.badgeLabel small {
+  color: #586d62;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .info {
-  width: 17px;
-  height: 17px;
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 16px;
+  height: 16px;
   display: grid;
   place-items: center;
   border: 1px solid currentColor;
@@ -273,29 +304,52 @@
 }
 
 .panel .portrait {
-  width: 78px;
-  flex: 0 0 78px;
-  display: grid;
-  gap: 4px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #3a5a50;
-  font: inherit;
-  font-size: 10px;
-  line-height: 1.15;
-  text-align: center;
+  border-color: #c9ac6b;
+  background: linear-gradient(145deg, #fffaf0, #eae0c5);
 }
 
 .panel .portrait img {
-  width: 58px;
-  height: 66px;
-  justify-self: center;
+  width: 80px;
+  height: 94px;
   display: block;
   object-fit: cover;
   border: 3px ridge #b88f3e;
   background: #dce6db;
-  box-shadow: 0 4px 10px rgb(75 58 23 / 18%);
+  box-shadow: 0 5px 12px rgb(75 58 23 / 25%);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.panel .portrait:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.panel .portrait:focus-visible img {
+  transform: translateY(-3px) rotate(-1deg);
+  box-shadow: 0 8px 16px rgb(75 58 23 / 30%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .panel .badge:hover {
+    border-color: #43847a;
+    box-shadow: 0 4px 12px rgb(32 82 73 / 12%);
+  }
+
+  .panel .portrait:not(:disabled):hover {
+    border-color: #a57920;
+    background: linear-gradient(145deg, #fffdf6, #eddfb5);
+  }
+
+  .panel .portrait:not(:disabled):hover img {
+    transform: translateY(-3px) rotate(-1deg);
+    box-shadow: 0 8px 16px rgb(75 58 23 / 30%);
+  }
+}
+
+.panel .portrait:not(:disabled):active img {
+  transform: scale(0.97);
 }
 
 .portraitWaiting {
@@ -436,8 +490,44 @@
     height: 23px;
   }
 
+  .scoreBody,
+  .badges {
+    gap: 6px;
+  }
+
   .scoreBody {
-    margin-top: 9px;
+    margin-top: 11px;
+  }
+
+  .panel .badge,
+  .panel .portrait {
+    min-height: 130px;
+    grid-template-rows: 78px auto;
+    gap: 5px;
+    padding: 7px 3px;
+    border-radius: 11px;
+  }
+
+  .badgeMedal {
+    width: 48px;
+    height: 48px;
+  }
+
+  .panel .portrait img {
+    width: 60px;
+    height: 76px;
+  }
+
+  .panel .portrait span {
+    font-size: 10px;
+  }
+
+  .info {
+    top: 5px;
+    right: 5px;
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
   }
 
   .actions {
@@ -465,11 +555,59 @@
 
   .panel {
     max-height: calc(100dvh - 24px);
+    padding: 10px;
+  }
+
+  .scoreCard {
+    margin-top: 8px;
+    padding: 8px;
+  }
+
+  .panel .difficultyStars {
+    margin-top: 5px;
+  }
+
+  .scoreBody {
+    margin-top: 7px;
+  }
+
+  .panel .badge,
+  .panel .portrait {
+    min-height: 108px;
+    grid-template-rows: 76px auto;
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .badgeMedal {
+    width: 48px;
+    height: 48px;
+  }
+
+  .panel .portrait img {
+    width: 60px;
+    height: 76px;
+  }
+
+  .actions {
+    margin-top: 8px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .scrim {
     backdrop-filter: none;
+  }
+
+  .panel .badge,
+  .panel .portrait,
+  .panel .portrait img {
+    transition: none;
+  }
+
+  .panel .portrait:not(:disabled):hover img,
+  .panel .portrait:focus-visible img,
+  .panel .portrait:not(:disabled):active img {
+    transform: none;
   }
 }

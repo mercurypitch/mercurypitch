@@ -118,7 +118,7 @@ export function CompletionResults(props: CompletionResultsProps) {
           inert={props.covered || inspectingPortrait()}
           data-testid="completion-results"
         >
-          <header class={styles.header}>
+          <div class={styles.header}>
             <button
               class={styles.iconButton}
               type="button"
@@ -160,7 +160,7 @@ export function CompletionResults(props: CompletionResultsProps) {
                 </button>
               </div>
             </details>
-          </header>
+          </div>
 
           <section class={styles.scoreCard} aria-label="Gallery result">
             <div class={styles.scoreTopline}>
@@ -258,9 +258,12 @@ export function CompletionResults(props: CompletionResultsProps) {
                         src={props.assetUrl('results-discovery-medal-v1')}
                         alt=""
                       />
-                      <span>
-                        {summary().discoveriesFound}/
-                        {summary().discoveriesTotal}
+                      <span class={styles.badgeLabel}>
+                        <span>
+                          {summary().discoveriesFound}/
+                          {summary().discoveriesTotal}
+                        </span>
+                        <small>Discoveries</small>
                       </span>
                       <span class={styles.info} aria-hidden="true">
                         i
@@ -319,7 +322,7 @@ export function CompletionResults(props: CompletionResultsProps) {
             </Show>
           </section>
 
-          <footer class={styles.actions}>
+          <div class={styles.actions}>
             <Show when={props.nextDifficulty}>
               {(action) => (
                 <button
@@ -349,7 +352,7 @@ export function CompletionResults(props: CompletionResultsProps) {
                 </button>
               )}
             </Show>
-          </footer>
+          </div>
         </section>
       </div>
 
