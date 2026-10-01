@@ -194,7 +194,7 @@ export function createBrowserRunnerSession(
           readiness: null,
         },
         events,
-        presentation,
+        true,
       )
     } else if (events.some((event) => event.type === 'recovery-required')) {
       invalidate()
@@ -207,7 +207,7 @@ export function createBrowserRunnerSession(
           pauseReason: null,
         },
         events,
-        presentation,
+        true,
       )
     } else publish({}, events, presentation)
   }

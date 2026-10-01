@@ -1655,3 +1655,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** SwiftShader still pays geometry uploads, program reflection, state changes and resource churn; suppressing pixels does not create a deterministic presentation boundary.
 **Rule:** use a typed, test-scoped presentation substitute for the long PCM/input/judging test, keeping its real clock and recovery threshold. Retain separate real-renderer loading/streaming/disposal tests and full hardware-rendered course proof. Fix measured production construction costs rather than widening timing tolerances or claiming software tests establish phone performance.
 **See:** `apps/beside-cue/e2e/helpers/runner-controls-renderer.ts`, `apps/beside-cue/e2e/helpers/runner-renderer-smoke.ts`.
+
+### Publish the terminal scene before cancelling its last animation frame
+
+**Symptom:** course results and rewards were correct, but the scene sometimes remained one fixed step before completion.
+**Cause:** microphone or input callbacks can finish the authoritative simulation before RAF; resource cleanup then cancels RAF while the terminal state is published without presentation permission.
+**Rule:** keep ordinary evidence updates independent of GPU rendering, but publish one authoritative finish/recovery frame after stopping the loop. Test capture, input and RAF as terminal triggers, including late callbacks and exactly-once cleanup.
+**See:** `packages/glass-game/src/browser/runner-session.ts`, `packages/glass-game/src/browser/runner-session.test.ts`.

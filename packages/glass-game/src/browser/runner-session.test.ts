@@ -1,5 +1,6 @@
 // Runner session tests — microphone ownership, raw capture evidence and explicit interrupted recovery.
 import { describe, expect, it, vi } from 'vitest'
+import type { RunnerSessionFrame } from '../runner/session-contracts'
 import { deferred, flush, runnerSessionHarness, } from './__fixtures__/runner-session'
 
 describe('runner session readiness and clock', () => {
@@ -359,4 +360,101 @@ describe('runner interruption and cancellation', () => {
     )
     h.session.dispose()
   })
+
+  it.each(['capture', 'input', 'frame'] as const)(
+    'publishes the finished snapshot once when %s reaches the course end before the queued frame',
+    async (trigger) => {
+      const h = runnerSessionHarness()
+      await h.running()
+      const terminalFrames: RunnerSessionFrame[] = []
+      h.session.subscribe((next) => {
+        if (next.state.phase === 'finished') terminalFrames.push(next)
+      })
+      const beforeEnd = h.course.lengthCourseSeconds - 0.1
+      for (let time = 0.2; time < beforeEnd; time += 0.2) h.courseTick(time)
+      h.courseTick(beforeEnd)
+      expect(h.frames.size).toBe(1)
+      const endAudioSeconds =
+        h.audio[0]!.anchor!.audioStartSeconds + h.course.lengthCourseSeconds
+
+      if (trigger === 'capture') h.emit(endAudioSeconds, null)
+      else if (trigger === 'input') {
+        h.setAudioTime(endAudioSeconds)
+        h.session.input('jump')
+      } else h.courseTick(h.course.lengthCourseSeconds)
+
+      expect(h.session.state()).toMatchObject({
+        phase: 'finished',
+        microphone: 'closed',
+        game: {
+          status: 'finished',
+          courseSeconds: h.course.lengthCourseSeconds,
+        },
+      })
+      expect(terminalFrames).toHaveLength(1)
+      expect(terminalFrames[0]).toMatchObject({
+        presentation: true,
+        state: { phase: 'finished', game: { status: 'finished' } },
+      })
+      expect(
+        terminalFrames[0]!.events.filter(
+          (event) => event.type === 'course-finished',
+        ),
+      ).toHaveLength(1)
+      expect(h.voices[0]!.stop).toHaveBeenCalledOnce()
+      expect(h.audio[0]!.dispose).toHaveBeenCalledOnce()
+      expect(h.frames.size).toBe(0)
+      expect(h.host.saveRunnerProgress).toHaveBeenLastCalledWith(
+        expect.objectContaining({ completed: true }),
+      )
+
+      h.emit(endAudioSeconds + 0.01, null)
+      h.tick(endAudioSeconds + 0.01)
+      expect(terminalFrames).toHaveLength(1)
+      h.session.dispose()
+    },
+  )
+
+  it.each(['capture', 'input', 'frame'] as const)(
+    'publishes recovery once when %s detects a clock gap before the queued frame',
+    async (trigger) => {
+      const h = runnerSessionHarness()
+      await h.running()
+      const terminalFrames: RunnerSessionFrame[] = []
+      h.session.subscribe((next) => {
+        if (next.state.phase === 'recovering') terminalFrames.push(next)
+      })
+      const stalledAudioSeconds = h.clock() + 2
+
+      if (trigger === 'capture') h.emit(stalledAudioSeconds, null)
+      else if (trigger === 'input') {
+        h.setAudioTime(stalledAudioSeconds)
+        h.session.input('jump')
+      } else h.tick(stalledAudioSeconds)
+
+      expect(h.session.state()).toMatchObject({
+        phase: 'recovering',
+        microphone: 'closed',
+        game: { status: 'recovering' },
+      })
+      expect(terminalFrames).toHaveLength(1)
+      expect(terminalFrames[0]).toMatchObject({
+        presentation: true,
+        state: { phase: 'recovering', game: { status: 'recovering' } },
+      })
+      expect(
+        terminalFrames[0]!.events.filter(
+          (event) => event.type === 'recovery-required',
+        ),
+      ).toHaveLength(1)
+      expect(h.voices[0]!.stop).toHaveBeenCalledOnce()
+      expect(h.audio[0]!.dispose).toHaveBeenCalledOnce()
+      expect(h.frames.size).toBe(0)
+
+      h.emit(stalledAudioSeconds + 0.01, null)
+      h.tick(stalledAudioSeconds + 0.01)
+      expect(terminalFrames).toHaveLength(1)
+      h.session.dispose()
+    },
+  )
 })
