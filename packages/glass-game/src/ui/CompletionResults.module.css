@@ -271,8 +271,9 @@
 }
 
 .badgeMedal {
-  width: 72px;
-  height: 72px;
+  width: 94px;
+  max-width: 100%;
+  height: 94px;
   object-fit: contain;
   filter: drop-shadow(0 4px 5px rgb(70 57 24 / 22%));
 }
@@ -509,8 +510,8 @@
   }
 
   .badgeMedal {
-    width: 48px;
-    height: 48px;
+    width: 84px;
+    height: 84px;
   }
 
   .panel .portrait img {
@@ -580,8 +581,8 @@
   }
 
   .badgeMedal {
-    width: 48px;
-    height: 48px;
+    width: 76px;
+    height: 76px;
   }
 
   .panel .portrait img {

@@ -412,6 +412,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+.touchControls,
+.touchControls * {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;

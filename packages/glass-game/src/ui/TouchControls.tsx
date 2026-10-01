@@ -43,9 +43,25 @@ export function TouchControls(props: TouchControlsProps) {
     resetContacts()
   })
   onMount(() => {
+    // WebKit's long-press selection/callout also follows native touch events;
+    // cancelling pointerdown alone does not cancel that browser default.
+    const preventControlSelection = (event: Event): void => {
+      if (!props.disabled) event.preventDefault()
+    }
+    const controls = [stickElement, jumpElement]
+    for (const control of controls) {
+      control.addEventListener('touchstart', preventControlSelection, {
+        passive: false,
+      })
+      control.addEventListener('selectstart', preventControlSelection)
+    }
     window.addEventListener('blur', resetContacts)
     onCleanup(() => {
       resetContacts()
+      for (const control of controls) {
+        control.removeEventListener('touchstart', preventControlSelection)
+        control.removeEventListener('selectstart', preventControlSelection)
+      }
       window.removeEventListener('blur', resetContacts)
     })
   })

@@ -1,7 +1,8 @@
 // Museum controls — real mouse, keyboard and simultaneous touch through the shared surface.
 import { expect, test } from '@playwright/test'
 import { GLASS_GAME_ASSET_FILES } from '@irchiinnuss/glass-game/assets'
-import { omitRasterOutput, openMuseum, value, verifyLookFirstMovementReacquisition, } from './helpers/glass-adventure-controls'
+import { omitRasterOutput, openMuseum, value, verifyLookFirstMovementReacquisition, verifyMovementFirstThreeContacts, } from './helpers/glass-adventure-controls'
+import { verifyNativeControlDefaults } from './helpers/glass-adventure-touch-defaults'
 
 const MERC_MODEL_PATH = `/games/${GLASS_GAME_ASSET_FILES.merc}`
 
@@ -297,6 +298,13 @@ test.describe('phone', () => {
     hasTouch: true,
     isMobile: true,
   })
+  test('native control taps suppress selection without suppressing modal inputs @smoke', async ({
+    page,
+    browserName,
+  }) => {
+    await verifyNativeControlDefaults(page, browserName)
+  })
+
   test('Tune clears Help and movement controls cannot be selected @smoke', async ({
     page,
     context,
@@ -338,6 +346,18 @@ test.describe('phone', () => {
       await page.screenshot({
         path: testInfo.outputPath('phone-tuning-panel.png'),
       })
+    const sensitivity = page.getByLabel('Look sensitivity')
+    const previousSensitivity = await sensitivity.inputValue()
+    await sensitivity.focus()
+    await page.keyboard.press('ArrowRight')
+    expect(await sensitivity.inputValue()).not.toBe(previousSensitivity)
+    expect(
+      await sensitivity.evaluate((element) =>
+        element.dispatchEvent(
+          new Event('selectstart', { bubbles: true, cancelable: true }),
+        ),
+      ),
+    ).toBe(true)
     await page.getByRole('button', { name: 'Close camera tuning' }).tap()
     // Resume a released-input frame after the tutorial before pressing Jump.
     await page.clock.runFor(32)
@@ -377,7 +397,68 @@ test.describe('phone', () => {
       'data-movement-context-menu',
       'true',
     )
+    await page.evaluate(() => {
+      document.addEventListener('touchstart', (event) => {
+        document.body.dataset.controlTouchPrevented = String(
+          event.defaultPrevented,
+        )
+      })
+    })
     const cdp = await context.newCDPSession(page)
+    const knob = page.getByTestId('floating-stick-knob')
+    const knobBox = (await knob.boundingBox())!
+    const origin = {
+      x: knobBox.x + knobBox.width / 2,
+      y: knobBox.y + knobBox.height / 2,
+    }
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 1, ...origin }],
+    })
+    await expect(page.locator('body')).toHaveAttribute(
+      'data-control-touch-prevented',
+      'true',
+    )
+    // Real browser long press; the game clock alone does not drive native selection gestures.
+    await page.waitForTimeout(850)
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+      '',
+    )
+    await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+      'data-active',
+      'true',
+    )
+    expect(
+      await knob.evaluate((element) =>
+        element.dispatchEvent(
+          new Event('selectstart', { bubbles: true, cancelable: true }),
+        ),
+      ),
+    ).toBe(false)
+    const beforeDrag = [
+      await value(page, 'player-x'),
+      await value(page, 'player-z'),
+    ]
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 1, x: origin.x + 30, y: origin.y - 16 }],
+    })
+    await expect(knob).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 30, -16)')
+    await page.clock.runFor(100)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - beforeDrag[0],
+        (await value(page, 'player-z')) - beforeDrag[1],
+      ),
+    ).toBeGreaterThan(0.03)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchCancel',
+      touchPoints: [],
+    })
+    await expect(page.getByTestId('floating-stick-base')).toHaveAttribute(
+      'data-active',
+      'false',
+    )
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchStart',
       touchPoints: [
@@ -399,99 +480,7 @@ test.describe('phone', () => {
     page,
     context,
   }, testInfo) => {
-    await openMuseum(page)
-    const cdp = await context.newCDPSession(page)
-    const stick = await page
-      .getByRole('group', { name: 'Move Merc' })
-      .boundingBox()
-    const jump = await page
-      .getByRole('button', { name: 'Jump', exact: true })
-      .boundingBox()
-    expect(stick).not.toBeNull()
-    expect(jump).not.toBeNull()
-    const origin = {
-      x: stick!.x + Math.min(60, stick!.width * 0.36),
-      y: stick!.y + stick!.height - 64,
-    }
-    const beforeContact = [
-      await value(page, 'player-x'),
-      await value(page, 'player-z'),
-    ]
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [{ id: 1, ...origin }],
-    })
-    await page.clock.runFor(120)
-    expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
-    expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ id: 1, x: origin.x + 4, y: origin.y - 2 }],
-    })
-    await page.clock.runFor(120)
-    expect(await value(page, 'player-x')).toBeCloseTo(beforeContact[0], 4)
-    expect(await value(page, 'player-z')).toBeCloseTo(beforeContact[1], 4)
-    const movement = { id: 1, x: origin.x + 30, y: origin.y - 16 }
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [movement],
-    })
-    const x = await value(page, 'player-x')
-    const z = await value(page, 'player-z')
-    await page.clock.runFor(100)
-    expect(
-      Math.hypot(
-        (await value(page, 'player-x')) - x,
-        (await value(page, 'player-z')) - z,
-      ),
-    ).toBeGreaterThan(0.03)
-    if (process.env.GLASS_CONTROLS_PROOF === '1')
-      await page.screenshot({
-        path: testInfo.outputPath('floating-stick-active.png'),
-      })
-    const yaw = await value(page, 'camera-yaw')
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [movement, { id: 2, x: 220, y: 380 }],
-    })
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [movement, { id: 2, x: 265, y: 390 }],
-    })
-    await page.clock.runFor(32)
-    expect(Math.abs((await value(page, 'camera-yaw')) - yaw)).toBeGreaterThan(
-      0.1,
-    )
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [
-        movement,
-        { id: 2, x: 265, y: 390 },
-        { id: 3, x: jump!.x + jump!.width / 2, y: jump!.y + jump!.height / 2 },
-      ],
-    })
-    await page.clock.runFor(100)
-    expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
-    await cdp.send('Input.dispatchTouchEvent', {
-      type: 'touchCancel',
-      touchPoints: [],
-    })
-    await page.clock.runFor(200)
-    const released = [
-      await value(page, 'player-x'),
-      await value(page, 'player-z'),
-      await value(page, 'camera-yaw'),
-    ]
-    await page.clock.runFor(200)
-    expect(await value(page, 'player-x')).toBeCloseTo(released[0], 4)
-    expect(await value(page, 'player-z')).toBeCloseTo(released[1], 4)
-    expect(await value(page, 'camera-yaw')).toBeCloseTo(released[2], 5)
-    expect(
-      await page.evaluate(() => ({
-        width: document.documentElement.scrollWidth,
-        height: document.documentElement.scrollHeight,
-      })),
-    ).toEqual({ width: 390, height: 844 })
+    await verifyMovementFirstThreeContacts(page, context, testInfo)
   })
 
   test('look can begin first while movement releases and reacquires independently @smoke', async ({

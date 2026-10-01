@@ -138,14 +138,25 @@ test('an input-driven exit awards the selected tier once and presents separate p
         badgeRight: badge.getBoundingClientRect().right,
         portraitLeft: portrait.getBoundingClientRect().left,
         badgeFontSize: Number.parseFloat(getComputedStyle(badge).fontSize),
-        medalSize: badge.querySelector('img')!.getBoundingClientRect().width,
+        medalSize: Math.min(
+          badge.querySelector('img')!.getBoundingClientRect().width,
+          badge.querySelector('img')!.getBoundingClientRect().height,
+        ),
+        badgeWidth: badge.getBoundingClientRect().width,
         portraitSize: portrait.querySelector('img')!.getBoundingClientRect()
           .width,
       }
     })
     expect(scoreLayout.badgeRight).toBeLessThanOrEqual(scoreLayout.portraitLeft)
     expect(scoreLayout.badgeFontSize).toBeGreaterThanOrEqual(12)
-    expect(scoreLayout.medalSize).toBeGreaterThanOrEqual(48)
+    if (viewport.width < 500)
+      expect(
+        scoreLayout.medalSize / scoreLayout.badgeWidth,
+      ).toBeGreaterThanOrEqual(0.8)
+    else
+      expect(scoreLayout.medalSize).toBeGreaterThanOrEqual(
+        (viewport.height <= 520 ? 48 : 72) * 1.1,
+      )
     expect(scoreLayout.portraitSize).toBeGreaterThanOrEqual(60)
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth)
     expect(layout.controls.every((height) => height >= 44)).toBe(true)
@@ -466,34 +477,106 @@ test.describe('completion portrait interaction', () => {
         qualityResults: [],
       },
     }
-    await page.addInitScript((complete) => {
-      // Actual host/DOM interaction is under test; separate raster proofs own the world.
-      for (const method of [
-        'clear',
-        'drawArrays',
-        'drawArraysInstanced',
-        'drawElements',
-        'drawElementsInstanced',
-      ])
-        Object.defineProperty(WebGL2RenderingContext.prototype, method, {
-          configurable: true,
-          value: () => undefined,
-        })
-      localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
-      localStorage.setItem(
-        `beside-cue:glass-adventure:progress:${complete.levelId}`,
-        JSON.stringify(complete),
-      )
-    }, complete)
-    await page.goto('/glass-game/?layout=journey')
+    const profiles = replayProfilesForLevel(level).map((profile) =>
+      resolveReplayProfile(level, profile),
+    )
+    const firstVisit = profiles[0]!
+    const replay = saveReplayAttempt(
+      beginReplayAttempt(
+        readReplayProgress(level, profiles, null, complete),
+        firstVisit,
+        true,
+      ),
+      firstVisit,
+      {
+        ...complete,
+        checkpointId: level.checkpoints.find((item) =>
+          item.id.endsWith('/checkpoint/panorama'),
+        )!.id,
+        finished: false,
+      },
+      100,
+    )
+    await page.addInitScript(
+      ({ complete, replay }) => {
+        // Actual host/DOM interaction is under test; separate raster proofs own the world.
+        for (const method of [
+          'clear',
+          'drawArrays',
+          'drawArraysInstanced',
+          'drawElements',
+          'drawElementsInstanced',
+        ])
+          Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+            configurable: true,
+            value: () => undefined,
+          })
+        localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+        localStorage.setItem(
+          `beside-cue:glass-adventure:progress:${complete.levelId}`,
+          JSON.stringify(complete),
+        )
+        localStorage.setItem(
+          `beside-cue:glass-adventure:replays:v1:${complete.levelId}`,
+          JSON.stringify(replay),
+        )
+      },
+      { complete, replay },
+    )
+    await page.goto('/glass-game/?campaign=1')
     await page
-      .getByRole('button', { name: 'Review completion', exact: true })
+      .getByRole('button', { name: 'Replay Glassworks Journey', exact: true })
       .click()
+    await page.getByRole('button', { name: 'First visit', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Continue this challenge', exact: true })
+      .click()
+    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+      'data-ready',
+      'true',
+      { timeout: 60_000 },
+    )
+    await page.keyboard.down('KeyW')
+    try {
+      await expect(page.getByTestId('completion-results')).toBeVisible({
+        timeout: 20_000,
+      })
+    } finally {
+      await page.keyboard.up('KeyW')
+    }
     const result = page.getByTestId('completion-results')
     await expect(result).toBeVisible({ timeout: 60_000 })
     const portrait = result.getByTestId('portrait-summary')
     const picture = portrait.locator('img')
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(result.getByTestId('level-star-summary')).toContainText(
+      '1 star earned',
+    )
+    await expect(
+      result.getByRole('button', { name: 'Earn 2 stars: Two-star challenge' }),
+    ).toBeVisible()
+    await result.getByTestId('singing-quality-summary').click()
+    await expect(
+      result.getByRole('region', { name: 'Accuracy explanation' }),
+    ).toBeVisible()
+    const expanded = await result.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }))
+    expect(expanded.scrollWidth).toBeLessThanOrEqual(expanded.clientWidth)
+    await page.screenshot({
+      path: testInfo.outputPath('results-first-visit-390-expanded.png'),
+    })
+    await result.getByTestId('singing-quality-summary').click()
+    await portrait.click()
+    await expect(page.getByText('From the museum collection')).toBeVisible()
+    await page.screenshot({
+      path: testInfo.outputPath('results-first-visit-390-portrait.png'),
+    })
+    await page.getByRole('button', { name: 'Back to the gallery' }).click()
+    await page.setViewportSize({ width: 1280, height: 800 })
     await page.mouse.move(0, 0)
+    await result.getByTestId('discovery-summary').focus()
     await expect(picture).toHaveCSS('transform', 'none')
     await portrait.hover()
     await expect(picture).not.toHaveCSS('transform', 'none')
