@@ -90,10 +90,12 @@ checks initial loading, chunk turnover and disposal without a wall-clock speed
 assertion. No game timing threshold is widened for these checks.
 
 Actual rendering is inspected separately with the real AMD/OpenGL path at fixed
-desktop and phone viewports. Both full 90.88-second hardware runs completed eight hits and 24/24 singing
-stars, collected the finale portrait and reported no graphics errors or overflow.
-Raw screenshots and reports live in the synced creative archive under
-`glass-adventure/song-runner/runtime-proof-v2`.
+desktop and phone viewports. The v5 hardware proof completed both full
+90.88-second views with eight hits and 24/24 singing stars, collected the finale
+portrait and reported no graphics errors or overflow. A post-terminal-fix phone
+run repeated that result at v6. Raw screenshots and reports live in the synced
+creative archive under `glass-adventure/song-runner/runtime-proof-v5` and
+`glass-adventure/song-runner/runtime-proof-v6`.
 
 Physical iPhone/Android frame pacing and speaker-to-microphone leakage still
 require device testing. A browser screenshot and synthetic microphone cannot
