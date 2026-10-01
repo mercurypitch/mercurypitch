@@ -284,6 +284,15 @@ describe('journey water', () => {
     const sources = water.root.getObjectByName(
       'journey-water-source-pools',
     ) as InstancedMesh
+    const sourceMaterial = sources.material as ShaderMaterial
+    expect(sourceMaterial.fog).toBe(false)
+    water.update(5, 1 / 60)
+    water.update(5 + 1 / 60, 1 / 60)
+    expect(sourceMaterial.uniforms.uTime.value).toBeCloseTo(1 / 60)
+    water.setReducedMotion(true)
+    expect(sourceMaterial.uniforms.uMotion.value).toBe(0)
+    water.setReducedMotion(false)
+    expect(sourceMaterial.uniforms.uMotion.value).toBe(1)
     const sourceMatrix = new Matrix4()
     sources.getMatrixAt(0, sourceMatrix)
     const sourcePosition = new Vector3()

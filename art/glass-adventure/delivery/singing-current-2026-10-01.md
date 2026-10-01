@@ -171,3 +171,76 @@ buffers/programs during the course; the art pass must avoid adding first-use
 work and compare against this measured baseline. The 100,000-frame cap omits
 late raw samples on the tablet/desktop runs; their finale screenshots, finish
 assertions and error checks still completed. Phone raw samples cover the finale.
+
+## R3: inhabited sky galleries
+
+The course now passes ivory-and-brass pavilions, a rotunda, framed garden art,
+planters with trailing ivy and animated jade source pools. Foundations join
+these assemblies to the runway; ponds and plants remain within their own
+supported shelves. Gameplay, jumps and singing windows stay unchanged. The
+staff panel uses the same celadon, pearl and gold palette, with unchanged
+notation dimensions and contrast cues.
+
+Existing finished donors add 4,701,506 fetched bytes to this course. Only the
+813,920-byte garden kit is newly included in the native package. Heavy museum
+and botanical hero bundles remain outside this runner pass. The scenery owns
+fixed-capacity instance pools grouped by material identity, at most two
+resident scenery chunks and three active material batches. Its maximum
+resident authored geometry is 27,432 triangles. Gameplay keeps its separate
+three-chunk window. Handoffs wait until outgoing bounds leave the view and
+incoming bounds are concealed by fog, across seven validated aspect ratios.
+
+All pools receive a real warm-up draw before play, including temporarily empty
+instances. Warm-up restores matrices, visibility and bounds even on failure.
+The source-pool material is shared with Journey through an owned geometry and
+material factory; borrowed donor assets remain owned by the renderer. Water
+uses a running-only presentation clock, freezes while paused and respects
+reduced motion. No reflection, waterfall or lighting pass is added.
+
+Verification includes renderer lifecycle/error paths, shared-pool ownership,
+scenery bounds/residency, warm-up restoration and native asset selection.
+Independent integration and rendering reviews passed. Three complete actual
+AMD/OpenGL runs at 390×844, 1024×768 and 1440×900 passed all eight phrases and 24
+singing stars, with no page or WebGL errors. Each used real PCM and controls;
+the automated route collected one of four optional pickups. The final visual
+review rejected unsupported first-pass architecture and accepted the corrected
+foundations and separate pond shelves. This is a first scenery pass, not a
+claim of exact reference-image fidelity.
+
+Measured matched-beat draw ranges increased by four to six draws, because the
+existing transmission and main passes both draw some scenery. The phone
+landmark peaked at 63 draws, versus 57 before; its triangles increased by
+54,864. The paired finale pavilions add six draws to a lower baseline of 31–40,
+a 19.35% non-shadow / 15% shadow-frame increase. That bounded finale exception
+is retained for the composition; there is no universal 15% draw-cost claim.
+Shadow cadence makes raw median comparisons misleading, so the archive records
+matched minima and maxima. Late tablet/desktop baseline samples were absent
+and are explicitly unavailable.
+
+Whole-course post-start GPU allocation counts match the preceding pace trial:
+315 buffers/uploads, seven textures, 52 shader compilations and 26 links per
+run. Existing target streaming still performs that work; this is not a claim
+of allocation-free playback. The phone-sized desktop run recorded one 57ms
+long task; tablet and desktop runs recorded none. These measurements do not
+establish physical iPhone/Android frame pacing. Evidence, screenshots, videos,
+source hashes and cost comparisons are in the synced
+`song-runner/r3-scenery-2026-10-01` archive.
+
+## Blocked-corner camera and verification follow-through
+
+A confirmed keyboard corridor turn can stop against the wall before the
+heading dwell completes. The camera now finishes adopting Merc's actual
+facing while that movement intent remains held, without rotating the movement
+basis or overriding a recent manual orbit. Regression tests reproduce the
+actual Journey corner at 10, 30 and 60Hz. Real held-key, mouse and touch checks
+passed normally, at 6× CPU throttling, and on the actual AMD/OpenGL path with
+clean graphics errors. Evidence is in the private
+`owner-polish-2026-10-01/camera-blocked-heading-ci` archive.
+
+The slower Learning tempo also exposed a smoke-test beat-boundary error: the
+fixed-step clock could sample just before beat 16. The probe now samples the
+completed beat within one fixed step, retaining exact chunk and resource
+assertions. A separate delivery smoke performs static document checks before
+GPU load and activates the focused entrance with a real Enter key; pointer
+controls retain their dedicated real-input coverage. Both targeted browser
+checks passed, and the repository metrics ratchet reports no regressions.

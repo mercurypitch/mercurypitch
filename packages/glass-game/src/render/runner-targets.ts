@@ -83,13 +83,16 @@ function createScoreCard() {
         activeNoteIndex: active?.noteIndex,
       })
       context.clearRect(0, 0, 512, 256)
-      context.fillStyle = 'rgba(246,244,229,0.95)'
+      context.fillStyle = 'rgba(17,61,65,0.68)'
       context.beginPath()
-      context.roundRect(0, 0, 512, 256, 22)
+      context.roundRect(2, 2, 508, 252, 22)
       context.fill()
+      context.lineWidth = 2
+      context.strokeStyle = 'rgba(234,194,105,0.85)'
+      context.stroke()
       context.font = 'italic 600 24px serif'
       context.textAlign = 'left'
-      context.fillStyle = '#946b31'
+      context.fillStyle = '#eac269'
       context.fillText('G', 14, layout.staff.lineYs[3])
       if (layout.staff.octaveLabel !== null) {
         context.font = '12px sans-serif'
@@ -100,7 +103,7 @@ function createScoreCard() {
         )
       }
       context.lineWidth = 1.5
-      context.strokeStyle = '#82948b'
+      context.strokeStyle = '#b8cfc5'
       for (const y of layout.staff.lineYs) {
         context.beginPath()
         context.moveTo(layout.staff.left, y)
@@ -108,7 +111,7 @@ function createScoreCard() {
         context.stroke()
       }
       for (const note of layout.notes) {
-        context.strokeStyle = '#174a49'
+        context.strokeStyle = '#fff3cf'
         context.lineWidth = 3
         for (const y of note.ledgerLineYs) {
           context.beginPath()
@@ -133,7 +136,7 @@ function createScoreCard() {
         context.beginPath()
         context.ellipse(note.x, note.endY, 9, 6.5, -0.3, 0, Math.PI * 2)
         context.clip()
-        context.fillStyle = '#eac269'
+        context.fillStyle = '#70e8b1'
         context.fillRect(note.x - 10, note.endY - 8, 20 * note.fillProgress, 16)
         context.restore()
         context.beginPath()
@@ -162,15 +165,15 @@ function createScoreCard() {
         if (note.dotted) {
           context.beginPath()
           context.arc(note.x + 15, note.endY, 2.5, 0, Math.PI * 2)
-          context.fillStyle = '#174a49'
+          context.fillStyle = '#fff3cf'
           context.fill()
         }
         if (note.pitch.accidental) {
-          context.fillStyle = '#174a49'
+          context.fillStyle = '#fff3cf'
           context.font = '16px serif'
           context.fillText('#', note.x - 17.5, note.endY + 5)
         }
-        context.fillStyle = '#174a49'
+        context.fillStyle = '#fff3cf'
         context.font = '600 18px sans-serif'
         context.textAlign = 'center'
         context.fillText(note.label, note.x, layout.labelY)

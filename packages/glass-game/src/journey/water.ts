@@ -2,6 +2,7 @@
 
 import type { IUniform } from 'three'
 import { AdditiveBlending, BufferAttribute, BufferGeometry, CircleGeometry, DoubleSide, DynamicDrawUsage, Euler, Group, InstancedMesh, Matrix4, Mesh, NormalBlending, Points, Quaternion, ShaderMaterial, Vector3, } from 'three'
+import { createSourcePoolSurface, SOURCE_POOL_TRIANGLES_PER_INSTANCE, } from '../render/source-pool'
 
 export interface JourneyWaterSource {
   readonly position: readonly [number, number, number]
@@ -53,8 +54,6 @@ export interface JourneyWater {
 const WIDTH_SEGMENTS = 14
 const FALL_SEGMENTS = 24
 const BASIN_SEGMENTS = 48
-const SOURCE_POOL_SEGMENTS = 40
-const SOURCE_POOL_MOUTH_EXTENSION = 0.9
 const MIST_PARTICLES_PER_SPILLWAY = 22
 const BUBBLE_PARTICLES_PER_SPILLWAY = 10
 const TERMINATION_PARTICLES_PER_SPILLWAY =
@@ -249,63 +248,6 @@ const BASIN_FRAGMENT_SHADER = /* glsl */ `
     vec3 highlight = vec3(0.68, 0.96, 0.87);
     float foam = clamp(centerFoam * 0.65 + ringA * 0.28 + ringB * 0.2, 0.0, 1.0);
     gl_FragColor = vec4(mix(turquoise, highlight, foam), edgeFade * (0.34 + foam * 0.38));
-    #include <tonemapping_fragment>
-    #include <colorspace_fragment>
-  }
-`
-
-const SOURCE_FRAGMENT_SHADER = /* glsl */ `
-  uniform float uTime;
-  uniform float uMotion;
-  varying vec2 vBasinUv;
-
-  float pondHash(vec2 point) {
-    return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453123);
-  }
-
-  float pondNoise(vec2 point) {
-    vec2 cell = floor(point);
-    vec2 fraction = fract(point);
-    fraction = fraction * fraction * (3.0 - 2.0 * fraction);
-    return mix(
-      mix(pondHash(cell), pondHash(cell + vec2(1.0, 0.0)), fraction.x),
-      mix(pondHash(cell + vec2(0.0, 1.0)), pondHash(cell + 1.0), fraction.x),
-      fraction.y
-    );
-  }
-
-  void main() {
-    vec2 centered = vBasinUv - 0.5;
-    float radius = length(centered) * 2.0;
-    if (radius > 1.0) discard;
-    float time = uTime * uMotion;
-    float current = pondNoise(vec2(
-      centered.x * 8.0 + time * 0.18,
-      centered.y * 6.0 - time * 0.32
-    ));
-    float ripple = 0.5 + 0.5 * sin(
-      radius * 31.0 - time * 1.8 + current * 3.2
-    );
-    float rim = smoothstep(0.72, 0.91, radius) *
-      (1.0 - smoothstep(0.91, 1.0, radius));
-    float mouthFoam = smoothstep(0.05, 0.42, -centered.y) *
-      smoothstep(0.28, 0.82, radius) *
-      (1.0 - smoothstep(0.82, 1.0, radius));
-    float glint = smoothstep(0.88, 0.985, current) *
-      smoothstep(0.45, 0.92, ripple);
-    float edgeFade = 1.0 - smoothstep(0.94, 1.0, radius);
-    vec3 deepJade = vec3(0.015, 0.29, 0.31);
-    vec3 turquoise = vec3(0.075, 0.58, 0.57);
-    vec3 pearl = vec3(0.76, 0.98, 0.91);
-    vec3 outgoingLight = mix(deepJade, turquoise, 0.4 + current * 0.32);
-    outgoingLight = mix(
-      outgoingLight,
-      pearl,
-      clamp(rim * 0.38 + mouthFoam * 0.48 + glint * 0.46, 0.0, 0.82)
-    );
-    float alpha = edgeFade *
-      (0.62 + ripple * 0.08 + rim * 0.16 + mouthFoam * 0.14);
-    gl_FragColor = vec4(outgoingLight, alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -520,25 +462,6 @@ function createSheetGeometry(spillway: JourneyWaterSpillway): BufferGeometry {
   return geometry
 }
 
-function createSourcePoolGeometry(): BufferGeometry {
-  const geometry = new CircleGeometry(1, SOURCE_POOL_SEGMENTS)
-  geometry.name = 'journey-water-source-pool-shared'
-  const positions = geometry.getAttribute('position') as BufferAttribute
-  for (let index = 0; index < positions.count; index++) {
-    const x = positions.getX(index)
-    const y = positions.getY(index)
-    if (y >= 0) continue
-    const downstream = clamp(-y, 0, 1)
-    const centerWeight = Math.pow(clamp(1 - Math.abs(x), 0, 1), 3)
-    const mouthWeight = centerWeight * downstream * downstream
-    positions.setY(index, y - SOURCE_POOL_MOUTH_EXTENSION * mouthWeight)
-  }
-  positions.needsUpdate = true
-  geometry.computeVertexNormals()
-  geometry.computeBoundingSphere()
-  return geometry
-}
-
 function createWaterMaterial(uniforms: OwnedUniforms): ShaderMaterial {
   const material = new ShaderMaterial({
     name: 'journey-water-sheet-material',
@@ -561,22 +484,6 @@ function createBasinMaterial(uniforms: OwnedUniforms): ShaderMaterial {
     uniforms,
     vertexShader: BASIN_VERTEX_SHADER,
     fragmentShader: BASIN_FRAGMENT_SHADER,
-    transparent: true,
-    depthWrite: false,
-    side: DoubleSide,
-    blending: NormalBlending,
-    toneMapped: true,
-  })
-  material.forceSinglePass = true
-  return material
-}
-
-function createSourceMaterial(uniforms: OwnedUniforms): ShaderMaterial {
-  const material = new ShaderMaterial({
-    name: 'journey-water-source-material',
-    uniforms,
-    vertexShader: BASIN_VERTEX_SHADER,
-    fragmentShader: SOURCE_FRAGMENT_SHADER,
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
@@ -770,15 +677,13 @@ export function createJourneyWater(
   const sourceSpillways = spillways.filter(
     (spillway) => spillway.source !== undefined,
   )
+  const sourceSurface =
+    sourceSpillways.length > 0 ? createSourcePoolSurface() : undefined
   let sourcePools: InstancedMesh | undefined
-  if (sourceSpillways.length > 0) {
-    const sourceGeometry = createSourcePoolGeometry()
-    ownedGeometries.add(sourceGeometry)
-    const sourceMaterial = createSourceMaterial(uniforms)
-    ownedMaterials.add(sourceMaterial)
+  if (sourceSurface !== undefined) {
     sourcePools = new InstancedMesh(
-      sourceGeometry,
-      sourceMaterial,
+      sourceSurface.geometry,
+      sourceSurface.material,
       sourceSpillways.length,
     )
     sourcePools.name = 'journey-water-source-pools'
@@ -817,7 +722,8 @@ export function createJourneyWater(
 
   const sheetTriangles = spillways.length * WIDTH_SEGMENTS * FALL_SEGMENTS * 2
   const basinTriangles = basinSpillways.length * BASIN_SEGMENTS
-  const sourceTriangles = sourceSpillways.length * SOURCE_POOL_SEGMENTS
+  const sourceTriangles =
+    sourceSpillways.length * SOURCE_POOL_TRIANGLES_PER_INSTANCE
   const metrics: JourneyWaterMetrics = Object.freeze({
     spillways: spillways.length,
     sourcePools: sourceSpillways.length,
@@ -827,8 +733,8 @@ export function createJourneyWater(
       (sourceSpillways.length > 0 ? 1 : 0) +
       (includeMist ? 1 : 0),
     triangles: sheetTriangles + basinTriangles + sourceTriangles,
-    geometries: ownedGeometries.size,
-    materials: ownedMaterials.size,
+    geometries: ownedGeometries.size + (sourceSurface === undefined ? 0 : 1),
+    materials: ownedMaterials.size + (sourceSurface === undefined ? 0 : 1),
     mistParticles: includeMist
       ? spillways.length * TERMINATION_PARTICLES_PER_SPILLWAY
       : 0,
@@ -863,11 +769,13 @@ export function createJourneyWater(
         previousVisibleSeconds = safeVisibleSeconds
       }
       uniforms.uTime.value = flowSeconds
+      sourceSurface?.setPresentation(flowSeconds, reducedMotion)
     },
     setReducedMotion(reduced) {
       if (disposed || reducedMotion === reduced) return
       reducedMotion = reduced
       uniforms.uMotion.value = reduced ? 0 : 1
+      sourceSurface?.setPresentation(flowSeconds, reducedMotion)
       if (mist !== undefined) mist.points.visible = !reduced
     },
     getMetrics() {
@@ -879,6 +787,7 @@ export function createJourneyWater(
       root.clear()
       basins?.dispose()
       sourcePools?.dispose()
+      sourceSurface?.dispose()
       ownedGeometries.forEach((geometry) => geometry.dispose())
       ownedMaterials.forEach((material) => material.dispose())
       ownedGeometries.clear()

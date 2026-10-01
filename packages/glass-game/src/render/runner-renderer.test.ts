@@ -20,6 +20,11 @@ const state = vi.hoisted(() => ({
   environmentDispose: vi.fn(),
   worldDispose: vi.fn(),
   targetDispose: vi.fn(),
+  sceneryDispose: vi.fn(),
+  sceneryCreate: vi.fn(),
+  sceneryUpdate: vi.fn(),
+  sceneryWarm: vi.fn(),
+  sceneryRestore: vi.fn(),
   mercDispose: vi.fn(),
   worldUpdate: vi.fn(),
   targetUpdate: vi.fn(),
@@ -101,6 +106,26 @@ vi.mock('./runner-targets', () => ({
 }))
 
 import { createSongRunnerRenderer } from './runner-renderer'
+
+vi.mock('./runner-scenery', () => ({
+  createRunnerScenery: (options: unknown) => {
+    state.sceneryCreate(options)
+    return {
+      root: new Group(),
+      update: state.sceneryUpdate,
+      dispose: state.sceneryDispose,
+      metrics: () => ({ residentChunks: 2, drawBatches: 3, triangles: 1200 }),
+      async withWarmupState(callback: () => Promise<void>) {
+        state.sceneryWarm()
+        try {
+          await callback()
+        } finally {
+          state.sceneryRestore()
+        }
+      },
+    }
+  },
+}))
 
 function ownedScene() {
   const geometry = new BoxGeometry(),
@@ -265,6 +290,7 @@ describe('runner renderer ownership', () => {
       state.environmentDispose,
       state.worldDispose,
       state.targetDispose,
+      state.sceneryDispose,
       state.observerDisconnect,
     ])
       expect(disposer).toHaveBeenCalledOnce()
@@ -280,6 +306,7 @@ describe('runner renderer ownership', () => {
     expect(state.render).toHaveBeenCalledTimes(2)
     expect(state.worldUpdate).toHaveBeenCalledTimes(2)
     expect(state.targetUpdate).toHaveBeenCalledTimes(2)
+    expect(state.sceneryUpdate).toHaveBeenCalledTimes(2)
     expect(state.targetUpdate).toHaveBeenNthCalledWith(1, expect.any(Object), 0)
     expect(state.targetUpdate).toHaveBeenNthCalledWith(2, expect.any(Object), 0)
     expect(state.verifyFirstFrame).toHaveBeenCalledOnce()
@@ -289,16 +316,27 @@ describe('runner renderer ownership', () => {
     expect(state.render.mock.invocationCallOrder[1]).toBeLessThan(
       state.verifyFirstFrame.mock.invocationCallOrder[0]!,
     )
+    expect(state.sceneryWarm.mock.invocationCallOrder[0]).toBeLessThan(
+      state.precompile.mock.invocationCallOrder[0]!,
+    )
+    expect(state.render.mock.invocationCallOrder[0]).toBeLessThan(
+      state.sceneryRestore.mock.invocationCallOrder[0]!,
+    )
+    expect(state.sceneryRestore.mock.invocationCallOrder[0]).toBeLessThan(
+      state.render.mock.invocationCallOrder[1]!,
+    )
   })
 
   it('forwards presentation elapsed time to target feedback', async () => {
     const { renderer, snapshot } = fixture()
     await renderer.ready
     state.targetUpdate.mockClear()
+    state.sceneryUpdate.mockClear()
 
     expect(renderer.render(snapshot, 0.075)).toBe(true)
 
     expect(state.targetUpdate).toHaveBeenCalledExactlyOnceWith(snapshot, 0.075)
+    expect(state.sceneryUpdate).toHaveBeenCalledExactlyOnceWith(snapshot, 0.075)
   })
 
   it('retires the renderer when the loading warmup draw fails', async () => {
@@ -313,5 +351,47 @@ describe('runner renderer ownership', () => {
     expect(state.loseContext).toHaveBeenCalledOnce()
     expect(state.worldDispose).toHaveBeenCalledOnce()
     expect(state.targetDispose).toHaveBeenCalledOnce()
+    expect(state.sceneryRestore).toHaveBeenCalledOnce()
+    expect(state.sceneryDispose).toHaveBeenCalledOnce()
+  })
+
+  it('loads the finished scenery donors once before readiness and reports their separate residency', async () => {
+    const { renderer } = fixture()
+    await renderer.ready
+    expect(state.model.mock.calls.map(([id]) => id)).toEqual([
+      'living-crystal-platform-v2',
+      'cloudway-lab-frost-gold-arch-desktop-v1',
+      'museum-kit-v2',
+      'museum-garden-v2',
+    ])
+    expect(state.texture.mock.calls.map(([id]) => id)).toEqual([
+      'floor-marble',
+      'museum-sky',
+      'painting-garden-v5',
+    ])
+    expect(state.sceneryCreate).toHaveBeenCalledOnce()
+    expect(renderer.metrics()).toMatchObject({
+      residentChunks: 1,
+      sceneryChunks: 2,
+      sceneryBatches: 3,
+      sceneryTriangles: 1200,
+    })
+    renderer.dispose()
+  })
+
+  it('rejects a missing garden and retires the already loaded museum instead of exposing partial scenery', async () => {
+    const museum = ownedScene()
+    state.model.mockImplementation(async (id: string) => {
+      if (id === 'museum-kit-v2') return museum.root
+      if (id === 'museum-garden-v2') throw new Error('Missing garden')
+      return new Group()
+    })
+    const { renderer } = fixture()
+    await expect(renderer.ready).rejects.toThrow('Missing garden')
+    expect(state.sceneryCreate).not.toHaveBeenCalled()
+    expect(state.render).not.toHaveBeenCalled()
+    expect(museum.geometryDispose).toHaveBeenCalledOnce()
+    expect(museum.materialDispose).toHaveBeenCalledOnce()
+    expect(state.dispose).toHaveBeenCalledOnce()
   })
 })

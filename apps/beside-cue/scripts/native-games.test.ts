@@ -14,6 +14,11 @@ import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAsse
 
 const temporary: string[] = []
 const opalineAsset = `games/${glassGameAssetPath('opaline-v6')}`
+const R3_NATIVE_GAME_ASSETS = [
+  'games/adventure-v2/platform-kit.glb',
+  'games/adventure-v2/garden-kit.glb',
+  'games/adventure-v5/painting-garden.webp',
+] as const
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
 const repository = fileURLToPath(new URL('../../../', import.meta.url))
 const iosGuard = resolve('ios/App/scripts/validate-native-games-profile.sh')
@@ -76,6 +81,8 @@ describe('explicit native games profile', () => {
       'floating-museum-twin-finish-kit-v4',
     ])
       expect(native.has(`games/${glassGameAssetPath(id)}`)).toBe(true)
+    for (const asset of R3_NATIVE_GAME_ASSETS)
+      expect(native.has(asset), `${asset} must remain native`).toBe(true)
     expect(NATIVE_DESKTOP_ONLY_GAME_ASSETS).toEqual(
       GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS.map(
         ({ desktop }) => `games/${desktop}`,

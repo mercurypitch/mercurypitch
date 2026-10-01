@@ -23,7 +23,6 @@ const ORT_FILES = [
  * GamesScreen and never mounts that entry or scene.
  */
 export const NATIVE_STANDALONE_ONLY_GAME_ASSETS = [
-  'games/adventure-v2/garden-kit.glb',
   'games/adventure-v3/gilded-column.glb',
   'games/adventure-v3/garden-arcade.glb',
   'games/adventure-v3/observatory-canopy.glb',

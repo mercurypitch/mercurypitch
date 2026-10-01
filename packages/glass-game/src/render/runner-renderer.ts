@@ -14,6 +14,7 @@ import { precompileRendererPrograms } from './program-precompile'
 import type { GlassAssetQualityProfile } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
+import { createRunnerScenery } from './runner-scenery'
 import { createRunnerTargets } from './runner-targets'
 import { createRunnerWorld } from './runner-world'
 import { runnerCameraPose } from './runner-world-layout'
@@ -35,6 +36,9 @@ export interface SongRunnerRenderer {
     triangles: number
     residentChunks: number
     targets: number
+    sceneryChunks: number
+    sceneryBatches: number
+    sceneryTriangles: number
   }
   dispose(): void
 }
@@ -86,6 +90,7 @@ export function createSongRunnerRenderer(
   let environment: ReturnType<typeof createMuseumEnvironment> | undefined
   let world: ReturnType<typeof createRunnerWorld> | undefined
   let targets: ReturnType<typeof createRunnerTargets> | undefined
+  let scenery: ReturnType<typeof createRunnerScenery> | undefined
   let merc: Awaited<ReturnType<typeof loadAdventureMerc>> | undefined
   let sky: Texture | undefined
   let disposed = false,
@@ -151,6 +156,7 @@ export function createSongRunnerRenderer(
     observer.disconnect()
     renderer.domElement.removeEventListener('webglcontextlost', lost)
     targets?.dispose()
+    scenery?.dispose()
     world?.dispose()
     merc?.dispose()
     environment?.dispose()
@@ -216,6 +222,10 @@ export function createSongRunnerRenderer(
       )
       const glass = await model(bundle)
       if (disposed) return
+      const museum = await model('museum-kit-v2')
+      const garden = await model('museum-garden-v2')
+      const painting = await texture('painting-garden-v5')
+      if (disposed) return
       world = createRunnerWorld(
         course,
         crystal,
@@ -229,18 +239,28 @@ export function createSongRunnerRenderer(
         comfortableMidi,
         options.reducedMotion === true,
       )
-      scene.add(world.root, targets.root)
+      scenery = createRunnerScenery({
+        course,
+        museumScene: museum,
+        gardenScene: garden,
+        paintingMap: painting,
+        reducedMotion: options.reducedMotion === true,
+      })
+      scene.add(world.root, targets.root, scenery.root)
       await environment.load(assetUrl('museum-environment-v2'), () => disposed)
       if (disposed) return
       world.update(options.initialSnapshot, 0)
       targets.update(options.initialSnapshot, 0)
+      scenery.update(options.initialSnapshot, 0)
       installBackdropFog(scene, sky)
-      await precompileRendererPrograms(renderer, scene, camera, abort.signal)
-      if (disposed) return
-      renderer.shadowMap.needsUpdate = true
-      withResidentRenderablesVisible(scene, () =>
-        renderer.render(scene, camera),
-      )
+      await scenery.withWarmupState(async () => {
+        await precompileRendererPrograms(renderer, scene, camera, abort.signal)
+        if (disposed) return
+        renderer.shadowMap.needsUpdate = true
+        withResidentRenderablesVisible(scene, () =>
+          renderer.render(scene, camera),
+        )
+      })
       if (disposed) return
       shadowCadence.invalidate()
       loaded = true
@@ -268,6 +288,7 @@ export function createSongRunnerRenderer(
       return false
     world!.update(snapshot, dt)
     targets!.update(snapshot, dt)
+    scenery!.update(snapshot, dt)
     merc!.update(
       {
         player: {
@@ -316,6 +337,9 @@ export function createSongRunnerRenderer(
       triangles: renderer.info.render.triangles,
       residentChunks: world?.metrics().residentChunks ?? 0,
       targets: targets?.metrics().targets ?? 0,
+      sceneryChunks: scenery?.metrics().residentChunks ?? 0,
+      sceneryBatches: scenery?.metrics().drawBatches ?? 0,
+      sceneryTriangles: scenery?.metrics().triangles ?? 0,
     }),
     dispose,
   }
