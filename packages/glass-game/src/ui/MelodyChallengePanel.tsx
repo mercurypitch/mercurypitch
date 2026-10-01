@@ -7,7 +7,7 @@ import type { MelodyJudgeSnapshot } from '../melody-contracts'
 import type { AdventureVoiceMode } from './adventure-voice-challenge'
 import styles from './GlassAdventure.module.css'
 import panelStyles from './MelodyChallengePanel.module.css'
-import { MelodyRibbon, melodyNoteName } from './MelodyRibbon'
+import { melodyNoteName, MelodyRibbon } from './MelodyRibbon'
 
 function paceLabel(pace: number): string {
   if (pace === 0.8) return 'Brisk'

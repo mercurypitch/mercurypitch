@@ -6,7 +6,7 @@ import { FROST_WALL_PANE } from '../content/frost-wall-profile'
 import { GLASSWORKS } from '../content/glassworks'
 import type { BreakableDefinition, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
-import { createFallbackChallengeSubjects, enclosureCompositionPitch, ENCLOSURE_EYE_LEVEL_PITCH, ENCLOSURE_READABLE_BOOM_DISTANCE, } from './camera-policy'
+import { createFallbackChallengeSubjects, ENCLOSURE_EYE_LEVEL_PITCH, ENCLOSURE_READABLE_BOOM_DISTANCE, enclosureCompositionPitch, } from './camera-policy'
 
 describe('enclosure composition pitch', () => {
   it('blends continuously into an eye-level view near the readable boom distance', () => {
