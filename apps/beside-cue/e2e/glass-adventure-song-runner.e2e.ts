@@ -5,32 +5,12 @@ import { MUSEUM_CAMPAIGN } from '../../../packages/glass-game/src/content/campai
 import { SINGING_CURRENT } from '../../../packages/glass-game/src/runner/first-course'
 import { readSavedRunnerProgress } from '../../../packages/glass-game/src/runner/progress'
 import { omitRasterOutput } from './helpers/glass-adventure-controls'
+import { runnerCourseActions } from './helpers/runner-course-actions'
 import { installRunnerVoice } from './helpers/runner-voice-fixture'
 import { createRunnerCourseProbe, useRunnerControlsRenderer, } from './helpers/runner-controls-renderer'
 import { verifyRunnerRendererStreaming } from './helpers/runner-renderer-smoke'
 
-function runnerActionSecond(
-  obstacleId: string,
-  kind: 'lane-transition' | 'jump',
-): number {
-  const obstacle = SINGING_CURRENT.obstacles.find(
-    (candidate) => candidate.id === obstacleId,
-  )
-  const window = obstacle?.certifiedActions.find(
-    (candidate) => candidate.kind === kind,
-  )
-  if (window === undefined)
-    throw new Error(`Missing ${kind} window for ${obstacleId}.`)
-  return (window.launchOpenCourseSeconds + window.launchCloseCourseSeconds) / 2
-}
-
-const RUNNER_ACTIONS = {
-  firstLaneChange: runnerActionSecond('first-lane-gate', 'lane-transition'),
-  firstJump: runnerActionSecond('first-jump', 'jump'),
-  returnToMiddle: 17,
-  secondLaneChange: runnerActionSecond('second-lane-gate', 'lane-transition'),
-  secondJump: runnerActionSecond('second-jump', 'jump'),
-} as const
+const RUNNER_ACTIONS = runnerCourseActions(SINGING_CURRENT)
 
 test.use({
   viewport: { width: 390, height: 844 },

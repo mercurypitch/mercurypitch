@@ -3,7 +3,8 @@ import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
-import { SongRunnerScreen } from '@irchiinnuss/glass-game/runner'
+import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
+import { SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
@@ -18,6 +19,7 @@ interface AdventureScreenProps {
   level?: LevelDefinition
   campaign?: boolean
   runner?: boolean
+  runnerPace?: SingingCurrentTrialPace
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   const assetProfile = nativeGameAssetProfile(
@@ -65,7 +67,15 @@ export function AdventureScreen(props: AdventureScreenProps) {
         </Show>
       }
     >
-      <SongRunnerScreen host={host} assetProfile={assetProfile} />
+      <SongRunnerScreen
+        host={host}
+        course={
+          props.runnerPace === undefined
+            ? undefined
+            : SINGING_CURRENT_TRIALS[props.runnerPace]
+        }
+        assetProfile={assetProfile}
+      />
     </Show>
   )
 }

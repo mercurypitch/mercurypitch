@@ -2,17 +2,28 @@
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import { untrack } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BuildInfo } from '@/build-info'
 
 const mounted = vi.hoisted(() => ({
   levels: [] as (LevelDefinition | undefined)[],
+  runners: [] as boolean[],
+  runnerPaces: [] as ('current' | 'learning' | undefined)[],
 }))
+const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
 
 vi.mock('@irchiinnuss/pitch-engine', () => ({
   configurePitchEngineAssets: vi.fn(),
 }))
+vi.mock('@/build-info', () => ({ BUILD: build }))
 vi.mock('./AdventureScreen', () => ({
-  AdventureScreen: (props: { level?: LevelDefinition }) => {
+  AdventureScreen: (props: {
+    level?: LevelDefinition
+    runner?: boolean
+    runnerPace?: 'current' | 'learning'
+  }) => {
     mounted.levels.push(untrack(() => props.level))
+    mounted.runners.push(untrack(() => props.runner === true))
+    mounted.runnerPaces.push(untrack(() => props.runnerPace))
     return null
   },
 }))
@@ -20,6 +31,9 @@ vi.mock('./AdventureScreen', () => ({
 beforeEach(() => {
   vi.resetModules()
   mounted.levels.length = 0
+  mounted.runners.length = 0
+  mounted.runnerPaces.length = 0
+  build.channel = 'dev'
   document.body.innerHTML = '<div id="root"></div>'
 })
 
@@ -29,15 +43,46 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-async function mountAt(development: boolean, layout: string) {
+async function mountAt(development: boolean, layout: string, pace?: string) {
   vi.stubEnv('DEV', development)
-  window.history.replaceState({}, '', `/glass-game/?layout=${layout}`)
+  const paceQuery = pace === undefined ? '' : `&pace=${pace}`
+  window.history.replaceState(
+    {},
+    '',
+    `/glass-game/?layout=${layout}${paceQuery}`,
+  )
   await import('./standalone')
   await vi.waitFor(() => expect(mounted.levels).toHaveLength(1))
   return mounted.levels[0]
 }
 
 describe('standalone development route', () => {
+  it.each([
+    ['dev', 'current', true],
+    ['ci', 'learning', false],
+  ] as const)(
+    'routes the %s Singing Current %s trial through the gated host',
+    async (channel, pace, development) => {
+      build.channel = channel
+      await mountAt(development, 'singing-current', pace)
+      expect(mounted.runners).toEqual([true])
+      expect(mounted.runnerPaces).toEqual([pace])
+    },
+  )
+
+  it('drops the Singing Current override from a release host', async () => {
+    build.channel = 'release'
+    await mountAt(false, 'singing-current', 'current')
+    expect(mounted.runners).toEqual([false])
+    expect(mounted.runnerPaces).toEqual([undefined])
+  })
+
+  it('uses the canonical runner course for an unknown pace', async () => {
+    await mountAt(true, 'singing-current', 'rush')
+    expect(mounted.runners).toEqual([true])
+    expect(mounted.runnerPaces).toEqual([undefined])
+  })
+
   it('opens the contained singing Rosebud trial only in development', async () => {
     const level = await mountAt(true, 'living-glass')
     expect(level?.id).toBe('living-glass')

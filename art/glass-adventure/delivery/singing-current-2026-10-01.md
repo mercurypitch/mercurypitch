@@ -4,13 +4,15 @@ The course reuses the reviewed floating-museum art and adds a separate moving
 game mode. Merc travels forward through three lanes. The microphone stays open
 after Start; staff notes fill as the player sings. Eight phrases progress from
 a held note through higher/lower notes, two-note replies, a three-note arc and
-the five-note Sunlit Steps finale. The authored run lasts 90.88 seconds plus
+the five-note Sunlit Steps finale. The default Learning run lasts 102.64 seconds plus
 readiness, count-in and any checkpoint recovery.
 
 ## Where to edit it
 
-- `packages/glass-game/src/runner/first-course.ts`: authored course, tempo,
-  relative melodies, movement, scoring tolerances and asset-profile catalogue.
+- `packages/glass-game/src/runner/first-course-tuning.ts`: typed pace presets,
+  target/cue timing, movement and breathing controls.
+- `runner/first-course.ts`: one course builder, relative melodies, scoring
+  tolerances and asset-profile catalogue.
 - `runner/source.ts` and `source-parser.ts`: JSON-compatible source contract and
   validation. Compiler modules validate vocal spacing, lane paths, jumps,
   checkpoints and the bounded asset set before the game starts.
@@ -55,6 +57,8 @@ rewards, without granting duplicates.
 ## Access and test route
 
 Development preview: `/glass-game/?layout=singing-current`.
+Dev/CI comparisons add `&pace=current` or `&pace=learning`. Each trial has its
+own save identity; release builds and `progression=earned` reject this override.
 Normal journey access unlocks after First Light is complete. Development unlock
 does not change release progression. The mini-game returns to the same journey.
 
@@ -134,3 +138,36 @@ tablet and desktop sizes, including reduced motion, pass with no graphics
 errors or post-start shader compilation. Raw evidence is in the synced
 `glass-adventure/song-runner/r1-live-pitch-2026-10-01` archive. Physical mobile
 frame pacing remains device verification.
+
+## R2: Learning pace and comparison routes
+
+Learning is the default: 84/96/104 BPM at beats 0/64/96, completing in
+102.637363 seconds. The original 96/108/116 control remains available and
+completes in 90.881226 seconds. Both use the same 160 beats, 192 metres, eight
+phrases, four pickups, certified jumps, pitch tolerance and scoring profile.
+The extra 11.756 seconds gives more reading and breathing time; sustained notes
+also take longer, so physical-device singing feedback still matters.
+
+Canonical revision 2 preserves completed status and known collected rewards
+from revision 1. It deliberately discards old per-target quality receipts:
+their absolute evidence durations were earned against shorter windows. Pace
+trials use separate IDs and cannot replace canonical progress.
+
+Verification: the focused runner domain passed 163 tests in 21 files, including
+both tempo maps, checkpoint count-ins, protected music silence, full sessions
+with 8/8 hits, 24 stars and all four pickups, both later recovery checkpoints,
+and migration. Route tests cover dev/CI/release/earned gates. Four complete
+real-renderer runs passed on AMD/OpenGL: original phone viewport, then Learning
+phone, tablet and desktop viewports. All used real PCM through the detector,
+real controls and isolated trial saves; all finished with eight hits and 24
+stars and no page/WebGL errors. The automated browser route collected one of
+four optional pickups; the deterministic session route covers all four.
+
+Private proof archive: `song-runner/r2-pace-trials-2026-10-01` in the existing
+Proton asset archive. It includes six beat-aligned screenshots per run, videos,
+raw frame/draw receipts, source fixtures and hashes. The unthrottled desktop
+GPU is not a native-device performance claim. Existing streaming created GPU
+buffers/programs during the course; the art pass must avoid adding first-use
+work and compare against this measured baseline. The 100,000-frame cap omits
+late raw samples on the tablet/desktop runs; their finale screenshots, finish
+assertions and error checks still completed. Phone raw samples cover the finale.

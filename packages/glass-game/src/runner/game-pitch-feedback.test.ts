@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RunnerVoiceEvidence, SongRunnerGame } from './contracts'
 import { SINGING_CURRENT } from './first-course'
+import { runnerFixedStepAtOrAfter } from './fixed-step'
 import { createSongRunnerGame } from './game'
 import { runnerTargetMidiAt } from './pitch'
 
@@ -15,7 +16,8 @@ const target = course.targets[0]!
 const note = target.notes[0]!
 const rootMidi = comfortableMidi + course.voice.comfortableRootOffsetSemitones
 const step = course.movement.fixedStepSeconds
-const capture = note.startCourseSeconds + step * 6
+const capture =
+  runnerFixedStepAtOrAfter(note.startCourseSeconds, 0, step) + step * 6
 
 function evidence(
   sequence: number,

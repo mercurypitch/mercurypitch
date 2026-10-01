@@ -2,15 +2,25 @@
 import type { CompiledRunnerCourse } from '../../runner/contracts'
 import { compileRunnerTempoSegments, runnerBeatToSeconds, } from '../../runner/tempo'
 
-export function runnerCourseFixture(): CompiledRunnerCourse {
-  const tempoSegments = compileRunnerTempoSegments(
-    [
-      { atBeat: 0, bpm: 96 },
-      { atBeat: 64, bpm: 108 },
-      { atBeat: 96, bpm: 116 },
-    ],
-    160,
-  )
+export type RunnerCourseFixturePace = 'current' | 'learning'
+
+const TEMPO_MAPS = {
+  current: [
+    { atBeat: 0, bpm: 96 },
+    { atBeat: 64, bpm: 108 },
+    { atBeat: 96, bpm: 116 },
+  ],
+  learning: [
+    { atBeat: 0, bpm: 84 },
+    { atBeat: 64, bpm: 96 },
+    { atBeat: 96, bpm: 104 },
+  ],
+} as const
+
+export function runnerCourseFixture(
+  pace: RunnerCourseFixturePace = 'current',
+): CompiledRunnerCourse {
+  const tempoSegments = compileRunnerTempoSegments(TEMPO_MAPS[pace], 160)
   const seconds = (beat: number) => runnerBeatToSeconds(tempoSegments, beat)
   return {
     schema: 'mercurypitch.song-runner.compiled',

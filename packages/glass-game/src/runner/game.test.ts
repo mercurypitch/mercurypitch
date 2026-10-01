@@ -3,8 +3,9 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import type { RunnerEvent, RunnerInput, RunnerSnapshot, RunnerVoiceEvidence, SavedRunnerProgress, SongRunnerGame, } from './contracts'
-import { SINGING_CURRENT } from './first-course'
+import type { CompiledRunnerCourse, RunnerEvent, RunnerInput, RunnerSnapshot, RunnerVoiceEvidence, SavedRunnerProgress, SongRunnerGame, } from './contracts'
+import { SINGING_CURRENT, SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, } from './first-course'
+import { runnerFixedStepActionEnd } from './fixed-step'
 import { createSongRunnerGame } from './game'
 import { runnerTargetMidiAt } from './pitch'
 import { runnerBeatToSeconds } from './tempo'
@@ -13,6 +14,22 @@ const course = SINGING_CURRENT
 const comfortableMidi = 60
 const epoch = 'flight-one'
 const EPSILON = 1e-9
+
+const pacingVariants: readonly {
+  name: string
+  course: CompiledRunnerCourse
+}[] = [
+  { name: 'current', course: SINGING_CURRENT_CURRENT },
+  { name: 'learning', course: SINGING_CURRENT_LEARNING },
+]
+
+const certifiedEndpointCases = pacingVariants.flatMap(({ name, course }) =>
+  (['open', 'close'] as const).map((endpoint) => ({
+    name,
+    course,
+    endpoint,
+  })),
+)
 
 interface TraceResult {
   readonly game: SongRunnerGame
@@ -235,13 +252,13 @@ describe('song runner game', () => {
     expect(game.snapshot().player.lateralX).toBeGreaterThan(0)
   })
 
-  it.each(['open', 'close'] as const)(
-    'matches every certified %s action endpoint on the fixed-step clock',
-    (endpoint) => {
-      const game = createSongRunnerGame(course, { comfortableMidi })
+  it.each(certifiedEndpointCases)(
+    'matches every certified $name $endpoint action endpoint on the fixed-step clock',
+    ({ course: endpointCourse, endpoint }) => {
+      const game = createSongRunnerGame(endpointCourse, { comfortableMidi })
       expect(game.beginEpoch(epoch)).toMatchObject({ ok: true })
       const action = (obstacleId: string) =>
-        course.obstacles.find((obstacle) => obstacle.id === obstacleId)!
+        endpointCourse.obstacles.find((obstacle) => obstacle.id === obstacleId)!
           .certifiedActions[0]!
       const inputTime = (obstacleId: string) => {
         const window = action(obstacleId)
@@ -268,7 +285,7 @@ describe('song runner game', () => {
           sequence: 3,
           atCourseSeconds:
             firstJump.landingCloseCourseSeconds +
-            course.movement.fixedStepSeconds * 4,
+            endpointCourse.movement.fixedStepSeconds * 4,
           action: 'lane-left',
         },
         {
@@ -295,14 +312,14 @@ describe('song runner game', () => {
         (endpoint === 'open'
           ? secondJump.landingOpenCourseSeconds
           : secondJump.landingCloseCourseSeconds) +
-        course.movement.fixedStepSeconds
+        endpointCourse.movement.fixedStepSeconds
       while (
         game.snapshot().status === 'running' &&
         requestedCourseSeconds < throughCourseSeconds - EPSILON
       ) {
         requestedCourseSeconds = Math.min(
           throughCourseSeconds,
-          requestedCourseSeconds + course.movement.fixedStepSeconds,
+          requestedCourseSeconds + endpointCourse.movement.fixedStepSeconds,
         )
         game.advanceTo(epoch, requestedCourseSeconds)
         const snapshot = game.snapshot()
@@ -310,14 +327,16 @@ describe('song runner game', () => {
           laneLandings.length === 0 &&
           snapshot.courseSeconds >=
             action('first-lane-gate').launchOpenCourseSeconds &&
-          Math.abs(snapshot.player.lateralX - course.laneCenters[2]) <= EPSILON
+          Math.abs(snapshot.player.lateralX - endpointCourse.laneCenters[2]) <=
+            EPSILON
         )
           laneLandings.push(snapshot.courseSeconds)
         if (
           laneLandings.length === 1 &&
           snapshot.courseSeconds >=
             action('second-lane-gate').launchOpenCourseSeconds &&
-          Math.abs(snapshot.player.lateralX - course.laneCenters[2]) <= EPSILON
+          Math.abs(snapshot.player.lateralX - endpointCourse.laneCenters[2]) <=
+            EPSILON
         )
           laneLandings.push(snapshot.courseSeconds)
         if (!priorGrounded && snapshot.player.grounded)
@@ -327,9 +346,17 @@ describe('song runner game', () => {
 
       const expectedLanding = (obstacleId: string) => {
         const window = action(obstacleId)
-        return endpoint === 'open'
-          ? window.landingOpenCourseSeconds
-          : window.landingCloseCourseSeconds
+        const actionDurationSeconds =
+          window.kind === 'lane-transition'
+            ? endpointCourse.movement.laneChangeSeconds
+            : (2 * endpointCourse.movement.jumpVelocityMetersPerSecond) /
+              endpointCourse.movement.gravityMetersPerSecondSquared
+        return runnerFixedStepActionEnd(
+          inputTime(obstacleId),
+          actionDurationSeconds,
+          0,
+          endpointCourse.movement.fixedStepSeconds,
+        )
       }
       expect(game.snapshot().status).toBe('running')
       expect(laneLandings).toHaveLength(2)
@@ -344,6 +371,30 @@ describe('song runner game', () => {
       )
       expect(jumpLandings[0]).toBeCloseTo(expectedLanding('first-jump'), 10)
       expect(jumpLandings[1]).toBeCloseTo(expectedLanding('second-jump'), 10)
+      for (const [index, obstacleId] of [
+        'first-lane-gate',
+        'second-lane-gate',
+      ].entries()) {
+        const window = action(obstacleId!)
+        expect(laneLandings[index]).toBeGreaterThanOrEqual(
+          window.landingOpenCourseSeconds - EPSILON,
+        )
+        expect(laneLandings[index]).toBeLessThanOrEqual(
+          window.landingCloseCourseSeconds + EPSILON,
+        )
+      }
+      for (const [index, obstacleId] of [
+        'first-jump',
+        'second-jump',
+      ].entries()) {
+        const window = action(obstacleId!)
+        expect(jumpLandings[index]).toBeGreaterThanOrEqual(
+          window.landingOpenCourseSeconds - EPSILON,
+        )
+        expect(jumpLandings[index]).toBeLessThanOrEqual(
+          window.landingCloseCourseSeconds + EPSILON,
+        )
+      }
     },
   )
 

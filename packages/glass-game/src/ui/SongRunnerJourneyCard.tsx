@@ -34,7 +34,7 @@ export function SongRunnerJourneyCard(props: {
               : 'Finish First Light to unlock'}
           </button>
           <small>
-            About 90 seconds. A missed note leaves room for the next.
+            About two minutes. A missed note leaves room for the next.
           </small>
         </div>
       </article>
