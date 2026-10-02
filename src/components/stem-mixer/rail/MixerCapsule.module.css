@@ -37,6 +37,17 @@
   background: color-mix(in srgb, var(--text-primary, #e6edf3) 3%, transparent);
 }
 
+/* An engine without color-mix() keeps a custom property set with it but
+   cannot use it: every control reading it would lose its resting tint. The
+   same tint as rgba (the default text colour at 6%). A declaration
+   fallback cannot do this, since a custom property is never invalid at
+   parse time. */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .capsule {
+    --mixer-control-bg: rgba(230, 237, 243, 0.06);
+  }
+}
+
 /* Inside a host that draws the box (the focus pill): no second box, and
    controls clear at rest, as the pill's glass had them. */
 .capsule[data-bare='true'] {
