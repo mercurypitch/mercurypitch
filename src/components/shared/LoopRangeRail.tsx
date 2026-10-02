@@ -2,9 +2,9 @@
 // ============================================================
 //
 // A short loop gets a close-up of A to B, opened from a button at the end of
-// the rail. The button's place is kept whether it is offered or not, so the
-// track does not get shorter, and every point on it move, at the moment B
-// makes a short loop.
+// the rail. A host may keep the button's place whether it is offered or not
+// (keepCloseUpPlace), so the track does not get shorter, and every point on
+// it move, at the moment B makes a short loop.
 //
 // The close-up floats over the rail, so it closes by the app's one rule for
 // floating panels (use-popover-layer): a press outside, or Escape. The rail
@@ -71,6 +71,12 @@ export interface LoopRangeRailProps {
   zoomInLabel?: string
   /** The same while it is open. Default "Full score". */
   zoomOutLabel?: string
+  /**
+   * Keep the close-up button's 44 px while it is not offered, so the track
+   * keeps its length when B makes a short loop. The karaoke mixer does; a
+   * phone's drum rail has no 44 px to spare, so it is the host's choice.
+   */
+  keepCloseUpPlace?: boolean
 }
 
 const SEEK_KEYS = new Set([
@@ -381,6 +387,7 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
       ref={frame}
       class={`${styles.frame} ${props.class ?? ''}`}
       data-focused={focused() ? 'true' : undefined}
+      data-keep-close-up={props.keepCloseUpPlace === true ? 'true' : undefined}
       data-active={(props.active?.() ?? true) ? 'true' : 'false'}
       data-testid={`${props.testIdPrefix}-loop-range`}
     >

@@ -19,13 +19,17 @@
 
   position: relative;
   display: grid;
-  /* The close-up button's place is kept while it is not offered: a track
-     that lost 44 px when B made a short loop moved every point on it under
-     the pointer. */
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   min-width: 0;
   gap: 0.2rem;
+}
+
+/* A host that keeps the close-up button's place while it is not offered
+   (keepCloseUpPlace): a track that lost 44 px when B made a short loop moved
+   every point on it under the pointer. */
+.frame[data-keep-close-up='true'] {
+  grid-template-columns: minmax(0, 1fr) 44px;
 }
 
 .rail,
