@@ -1,7 +1,8 @@
 // ============================================================
 // Every Stem Mixer transport control has an accessible name. The buttons are
 // icon-only; a screen reader that lands on "button" nine times in a row has
-// been told nothing (UX-32).
+// been told nothing (UX-32). The key chip sits right after the speed chip,
+// and in karaoke focus the stage toggles live in More.
 // ============================================================
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
@@ -54,8 +55,10 @@ function props(
     loopEnabled: () => true,
     loopStart: () => 10,
     loopEnd: () => 20,
+    minimumLoopGap: 0.1,
     onSetLoopA: vi.fn(),
     onSetLoopB: vi.fn(),
+    onMoveLoopPoint: vi.fn(),
     onClearLoop: vi.fn(),
     onToggleLoop: vi.fn(),
     ...overrides,
@@ -63,6 +66,9 @@ function props(
 }
 
 afterEach(cleanup)
+
+const nameOf = (el: Element): string =>
+  el.getAttribute('aria-label') ?? el.textContent?.trim() ?? ''
 
 describe('StemMixerTransport accessible names', () => {
   it.each([
@@ -73,25 +79,40 @@ describe('StemMixerTransport accessible names', () => {
     const buttons = screen.getAllByRole('button')
     expect(buttons.length).toBeGreaterThan(5)
     for (const button of buttons) {
-      const name =
-        button.getAttribute('aria-label') ?? button.textContent?.trim() ?? ''
       expect(
-        name,
+        nameOf(button),
         `button without a name: ${button.outerHTML.slice(0, 80)}`,
       ).not.toBe('')
     }
-    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    expect(buttons.map(nameOf).slice(0, 3)).toEqual([
+      'Play',
+      'Stop',
+      'Play from the start',
+    ])
   })
 
-  it('says Pause while playing', () => {
-    render(() => <StemMixerTransport {...props({ playing: () => true })} />)
-    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+  it('says Pause while playing, in the place Play was', () => {
+    const [playing, setPlaying] = createSignal(false)
+    render(() => <StemMixerTransport {...props({ playing })} />)
+    const first = () => nameOf(screen.getAllByRole('button')[0]!)
+    expect(first()).toBe('Play')
+
+    setPlaying(true)
+
+    expect(first()).toBe('Pause')
+  })
+
+  it('reads the timeline as a position in the song', () => {
+    render(() => <StemMixerTransport {...props()} />)
+
+    expect(
+      screen.getByRole('slider', { name: 'Song position' }),
+    ).toHaveAttribute('aria-valuetext', '0:12 of 3:00')
   })
 })
 
 describe('StemMixerTransport key', () => {
-  it('puts the key control right after the speed select, when the mixer binds one', () => {
+  it('puts the key chip right after the speed chip, when the mixer binds one', () => {
     const [value, setValue] = createSignal(0)
     const binding: KeyShiftBinding = {
       value,
@@ -104,16 +125,96 @@ describe('StemMixerTransport key', () => {
     }
     render(() => <StemMixerTransport {...props({ keyControl: binding })} />)
 
-    const control = screen.getByTestId('key-shift-control')
-    expect(screen.getByTitle('Playback speed').nextElementSibling).toBe(control)
+    const chip = screen.getByTestId('key-chip')
+    expect(
+      screen.getByTestId('speed-chip').parentElement?.nextElementSibling,
+    ).toBe(chip)
+    fireEvent.click(chip)
     fireEvent.click(screen.getByRole('button', { name: 'Raise the key' }))
-    expect(screen.getByTestId('key-shift-value').textContent).toBe('+1')
-    expect(screen.getByTestId('key-shift-label').textContent).toBe('G major')
+    expect(screen.getByTestId('key-chip-value').textContent).toBe('+1')
+    expect(screen.getByTestId('key-chip-name').textContent).toBe('G major')
+    expect(chip).toHaveAccessibleName('Key +1')
   })
 
-  it('has no key control without a binding', () => {
+  it('has no key chip without a binding', () => {
     render(() => <StemMixerTransport {...props()} />)
 
-    expect(screen.queryByTestId('key-shift-control')).toBeNull()
+    expect(screen.queryByTestId('key-chip')).toBeNull()
+  })
+})
+
+describe('StemMixerTransport in karaoke focus', () => {
+  const stageRows = () =>
+    Array.from(
+      screen.getByRole('menu').querySelectorAll('[role="menuitemcheckbox"]'),
+    ).map((row) => [row.textContent?.trim(), row.getAttribute('aria-checked')])
+
+  it('keeps the stage toggles in More, ticked while shown', () => {
+    const [showLyrics, setLyrics] = createSignal(true)
+    const setShowLyrics = vi.fn(setLyrics)
+    render(() => (
+      <StemMixerTransport
+        {...props({
+          karaokeFocus: () => true,
+          showLyrics,
+          setShowLyrics,
+        })}
+      />
+    ))
+    const more = screen.getByRole('button', { name: 'More playback options' })
+    fireEvent.click(more)
+    expect(stageRows()).toEqual([
+      ['Waveform', 'true'],
+      ['Pitch', 'true'],
+      ['Lyrics', 'true'],
+    ])
+
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Lyrics' }))
+
+    expect(setShowLyrics).toHaveBeenCalledTimes(1)
+    fireEvent.click(more)
+    expect(stageRows()).toContainEqual(['Lyrics', 'false'])
+  })
+
+  it('offers only the waveform in the performance layout', () => {
+    render(() => (
+      <StemMixerTransport
+        {...props({ karaokeFocus: () => true, performanceLayout: () => true })}
+      />
+    ))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'More playback options' }),
+    )
+
+    expect(stageRows()).toEqual([['Waveform', 'true']])
+  })
+
+  it('leaves the stage toggles out of More outside focus mode', () => {
+    render(() => <StemMixerTransport {...props()} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'More playback options' }),
+    )
+
+    expect(stageRows()).toEqual([])
+    expect(screen.getByRole('menuitem', { name: 'Clear loop' })).toBeEnabled()
+  })
+
+  it('exits focus mode from its own button', () => {
+    const [focus, setFocusSignal] = createSignal(true)
+    const setFocus = vi.fn(setFocusSignal)
+    render(() => (
+      <StemMixerTransport
+        {...props({ karaokeFocus: focus, setKaraokeFocus: setFocus })}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Exit karaoke mode (Esc)' }),
+    )
+
+    expect(setFocus).toHaveBeenCalledWith(false)
+    expect(
+      screen.queryByRole('button', { name: 'Exit karaoke mode (Esc)' }),
+    ).toBeNull()
   })
 })

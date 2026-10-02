@@ -9,8 +9,8 @@
 //
 // Space and the letter shortcuts follow the room-wide rule in
 // space-playback.ts: Space plays and pauses from anywhere on the mixer,
-// except in a typing surface (the speed select included) or a dialog, menu
-// or listbox. A, B, S, L and M stay out of the same places, and out of
+// except in a typing surface or a dialog, menu or listbox. The speed chip
+// is a button, not a typing surface. A, B, S, L and M stay out of the same places, and out of
 // modifier chords.
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
@@ -121,8 +121,9 @@ const press = (target: Element, key: string, init: KeyboardEventInit = {}) =>
 const isPlaying = (): boolean =>
   screen.queryByRole('button', { name: 'Pause' }) !== null
 const buttonA = () => screen.getByRole('button', { name: 'Set loop start (A)' })
-const speedSelect = () =>
-  screen.getByRole('combobox', { name: 'Playback speed' })
+const speedChip = () => screen.getByTestId('speed-chip')
+const isSet = (button: HTMLElement): boolean =>
+  button.getAttribute('data-set') === 'true'
 
 describe('Escape in focus mode', () => {
   it('leaves focus mode when nothing is open over the mixer', async () => {
@@ -201,30 +202,29 @@ describe('Space and the letter shortcuts', () => {
 
     expect(isPlaying()).toBe(true)
     expect(kept).toBe(false)
-    expect(buttonA()).not.toHaveClass('sm-loop-btn--a-set')
+    expect(isSet(buttonA())).toBe(false)
   })
 
-  it('leaves Space to the speed select, which opens on it', async () => {
+  // The speed is a chip now, not a native select: a button like the rest,
+  // so Space plays and the letters stay shortcuts while it has focus.
+  it('plays from the speed chip without opening its list', async () => {
     await mountLoadedMixer()
-    speedSelect().focus()
+    speedChip().focus()
 
-    const kept = space(speedSelect())
+    const kept = space(speedChip())
 
-    expect(kept).toBe(true)
-    expect(isPlaying()).toBe(false)
+    expect(isPlaying()).toBe(true)
+    expect(kept).toBe(false)
+    expect(speedChip()).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('leaves letters to the speed select, which jumps between speeds on them', async () => {
+  it('takes the letter shortcuts from the speed chip', async () => {
     await mountLoadedMixer()
-    speedSelect().focus()
+    speedChip().focus()
 
-    press(speedSelect(), 'a')
-    press(speedSelect(), 'l')
+    press(speedChip(), 'a')
 
-    expect(buttonA()).not.toHaveClass('sm-loop-btn--a-set')
-    expect(
-      screen.queryByRole('button', { name: /^(Enable|Disable) loop$/ }),
-    ).toBeNull()
+    expect(isSet(buttonA())).toBe(true)
   })
 
   it('takes no keys from inside a dialog, menu or listbox', async () => {
@@ -241,7 +241,7 @@ describe('Space and the letter shortcuts', () => {
 
     expect(kept).toBe(true)
     expect(isPlaying()).toBe(false)
-    expect(buttonA()).not.toHaveClass('sm-loop-btn--a-set')
+    expect(isSet(buttonA())).toBe(false)
   })
 
   it('takes no keys while the voice picker is open', async () => {
@@ -255,7 +255,7 @@ describe('Space and the letter shortcuts', () => {
     press(voice, 'a')
 
     expect(isPlaying()).toBe(false)
-    expect(buttonA()).not.toHaveClass('sm-loop-btn--a-set')
+    expect(isSet(buttonA())).toBe(false)
   })
 
   it('leaves modifier chords to the browser', async () => {
@@ -264,7 +264,7 @@ describe('Space and the letter shortcuts', () => {
     press(document.body, 'a', { ctrlKey: true })
     press(document.body, 'a', { metaKey: true })
 
-    expect(buttonA()).not.toHaveClass('sm-loop-btn--a-set')
+    expect(isSet(buttonA())).toBe(false)
   })
 
   it('still sets A from the page', async () => {
@@ -272,6 +272,6 @@ describe('Space and the letter shortcuts', () => {
 
     press(document.body, 'a')
 
-    expect(buttonA()).toHaveClass('sm-loop-btn--a-set')
+    expect(isSet(buttonA())).toBe(true)
   })
 })
