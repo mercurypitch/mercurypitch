@@ -339,17 +339,16 @@ describe('the pictures Progress draws', () => {
     expect(unshipped(urls)).toEqual([])
   })
 
-  it('ships the trophy of every rung a singer can stand in', () => {
+  it('ships the trophy of every rung', () => {
+    // Progress draws the singer's own rung (1 to 6); the Leaderboard's
+    // ladder draws all seven, the mystery rung included.
     const rungs = [
       ...read(
         '../../../workers/db-worker/migrations/0005_leagues.sql',
-      ).matchAll(/'(\/leagues\/[^']+\.webp)', (?:'[^']*'|NULL), ([01]),/gu),
-    ]
-    const playable = rungs
-      .filter((match) => match[2] === '0')
-      .map((match) => match[1])
-    expect(playable).toHaveLength(6)
-    expect(unshipped(playable)).toEqual([])
+      ).matchAll(/'(\/leagues\/[^']+\.webp)', (?:'[^']*'|NULL), [01],/gu),
+    ].map((match) => match[1])
+    expect(rungs).toHaveLength(7)
+    expect(unshipped(rungs)).toEqual([])
   })
 
   it('ships the Atlas plate and the share plate', () => {
@@ -360,5 +359,40 @@ describe('the pictures Progress draws', () => {
     ]
     expect(plates).toContain('/progress/resonance-atlas.webp')
     expect(unshipped(plates)).toEqual([])
+  })
+})
+
+describe('the pictures the Leaderboard draws', () => {
+  // Reached from Progress's league card ("Open Leaderboard"), and as blank
+  // on build 451: the veiled trophy for the rungs above the singer's, and
+  // the podium's three places. Both are named in the component's source by
+  // absolute path, so read them from there, as the sing pill's check does.
+  const shipped = new Set(publicFiles)
+  const source = readFileSync(
+    fileURLToPath(
+      new URL(
+        '../../../src/components/CommunityLeaderboard.tsx',
+        import.meta.url,
+      ),
+    ),
+    'utf8',
+  )
+  const asked = [
+    ...new Set(
+      [...source.matchAll(/'\/([^']+\.webp)'/gu)].map((match) => match[1]),
+    ),
+  ].sort()
+
+  it('names the veiled trophy and the three podium places', () => {
+    expect(asked).toEqual([
+      'leaderboard/place-1.webp',
+      'leaderboard/place-2.webp',
+      'leaderboard/place-3.webp',
+      'leagues/locked.webp',
+    ])
+  })
+
+  it('ships every picture it names', () => {
+    expect(asked.filter((file) => !shipped.has(file))).toEqual([])
   })
 })

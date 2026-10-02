@@ -285,7 +285,7 @@ export const NATIVE_ASSETS = [
   },
   ...[1, 2, 3, 4, 5, 6].map((rank) => ({
     glob: `leagues/l${rank}.webp`,
-    reason: `The rung ${rank} trophy on the Progress league card: the worker's leagues row names it as trophyAsset (workers/db-worker/migrations/0005_leagues.sql) and the card draws it as-is (buildLeague in src/features/progress/progress-view-model.ts). Rungs 1 to 6 only: l7 is the mystery rung nobody stands in, and the -badge pins are drawn nowhere.`,
+    reason: `The rung ${rank} trophy: the worker's leagues row names it as trophyAsset (workers/db-worker/migrations/0005_leagues.sql), and both the Progress league card (buildLeague in src/features/progress/progress-view-model.ts) and the Leaderboard's ladder (src/components/CommunityLeaderboard.tsx) draw it as-is. The -badge pins are drawn nowhere.`,
   })),
   {
     glob: 'progress/resonance-atlas.webp',
@@ -296,6 +296,27 @@ export const NATIVE_ASSETS = [
     glob: 'progress/mercury-pressing.webp',
     reason:
       'The Pressing plate the share studio draws its card on, loaded into a canvas with new Image() (MERCURY_PRESSING_PLATE_URL in src/features/progress/share-card.ts).',
+  },
+
+  // ── The Leaderboard ──────────────────────────────────────────
+  //
+  // Same round, same cause: the Progress league card's "Open Leaderboard"
+  // leads here, and its ladder and podium drew nothing. The medallions its
+  // Legends view draws for past weeks' places are the badges/*.webp above.
+  {
+    glob: 'leagues/l7.webp',
+    reason:
+      "The mystery rung's trophy: the Leaderboard's ladder always draws it, a mystery rung counting as revealed (rungRevealed in src/components/CommunityLeaderboard.tsx). Progress never does: nobody stands in l7.",
+  },
+  {
+    glob: 'leagues/locked.webp',
+    reason:
+      "The veiled trophy the Leaderboard's ladder draws for every rung above the singer's own (LOCKED_TROPHY in src/components/CommunityLeaderboard.tsx).",
+  },
+  {
+    glob: 'leaderboard/place-*.webp',
+    reason:
+      "The podium's three places, 384px, full-bleed behind the top three of the Global and Friends boards (PODIUM_MEDALS in src/components/CommunityLeaderboard.tsx).",
   },
 ]
 
