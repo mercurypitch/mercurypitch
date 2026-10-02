@@ -102,6 +102,7 @@ describe('StemMixerTransport key', () => {
     const [value, setValue] = createSignal(0)
     const binding: KeyShiftBinding = {
       value,
+      heard: value,
       onChange: setValue,
       keyLabel: () => 'G major',
       suggestion: () => null,

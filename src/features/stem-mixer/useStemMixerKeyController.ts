@@ -330,13 +330,16 @@ export function useStemMixerKeyView(
     },
     binding: {
       value: deps.key.keyShift,
+      heard: deps.heardShift,
       onChange: deps.key.setKeyShift,
-      // Where the stepper lands, so it follows the stepper and not the ear.
+      // The key being played. While Pitch Studio plays the original, or the
+      // engine is missing, the stepper keeps the singer's key for later and
+      // the label names the song's own.
       keyLabel: () => {
         const detected = deps.detectedKey()
         if (detected === null) return undefined
         const scale = detected.scaleType === 'major' ? 'major' : 'minor'
-        return `${transposeKeyName(detected.keyName, deps.key.keyShift(), scale)} ${scale}`
+        return `${transposeKeyName(detected.keyName, deps.heardShift(), scale)} ${scale}`
       },
       suggestion: deps.key.suggestion,
       onFindKey: () => announce(deps.key.findMyKey()),

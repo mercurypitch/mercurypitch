@@ -26,6 +26,11 @@ export const KEY_SHIFT_STRETCH_NOTE =
 /** What a host hands its key controls: the transport, the phone stage. */
 export interface KeyShiftBinding {
   value: Accessor<number>
+  /**
+   * The key the song is played in: `value`, or 0 while Pitch Studio plays
+   * the original or the engine is missing. What lights up follows this.
+   */
+  heard: Accessor<number>
   onChange: (value: number) => void
   keyLabel: Accessor<string | undefined>
   suggestion: Accessor<KeySuggestion | null>

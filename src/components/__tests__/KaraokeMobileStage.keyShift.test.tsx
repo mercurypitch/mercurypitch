@@ -12,6 +12,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
+import styles from '@/components/KaraokeMobileStage.module.css'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 
 beforeAll(() => {
@@ -71,6 +72,7 @@ function mountWithKey(over: Partial<KeyShiftBinding> = {}) {
   const onFindKey = vi.fn<() => void>()
   const binding: KeyShiftBinding = {
     value,
+    heard: value,
     onChange: setValue,
     keyLabel: () => 'A major',
     suggestion: () => null,
@@ -127,6 +129,24 @@ describe('the key on the phone stage', () => {
     expect(screen.getByRole('dialog', { name: 'Key' }).textContent).toContain(
       'Changing the key is not available right now',
     )
+  })
+
+  it('lights up for a moved key the song is played in', () => {
+    mountWithKey()
+
+    expect(keyButton()).toHaveClass(styles.keyBtnOn!)
+  })
+
+  it('stays dark while the song plays in its own key, whatever the stepper says', () => {
+    // Pitch Studio, or no engine on this device: the singer's +2 is kept,
+    // and none of it is heard.
+    mountWithKey({
+      heard: () => 0,
+      disabledReason: () => 'Pitch Studio plays the song in its own key',
+    })
+
+    expect(keyButton()).not.toHaveClass(styles.keyBtnOn!)
+    expect(keyButton().textContent).toContain('+2')
   })
 
   it('leaves the slot empty for a host with no key', () => {
