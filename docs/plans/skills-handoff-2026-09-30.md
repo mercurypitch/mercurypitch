@@ -45,12 +45,13 @@ version control. Never run the vendored kit's `offline-mix.py` unmodified
 
 ## 2. Sources audited
 
-| Source                                                                                                                 | What it is                                                                                                                                                                                                          | Version                                 | Licence    |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------- |
-| [The post](https://x.com/RoundtableSpace/status/2105209785335373948) and its thread reply (status 2105212446122062051) | A pipeline prompt in XML sections (role, brief, kit, setup, reference study, motion principles, storyboard, build, 3D, footage, audio, critic loop, quality bar, honesty, deliverables), credited to @everestchris6 | Posted 2026-09-30 08:15 and 08:25 UTC   | n/a        |
-| [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit)                                                | A Claude Code skill: the Gauntlet critic loop, motion grammar from 28 launch films, quality bar, audio rules, Three.js patterns, 7 scripts, 2 templates                                                             | `255562b` (2026-09-29), 24 files, 95 KB | MIT        |
-| [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)                                                    | The HTML-to-video renderer the kit is built for, with its own Claude Code plugin of 21 skills                                                                                                                       | CLI and plugin 0.8.97                   | Apache-2.0 |
-| The attached image                                                                                                     | The "AI agent architect" prompt, transcribed verbatim to `.claude/skills/agent-team-architect/references/source-prompt.md`                                                                                          | 2026-09-30                              | n/a        |
+| Source                                                                                                                 | What it is                                                                                                                                                                                                          | Version                                 | Licence                               |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------- |
+| [The post](https://x.com/RoundtableSpace/status/2105209785335373948) and its thread reply (status 2105212446122062051) | A pipeline prompt in XML sections (role, brief, kit, setup, reference study, motion principles, storyboard, build, 3D, footage, audio, critic loop, quality bar, honesty, deliverables), credited to @everestchris6 | Posted 2026-09-30 08:15 and 08:25 UTC   | n/a                                   |
+| [echris6/motion-video-kit](https://github.com/echris6/motion-video-kit)                                                | A Claude Code skill: the Gauntlet critic loop, motion grammar from 28 launch films, quality bar, audio rules, Three.js patterns, 7 scripts, 2 templates                                                             | `255562b` (2026-09-29), 24 files, 95 KB | MIT                                   |
+| [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)                                                    | The HTML-to-video renderer the kit is built for, with its own Claude Code plugin of 21 skills                                                                                                                       | CLI and plugin 0.8.97                   | Apache-2.0                            |
+| The attached image                                                                                                     | The "AI agent architect" prompt, transcribed verbatim to `.claude/skills/agent-team-architect/references/source-prompt.md`                                                                                          | 2026-09-30                              | n/a                                   |
+| [Melies cinematic techniques](https://melies.co/cinematic-techniques)                                                  | A catalogue of 424 film techniques in 13 categories, each with narrative function, look-alikes, what goes wrong and a prompt; 146 read in depth                                                                     | Read 2026-10-02                         | Proprietary text; studied, not copied |
 
 ## 3. Audit findings
 
@@ -121,6 +122,27 @@ after explicit approval, a retry-once-then-escalate rule and a cost guard. It is
 user-invoked only (`disable-model-invocation: true`), because a multi-agent run
 should never start by itself.
 
+### 3.5 The Melies cinematic techniques catalogue
+
+The owner pointed to it as a source of shot ideas. Its most useful idea for this
+pipeline is the "wrong cousin": every technique has a look-alike that builders
+and generators drift into, with a visible tell (a "dolly in" with no parallax is
+a zoom; a "rack focus" where both planes stay sharp is not one). That turns shot
+quality into something a critic can check on a dense sheet. Its prompt advice is
+consistent too: name the geometry of a move, what stays fixed and how long it
+lasts, and ban the look-alike by name, rather than describing a mood.
+
+The 146 techniques that matter for code-built brand and product films were read
+in depth (the site's `robots.txt` allows it) and rewritten, not copied, into
+`references/shot-grammar.md`: a shot line for every storyboard row, what each
+technique says, how to build it in GSAP, CSS or Three.js, its wrong cousin and
+tell, the HyperFrames registry item that already implements it (`whip-pan-cut`,
+`rack-focus`, `camera-dolly-zoom`, `match-cut` and about 30 more), a lens to
+field-of-view table, and a prompt template for generated footage. Anything else
+is looked up on its Melies page when needed. One registry finding worth
+knowing: HyperFrames' `push-in` scales the whole stage, so it is optically a
+zoom, not a dolly.
+
 ## 4. What is in this branch
 
 | Path                                                              | Purpose                                                                                                                         |
@@ -130,6 +152,7 @@ should never start by itself.
 | `.claude/skills/motion-designer/references/hyperframes-bridge.md` | How to drive HyperFrames: pinned CLI, new project, director block, rules that bite, sizes, music-only version, telemetry        |
 | `.claude/skills/motion-designer/references/house-rules.md`        | MercuryPitch and Beside Cue brand, measured contrast, the facts file, real product capture, licensing, where work goes          |
 | `.claude/skills/motion-designer/references/measurement.md`        | Reading the numbers, calibrated thresholds, the kit script bugs                                                                 |
+| `.claude/skills/motion-designer/references/shot-grammar.md`       | Shot vocabulary from the Melies catalogue, rewritten for code: what each technique says, how to build it, its wrong cousin      |
 | `.claude/skills/motion-designer/scripts/measure.py`               | Render measurement: frozen time at two thresholds, loudness, timestamped sheets, dense transition sheets, brand-colour sampling |
 | `.claude/skills/motion-designer/scripts/reference_pass.py`        | Reference study: per-frame change, brightness, edges, cut detection, overview and dense sheets, a notes skeleton                |
 | `.claude/skills/motion-designer/scripts/smoke-test.sh`            | The end-to-end proof: scaffold, check, render twice, compare every frame, measure                                               |
@@ -300,7 +323,8 @@ Report these to the owner:
    ```
 
    Expect `output/motion/<slug>/` with `BRIEF.md`, `FACTS.md`,
-   `STORYBOARD.md`, `DECISIONS.md`, a `LEDGER.md` with at least one storyboard
+   `STORYBOARD.md` (with a shot line on every row), `DECISIONS.md`, a
+   `LEDGER.md` with at least one storyboard
    and one film critic round, the final MP4 at 1920x1080 and 60 fps, and
    `DELIVERY.md`. Report the critic verdicts, the hard-hold and loudness
    numbers from `summary.md`, and anything the run could not do.

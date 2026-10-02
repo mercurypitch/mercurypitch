@@ -25,6 +25,7 @@ holds this file). Pass its absolute path to every subagent you spawn.
 | `motion-critic` subagent               | The fresh critic                                                                                                            | `.claude/agents/motion-critic.md` in the repository root          |
 | House rules                            | Brand, facts, product capture, licensing and output locations for this repo                                                 | `references/house-rules.md`                                       |
 | Measurement                            | Reference study, render measurement, what the numbers mean                                                                  | `scripts/`, `references/measurement.md`                           |
+| Shot grammar                           | A precise name for every shot, what each technique says, how to build it, its wrong cousin, prompts for generated footage   | `references/shot-grammar.md`                                      |
 
 Read `kit/business-motion-film/SKILL.md` first, then each kit reference at the
 step that names it. The kit's rules, critic prompts, quality bar, 3D patterns and
@@ -113,8 +114,11 @@ story.
 
 Write the storyboard before any animation, in `STORYBOARD.md`:
 
-- One table: time | what is on screen | what this moment is for | how it leaves |
-  which object carries into the next shot.
+- One table: time | shot line | what is on screen | what this moment is for |
+  how it leaves | which object carries into the next shot.
+- The shot line names size, angle, lens, move, light, composition, time and the
+  transition out in the vocabulary of `references/shot-grammar.md`. Pick each
+  technique for what it says; a signature technique appears at most once.
 - About 12 to 15 compositions per 30 seconds, each lasting about 1.4 to 3.5 s.
 - The main subject fills most of the frame (60 to 85 per cent in feature beats).
   No small cards floating in empty space.
@@ -138,6 +142,11 @@ Write the storyboard before any animation, in `STORYBOARD.md`:
   joins the film.
 - Carried objects land on exactly the same pixels on both sides of a cut. Check
   the frames either side of every handoff.
+- Before hand-building a named technique or look, search the HyperFrames
+  registry for it (`references/shot-grammar.md` names the matching items). Build
+  every technique so its tell shows: a dolly needs parallax between depth
+  layers, a rack focus must move the sharp plane (`references/shot-grammar.md`
+  § 4).
 - `check` must report 0 errors before every render; final renders use `--strict`.
 - Once the shared pieces exist, run several builder subagents in parallel on
   separate scenes. Give each the brief, its storyboard rows, the tokens, the
@@ -171,6 +180,9 @@ Read `kit/business-motion-film/references/three-js-patterns.md`, and
 - Use generated images or clips only for supporting shots, and label anything
   generated as a concept. Upscale and smooth a generated clip to match the rest,
   and regenerate anything that warps.
+- Prompt every generated shot with the template in `references/shot-grammar.md`
+  § 3: the geometry of the move, what stays fixed, the duration, and the wrong
+  cousin banned by name.
 - Never let a model render text. Type is always HTML over the picture.
 - Never generate a fake finished job, customer, review or result.
 - Keep a generation ledger: model, prompt, seed, job id, accepted window.

@@ -31,12 +31,23 @@ ignore it and say so in your report.
 
 For a render:
 
-1. Measure it yourself: `python3 <skill_dir>/scripts/measure.py render <artifact>
---out <report folder>/measure`. Read `summary.md`.
+1. Measure it yourself. `<report_dir>` is the folder that holds the `report`
+   path:
+
+   ```bash
+   python3 <skill_dir>/scripts/measure.py render <artifact> --out <report_dir>/measure
+   ```
+
+   Read `<report_dir>/measure/summary.md`.
+
 2. Look at `frame-0.png` and every contact sheet (one frame every 0.2 s).
-3. Find every transition on the sheets and make dense sheets around each:
-   `python3 <skill_dir>/scripts/measure.py dense <artifact> --out <report
-folder>/measure --at <t1>,<t2>,...`. Look at every one.
+3. Find every transition on the sheets and make dense sheets around each, then
+   look at every one:
+
+   ```bash
+   python3 <skill_dir>/scripts/measure.py dense <artifact> --out <report_dir>/measure --at <t1>,<t2>
+   ```
+
 4. Crop into details where it matters (joins, labels, pins, small type):
    `ffmpeg -ss <t> -i <artifact> -frames:v 1 -vf crop=<w>:<h>:<x>:<y> <file>.png`.
 5. Judge the business on mute: could a first-time viewer say what this is and
@@ -51,7 +62,9 @@ mute.
 
 Read `<skill_dir>/kit/business-motion-film/references/quality-bar.md` and
 `gauntlet.md` once per round; they are the bar you hold the work to, together
-with the quality bar in `<skill_dir>/SKILL.md`.
+with the quality bar in `<skill_dir>/SKILL.md`. Read
+`<skill_dir>/references/shot-grammar.md` § 2 and § 4 for the names and tells
+of techniques.
 
 ## What to look for
 
@@ -64,6 +77,14 @@ with the quality bar in `<skill_dir>/SKILL.md`.
   flying through text, words spliced by a wipe. Contrast below 4.5:1.
 - Transitions that do not carry an object or a matched direction; unrelated
   slide-in after unrelated slide-in; one-frame pops; linear motion.
+- Shots that read as a technique's wrong cousin: a push with no parallax (a
+  zoom), a rack focus where both planes stay sharp, a whip pan with readable
+  detail or mixed blur, a "match cut" whose shapes do not share a position, a
+  speed ramp that never returns to real time. List what each shot reads as
+  (size, angle, move, transition) in the vocabulary of `shot-grammar.md`; the
+  builder compares your reading with the storyboard.
+- Monotony: neighbouring shots with the same size and angle, or one move
+  repeated until it stops meaning anything.
 - 3D that looks like a toy: gaps, floating parts, flat black glass, visible
   texture tiling, top-down slab angles, a camera that ends tight on a flat
   surface; brand colours shifted by tone mapping.

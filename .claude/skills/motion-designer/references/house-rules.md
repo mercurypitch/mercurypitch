@@ -77,6 +77,9 @@ list of traps to re-verify, not as facts:
   exact canvas; generators emit about 9:16.1, which letterboxes on a phone.
 - `BRAND.md` § 6 is a MidJourney prompt pack for mood; it is not a source of
   final assets for a logo.
+- The repository has used Higgsfield for plates and Google Flow for the Beside
+  Cue character clips; any generator is acceptable. Whichever it is, write the
+  prompt with `shot-grammar.md` § 3 and record it in the generation ledger.
 
 ## Music and sound
 
