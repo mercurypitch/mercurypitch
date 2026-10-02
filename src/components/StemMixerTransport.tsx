@@ -67,10 +67,10 @@ export interface StemMixerTransportProps {
   showLyrics: Accessor<boolean>
   setShowLyrics: Setter<boolean>
 
-  // Loop
+  // Loop: A and B in seconds, null until set
   loopEnabled: Accessor<boolean>
-  loopStart: Accessor<number>
-  loopEnd: Accessor<number>
+  loopStart: Accessor<number | null>
+  loopEnd: Accessor<number | null>
   onSetLoopA: () => void
   onSetLoopB: () => void
   onClearLoop: () => void
@@ -80,7 +80,7 @@ export interface StemMixerTransportProps {
 export const StemMixerTransport: Component<StemMixerTransportProps> = (
   props,
 ) => {
-  const hasLoop = () => props.loopEnd() > 0
+  const hasLoop = () => props.loopEnd() !== null
   const isVertical = () =>
     props.karaokeFocus() &&
     (props.toolbarPosition?.() === 'left' ||
@@ -257,7 +257,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           {/* Loop A / B / Toggle */}
           <button
             class="sm-icon-btn sm-loop-icon-a"
-            classList={{ 'sm-loop-btn--a-set': props.loopStart() > 0 }}
+            classList={{ 'sm-loop-btn--a-set': props.loopStart() !== null }}
             onClick={() => props.onSetLoopA()}
             title="Set loop start (A)"
             aria-label="Set loop start (A)"
@@ -278,7 +278,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           </button>
           <button
             class="sm-icon-btn sm-loop-icon-b"
-            classList={{ 'sm-loop-btn--b-set': props.loopEnd() > 0 }}
+            classList={{ 'sm-loop-btn--b-set': hasLoop() }}
             onClick={() => props.onSetLoopB()}
             title="Set loop end (B)"
             aria-label="Set loop end (B)"
@@ -653,12 +653,12 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                   width: `${props.duration() > 0 ? (props.elapsed() / props.duration()) * 100 : 0}%`,
                 }}
               />
-              <Show when={props.loopEnd() > 0}>
+              <Show when={hasLoop()}>
                 <div
                   class="sm-progress-loop"
                   style={{
-                    left: `${(props.loopStart() / props.duration()) * 100}%`,
-                    width: `${((props.loopEnd() - props.loopStart()) / props.duration()) * 100}%`,
+                    left: `${((props.loopStart() ?? 0) / props.duration()) * 100}%`,
+                    width: `${(((props.loopEnd() ?? 0) - (props.loopStart() ?? 0)) / props.duration()) * 100}%`,
                   }}
                 />
               </Show>

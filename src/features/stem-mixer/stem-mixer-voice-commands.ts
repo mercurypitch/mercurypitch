@@ -16,6 +16,7 @@ import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASE
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
 import { formatKeyShift, KEY_SHIFT_MAX, KEY_SHIFT_MIN, } from '@/lib/key-shift/key-shift'
+import { LOOP_MIN_GAP, placeLoopPoint } from './loop-points'
 import type { FindMyKeyResult } from './useStemMixerKeyController'
 
 export interface StemMixerVoiceTrack {
@@ -45,14 +46,14 @@ export interface StemMixerVoiceDeps {
   /** Playback rate, 1 = normal. */
   speed: Accessor<number>
   setSpeed: (multiplier: number) => void
-  /** The mixer's own A-B loop, in seconds. */
+  /** The mixer's own A-B loop, in seconds; a point is null until set. */
   loop: {
     enabled: Accessor<boolean>
     setEnabled: (on: boolean) => void
-    start: Accessor<number>
-    setStart: (seconds: number) => void
-    end: Accessor<number>
-    setEnd: (seconds: number) => void
+    start: Accessor<number | null>
+    setStart: (seconds: number | null) => void
+    end: Accessor<number | null>
+    setEnd: (seconds: number | null) => void
     clear: () => void
   }
   playlist: {
@@ -500,8 +501,10 @@ export function createStemMixerVoiceCommands(
       run: () => {
         const at = deps.elapsed()
         deps.loop.setStart(at)
-        if (deps.loop.end() > 0 && deps.loop.end() <= at) {
-          deps.loop.setEnd(0)
+        // An A on or just before B leaves no loop to play: B goes.
+        const end = deps.loop.end()
+        if (end !== null && end - at <= LOOP_MIN_GAP) {
+          deps.loop.setEnd(null)
           deps.loop.setEnabled(false)
         }
         return 'Loop A set'
@@ -512,11 +515,13 @@ export function createStemMixerVoiceCommands(
       label: 'Loop B set',
       phrases: LOOP_SET_B_PHRASES,
       run: () => {
-        const at = deps.elapsed()
-        if (at <= deps.loop.start()) {
-          return voiceFailure('Loop B must come after A')
-        }
-        deps.loop.setEnd(at)
+        const placed = placeLoopPoint('B', deps.elapsed(), {
+          start: deps.loop.start(),
+          end: deps.loop.end(),
+        })
+        if (!placed.placed) return voiceFailure('Loop B must come after A')
+        deps.loop.setStart(placed.points.start)
+        deps.loop.setEnd(placed.points.end)
         deps.loop.setEnabled(true)
         return 'Loop B set'
       },
@@ -536,7 +541,8 @@ export function createStemMixerVoiceCommands(
       label: 'Loop on',
       phrases: LOOP_ON_PHRASES,
       run: () => {
-        if (deps.loop.end() <= deps.loop.start()) {
+        const end = deps.loop.end()
+        if (end === null || end - (deps.loop.start() ?? 0) < LOOP_MIN_GAP) {
           return voiceFailure('Set A and B first')
         }
         deps.loop.setEnabled(true)
