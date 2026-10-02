@@ -9,9 +9,13 @@
 //
 // Skin via --scrubber-* props; the tap zone is padded well past the 4px
 // track so it meets the touch-target rule.
+//
+// `loop` draws an A-B loop's marks over the track (the karaoke stage sets
+// them from its More sheet). Drawn only: they take no taps, so a seek near
+// A is still a seek.
 
 import type { Component } from 'solid-js'
-import { createSignal } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import styles from './Scrubber.module.css'
@@ -25,6 +29,8 @@ interface ScrubberProps {
   onSeek: (t: number) => void
   /** Preview while dragging: seconds, or null when the drag ends. */
   onScrub?: (t: number | null) => void
+  /** An A-B loop to draw, in seconds; null for a point not set. */
+  loop?: { start: number | null; end: number | null; on: boolean }
   class?: string
 }
 
@@ -38,6 +44,14 @@ export const Scrubber: Component<ScrubberProps> = (props) => {
     const t = scrub() ?? props.value
     return Math.max(0, Math.min(100, (t / props.duration) * 100))
   }
+
+  /** A loop point as a share of the bar, or null where none is drawn. */
+  const at = (t: number | null | undefined): number | null =>
+    t === null || t === undefined || props.duration <= 0
+      ? null
+      : Math.max(0, Math.min(100, (t / props.duration) * 100))
+  const markA = () => at(props.loop?.start)
+  const markB = () => at(props.loop?.end)
 
   const setPreview = (t: number | null): void => {
     setScrub(t)
@@ -81,6 +95,39 @@ export const Scrubber: Component<ScrubberProps> = (props) => {
       <div class={styles.track}>
         <div class={styles.fill} style={{ width: `${pct()}%` }} />
       </div>
+      <Show when={markA() !== null || markB() !== null}>
+        <div
+          class={styles.loop}
+          data-on={props.loop?.on === true ? 'true' : 'false'}
+          aria-hidden="true"
+        >
+          <Show when={markA() !== null && markB() !== null}>
+            <span
+              class={styles.loopSpan}
+              data-testid="scrubber-loop-span"
+              data-on={props.loop?.on === true ? 'true' : 'false'}
+              style={{
+                left: `${markA()}%`,
+                width: `${Math.max(0, markB()! - markA()!)}%`,
+              }}
+            />
+          </Show>
+          <Show when={markA() !== null}>
+            <span
+              class={styles.loopMark}
+              data-testid="scrubber-loop-a"
+              style={{ left: `${markA()}%` }}
+            />
+          </Show>
+          <Show when={markB() !== null}>
+            <span
+              class={styles.loopMark}
+              data-testid="scrubber-loop-b"
+              style={{ left: `${markB()}%` }}
+            />
+          </Show>
+        </div>
+      </Show>
     </div>
   )
 }
