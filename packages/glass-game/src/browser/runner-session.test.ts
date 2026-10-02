@@ -138,6 +138,11 @@ describe('runner session readiness and clock', () => {
 
       expect(h.session.state().game.resolvedTargets[0]?.outcome).toBe('hit')
       expect(targetEvents).toEqual(['target-hit'])
+      expect(h.audio[0]!.shatter).toHaveBeenCalledOnce()
+      expect(h.audio[0]!.shatter).toHaveBeenCalledWith(
+        target.id,
+        expect.any(Number),
+      )
       expect(h.host.saveRunnerProgress).toHaveBeenCalled()
       h.session.setMusicMuted(true)
       expect(h.session.input('lane-left')).toBe(true)
@@ -146,6 +151,7 @@ describe('runner session readiness and clock', () => {
       h.courseTick(courseSeconds)
       expect(presentations).toHaveBeenCalledOnce()
       expect(targetEvents).toEqual(['target-hit'])
+      expect(h.audio[0]!.shatter).toHaveBeenCalledOnce()
       h.session.dispose()
       expect(h.frames.size).toBe(0)
     },
@@ -389,11 +395,13 @@ describe('runner session readiness and clock', () => {
       musicMuted: true,
       musicVolume: 0.35,
       guideVolume: 0.65,
+      effectsVolume: 0.65,
     })
     expect(JSON.parse(h.preferences.get('runner-audio:v1')!)).toEqual({
       musicMuted: true,
       musicVolume: 0.35,
       guideVolume: 0.65,
+      effectsVolume: 0.65,
     })
     h.session.dispose()
   })

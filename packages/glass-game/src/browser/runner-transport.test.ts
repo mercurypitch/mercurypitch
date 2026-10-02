@@ -5,6 +5,7 @@ import { runnerCourseFixture } from './__fixtures__/runner-course'
 import { deferred, flush } from './__fixtures__/runner-session'
 import { createRunnerBackingCache, planRunnerPhraseGuides, RUNNER_JUDGE_GAIN, runnerVoiceSpans, } from './runner-music'
 import { createBrowserRunnerTransport } from './runner-transport'
+import { createShatterBufferCache } from './shatter-buffer-cache'
 
 const pacingVariants: readonly {
   name: string
@@ -141,13 +142,85 @@ function setup() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.useFakeTimers()
-  mocks.fetch.mockResolvedValue(new ArrayBuffer(10))
+  mocks.fetch.mockResolvedValue(new ArrayBuffer(40))
 })
 afterEach(() => {
   vi.useRealTimers()
 })
 
 describe('runner audio transport', () => {
+  it('plays cached earned breaks immediately, ends before the next microphone guard and honors both effects opt-outs', async () => {
+    const fixture = setup(),
+      base = runnerCourseFixture(),
+      first = base.targets[0]!
+    const next = {
+      ...first,
+      id: 'next',
+      protectedFromCourseSeconds: first.endCourseSeconds + 0.85,
+      protectedUntilCourseSeconds: first.endCourseSeconds + 2,
+    }
+    const course = { ...base, targets: [first, next] }
+    let overallMuted = false
+    const transport = createBrowserRunnerTransport(course, 60, {
+      ...audioOptions,
+      effectsMuted: () => overallMuted,
+    })
+    await transport.unlock()
+    await transport.prepareBacking()
+    const schedule = transport.schedule(course.checkpoints[0]!)
+    const scheduledSources = fixture.sources.length
+    const preparedFetches = mocks.fetch.mock.calls.length
+    fixture.context.currentTime =
+      schedule.audioStartSeconds + first.endCourseSeconds
+    transport.shatter?.(first.id, first.endCourseSeconds)
+    expect(fixture.sources).toHaveLength(scheduledSources + 1)
+    const fracture = fixture.sources.at(-1)!
+    expect(fracture.start).toHaveBeenCalledWith(fixture.context.currentTime)
+    expect(fracture.playbackRate.setValueAtTime).toHaveBeenCalledWith(
+      1,
+      fixture.context.currentTime,
+    )
+    expect(fracture.stop.mock.calls[0]![0]).toBeLessThan(
+      schedule.audioStartSeconds + next.protectedFromCourseSeconds - 0.35,
+    )
+    transport.setPreferences({ effectsVolume: 0 })
+    transport.shatter?.(first.id, first.endCourseSeconds)
+    transport.setPreferences({ effectsVolume: 1 })
+    overallMuted = true
+    transport.shatter?.(first.id, first.endCourseSeconds)
+    overallMuted = false
+    fixture.context.currentTime =
+      schedule.audioStartSeconds + next.protectedFromCourseSeconds - 0.35
+    transport.shatter?.(
+      first.id,
+      fixture.context.currentTime - schedule.audioStartSeconds,
+    )
+    expect(fixture.sources).toHaveLength(scheduledSources + 1)
+    expect(mocks.fetch).toHaveBeenCalledTimes(preparedFetches)
+    transport.dispose()
+    transport.shatter?.(first.id, first.endCourseSeconds)
+    await vi.advanceTimersByTimeAsync(240)
+    expect(fracture.disconnect).toHaveBeenCalledOnce()
+    expect(fixture.lease.release).toHaveBeenCalledOnce()
+  })
+
+  it('omits an old earned event after catch-up and never schedules its sound later', async () => {
+    const fixture = setup(),
+      course = runnerCourseFixture(),
+      target = course.targets[0]!
+    const transport = createBrowserRunnerTransport(course, 60, audioOptions)
+    await transport.unlock()
+    await transport.prepareBacking()
+    const schedule = transport.schedule(course.checkpoints[0]!)
+    const scheduledSources = fixture.sources.length
+    fixture.context.currentTime =
+      schedule.audioStartSeconds + target.endCourseSeconds + 0.16
+    transport.shatter?.(target.id, target.endCourseSeconds)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(fixture.sources).toHaveLength(scheduledSources)
+    transport.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
   it.each(pacingVariants)(
     'stays inert until the gesture and schedules finite $name music after a tempo-correct count-in',
     async ({ pace, bpms, secondCheckpointSeconds }) => {
@@ -339,7 +412,7 @@ describe('runner audio transport', () => {
     transport.setPreferences({ musicVolume: 0.9 })
     transport.setMuted(false)
     expect(fixture.gains[2]!.setTargetAtTime).not.toHaveBeenCalled()
-    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    expect(mocks.fetch).toHaveBeenCalledTimes(4)
     transport.dispose()
     await vi.advanceTimersByTimeAsync(240)
 
@@ -459,15 +532,17 @@ describe('runner audio transport', () => {
     await vi.advanceTimersByTimeAsync(240)
   })
 
-  it('waits for decode before anchoring and reuses only the two approved buffers on restart', async () => {
+  it('waits for decode before anchoring and reuses the approved backing and fracture buffers on restart', async () => {
     const fixture = setup(),
       course = runnerCourseFixture(),
-      cache = createRunnerBackingCache()
+      cache = createRunnerBackingCache(),
+      shatterCache = createShatterBufferCache()
     const decoded = deferred<AudioBuffer>()
     fixture.context.decodeAudioData.mockReturnValue(decoded.promise)
     const transport = createBrowserRunnerTransport(course, 60, {
       ...audioOptions,
       backingCache: cache,
+      shatterCache,
     })
     await transport.unlock()
     const preparing = transport.prepareBacking()
@@ -476,7 +551,7 @@ describe('runner audio transport', () => {
       'not prepared',
     )
     fixture.context.currentTime = 50
-    decoded.resolve(fixture.context.createBuffer(1, 1000, 1000) as AudioBuffer)
+    decoded.resolve(decodedBuffer(new Float32Array(1000)))
     expect(await preparing).toEqual({ music: true, ambience: true })
     expect(
       transport.schedule(course.checkpoints[0]!).countInStartAudioSeconds,
@@ -488,13 +563,14 @@ describe('runner audio transport', () => {
     const restart = createBrowserRunnerTransport(course, 60, {
       ...audioOptions,
       backingCache: cache,
+      shatterCache,
     })
     await restart.unlock()
     expect(await restart.prepareBacking()).toEqual({
       music: true,
       ambience: true,
     })
-    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    expect(mocks.fetch).toHaveBeenCalledTimes(4)
     expect(second.context.decodeAudioData).not.toHaveBeenCalled()
     restart.dispose()
   })
@@ -502,12 +578,14 @@ describe('runner audio transport', () => {
   it('cancels immediately on dispose, rejects late decode buffers and bounds repeat-start decode slots', async () => {
     const first = setup(),
       course = runnerCourseFixture(),
-      cache = createRunnerBackingCache()
+      cache = createRunnerBackingCache(),
+      shatterCache = createShatterBufferCache()
     const decoded = deferred<AudioBuffer>()
     first.context.decodeAudioData.mockReturnValue(decoded.promise)
     const transport = createBrowserRunnerTransport(course, 60, {
       ...audioOptions,
       backingCache: cache,
+      shatterCache,
     })
     await transport.unlock()
     const preparing = transport.prepareBacking()
@@ -521,6 +599,7 @@ describe('runner audio transport', () => {
     const restart = createBrowserRunnerTransport(course, 60, {
       ...audioOptions,
       backingCache: cache,
+      shatterCache,
     })
     await restart.unlock()
     const waiting = restart.prepareBacking()
@@ -558,7 +637,7 @@ describe('runner audio transport', () => {
         .some((sample) => sample !== 0),
     ).toBe(true)
     expect(fixture.gains[2]!.setTargetAtTime).not.toHaveBeenCalled()
-    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    expect(mocks.fetch).toHaveBeenCalledTimes(4)
     expect(fixture.context.decodeAudioData).not.toHaveBeenCalled()
     transport.dispose()
     await vi.advanceTimersByTimeAsync(240)

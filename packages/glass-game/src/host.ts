@@ -1,5 +1,5 @@
 // Glass adventure host — platform services stay outside simulation and rendering.
-import type { PitchObservation, SavedProgress } from './contracts'
+import type { BreakableDefinition, PitchObservation, SavedProgress, } from './contracts'
 import type { CompiledMelody } from './core/melody-contour'
 import type { MelodyReferencePlayer } from './core/melody-reference'
 import type { MusicalMemoryPlayback, MusicalMemoryStore, } from './core/musical-memory'
@@ -56,6 +56,8 @@ export interface GlassSound {
     waveCycles?: number,
   ): Promise<void>
   shatter(): void
+  /** Decode optional fracture recordings and release previous tails before capture. */
+  prepareShatter?(): Promise<void>
   dispose(): void
 }
 
@@ -124,7 +126,9 @@ export interface GlassGameHost {
   takeOverMicrophone?(): Promise<boolean>
   /** Give back a completed handoff if its requesting surface disappeared. */
   releaseUnusedMicrophoneTakeover?(): Promise<void>
-  createSound(): GlassSound
+  createSound(
+    target?: Pick<BreakableDefinition, 'id' | 'variant' | 'soundProfile'>,
+  ): GlassSound
   createMusic?(): GlassMuseumAudio
   createNarration?(): GlassMercNarration
   createMelodyReference?(melody: CompiledMelody): MelodyReferencePlayer

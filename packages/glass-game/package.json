@@ -20,7 +20,10 @@
     "./songbook": "./src/songbook.ts",
     "./songbook-content": "./src/content/merc-songbook.ts",
     "./quarter-turn": "./src/quarter-turn.ts",
-    "./runner": "./src/ui/SongRunnerScreen.tsx"
+    "./runner": "./src/ui/SongRunnerScreen.tsx",
+    "./shatter-sounds": "./src/content/shatter-sounds.ts",
+    "./fracture-audio": "./src/browser/fracture-audio.ts",
+    "./current-wall-profiles": "./src/content/singing-current-wall-profiles.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

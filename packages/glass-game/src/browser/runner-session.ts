@@ -209,7 +209,12 @@ export function createBrowserRunnerSession(
         events,
         true,
       )
-    } else publish({}, events, presentation)
+    } else {
+      for (const event of events)
+        if (event.type === 'target-hit')
+          audio?.shatter?.(event.result.targetId, event.atCourseSeconds)
+      publish({}, events, presentation)
+    }
   }
 
   function courseTime(now: number): number {

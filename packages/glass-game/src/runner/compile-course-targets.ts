@@ -2,6 +2,7 @@
 // Song runner target compiler — voice profiles, contours, and protected windows.
 // ============================================================
 
+import { validateRunnerGlassPresentation } from '../content/runner-glass-presentation.ts'
 import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, } from './compile-course-helpers.ts'
 import type { CompiledRunnerCourse, CompiledRunnerNote, CompiledRunnerTarget, CompiledRunnerVoiceProfile, RunnerQualityGrade, } from './contracts.ts'
 import type { RunnerPhraseSource, RunnerTargetSource, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
@@ -199,6 +200,25 @@ export function compileRunnerTargets(
         `${path}.voice.targets[${index}].phraseId`,
         `references unknown phrase "${target.phraseId}".`,
       )
+    const presentation =
+      catalog.glassProfiles[target.glassProfileId]?.presentation
+    if (
+      presentation !== undefined &&
+      !validateRunnerGlassPresentation(presentation)
+    )
+      runnerSourceFail(
+        `${path}.voice.targets[${index}].glassProfileId`,
+        'has invalid wall presentation bounds.',
+      )
+    if (
+      presentation !== undefined &&
+      presentation.envelope.width >
+        1.5 * (course.track.laneCenters[2] - course.track.laneCenters[0]) - 0.08
+    )
+      runnerSourceFail(
+        `${path}.voice.targets[${index}].glassProfileId`,
+        'does not fit the full course width.',
+      )
     if (catalog.glassProfiles[target.glassProfileId] === undefined)
       runnerSourceFail(
         `${path}.voice.targets[${index}].glassProfileId`,
@@ -388,6 +408,10 @@ export function compileRunnerTargets(
         ),
         displayLane: target.displayLane,
         glassProfileId: target.glassProfileId,
+        soundProfile:
+          catalog.glassProfiles[target.glassProfileId]!.soundProfile,
+        glassPresentation:
+          catalog.glassProfiles[target.glassProfileId]!.presentation,
         requiredForGrade: target.requiredForGrade,
         completionPolicy: charge === undefined ? 'scheduled' : 'charge',
         completionFingerprint:

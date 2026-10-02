@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Keep retired shatter voices registered through their fade
+
+**Symptom:** navigating directly into another scored singing screen could leak a previous glass sound into its microphone window.
+**Cause:** disposal removed the voice from the shared capture barrier before its scheduled fade had finished.
+**Rule:** retain a retiring voice until its fade ends, so a new capture owner can still stop it immediately; test unawaited disposal followed by capture acquisition.
+**See:** `packages/glass-game/src/browser/shatter-player.ts` and `shatter-player.test.ts`.
+
 ### Consume pitch evidence independently of rendered frames
 
 **Symptom:** a steady injected tone never completed calibration while a rich 3D scene rendered slowly.
@@ -749,6 +756,13 @@ import handler, issue #813.
 **See:** `packages/glass-game/src/render/camera-input-follow.test.ts`, `apps/beside-cue/e2e/helpers/glass-adventure-camera-observation.ts`.
 
 ## Performance
+
+### Preserve physical material units when baking decoded geometry
+
+**Symptom:** imported glass had enormous packed thickness values and inconsistent refraction after its node scale was baked into vertices.
+**Cause:** quantization correctly placed inverse units in `KHR_materials_volume.thicknessFactor`, but flattening the decoded node discarded the compensating scale.
+**Rule:** for explicitly authored physical-unit assets, bake uniform world scale into the owned material variant with geometry; verify world thickness after real Meshopt decoding and leave legacy recipes unchanged.
+**See:** `packages/glass-game/src/render/asset-geometry.ts`, `material-library.ts` and `singing-current-wall-asset.test.ts`.
 
 ### Finish document checks before starting a software-rendered scene
 

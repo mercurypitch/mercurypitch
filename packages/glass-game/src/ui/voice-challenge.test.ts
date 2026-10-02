@@ -300,6 +300,31 @@ function beginnerWaveCents(seconds: number): number {
 }
 
 describe('voice challenge controller', () => {
+  it('waits for cached break preparation before accepting microphone evidence and retires cancelled work', async () => {
+    const gate = deferred()
+    class PreparingSound extends FakeSound {
+      prepareShatter(): Promise<void> {
+        return gate.promise
+      }
+    }
+    const voice = new FakeVoice()
+    const sound = new PreparingSound()
+    const fixture = harness(
+      COMFORTABLE,
+      { 'comfortable-note': '60' },
+      [voice],
+      [sound],
+    )
+    const pending = fixture.controller.start('vessel')
+    await flush()
+    expect(voice.subscriptions).toBe(0)
+    fixture.controller.cancel()
+    gate.resolve()
+    await pending
+    expect(voice.subscriptions).toBe(0)
+    expect(sound.shatterCount).toBe(0)
+    expect(sound.disposeCount).toBe(1)
+  })
   it('keeps the wave demonstration out of evidence and breaks only after fresh settling and waves', async () => {
     const voice = new FakeVoice()
     const sound = new FakeSound()

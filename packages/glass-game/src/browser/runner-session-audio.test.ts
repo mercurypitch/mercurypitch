@@ -86,6 +86,7 @@ describe('runner session audio mix', () => {
       musicMuted: false,
       musicVolume: 0,
       guideVolume: 1,
+      effectsVolume: 0.65,
     })
     expect(h.audio[0]!.prepareBacking).toHaveBeenCalledOnce()
     expect(h.voices[0]!.stop).not.toHaveBeenCalled()
@@ -93,6 +94,7 @@ describe('runner session audio mix', () => {
       musicMuted: false,
       musicVolume: 0,
       guideVolume: 1,
+      effectsVolume: 0.65,
     })
     h.session.dispose()
   })

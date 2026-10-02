@@ -302,7 +302,7 @@ describe('Singing Current pacing variants', () => {
       id: 'the-singing-current-v1',
       revision: 3,
       metersPerBeat: 1.5,
-      laneCenters: [-1.25, 0, 1.25],
+      laneCenters: [-2, 0, 2],
     })
     expectBoundaries(
       SINGING_CURRENT_RESPONSIVE,

@@ -6,6 +6,9 @@ import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerBackingAvailabili
 import { clampRunnerAudioPreferences, RUNNER_AUDIO_DEFAULTS, } from '../runner/session-contracts'
 import type { RunnerBackingAssets } from './runner-music'
 import { createRunnerBackingCache, loadRunnerBacking, renderRunnerCountIn, renderRunnerMusic, renderRunnerReference, RUNNER_JUDGE_GAIN, RUNNER_MUSIC_SAMPLE_RATE, runnerVoiceSpans, } from './runner-music'
+import { RUNNER_FALLBACK_SHATTER_PROFILE, runnerShatterSafeSeconds, } from './runner-shatter-window'
+import { createShatterBufferCache, prepareShatterBuffers, } from './shatter-buffer-cache'
+import { createShatterPlayer } from './shatter-player'
 
 const FLOOR = 0.0001
 const RELEASE_SECONDS = 0.24
@@ -41,6 +44,8 @@ export function createBrowserRunnerTransport(
   options: {
     assetUrl(id: string): string
     backingCache?: ReturnType<typeof createRunnerBackingCache>
+    shatterCache?: ReturnType<typeof createShatterBufferCache>
+    effectsMuted?(): boolean
   },
 ): RunnerAudioTransport {
   let lease: SharedAudioLease | null = null
@@ -54,6 +59,9 @@ export function createBrowserRunnerTransport(
   let preferences = RUNNER_AUDIO_DEFAULTS
   let backing: RunnerBackingAssets = {}
   const backingCache = options.backingCache ?? createRunnerBackingCache()
+  const shatterCache = options.shatterCache ?? createShatterBufferCache()
+  let fracture: ReturnType<typeof createShatterPlayer> | null = null
+  let epochSchedule: RunnerAudioSchedule | null = null
   const abort = new AbortController()
   let backingReady: Promise<RunnerBackingAvailability> | undefined
   let backingTimer: ReturnType<typeof setTimeout> | undefined
@@ -97,6 +105,7 @@ export function createBrowserRunnerTransport(
     completions.clear()
     for (const node of [master, music, examples, voice, guard, guideGuard])
       node?.disconnect()
+    void fracture?.dispose()
     backing = {}
     context?.removeEventListener('statechange', changed)
     lease?.release()
@@ -110,7 +119,13 @@ export function createBrowserRunnerTransport(
     abort.abort()
     clearTimeout(backingTimer)
     listeners.clear()
-    if (!context || context.state !== 'running' || sources.size === 0) {
+    const hasFracture = fracture?.active() ?? false
+    void fracture?.dispose()
+    if (
+      !context ||
+      context.state !== 'running' ||
+      (sources.size === 0 && !hasFracture)
+    ) {
       finish()
       return
     }
@@ -234,6 +249,14 @@ export function createBrowserRunnerTransport(
       setVoice = level(voice.gain, 1, context.currentTime)
       guard.gain.setValueAtTime(1, context.currentTime)
       guideGuard.gain.setValueAtTime(1, context.currentTime)
+      fracture = createShatterPlayer({
+        context,
+        output: master,
+        cache: shatterCache,
+        volume: () =>
+          options.effectsMuted?.() === true ? 0 : preferences.effectsVolume,
+        seed: course.revision,
+      })
       context.addEventListener('statechange', changed)
       ready = lease.unlock().then(
         (ok) => {
@@ -258,12 +281,18 @@ export function createBrowserRunnerTransport(
       if (scheduled) throw new Error('Runner backing cannot load during a run.')
       const ctx = running()
       backingTimer = setTimeout(() => abort.abort(), 15_000)
-      backingReady = loadRunnerBacking(
-        ctx,
-        options.assetUrl,
-        abort.signal,
-        backingCache,
-      ).then((assets) => {
+      backingReady = Promise.all([
+        loadRunnerBacking(ctx, options.assetUrl, abort.signal, backingCache),
+        prepareShatterBuffers(
+          shatterCache,
+          ctx,
+          options.assetUrl,
+          course.targets.map(
+            (target) => target.soundProfile ?? RUNNER_FALLBACK_SHATTER_PROFILE,
+          ),
+          abort.signal,
+        ),
+      ]).then(([assets]) => {
         clearTimeout(backingTimer)
         if (!disposed) {
           backing = assets
@@ -340,6 +369,7 @@ export function createBrowserRunnerTransport(
         secondsPerBeat,
         countInBeats: checkpoint.countInBeats,
       }
+      epochSchedule = result
       return result
     },
     hearReference(midi) {
@@ -372,6 +402,7 @@ export function createBrowserRunnerTransport(
       if (disposed) return
       const previous = preferences
       preferences = clampRunnerAudioPreferences(patch, previous)
+      fracture?.setVolume()
       if (!context) return
       if (
         preferences.musicMuted !== previous.musicMuted ||
@@ -390,6 +421,29 @@ export function createBrowserRunnerTransport(
       voiceActive = active
       if (!disposed && context)
         setVoice?.(active ? 0.5 : 1, context.currentTime, active ? 0.06 : 0.3)
+    },
+    shatter(targetId, atCourseSeconds) {
+      if (
+        disposed ||
+        !scheduled ||
+        !epochSchedule ||
+        context?.state !== 'running'
+      )
+        return
+      const target = course.targets.find((item) => item.id === targetId)
+      if (!target) return
+      const now =
+        epochSchedule.courseStartSeconds +
+        context.currentTime -
+        epochSchedule.audioStartSeconds
+      // Old catch-up events must not create a late sound in a newer capture window.
+      if (now < atCourseSeconds - 0.03 || now - atCourseSeconds > 0.15) return
+      const safe = runnerShatterSafeSeconds(course, targetId, now)
+      fracture?.play(
+        target.soundProfile ?? RUNNER_FALLBACK_SHATTER_PROFILE,
+        target.id,
+        safe,
+      )
     },
     subscribeInterruption(listener) {
       listeners.add(listener)

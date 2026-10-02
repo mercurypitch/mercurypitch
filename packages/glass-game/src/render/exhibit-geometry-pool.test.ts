@@ -91,6 +91,57 @@ function intactMesh(root: Object3D, id: string): Mesh {
 }
 
 describe('bundle-scoped exhibit geometry leases', () => {
+  it('bakes distinct node optical metres without aliasing their shared source material or scaling a lease twice', () => {
+    const { acquire, pool, intact, scene, material } = fixture()
+    intact.scale.setScalar(2)
+    for (const child of scene.children)
+      if (child !== intact) child.scale.setScalar(0.5)
+    const normalized: BreakableRenderRecipe = {
+      ...recipe,
+      displayHeight: 0.9,
+      sourceHeight: 0.9,
+      bakeImportedMaterialUnits: true,
+      scaleImportedMaterialUnits: [],
+    }
+    const first = acquire(normalized)
+    const second = acquire(normalized)
+    const paneMaterial = first.materials[
+      first.geometry.groups[0]!.materialIndex!
+    ] as PhysicalMaterial
+    const shardMaterial = first.materials[
+      first.pieces[0]!.geometry.groups[0]!.materialIndex!
+    ] as PhysicalMaterial
+    expect(paneMaterial).not.toBe(shardMaterial)
+    expect(paneMaterial.thickness).toBeCloseTo(0.024, 7)
+    expect(shardMaterial.thickness).toBeCloseTo(0.006, 7)
+    expect(paneMaterial.attenuationDistance).toBeCloseTo(0.3, 7)
+    expect(shardMaterial.attenuationDistance).toBeCloseTo(0.075, 7)
+    expect((material as PhysicalMaterial).thickness).toBe(0.012)
+    expect(
+      second.materials.map((m) => (m as PhysicalMaterial).thickness),
+    ).toEqual(first.materials.map((m) => (m as PhysicalMaterial).thickness))
+    expect(second.geometry).toBe(first.geometry)
+    const smaller = acquire({
+      ...normalized,
+      displayHeight: 0.45,
+      scaleImportedMaterialUnits: recipe.scaleImportedMaterialUnits,
+    })
+    expect(
+      (
+        smaller.materials[
+          smaller.geometry.groups[0]!.materialIndex!
+        ] as PhysicalMaterial
+      ).thickness,
+    ).toBeCloseTo(0.012, 7)
+    expect(
+      (
+        smaller.materials[
+          smaller.pieces[0]!.geometry.groups[0]!.materialIndex!
+        ] as PhysicalMaterial
+      ).thickness,
+    ).toBeCloseTo(0.003, 7)
+    pool.close()
+  })
   it('shares prepared buffers but isolates material optics, piece pivots and placement transforms', () => {
     const { acquire, pool, intact } = fixture()
     const first = acquire()
@@ -154,6 +205,8 @@ describe('bundle-scoped exhibit geometry leases', () => {
     const { acquire, pool } = fixture()
     const first = acquire()
     const smaller = acquire({ ...recipe, displayHeight: 0.4 })
+    const authoredOrigin = acquire({ ...recipe, preserveAuthoredOrigin: true })
+    expect(authoredOrigin.geometry).not.toBe(first.geometry)
     expect(smaller.geometry).not.toBe(first.geometry)
     expect(smaller.geometry.boundingBox?.max.y).toBeCloseTo(0.4)
     expect((smaller.materials[0] as PhysicalMaterial).thickness).toBeCloseTo(

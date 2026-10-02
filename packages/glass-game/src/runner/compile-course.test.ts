@@ -37,7 +37,15 @@ function responsiveBlockerSourceClone(): Mutable<SongRunnerSourceDocument> {
         catalog.obstacleProfiles[obstacle.profileId]!.kind === 'blocker',
     )!,
   ]
+  // Collision fixtures intentionally vary road width independently of art.
+  for (const target of course.voice.targets)
+    target.glassProfileId = 'runner-score-window-v1'
   return source
+}
+
+const MOVEMENT_ONLY_CATALOG: SongRunnerCourseCatalog = {
+  ...SINGING_CURRENT_RESPONSIVE_CATALOG,
+  glassProfiles: SINGING_CURRENT_CURRENT_CATALOG.glassProfiles,
 }
 
 function nearbyBlockerSource(
@@ -268,10 +276,7 @@ describe('song runner course compiler', () => {
       source.courses[0]!.track.laneCenters = [-spacing, 0, spacing]
 
       expect(() =>
-        compileSongRunnerCourseDocument(
-          source,
-          SINGING_CURRENT_RESPONSIVE_CATALOG,
-        ),
+        compileSongRunnerCourseDocument(source, MOVEMENT_ONLY_CATALOG),
       ).toThrow(
         '$.courses[0].obstacles[0].laneMask blockers must leave at least one lane clear of the runner body.',
       )
@@ -284,7 +289,7 @@ describe('song runner course compiler', () => {
 
     const course = compileSongRunnerCourseDocument(
       source,
-      SINGING_CURRENT_RESPONSIVE_CATALOG,
+      MOVEMENT_ONLY_CATALOG,
     )[0]!
     const obstacle = course.obstacles[0]!
     const action = obstacle.certifiedActions[0]!
@@ -311,6 +316,9 @@ describe('song runner course compiler', () => {
     expect(action.reachableLanes).toEqual([2])
     expect(
       action.landingOpenCourseSeconds - action.launchOpenCourseSeconds,
+    ).toBeGreaterThanOrEqual(course.movement.laneChangeSeconds)
+    expect(
+      action.landingCloseCourseSeconds - action.launchCloseCourseSeconds,
     ).toBeGreaterThanOrEqual(2 * course.movement.laneChangeSeconds)
   })
 
@@ -326,10 +334,7 @@ describe('song runner course compiler', () => {
     })
 
     expect(() =>
-      compileSongRunnerCourseDocument(
-        source,
-        SINGING_CURRENT_RESPONSIVE_CATALOG,
-      ),
+      compileSongRunnerCourseDocument(source, MOVEMENT_ONLY_CATALOG),
     ).toThrow(
       '$.courses[0].checkpoints[1] runway intersects blocker "first-lane-gate".',
     )

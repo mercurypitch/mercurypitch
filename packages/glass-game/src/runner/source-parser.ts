@@ -316,11 +316,21 @@ export function parseRunnerCourseSource(
     source.presentation,
     `${path}.presentation`,
   )
-  runnerSourceExactKeys(presentation, `${path}.presentation`, [
-    'environmentProfileId',
-    'musicProfileId',
-    'notationProfileId',
-  ])
+  runnerSourceExactKeys(
+    presentation,
+    `${path}.presentation`,
+    ['environmentProfileId', 'musicProfileId', 'notationProfileId'],
+    ['cameraProfile'],
+  )
+  if (
+    presentation.cameraProfile !== undefined &&
+    presentation.cameraProfile !== 'responsive-close' &&
+    presentation.cameraProfile !== 'legacy-wide'
+  )
+    runnerSourceFail(
+      `${path}.presentation.cameraProfile`,
+      'must be a supported camera profile.',
+    )
 
   return {
     id: runnerSourceString(source.id, `${path}.id`),
@@ -407,6 +417,13 @@ export function parseRunnerCourseSource(
       ),
     },
     presentation: {
+      ...(presentation.cameraProfile === undefined
+        ? {}
+        : {
+            cameraProfile: presentation.cameraProfile as
+              | 'responsive-close'
+              | 'legacy-wide',
+          }),
       environmentProfileId: runnerSourceString(
         presentation.environmentProfileId,
         `${path}.presentation.environmentProfileId`,

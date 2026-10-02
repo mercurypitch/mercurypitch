@@ -1,7 +1,7 @@
 // Runner target feedback — preallocated pane-local edges present semantic pitch truth without rescoring it.
 
 import type { BufferGeometry, Material } from 'three'
-import { BufferGeometry as Geometry, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, } from 'three'
+import { BufferGeometry as Geometry, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3, } from 'three'
 import type { RunnerPitchFeedback, RunnerTargetResult, } from '../runner/contracts'
 import type { RunnerTargetFeedbackPresentationConfig } from './runner-target-feedback-config'
 import { RUNNER_TARGET_FEEDBACK_PRESENTATION } from './runner-target-feedback-config'
@@ -22,7 +22,38 @@ export interface RunnerTargetFeedbackUpdate {
 function paneOutline(
   config: RunnerTargetFeedbackPresentationConfig,
   inset: number,
+  authoredOutline = config.geometry.outline,
 ): readonly Point[] {
+  if (authoredOutline !== undefined) {
+    const outline = authoredOutline.filter(
+      (point, index) =>
+        index === 0 ||
+        Math.hypot(
+          point.x - authoredOutline[index - 1]!.x,
+          point.y - authoredOutline[index - 1]!.y,
+        ) > 0.000001,
+    )
+    const last = outline.at(-1)!
+    if (Math.hypot(last.x - outline[0]!.x, last.y - outline[0]!.y) <= 0.000001)
+      outline.pop()
+    const minX = Math.min(...outline.map((p) => p.x))
+    const maxX = Math.max(...outline.map((p) => p.x))
+    const centerX = (minX + maxX) / 2
+    const centerY =
+      (Math.min(...outline.map((p) => p.y)) +
+        Math.max(...outline.map((p) => p.y))) /
+      2
+    const scaleX = Math.max(0.1, 1 - (2 * inset) / (maxX - minX))
+    const height =
+      Math.max(...outline.map((p) => p.y)) -
+      Math.min(...outline.map((p) => p.y))
+    const scaleY = Math.max(0.1, 1 - (2 * inset) / height)
+    const points = outline.map((p) => ({
+      x: centerX + (p.x - centerX) * scaleX,
+      y: centerY + (p.y - centerY) * scaleY,
+    }))
+    return [...points, points[0]!]
+  }
   const halfWidth = config.geometry.width / 2 - inset
   const baseY = inset
   const shoulderY = config.geometry.shoulderHeight - inset
@@ -44,6 +75,17 @@ function paneOutline(
     { x: -halfWidth, y: baseY },
   )
   return points
+}
+
+function paneOutlines(
+  config: RunnerTargetFeedbackPresentationConfig,
+  inset: number,
+): readonly (readonly Point[])[] {
+  return (
+    config.geometry.outlines?.map((outline) =>
+      paneOutline(config, inset, outline),
+    ) ?? [paneOutline(config, inset)]
+  )
 }
 
 function addStripQuad(
@@ -84,67 +126,68 @@ function addStripQuad(
 function solidStripGeometry(
   config: RunnerTargetFeedbackPresentationConfig,
 ): BufferGeometry {
-  const outline = paneOutline(config, config.geometry.outlineInset)
-  const points = outline.slice(0, -1)
-  const halfWidth = config.geometry.stripWidth / 2
-  const outer: Point[] = []
-  const inner: Point[] = []
-
-  for (let index = 0; index < points.length; index++) {
-    const previous = points[(index - 1 + points.length) % points.length]!
-    const point = points[index]!
-    const next = points[(index + 1) % points.length]!
-    const previousLength = Math.hypot(
-      point.x - previous.x,
-      point.y - previous.y,
-    )
-    const nextLength = Math.hypot(next.x - point.x, next.y - point.y)
-    const previousNormal = {
-      x: -(point.y - previous.y) / previousLength,
-      y: (point.x - previous.x) / previousLength,
-    }
-    const nextNormal = {
-      x: -(next.y - point.y) / nextLength,
-      y: (next.x - point.x) / nextLength,
-    }
-    const miterLength = Math.hypot(
-      previousNormal.x + nextNormal.x,
-      previousNormal.y + nextNormal.y,
-    )
-    const miter = {
-      x: (previousNormal.x + nextNormal.x) / miterLength,
-      y: (previousNormal.y + nextNormal.y) / miterLength,
-    }
-    const scale =
-      halfWidth /
-      Math.max(0.25, miter.x * nextNormal.x + miter.y * nextNormal.y)
-    outer.push({ x: point.x + miter.x * scale, y: point.y + miter.y * scale })
-    inner.push({ x: point.x - miter.x * scale, y: point.y - miter.y * scale })
-  }
-
   const positions: number[] = []
-  for (let index = 0; index < points.length; index++) {
-    const next = (index + 1) % points.length
-    positions.push(
-      outer[index]!.x,
-      outer[index]!.y,
-      0,
-      inner[index]!.x,
-      inner[index]!.y,
-      0,
-      inner[next]!.x,
-      inner[next]!.y,
-      0,
-      outer[index]!.x,
-      outer[index]!.y,
-      0,
-      inner[next]!.x,
-      inner[next]!.y,
-      0,
-      outer[next]!.x,
-      outer[next]!.y,
-      0,
-    )
+  for (const outline of paneOutlines(config, config.geometry.outlineInset)) {
+    const points = outline.slice(0, -1)
+    const halfWidth = config.geometry.stripWidth / 2
+    const outer: Point[] = []
+    const inner: Point[] = []
+
+    for (let index = 0; index < points.length; index++) {
+      const previous = points[(index - 1 + points.length) % points.length]!
+      const point = points[index]!
+      const next = points[(index + 1) % points.length]!
+      const previousLength = Math.hypot(
+        point.x - previous.x,
+        point.y - previous.y,
+      )
+      const nextLength = Math.hypot(next.x - point.x, next.y - point.y)
+      const previousNormal = {
+        x: -(point.y - previous.y) / previousLength,
+        y: (point.x - previous.x) / previousLength,
+      }
+      const nextNormal = {
+        x: -(next.y - point.y) / nextLength,
+        y: (next.x - point.x) / nextLength,
+      }
+      const miterLength = Math.hypot(
+        previousNormal.x + nextNormal.x,
+        previousNormal.y + nextNormal.y,
+      )
+      const miter = {
+        x: (previousNormal.x + nextNormal.x) / miterLength,
+        y: (previousNormal.y + nextNormal.y) / miterLength,
+      }
+      const scale =
+        halfWidth /
+        Math.max(0.5, miter.x * nextNormal.x + miter.y * nextNormal.y)
+      outer.push({ x: point.x + miter.x * scale, y: point.y + miter.y * scale })
+      inner.push({ x: point.x - miter.x * scale, y: point.y - miter.y * scale })
+    }
+
+    for (let index = 0; index < points.length; index++) {
+      const next = (index + 1) % points.length
+      positions.push(
+        outer[index]!.x,
+        outer[index]!.y,
+        0,
+        inner[index]!.x,
+        inner[index]!.y,
+        0,
+        inner[next]!.x,
+        inner[next]!.y,
+        0,
+        outer[index]!.x,
+        outer[index]!.y,
+        0,
+        inner[next]!.x,
+        inner[next]!.y,
+        0,
+        outer[next]!.x,
+        outer[next]!.y,
+        0,
+      )
+    }
   }
   const geometry = new Geometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -182,9 +225,10 @@ function wrongStripGeometry(
     config.geometry.outlineInset,
     config.geometry.outlineInset + config.geometry.wrongInnerInset,
   ]) {
-    const points = paneOutline(config, inset)
-    for (let index = 1; index < points.length; index++)
-      addDashedStrip(positions, points[index - 1]!, points[index]!, config)
+    for (const points of paneOutlines(config, inset)) {
+      for (let index = 1; index < points.length; index++)
+        addDashedStrip(positions, points[index - 1]!, points[index]!, config)
+    }
   }
   const geometry = new Geometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -227,6 +271,27 @@ export function createRunnerTargetFeedback(
     toneMapped: false,
   })
   const accepted = new Mesh(solidStripGeometry(config), acceptedMaterial)
+  accepted.geometry.computeBoundingBox()
+  const popCenter = accepted.geometry.boundingBox!.getCenter(new Vector3())
+  const originalPoints = paneOutlines(config, 0).flat()
+  const originalMinX = Math.min(...originalPoints.map((p) => p.x))
+  const originalMaxX = Math.max(...originalPoints.map((p) => p.x))
+  const originalMinY = Math.min(...originalPoints.map((p) => p.y))
+  const originalMaxY = Math.max(...originalPoints.map((p) => p.y))
+  const popBounds = accepted.geometry.boundingBox!
+  const maximumPopScale =
+    config.geometry.outline === undefined &&
+    config.geometry.outlines === undefined
+      ? config.timing.completionPopScale
+      : Math.max(
+          0,
+          Math.min(
+            (popCenter.x - originalMinX) / (popCenter.x - popBounds.min.x),
+            (originalMaxX - popCenter.x) / (popBounds.max.x - popCenter.x),
+            (popCenter.y - originalMinY) / (popCenter.y - popBounds.min.y),
+            (originalMaxY - popCenter.y) / (popBounds.max.y - popCenter.y),
+          ) - 1,
+        ) * 0.98
   accepted.name = 'runner-target-feedback-accepted'
   accepted.visible = false
 
@@ -250,6 +315,7 @@ export function createRunnerTargetFeedback(
   })
   const direction = new Mesh(directionGeometry(config), directionMaterial)
   direction.name = 'runner-target-feedback-direction'
+  direction.position.x = config.geometry.directionCenterX ?? 0
   direction.position.y = config.geometry.directionCenterY
   direction.visible = false
   root.add(accepted, wrong, direction)
@@ -263,6 +329,7 @@ export function createRunnerTargetFeedback(
     wrong.visible = false
     direction.visible = false
     accepted.scale.setScalar(1)
+    accepted.position.set(0, 0, 0)
   }
 
   return {
@@ -281,8 +348,15 @@ export function createRunnerTargetFeedback(
         acceptedMaterial.opacity = config.opacity.accepted
         if (!reducedMotion) {
           const progress = age / config.timing.completionPopSeconds
-          accepted.scale.setScalar(
-            1 + Math.sin(progress * Math.PI) * config.timing.completionPopScale,
+          const scale =
+            1 +
+            Math.sin(progress * Math.PI) *
+              Math.min(config.timing.completionPopScale, maximumPopScale)
+          accepted.scale.setScalar(scale)
+          accepted.position.set(
+            popCenter.x * (1 - scale),
+            popCenter.y * (1 - scale),
+            0,
           )
         }
         previousState = 'neutral'

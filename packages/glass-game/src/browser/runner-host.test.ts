@@ -27,11 +27,13 @@ describe('runner host', () => {
       musicMuted: true,
       musicVolume: 0.35,
       guideVolume: 0.65,
+      effectsVolume: 0.65,
     })
     expect(JSON.parse(values.get(RUNNER_AUDIO_PREFERENCE)!)).toEqual({
       musicMuted: true,
       musicVolume: 0.35,
       guideVolume: 0.65,
+      effectsVolume: 0.65,
     })
   })
   it('clamps stored volumes and prefers the saved mix over legacy mute', () => {
@@ -46,6 +48,7 @@ describe('runner host', () => {
       musicMuted: false,
       musicVolume: 0,
       guideVolume: 1,
+      effectsVolume: 0.65,
     })
   })
   it.each(['null', '[]', '{broken', '42'])(
@@ -60,7 +63,12 @@ describe('runner host', () => {
     },
   )
   it('retains the last valid level for non-finite live writes and preserves explicit zero', () => {
-    const previous = { musicMuted: true, musicVolume: 0.2, guideVolume: 0.8 }
+    const previous = {
+      musicMuted: true,
+      musicVolume: 0.2,
+      guideVolume: 0.8,
+      effectsVolume: 0.65,
+    }
 
     expect(
       clampRunnerAudioPreferences(

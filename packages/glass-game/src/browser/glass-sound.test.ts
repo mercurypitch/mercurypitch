@@ -1,7 +1,9 @@
 // Glass sound tests — real shared-lease policy around a controlled Web Audio boundary.
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io/shared-audio-context'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_SHATTER_PROFILE, shatterSoundAssetIds, } from '../content/shatter-sounds'
 import { createBrowserGlassSound } from './glass-sound'
+import { createShatterBufferCache } from './shatter-buffer-cache'
 
 class AudioParamFake {
   value = 1
@@ -14,6 +16,7 @@ class AudioParamFake {
 class NodeFake {
   gain = new AudioParamFake()
   frequency = new AudioParamFake()
+  playbackRate = new AudioParamFake()
   type = ''
   buffer: unknown
   onended: (() => void) | null = null
@@ -221,13 +224,16 @@ describe('museum audio release', () => {
   })
 
   it('an old release cannot disconnect or suspend a newer encounter', async () => {
-    const previous = createBrowserGlassSound()
+    const cache = createShatterBufferCache()
+    for (const id of shatterSoundAssetIds(DEFAULT_SHATTER_PROFILE))
+      cache.buffers.set(id, { url: id, buffer: { duration: 1 } as AudioBuffer })
+    const previous = createBrowserGlassSound({ cache })
     await flush()
     previous.shatter()
     const previousSourceCount = context.sources.length
     previous.dispose()
     await vi.advanceTimersByTimeAsync(100)
-    const current = createBrowserGlassSound()
+    const current = createBrowserGlassSound({ cache })
     await flush()
     current.shatter()
     const currentSource = context.sources[previousSourceCount]

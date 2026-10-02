@@ -1,5 +1,6 @@
 // Browser host — storage, microphone and audio adapters for either product shell.
 import { micManager } from '@irchiinnuss/pitch-engine'
+import { exhibitShatterProfile } from '../content/shatter-sounds'
 import type { GlassGameHost } from '../host'
 import { createBrowserGlassSound } from './glass-sound'
 import { createBrowserMelodyReference } from './melody-reference'
@@ -8,6 +9,7 @@ import { createBrowserMercNarration } from './merc-narration'
 import { createBrowserMicrophoneInput } from './microphone-input'
 import { createBrowserMuseumAudio } from './museum-audio'
 import { createBrowserMemoryStore } from './musical-memory-store'
+import { createShatterBufferCache } from './shatter-buffer-cache'
 import { createBrowserVoice, prepareBrowserVoiceGesture } from './voice-session'
 
 export interface BrowserHostOptions {
@@ -21,6 +23,7 @@ export interface BrowserHostOptions {
 export function createBrowserGlassHost(
   options: BrowserHostOptions,
 ): GlassGameHost {
+  const shatterCache = createShatterBufferCache()
   const microphone = createBrowserMicrophoneInput(
     options.microphonePreferenceKey ??
       `${options.storagePrefix}:microphone-device`,
@@ -38,6 +41,8 @@ export function createBrowserGlassHost(
     } catch {
       /* Current visit still works without persistent storage. */
     }
+    if (key === 'museum-audio:v1')
+      for (const update of shatterCache.volumeChanges) update()
   }
   return {
     assetUrl: options.assetUrl,
@@ -46,7 +51,24 @@ export function createBrowserGlassHost(
     microphoneInput: microphone.input,
     takeOverMicrophone: () => micManager.takeOverFromOtherTab(),
     releaseUnusedMicrophoneTakeover: () => micManager.releaseTakeoverIfUnused(),
-    createSound: createBrowserGlassSound,
+    createSound: (target) =>
+      createBrowserGlassSound({
+        assetUrl: options.assetUrl,
+        cache: shatterCache,
+        profile: exhibitShatterProfile(target),
+        identity: target?.id,
+        volume: () => {
+          try {
+            const value = JSON.parse(read('museum-audio:v1') ?? 'null')
+            if (value?.muted === true) return 0
+            return Number.isFinite(value?.ambienceVolume)
+              ? Math.max(0, Math.min(1, value.ambienceVolume))
+              : 0.65
+          } catch {
+            return 0.65
+          }
+        },
+      }),
     createMelodyReference: createBrowserMelodyReference,
     memories: createBrowserMemoryStore(options.storagePrefix),
     createMemoryPlayback: createBrowserMemoryPlayback,

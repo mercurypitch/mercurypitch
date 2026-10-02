@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { BufferAttribute, BufferGeometry, InterleavedBufferAttribute, Material, Matrix4, Mesh, Object3D, } from 'three'
-import { Float32BufferAttribute } from 'three'
+import { Float32BufferAttribute, Vector3 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { MaterialLibrary } from './material-library'
 
@@ -34,12 +34,32 @@ function promoteTransformAttribute(
   geometry.setAttribute(name, new Float32BufferAttribute(data, source.itemSize))
 }
 
-export function createMaterialTable(library: MaterialLibrary) {
+export function createMaterialTable(
+  library: MaterialLibrary,
+  bakeImportedMaterialUnits = false,
+) {
   const materials: Material[] = []
   return {
     materials,
-    index(source: Material) {
-      const material = library.clone(source)
+    bakeImportedMaterialUnits,
+    index(source: Material, bakedTransform?: Matrix4) {
+      let unitsScale = 1
+      if (bakeImportedMaterialUnits && bakedTransform !== undefined) {
+        const axes = new Vector3().setFromMatrixScale(bakedTransform)
+        unitsScale = axes.x
+        if (
+          !Number.isFinite(unitsScale) ||
+          unitsScale <= 0 ||
+          Math.abs(axes.y - unitsScale) >
+            Math.max(0.000001, unitsScale * 0.000001) ||
+          Math.abs(axes.z - unitsScale) >
+            Math.max(0.000001, unitsScale * 0.000001)
+        )
+          throw new Error(
+            'Optical material unit baking requires a uniform positive mesh scale.',
+          )
+      }
+      const material = library.clone(source, undefined, unitsScale)
       let index = materials.indexOf(material)
       if (index === -1) index = materials.push(material) - 1
       return index
@@ -89,6 +109,11 @@ export function flattenGeometry(
         attributes.set(name, attribute.itemSize)
       }
       const count = geometry.index!.count
+      // Quantized GLTF meshes compensate their node scale in local optical units.
+      // Geometry baking removes that scale, so retain it in each owned material.
+      const bakedTransform = table.bakeImportedMaterialUnits
+        ? transform.clone().multiply(mesh.matrixWorld)
+        : undefined
       const materials = Array.isArray(mesh.material)
         ? mesh.material
         : [mesh.material]
@@ -105,7 +130,7 @@ export function flattenGeometry(
         groups.push({
           start: offset + group.start,
           count: group.count,
-          materialIndex: table.index(source),
+          materialIndex: table.index(source, bakedTransform),
         })
       }
       geometry.clearGroups()

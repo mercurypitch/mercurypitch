@@ -637,8 +637,12 @@ export function createVoiceChallenge(
     try {
       const session = options.host.createVoice()
       voice = session
-      sound = options.host.createSound()
-      const quiet = options.beforeCapture()
+      sound = options.host.createSound(encounter)
+      const quiet = sound.prepareShatter
+        ? Promise.all([options.beforeCapture(), sound.prepareShatter()]).then(
+            () => undefined,
+          )
+        : options.beforeCapture()
       await session.start(quiet)
       if (disposed || run !== generation || voice !== session) {
         session.stop()

@@ -7,20 +7,30 @@ import type { Material, MeshPhysicalMaterial, Texture } from 'three'
 export function createMaterialLibrary() {
   const copies = new Map<
     Material,
-    Map<MeshPhysicalMaterial | undefined, Material>
+    Map<MeshPhysicalMaterial | undefined, Map<number, Material>>
   >()
   const textures = new Map<Texture, Texture>()
   const materials = new Set<Material>()
   return {
     materials,
-    clone(source: Material, surface?: MeshPhysicalMaterial): Material {
+    clone(
+      source: Material,
+      surface?: MeshPhysicalMaterial,
+      materialUnitsScale = 1,
+    ): Material {
       const variants =
         copies.get(source) ??
-        new Map<MeshPhysicalMaterial | undefined, Material>()
-      const previous = variants.get(surface)
+        new Map<MeshPhysicalMaterial | undefined, Map<number, Material>>()
+      const units = variants.get(surface) ?? new Map<number, Material>()
+      const previous = units.get(materialUnitsScale)
       if (previous) return previous
       const copy = source.clone()
       const rendered = copy as MeshPhysicalMaterial
+      if (rendered.isMeshPhysicalMaterial && materialUnitsScale !== 1) {
+        rendered.thickness *= materialUnitsScale
+        if (Number.isFinite(rendered.attenuationDistance))
+          rendered.attenuationDistance *= materialUnitsScale
+      }
       if (surface && rendered.isMeshStandardMaterial) {
         rendered.color.copy(surface.color)
         rendered.roughness = surface.roughness
@@ -47,7 +57,8 @@ export function createMaterialLibrary() {
         }
         properties[key] = owned
       }
-      variants.set(surface, copy)
+      units.set(materialUnitsScale, copy)
+      variants.set(surface, units)
       copies.set(source, variants)
       materials.add(copy)
       return copy

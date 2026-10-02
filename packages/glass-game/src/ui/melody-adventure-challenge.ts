@@ -549,8 +549,12 @@ export function createMelodyAdventureChallenge(
     try {
       const session = options.host.createVoice()
       voice = session
-      sound = options.host.createSound()
-      const quiet = holdSilence()
+      sound = options.host.createSound(current ?? undefined)
+      const quiet = sound.prepareShatter
+        ? Promise.all([holdSilence(), sound.prepareShatter()]).then(
+            () => undefined,
+          )
+        : holdSilence()
       await session.start(quiet)
       if (disposed || run !== generation || voice !== session) {
         session.stop()
@@ -593,7 +597,7 @@ export function createMelodyAdventureChallenge(
     stopOwnedAudio()
     try {
       if (current.challenge.kind === 'melody-anchor')
-        sound = options.host.createSound()
+        sound = options.host.createSound(current ?? undefined)
       else reference = references.create(contour!)
       const quiet = holdSilence()
       await quiet

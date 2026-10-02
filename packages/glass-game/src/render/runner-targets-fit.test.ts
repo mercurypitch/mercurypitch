@@ -10,7 +10,7 @@ import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { FROST_GOLD_ARCH_BUNDLE_IDS, FROST_GOLD_ARCH_NODES, } from '../content/frost-gold-arch-profile'
 import { compileSongRunnerCourse } from '../runner/compile-course'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
-import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_RESPONSIVE, SINGING_CURRENT_RESPONSIVE_CATALOG, SINGING_CURRENT_RESPONSIVE_SOURCE, } from '../runner/first-course'
+import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_CATALOG, SINGING_CURRENT_CURRENT_SOURCE, SINGING_CURRENT_LEARNING, } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
 import { disposeObject } from './dispose'
 import { RUNNER_TARGET_FEEDBACK_PRESENTATION } from './runner-target-feedback-config'
@@ -34,18 +34,18 @@ const ACCEPTED: RunnerPitchFeedback = {
 
 const shiftedUneven = compileSongRunnerCourse(
   {
-    ...SINGING_CURRENT_RESPONSIVE_SOURCE,
+    ...SINGING_CURRENT_CURRENT_SOURCE,
     id: 'runner-fit-shifted-uneven',
     track: {
-      ...SINGING_CURRENT_RESPONSIVE_SOURCE.track,
+      ...SINGING_CURRENT_CURRENT_SOURCE.track,
       laneCenters: [-1.7, -0.15, 1.1],
       groundFeetY: 0.6,
     },
   },
-  SINGING_CURRENT_RESPONSIVE_CATALOG,
+  SINGING_CURRENT_CURRENT_CATALOG,
 )
 const layouts = [
-  SINGING_CURRENT_RESPONSIVE,
+  SINGING_CURRENT_LEARNING,
   SINGING_CURRENT_CURRENT,
   shiftedUneven,
 ]
@@ -216,10 +216,10 @@ describe.each(['desktop', 'mobile'] as const)(
       try {
         for (const reducedMotion of [false, true]) {
           for (const lane of [0, 2] as const) {
-            const target = SINGING_CURRENT_RESPONSIVE.targets.find(
+            const target = SINGING_CURRENT_LEARNING.targets.find(
               (item) => item.displayLane === lane,
             )!
-            const course = { ...SINGING_CURRENT_RESPONSIVE, targets: [target] }
+            const course = { ...SINGING_CURRENT_LEARNING, targets: [target] }
             const targets = createRunnerTargets(
               course,
               source,

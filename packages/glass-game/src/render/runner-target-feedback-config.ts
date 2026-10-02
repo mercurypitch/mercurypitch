@@ -1,9 +1,15 @@
 // Runner target feedback tuning — one typed palette and motion contract for live pitch response.
 
 import { FROST_GOLD_ARCH_PANE } from '../content/frost-gold-arch-profile'
+import type { RunnerGlassPresentation } from '../content/runner-glass-presentation'
 
 export interface RunnerTargetFeedbackPresentationConfig {
   readonly geometry: {
+    readonly outline?: readonly { readonly x: number; readonly y: number }[]
+    readonly outlines?: readonly (readonly {
+      readonly x: number
+      readonly y: number
+    }[])[]
     readonly width: number
     readonly shoulderHeight: number
     readonly archRise: number
@@ -15,6 +21,7 @@ export interface RunnerTargetFeedbackPresentationConfig {
     readonly wrongDashLength: number
     readonly wrongGapRatio: number
     readonly directionCenterY: number
+    readonly directionCenterX?: number
     readonly directionHeight: number
     readonly directionWidth: number
   }
@@ -87,3 +94,30 @@ export const RUNNER_TARGET_FEEDBACK_PRESENTATION = {
     },
   },
 } as const satisfies RunnerTargetFeedbackPresentationConfig
+
+/** Per-family contour keeps accepted/wrong edges on the actual optical pane. */
+export function runnerTargetFeedbackForPane(
+  pane: RunnerGlassPresentation['pane'],
+  notation?: RunnerGlassPresentation['notation'],
+): RunnerTargetFeedbackPresentationConfig {
+  const outlines =
+    pane.outlines ?? (pane.outline === undefined ? [] : [pane.outline])
+  const minimumY =
+    outlines.length === 0
+      ? 0
+      : Math.min(...outlines.flatMap((outline) => outline.map((p) => p.y)))
+  return {
+    ...RUNNER_TARGET_FEEDBACK_PRESENTATION,
+    geometry: {
+      ...RUNNER_TARGET_FEEDBACK_PRESENTATION.geometry,
+      width: pane.width,
+      shoulderHeight: pane.shoulderHeight,
+      archRise: pane.archRise,
+      frontOffset: pane.frontZ + 0.024,
+      directionCenterY: minimumY + 0.42,
+      directionCenterX: notation?.centerX ?? 0,
+      ...(pane.outline === undefined ? {} : { outline: pane.outline }),
+      ...(pane.outlines === undefined ? {} : { outlines: pane.outlines }),
+    },
+  }
+}

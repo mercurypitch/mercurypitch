@@ -2,9 +2,10 @@
 
 import type { Material, Mesh } from 'three'
 import { describe, expect, it, vi } from 'vitest'
+import { SINGING_CURRENT_WALL_PROFILES } from '../content/singing-current-wall-profiles'
 import type { RunnerPitchFeedback } from '../runner/contracts'
 import { createRunnerTargetFeedback } from './runner-target-feedback'
-import { RUNNER_TARGET_FEEDBACK_PRESENTATION as CONFIG } from './runner-target-feedback-config'
+import { RUNNER_TARGET_FEEDBACK_PRESENTATION as CONFIG, runnerTargetFeedbackForPane, } from './runner-target-feedback-config'
 
 const NEUTRAL: RunnerPitchFeedback = {
   state: 'neutral',
@@ -65,6 +66,79 @@ function parts(controller: ReturnType<typeof createRunnerTargetFeedback>) {
 }
 
 describe('runner target feedback', () => {
+  it('keeps the exported W09 closed contour finite when it contains coincident endpoints', () => {
+    const profile = SINGING_CURRENT_WALL_PROFILES.W09.presentation
+    const controller = createRunnerTargetFeedback(
+      false,
+      runnerTargetFeedbackForPane(profile.pane, profile.notation),
+    )
+    const { accepted, wrong } = parts(controller)
+    for (const geometry of [accepted.geometry, wrong.geometry]) {
+      const positions = geometry.getAttribute('position')
+      expect(positions.count).toBeGreaterThan(0)
+      for (let index = 0; index < positions.count; index++)
+        expect(
+          Number.isFinite(
+            positions.getX(index) +
+              positions.getY(index) +
+              positions.getZ(index),
+          ),
+        ).toBe(true)
+    }
+    controller.dispose()
+  })
+  it.each(Object.values(SINGING_CURRENT_WALL_PROFILES))(
+    'keeps $id completion glow within its measured pane at peak pop',
+    (profile) => {
+      const controller = createRunnerTargetFeedback(
+        false,
+        runnerTargetFeedbackForPane(
+          profile.presentation.pane,
+          profile.presentation.notation,
+        ),
+      )
+      controller.update({
+        feedback: NEUTRAL,
+        outcome: 'hit',
+        resultAgeSeconds: CONFIG.timing.completionPopSeconds / 2,
+        deltaSeconds: 1 / 60,
+        visible: true,
+      })
+      const { accepted } = parts(controller)
+      const positions = accepted.geometry.getAttribute('position')
+      for (let index = 0; index < positions.count; index++) {
+        const x = positions.getX(index) * accepted.scale.x + accepted.position.x
+        const y = positions.getY(index) * accepted.scale.y + accepted.position.y
+        expect(x).toBeGreaterThan(profile.paneBounds.min[0]! - 0.01)
+        expect(x).toBeLessThan(profile.paneBounds.max[0]! + 0.01)
+        expect(y).toBeGreaterThan(profile.paneBounds.min[1]! - 0.01)
+        expect(y).toBeLessThan(profile.paneBounds.max[1]! + 0.01)
+      }
+      controller.dispose()
+    },
+  )
+  it('keeps split-window edges inside their individual panes and the direction marker clear of the mullion', () => {
+    const profile = SINGING_CURRENT_WALL_PROFILES.W03.presentation
+    const controller = createRunnerTargetFeedback(
+      false,
+      runnerTargetFeedbackForPane(profile.pane, profile.notation),
+    )
+    const { accepted, wrong, direction } = parts(controller)
+    for (const geometry of [accepted.geometry, wrong.geometry]) {
+      const positions = geometry.getAttribute('position')
+      for (let index = 0; index < positions.count; index++) {
+        const x = positions.getX(index)
+        expect(Number.isFinite(x + positions.getY(index))).toBe(true)
+        expect(Math.abs(x)).toBeGreaterThan(0.08)
+        expect(Math.abs(x)).toBeLessThan(1.08)
+      }
+    }
+    expect(direction.position.x).toBe(profile.notation.centerX)
+    expect(
+      direction.position.x + CONFIG.geometry.directionWidth / 2,
+    ).toBeLessThan(-0.08)
+    controller.dispose()
+  })
   it('uses inset phone-legible strips without relying on WebGL line width', () => {
     const controller = createRunnerTargetFeedback(false)
     const { accepted, wrong } = parts(controller)
@@ -173,7 +247,10 @@ describe('runner target feedback', () => {
       visible: true,
     })
     expect(accepted.visible).toBe(true)
-    expect(accepted.scale.x).toBeCloseTo(1 + CONFIG.timing.completionPopScale)
+    expect(accepted.scale.x).toBeGreaterThan(1)
+    expect(accepted.scale.x).toBeLessThanOrEqual(
+      1 + CONFIG.timing.completionPopScale,
+    )
 
     reduced.update({
       feedback: NEUTRAL,

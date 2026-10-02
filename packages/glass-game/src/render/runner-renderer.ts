@@ -6,6 +6,7 @@ import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
 import { releaseAssetImage } from './asset-texture-profile'
 import { installBackdropFog } from './backdrop-fog'
+import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
@@ -54,7 +55,11 @@ export function createSongRunnerRenderer(
   const abort = new AbortController()
   const scene = new Scene()
   scene.background = new Color(0xc8dce0)
-  scene.fog = new Fog(0xc8dce0, 18, runnerSceneryFogFar(course.laneCenters))
+  scene.fog = new Fog(
+    0xc8dce0,
+    18,
+    runnerSceneryFogFar(course.laneCenters, course.presentation.cameraProfile),
+  )
   const camera = new PerspectiveCamera(55, 1, 0.08, 75)
   const quality = resolveGlassRenderQuality('auto', {
     cssWidth: container.clientWidth,
@@ -102,8 +107,14 @@ export function createSongRunnerRenderer(
   let cameraFollowX = runnerCameraFollowTarget(
     options.initialSnapshot.player.lateralX,
     course.laneCenters,
+    1,
+    course.presentation.cameraProfile,
   )
-  let cameraPose = runnerCameraPose(1, course.laneCenters)
+  let cameraPose = runnerCameraPose(
+    1,
+    course.laneCenters,
+    course.presentation.cameraProfile,
+  )
   const key = new DirectionalLight(0xffdfaa, 2.5)
   key.position.set(-6, 9, 2)
   key.target.position.set(0, 0, -6)
@@ -147,12 +158,17 @@ export function createSongRunnerRenderer(
       height = container.clientHeight
     renderer.setSize(width, height, false)
     camera.aspect = width / height
-    cameraPose = runnerCameraPose(camera.aspect, course.laneCenters)
+    cameraPose = runnerCameraPose(
+      camera.aspect,
+      course.laneCenters,
+      course.presentation.cameraProfile,
+    )
     camera.fov = cameraPose.fovDegrees
     cameraFollowX = runnerCameraFollowTarget(
       (latest ?? options.initialSnapshot).player.lateralX,
       course.laneCenters,
       camera.aspect,
+      course.presentation.cameraProfile,
     )
     applyCameraPose()
     camera.updateProjectionMatrix()
@@ -243,11 +259,26 @@ export function createSongRunnerRenderer(
       scene.background = sky
       resize()
       const crystal = await model('living-crystal-platform-v2')
-      const bundle = resolveAssetProfileBundle(
-        'cloudway-lab-frost-gold-arch-v1',
-        options.assetProfile ?? quality.assetProfile,
-      )
-      const glass = await model(bundle)
+      const wallSources = new Map<
+        string,
+        { source: Object3D; bundle: string }
+      >()
+      const wallBundles = new Map<string, Object3D>()
+      for (const target of course.targets) {
+        const variant =
+          target.glassPresentation?.variant ?? 'frost-gold-arch-breakwall-a'
+        if (wallSources.has(variant)) continue
+        const recipe = getBreakableRenderRecipe(variant)
+        const bundle = resolveAssetProfileBundle(
+          recipe.bundle!,
+          options.assetProfile ?? quality.assetProfile,
+        )
+        // Only installed course families are decoded, one at a time. Editor-only
+        // alternatives never enter a play visit's memory or preparation work.
+        const source = wallBundles.get(bundle) ?? (await model(bundle))
+        wallBundles.set(bundle, source)
+        wallSources.set(variant, { source, bundle })
+      }
       if (disposed) return
       const museum = await model('museum-kit-v2')
       const garden = await model('museum-garden-v2')
@@ -262,8 +293,8 @@ export function createSongRunnerRenderer(
       )
       targets = createRunnerTargets(
         course,
-        glass,
-        bundle,
+        wallSources,
+        '',
         comfortableMidi,
         options.reducedMotion === true,
       )
@@ -324,6 +355,7 @@ export function createSongRunnerRenderer(
         snapshot.player.lateralX,
         course.laneCenters,
         camera.aspect,
+        course.presentation.cameraProfile,
       ),
       dt,
     )

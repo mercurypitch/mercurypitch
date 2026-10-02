@@ -36,6 +36,7 @@ interface RunnerSceneryCameraReceipt {
 
 export interface RunnerSceneryVisibilityContext {
   readonly laneCenters: CompiledRunnerCourse['laneCenters']
+  readonly cameraProfile: CompiledRunnerCourse['presentation']['cameraProfile']
   readonly boxesByChunk: ReadonlyMap<string, readonly Box3[]>
   readonly cameras: readonly RunnerSceneryCameraReceipt[]
 }
@@ -43,8 +44,10 @@ export interface RunnerSceneryVisibilityContext {
 /** Wide comparison courses use a nearer veil so dense art can still hand off unseen. */
 export function runnerSceneryFogFar(
   laneCenters: CompiledRunnerCourse['laneCenters'],
+  cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): number {
-  return laneCenters[2] - laneCenters[0] <= 2.75
+  return cameraProfile === 'responsive-close' ||
+    (cameraProfile === undefined && laneCenters[2] - laneCenters[0] <= 2.75)
     ? RUNNER_SCENERY_FOG_FAR
     : RUNNER_SCENERY_LEGACY_FOG_FAR
 }
@@ -53,9 +56,15 @@ function cameraFor(
   aspect: number,
   laneCenters: CompiledRunnerCourse['laneCenters'],
   playerLateralX: number,
+  cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): PerspectiveCamera {
-  const pose = runnerCameraPose(aspect, laneCenters)
-  const followX = runnerCameraFollowTarget(playerLateralX, laneCenters, aspect)
+  const pose = runnerCameraPose(aspect, laneCenters, cameraProfile)
+  const followX = runnerCameraFollowTarget(
+    playerLateralX,
+    laneCenters,
+    aspect,
+    cameraProfile,
+  )
   const camera = new PerspectiveCamera(pose.fovDegrees, aspect, 0.08, 75)
   camera.position.set(pose.x + followX, pose.y, pose.z)
   camera.lookAt(pose.targetX + followX, pose.targetY, pose.targetZ)
@@ -68,8 +77,9 @@ function cameraReceipt(
   aspect: number,
   laneCenters: CompiledRunnerCourse['laneCenters'],
   playerLateralX: number,
+  cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): RunnerSceneryCameraReceipt {
-  const camera = cameraFor(aspect, laneCenters, playerLateralX)
+  const camera = cameraFor(aspect, laneCenters, playerLateralX, cameraProfile)
   const projectionView = new Matrix4().multiplyMatrices(
     camera.projectionMatrix,
     camera.matrixWorldInverse,
@@ -85,6 +95,7 @@ function cameraReceipt(
 export function createRunnerSceneryVisibilityContext(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   chunks: readonly RunnerSceneryProjectionChunk[],
+  cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): RunnerSceneryVisibilityContext {
   const boxesByChunk = new Map<string, readonly Box3[]>()
   for (const chunk of chunks) boxesByChunk.set(chunk.id, chunk.bounds)
@@ -97,13 +108,16 @@ export function createRunnerSceneryVisibilityContext(
         playerLateralX,
         laneCenters,
         aspect,
+        cameraProfile,
       )
       if (seenFollowXs.has(followX)) continue
       seenFollowXs.add(followX)
-      cameras.push(cameraReceipt(aspect, laneCenters, playerLateralX))
+      cameras.push(
+        cameraReceipt(aspect, laneCenters, playerLateralX, cameraProfile),
+      )
     }
   }
-  return Object.freeze({ laneCenters, boxesByChunk, cameras })
+  return Object.freeze({ laneCenters, cameraProfile, boxesByChunk, cameras })
 }
 
 function minimumViewDepth(
@@ -167,7 +181,7 @@ function visibilityAtDistance(
     incomingFullyFogged: incoming.every(
       (box) =>
         minimumViewDepth(box, receipt.camera, courseDistanceMeters) >=
-        runnerSceneryFogFar(context.laneCenters) + 0.2,
+        runnerSceneryFogFar(context.laneCenters, context.cameraProfile) + 0.2,
     ),
   })
 }
@@ -279,14 +293,22 @@ export function runnerSceneryHandoffVisibilityAt(
             candidate.playerLateralX,
             context.laneCenters,
             aspect,
+            context.cameraProfile,
           ) -
             runnerCameraFollowTarget(
               playerLateralX,
               context.laneCenters,
               aspect,
+              context.cameraProfile,
             ),
         ) < 1e-12,
-    ) ?? cameraReceipt(aspect, context.laneCenters, playerLateralX)
+    ) ??
+    cameraReceipt(
+      aspect,
+      context.laneCenters,
+      playerLateralX,
+      context.cameraProfile,
+    )
   return visibilityAtDistance(
     context,
     handoff.outgoingChunkId,

@@ -12,6 +12,7 @@ import type { BreakableRenderRecipe } from './breakable-render-recipe'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
 import { GLASSWARE_TRIO_RENDER_CATALOG } from './glassware-trio-catalog'
+import { SINGING_CURRENT_WALL_RENDER_CATALOG } from './singing-current-wall-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
 export type { BreakableRenderRecipe } from './breakable-render-recipe'
@@ -49,6 +50,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
   Record<string, BreakableRenderRecipe>
 > = {
   ...GLASSWARE_TRIO_RENDER_CATALOG,
+  ...SINGING_CURRENT_WALL_RENDER_CATALOG,
   'frosted-scroll-wall': {
     ...CLEAR_GLASS,
     shatterProfile: 'ice-wall',

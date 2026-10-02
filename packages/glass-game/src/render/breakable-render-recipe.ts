@@ -15,10 +15,14 @@ export interface BreakableRenderRecipe {
   persistentPrefix?: string
   /** Optional reviewed source height; rejects an unexpected donor export. */
   sourceHeight?: number
+  /** New architectural exports own their neutral floor datum; do not recenter their pane. */
+  preserveAuthoredOrigin?: boolean
   /** Identical prepared donor geometry may be leased across vessel instances. */
   sharedGeometry?: boolean
   displayHeight: number
-  /** Physical glTF materials whose metre-valued optics scale with geometry. */
+  /** Preserve optical metres when quantized node transforms are baked into geometry. */
+  bakeImportedMaterialUnits?: boolean
+  /** Legacy named materials whose metre-valued optics scale with display geometry. */
   scaleImportedMaterialUnits?: readonly string[]
   /** Opt-in charge and release treatment layered around standard rigid shards. */
   resonancePresentation?: ResonancePresentationConfig

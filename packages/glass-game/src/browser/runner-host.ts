@@ -5,6 +5,7 @@ import type { RunnerAudioPreferences, SongRunnerHost, } from '../runner/session-
 import { clampRunnerAudioPreferences } from '../runner/session-contracts'
 import { createRunnerBackingCache } from './runner-music'
 import { createBrowserRunnerTransport } from './runner-transport'
+import { createShatterBufferCache } from './shatter-buffer-cache'
 
 const memories = new WeakMap<
   GlassGameHost,
@@ -12,6 +13,7 @@ const memories = new WeakMap<
     memory: Map<string, string>
     volatile: Set<string>
     backing: ReturnType<typeof createRunnerBackingCache>
+    shatter: ReturnType<typeof createShatterBufferCache>
   }
 >()
 
@@ -99,6 +101,7 @@ export function createBrowserRunnerHost(
     memory: new Map<string, string>(),
     volatile: new Set<string>(),
     backing: createRunnerBackingCache(),
+    shatter: createShatterBufferCache(),
   }
   memories.set(galleryHost, saved)
   const { memory, volatile } = saved
@@ -156,6 +159,14 @@ export function createBrowserRunnerHost(
       createBrowserRunnerTransport(course, comfortableMidi, {
         assetUrl: (id) => galleryHost.assetUrl(id),
         backingCache: saved.backing,
+        shatterCache: saved.shatter,
+        effectsMuted: () => {
+          try {
+            return JSON.parse(read('museum-audio:v1') ?? 'null')?.muted === true
+          } catch {
+            return false
+          }
+        },
       }),
   }
 }

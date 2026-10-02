@@ -6,9 +6,8 @@
 // answer for the 3D stages: a modal ring that swells with the charge,
 // trembles with the player's vibrato, and breaks in layers.
 //
-// Synthesis rather than samples, for the reason §7 gives: a recording
-// pitch-shifted more than three or four semitones reads as a chipmunk,
-// and this tone has to sit relative to an arbitrary target note.
+// The pitched resonance remains synthesized; fracture uses independently
+// generated recordings at their native pitch, prepared before capture.
 //
 // Two constraints inherited from decisions elsewhere:
 //
@@ -27,6 +26,9 @@
 
 import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
+import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
+import type { GlassShatterProfile } from '@irchiinnuss/glass-game/fracture-audio'
+import { createRecordedGlassFracture, readGlassEffectsVolume, } from '@irchiinnuss/glass-game/fracture-audio'
 
 /**
  * Partial ratios for the ring. STK's published struck-vessel set
@@ -58,8 +60,10 @@ export interface GlassTone {
   start(): void
   /** Feed the per-frame state. Cheap; params smooth themselves. */
   update(resonance: number, vibratoStrength: number): void
-  /** The four-layer break (§7): crack, body, shard tail, settle. */
-  shatter(accuracy: number): void
+  /** Optional recordings finish decoding before live scoring begins. */
+  prepareBreak(): Promise<void>
+  /** A protected concurrent judge supplies zero safe seconds. */
+  shatter(accuracy: number, safeSeconds?: number): void
   /**
    * Point the ring at a different note.
    *
@@ -81,9 +85,15 @@ export interface GlassTone {
   dispose(): void
 }
 
-export const createGlassTone = (targetHz: number): GlassTone => {
+export const createGlassTone = (
+  targetHz: number,
+  profile: GlassShatterProfile = {
+    form: 'bowl',
+    size: 'small',
+    material: 'thick-crystal',
+  },
+): GlassTone => {
   const lease: SharedAudioLease = acquireSharedAudioContext('glass3d-stage')
-  let voiceHz = targetHz
   let base = targetHz * 2 // the octave-away rule, see header
 
   let ctx: AudioContext | null = null
@@ -94,13 +104,12 @@ export const createGlassTone = (targetHz: number): GlassTone => {
   let noise: AudioBufferSourceNode | null = null
   let lfo: OscillatorNode | null = null
   let broken = false
+  let disposed = false
+  let breakCount = 0
+  let fracture: ReturnType<typeof createRecordedGlassFracture> | null = null
 
-  /** Two seconds of looped white noise — the excitation for everything
-   * here, ring and break alike. One buffer, reused, which the code did
-   * not actually do: every burst built its own, so a single shatter cut
-   * nineteen two-second buffers and ran two million Math.random() calls
-   * inside the frame that was also launching eighty shards. Noise is
-   * noise; the same two seconds serve every voice. */
+  /** One noise buffer excites the modal ring, built once during gesture
+   * preparation. Fractures use their separate decoded recordings. */
   let noiseCache: AudioBuffer | null = null
   const noiseBuffer = (c: AudioContext): AudioBuffer => {
     if (noiseCache !== null) return noiseCache
@@ -111,42 +120,25 @@ export const createGlassTone = (targetHz: number): GlassTone => {
     return buf
   }
 
-  /** One short filtered-noise burst, scheduled absolutely. The building
-   * block of both the crack and the shard tail. */
-  const burst = (
-    c: AudioContext,
-    out: AudioNode,
-    at: number,
-    freq: number,
-    q: number,
-    peak: number,
-    decay: number,
-  ): void => {
-    const src = c.createBufferSource()
-    src.buffer = noiseBuffer(c)
-    const bp = c.createBiquadFilter()
-    bp.type = 'bandpass'
-    bp.frequency.value = freq
-    bp.Q.value = q
-    const g = c.createGain()
-    g.gain.setValueAtTime(0, at)
-    g.gain.linearRampToValueAtTime(peak, at + 0.005)
-    g.gain.exponentialRampToValueAtTime(0.001, at + decay)
-    src.connect(bp).connect(g).connect(out)
-    src.start(at)
-    src.stop(at + decay + 0.05)
-  }
-
   return {
     start(): void {
       const c = lease.ensure()
-      if (c === null || master !== null) return
+      if (disposed || c === null || master !== null) return
       void lease.unlock()
       ctx = c
 
       master = c.createGain()
       master.gain.value = 1
       master.connect(c.destination)
+      fracture = createRecordedGlassFracture({
+        context: c,
+        output: master,
+        assetUrl: (id) => glassGameAssetUrl(id, 'games/'),
+        profile,
+        volume: () => readGlassEffectsVolume('beside-cue:glass-adventure'),
+        seed: Math.round(targetHz),
+      })
+      void fracture.prepare()
 
       // The ring: looped noise pushed through one bandpass per partial.
       // Narrow filters on noise ARE the modal model — each passes only
@@ -209,12 +201,15 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       }
     },
 
-    shatter(accuracy: number): void {
+    prepareBreak(): Promise<void> {
+      return fracture?.prepare() ?? Promise.resolve()
+    },
+
+    shatter(_accuracy: number, safeSeconds = 4): void {
       if (ctx === null || master === null || broken) return
       broken = true
       const c = ctx
       const t = c.currentTime
-      const acc = Math.max(0, Math.min(1, accuracy))
 
       // Layer 4 first in code, first to matter: the ring must not keep
       // singing over its own wreckage. Fast settle, not a cut.
@@ -236,34 +231,10 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       // break after the first with no tremolo at all. Depth zero is what
       // actually stops it pushing on the gain, which was the bug.
 
-      // Layer 1, the crack: bright, sharp, and centred well above the
-      // ring so it reads as breakage rather than a louder note.
-      burst(c, master, t, 3200, 1.2, 0.5 + 0.2 * acc, 0.09)
-      // Layer 2, the body: the dull low thump a thick bowl gives before
-      // the fragments. A plain decaying sine, one octave-ish below target.
-      const thump = c.createOscillator()
-      thump.frequency.value = voiceHz * 0.5
-      const tg = c.createGain()
-      tg.gain.setValueAtTime(0.3, t)
-      tg.gain.exponentialRampToValueAtTime(0.001, t + 0.22)
-      thump.connect(tg).connect(master)
-      thump.start(t)
-      thump.stop(t + 0.3)
-
-      // Layer 3, the shard tail: 1.5–3 s of thinning tinkles. Density
-      // falls quadratically — the debris settles rather than stops.
-      const tail = 1.6 + acc * 0.9
-      const n = 18
-      for (let i = 0; i < n; i++) {
-        const u = (i + 1) / n
-        const at = t + 0.04 + u * u * tail
-        const freq = 2800 + Math.random() * 5600
-        burst(c, master, at, freq, 14, 0.12 * (1 - u * 0.8), 0.16)
-      }
+      fracture?.play(`glass3d-${breakCount++}`, safeSeconds)
     },
 
     retune(nextHz: number): void {
-      voiceHz = nextHz
       base = nextHz * 2
       if (ctx === null) return
       const t = ctx.currentTime
@@ -278,6 +249,7 @@ export const createGlassTone = (targetHz: number): GlassTone => {
     rearm(): void {
       if (!broken) return
       broken = false
+      void fracture?.silence()
       if (ctx === null || ringGain === null) return
       // Start from silence rather than from wherever the settle left it,
       // so the next hold swells from nothing exactly as the first did.
@@ -287,18 +259,34 @@ export const createGlassTone = (targetHz: number): GlassTone => {
     },
 
     dispose(): void {
+      if (disposed) return
+      disposed = true
       broken = true
+      void fracture?.dispose()
+      fracture = null
+      const retiringMaster = master
+      const running = ctx?.state === 'running'
+      const stopAt = (ctx?.currentTime ?? 0) + (running ? 0.24 : 0)
+      if (ctx !== null && retiringMaster !== null) {
+        retiringMaster.gain.cancelScheduledValues(ctx.currentTime)
+        retiringMaster.gain.setTargetAtTime(0, ctx.currentTime, 0.036)
+      }
       try {
-        noise?.stop()
+        noise?.stop(stopAt)
       } catch {
         // Never started, or the context already went away with the page.
       }
       try {
-        lfo?.stop()
+        lfo?.stop(stopAt)
       } catch {
         // Never started, or the context already went away with the page.
       }
-      master?.disconnect()
+      const finish = (): void => {
+        retiringMaster?.disconnect()
+        lease.release()
+      }
+      if (running) setTimeout(finish, 240)
+      else finish()
       master = null
       ringGain = null
       tremoloDepth = null
@@ -307,7 +295,6 @@ export const createGlassTone = (targetHz: number): GlassTone => {
       lfo = null
       noiseCache = null
       ctx = null
-      lease.release()
     },
   }
 }

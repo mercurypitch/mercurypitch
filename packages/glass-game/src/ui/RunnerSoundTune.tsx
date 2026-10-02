@@ -209,6 +209,26 @@ export function RunnerSoundTune(props: RunnerSoundTuneProps) {
             }
           />
         </label>
+        <label class={styles.volume}>
+          <span>
+            Glass breaks{' '}
+            <output>{percentage(props.preferences.effectsVolume)}%</output>
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={percentage(props.preferences.effectsVolume)}
+            aria-label="Glass break volume"
+            aria-valuetext={`${percentage(props.preferences.effectsVolume)} percent`}
+            onInput={(event) =>
+              props.onPreferencesChange({
+                effectsVolume: Number(event.currentTarget.value) / 100,
+              })
+            }
+          />
+        </label>
         <button
           type="button"
           class={styles.action}
