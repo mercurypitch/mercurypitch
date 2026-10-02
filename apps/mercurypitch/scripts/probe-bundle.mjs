@@ -48,6 +48,12 @@
 // round, measured for text or a control in the top, side or bottom insets.
 // `--safe-areas-only` walks that alone.
 //
+// PROGRESS WITH A RECORD ON IT (probe-progress.mjs): signed in, the worker
+// answering with badges, achievements, a league and a voiceprint, scrolled
+// to its end and shared from. Every picture it names must come from the
+// bundle; one that does not is a file native-assets.mjs forgot.
+// `--progress-only` walks that alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -60,6 +66,7 @@ import { chromium } from '@playwright/test'
 import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
+import { walkProgress } from './probe-progress.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
 import { frameName, SAFE_AREA_FRAMES, walkSafeAreas, } from './probe-safe-areas.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
@@ -111,6 +118,7 @@ function parseArgs(argv) {
     karaokeOnly: false,
     handoverOnly: false,
     safeAreasOnly: false,
+    progressOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -124,6 +132,7 @@ function parseArgs(argv) {
     else if (flag === '--karaoke-only') args.karaokeOnly = true
     else if (flag === '--handover-only') args.handoverOnly = true
     else if (flag === '--safe-areas-only') args.safeAreasOnly = true
+    else if (flag === '--progress-only') args.progressOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -5001,6 +5010,15 @@ async function main() {
     }
   }
 
+  /** Progress with a record on it, every picture it names from the bundle. */
+  const walkProgressFrame = async (frame) => {
+    try {
+      steps.push(...(await walkProgress(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+
   /** Sing and Karaoke, one after the other, on one frame. */
   const walkHandoverFrame = async (frame) => {
     try {
@@ -5038,10 +5056,14 @@ async function main() {
     for (const frame of args.safeAreasOnly ? SAFE_AREA_FRAMES : []) {
       await walkSafeAreaFrame(frame)
     }
+    for (const frame of args.progressOnly ? FRAMES : []) {
+      await walkProgressFrame(frame)
+    }
     for (const frame of args.landscapeOnly ||
     args.karaokeOnly ||
     args.handoverOnly ||
-    args.safeAreasOnly
+    args.safeAreasOnly ||
+    args.progressOnly
       ? []
       : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -5085,12 +5107,14 @@ async function main() {
       }
       await walkKaraokeFrame(frame)
       await walkHandoverFrame(frame)
+      await walkProgressFrame(frame)
     }
     if (
       !args.chromeOnly &&
       !args.karaokeOnly &&
       !args.handoverOnly &&
-      !args.safeAreasOnly
+      !args.safeAreasOnly &&
+      !args.progressOnly
     ) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
@@ -5146,7 +5170,9 @@ async function main() {
         ? `the rooms handing over only, ${FRAMES.length} frames and ${LANDSCAPE_INSET_FRAMES.length} sideways`
         : args.safeAreasOnly
           ? `the safe areas only, ${SAFE_AREA_FRAMES.map(frameName).join(', ')}`
-          : `${FRAMES.length} frames`
+          : args.progressOnly
+            ? `Progress only, ${FRAMES.length} frames`
+            : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 
