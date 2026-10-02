@@ -74,6 +74,7 @@ import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
+import type { KaraokeMoreBinding } from './mobile/KaraokeMoreSheet'
 import type { LoopPoint } from './stem-mixer/LoopPointMenu'
 import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
 import { MixerViewControls } from './stem-mixer/MixerViewControls'
@@ -1278,16 +1279,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // Setting B enables the loop; setting A alone just marks the start (drawn
   // immediately by the canvas overlay).
   const applyLoopPoint = (which: 'A' | 'B', time: number) => {
-    const result = audio.placeLoopPoint(which, time)
-    if (!result.placed) {
-      showNotification(result.reason, 'warning', {
-        channel: LOOP_POINT_CHANNEL,
-      })
-      return
+    const reason = placeLoopPointAt(which, time)
+    if (reason !== null) {
+      showNotification(reason, 'warning', { channel: LOOP_POINT_CHANNEL })
     }
+  }
+  /** Place a point; why it was refused, or null once it is placed. */
+  const placeLoopPointAt = (which: 'A' | 'B', time: number): string | null => {
+    const result = audio.placeLoopPoint(which, time)
+    if (!result.placed) return result.reason
     // A refusal still on screen no longer describes the loop.
     removeNotificationsByChannel(LOOP_POINT_CHANNEL)
     canvas.queueCanvasRedraw()
+    return null
   }
 
   // Waveform/pitch-canvas right-click → a small loop menu at the clicked time
@@ -1312,6 +1316,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     setLoopStartLyricIdx(null)
     setLoopEndLyricIdx(null)
     canvas.queueCanvasRedraw()
+  }
+
+  // The phone stage's More (KaraokeMoreSheet): the capsule's speed and loop.
+  // A refused point's reason goes back to the sheet, which shows it where
+  // the singer is looking; the toggle follows the L key's rule.
+  const phoneMore: KaraokeMoreBinding = {
+    speed: audio.speed,
+    onSpeed: audio.setSpeed,
+    loopStart: audio.loopStart,
+    loopEnd: audio.loopEnd,
+    loopOn: audio.loopEnabled,
+    onSetPoint: (which) => placeLoopPointAt(which, audio.elapsed()),
+    onToggleLoop: () => {
+      const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+      audio.setLoopEnabled((on) => !on && ready)
+      canvas.queueCanvasRedraw()
+    },
+    onClearLoop: clearLoopFromMenu,
   }
 
   // ── What the analysers are allowed to read ─────────────────────
@@ -2546,6 +2568,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             micPitch={mic.micPitch}
             ribbonNotes={displayNotes}
             keyControl={keyView.binding}
+            more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal
             showScore={mic.showScore}

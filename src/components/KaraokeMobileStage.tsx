@@ -26,7 +26,9 @@ import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
 import { GuideVocalMic } from '@/components/mobile/GuideVocalMic'
-import { AutoplayIcon, ChevronLeftIcon, MicIcon, MusicLevelIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { AutoplayIcon, ChevronLeftIcon, EllipsisIcon, MicIcon, MusicLevelIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import type { KaraokeMoreBinding } from '@/components/mobile/KaraokeMoreSheet'
+import { KaraokeMoreSheet } from '@/components/mobile/KaraokeMoreSheet'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -216,6 +218,12 @@ export interface KaraokeMobileStageProps {
       that opens a sheet with the stepper and "Find my key". Without it the
       right slot stays empty spacing. */
   keyControl?: KeyShiftBinding
+
+  /** Speed and the A/B loop, behind the header's More (owner decision 1,
+      2 October 2026). Autoplay moves into the same sheet, which is what
+      makes room for More at 44 px. Absent, the header keeps its autoplay
+      button and there is no More (a hosted room has its own options). */
+  more?: KaraokeMoreBinding
 
   /** Attach user-supplied lyrics when none were found (paste or file).
       Reuses the studio's lyrics controller, so they parse, sync, persist,
@@ -492,6 +500,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // ── In-stage song sheet ───────────────────────────────────────
   const [sheetOpen, setSheetOpen] = createSignal(false)
   const [keySheetOpen, setKeySheetOpen] = createSignal(false)
+  const [moreOpen, setMoreOpen] = createSignal(false)
 
   // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
   const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
@@ -754,7 +763,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         >
           <TextSizeIcon />
         </button>
-        <Show when={props.onPickSession}>
+        <Show when={props.onPickSession && props.more === undefined}>
           <button
             class={styles.autoplayBtn}
             classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
@@ -769,6 +778,23 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           >
             <AutoplayIcon />
           </button>
+        </Show>
+        <Show when={props.more}>
+          <button
+            class={styles.autoplayBtn}
+            onClick={() => setMoreOpen(true)}
+            title={
+              props.onPickSession
+                ? 'Speed, loop and autoplay'
+                : 'Speed and loop'
+            }
+            aria-label="More"
+            aria-haspopup="dialog"
+          >
+            <EllipsisIcon />
+          </button>
+        </Show>
+        <Show when={props.onPickSession}>
           <button
             class={styles.listBtn}
             onClick={() => setSheetOpen(true)}
@@ -1104,6 +1130,13 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           duration={props.duration()}
           onSeek={props.seekTo}
           onScrub={setScrub}
+          loop={
+            props.more && {
+              start: props.more.loopStart(),
+              end: props.more.loopEnd(),
+              on: props.more.loopOn(),
+            }
+          }
         />
         <div class={styles.times}>
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
@@ -1340,6 +1373,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               </p>
             </div>
           </Sheet>
+        )}
+      </Show>
+
+      {/* ── More sheet: speed, the A/B loop, autoplay ──────── */}
+      <Show when={props.more}>
+        {(more) => (
+          <KaraokeMoreSheet
+            isOpen={moreOpen()}
+            close={() => setMoreOpen(false)}
+            binding={more()}
+            autoplay={
+              props.onPickSession
+                ? { on: props.autoplayEnabled, toggle: props.onToggleAutoplay }
+                : undefined
+            }
+          />
         )}
       </Show>
 
