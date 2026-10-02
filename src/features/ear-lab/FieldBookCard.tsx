@@ -126,7 +126,7 @@ export function FieldBookCard(props: FieldBookCardProps): JSX.Element {
       <p class={styles.note}>
         Your own songs, read once for the degrees the voice lands on, the
         phrases it sings and the roots that move under it. Rated on the Field
-        Book's own tracks — the Column never moves for them.
+        Book's own tracks; the Column never moves for them.
       </p>
     </section>
   )
