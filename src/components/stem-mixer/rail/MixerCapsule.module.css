@@ -242,6 +242,19 @@
   outline-offset: 2px;
 }
 
+/* In focus mode More also holds the dock, the layout and the stage
+   panels: more rows than a short window has room for, so it scrolls
+   rather than running off the bottom (8 px clear, as popovers are). */
+.morePanel.morePanel {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.morePanel > * {
+  flex-shrink: 0;
+}
+
 /* ── Docked to a side edge ─────────────────────────────────────────────
    Each group is a row and the groups stack: thirteen controls in one
    column would need about 400 px at 28 px, more than a phone on its side

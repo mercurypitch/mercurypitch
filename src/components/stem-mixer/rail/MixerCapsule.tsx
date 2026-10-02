@@ -272,7 +272,7 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
         label="More playback options"
         testId="mixer-more"
         triggerClass={styles.more}
-        panelClass="mp-dark-stage"
+        panelClass={`mp-dark-stage ${styles.morePanel}`}
         items={moreRows()}
       />
 
