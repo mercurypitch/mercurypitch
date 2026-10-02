@@ -30,6 +30,14 @@ button.chip {
   cursor: pointer;
 }
 
+/* A finger needs 44 px; the pill is 40x31 for a mouse. */
+@media (pointer: coarse) {
+  .chip {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 button.chip:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -40,9 +48,9 @@ button.chip:focus-visible {
   border-color: var(--accent);
 }
 
-/* Matches the row's other captions (.takeLabel). */
+/* Matches the row's other captions (.takeLabel): 12 px, the floor for text. */
 .caption {
-  font-size: 0.55rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
