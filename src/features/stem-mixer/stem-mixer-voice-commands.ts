@@ -286,6 +286,13 @@ export function createStemMixerVoiceCommands(
     return `Loop ${String(from)}s to ${String(to)}s`
   }
 
+  /** A and B make a loop: the Loop button's rule, and L's. A alone would
+   *  loop from A to the song's end. */
+  const loopIsReady = (): boolean => {
+    const end = deps.loop.end()
+    return end !== null && end - (deps.loop.start() ?? 0) >= LOOP_MIN_GAP
+  }
+
   // ── The set ────────────────────────────────────────────────
 
   const commands: VoiceCommand[] = [
@@ -533,6 +540,7 @@ export function createStemMixerVoiceCommands(
       phrases: LOOP_TOGGLE_PHRASES,
       run: () => {
         const next = !deps.loop.enabled()
+        if (next && !loopIsReady()) return voiceFailure('Set A and B first')
         deps.loop.setEnabled(next)
         return next ? 'Loop on' : 'Loop off'
       },
@@ -542,10 +550,7 @@ export function createStemMixerVoiceCommands(
       label: 'Loop on',
       phrases: LOOP_ON_PHRASES,
       run: () => {
-        const end = deps.loop.end()
-        if (end === null || end - (deps.loop.start() ?? 0) < LOOP_MIN_GAP) {
-          return voiceFailure('Set A and B first')
-        }
+        if (!loopIsReady()) return voiceFailure('Set A and B first')
         deps.loop.setEnabled(true)
         return 'Loop on'
       },
