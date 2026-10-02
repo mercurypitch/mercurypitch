@@ -761,6 +761,17 @@ describe('in the small window (Android)', () => {
     expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
   })
 
+  it('keeps the media buttons it had when the window opens over background play', async () => {
+    await playSong()
+    expect(device.onMediaAction).toHaveBeenCalledTimes(1)
+
+    device.windowed(true)
+    device.windowed(false)
+
+    expect(device.onMediaAction).toHaveBeenCalledTimes(1)
+    expect(device.mediaListeners()).toBe(1)
+  })
+
   it('stays out of the window with the setting off', async () => {
     setKaraokePictureInPicture(false)
     await playSong()
