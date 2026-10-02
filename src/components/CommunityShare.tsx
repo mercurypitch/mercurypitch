@@ -182,6 +182,9 @@ export type ShareableContent = 'melody' | 'session' | 'result' | 'profile'
 
 export interface SharedMelody {
   id: string
+  /** Who published it, on a card from the board. Absent on a share that
+   *  only ever lived in this browser's list (`pp_shared_melodies`). */
+  userId?: string
   name: string
   items: MelodyItem[]
   author: string
@@ -198,6 +201,8 @@ export interface SharedMelody {
 
 export interface SharedSession {
   id: string
+  /** Who published it. See SharedMelody.userId. */
+  userId?: string
   name: string
   items: PlaybackSession['items']
   author: string
@@ -527,6 +532,26 @@ export const CommunityShare: Component = () => {
    * exercises and challenges were unshareable and a singer who only did
    * those saw an empty picker forever.
    */
+  /**
+   * Whether a card is this singer's own: the only card that may offer
+   * Unpublish. The board lists everyone's shares, and every card used to
+   * offer it. Pressed on somebody else's, it took the card off this screen
+   * and announced success while the worker refused the delete
+   * (canWriteRow), so the share came back on the next load.
+   *
+   * A share in this browser's own list is this browser's by definition:
+   * without an account it never reached the board and carries no owner.
+   */
+  const isOwnShare = (
+    share: { id: string; userId?: string },
+    local: readonly { id: string }[],
+  ): boolean => {
+    authVersion() // signing in changes whose shares these are
+    return (
+      share.userId === getUserId() || local.some((own) => own.id === share.id)
+    )
+  }
+
   /** The share awaiting "yes, take it down". */
   const [unpublishing, setUnpublishing] = createSignal<{
     kind: 'melody' | 'session'
@@ -847,22 +872,24 @@ export const CommunityShare: Component = () => {
                         <IconLink />
                       </span>
                     </button>
-                    <button
-                      class={`${modalStyles.actionBtn} unpublish-btn`}
-                      onClick={() =>
-                        setUnpublishing({
-                          kind: 'melody',
-                          id: melody.id,
-                          name: melody.name,
-                        })
-                      }
-                      aria-label={`Unpublish ${melody.name}`}
-                      title="Unpublish"
-                    >
-                      <span>
-                        <IconCloseSmall />
-                      </span>
-                    </button>
+                    <Show when={isOwnShare(melody, localMelodies())}>
+                      <button
+                        class={`${modalStyles.actionBtn} unpublish-btn`}
+                        onClick={() =>
+                          setUnpublishing({
+                            kind: 'melody',
+                            id: melody.id,
+                            name: melody.name,
+                          })
+                        }
+                        aria-label={`Unpublish ${melody.name}`}
+                        title="Unpublish"
+                      >
+                        <span>
+                          <IconCloseSmall />
+                        </span>
+                      </button>
+                    </Show>
                     <button
                       class={`${modalStyles.actionBtn} view-btn`}
                       onClick={() => openShared('melody', melody.id)}
@@ -1001,22 +1028,24 @@ export const CommunityShare: Component = () => {
                         <IconLink />
                       </span>
                     </button>
-                    <button
-                      class={`${modalStyles.actionBtn} unpublish-btn`}
-                      onClick={() =>
-                        setUnpublishing({
-                          kind: 'session',
-                          id: session.id,
-                          name: session.name,
-                        })
-                      }
-                      aria-label={`Unpublish ${session.name}`}
-                      title="Unpublish"
-                    >
-                      <span>
-                        <IconCloseSmall />
-                      </span>
-                    </button>
+                    <Show when={isOwnShare(session, localSessions())}>
+                      <button
+                        class={`${modalStyles.actionBtn} unpublish-btn`}
+                        onClick={() =>
+                          setUnpublishing({
+                            kind: 'session',
+                            id: session.id,
+                            name: session.name,
+                          })
+                        }
+                        aria-label={`Unpublish ${session.name}`}
+                        title="Unpublish"
+                      >
+                        <span>
+                          <IconCloseSmall />
+                        </span>
+                      </button>
+                    </Show>
                     <button
                       class={`${modalStyles.actionBtn} view-btn`}
                       onClick={() => openShared('session', session.id)}
