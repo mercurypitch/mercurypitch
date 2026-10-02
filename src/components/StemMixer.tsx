@@ -61,7 +61,7 @@ import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
 import { karaokeKeyKeepDrums } from '@/stores/karaoke-settings-store'
-import { showNotification } from '@/stores/notifications-store'
+import { removeNotificationsByChannel, showNotification, } from '@/stores/notifications-store'
 import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -181,6 +181,9 @@ interface StemTrack {
 }
 
 // ── Constants ──────────────────────────────────────────────────
+
+/** One refused-loop-point toast at a time, however often A or B is pressed. */
+const LOOP_POINT_CHANNEL = 'stem-mixer-loop-point'
 
 interface SmWindow {
   __smKeydown?: (e: KeyboardEvent) => void
@@ -1241,36 +1244,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         audio.setLoopEnabled(true)
       }
     } else {
-      audio.setLoopEnd(0)
+      audio.setLoopEnd(null)
       audio.setLoopEnabled(false)
     }
   }
 
-  // Set an A or B loop point at an explicit time, keeping A < B (swaps when a
-  // point lands on the wrong side — the "renumerate" behaviour). Shared by the
-  // transport A/B buttons (playhead time) and the waveform right-click menu
-  // (clicked time). Setting B enables the loop; setting A alone just marks the
-  // start (drawn immediately by the canvas overlay).
+  // Set an A or B loop point at an explicit time. Shared by the transport A/B
+  // buttons and the A/B keys (playhead time) and the waveform right-click
+  // menu (clicked time). A point on the wrong side of the other one, or
+  // within 0.1 s of it, is refused and the toast says why (loop-points.ts).
+  // Setting B enables the loop; setting A alone just marks the start (drawn
+  // immediately by the canvas overlay).
   const applyLoopPoint = (which: 'A' | 'B', time: number) => {
-    const t = Math.max(0, time)
-    if (which === 'A') {
-      const currentB = audio.loopEnd()
-      if (currentB > 0 && t > currentB) {
-        audio.setLoopEnd(t)
-        audio.setLoopStart(currentB)
-      } else {
-        audio.setLoopStart(t)
-      }
-    } else {
-      const currentA = audio.loopStart()
-      if (t < currentA) {
-        audio.setLoopStart(t)
-        audio.setLoopEnd(currentA)
-      } else {
-        audio.setLoopEnd(t)
-      }
-      audio.setLoopEnabled(true)
+    const result = audio.placeLoopPoint(which, time)
+    if (!result.placed) {
+      showNotification(result.reason, 'warning', {
+        channel: LOOP_POINT_CHANNEL,
+      })
+      return
     }
+    // A refusal still on screen no longer describes the loop.
+    removeNotificationsByChannel(LOOP_POINT_CHANNEL)
     canvas.queueCanvasRedraw()
   }
 
@@ -2270,17 +2264,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // L = toggle loop
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault()
-        audio.setLoopStart(audio.elapsed())
+        applyLoopPoint('A', audio.elapsed())
       }
       if (e.key === 'b' || e.key === 'B') {
         e.preventDefault()
-        audio.setLoopEnd(audio.elapsed())
-        audio.setLoopEnabled(true)
+        applyLoopPoint('B', audio.elapsed())
       }
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault()
-        if (audio.loopEnabled() && audio.loopStart() > 0) {
-          audio.seekTo(audio.loopStart())
+        const loopStart = audio.loopStart()
+        if (audio.loopEnabled() && loopStart !== null) {
+          audio.seekTo(loopStart)
         }
       }
       if (e.key === 'l' || e.key === 'L') {
@@ -2967,7 +2961,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
 
           <Show
-            when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+            when={
+              audio.loopEnabled() && audio.loopEnd() !== null && mic.micActive()
+            }
           >
             <LoopMetricsBar
               comparisonData={mic.iterationComparisonData}
@@ -3322,7 +3318,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   <span class="sm-loop-menu-dot sm-loop-menu-dot--b">B</span>
                   Set loop end here
                 </button>
-                <Show when={audio.loopStart() > 0 || audio.loopEnd() > 0}>
+                <Show
+                  when={audio.loopStart() !== null || audio.loopEnd() !== null}
+                >
                   <button
                     class="sm-loop-menu-item sm-loop-menu-item--clear"
                     onClick={() => {

@@ -60,7 +60,7 @@ interface Harness {
 function harness(): Harness {
   const [showNoteLabels, setShowNoteLabels] = createSignal(false)
   const [showWordMarkers, setShowWordMarkers] = createSignal(false)
-  const [loopStart, setLoopStart] = createSignal(0)
+  const [loopStart, setLoopStart] = createSignal<number | null>(null)
   const [elapsed, setElapsed] = createSignal(0)
   const [wordMarkers, setWordMarkers] = createSignal<WordMarker[]>([])
 
@@ -88,7 +88,7 @@ function harness(): Harness {
     PITCH_WINDOW_FILL_RATIO: 0.7,
     loopEnabled: () => false,
     loopStart,
-    loopEnd: () => 0,
+    loopEnd: () => null,
     setLoopStart: (() => 0) as StemMixerCanvasDeps['setLoopStart'],
     setLoopEnd: (() => 0) as StemMixerCanvasDeps['setLoopEnd'],
     wordMarkers,
