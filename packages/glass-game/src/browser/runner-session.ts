@@ -3,13 +3,13 @@ import type { PitchObservation } from '../contracts'
 import type { GlassVoicePreparation, GlassVoiceSession } from '../host'
 import type { CompiledRunnerCourse, RunnerEvent } from '../runner/contracts'
 import { createSongRunnerGame } from '../runner/game'
-import { runnerTargetMidiAt } from '../runner/pitch'
 import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerPauseReason, RunnerSessionFrame, RunnerSessionState, SongRunnerHost, SongRunnerSession, } from '../runner/session-contracts'
+import { clampRunnerAudioPreferences } from '../runner/session-contracts'
 import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
+import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-host'
 import { createRunnerReadinessTracker } from './runner-readiness'
 
 const READINESS_SECONDS = 0.35
-const MUSIC_PREFERENCE = 'runner-music-muted:v1'
 let nextEpoch = 0
 
 /** Only scheduling is injected; tests still exercise the real core and timestamp routing. */
@@ -42,19 +42,16 @@ export function createBrowserRunnerSession(
     judge: course.voice.judge,
     requiredAcceptedSeconds: READINESS_SECONDS,
   })
-  let muted = false
-  try {
-    muted = host.readPreference(MUSIC_PREFERENCE) === 'true'
-  } catch {
-    /* Optional preference. */
-  }
+  const audioPreferences = readRunnerAudioPreferences(host)
   let state: RunnerSessionState = Object.freeze({
     phase: 'idle',
     game: game.snapshot(),
     microphone: 'closed',
     readiness: null,
     countIn: null,
-    musicMuted: muted,
+    musicMuted: audioPreferences.musicMuted,
+    audioPreferences,
+    backing: null,
     pauseReason: null,
     error: null,
   })
@@ -78,6 +75,8 @@ export function createBrowserRunnerSession(
   let checkpointId = course.checkpoints[0]!.id
   let inputSequence = 0
   let lastVoiceReceipt = -Infinity
+  let lastMixSequence = -1,
+    lastMixCapture = -Infinity
   let publishing = false
   const frames: RunnerSessionFrame[] = []
   const listeners = new Set<(frame: RunnerSessionFrame) => void>()
@@ -299,6 +298,9 @@ export function createBrowserRunnerSession(
         epoch = token
         lastRequestedCourseSeconds = result.startCourseSeconds
         inputSequence = 0
+        lastVoiceReceipt = -Infinity
+        lastMixSequence = -1
+        lastMixCapture = -Infinity
         publish({ phase: 'running', countIn: null })
         advance(now, true)
       } else {
@@ -361,8 +363,7 @@ export function createBrowserRunnerSession(
       schedule.courseStartSeconds +
       value.captureSeconds -
       schedule.audioStartSeconds
-    const activeTargetBeforeObservation = state.game.activeTarget
-    const accepted = game.observe({
+    game.observe({
       epoch,
       sequence: value.sequence,
       captureCourseSeconds: capture,
@@ -370,31 +371,28 @@ export function createBrowserRunnerSession(
       midi: value.midi,
       confidence: value.confidence,
     })
-    if (accepted) {
-      const target = course.targets.find(
-        (item) =>
-          capture >= item.judgeOpenCourseSeconds &&
-          capture <= item.judgeCloseCourseSeconds,
-      )
-      const compatible =
-        target !== undefined &&
+    if (
+      Number.isSafeInteger(value.sequence) &&
+      value.sequence > lastMixSequence &&
+      Number.isFinite(capture) &&
+      capture > lastMixCapture &&
+      capture >= schedule.courseStartSeconds &&
+      capture <= received &&
+      received - capture <= course.voice.judge.maximumDeliveryLatencySeconds &&
+      Number.isFinite(value.confidence) &&
+      value.confidence >= 0 &&
+      value.confidence <= 1 &&
+      (value.midi === null || Number.isFinite(value.midi))
+    ) {
+      lastMixSequence = value.sequence
+      lastMixCapture = capture
+      const voiced =
         value.midi !== null &&
-        value.confidence >= course.voice.judge.minimumConfidence &&
-        Math.abs(
-          value.midi -
-            (target.completionPolicy === 'charge' &&
-            activeTargetBeforeObservation?.id === target.id
-              ? activeTargetBeforeObservation.currentTargetMidi
-              : runnerTargetMidiAt(
-                  target.notes,
-                  capture,
-                  comfortableMidi + course.voice.comfortableRootOffsetSemitones,
-                )),
-        ) *
-          100 <=
-          course.voice.judge.centsTolerance
-      audio.setVoiceActive(compatible)
-      if (compatible) lastVoiceReceipt = now
+        value.confidence >= course.voice.judge.minimumConfidence
+      // Duck any credible voice, including a wrong note. Scoring silence is
+      // already in PCM and scheduled guards; this is only an extra mix dip.
+      audio.setVoiceActive(voiced)
+      if (voiced) lastVoiceReceipt = now
     }
     // Delivery order matters: evidence at the settlement boundary arrives first.
     advance(now)
@@ -403,7 +401,7 @@ export function createBrowserRunnerSession(
   function prepareAudio(): RunnerAudioTransport {
     const next = host.createRunnerAudio(course, comfortableMidi)
     audio = next
-    next.setMuted(state.musicMuted)
+    next.setPreferences(state.audioPreferences)
     unsubscribeAudio = next.subscribeInterruption(() =>
       pause('audio-interrupted'),
     )
@@ -457,6 +455,7 @@ export function createBrowserRunnerSession(
         pauseReason: null,
         readiness: null,
         countIn: null,
+        backing: null,
       },
       [],
       true,
@@ -474,7 +473,13 @@ export function createBrowserRunnerSession(
       localAudio = prepareAudio()
       // These calls all happen before the first await, preserving gesture scope.
       ready = Promise.all([preparation.ready, localAudio.unlock()]).then(
-        ([gesture, available]) => gesture && available,
+        async ([gesture, available]) => {
+          if (!gesture || !available || !current(token)) return false
+          const backing = await localAudio.prepareBacking()
+          if (!current(token)) return false
+          publish({ backing })
+          return true
+        },
       )
       localVoice = host.createVoice()
       voice = localVoice
@@ -695,14 +700,27 @@ export function createBrowserRunnerSession(
       return accepted
     },
     setMusicMuted(value) {
+      session.setAudioPreferences({ musicMuted: value })
+    },
+    setAudioPreferences(patch) {
       if (disposed) return
-      audio?.setMuted(value)
+      const preferences = clampRunnerAudioPreferences(
+        patch,
+        state.audioPreferences,
+      )
+      audio?.setPreferences(preferences)
       try {
-        host.writePreference(MUSIC_PREFERENCE, String(value))
+        host.writePreference(
+          RUNNER_AUDIO_PREFERENCE,
+          JSON.stringify(preferences),
+        )
       } catch {
         /* Current mix still works. */
       }
-      publish({ musicMuted: value })
+      publish({
+        musicMuted: preferences.musicMuted,
+        audioPreferences: preferences,
+      })
     },
     setPresentationReady(value) {
       if (disposed || presentationReady === value) return

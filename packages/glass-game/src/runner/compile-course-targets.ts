@@ -2,11 +2,11 @@
 // Song runner target compiler — voice profiles, contours, and protected windows.
 // ============================================================
 
-import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, } from './compile-course-helpers'
-import type { CompiledRunnerCourse, CompiledRunnerNote, CompiledRunnerTarget, CompiledRunnerVoiceProfile, RunnerQualityGrade, } from './contracts'
-import type { RunnerPhraseSource, RunnerTargetSource, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source'
-import { runnerSourceFail, runnerSourceUniqueIds } from './source'
-import { runnerBeatToSeconds, runnerSecondsToBeat } from './tempo'
+import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, } from './compile-course-helpers.ts'
+import type { CompiledRunnerCourse, CompiledRunnerNote, CompiledRunnerTarget, CompiledRunnerVoiceProfile, RunnerQualityGrade, } from './contracts.ts'
+import type { RunnerPhraseSource, RunnerTargetSource, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
+import { runnerSourceFail, runnerSourceUniqueIds } from './source.ts'
+import { runnerBeatToSeconds, runnerSecondsToBeat } from './tempo.ts'
 
 export const RUNNER_MINIMUM_RELEASE_BEFORE_CONTACT_SECONDS = 0.8
 

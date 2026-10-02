@@ -106,6 +106,9 @@ export function runnerSessionHarness(
       const transport = {
         finished: finished.promise,
         unlock: vi.fn().mockResolvedValue(true),
+        prepareBacking: vi
+          .fn()
+          .mockResolvedValue({ music: true, ambience: true }),
         currentAudioSeconds: () => (disposed ? null : now),
         schedule: vi.fn((checkpoint): RunnerAudioSchedule => {
           const tempo = course.tempoSegments.find(
@@ -125,6 +128,7 @@ export function runnerSessionHarness(
         }),
         hearReference: vi.fn(() => reference.promise),
         setMuted: vi.fn(),
+        setPreferences: vi.fn(),
         setVoiceActive: vi.fn(),
         subscribeInterruption: (listener: () => void) => {
           interrupted = listener

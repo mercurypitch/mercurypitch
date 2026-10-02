@@ -2,8 +2,8 @@
 // Song runner source — strict JSON authoring types and validation primitives.
 // ============================================================
 
-import type { CompiledRunnerMovementProfile, CompiledRunnerVoiceProfile, RunnerLane, } from './contracts'
-import type { RunnerTempoPoint } from './tempo'
+import type { CompiledRunnerMovementProfile, CompiledRunnerVoiceProfile, RunnerLane, } from './contracts.ts'
+import type { RunnerTempoPoint } from './tempo.ts'
 
 export interface RunnerPhraseNoteSource {
   readonly offsetSemitones: number

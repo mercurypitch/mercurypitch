@@ -10,13 +10,12 @@ import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
 import type { RunnerSessionFrame, RunnerSessionPhase, SongRunnerSession, } from '../runner/session-contracts'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
-import type { MicrophoneIssue } from './mic-error'
-import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 import { runnerDisplayNotationNotes, runnerEventAnnouncement, runnerMicrophoneStatus, runnerMovementCueCopy, runnerPauseMessage, runnerRecoveryCopy, runnerTargetResultNotice, runnerVoiceCue, } from './runner-hud'
 import { createRunnerInputEdges } from './runner-input'
 import { RunnerControls } from './RunnerControls'
 import { RunnerFinishRewards } from './RunnerFinishRewards'
 import { RunnerNotation } from './RunnerNotation'
+import { RunnerSetup, RunnerSoundTune } from './RunnerSoundTune'
 import styles from './SongRunnerView.module.css'
 
 interface SongRunnerViewProps {
@@ -35,68 +34,6 @@ interface SongRunnerViewProps {
   presentationError?: string
   onRetryPresentation?(): void
   mountScene(container: HTMLDivElement): () => void
-}
-
-interface RunnerSetupProps {
-  microphoneInput?: GlassMicrophoneInput
-  microphoneIssue?: MicrophoneIssue
-  comfortableMidi: number
-  minimumMidi: number
-  maximumMidi: number
-  onComfortableMidiChange(midi: number): void
-  onHearReference(): void
-}
-
-function RunnerSetup(props: RunnerSetupProps) {
-  const [draftMidi, setDraftMidi] = createSignal(
-    untrack(() => props.comfortableMidi),
-  )
-  createEffect(() => setDraftMidi(props.comfortableMidi))
-  const label = createMemo(() => runnerMidiName(draftMidi()).text)
-
-  return (
-    <div class={styles.setup}>
-      <div class={styles.noteChoice}>
-        <div class={styles.setupLabel}>
-          <span>Comfortable note</span>
-          <strong>{label()}</strong>
-        </div>
-        <input
-          class={styles.noteRange}
-          type="range"
-          min={props.minimumMidi}
-          max={props.maximumMidi}
-          step="1"
-          value={draftMidi()}
-          aria-label="Comfortable note"
-          aria-valuetext={label()}
-          onInput={(event) => setDraftMidi(Number(event.currentTarget.value))}
-          onChange={(event) => {
-            const midi = Number(event.currentTarget.value)
-            setDraftMidi(midi)
-            props.onComfortableMidiChange(midi)
-          }}
-        />
-        <div class={styles.rangeLabels} aria-hidden="true">
-          <span>{runnerMidiName(props.minimumMidi).text}</span>
-          <span>{runnerMidiName(props.maximumMidi).text}</span>
-        </div>
-        <button
-          type="button"
-          class={styles.secondaryButton}
-          onClick={() => props.onHearReference()}
-        >
-          Hear note
-        </button>
-      </div>
-      <Show when={props.microphoneInput !== undefined}>
-        <MicrophoneInputRecovery
-          microphoneInput={props.microphoneInput}
-          issue={props.microphoneIssue}
-        />
-      </Show>
-    </div>
-  )
 }
 
 function phaseAnnouncement(phase: RunnerSessionPhase): string | null {
@@ -145,6 +82,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     events: [],
   })
   const [announcement, setAnnouncement] = createSignal('')
+  const [soundRequest, setSoundRequest] = createSignal(0)
   const [lastRecoveryReason, setLastRecoveryReason] = createSignal<
     Extract<RunnerEvent, { type: 'recovery-required' }>['reason'] | ''
   >('')
@@ -155,7 +93,9 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     readonly resolvedAtCourseSeconds: number
   } | null>(null)
   let sceneContainer!: HTMLDivElement
+  let runnerElement!: HTMLElement
   let dialogElement: HTMLElement | undefined
+  let soundReturnTarget: HTMLButtonElement | undefined
 
   const state = createMemo(() => frame().state)
   const game = createMemo(() => state().game)
@@ -395,9 +335,40 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     void props.session.hearReference()
   }
   const pauseForSetup = (): void => props.session.pause('manual')
+  const openSound = (returnTarget?: HTMLButtonElement): void => {
+    soundReturnTarget = returnTarget
+    input.clear()
+    if (
+      ['preparing', 'readiness', 'count-in', 'running'].includes(state().phase)
+    )
+      props.session.pause('manual')
+    setSoundRequest((request) => request + 1)
+  }
+  const SoundEntry = () => (
+    <button
+      type="button"
+      class={styles.secondaryButton}
+      onClick={(event) => openSound(event.currentTarget)}
+    >
+      Sound / tune
+    </button>
+  )
+  const focusNoteSetup = (): void => {
+    props.session.pause('manual')
+    queueMicrotask(() =>
+      queueMicrotask(() => {
+        runnerElement
+          .querySelector<HTMLInputElement>(
+            'input[aria-label="Comfortable note"]',
+          )
+          ?.focus({ preventScroll: true })
+      }),
+    )
+  }
 
   return (
     <main
+      ref={runnerElement}
       class={styles.runner}
       data-testid="song-runner"
       data-phase={state().phase}
@@ -446,17 +417,29 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         <Show when={game().combo > 1}>
           <span class={styles.combo}>{game().combo} in a row</span>
         </Show>
-        <button
-          type="button"
-          class={styles.iconButton}
-          aria-label={state().musicMuted ? 'Turn music on' : 'Mute music'}
-          aria-pressed={state().musicMuted}
-          onClick={() => props.session.setMusicMuted(!state().musicMuted)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 10v4h4l5 4V6l-5 4H5m12-1c1.3 1.7 1.3 4.3 0 6m2.5-8.5c2.7 3.1 2.7 7.9 0 11" />
-          </svg>
-        </button>
+        <RunnerSoundTune
+          openRequest={soundRequest()}
+          canChangeNote={state().phase !== 'finished'}
+          restoreFocus={() => {
+            if (soundReturnTarget?.isConnected === true) {
+              soundReturnTarget.focus({ preventScroll: true })
+              return true
+            }
+            if (dialogElement?.isConnected === true) {
+              focusDialog(dialogElement)
+              return true
+            }
+            return false
+          }}
+          preferences={state().audioPreferences}
+          backing={state().backing}
+          comfortableMidi={props.comfortableMidi}
+          onPreferencesChange={(patch) =>
+            props.session.setAudioPreferences(patch)
+          }
+          onOpen={() => openSound()}
+          onSetup={focusNoteSetup}
+        />
         <Show
           when={['readiness', 'count-in', 'running'].includes(state().phase)}
         >
@@ -536,8 +519,16 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       <Show when={state().phase === 'preparing'}>
         <section class={styles.statusPanel} role="status" aria-live="polite">
           <span class={styles.spinner} aria-hidden="true" />
-          <h1>Opening your microphone</h1>
-          <p>The course starts after your note is ready.</p>
+          <h1>
+            {state().microphone === 'opening'
+              ? 'Preparing sound and microphone'
+              : 'Playing your note'}
+          </h1>
+          <p>
+            {state().microphone === 'opening'
+              ? 'The course starts after your note is ready.'
+              : 'Match this note when you start.'}
+          </p>
         </section>
       </Show>
 
@@ -610,6 +601,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <h1 id="runner-recovery-title">{recovery().title}</h1>
           <p>{recovery().detail}</p>
           <div class={styles.primaryActions}>
+            <SoundEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -667,6 +659,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             )}
           </Show>
           <div class={styles.primaryActions}>
+            <SoundEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -731,6 +724,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             )}
           </Show>
           <div class={styles.primaryActions}>
+            <SoundEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -785,6 +779,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <h1 id="runner-error-title">Check your setup</h1>
           <p>{state().error?.message ?? 'The course could not start.'}</p>
           <div class={styles.primaryActions}>
+            <SoundEntry />
             <Show
               when={
                 state().error?.microphoneIssue?.action === 'take-over' &&
@@ -850,6 +845,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             assetUrl={props.assetUrl}
           />
           <div class={styles.primaryActions}>
+            <SoundEntry />
             <button
               type="button"
               class={styles.primaryButton}

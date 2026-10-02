@@ -94,6 +94,36 @@ Optional `LevelDefinition.camera` route sections define a stable yaw and look-ah
 
 ## Museum soundtrack
 
+### Singing Current soundtrack and authoring
+
+The moving runner uses approved M03 garden music and quiet A02 ambience at
+their original playback rate. `browser/runner-music.ts` owns the mix;
+`runner/session-contracts.ts` owns default music/example preferences. The
+runner's **Sound / tune** panel saves separate music and note-example levels.
+Muting music leaves the count-in and examples audible. Both score buses are
+hard-zero throughout protected singing spans, with separate fades so the last
+example note finishes before capture. Credible voice outside these spans ducks
+only backing. Backing loads before readiness/count-in; cancellation and retries
+cannot reuse an obsolete epoch. Missing recordings report an availability
+message without disabling capture or examples.
+
+The private moving-course editor uses raw `mercurypitch.song-runner-course`
+version 1. `authoring/runner-studio.ts` provides detached responsive-catalog
+snapshots and calls the same compiler as the game. The local bridge adds
+`GET /api/runner/catalog` and `POST /api/runner/validate` or `/compile`;
+posts require the matching `X-Runner-Catalog` identity. CLI `runner-catalog`
+exports that catalog; `validate` and `compile` identify runner/gallery schemas
+automatically. Run the native Node 22 CLI with `--experimental-strip-types` and
+an explicit private editor `--root`. Structural acceptance, compiler acceptance
+and actual device playability remain distinct. The private editor is not bundled
+with the application.
+
+Runner imports are bounded before audio allocation: courses may last up to 180
+seconds; count-ins accept 1–16 whole beats and no more than 16 seconds. The
+compiler checks actual body clearance, overlapping obstacle routes and reachable
+lane changes from every checkpoint. These resource limits are an allocation
+policy; native-device memory and microphone isolation still require playtesting.
+
 `host.createMusic` is optional so another host can provide or omit its own output adapter. The browser adapter lazily loads the approved M01 museum and M03 garden music with A01/A02/A03 ambience; scene selection is presentation data in `content/soundscapes.ts`. M02 is not used. Audio starts from a player gesture, preserves loop positions across encounters, and stores mute/music/ambience preferences independently from progress.
 
 `ui/soundscape.ts` coordinates voice and playback intent. Microphone permission and audio unlock begin in the Start gesture, but pitch detection waits until `silenceForVoice()` resolves after the soundtrack's release. Cancellation, late loads and foreground recovery cannot restart a retired output. The pause dialog exposes separate music and ambience sliders. Original WAVs and derivation receipts are under `art/glass-adventure/audio/v1`; the shipped five MP3 loops total about 6.2 MB.

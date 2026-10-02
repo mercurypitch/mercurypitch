@@ -21,6 +21,41 @@ export type RunnerPauseReason =
   | 'microphone-interrupted'
   | 'renderer-unavailable'
 
+export interface RunnerAudioPreferences {
+  readonly musicMuted: boolean
+  readonly musicVolume: number
+  readonly guideVolume: number
+}
+
+export const RUNNER_AUDIO_DEFAULTS: RunnerAudioPreferences = Object.freeze({
+  musicMuted: false,
+  musicVolume: 0.35,
+  guideVolume: 0.65,
+})
+
+export function clampRunnerAudioPreferences(
+  patch: Partial<RunnerAudioPreferences>,
+  previous: RunnerAudioPreferences = RUNNER_AUDIO_DEFAULTS,
+): RunnerAudioPreferences {
+  const volume = (value: unknown, fallback: number): number =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.max(0, Math.min(1, value))
+      : fallback
+  return Object.freeze({
+    musicMuted:
+      typeof patch.musicMuted === 'boolean'
+        ? patch.musicMuted
+        : previous.musicMuted,
+    musicVolume: volume(patch.musicVolume, previous.musicVolume),
+    guideVolume: volume(patch.guideVolume, previous.guideVolume),
+  })
+}
+
+export interface RunnerBackingAvailability {
+  readonly music: boolean
+  readonly ambience: boolean
+}
+
 export interface RunnerSessionState {
   readonly phase: RunnerSessionPhase
   readonly game: RunnerSnapshot
@@ -36,6 +71,8 @@ export interface RunnerSessionState {
     readonly beatProgress: number
   } | null
   readonly musicMuted: boolean
+  readonly audioPreferences: RunnerAudioPreferences
+  readonly backing: RunnerBackingAvailability | null
   readonly pauseReason: RunnerPauseReason | null
   readonly error: {
     readonly code:
@@ -69,6 +106,7 @@ export interface SongRunnerSession {
   pause(reason?: RunnerPauseReason): void
   input(action: RunnerInput['action']): boolean
   setMusicMuted(muted: boolean): void
+  setAudioPreferences(patch: Partial<RunnerAudioPreferences>): void
   setPresentationReady(ready: boolean): void
   dispose(): void
 }
@@ -87,10 +125,13 @@ export interface RunnerAudioTransport {
   /** Resolves after release tails and all owned audio resources have closed. */
   readonly finished: Promise<void>
   unlock(): Promise<boolean>
+  /** Optional approved recordings load before readiness and never during an epoch. */
+  prepareBacking(): Promise<RunnerBackingAvailability>
   currentAudioSeconds(): number | null
   schedule(checkpoint: CompiledRunnerCheckpoint): RunnerAudioSchedule
   hearReference(midi: number): Promise<void>
   setMuted(muted: boolean): void
+  setPreferences(patch: Partial<RunnerAudioPreferences>): void
   setVoiceActive(active: boolean): void
   subscribeInterruption(listener: () => void): () => void
   dispose(): void

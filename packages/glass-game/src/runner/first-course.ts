@@ -2,10 +2,10 @@
 // The Singing Current — one stable course structure compiled from typed tuning.
 // ============================================================
 
-import { compileSongRunnerCourseDocument } from './compile-course'
-import type { SingingCurrentTuning } from './first-course-tuning'
-import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, SINGING_CURRENT_RESPONSIVE_TUNING, } from './first-course-tuning'
-import type { SongRunnerCourseCatalog, SongRunnerCourseSource, SongRunnerSourceDocument, } from './source'
+import { compileSongRunnerCourseDocument } from './compile-course.ts'
+import type { SingingCurrentTuning } from './first-course-tuning.ts'
+import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, SINGING_CURRENT_RESPONSIVE_TUNING, } from './first-course-tuning.ts'
+import type { SongRunnerCourseCatalog, SongRunnerCourseSource, SongRunnerSourceDocument, } from './source.ts'
 
 interface SingingCurrentIdentity {
   readonly id: string
