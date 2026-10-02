@@ -152,15 +152,13 @@ input[type='range'] {
    strip it to quiet glass: transparent at rest, tinted on hover; accent
    fills (play, active mic/layout/sidebar states) re-asserted below. */
 .stem-mixer--focus .sm-transport .sm-transport-btn,
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn,
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle {
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn {
   background: transparent;
   border-color: transparent;
 }
 
 .stem-mixer--focus .sm-transport .sm-transport-btn:hover:not(:disabled),
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn:hover:not(:disabled),
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle:hover {
+.stem-mixer--focus .sm-transport .sm-mic-toggle-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
   color: var(--fg-primary, #c9d1d9);
 }
@@ -184,16 +182,6 @@ input[type='range'] {
 .stem-mixer--focus .sm-transport .sm-mic-toggle-btn--error {
   background: color-mix(in srgb, var(--danger, #da3633) 20%, transparent);
   color: var(--danger, #da3633);
-}
-
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active,
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active:hover {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-
-.stem-mixer--focus .sm-transport .sm-col-toggle {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 7%, transparent);
 }
 
 .stem-mixer--focus .sm-transport .sm-speed-select {
