@@ -146,7 +146,7 @@ Rename `src/components/__tests__/Foo.test.tsx` → `src/components/Foo.test.tsx`
 - Unit / integration / component: `<module>.test.ts` / `.test.tsx`, adjacent to `<module>.ts`.
 - Contract: `<subject>.contract.test.ts` (e.g. `cloud-entities.contract.test.ts`). Distinct suffix because these are the only tests that read another package's source off disk, and reviewers should recognise them instantly.
 - Property: no separate file; a `describe('properties', ...)` block inside the module's `.test.ts`.
-- Worker SQL integration: stays in `workers/db-worker/node-tests/*.test.ts` (different runtime — `node:sqlite`).
+- Worker SQL integration: stays in `workers/db-worker/node-tests/*.test.ts` (different runtime — `node:sqlite`). Those files get Node's types from `node-tests/tsconfig.json`, and `pnpm typecheck:db` checks them. Worker `src/` must never get Node's types; `typecheck-coverage.test.ts` fails if a file escapes either program or if the worker's own config gains them.
 - E2E: `src/e2e/<feature>.spec.ts`. One feature per file. No `debug*`, no `test-*`, no `*-test.spec.ts`.
 
 ### 3.2b Which environment a test runs in
