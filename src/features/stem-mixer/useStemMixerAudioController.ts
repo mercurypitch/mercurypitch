@@ -715,6 +715,9 @@ export const useStemMixerAudioController = (
   }
 
   const detachGraph = (): void => {
+    // The key graph goes too: attach() skips a context it already holds, so a
+    // lent context handed back again would keep it wired to the old master.
+    keyControl.dispose()
     for (const node of [mainGain, softClipNode, vocalAnalyser]) {
       try {
         node?.disconnect()
