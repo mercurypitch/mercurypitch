@@ -36,6 +36,7 @@
 // how many rooms are open. This file only knows how to reach the device.
 
 import { Capacitor } from '@capacitor/core'
+import type { MediaSessionPlugin } from '@capgo/capacitor-media-session'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
 export type Unsubscribe = () => void
@@ -211,6 +212,10 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
 /**
  * The system's media buttons, all through one handler. The unsubscribe clears
  * the plugin's handlers again, so a room that is gone is never asked to play.
+ *
+ * Each button is registered on its own. iOS answers through the WebView's
+ * own media session, which may not know every button, and one it refuses
+ * must not leave the others unregistered or uncleared.
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
@@ -219,24 +224,38 @@ export function onMediaAction(
 
   return lazyListener((dispose) => {
     void (async () => {
+      let session: MediaSessionPlugin
       try {
-        const { MediaSession } = await import('@capgo/capacitor-media-session')
-        for (const action of MEDIA_ACTIONS) {
-          await MediaSession.setActionHandler({ action }, () => {
-            handler(action)
-          })
-        }
-        dispose({
-          remove: async () => {
-            for (const action of MEDIA_ACTIONS) {
-              await MediaSession.setActionHandler({ action }, null)
-            }
-          },
-        })
+        session = (await import('@capgo/capacitor-media-session')).MediaSession
       } catch {
         // No media-session plugin in this build: the system's buttons do
         // nothing, as they always did.
+        return
       }
+      const registered: MediaAction[] = []
+      for (const action of MEDIA_ACTIONS) {
+        try {
+          await session.setActionHandler({ action }, () => {
+            handler(action)
+          })
+          registered.push(action)
+        } catch {
+          // This platform has no such button.
+        }
+      }
+      dispose({
+        remove: async () => {
+          for (const action of registered) {
+            // Android hands back a callback id here, not a promise: await
+            // it, never chain on it.
+            try {
+              await session.setActionHandler({ action }, null)
+            } catch {
+              // Gone with the plugin; nothing left to clear.
+            }
+          }
+        },
+      })
     })()
   })
 }

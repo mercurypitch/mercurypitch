@@ -440,4 +440,53 @@ describe('on a phone', () => {
       [{ action: 'stop' }, null],
     ])
   })
+
+  it('registers the buttons a platform has, and clears only those', async () => {
+    // iOS answers through the WebView's media session, which may not know
+    // every button. One refusal must not cost the others.
+    const platform = await loadPlatform(true)
+    mediaSession.setActionHandler.mockImplementation(
+      async ({ action }: { action: string }, handler: unknown) => {
+        if (action === 'stop' && handler !== null) {
+          throw new TypeError('stop is not a supported action')
+        }
+      },
+    )
+    const handler = vi.fn()
+
+    const stop = platform.onMediaAction(handler)
+    await settle()
+    const press = mediaSession.setActionHandler.mock.calls.find(
+      ([options]) => (options as { action: string }).action === 'pause',
+    )?.[1] as () => void
+    press()
+    expect(handler).toHaveBeenCalledWith('pause')
+
+    mediaSession.setActionHandler.mockClear()
+    stop()
+    await settle()
+
+    expect(mediaSession.setActionHandler.mock.calls).toEqual([
+      [{ action: 'play' }, null],
+      [{ action: 'pause' }, null],
+    ])
+    mediaSession.setActionHandler.mockReset()
+  })
+
+  it('takes a callback id from Android rather than a promise', async () => {
+    // Capacitor's bridge answers a callback method with the callback's id.
+    const platform = await loadPlatform(true)
+    mediaSession.setActionHandler.mockImplementation(() => '7')
+
+    const stop = platform.onMediaAction(vi.fn())
+    await settle()
+    stop()
+    await settle()
+
+    expect(mediaSession.setActionHandler).toHaveBeenCalledWith(
+      { action: 'stop' },
+      null,
+    )
+    mediaSession.setActionHandler.mockReset()
+  })
 })
