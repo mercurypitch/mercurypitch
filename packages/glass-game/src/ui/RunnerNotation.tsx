@@ -12,11 +12,18 @@ import styles from './SongRunnerView.module.css'
 interface RunnerNotationProps {
   notes: readonly RunnerNotationNote[]
   activeNoteIndex: number | null
+  phaseLabel: string
+  displayLabel: string
   instruction: string
   target: Pick<
     RunnerTargetSnapshot,
     'currentTargetMidi' | 'pitchFeedback'
   > | null
+  showPitchReadout: boolean
+  microphoneStatus: string
+  scoreStatus: string
+  compact: boolean
+  shortHold: boolean
 }
 
 export function RunnerNotation(props: RunnerNotationProps) {
@@ -31,25 +38,42 @@ export function RunnerNotation(props: RunnerNotationProps) {
       .notes.map((note) => note.label)
       .join(', '),
   )
+  const chargePercent = createMemo(() =>
+    Math.round(
+      Math.min(1, Math.max(0, props.notes[0]?.fillProgress ?? 0)) * 100,
+    ),
+  )
 
   return (
     <section
       class={styles.notationPanel}
-      classList={{ [styles.withPitchReadout]: props.target !== null }}
+      classList={{
+        [styles.withPitchReadout]:
+          props.target !== null && props.showPitchReadout,
+        [styles.compactNotation]: props.compact,
+      }}
+      data-voice-phase={props.phaseLabel.toLowerCase().replaceAll(' ', '-')}
       aria-label="Current melody"
     >
-      <Show
-        when={props.target}
-        fallback={
-          <div class={styles.notationHeading}>
-            <strong>{props.instruction}</strong>
-          </div>
-        }
-      >
-        {(target) => <RunnerPitchReadout target={target()} />}
+      <div class={styles.notationHeading}>
+        <div class={styles.voicePrompt}>
+          <span>{props.phaseLabel}</span>
+          <strong aria-label={props.instruction}>{props.displayLabel}</strong>
+        </div>
+        <div class={styles.voiceFacts} aria-label="Listening status">
+          <span>{props.microphoneStatus}</span>
+          <span>{props.scoreStatus}</span>
+          <Show when={props.shortHold}>
+            <span>Short hold</span>
+          </Show>
+        </div>
+      </div>
+      <Show when={props.target !== null && props.showPitchReadout}>
+        <RunnerPitchReadout target={props.target!} />
       </Show>
       <svg
         class={styles.staff}
+        classList={{ [styles.hiddenStaff]: props.compact }}
         viewBox={`0 0 ${layout().width} ${layout().height}`}
         role="img"
         aria-label={summary() ? `Notes: ${summary()}` : 'Five-line music staff'}
@@ -169,6 +193,14 @@ export function RunnerNotation(props: RunnerNotationProps) {
                     />
                   </clipPath>
                 </defs>
+                <ellipse
+                  class={styles.noteBackdrop}
+                  cx={note.x}
+                  cy={note.endY}
+                  rx={headWidth / 2}
+                  ry={headHeight / 2}
+                  transform={`rotate(-16 ${note.x} ${note.endY})`}
+                />
                 <rect
                   class={styles.noteFill}
                   x={note.x - headWidth / 2 - 2}
@@ -206,6 +238,22 @@ export function RunnerNotation(props: RunnerNotationProps) {
           }}
         </For>
       </svg>
+      <Show when={props.compact}>
+        <div class={styles.chargeMeter}>
+          <span>Charge</span>
+          <div
+            class={styles.chargeTrack}
+            role="progressbar"
+            aria-label="Note charge"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={chargePercent()}
+          >
+            <span style={{ width: `${chargePercent()}%` }} />
+          </div>
+          <strong>{chargePercent()}%</strong>
+        </div>
+      </Show>
     </section>
   )
 }

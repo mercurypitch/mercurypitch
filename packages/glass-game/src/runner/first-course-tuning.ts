@@ -22,6 +22,7 @@ interface SingingCurrentObstacleTuning extends SingingCurrentBeatTuning {
 }
 
 interface SingingCurrentGapTuning extends SingingCurrentObstacleTuning {
+  readonly lengthMeters?: number
   readonly landingRunwayMeters: number
 }
 
@@ -33,17 +34,26 @@ export interface SingingCurrentTuning {
   ]
   readonly track: {
     readonly metersPerBeat: number
+    readonly laneCenters?: readonly [number, number, number]
     readonly spawnRunwayBeats: number
     readonly vocalLookaheadBeats: number
     readonly vocalEmphasisBeats: number
   }
   readonly movement: {
     readonly laneChangeSeconds: number
+    readonly bodyRadius?: number
+    readonly bodyHeight?: number
     readonly jumpVelocityMetersPerSecond: number
     readonly gravityMetersPerSecondSquared: number
     readonly maxJumpRiseMeters: number
     readonly coyoteSeconds: number
     readonly jumpBufferSeconds: number
+  }
+  readonly charge?: {
+    readonly previewDurationSeconds: number
+    readonly contactAfterResponseSeconds: number
+    readonly singleHoldSeconds: number
+    readonly phraseHoldSeconds: number
   }
   readonly voiceWindow: {
     readonly judgeLeadBeats: number
@@ -174,4 +184,76 @@ export const SINGING_CURRENT_LEARNING_TUNING = {
     { atBeat: 64, bpm: 96 },
     { atBeat: 96, bpm: 104 },
   ],
+} as const satisfies SingingCurrentTuning
+
+// The responsive course uses broad response windows and short, ordered holds.
+// Its scheduled predecessors remain available as isolated comparison trials.
+export const SINGING_CURRENT_RESPONSIVE_TUNING = {
+  ...SINGING_CURRENT_CURRENT_TUNING,
+  tempoMap: [
+    { atBeat: 0, bpm: 104 },
+    { atBeat: 64, bpm: 112 },
+    { atBeat: 96, bpm: 120 },
+  ],
+  track: {
+    metersPerBeat: 1.5,
+    laneCenters: [-1.25, 0, 1.25],
+    spawnRunwayBeats: 4,
+    vocalLookaheadBeats: 8,
+    vocalEmphasisBeats: 1.2,
+  },
+  movement: {
+    ...SINGING_CURRENT_CURRENT_TUNING.movement,
+    bodyRadius: 0.28,
+    bodyHeight: 0.9,
+    laneChangeSeconds: 0.32,
+    jumpVelocityMetersPerSecond: Math.sqrt(12),
+    gravityMetersPerSecondSquared: 6,
+    maxJumpRiseMeters: 1,
+  },
+  charge: {
+    previewDurationSeconds: 0.6,
+    contactAfterResponseSeconds: 1.1,
+    singleHoldSeconds: 0.6,
+    phraseHoldSeconds: 0.5,
+  },
+  voiceWindow: {
+    judgeLeadBeats: 0,
+    protectedLeadBeats: 0.5,
+    protectedTailBeats: 2,
+  },
+  phrases: {
+    homeWhole: { noteDurationsBeats: [4], breathAfterBeats: 4 },
+    higherHalf: { noteDurationsBeats: [4], breathAfterBeats: 4 },
+    lowerHalf: { noteDurationsBeats: [4], breathAfterBeats: 4 },
+    twoUp: { noteDurationsBeats: [3, 3], breathAfterBeats: 4 },
+    firstArc: { noteDurationsBeats: [3, 3, 3], breathAfterBeats: 4 },
+    sunlitSteps: { noteDurationsBeats: [2, 2, 2, 2, 2], breathAfterBeats: 4 },
+  },
+  targets: {
+    homeWindow: { atBeat: 6 },
+    higherCarafe: { atBeat: 36 },
+    lowerDiadem: { atBeat: 46 },
+    twoNoteWindow: { atBeat: 56 },
+    arcDiadem: { atBeat: 70 },
+    melodyRehearsal: { atBeat: 104 },
+    twoNoteRevisit: { atBeat: 122 },
+    melodyFinale: { atBeat: 146 },
+  },
+  obstacles: {
+    firstLaneGate: { atBeat: 19, telegraphLeadBeats: 3 },
+    firstJump: {
+      atBeat: 29,
+      telegraphLeadBeats: 3,
+      lengthMeters: 0.8,
+      landingRunwayMeters: 2,
+    },
+    secondLaneGate: { atBeat: 86, telegraphLeadBeats: 3 },
+    secondJump: {
+      atBeat: 93,
+      telegraphLeadBeats: 3,
+      lengthMeters: 0.95,
+      landingRunwayMeters: 2,
+    },
+  },
 } as const satisfies SingingCurrentTuning

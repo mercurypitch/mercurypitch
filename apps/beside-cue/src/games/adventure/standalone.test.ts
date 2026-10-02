@@ -7,7 +7,7 @@ import type { BuildInfo } from '@/build-info'
 const mounted = vi.hoisted(() => ({
   levels: [] as (LevelDefinition | undefined)[],
   runners: [] as boolean[],
-  runnerPaces: [] as ('current' | 'learning' | undefined)[],
+  runnerPaces: [] as ('current' | 'learning' | 'responsive' | undefined)[],
 }))
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
 
@@ -19,7 +19,7 @@ vi.mock('./AdventureScreen', () => ({
   AdventureScreen: (props: {
     level?: LevelDefinition
     runner?: boolean
-    runnerPace?: 'current' | 'learning'
+    runnerPace?: 'current' | 'learning' | 'responsive'
   }) => {
     mounted.levels.push(untrack(() => props.level))
     mounted.runners.push(untrack(() => props.runner === true))
@@ -60,6 +60,7 @@ describe('standalone development route', () => {
   it.each([
     ['dev', 'current', true],
     ['ci', 'learning', false],
+    ['dev', 'responsive', true],
   ] as const)(
     'routes the %s Singing Current %s trial through the gated host',
     async (channel, pace, development) => {

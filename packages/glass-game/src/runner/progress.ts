@@ -4,6 +4,8 @@
 
 import type { CompiledRunnerCourse, RunnerQualityGrade, SavedRunnerProgress, SavedRunnerTargetQuality, } from './contracts'
 
+const EPSILON = 1e-9
+
 function emptyProgress(course: CompiledRunnerCourse): SavedRunnerProgress {
   return {
     version: 1,
@@ -34,6 +36,10 @@ function validQuality(
   const grade = source.grade
   const reliableSeconds = source.reliableSeconds
   const meanAbsoluteCents = source.meanAbsoluteCents
+  const completionFingerprint = source.completionFingerprint
+  const legacyScheduledFingerprint =
+    completionFingerprint === undefined &&
+    target?.completionFingerprint === 'scheduled-v1'
   if (
     target === undefined ||
     (grade !== 1 && grade !== 2 && grade !== 3) ||
@@ -41,9 +47,11 @@ function validQuality(
     source.judgeProfileId !== course.voice.judge.id ||
     source.judgeProfileRevision !== course.voice.judge.revision ||
     source.evidenceVersion !== course.voice.judge.evidenceVersion ||
+    (completionFingerprint !== target.completionFingerprint &&
+      !legacyScheduledFingerprint) ||
     typeof reliableSeconds !== 'number' ||
     !Number.isFinite(reliableSeconds) ||
-    reliableSeconds <
+    reliableSeconds + EPSILON <
       target.notes.reduce(
         (total, note) => total + note.minimumReliableSeconds,
         0,
@@ -58,8 +66,12 @@ function validQuality(
   )
   if (
     band === undefined ||
-    meanAbsoluteCents > band.maximumMeanAbsoluteCents ||
-    meanAbsoluteCents > course.voice.judge.centsTolerance
+    meanAbsoluteCents >
+      (target.completionPolicy === 'charge' && grade === 1
+        ? course.voice.judge.centsTolerance
+        : band.maximumMeanAbsoluteCents) +
+        EPSILON ||
+    meanAbsoluteCents > course.voice.judge.centsTolerance + EPSILON
   )
     return null
   return {
@@ -69,6 +81,7 @@ function validQuality(
     judgeProfileId: course.voice.judge.id,
     judgeProfileRevision: course.voice.judge.revision,
     evidenceVersion: course.voice.judge.evidenceVersion,
+    completionFingerprint: target.completionFingerprint,
     reliableSeconds,
     meanAbsoluteCents,
   }
@@ -186,6 +199,9 @@ export function createRunnerTargetQuality(
   reliableSeconds: number,
   meanAbsoluteCents: number,
 ): SavedRunnerTargetQuality {
+  const target = course.targets.find((candidate) => candidate.id === targetId)
+  if (target === undefined)
+    throw new Error(`Unknown runner target quality "${targetId}".`)
   return {
     targetId,
     grade,
@@ -193,6 +209,7 @@ export function createRunnerTargetQuality(
     judgeProfileId: course.voice.judge.id,
     judgeProfileRevision: course.voice.judge.revision,
     evidenceVersion: course.voice.judge.evidenceVersion,
+    completionFingerprint: target.completionFingerprint,
     reliableSeconds,
     meanAbsoluteCents,
   }

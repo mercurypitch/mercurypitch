@@ -74,6 +74,32 @@ function perfectEvidence(activeEpoch = epoch): readonly RunnerVoiceEvidence[] {
   let sequence = 0
   const result: RunnerVoiceEvidence[] = []
   for (const target of course.targets) {
+    if (target.completionPolicy === 'charge') {
+      let nextNoteStart = target.onsetCourseSeconds
+      for (const note of target.notes) {
+        const step = Math.min(
+          course.voice.judge.maximumEvidenceGapSeconds / 2,
+          note.minimumReliableSeconds / 10,
+        )
+        const intervalCount = Math.ceil(note.minimumReliableSeconds / step)
+        for (let interval = 0; interval <= intervalCount; interval++) {
+          const captureCourseSeconds =
+            interval === intervalCount
+              ? nextNoteStart + note.minimumReliableSeconds + 1e-6
+              : nextNoteStart + interval * step
+          result.push({
+            epoch: activeEpoch,
+            sequence: sequence++,
+            captureCourseSeconds,
+            receivedCourseSeconds: captureCourseSeconds + 0.02,
+            midi: rootMidi + note.endOffsetSemitones,
+            confidence: 1,
+          })
+        }
+        nextNoteStart += note.minimumReliableSeconds + step * 2
+      }
+      continue
+    }
     for (const note of target.notes) {
       const step = Math.min(
         course.voice.judge.maximumEvidenceGapSeconds / 2,
@@ -201,6 +227,130 @@ describe('song runner game', () => {
     expect(
       thirty.snapshot.resolvedTargets.every((result) => result.grade === 3),
     ).toBe(true)
+  })
+
+  it('latches a corrected delayed charge immediately and emits one exact-time fallback hit', () => {
+    const target = course.targets[0]!
+    expect(target.completionPolicy).toBe('charge')
+    const note = target.notes[0]!
+    const rootMidi =
+      comfortableMidi + course.voice.comfortableRootOffsetSemitones
+    const game = createSongRunnerGame(course, { comfortableMidi })
+    expect(game.beginEpoch(epoch)).toMatchObject({ ok: true })
+    const deliverySeconds = 0.15
+    let sequence = 0
+    let captureCourseSeconds = target.onsetCourseSeconds + 0.05
+    const observeAt = (midi: number): number => {
+      const receivedCourseSeconds = captureCourseSeconds + deliverySeconds
+      expect(
+        game.observe({
+          epoch,
+          sequence: sequence++,
+          captureCourseSeconds,
+          receivedCourseSeconds,
+          midi,
+          confidence: 1,
+        }),
+      ).toBe(true)
+      return receivedCourseSeconds
+    }
+
+    observeAt(rootMidi + 3)
+    captureCourseSeconds += 0.05
+    const wrongReceived = observeAt(rootMidi + 3)
+    advanceInFrames(game, epoch, wrongReceived)
+    expect(game.snapshot().activeTarget?.pitchFeedback).toMatchObject({
+      state: 'wrong',
+      correction: 'lower',
+    })
+
+    captureCourseSeconds += 0.05
+    let finalReceived = 0
+    for (
+      let creditedSeconds = 0;
+      creditedSeconds <= note.minimumReliableSeconds + EPSILON;
+      creditedSeconds += 0.05
+    ) {
+      finalReceived = observeAt(rootMidi + 0.8)
+      if (creditedSeconds < note.minimumReliableSeconds - EPSILON)
+        captureCourseSeconds += 0.05
+    }
+    expect(game.snapshot().resolvedTargets).toEqual([])
+    advanceInFrames(
+      game,
+      epoch,
+      finalReceived + course.movement.fixedStepSeconds,
+    )
+
+    expect(game.snapshot().activeTarget?.id).not.toBe(target.id)
+    expect(game.snapshot().resolvedTargets).toEqual([
+      expect.objectContaining({
+        targetId: target.id,
+        outcome: 'hit',
+        grade: 1,
+        resolvedAtCourseSeconds: finalReceived,
+      }),
+    ])
+    expect(game.drainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'target-hit',
+        atCourseSeconds: finalReceived,
+        result: expect.objectContaining({
+          targetId: target.id,
+          grade: 1,
+          resolvedAtCourseSeconds: finalReceived,
+        }),
+      }),
+    ])
+    advanceInFrames(game, epoch, target.settleAfterCourseSeconds + 0.02)
+    expect(game.drainEvents()).toEqual([])
+  })
+
+  it('resolves an incomplete charge once as a miss at settlement', () => {
+    const target = course.targets[0]!
+    const rootMidi =
+      comfortableMidi + course.voice.comfortableRootOffsetSemitones
+    const game = createSongRunnerGame(course, { comfortableMidi })
+    expect(game.beginEpoch(epoch)).toMatchObject({ ok: true })
+    for (const [sequence, offsetSeconds] of [0.05, 0.15].entries()) {
+      const captureCourseSeconds = target.onsetCourseSeconds + offsetSeconds
+      const receivedCourseSeconds = captureCourseSeconds + 0.02
+      expect(
+        game.observe({
+          epoch,
+          sequence,
+          captureCourseSeconds,
+          receivedCourseSeconds,
+          midi: rootMidi + target.notes[0]!.endOffsetSemitones,
+          confidence: 1,
+        }),
+      ).toBe(true)
+      advanceInFrames(game, epoch, receivedCourseSeconds)
+    }
+
+    advanceInFrames(game, epoch, target.settleAfterCourseSeconds + 0.02)
+    expect(game.snapshot().resolvedTargets).toEqual([
+      expect.objectContaining({
+        targetId: target.id,
+        outcome: 'miss',
+        grade: null,
+        resolvedAtCourseSeconds: target.settleAfterCourseSeconds,
+      }),
+    ])
+    expect(game.drainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'target-miss',
+        atCourseSeconds: target.settleAfterCourseSeconds,
+        result: expect.objectContaining({
+          targetId: target.id,
+          outcome: 'miss',
+          grade: null,
+          resolvedAtCourseSeconds: target.settleAfterCourseSeconds,
+        }),
+      }),
+    ])
+    advanceInFrames(game, epoch, target.settleAfterCourseSeconds + 0.5)
+    expect(game.drainEvents()).toEqual([])
   })
 
   it('finishes at the authored endpoint with zero hits and awards the portrait once', () => {
@@ -580,7 +730,110 @@ describe('song runner game', () => {
     ).toContain('two-note-revisit')
   })
 
-  it('stages the initial checkpoint after a no-wall fall and permits repeated retries', () => {
+  it('rewinds an early charge hit after a checkpoint without replaying its event', () => {
+    const checkpoint = course.checkpoints.find(
+      (candidate) => candidate.id === 'melody',
+    )!
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'melody-rehearsal',
+    )!
+    const targetEvidence = perfectEvidence().filter(
+      (observation) =>
+        observation.captureCourseSeconds >=
+          target.judgeOpenCourseSeconds - EPSILON &&
+        observation.captureCourseSeconds <=
+          target.judgeCloseCourseSeconds + EPSILON,
+    )
+    const completedAtCourseSeconds =
+      targetEvidence.at(-1)!.receivedCourseSeconds
+    const trace = runTrace(60, {
+      evidence: perfectEvidence().filter(
+        (observation) =>
+          observation.receivedCourseSeconds <=
+          completedAtCourseSeconds + EPSILON,
+      ),
+      stopCourseSeconds:
+        completedAtCourseSeconds + course.movement.fixedStepSeconds,
+    })
+    expect(trace.snapshot.resolvedTargets).toContainEqual(
+      expect.objectContaining({
+        targetId: target.id,
+        outcome: 'hit',
+        resolvedAtCourseSeconds: completedAtCourseSeconds,
+      }),
+    )
+    expect(
+      trace.events.filter(
+        (event) =>
+          event.type === 'target-hit' && event.result.targetId === target.id,
+      ),
+    ).toHaveLength(1)
+
+    trace.game.advanceTo(
+      epoch,
+      completedAtCourseSeconds +
+        course.movement.fixedStepSeconds +
+        course.movement.maxCatchUpSeconds +
+        0.01,
+    )
+    expect(trace.game.snapshot().status).toBe('recovering')
+    expect(trace.game.drainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'recovery-required',
+        checkpointId: checkpoint.id,
+      }),
+    ])
+    expect(trace.game.prepareCheckpoint(checkpoint.id)).toMatchObject({
+      ok: true,
+      checkpointId: checkpoint.id,
+    })
+    const expectedPreservedTargetIds = course.targets
+      .filter(
+        (candidate) =>
+          candidate.settleAfterCourseSeconds <=
+          checkpoint.courseSeconds + EPSILON,
+      )
+      .map((candidate) => candidate.id)
+    expect(
+      trace.game.snapshot().resolvedTargets.map((result) => result.targetId),
+    ).toEqual(expectedPreservedTargetIds)
+    expect(trace.game.drainEvents()).toEqual([])
+
+    const retryEpoch = 'checkpoint-two'
+    expect(trace.game.beginEpoch(retryEpoch, checkpoint.id)).toMatchObject({
+      ok: true,
+      checkpointId: checkpoint.id,
+    })
+    const retryEvidence = perfectEvidence(retryEpoch).filter(
+      (observation) =>
+        observation.captureCourseSeconds >=
+          target.judgeOpenCourseSeconds - EPSILON &&
+        observation.captureCourseSeconds <=
+          target.judgeCloseCourseSeconds + EPSILON,
+    )
+    for (const observation of retryEvidence) {
+      expect(trace.game.observe(observation)).toBe(true)
+      advanceInFrames(trace.game, retryEpoch, observation.receivedCourseSeconds)
+    }
+    advanceInFrames(
+      trace.game,
+      retryEpoch,
+      retryEvidence.at(-1)!.receivedCourseSeconds +
+        course.movement.fixedStepSeconds,
+    )
+    expect(trace.game.drainEvents()).toEqual([
+      expect.objectContaining({
+        type: 'target-hit',
+        epoch: retryEpoch,
+        result: expect.objectContaining({
+          targetId: target.id,
+          resolvedAtCourseSeconds: retryEvidence.at(-1)!.receivedCourseSeconds,
+        }),
+      }),
+    ])
+  })
+
+  it('reports a lane blocker collision and permits repeated checkpoint retries', () => {
     const game = createSongRunnerGame(course, { comfortableMidi })
     expect(game.beginEpoch(epoch)).toMatchObject({ ok: true })
     for (const input of safeInputs().filter(
@@ -594,7 +847,11 @@ describe('song runner game', () => {
       recoveryCheckpointId: 'start',
     })
     expect(game.snapshot().courseSeconds).toBeGreaterThan(0)
-    game.drainEvents()
+    expect(game.drainEvents().at(-1)).toMatchObject({
+      type: 'recovery-required',
+      reason: 'collision',
+      checkpointId: 'start',
+    })
 
     for (let retry = 0; retry < 2; retry++) {
       expect(game.prepareCheckpoint('start')).toEqual({

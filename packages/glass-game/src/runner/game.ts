@@ -2,7 +2,7 @@
 // Song runner game — deterministic epochs, movement, judging, recovery, and saves.
 // ============================================================
 
-import type { CompiledRunnerCheckpoint, CompiledRunnerCourse, CreateSongRunnerGameOptions, RunnerBeginEpochResult, RunnerEpoch, RunnerEvent, RunnerInput, RunnerSnapshot, RunnerTargetResult, RunnerVoiceEvidence, SavedRunnerProgress, SongRunnerGame, } from './contracts'
+import type { CompiledRunnerCheckpoint, CompiledRunnerCourse, CreateSongRunnerGameOptions, RunnerBeginEpochResult, RunnerEpoch, RunnerEvent, RunnerInput, RunnerRecoveryReason, RunnerSnapshot, RunnerTargetResult, RunnerVoiceEvidence, SavedRunnerProgress, SongRunnerGame, } from './contracts'
 import { runnerFixedStepAtOrAfter } from './fixed-step'
 import { createRunnerJudge } from './judge'
 import type { RunnerMovementState } from './movement'
@@ -84,6 +84,7 @@ export function createSongRunnerGame(
   let lastInputSequence = -1
   let lastEvidenceSequence = -1
   let lastEvidenceCaptureCourseSeconds = -Infinity
+  let lastEvidenceReceivedCourseSeconds = -Infinity
   let eventSequence = 0
   let events: RunnerEvent[] = []
   let combo = 0
@@ -110,6 +111,7 @@ export function createSongRunnerGame(
     lastInputSequence = -1
     lastEvidenceSequence = -1
     lastEvidenceCaptureCourseSeconds = -Infinity
+    lastEvidenceReceivedCourseSeconds = -Infinity
     events = []
     combo = 0
     recoveryCheckpointId = null
@@ -196,8 +198,11 @@ export function createSongRunnerGame(
 
   const resolveTargetsThrough = (throughCourseSeconds: number): void => {
     for (const target of course.targets) {
+      const completedAtCourseSeconds = judge.completionAtCourseSeconds(target)
+      const resolveAtCourseSeconds =
+        completedAtCourseSeconds ?? target.settleAfterCourseSeconds
       if (
-        target.settleAfterCourseSeconds > throughCourseSeconds + EPSILON ||
+        resolveAtCourseSeconds > throughCourseSeconds + EPSILON ||
         sessionResults.has(target.id)
       )
         continue
@@ -232,7 +237,7 @@ export function createSongRunnerGame(
   }
 
   const enterRecovery = (
-    reason: 'fall' | 'frame-gap',
+    reason: RunnerRecoveryReason,
     atCourseSeconds: number,
   ): void => {
     if (status === 'recovering') return
@@ -337,7 +342,10 @@ export function createSongRunnerGame(
     collectPickups(startCourseSeconds, courseSeconds, startX, movement.lateralX)
     certifyCheckpoints(courseSeconds)
     if (movementResult.collided || movementResult.fell) {
-      enterRecovery('fall', courseSeconds)
+      enterRecovery(
+        movementResult.collided ? 'collision' : 'fall',
+        courseSeconds,
+      )
       return false
     }
     if (courseSeconds >= course.lengthCourseSeconds - EPSILON) {
@@ -422,7 +430,9 @@ export function createSongRunnerGame(
       observation.confidence > 1 ||
       (observation.midi !== null && !Number.isFinite(observation.midi)) ||
       observation.captureCourseSeconds <=
-        lastEvidenceCaptureCourseSeconds + EPSILON
+        lastEvidenceCaptureCourseSeconds + EPSILON ||
+      observation.receivedCourseSeconds <
+        lastEvidenceReceivedCourseSeconds - EPSILON
     )
       return false
     const target = course.targets.find(
@@ -441,6 +451,7 @@ export function createSongRunnerGame(
       return false
     lastEvidenceSequence = observation.sequence
     lastEvidenceCaptureCourseSeconds = observation.captureCourseSeconds
+    lastEvidenceReceivedCourseSeconds = observation.receivedCourseSeconds
     judge.observe(observation)
     return true
   }

@@ -361,6 +361,7 @@ export function createBrowserRunnerSession(
       schedule.courseStartSeconds +
       value.captureSeconds -
       schedule.audioStartSeconds
+    const activeTargetBeforeObservation = state.game.activeTarget
     const accepted = game.observe({
       epoch,
       sequence: value.sequence,
@@ -381,11 +382,14 @@ export function createBrowserRunnerSession(
         value.confidence >= course.voice.judge.minimumConfidence &&
         Math.abs(
           value.midi -
-            runnerTargetMidiAt(
-              target.notes,
-              capture,
-              comfortableMidi + course.voice.comfortableRootOffsetSemitones,
-            ),
+            (target.completionPolicy === 'charge' &&
+            activeTargetBeforeObservation?.id === target.id
+              ? activeTargetBeforeObservation.currentTargetMidi
+              : runnerTargetMidiAt(
+                  target.notes,
+                  capture,
+                  comfortableMidi + course.voice.comfortableRootOffsetSemitones,
+                )),
         ) *
           100 <=
           course.voice.judge.centsTolerance

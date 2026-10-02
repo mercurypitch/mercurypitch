@@ -3,7 +3,8 @@ import type { Matrix4, Object3D } from 'three'
 import { CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import type { BreakableSnapshot } from '../contracts'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
-import { layoutRunnerNotation } from '../runner/notation'
+import { layoutRunnerNotation, runnerMidiName } from '../runner/notation'
+import { runnerSecondsToBeat } from '../runner/tempo'
 import { getBreakableRenderRecipe } from './catalog'
 import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
@@ -83,6 +84,38 @@ function createScoreCard() {
         activeNoteIndex: active?.noteIndex,
       })
       context.clearRect(0, 0, 512, 256)
+      if (target.completionPolicy === 'charge' && notes.length === 1) {
+        const note = notes[0]!
+        const label = runnerMidiName(note.endMidi).text
+        context.fillStyle = 'rgba(17,61,65,0.70)'
+        context.beginPath()
+        context.roundRect(100, 10, 312, 232, 28)
+        context.fill()
+        context.lineWidth = 5
+        context.strokeStyle = 'rgba(234,194,105,0.6)'
+        context.beginPath()
+        context.arc(256, 104, 64, 0, Math.PI * 2)
+        context.stroke()
+        context.strokeStyle = '#70e8b1'
+        context.lineWidth = 10
+        context.beginPath()
+        context.arc(
+          256,
+          104,
+          64,
+          -Math.PI / 2,
+          -Math.PI / 2 + Math.PI * 2 * note.fillProgress,
+        )
+        context.stroke()
+        context.fillStyle = '#fff3cf'
+        context.font = '600 52px serif'
+        context.textAlign = 'center'
+        context.fillText(label, 256, 122)
+        context.font = '600 22px sans-serif'
+        context.fillText('Short hold', 256, 206)
+        texture.needsUpdate = true
+        return
+      }
       context.fillStyle = 'rgba(17,61,65,0.68)'
       context.beginPath()
       context.roundRect(2, 2, 508, 252, 22)
@@ -142,7 +175,7 @@ function createScoreCard() {
         context.beginPath()
         context.ellipse(note.x, note.endY, 9, 6.5, -0.3, 0, Math.PI * 2)
         context.stroke()
-        if (note.stemDirection) {
+        if (note.stemDirection && target.completionPolicy !== 'charge') {
           const direction = note.stemDirection === 'up' ? -1 : 1
           const stemX = note.x + (direction < 0 ? 8 : -8),
             stemY = note.endY + direction * 26
@@ -162,7 +195,7 @@ function createScoreCard() {
             context.stroke()
           }
         }
-        if (note.dotted) {
+        if (note.dotted && target.completionPolicy !== 'charge') {
           context.beginPath()
           context.arc(note.x + 15, note.endY, 2.5, 0, Math.PI * 2)
           context.fillStyle = '#fff3cf'
@@ -288,11 +321,9 @@ export function createRunnerTargets(
         const hit = result?.outcome === 'hit'
         if (epochChanged) item.displayCharge = 0
         if (hit) item.displayCharge = 1
-        else if (active !== null) {
-          if (scoreCharge < item.displayCharge) item.displayCharge = scoreCharge
-          else if (active.pitchFeedback.state === 'accepted')
-            item.displayCharge = scoreCharge
-        }
+        // Charge is already accepted evidence. Instantaneous pitch controls
+        // tremor/color only; silence must not hide previously earned cracks.
+        else if (active !== null) item.displayCharge = scoreCharge
         const charge = hit ? 1 : item.displayCharge
         const state: BreakableSnapshot = {
           id: target.id,
@@ -300,12 +331,16 @@ export function createRunnerTargets(
           phase: hit ? 'complete' : charge > 0 ? 'charging' : 'idle',
           brokenAt: hit ? result.resolvedAtCourseSeconds : null,
         }
-        // Phrase end reaches Merc; a miss becomes passable without a false shatter.
-        const endBeat = target.notes.at(-1)!.endBeat
+        // Contact is authored independently of the response deadline. A miss
+        // remains passable without masquerading as an earned shatter.
+        const contactBeat = runnerSecondsToBeat(
+          course.tempoSegments,
+          target.contactCourseSeconds,
+        )
         item.vessel.root.position.set(
           course.laneCenters[target.displayLane],
           course.groundFeetY,
-          -endBeat * course.metersPerBeat + snapshot.courseDistanceMeters,
+          -contactBeat * course.metersPerBeat + snapshot.courseDistanceMeters,
         )
         item.vessel.root.visible =
           result?.outcome !== 'miss' &&

@@ -24,6 +24,18 @@ export interface RunnerTargetSource {
   readonly displayLane: RunnerLane
   readonly glassProfileId: string
   readonly requiredForGrade: boolean
+  /** Omitted targets keep the exact scheduled-phrase contract from schema v1. */
+  readonly completion?: RunnerChargeCompletionSource
+}
+
+export interface RunnerChargeCompletionSource {
+  readonly kind: 'charge'
+  /** One threshold per authored note. Charge notes advance in source order. */
+  readonly minimumReliableSecondsPerNote: readonly number[]
+  /** Audible example length, independent from the authored response window. */
+  readonly previewDurationSeconds: number
+  /** Physical contact after response close, independent from tempo. */
+  readonly contactAfterResponseSeconds: number
 }
 
 export interface RunnerObstacleSource {

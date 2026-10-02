@@ -4,12 +4,12 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CompiledRunnerNote, CompiledRunnerTarget, RunnerVoiceEvidence, } from './contracts'
-import { SINGING_CURRENT } from './first-course'
+import { SINGING_CURRENT_LEARNING, SINGING_CURRENT_RESPONSIVE, } from './first-course'
 import type { RunnerJudge } from './judge'
 import { createRunnerJudge } from './judge'
 import { runnerTargetMidiAt } from './pitch'
 
-const course = SINGING_CURRENT
+const course = SINGING_CURRENT_LEARNING
 const rootMidi = 60 + course.voice.comfortableRootOffsetSemitones
 
 function evidence(
@@ -48,6 +48,69 @@ function fillNote(
     judge.observe(evidence(target, capture))
   const finalCapture = note.endCourseSeconds - 1e-6
   judge.observe(evidence(target, finalCapture))
+}
+
+function chargeEvidence(
+  target: CompiledRunnerTarget,
+  noteIndex: number,
+  captureCourseSeconds: number,
+  errorCents = 0,
+  deliverySeconds = 0,
+): RunnerVoiceEvidence {
+  const responsiveRootMidi =
+    60 + SINGING_CURRENT_RESPONSIVE.voice.comfortableRootOffsetSemitones
+  return {
+    epoch: 'charge-judge',
+    sequence: 0,
+    captureCourseSeconds,
+    receivedCourseSeconds: captureCourseSeconds + deliverySeconds,
+    midi:
+      responsiveRootMidi +
+      target.notes[noteIndex]!.endOffsetSemitones +
+      errorCents / 100,
+    confidence: 1,
+  }
+}
+
+function fillChargeNote(
+  judge: RunnerJudge,
+  target: CompiledRunnerTarget,
+  noteIndex: number,
+  startCourseSeconds: number,
+  errorCents = 0,
+  deliverySeconds = 0,
+): number {
+  const note = target.notes[noteIndex]!
+  const step = Math.min(
+    SINGING_CURRENT_RESPONSIVE.voice.judge.maximumEvidenceGapSeconds / 2,
+    note.minimumReliableSeconds / 10,
+  )
+  judge.observe(
+    chargeEvidence(
+      target,
+      noteIndex,
+      startCourseSeconds,
+      errorCents,
+      deliverySeconds,
+    ),
+  )
+  let creditedSeconds = 0
+  let captureCourseSeconds = startCourseSeconds
+  while (creditedSeconds < note.minimumReliableSeconds) {
+    const delta = Math.min(step, note.minimumReliableSeconds - creditedSeconds)
+    captureCourseSeconds += delta
+    creditedSeconds += delta
+    judge.observe(
+      chargeEvidence(
+        target,
+        noteIndex,
+        captureCourseSeconds,
+        errorCents,
+        deliverySeconds,
+      ),
+    )
+  }
+  return captureCourseSeconds + deliverySeconds
 }
 
 describe('song runner judge', () => {
@@ -356,5 +419,124 @@ describe('song runner judge', () => {
     expect(snapshot.phase).toBe('settling')
     expect(snapshot.pitchFeedback.state).toBe('neutral')
     expect(judge.result(target)).toEqual(resultBeforeSettlement)
+  })
+
+  it('projects delayed valid feedback from receipt time without changing capture continuity', () => {
+    const target = course.targets.find(
+      (candidate) => candidate.id === 'home-window',
+    )!
+    const start = target.notes[0]!.startCourseSeconds + 0.2
+    const delivery = 0.15
+    const judge = createRunnerJudge(course, 60)
+    judge.observe(evidence(target, start - 0.05))
+    judge.observe(
+      evidence(target, start, 0, {
+        receivedCourseSeconds: start + delivery,
+      }),
+    )
+
+    expect(
+      judge.targetSnapshot(target, start + delivery - 0.001).pitchFeedback
+        .state,
+    ).toBe('neutral')
+    const received = judge.targetSnapshot(target, start + delivery)
+    expect(received.pitchFeedback.state).toBe('accepted')
+    expect(received.notes[0]!.fillProgress).toBeGreaterThan(0)
+    expect(
+      judge.targetSnapshot(
+        target,
+        start + delivery + course.voice.judge.maximumEvidenceGapSeconds,
+      ).pitchFeedback.state,
+    ).toBe('accepted')
+    expect(
+      judge.targetSnapshot(
+        target,
+        start + delivery + course.voice.judge.maximumEvidenceGapSeconds + 1e-6,
+      ).pitchFeedback.state,
+    ).toBe('neutral')
+  })
+
+  it('advances charge notes only in authored order and latches exact receipt completion', () => {
+    const target = SINGING_CURRENT_RESPONSIVE.targets.find(
+      (candidate) => candidate.id === 'two-note-window',
+    )!
+    const judge = createRunnerJudge(SINGING_CURRENT_RESPONSIVE, 60)
+    let capture = target.onsetCourseSeconds + 0.05
+
+    judge.observe(chargeEvidence(target, 1, capture))
+    expect(judge.targetSnapshot(target, capture)).toMatchObject({
+      noteIndex: 0,
+      pitchFeedback: { state: 'wrong' },
+      notes: [{ fillProgress: 0 }, { fillProgress: 0 }],
+    })
+
+    const firstReceived = fillChargeNote(judge, target, 0, capture + 0.05)
+    expect(judge.completionAtCourseSeconds(target)).toBeNull()
+    const afterFirst = judge.targetSnapshot(target, firstReceived)
+    expect(afterFirst.noteIndex).toBe(1)
+    expect(afterFirst.notes[0]).toMatchObject({
+      fillProgress: 1,
+      state: 'filled',
+    })
+    expect(afterFirst.notes[1]).toMatchObject({
+      fillProgress: 0,
+      state: 'hollow',
+    })
+
+    capture = firstReceived + 0.05
+    const completedAt = fillChargeNote(judge, target, 1, capture, 0, 0.15)
+    expect(judge.completionAtCourseSeconds(target)).toBeCloseTo(completedAt, 10)
+    expect(judge.result(target)).toMatchObject({
+      outcome: 'hit',
+      grade: 3,
+      resolvedAtCourseSeconds: completedAt,
+    })
+  })
+
+  it.each([
+    { cents: 0, grade: 3 },
+    { cents: 35, grade: 2 },
+    { cents: 60, grade: 1 },
+    { cents: 80, grade: 1 },
+  ] as const)(
+    'keeps a completed charge hit at grade $grade for $cents accepted cents',
+    ({ cents, grade }) => {
+      const target = SINGING_CURRENT_RESPONSIVE.targets[0]!
+      const judge = createRunnerJudge(SINGING_CURRENT_RESPONSIVE, 60)
+      fillChargeNote(judge, target, 0, target.onsetCourseSeconds + 0.05, cents)
+      expect(judge.result(target)).toMatchObject({ outcome: 'hit', grade })
+    },
+  )
+
+  it('keeps scheduled grade semantics and unresolved charge misses distinct', () => {
+    const scheduled = course.targets[0]!
+    const scheduledJudge = createRunnerJudge(course, 60)
+    const note = scheduled.notes[0]!
+    const step = course.voice.judge.maximumEvidenceGapSeconds / 2
+    for (
+      let capture = note.startCourseSeconds;
+      capture <= note.endCourseSeconds - 1e-6;
+      capture += step
+    )
+      scheduledJudge.observe(evidence(scheduled, capture, 75))
+    expect(scheduledJudge.result(scheduled)).toMatchObject({
+      outcome: 'miss',
+      grade: null,
+    })
+
+    const charge = SINGING_CURRENT_RESPONSIVE.targets[0]!
+    const chargeJudge = createRunnerJudge(SINGING_CURRENT_RESPONSIVE, 60)
+    chargeJudge.observe(
+      chargeEvidence(charge, 0, charge.onsetCourseSeconds + 0.05),
+    )
+    chargeJudge.observe(
+      chargeEvidence(charge, 0, charge.onsetCourseSeconds + 0.15),
+    )
+    expect(chargeJudge.completionAtCourseSeconds(charge)).toBeNull()
+    expect(chargeJudge.result(charge)).toMatchObject({
+      outcome: 'miss',
+      grade: null,
+      resolvedAtCourseSeconds: charge.settleAfterCourseSeconds,
+    })
   })
 })

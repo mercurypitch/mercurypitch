@@ -1,9 +1,9 @@
 // Runner music tests — exact finite timing, safe previews and silence independent of gain automation.
 import { describe, expect, it } from 'vitest'
 import type { CompiledRunnerCourse } from '../runner/contracts'
-import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, } from '../runner/first-course'
+import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, SINGING_CURRENT_RESPONSIVE, } from '../runner/first-course'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
-import { planRunnerPhraseGuides, renderRunnerMusic, runnerVoiceSpans, } from './runner-music'
+import { planRunnerPhraseGuides, renderRunnerMusic, RUNNER_VOICE_GUARD_SECONDS, runnerVoiceSpans, } from './runner-music'
 
 const pacingVariants: readonly {
   name: string
@@ -115,5 +115,53 @@ describe('runner score', () => {
       high.samples.slice(after, after + 1000),
     )
     expect(renderRunnerMusic(course, 60, guide.start + 0.1).guides).toEqual([])
+  })
+
+  it('keeps responsive previews short, visible, and wholly ahead of the acoustic guard', () => {
+    const guides = planRunnerPhraseGuides(SINGING_CURRENT_RESPONSIVE)
+    expect(guides.map((guide) => guide.target.id)).toEqual(
+      SINGING_CURRENT_RESPONSIVE.targets.map((target) => target.id),
+    )
+    for (const guide of guides) {
+      expect(guide.end - guide.start).toBeCloseTo(
+        guide.target.previewDurationSeconds,
+        10,
+      )
+      expect(guide.target.previewDurationSeconds).toBeLessThan(
+        guide.target.endCourseSeconds - guide.target.onsetCourseSeconds,
+      )
+      expect(guide.start).toBeGreaterThanOrEqual(
+        guide.target.visibleFromCourseSeconds,
+      )
+      expect(guide.end).toBeLessThanOrEqual(
+        guide.target.protectedFromCourseSeconds -
+          RUNNER_VOICE_GUARD_SECONDS -
+          0.1 +
+          1e-9,
+      )
+    }
+    for (const checkpoint of SINGING_CURRENT_RESPONSIVE.checkpoints) {
+      expect(
+        guides
+          .filter((guide) => guide.start >= checkpoint.courseSeconds - 1e-9)
+          .map((guide) => guide.target.id),
+      ).toEqual(
+        SINGING_CURRENT_RESPONSIVE.targets
+          .filter(
+            (target) =>
+              target.onsetCourseSeconds > checkpoint.courseSeconds + 1e-9,
+          )
+          .map((target) => target.id),
+      )
+    }
+
+    const score = renderRunnerMusic(SINGING_CURRENT_RESPONSIVE, 60)
+    for (const guard of runnerVoiceSpans(SINGING_CURRENT_RESPONSIVE)) {
+      const start = Math.floor(guard.start * score.sampleRate)
+      const end = Math.ceil(guard.end * score.sampleRate)
+      expect(
+        score.samples.slice(start, end).some((sample) => sample !== 0),
+      ).toBe(false)
+    }
   })
 })

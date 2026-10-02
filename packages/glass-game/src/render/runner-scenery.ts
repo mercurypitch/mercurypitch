@@ -1,9 +1,9 @@
 // Runner scenery — fixed-capacity donor assemblies with fog-safe two-chunk residency.
 
-import type { BufferGeometry, Material, Object3D, Texture, TypedArray, } from 'three'
-import { DoubleSide, DynamicDrawUsage, Group, InstancedMesh, Matrix4, MeshStandardMaterial, } from 'three'
+import type { BufferGeometry, Material, Object3D, TypedArray } from 'three'
+import { DynamicDrawUsage, Group, InstancedMesh, Matrix4 } from 'three'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
-import { buildRunnerSceneryDonorAssembly, createRunnerSceneryPaintingGeometry, } from './runner-scenery-geometry'
+import { buildRunnerSceneryDonorAssembly } from './runner-scenery-geometry'
 import type { RunnerSceneryKind, RunnerSceneryWindow, } from './runner-scenery-layout'
 import { createRunnerSceneryLayout, runnerSceneryPlacementMatrix, } from './runner-scenery-layout'
 import { createSourcePoolSurface } from './source-pool'
@@ -12,7 +12,8 @@ export interface RunnerSceneryOptions {
   readonly course: CompiledRunnerCourse
   readonly museumScene: Object3D
   readonly gardenScene: Object3D
-  readonly paintingMap: Texture
+  readonly arcadeScene: Object3D
+  readonly canopyScene: Object3D
   readonly reducedMotion: boolean
 }
 
@@ -118,10 +119,10 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     )?.[0]
     if (!warmupMatrix)
       throw new Error(`Runner scenery has no authored ${kind} placement.`)
-    const poolMeshes = parts.map(({ geometry, material }) => {
+    const poolMeshes = parts.map(({ geometry, material }, partIndex) => {
       const mesh = configureMesh(
         new InstancedMesh(geometry, material, capacity),
-        `${geometry.name}-instances`,
+        `runner-scenery-${kind}-${partIndex}-${geometry.name}-instances`,
         root,
       )
       meshes.push(mesh)
@@ -134,34 +135,18 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     const donorScenes = {
       museum: options.museumScene,
       garden: options.gardenScene,
+      arcade: options.arcadeScene,
+      canopy: options.canopyScene,
     }
-    for (const kind of ['pavilion', 'landmark', 'garden'] as const) {
+    for (const kind of ['terrace', 'canopy', 'arcade'] as const) {
       const parts = buildRunnerSceneryDonorAssembly(kind, donorScenes)
       parts.forEach(({ geometry }) => ownedGeometries.push(geometry))
       createPool(kind, parts)
     }
-
-    const painting = createRunnerSceneryPaintingGeometry()
-    ownedGeometries.push(painting.plane, painting.frame)
-    const paintingMaterial = new MeshStandardMaterial({
-      name: 'runner-scenery-painting',
-      map: options.paintingMap,
-      roughness: 0.62,
-      metalness: 0,
-      side: DoubleSide,
-    })
-    const frameMaterial = new MeshStandardMaterial({
-      name: 'runner-scenery-painting-frame',
-      vertexColors: true,
-      roughness: 0.28,
-      metalness: 0.72,
-    })
-    ownedMaterials.push(paintingMaterial, frameMaterial)
-    createPool('painting', [
-      { geometry: painting.plane, material: paintingMaterial },
-      { geometry: painting.frame, material: frameMaterial },
-    ])
     createPool('water', [
+      { geometry: sourcePool.geometry, material: sourcePool.material },
+    ])
+    createPool('waterfall', [
       { geometry: sourcePool.geometry, material: sourcePool.material },
     ])
   } catch (error) {

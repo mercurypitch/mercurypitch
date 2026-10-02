@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { compileSongRunnerCourseDocument } from './compile-course'
-import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_CATALOG, SINGING_CURRENT_CURRENT_SOURCE_DOCUMENT, } from './first-course'
+import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_CATALOG, SINGING_CURRENT_CURRENT_SOURCE_DOCUMENT, SINGING_CURRENT_RESPONSIVE, SINGING_CURRENT_RESPONSIVE_CATALOG, SINGING_CURRENT_RESPONSIVE_SOURCE_DOCUMENT, } from './first-course'
 import type { SongRunnerCourseCatalog, SongRunnerSourceDocument, } from './source'
 
 type Mutable<T> = T extends readonly (infer Entry)[]
@@ -19,6 +19,10 @@ function sourceClone(): Mutable<SongRunnerSourceDocument> {
 
 function catalogClone(): Mutable<SongRunnerCourseCatalog> {
   return mutableJsonClone(SINGING_CURRENT_CURRENT_CATALOG)
+}
+
+function responsiveSourceClone(): Mutable<SongRunnerSourceDocument> {
+  return mutableJsonClone(SINGING_CURRENT_RESPONSIVE_SOURCE_DOCUMENT)
 }
 
 function mutableJsonClone<T>(value: T): Mutable<T> {
@@ -223,5 +227,71 @@ describe('song runner course compiler', () => {
         mismatchedCatalog,
       ),
     ).toThrow('must have matching positive visible and collision spans')
+  })
+
+  it('compiles explicit charge timing while scheduled targets retain schema-one defaults', () => {
+    const scheduled = SINGING_CURRENT_CURRENT.targets[0]!
+    expect(scheduled).toMatchObject({
+      completionPolicy: 'scheduled',
+      completionFingerprint: 'scheduled-v1',
+      previewDurationSeconds:
+        scheduled.endCourseSeconds - scheduled.onsetCourseSeconds,
+      contactCourseSeconds: scheduled.endCourseSeconds,
+    })
+
+    const charge = SINGING_CURRENT_RESPONSIVE.targets[0]!
+    expect(charge).toMatchObject({
+      completionPolicy: 'charge',
+      previewDurationSeconds: 0.6,
+    })
+    expect(charge.completionFingerprint).toMatch(/^charge-v1:/)
+    expect(charge.judgeOpenCourseSeconds).toBe(charge.onsetCourseSeconds)
+    expect(charge.notes[0]!.minimumReliableSeconds).toBe(0.6)
+    expect(
+      charge.contactCourseSeconds - charge.settleAfterCourseSeconds,
+    ).toBeGreaterThanOrEqual(0.8)
+    expect(charge.protectedUntilCourseSeconds).toBeGreaterThanOrEqual(
+      charge.contactCourseSeconds,
+    )
+  })
+
+  it('fingerprints charge policy and rejects unsafe or ambiguous charge authoring', () => {
+    const changed = responsiveSourceClone()
+    changed.courses[0].voice.targets[0].completion!.minimumReliableSecondsPerNote[0] = 0.55
+    const changedCourse = compileSongRunnerCourseDocument(
+      changed,
+      SINGING_CURRENT_RESPONSIVE_CATALOG,
+    )[0]!
+    expect(changedCourse.targets[0]!.completionFingerprint).not.toBe(
+      SINGING_CURRENT_RESPONSIVE.targets[0]!.completionFingerprint,
+    )
+
+    const wrongCount = responsiveSourceClone()
+    wrongCount.courses[0].voice.targets[0].completion!.minimumReliableSecondsPerNote =
+      [0.5, 0.5]
+    expect(() =>
+      compileSongRunnerCourseDocument(
+        wrongCount,
+        SINGING_CURRENT_RESPONSIVE_CATALOG,
+      ),
+    ).toThrow('must contain exactly one threshold per phrase note')
+
+    const noReleaseRoom = responsiveSourceClone()
+    noReleaseRoom.courses[0].voice.targets[0].completion!.contactAfterResponseSeconds = 0.9
+    expect(() =>
+      compileSongRunnerCourseDocument(
+        noReleaseRoom,
+        SINGING_CURRENT_RESPONSIVE_CATALOG,
+      ),
+    ).toThrow('must leave at least 0.8 seconds after late evidence settlement')
+
+    const glide = responsiveSourceClone()
+    glide.courses[0].voice.phrases[3].notes[1].connection = 'glide'
+    expect(() =>
+      compileSongRunnerCourseDocument(
+        glide,
+        SINGING_CURRENT_RESPONSIVE_CATALOG,
+      ),
+    ).toThrow('timed glides remain scheduled')
   })
 })

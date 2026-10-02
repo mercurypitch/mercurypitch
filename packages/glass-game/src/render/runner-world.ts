@@ -1,11 +1,13 @@
 // Runner scenery — bounded chunk instances use certified floor cuts and reviewed Living Crystal geometry.
 import type { BufferGeometry, Material, Object3D, Texture } from 'three'
-import { BoxGeometry, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, TorusGeometry, Vector3, } from 'three'
+import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, Quaternion, TorusGeometry, Vector3, } from 'three'
 import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
-import { runnerFloorCells } from './runner-world-layout'
+import { runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
+
+const Y_AXIS = new Vector3(0, 1, 0)
 
 function batch(
   geometry: BufferGeometry,
@@ -34,6 +36,22 @@ function box(
     .multiply(new Matrix4().makeScale(width, height, depth))
 }
 
+function turnedBox(
+  x: number,
+  y: number,
+  z: number,
+  width: number,
+  height: number,
+  depth: number,
+  yawRadians: number,
+) {
+  return new Matrix4().compose(
+    new Vector3(x, y, z),
+    new Quaternion().setFromAxisAngle(Y_AXIS, yawRadians),
+    new Vector3(width, height, depth),
+  )
+}
+
 export function createRunnerWorld(
   course: CompiledRunnerCourse,
   crystalScene: Object3D,
@@ -46,6 +64,8 @@ export function createRunnerWorld(
   const root = new Group()
   root.name = 'singing-current-world'
   const boxGeometry = new BoxGeometry(1, 1, 1)
+  const lipGeometry = new CylinderGeometry(0.085, 0.06, 1, 10, 1, false)
+  lipGeometry.rotateZ(Math.PI / 2)
   const pickupGeometry = new TorusGeometry(0.16, 0.035, 6, 24)
   const marble = new MeshPhysicalMaterial({
     color: 0xf4eee0,
@@ -69,6 +89,27 @@ export function createRunnerWorld(
     color: 0xc5a75c,
     roughness: 0.55,
     metalness: 0.5,
+  })
+  const gapDepth = new MeshPhysicalMaterial({
+    color: 0x102a34,
+    roughness: 0.9,
+    metalness: 0.08,
+  })
+  const landing = new MeshPhysicalMaterial({
+    color: 0x8ad8c8,
+    emissive: 0x123d3b,
+    emissiveIntensity: 0.32,
+    roughness: 0.2,
+    metalness: 0.18,
+    clearcoat: 0.88,
+  })
+  const jumpCue = new MeshPhysicalMaterial({
+    color: 0xf1b6a8,
+    emissive: 0x52271f,
+    emissiveIntensity: 0.24,
+    roughness: 0.28,
+    metalness: 0.35,
+    clearcoat: 0.72,
   })
   const roots = createLivingCrystalInteriorAnimation({
     variant: 'pearl-roots',
@@ -97,6 +138,9 @@ export function createRunnerWorld(
       rewardIds: string[]
     }
   >()
+  const trackBounds = runnerTrackBounds(course)
+  const trackWidth = trackBounds.right - trackBounds.left
+  const laneDividers = runnerLaneDividerXs(course)
   let disposed = false
 
   function install(id: string) {
@@ -108,13 +152,19 @@ export function createRunnerWorld(
       trim: Matrix4[] = [],
       lines: Matrix4[] = [],
       crystal: Matrix4[] = [],
-      blockers: Matrix4[] = []
+      blockers: Matrix4[] = [],
+      gapVoids: Matrix4[] = [],
+      takeoffLips: Matrix4[] = [],
+      landingLips: Matrix4[] = [],
+      landingBands: Matrix4[] = [],
+      jumpChevrons: Matrix4[] = []
     for (const cell of cells) {
       const width = cell.maxX - cell.minX,
         depth = cell.end - cell.start,
         x = (cell.minX + cell.maxX) / 2,
         z = -(cell.start + cell.end) / 2
-      const glass = chunk.index % 3 === 1 && width > 4 && depth > 2
+      const glass =
+        !cell.gapApron && chunk.index % 3 === 1 && width >= trackWidth * 0.9
       if (glass)
         crystal.push(box(x, course.groundFeetY, z, width / 3, 1, depth / 1.7))
       else stone.push(box(x, course.groundFeetY - 0.19, z, width, 0.38, depth))
@@ -124,7 +174,7 @@ export function createRunnerWorld(
       trim.push(
         box(x, course.groundFeetY - 0.045, -cell.start, width, 0.07, 0.04),
       )
-      for (const divide of [-1, 1])
+      for (const divide of laneDividers)
         if (divide > cell.minX && divide < cell.maxX)
           lines.push(
             box(
@@ -153,11 +203,82 @@ export function createRunnerWorld(
           ),
         )
       }
+    for (const gap of runnerGapArtSpans(course, id)) {
+      const width = gap.maxX - gap.minX
+      const x = (gap.minX + gap.maxX) / 2
+      const gapDepthMeters = gap.gapEnd - gap.gapStart
+      gapVoids.push(
+        box(
+          x,
+          gap.voidBottomY - 0.025,
+          -(gap.gapStart + gap.gapEnd) / 2,
+          width,
+          0.05,
+          gapDepthMeters,
+        ),
+      )
+      takeoffLips.push(
+        box(
+          x,
+          course.groundFeetY - 0.055,
+          -(gap.takeoffLipStart + gap.takeoffLipEnd) / 2,
+          width,
+          1,
+          1,
+        ),
+      )
+      landingLips.push(
+        box(
+          x,
+          course.groundFeetY - 0.055,
+          -(gap.landingBandStart + 0.11),
+          width,
+          1,
+          1,
+        ),
+      )
+      const landingDepth = gap.landingBandEnd - gap.landingBandStart
+      landingBands.push(
+        box(
+          x,
+          course.groundFeetY + 0.009,
+          -(gap.landingBandStart + gap.landingBandEnd) / 2,
+          width - 0.08,
+          0.018,
+          landingDepth,
+        ),
+      )
+      const cueDepth = gap.projectedRunwayEnd - gap.projectedRunwayStart
+      for (let marker = 1; marker <= 3; marker++) {
+        const distance = gap.projectedRunwayStart + (cueDepth * marker) / 4
+        for (const laneX of course.laneCenters) {
+          const laneInsideGap = laneX >= gap.minX && laneX <= gap.maxX
+          if (!laneInsideGap) continue
+          for (const side of [-1, 1])
+            jumpChevrons.push(
+              turnedBox(
+                laneX + side * 0.12,
+                course.groundFeetY + 0.012,
+                -distance + 0.035,
+                0.3,
+                0.024,
+                0.075,
+                side * 0.58,
+              ),
+            )
+        }
+      }
+    }
     const meshes = [
       batch(boxGeometry, marble, stone, 'pearl-runway'),
       batch(boxGeometry, gold, trim, 'gilt-runway-edges'),
       batch(boxGeometry, lane, lines, 'lane-inlays'),
       batch(boxGeometry, frost, blockers, 'frost-obstacles'),
+      batch(boxGeometry, gapDepth, gapVoids, 'runner-gap-void-depth'),
+      batch(lipGeometry, gold, takeoffLips, 'runner-gap-takeoff-lips'),
+      batch(lipGeometry, gold, landingLips, 'runner-gap-landing-lips'),
+      batch(boxGeometry, landing, landingBands, 'runner-gap-landing-bands'),
+      batch(boxGeometry, jumpCue, jumpChevrons, 'runner-gap-jump-runway'),
       ...crystalParts.map((part, index) =>
         batch(part.geometry, part.material, crystal, `living-crystal-${index}`),
       ),
@@ -243,11 +364,15 @@ export function createRunnerWorld(
       root.removeFromParent()
       installed.clear()
       boxGeometry.dispose()
+      lipGeometry.dispose()
       pickupGeometry.dispose()
       marble.dispose()
       gold.dispose()
       frost.dispose()
       lane.dispose()
+      gapDepth.dispose()
+      landing.dispose()
+      jumpCue.dispose()
       crystalParts.forEach((part, index) => {
         part.geometry.dispose()
         if (index !== 2) part.material.dispose()

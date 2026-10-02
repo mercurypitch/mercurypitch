@@ -5,7 +5,9 @@ import { Group } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runnerCourseFixture } from '../browser/__fixtures__/runner-course'
 import type { RunnerPitchFeedback, RunnerSnapshot } from '../runner/contracts'
+import { SINGING_CURRENT_RESPONSIVE } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
+import { runnerSecondsToBeat } from '../runner/tempo'
 
 const state = vi.hoisted(() => ({
   vesselUpdate: vi.fn(),
@@ -13,6 +15,7 @@ const state = vi.hoisted(() => ({
   feedbackUpdate: vi.fn(),
   feedbackDispose: vi.fn(),
   poolClose: vi.fn(),
+  drawText: vi.fn(),
 }))
 
 vi.mock('./exhibit-geometry-pool', async () => {
@@ -89,7 +92,7 @@ function context() {
     beginPath: vi.fn(),
     roundRect: vi.fn(),
     fill: vi.fn(),
-    fillText: vi.fn(),
+    fillText: state.drawText,
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     stroke: vi.fn(),
@@ -146,7 +149,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('runner targets live feedback', () => {
-  it('advances displayed fracture only during accepted feedback', () => {
+  it('shows authoritative charge even after instantaneous pitch feedback becomes neutral', () => {
     const course = runnerCourseFixture()
     const initial = createSongRunnerGame(course, {
       comfortableMidi: 60,
@@ -170,17 +173,68 @@ describe('runner targets live feedback', () => {
     })
 
     targets.update(withFeedback(initial, NEUTRAL, 0.7), 1 / 60)
-    expect(latestVesselState().charge).toBe(0.4)
+    expect(latestVesselState().charge).toBe(0.7)
     expect(state.vesselUpdate.mock.calls.at(-1)![3]).toMatchObject({
       surfaceStressActive: false,
       tremorActive: false,
     })
 
     targets.update(withFeedback(initial, WRONG, 0.7), 1 / 60)
-    expect(latestVesselState().charge).toBe(0.4)
+    expect(latestVesselState().charge).toBe(0.7)
 
     targets.update(withFeedback(initial, ACCEPTED, 0.75), 1 / 60)
     expect(latestVesselState().charge).toBe(0.75)
+    targets.dispose()
+  })
+
+  it('places the pane at contact time rather than the response deadline', () => {
+    const course = SINGING_CURRENT_RESPONSIVE
+    const target = course.targets[0]!
+    const snapshot = createSongRunnerGame(course, {
+      comfortableMidi: 60,
+    }).snapshot()
+    const targets = createRunnerTargets(
+      course,
+      new Group(),
+      'test-bundle',
+      60,
+      false,
+    )
+    targets.update(snapshot, 0)
+    const pane = targets.root.children[0]!
+    const contactBeat = runnerSecondsToBeat(
+      course.tempoSegments,
+      target.contactCourseSeconds,
+    )
+    expect(target.completionPolicy).toBe('charge')
+    expect(pane.position.z).toBeCloseTo(-contactBeat * course.metersPerBeat, 8)
+    expect(pane.position.z).toBeLessThan(
+      -target.notes.at(-1)!.endBeat * course.metersPerBeat,
+    )
+    targets.dispose()
+  })
+
+  it('labels a short hold with the actual pitch instead of a timed notation duration', () => {
+    const original = runnerCourseFixture()
+    const course = {
+      ...original,
+      targets: [
+        { ...original.targets[0]!, completionPolicy: 'charge' as const },
+      ],
+    }
+    const snapshot = createSongRunnerGame(course, {
+      comfortableMidi: 60,
+    }).snapshot()
+    const targets = createRunnerTargets(
+      course,
+      new Group(),
+      'test-bundle',
+      60,
+      false,
+    )
+    targets.update(snapshot, 0)
+    expect(state.drawText).toHaveBeenCalledWith('C4', 256, 122)
+    expect(state.drawText).toHaveBeenCalledWith('Short hold', 256, 206)
     targets.dispose()
   })
 

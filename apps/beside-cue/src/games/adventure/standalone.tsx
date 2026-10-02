@@ -102,7 +102,9 @@ function selectedRunnerPace(
   query: URLSearchParams,
 ): SingingCurrentTrialPace | undefined {
   const pace = query.get('pace')
-  return pace === 'current' || pace === 'learning' ? pace : undefined
+  return pace === 'current' || pace === 'learning' || pace === 'responsive'
+    ? pace
+    : undefined
 }
 
 async function mount(): Promise<void> {

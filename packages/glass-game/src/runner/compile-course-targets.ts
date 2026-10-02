@@ -6,7 +6,9 @@ import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqua
 import type { CompiledRunnerCourse, CompiledRunnerNote, CompiledRunnerTarget, CompiledRunnerVoiceProfile, RunnerQualityGrade, } from './contracts'
 import type { RunnerPhraseSource, RunnerTargetSource, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source'
 import { runnerSourceFail, runnerSourceUniqueIds } from './source'
-import { runnerBeatToSeconds } from './tempo'
+import { runnerBeatToSeconds, runnerSecondsToBeat } from './tempo'
+
+export const RUNNER_MINIMUM_RELEASE_BEFORE_CONTACT_SECONDS = 0.8
 
 interface ParsedTarget extends RunnerTargetSource {
   readonly phrase: RunnerPhraseSource
@@ -219,6 +221,24 @@ export function compileRunnerTargets(
         runnerSourceFail(`${targetPath}.atBeat`, 'must lie inside the course.')
       let noteBeat = target.atBeat
       let previousOffset: number | null = null
+      const charge = target.completion
+      if (
+        charge !== undefined &&
+        charge.minimumReliableSecondsPerNote.length !==
+          target.phrase.notes.length
+      )
+        runnerSourceFail(
+          `${targetPath}.completion.minimumReliableSecondsPerNote`,
+          'must contain exactly one threshold per phrase note.',
+        )
+      if (
+        charge !== undefined &&
+        target.phrase.notes.some((note) => note.connection === 'glide')
+      )
+        runnerSourceFail(
+          `${targetPath}.completion`,
+          'charge targets require separate notes; timed glides remain scheduled.',
+        )
       const notes: CompiledRunnerNote[] = target.phrase.notes.map(
         (note, noteIndex) => {
           const startBeat = noteBeat
@@ -243,8 +263,9 @@ export function compileRunnerTargets(
             startCourseSeconds,
             endCourseSeconds,
             minimumReliableSeconds:
+              charge?.minimumReliableSecondsPerNote[noteIndex] ??
               (endCourseSeconds - startCourseSeconds) *
-              voice.judge.minimumReliableRatio,
+                voice.judge.minimumReliableRatio,
           }
         },
       )
@@ -262,24 +283,76 @@ export function compileRunnerTargets(
         )
       const onsetCourseSeconds = notes[0]!.startCourseSeconds
       const endCourseSeconds = notes.at(-1)!.endCourseSeconds
+      const responseDurationSeconds = endCourseSeconds - onsetCourseSeconds
+      const requiredReliableSeconds = notes.reduce(
+        (total, note) => total + note.minimumReliableSeconds,
+        0,
+      )
+      if (
+        charge !== undefined &&
+        requiredReliableSeconds >=
+          responseDurationSeconds - RUNNER_COMPILER_EPSILON
+      )
+        runnerSourceFail(
+          `${targetPath}.completion.minimumReliableSecondsPerNote`,
+          'must leave response time beyond the aggregate reliable hold.',
+        )
+      if (
+        charge !== undefined &&
+        charge.previewDurationSeconds >
+          responseDurationSeconds + RUNNER_COMPILER_EPSILON
+      )
+        runnerSourceFail(
+          `${targetPath}.completion.previewDurationSeconds`,
+          'cannot exceed the authored response duration.',
+        )
+      const settleAfterCourseSeconds =
+        endCourseSeconds + voice.judge.maximumDeliveryLatencySeconds
+      const contactCourseSeconds =
+        charge === undefined
+          ? endCourseSeconds
+          : endCourseSeconds + charge.contactAfterResponseSeconds
+      if (
+        charge !== undefined &&
+        contactCourseSeconds - settleAfterCourseSeconds <
+          RUNNER_MINIMUM_RELEASE_BEFORE_CONTACT_SECONDS -
+            RUNNER_COMPILER_EPSILON
+      )
+        runnerSourceFail(
+          `${targetPath}.completion.contactAfterResponseSeconds`,
+          `must leave at least ${RUNNER_MINIMUM_RELEASE_BEFORE_CONTACT_SECONDS} seconds after late evidence settlement.`,
+        )
+      if (
+        contactCourseSeconds >
+        runnerBeatToSeconds(tempoSegments, course.track.lengthBeats) +
+          RUNNER_COMPILER_EPSILON
+      )
+        runnerSourceFail(
+          targetPath,
+          'physical contact extends beyond the course.',
+        )
       const protectedFromBeat = Math.max(
         0,
         target.atBeat - voiceProfile.protectedLeadBeats,
       )
-      const protectedUntilBeat = Math.min(
-        course.track.lengthBeats,
-        noteBeat + voiceProfile.protectedTailBeats,
+      const protectedUntilCourseSeconds = Math.max(
+        runnerBeatToSeconds(
+          tempoSegments,
+          Math.min(
+            course.track.lengthBeats,
+            noteBeat + voiceProfile.protectedTailBeats,
+          ),
+        ),
+        contactCourseSeconds,
+      )
+      const protectedUntilBeat = runnerSecondsToBeat(
+        tempoSegments,
+        protectedUntilCourseSeconds,
       )
       const protectedFromCourseSeconds = runnerBeatToSeconds(
         tempoSegments,
         protectedFromBeat,
       )
-      const protectedUntilCourseSeconds = runnerBeatToSeconds(
-        tempoSegments,
-        protectedUntilBeat,
-      )
-      const settleAfterCourseSeconds =
-        endCourseSeconds + voice.judge.maximumDeliveryLatencySeconds
       if (
         settleAfterCourseSeconds >
         runnerBeatToSeconds(tempoSegments, course.track.lengthBeats) +
@@ -316,6 +389,18 @@ export function compileRunnerTargets(
         displayLane: target.displayLane,
         glassProfileId: target.glassProfileId,
         requiredForGrade: target.requiredForGrade,
+        completionPolicy: charge === undefined ? 'scheduled' : 'charge',
+        completionFingerprint:
+          charge === undefined
+            ? 'scheduled-v1'
+            : `charge-v1:${JSON.stringify({
+                minimumReliableSecondsPerNote:
+                  charge.minimumReliableSecondsPerNote,
+                previewDurationSeconds: charge.previewDurationSeconds,
+                contactAfterResponseSeconds: charge.contactAfterResponseSeconds,
+              })}`,
+        previewDurationSeconds:
+          charge?.previewDurationSeconds ?? responseDurationSeconds,
         notes,
         visibleFromCourseSeconds: runnerBeatToSeconds(
           tempoSegments,
@@ -327,12 +412,16 @@ export function compileRunnerTargets(
         ),
         onsetCourseSeconds,
         endCourseSeconds,
-        judgeOpenCourseSeconds: runnerBeatToSeconds(
-          tempoSegments,
-          Math.max(0, target.atBeat - voiceProfile.judgeLeadBeats),
-        ),
+        judgeOpenCourseSeconds:
+          charge === undefined
+            ? runnerBeatToSeconds(
+                tempoSegments,
+                Math.max(0, target.atBeat - voiceProfile.judgeLeadBeats),
+              )
+            : onsetCourseSeconds,
         judgeCloseCourseSeconds: endCourseSeconds,
         settleAfterCourseSeconds,
+        contactCourseSeconds,
         protectedFromCourseSeconds,
         protectedUntilCourseSeconds,
       }
@@ -349,6 +438,14 @@ export function compileRunnerTargets(
       runnerSourceFail(
         `${path}.voice.targets[${index}].atBeat`,
         `overlaps target "${previous.id}" through settlement grace.`,
+      )
+    if (
+      previous.contactCourseSeconds >
+      current.judgeOpenCourseSeconds + RUNNER_COMPILER_EPSILON
+    )
+      runnerSourceFail(
+        `${path}.voice.targets[${index}].atBeat`,
+        `overlaps target "${previous.id}" through physical contact.`,
       )
   }
 

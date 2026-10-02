@@ -4,7 +4,7 @@
 
 import { compileSongRunnerCourseDocument } from './compile-course'
 import type { SingingCurrentTuning } from './first-course-tuning'
-import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, } from './first-course-tuning'
+import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, SINGING_CURRENT_RESPONSIVE_TUNING, } from './first-course-tuning'
 import type { SongRunnerCourseCatalog, SongRunnerCourseSource, SongRunnerSourceDocument, } from './source'
 
 interface SingingCurrentIdentity {
@@ -16,6 +16,31 @@ function buildSingingCurrent(
   identity: SingingCurrentIdentity,
   tuning: SingingCurrentTuning,
 ) {
+  const laneCenters = tuning.track.laneCenters ?? ([-2, 0, 2] as const)
+  const compact = laneCenters[2] - laneCenters[0] < 4
+  const gapLaneHalfWidth = (laneCenters[2] - laneCenters[0]) / 4
+  const blockerHalfWidth = compact ? 0.5 : 0.78
+  const firstGapLength = tuning.obstacles.firstJump.lengthMeters ?? 0.9
+  const secondGapLength = tuning.obstacles.secondJump.lengthMeters ?? 1.05
+  const completion = (noteCount: number) =>
+    tuning.charge === undefined
+      ? {}
+      : {
+          completion: {
+            kind: 'charge' as const,
+            minimumReliableSecondsPerNote: Array.from(
+              { length: noteCount },
+              () =>
+                noteCount === 1
+                  ? tuning.charge!.singleHoldSeconds
+                  : tuning.charge!.phraseHoldSeconds,
+            ),
+            previewDurationSeconds:
+              tuning.charge.previewDurationSeconds * noteCount,
+            contactAfterResponseSeconds:
+              tuning.charge.contactAfterResponseSeconds,
+          },
+        }
   const catalog = {
     movementProfiles: {
       'runner-beginner-v1': {
@@ -24,8 +49,8 @@ function buildSingingCurrent(
         fixedStepSeconds: 1 / 120,
         maxCatchUpSeconds: 0.25,
         laneChangeSeconds: tuning.movement.laneChangeSeconds,
-        bodyRadius: 0.22,
-        bodyHeight: 0.7,
+        bodyRadius: tuning.movement.bodyRadius ?? 0.22,
+        bodyHeight: tuning.movement.bodyHeight ?? 0.7,
         jumpVelocityMetersPerSecond:
           tuning.movement.jumpVelocityMetersPerSecond,
         gravityMetersPerSecondSquared:
@@ -69,11 +94,11 @@ function buildSingingCurrent(
         kind: 'blocker',
         id: 'runner-lane-gate-training-v1',
         longitudinalHalfLengthMeters: 0.35,
-        laneHalfWidthMeters: 0.78,
+        laneHalfWidthMeters: blockerHalfWidth,
         minYOffsetMeters: 0,
         maxYOffsetMeters: 1.15,
         visibleLongitudinalHalfLengthMeters: 0.35,
-        visibleLaneHalfWidthMeters: 0.78,
+        visibleLaneHalfWidthMeters: blockerHalfWidth,
         visibleMinYOffsetMeters: 0,
         visibleMaxYOffsetMeters: 1.15,
         telegraphLeadBeats: tuning.obstacles.firstLaneGate.telegraphLeadBeats,
@@ -82,10 +107,10 @@ function buildSingingCurrent(
       'runner-gap-catch-training-v1': {
         kind: 'gap',
         id: 'runner-gap-catch-training-v1',
-        lengthMeters: 0.9,
-        laneHalfWidthMeters: 1,
-        visibleLengthMeters: 0.9,
-        visibleLaneHalfWidthMeters: 1,
+        lengthMeters: firstGapLength,
+        laneHalfWidthMeters: gapLaneHalfWidth,
+        visibleLengthMeters: firstGapLength,
+        visibleLaneHalfWidthMeters: gapLaneHalfWidth,
         landingRunwayMeters: tuning.obstacles.firstJump.landingRunwayMeters,
         telegraphLeadBeats: tuning.obstacles.firstJump.telegraphLeadBeats,
         assetProfileIds: ['living-crystal-platform-v2'],
@@ -94,11 +119,11 @@ function buildSingingCurrent(
         kind: 'blocker',
         id: 'runner-lane-gate-v1',
         longitudinalHalfLengthMeters: 0.4,
-        laneHalfWidthMeters: 0.78,
+        laneHalfWidthMeters: blockerHalfWidth,
         minYOffsetMeters: 0,
         maxYOffsetMeters: 1.25,
         visibleLongitudinalHalfLengthMeters: 0.4,
-        visibleLaneHalfWidthMeters: 0.78,
+        visibleLaneHalfWidthMeters: blockerHalfWidth,
         visibleMinYOffsetMeters: 0,
         visibleMaxYOffsetMeters: 1.25,
         telegraphLeadBeats: tuning.obstacles.secondLaneGate.telegraphLeadBeats,
@@ -107,10 +132,10 @@ function buildSingingCurrent(
       'runner-gap-v1': {
         kind: 'gap',
         id: 'runner-gap-v1',
-        lengthMeters: 1.05,
-        laneHalfWidthMeters: 1,
-        visibleLengthMeters: 1.05,
-        visibleLaneHalfWidthMeters: 1,
+        lengthMeters: secondGapLength,
+        laneHalfWidthMeters: gapLaneHalfWidth,
+        visibleLengthMeters: secondGapLength,
+        visibleLaneHalfWidthMeters: gapLaneHalfWidth,
         landingRunwayMeters: tuning.obstacles.secondJump.landingRunwayMeters,
         telegraphLeadBeats: tuning.obstacles.secondJump.telegraphLeadBeats,
         assetProfileIds: ['living-crystal-platform-v2'],
@@ -137,8 +162,8 @@ function buildSingingCurrent(
           'museum-environment-v2',
           'museum-kit-v2',
           'museum-garden-v2',
-          'painting-garden-v5',
           'living-crystal-platform-v2',
+          ...(compact ? ['museum-canopy-v3', 'museum-arcade-v3'] : []),
         ],
       },
     },
@@ -158,7 +183,7 @@ function buildSingingCurrent(
       metersPerBeat: tuning.track.metersPerBeat,
       groundFeetY: 0,
       fallBelowFeetY: -3,
-      laneCenters: [-2, 0, 2],
+      laneCenters,
       spawnRunwayBeats: tuning.track.spawnRunwayBeats,
       vocalLookaheadBeats: tuning.track.vocalLookaheadBeats,
       vocalEmphasisBeats: tuning.track.vocalEmphasisBeats,
@@ -223,12 +248,12 @@ function buildSingingCurrent(
             {
               offsetSemitones: 2,
               durationBeats: tuning.phrases.firstArc.noteDurationsBeats[1],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
             {
               offsetSemitones: 0,
               durationBeats: tuning.phrases.firstArc.noteDurationsBeats[2],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
           ],
           breathAfterBeats: tuning.phrases.firstArc.breathAfterBeats,
@@ -243,22 +268,22 @@ function buildSingingCurrent(
             {
               offsetSemitones: 2,
               durationBeats: tuning.phrases.sunlitSteps.noteDurationsBeats[1],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
             {
               offsetSemitones: 4,
               durationBeats: tuning.phrases.sunlitSteps.noteDurationsBeats[2],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
             {
               offsetSemitones: 2,
               durationBeats: tuning.phrases.sunlitSteps.noteDurationsBeats[3],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
             {
               offsetSemitones: 0,
               durationBeats: tuning.phrases.sunlitSteps.noteDurationsBeats[4],
-              connection: 'glide',
+              connection: tuning.charge === undefined ? 'glide' : 'separate',
             },
           ],
           breathAfterBeats: tuning.phrases.sunlitSteps.breathAfterBeats,
@@ -269,6 +294,7 @@ function buildSingingCurrent(
           id: 'home-window',
           atBeat: tuning.targets.homeWindow.atBeat,
           phraseId: 'home-whole',
+          ...completion(1),
           displayLane: 1,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -277,6 +303,7 @@ function buildSingingCurrent(
           id: 'higher-carafe',
           atBeat: tuning.targets.higherCarafe.atBeat,
           phraseId: 'higher-half',
+          ...completion(1),
           displayLane: 2,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -285,6 +312,7 @@ function buildSingingCurrent(
           id: 'lower-diadem',
           atBeat: tuning.targets.lowerDiadem.atBeat,
           phraseId: 'lower-half',
+          ...completion(1),
           displayLane: 0,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -293,6 +321,7 @@ function buildSingingCurrent(
           id: 'two-note-window',
           atBeat: tuning.targets.twoNoteWindow.atBeat,
           phraseId: 'two-up',
+          ...completion(2),
           displayLane: 1,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -301,6 +330,7 @@ function buildSingingCurrent(
           id: 'arc-diadem',
           atBeat: tuning.targets.arcDiadem.atBeat,
           phraseId: 'first-arc',
+          ...completion(3),
           displayLane: 1,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -309,6 +339,7 @@ function buildSingingCurrent(
           id: 'melody-rehearsal',
           atBeat: tuning.targets.melodyRehearsal.atBeat,
           phraseId: 'sunlit-steps',
+          ...completion(5),
           displayLane: 2,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -317,6 +348,7 @@ function buildSingingCurrent(
           id: 'two-note-revisit',
           atBeat: tuning.targets.twoNoteRevisit.atBeat,
           phraseId: 'two-up',
+          ...completion(2),
           displayLane: 0,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -325,6 +357,7 @@ function buildSingingCurrent(
           id: 'melody-finale',
           atBeat: tuning.targets.melodyFinale.atBeat,
           phraseId: 'sunlit-steps',
+          ...completion(5),
           displayLane: 1,
           glassProfileId: 'runner-score-window-v1',
           requiredForGrade: true,
@@ -452,6 +485,22 @@ const learningTrial = buildSingingCurrent(
   SINGING_CURRENT_LEARNING_TUNING,
 )
 
+const responsive = buildSingingCurrent(
+  { id: 'the-singing-current-v1', revision: 3 },
+  SINGING_CURRENT_RESPONSIVE_TUNING,
+)
+const responsiveTrial = buildSingingCurrent(
+  { id: 'the-singing-current-trial-responsive-v1', revision: 1 },
+  SINGING_CURRENT_RESPONSIVE_TUNING,
+)
+
+export const SINGING_CURRENT_RESPONSIVE_CATALOG = responsive.catalog
+export const SINGING_CURRENT_RESPONSIVE_SOURCE = responsive.source
+export const SINGING_CURRENT_RESPONSIVE_SOURCE_DOCUMENT =
+  responsive.sourceDocument
+export const SINGING_CURRENT_RESPONSIVE = responsive.course
+export const SINGING_CURRENT_RESPONSIVE_TRIAL = responsiveTrial.course
+
 export const SINGING_CURRENT_CURRENT_CATALOG = current.catalog
 export const SINGING_CURRENT_CURRENT_SOURCE = current.source
 export const SINGING_CURRENT_CURRENT_SOURCE_DOCUMENT = current.sourceDocument
@@ -465,12 +514,13 @@ export const SINGING_CURRENT_LEARNING = learning.course
 export const SINGING_CURRENT_CURRENT_TRIAL = currentTrial.course
 export const SINGING_CURRENT_LEARNING_TRIAL = learningTrial.course
 export const SINGING_CURRENT_TRIALS = {
+  responsive: SINGING_CURRENT_RESPONSIVE_TRIAL,
   current: SINGING_CURRENT_CURRENT_TRIAL,
   learning: SINGING_CURRENT_LEARNING_TRIAL,
 } as const
 
-export const SINGING_CURRENT_CATALOG = SINGING_CURRENT_LEARNING_CATALOG
-export const SINGING_CURRENT_SOURCE = SINGING_CURRENT_LEARNING_SOURCE
+export const SINGING_CURRENT_CATALOG = SINGING_CURRENT_RESPONSIVE_CATALOG
+export const SINGING_CURRENT_SOURCE = SINGING_CURRENT_RESPONSIVE_SOURCE
 export const SINGING_CURRENT_SOURCE_DOCUMENT =
-  SINGING_CURRENT_LEARNING_SOURCE_DOCUMENT
-export const SINGING_CURRENT = SINGING_CURRENT_LEARNING
+  SINGING_CURRENT_RESPONSIVE_SOURCE_DOCUMENT
+export const SINGING_CURRENT = SINGING_CURRENT_RESPONSIVE
