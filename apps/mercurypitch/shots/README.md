@@ -1,7 +1,7 @@
 # Raw store screenshots
 
 `pnpm shots` builds the Mercury Pitch native bundle the way the store build
-presents it and captures eight screens on an iPhone, an iPad, an Android phone
+presents it and captures nine screens on an iPhone, an iPad, an Android phone
 and two Android tablets, and the two tablets again held sideways. It is a
 local tool: PR Gate never runs it (the gate's
 Playwright config is the root one, whose test directory is `src/e2e`), and a
@@ -53,10 +53,11 @@ leave the machine, and each test prints what it answered and refused.
 ## Whose phone it is
 
 Everything is invented (`shots/fixtures.ts`). The clock is fixed to start at
-2026-10-15 18:40 UTC and then runs at the real rate, so a take lasts as long
-as it was sung.
+2026-09-24 18:39:48 UTC and then runs at the real rate, so a take lasts as
+long as it was sung, and one sung right after the start runs from 18:39 to
+18:40.
 
-- **Mara's phone** (screens 02 and 04 to 08): signed in to a fictional account
+- **Mara's phone** (screens 02 and 04 to 09): signed in to a fictional account
   (`mara@example.com`), the microphone granted before, five kept Sing takes
   over the past week, and five weeks of Ear Lab practice with two
   calibrations. That is her progress as the native rooms keep it: the take
@@ -76,9 +77,14 @@ bundled example song, whose attribution the room shows.
 4. The Sing room live, on the phrase's held top note, in tune. A frame
    taken after the note moved on is retaken on the phrase's next pass.
 5. The end card of that take, against the newest take the phone kept.
-6. The Ear Lab bench: the Mercury Index and its last calibration.
+6. The Ear Lab bench, scrolled so its faculty dials lead: each threshold in
+   its own unit, cents or milliseconds. The scroll stops where no dial and no
+   line of text is cut by the top of the bench or by its action row.
 7. Karaoke playing, moved to a line in the middle by tapping it.
 8. Settings for a signed-in phone.
+9. The Ear Report, opened from the bench: what moved over the weeks, each
+   threshold traced in its own unit. It lays out for the width, so the
+   tablets use it where the phone-only screens are dropped.
 
 **Progress is not captured.** It reads the account's history, which today
 only the web app writes (Sing takes and Ear Lab stay on the phone), and it
@@ -89,7 +95,8 @@ shows scored moments as percentages, which a store frame must not carry.
 Each test walks to its screen with taps, waits for a landmark, fonts and
 every on-screen image, then refuses the frame if its visible text carries a
 build channel, a developer surface, a desktop user agent, an error, a
-percentage, "Nothing uploaded", "practise" or "AI". Screens run at reduced
+percentage, "Nothing uploaded", "practise", "AI" or a sentence with an em
+dash (a credit line such as "Artist — Title" is allowed). Screens run at reduced
 motion; the screenshot API finishes CSS animations and hides the caret. The
 PNG is flattened to 8-bit RGB with no alpha, which is the only change made to
 it: no resizing, no overlay, no removed UI. Its size is checked against the
@@ -98,9 +105,14 @@ device's.
 Beside each PNG, `<screen>.layout.json` records where its words and controls
 sit at the moment of the screenshot: every visible line of text and every
 visible button, link, field, tab, slider or switch, as boxes in CSS px with
-the device scale, and the box of the landmark the capture waited for. A
-composition built from the PNG uses it to keep a cut or an overlap clear of
-them, such as the seam where two store panels meet.
+the device scale, and the box of the landmark the capture waited for. A box
+is clipped to whatever scrolls or hides it, and one that shows less than
+half of itself is left out. `groups` lists the control groups: a painted
+container holding two or more controls (the transport pill) and a row of
+controls side by side (a chip row). A composition built from the PNG uses
+the file to keep a cut or an overlap clear of them, such as the seam where
+two store panels meet, and treats each group as one unit. On the Ear Lab
+screens, `serif` names the face the Ear Lab's serif was drawn in.
 
 These are Chromium captures of the native bundle on touch viewports, not
 captures from a simulator or a phone. The iPhone and iPad keep the device's
@@ -108,9 +120,17 @@ safe-area insets (the table below): `env(safe-area-inset-*)` answers with them
 through the DevTools protocol, so the app keeps clear of where the status bar
 and home indicator sit, and that strip shows the app's own background. The
 bars themselves, permission sheets and purchase sheets are not drawn. The
-Android captures are the web view's own area, with no insets. System fonts
-are this machine's: the Ear Lab's serif is Iowan Old Style on an iPhone and
-whatever the host resolves here.
+Android captures are the web view's own area, with no insets.
+
+System fonts are this machine's, with one correction. The Ear Lab's serif is
+`'Iowan Old Style', 'Palatino Linotype', Baskerville, Georgia, 'Times New
+Roman', serif`. On Android none of the named faces exist and every serif
+alias resolves to Noto Serif, so the Android projects hand Chromium
+`shots/android-fonts.conf`, which makes the same aliases resolve to Noto
+Serif here; each Ear Lab capture asserts the face it drew. Iowan Old Style
+ships only on Apple systems, so the iPhone and iPad captures draw this
+machine's fallback (Liberation Serif) instead, and the run says so for each
+Ear Lab capture rather than substituting another face.
 
 ## Devices and store sizes
 
@@ -139,19 +159,21 @@ with the short side over 1080, which is what Play's large-screen listing asks
 for. A landscape screen is the same walk at a wide viewport; nothing is
 rotated or recomposed.
 
-Not every screen holds up sideways. A device's `dropped` option (in
+## Dropped screens
+
+Not every screen holds up on a tablet. A device's `dropped` option (in
 `playwright.shots.config.ts`) names the screens it skips, each with the
 reason, judged by eye from a run that captured them. The contact sheet and
 `manifest.json` list them as dropped, not missing:
 
-- `03-sing-priming`, both tablets: a phone layout stretched sideways. The
-  drawing sits alone in the middle and the Continue button runs the full
-  width of the screen.
-- `06-ear-lab`, the 7-inch tablet: at 612 px tall the bench runs under its
-  action row. The practice estimate caption is cut off after "the fainter",
-  and the change since the last calibration is half hidden behind Run
-  Calibration. The 10-inch tablet keeps it.
+- `03-sing-priming`, the iPad and every Play tablet, upright and sideways: a
+  phone layout on a tablet. The drawing and its lines sit in the middle, the
+  Continue button runs nearly the full width, and a third of the screen is
+  empty.
+- `05-sing-take`, every Play tablet, upright and sideways: the take sheet is
+  a phone's bottom sheet, its tiles and buttons stretched across the width
+  under a blurred stage that fills most of the frame.
 
-That leaves six landscape screens on the 7-inch tablet and seven on the
-10-inch. Play takes up to eight screenshots per device type, portrait and
-landscape together.
+That leaves eight screens on the iPad and seven on each Play tablet, upright
+and sideways. Play takes up to eight screenshots per device type, portrait
+and landscape together.

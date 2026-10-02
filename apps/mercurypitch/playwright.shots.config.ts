@@ -50,6 +50,14 @@ export interface ShotOptions {
    * as dropped rather than missing.
    */
   readonly dropped: Readonly<Record<string, string>>
+  /**
+   * The face this platform draws a serif stack in, which store.shots.ts
+   * asserts on the Ear Lab's serif: Noto Serif on Android. null where the
+   * real face cannot be had here: the Ear Lab asks first for Iowan Old
+   * Style, which only Apple ships, so an iOS capture records the face it
+   * fell back to instead of passing a stand-in off as Iowan.
+   */
+  readonly systemSerif: string | null
 }
 
 // A per-checkout port, so parallel worktrees never answer for each other.
@@ -138,12 +146,52 @@ const ANDROID_UA =
 const ANDROID_TABLET_UA =
   'Mozilla/5.0 (Linux; Android 15; Pixel Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
 
-// A tablet held sideways: the screens that do not hold up there, judged by
-// eye from the 2026-10-02 run. The portrait sets keep all eight.
+// Screens a tablet does not hold up, judged by eye from the 2026-10-02 run
+// and its review: phone layouts stretched to a tablet's width. The phones
+// keep every screen.
+const PRIMING_ON_A_TABLET =
+  'A phone layout on a tablet: the drawing and three lines sit in the middle, the Continue button runs nearly the full width, and a third of the screen is empty.'
+const TAKE_ON_A_TABLET =
+  "The take sheet is a phone's bottom sheet: on a tablet its four tiles and two buttons stretch across the width, under a blurred stage that fills most of the frame."
+const TABLET_DROPPED: Readonly<Record<string, string>> = {
+  '03-sing-priming': PRIMING_ON_A_TABLET,
+  '05-sing-take': TAKE_ON_A_TABLET,
+}
 const LANDSCAPE_DROPPED: Readonly<Record<string, string>> = {
   '03-sing-priming':
     'A phone layout stretched sideways: the drawing sits alone in the middle and the Continue button runs the full width of the screen.',
+  '05-sing-take': TAKE_ON_A_TABLET,
 }
+
+// What every project launches Chromium with. A project that sets its own
+// launchOptions replaces these rather than adding to them, so the Android
+// projects spread them in again.
+const LAUNCH_ARGS = [
+  // Headless by default; a `--headed` debugging run must still land
+  // on the agents workspace, which keys on this class.
+  '--class=agent-browser',
+  '--use-fake-device-for-media-stream',
+  '--use-fake-ui-for-media-stream',
+  `--use-file-for-fake-audio-capture=${VOICE_WAV}`,
+  '--autoplay-policy=no-user-gesture-required',
+  '--mute-audio',
+]
+
+// An Android phone's fonts: its serif is Noto Serif, which android-fonts.conf
+// gives the names Android aliases to it. Launch env replaces the browser's
+// environment, so it starts from this one.
+const ANDROID_LAUNCH = {
+  args: LAUNCH_ARGS,
+  env: {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => entry[1] !== undefined,
+      ),
+    ),
+    FONTCONFIG_FILE: join(APP_ROOT, 'shots', 'android-fonts.conf'),
+  },
+}
+const ANDROID = { launchOptions: ANDROID_LAUNCH, systemSerif: 'Noto Serif' }
 
 export default defineConfig<ShotOptions>({
   testDir: './shots',
@@ -164,18 +212,7 @@ export default defineConfig<ShotOptions>({
     baseURL: `http://127.0.0.1:${shotsPort}`,
     trace: 'retain-on-failure',
     shotDir,
-    launchOptions: {
-      args: [
-        // Headless by default; a `--headed` debugging run must still land
-        // on the agents workspace, which keys on this class.
-        '--class=agent-browser',
-        '--use-fake-device-for-media-stream',
-        '--use-fake-ui-for-media-stream',
-        `--use-file-for-fake-audio-capture=${VOICE_WAV}`,
-        '--autoplay-policy=no-user-gesture-required',
-        '--mute-audio',
-      ],
-    },
+    launchOptions: { args: LAUNCH_ARGS },
   },
   projects: [
     {
@@ -200,6 +237,7 @@ export default defineConfig<ShotOptions>({
         userAgent: IPAD_UA,
         viewport: { width: 1032, height: 1376 },
         deviceScaleFactor: 2,
+        dropped: { '03-sing-priming': PRIMING_ON_A_TABLET },
         // The iPad status bar, and the home indicator.
         safeArea: { top: 24, bottom: 20 },
       },
@@ -211,6 +249,7 @@ export default defineConfig<ShotOptions>({
       name: 'play-phone',
       use: {
         ...DEVICE,
+        ...ANDROID,
         userAgent: ANDROID_UA,
         viewport: { width: 390, height: 780 },
         deviceScaleFactor: 2,
@@ -222,9 +261,11 @@ export default defineConfig<ShotOptions>({
       name: 'play-tablet-7',
       use: {
         ...DEVICE,
+        ...ANDROID,
         userAgent: ANDROID_TABLET_UA,
         viewport: { width: 612, height: 1088 },
         deviceScaleFactor: 2,
+        dropped: TABLET_DROPPED,
       },
     },
     {
@@ -232,9 +273,11 @@ export default defineConfig<ShotOptions>({
       name: 'play-tablet-10',
       use: {
         ...DEVICE,
+        ...ANDROID,
         userAgent: ANDROID_TABLET_UA,
         viewport: { width: 810, height: 1440 },
         deviceScaleFactor: 2,
+        dropped: TABLET_DROPPED,
       },
     },
     {
@@ -244,14 +287,11 @@ export default defineConfig<ShotOptions>({
       name: 'play-tablet-7-landscape',
       use: {
         ...DEVICE,
+        ...ANDROID,
         userAgent: ANDROID_TABLET_UA,
         viewport: { width: 1088, height: 612 },
         deviceScaleFactor: 2,
-        dropped: {
-          ...LANDSCAPE_DROPPED,
-          '06-ear-lab':
-            'At 612 px tall the bench runs under its action row: the practice estimate caption is cut off after "the fainter", and the change since the last calibration is half hidden behind Run Calibration.',
-        },
+        dropped: LANDSCAPE_DROPPED,
       },
     },
     {
@@ -259,6 +299,7 @@ export default defineConfig<ShotOptions>({
       name: 'play-tablet-10-landscape',
       use: {
         ...DEVICE,
+        ...ANDROID,
         userAgent: ANDROID_TABLET_UA,
         viewport: { width: 1440, height: 810 },
         deviceScaleFactor: 2,

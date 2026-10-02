@@ -291,8 +291,8 @@ export function Regulator(props: RegulatorProps): JSX.Element {
         >
           <Show when={showMeniscus()}>
             <span>
-              Practice estimate <b>{props.estimate}</b> — the fainter line, not
-              a mark.
+              Practice estimate <b>{props.estimate}</b>: the fainter line, not a
+              mark.
             </span>
           </Show>
         </Show>

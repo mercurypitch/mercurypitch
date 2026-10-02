@@ -27,8 +27,13 @@ import { mercuryIndex } from '../../../src/lib/ear/mercury-index'
 import type { CalibrationRunEntry, ThresholdReadingEntry, } from '../../../src/stores/ear-lab-store'
 import type { SingTake } from '../../../src/stores/sing-takes-store'
 
-/** The page clock starts here: a Thursday evening. The projects run in UTC. */
-export const SHOT_NOW = '2026-10-15T18:40:00.000Z'
+/**
+ * The page clock starts here: a Thursday evening. The projects run in UTC.
+ * A date already past when the screens were made, and twelve seconds short
+ * of 18:40, so a take sung right after it starts at 18:39 and ends at 18:40
+ * rather than reading "18:40 to 18:40" (store review, 2026-10-02).
+ */
+export const SHOT_NOW = '2026-09-24T18:39:48.000Z'
 const NOW_MS = Date.parse(SHOT_NOW)
 const DAY_MS = 86_400_000
 

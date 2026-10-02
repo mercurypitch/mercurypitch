@@ -174,8 +174,8 @@ export function EarReport(props: EarReportProps): JSX.Element {
           </For>
         </div>
         <p class={styles.foot}>
-          Brass is sealed; silver is practice. The range moves the traces —
-          confusions are counted for all time.
+          Brass is sealed; silver is practice. The range moves the traces.
+          Confusions are counted for all time.
         </p>
       </div>
     </section>
@@ -353,7 +353,7 @@ function ConfusionPlate(props: { section: ConfusionSection }): JSX.Element {
         when={matrix().totalMisses > 0}
         fallback={
           <PlateNote>
-            No misses recorded yet — play the drill and this map fills in.
+            No misses recorded yet. Play the drill and this map fills in.
           </PlateNote>
         }
       >
