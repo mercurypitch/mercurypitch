@@ -34,7 +34,11 @@
 //     call, Siri, or another app taking the route, and that event is the only
 //     notice we get. 'interrupted' is not in the DOM's AudioContextState.
 //   - Follow the page. Beside Cue's frame loop stops when the tab hides; the
-//     sound stops with it and comes back on the way in.
+//     sound stops with it and comes back on the way in. The one exception is
+//     a background hold: a song the player asked to keep hearing behind
+//     another app (Mercury Pitch's Karaoke) keeps the clock running through
+//     both the page hiding and the app leaving the foreground, until the
+//     hold is let go.
 //
 // What this module deliberately does NOT touch: the microphone constraints.
 // echoCancellation, noiseSuppression and autoGainControl stay off (they live
@@ -87,6 +91,9 @@ let explicitlySuspended = false
 let suspendTimer: ReturnType<typeof setTimeout> | undefined
 let suspendDeadline = 0
 let suspendGeneration = 0
+/** A native suspension that arrived while a hold kept the clock running. */
+let suspensionDeferred = false
+const backgroundHolds = new Set<symbol>()
 const owners = new Map<
   symbol,
   SharedAudioLeaseOptions & { readonly owner: string }
@@ -159,9 +166,15 @@ function resumeQuietly(audioContext: AudioContext): void {
   }
 }
 
+/** The page is hidden and nothing asked to keep the clock running there. */
+function hiddenWithoutHold(): boolean {
+  return isPageHidden() && backgroundHolds.size === 0
+}
+
 function parkIfNoLongerActive(audioContext: AudioContext): boolean {
   if (context !== audioContext) return true
-  if (owners.size > 0 && !isPageHidden() && !explicitlySuspended) return false
+  if (owners.size > 0 && !hiddenWithoutHold() && !explicitlySuspended)
+    return false
   requestSuspension(audioContext)
   return true
 }
@@ -169,16 +182,23 @@ function parkIfNoLongerActive(audioContext: AudioContext): boolean {
 function handleStateChange(): void {
   const audioContext = context
   if (audioContext === undefined || !isInterrupted(audioContext)) return
-  // Only reach for it while the page is in front — a resume from the
-  // background is refused anyway, and the visibility handler will retry.
-  if (owners.size === 0 || isPageHidden() || explicitlySuspended) return
+  // Only reach for it while the page is in front, or while a hold keeps the
+  // clock running behind it — otherwise a resume from the background is
+  // refused anyway, and the visibility handler will retry.
+  if (owners.size === 0 || hiddenWithoutHold() || explicitlySuspended) return
   // Outputs must observe the interruption before a resume can make their
   // disconnected sources' audio clocks advance again.
   queueMicrotask(() => {
     if (context !== audioContext || !isInterrupted(audioContext)) return
-    if (owners.size === 0 || isPageHidden() || explicitlySuspended) return
+    if (owners.size === 0 || hiddenWithoutHold() || explicitlySuspended) return
     resumeQuietly(audioContext)
   })
+}
+
+function parkForHiddenPage(audioContext: AudioContext): void {
+  if (audioContext.state === 'running' && !explicitlySuspended)
+    suspendedByPage = true
+  requestSuspension(audioContext)
 }
 
 function handleVisibilityChange(): void {
@@ -186,9 +206,10 @@ function handleVisibilityChange(): void {
   if (audioContext === undefined) return
 
   if (isPageHidden()) {
-    if (audioContext.state === 'running' && !explicitlySuspended)
-      suspendedByPage = true
-    requestSuspension(audioContext)
+    // Held: the sound is meant to carry on behind the page. Letting go of
+    // the hold parks it then, if the page is still hidden.
+    if (backgroundHolds.size > 0) return
+    parkForHiddenPage(audioContext)
     return
   }
 
@@ -302,6 +323,12 @@ export function acquireSharedAudioContext(
  * Cancelling intent alone does not resume the clock or replay stopped sound.
  */
 export function suspendSharedAudioContext(): void {
+  // A hold outranks the app leaving the foreground: that is what it is for.
+  // The intent is kept, and carried out when the last hold lets go.
+  if (backgroundHolds.size > 0) {
+    suspensionDeferred = true
+    return
+  }
   explicitlySuspended = true
   suspendedByPage = false
   const audioContext = context
@@ -311,7 +338,37 @@ export function suspendSharedAudioContext(): void {
 /** Clears a native suspension intent without resuming playback or the clock. */
 export function cancelSharedAudioContextSuspension(): void {
   explicitlySuspended = false
+  suspensionDeferred = false
   cancelPendingSuspension()
+}
+
+/**
+ * Keeps the clock running while the page is hidden and the app is in the
+ * background, for sound the player chose to keep hearing there. Returns the
+ * release; safe to call twice.
+ *
+ * A hold does not resume anything, and it does not keep a lease alive: it
+ * only stops the page hiding and the app leaving the foreground from parking
+ * a clock that is running. The platform still has to allow the sound (an
+ * audio background mode on iOS, a media foreground service on Android).
+ *
+ * Letting go of the last hold does what was held off: parks the clock if the
+ * app went to the background meanwhile, or if the page is still hidden.
+ */
+export function holdSharedAudioContextInBackground(owner: string): () => void {
+  const token = Symbol(owner)
+  backgroundHolds.add(token)
+  return () => {
+    if (!backgroundHolds.delete(token) || backgroundHolds.size > 0) return
+    if (suspensionDeferred) {
+      suspensionDeferred = false
+      suspendSharedAudioContext()
+      return
+    }
+    const audioContext = context
+    if (audioContext !== undefined && isPageHidden())
+      parkForHiddenPage(audioContext)
+  }
 }
 
 /**
@@ -324,7 +381,7 @@ export function resumeSharedAudioContext(): void {
   if (
     audioContext === undefined ||
     owners.size === 0 ||
-    isPageHidden() ||
+    hiddenWithoutHold() ||
     explicitlySuspended ||
     audioContext.state === 'closed'
   ) {
@@ -366,6 +423,8 @@ export function resetSharedAudioContext(
   context = undefined
   constructionFailed = false
   suspendedByPage = false
+  suspensionDeferred = false
+  backgroundHolds.clear()
   owners.clear()
   makeContext = options.createContext ?? defaultContext
 }

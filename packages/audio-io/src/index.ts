@@ -16,6 +16,7 @@ export type {
 export {
   acquireSharedAudioContext,
   cancelSharedAudioContextSuspension,
+  holdSharedAudioContextInBackground,
   resetSharedAudioContext,
   resumeSharedAudioContext,
   sharedAudioContextOwners,
