@@ -1,9 +1,10 @@
 import { SIGNAL_FLOOR_RMS } from '@/lib/input-health'
 import { rmsToDb } from '@/lib/mic-level'
+import { DEFAULT_VOICE_WINDOW, VOICE_WINDOW_SPAN } from '@/lib/voice-window'
 import type { ResolvedZenTarget, ZenExerciseDefinition, ZenPitchPoint, ZenRunScore, ZenScoringConfig, ZenTargetKind, ZenViewport, } from './types'
 
 export const DEFAULT_ZEN_LOOP_SECONDS = 8
-export const DEFAULT_ZEN_VIEWPORT_SPAN = 24
+export const DEFAULT_ZEN_VIEWPORT_SPAN = VOICE_WINDOW_SPAN
 export const MAX_ZEN_VIEWPORT_SPAN = 48
 const COVERAGE_BIN_SECONDS = 0.1
 
@@ -92,7 +93,7 @@ export function fitZenViewport(
     (value) => Number.isFinite(value) && value >= 0 && value <= 127,
   )
   if (valid.length === 0) {
-    return previous ?? { minMidi: 48, maxMidi: 72 }
+    return previous ?? { ...DEFAULT_VOICE_WINDOW }
   }
 
   const low = Math.min(...valid)

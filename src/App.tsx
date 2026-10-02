@@ -3124,6 +3124,7 @@ const AppShell: Component<AppProps> = (props) => {
       targetStyle={() => 'line'}
       perNoteBurn={options.perNoteBurn}
       frozen={options.frozen}
+      viewWindow={options.viewWindow}
     />
   )
 
