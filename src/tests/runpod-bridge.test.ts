@@ -317,14 +317,32 @@ describe('handleRunpodRequest — process', () => {
     expect(sent.input.audio_base64).toBeUndefined()
   })
 
-  it('502s when RunPod returns no job id', async () => {
+  it('answers busy, try again, when RunPod returns no job id', async () => {
     mockFetchOnce({ error: 'no capacity' })
     const { request, url } = processReq('/api/uvr/process', {
       headers: { 'x-uvr-provider': 'runpod' },
       file: smallFile(),
     })
     const res = await handleRunpodRequest(request, url, 'POST', CFG)
-    expect(res?.status).toBe(502)
+    expect(res?.status).toBe(503)
+    expect(res?.headers.get('Retry-After')).toBe('60')
+    expect(await res?.json()).toEqual({
+      error: 'The studio is busy right now. Try again in a minute.',
+    })
+  })
+
+  it('answers busy, try again, when RunPod refuses the submit', async () => {
+    // An endpoint with no workers to give, or RunPod itself down: submitJob
+    // throws. That used to escape to the worker's catch-all as a 502, which
+    // the app's import queue showed as "could not be sent".
+    mockFetchOnce({}, false, 500)
+    const { request, url } = processReq('/api/uvr/process', {
+      headers: { 'x-uvr-provider': 'runpod' },
+      file: smallFile(),
+    })
+    const res = await handleRunpodRequest(request, url, 'POST', CFG)
+    expect(res?.status).toBe(503)
+    expect(res?.headers.get('Retry-After')).toBe('60')
   })
 })
 
