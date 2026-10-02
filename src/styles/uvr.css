@@ -1957,6 +1957,16 @@
   box-shadow: 0 12px 32px rgba(17, 12, 34, 0.16);
 }
 
+/* The file input covers the zone at opacity 0, so its own focus ring is
+   drawn but never seen: a keyboard user tabbed onto the zone and nothing
+   changed. The zone wears the ring for it while the input has keyboard
+   focus. Enter and Space still reach the input and open the picker. */
+.upload-zone:has(> .file-input:focus-visible) {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .upload-zone.dragging {
   border-color: var(--accent);
   background:
