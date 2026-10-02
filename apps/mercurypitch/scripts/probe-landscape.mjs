@@ -405,6 +405,27 @@ const readTrace = (left) => {
 }
 
 /**
+ * The free run's view: two octaves, opened on the voice type and moved by a
+ * voice that settles outside it (src/lib/voice-window.ts).
+ *
+ * Owner, build 451 on its side: a low voice's view ran B1 to B4, three whole
+ * octaves, every row a sliver. Nothing seeds a voice type here, so the room
+ * opens on the default, tenor, C3 to C5. The fake voice then holds E5, four
+ * semitones over the top row, and the view has to go up to it.
+ */
+const VOICE_WINDOW_SPAN = 24
+const DEFAULT_WINDOW = { low: 48, high: 72 }
+const E5 = 76
+
+/** In the page: the window the stage says it is drawing, or null. */
+const readWindow = () => {
+  const stage = document.querySelector('[data-testid="sing-stage"]')
+  const low = Number(stage?.getAttribute('data-window-low') ?? Number.NaN)
+  const high = Number(stage?.getAttribute('data-window-high') ?? Number.NaN)
+  return Number.isFinite(low) && Number.isFinite(high) ? { low, high } : null
+}
+
+/**
  * In the page: the coach mark, the pill it points at, and what it must not
  * cover on its side (device round 5): the key chip and the stage's line.
  */
@@ -693,6 +714,54 @@ export async function walkLandscapeSurfaces(browser, args, frame, kit) {
         `sing trace: ${read}, under ${TRACE_MIN_PX_PER_SEMITONE}; the line is one flat row`,
       )
     } else steps.push(`sing trace: ${read}`)
+    at = 'reading the free view'
+    const opened = await page.evaluate(readWindow)
+    if (
+      opened === null ||
+      opened.low !== DEFAULT_WINDOW.low ||
+      opened.high !== DEFAULT_WINDOW.high
+    ) {
+      failures.push(
+        `free view: opened on ${JSON.stringify(opened)}, not tenor's ${JSON.stringify(DEFAULT_WINDOW)}`,
+      )
+    } else {
+      steps.push(
+        `free view: opens on ${opened.low} to ${opened.high}, two octaves, with A4 and C5 inside`,
+      )
+    }
+    // The voice goes on to E5, over the top row; the view follows it.
+    const followed = await page
+      .waitForFunction(
+        (top) => {
+          const high = Number(
+            document
+              .querySelector('[data-testid="sing-stage"]')
+              ?.getAttribute('data-window-high'),
+          )
+          return Number.isFinite(high) && high > top
+        },
+        DEFAULT_WINDOW.high,
+        { timeout: runTimeoutMs },
+      )
+      .then(() => page.evaluate(readWindow))
+      .catch(() => null)
+    if (
+      followed === null ||
+      followed.high - followed.low !== VOICE_WINDOW_SPAN ||
+      followed.low > E5 ||
+      followed.high < E5
+    ) {
+      failures.push(
+        `free view: did not follow the voice to E5 (${E5}): ${JSON.stringify(followed)}`,
+      )
+    } else {
+      // Past the ease, so the picture is the settled view.
+      await settle(600)
+      await shoot(page, ctx, 'landscape-sing-followed')
+      steps.push(
+        `free view: followed the voice up to ${followed.low} to ${followed.high}, still two octaves, E5 inside`,
+      )
+    }
     await page
       .locator('[data-testid="shell-transport"] [aria-label="Stop"]')
       .click()

@@ -15,6 +15,8 @@ import { eventBus } from '@/lib/event-bus'
 import { beatToHistoryX } from '@/lib/pitch-history-window'
 import { labelledRows, plotBand } from '@/lib/pitch-plot-band'
 import { freqToNote, gridRowsForBounds, melodyIndexAtBeat, } from '@/lib/scale-data'
+import type { MidiWindow } from '@/lib/voice-window'
+import { easeMidiWindow } from '@/lib/voice-window'
 import { bpm, focusMode, micWaveVisible } from '@/stores'
 import { colorCodeNotes, flameMode, gridLinesVisible, showAccuracyPercent, showFocusBall, showPlaybackBall, showPlayhead, } from '@/stores/settings-store'
 import type { ChordType, EffectType, MelodyItem, NoteResult, PitchResult, PitchSample, ScaleDegree, } from '@/types'
@@ -118,7 +120,18 @@ interface PitchCanvasProps {
    * it turns off or the geometry changes.
    */
   frozen?: () => boolean
+  /**
+   * Pin the vertical view to these MIDI bounds instead of fitting it to the
+   * melody (or, with none, the scale). A new window eases in over
+   * `VIEW_EASE_MS` rather than jumping. The Sing room's free run passes its
+   * two-octave voice window here (`src/lib/voice-window.ts`); null, or no
+   * prop, is the fitted view every other stage has always had.
+   */
+  viewWindow?: () => MidiWindow | null
 }
+
+/** How long a pinned view takes to ease from one window to the next. */
+const VIEW_EASE_MS = 320
 
 /** Map a per-note rating to (fill, stroke, text) triple for the
  *  played-note state. Palette intentionally matches the existing
@@ -734,6 +747,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
         paused ||
         hasMicData ||
         isSeeking ||
+        viewEasing(ts) ||
         pitchLen !== lastPitchLength ||
         liveFreq > 0 ||
         liveFreq !== lastLiveFreq
@@ -915,7 +929,7 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
     }
   }
 
-  const verticalBounds = createMemo(() => {
+  const fittedBounds = createMemo(() => {
     const scale = props.scale()
     const melody = props.melody()
 
@@ -964,6 +978,56 @@ export const PitchCanvas: Component<PitchCanvasProps> = (props) => {
 
     return { minMidi: viewMin, maxMidi: viewMax }
   })
+
+  // ── A pinned view, eased ─────────────────────────────────────
+  //
+  // Synced lazily, wherever the bounds are read, rather than in an effect:
+  // an effect can run after the draw that first sees the new window, and
+  // that frame would paint the old one. Plain variables, not signals, because
+  // the ease is per-frame state and the draw effect already tracks the prop.
+  let viewFrom: MidiWindow | null = null
+  let viewTo: MidiWindow | null = null
+  let viewEaseStart = Number.NEGATIVE_INFINITY
+  const reducedMotion = (): boolean =>
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+
+  const pinnedViewAt = (now: number): MidiWindow | null => {
+    const target = props.viewWindow?.() ?? null
+    if (target === null) {
+      viewFrom = null
+      viewTo = null
+      return null
+    }
+    if (viewTo === null || viewFrom === null) {
+      viewFrom = target
+      viewTo = target
+      viewEaseStart = Number.NEGATIVE_INFINITY
+    } else if (
+      target.minMidi !== viewTo.minMidi ||
+      target.maxMidi !== viewTo.maxMidi
+    ) {
+      // From wherever the view is NOW, so a move during a move does not jump.
+      viewFrom = easeMidiWindow(viewFrom, viewTo, easeProgress(now))
+      viewTo = target
+      viewEaseStart = reducedMotion() ? Number.NEGATIVE_INFINITY : now
+      needsRedraw = true
+    }
+    const progress = easeProgress(now)
+    // Settled: the target itself. Every point of the trail reads this, so the
+    // common case must not build an object per call.
+    return progress >= 1 ? viewTo : easeMidiWindow(viewFrom, viewTo, progress)
+  }
+
+  const easeProgress = (now: number): number =>
+    (now - viewEaseStart) / VIEW_EASE_MS
+
+  /** A pinned view still moving: the loop owes it a frame. */
+  const viewEasing = (now: number): boolean =>
+    viewTo !== null && easeProgress(now) < 1
+
+  const verticalBounds = (): MidiWindow =>
+    pinnedViewAt(performance.now()) ?? fittedBounds()
 
   const freqToY = (freq: number, h: number): number => {
     if (!Number.isFinite(freq) || freq <= 0) return h / 2

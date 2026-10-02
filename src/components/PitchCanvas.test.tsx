@@ -12,6 +12,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { buildMultiOctaveScale, gridRowsForBounds } from '@/lib/scale-data'
+import type { MidiWindow } from '@/lib/voice-window'
 import type { PitchSample } from '@/types'
 
 vi.mock('@/lib/audio-engine', () => ({
@@ -103,10 +104,11 @@ afterEach(() => {
 })
 
 /** The canvas as the Sing room builds it, `h` px tall; `room` off is the stage. */
-function mount(h: number, room = true) {
+function mount(h: number, room = true, pinned?: MidiWindow | null) {
   height = h
   const [history, setHistory] = createSignal<PitchSample[]>(held(A3))
-  const view = render(() => (
+  const [view, setView] = createSignal<MidiWindow | null>(pinned ?? null)
+  const rendered = render(() => (
     <PitchCanvas
       melody={() => []}
       scale={() => SCALE}
@@ -120,6 +122,7 @@ function mount(h: number, room = true) {
       transparent={() => room}
       traceStyle={() => 'spectrum'}
       targetStyle={() => 'line'}
+      viewWindow={pinned === undefined ? undefined : view}
     />
   ))
   /** Where the head of the line is drawn when the voice holds `midi`. */
@@ -136,7 +139,7 @@ function mount(h: number, room = true) {
     setHistory(held(A5))
     return [...drawn.labels].sort((a, b) => a - b)
   }
-  return { headY, labelYs, unmount: view.unmount }
+  return { headY, labelYs, setView, unmount: rendered.unmount }
 }
 
 describe('a pitch on a short room canvas (a phone on its side)', () => {
@@ -185,6 +188,54 @@ describe('everywhere else, exactly as before', () => {
     const canvas = mount(117, false)
     expect(canvas.headY(A3)).toBeCloseTo(stageY(A3, 117), 6)
     expect(canvas.headY(A5)).toBeCloseTo(stageY(A5, 117), 6)
+    canvas.unmount()
+  })
+})
+
+describe('a pinned view (the Sing room free run)', () => {
+  /** The room's mapping upright: 34 px above the view, 78 under, no air. */
+  const pinnedY = (midi: number, window: MidiWindow, h: number): number =>
+    h -
+    78 -
+    ((midi - window.minMidi) / (window.maxMidi - window.minMidi)) *
+      (h - 34 - 78)
+  let now = 1000
+
+  beforeEach(() => {
+    now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+  })
+
+  it('shows exactly its two octaves, the bottom and top rows on the band edges', () => {
+    const tenor = { minMidi: 48, maxMidi: 72 }
+    const canvas = mount(511, true, tenor)
+    expect(canvas.headY(48)).toBeCloseTo(511 - 78, 6)
+    expect(canvas.headY(72)).toBeCloseTo(34, 6)
+    canvas.unmount()
+  })
+
+  it('eases to a new window instead of jumping', () => {
+    const from = { minMidi: 48, maxMidi: 72 }
+    const to = { minMidi: 55, maxMidi: 79 }
+    const canvas = mount(511, true, from)
+    expect(canvas.headY(64)).toBeCloseTo(pinnedY(64, from, 511), 6)
+
+    canvas.setView(to)
+    // The frame the move starts on is still the old view.
+    expect(canvas.headY(64)).toBeCloseTo(pinnedY(64, from, 511), 6)
+    now += 120
+    const mid = canvas.headY(64)
+    expect(mid).toBeGreaterThan(pinnedY(64, from, 511))
+    expect(mid).toBeLessThan(pinnedY(64, to, 511))
+    now += 1000
+    expect(canvas.headY(64)).toBeCloseTo(pinnedY(64, to, 511), 6)
+    canvas.unmount()
+  })
+
+  it('fits the scale again when the window is taken away', () => {
+    const canvas = mount(511, true, { minMidi: 48, maxMidi: 72 })
+    canvas.setView(null)
+    expect(canvas.headY(A3)).toBeCloseTo(stageY(A3, 511), 6)
     canvas.unmount()
   })
 })

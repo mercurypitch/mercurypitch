@@ -41,6 +41,8 @@ import { micManager } from '@/lib/mic-manager'
 import { buildMultiOctaveScale, scaleDegreeSet } from '@/lib/scale-data'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
+import type { MidiWindow } from '@/lib/voice-window'
+import { createVoiceWindowFollower, voiceWindowFor } from '@/lib/voice-window'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
@@ -83,6 +85,9 @@ export interface SingRoomCanvasOptions {
   perNoteBurn: () => boolean
   /** Nothing is moving: draw once and stop. */
   frozen: () => boolean
+  /** The two octaves a free run is drawn in, following the voice; null in a
+   *  melody run, whose view fits the melody. */
+  viewWindow?: () => MidiWindow | null
 }
 
 export interface SingRoomStageProps {
@@ -182,9 +187,30 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
 
   // ── The take ───────────────────────────────────────────────
 
+  // ── The free run's two octaves ─────────────────────────────
+  //
+  // Opens on the singer's voice type and follows a voice that settles above
+  // or below it (`src/lib/voice-window.ts` has the rules). Component state,
+  // not the take recorder's: a room that comes back from another tab opens on
+  // the voice type again and finds the voice within a third of a second.
+  const homeWindow = createMemo(() =>
+    voiceWindowFor(VOCAL_RANGES[vocalRangePreset()]),
+  )
+  const follower = createVoiceWindowFollower(untrack(homeWindow))
+  const [freeWindow, setFreeWindow] = createSignal<MidiWindow>(
+    follower.window(),
+  )
+  const resetFreeWindow = (): void => {
+    follower.reset(homeWindow())
+    setFreeWindow(follower.window())
+  }
+  // A new voice type is a new home, at once.
+  createEffect(on(homeWindow, resetFreeWindow, { defer: true }))
+
   const startTake = (): void => {
     startTakeRecording()
     beginTake()
+    resetFreeWindow()
   }
 
   const endTake = (): boolean => {
@@ -337,6 +363,16 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
       // only while its transport is running. A free run has none.
       trail: !melody,
     })
+
+    // The fractional note, not the rounded one the end card keeps: a voice
+    // a little flat of the bottom row is still on it.
+    if (!melody) {
+      const next = follower.push(
+        frame.atMs,
+        freq > 0 ? 69 + 12 * Math.log2(freq / 440) : null,
+      )
+      if (next !== freeWindow()) setFreeWindow(next)
+    }
   }
 
   // ── The run, and the shell that drives it ──────────────────
@@ -650,6 +686,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
    * dropped as an out-of-view artifact. The singer's own declared range is
    * the right window for a tracker with nothing to track against, and it is
    * the same answer Zen uses.
+   *
+   * These rows only NAME the lines now. What the view shows is `freeWindow`:
+   * whole octaves made a low voice's view three octaves tall (B1 to B4 on a
+   * phone on its side), with every row squeezed to a sliver.
    */
   const freeScale = createMemo(() => {
     const range = VOCAL_RANGES[vocalRangePreset()]
@@ -683,6 +723,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // and repainted a still trace behind the end card fifty-six times a
     // second, on a phone, for nothing.
     frozen: () => !melodyRun() && !micIntent(ctx()),
+    viewWindow: () => (melodyRun() ? null : freeWindow()),
   }
 
   /**
@@ -798,6 +839,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             [styles.canvasResting]: view() === 'melody-preview',
           }}
           data-view={view()}
+          data-window-low={melodyRun() ? undefined : freeWindow().minMidi}
+          data-window-high={melodyRun() ? undefined : freeWindow().maxMidi}
           data-testid="sing-stage"
         >
           <Switch fallback={<SingTrace variant="silent" />}>

@@ -16,9 +16,11 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
 import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import { setVocalRangePreset } from '@/stores/settings-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
@@ -103,6 +105,8 @@ interface Room {
    * point in one case, and a call count cannot see it.
    */
   log: string[]
+  /** One detection frame into the room, as the app's controller sends it. */
+  frame: (atMs: number, freq: number) => void
 }
 
 function mountRoom(): Room {
@@ -120,6 +124,27 @@ function mountRoom(): Room {
   }
   const seen: SingRoomCanvasOptions[] = []
   const log: string[] = []
+  const listeners = new Set<PracticeFrameListener>()
+  const subscribeFrames = (listener: PracticeFrameListener): (() => void) => {
+    listeners.add(listener)
+    return () => listeners.delete(listener)
+  }
+  const frame = (atMs: number, freq: number): void => {
+    for (const listener of listeners) {
+      listener({
+        atMs,
+        beat: 0,
+        micActive: true,
+        pitch:
+          freq > 0
+            ? ({
+                frequency: freq,
+                clarity: 0.95,
+              } as Parameters<PracticeFrameListener>[0]['pitch'])
+            : null,
+      })
+    }
+  }
   const transport: Room['transport'] = {
     onPlay: vi.fn(() => {
       setPlaying(true)
@@ -149,7 +174,7 @@ function mountRoom(): Room {
       pitchHistory={() => []}
       currentPitch={() => null}
       targetPitch={() => null}
-      subscribeFrames={() => () => {}}
+      subscribeFrames={subscribeFrames}
       renderCanvas={(options) => {
         seen.push(options)
         return <div data-testid="canvas" />
@@ -179,7 +204,15 @@ function mountRoom(): Room {
       onAutoCalibrate={() => {}}
     />
   ))
-  return { transport, setPlaying, setPaused, canvas: () => seen, picker, log }
+  return {
+    transport,
+    setPlaying,
+    setPaused,
+    canvas: () => seen,
+    picker,
+    log,
+    frame,
+  }
 }
 
 /** Put the room into a melody run the way loading a melody does. */
@@ -293,6 +326,65 @@ describe('the coach mark', () => {
     expect(coach.textContent).toBe(
       `${SING_COACH_MARK.title}${SING_COACH_MARK.body}`,
     )
+  })
+})
+
+describe("the free run's view", () => {
+  const hz = (midi: number): number => 440 * 2 ** ((midi - 69) / 12)
+
+  /** A free run, live, the way a first tap with the mic granted gets there. */
+  function startFreeRun(): Room {
+    const room = mountRoom()
+    dispatchSingRoom({ type: 'sing-a-note' })
+    dispatchSingRoom({ type: 'priming-continue' })
+    dispatchSingRoom({ type: 'mic-granted' })
+    expect(singRoomContext().state).toBe('live')
+    return room
+  }
+
+  /** The window the live canvas was last handed. */
+  const liveWindow = (room: Room) =>
+    room
+      .canvas()
+      .find((options) => options.melody().length === 0)
+      ?.viewWindow?.()
+
+  afterEach(() => {
+    setVocalRangePreset('tenor')
+  })
+
+  it("opens on the voice type's two octaves, not three whole ones", () => {
+    // Owner, landscape on build 451: a low voice's free view ran B1 to B4.
+    setVocalRangePreset('baritone')
+    const room = startFreeRun()
+    expect(liveWindow(room)).toEqual({ minMidi: 43, maxMidi: 67 })
+    expect(screen.getByTestId('sing-stage').dataset.windowLow).toBe('43')
+  })
+
+  it('follows a voice that settles above it, and ignores a blip', () => {
+    setVocalRangePreset('tenor')
+    const room = startFreeRun()
+    let at = 0
+    // An octave blip off a held G3: 100 ms at G4 + 12.
+    for (; at < 500; at += 16) room.frame(at, hz(55))
+    for (; at < 600; at += 16) room.frame(at, hz(79))
+    for (; at < 1000; at += 16) room.frame(at, hz(55))
+    expect(liveWindow(room)).toEqual({ minMidi: 48, maxMidi: 72 })
+    // Then a held E5 over the top row.
+    for (; at < 1500; at += 16) room.frame(at, hz(76))
+    const moved = liveWindow(room)!
+    expect(moved.maxMidi - moved.minMidi).toBe(24)
+    expect(moved.maxMidi).toBeGreaterThan(76)
+  })
+
+  it('pins no window over a melody run', () => {
+    const room = mountRoom()
+    startMelodyRun(room)
+    const melodyOptions = room.canvas().filter((options) => options.isPlaying())
+    expect(melodyOptions.length).toBeGreaterThan(0)
+    for (const options of melodyOptions) {
+      expect(options.viewWindow?.() ?? null).toBeNull()
+    }
   })
 })
 
