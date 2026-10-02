@@ -235,6 +235,17 @@
   max-width: 280px;
 }
 
+/* The border above outranks the global `select:focus` border (module CSS
+   loads after app.css), and `select:focus` turns the outline off, so a
+   focused select showed only its 12-15% accent glow: 1.15-1.26:1 against
+   the panel in every preset. A solid accent ring outside the box clears
+   3:1 against the panel and the select's own fill in all of them. */
+.settingsRow select:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .settingsVal {
   min-width: 40px;
   text-align: left;
