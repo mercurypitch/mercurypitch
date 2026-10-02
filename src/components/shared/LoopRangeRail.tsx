@@ -47,6 +47,11 @@ export interface LoopRangeRailProps {
    * doubled class does).
    */
   class?: string
+  /**
+   * Where the A-B close-up opens: above the rail (the default), or over it,
+   * in its place, for a host whose rail has controls close above it.
+   */
+  lensSide?: 'above' | 'over'
 }
 
 const SEEK_KEYS = new Set([
@@ -402,6 +407,7 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
       <Show when={focused()}>
         <div
           class={styles.precisionLens}
+          data-side={props.lensSide ?? 'above'}
           role="group"
           aria-label="Focused A B loop editor"
           data-testid={`${props.testIdPrefix}-loop-precision-lens`}

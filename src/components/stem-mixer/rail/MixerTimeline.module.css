@@ -39,6 +39,7 @@
   --loop-range-b: #ff7b72;
   --loop-range-region: rgba(88, 166, 255, 0.14);
   --loop-range-marker-font: 0.75rem;
+  --loop-range-lens-label-font: 0.75rem;
   --loop-range-knob-size: 12px;
   --loop-range-knob: var(--text-primary, #e6edf3);
 }
