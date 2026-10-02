@@ -39,6 +39,7 @@ import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { lyricGlance } from '@/lib/lyric-glance'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -2076,6 +2077,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         setTrackVolume('Vocal', guide.volume)
         if (vocal().muted !== guide.muted) toggleMute('Vocal')
       },
+      lyricGlance: () => lyricGlance(stableParsedLyrics(), currentLineIdx()),
     })
 
     // Load cached data from IndexedDB in parallel:

@@ -15,7 +15,10 @@ import type * as PlatformModule from './platform'
 
 const loaded = vi.hoisted(() => [] as string[])
 
-const capacitor = vi.hoisted(() => ({ isNativePlatform: vi.fn(() => false) }))
+const capacitor = vi.hoisted(() => ({
+  isNativePlatform: vi.fn(() => false),
+  getPlatform: vi.fn(() => 'web'),
+}))
 const haptics = vi.hoisted(() => ({ impact: vi.fn(), notification: vi.fn() }))
 const keepAwakePlugin = vi.hoisted(() => ({
   keepAwake: vi.fn(),
@@ -36,7 +39,17 @@ const mediaSession = vi.hoisted(() => ({
   setActionHandler: vi.fn(),
 }))
 
-vi.mock('@capacitor/core', () => ({ Capacitor: capacitor }))
+// The app's own picture-in-picture plugin, reached through registerPlugin
+// rather than a module, so "registered" is what stands for "loaded" there.
+const pictureInPicture = vi.hoisted(() => ({
+  setAutoEnter: vi.fn(),
+  addListener: vi.fn(),
+}))
+const registerPlugin = vi.hoisted(() =>
+  vi.fn((_name: string) => pictureInPicture),
+)
+
+vi.mock('@capacitor/core', () => ({ Capacitor: capacitor, registerPlugin }))
 
 vi.mock('@capacitor/haptics', () => {
   loaded.push('@capacitor/haptics')
@@ -93,8 +106,12 @@ vi.mock('@capgo/capacitor-media-session', () => {
 type Platform = typeof PlatformModule
 
 /** A fresh module graph per test, so "was it loaded" means this test. */
-async function loadPlatform(native: boolean): Promise<Platform> {
+async function loadPlatform(
+  native: boolean,
+  name: 'android' | 'ios' = 'android',
+): Promise<Platform> {
   capacitor.isNativePlatform.mockReturnValue(native)
+  capacitor.getPlatform.mockReturnValue(native ? name : 'web')
   vi.resetModules()
   loaded.length = 0
   return import('./platform')
@@ -133,12 +150,17 @@ describe('on the web', () => {
       'setNowPlaying',
       (p: Platform) => p.setNowPlaying({ title: 'Song', playing: true }),
     ],
+    [
+      'setPictureInPictureAutoEnter',
+      (p: Platform) => p.setPictureInPictureAutoEnter(true),
+    ],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
 
     await call(platform)
 
     expect(loaded).toEqual([])
+    expect(registerPlugin).not.toHaveBeenCalled()
   })
 
   it('reports a share and a Settings trip as not taken', async () => {
@@ -156,15 +178,18 @@ describe('on the web', () => {
     const stopBack = platform.onBackButton(handler)
     const stopState = platform.onAppState(handler)
     const stopMedia = platform.onMediaAction(handler)
+    const stopWindow = platform.onPictureInPicture(handler)
     await settle()
 
     expect(loaded).toEqual([])
     expect(appPlugin.addListener).not.toHaveBeenCalled()
     expect(mediaSession.setActionHandler).not.toHaveBeenCalled()
+    expect(registerPlugin).not.toHaveBeenCalled()
     expect(() => {
       stopBack()
       stopState()
       stopMedia()
+      stopWindow()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -488,5 +513,90 @@ describe('on a phone', () => {
       null,
     )
     mediaSession.setActionHandler.mockReset()
+  })
+})
+
+describe('picture in picture', () => {
+  it('turns auto-enter on and off on Android, registering the plugin once', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.setPictureInPictureAutoEnter(true)
+    await platform.setPictureInPictureAutoEnter(false)
+
+    expect(registerPlugin.mock.calls).toEqual([['PictureInPicture']])
+    expect(pictureInPicture.setAutoEnter.mock.calls).toEqual([
+      [{ enabled: true }],
+      [{ enabled: false }],
+    ])
+  })
+
+  it('does nothing on iOS, where the window is for video only', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    const handler = vi.fn()
+
+    await platform.setPictureInPictureAutoEnter(true)
+    const stop = platform.onPictureInPicture(handler)
+    await settle()
+    stop()
+
+    expect(registerPlugin).not.toHaveBeenCalled()
+    expect(pictureInPicture.setAutoEnter).not.toHaveBeenCalled()
+    expect(pictureInPicture.addListener).not.toHaveBeenCalled()
+  })
+
+  it('survives a build with no plugin behind the name', async () => {
+    const platform = await loadPlatform(true)
+    pictureInPicture.setAutoEnter.mockRejectedValueOnce(
+      new Error('"PictureInPicture" plugin is not implemented on android'),
+    )
+    pictureInPicture.addListener.mockRejectedValueOnce(
+      new Error('"PictureInPicture" plugin is not implemented on android'),
+    )
+    const handler = vi.fn()
+
+    await expect(
+      platform.setPictureInPictureAutoEnter(true),
+    ).resolves.toBeUndefined()
+    const stop = platform.onPictureInPicture(handler)
+    await settle()
+
+    expect(() => {
+      stop()
+    }).not.toThrow()
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('reports the window coming and going', async () => {
+    const platform = await loadPlatform(true)
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+    const handler = vi.fn()
+
+    platform.onPictureInPicture(handler)
+    await settle()
+
+    expect(pictureInPicture.addListener.mock.calls[0]?.[0]).toBe(
+      'pictureInPictureChange',
+    )
+    const emit = pictureInPicture.addListener.mock.calls[0]?.[1] as (state: {
+      inPictureInPicture?: boolean
+    }) => void
+    emit({ inPictureInPicture: true })
+    emit({ inPictureInPicture: false })
+    emit({})
+
+    expect(handler.mock.calls).toEqual([[true], [false], [false]])
+  })
+
+  it('removes a listener unsubscribed before its handle arrived', async () => {
+    const platform = await loadPlatform(true)
+    const handle = listenerHandle()
+    pictureInPicture.addListener.mockResolvedValue(handle)
+
+    const stop = platform.onPictureInPicture(vi.fn())
+    stop()
+    await settle()
+    await settle()
+
+    expect(handle.remove).toHaveBeenCalledTimes(1)
   })
 })

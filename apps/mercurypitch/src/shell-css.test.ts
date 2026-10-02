@@ -107,3 +107,13 @@ describe("the pill's state word", () => {
     expect(declaration('.mp-pill__state', 'flex')).toBe('0 0 auto')
   })
 })
+
+// Android's picture-in-picture window holds the Karaoke room's compact view
+// and nothing else: the shell's chrome goes while the room is in there.
+describe('the shell in the small window', () => {
+  it('draws none of its chrome', () => {
+    expect(
+      declaration(":root[data-picture-in-picture='on'] .mp-shell", 'display'),
+    ).toBe('none')
+  })
+})

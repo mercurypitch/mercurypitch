@@ -14,6 +14,10 @@ const platform = vi.hoisted(() => ({
   keepAwake: vi.fn(async (_on: boolean) => Promise.resolve()),
   setNowPlaying: vi.fn(async (_song: unknown) => Promise.resolve()),
   onMediaAction: vi.fn((_handler: (action: string) => void) => vi.fn()),
+  setPictureInPictureAutoEnter: vi.fn(async (_on: boolean) =>
+    Promise.resolve(),
+  ),
+  onPictureInPicture: vi.fn((_handler: (inPip: boolean) => void) => vi.fn()),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
@@ -123,6 +127,36 @@ describe('the device a room reaches through the bridge', () => {
     unsubscribe()
 
     expect(handler).toHaveBeenCalledWith('pause')
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('turns the small window on and off, and survives a refusal', async () => {
+    platform.setPictureInPictureAutoEnter.mockImplementationOnce(async () =>
+      Promise.reject(new Error('not available')),
+    )
+    const device = createNativeDevice()
+
+    expect(() => device.pictureInPictureAutoEnter(true)).not.toThrow()
+    device.pictureInPictureAutoEnter(false)
+    await Promise.resolve()
+
+    expect(platform.setPictureInPictureAutoEnter.mock.calls).toEqual([
+      [true],
+      [false],
+    ])
+  })
+
+  it('passes the window coming and going through, with its unsubscribe', () => {
+    const stop = vi.fn()
+    platform.onPictureInPicture.mockReturnValueOnce(stop)
+    const device = createNativeDevice()
+    const handler = vi.fn()
+
+    const unsubscribe = device.onPictureInPicture(handler)
+    platform.onPictureInPicture.mock.calls[0]?.[0](true)
+    unsubscribe()
+
+    expect(handler).toHaveBeenCalledWith(true)
     expect(stop).toHaveBeenCalledTimes(1)
   })
 })

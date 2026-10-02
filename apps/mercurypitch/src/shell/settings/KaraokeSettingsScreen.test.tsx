@@ -4,10 +4,12 @@
 //
 // The same two settings the room's Options sheet holds, for a singer who
 // looks for them in Settings: the lyrics size and the next song. One store
-// behind both, so a change in either place is the change in the other.
+// behind both, so a change in either place is the change in the other. And
+// the two that live here only: background play, and the lyrics window that
+// Android alone is offered.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { karaokeBackgroundPlay, karaokeLyricsSize, karaokePlayNext, resetKaraokeRoomForTests, setKaraokeLyricsSize, } from '@/features/karaoke-room/karaoke-room-store'
+import { karaokeBackgroundPlay, karaokeLyricsSize, karaokePictureInPicture, karaokePlayNext, resetKaraokeRoomForTests, setKaraokeLyricsSize, } from '@/features/karaoke-room/karaoke-room-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KaraokeSettingsScreen } from './KaraokeSettingsScreen'
@@ -24,10 +26,13 @@ afterEach(() => {
   view = null
 })
 
-const mount = (): HTMLElement => {
-  view = renderShell(() => <KaraokeSettingsScreen />)
+const mount = (platform?: string): HTMLElement => {
+  view = renderShell(() => <KaraokeSettingsScreen platform={platform} />)
   return view.container
 }
+
+const WINDOW_SWITCH =
+  '[role="switch"][aria-label="Show lyrics in a small window"]'
 
 const choice = (root: HTMLElement, id: string): HTMLElement | null =>
   root.querySelector<HTMLElement>(`[data-choice="${id}"]`)
@@ -99,5 +104,26 @@ describe('Settings, Karaoke', () => {
 
     expect(karaokeBackgroundPlay()).toBe(false)
     expect(background?.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('offers the lyrics window on Android, on until it is turned off', () => {
+    const root = mount('android')
+    const lyricsWindow = root.querySelector<HTMLElement>(WINDOW_SWITCH)
+    expect(lyricsWindow?.getAttribute('aria-checked')).toBe('true')
+    expect(root.textContent).toContain(
+      'When you leave the app during a song, the lyrics stay in a corner of the screen',
+    )
+
+    lyricsWindow?.click()
+
+    expect(karaokePictureInPicture()).toBe(false)
+    expect(lyricsWindow?.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('does not offer the lyrics window on iOS, or on the web', () => {
+    expect(mount('ios').querySelector(WINDOW_SWITCH)).toBeNull()
+    view?.unmount()
+
+    expect(mount().querySelector(WINDOW_SWITCH)).toBeNull()
   })
 })

@@ -35,6 +35,18 @@
 //   being frozen), and its media buttons reach the run's own play, pause
 //   and stop. With it off, a song the app is sent away from pauses.
 //
+//   IN A SMALL WINDOW (Android). With "Show lyrics in a small window" on,
+//   the default, a singer who leaves the app while a song plays keeps the
+//   room in a picture-in-picture window, over whatever app they went to:
+//   the line being sung, the next, the title, and nothing of the room's or
+//   the shell's chrome (KaraokeLyricsWindow.tsx). The microphone goes as
+//   the window opens, as it does when the app is left. The song plays on in
+//   there whatever "Keep playing in the background" says, because the page
+//   is still on the screen; the system is told what plays, so the window
+//   has Android's play and pause. Coming back to the app restores the room
+//   as it was (useKaraokePictureInPicture.ts). iOS has no such window for
+//   anything but video, and nothing here changes it.
+//
 //   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
 //   songs on their way ("Separating 2") and opens the library, where they
 //   are; a song sung loses its New mark; and the options say how many songs
@@ -51,6 +63,7 @@ import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
 import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { NO_LYRIC_GLANCE } from '@/lib/lyric-glance'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import type { NativeMediaAction, NativeNowPlaying, PinnedRoomToggle, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
@@ -62,8 +75,10 @@ import type { ParkedSong } from './karaoke-room-store'
 import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
+import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
+import { useKaraokePictureInPicture } from './useKaraokePictureInPicture'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -420,6 +435,25 @@ export const KaraokeRoomStage: Component = () => {
   // otherwise it pauses, and play is one tap on the way back.
   const backgroundPlay = (): boolean =>
     device !== null && karaokeBackgroundPlay()
+
+  // The small window (see IN A SMALL WINDOW). What is open over the stage
+  // closes as it opens: nobody can tap a sheet in there, and coming back
+  // finds the stage.
+  const inWindow = useKaraokePictureInPicture({
+    device,
+    playing: isPlaying,
+    onEnter: () => {
+      mixer()?.releaseMic()
+      setPickerOpen(false)
+      setOptionsOpen(false)
+      setLibraryOpen(false)
+    },
+  })
+  // The run is the system's business while the song is behind another app,
+  // and while it is in the window: that is where the window's play and
+  // pause come from, and the hold keeps the clock running if the app is
+  // reported as gone while the window is still up.
+  const systemPlayback = (): boolean => backgroundPlay() || inWindow()
   const [pageHidden, setPageHidden] = createSignal(
     document.visibilityState === 'hidden',
   )
@@ -446,7 +480,7 @@ export const KaraokeRoomStage: Component = () => {
     return controls !== null && !controls.loading() && !controls.playing()
   }
   const holdingAudio = createMemo(
-    () => backgroundPlay() && runOn() && !(pageHidden() && pausedRun()),
+    () => systemPlayback() && runOn() && !(pageHidden() && pausedRun()),
   )
   createEffect(
     on(holdingAudio, (hold) => {
@@ -465,7 +499,7 @@ export const KaraokeRoomStage: Component = () => {
   }
   createEffect(() => {
     const entry = cue()
-    if (!backgroundPlay() || !runOn() || entry === null) {
+    if (!systemPlayback() || !runOn() || entry === null) {
       announce(null)
       return
     }
@@ -493,7 +527,7 @@ export const KaraokeRoomStage: Component = () => {
     }
   }
   createEffect(
-    on(backgroundPlay, (on) => {
+    on(systemPlayback, (on) => {
       if (!on || device === null) return
       onCleanup(device.onMediaAction(onMediaButton))
     }),
@@ -516,6 +550,7 @@ export const KaraokeRoomStage: Component = () => {
   return (
     <div
       class={styles.room}
+      classList={{ [styles.inWindow]: inWindow() }}
       data-testid="karaoke-room"
       style={background.resolvedStyle()}
     >
@@ -535,6 +570,14 @@ export const KaraokeRoomStage: Component = () => {
             autoPlay={entry.autoPlay}
             initialSeekSec={entry.seekSec}
             hosted={hostingFor(entry)}
+          />
+        )}
+      </Show>
+      <Show when={inWindow() ? cue() : null} keyed>
+        {(entry) => (
+          <KaraokeLyricsWindow
+            title={entry.song.title}
+            glance={mixer()?.lyricGlance() ?? NO_LYRIC_GLANCE}
           />
         )}
       </Show>
