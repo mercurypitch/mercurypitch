@@ -3357,14 +3357,16 @@
   border-color: rgba(59, 130, 246, 0.4);
 }
 
+/* Text and tint come from theme tokens: #8b5cf6 on this tint read 4.16:1
+   on the default theme and 3.3:1 on Forest (app.css, "Stem colours"). */
 .stem-pill-midi {
-  color: #8b5cf6;
+  color: var(--stem-midi-fg);
   border-color: rgba(139, 92, 246, 0.25);
-  background: rgba(139, 92, 246, 0.08);
+  background: var(--stem-midi-surface);
 }
 
 .stem-pill-midi:hover {
-  background: rgba(139, 92, 246, 0.15);
+  background: var(--stem-midi-surface-hover);
   border-color: rgba(139, 92, 246, 0.4);
 }
 

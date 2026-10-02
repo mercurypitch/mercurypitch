@@ -99,6 +99,14 @@
   --fg-primary: var(--text-primary);
   --fg-secondary: var(--text-secondary);
   --fg-tertiary: var(--text-muted);
+
+  /* ── Stem colours ──
+     The MIDI stem's violet, as text on its own violet tint (karaoke stem
+     pills). The tint is shared; the text is set per preset where the
+     default cannot clear 4.5:1 over every surface, resting and hovered. */
+  --stem-midi-fg: #ac8bf9;
+  --stem-midi-surface: rgba(139, 92, 246, 0.08);
+  --stem-midi-surface-hover: rgba(139, 92, 246, 0.15);
   color-scheme: dark;
 
   /* ── Spacing scale ──
@@ -185,6 +193,7 @@
   --status-warning-on-fill: #ffffff;
   --status-danger-fg: #a0222c;
   --status-danger-on-fill: #ffffff;
+  --stem-midi-fg: #5d1cf2;
   color-scheme: light;
 }
 
@@ -251,6 +260,7 @@
   --text-inverse: #1b2a1b;
   --status-warning-fg: #cba549;
   --status-danger-fg: #e68c7f;
+  --stem-midi-fg: #b090f9;
   color-scheme: dark;
 }
 
