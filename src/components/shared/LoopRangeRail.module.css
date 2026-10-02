@@ -19,7 +19,10 @@
 
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* The close-up button's place is kept while it is not offered: a track
+     that lost 44 px when B made a short loop moved every point on it under
+     the pointer. */
+  grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
   min-width: 0;
   gap: 0.2rem;
