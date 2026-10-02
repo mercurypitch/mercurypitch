@@ -1,5 +1,6 @@
-/* Sits beside the transport's speed select and matches it
-   (`.sm-speed-select` in StemMixer.tsx). */
+/* Compact, in the Jam room key's panel (JamRoomKey); 'touch', in the phone
+   stage's key sheet. The desktop mixer's rail has its own chip and panel
+   (stem-mixer/rail/KeyChip). */
 .keyShift {
   display: inline-flex;
   align-items: center;

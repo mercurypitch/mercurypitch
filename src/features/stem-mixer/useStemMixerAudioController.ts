@@ -31,7 +31,7 @@ import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { createHiddenClock } from './hidden-clock'
 import type { LoopPointPlacement } from './loop-points'
-import { loopSpan, placeLoopPoint as placeLoop } from './loop-points'
+import { LOOP_MIN_GAP, loopSpan, placeLoopPoint as placeLoop, } from './loop-points'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
@@ -354,6 +354,8 @@ export interface StemMixerAudioController {
    * reason. A placed B turns the loop on.
    */
   placeLoopPoint: (which: 'A' | 'B', time: number) => LoopPointPlacement
+  /** The least time between A and B that placeLoopPoint accepts. */
+  loopMinGap: number
   clearLoop: () => void
   loopCount: Accessor<number>
   resetLoopCount: () => void
@@ -2455,6 +2457,7 @@ export const useStemMixerAudioController = (
     loopEnd,
     setLoopEnd,
     placeLoopPoint,
+    loopMinGap: LOOP_MIN_GAP,
     clearLoop,
     loopCount,
     resetLoopCount: () => setLoopCount(0),

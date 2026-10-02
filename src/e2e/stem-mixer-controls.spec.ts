@@ -713,6 +713,17 @@ test('activates Pitch Studio from light with complete dark ownership @smoke', as
   })
 })
 
+/** Where the timeline's playhead is, as a share of the song (0 to 1). */
+function playheadShare(page: Page): Promise<number> {
+  return page
+    .getByRole('slider', { name: 'Song position' })
+    .evaluate((element) => {
+      const input = element as HTMLInputElement
+      const max = Number(input.max)
+      return max > 0 ? Number(input.value) / max : 0
+    })
+}
+
 test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   page,
 }) => {
@@ -751,7 +762,7 @@ test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   await handoff.getByRole('button', { name: 'Use it here' }).click()
 
   await expect(secondMic).toBeEnabled()
-  await expect(secondMic).not.toHaveClass(/sm-mic-toggle-btn--error/)
+  await expect(secondMic).not.toHaveAttribute('data-state', 'error')
   await secondMic.click()
   await expect(secondMic).toHaveAttribute('aria-pressed', 'true')
 
@@ -760,7 +771,7 @@ test('recovers the mixer mic button after a cross-tab handoff @smoke', async ({
   await expect(firstMic).toBeEnabled()
   await expect(firstMic).toHaveAccessibleName('Enable microphone')
   await expect(firstMic).toHaveAttribute('aria-pressed', 'false')
-  await expect(firstMic).not.toHaveClass(/sm-mic-toggle-btn--(?:active|error)/)
+  await expect(firstMic).toHaveAttribute('data-state', 'off')
   await secondPage.close()
 })
 
@@ -789,23 +800,20 @@ test('maps a zoomed waveform context menu without seeking @smoke', async ({
   await page.mouse.move(targetX, targetY)
   await page.mouse.wheel(0, -100)
 
-  const progressWidth = () =>
-    page
-      .locator('.sm-progress-fill')
-      .evaluate((element) => parseFloat(getComputedStyle(element).width))
-  const before = await progressWidth()
+  const playhead = () => playheadShare(page)
+  const before = await playhead()
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
   const menu = page.getByTestId('loop-point-menu')
   await expect(menu).toBeVisible()
   await expect(menu).toContainText('Loop point at 0:00')
-  await expect.poll(progressWidth).toBeCloseTo(before, 1)
+  await expect.poll(playhead).toBeCloseTo(before, 2)
 
   await menu.getByRole('menuitem', { name: 'Set loop start here' }).click()
   await expect(menu).toBeHidden()
   await expect(
     page.getByRole('button', { name: 'Set loop start (A)' }),
-  ).toHaveClass(/sm-loop-btn--a-set/)
+  ).toHaveAttribute('data-set', 'true')
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
   await expect(menu.getByRole('menuitem', { name: 'Clear loop' })).toBeVisible()
@@ -978,31 +986,14 @@ test('keeps seven-stem compact and expanded decks readable while scrolling @smok
   const waveformWidth = overviewBox.width - railWidth - 5
 
   await page.mouse.click(overviewBox.x + 8, overviewBox.y + 24)
-  await expect
-    .poll(async () =>
-      parseFloat(
-        await page
-          .locator('.sm-progress-fill')
-          .evaluate((element) => getComputedStyle(element).width),
-      ),
-    )
-    .toBeLessThan(2)
+  await expect.poll(() => playheadShare(page)).toBeLessThan(0.01)
 
   await page.mouse.click(
     overviewBox.x + railWidth + 1 + waveformWidth * 0.015,
     overviewBox.y + 24,
   )
   await expect
-    .poll(async () => {
-      const fill = page.locator('.sm-progress-fill')
-      const progress = page.locator('.sm-progress-bar')
-      const [fillBox, progressBox] = await Promise.all([
-        fill.boundingBox(),
-        progress.boundingBox(),
-      ])
-      if (fillBox === null || progressBox === null) return 0
-      return fillBox.width / progressBox.width
-    })
+    .poll(() => playheadShare(page))
     // The one-second fixture sits inside the mixer's default thirty-second
     // window, so 1.5% of the visible waveform lands at 0.45 seconds. Mapping
     // against the whole canvas would include the rail and clamp to the end.

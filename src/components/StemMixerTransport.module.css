@@ -1,0 +1,228 @@
+/* StemMixerTransport: the bar the rail sits in, and the focus pill's own
+   parts (dock handle, compass, drop-zone preview, exit). The pill's glass
+   and its dock positions are in src/styles/mixer-shared.css, under
+   .stem-mixer--focus, keyed on the .sm-transport class this element keeps. */
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border, #30363d);
+  background: var(--bg-primary, #0d1117);
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Docked first or last among the mixer's rows (focus mode). */
+.transport[data-dock='top'],
+.transport[data-dock='left'] {
+  order: -1;
+}
+
+.transport[data-dock='bottom'],
+.transport[data-dock='right'] {
+  order: 999;
+}
+
+.transport[data-vertical='true'] {
+  flex-direction: column;
+}
+
+/* ── Dock handle ───────────────────────────────────────────────────── */
+
+/* A grip like the practice ControlOverlay's: no block of its own, a tint
+   on hover, the accent while its compass is open. */
+.handle {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--mixer-control-size, 32px);
+  height: var(--mixer-control-size, 32px);
+  border-radius: 8px;
+  color: var(--fg-muted, #8b949e);
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.handle svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (hover: hover) {
+  .handle:hover {
+    color: var(--fg-primary, #c9d1d9);
+    background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
+  }
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.handleOpen {
+  color: var(--accent, #58a6ff);
+  background: color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent);
+}
+
+/* ── Compass ───────────────────────────────────────────────────────── */
+
+/* Four arrows round a hub, the current side filled. Portalled to <body>
+   and placed by placePopover, toward the stage. */
+.compass {
+  position: fixed;
+  z-index: 9000;
+  display: grid;
+  grid-template-columns: repeat(3, 1.75rem);
+  grid-template-rows: repeat(3, 1.75rem);
+  place-items: center;
+  padding: 0.3rem;
+  border: 1px solid var(--border, #6e7681);
+  border-radius: 0.6rem;
+  background: var(--bg-secondary, #161b22);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+  animation: compassIn 0.12s ease-out;
+}
+
+@keyframes compassIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.compassBtn {
+  display: inline-grid;
+  grid-row: 2;
+  grid-column: 2;
+  place-items: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.3rem;
+  color: var(--text-secondary, #a8b3bf);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.compassBtn[data-side='top'] {
+  grid-row: 1;
+}
+
+.compassBtn[data-side='bottom'] {
+  grid-row: 3;
+}
+
+.compassBtn[data-side='left'] {
+  grid-column: 1;
+}
+
+.compassBtn[data-side='right'] {
+  grid-column: 3;
+}
+
+@media (hover: hover) {
+  .compassBtn:hover {
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
+  }
+}
+
+.compassBtn:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
+.compassBtn[aria-pressed='true'] {
+  color: var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+}
+
+.hub {
+  grid-row: 2;
+  grid-column: 2;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--border, #6e7681);
+  pointer-events: none;
+}
+
+/* ── Drop zone, while the handle is dragged ────────────────────────── */
+
+.dropZone {
+  position: absolute;
+  z-index: 1000;
+  background: var(--accent, #58a6ff);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.dropZone[data-zone='top'] {
+  inset: 0 0 auto;
+  height: 100px;
+}
+
+.dropZone[data-zone='bottom'] {
+  inset: auto 0 0;
+  height: 100px;
+}
+
+.dropZone[data-zone='left'] {
+  inset: 0 auto 0 0;
+  width: 100px;
+}
+
+.dropZone[data-zone='right'] {
+  inset: 0 0 0 auto;
+  width: 100px;
+}
+
+/* ── Exit ──────────────────────────────────────────────────────────── */
+
+.exit {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--mixer-control-size, 32px);
+  height: var(--mixer-control-size, 32px);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--fg-tertiary, #8b949e);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+@media (hover: hover) {
+  .exit:hover {
+    color: var(--error, #f85149);
+    background: color-mix(in srgb, var(--error, #f85149) 14%, transparent);
+  }
+}
+
+.exit:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compass {
+    animation: none;
+  }
+}

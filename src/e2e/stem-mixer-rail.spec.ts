@@ -1,0 +1,354 @@
+// ============================================================
+// Stem mixer rail: one row that keeps its timeline
+// ============================================================
+//
+// The rail is a capsule of grouped controls with the timeline beside it,
+// and the timeline keeps 380 px or takes a line of its own. These are the
+// claims only a browser can check, at three window sizes: the timeline
+// stays usable, nothing runs past the window, the row does not move when a
+// loop is set or the mic turns on, and the key panel and the speed list
+// close on a press outside and on Escape. At 1440 px, an A-B loop also
+// plays round without freezing, and the focus pill docks to every edge.
+
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { dismissOverlays } from './helpers/ui'
+
+interface SongSeed {
+  seedSong: (input: {
+    name: string
+    fileHash: string
+    vocalWavBase64: string
+  }) => Promise<string>
+}
+
+const VIEWPORTS = [
+  { width: 1440, height: 900 },
+  { width: 1024, height: 768 },
+  { width: 844, height: 390 },
+] as const
+
+/** A mono 8 kHz sine as a WAV, base64 for page.evaluate. */
+function toneWavBase64(seconds: number, hz: number): string {
+  const rate = 8000
+  const samples = Math.floor(rate * seconds)
+  const buf = Buffer.alloc(44 + samples * 2)
+  buf.write('RIFF', 0)
+  buf.writeUInt32LE(36 + samples * 2, 4)
+  buf.write('WAVE', 8)
+  buf.write('fmt ', 12)
+  buf.writeUInt32LE(16, 16)
+  buf.writeUInt16LE(1, 20)
+  buf.writeUInt16LE(1, 22)
+  buf.writeUInt32LE(rate, 24)
+  buf.writeUInt32LE(rate * 2, 28)
+  buf.writeUInt16LE(2, 32)
+  buf.writeUInt16LE(16, 34)
+  buf.write('data', 36)
+  buf.writeUInt32LE(samples * 2, 40)
+  for (let index = 0; index < samples; index += 1) {
+    buf.writeInt16LE(
+      Math.round(Math.sin((2 * Math.PI * hz * index) / rate) * 8000),
+      44 + index * 2,
+    )
+  }
+  return buf.toString('base64')
+}
+
+const SONG = {
+  name: 'Rail Layout Song',
+  fileHash: 'rail-layout-song',
+  vocalWavBase64: toneWavBase64(30, 220),
+}
+
+// The mic's own plumbing is not under test here; a Web Audio stream stands
+// in for the device, as in stem-mixer-controls.spec.ts.
+const SYNTHETIC_MIC_INIT = () => {
+  Object.defineProperty(navigator.mediaDevices, 'getUserMedia', {
+    configurable: true,
+    value: async () => {
+      const context = new AudioContext()
+      const oscillator = context.createOscillator()
+      const destination = context.createMediaStreamDestination()
+      oscillator.frequency.value = 220
+      oscillator.connect(destination)
+      oscillator.start()
+      return destination.stream
+    },
+  })
+}
+
+test.use({ permissions: ['microphone'] })
+
+async function openSeededSong(
+  page: Page,
+  viewport: { width: number; height: number },
+): Promise<void> {
+  await page.setViewportSize(viewport)
+  await page.addInitScript(() => {
+    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+  })
+  await page.addInitScript(SYNTHETIC_MIC_INIT)
+  await page.goto('/')
+  await dismissOverlays(page)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __ppSongSeed?: unknown }).__ppSongSeed !==
+      undefined,
+  )
+  const sessionId = await page.evaluate((song) => {
+    // The first-visit tour offer is a toast that sits on the rail at
+    // 844x390 for ten seconds (a phone-stage item, Phase 3 of the rail
+    // plan). It is not what this spec measures; mark it already offered.
+    localStorage.setItem('pitchperfect_mixer_tour_offered', 'true')
+    return (
+      window as unknown as { __ppSongSeed: SongSeed }
+    ).__ppSongSeed.seedSong(song)
+  }, SONG)
+  await page.goto(`/#/karaoke/session/${sessionId}/mixer`)
+  await dismissOverlays(page)
+  await expect(page.getByTestId('mixer-time-total')).toHaveText('0:30', {
+    timeout: 20_000,
+  })
+}
+
+interface Box {
+  x: number
+  y: number
+  w: number
+  h: number
+  right: number
+  bottom: number
+}
+
+interface RailLayout {
+  rail: Box
+  capsule: Box
+  timeline: Box
+  scrollWidth: number
+  innerWidth: number
+  /** Painted things in the rail that start or end outside the window. */
+  outside: string[]
+}
+
+function railLayout(page: Page): Promise<RailLayout> {
+  return page.evaluate(() => {
+    const box = (element: Element | null): Box => {
+      if (element === null) throw new Error('rail part missing')
+      const r = element.getBoundingClientRect()
+      return {
+        x: r.left,
+        y: r.top,
+        w: r.width,
+        h: r.height,
+        right: r.right,
+        bottom: r.bottom,
+      }
+    }
+    const rail = document.querySelector('.sm-transport')
+    const outside = Array.from(rail?.querySelectorAll('*') ?? [])
+      .filter((element) => {
+        const r = element.getBoundingClientRect()
+        return (
+          r.width > 0 &&
+          r.height > 0 &&
+          (r.left < -0.5 || r.right > window.innerWidth + 0.5)
+        )
+      })
+      .map(
+        (element) =>
+          `${element.tagName.toLowerCase()}[${
+            element.getAttribute('aria-label') ?? element.className
+          }]`,
+      )
+    return {
+      rail: box(rail),
+      capsule: box(document.querySelector('[data-testid="mixer-capsule"]')),
+      timeline: box(
+        document.querySelector(
+          '[data-testid="mixer-timeline"] input[type="range"]',
+        ),
+      ),
+      scrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      outside,
+    }
+  })
+}
+
+const songPosition = (page: Page) =>
+  page.getByRole('slider', { name: 'Song position' })
+
+/** Where the playhead is, in seconds. */
+const playhead = (page: Page): Promise<number> =>
+  songPosition(page).evaluate((element) =>
+    Number((element as HTMLInputElement).value),
+  )
+
+async function setLoop(page: Page, a: number, b: number): Promise<void> {
+  await songPosition(page).fill(String(a))
+  await expect.poll(() => playhead(page)).toBeCloseTo(a, 1)
+  await page.getByRole('button', { name: 'Set loop start (A)' }).click()
+  await songPosition(page).fill(String(b))
+  await expect.poll(() => playhead(page)).toBeCloseTo(b, 1)
+  await page.getByRole('button', { name: 'Set loop end (B)' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Set loop end (B)' }),
+  ).toHaveAttribute('data-set', 'true')
+}
+
+/** A press on the rail's own padding: outside every control and panel. */
+async function pressOutside(page: Page): Promise<void> {
+  const rail = await page.locator('.sm-transport').boundingBox()
+  if (rail === null) throw new Error('the rail has no box')
+  await page.mouse.click(rail.x + 4, rail.y + 4)
+}
+
+for (const viewport of VIEWPORTS) {
+  test.describe(`the rail at ${viewport.width}x${viewport.height}`, () => {
+    test.beforeEach(({ page }) => openSeededSong(page, viewport))
+
+    test('keeps the timeline usable and every control inside the window', async ({
+      page,
+    }) => {
+      const layout = await railLayout(page)
+      const ownLine = layout.timeline.y >= layout.capsule.bottom - 1
+
+      expect(layout.timeline.w).toBeGreaterThanOrEqual(200)
+      expect(
+        ownLine || layout.timeline.w >= 380,
+        `a ${layout.timeline.w} px timeline squeezed in beside the capsule`,
+      ).toBe(true)
+      expect(layout.scrollWidth).toBeLessThanOrEqual(layout.innerWidth)
+      expect(layout.outside).toEqual([])
+    })
+
+    test('keeps its width when a loop is set and the mic turns on', async ({
+      page,
+    }) => {
+      const before = await railLayout(page)
+
+      await setLoop(page, 5, 15)
+      await page.getByRole('button', { name: 'Enable microphone' }).click()
+      await expect(
+        page.getByRole('button', { name: 'Disable microphone' }),
+      ).toHaveAttribute('aria-pressed', 'true')
+
+      const after = await railLayout(page)
+      expect(after.capsule.w).toBeCloseTo(before.capsule.w, 1)
+      expect(after.timeline.w).toBeCloseTo(before.timeline.w, 1)
+      expect(after.rail.h).toBeCloseTo(before.rail.h, 1)
+      expect(after.outside).toEqual([])
+    })
+
+    test('closes the key panel and the speed list on a press outside and on Escape', async ({
+      page,
+    }) => {
+      const keyChip = page.getByTestId('key-chip')
+      const keyPanel = page.getByTestId('key-chip-popover')
+
+      await keyChip.click()
+      await expect(keyPanel).toBeVisible()
+      const panel = await keyPanel.boundingBox()
+      expect(panel).not.toBeNull()
+      expect(panel!.x).toBeGreaterThanOrEqual(0)
+      expect(panel!.y).toBeGreaterThanOrEqual(0)
+      expect(panel!.x + panel!.width).toBeLessThanOrEqual(viewport.width)
+      expect(panel!.y + panel!.height).toBeLessThanOrEqual(viewport.height)
+      // A press inside the portalled panel is not a press outside it.
+      await keyPanel.getByText('Key', { exact: true }).click()
+      await expect(keyPanel).toBeVisible()
+
+      await pressOutside(page)
+      await expect(keyPanel).toBeHidden()
+
+      await keyChip.click()
+      await expect(keyPanel).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(keyPanel).toBeHidden()
+      await expect(keyChip).toBeFocused()
+
+      const speedChip = page.getByTestId('speed-chip')
+      const speedList = page.getByRole('menu', { name: /^Playback speed/ })
+      await speedChip.click()
+      await expect(speedList).toBeVisible()
+      await pressOutside(page)
+      await expect(speedList).toBeHidden()
+
+      await speedChip.click()
+      await expect(speedList).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(speedList).toBeHidden()
+      await expect(speedChip).toBeFocused()
+    })
+  })
+}
+
+test.describe('the rail at 1440x900, playing', () => {
+  test.beforeEach(({ page }) => openSeededSong(page, VIEWPORTS[0]))
+
+  test('plays an A-B loop round without freezing', async ({ page }) => {
+    await setLoop(page, 2, 4)
+    await expect(
+      page.getByRole('button', { name: 'Loop', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await songPosition(page).fill('3')
+
+    await page.getByRole('button', { name: 'Play', exact: true }).click()
+
+    const often = { intervals: [100], timeout: 10_000 }
+    // Up to B, round to A, and on again.
+    await expect.poll(() => playhead(page), often).toBeGreaterThan(3.6)
+    await expect.poll(() => playhead(page), often).toBeLessThan(3.2)
+    const roundAgain = await playhead(page)
+    await expect
+      .poll(() => playhead(page), often)
+      .toBeGreaterThan(roundAgain + 0.3)
+    await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  })
+
+  test('docks the focus pill to each edge, and Escape shuts the compass first', async ({
+    page,
+  }) => {
+    await page.locator('[data-tour="mixer.focus"]').click()
+    const focus = page.locator('.stem-mixer--focus')
+    const pill = page.locator('.sm-transport')
+    const handle = page.getByTestId('dock-handle')
+    const compass = page.getByTestId('dock-compass')
+    await expect(focus).toBeVisible()
+
+    await handle.click()
+    await expect(compass).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(compass).toBeHidden()
+    await expect(focus).toBeVisible()
+
+    for (const side of ['top', 'left', 'right', 'bottom'] as const) {
+      await handle.click()
+      await page.getByRole('button', { name: `Dock ${side}` }).click()
+      await expect(compass).toBeHidden()
+
+      const box = await pill.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.x, side).toBeGreaterThanOrEqual(0)
+      expect(box!.y, side).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width, side).toBeLessThanOrEqual(1440.5)
+      expect(box!.y + box!.height, side).toBeLessThanOrEqual(900.5)
+      await expect(
+        page.getByRole('button', { name: 'Play', exact: true }),
+      ).toBeInViewport()
+
+      const timeline = page.getByTestId('mixer-timeline')
+      if (side === 'left' || side === 'right') {
+        // The side docks stack the controls and leave the timeline out.
+        await expect(timeline).toHaveCount(0)
+      } else {
+        const bar = await timeline.boundingBox()
+        expect(bar?.width ?? 0, side).toBeGreaterThanOrEqual(200)
+      }
+    }
+
+    await page.getByRole('button', { name: 'Exit karaoke mode (Esc)' }).click()
+    await expect(focus).toHaveCount(0)
+  })
+})

@@ -1,13 +1,29 @@
+// StemMixerTransport fits the stem mixer's state to the playback rail.
 // ============================================================
-// StemMixerTransport — playback transport bar
-// ============================================================
+//
+// The rail (stem-mixer/rail/) takes values and callbacks; this file reads
+// the mixer's accessors into it, and adds what only the karaoke focus pill
+// has: the dock handle and its compass, the drop-zone preview while the
+// handle is dragged, the exit button, and the stage toggles (waveform,
+// pitch, lyrics), which sit in More as ticked rows.
+//
+// The compass is portalled to <body>. The pill's transform and backdrop
+// filter make it the containing block for anything fixed inside it, so a
+// fixed backdrop drawn inside covered the pill and nothing else, and the
+// compass could not close on a press outside it. It closes by the app's
+// one rule for floating panels now (use-popover-layer).
 
-import type { Component } from 'solid-js'
-import type { Accessor, Setter } from 'solid-js'
-import { createSignal, For, Show } from 'solid-js'
+import type { Accessor, Component, Setter } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
-import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
-import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
+import type { OverflowMenuItem } from '@/components/OverflowMenu'
+import { MixerCapsule } from '@/components/stem-mixer/rail/MixerCapsule'
+import { MixerRail } from '@/components/stem-mixer/rail/MixerRail'
+import { MixerTimeline } from '@/components/stem-mixer/rail/MixerTimeline'
+import { placePopover, usePopoverLayer } from '@/lib/use-popover-layer'
+import { CheckSmall, GripVertical, Minimize2 } from './icons'
+import styles from './StemMixerTransport.module.css'
 
 type DockPos = 'top' | 'bottom' | 'left' | 'right'
 /** [side, arrow-path, label] for the click-to-dock compass. */
@@ -17,10 +33,12 @@ const DOCK_OPTIONS: readonly (readonly [DockPos, string, string])[] = [
   ['left', 'M4 12l6-6v4h8v4h-8v4z', 'Dock left'],
   ['right', 'M20 12l-6 6v-4H6v-4h8V6z', 'Dock right'],
 ]
-import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, } from './icons'
+
+/** Pointer travel that turns a press on the handle into a drag. */
+const DRAG_THRESHOLD_PX = 6
 
 export interface StemMixerTransportProps {
-  // Audio / transport
+  // Playback
   playing: Accessor<boolean>
   elapsed: Accessor<number>
   duration: Accessor<number>
@@ -28,9 +46,10 @@ export interface StemMixerTransportProps {
   onRestart: () => void
   onPlay: () => void
   onPause: () => void
-  onSeek: (e: MouseEvent) => void
+  /** Moves the playhead to a time in the song, in seconds. */
+  onSeek: (seconds: number) => void
 
-  /** The performance layout always shows lyrics and never pitch. */
+  // Workspace layout (switched from the mixer header)
   performanceLayout: Accessor<boolean>
 
   // Mic
@@ -43,18 +62,18 @@ export interface StemMixerTransportProps {
   // Formatting
   formatTime: (t: number) => string
 
-  // Playback speed
+  // Speed
   speed: Accessor<number>
   onSpeedChange: (speed: number) => void
 
-  /** The singer's key; the control sits beside the speed it is kept apart from. */
+  // Key
   keyControl?: KeyShiftBinding
 
-  // Karaoke focus mode
+  // Focus mode
   karaokeFocus: Accessor<boolean>
   setKaraokeFocus: Setter<boolean>
-  toolbarPosition?: Accessor<'top' | 'bottom' | 'left' | 'right'>
-  setToolbarPosition?: Setter<'top' | 'bottom' | 'left' | 'right'>
+  toolbarPosition?: Accessor<DockPos>
+  setToolbarPosition?: Setter<DockPos>
   showWaveform: Accessor<boolean>
   setShowWaveform: Setter<boolean>
   showPitch: Accessor<boolean>
@@ -62,471 +81,282 @@ export interface StemMixerTransportProps {
   showLyrics: Accessor<boolean>
   setShowLyrics: Setter<boolean>
 
-  // Loop: A and B in seconds, null until set
+  // Loop
   loopEnabled: Accessor<boolean>
   loopStart: Accessor<number | null>
   loopEnd: Accessor<number | null>
+  /** The least time between A and B the loop rule accepts. */
+  minimumLoopGap: number
   onSetLoopA: () => void
   onSetLoopB: () => void
+  /** A mark dragged or stepped on the timeline. */
+  onMoveLoopPoint: (which: 'A' | 'B', seconds: number) => void
   onClearLoop: () => void
   onToggleLoop: () => void
 }
 
+const tick = (on: boolean) => (on ? <CheckSmall size={16} /> : null)
+
 export const StemMixerTransport: Component<StemMixerTransportProps> = (
   props,
 ) => {
-  const hasLoop = () => props.loopEnd() !== null
+  const dock = (): DockPos => props.toolbarPosition?.() ?? 'bottom'
   const isVertical = () =>
-    props.karaokeFocus() &&
-    (props.toolbarPosition?.() === 'left' ||
-      props.toolbarPosition?.() === 'right')
+    props.karaokeFocus() && (dock() === 'left' || dock() === 'right')
 
-  // Drag logic
-  const [dragHoverZone, setDragHoverZone] = createSignal<
-    'top' | 'bottom' | 'left' | 'right' | null
-  >(null)
-
-  // The dock handle is dual-purpose: a plain click opens a compass popover
-  // (fast, precise docking on desktop — the Chrome DevTools "Dock side"
-  // pattern), while dragging past a small threshold reveals the edge-drop
-  // preview (natural on touch). We tell them apart by pointer travel.
-  const DRAG_THRESHOLD_PX = 6
+  // ── Dock handle ──────────────────────────────────────────────────
+  // Dual-purpose: a plain click opens the compass (fast, precise docking
+  // on a desk, the Chrome DevTools "Dock side" pattern), and a drag past
+  // a few pixels shows the edge it will land on (natural on touch).
+  const [dragHoverZone, setDragHoverZone] = createSignal<DockPos | null>(null)
   const [compassOpen, setCompassOpen] = createSignal(false)
+  const [compassPos, setCompassPos] = createSignal({ x: 0, y: 0 })
+  let handle: HTMLDivElement | undefined
+  let compass: HTMLDivElement | undefined
   let dragStartX = 0
   let dragStartY = 0
   let didDrag = false
 
   const handleDragStart = (e: PointerEvent) => {
     e.preventDefault()
-    const handle = e.currentTarget as HTMLElement
-    handle.setPointerCapture(e.pointerId)
+    const target = e.currentTarget as HTMLElement
+    target.setPointerCapture(e.pointerId)
     dragStartX = e.clientX
     dragStartY = e.clientY
     didDrag = false
   }
 
   const handleDragMove = (e: PointerEvent) => {
-    if (
-      !e.currentTarget ||
-      !(e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)
-    )
-      return
-
+    const target = e.currentTarget as HTMLElement | null
+    if (target?.hasPointerCapture(e.pointerId) !== true) return
     if (
       !didDrag &&
       Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) <
         DRAG_THRESHOLD_PX
     ) {
-      return // still within click tolerance — don't start a drag yet
+      return // still within click tolerance: not a drag yet
     }
     didDrag = true
     setCompassOpen(false)
 
-    // Determine which edge we are closest to
-    const x = e.clientX
-    const y = e.clientY
-    const w = window.innerWidth
-    const h = window.innerHeight
-    const dists = { top: y, bottom: h - y, left: x, right: w - x }
-    let closestZone: 'top' | 'bottom' | 'left' | 'right' = 'bottom'
-    let minDist = dists.bottom
-    for (const [zone, dist] of Object.entries(dists)) {
-      if (dist < minDist) {
-        closestZone = zone as 'top' | 'bottom' | 'left' | 'right'
-        minDist = dist
-      }
+    // The edge the pointer is nearest.
+    const distances: Record<DockPos, number> = {
+      top: e.clientY,
+      bottom: window.innerHeight - e.clientY,
+      left: e.clientX,
+      right: window.innerWidth - e.clientX,
     }
-    setDragHoverZone(closestZone)
+    let closest: DockPos = 'bottom'
+    for (const zone of Object.keys(distances) as DockPos[]) {
+      if (distances[zone] < distances[closest]) closest = zone
+    }
+    setDragHoverZone(closest)
   }
 
   const handleDragEnd = (e: PointerEvent) => {
-    const handle = e.currentTarget as HTMLElement
-    if (handle.hasPointerCapture(e.pointerId)) {
-      handle.releasePointerCapture(e.pointerId)
-      if (didDrag) {
-        const zone = dragHoverZone()
-        if (zone && props.setToolbarPosition) props.setToolbarPosition(zone)
-        setDragHoverZone(null)
-      } else {
-        // A tap/click, not a drag — toggle the compass popover.
-        setCompassOpen((v) => !v)
-      }
+    const target = e.currentTarget as HTMLElement
+    if (!target.hasPointerCapture(e.pointerId)) return
+    target.releasePointerCapture(e.pointerId)
+    if (didDrag) {
+      const zone = dragHoverZone()
+      if (zone !== null) props.setToolbarPosition?.(zone)
+      setDragHoverZone(null)
+    } else {
+      setCompassOpen((open) => !open)
     }
   }
 
-  const dockTo = (pos: 'top' | 'bottom' | 'left' | 'right') => {
-    props.setToolbarPosition?.(pos)
+  const dockTo = (side: DockPos) => {
+    props.setToolbarPosition?.(side)
     setCompassOpen(false)
+  }
+
+  usePopoverLayer({
+    open: compassOpen,
+    onClose: () => setCompassOpen(false),
+    inside: () => [handle, compass],
+    anchor: () => handle,
+  })
+
+  createEffect(() => {
+    if (!compassOpen() || handle === undefined || compass === undefined) return
+    // Toward the stage, away from the edge the pill is docked on.
+    const { x, y } = placePopover(
+      handle.getBoundingClientRect(),
+      { width: compass.offsetWidth, height: compass.offsetHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+      { axis: isVertical() ? 'inline' : 'block', align: 'start' },
+    )
+    setCompassPos({ x, y })
+  })
+
+  // Leaving focus mode with the compass open must not strand it.
+  createEffect(() => {
+    if (!props.karaokeFocus()) setCompassOpen(false)
+  })
+
+  // ── Stage toggles, in More while focus mode hides the panels' own ──
+  const stageRows = (): OverflowMenuItem[] => {
+    if (!props.karaokeFocus()) return []
+    const rows: OverflowMenuItem[] = [
+      {
+        key: 'show-waveform',
+        label: 'Waveform',
+        checked: props.showWaveform(),
+        checkType: 'checkbox',
+        separatorBefore: true,
+        icon: () => tick(props.showWaveform()),
+        onSelect: () => props.setShowWaveform((on) => !on),
+      },
+    ]
+    // The performance layout always shows the lyrics and never the pitch.
+    if (props.performanceLayout()) return rows
+    rows.push(
+      {
+        key: 'show-pitch',
+        label: 'Pitch',
+        checked: props.showPitch(),
+        checkType: 'checkbox',
+        icon: () => tick(props.showPitch()),
+        onSelect: () => props.setShowPitch((on) => !on),
+      },
+      {
+        key: 'show-lyrics',
+        label: 'Lyrics',
+        checked: props.showLyrics(),
+        checkType: 'checkbox',
+        icon: () => tick(props.showLyrics()),
+        onSelect: () => props.setShowLyrics((on) => !on),
+      },
+    )
+    return rows
   }
 
   return (
     <>
-      <Show when={dragHoverZone() !== null}>
-        <div class={`sm-drag-overlay sm-drag-overlay--${dragHoverZone()}`} />
+      <Show when={dragHoverZone()}>
+        {(zone) => <div class={styles.dropZone} data-zone={zone()} />}
       </Show>
       <div
-        class="sm-transport"
+        class={`sm-transport ${styles.transport}`}
         data-tour="mixer.transport"
-        classList={{
-          'sm-transport--vertical': isVertical(),
-          [`sm-transport--docked-${props.toolbarPosition?.()}`]:
-            props.karaokeFocus(),
-        }}
+        data-dock={props.karaokeFocus() ? dock() : undefined}
+        data-vertical={isVertical() ? 'true' : 'false'}
       >
-        <Show when={props.karaokeFocus()}>
-          <div class="sm-transport-dock">
-            <div
-              class="sm-transport-drag-handle"
-              classList={{ 'sm-transport-drag-handle--open': compassOpen() }}
-              onPointerDown={handleDragStart}
-              onPointerMove={handleDragMove}
-              onPointerUp={handleDragEnd}
-              onPointerCancel={handleDragEnd}
-              title="Click to dock (or drag)"
-            >
-              <GripVertical />
-            </div>
-            <Show when={compassOpen()}>
-              <div
-                class="sm-dock-compass-backdrop"
-                onPointerDown={() => setCompassOpen(false)}
-              />
-              <div
-                class={`sm-dock-compass sm-dock-compass--${props.toolbarPosition?.() ?? 'bottom'}`}
-                role="menu"
-                aria-label="Dock toolbar to a side"
-              >
-                <For each={DOCK_OPTIONS}>
-                  {(opt) => (
-                    <button
-                      class="sm-dock-compass-btn"
-                      classList={{
-                        [`sm-dock-compass-btn--${opt[0]}`]: true,
-                        'sm-dock-compass-btn--active':
-                          props.toolbarPosition?.() === opt[0],
-                      }}
-                      onClick={() => dockTo(opt[0])}
-                      title={opt[2]}
-                      aria-label={opt[2]}
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14">
-                        <path fill="currentColor" d={opt[1]} />
-                      </svg>
-                    </button>
-                  )}
-                </For>
-                <span class="sm-dock-compass-hub" aria-hidden="true" />
-              </div>
-            </Show>
-          </div>
-        </Show>
-        <div class="sm-transport-controls">
-          <button
-            class="sm-transport-btn sm-transport-play"
-            aria-label={props.playing() ? 'Pause' : 'Play'}
-            onClick={() => (props.playing() ? props.onPause() : props.onPlay())}
-          >
-            {props.playing() ? <Pause /> : <Play />}
-          </button>
-          <button
-            class="sm-transport-btn"
-            onClick={() => props.onStop()}
-            title="Stop"
-            aria-label="Stop"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-            </svg>
-          </button>
-          <button
-            class="sm-transport-btn"
-            onClick={() => props.onRestart()}
-            title="Restart (play from beginning)"
-            aria-label="Restart (play from beginning)"
-          >
-            <SkipBack />
-          </button>
-
-          <div class="sm-focus-divider" />
-
-          {/* Loop A / B / Toggle */}
-          <button
-            class="sm-icon-btn sm-loop-icon-a"
-            classList={{ 'sm-loop-btn--a-set': props.loopStart() !== null }}
-            onClick={() => props.onSetLoopA()}
-            title="Set loop start (A)"
-            aria-label="Set loop start (A)"
-          >
-            <svg class="sm-loop-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="11" />
-              <text
-                x="12"
-                y="16.5"
-                font-size="12"
-                font-family="sans-serif"
-                text-anchor="middle"
-                font-weight="bold"
-              >
-                A
-              </text>
-            </svg>
-          </button>
-          <button
-            class="sm-icon-btn sm-loop-icon-b"
-            classList={{ 'sm-loop-btn--b-set': hasLoop() }}
-            onClick={() => props.onSetLoopB()}
-            title="Set loop end (B)"
-            aria-label="Set loop end (B)"
-          >
-            <svg class="sm-loop-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="11" />
-              <text
-                x="12"
-                y="16.5"
-                font-size="12"
-                font-family="sans-serif"
-                text-anchor="middle"
-                font-weight="bold"
-              >
-                B
-              </text>
-            </svg>
-          </button>
-          <Show when={hasLoop()}>
-            <button
-              class="sm-icon-btn"
-              classList={{ 'sm-loop-toggle--active': props.loopEnabled() }}
-              onClick={() => props.onToggleLoop()}
-              title={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
-              aria-label={props.loopEnabled() ? 'Disable loop' : 'Enable loop'}
-              style={{ 'margin-left': '0.5rem' }}
-            >
-              <Loop />
-            </button>
-            <button
-              class="sm-icon-btn"
-              onClick={() => props.onClearLoop()}
-              title="Clear loop points"
-              aria-label="Clear loop points"
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <line
-                  x1="18"
-                  y1="6"
-                  x2="6"
-                  y2="18"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <line
-                  x1="6"
-                  y1="6"
-                  x2="18"
-                  y2="18"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-            </button>
-          </Show>
-
-          {/* ── Focus mode: panel visibility toggles ───────── */}
-          <Show when={props.karaokeFocus()}>
-            <div class="sm-focus-divider" />
-            <button
-              class="sm-focus-toggle-btn"
-              classList={{
-                'sm-focus-toggle-btn--active': props.showWaveform(),
-              }}
-              onClick={() => props.setShowWaveform((p) => !p)}
-              title={props.showWaveform() ? 'Hide waveform' : 'Show waveform'}
-              aria-label={
-                props.showWaveform() ? 'Hide waveform' : 'Show waveform'
+        <MixerRail
+          vertical={isVertical()}
+          // The bottom dock's pill is as wide as what is in it; the top
+          // dock's spans the stage, and the rail fills it.
+          fit={props.karaokeFocus() && dock() === 'bottom'}
+          capsule={
+            <MixerCapsule
+              playing={props.playing()}
+              onPlay={() => props.onPlay()}
+              onPause={() => props.onPause()}
+              onStop={() => props.onStop()}
+              onRestart={() => props.onRestart()}
+              loopStart={props.loopStart()}
+              loopEnd={props.loopEnd()}
+              loopEnabled={props.loopEnabled()}
+              onSetLoopA={() => props.onSetLoopA()}
+              onSetLoopB={() => props.onSetLoopB()}
+              onToggleLoop={() => props.onToggleLoop()}
+              onClearLoop={() => props.onClearLoop()}
+              speed={props.speed()}
+              onSpeedChange={(speed) => props.onSpeedChange(speed)}
+              keyControl={props.keyControl}
+              micActive={props.micActive()}
+              micError={props.micError()}
+              onToggleMic={() => props.onToggleMic()}
+              micMonitorEnabled={props.micMonitorEnabled()}
+              onToggleMicMonitor={() => props.onToggleMicMonitor()}
+              moreItems={stageRows()}
+              vertical={isVertical()}
+              bare={props.karaokeFocus()}
+              leading={
+                props.karaokeFocus() ? (
+                  <div
+                    ref={handle}
+                    class={styles.handle}
+                    classList={{ [styles.handleOpen!]: compassOpen() }}
+                    data-testid="dock-handle"
+                    onPointerDown={handleDragStart}
+                    onPointerMove={handleDragMove}
+                    onPointerUp={handleDragEnd}
+                    onPointerCancel={handleDragEnd}
+                    title="Click to dock (or drag)"
+                  >
+                    <GripVertical />
+                  </div>
+                ) : undefined
               }
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              >
-                <line x1="4" y1="8" x2="4" y2="16" />
-                <line x1="8" y1="4" x2="8" y2="20" />
-                <line x1="12" y1="10" x2="12" y2="14" />
-                <line x1="16" y1="6" x2="16" y2="18" />
-                <line x1="20" y1="9" x2="20" y2="15" />
-              </svg>
-            </button>
-            {/* Pitch + lyrics toggles do nothing in the performance layout
-                (lyrics always shown, pitch never) — only the waveform toggles. */}
-            <Show when={!props.performanceLayout()}>
-              <button
-                class="sm-focus-toggle-btn"
-                classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
-                onClick={() => props.setShowPitch((p) => !p)}
-                title={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
-                aria-label={props.showPitch() ? 'Hide pitch' : 'Show pitch'}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 18V5l12-2v13" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
-                </svg>
-              </button>
-              <button
-                class="sm-focus-toggle-btn"
-                classList={{
-                  'sm-focus-toggle-btn--active': props.showLyrics(),
-                }}
-                onClick={() => props.setShowLyrics((p) => !p)}
-                title={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
-                aria-label={props.showLyrics() ? 'Hide lyrics' : 'Show lyrics'}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                </svg>
-              </button>
-            </Show>
-          </Show>
+              trailing={
+                props.karaokeFocus() ? (
+                  <button
+                    type="button"
+                    class={styles.exit}
+                    onClick={() => props.setKaraokeFocus(false)}
+                    title="Exit karaoke mode (Esc)"
+                    aria-label="Exit karaoke mode (Esc)"
+                  >
+                    <Minimize2 size={14} />
+                  </button>
+                ) : undefined
+              }
+            />
+          }
+          timeline={
+            <MixerTimeline
+              elapsed={props.elapsed()}
+              duration={props.duration()}
+              formatTime={props.formatTime}
+              onSeek={(seconds) => props.onSeek(seconds)}
+              loopStart={props.loopStart()}
+              loopEnd={props.loopEnd()}
+              loopEnabled={props.loopEnabled()}
+              minimumLoopGap={props.minimumLoopGap}
+              onMoveLoopPoint={(which, seconds) =>
+                props.onMoveLoopPoint(which, seconds)
+              }
+            />
+          }
+        />
+      </div>
 
-          <div class="sm-focus-divider" />
-
-          {/* ── Mic toggle (always visible) ────────────────── */}
-          <button
-            type="button"
-            class={`sm-mic-toggle-btn${props.micActive() ? ' sm-mic-toggle-btn--active' : ''}${props.micError() ? ' sm-mic-toggle-btn--error' : ''}`}
-            onClick={() => {
-              void props.onToggleMic()
+      <Show when={compassOpen()}>
+        <Portal>
+          <div
+            ref={compass}
+            class={`${styles.compass} mp-dark-stage`}
+            role="group"
+            aria-label="Dock the controls"
+            data-testid="dock-compass"
+            style={{
+              left: `${compassPos().x}px`,
+              top: `${compassPos().y}px`,
             }}
-            title={
-              props.micError()
-                ? `${props.micError()} Tap to try again.`
-                : props.micActive()
-                  ? 'Disable microphone'
-                  : 'Enable microphone pitch comparison'
-            }
-            aria-label={
-              props.micError()
-                ? 'Retry microphone'
-                : props.micActive()
-                  ? 'Disable microphone'
-                  : 'Enable microphone'
-            }
-            aria-pressed={props.micActive()}
           >
-            <Mic />
-          </button>
-
-          {/* ── Mic monitor (hear yourself) ──────────────── */}
-          <Show when={props.micActive()}>
-            <button
-              class={`sm-mic-toggle-btn${props.micMonitorEnabled() ? ' sm-mic-toggle-btn--active' : ''}`}
-              onClick={() => props.onToggleMicMonitor()}
-              title={
-                props.micMonitorEnabled()
-                  ? 'Mute self-monitoring'
-                  : 'Hear my voice over the track (use headphones)'
-              }
-              aria-label={
-                props.micMonitorEnabled()
-                  ? 'Mute self-monitoring'
-                  : 'Hear my voice over the track (use headphones)'
-              }
-            >
-              <Headphones />
-            </button>
-          </Show>
-
-          {/* ── Speed selector (always visible) ──────────── */}
-          <select
-            class="sm-speed-select"
-            value={props.speed().toString()}
-            onChange={(e) => {
-              props.onSpeedChange(parseFloat(e.currentTarget.value))
-            }}
-            title="Playback speed"
-          >
-            <For each={STEM_MIXER_PLAYBACK_SPEEDS}>
-              {(speed) => (
-                <option value={speed}>{formatPlaybackSpeed(speed)}</option>
+            <For each={DOCK_OPTIONS}>
+              {([side, path, label]) => (
+                <button
+                  type="button"
+                  class={styles.compassBtn}
+                  data-side={side}
+                  aria-pressed={dock() === side}
+                  onClick={() => dockTo(side)}
+                  title={label}
+                  aria-label={label}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14">
+                    <path fill="currentColor" d={path} />
+                  </svg>
+                </button>
               )}
             </For>
-          </select>
-
-          {/* ── Key (the singer's; speed no longer moves it) ── */}
-          <Show when={props.keyControl}>
-            {(key) => (
-              <KeyShiftControl
-                value={key().value()}
-                onChange={key().onChange}
-                keyLabel={key().keyLabel()}
-                suggestion={key().suggestion()}
-                onFindKey={key().onFindKey}
-                disabledReason={key().disabledReason()}
-              />
-            )}
-          </Show>
-
-          {/* ── Focus mode: exit button ───────────────────── */}
-          <Show when={props.karaokeFocus()}>
-            <div class="sm-focus-divider" />
-            <button
-              class="sm-focus-exit-btn"
-              onClick={() => props.setKaraokeFocus(false)}
-              title="Exit karaoke mode (Esc)"
-              aria-label="Exit karaoke mode (Esc)"
-            >
-              <Minimize2 size={14} />
-            </button>
-          </Show>
-        </div>
-
-        <Show when={!isVertical()}>
-          <div class="sm-progress-area">
-            <span class="sm-time">{props.formatTime(props.elapsed())}</span>
-            <div class="sm-progress-bar" onClick={(e) => props.onSeek(e)}>
-              <div
-                class="sm-progress-fill"
-                style={{
-                  width: `${props.duration() > 0 ? (props.elapsed() / props.duration()) * 100 : 0}%`,
-                }}
-              />
-              <Show when={hasLoop()}>
-                <div
-                  class="sm-progress-loop"
-                  style={{
-                    left: `${((props.loopStart() ?? 0) / props.duration()) * 100}%`,
-                    width: `${(((props.loopEnd() ?? 0) - (props.loopStart() ?? 0)) / props.duration()) * 100}%`,
-                  }}
-                />
-              </Show>
-            </div>
-            <span class="sm-time">{props.formatTime(props.duration())}</span>
+            <span class={styles.hub} aria-hidden="true" />
           </div>
-        </Show>
-      </div>
+        </Portal>
+      </Show>
     </>
   )
 }
