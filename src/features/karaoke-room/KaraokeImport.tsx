@@ -39,6 +39,7 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
+import { deviceNoun, thisDeviceLower } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { balanceVersion } from '@/stores/billing-store'
 import type { KaraokeOffer } from '@/stores/native-shell-store'
@@ -121,11 +122,15 @@ const CloseGlyph: Component = () => (
   </svg>
 )
 
-const PAYWALL_LINES = [
-  'Any song from Files on this phone',
-  'Voice and music separated on our server',
-  'Your songs stay on this phone and play offline',
-] as const
+/** The paywall's three lines, naming the device in hand. */
+function paywallLines(): readonly string[] {
+  const here = thisDeviceLower()
+  return [
+    `Any song from Files on ${here}`,
+    'Voice and music separated on our server',
+    `Your songs stay on ${here} and play offline`,
+  ]
+}
 
 /** The store's price for the paywall, asked for when it opens. */
 type Price =
@@ -558,7 +563,8 @@ export const KaraokeImport: Component = () => {
                 {songsComeBackLine(karaokeSongs())}
               </p>
               <p class={styles.sheetText}>
-                The songs you imported stay on this phone and still play.
+                The songs you imported stay on {thisDeviceLower()} and still
+                play.
               </p>
               <div class={styles.sheetActions}>
                 <button
@@ -573,7 +579,7 @@ export const KaraokeImport: Component = () => {
             <Match when={sheet()?.kind === 'paywall'}>
               <SheetHead title="Sing your own songs" closeLabel="Later" />
               <ul class={styles.paywallLines}>
-                <For each={PAYWALL_LINES}>
+                <For each={paywallLines()}>
                   {(line) => (
                     <li>
                       <span class={styles.paywallGlyph} aria-hidden="true">
@@ -630,7 +636,7 @@ export const KaraokeImport: Component = () => {
             <Match when={sheet()?.kind === 'subscribed'}>
               <SheetHead title="You're subscribed" />
               <p class={styles.sheetText}>
-                {`${songsArrival()}${hasUpgradedAccount() ? '' : ' Keep them with an account, so your subscription and your songs follow you to a new phone.'}`}
+                {`${songsArrival()}${hasUpgradedAccount() ? '' : ` Keep them with an account, so your subscription and your songs follow you to a new ${deviceNoun()}.`}`}
               </p>
               <div class={styles.sheetActions}>
                 <Show when={!hasUpgradedAccount()}>

@@ -34,6 +34,7 @@ import { registerMusicPlayingSource, registerVoiceCommands, } from '@/features/v
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { createBlobUrlOwner, revokeBlobUrl } from '@/lib/blob-url-owner'
 import { IS_DIAGNOSTIC_BUILD, PREMIUM_FEATURES } from '@/lib/defaults'
+import { yourDevicePossessive } from '@/lib/device-noun'
 import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
@@ -717,7 +718,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       if (!micOn || !zenStage() || musicLevelHintSeen()) return
       setMusicLevelHintSeen(true)
       showNotification(
-        "Your phone's noise cancelling turns the backing track down while the mic is on. The music button next to the mic turns it back up.",
+        `${yourDevicePossessive()} noise cancelling turns the backing track down while the mic is on. The music button next to the mic turns it back up.`,
         'info',
       )
     }),

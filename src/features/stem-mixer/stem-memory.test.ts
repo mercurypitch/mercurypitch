@@ -17,7 +17,8 @@
 // to be worked out before the decode is attempted.
 
 import { describe, expect, it } from 'vitest'
-import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, stemLoadConcurrency, } from './stem-memory'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, mb, needsStreamingMessage, stemLoadConcurrency, } from './stem-memory'
 
 const MB = 1024 * 1024
 
@@ -166,5 +167,24 @@ describe('fitStems', () => {
     })
     expect(fit.allowed).toBe(5)
     expect(fit.skipped).toBe(0)
+  })
+})
+
+describe('needsStreamingMessage', () => {
+  it("names a phone's software on a phone", () => {
+    expect(needsStreamingMessage()).toBe(
+      "This song needs a newer version of this phone's software to play here. Update it, then open the song again.",
+    )
+  })
+
+  it("names the iPad's software on an iPad", () => {
+    const restore = actAsIpad()
+    try {
+      expect(needsStreamingMessage()).toBe(
+        "This song needs a newer version of this iPad's software to play here. Update it, then open the song again.",
+      )
+    } finally {
+      restore()
+    }
   })
 })

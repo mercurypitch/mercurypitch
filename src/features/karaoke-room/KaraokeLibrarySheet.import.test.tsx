@@ -51,6 +51,7 @@ vi.mock('./KaraokeImport', () => ({
   KaraokeImport: () => <div data-testid="karaoke-import">Import a song</div>,
 }))
 
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 
 const GOODBYE: RoomSong = {
@@ -305,5 +306,42 @@ describe('the library, where songs can be imported', () => {
     fireEvent.click(items[0] as HTMLElement)
 
     expect(queue.removedSongs).toEqual(['paper'])
+  })
+})
+
+describe('the library, on an iPad', () => {
+  it('removes a song from this iPad, and asks support about the iPad', () => {
+    const restore = actAsIpad()
+    try {
+      queue.rows = [
+        {
+          sessionId: 'lanterns',
+          title: 'Lanterns on the Water',
+          state: { kind: 'failed', reason: 'expired' },
+        },
+      ]
+      open([PAPER, GOODBYE])
+      const support = within(row('Lanterns on the Water')).getByRole('link', {
+        name: 'Ask support',
+      })
+      fireEvent.click(
+        screen.getByRole('button', { name: 'More for Paper Moon Waltz' }),
+      )
+      const menu = screen.getByRole('menu', { name: 'Paper Moon Waltz' })
+
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent),
+      ).toEqual(['Remove from this iPad'])
+      expect(
+        decodeURIComponent(support.getAttribute('href') ?? '').replace(
+          /\+/gu,
+          ' ',
+        ),
+      ).toContain('before it reached my iPad.')
+    } finally {
+      restore()
+    }
   })
 })

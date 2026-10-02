@@ -16,6 +16,7 @@
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 
 export interface KeepAlertProps {
@@ -45,7 +46,7 @@ export const KeepAlert: Component<KeepAlertProps> = (props) => {
               Keep this take?
             </div>
             <div class="mp-alert__text" id="shell-keep-text">
-              Keep stores it on this phone.
+              Keep stores it on {thisDeviceLower()}.
             </div>
           </div>
           <div class="mp-alert__actions">

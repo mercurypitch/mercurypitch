@@ -17,6 +17,7 @@
 import { createSignal } from 'solid-js'
 import { requireAuth } from '@/db/services/auth-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
+import { thisDeviceLower } from '@/lib/device-noun'
 import type { KaraokeRestoreOutcome } from '@/stores/native-shell-store'
 
 /**
@@ -44,7 +45,7 @@ export const STEMS_KEPT_DAYS = 1
 export function collectLine(count: number): string {
   const within =
     STEMS_KEPT_DAYS === 1 ? 'about a day' : `about ${STEMS_KEPT_DAYS} days`
-  return `Open Mercury Pitch within ${within} to save ${count === 1 ? 'it' : 'them'} to this phone.`
+  return `Open Mercury Pitch within ${within} to save ${count === 1 ? 'it' : 'them'} to ${thisDeviceLower()}.`
 }
 
 export interface KaraokeSongs {
@@ -171,7 +172,7 @@ export function songsLeftSentence(state: KaraokeSongs): string | null {
 /** The line under Import a song (mock 4b, 4c). */
 export function importLine(state: KaraokeSongs): string {
   if (state.left === 0 && !state.subscribed) {
-    return 'Any song from Files. Our server separates the voice from the music, and the song then lives on this phone. Part of the subscription.'
+    return `Any song from Files. Our server separates the voice from the music, and the song then lives on ${thisDeviceLower()}. Part of the subscription.`
   }
   const sentence = songsLeftSentence(state)
   const what = 'Songs from Files: MP3, M4A, WAV or FLAC, up to 12 minutes.'

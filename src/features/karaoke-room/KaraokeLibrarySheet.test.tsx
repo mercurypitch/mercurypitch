@@ -4,6 +4,7 @@
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RoomSong } from './karaoke-room-library'
 import { formatSongDuration, KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 
@@ -153,5 +154,21 @@ describe('a song length', () => {
   it('is nothing when the song does not know it', () => {
     expect(formatSongDuration(null)).toBeNull()
     expect(formatSongDuration(0)).toBeNull()
+  })
+})
+
+describe('the library sheet, on an iPad', () => {
+  it('says the examples play with the iPad offline', () => {
+    const restore = actAsIpad()
+    try {
+      const { sheet } = open([MINE, GOODBYE])
+
+      expect(
+        screen.getByText('Part of the app: they play with the iPad offline.'),
+      ).toBeTruthy()
+      expect(sheet.textContent).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

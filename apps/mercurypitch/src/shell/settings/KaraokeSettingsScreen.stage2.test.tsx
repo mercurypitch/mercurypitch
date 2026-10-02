@@ -88,6 +88,7 @@ vi.mock('@/features/karaoke-room/karaoke-imported-songs', async () => {
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KaraokeSettingsScreen } from './KaraokeSettingsScreen'
@@ -403,5 +404,35 @@ describe('Settings, Karaoke, in a build with Import', () => {
     expect(root.querySelector('[role="alert"]')?.textContent).toBe(
       '2 songs could not be removed. They are still on this phone.',
     )
+  })
+})
+
+describe('the songs, on an iPad', () => {
+  it('groups them as the songs on this iPad, and says what removing leaves', async () => {
+    const restore = actAsIpad()
+    try {
+      phone.set?.({ count: 7, bytes: 71_200_000 })
+      phone.stuck = 2
+      const root = await mount()
+      const words = root.textContent ?? ''
+
+      row(root, 'karaoke-remove-imported')?.click()
+      const asked =
+        document.querySelector('[role="alertdialog"]')?.textContent ?? ''
+      confirmSettingsAlert()
+      await settle()
+      const stuck = root.querySelector('[role="alert"]')?.textContent ?? ''
+
+      expect(words).toContain('Songs on this iPad')
+      expect(asked).toContain(
+        'Their voice and music leave this iPad. The originals are still in Files, and the example songs stay.',
+      )
+      expect(stuck).toBe(
+        '2 songs could not be removed. They are still on this iPad.',
+      )
+      expect(words + asked + stuck).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

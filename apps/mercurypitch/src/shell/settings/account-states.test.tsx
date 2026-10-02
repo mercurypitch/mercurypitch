@@ -25,7 +25,7 @@ import type * as VoiceTakeService from '@/db/services/voice-take-service'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { resetRunShell } from '../run-shell-store'
-import { ACCOUNT_OFFLINE, ACCOUNT_PROMISES, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, } from './account-copy'
+import { ACCOUNT_OFFLINE, ACCOUNT_ROW, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, accountPromises, } from './account-copy'
 import { forgetAccountOffer } from './account-offer'
 import { refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
@@ -192,7 +192,7 @@ describe('the account states', () => {
     expect(seen.accountRow).toBeNull()
     expect(seen.deleteRow).toBe(false)
     expect(seen.account).toContain(ACCOUNT_SIGNED_OUT.title)
-    for (const promise of ACCOUNT_PROMISES) {
+    for (const promise of accountPromises()) {
       expect(seen.account).toContain(promise)
     }
     expect(seen.signInButton).toBe(true)

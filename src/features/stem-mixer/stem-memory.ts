@@ -19,6 +19,7 @@
 // So the size is computed before the decode is attempted, and a load that
 // cannot fit is trimmed and explained rather than run into the ceiling.
 
+import { thisDevicePossessive } from '@/lib/device-noun'
 import type { DeviceClass } from '@/lib/device-tier'
 
 /** Web Audio decodes to 32-bit floats, one per sample per channel. */
@@ -156,8 +157,9 @@ export function fitStems(input: StemFitInput): StemFit {
 export const HOSTED_WHOLE_DECODE_MAX_BYTES = 12 * 1024 * 1024
 
 /** What the room says instead of decoding a song it cannot hold. */
-export const NEEDS_STREAMING_MESSAGE =
-  "This song needs a newer version of this phone's software to play here. Update it, then open the song again."
+export function needsStreamingMessage(): string {
+  return `This song needs a newer version of ${thisDevicePossessive()} software to play here. Update it, then open the song again.`
+}
 
 // ── Streamed playback ────────────────────────────────────────
 //

@@ -23,6 +23,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate'
 import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { setSingMicGranted, singMicGranted, } from '@/features/sing-room/sing-room-settings'
+import { deviceNoun } from '@/lib/device-noun'
 import { describeSensitivityPosition } from '@/lib/sensitivity-scale'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import { sensitivityPosition } from '@/stores/settings-store'
@@ -35,8 +36,9 @@ import { createLevelCheck, inputLine, peakLabel, peakText } from './level-check'
 import { SettingsGroup, SettingsRow } from './SettingsList'
 
 /** 7b's first paragraph: what the singer sees, and no one to blame. */
-const LATENCY_INTRO =
-  'Your phone takes a moment to play a sound and another to hear one. Over that gap a note you sing lands late against the melody. This plays a few clicks through the speaker, listens for them, and measures the gap.'
+function latencyIntro(): string {
+  return `Your ${deviceNoun()} takes a moment to play a sound and another to hear one. Over that gap a note you sing lands late against the melody. This plays a few clicks through the speaker, listens for them, and measures the gap.`
+}
 
 /** The input card's line while nothing is open. */
 const CLOSED_LINE: Record<string, string> = {
@@ -188,7 +190,7 @@ function LatencySheet(): JSX.Element {
       <Show when={latencySheetOpen()}>
         <MicLatencyWizard
           class="mp-latency"
-          intro={LATENCY_INTRO}
+          intro={latencyIntro()}
           onClose={closeLatencySheet}
           onApplied={() => {
             recordLatencyMeasured()

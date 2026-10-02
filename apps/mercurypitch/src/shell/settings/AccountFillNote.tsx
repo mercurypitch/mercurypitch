@@ -5,7 +5,7 @@
 // The top of the Account screen on the first visit after signing in to an
 // account that already existed (4b): the account's runs and voiceprints,
 // counted the way Progress counts them, and the one thing that did not come:
-// takes stay on the phone that kept them (REQ-NAM-044). Shown once, then
+// takes stay on the device that kept them (REQ-NAM-044). Shown once, then
 // gone. A history that cannot be read is said to be unreadable, with the
 // phone's own records still here and a retry (REQ-NAM-045); it stays due,
 // so the next visit tries again.

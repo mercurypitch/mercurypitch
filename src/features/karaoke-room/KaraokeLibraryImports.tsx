@@ -16,6 +16,7 @@
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { contactFormUrl } from '@/lib/contact-links'
+import { deviceNoun, thisDeviceLower } from '@/lib/device-noun'
 import type { ImportRow, ImportRowState } from './karaoke-import-queue'
 import { importRowLine, importRows, karaokeNewSongs, removeImport, removeImportedSong, retryImport, sendingTitle, showImportGate, } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
@@ -47,10 +48,13 @@ const REMOVABLE_WAITING: ReadonlySet<ImportRowState['kind']> = new Set([
   'blocked',
 ])
 
-const EXPIRED_SUPPORT = contactFormUrl(
-  'support',
-  'A Karaoke song expired on the server before it reached my phone.',
-)
+/** Support, asked about a song that expired, from the device in hand. */
+function expiredSupport(): string {
+  return contactFormUrl(
+    'support',
+    `A Karaoke song expired on the server before it reached my ${deviceNoun()}.`,
+  )
+}
 
 /** A song in the import queue: what it waits for, and what can be done. */
 const QueueRow: Component<{ row: ImportRow }> = (props) => {
@@ -109,7 +113,7 @@ const QueueRow: Component<{ row: ImportRow }> = (props) => {
               </button>
               <a
                 class={styles.queueAction}
-                href={EXPIRED_SUPPORT}
+                href={expiredSupport()}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -217,7 +221,7 @@ export const ImportedSongMenu: Component<ImportedSongMenuProps> = (props) => (
             void removeImportedSong(props.song.sessionId)
           }}
         >
-          Remove from this phone
+          Remove from {thisDeviceLower()}
         </button>
       </div>
     </Show>

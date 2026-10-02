@@ -40,6 +40,7 @@ import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
+import { yourDevice } from '@/lib/device-noun'
 import { formatBytes } from '@/lib/fetch-progress'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
@@ -1069,7 +1070,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                   }
                   dragRange={120}
                   ariaLabel="Music level"
-                  title="Music level — drag to turn the backing track back up if your phone quietened it"
+                  title={`Music level: drag to turn the backing track back up if ${yourDevice()} quietened it`}
                 >
                   <MusicLevelIcon />
                 </PillControl>

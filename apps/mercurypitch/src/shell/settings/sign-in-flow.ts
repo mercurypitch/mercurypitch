@@ -27,6 +27,7 @@ import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import type { AuthResponse, SignInOutcome } from '@/db/services/auth-service'
 import { isTwofaChallenge, loginWithPassword, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
+import { thisDeviceLower } from '@/lib/device-noun'
 
 export type SignInPane = 'methods' | 'email' | 'code' | 'password' | 'twofa'
 
@@ -191,7 +192,7 @@ export function createSignInFlow(options: SignInFlowOptions): SignInFlow {
           )
           setFailure({
             kind: 'message',
-            text: `${PROVIDER_NAMES[provider]} sign-in is not available on this phone. Choose another way.`,
+            text: `${PROVIDER_NAMES[provider]} sign-in is not available on ${thisDeviceLower()}. Choose another way.`,
           })
           return
         }

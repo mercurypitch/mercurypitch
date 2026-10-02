@@ -4,9 +4,10 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { setTheme, setThemeSource, stopThemeAutoWatch, theme, themeSource, } from '@/stores/theme-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { AppearanceScreen } from './AppearanceScreen'
+import { appearanceLabel, AppearanceScreen } from './AppearanceScreen'
 
 let view: RenderedShell | null = null
 
@@ -62,5 +63,22 @@ describe('Appearance', () => {
 
     expect(checked()).toEqual(['midnight'])
     expect(choice('Midnight')?.textContent).toContain('Chosen on the web')
+  })
+})
+
+describe('on an iPad', () => {
+  it('offers to match the iPad, and the Settings row says so', () => {
+    const restore = actAsIpad()
+    try {
+      view = renderShell(() => <AppearanceScreen />)
+      const words = view.container.textContent ?? ''
+
+      expect(choice('Match the iPad')).toBeDefined()
+      expect(words).toContain('Dark or light, as the iPad is set')
+      expect(words).not.toMatch(/\bphones?\b/iu)
+      expect(appearanceLabel('system', 'dark')).toBe('Match the iPad')
+    } finally {
+      restore()
+    }
   })
 })

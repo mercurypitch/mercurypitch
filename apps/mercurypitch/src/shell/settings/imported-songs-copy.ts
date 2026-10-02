@@ -2,11 +2,12 @@
 // The words for the singer's own Karaoke songs, in Settings and Storage
 // ============================================================
 //
-// Settings, Karaoke ("Songs on this phone") and Storage ("Imported songs")
+// Settings, Karaoke ("Songs on this phone", or this iPad) and Storage ("Imported songs")
 // say the same things about the same songs (plan S8 §9), so they say them
 // from here. Songs, never credits.
 
 import type { ImportedSongs } from '@/features/karaoke-room/karaoke-imported-songs'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { formatBytes } from './storage-facts'
 
 const songsWord = (count: number): string =>
@@ -24,7 +25,7 @@ export function importedSongsValue(songs: ImportedSongs): string {
 /** Storage's line under "Imported songs" (mock 9c). */
 export function importedSongsStorageLine(count: number): string {
   return count === 0
-    ? 'None on this phone'
+    ? `None on ${thisDeviceLower()}`
     : `${songsWord(count)}. The originals are still in Files.`
 }
 
@@ -35,13 +36,13 @@ export function removeImportedQuestion(count: number): {
 } {
   return {
     title: `Remove ${count} imported ${count === 1 ? 'song' : 'songs'}?`,
-    text: 'Their voice and music leave this phone. The originals are still in Files, and the example songs stay.',
+    text: `Their voice and music leave ${thisDeviceLower()}. The originals are still in Files, and the example songs stay.`,
   }
 }
 
 /** Said when some of them could not be removed. */
 export function songsStuckLine(stuck: number): string {
   return stuck === 1
-    ? '1 song could not be removed. It is still on this phone.'
-    : `${stuck} songs could not be removed. They are still on this phone.`
+    ? `1 song could not be removed. It is still on ${thisDeviceLower()}.`
+    : `${stuck} songs could not be removed. They are still on ${thisDeviceLower()}.`
 }

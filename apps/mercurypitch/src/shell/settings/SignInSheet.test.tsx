@@ -13,9 +13,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
 import type * as NativeSignIn from '@/features/account/native-sign-in'
 import { NativeSignInError } from '@/features/account/native-sign-in'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { SIGN_IN_EVERYWHERE } from './account-copy'
+import { signInEverywhere } from './account-copy'
 import type * as AccountState from './account-state'
 import { openSignIn, resetSignIn, signInOpen } from './sign-in-state'
 import { SignInSheet } from './SignInSheet'
@@ -124,7 +125,7 @@ describe('the ways in', () => {
     ].map((button) => button.dataset.testid)
 
     expect(ways).toEqual(['signin-apple', 'signin-google', 'signin-email'])
-    expect(q('signin-sheet')?.textContent).toContain(SIGN_IN_EVERYWHERE)
+    expect(q('signin-sheet')?.textContent).toContain(signInEverywhere())
   })
 
   it('offers no Apple on a phone that has no Apple sheet', () => {
@@ -319,5 +320,41 @@ describe('a second factor', () => {
 
     expect(q('signin-error')?.textContent).toBe('That code did not match')
     expect((q('signin-twofa-input') as HTMLInputElement).value).toBe('654321')
+  })
+})
+
+describe('on an iPad', () => {
+  it('names the iPad in the lead, a missing way in and a lost connection', async () => {
+    view?.unmount()
+    const restore = actAsIpad()
+    try {
+      view = renderShell(() => <SignInSheet onSignedIn={signedIn} />)
+      stand.google.mockRejectedValue(
+        new NativeSignInError('unavailable', 'The plugin could not start.'),
+      )
+      stand.apple.mockRejectedValue(
+        new NativeSignInError('network', 'Could not reach the server.'),
+      )
+      openSignIn()
+      const lead = q('signin-sheet')?.textContent ?? ''
+
+      q('signin-google')?.click()
+      await settle()
+      const missing = q('signin-sheet')?.textContent ?? ''
+      q('signin-apple')?.click()
+      await settle()
+      const offline = q('signin-offline')?.textContent ?? ''
+
+      expect(lead).toContain(
+        'Use the same way on this iPad, your next one and the web.',
+      )
+      expect(missing).toContain(
+        'Google sign-in is not available on this iPad. Choose another way.',
+      )
+      expect(offline).toContain('You are still practicing on this iPad.')
+      expect(lead + missing + offline).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

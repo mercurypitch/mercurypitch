@@ -14,7 +14,7 @@
 import { createSignal } from 'solid-js'
 import { deleteAccount } from '@/db/services/auth-service'
 import { pushSettingsScreen } from '../run-shell-store'
-import { ACCOUNT_DELETED } from './account-copy'
+import { accountDeleted } from './account-copy'
 import { forgetAccountFill } from './account-fill'
 import { forgetAccountCard } from './account-state'
 import { restartApp } from './app-restart'
@@ -62,6 +62,6 @@ export function takeAccountDeleted(): boolean {
 /** On boot: a deletion just restarted the app, so come back on Settings. */
 export function resumeAfterDeletion(): void {
   if (!takeAccountDeleted()) return
-  setNote(ACCOUNT_DELETED)
+  setNote(accountDeleted())
   pushSettingsScreen()
 }

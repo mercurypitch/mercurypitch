@@ -11,13 +11,14 @@
 
 import type { JSX } from 'solid-js'
 import { For } from 'solid-js'
+import { theDevice } from '@/lib/device-noun'
 import type { ThemeMode, ThemeSource } from '@/stores/theme-store'
 import { setTheme, setThemeSource, theme, THEME_INFO, THEME_SOURCE_INFO, themeSource, } from '@/stores/theme-store'
 import { SettingsChoice } from './SettingsList'
 
 /** What the Appearance row in Settings says. */
 export function appearanceLabel(source: ThemeSource, mode: ThemeMode): string {
-  if (source === 'system') return 'Match the phone'
+  if (source === 'system') return `Match ${theDevice()}`
   if (source === 'time') return THEME_SOURCE_INFO.time.label
   return THEME_INFO[mode].label
 }
@@ -33,8 +34,12 @@ interface Choice {
 const OFFERED: readonly Choice[] = [
   {
     id: 'system',
-    label: 'Match the phone',
-    sub: 'Dark or light, as the phone is set',
+    get label(): string {
+      return `Match ${theDevice()}`
+    },
+    get sub(): string {
+      return `Dark or light, as ${theDevice()} is set`
+    },
     checked: () => themeSource() === 'system',
     choose: () => {
       setThemeSource('system')

@@ -52,8 +52,10 @@ describe('the native copy after R6', () => {
   })
 
   it('says where a kept take goes, on the end card', () => {
+    // "this phone", or "this iPad" on an iPad: the noun is the device in
+    // hand (device-noun.ts), and SingTakeSheet.test.tsx renders both.
     const card = readFileSync(`${ROOM}/SingTakeSheet.tsx`, 'utf8')
-    expect(card).toContain('Keep stores it on this phone.')
+    expect(card).toContain('Keep stores it on {thisDeviceLower()}.')
   })
 })
 

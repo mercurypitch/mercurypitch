@@ -23,6 +23,7 @@ import type { JSX } from 'solid-js'
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { importedSongs, removeAllImportedSongs, } from '@/features/karaoke-room/karaoke-imported-songs'
 import { awaitSubscription, karaokeSongs, refreshKaraokeSongs, restoreNote, songsOptionRow, subscriptionStatusLine, } from '@/features/karaoke-room/karaoke-songs'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { CardIcon, ExternalIcon, NoteGlyphIcon, RefreshIcon, TrashIcon, } from '../icons'
 import { importedSongsValue, removeImportedQuestion, songsStuckLine, } from './imported-songs-copy'
@@ -148,7 +149,7 @@ export function KaraokeSongsGroups(): JSX.Element {
         )}
       </Show>
       <ReviewAccess />
-      <SettingsGroup title="Songs on this phone">
+      <SettingsGroup title={`Songs on ${thisDeviceLower()}`}>
         <SettingsRow
           id="karaoke-imported-songs"
           icon={<NoteGlyphIcon />}

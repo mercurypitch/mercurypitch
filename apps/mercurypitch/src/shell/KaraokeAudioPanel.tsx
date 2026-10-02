@@ -32,6 +32,7 @@ import { describeSongPath, PATH_SOURCE, readLastSongPath, } from '@/features/ste
 import { HOSTED_WHOLE_DECODE_MAX_BYTES } from '@/features/stem-mixer/stem-memory'
 import { decodePastGuard, noStreamForced, setDecodePastGuard, setNoStreamForced, } from '@/features/stem-mixer/stream-switches'
 import { onAudioDiagnostic, recordAudioDiagnostic, } from '@/lib/audio-diagnostics'
+import { theDevice, thisDeviceLower } from '@/lib/device-noun'
 import { codecSupport, configLine, decoderRow, lastSongConfig, STREAMED_CODECS, } from './karaoke-audio-readout'
 import { SettingsGroup, SettingsRow } from './settings/SettingsList'
 import { SettingsSwitch } from './settings/SettingsSwitch'
@@ -129,7 +130,7 @@ export const KaraokeAudioPanel: Component = () => {
         <SettingsRow
           id="karaoke-force-no-stream"
           label="Force the no-streaming path"
-          sub={`The Karaoke room behaves as if this phone had no AudioDecoder, as every iPhone before iOS 26 has none. A song with a stem over ${GUARD_MB} MB is refused; a smaller stem is decoded whole.`}
+          sub={`The Karaoke room behaves as if ${thisDeviceLower()} had no AudioDecoder, as every iPhone before iOS 26 has none. A song with a stem over ${GUARD_MB} MB is refused; a smaller stem is decoded whole.`}
           accessory={
             <SettingsSwitch
               checked={noStreamForced()}
@@ -142,7 +143,7 @@ export const KaraokeAudioPanel: Component = () => {
         <SettingsRow
           id="karaoke-decode-past-guard"
           label="Allow full decode past the guard"
-          sub="A crash test. A song the room would refuse is decoded whole instead, about 90 MB a stem for four minutes. If the app restarts, the phone did not survive it, and Last song says so."
+          sub={`A crash test. A song the room would refuse is decoded whole instead, about 90 MB a stem for four minutes. If the app restarts, ${theDevice()} did not survive it, and Last song says so.`}
           accessory={
             <SettingsSwitch
               checked={decodePastGuard()}

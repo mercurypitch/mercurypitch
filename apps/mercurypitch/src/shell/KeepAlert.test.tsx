@@ -8,6 +8,7 @@
 // one underneath it.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KeepAlert } from './KeepAlert'
 import { renderShell } from './render-for-test'
 
@@ -57,5 +58,23 @@ describe('KeepAlert', () => {
     expect(
       rendered.container.querySelector('[data-testid="shell-keep-alert"]'),
     ).toBe(null)
+  })
+})
+
+describe('on an iPad', () => {
+  it('says Keep stores the take on this iPad', () => {
+    const restore = actAsIpad()
+    try {
+      const rendered = renderShell(() => (
+        <KeepAlert open={() => true} onDiscard={() => {}} onKeep={() => {}} />
+      ))
+      unmount = rendered.unmount
+
+      const text = rendered.container.textContent ?? ''
+      expect(text).toContain('Keep stores it on this iPad.')
+      expect(text).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

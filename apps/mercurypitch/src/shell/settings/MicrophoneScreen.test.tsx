@@ -17,6 +17,7 @@ import { autoCalibrateSensitivity } from '@/features/mic-feedback/auto-calibrate
 import { setSingMicGranted } from '@/features/sing-room/sing-room-settings'
 import { setMicLatencyByDevice } from '@/stores/mic-latency-store'
 import { applySensitivityPreset } from '@/stores/settings-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { pushed, resetRunShell } from '../run-shell-store'
@@ -323,5 +324,26 @@ describe('the room', () => {
       row('mic-auto-calibrate')?.querySelector<HTMLButtonElement>('button')
         ?.disabled,
     ).toBe(true)
+  })
+})
+
+describe('on an iPad', () => {
+  it("opens the wizard in the iPad's words", async () => {
+    const restore = actAsIpad()
+    try {
+      await open()
+      press('latency-measure')
+      await settle()
+      const words =
+        document.querySelector('[data-testid="latency-wizard"]')?.textContent ??
+        ''
+      closeLatencySheet()
+      await settle()
+
+      expect(words).toContain('Your iPad takes a moment to play a sound')
+      expect(words).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

@@ -24,17 +24,17 @@ import { needsSignIn } from '@/db/services/auth-service'
 import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions } from '@/db/services/auth-sessions-service'
 import { authVersion } from '@/db/services/user-service'
+import { thisDevice } from '@/lib/device-noun'
 import { showNotification } from '@/stores/notifications-store'
 import { isApplePrivateRelayAddress } from '../../../../../workers/db-worker/src/apple-relay'
 import { AccountIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, WarnIcon, } from '../icons'
 import { pushScreen } from '../run-shell-store'
 import { setProductNews, signOutHere } from './account-actions'
-import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, RELAY_NOTE, SIGN_OUT_QUESTION, TAKES_STAY_ON_PHONE, TWO_STEP, } from './account-copy'
+import { ACCOUNT_ADDS_TITLE, ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, ACCOUNT_SIGNED_OUT_HERE, RELAY_NOTE, SIGN_OUT_QUESTION, takesStayHere, TWO_STEP, } from './account-copy'
 import { accountCard, accountDisplayName, accountProviderLine, accountReach, accountSignedIn, refreshAccount, } from './account-state'
 import { AccountFillNote } from './AccountFillNote'
 import { AccountPromises } from './AccountPromises'
 import { copyText } from './copy-text'
-import { thisDevice } from './device-noun'
 import { askSettings } from './settings-alert'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { SettingsSwitch } from './SettingsSwitch'
@@ -62,7 +62,7 @@ function NoAccount(): JSX.Element {
         </div>
       </div>
       <AccountPromises title={ACCOUNT_ADDS_TITLE} />
-      <p class="mp-set__caption">{TAKES_STAY_ON_PHONE}</p>
+      <p class="mp-set__caption">{takesStayHere()}</p>
       <button
         type="button"
         class="mp-set-button"

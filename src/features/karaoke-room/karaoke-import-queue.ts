@@ -30,6 +30,7 @@
 import { batch, createEffect, createRoot, createSignal, on, untrack, } from 'solid-js'
 import { deleteStemBlobs, getOriginalFileBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { theDevice, thisDeviceLower, yourDevice } from '@/lib/device-noun'
 import type { ProcessingCallbacks } from '@/lib/uvr-processing-pipeline'
 import { resumeServerSession, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import { showActionNotification } from '@/stores/notifications-store'
@@ -37,7 +38,7 @@ import { setActiveTab } from '@/stores/ui-store'
 import type { UvrSession } from '@/stores/uvr-store'
 import { completeUvrSession, deleteUvrSession, getAllUvrSessions, getAllUvrSessionsReactive, getUvrSession, saveAllUvrSessions, setErrorUvrSession, setInterruptedUvrSession, setUvrSessionResuming, startUvrSession, whenSessionStoreReady, } from '@/stores/uvr-store'
 import type { ImportRefusal } from './karaoke-import-checks'
-import { songTitleOf } from './karaoke-import-checks'
+import { noRoomForCopy, songTitleOf } from './karaoke-import-checks'
 import { requestKaraokeSong } from './karaoke-room-store'
 import type { KaraokeSongs } from './karaoke-songs'
 import { karaokeSongs, refreshKaraokeSongs } from './karaoke-songs'
@@ -58,8 +59,10 @@ const NETWORK_RETRY_MS = 5_000
 
 /** Our own failure messages, stored on the session as its error. */
 const NOT_SENT = 'This song could not be sent. Nothing was used.'
-const COPY_GONE =
-  'The copy of this song on this phone is gone. Choose it again from Files.'
+const copyGone = (): string =>
+  `The copy of this song on ${thisDeviceLower()} is gone. Choose it again from Files.`
+/** copyGone() as stored: an older build said "this phone" on every device. */
+const COPY_GONE_SAID = /^The copy of this song on this \w+ is gone\./u
 /** What cleanupStaleUvrSessions writes on a song cut off before it had a job. */
 const CUT_OFF_BY_RELOAD = 'Session interrupted by page reload or closure.'
 
@@ -285,7 +288,7 @@ async function send(id: string): Promise<void> {
     const file = await getOriginalFileBlob(id)
     if (abort.signal.aborted) return
     if (file === null) {
-      setErrorUvrSession(id, COPY_GONE)
+      setErrorUvrSession(id, copyGone())
       return
     }
     patchSession(id, {
@@ -418,11 +421,6 @@ const QUEUE_FULL: ImportRefusal = {
   body: `Up to ${IMPORT_QUEUE_CAP} songs can wait at once. Import this one when some are ready. Nothing was used.`,
 }
 
-const NO_ROOM_FOR_COPY: ImportRefusal = {
-  title: 'Not enough space on this phone',
-  body: 'Free up some space and try again. Nothing was used.',
-}
-
 export interface EnqueueResult {
   readonly queued: string[]
   readonly refused: ReadonlyArray<{ title: string; refusal: ImportRefusal }>
@@ -460,7 +458,7 @@ export async function enqueueImports(
     )
     if (!kept.ok) {
       await deleteUvrSession(sessionId)
-      turnedAway.push({ title, refusal: NO_ROOM_FOR_COPY })
+      turnedAway.push({ title, refusal: noRoomForCopy() })
       continue
     }
     track(sessionId)
@@ -559,7 +557,7 @@ function announceReady(session: UvrSession): void {
 function failureOf(session: UvrSession): ImportFailure {
   const message = session.error ?? ''
   if (session.status === 'cancelled' || message === NOT_SENT) return 'not-sent'
-  if (message === COPY_GONE) return 'missing'
+  if (COPY_GONE_SAID.test(message)) return 'missing'
   if (/expired/iu.test(message)) return 'expired'
   if (/storage is full|quota/iu.test(message)) return 'storage'
   // Separated, and still waiting on the server to be collected.
@@ -648,7 +646,7 @@ export function importRowLine(state: ImportRowState): string {
     case 'waiting-turn':
       return 'Waiting to be sent'
     case 'waiting-network':
-      return 'Waiting for a connection. It is sent when the phone is back online.'
+      return `Waiting for a connection. It is sent when ${theDevice()} is back online.`
     case 'sending':
       if (state.again === 'closed') {
         return `Sending again · ${percent(state.share)}%. The app closed before it finished.`
@@ -667,21 +665,21 @@ export function importRowLine(state: ImportRowState): string {
     case 'separating':
       return `Separating · ${state.percent}%`
     case 'saving':
-      return 'Saving to this phone'
+      return `Saving to ${thisDeviceLower()}`
     case 'failed':
       switch (state.reason) {
         case 'separation':
           return 'This song could not be separated. It was given back.'
         case 'expired':
-          return 'This song expired on the server before it reached your phone.'
+          return `This song expired on the server before it reached ${yourDevice()}.`
         case 'storage':
-          return 'Not enough space on this phone. Free up about 20 MB.'
+          return `Not enough space on ${thisDeviceLower()}. Free up about 20 MB.`
         case 'saving':
-          return 'The song could not be saved to this phone.'
+          return `The song could not be saved to ${thisDeviceLower()}.`
         case 'not-sent':
           return NOT_SENT
         case 'missing':
-          return COPY_GONE
+          return copyGone()
       }
   }
 }

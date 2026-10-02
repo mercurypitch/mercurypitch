@@ -10,7 +10,7 @@ import type { JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { AccountIcon, HistoryIcon, LockIcon, PhoneIcon } from '../icons'
-import { ACCOUNT_PROMISES } from './account-copy'
+import { accountPromises } from './account-copy'
 
 const ICONS = [HistoryIcon, PhoneIcon, LockIcon] as const
 
@@ -30,7 +30,7 @@ export function AccountPromises(props: AccountPromisesProps): JSX.Element {
           : 'mp-set-card mp-set-promises'
       }
     >
-      <For each={ACCOUNT_PROMISES}>
+      <For each={accountPromises()}>
         {(promise, index) => (
           <li>
             <Dynamic component={ICONS[index()] ?? AccountIcon} size={22} />

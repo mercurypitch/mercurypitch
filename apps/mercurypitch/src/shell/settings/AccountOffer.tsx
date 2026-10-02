@@ -13,7 +13,7 @@ import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
 import './settings.css'
 import { Sheet } from '@/components/mobile/Sheet'
-import { ACCOUNT_OFFER, TAKES_STAY_ON_PHONE } from './account-copy'
+import { ACCOUNT_OFFER, takesStayHere } from './account-copy'
 import { acceptOffer, declineOffer, offerIsFirstTake, offerOpen, } from './account-offer'
 import { AccountPromises } from './AccountPromises'
 
@@ -64,7 +64,7 @@ export function AccountOfferSheet(): JSX.Element {
           <h2 class="mp-offer__title">{ACCOUNT_OFFER.title}</h2>
         </div>
         <AccountPromises bare />
-        <p class="mp-set__caption">{TAKES_STAY_ON_PHONE}</p>
+        <p class="mp-set__caption">{takesStayHere()}</p>
         <Answers />
       </div>
     </Sheet>
@@ -81,7 +81,7 @@ export function AccountOfferCard(): JSX.Element {
     >
       <h2 class="mp-offer__title">{ACCOUNT_OFFER.title}</h2>
       <AccountPromises bare />
-      <p class="mp-set__caption">{TAKES_STAY_ON_PHONE}</p>
+      <p class="mp-set__caption">{takesStayHere()}</p>
       <Answers small />
     </section>
   )

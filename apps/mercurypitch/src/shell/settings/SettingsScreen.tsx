@@ -20,6 +20,7 @@
 import type { JSX } from 'solid-js'
 import { onCleanup, onMount, Show } from 'solid-js'
 import { karaokeSongs, songsOptionRow, } from '@/features/karaoke-room/karaoke-songs'
+import { thisDevice, thisDeviceLower } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { theme, themeSource } from '@/stores/theme-store'
 import { ContrastIcon, InfoIcon, KaraokeIcon, LockIcon, MicIcon, PhoneIcon, StorageIcon, TrashIcon, WarnIcon, } from '../icons'
@@ -30,7 +31,6 @@ import { accountDisplayName, accountProviderLine, accountReach, accountSignedIn,
 import { AccountOfferCard } from './AccountOffer'
 import { appearanceLabel } from './AppearanceScreen'
 import { deviceFacts, loadDeviceFacts } from './device-facts'
-import { thisDevice } from './device-noun'
 import { knownInput } from './level-check'
 import { AccountAvatar, SettingsGroup, SettingsRow } from './SettingsList'
 import { formatBytes, loadStorageFacts, storageTotal } from './storage-facts'
@@ -186,7 +186,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               sub="Its options are behind the room's gear"
             />
             {/* A build that imports songs has the subscription and the
-                songs on this phone there too, and the songs left show here
+                songs on this device there too, and the songs left show here
                 at a glance (mock 9a), as /me last said them. */}
             <SettingsRow
               id="rooms-karaoke"
@@ -194,7 +194,7 @@ export function SettingsScreen(props: SettingsScreenProps): JSX.Element {
               label="Karaoke"
               sub={
                 KARAOKE_IMPORT
-                  ? 'Subscription, songs on this phone, lyrics'
+                  ? `Subscription, songs on ${thisDeviceLower()}, lyrics`
                   : 'Text size and the next song'
               }
               value={

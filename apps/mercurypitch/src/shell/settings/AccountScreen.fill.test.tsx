@@ -4,7 +4,7 @@
 //
 // S6 step 5 (4b). The first visit after signing in to an account that
 // already existed says what arrived, with the real counts, and what did not:
-// takes stay on the phone that kept them (REQ-NAM-044). It goes once read.
+// takes stay on the device that kept them (REQ-NAM-044). It goes once read.
 // When the account's history cannot be read, the note says so, says what
 // the phone kept is still here, and offers to try again (REQ-NAM-045).
 
