@@ -129,15 +129,14 @@ export const TWO_STEP = {
 /**
  * The one-time note after signing in to an account that already existed
  * (4b, REQ-NAM-043 to 045). It says the account's history reached this
- * phone, and what did not: takes stay on the phone that kept them.
+ * phone, and what did not: takes stay on the device that kept them, which
+ * may be another one, so this line names no device.
  */
 export const FILL_NOTE = {
   get lead(): string {
     return `Your account's history is on ${thisDeviceLower()} now:`
   },
-  get takes(): string {
-    return `Takes stay on the ${deviceNoun()} that kept them.`
-  },
+  takes: 'Takes stay on the device that kept them.',
   failedTitle: "Could not load your account's history just now.",
   get failedBody(): string {
     return `What ${thisDeviceLower()} kept is still here.`

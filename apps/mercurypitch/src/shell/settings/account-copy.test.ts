@@ -24,7 +24,6 @@ function deviceLines(): string[] {
     TWO_STEP.offSub,
     TWO_STEP.onSub,
     FILL_NOTE.lead,
-    FILL_NOTE.takes,
     FILL_NOTE.failedBody,
     DELETE_ACCOUNT.staysTitle,
     DELETE_ACCOUNT.stays.sub,
@@ -62,7 +61,9 @@ describe('account copy', () => {
       'Turn it on from the web. This iPad asks for the code.',
     )
     expect(FILL_NOTE.lead).toBe("Your account's history is on this iPad now:")
-    expect(FILL_NOTE.takes).toBe('Takes stay on the iPad that kept them.')
+    // The takes were kept by whichever device recorded them, so this line
+    // names no device: "the iPad that kept them" is wrong on an iPad.
+    expect(FILL_NOTE.takes).toBe('Takes stay on the device that kept them.')
     expect(STORAGE_COPY.clearTakes).toBe(
       'They are only on this iPad, so they cannot come back. Your history and voiceprints stay.',
     )
