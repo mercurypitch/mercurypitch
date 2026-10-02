@@ -1,0 +1,228 @@
+/* KeyChip: the key on a chip the capsule's height, and its panel. The panel
+   is portalled to <body> with .mp-dark-stage, so it keeps the stage's dark
+   palette in any app theme; z-index 9000 is the app's popover layer. */
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  /* "Key −6" and the chevron: the chip does not change width as the key
+     moves, so the capsule does not shift under the singer's pointer. */
+  min-width: 5.75rem;
+  /* The capsule's control size and look (MixerCapsule.module.css). */
+  min-height: var(--mixer-control-size, 32px);
+  padding: 0 0.5rem 0 0.6rem;
+  border: 1px solid var(--mixer-control-border, var(--border-subtle, #30363d));
+  border-radius: 0.5rem;
+  color: var(--text-primary, #e6edf3);
+  background: var(
+    --mixer-control-bg,
+    color-mix(in srgb, var(--text-primary, #e6edf3) 6%, transparent)
+  );
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--bg-tertiary, #21262d);
+  }
+}
+
+.chip[aria-expanded='true'] {
+  background: var(--bg-tertiary, #21262d);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.chip svg {
+  flex: none;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+/* The song is being played in a moved key: worth a glance from across the
+   room, as on the Jam room key. */
+.chipMoved {
+  border-color: var(--accent, #58a6ff);
+}
+
+.face {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+/* ── Panel ─────────────────────────────────────────────────────────── */
+
+.panel {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 15rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.75rem;
+  border: 1px solid var(--border, #6e7681);
+  border-radius: 0.75rem;
+  color: var(--text-primary, #e6edf3);
+  background: var(--bg-secondary, #161b22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: panelIn 0.12s ease-out;
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.caption {
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The key's name on its own line, never squeezed beside the stepper. */
+.keyName {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.step {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-subtle, #30363d);
+  border-radius: 0.5rem;
+  color: var(--text-primary, #e6edf3);
+  background: var(--bg-tertiary, #21262d);
+  cursor: pointer;
+}
+
+.value {
+  flex: 1 1 auto;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-subtle, #30363d);
+  border-radius: 0.5rem;
+  color: var(--text-primary, #e6edf3);
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.action svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+@media (hover: hover) {
+  .step:hover:not(:disabled),
+  .action:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 10%,
+      transparent
+    );
+  }
+}
+
+.step:disabled,
+.action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.step:focus-visible,
+.action:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+/* Two lines tall whatever it says, so the panel does not grow under the
+   pointer when a step crosses ±4. */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-height: 2.6em;
+  margin: 0;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.note svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+}
+
+.panel[data-tone='stretch'] .value,
+.panel[data-tone='stretch'] .note {
+  color: var(--warning, #e3b341);
+}
+
+@media (pointer: coarse) {
+  .chip,
+  .action {
+    min-height: 44px;
+  }
+
+  .step {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
