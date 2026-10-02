@@ -50,7 +50,8 @@
 //
 // PROGRESS WITH A RECORD ON IT (probe-progress.mjs): signed in, the worker
 // answering with badges, achievements, a league and a voiceprint, scrolled
-// to its end and shared from. Every picture it names must come from the
+// to its end and shared from; then the Leaderboard its league card opens,
+// each of its four views. Every picture either names must come from the
 // bundle; one that does not is a file native-assets.mjs forgot.
 // `--progress-only` walks that alone.
 //
@@ -66,7 +67,7 @@ import { chromium } from '@playwright/test'
 import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
-import { walkProgress } from './probe-progress.mjs'
+import { walkLeaderboard, walkProgress } from './probe-progress.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
 import { frameName, SAFE_AREA_FRAMES, walkSafeAreas, } from './probe-safe-areas.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
@@ -5010,12 +5011,17 @@ async function main() {
     }
   }
 
-  /** Progress with a record on it, every picture it names from the bundle. */
+  /**
+   * Progress with a record on it, and the Leaderboard its league card opens:
+   * every picture either names, from the bundle.
+   */
   const walkProgressFrame = async (frame) => {
-    try {
-      steps.push(...(await walkProgress(browser, args, frame, kit)))
-    } catch (error) {
-      failures.push(error.message)
+    for (const walk of [walkProgress, walkLeaderboard]) {
+      try {
+        steps.push(...(await walk(browser, args, frame, kit)))
+      } catch (error) {
+        failures.push(error.message)
+      }
     }
   }
 

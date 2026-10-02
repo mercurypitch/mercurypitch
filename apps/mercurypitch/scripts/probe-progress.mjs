@@ -31,8 +31,14 @@
 // are asked for. `probe-progress-0001` is nobody, the token is not signed and
 // could not be, and nothing but this walk's own route ever answers for it.
 //
+// THE LEADERBOARD, TOO (owner, same round): the league card's "Open
+// Leaderboard" leads there, and it drew no ladder trophies and no podium.
+// Its pictures are named the same way, the ladder's straight from the
+// worker's leagues rows, so the second walk follows that link and checks
+// each of the four views (League, Global, Legends, Friends) the same way.
+//
 // Wired into probe-bundle.mjs, which owns the browser and passes its helpers
-// in. `--progress-only` walks this alone.
+// in. `--progress-only` walks these two alone.
 
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -181,11 +187,94 @@ function record() {
       points: 140,
       rank: 4,
       cohortSize: 20,
-      standings: [],
+      standings: STANDINGS.map((name, index) => ({
+        userId: index === 3 ? SINGER.id : `probe-rival-${index + 1}`,
+        displayName: name,
+        points: 220 - index * 20,
+        rank: index + 1,
+      })),
     },
-    tables: { sessionRecords, voiceprints, userActivity: [] },
+    // The seven rungs as 0005_leagues.sql seeds them: the Leaderboard's
+    // ladder draws every one, veiling the rungs above the singer's.
+    ladder: LADDER.map(([rank, name], index) => ({
+      id: `l${rank}`,
+      rank,
+      name,
+      trophyAsset: `/leagues/l${rank}.webp`,
+      badgeAsset: rank === 7 ? null : `/leagues/l${rank}-badge.webp`,
+      isMystery: rank === 7,
+      promoteCount: index === 0 ? 15 : rank >= 6 ? 0 : 10,
+      relegateCount: rank === 1 || rank === 7 ? 0 : 10,
+    })),
+    board: {
+      total: STANDINGS.length,
+      entries: STANDINGS.map((name, index) => ({
+        userId: index === 3 ? SINGER.id : `probe-rival-${index + 1}`,
+        displayName: name,
+        avatarUrl: null,
+        score: 9_000 - index * 700,
+        rank: index + 1,
+        streak: 6 - index,
+        longestStreak: 12 - index,
+        totalSessions: 80 - index * 9,
+        bestScore: 96 - index * 3,
+        accuracy: 88 - index * 4,
+      })),
+    },
+    archive: [
+      {
+        id: 'probe-weekly-1',
+        slug: 'probe-weekly-1',
+        title: 'The long note',
+        description: 'Hold it, then land it.',
+        featType: 'sustain',
+        voiceTypeSplit: null,
+        difficulty: 'intermediate',
+        targetItems: [],
+        targetScore: 70,
+        hearItUrl: null,
+        startsAt: daysAgo(14, 0),
+        endsAt: daysAgo(7, 0),
+        rewardBadgeId: null,
+        founderScore: null,
+        founderTrace: null,
+        status: 'closed',
+        results: {
+          version: 1,
+          top3: STANDINGS.slice(0, 3).map((name, index) => ({
+            rank: index + 1,
+            displayName: name,
+            best: 94 - index * 4,
+          })),
+          attemptedCount: 41,
+          completedCount: 23,
+          closedAt: daysAgo(7, 0),
+        },
+      },
+    ],
+    tables: { sessionRecords, voiceprints, userActivity: [], follows: [] },
   }
 }
+
+/** Invented rivals; the fourth row is the probe's own singer. */
+const STANDINGS = [
+  'Probe Rival One',
+  'Probe Rival Two',
+  'Probe Rival Three',
+  'Probe Singer',
+  'Probe Rival Five',
+]
+
+/** The ladder's rungs and names, as the leagues migration seeds them. */
+const LADDER = [
+  [1, 'Mercling'],
+  [2, 'Sparkwing'],
+  [3, 'Skyvox'],
+  [4, 'Highnova'],
+  [5, 'Starcrest'],
+  [6, 'Mercapex'],
+  [7, '???'],
+]
 
 function answer(route, status, body) {
   return route.fulfill({
@@ -201,7 +290,7 @@ function answer(route, status, body) {
 }
 
 /**
- * The reads Progress makes, answered with the record above. Every other
+ * The reads Progress and the Leaderboard make, answered with the record above. Every other
  * request to the worker (writes included: the grant flush, a settings push)
  * falls through to the kit's isolation and is refused, the way a phone with
  * no signal would see it.
@@ -223,6 +312,14 @@ async function standIn(context) {
       return answer(route, 200, data.grantContext)
     }
     if (path === '/api/league/me') return answer(route, 200, data.league)
+    if (path === '/api/leagues') return answer(route, 200, data.ladder)
+    if (path === '/api/leaderboard') return answer(route, 200, data.board)
+    if (path === '/api/weekly/active') {
+      return answer(route, 200, { challenge: null })
+    }
+    if (path === '/api/weekly/archive') {
+      return answer(route, 200, { archive: data.archive })
+    }
     const table = /^\/api\/(\w+)(\/count)?$/u.exec(path)
     if (table !== null && table[1] in data.tables) {
       const rows = data.tables[table[1]]
@@ -315,17 +412,12 @@ const readPictures = async (scope) => {
 }
 
 /**
- * Progress with a record on it, scrolled through and shared from. Throws
- * with every picture that did not arrive; returns the lines that passed.
+ * A phone signed in to the invented account, booted to the alley, with every
+ * picture request that fails (or answers with something other than an
+ * image) collected into `requests`.
  */
-export async function walkProgress(browser, args, frame, kit) {
+async function openWithRecord(browser, args, frame, kit, problems, requests) {
   const { isolate, seed, bootTimeoutMs, stepTimeoutMs } = kit
-  const where = `${frame.width}x${frame.height}`
-  const ctx = { frame, theme: args.theme, shots: args.shots }
-  const steps = []
-  const problems = []
-  const requests = []
-
   const context = await isolate(
     await browser.newContext({
       viewport: { width: frame.width, height: frame.height },
@@ -336,65 +428,150 @@ export async function walkProgress(browser, args, frame, kit) {
       permissions: ['microphone'],
     }),
   )
-  try {
-    await standIn(context)
-    const page = await context.newPage()
-    page.on('pageerror', (error) => {
-      problems.push(`page error: ${error.message}`)
+  await standIn(context)
+  const page = await context.newPage()
+  page.on('pageerror', (error) => {
+    problems.push(`page error: ${error.message}`)
+  })
+  const isPicture = (request) =>
+    request.resourceType() === 'image' || PICTURE.test(request.url())
+  page.on('requestfailed', (request) => {
+    if (!isPicture(request)) return
+    requests.push({
+      url: request.url(),
+      why: request.failure()?.errorText ?? 'failed',
     })
-    const isPicture = (request) =>
-      request.resourceType() === 'image' || PICTURE.test(request.url())
-    page.on('requestfailed', (request) => {
-      if (!isPicture(request)) return
+  })
+  page.on('response', (response) => {
+    const request = response.request()
+    if (!isPicture(request)) return
+    const type = response.headers()['content-type'] ?? ''
+    if (response.status() >= 400 || !type.startsWith('image/')) {
       requests.push({
         url: request.url(),
-        why: request.failure()?.errorText ?? 'failed',
+        why: `${response.status()} ${type || 'no content-type'}`,
       })
-    })
-    page.on('response', (response) => {
-      const request = response.request()
-      if (!isPicture(request)) return
-      const type = response.headers()['content-type'] ?? ''
-      if (response.status() >= 400 || !type.startsWith('image/')) {
-        requests.push({
-          url: request.url(),
-          why: `${response.status()} ${type || 'no content-type'}`,
-        })
-      }
-    })
-    await page.addInitScript(seed, args.theme)
-    await page.addInitScript(seedAccount, SINGER)
-    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
-    await page
-      .locator('#root.loaded')
-      .waitFor({ state: 'attached', timeout: bootTimeoutMs })
-    await page
-      .locator('[data-testid="rooms-alley"]')
-      .waitFor({ state: 'visible', timeout: stepTimeoutMs })
+    }
+  })
+  await page.addInitScript(seed, args.theme)
+  await page.addInitScript(seedAccount, SINGER)
+  await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+  await page
+    .locator('#root.loaded')
+    .waitFor({ state: 'attached', timeout: bootTimeoutMs })
+  await page
+    .locator('[data-testid="rooms-alley"]')
+    .waitFor({ state: 'visible', timeout: stepTimeoutMs })
+  return { context, page }
+}
 
-    await page.locator('[data-rail-item="progress"]').click()
-    const progress = 'section[data-progress-state]'
-    await page.locator(progress).first().waitFor({
-      state: 'visible',
-      timeout: stepTimeoutMs,
-    })
-    const cabinet = page.locator('[data-testid^="cabinet-badge-"]')
-    await cabinet.first().waitFor({ state: 'attached', timeout: stepTimeoutMs })
-    await page.waitForTimeout(800)
+/** Progress, opened from the rail and loaded with the record. */
+const PROGRESS = 'section[data-progress-state]'
+
+async function openProgress(page, kit) {
+  await page.locator('[data-rail-item="progress"]').click()
+  await page.locator(PROGRESS).first().waitFor({
+    state: 'visible',
+    timeout: kit.stepTimeoutMs,
+  })
+  await page
+    .locator('[data-testid^="cabinet-badge-"]')
+    .first()
+    .waitFor({ state: 'attached', timeout: kit.stepTimeoutMs })
+  await page.waitForTimeout(800)
+}
+
+/**
+ * Every picture under `scope`, asked of the bundle. Pushes a problem for each
+ * one that is not served as an image or is drawn broken, and returns the
+ * line that describes what was checked.
+ */
+async function checkPictures(page, scope, label, args, problems) {
+  const scrollers = await page.evaluate(scrollEverything)
+  await page.waitForTimeout(800)
+  const pictures = await page.evaluate(readPictures, scope)
+  const missing = pictures.answers.filter((answer) => !answer.ok)
+  for (const answer of missing) {
+    problems.push(
+      `${label}: not in the bundle: ${new URL(answer.url).pathname} (${answer.status} ${answer.type || answer.error || ''})`.trim(),
+    )
+  }
+  for (const url of pictures.broken) {
+    problems.push(
+      `${label}: drawn broken: ${new URL(url, args.baseUrl).pathname}`,
+    )
+  }
+  const folders = new Map()
+  for (const answer of pictures.answers) {
+    const folder = new URL(answer.url).pathname.replace(/\/[^/]*$/u, '/')
+    folders.set(folder, (folders.get(folder) ?? 0) + 1)
+  }
+  const where = [...folders].map(([folder, n]) => `${folder} ${n}`).join(', ')
+  return `${label}: ${pictures.answers.length} pictures named after ${scrollers} scrollers walked (${where || 'none'}), ${pictures.answers.length - missing.length} served as images`
+}
+
+/** One problem per failed picture request, or a step saying there were none. */
+function settleRequests(requests, label, steps, problems) {
+  const failed = new Map()
+  for (const request of requests) {
+    failed.set(new URL(request.url).pathname, request.why)
+  }
+  for (const [path, why] of failed) {
+    problems.push(`${label}: picture request failed: ${path} (${why})`)
+  }
+  if (failed.size === 0) steps.push(`${label}: no picture request failed`)
+}
+
+function finish(where, name, steps, problems) {
+  if (problems.length > 0) {
+    throw new Error(
+      `[${where}] ${name}: ${problems.length} problem(s)\n  ${[...new Set(problems)].join('\n  ')}`,
+    )
+  }
+  return steps.map((line) => `[${where}] ${line}`)
+}
+
+/**
+ * Progress with a record on it, scrolled through and shared from. Throws
+ * with every picture that did not arrive; returns the lines that passed.
+ */
+export async function walkProgress(browser, args, frame, kit) {
+  const where = `${frame.width}x${frame.height}`
+  const ctx = { frame, theme: args.theme, shots: args.shots }
+  const steps = []
+  const problems = []
+  const requests = []
+
+  const { context, page } = await openWithRecord(
+    browser,
+    args,
+    frame,
+    kit,
+    problems,
+    requests,
+  )
+  try {
+    await openProgress(page, kit)
     await kit.shoot(page, ctx, 'progress-top')
 
-    const counts = await page.evaluate(() => ({
-      badges: document.querySelectorAll('[data-testid^="cabinet-badge-"]')
-        .length,
-      images: document.querySelectorAll('section[data-progress-state] img')
-        .length,
-    }))
+    const counts = await page.evaluate((scope) => {
+      const root = document.querySelector(scope)
+      return {
+        badges: root.querySelectorAll('[data-testid^="cabinet-badge-"]').length,
+        images: root.querySelectorAll('img').length,
+      }
+    }, PROGRESS)
     steps.push(
-      `[${where}] progress: opened with a record, ${counts.badges} cabinet badges and ${counts.images} pictures drawn`,
+      `progress: opened with a record, ${counts.badges} cabinet badges and ${counts.images} pictures drawn`,
     )
 
-    const scrollers = await page.evaluate(scrollEverything)
-    await page.waitForTimeout(800)
+    const checked = await checkPictures(
+      page,
+      PROGRESS,
+      'progress',
+      args,
+      problems,
+    )
 
     for (const [name, selector] of [
       ['progress-milestones', '[aria-label^="Earned milestones"]'],
@@ -409,25 +586,7 @@ export async function walkProgress(browser, args, frame, kit) {
       await page.waitForTimeout(500)
       await kit.shoot(page, ctx, name)
     }
-
-    const pictures = await page.evaluate(readPictures, progress)
-    const missing = pictures.answers.filter((answer) => !answer.ok)
-    for (const answer of missing) {
-      problems.push(
-        `not in the bundle: ${new URL(answer.url).pathname} (${answer.status} ${answer.type || answer.error || ''})`.trim(),
-      )
-    }
-    for (const url of pictures.broken) {
-      problems.push(`drawn broken: ${new URL(url, args.baseUrl).pathname}`)
-    }
-    const folders = new Map()
-    for (const answer of pictures.answers) {
-      const folder = new URL(answer.url).pathname.replace(/\/[^/]*$/u, '/')
-      folders.set(folder, (folders.get(folder) ?? 0) + 1)
-    }
-    steps.push(
-      `[${where}] progress: ${pictures.answers.length} pictures named after ${scrollers} scrollers walked (${[...folders].map(([folder, n]) => `${folder} ${n}`).join(', ')}), ${pictures.answers.length - missing.length} served as images`,
-    )
+    steps.push(checked)
 
     // The share studio draws the Pressing plate into a canvas with `new
     // Image()`, outside the page tree the check above reads.
@@ -439,30 +598,94 @@ export async function walkProgress(browser, args, frame, kit) {
       await share.first().click()
       await page
         .locator('[data-testid="progress-share-studio"]')
-        .waitFor({ state: 'visible', timeout: stepTimeoutMs })
+        .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
       await page.waitForTimeout(1200)
       await kit.shoot(page, ctx, 'progress-share')
-      steps.push(`[${where}] progress: the share studio opened`)
+      steps.push('progress: the share studio opened')
     }
 
-    const failed = new Map()
-    for (const request of requests) {
-      failed.set(new URL(request.url).pathname, request.why)
-    }
-    for (const [path, why] of failed) {
-      problems.push(`picture request failed: ${path} (${why})`)
-    }
-    if (failed.size === 0) {
-      steps.push(`[${where}] progress: no picture request failed`)
-    }
+    settleRequests(requests, 'progress', steps, problems)
   } finally {
     await context.close()
   }
+  return finish(where, 'progress', steps, problems)
+}
 
-  if (problems.length > 0) {
-    throw new Error(
-      `[${where}] progress: ${problems.length} problem(s)\n  ${[...new Set(problems)].join('\n  ')}`,
-    )
+/** The Leaderboard's own root. */
+const LEADERBOARD = '.community-leaderboard'
+
+/**
+ * The Leaderboard, reached the way the owner reached it: Progress's league
+ * card, "Open Leaderboard". Then each of its four views in turn, every
+ * picture each one names asked of the bundle: the ladder's trophies (the
+ * rungs above the singer's veiled, the mystery rung its own), the podium's
+ * three places, and the past weeks' place medals.
+ */
+export async function walkLeaderboard(browser, args, frame, kit) {
+  const where = `${frame.width}x${frame.height}`
+  const ctx = { frame, theme: args.theme, shots: args.shots }
+  const steps = []
+  const problems = []
+  const requests = []
+
+  const { context, page } = await openWithRecord(
+    browser,
+    args,
+    frame,
+    kit,
+    problems,
+    requests,
+  )
+  try {
+    await openProgress(page, kit)
+    const open = page
+      .locator(PROGRESS)
+      .getByRole('link', { name: 'Open Leaderboard' })
+    await open.scrollIntoViewIfNeeded()
+    await open.click()
+    await page
+      .locator(LEADERBOARD)
+      .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+    const hash = await page.evaluate(() => window.location.hash)
+    steps.push(`leaderboard: opened from the league card, on ${hash}`)
+
+    for (const [view, tab, ready] of [
+      ['league', null, '.league-strip-trophy'],
+      ['global', '[data-testid="global-tab"]', '.podium-art'],
+      ['legends', '[data-testid="legends-tab"]', null],
+      ['friends', '.leaderboard-tab:has(.tab-name:text-is("Friends"))', null],
+    ]) {
+      if (tab !== null) await page.locator(tab).click()
+      if (ready !== null) {
+        await page
+          .locator(ready)
+          .first()
+          .waitFor({ state: 'visible', timeout: kit.stepTimeoutMs })
+      }
+      await page.waitForTimeout(1000)
+      await kit.shoot(page, ctx, `leaderboard-${view}`)
+      steps.push(
+        await checkPictures(
+          page,
+          LEADERBOARD,
+          `leaderboard ${view}`,
+          args,
+          problems,
+        ),
+      )
+      await page.evaluate(() => {
+        for (const el of [
+          document.scrollingElement,
+          ...document.querySelectorAll('*'),
+        ]) {
+          if (el !== null) el.scrollTop = 0
+        }
+      })
+    }
+
+    settleRequests(requests, 'leaderboard', steps, problems)
+  } finally {
+    await context.close()
   }
-  return steps
+  return finish(where, 'leaderboard', steps, problems)
 }
