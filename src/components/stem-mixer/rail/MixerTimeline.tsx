@@ -148,6 +148,7 @@ export const MixerTimeline: Component<MixerTimelineProps> = (props) => {
           onMoveMarkB={(seconds) => props.onMoveLoopPoint('B', seconds)}
           testIdPrefix="mixer-timeline"
           lensSide="over"
+          keepCloseUpPlace
           zoomInLabel="Zoom to the loop"
           zoomOutLabel="Show the whole song"
         />
