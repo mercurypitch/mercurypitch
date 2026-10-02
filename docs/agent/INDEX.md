@@ -147,7 +147,7 @@ These are the rules that break things when ignored.
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 950 | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
-| `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 850 | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
+| `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 900 | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `drive` | [drive-client.ts](../../src/lib/drive/drive-client.ts) | 450 | ── Google Drive client The handful of Drive REST calls sync needs, and nothing else. |
