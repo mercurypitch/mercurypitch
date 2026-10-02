@@ -445,7 +445,7 @@
   align-items: center;
   gap: 0.6rem;
   margin: 0.1rem 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(244, 236, 255, 0.42);
@@ -743,7 +743,7 @@
 }
 
 .keyBtnCaption {
-  font-size: 0.5rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
