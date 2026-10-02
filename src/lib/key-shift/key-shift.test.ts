@@ -65,21 +65,47 @@ describe('formatKeyShift', () => {
 
 describe('transposeKeyName', () => {
   it('moves a key name round the octave', () => {
-    expect(transposeKeyName('G', 2)).toBe('A')
-    expect(transposeKeyName('A#', 1)).toBe('B')
-    expect(transposeKeyName('B', 1)).toBe('C')
-    expect(transposeKeyName('C', -1)).toBe('B')
-    expect(transposeKeyName('F#', 6)).toBe('C')
+    expect(transposeKeyName('G', 2, 'major')).toBe('A')
+    expect(transposeKeyName('A#', 1, 'major')).toBe('B')
+    expect(transposeKeyName('B', 1, 'major')).toBe('C')
+    expect(transposeKeyName('C', -1, 'major')).toBe('B')
+    expect(transposeKeyName('F#', 6, 'major')).toBe('C')
   })
 
-  it('reads flat spellings and answers in the app’s sharp spelling', () => {
-    expect(transposeKeyName('Bb', 2)).toBe('C')
-    expect(transposeKeyName('Eb', 1)).toBe('E')
+  it('reads flat spellings, ASCII or not', () => {
+    expect(transposeKeyName('Bb', 2, 'major')).toBe('C')
+    expect(transposeKeyName('Eb', 1, 'minor')).toBe('E')
+    expect(transposeKeyName('B♭', 2, 'major')).toBe('C')
+    expect(transposeKeyName('F♯', 1, 'major')).toBe('G')
+  })
+
+  it('names a major key as it is written: D♭, E♭, A♭, B♭, and F#', () => {
+    const majors = [1, 3, 6, 8, 10].map((up) =>
+      transposeKeyName('C', up, 'major'),
+    )
+
+    expect(majors).toEqual(['D♭', 'E♭', 'F#', 'A♭', 'B♭'])
+    expect(transposeKeyName('D', -4, 'major')).toBe('B♭')
+  })
+
+  it('names a minor key as it is written: C#, E♭, F#, G#, B♭', () => {
+    const minors = [1, 3, 6, 8, 10].map((up) =>
+      transposeKeyName('C', up, 'minor'),
+    )
+
+    expect(minors).toEqual(['C#', 'E♭', 'F#', 'G#', 'B♭'])
+    expect(transposeKeyName('A', 1, 'minor')).toBe('B♭')
+  })
+
+  it('reads back a name it wrote', () => {
+    expect(
+      transposeKeyName(transposeKeyName('D', -4, 'major'), 4, 'major'),
+    ).toBe('D')
   })
 
   it('leaves a name it does not know alone', () => {
-    expect(transposeKeyName('H', 2)).toBe('H')
-    expect(transposeKeyName('', 2)).toBe('')
+    expect(transposeKeyName('H', 2, 'major')).toBe('H')
+    expect(transposeKeyName('', 2, 'minor')).toBe('')
   })
 })
 
