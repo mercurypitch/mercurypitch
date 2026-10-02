@@ -23,8 +23,8 @@ function makeFixture(): Fixture {
   let seekedTo: number | null = null
   let speed = 1
   let loopEnabled = false
-  let loopStart = 0
-  let loopEnd = 0
+  let loopStart: number | null = null
+  let loopEnd: number | null = null
   let songsOpen = false
   let keyShift = 0
   let findResult: FindMyKeyResult = 'applied'
@@ -95,8 +95,8 @@ function makeFixture(): Fixture {
       clear: () => {
         calls.push('loop:clear')
         loopEnabled = false
-        loopStart = 0
-        loopEnd = 0
+        loopStart = null
+        loopEnd = null
       },
     },
     playlist: {

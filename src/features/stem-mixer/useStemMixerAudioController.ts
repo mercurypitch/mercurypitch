@@ -4,7 +4,7 @@
 
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, onCleanup } from 'solid-js'
+import { batch, createSignal, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
@@ -30,6 +30,8 @@ import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cac
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { createHiddenClock } from './hidden-clock'
+import type { LoopPointPlacement } from './loop-points'
+import { loopSpan, placeLoopPoint as placeLoop } from './loop-points'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
@@ -298,13 +300,18 @@ export interface StemMixerAudioController {
   /** The key the listener hears: 0 in Pitch Studio or without the engine. */
   effectiveShift: Accessor<number>
 
-  // Loop
+  // Loop: A and B in seconds, null until set (see loop-points.ts)
   loopEnabled: Accessor<boolean>
   setLoopEnabled: Setter<boolean>
-  loopStart: Accessor<number>
-  setLoopStart: Setter<number>
-  loopEnd: Accessor<number>
-  setLoopEnd: Setter<number>
+  loopStart: Accessor<number | null>
+  setLoopStart: Setter<number | null>
+  loopEnd: Accessor<number | null>
+  setLoopEnd: Setter<number | null>
+  /**
+   * Set A or B at `time` by the loop-point rule, or refuse it with the
+   * reason. A placed B turns the loop on.
+   */
+  placeLoopPoint: (which: 'A' | 'B', time: number) => LoopPointPlacement
   clearLoop: () => void
   loopCount: Accessor<number>
   resetLoopCount: () => void
@@ -461,9 +468,12 @@ export const useStemMixerAudioController = (
 
   // ── Loop signals ────────────────────────────────────────────
   const [loopEnabled, setLoopEnabled] = createSignal(false)
-  const [loopStart, setLoopStart] = createSignal(0)
-  const [loopEnd, setLoopEnd] = createSignal(0)
+  const [loopStart, setLoopStart] = createSignal<number | null>(null)
+  const [loopEnd, setLoopEnd] = createSignal<number | null>(null)
   const [loopCount, setLoopCount] = createSignal(0)
+  /** The span the clock wraps in, or null when it plays straight on. */
+  const activeLoop = () =>
+    loopSpan(loopEnabled(), { start: loopStart(), end: loopEnd() }, duration())
 
   // When the user manually seeks outside the loop region, we stop
   // enforcing the loop boundary until playback re-enters A–B.
@@ -1697,11 +1707,8 @@ export const useStemMixerAudioController = (
     setAudibleElapsed(pauseOffset)
 
     // Track whether this seek lands outside the active loop region
-    if (
-      loopEnabled() &&
-      loopEnd() > 0 &&
-      (pauseOffset < loopStart() || pauseOffset > loopEnd())
-    ) {
+    const span = activeLoop()
+    if (span !== null && (pauseOffset < span.start || pauseOffset > span.end)) {
       seekedOutsideLoop = true
     }
 
@@ -1947,23 +1954,26 @@ export const useStemMixerAudioController = (
     // score/summary screen (the "second song ends before it starts" bug).
     if (duration() <= 0) return true
 
-    const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
+    // A span too short to play is no loop at all: wrapping it would seek
+    // back to A on every frame and hold the song there.
+    const span = activeLoop()
+    const endTime = span?.end ?? duration()
 
     // If playback re-entered the loop region, clear the escape flag
     if (
       seekedOutsideLoop &&
-      loopEnabled() &&
-      elapsedTime >= loopStart() &&
-      elapsedTime < loopEnd()
+      span !== null &&
+      elapsedTime >= span.start &&
+      elapsedTime < span.end
     ) {
       seekedOutsideLoop = false
     }
 
     if (elapsedTime >= endTime) {
-      if (loopEnabled() && !seekedOutsideLoop) {
+      if (span !== null && !seekedOutsideLoop) {
         setLoopCount(loopCount() + 1)
         deps.markLoopIteration()
-        seekTo(loopStart())
+        seekTo(span.start)
         return true
       }
       // Outside loop or loop disabled — stop at end of track
@@ -2069,10 +2079,29 @@ export const useStemMixerAudioController = (
     }
   }
 
+  const placeLoopPoint = (
+    which: 'A' | 'B',
+    time: number,
+  ): LoopPointPlacement => {
+    const result = placeLoop(which, time, {
+      start: loopStart(),
+      end: loopEnd(),
+    })
+    if (result.placed) {
+      const { points } = result
+      batch(() => {
+        setLoopStart(points.start)
+        setLoopEnd(points.end)
+        if (which === 'B') setLoopEnabled(true)
+      })
+    }
+    return result
+  }
+
   const clearLoop = () => {
     setLoopEnabled(false)
-    setLoopStart(0)
-    setLoopEnd(0)
+    setLoopStart(null)
+    setLoopEnd(null)
     setLoopCount(0)
   }
   return {
@@ -2120,6 +2149,7 @@ export const useStemMixerAudioController = (
     setLoopStart,
     loopEnd,
     setLoopEnd,
+    placeLoopPoint,
     clearLoop,
     loopCount,
     resetLoopCount: () => setLoopCount(0),
