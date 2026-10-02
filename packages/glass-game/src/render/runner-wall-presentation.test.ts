@@ -6,7 +6,7 @@ import { runnerCourseFixture } from '../browser/__fixtures__/runner-course'
 import type { RunnerGlassPresentation } from '../content/runner-glass-presentation'
 import type { RunnerSnapshot } from '../runner/contracts'
 import { createSongRunnerGame } from '../runner/game'
-import { runnerSecondsToBeat } from '../runner/tempo'
+import { runnerBeatToSeconds, runnerSecondsToBeat } from '../runner/tempo'
 import type { BreakableRenderRecipe } from './breakable-render-recipe'
 import type * as Catalog from './catalog'
 import { disposeObject } from './dispose'
@@ -142,17 +142,44 @@ describe('authored runner wall presentation', () => {
       reliableSeconds: 1,
       resolvedAtCourseSeconds: target.contactCourseSeconds - 0.5,
     }
+    const clearance =
+      course.movement.bodyRadius + presentation.envelope.depth / 2 + 0.08
+    const beforeClearance = contactDistance - clearance - 0.01
     targets.update(
       {
         ...initial,
-        courseSeconds: target.contactCourseSeconds - 0.3,
-        courseDistanceMeters: contactDistance - 0.8,
+        courseSeconds: runnerBeatToSeconds(
+          course.tempoSegments,
+          beforeClearance / course.metersPerBeat,
+        ),
+        courseDistanceMeters: beforeClearance,
         activeTarget: null,
         resolvedTargets: [hit],
       },
       0.1,
     )
     expect(frame.parent!.visible).toBe(true)
+    const insideClearance = contactDistance - clearance + 0.01
+    const beforeContactSeconds = runnerBeatToSeconds(
+      course.tempoSegments,
+      insideClearance / course.metersPerBeat,
+    )
+    expect(beforeContactSeconds).toBeLessThan(target.contactCourseSeconds)
+    targets.update(
+      {
+        ...initial,
+        courseSeconds: beforeContactSeconds,
+        courseDistanceMeters: insideClearance,
+        activeTarget: null,
+        resolvedTargets: [hit],
+      },
+      0.01,
+    )
+    expect(frame.parent!.visible).toBe(false)
+    expect(wall.visible).toBe(true)
+    expect(wall.getObjectByName(`vessel-shards-${target.id}`)!.visible).toBe(
+      true,
+    )
     targets.update(
       {
         ...initial,

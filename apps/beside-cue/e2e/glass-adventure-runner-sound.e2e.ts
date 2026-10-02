@@ -1,6 +1,7 @@
 // Runner sound acceptance — real host controls, saved independent mix and keyboard-safe modal transitions.
 import { expect, test } from '@playwright/test'
 import { installRunnerVoice } from './helpers/runner-voice-fixture'
+import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
 
 for (const viewport of [
   { width: 390, height: 844 },
@@ -10,7 +11,11 @@ for (const viewport of [
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport)
-    await installRunnerVoice(page, true, { omitRaster: false })
+    // Actual DOM, audio transport and captured PCM. Separate real-raster checks
+    // cover the scene; this control/focus acceptance test stays independent of
+    // software-GPU delivery stalls.
+    await useRunnerControlsRenderer(page)
+    await installRunnerVoice(page, true)
     await page.addInitScript(() =>
       localStorage.setItem(
         'beside-cue:glass-adventure:runner-audio:v1',
@@ -51,7 +56,7 @@ for (const viewport of [
     const setup = page.getByRole('dialog', { name: 'Ready when you are' })
     const entry = setup.getByRole('button', { name: 'Sound / tune' })
     await expect(entry).toBeVisible()
-    await start.focus()
+    await expect(start).toBeFocused()
     for (
       let i = 0;
       i < 12 && !(await entry.evaluate((el) => el === document.activeElement));
@@ -109,7 +114,9 @@ for (const viewport of [
     await expect(runner).toHaveAttribute('data-phase', 'running', {
       timeout: 15_000,
     })
-    await page.screenshot({ path: testInfo.outputPath('host-running.png') })
+    await page.screenshot({
+      path: testInfo.outputPath('host-controls-running.png'),
+    })
     await headerTrigger.click()
     await expect(sound).toBeVisible()
     await expect(runner).toHaveAttribute('data-phase', 'paused')

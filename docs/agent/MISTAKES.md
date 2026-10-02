@@ -889,6 +889,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** compare isolated hardware backends and immediate framebuffer readback against screenshots before changing game assets or shaders. A clean `gl.getError()` does not prove correct presentation; do not label a driver crash without evidence.
 **See:** [ANGLE backend selection](https://chromium.googlesource.com/angle/angle/+/main/doc/DebuggingTips.md), `packages/glass-game/src/render/viewport.ts`.
 
+### Verify data-texture conversions through the renderer's upload path
+
+**Symptom:** lossless normal-map WebPs matched Canvas2D but changed actual uploaded normal channels by one byte unit.
+**Cause:** Chrome's 16-bit PNG data-texture upload quantized differently from Canvas2D and ordinary Pillow conversion; canvas equality did not certify RGBA8 NoColorSpace input.
+**Rule:** preserve source masters, freeze and hash the actual uploaded RGBA reference, then compare replacement GPU readback with color conversion disabled and the renderer's flipY setting. Treat canvas comparison as diagnostic and require zero changed GPU channels; desktop proof does not establish native-device acceptance.
+**See:** `apps/beside-cue/public/games/adventure-v2/manifest.json`, `packages/glass-game/src/browser/assets.ts`, `apps/beside-cue/scripts/game-assets.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

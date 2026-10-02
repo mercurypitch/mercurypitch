@@ -1,6 +1,6 @@
 // Runner target integration regressions — semantic feedback gates presentation without becoming score truth.
 
-import type { Mesh, MeshBasicMaterial, PlaneGeometry } from 'three'
+import type { Box3 as ThreeBox3, Mesh, MeshBasicMaterial, PlaneGeometry, } from 'three'
 import { Group } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runnerCourseFixture } from '../browser/__fixtures__/runner-course'
@@ -32,7 +32,7 @@ vi.mock('./kit-instance', async () => {
   return { createKitInstance: () => new Group() }
 })
 vi.mock('./vessels', async () => {
-  const { Group } = await import('three')
+  const { Box3, Group, Vector3 } = await import('three')
   return {
     createAuthoredVessel: (
       _target: unknown,
@@ -40,10 +40,21 @@ vi.mock('./vessels', async () => {
       acquire: (library: unknown) => unknown,
     ) => {
       acquire({})
+      const root = new Group()
+      const intactLocalBounds = new Box3(
+        new Vector3(-0.5, 0, -0.01),
+        new Vector3(0.5, 2, 0.01),
+      )
       return {
-        root: new Group(),
+        root,
         materialLibrary: {},
-        addPersistent: vi.fn(),
+        addPersistent(object: Group) {
+          root.add(object)
+        },
+        getIntactBounds: (box: ThreeBox3): ThreeBox3 => {
+          root.updateWorldMatrix(true, false)
+          return box.copy(intactLocalBounds).applyMatrix4(root.matrixWorld)
+        },
         update: state.vesselUpdate,
         dispose: state.vesselDispose,
       }
@@ -211,6 +222,18 @@ describe('runner targets live feedback', () => {
     expect(pane.position.z).toBeLessThan(
       -target.notes.at(-1)!.endBeat * course.metersPerBeat,
     )
+    expect(pane.position.y).toBe(course.groundFeetY)
+    expect(pane.scale.toArray()).toEqual([1, 1, 1])
+    targets.update(
+      {
+        ...snapshot,
+        courseSeconds: target.contactCourseSeconds,
+        courseDistanceMeters: contactBeat * course.metersPerBeat,
+      },
+      0,
+    )
+    expect(pane.position.z).toBeCloseTo(0, 8)
+    expect(pane.scale.toArray()).toEqual([1, 1, 1])
     targets.dispose()
   })
 

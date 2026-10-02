@@ -605,6 +605,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             <button
               type="button"
               class={styles.primaryButton}
+              data-dialog-initial-focus
               disabled={!presentationReady()}
               onClick={() => void props.session.resume()}
             >
@@ -663,6 +664,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             <button
               type="button"
               class={styles.primaryButton}
+              data-dialog-initial-focus
               disabled={!presentationReady()}
               onClick={() => void props.session.start()}
             >
@@ -728,6 +730,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             <button
               type="button"
               class={styles.primaryButton}
+              data-dialog-initial-focus
               disabled={!presentationReady()}
               onClick={() => void props.session.resume()}
             >
@@ -789,6 +792,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               <button
                 type="button"
                 class={styles.primaryButton}
+                data-dialog-initial-focus
                 onClick={() => void props.session.takeOverMicrophone?.()}
               >
                 Use microphone here
@@ -798,6 +802,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               <button
                 type="button"
                 class={styles.primaryButton}
+                data-dialog-initial-focus
                 onClick={() => void props.session.start()}
               >
                 Try again
@@ -849,6 +854,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             <button
               type="button"
               class={styles.primaryButton}
+              data-dialog-initial-focus
               onClick={() => void props.session.restart()}
             >
               Run again
