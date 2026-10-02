@@ -37,6 +37,19 @@
   display: none;
 }
 
+/* Except over focus mode with its pill docked at the top: the pill is the
+   window's whole top edge, so this corner is its controls, not the account
+   cluster. Measured: at 844x390 the toast hid More and Exit for as long as
+   it showed, and at 1440x900 the end of the timeline. The bottom corner is
+   lyrics there. Wide screens only; a phone's toasts are at the bottom
+   already (below). */
+@media (min-width: 769px) {
+  :global(body:has(.stem-mixer--focus-docked-top)) .notificationContainer {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom) + 0.6rem);
+  }
+}
+
 .notification {
   --toast-accent: var(--accent, #58a6ff);
   display: flex;
