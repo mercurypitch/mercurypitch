@@ -4,7 +4,7 @@
 
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
-import { batch, createSignal, onCleanup } from 'solid-js'
+import { batch, createEffect, createSignal, on, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
 import { installAudioUnlock, unlockForPlayback } from '@/lib/audio-unlock'
@@ -1760,6 +1760,15 @@ export const useStemMixerAudioController = (
     }, FADE_OUT_MS + 50)
   }
 
+  /** New sources from the playhead, through the transport's own fades. */
+  const restartSourcesAtPlayhead = () => {
+    const currentElapsed = elapsed()
+    disconnectSources()
+    createSources(currentElapsed)
+    wallPlayStart = audioCtx!.currentTime
+    bufferPlayStart = currentElapsed
+  }
+
   // ── Speed ────────────────────────────────────────────────────
   const setSpeed = (newSpeed: number) => {
     const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
@@ -1767,14 +1776,24 @@ export const useStemMixerAudioController = (
     playbackSpeed = clamped
     setSpeedLocal(clamped)
 
-    if (playing()) {
-      const currentElapsed = elapsed()
-      disconnectSources()
-      createSources(currentElapsed)
-      wallPlayStart = audioCtx!.currentTime
-      bufferPlayStart = currentElapsed
-    }
+    if (playing()) restartSourcesAtPlayhead()
   }
+
+  // "Leave drums unshifted" picks the key-graph bus a Drums source joins, and
+  // a source joins one as it is made. Changed mid-song, the drums move at once
+  // the way a speed change does, rather than at the next pause or seek.
+  createEffect(
+    on(
+      () => deps.keepDrums?.() ?? true,
+      () => {
+        if (!playing()) return
+        if (deps.tracks().some((track) => track.label === 'Drums')) {
+          restartSourcesAtPlayhead()
+        }
+      },
+      { defer: true },
+    ),
+  )
 
   // ── Transport ────────────────────────────────────────────────
   // A clock that says it runs and does not move: stopping it and starting it
