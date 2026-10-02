@@ -22,7 +22,7 @@ import type { StemStream } from '@/features/stem-mixer/stem-stream-source'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
-import { songMelody, useStemMixerKeyController, useStemMixerKeyView, } from '@/features/stem-mixer/useStemMixerKeyController'
+import { createFindMyKeyNotices, songMelody, useStemMixerKeyController, useStemMixerKeyView, } from '@/features/stem-mixer/useStemMixerKeyController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useStemMixerMelodyAuditionController'
@@ -74,6 +74,7 @@ import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
+import type { KeyShiftBinding } from './key-shift/KeyShiftControl'
 import type { KaraokeMoreBinding } from './mobile/KaraokeMoreSheet'
 import type { LoopPoint } from './stem-mixer/LoopPointMenu'
 import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
@@ -567,6 +568,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // one. The melody and the detection are Pitch Studio's, built further
   // down: the melody is first read once the singer's range has been read,
   // which is never before this component has finished setting up.
+  // Find my key's notices: toasts, or a line in the phone's key sheet while
+  // that is open, where a phone's toasts would sit over it.
+  const findKeyNotices = createFindMyKeyNotices({
+    show: showNotification,
+    remove: removeNotificationsByChannel,
+  })
   const key = useStemMixerKeyController({
     sessionId: () => props.sessionId,
     queueEntry: () => {
@@ -581,8 +588,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       vocalIsStreamed() || analysableVocal() === null
         ? null
         : pitchAnalysis.runAnalysis({ quiet: true }),
-    notify: showNotification,
-    dismiss: removeNotificationsByChannel,
+    notify: findKeyNotices.notify,
+    dismiss: findKeyNotices.dismiss,
   })
 
   // ── Audio controller ─────────────────────────────────────────
@@ -1384,8 +1391,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     engineAvailable: audio.keyShiftAvailable,
     editMode: pitchAnalysis.editMode,
     detectedKey: pitchAnalysis.detectedKey,
-    notify: showNotification,
+    notify: findKeyNotices.notify,
   })
+  const phoneKeyBinding: KeyShiftBinding = {
+    ...keyView.binding,
+    notice: findKeyNotices.notice,
+    holdNotices: findKeyNotices.hold,
+  }
   const displayNotes = keyView.createShownNotes(pitchAnalysis.editableNotes)
   const displayBaseNotes = keyView.createShownNotes(pitchAnalysis.baseNotes)
   const displayMidiNotes = keyView.createShownNotes(midiNotes)
@@ -2567,7 +2579,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             musicLevelRange={audio.musicLevelRange}
             micPitch={mic.micPitch}
             ribbonNotes={displayNotes}
-            keyControl={keyView.binding}
+            keyControl={phoneKeyBinding}
             more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal

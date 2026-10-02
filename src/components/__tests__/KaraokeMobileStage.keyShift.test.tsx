@@ -7,13 +7,13 @@
 // music level already fill the left slot), so the empty right slot carries
 // one key button, and the stepper and "Find my key" live in a sheet it opens.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
 import styles from '@/components/KaraokeMobileStage.module.css'
-import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import type { KeyShiftBinding, KeyShiftNotice, } from '@/components/key-shift/KeyShiftControl'
 
 beforeAll(() => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -147,6 +147,40 @@ describe('the key on the phone stage', () => {
 
     expect(keyButton()).not.toHaveClass(styles.keyBtnOn!)
     expect(keyButton().textContent).toContain('+2')
+  })
+
+  it("holds Find my key's notices in the sheet while it is open, and says them there", () => {
+    // A phone's toasts sit at the bottom, where this sheet is: the wait and
+    // the fit used to land on top of it.
+    const holds: boolean[] = []
+    const [notice, setNotice] = createSignal<KeyShiftNotice | null>(null)
+    mountWithKey({ notice, holdNotices: (held) => holds.push(held) })
+
+    fireEvent.click(keyButton())
+    setNotice({
+      message: 'Finding the melody first. This takes a moment.',
+      tone: 'info',
+    })
+    const sheet = screen.getByRole('dialog', { name: 'Key' })
+    const said = within(sheet).getByRole('status').textContent
+    fireEvent.keyDown(sheet, { key: 'Escape' })
+
+    expect([holds, said]).toEqual([
+      [true, false],
+      'Finding the melody first. This takes a moment.',
+    ])
+  })
+
+  it('lets go of the notices when the stage goes with the sheet open', () => {
+    // Turning the phone to the desktop mixer unmounts the stage; a hold
+    // left on would swallow every notice after it.
+    const holds: boolean[] = []
+    mountWithKey({ holdNotices: (held) => holds.push(held) })
+    fireEvent.click(keyButton())
+
+    cleanup()
+
+    expect(holds).toEqual([true, false])
   })
 
   it('leaves the slot empty for a host with no key', () => {
