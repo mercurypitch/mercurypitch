@@ -49,7 +49,7 @@ import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { isInsideOverlay } from '@/lib/space-playback'
+import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
@@ -2222,20 +2222,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       props.onOfferTour?.('mount')
     }
 
-    // Keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (props.importOpen?.() === true) return
-      // The score dialog owns keyboard input while it is open. Without this
-      // guard Space restarted playback and letter shortcuts mutated the mixer
-      // behind the singer's keep-or-close decision.
-      if (scoreModalOpen()) return
+    // The import and score dialogs, and any dialog, menu or listbox holding
+    // the focus, keep their own keys. Without this the score dialog's
+    // keep-or-close decision had Space restart playback and the letter
+    // shortcuts change the mixer behind it.
+    const layerAboveOwnsKeys = (target: EventTarget | null): boolean =>
+      props.importOpen?.() === true ||
+      scoreModalOpen() ||
+      isInsideOverlay(target)
 
-      // Ignore when typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      )
-        return
+    // Space plays and pauses from anywhere on the mixer, as in every room
+    // (space-playback.ts): a focused button does not take it, a select or a
+    // text field does.
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: () => {
+          if (audio.playing()) audio.handlePause()
+          else audio.handlePlay()
+        },
+        ownsSpace: () => !layerAboveOwnsKeys(document.activeElement),
+        enabled: () => !audio.loading() && audio.loadError() === '',
+      }),
+    )
+
+    // Letter shortcuts. Not while typing, and not in a modifier chord:
+    // Ctrl+S saves the page, it does not seek.
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (layerAboveOwnsKeys(e.target) || isTypingTarget(e.target)) return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
 
       if (lrcGenMode() && lrcGenInputMode() === 'tap') {
         if (e.key === 'w' || e.key === 'W') {
@@ -2247,16 +2261,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           e.preventDefault()
           handleNextLine()
           return
-        }
-      }
-
-      if (e.code === 'Space') {
-        e.preventDefault()
-        if (audio.loading() || audio.loadError()) return
-        if (audio.playing()) {
-          audio.handlePause()
-        } else {
-          audio.handlePlay()
         }
       }
 
