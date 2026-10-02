@@ -185,6 +185,38 @@ describe('Community > Profile', () => {
     expect(screen.getByText(/on this device only/i)).toBeInTheDocument()
     expect(screen.queryByText(/across your account/i)).toBeNull()
   })
+
+  it("counts only the singer's own shares under Published", async () => {
+    // The board is everyone's. Counted whole, it credited each singer with
+    // the whole community's shares. The achievement count made the same
+    // mistake once; the worker now counts per owner (grants.ts,
+    // sharesPosted), and so does this.
+    mocks.loadSharedMelodies.mockResolvedValue([
+      boardMelody('m-mine', 'user-0001', 'Mine'),
+      boardMelody('m-theirs', 'user-0002', 'Theirs'),
+      boardMelody('m-also', 'user-0003', 'Also theirs'),
+    ])
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+    ])
+    // This browser's own copy of the same share, under its local id. It is
+    // the board row above, not a second publication.
+    const localCopy = { ...boardMelody('m-local', '', 'Mine') }
+    delete (localCopy as { userId?: string }).userId
+    mocks.storageGet.mockImplementation((key: string, fallback: unknown) =>
+      key === 'pp_shared_melodies' ? [localCopy] : fallback,
+    )
+
+    render(() => <CommunityShare />)
+    // The board has loaded once somebody else's card is on it.
+    await screen.findByRole('button', { name: 'Open Also theirs' })
+    openTab(/Profile/)
+
+    expect(screen.getByText('melody').previousElementSibling).toHaveTextContent(
+      '1',
+    )
+    expect(screen.queryByText(/^setlists?$/)).toBeNull()
+  })
 })
 
 describe('Community > board cards', () => {
