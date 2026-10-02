@@ -1160,7 +1160,10 @@ export const CommunityLeaderboard: Component<LeaderboardProps> = (props) => {
 
             {/* Leaderboard Table */}
             <div class="leaderboard-table-container">
-              <table class="leaderboard-table">
+              {/* The category tells a phone which column to keep: below
+                  480px the table drops to the score plus the number the
+                  board is ranked by (vocal-analysis.css). */}
+              <table class="leaderboard-table" data-category={activeCategory()}>
                 <thead>
                   <tr>
                     <th class="rank-th">#</th>
