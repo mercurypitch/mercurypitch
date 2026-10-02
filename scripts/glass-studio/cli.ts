@@ -5,6 +5,7 @@ import { networkInterfaces } from 'node:os'
 import { parseArgs } from 'node:util'
 import { CLOUDWAY_STUDIO_LIMITS, cloudwayStudioCatalog, compileStudioDocument, summarizeStudioDocument, } from '../../packages/glass-game/src/authoring/cloudway-studio.ts'
 import { createStudioServer } from './server.ts'
+import { runnerStudioCatalog, compileRunnerStudioDocument, summarizeRunnerStudioDocument, } from '../../packages/glass-game/src/authoring/runner-studio.ts'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -50,23 +51,34 @@ if (command === 'serve') {
     })
 } else if (command === 'catalog') {
   console.log(JSON.stringify(cloudwayStudioCatalog(), null, 2))
+} else if (command === 'runner-catalog') {
+  console.log(JSON.stringify(runnerStudioCatalog(), null, 2))
 } else if (command === 'validate' || command === 'compile') {
   if (!file) throw new Error('Supply a course JSON file.')
   const bytes = await readFile(file)
   if (bytes.length > CLOUDWAY_STUDIO_LIMITS.maxBytes)
     throw new Error('Course document is too large.')
   const source: unknown = JSON.parse(bytes.toString('utf8'))
+  const runner =
+    source !== null &&
+    typeof source === 'object' &&
+    'schema' in source &&
+    source.schema === 'mercurypitch.song-runner-course'
   console.log(
     JSON.stringify(
       command === 'compile'
-        ? compileStudioDocument(source)
-        : summarizeStudioDocument(source),
+        ? runner
+          ? compileRunnerStudioDocument(source)
+          : compileStudioDocument(source)
+        : runner
+          ? summarizeRunnerStudioDocument(source)
+          : summarizeStudioDocument(source),
       null,
       2,
     ),
   )
 } else {
   throw new Error(
-    'Usage: cli.ts serve --root <private-editor> [--host 0.0.0.0 --port 5635] | catalog | validate <course.json> | compile <course.json>',
+    'Usage: cli.ts serve --root <private-editor> [--host 0.0.0.0 --port 5635] | catalog | runner-catalog | validate <course.json> | compile <course.json>',
   )
 }

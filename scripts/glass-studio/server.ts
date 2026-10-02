@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse, } from 'node:h
 import { readFile, realpath } from 'node:fs/promises'
 import { extname, relative, resolve, sep } from 'node:path'
 import { CLOUDWAY_STUDIO_LIMITS, cloudwayStudioCatalog, compileStudioDocument, summarizeStudioDocument, } from '../../packages/glass-game/src/authoring/cloudway-studio.ts'
+import { RUNNER_STUDIO_CATALOG_ID, runnerStudioCatalog, compileRunnerStudioDocument, summarizeRunnerStudioDocument, } from '../../packages/glass-game/src/authoring/runner-studio.ts'
 
 class RequestError extends Error {
   readonly status: number
@@ -84,6 +85,39 @@ export async function createStudioServer(options: StudioServerOptions) {
       const url = new URL(req.url ?? '/', origin)
       if (req.method === 'GET' && url.pathname === '/api/catalog') {
         send(res, 200, cloudwayStudioCatalog())
+        return
+      }
+      if (req.method === 'GET' && url.pathname === '/api/runner/catalog') {
+        send(res, 200, runnerStudioCatalog())
+        return
+      }
+      if (
+        req.method === 'POST' &&
+        ['/api/runner/validate', '/api/runner/compile'].includes(url.pathname)
+      ) {
+        const source = await body(req)
+        try {
+          const catalogId = req.headers['x-runner-catalog']
+          if (typeof catalogId !== 'string')
+            throw new Error(
+              'Select the runner catalog with the X-Runner-Catalog header.',
+            )
+          send(res, 200, {
+            ok: true,
+            catalogId: RUNNER_STUDIO_CATALOG_ID,
+            ...(url.pathname === '/api/runner/compile'
+              ? { courses: compileRunnerStudioDocument(source, catalogId) }
+              : { courses: summarizeRunnerStudioDocument(source, catalogId) }),
+          })
+        } catch (error) {
+          send(res, 422, {
+            ok: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Invalid runner course document.',
+          })
+        }
         return
       }
       if (

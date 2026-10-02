@@ -1,6 +1,6 @@
 // Runner glass targets — the existing reviewed frost fracture follows authoritative voice results.
 import type { Matrix4, Object3D } from 'three'
-import { CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
+import { Box3, CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import type { BreakableSnapshot } from '../contracts'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
 import { layoutRunnerNotation, runnerMidiName } from '../runner/notation'
@@ -14,12 +14,28 @@ import type { VesselDefinition } from './vessels'
 import { createAuthoredVessel } from './vessels'
 
 const VARIANT = 'frost-gold-arch-breakwall-a'
+const TARGET_LANE_INSET_METERS = 0.04
 const NEUTRAL_FEEDBACK: RunnerPitchFeedback = {
   state: 'neutral',
   observedMidi: null,
   comparedTargetMidi: null,
   errorCents: null,
   correction: null,
+}
+
+function fitTargetToCourse(root: Group, course: CompiledRunnerCourse): void {
+  const bounds = new Box3().setFromObject(root)
+  const lateralExtent = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x))
+  const halfLane =
+    Math.min(
+      course.laneCenters[1] - course.laneCenters[0],
+      course.laneCenters[2] - course.laneCenters[1],
+    ) / 2
+  const inset = Math.min(TARGET_LANE_INSET_METERS, halfLane * 0.1)
+  // The reviewed stone frame is wider than the certified glass pane. Measure
+  // the installed assembly and fit every lane to the same centred footprint;
+  // one uniform root transform keeps the donor, notation and feedback aligned.
+  root.scale.setScalar(Math.min(1, (halfLane - inset) / lateralExtent))
 }
 
 function targetDefinition(target: CompiledRunnerTarget): VesselDefinition {
@@ -277,6 +293,7 @@ export function createRunnerTargets(
       card = createScoreCard()
       feedback = createRunnerTargetFeedback(reducedMotion)
       vessel.root.add(card.plane, feedback.root)
+      fitTargetToCourse(vessel.root, course)
       root.add(vessel.root)
       const item = { vessel, card, feedback, displayCharge: 0 }
       items.set(target.id, item)

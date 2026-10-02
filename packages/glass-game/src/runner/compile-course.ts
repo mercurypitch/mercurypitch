@@ -2,16 +2,18 @@
 // Song runner compiler — assemble strict source into finite runtime courses.
 // ============================================================
 
-import { runnerChunkId } from './compile-course-helpers'
-import { compileRunnerCheckpoints, compileRunnerObstacles, validateRunnerReachability, } from './compile-course-obstacles'
-import { compileRunnerTargets, validateRunnerMovement, validateRunnerVoice, } from './compile-course-targets'
-import type { CompiledRunnerChunk, CompiledRunnerCourse, CompiledRunnerObstacle, CompiledRunnerTarget, } from './contracts'
-import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source'
-import { runnerSourceArray, runnerSourceExactKeys, runnerSourceFail, runnerSourceRecord, runnerSourceUniqueIds, } from './source'
-import { parseRunnerCourseSource } from './source-parser'
-import { compileRunnerTempoSegments, runnerBeatToDistance, runnerBeatToSeconds, } from './tempo'
+import { runnerChunkId } from './compile-course-helpers.ts'
+import { compileRunnerCheckpoints, compileRunnerObstacles, validateRunnerReachability, } from './compile-course-obstacles.ts'
+import { compileRunnerTargets, validateRunnerMovement, validateRunnerVoice, } from './compile-course-targets.ts'
+import type { CompiledRunnerChunk, CompiledRunnerCourse, CompiledRunnerObstacle, CompiledRunnerTarget, } from './contracts.ts'
+import { RUNNER_MAXIMUM_COURSE_SECONDS } from './resource-limits.ts'
+import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
+import { runnerSourceArray, runnerSourceExactKeys, runnerSourceFail, runnerSourceRecord, runnerSourceUniqueIds, } from './source.ts'
+import { parseRunnerCourseSource } from './source-parser.ts'
+import { compileRunnerTempoSegments, runnerBeatToDistance, runnerBeatToSeconds, } from './tempo.ts'
 
 const MAXIMUM_COURSES = 16
+export const RUNNER_MAXIMUM_CHUNKS = 256
 
 function compileChunks(
   course: SongRunnerCourseSource,
@@ -86,6 +88,23 @@ export function compileSongRunnerCourse(
     runnerSourceFail(`${path}.revision`, 'must be positive.')
   if (course.track.lengthBeats > 2048)
     runnerSourceFail(`${path}.track.lengthBeats`, 'is too large.')
+  const lengthMeters = runnerBeatToDistance(
+    course.track.lengthBeats,
+    course.track.metersPerBeat,
+  )
+  if (!Number.isFinite(lengthMeters))
+    runnerSourceFail(
+      `${path}.track.metersPerBeat`,
+      'must produce a finite course length.',
+    )
+  if (
+    Math.ceil(course.track.lengthBeats / course.track.chunkBeats) >
+    RUNNER_MAXIMUM_CHUNKS
+  )
+    runnerSourceFail(
+      `${path}.track.chunkBeats`,
+      `must produce at most ${RUNNER_MAXIMUM_CHUNKS} chunks.`,
+    )
   if (
     course.track.chunkBeats > course.track.lengthBeats ||
     course.track.lengthBeats % course.track.chunkBeats !== 0
@@ -109,7 +128,15 @@ export function compileSongRunnerCourse(
   const tempoSegments = compileRunnerTempoSegments(
     course.tempoMap,
     course.track.lengthBeats,
+    `${path}.tempoMap`,
   )
+  for (const [index, segment] of tempoSegments.entries()) {
+    if (segment.endCourseSeconds > RUNNER_MAXIMUM_COURSE_SECONDS)
+      runnerSourceFail(
+        `${path}.tempoMap[${index}].bpm`,
+        `must keep the course duration at most ${RUNNER_MAXIMUM_COURSE_SECONDS} seconds.`,
+      )
+  }
   const movement = validateRunnerMovement(course, catalog, path)
   const { voice, profile: voiceProfile } = validateRunnerVoice(
     course,
@@ -132,13 +159,14 @@ export function compileSongRunnerCourse(
     windows,
     path,
   )
-  validateRunnerReachability(course, obstacles, tempoSegments, movement, path)
   const checkpoints = compileRunnerCheckpoints(
     course,
     obstacles,
     tempoSegments,
+    movement,
     path,
   )
+  validateRunnerReachability(course, obstacles, tempoSegments, movement, path)
 
   const pickupProfile = catalog.pickupProfiles[course.rewards.pickupProfileId]
   if (pickupProfile === undefined)
@@ -246,10 +274,7 @@ export function compileSongRunnerCourse(
       course.track.lengthBeats,
     ),
     metersPerBeat: course.track.metersPerBeat,
-    lengthMeters: runnerBeatToDistance(
-      course.track.lengthBeats,
-      course.track.metersPerBeat,
-    ),
+    lengthMeters,
     groundFeetY: course.track.groundFeetY,
     fallBelowFeetY: course.track.fallBelowFeetY,
     laneCenters: course.track.laneCenters,

@@ -499,6 +499,7 @@ jobs:
             resonance,
             runner-readiness,
             runner-responsive,
+            runner-sound,
             song-runner,
             songbook,
             solids,

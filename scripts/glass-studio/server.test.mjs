@@ -96,3 +96,46 @@ test('distinguishes invalid JSON, oversize documents and compiler rejection', as
     415,
   )
 })
+
+test('runner routes compile the exact source against its explicit catalog and reject stale imports', async () => {
+  const catalog = await (await fetch(`${origin}/api/runner/catalog`)).json()
+  assert.equal(catalog.schema, 'mercurypitch.runner-studio-catalog')
+  const post = (operation, source, identity = catalog.catalogId) =>
+    fetch(`${origin}/api/runner/${operation}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-runner-catalog': identity,
+      },
+      body: JSON.stringify(source),
+    })
+  for (const operation of ['validate', 'compile']) {
+    const response = await post(operation, catalog.examples[0].document)
+    assert.equal(response.status, 200)
+    const result = await response.json()
+    assert.equal(result.catalogId, catalog.catalogId)
+    assert.equal(result.courses[0].targets.length, 8)
+    assert.equal(result.courses[0].checkpoints.length, 3)
+  }
+  assert.equal(
+    (await post('compile', catalog.examples[0].document, 'stale')).status,
+    422,
+  )
+  const source = structuredClone(catalog.examples[0].document)
+  source.courses[0].checkpoints = []
+  const invalid = await post('compile', source)
+  assert.equal(invalid.status, 422)
+  assert.match((await invalid.json()).error, /checkpoints must begin/)
+  source.courses[0].track.chunkBeats = 0.25
+  assert.match(
+    (await (await post('compile', source)).json()).error,
+    /at most 256 chunks/,
+  )
+  const noCatalog = await fetch(`${origin}/api/runner/compile`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{}',
+  })
+  assert.equal(noCatalog.status, 422)
+  assert.match((await noCatalog.json()).error, /X-Runner-Catalog/)
+})

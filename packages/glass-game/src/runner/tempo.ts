@@ -2,7 +2,7 @@
 // Song runner tempo — exact piecewise beat, time, and distance conversion.
 // ============================================================
 
-import type { CompiledRunnerTempoSegment } from './contracts'
+import type { CompiledRunnerTempoSegment } from './contracts.ts'
 
 const EPSILON = 1e-9
 
@@ -43,6 +43,7 @@ function segmentAtSeconds(
 export function compileRunnerTempoSegments(
   points: readonly RunnerTempoPoint[],
   lengthBeats: number,
+  path?: string,
 ): readonly CompiledRunnerTempoSegment[] {
   if (!Number.isFinite(lengthBeats) || lengthBeats <= 0)
     throw new Error('Runner lengthBeats must be finite and positive.')
@@ -61,14 +62,24 @@ export function compileRunnerTempoSegments(
     )
       throw new Error(`Runner tempo point ${index} is invalid.`)
     const duration = ((endBeat - point.atBeat) * 60) / point.bpm
+    const endCourseSeconds = seconds + duration
+    if (
+      !Number.isFinite(duration) ||
+      duration <= 0 ||
+      !Number.isFinite(endCourseSeconds) ||
+      endCourseSeconds <= seconds
+    )
+      throw new Error(
+        `${path === undefined ? `Runner tempo point ${index}` : `${path}[${index}].bpm`} must produce a finite positive duration.`,
+      )
     const segment: CompiledRunnerTempoSegment = {
       startBeat: point.atBeat,
       endBeat,
       startCourseSeconds: seconds,
-      endCourseSeconds: seconds + duration,
+      endCourseSeconds,
       bpm: point.bpm,
     }
-    seconds += duration
+    seconds = endCourseSeconds
     return segment
   })
 }

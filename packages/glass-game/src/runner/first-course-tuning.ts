@@ -2,7 +2,7 @@
 // Singing Current tuning — typed authored pacing controls for course variants.
 // ============================================================
 
-import type { RunnerTempoPoint } from './tempo'
+import type { RunnerTempoPoint } from './tempo.ts'
 
 interface SingingCurrentPhraseTuning<Durations extends readonly number[]> {
   readonly noteDurationsBeats: Durations

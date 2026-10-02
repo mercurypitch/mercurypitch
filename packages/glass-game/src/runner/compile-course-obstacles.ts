@@ -2,13 +2,14 @@
 // Song runner safety compiler — obstacle envelopes, routes, and checkpoints.
 // ============================================================
 
-import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, runnerIntervalsOverlap, } from './compile-course-helpers'
-import type { RunnerProtectedWindow } from './compile-course-targets'
-import type { CompiledRunnerActionWindow, CompiledRunnerCheckpoint, CompiledRunnerCourse, CompiledRunnerObstacle, RunnerLane, } from './contracts'
-import { runnerFixedStepActionEnd } from './fixed-step'
-import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source'
-import { runnerSourceFail, runnerSourceUniqueIds } from './source'
-import { runnerBeatToDistance, runnerBeatToSeconds } from './tempo'
+import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, runnerIntervalsOverlap, } from './compile-course-helpers.ts'
+import type { RunnerProtectedWindow } from './compile-course-targets.ts'
+import type { CompiledRunnerActionWindow, CompiledRunnerCheckpoint, CompiledRunnerCourse, CompiledRunnerObstacle, RunnerLane, } from './contracts.ts'
+import { runnerFixedStepActionEnd, runnerFixedStepAtOrAfter, } from './fixed-step.ts'
+import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, } from './resource-limits.ts'
+import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
+import { runnerSourceFail, runnerSourceUniqueIds } from './source.ts'
+import { runnerBeatToDistance, runnerBeatToSeconds } from './tempo.ts'
 
 function validateObstacleProfile(
   profile: RunnerObstacleCatalogProfile,
@@ -220,13 +221,32 @@ export function compileRunnerObstacles(
             'blocker lanes must be contiguous for one continuous envelope.',
           )
       }
-      const safeLanes = ([0, 1, 2] as const).filter(
+      const unmaskedLanes = ([0, 1, 2] as const).filter(
         (lane) => !obstacle.laneMask.includes(lane),
       )
-      if (safeLanes.length === 0)
+      if (unmaskedLanes.length === 0)
         runnerSourceFail(
           `${obstaclePath}.laneMask`,
           'blockers must leave at least one lane open.',
+        )
+      const minLateralX =
+        course.track.laneCenters[obstacle.laneMask[0]!] -
+        profile.laneHalfWidthMeters
+      const maxLateralX =
+        course.track.laneCenters[obstacle.laneMask.at(-1)!] +
+        profile.laneHalfWidthMeters
+      // Movement sweeps a body, so an unmasked center can still hit the box.
+      const safeLanes = unmaskedLanes.filter((lane) => {
+        const laneX = course.track.laneCenters[lane]
+        return (
+          laneX < minLateralX - movement.bodyRadius - RUNNER_COMPILER_EPSILON ||
+          laneX > maxLateralX + movement.bodyRadius + RUNNER_COMPILER_EPSILON
+        )
+      })
+      if (safeLanes.length === 0)
+        runnerSourceFail(
+          `${obstaclePath}.laneMask`,
+          'blockers must leave at least one lane clear of the runner body.',
         )
       const minCourseDistanceMeters =
         centerDistance - profile.longitudinalHalfLengthMeters
@@ -240,10 +260,8 @@ export function compileRunnerObstacles(
         Math.max(0, obstacle.atBeat - profile.telegraphLeadBeats),
       )
       const maximumLaneChanges = Math.max(
-        ...safeLanes.map((safe) =>
-          Math.min(
-            ...([0, 1, 2] as const).map((from) => Math.abs(safe - from)),
-          ),
+        ...([0, 1, 2] as const).map((from) =>
+          Math.min(...safeLanes.map((safe) => Math.abs(safe - from))),
         ),
         1,
       )
@@ -287,12 +305,8 @@ export function compileRunnerObstacles(
         telegraphFromCourseSeconds,
         minCourseDistanceMeters,
         maxCourseDistanceMeters,
-        minLateralX:
-          course.track.laneCenters[obstacle.laneMask[0]!] -
-          profile.laneHalfWidthMeters,
-        maxLateralX:
-          course.track.laneCenters[obstacle.laneMask.at(-1)!] +
-          profile.laneHalfWidthMeters,
+        minLateralX,
+        maxLateralX,
         minY: course.track.groundFeetY + profile.minYOffsetMeters,
         maxY: course.track.groundFeetY + profile.maxYOffsetMeters,
         authoredLaneMask: obstacle.laneMask,
@@ -393,6 +407,26 @@ export function compileRunnerObstacles(
         `${path}.obstacles[${index}]`,
         `overlaps obstacle "${prior.id}".`,
       )
+    if (current.kind !== 'blocker') continue
+    for (const earlier of obstacles.slice(0, index)) {
+      if (
+        earlier.kind !== 'blocker' ||
+        earlier.maxCourseDistanceMeters + movement.bodyRadius <
+          current.minCourseDistanceMeters -
+            movement.bodyRadius -
+            RUNNER_COMPILER_EPSILON
+      )
+        continue
+      if (
+        !earlier.certifiedActions[0]!.reachableLanes.some((lane) =>
+          current.certifiedActions[0]!.reachableLanes.includes(lane),
+        )
+      )
+        runnerSourceFail(
+          `${path}.obstacles[${index}]`,
+          `body collision envelope overlaps obstacle "${earlier.id}" without a shared clear lane.`,
+        )
+    }
   }
   return { obstacles, profiles }
 }
@@ -404,47 +438,122 @@ export function validateRunnerReachability(
   movement: CompiledRunnerCourse['movement'],
   path: string,
 ): void {
-  let reachable = new Set<RunnerLane>([course.checkpoints[0]!.respawnLane])
-  let availableFromSeconds = 0
-  for (const [index, obstacle] of obstacles.entries()) {
-    const action = obstacle.certifiedActions[0]!
-    if (obstacle.kind === 'blocker') {
-      const next = new Set<RunnerLane>()
-      for (const safeLane of action.reachableLanes) {
-        if (
-          [...reachable].some(
-            (fromLane) =>
-              availableFromSeconds +
-                Math.abs(safeLane - fromLane) * movement.laneChangeSeconds <=
-              action.landingCloseCourseSeconds + RUNNER_COMPILER_EPSILON,
-          )
-        )
-          next.add(safeLane)
-      }
-      reachable = next
-    }
-    if (reachable.size === 0)
-      runnerSourceFail(
-        `${path}.obstacles[${index}]`,
-        'leaves no reachable lane to the finish.',
-      )
-    availableFromSeconds = Math.max(
-      availableFromSeconds,
-      action.landingOpenCourseSeconds,
-    )
-  }
   const finishSeconds = runnerBeatToSeconds(
     tempoSegments,
     course.track.lengthBeats,
   )
-  if (availableFromSeconds >= finishSeconds)
-    runnerSourceFail(`${path}.obstacles`, 'leave no reachable finish interval.')
+  const lengthMeters = course.track.lengthBeats * course.track.metersPerBeat
+  const secondsAtDistance = (distance: number): number =>
+    runnerBeatToSeconds(
+      tempoSegments,
+      Math.max(0, Math.min(lengthMeters, distance)) /
+        course.track.metersPerBeat,
+    )
+  for (const [checkpointIndex, checkpoint] of course.checkpoints.entries()) {
+    const epochStart = runnerBeatToSeconds(tempoSegments, checkpoint.atBeat)
+    const checkpointDistance = checkpoint.atBeat * course.track.metersPerBeat
+    let reachable = new Set<RunnerLane>([checkpoint.respawnLane])
+    let availableFromSeconds = epochStart
+    for (const [index, obstacle] of obstacles.entries()) {
+      const collisionExitDistance =
+        obstacle.maxCourseDistanceMeters + movement.bodyRadius
+      if (collisionExitDistance < checkpointDistance - RUNNER_COMPILER_EPSILON)
+        continue
+      const action = obstacle.certifiedActions[0]!
+      if (obstacle.kind === 'blocker') {
+        const collisionEntrySeconds = secondsAtDistance(
+          obstacle.minCourseDistanceMeters - movement.bodyRadius,
+        )
+        const next = new Set<RunnerLane>()
+        for (const safeLane of action.reachableLanes) {
+          for (const fromLane of reachable) {
+            // The same clear lane remains usable while blocker bodies overlap.
+            if (safeLane === fromLane) {
+              next.add(safeLane)
+              break
+            }
+            let transitionEnd = Math.max(
+              availableFromSeconds,
+              action.launchOpenCourseSeconds,
+            )
+            for (let hop = 0; hop < Math.abs(safeLane - fromLane); hop++)
+              transitionEnd = runnerFixedStepActionEnd(
+                transitionEnd,
+                movement.laneChangeSeconds,
+                epochStart,
+                movement.fixedStepSeconds,
+              )
+            if (
+              transitionEnd <=
+              collisionEntrySeconds - RUNNER_COMPILER_EPSILON
+            ) {
+              next.add(safeLane)
+              break
+            }
+          }
+        }
+        reachable = next
+        // A successful early dodge does not release the blocked space. Wait
+        // until the complete body has passed before changing across that box.
+        availableFromSeconds = Math.max(
+          availableFromSeconds,
+          runnerFixedStepAtOrAfter(
+            secondsAtDistance(collisionExitDistance) +
+              movement.fixedStepSeconds,
+            epochStart,
+            movement.fixedStepSeconds,
+          ),
+        )
+      } else {
+        const launchSeconds = runnerFixedStepAtOrAfter(
+          Math.max(availableFromSeconds, action.launchOpenCourseSeconds),
+          epochStart,
+          movement.fixedStepSeconds,
+        )
+        if (
+          launchSeconds >
+          action.launchCloseCourseSeconds + RUNNER_COMPILER_EPSILON
+        )
+          reachable = new Set(
+            [...reachable].filter(
+              (lane) => !action.reachableLanes.includes(lane),
+            ),
+          )
+        else {
+          const flightSeconds =
+            (2 * movement.jumpVelocityMetersPerSecond) /
+            movement.gravityMetersPerSecondSquared
+          availableFromSeconds = runnerFixedStepActionEnd(
+            launchSeconds,
+            flightSeconds,
+            epochStart,
+            movement.fixedStepSeconds,
+          )
+          if (availableFromSeconds >= finishSeconds)
+            runnerSourceFail(
+              `${path}.obstacles`,
+              'leave no reachable finish interval.',
+            )
+        }
+      }
+      if (reachable.size === 0)
+        runnerSourceFail(
+          checkpointIndex === 0
+            ? `${path}.obstacles[${index}]`
+            : `${path}.checkpoints[${checkpointIndex}]`,
+          checkpointIndex === 0
+            ? 'leaves no reachable lane to the finish.'
+            : `leaves no reachable lane through obstacle "${obstacle.id}".`,
+        )
+    }
+  }
 }
 
 export function compileRunnerCheckpoints(
   course: SongRunnerCourseSource,
   obstacles: readonly CompiledRunnerObstacle[],
   tempoSegments: CompiledRunnerCourse['tempoSegments'],
+  movement: CompiledRunnerCourse['movement'],
   path: string,
 ): readonly CompiledRunnerCheckpoint[] {
   runnerSourceUniqueIds(
@@ -456,6 +565,15 @@ export function compileRunnerCheckpoints(
   return course.checkpoints.map((checkpoint, index) => {
     const checkpointPath = `${path}.checkpoints[${index}]`
     if (
+      !Number.isInteger(checkpoint.countInBeats) ||
+      checkpoint.countInBeats < 1 ||
+      checkpoint.countInBeats > RUNNER_MAXIMUM_COUNT_IN_BEATS
+    )
+      runnerSourceFail(
+        `${checkpointPath}.countInBeats`,
+        `must be an integer between 1 and ${RUNNER_MAXIMUM_COUNT_IN_BEATS}.`,
+      )
+    if (
       checkpoint.atBeat < 0 ||
       checkpoint.atBeat >= course.track.lengthBeats ||
       checkpoint.atBeat % course.meter.beatsPerBar !== 0
@@ -466,6 +584,20 @@ export function compileRunnerCheckpoints(
       )
     if (index > 0 && checkpoint.atBeat <= course.checkpoints[index - 1]!.atBeat)
       runnerSourceFail(`${checkpointPath}.atBeat`, 'must increase strictly.')
+    const tempo = tempoSegments.find(
+      (segment) =>
+        checkpoint.atBeat >= segment.startBeat &&
+        checkpoint.atBeat < segment.endBeat,
+    )!
+    const countInSeconds = checkpoint.countInBeats * (60 / tempo.bpm)
+    if (
+      !Number.isFinite(countInSeconds) ||
+      countInSeconds > RUNNER_MAXIMUM_COUNT_IN_SECONDS
+    )
+      runnerSourceFail(
+        `${checkpointPath}.countInBeats`,
+        `must produce at most ${RUNNER_MAXIMUM_COUNT_IN_SECONDS} seconds of count-in audio.`,
+      )
     const courseDistanceMeters = runnerBeatToDistance(
       checkpoint.atBeat,
       course.track.metersPerBeat,
@@ -480,17 +612,21 @@ export function compileRunnerCheckpoints(
       course.track.metersPerBeat,
     )
     for (const obstacle of obstacles) {
+      const blockerRadius =
+        obstacle.kind === 'blocker' ? movement.bodyRadius : 0
       if (
         obstacle.maxCourseDistanceMeters <
-          courseDistanceMeters - RUNNER_COMPILER_EPSILON ||
+          courseDistanceMeters - blockerRadius - RUNNER_COMPILER_EPSILON ||
         obstacle.minCourseDistanceMeters >
-          runwayEndDistance + RUNNER_COMPILER_EPSILON
+          runwayEndDistance + blockerRadius + RUNNER_COMPILER_EPSILON
       )
         continue
       if (obstacle.kind === 'blocker') {
         if (
-          laneX >= obstacle.minLateralX - RUNNER_COMPILER_EPSILON &&
-          laneX <= obstacle.maxLateralX + RUNNER_COMPILER_EPSILON
+          laneX >=
+            obstacle.minLateralX - blockerRadius - RUNNER_COMPILER_EPSILON &&
+          laneX <=
+            obstacle.maxLateralX + blockerRadius + RUNNER_COMPILER_EPSILON
         )
           runnerSourceFail(
             checkpointPath,

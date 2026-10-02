@@ -385,8 +385,16 @@ describe('runner session readiness and clock', () => {
     expect(h.session.state().game.courseSeconds).toBeCloseTo(0.2)
     expect(h.session.state().game.player.lateralX).toBeLessThan(0)
     expect(h.voices[0]!.stop).not.toHaveBeenCalled()
-    expect(h.audio[0]!.setMuted).toHaveBeenLastCalledWith(true)
-    expect(h.preferences.get('runner-music-muted:v1')).toBe('true')
+    expect(h.audio[0]!.setPreferences).toHaveBeenLastCalledWith({
+      musicMuted: true,
+      musicVolume: 0.35,
+      guideVolume: 0.65,
+    })
+    expect(JSON.parse(h.preferences.get('runner-audio:v1')!)).toEqual({
+      musicMuted: true,
+      musicVolume: 0.35,
+      guideVolume: 0.65,
+    })
     h.session.dispose()
   })
 })

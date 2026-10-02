@@ -2,8 +2,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GlassGameHost } from '../host'
 import type { SavedRunnerProgress } from '../runner/contracts'
+import { clampRunnerAudioPreferences, RUNNER_AUDIO_DEFAULTS, } from '../runner/session-contracts'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
-import { createBrowserRunnerHost, resolveRunnerComfortableMidi, runnerComfortableMidiRange, } from './runner-host'
+import { createBrowserRunnerHost, readRunnerAudioPreferences, resolveRunnerComfortableMidi, RUNNER_AUDIO_PREFERENCE, runnerComfortableMidiRange, } from './runner-host'
 
 function gallery() {
   const values = new Map<string, string>()
@@ -17,6 +18,61 @@ function gallery() {
   return { host, values }
 }
 describe('runner host', () => {
+  it('migrates the old music mute while keeping a separate audible example level', () => {
+    const { host, values } = gallery()
+    values.set('runner-music-muted:v1', 'true')
+    const runner = createBrowserRunnerHost(host)
+
+    expect(readRunnerAudioPreferences(runner)).toEqual({
+      musicMuted: true,
+      musicVolume: 0.35,
+      guideVolume: 0.65,
+    })
+    expect(JSON.parse(values.get(RUNNER_AUDIO_PREFERENCE)!)).toEqual({
+      musicMuted: true,
+      musicVolume: 0.35,
+      guideVolume: 0.65,
+    })
+  })
+  it('clamps stored volumes and prefers the saved mix over legacy mute', () => {
+    const { host, values } = gallery()
+    values.set('runner-music-muted:v1', 'true')
+    values.set(
+      RUNNER_AUDIO_PREFERENCE,
+      JSON.stringify({ musicMuted: false, musicVolume: -5, guideVolume: 8 }),
+    )
+
+    expect(readRunnerAudioPreferences(createBrowserRunnerHost(host))).toEqual({
+      musicMuted: false,
+      musicVolume: 0,
+      guideVolume: 1,
+    })
+  })
+  it.each(['null', '[]', '{broken', '42'])(
+    'falls back safely from malformed saved mix %s',
+    (stored) => {
+      const { host, values } = gallery()
+      values.set(RUNNER_AUDIO_PREFERENCE, stored)
+
+      expect(readRunnerAudioPreferences(createBrowserRunnerHost(host))).toEqual(
+        RUNNER_AUDIO_DEFAULTS,
+      )
+    },
+  )
+  it('retains the last valid level for non-finite live writes and preserves explicit zero', () => {
+    const previous = { musicMuted: true, musicVolume: 0.2, guideVolume: 0.8 }
+
+    expect(
+      clampRunnerAudioPreferences(
+        { musicVolume: Infinity, guideVolume: NaN },
+        previous,
+      ),
+    ).toEqual(previous)
+    expect(clampRunnerAudioPreferences({ musicVolume: 0 }, previous)).toEqual({
+      ...previous,
+      musicVolume: 0,
+    })
+  })
   it('keeps failed writes across adapter recreation even when stale storage is readable', () => {
     const { host, values } = gallery()
     values.set('runner-music-muted:v1', 'false')

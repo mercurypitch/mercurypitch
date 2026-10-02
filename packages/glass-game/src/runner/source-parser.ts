@@ -2,9 +2,9 @@
 // Song runner source parser — exact-key JSON decoding with authored paths.
 // ============================================================
 
-import type { RunnerLane } from './contracts'
-import type { RunnerCheckpointSource, RunnerObstacleSource, RunnerPhraseSource, RunnerPickupSource, RunnerTargetSource, SongRunnerCourseSource, } from './source'
-import { runnerSourceArray, runnerSourceBoolean, runnerSourceExactKeys, runnerSourceFail, runnerSourceFinite, runnerSourceInteger, runnerSourceLane, runnerSourcePositive, runnerSourceRecord, runnerSourceString, runnerSourceTitle, runnerSourceUniqueIds, } from './source'
+import type { RunnerLane } from './contracts.ts'
+import type { RunnerCheckpointSource, RunnerObstacleSource, RunnerPhraseSource, RunnerPickupSource, RunnerTargetSource, SongRunnerCourseSource, } from './source.ts'
+import { runnerSourceArray, runnerSourceBoolean, runnerSourceExactKeys, runnerSourceFail, runnerSourceFinite, runnerSourceInteger, runnerSourceLane, runnerSourcePositive, runnerSourceRecord, runnerSourceString, runnerSourceTitle, runnerSourceUniqueIds, } from './source.ts'
 
 const MAXIMUM_TARGETS = 64
 const MAXIMUM_OBSTACLES = 128

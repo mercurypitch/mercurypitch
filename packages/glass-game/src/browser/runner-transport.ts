@@ -2,8 +2,10 @@
 import type { SharedAudioLease } from '@irchiinnuss/audio-io'
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { CompiledRunnerCourse } from '../runner/contracts'
-import type { RunnerAudioSchedule, RunnerAudioTransport, } from '../runner/session-contracts'
-import { renderRunnerMusic, RUNNER_JUDGE_GAIN, runnerVoiceSpans, } from './runner-music'
+import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerBackingAvailability, } from '../runner/session-contracts'
+import { clampRunnerAudioPreferences, RUNNER_AUDIO_DEFAULTS, } from '../runner/session-contracts'
+import type { RunnerBackingAssets } from './runner-music'
+import { createRunnerBackingCache, loadRunnerBacking, renderRunnerCountIn, renderRunnerMusic, renderRunnerReference, RUNNER_JUDGE_GAIN, RUNNER_MUSIC_SAMPLE_RATE, runnerVoiceSpans, } from './runner-music'
 
 const FLOOR = 0.0001
 const RELEASE_SECONDS = 0.24
@@ -36,6 +38,10 @@ function level(param: AudioParam, initial: number, at: number) {
 export function createBrowserRunnerTransport(
   course: CompiledRunnerCourse,
   comfortableMidi: number,
+  options: {
+    assetUrl(id: string): string
+    backingCache?: ReturnType<typeof createRunnerBackingCache>
+  },
 ): RunnerAudioTransport {
   let lease: SharedAudioLease | null = null
   let context: AudioContext | null = null
@@ -43,14 +49,24 @@ export function createBrowserRunnerTransport(
     finished = false,
     scheduled = false,
     unlocking = false,
-    muted = false
+    voiceActive = false,
+    prepared = false
+  let preferences = RUNNER_AUDIO_DEFAULTS
+  let backing: RunnerBackingAssets = {}
+  const backingCache = options.backingCache ?? createRunnerBackingCache()
+  const abort = new AbortController()
+  let backingReady: Promise<RunnerBackingAvailability> | undefined
+  let backingTimer: ReturnType<typeof setTimeout> | undefined
   let ready: Promise<boolean> | undefined
   let releaseTimer: ReturnType<typeof setTimeout> | undefined
   let master: GainNode | undefined,
-    mute: GainNode | undefined,
+    music: GainNode | undefined,
+    examples: GainNode | undefined,
     voice: GainNode | undefined,
-    guard: GainNode | undefined
-  let setMute: ReturnType<typeof level> | undefined,
+    guard: GainNode | undefined,
+    guideGuard: GainNode | undefined
+  let setMusic: ReturnType<typeof level> | undefined,
+    setExamples: ReturnType<typeof level> | undefined,
     setVoice: ReturnType<typeof level> | undefined
   const sources = new Set<AudioBufferSourceNode>()
   const completions = new Map<AudioBufferSourceNode, () => void>()
@@ -64,6 +80,8 @@ export function createBrowserRunnerTransport(
   function finish(): void {
     if (finished) return
     finished = true
+    abort.abort()
+    clearTimeout(backingTimer)
     clearTimeout(releaseTimer)
     for (const source of sources) {
       source.onended = null
@@ -77,7 +95,9 @@ export function createBrowserRunnerTransport(
     }
     sources.clear()
     completions.clear()
-    for (const node of [master, mute, voice, guard]) node?.disconnect()
+    for (const node of [master, music, examples, voice, guard, guideGuard])
+      node?.disconnect()
+    backing = {}
     context?.removeEventListener('statechange', changed)
     lease?.release()
     lease = null
@@ -87,6 +107,8 @@ export function createBrowserRunnerTransport(
   function dispose(): void {
     if (disposed) return
     disposed = true
+    abort.abort()
+    clearTimeout(backingTimer)
     listeners.clear()
     if (!context || context.state !== 'running' || sources.size === 0) {
       finish()
@@ -150,6 +172,7 @@ export function createBrowserRunnerTransport(
   ): void {
     const node = running().createBufferSource()
     node.buffer = data
+    node.playbackRate.setValueAtTime(1, at)
     node.connect(output)
     sources.add(node)
     if (completion) completions.set(node, completion)
@@ -186,18 +209,31 @@ export function createBrowserRunnerTransport(
         return Promise.resolve(false)
       }
       master = context.createGain()
-      mute = context.createGain()
+      music = context.createGain()
+      examples = context.createGain()
       voice = context.createGain()
       guard = context.createGain()
+      guideGuard = context.createGain()
       guard
         .connect(voice)
-        .connect(mute)
+        .connect(music)
         .connect(master)
         .connect(context.destination)
+      guideGuard.connect(examples).connect(master)
       master.gain.setValueAtTime(FLOOR, context.currentTime)
-      setMute = level(mute.gain, muted ? 0 : 0.65, context.currentTime)
+      setMusic = level(
+        music.gain,
+        preferences.musicMuted ? 0 : preferences.musicVolume,
+        context.currentTime,
+      )
+      setExamples = level(
+        examples.gain,
+        preferences.guideVolume,
+        context.currentTime,
+      )
       setVoice = level(voice.gain, 1, context.currentTime)
       guard.gain.setValueAtTime(1, context.currentTime)
+      guideGuard.gain.setValueAtTime(1, context.currentTime)
       context.addEventListener('statechange', changed)
       ready = lease.unlock().then(
         (ok) => {
@@ -216,18 +252,45 @@ export function createBrowserRunnerTransport(
       )
       return ready
     },
+    prepareBacking() {
+      if (disposed) return Promise.resolve({ music: false, ambience: false })
+      if (backingReady) return backingReady
+      if (scheduled) throw new Error('Runner backing cannot load during a run.')
+      const ctx = running()
+      backingTimer = setTimeout(() => abort.abort(), 15_000)
+      backingReady = loadRunnerBacking(
+        ctx,
+        options.assetUrl,
+        abort.signal,
+        backingCache,
+      ).then((assets) => {
+        clearTimeout(backingTimer)
+        if (!disposed) {
+          backing = assets
+          prepared = true
+        }
+        return Object.freeze({
+          music: !disposed && !!assets.music,
+          ambience: !disposed && !!assets.ambience,
+        })
+      })
+      return backingReady
+    },
     currentAudioSeconds: () =>
       !disposed && context?.state === 'running' ? context.currentTime : null,
     schedule(checkpoint) {
       if (scheduled) throw new Error('Runner transport already has an epoch.')
       const ctx = running()
-      // Generate first, then anchor. Synthesis time cannot eat the count-in.
+      if (!prepared) throw new Error('Runner backing is not prepared.')
+      // Decode and render first, then anchor. Preparation cannot eat count-in.
       const score = renderRunnerMusic(
         course,
         comfortableMidi,
         checkpoint.courseSeconds,
+        backing,
       )
-      const music = buffer(score.samples, score.sampleRate)
+      const musicBuffer = buffer(score.backingSamples, score.sampleRate)
+      const guideBuffer = buffer(score.guideSamples, score.sampleRate)
       const tempo =
         course.tempoSegments.find(
           (segment) =>
@@ -235,42 +298,39 @@ export function createBrowserRunnerTransport(
             checkpoint.beat < segment.endBeat,
         ) ?? course.tempoSegments.at(-1)!
       const secondsPerBeat = 60 / tempo.bpm
+      const clicks = renderRunnerCountIn(
+        checkpoint.countInBeats,
+        secondsPerBeat,
+      )
+      const clickBuffer = clicks.length
+        ? buffer(clicks, RUNNER_MUSIC_SAMPLE_RATE)
+        : null
       const start = ctx.currentTime + 0.08
       const audioStart = start + checkpoint.countInBeats * secondsPerBeat
-      const clickRate = 24_000
-      const clicks = new Float32Array(
-        Math.ceil(checkpoint.countInBeats * secondsPerBeat * clickRate),
-      )
-      for (let beat = 0; beat < checkpoint.countInBeats; beat++) {
-        const first = Math.round(beat * secondsPerBeat * clickRate)
-        for (
-          let i = 0;
-          i < clickRate * 0.055 && first + i < clicks.length;
-          i++
-        ) {
-          const t = i / clickRate
-          clicks[first + i] =
-            Math.sin(2 * Math.PI * (beat === 0 ? 1000 : 750) * t) *
-            0.12 *
-            (t < 0.003 ? FLOOR * 10_000 ** (t / 0.003) : 1) *
-            Math.exp(-t * 110)
-        }
-      }
       open(ctx.currentTime)
-      if (clicks.length) source(buffer(clicks, clickRate), start, mute!)
-      source(music, audioStart, guard!)
+      if (clickBuffer) source(clickBuffer, start, examples!)
+      if (backing.music || backing.ambience)
+        source(musicBuffer, audioStart, guard!)
+      source(guideBuffer, audioStart, guideGuard!)
       for (const span of runnerVoiceSpans(course)) {
         if (span.end <= checkpoint.courseSeconds) continue
         const from =
           audioStart + Math.max(0, span.start - checkpoint.courseSeconds)
         const until = audioStart + span.end - checkpoint.courseSeconds
-        guard!.gain.setTargetAtTime(
-          RUNNER_JUDGE_GAIN,
-          Math.max(audioStart, from - 0.35),
-          0.035,
-        )
-        guard!.gain.setValueAtTime(RUNNER_JUDGE_GAIN, from)
-        guard!.gain.setTargetAtTime(1, until, 0.3 / 5)
+        // Guides finish 100 ms before capture; their fade must follow the
+        // final note. Backing gets a longer fade so the listening window is clear.
+        for (const [guarded, lead] of [
+          [guard!, 0.35],
+          [guideGuard!, 0.09],
+        ] as const) {
+          guarded.gain.setTargetAtTime(
+            RUNNER_JUDGE_GAIN,
+            Math.max(audioStart, from - lead),
+            0.035,
+          )
+          guarded.gain.setValueAtTime(RUNNER_JUDGE_GAIN, from)
+          guarded.gain.setTargetAtTime(1, until, 0.3 / 5)
+        }
       }
       scheduled = true
       const result: RunnerAudioSchedule = {
@@ -285,32 +345,49 @@ export function createBrowserRunnerTransport(
     hearReference(midi) {
       const ctx = running()
       if (scheduled || !Number.isFinite(midi)) return Promise.resolve()
-      const rate = 24_000,
-        duration = 0.8
-      const samples = new Float32Array(rate * duration)
-      const frequency = 440 * 2 ** ((midi - 69) / 12)
-      for (let i = 0; i < samples.length; i++) {
-        const t = i / rate
-        const gain =
-          t < 0.09
-            ? FLOOR * 10_000 ** (t / 0.09)
-            : t > 0.56
-              ? Math.exp(-(t - 0.56) / 0.036)
-              : 1
-        samples[i] = 0.18 * Math.sin(2 * Math.PI * frequency * t) * gain
-      }
-      samples[samples.length - 1] = 0
+      const samples = renderRunnerReference(midi)
       open(ctx.currentTime)
       return new Promise<void>((resolve) =>
-        source(buffer(samples, rate), ctx.currentTime + 0.03, master!, resolve),
+        source(
+          buffer(samples, RUNNER_MUSIC_SAMPLE_RATE),
+          ctx.currentTime + 0.03,
+          examples!,
+          resolve,
+        ),
       )
     },
     setMuted(value) {
-      muted = value
+      preferences = clampRunnerAudioPreferences(
+        { musicMuted: value },
+        preferences,
+      )
       if (!disposed && context)
-        setMute?.(value ? 0 : 0.65, context.currentTime, 0.12)
+        setMusic?.(
+          value ? 0 : preferences.musicVolume,
+          context.currentTime,
+          0.12,
+        )
+    },
+    setPreferences(patch) {
+      if (disposed) return
+      const previous = preferences
+      preferences = clampRunnerAudioPreferences(patch, previous)
+      if (!context) return
+      if (
+        preferences.musicMuted !== previous.musicMuted ||
+        preferences.musicVolume !== previous.musicVolume
+      )
+        setMusic?.(
+          preferences.musicMuted ? 0 : preferences.musicVolume,
+          context.currentTime,
+          0.12,
+        )
+      if (preferences.guideVolume !== previous.guideVolume)
+        setExamples?.(preferences.guideVolume, context.currentTime, 0.12)
     },
     setVoiceActive(active) {
+      if (voiceActive === active) return
+      voiceActive = active
       if (!disposed && context)
         setVoice?.(active ? 0.5 : 1, context.currentTime, active ? 0.06 : 0.3)
     },
