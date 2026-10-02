@@ -5,7 +5,8 @@
 // Shown when there is no measured voiceprint and no voice type picked in
 // Settings. The pick is the same voice type Settings keeps. Voice Mirror
 // opens in a new tab so the song on stage is not lost; a range measured
-// there is read back when this tab is shown again.
+// there is read back when this tab is shown again. The native app has no
+// Voice Mirror, so there the picker offers the voice types alone.
 //
 // The chrome (portal, overlay, focus trap, Escape) is ConfirmDialog's.
 
@@ -14,6 +15,7 @@ import { createUniqueId, For, Show } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import confirmStyles from '@/components/ConfirmDialog.module.css'
 import { createPortalSkinBridge } from '@/components/portal-skin'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import type { VocalRangePreset } from '@/stores/settings-store'
@@ -64,8 +66,9 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
             >
               <h4 id={titleId}>Which is your voice?</h4>
               <p id={bodyId}>
-                Find my key moves the song into your range. Pick the voice
-                closest to yours, or measure your range with Voice Mirror.
+                {IS_NATIVE_BUILD
+                  ? 'Find my key moves the song into your range. Pick the voice closest to yours.'
+                  : 'Find my key moves the song into your range. Pick the voice closest to yours, or measure your range with Voice Mirror.'}
               </p>
               <div class={styles.voices}>
                 <For each={VOICE_TYPES}>
@@ -88,14 +91,16 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
                 </For>
               </div>
               <div class={confirmStyles.actions}>
-                <a
-                  class={`${confirmStyles.secondary} ${styles.measure}`}
-                  href="/mirror"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Measure my range
-                </a>
+                <Show when={!IS_NATIVE_BUILD}>
+                  <a
+                    class={`${confirmStyles.secondary} ${styles.measure}`}
+                    href="/mirror"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Measure my range
+                  </a>
+                </Show>
                 <button
                   type="button"
                   class={confirmStyles.cancel}
