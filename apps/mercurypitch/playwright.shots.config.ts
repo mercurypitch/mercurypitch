@@ -43,6 +43,13 @@ export interface ShotOptions {
    * env() with these, as WebKit does on the device.
    */
   readonly safeArea: SafeArea
+  /**
+   * Screens this device does not capture, each with the reason: judged by
+   * eye from a run that captured them, broken or poor at this size.
+   * store.shots.ts skips them, and the contact sheet and manifest list them
+   * as dropped rather than missing.
+   */
+  readonly dropped: Readonly<Record<string, string>>
 }
 
 // A per-checkout port, so parallel worktrees never answer for each other.
@@ -130,6 +137,13 @@ const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36'
 const ANDROID_TABLET_UA =
   'Mozilla/5.0 (Linux; Android 15; Pixel Tablet) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36'
+
+// A tablet held sideways: the screens that do not hold up there, judged by
+// eye from the 2026-10-02 run. The portrait sets keep all eight.
+const LANDSCAPE_DROPPED: Readonly<Record<string, string>> = {
+  '03-sing-priming':
+    'A phone layout stretched sideways: the drawing sits alone in the middle and the Continue button runs the full width of the screen.',
+}
 
 export default defineConfig<ShotOptions>({
   testDir: './shots',
@@ -221,6 +235,34 @@ export default defineConfig<ShotOptions>({
         userAgent: ANDROID_TABLET_UA,
         viewport: { width: 810, height: 1440 },
         deviceScaleFactor: 2,
+      },
+    },
+    {
+      // The 7-inch tablet turned sideways: 1088 x 612 at 2x = 2176 x 1224,
+      // 16:9 with the short side over 1080. The Android app locks no
+      // orientation, so a tablet held this way is how many people meet it.
+      name: 'play-tablet-7-landscape',
+      use: {
+        ...DEVICE,
+        userAgent: ANDROID_TABLET_UA,
+        viewport: { width: 1088, height: 612 },
+        deviceScaleFactor: 2,
+        dropped: {
+          ...LANDSCAPE_DROPPED,
+          '06-ear-lab':
+            'At 612 px tall the bench runs under its action row: the practice estimate caption is cut off after "the fainter", and the change since the last calibration is half hidden behind Run Calibration.',
+        },
+      },
+    },
+    {
+      // The 10-inch tablet sideways: 1440 x 810 at 2x = 2880 x 1620, 16:9.
+      name: 'play-tablet-10-landscape',
+      use: {
+        ...DEVICE,
+        userAgent: ANDROID_TABLET_UA,
+        viewport: { width: 1440, height: 810 },
+        deviceScaleFactor: 2,
+        dropped: LANDSCAPE_DROPPED,
       },
     },
   ],

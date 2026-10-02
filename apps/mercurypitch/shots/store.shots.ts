@@ -10,7 +10,7 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect, test as base } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ShotOptions } from '../playwright.shots.config'
 import { readPngFacts } from './contact-sheet'
@@ -31,12 +31,24 @@ interface ShotFixtures {
   /** Whose phone this is: Mara's lived-in one, or a fresh install. */
   singer: Singer
   standIn: StandInLog
+  /** Skips a screen this device drops (the config's `dropped`). */
+  notDropped: void
 }
 
 const test = base.extend<ShotOptions & ShotFixtures>({
   shotDir: ['', { option: true }],
   safeArea: [{ top: 0, bottom: 0 }, { option: true }],
+  dropped: [{}, { option: true }],
   singer: ['mara', { option: true }],
+  notDropped: [
+    async ({ dropped }, use, info) => {
+      // Set up before the page: a dropped screen is never opened.
+      const reason: string | undefined = dropped[info.title]
+      info.skip(reason !== undefined, `dropped on this device: ${reason}`)
+      await use()
+    },
+    { auto: true },
+  ],
   standIn: async ({ context, singer }, use) => {
     await use(await installStandInApi(context, { signedIn: singer === 'mara' }))
   },
@@ -199,6 +211,87 @@ function insetsInForce(page: Page): Promise<{ top: number; bottom: number }> {
   })
 }
 
+/** A box in the viewport, in CSS px. */
+interface Box {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * Where a capture's words and controls sit, written beside its PNG as
+ * <name>.layout.json, so a composition built from the PNG can keep a cut or
+ * an overlap clear of them. CSS px of the viewport; `scale` turns them into
+ * the PNG's pixels.
+ */
+interface CaptureLayout {
+  readonly viewport: { readonly width: number; readonly height: number }
+  readonly scale: number
+  /** The box of the landmark the capture waited for. */
+  readonly landmark: Box | null
+  /** Each visible line of each text node. */
+  readonly words: readonly (Box & { readonly text: string })[]
+  /** Each visible button, link, field, tab, slider or switch. */
+  readonly controls: readonly (Box & { readonly label: string })[]
+}
+
+/** The words and controls on screen, read right after a screenshot. */
+function wordsAndControls(
+  page: Page,
+): Promise<Pick<CaptureLayout, 'words' | 'controls'>> {
+  return page.evaluate(() => {
+    const shown = (element: Element, box: DOMRect): boolean => {
+      const style = window.getComputedStyle(element)
+      return (
+        style.visibility !== 'hidden' &&
+        Number(style.opacity) !== 0 &&
+        box.width > 0 &&
+        box.height > 0 &&
+        box.bottom > 0 &&
+        box.right > 0 &&
+        box.top < window.innerHeight &&
+        box.left < window.innerWidth
+      )
+    }
+    const plain = (box: DOMRect) => ({
+      x: Math.round(box.left * 100) / 100,
+      y: Math.round(box.top * 100) / 100,
+      width: Math.round(box.width * 100) / 100,
+      height: Math.round(box.height * 100) / 100,
+    })
+    const words: (ReturnType<typeof plain> & { text: string })[] = []
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+    )
+    while (walker.nextNode()) {
+      const node = walker.currentNode
+      const text = node.textContent?.trim() ?? ''
+      if (node.parentElement === null || text === '') continue
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      for (const box of range.getClientRects()) {
+        if (shown(node.parentElement, box)) words.push({ text, ...plain(box) })
+      }
+    }
+    const controls = [
+      ...document.querySelectorAll(
+        'button, a[href], input, select, textarea, [role="button"], [role="tab"], [role="slider"], [role="switch"]',
+      ),
+    ].flatMap((element) => {
+      const box = element.getBoundingClientRect()
+      if (!shown(element, box)) return []
+      const label =
+        element.getAttribute('aria-label') ??
+        element.textContent?.trim().slice(0, 60) ??
+        ''
+      return [{ label, ...plain(box) }]
+    })
+    return { words, controls }
+  })
+}
+
 /** For a screen that moves on its own, like a live trace. */
 interface Moment {
   /** Waits for the instant worth keeping; the screenshot follows at once. */
@@ -231,18 +324,21 @@ async function capture(
   await settle(page)
   await expectCleanFrame(page)
   let png: Buffer | null = null
+  let onScreen: Pick<CaptureLayout, 'words' | 'controls'> | null = null
   for (let attempt = 1; attempt <= (moment?.attempts ?? 1); attempt += 1) {
     await moment?.wait()
     const shot = await page.screenshot({
       animations: 'disabled',
       caret: 'hide',
     })
+    const read = await wordsAndControls(page)
     if (moment === undefined || (await moment.held())) {
       png = shot
+      onScreen = read
       break
     }
   }
-  if (png === null) {
+  if (png === null || onScreen === null) {
     throw new Error(`${name}: the screen moved on during every screenshot`)
   }
   await expect(landmark, 'the screen held still for the capture').toBeVisible()
@@ -280,8 +376,18 @@ async function capture(
     colorType: 2,
     hasTransparency: false,
   })
+  const layout: CaptureLayout = {
+    viewport,
+    scale,
+    landmark: await landmark.boundingBox(),
+    ...onScreen,
+  }
+  writeFileSync(
+    join(folder, `${name}.layout.json`),
+    `${JSON.stringify(layout, null, 2)}\n`,
+  )
   console.log(
-    `ok  ${info.project.name}/${name}.png  ${viewport.width * scale}x${viewport.height * scale}`,
+    `ok  ${info.project.name}/${name}.png  ${viewport.width * scale}x${viewport.height * scale}, ${onScreen.words.length} lines of words, ${onScreen.controls.length} controls`,
   )
 }
 
