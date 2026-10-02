@@ -36,8 +36,13 @@ export const JamRoomKey: Component = () => {
       if (!(target instanceof Node) || root?.contains(target) !== true)
         setOpen(false)
     }
+    // One layer per Escape. A dialog that has used the press keeps the
+    // stepper open, and the press that folds the stepper is claimed, so
+    // nothing underneath acts on it as well.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      event.preventDefault()
+      setOpen(false)
     }
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)

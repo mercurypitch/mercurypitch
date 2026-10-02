@@ -59,6 +59,63 @@ describe('JamRoomKey', () => {
     expect(screen.queryByRole('button', { name: 'Raise the key' })).toBeNull()
   })
 
+  it('leaves an Escape that a dialog has already used', () => {
+    render(() => (
+      <>
+        <JamRoomKey />
+        <div
+          role="dialog"
+          ref={(dialog) =>
+            dialog.addEventListener('keydown', (event) => {
+              if (event.key === 'Escape') event.preventDefault()
+            })
+          }
+        >
+          <button type="button">Close</button>
+        </div>
+      </>
+    ))
+    const chip = screen.getByRole('button', { name: 'Room key 0' })
+    fireEvent.click(chip)
+
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Close' }), {
+      key: 'Escape',
+    })
+
+    expect(chip.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Raise the key' })).toBeVisible()
+  })
+
+  it('takes the Escape it folds on, so the layer under it stays put', () => {
+    render(() => <JamRoomKey />)
+    fireEvent.click(screen.getByRole('button', { name: 'Room key 0' }))
+    const seenBelow: boolean[] = []
+    const below = (event: KeyboardEvent) => {
+      seenBelow.push(event.defaultPrevented)
+    }
+    window.addEventListener('keydown', below)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    window.removeEventListener('keydown', below)
+    expect(screen.queryByRole('button', { name: 'Raise the key' })).toBeNull()
+    expect(seenBelow).toEqual([true])
+  })
+
+  it('lets Escape through while the stepper is folded', () => {
+    render(() => <JamRoomKey />)
+    const seenBelow: boolean[] = []
+    const below = (event: KeyboardEvent) => {
+      seenBelow.push(event.defaultPrevented)
+    }
+    window.addEventListener('keydown', below)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    window.removeEventListener('keydown', below)
+    expect(seenBelow).toEqual([false])
+  })
+
   it('stays open while the stepper is in use', () => {
     render(() => <JamRoomKey />)
     fireEvent.click(screen.getByRole('button', { name: 'Room key 0' }))
