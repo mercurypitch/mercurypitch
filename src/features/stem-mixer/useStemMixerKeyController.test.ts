@@ -37,8 +37,12 @@ vi.mock('@/stores/karaoke-playlist-store', () => ({
   },
 }))
 
-const { songMelody, useStemMixerKeyController, useStemMixerKeyView } =
-  await import('./useStemMixerKeyController')
+const {
+  createFindMyKeyNotices,
+  songMelody,
+  useStemMixerKeyController,
+  useStemMixerKeyView,
+} = await import('./useStemMixerKeyController')
 const { setSongKeyShift, songKeyShift } =
   await import('@/stores/karaoke-key-store')
 
@@ -731,6 +735,102 @@ describe('find my key, as the singer sees it', () => {
     await vi.waitFor(() => expect(shown.controller.keyShift()).not.toBe(0))
     expect(notifications().map((note) => note.message)).toEqual([
       `Key ${String(shown.controller.keyShift()).replace('-', '\u2212')} fits your voice.`,
+    ])
+    shown.dispose()
+  })
+})
+
+describe('find my key, on the phone stage', () => {
+  // The phone's key sheet covers the bottom of the screen, where toasts
+  // sit on a phone: "Finding the melody" and "Key −4 fits your voice." were
+  // toasts over the sheet the singer had just used. While the sheet is
+  // open, they are a line inside it.
+  function mountRouted() {
+    return createRoot((dispose) => {
+      const notices = createFindMyKeyNotices({
+        show: showNotification,
+        remove: removeNotificationsByChannel,
+      })
+      const [melody, setMelody] = createSignal<readonly TimedNote[]>([])
+      const song = freshSong()
+      const controller = useStemMixerKeyController({
+        sessionId: () => song,
+        queueEntry: () => null,
+        playlistId: () => null,
+        melody,
+        detectMelody: () =>
+          Promise.resolve().then(() => {
+            setMelody(MELODY)
+            return FOUND
+          }),
+        notify: notices.notify,
+        dismiss: notices.dismiss,
+      })
+      const view = useStemMixerKeyView({
+        key: controller,
+        heardShift: () => 0,
+        engineAvailable: () => true,
+        editMode: () => false,
+        detectedKey: () => null,
+        notify: notices.notify,
+      })
+      return { controller, view, notices, dispose }
+    })
+  }
+  const toasts = () => notifications().map((note) => note.message)
+  const fits = (shift: number) =>
+    `Key ${String(shift).replace('-', '\u2212')} fits your voice.`
+
+  it('says the wait and the fit in the sheet while it is open, with no toast', async () => {
+    const shown = mountRouted()
+    shown.notices.hold(true)
+
+    shown.view.pickVoiceType('bass')
+    const waiting = [shown.notices.notice()?.message, toasts()]
+    await vi.waitFor(() => expect(shown.controller.keyShift()).not.toBe(0))
+
+    expect([waiting, [shown.notices.notice(), toasts()]]).toEqual([
+      ['Finding the melody first. This takes a moment.', []],
+      [{ message: fits(shown.controller.keyShift()), tone: 'success' }, []],
+    ])
+    shown.dispose()
+  })
+
+  it('goes back to toasts once the sheet shuts, and forgets the line', async () => {
+    const shown = mountRouted()
+    shown.notices.hold(true)
+    shown.view.pickVoiceType('bass')
+    await vi.waitFor(() => expect(shown.controller.keyShift()).not.toBe(0))
+
+    shown.notices.hold(false)
+    const shut = shown.notices.notice()
+    shown.view.binding.onFindKey()
+
+    expect([shut, toasts()]).toEqual([
+      null,
+      [
+        `Key ${String(shown.controller.keyShift()).replace('-', '\u2212')} already fits your voice.`,
+      ],
+    ])
+    shown.dispose()
+  })
+
+  it('takes a toast already up off the sheet as it opens', () => {
+    const shown = mountRouted()
+    shown.notices.notify(
+      'Finding the melody first. This takes a moment.',
+      'info',
+      {
+        channel: 'stem-mixer-find-my-key',
+      },
+    )
+    const before = toasts()
+
+    shown.notices.hold(true)
+
+    expect([before, toasts()]).toEqual([
+      ['Finding the melody first. This takes a moment.'],
+      [],
     ])
     shown.dispose()
   })

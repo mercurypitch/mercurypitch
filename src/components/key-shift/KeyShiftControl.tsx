@@ -23,6 +23,12 @@ import styles from './KeyShiftControl.module.css'
 export const KEY_SHIFT_STRETCH_NOTE =
   'Beyond ±4 semitones the backing can sound processed'
 
+/** A "find my key" notice, said inside a sheet instead of as a toast. */
+export interface KeyShiftNotice {
+  message: string
+  tone: 'info' | 'success' | 'warning' | 'error'
+}
+
 /** What a host hands its key controls: the transport, the phone stage. */
 export interface KeyShiftBinding {
   value: Accessor<number>
@@ -36,6 +42,13 @@ export interface KeyShiftBinding {
   suggestion: Accessor<KeySuggestion | null>
   onFindKey: () => void
   disabledReason: Accessor<string | undefined>
+  /**
+   * "Find my key"'s last word while a sheet holds its notices (below), for
+   * the sheet to show; null when there is none.
+   */
+  notice?: Accessor<KeyShiftNotice | null>
+  /** A sheet opens (true) or shuts (false): its notices go in it meanwhile. */
+  holdNotices?: (held: boolean) => void
 }
 
 interface KeyShiftControlProps {

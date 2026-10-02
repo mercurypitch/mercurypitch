@@ -432,6 +432,17 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const [sheetOpen, setSheetOpen] = createSignal(false)
   const [keySheetOpen, setKeySheetOpen] = createSignal(false)
   const [moreOpen, setMoreOpen] = createSignal(false)
+  // Open, the key sheet holds "find my key"'s notices and says them itself:
+  // a phone's toasts sit where the sheet is. Let go as it shuts, and as the
+  // stage goes with it open (a phone turned to the desktop mixer).
+  createEffect(
+    on(keySheetOpen, (open, wasOpen) => {
+      if (open || wasOpen === true) props.keyControl?.holdNotices?.(open)
+    }),
+  )
+  onCleanup(() => {
+    if (keySheetOpen()) props.keyControl?.holdNotices?.(false)
+  })
 
   // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
   const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
@@ -1288,6 +1299,13 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                 disabledReason={key().disabledReason()}
                 size="touch"
               />
+              <p
+                class={styles.keySheetStatus}
+                role="status"
+                data-tone={key().notice?.()?.tone}
+              >
+                {key().notice?.()?.message ?? ''}
+              </p>
               <p class={styles.keySheetNote}>
                 {key().disabledReason() ??
                   'Moves the song up or down to suit your voice. The speed stays the same.'}
