@@ -75,8 +75,10 @@ export function installNativeShell(
   // visibility event is the WebView answering a question about the document;
   // this is the OS answering one about the app, and they disagree exactly
   // where it matters — a call arriving, the app switcher, the screen locking.
-  // Owner decision: no background audio in V1, so leaving the foreground
-  // stops the sound rather than ducking it.
+  // Leaving the foreground stops the sound rather than ducking it, with one
+  // exception: a Karaoke song the singer chose to keep hearing (Settings,
+  // Karaoke, "Keep playing in the background") holds the clock, and this
+  // suspension waits until the hold lets go (packages/audio-io).
   //
   // COMING BACK IS NOT WIRED HERE, and it is not always the next tap either.
   // `packages/audio-io` follows the page as well: a WebView the OS takes away

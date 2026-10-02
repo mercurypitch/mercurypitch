@@ -53,4 +53,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <!-- A Karaoke song that keeps playing behind another app. The
+         media-session plugin (@capgo/capacitor-media-session) runs a
+         foreground service of type mediaPlayback while a song plays or is
+         paused, with its notification; without one, Android freezes a
+         backgrounded app within seconds and the song stops. The plugin's own
+         manifest declares FOREGROUND_SERVICE and the service, but not the
+         per-type permission that targetSdk 34+ requires before
+         startForeground() with that type is allowed. Play Console asks for a
+         foreground service declaration for it (media playback). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 </manifest>

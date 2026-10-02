@@ -159,6 +159,88 @@ export async function setStatusBar(style: StatusBarStyle): Promise<void> {
   })
 }
 
+// ------------------------------------------------------------
+// What is playing, and the system's media buttons
+// ------------------------------------------------------------
+//
+// A song that keeps playing behind another app needs the system to know about
+// it. On Android that is not optional: a backgrounded app with no foreground
+// service is frozen within seconds, WebView and song with it, and the media
+// session plugin is what runs one (type mediaPlayback) while a song is playing
+// or paused, with its notification and its play and pause buttons. On iOS the
+// audio background mode keeps the app going by itself; the plugin only feeds
+// the lock screen's Now Playing, which iOS shows for a session that does not
+// mix with others (AudioSessionKit's mixes, so expect little there).
+
+/** A song the system's media controls can name. */
+export interface NowPlaying {
+  readonly title: string
+  readonly artist?: string
+  readonly playing: boolean
+}
+
+/** A system media button: the notification, the lock screen, a headset. */
+export type MediaAction = 'play' | 'pause' | 'stop'
+
+const MEDIA_ACTIONS: readonly MediaAction[] = ['play', 'pause', 'stop']
+
+/**
+ * Tell the system what is playing, or null when nothing is.
+ *
+ * Null is the plugin's 'none', which on Android stops the foreground service
+ * and takes its notification away. The metadata goes first, so the service's
+ * first notification already names the song.
+ */
+export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
+  await attempt(async () => {
+    const { MediaSession } = await import('@capgo/capacitor-media-session')
+    if (song === null) {
+      await MediaSession.setPlaybackState({ playbackState: 'none' })
+      return
+    }
+    await MediaSession.setMetadata({
+      title: song.title,
+      ...(song.artist === undefined ? {} : { artist: song.artist }),
+    })
+    await MediaSession.setPlaybackState({
+      playbackState: song.playing ? 'playing' : 'paused',
+    })
+  })
+}
+
+/**
+ * The system's media buttons, all through one handler. The unsubscribe clears
+ * the plugin's handlers again, so a room that is gone is never asked to play.
+ */
+export function onMediaAction(
+  handler: (action: MediaAction) => void,
+): Unsubscribe {
+  if (!isNative()) return () => undefined
+
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        const { MediaSession } = await import('@capgo/capacitor-media-session')
+        for (const action of MEDIA_ACTIONS) {
+          await MediaSession.setActionHandler({ action }, () => {
+            handler(action)
+          })
+        }
+        dispose({
+          remove: async () => {
+            for (const action of MEDIA_ACTIONS) {
+              await MediaSession.setActionHandler({ action }, null)
+            }
+          },
+        })
+      } catch {
+        // No media-session plugin in this build: the system's buttons do
+        // nothing, as they always did.
+      }
+    })()
+  })
+}
+
 /**
  * Dismiss the software keyboard, on a phone only.
  *

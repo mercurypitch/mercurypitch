@@ -343,6 +343,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^8.0.3
         version: 8.0.3(@capacitor/core@8.5.0)
+      '@capgo/capacitor-media-session':
+        specifier: 8.0.32
+        version: 8.0.32(@capacitor/core@8.5.0)
       '@capgo/capacitor-social-login':
         specifier: 8.5.7
         version: 8.5.7(@capacitor/core@8.5.0)
@@ -508,6 +511,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^8.0.3
         version: 8.0.3(@capacitor/core@8.5.0)
+      '@capgo/capacitor-media-session':
+        specifier: 8.0.32
+        version: 8.0.32(@capacitor/core@8.5.0)
       '@revenuecat/purchases-capacitor':
         specifier: ^13.4.0
         version: 13.4.0(@capacitor/core@8.5.0)
@@ -1183,6 +1189,11 @@ packages:
 
   '@capacitor/status-bar@8.0.3':
     resolution: {integrity: sha512-csSpfNeN49Hx9JaQBSJEIiEbOLtXg3kcc2IpScq2fu5L520h3AWEvsxoH8Srk1jxfRKepaJ4S4sqSC3foI4AgA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capgo/capacitor-media-session@8.0.32':
+    resolution: {integrity: sha512-HOuCieJAlsFYtfBCTkFp7Vey4JmVZvabrakOBhPDhYkpOYyPml8NFdYc9cVatXm0X2KaN/PJ9WdmWQp+JH54xQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -7562,6 +7573,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.0
 
+  '@capgo/capacitor-media-session@8.0.32(@capacitor/core@8.5.0)':
+    dependencies:
+      '@capacitor/core': 8.5.0
+
   '@capgo/capacitor-social-login@8.5.7(@capacitor/core@8.5.0)':
     dependencies:
       '@capacitor/core': 8.5.0
@@ -12822,11 +12837,11 @@ snapshots:
   vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.12
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
       postcss: 8.5.15
       rollup: 4.60.4
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 22.19.19
       fsevents: 2.3.3
