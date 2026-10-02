@@ -26,7 +26,7 @@
 import { createSignal, untrack } from 'solid-js'
 import type { GuideLevel } from '@/components/stem-mixer-hosting'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
-import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
+import { ZEN_LYRICS_SIZE_LABELS, ZEN_LYRICS_SIZES, } from '@/features/stem-mixer/zen-navigation'
 import { createPersistedSignal } from '@/lib/storage'
 
 /** The session id of the last song the singer played in the room. */
@@ -46,12 +46,10 @@ export type KaraokePinned = KaraokePinnable | 'none'
 const isPinned = (value: unknown): value is KaraokePinned =>
   value === 'none' || (KARAOKE_PINNABLE as readonly unknown[]).includes(value)
 
-/** What the Options sheet and the header call each lyrics size. */
-export const KARAOKE_LYRICS_SIZE_LABELS: Record<ZenLyricsSize, string> = {
-  smaller: 'Small',
-  current: 'Medium',
-  bigger: 'Large',
-}
+/** What the Options sheet and the header call each lyrics size: the names
+    the web's phone stage uses too. */
+export const KARAOKE_LYRICS_SIZE_LABELS: Record<ZenLyricsSize, string> =
+  ZEN_LYRICS_SIZE_LABELS
 
 const isLyricsSize = (value: unknown): value is ZenLyricsSize =>
   (ZEN_LYRICS_SIZES as readonly unknown[]).includes(value)
