@@ -796,20 +796,22 @@ test('maps a zoomed waveform context menu without seeking @smoke', async ({
   const before = await progressWidth()
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
-  const menu = page.locator('.sm-loop-menu')
+  const menu = page.getByTestId('loop-point-menu')
   await expect(menu).toBeVisible()
   await expect(menu).toContainText('Loop point at 0:00')
   await expect.poll(progressWidth).toBeCloseTo(before, 1)
 
-  await menu.getByRole('button', { name: 'Set loop start here' }).click()
+  await menu.getByRole('menuitem', { name: 'Set loop start here' }).click()
+  await expect(menu).toBeHidden()
   await expect(
     page.getByRole('button', { name: 'Set loop start (A)' }),
   ).toHaveClass(/sm-loop-btn--a-set/)
 
   await page.mouse.click(targetX, targetY, { button: 'right' })
-  await expect(
-    page.locator('.sm-loop-menu').getByRole('button', { name: 'Clear loop' }),
-  ).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: 'Clear loop' })).toBeVisible()
+  // The one closing rule: Escape takes the menu and nothing under it.
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
 })
 
 test('launches a full-band guitar role without doubling the backing @smoke', async ({
