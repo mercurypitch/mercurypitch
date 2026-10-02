@@ -95,6 +95,13 @@ PNG is flattened to 8-bit RGB with no alpha, which is the only change made to
 it: no resizing, no overlay, no removed UI. Its size is checked against the
 device's.
 
+Beside each PNG, `<screen>.layout.json` records where its words and controls
+sit at the moment of the screenshot: every visible line of text and every
+visible button, link, field, tab, slider or switch, as boxes in CSS px with
+the device scale, and the box of the landmark the capture waited for. A
+composition built from the PNG uses it to keep a cut or an overlap clear of
+them, such as the seam where two store panels meet.
+
 These are Chromium captures of the native bundle on touch viewports, not
 captures from a simulator or a phone. The iPhone and iPad keep the device's
 safe-area insets (the table below): `env(safe-area-inset-*)` answers with them
