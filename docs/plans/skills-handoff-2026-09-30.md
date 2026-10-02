@@ -9,6 +9,11 @@ machine: installing the prerequisites and the HyperFrames plugin, proving it
 works there, and reporting back. Section 0 is the whole job in order; the rest
 explains it.
 
+**Status on 2026-10-02:** on the owner's machine the branch is checked out and
+the smoke test passes (§ 5.4, 63 s). The HyperFrames plugin is not installed
+yet (§ 5.3), so steps 3, 5 and 7 of § 0 remain. A critic dry run in the cloud
+went two rounds (§ 10); its feedback on the measuring tools is fixed.
+
 ---
 
 ## 0. Checklist for the local agent
@@ -223,7 +228,8 @@ bash .claude/skills/motion-designer/scripts/smoke-test.sh "$(mktemp -d)"
 ```
 
 Expected, as it ran in the cloud session (83 s from a clean directory once npm
-and Chrome were cached):
+and Chrome were cached; 63 s on the owner's Arch Linux machine, where the render
+path reads `hardware gpu`):
 
 ```text
 1/7 scaffolding .../motion-smoke
@@ -341,7 +347,8 @@ Report these to the owner:
    paths (`round: film`, the artifact, the music-only render, a short brief,
    `skill_dir`, a report path) and save the report it returns. Expect ONE MORE
    PASS with specific, timestamped findings; the smoke film is a toolchain test,
-   so a SHIP would mean the critic is too lenient.
+   so a SHIP would mean the critic is too lenient. The cloud run of this step is
+   in § 10.
 
 5. A design-only run of the other skill on a real problem:
 
@@ -428,6 +435,31 @@ Python 3 with numpy 2.4 and scipy 1.17.
 - `measure.py` sampled the rendered background as exactly `#0d1117`.
   `reference_pass.py` found synthetic hard cuts at exactly 2.000 s and 4.000 s.
   `smoke-test.sh` passed from a clean directory.
+
+Critic dry run, on the smoke film, with the registered `motion-critic` agent
+given paths only:
+
+- Round 2 (film): ONE MORE PASS with nine ranked findings, among them a
+  call-to-action domain too small to read on a phone, the title flying across
+  the logo mark (which `check` cannot see, § 3.3), dots drawn off the line, and
+  the whoosh sitting on top of a bed with nothing above 500 Hz. The composition
+  and the bed were changed.
+- Round 3 (verification, a new critic): 3 FIXED (the mix, the title over the
+  mark, the dots), 4 PARTLY, 2 STILL PRESENT, ONE MORE PASS. New findings: no
+  mark at the end, a transition that reverses, dead space, a loop seam that
+  jumps, a near-hold, the whoosh 1-1.5 dB too forward. As expected for a
+  toolchain test.
+- Round 3 also reported three faults in the measuring tools, all fixed since:
+  sheet labels a frame or more off the frames they showed, a single-frame event
+  test that flagged two of six equal snaps, and an audio check with no 50 ms
+  in-band measure. `references/measurement.md` gives the before and after
+  numbers. The critic's instructions now ask for frame-exact sheets across the
+  whole transition and a "Shots as read" section.
+
+On the owner's machine (2026-10-02; Arch Linux, Node 25.8.2, FFmpeg n9.0.2, AMD
+GPU): the smoke test passed in 63 s under `gpu-guard` (GPU at most 30 per cent
+busy, 42 °C), with the `hardware gpu` capture path, and the two renders were
+again identical in all 300 frames.
 
 Not verified here: macOS and Windows; the Claude Code plugin installation
 itself (no interactive Claude Code in the cloud session); a full-length film

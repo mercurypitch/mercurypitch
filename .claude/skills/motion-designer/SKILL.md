@@ -237,12 +237,14 @@ The video is not done until all of these pass, measured
 
 - No more than about 1 s of frozen screen per 30 s, and no still stretch longer
   than about half a second except the final call to action.
-- Frame one is a finished composition.
+- Frame one is a finished composition. A film that will play on a loop rejoins
+  at the seam like an ordinary frame.
 - All text meets at least 4.5:1 contrast, and nothing collides with or flies
   through other text (`check` audits both; a critic confirms on the dense sheets).
 - Brand colours in 3D renders match the brand values.
 - Loudness is steady and comfortable for web, true peak at most -1 dBFS, no
-  clipping, and effects are never louder than the music.
+  clipping. Each effect sits a few dB over the music in its own band, with at
+  most about 4 dB of 2-8 kHz lift (`scripts/measure.py audio`).
 - A first-time viewer understands it with the sound off.
 - A critic would put it next to the references without it looking weaker. A
   video with no bugs is not the same as a good video.

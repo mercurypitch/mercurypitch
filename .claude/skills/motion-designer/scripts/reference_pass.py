@@ -54,6 +54,16 @@ def per_frame(film, chain, key):
     return list(zip(times, values))
 
 
+def spaced(step):
+    """Pick the first frame, then each frame at least step after the last one picked.
+
+    Picking keeps every tile a real frame stamped with its own time, also on a
+    variable frame rate download. Resampling with the fps filter stamps output
+    times instead, up to half a step away from the frame shown.
+    """
+    return f"select='isnan(prev_selected_t)+gte(t-prev_selected_t\\,{step - 0.0005:.6f})'"
+
+
 def sheet(film, out, vf_core, tile, start=None, length=None):
     base = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y']
     if start is not None:
@@ -131,7 +141,7 @@ def main():
     tiles = 48 if duration > 24 else max(12, int(duration * 2))
     cols = 8 if tiles >= 32 else 6
     sheet(args.film, os.path.join(args.out, 'overview.jpg'),
-          f'fps={tiles / duration:.6f},scale=320:-2', f'{cols}x{-(-tiles // cols)}')
+          f'{spaced(duration / tiles)},scale=320:-2', f'{cols}x{-(-(tiles + 1) // cols)}')
 
     events = [('cut', r) for r in cuts] + [('fast', r) for r in fast]
     events.sort(key=lambda item: item[1]['t'])
@@ -139,7 +149,7 @@ def main():
     for kind, r in events:
         start = max(0.0, r['t'] - 0.5)
         name = os.path.join(args.out, f"dense-{r['t']:07.3f}s-{kind}.jpg")
-        sheet(args.film, name, f'fps={args.dense_fps},scale=320:-2',
+        sheet(args.film, name, f'{spaced(1 / args.dense_fps)},scale=320:-2',
               f'5x{-(-frames_per_sheet // 5)}', start=start, length=1.0)
 
     avg_shot = duration / (len(cuts) + 1)

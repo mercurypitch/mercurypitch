@@ -43,18 +43,22 @@ For a render:
 
    Read `<report_dir>/measure/summary.md`.
 
-2. Look at `frame-0.png` and every contact sheet (one frame every 0.2 s).
+2. Look at `frame-0.png`, `frame-last.png` and every contact sheet (one frame
+   every 0.2 s). Each tile is a real frame stamped with its own time.
 3. Find every transition on the sheets, and every single-frame event in
-   `summary.md`. Make a 20 fps sheet across one second and a frame-exact sheet
-   across half a second around each, then look at every one (use the film's
-   own frame rate for `<fps>`):
+   `summary.md`. Make a 20 fps sheet across one second around each, and a
+   frame-exact sheet that covers the whole transition, from the last settled
+   frame before it to the first settled frame after it (`<window>` in seconds,
+   `<fps>` the film's own frame rate). Look at every one:
 
    ```bash
    python3 <skill_dir>/scripts/measure.py dense <artifact> --out <report_dir>/measure --at <t1>,<t2>
-   python3 <skill_dir>/scripts/measure.py dense <artifact> --out <report_dir>/measure --at <t1>,<t2> --window 0.5 --fps <fps>
+   python3 <skill_dir>/scripts/measure.py dense <artifact> --out <report_dir>/measure --at <t1> --window <window> --fps <fps>
    ```
 
-   With `music_only`, compare the effects with the music:
+   With `music_only`, compare the effects with the music. `audio.md` gives each
+   effect's own band, its 50 ms in-band peak and 150 ms body over the music, its
+   2-8 kHz lift and its sample-peak lift:
 
    ```bash
    python3 <skill_dir>/scripts/measure.py audio <artifact> --music-only <music_only> --out <report_dir>/measure
@@ -94,11 +98,15 @@ of techniques.
 - Shots that read as a technique's wrong cousin: a push with no parallax (a
   zoom), a rack focus where both planes stay sharp, a whip pan with readable
   detail or mixed blur, a "match cut" whose shapes do not share a position, a
-  speed ramp that never returns to real time. List what each shot reads as
-  (size, angle, move, transition) in the vocabulary of `shot-grammar.md`; the
-  builder compares your reading with the storyboard.
+  speed ramp that never returns to real time.
 - Monotony: neighbouring shots with the same size and angle, or one move
   repeated until it stops meaning anything.
+- The default look of a generated video: a centred title on a gradient,
+  everything fading in, labels in the corners or a frame border, glow on
+  interface chrome, stock particle bursts, type that blurs while the camera
+  scales it.
+- A loop seam that jumps (`summary.md` § Loop seam), when the brief's
+  destination plays the film on a loop.
 - 3D that looks like a toy: gaps, floating parts, flat black glass, visible
   texture tiling, top-down slab angles, a camera that ends tight on a flat
   surface; brand colours shifted by tone mapping.
@@ -113,14 +121,17 @@ of techniques.
 Return the report as your final message; the caller saves it to the `report`
 path (some harnesses do not let a subagent write report files). If writing it
 yourself is allowed, write it there too. Keep it under 900 words for a film, 450
-for a component or storyboard, 500 for a verification round.
+for a component or storyboard, 600 for a verification round.
 
 1. Verdict first: SHIP or ONE MORE PASS (component rounds: KEEP, REVISE or
    REJECT).
 2. For verification rounds: every item of the previous report marked FIXED,
    PARTLY or STILL PRESENT, with timestamps.
-3. Problems ranked by impact, each with a timestamp or time range, the screen
+3. Shots as read: each shot's time range and what it reads as (size, angle,
+   move, transition) in the vocabulary of `shot-grammar.md`. The builder
+   compares your reading with the storyboard; a difference is a finding.
+4. Problems ranked by impact, each with a timestamp or time range, the screen
    region, what is wrong, and one concrete fix a builder can implement.
-4. The measured numbers you relied on.
-5. What you could not judge from pixels and numbers alone (for example, how the
+5. The measured numbers you relied on.
+6. What you could not judge from pixels and numbers alone (for example, how the
    mix sounds on phone speakers), so a human knows what is left.
