@@ -2,18 +2,32 @@
 // HeaderAccount component tests
 // ============================================================
 
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
+
+interface Offer {
+  code: string
+  credits: number
+  expiresAt: string | null
+}
+
+const LAUNCH: Offer = {
+  code: 'LAUNCH',
+  credits: 5,
+  expiresAt: '2027-01-01T23:59:59.000Z',
+}
 
 const mocks = vi.hoisted(() => ({
   restoreAuth: vi.fn(async () => true),
   fetchMe: vi.fn(),
   logout: vi.fn(),
   openAuthModal: vi.fn(),
-  isLaunchPromoOpen: vi.fn(() => true),
+  loadFeaturedPromo: vi.fn(async () => {}),
+  // Replaced by the promo-store mock below with a real signal's setter.
+  setOffer: (_offer: Offer | null): void => {},
 }))
 vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   // Real, because which providers count as an account is under test here.
@@ -23,14 +37,13 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   fetchMe: mocks.fetchMe,
   logout: mocks.logout,
 }))
-vi.mock('@/components/billing/launch-promo', () => ({
-  LAUNCH_PROMO: {
-    code: 'PRODUCT_HUNT',
-    credits: 5,
-    endsAt: '2026-09-30T23:59:59.000Z',
-  },
-  isLaunchPromoOpen: mocks.isLaunchPromoOpen,
-}))
+vi.mock('@/stores/promo-store', async () => {
+  // A real signal, so a test can change the offer after the first render.
+  const { createSignal } = await import('solid-js')
+  const [offer, setOffer] = createSignal<Offer | null>(null)
+  mocks.setOffer = (next) => setOffer(() => next)
+  return { offeredPromo: offer, loadFeaturedPromo: mocks.loadFeaturedPromo }
+})
 // Mocked so the component doesn't pull the full ui-store import chain
 // (which reads more of @/lib/defaults than the stub above provides).
 vi.mock('@/stores/ui-store', () => ({ openAuthModal: mocks.openAuthModal }))
@@ -39,7 +52,7 @@ import { HeaderAccount } from '../account/HeaderAccount'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.isLaunchPromoOpen.mockReturnValue(true)
+  mocks.setOffer(LAUNCH)
 })
 
 describe('HeaderAccount', () => {
@@ -143,7 +156,7 @@ describe('HeaderAccount', () => {
     expect(mocks.openAuthModal).toHaveBeenCalledWith('login')
   })
 
-  it('offers the launch promo pill while the campaign is open', async () => {
+  it('offers the promo pill while a code is on offer', async () => {
     mocks.fetchMe.mockResolvedValue({
       user: { authProvider: 'anonymous', email: null },
       profile: null,
@@ -155,17 +168,67 @@ describe('HeaderAccount', () => {
       'href',
       '#/settings/credits',
     )
+    expect(mocks.loadFeaturedPromo).toHaveBeenCalled()
   })
 
-  it('drops the promo pill once the campaign has closed', async () => {
-    mocks.isLaunchPromoOpen.mockReturnValue(false)
+  it('wraps the offer as a gift: the icon leads, the label stays Promo', async () => {
     mocks.fetchMe.mockResolvedValue({
       user: { authProvider: 'anonymous', email: null },
       profile: null,
     })
     render(() => <HeaderAccount />)
 
+    const pill = await screen.findByTestId('header-promo-pill')
+    const icon = pill.firstElementChild
+    expect(icon?.tagName.toLowerCase()).toBe('svg')
+    expect(icon).toHaveAttribute('data-icon', 'gift')
+    // Decoration only: a screen reader still hears the pill say Promo.
+    expect(icon).toHaveAttribute('aria-hidden', 'true')
+    expect(pill).toHaveTextContent(/^Promo$/)
+  })
+
+  it('names the credits the offer gives, not a fixed number', async () => {
+    mocks.setOffer({ code: 'WINTER', credits: 8, expiresAt: null })
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'anonymous', email: null },
+      profile: null,
+    })
+    render(() => <HeaderAccount />)
+
+    const pill = await screen.findByTestId('header-promo-pill')
+    expect(pill.getAttribute('title')).toMatch(/\b8 free\b/)
+  })
+
+  it('drops the promo pill when the offer goes away', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'anonymous', email: null },
+      profile: null,
+    })
+    render(() => <HeaderAccount />)
+    expect(await screen.findByTestId('header-promo-pill')).toHaveAttribute(
+      'href',
+      '#/settings/credits',
+    )
+
+    mocks.setOffer(null)
+    await waitFor(() => {
+      expect(screen.queryByTestId('header-promo-pill')).toBeNull()
+    })
+    expect(screen.getByTestId('header-signin')).toHaveTextContent('Sign in')
+  })
+
+  it('shows the pill when the offer arrives after the header has rendered', async () => {
+    mocks.setOffer(null)
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'anonymous', email: null },
+      profile: null,
+    })
+    render(() => <HeaderAccount />)
     expect(await screen.findByTestId('header-signin')).toBeInTheDocument()
-    expect(screen.queryByTestId('header-promo-pill')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('header-promo-pill')).toBeNull()
+
+    mocks.setOffer(LAUNCH)
+    const pill = await screen.findByTestId('header-promo-pill')
+    expect(pill.getAttribute('title')).toMatch(/\b5 free\b/)
   })
 })

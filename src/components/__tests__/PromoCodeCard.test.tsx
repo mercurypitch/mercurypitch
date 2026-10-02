@@ -5,6 +5,27 @@
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+interface Offer {
+  code: string
+  credits: number
+  expiresAt: string | null
+}
+
+const LAUNCH: Offer = {
+  code: 'LAUNCH',
+  credits: 5,
+  expiresAt: '2027-01-01T23:59:59.000Z',
+}
+
+const VERIFIED = {
+  user: {
+    id: 'user-1',
+    authProvider: 'password',
+    email: 'test@example.com',
+    emailVerified: true,
+  },
+}
+
 const mocks = vi.hoisted(() => ({
   fetchMe: vi.fn(),
   resendVerificationEmail: vi.fn(),
@@ -12,7 +33,9 @@ const mocks = vi.hoisted(() => ({
   redeemPromoCode: vi.fn(),
   showNotification: vi.fn(),
   openAuthModal: vi.fn(),
-  isLaunchPromoOpen: vi.fn(() => true),
+  loadFeaturedPromo: vi.fn(async () => {}),
+  // Replaced by the promo-store mock below with a real signal's setter.
+  setOffer: (_offer: Offer | null): void => {},
 }))
 
 vi.mock('@/db/services/auth-service', () => ({
@@ -37,21 +60,20 @@ vi.mock('@/stores/theme-store', () => ({
   theme: () => 'dark',
 }))
 
-vi.mock('@/components/billing/launch-promo', () => ({
-  LAUNCH_PROMO: {
-    code: 'PRODUCT_HUNT',
-    credits: 5,
-    endsAt: '2026-09-30T23:59:59.000Z',
-  },
-  isLaunchPromoOpen: mocks.isLaunchPromoOpen,
-}))
+vi.mock('@/stores/promo-store', async () => {
+  // A real signal, so a test can change the offer after the first render.
+  const { createSignal } = await import('solid-js')
+  const [offer, setOffer] = createSignal<Offer | null>(null)
+  mocks.setOffer = (next) => setOffer(() => next)
+  return { offeredPromo: offer, loadFeaturedPromo: mocks.loadFeaturedPromo }
+})
 
 import { PromoCodeCard } from '../billing/PromoCodeCard'
 
 describe('PromoCodeCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.isLaunchPromoOpen.mockReturnValue(true)
+    mocks.setOffer(LAUNCH)
   })
 
   it('renders account required banner when signed out', async () => {
@@ -98,15 +120,8 @@ describe('PromoCodeCard', () => {
     expect(mocks.resendVerificationEmail).toHaveBeenCalled()
   })
 
-  it('renders one-click claim button for verified user when PRODUCT_HUNT is unredeemed', async () => {
-    mocks.fetchMe.mockResolvedValue({
-      user: {
-        id: 'user-1',
-        authProvider: 'password',
-        email: 'test@example.com',
-        emailVerified: true,
-      },
-    })
+  it('claims the code on offer in one click for a verified account', async () => {
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
     mocks.fetchBillingMe.mockResolvedValue({
       creditBalance: 0,
       entitlements: [],
@@ -115,35 +130,46 @@ describe('PromoCodeCard', () => {
     })
     mocks.redeemPromoCode.mockResolvedValue({
       success: true,
-      code: 'PRODUCT_HUNT',
+      code: 'LAUNCH',
       creditsGranted: 5,
       newBalance: 5,
     })
 
     render(() => <PromoCodeCard />)
 
-    const claimBtn = await screen.findByTestId('claim-ph-btn')
+    const claimBtn = await screen.findByTestId('claim-promo-btn')
     expect(claimBtn).toBeInTheDocument()
+    expect(mocks.loadFeaturedPromo).toHaveBeenCalled()
 
     fireEvent.click(claimBtn)
 
     await waitFor(() => {
-      expect(mocks.redeemPromoCode).toHaveBeenCalledWith('PRODUCT_HUNT')
+      expect(mocks.redeemPromoCode).toHaveBeenCalledWith('LAUNCH')
       expect(
-        screen.getByText(/promo code PRODUCT_HUNT redeemed/i),
+        screen.getByText(/promo code LAUNCH redeemed/i),
       ).toBeInTheDocument()
     })
   })
 
-  it('displays Claimed pill when PRODUCT_HUNT has already been redeemed', async () => {
-    mocks.fetchMe.mockResolvedValue({
-      user: {
-        id: 'user-1',
-        authProvider: 'password',
-        email: 'test@example.com',
-        emailVerified: true,
-      },
+  it('shows Claimed once the code on offer has been redeemed', async () => {
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 5,
+      entitlements: [],
+      redeemedPromos: ['LAUNCH'],
+      stripeConfigured: true,
     })
+
+    render(() => <PromoCodeCard />)
+
+    // The pill sits on the card for the code on offer, in place of its button.
+    const claimed = await screen.findByText('Claimed')
+    expect(claimed.parentElement).toHaveTextContent('5 free credits')
+    expect(screen.queryByTestId('claim-promo-btn')).toBeNull()
+  })
+
+  it('still offers the current code to someone who claimed an earlier one', async () => {
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
     mocks.fetchBillingMe.mockResolvedValue({
       creditBalance: 5,
       entitlements: [],
@@ -153,8 +179,54 @@ describe('PromoCodeCard', () => {
 
     render(() => <PromoCodeCard />)
 
-    expect(await screen.findByText('Claimed')).toBeInTheDocument()
-    expect(screen.queryByTestId('claim-ph-btn')).not.toBeInTheDocument()
+    const claimBtn = await screen.findByTestId('claim-promo-btn')
+    expect(claimBtn).toHaveTextContent(/claim 5 credits/i)
+    expect(screen.queryByText('Claimed')).toBeNull()
+    fireEvent.click(claimBtn)
+    await waitFor(() => {
+      expect(mocks.redeemPromoCode).toHaveBeenCalledWith('LAUNCH')
+    })
+  })
+
+  it('offers the credits the server names, under the code it names', async () => {
+    mocks.setOffer({ code: 'WINTER', credits: 8, expiresAt: null })
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    const claimBtn = await screen.findByTestId('claim-promo-btn')
+    expect(claimBtn).toHaveTextContent(/claim 8 credits/i)
+    expect(screen.getByText('WINTER')).toBeInTheDocument()
+    fireEvent.click(claimBtn)
+    await waitFor(() => {
+      expect(mocks.redeemPromoCode).toHaveBeenCalledWith('WINTER')
+    })
+  })
+
+  it('shows the offer when it arrives after the card has opened', async () => {
+    mocks.setOffer(null)
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+    expect(await screen.findByTestId('promo-input')).toBeInTheDocument()
+    expect(screen.queryByTestId('claim-promo-btn')).toBeNull()
+
+    mocks.setOffer(LAUNCH)
+    expect(await screen.findByTestId('claim-promo-btn')).toHaveTextContent(
+      /claim 5 credits/i,
+    )
   })
 
   it('allows manual entry of promo codes', async () => {
@@ -216,7 +288,7 @@ describe('PromoCodeCard', () => {
 
     render(() => <PromoCodeCard />)
 
-    const claimBtn = await screen.findByTestId('claim-ph-btn')
+    const claimBtn = await screen.findByTestId('claim-promo-btn')
     fireEvent.click(claimBtn)
 
     await waitFor(() => {
@@ -226,16 +298,9 @@ describe('PromoCodeCard', () => {
     })
   })
 
-  it('stops offering the launch gift once the campaign has closed', async () => {
-    mocks.isLaunchPromoOpen.mockReturnValue(false)
-    mocks.fetchMe.mockResolvedValue({
-      user: {
-        id: 'user-1',
-        authProvider: 'password',
-        email: 'test@example.com',
-        emailVerified: true,
-      },
-    })
+  it('stops offering free credits when nothing is on offer', async () => {
+    mocks.setOffer(null)
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
     mocks.fetchBillingMe.mockResolvedValue({
       creditBalance: 0,
       entitlements: [],
@@ -245,16 +310,16 @@ describe('PromoCodeCard', () => {
 
     render(() => <PromoCodeCard />)
 
-    // The manual code entry stays; the one-click gift and its copy go.
+    // The manual code entry stays; the one-click offer and its copy go.
     expect(await screen.findByTestId('promo-input')).toBeInTheDocument()
-    expect(screen.queryByTestId('claim-ph-btn')).not.toBeInTheDocument()
-    expect(screen.queryByText(/launch gift/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/free credits/i)).not.toBeInTheDocument()
-    expect(screen.getByText('Promo Codes')).toBeInTheDocument()
+    expect(screen.queryByTestId('claim-promo-btn')).toBeNull()
+    expect(screen.queryByText(/free credits/i)).toBeNull()
+    expect(screen.getByText(/^Redeem a promotional code/)).toHaveTextContent(
+      'Redeem a promotional code for cloud vocal separation credits.',
+    )
   })
 
-  it('tells a signed-out visitor about the gift only while it is open', async () => {
-    mocks.isLaunchPromoOpen.mockReturnValue(false)
+  it('tells a signed-out visitor how many credits an account would get', async () => {
     mocks.fetchMe.mockResolvedValue(null)
     mocks.fetchBillingMe.mockResolvedValue({
       creditBalance: 0,
@@ -266,8 +331,27 @@ describe('PromoCodeCard', () => {
 
     expect(await screen.findByText('Account Required')).toBeInTheDocument()
     expect(
-      screen.queryByText(/free cloud separation credits/i),
-    ).not.toBeInTheDocument()
-    expect(screen.getByText(/redeem promo codes/i)).toBeInTheDocument()
+      screen.getByText(/claim 5 free cloud separation credits/i),
+    ).toHaveTextContent(
+      'Create a free account and verify your email to claim 5 free cloud separation credits.',
+    )
+  })
+
+  it('tells a signed-out visitor about free credits only while some are on offer', async () => {
+    mocks.setOffer(null)
+    mocks.fetchMe.mockResolvedValue(null)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    expect(await screen.findByText('Account Required')).toBeInTheDocument()
+    expect(screen.queryByText(/free cloud separation credits/i)).toBeNull()
+    expect(screen.getByText(/redeem promo codes/i)).toHaveTextContent(
+      'Create a free account and verify your email to redeem promo codes.',
+    )
   })
 })

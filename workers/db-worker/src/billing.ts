@@ -13,6 +13,8 @@
 //                                 web credits (S7 D9, app-songs.ts)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
 //   POST /api/billing/promo/redeem — auth + verified email; { code } → credits
+//   GET  /api/billing/promo/featured — public; the code the app offers with
+//                                      one click, only while it is open
 //   POST /api/billing/review-access — auth, Android app; Play's review code →
 //                                     a few songs, once (review-access.ts)
 //   POST /api/billing/revenuecat — RevenueCat; secret header, idempotent: the
@@ -40,6 +42,8 @@ import { sendBillingAlert, sendPurchaseThankYou } from './email'
 import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
+import type { FeaturedPromoRow } from './promo-rules'
+import { featuredPromoView, PROMO_REFUSALS, promoRefusal } from './promo-rules'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
@@ -1291,25 +1295,10 @@ async function handlePromoRedeem(
   const now = new Date()
   const nowIso = now.toISOString()
 
-  if (promo.startsAt && new Date(promo.startsAt) > now) {
-    return respond(
-      { error: 'This promo code is not active yet.' },
-      { status: 400 },
-    )
-  }
-
-  if (promo.expiresAt && new Date(promo.expiresAt) < now) {
-    return respond({ error: 'This promo code has expired.' }, { status: 400 })
-  }
-
-  if (
-    promo.maxRedemptions !== null &&
-    promo.redemptionCount >= promo.maxRedemptions
-  ) {
-    return respond(
-      { error: 'This promo code has reached its maximum redemption limit.' },
-      { status: 400 },
-    )
+  const refusal = promoRefusal(promo, now)
+  if (refusal !== null) {
+    const { error, status } = PROMO_REFUSALS[refusal]
+    return respond({ error }, { status })
   }
 
   // One transaction for the three writes that make a redemption: the
@@ -1394,6 +1383,27 @@ async function handlePromoRedeem(
   })
 }
 
+/**
+ * The code the app offers with one click — the header pill and the claim card
+ * — or `{ promo: null }` when no featured code is open. Public, because the
+ * pill shows before anyone signs in; it says the code, its credits and its
+ * end, never the cap or how many have claimed it. Cached for a minute, so a
+ * code switched off in the table leaves the app within one.
+ */
+async function handleFeaturedPromo(
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const row = await env.DB.prepare(
+    // idx_promoCodes_featured allows one featured row; LIMIT says so here too.
+    'SELECT code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE featured = 1 LIMIT 1',
+  ).first<FeaturedPromoRow>()
+  return respond(
+    { promo: featuredPromoView(row, new Date()) },
+    { headers: { 'Cache-Control': 'public, max-age=60' } },
+  )
+}
+
 /** Route /api/billing/* requests. Returns null when the path doesn't match. */
 export async function handleBilling(
   request: Request,
@@ -1410,6 +1420,9 @@ export async function handleBilling(
   if (route === 'me' && method === 'GET') return handleMe(request, env, respond)
   if (route === 'promo/redeem' && method === 'POST') {
     return handlePromoRedeem(request, env, respond)
+  }
+  if (route === 'promo/featured' && method === 'GET') {
+    return handleFeaturedPromo(env, respond)
   }
   if (route === 'review-access' && method === 'POST') {
     return handleReviewAccess(request, env, respond)

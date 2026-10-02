@@ -38,6 +38,8 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
 
 vi.mock('@/db/services/billing-service', () => ({
   fetchBillingMe: () => Promise.resolve(null),
+  // The header asks for the promo on offer; none is, which is not under test.
+  fetchFeaturedPromo: () => Promise.resolve(null),
   supporterEntitlement: () => null,
   supporterPlanId: () => null,
 }))

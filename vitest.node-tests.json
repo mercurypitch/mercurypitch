@@ -447,6 +447,7 @@
   "workers/db-worker/src/premium-background-admin.test.ts",
   "workers/db-worker/src/premium-backgrounds.test.ts",
   "workers/db-worker/src/pricing-plans-read.test.ts",
+  "workers/db-worker/src/promo-rules.test.ts",
   "workers/db-worker/src/supporter-feature-access.test.ts",
   "workers/db-worker/src/tables.test.ts",
   "workers/db-worker/src/turnstile.test.ts",

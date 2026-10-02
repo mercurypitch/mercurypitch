@@ -1,5 +1,5 @@
 // ============================================================
-// PromoCodeCard — Promo code redemption & Product Hunt launch offer
+// PromoCodeCard — Promo code redemption & the code on offer
 // ============================================================
 //
 // Mounted inside Settings → Credits (and accessible via deep-link #/settings/credits).
@@ -7,18 +7,18 @@
 // 1. For unauthenticated / anonymous users: CTA to sign up to claim promo credits.
 // 2. For unverified accounts: alert to verify email before claiming.
 // 3. For verified accounts:
-//    - 1-click claim card while the launch campaign is open and unclaimed
-//      (see launch-promo.ts for the window).
-//    - Input box to redeem any promo code (supporting future campaigns).
+//    - 1-click claim card while the server features an open code
+//      (promo-store.ts), or "Claimed" once this account has redeemed it.
+//    - Input box to redeem any promo code.
 // 4. Product Hunt featured badge with automatic dark/light theme switching.
 
 import type { Component } from 'solid-js'
-import { createEffect, createResource, createSignal, Show } from 'solid-js'
-import { isLaunchPromoOpen, LAUNCH_PROMO, } from '@/components/billing/launch-promo'
+import { createEffect, createResource, createSignal, onMount, Show, } from 'solid-js'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
+import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { theme } from '@/stores/theme-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './PromoCodeCard.module.css'
@@ -58,14 +58,15 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
     return user()?.user.emailVerified === true
   }
 
-  const hasRedeemedPh = (): boolean => {
+  const hasRedeemed = (code: string): boolean => {
     const promos = billingMe()?.redeemedPromos
-    return Array.isArray(promos) && promos.includes(LAUNCH_PROMO.code)
+    return Array.isArray(promos) && promos.includes(code)
   }
 
-  // Evaluated at render: the card is mounted fresh each time Settings opens,
-  // so the day the campaign closes it simply stops offering the gift.
-  const launchOpen = isLaunchPromoOpen()
+  // Shared with the header pill; a no-op when the header already asked.
+  onMount(() => {
+    void loadFeaturedPromo()
+  })
 
   const phTheme = (): 'dark' | 'light' => {
     return theme() === 'light' ? 'light' : 'dark'
@@ -127,11 +128,9 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
     <div class={styles.promoContainer} data-testid="promo-code-card">
       <div class={styles.promoHeader}>
         <div class={styles.promoTitleGroup}>
-          <h4 class={styles.promoTitle}>
-            {launchOpen ? 'Launch Promo & Codes' : 'Promo Codes'}
-          </h4>
-          <Show when={launchOpen}>
-            <span class={styles.promoBadge}>Product Hunt</span>
+          <h4 class={styles.promoTitle}>Promo Codes</h4>
+          <Show when={offeredPromo()}>
+            {(promo) => <span class={styles.promoBadge}>{promo().code}</span>}
           </Show>
         </div>
 
@@ -153,9 +152,14 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
       </div>
 
       <p class={styles.promoDesc}>
-        {launchOpen
-          ? 'Redeem a promotional code or claim your Product Hunt launch bonus credits for cloud vocal separation.'
-          : 'Redeem a promotional code for cloud vocal separation credits.'}
+        <Show
+          when={offeredPromo()}
+          fallback="Redeem a promotional code for cloud vocal separation credits."
+        >
+          {(promo) =>
+            `Claim ${promo().credits} free credits for cloud vocal separation, or redeem a code you were given.`
+          }
+        </Show>
       </p>
 
       {/* 1. Signed-out state */}
@@ -163,9 +167,14 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         <div class={styles.alertBox}>
           <span class={styles.alertTitle}>Account Required</span>
           <span>
-            {launchOpen
-              ? `Create a free account and verify your email to claim ${LAUNCH_PROMO.credits} free cloud separation credits.`
-              : 'Create a free account and verify your email to redeem promo codes.'}{' '}
+            <Show
+              when={offeredPromo()}
+              fallback="Create a free account and verify your email to redeem promo codes."
+            >
+              {(promo) =>
+                `Create a free account and verify your email to claim ${promo().credits} free cloud separation credits.`
+              }
+            </Show>{' '}
             <button
               type="button"
               class={styles.alertLink}
@@ -197,34 +206,37 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         </div>
       </Show>
 
-      {/* 3. Verified email state: one-click claim while the launch is open */}
-      <Show when={launchOpen && isAuthenticated() && isEmailVerified()}>
-        <div class={styles.claimCard}>
-          <div class={styles.claimInfo}>
-            <span class={styles.claimTitle}>Product Hunt Launch Gift</span>
-            <span class={styles.claimSub}>
-              {LAUNCH_PROMO.credits} free credits: one credit per song on the
-              standard cloud models
-            </span>
-          </div>
+      {/* 3. Verified email state: one-click claim while a code is on offer */}
+      <Show when={isAuthenticated() && isEmailVerified() && offeredPromo()}>
+        {(promo) => (
+          <div class={styles.claimCard}>
+            <div class={styles.claimInfo}>
+              <span class={styles.claimTitle}>
+                {promo().credits} free credits
+              </span>
+              <span class={styles.claimSub}>
+                One credit per song on the standard cloud models
+              </span>
+            </div>
 
-          <Show
-            when={!hasRedeemedPh()}
-            fallback={<span class={styles.claimedPill}>Claimed</span>}
-          >
-            <button
-              type="button"
-              class={styles.claimBtn}
-              disabled={busy()}
-              onClick={() => {
-                void handleRedeem(LAUNCH_PROMO.code)
-              }}
-              data-testid="claim-ph-btn"
+            <Show
+              when={!hasRedeemed(promo().code)}
+              fallback={<span class={styles.claimedPill}>Claimed</span>}
             >
-              {busy() ? 'Claiming…' : `Claim ${LAUNCH_PROMO.credits} Credits`}
-            </button>
-          </Show>
-        </div>
+              <button
+                type="button"
+                class={styles.claimBtn}
+                disabled={busy()}
+                onClick={() => {
+                  void handleRedeem(promo().code)
+                }}
+                data-testid="claim-promo-btn"
+              >
+                {busy() ? 'Claiming…' : `Claim ${promo().credits} Credits`}
+              </button>
+            </Show>
+          </div>
+        )}
       </Show>
 
       {/* 4. Manual promo code input (for any code) */}

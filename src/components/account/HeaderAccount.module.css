@@ -150,6 +150,10 @@
     background 0.15s ease;
 }
 
+.promoPill svg {
+  flex: none;
+}
+
 .promoPill:hover {
   background: color-mix(in srgb, #da552f 24%, var(--bg-secondary));
   transform: translateY(-1px);

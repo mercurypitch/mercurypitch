@@ -251,9 +251,15 @@ export const TABLES: Record<string, TableDef> = {
   // advertised or not. Like every private column it cannot be filtered or
   // sorted on either, so the generic reader will not confirm a guess. `id` is
   // still listed to everyone, so it must never spell the code out.
+  //
+  // Windows, switches and caps are edited here without a deploy, and
+  // `featured` picks the code the app offers (0054_promo_launch_featured.sql).
+  // `redemptionCount` is the counter the cap is enforced against; only a
+  // redemption moves it, so no write here may reset it.
   promoCodes: {
     access: 'admin',
-    boolCols: ['active'],
+    boolCols: ['active', 'featured'],
+    serverCols: ['redemptionCount'],
     privateCols: ['code'],
   },
 }
