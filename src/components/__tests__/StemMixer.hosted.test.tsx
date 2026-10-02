@@ -269,6 +269,25 @@ describe('the mixer the Karaoke room hosts', () => {
     })
   })
 
+  it("hands the key to the room's options, and keeps it off the stage", async () => {
+    // The room's landscape column is 236-286 px wide and the key control
+    // needs about 324: in the room, the key is a row in Karaoke options.
+    const { host, controls } = hosting()
+    mountHosted(host)
+    await waitFor(() => {
+      expect(controls()).not.toBeNull()
+    })
+    const before = controls()!.key.value()
+
+    controls()!.key.onChange(2)
+
+    expect({
+      onStage: screen.queryByTestId('mobile-key-shift'),
+      before,
+      after: controls()!.key.value(),
+    }).toEqual({ onStage: null, before: 0, after: 2 })
+  })
+
   it("steps through the room's library, not the mixer's own", () => {
     const { host } = hosting()
     mountHosted(host)

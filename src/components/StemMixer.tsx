@@ -2238,6 +2238,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           untimedCount: lyricsLines().length,
           duration: audio.duration(),
         }),
+      key: phoneKeyBinding,
     })
 
     // Load cached data from IndexedDB in parallel:
@@ -2579,7 +2580,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             musicLevelRange={audio.musicLevelRange}
             micPitch={mic.micPitch}
             ribbonNotes={displayNotes}
-            keyControl={phoneKeyBinding}
+            // Hosted, the key is a row in the room's options instead.
+            keyControl={hosted ? undefined : phoneKeyBinding}
             more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal

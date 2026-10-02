@@ -243,6 +243,29 @@
   gap: 8px;
 }
 
+/* The key: its words, then the stepper and Find my key under them (the
+   control needs about 324 px, more than a row's right side), then Find my
+   key's wait and fit while the sheet is open. */
+.keyRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border, #30363d) 55%, transparent);
+}
+
+.keyStatus {
+  margin: 0;
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+}
+
+.keyStatus:empty {
+  display: none;
+}
+
 .optionValue {
   font: 500 14px/1 var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
