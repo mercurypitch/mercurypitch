@@ -275,10 +275,10 @@ function freshDatabase(
   stubApple()
 }
 
-beforeAll(async () => {
-  // The Workers types give exportKey and generateKey one union return each;
-  // the format and the algorithm decide which half, and here they are fixed.
-  signing = (await crypto.subtle.generateKey(
+// The Workers types give exportKey and generateKey one union return each; the
+// format and the algorithm decide which half, and here they are fixed.
+async function rsaKeyPair(): Promise<CryptoKeyPair> {
+  return (await crypto.subtle.generateKey(
     {
       name: 'RSASSA-PKCS1-v1_5',
       modulusLength: 2048,
@@ -288,6 +288,10 @@ beforeAll(async () => {
     true,
     ['sign', 'verify'],
   )) as CryptoKeyPair
+}
+
+beforeAll(async () => {
+  signing = await rsaKeyPair()
   publicJwk = (await crypto.subtle.exportKey(
     'jwk',
     signing.publicKey,
@@ -445,16 +449,7 @@ describe('POST /api/auth/apple', () => {
   })
 
   it('refuses a token signed by anybody else', async () => {
-    const impostor = (await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    )) as CryptoKeyPair
+    const impostor = await rsaKeyPair()
     const now = Math.floor(Date.now() / 1000)
     const forged = await signAppleToken(
       {
