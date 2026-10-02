@@ -2,6 +2,9 @@
 // Song runner contracts — immutable compiled content and pure game I/O.
 // ============================================================
 
+import type { RunnerGlassPresentation } from '../content/runner-glass-presentation.ts'
+import type { GlassShatterProfile } from '../content/shatter-sounds.ts'
+
 export type RunnerEpoch = string
 export type RunnerLane = 0 | 1 | 2
 export type RunnerQualityGrade = 1 | 2 | 3
@@ -88,6 +91,8 @@ export interface CompiledRunnerTarget {
   readonly chunkId: string
   readonly displayLane: RunnerLane
   readonly glassProfileId: string
+  readonly soundProfile?: GlassShatterProfile
+  readonly glassPresentation?: RunnerGlassPresentation
   readonly requiredForGrade: boolean
   /** Scheduled preserves exact authored note windows; charge advances notes from accepted evidence. */
   readonly completionPolicy: 'scheduled' | 'charge'
@@ -209,6 +214,8 @@ export interface CompiledRunnerCourse {
     readonly environmentProfileId: string
     readonly musicProfileId: string
     readonly notationProfileId: string
+    /** Authored close camera survives physical lane-width changes. Omission preserves legacy behavior. */
+    readonly cameraProfile?: 'responsive-close' | 'legacy-wide'
   }
   readonly preloadAssetProfileIds: readonly string[]
 }

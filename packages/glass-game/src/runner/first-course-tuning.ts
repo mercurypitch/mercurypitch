@@ -35,6 +35,9 @@ export interface SingingCurrentTuning {
   readonly track: {
     readonly metersPerBeat: number
     readonly laneCenters?: readonly [number, number, number]
+    readonly targetArt?: 'current-walls-v1'
+    readonly cameraProfile?: 'responsive-close' | 'legacy-wide'
+    readonly richScenery?: boolean
     readonly spawnRunwayBeats: number
     readonly vocalLookaheadBeats: number
     readonly vocalEmphasisBeats: number
@@ -197,7 +200,10 @@ export const SINGING_CURRENT_RESPONSIVE_TUNING = {
   ],
   track: {
     metersPerBeat: 1.5,
-    laneCenters: [-1.25, 0, 1.25],
+    laneCenters: [-2, 0, 2],
+    cameraProfile: 'responsive-close',
+    targetArt: 'current-walls-v1',
+    richScenery: true,
     spawnRunwayBeats: 4,
     vocalLookaheadBeats: 8,
     vocalEmphasisBeats: 1.2,

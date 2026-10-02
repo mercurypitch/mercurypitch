@@ -7,7 +7,9 @@
 // only this allowlist elsewhere without changing the IDs authored in levels.
 
 // The export resolves to an explicit .ts path for Node's native-build scripts.
+import { SINGING_CURRENT_WALL_ASSET_FILES } from '@irchiinnuss/glass-game/current-wall-profiles'
 import { MERC_ENCORE_VARIANTS } from '@irchiinnuss/glass-game/encore-examples'
+import { SHATTER_SOUND_ASSET_FILES } from '@irchiinnuss/glass-game/shatter-sounds'
 import { MERC_SONGBOOK_ASSETS } from '@irchiinnuss/glass-game/songbook-content'
 
 const MATERIALS = [
@@ -125,6 +127,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
       `adventure-voice-v2/merc-d2-${cue}.mp3`,
     ]),
   ),
+  ...SHATTER_SOUND_ASSET_FILES,
+  ...SINGING_CURRENT_WALL_ASSET_FILES,
   'audio-m01-loop': 'adventure-audio-v1/m01-loop.mp3',
   'audio-m03-loop': 'adventure-audio-v1/m03-loop.mp3',
   'audio-a01-loop': 'adventure-audio-v1/a01-loop.mp3',
@@ -181,6 +185,8 @@ const MANIFEST_FILES = [
   'adventure-voice-v6/manifest.json',
   'adventure-voice-v7/manifest.json',
   'glassware-trio-v1/manifest.json',
+  'shatter-sounds-v1/manifest.json',
+  'singing-current-walls-v1/manifest.json',
 ] as const
 
 // Standard glTF external buffers preserve the accepted source bytes while

@@ -25,12 +25,14 @@ export interface RunnerAudioPreferences {
   readonly musicMuted: boolean
   readonly musicVolume: number
   readonly guideVolume: number
+  readonly effectsVolume: number
 }
 
 export const RUNNER_AUDIO_DEFAULTS: RunnerAudioPreferences = Object.freeze({
   musicMuted: false,
   musicVolume: 0.35,
   guideVolume: 0.65,
+  effectsVolume: 0.65,
 })
 
 export function clampRunnerAudioPreferences(
@@ -48,6 +50,7 @@ export function clampRunnerAudioPreferences(
         : previous.musicMuted,
     musicVolume: volume(patch.musicVolume, previous.musicVolume),
     guideVolume: volume(patch.guideVolume, previous.guideVolume),
+    effectsVolume: volume(patch.effectsVolume, previous.effectsVolume),
   })
 }
 
@@ -133,6 +136,8 @@ export interface RunnerAudioTransport {
   setMuted(muted: boolean): void
   setPreferences(patch: Partial<RunnerAudioPreferences>): void
   setVoiceActive(active: boolean): void
+  /** Immediate cached fracture, suppressed or shortened before other protected capture. */
+  shatter?(targetId: string, atCourseSeconds: number): void
   subscribeInterruption(listener: () => void): () => void
   dispose(): void
 }

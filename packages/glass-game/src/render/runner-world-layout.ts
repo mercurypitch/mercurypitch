@@ -263,10 +263,14 @@ export function runnerGapArtSpans(
 export function runnerCameraPose(
   aspect: number,
   laneCenters: CompiledRunnerCourse['laneCenters'] = [-2, 0, 2],
+  profile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): RunnerCameraPose {
   const safeAspect = Math.max(0.3, Math.min(3, aspect))
   const laneSpan = laneCenters[2] - laneCenters[0]
-  if (laneSpan <= COMPACT_LANE_SPAN_METERS) {
+  if (
+    profile === 'responsive-close' ||
+    (profile !== 'legacy-wide' && laneSpan <= COMPACT_LANE_SPAN_METERS)
+  ) {
     const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))
     return Object.freeze({
       fovDegrees: 55 + portraitBlend * 7,
@@ -295,8 +299,14 @@ export function runnerCameraFollowTarget(
   lateralX: number,
   laneCenters: CompiledRunnerCourse['laneCenters'],
   aspect = 1,
+  profile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): number {
-  if (laneCenters[2] - laneCenters[0] > COMPACT_LANE_SPAN_METERS) return 0
+  if (
+    profile === 'legacy-wide' ||
+    (profile !== 'responsive-close' &&
+      laneCenters[2] - laneCenters[0] > COMPACT_LANE_SPAN_METERS)
+  )
+    return 0
   if (!Number.isFinite(lateralX)) return 0
   const safeAspect = Math.max(0.3, Math.min(3, aspect))
   const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))

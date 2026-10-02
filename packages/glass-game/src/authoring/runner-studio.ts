@@ -2,7 +2,7 @@
 
 import { compileSongRunnerCourseDocument, RUNNER_MAXIMUM_CHUNKS, } from '../runner/compile-course.ts'
 import { SINGING_CURRENT_CATALOG, SINGING_CURRENT_SOURCE_DOCUMENT, } from '../runner/first-course.ts'
-import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS,RUNNER_MAXIMUM_COURSE_SECONDS,  } from '../runner/resource-limits.ts'
+import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, RUNNER_MAXIMUM_COURSE_SECONDS, } from '../runner/resource-limits.ts'
 
 export const RUNNER_STUDIO_LIMITS = {
   maxBytes: 1_000_000,

@@ -130,6 +130,7 @@ export function runnerSessionHarness(
         setMuted: vi.fn(),
         setPreferences: vi.fn(),
         setVoiceActive: vi.fn(),
+        shatter: vi.fn(),
         subscribeInterruption: (listener: () => void) => {
           interrupted = listener
           return () => {

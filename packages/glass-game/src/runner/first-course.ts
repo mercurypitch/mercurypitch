@@ -2,6 +2,7 @@
 // The Singing Current — one stable course structure compiled from typed tuning.
 // ============================================================
 
+import { SINGING_CURRENT_TARGET_WALLS, SINGING_CURRENT_WALL_GLASS_PROFILES, SINGING_CURRENT_WALL_PROFILES, } from '../content/singing-current-wall-profiles.ts'
 import { compileSongRunnerCourseDocument } from './compile-course.ts'
 import type { SingingCurrentTuning } from './first-course-tuning.ts'
 import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, SINGING_CURRENT_RESPONSIVE_TUNING, } from './first-course-tuning.ts'
@@ -16,8 +17,17 @@ function buildSingingCurrent(
   identity: SingingCurrentIdentity,
   tuning: SingingCurrentTuning,
 ) {
+  const authoredWalls = tuning.track.targetArt === 'current-walls-v1'
+  const glassProfileFor = (
+    targetId: keyof typeof SINGING_CURRENT_TARGET_WALLS,
+  ) =>
+    authoredWalls
+      ? SINGING_CURRENT_WALL_PROFILES[SINGING_CURRENT_TARGET_WALLS[targetId]]
+          .bundle
+      : 'runner-score-window-v1'
   const laneCenters = tuning.track.laneCenters ?? ([-2, 0, 2] as const)
-  const compact = laneCenters[2] - laneCenters[0] < 4
+  const compact =
+    tuning.track.richScenery ?? laneCenters[2] - laneCenters[0] < 4
   const gapLaneHalfWidth = (laneCenters[2] - laneCenters[0]) / 4
   const blockerHalfWidth = compact ? 0.5 : 0.78
   const firstGapLength = tuning.obstacles.firstJump.lengthMeters ?? 0.9
@@ -148,11 +158,13 @@ function buildSingingCurrent(
         assetProfileIds: [],
       },
     },
-    glassProfiles: {
-      'runner-score-window-v1': {
-        assetProfileIds: ['cloudway-lab-frost-gold-arch-v1'],
-      },
-    },
+    glassProfiles: authoredWalls
+      ? SINGING_CURRENT_WALL_GLASS_PROFILES
+      : {
+          'runner-score-window-v1': {
+            assetProfileIds: ['cloudway-lab-frost-gold-arch-v1'],
+          },
+        },
     environmentProfiles: {
       'runner-sunlit-glass-v1': {
         assetProfileIds: [
@@ -296,7 +308,7 @@ function buildSingingCurrent(
           phraseId: 'home-whole',
           ...completion(1),
           displayLane: 1,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('home-window'),
           requiredForGrade: true,
         },
         {
@@ -305,7 +317,7 @@ function buildSingingCurrent(
           phraseId: 'higher-half',
           ...completion(1),
           displayLane: 2,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('higher-carafe'),
           requiredForGrade: true,
         },
         {
@@ -314,7 +326,7 @@ function buildSingingCurrent(
           phraseId: 'lower-half',
           ...completion(1),
           displayLane: 0,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('lower-diadem'),
           requiredForGrade: true,
         },
         {
@@ -323,7 +335,7 @@ function buildSingingCurrent(
           phraseId: 'two-up',
           ...completion(2),
           displayLane: 1,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('two-note-window'),
           requiredForGrade: true,
         },
         {
@@ -332,7 +344,7 @@ function buildSingingCurrent(
           phraseId: 'first-arc',
           ...completion(3),
           displayLane: 1,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('arc-diadem'),
           requiredForGrade: true,
         },
         {
@@ -341,7 +353,7 @@ function buildSingingCurrent(
           phraseId: 'sunlit-steps',
           ...completion(5),
           displayLane: 2,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('melody-rehearsal'),
           requiredForGrade: true,
         },
         {
@@ -350,7 +362,7 @@ function buildSingingCurrent(
           phraseId: 'two-up',
           ...completion(2),
           displayLane: 0,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('two-note-revisit'),
           requiredForGrade: true,
         },
         {
@@ -359,7 +371,7 @@ function buildSingingCurrent(
           phraseId: 'sunlit-steps',
           ...completion(5),
           displayLane: 1,
-          glassProfileId: 'runner-score-window-v1',
+          glassProfileId: glassProfileFor('melody-finale'),
           requiredForGrade: true,
         },
       ],
@@ -451,6 +463,9 @@ function buildSingingCurrent(
       environmentProfileId: 'runner-sunlit-glass-v1',
       musicProfileId: 'runner-first-flight-v1',
       notationProfileId: 'runner-staff-glass-v1',
+      ...(tuning.track.cameraProfile === undefined
+        ? {}
+        : { cameraProfile: tuning.track.cameraProfile }),
     },
   } as const satisfies SongRunnerCourseSource
 

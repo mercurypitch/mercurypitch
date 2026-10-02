@@ -118,7 +118,11 @@ export const HallwayStage = (props: HallwayStageProps) => {
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
-  const tone = createGlassTone(midiToFreq(TARGET_MIDI))
+  const tone = createGlassTone(midiToFreq(TARGET_MIDI), {
+    form: 'panel',
+    size: 'medium',
+    material: 'thin-crystal',
+  })
   // Made here rather than in `begin()`, because the pad is rendered as
   // soon as the mic is live and `begin()` waits on the renderer.
   const input = createIntentSource()
@@ -476,7 +480,7 @@ export const HallwayStage = (props: HallwayStageProps) => {
       // The remembered input, if it is still plugged in -- see
       // audio/input-device.ts. Must happen before acquire(), because the
       // device is chosen by the constraints that open the stream.
-      await applyPreferredInput()
+      await Promise.all([applyPreferredInput(), tone.prepareBreak()])
       if (left) return
       // A previous attempt may have left a live driver: a second tap while
       // the permission prompt is up, or a switch that came good. Overwriting

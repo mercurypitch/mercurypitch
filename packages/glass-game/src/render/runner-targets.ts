@@ -1,6 +1,7 @@
-// Runner glass targets — the existing reviewed frost fracture follows authoritative voice results.
+// Runner glass targets — authored wall families keep floor datums, notation and earned fracture aligned.
 import type { Matrix4, Object3D } from 'three'
 import { Box3, CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
+import type { RunnerGlassPresentation } from '../content/runner-glass-presentation'
 import type { BreakableSnapshot } from '../contracts'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
 import { layoutRunnerNotation, runnerMidiName } from '../runner/notation'
@@ -8,8 +9,9 @@ import { runnerSecondsToBeat } from '../runner/tempo'
 import { getBreakableRenderRecipe } from './catalog'
 import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
+import { createRunnerNoteCards } from './runner-note-cards'
 import { createRunnerTargetFeedback } from './runner-target-feedback'
-import { RUNNER_TARGET_FEEDBACK_PRESENTATION } from './runner-target-feedback-config'
+import { RUNNER_TARGET_FEEDBACK_PRESENTATION, runnerTargetFeedbackForPane, } from './runner-target-feedback-config'
 import type { VesselDefinition } from './vessels'
 import { createAuthoredVessel } from './vessels'
 
@@ -23,8 +25,29 @@ const NEUTRAL_FEEDBACK: RunnerPitchFeedback = {
   correction: null,
 }
 
-function fitTargetToCourse(root: Group, course: CompiledRunnerCourse): void {
-  const bounds = new Box3().setFromObject(root)
+function fitTargetToCourse(
+  root: Group,
+  course: CompiledRunnerCourse,
+  presentation?: RunnerGlassPresentation,
+  authoredBounds?: Box3,
+): void {
+  const bounds = authoredBounds ?? new Box3().setFromObject(root)
+  if (presentation !== undefined) {
+    if (
+      bounds.max.x - bounds.min.x > presentation.envelope.width + 0.02 ||
+      bounds.max.y - bounds.min.y > presentation.envelope.height + 0.02 ||
+      bounds.max.z - bounds.min.z > presentation.envelope.depth + 0.06 ||
+      Math.abs(bounds.min.y) > 0.02
+    )
+      throw new Error(
+        'Installed runner wall does not match its authored floor envelope.',
+      )
+    root.userData.runnerWallHalfWidth = Math.max(
+      Math.abs(bounds.min.x),
+      Math.abs(bounds.max.x),
+    )
+    return
+  }
   const lateralExtent = Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x))
   const halfLane =
     Math.min(
@@ -44,11 +67,18 @@ function targetDefinition(target: CompiledRunnerTarget): VesselDefinition {
     position: { x: 0, y: 0, z: 0 },
     anchor: { x: 0, y: 0, z: 1 },
     presentation: { kind: 'barrier', facingYaw: 0 },
-    variant: VARIANT,
+    variant: target.glassPresentation?.variant ?? VARIANT,
   }
 }
 
-function createScoreCard() {
+function createScoreCard(
+  presentation?: RunnerGlassPresentation,
+  noteCount = 0,
+) {
+  const noteCards = presentation?.notation.noteCards
+  if (noteCards !== undefined && noteCards.length === noteCount)
+    return createRunnerNoteCards(noteCards)
+
   const canvas = document.createElement('canvas')
   canvas.width = 1024
   canvas.height = 512
@@ -63,9 +93,19 @@ function createScoreCard() {
     depthWrite: false,
     toneMapped: false,
   })
-  const plane = new Mesh(new PlaneGeometry(1.8, 0.9), material)
+  const notation = presentation?.notation ?? {
+    width: 1.8,
+    height: 0.9,
+    centerX: 0,
+    centerY: 1.36,
+    z: 0.055,
+  }
+  const plane = new Mesh(
+    new PlaneGeometry(notation.width, notation.height),
+    material,
+  )
   plane.name = 'runner-target-scorecard'
-  plane.position.set(0, 1.36, 0.055)
+  plane.position.set(notation.centerX ?? 0, notation.centerY, notation.z)
   let previous = ''
   return {
     plane,
@@ -240,15 +280,21 @@ function createScoreCard() {
 
 export function createRunnerTargets(
   course: CompiledRunnerCourse,
-  source: Object3D,
+  source:
+    | Object3D
+    | ReadonlyMap<
+        string,
+        { readonly source: Object3D; readonly bundle: string }
+      >,
   bundle: string,
   comfortableMidi: number,
   reducedMotion: boolean,
 ) {
   const root = new Group()
   root.name = 'runner-musical-glass'
-  const recipe = getBreakableRenderRecipe(VARIANT)
-  const pool = createExhibitGeometryPool(source, bundle)
+  const pools = new Map<string, ReturnType<typeof createExhibitGeometryPool>>()
+  const bank = 'isObject3D' in source ? null : source
+  const legacy = bank === null ? (source as Object3D) : null
   const items = new Map<
     string,
     {
@@ -256,12 +302,26 @@ export function createRunnerTargets(
       card: ReturnType<typeof createScoreCard>
       feedback: ReturnType<typeof createRunnerTargetFeedback>
       displayCharge: number
+      frames: Object3D[]
+      direction: Object3D | undefined
     }
   >()
   let disposed = false
   let previousEpoch: RunnerSnapshot['epoch'] | undefined
 
   function install(target: CompiledRunnerTarget) {
+    const variant = target.glassPresentation?.variant ?? VARIANT
+    const recipe = getBreakableRenderRecipe(variant)
+    const asset =
+      bank?.get(variant) ??
+      (legacy === null ? undefined : { source: legacy, bundle })
+    if (asset === undefined)
+      throw new Error(`Runner wall asset "${variant}" is unavailable.`)
+    const sourceScene = asset.source
+    const pool =
+      pools.get(asset.bundle) ??
+      createExhibitGeometryPool(sourceScene, asset.bundle)
+    pools.set(asset.bundle, pool)
     let assetTransform: Matrix4 | undefined
     const vessel = createAuthoredVessel(
       targetDefinition(target),
@@ -275,32 +335,71 @@ export function createRunnerTargets(
     )
     let card: ReturnType<typeof createScoreCard> | undefined
     let feedback: ReturnType<typeof createRunnerTargetFeedback> | undefined
+    const frames: Object3D[] = []
     try {
       if (assetTransform === undefined)
         throw new Error(`Runner target "${target.id}" has no asset transform.`)
       const transform = assetTransform
-      source.traverse((node) => {
+      sourceScene.traverse((node) => {
         if (
           recipe.persistentPrefix !== undefined &&
           node.name.startsWith(recipe.persistentPrefix) &&
           node.parent?.name.startsWith(recipe.persistentPrefix) !== true
         ) {
-          const frame = createKitInstance(node, {}, {}, vessel.materialLibrary)
+          const frame = createKitInstance(
+            node,
+            {},
+            {},
+            vessel.materialLibrary,
+            { shareGeometry: target.glassPresentation !== undefined },
+          )
           frame.applyMatrix4(transform)
           vessel.addPersistent(frame)
+          frames.push(frame)
         }
       })
-      card = createScoreCard()
-      feedback = createRunnerTargetFeedback(reducedMotion)
+      card = createScoreCard(target.glassPresentation, target.notes.length)
+      feedback = createRunnerTargetFeedback(
+        reducedMotion,
+        target.glassPresentation === undefined
+          ? undefined
+          : runnerTargetFeedbackForPane(
+              target.glassPresentation.pane,
+              target.glassPresentation.notation,
+            ),
+      )
       vessel.root.add(card.plane, feedback.root)
-      fitTargetToCourse(vessel.root, course)
+      const authoredBounds =
+        target.glassPresentation === undefined
+          ? undefined
+          : vessel.getIntactBounds(new Box3())
+      if (authoredBounds !== undefined)
+        for (const frame of frames)
+          authoredBounds.union(new Box3().setFromObject(frame))
+      fitTargetToCourse(
+        vessel.root,
+        course,
+        target.glassPresentation,
+        authoredBounds,
+      )
       root.add(vessel.root)
-      const item = { vessel, card, feedback, displayCharge: 0 }
+      const item = {
+        vessel,
+        card,
+        feedback,
+        displayCharge: 0,
+        frames,
+        direction: feedback.root.getObjectByName(
+          'runner-target-feedback-direction',
+        ),
+      }
       items.set(target.id, item)
       return item
     } catch (error) {
       feedback?.dispose()
       card?.dispose()
+      if (target.glassPresentation !== undefined)
+        for (const frame of frames) frame.removeFromParent()
       vessel.dispose()
       throw error
     }
@@ -318,6 +417,8 @@ export function createRunnerTargets(
         if (!resident.has(target.chunkId)) {
           item.feedback.dispose()
           item.card.dispose()
+          if (target.glassPresentation !== undefined)
+            for (const frame of item.frames) frame.removeFromParent()
           item.vessel.dispose()
           items.delete(id)
         }
@@ -355,7 +456,21 @@ export function createRunnerTargets(
           target.contactCourseSeconds,
         )
         item.vessel.root.position.set(
-          course.laneCenters[target.displayLane],
+          target.glassPresentation === undefined
+            ? course.laneCenters[target.displayLane]
+            : Math.max(
+                course.laneCenters[0] -
+                  (course.laneCenters[1] - course.laneCenters[0]) / 2 +
+                  Number(item.vessel.root.userData.runnerWallHalfWidth) +
+                  TARGET_LANE_INSET_METERS,
+                Math.min(
+                  course.laneCenters[2] +
+                    (course.laneCenters[2] - course.laneCenters[1]) / 2 -
+                    Number(item.vessel.root.userData.runnerWallHalfWidth) -
+                    TARGET_LANE_INSET_METERS,
+                  course.laneCenters[target.displayLane],
+                ),
+              ),
           course.groundFeetY,
           -contactBeat * course.metersPerBeat + snapshot.courseDistanceMeters,
         )
@@ -363,7 +478,27 @@ export function createRunnerTargets(
           result?.outcome !== 'miss' &&
           snapshot.courseSeconds >= target.visibleFromCourseSeconds &&
           (!hit || snapshot.courseSeconds - result.resolvedAtCourseSeconds < 2)
+        // Authored full frames include rails and mullions. Retire those before
+        // Merc's body reaches the passable musical target; earned shards keep
+        // their own short lifecycle. Legacy fixtures retain their old display.
+        if (target.glassPresentation !== undefined) {
+          const forwardClearance =
+            course.movement.bodyRadius +
+            target.glassPresentation.envelope.depth / 2 +
+            0.08
+          const frameVisible = item.vessel.root.position.z < -forwardClearance
+          for (const frame of item.frames) frame.visible = frameVisible
+        }
         const feedback = active?.pitchFeedback ?? NEUTRAL_FEEDBACK
+        const noteCards = target.glassPresentation?.notation.noteCards
+        if (
+          noteCards?.length === target.notes.length &&
+          item.direction !== undefined
+        )
+          item.direction.position.x =
+            noteCards.find(
+              (card) => card.noteIndex === (active?.noteIndex ?? 0),
+            )?.centerX ?? 0
         item.feedback.update({
           feedback,
           outcome: result?.outcome ?? null,
@@ -396,13 +531,18 @@ export function createRunnerTargets(
     dispose() {
       if (disposed) return
       disposed = true
-      for (const item of items.values()) {
+      for (const [id, item] of items) {
         item.feedback.dispose()
         item.card.dispose()
+        if (
+          course.targets.find((target) => target.id === id)
+            ?.glassPresentation !== undefined
+        )
+          for (const frame of item.frames) frame.removeFromParent()
         item.vessel.dispose()
       }
       items.clear()
-      pool.close()
+      for (const pool of pools.values()) pool.close()
       root.removeFromParent()
     },
   }

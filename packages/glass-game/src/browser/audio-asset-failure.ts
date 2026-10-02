@@ -4,6 +4,7 @@ export type AudioAssetChannel =
   | 'museum-soundtrack'
   | 'merc-narration'
   | 'songbook'
+  | 'glass-fracture'
 
 export function reportAudioAssetFailure(
   channel: AudioAssetChannel,

@@ -61,6 +61,8 @@ function geometryContract(
     recipe.bundleShardCounts?.[bundle] ?? recipe.shardCount,
     recipe.sourceHeight,
     recipe.displayHeight,
+    recipe.preserveAuthoredOrigin === true,
+    recipe.bakeImportedMaterialUnits === true,
     recipe.barrierEnvelope?.width,
     recipe.barrierEnvelope?.height,
     recipe.barrierEnvelope?.depth,

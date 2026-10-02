@@ -367,7 +367,7 @@ export const Stage3D = (props: Stage3DProps) => {
       // The remembered input, if it is still plugged in -- see
       // audio/input-device.ts. Must happen before acquire(), because the
       // device is chosen by the constraints that open the stream.
-      await applyPreferredInput()
+      await Promise.all([applyPreferredInput(), tone.prepareBreak()])
       if (left) return
       // A previous attempt may have left a live driver: a second tap while
       // the permission prompt is up, or a switch that came good. Overwriting

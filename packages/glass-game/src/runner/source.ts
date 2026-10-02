@@ -2,6 +2,8 @@
 // Song runner source — strict JSON authoring types and validation primitives.
 // ============================================================
 
+import type { RunnerGlassPresentation } from '../content/runner-glass-presentation.ts'
+import type { GlassShatterProfile } from '../content/shatter-sounds.ts'
 import type { CompiledRunnerMovementProfile, CompiledRunnerVoiceProfile, RunnerLane, } from './contracts.ts'
 import type { RunnerTempoPoint } from './tempo.ts'
 
@@ -95,6 +97,8 @@ export interface SongRunnerCourseSource {
     readonly environmentProfileId: string
     readonly musicProfileId: string
     readonly notationProfileId: string
+    /** Authored close camera survives physical lane-width changes. Omission preserves legacy behavior. */
+    readonly cameraProfile?: 'responsive-close' | 'legacy-wide'
   }
 }
 
@@ -158,7 +162,14 @@ export interface SongRunnerCourseCatalog {
   >
   readonly pickupProfiles: Readonly<Record<string, RunnerPickupCatalogProfile>>
   readonly glassProfiles: Readonly<
-    Record<string, { readonly assetProfileIds: readonly string[] }>
+    Record<
+      string,
+      {
+        readonly assetProfileIds: readonly string[]
+        readonly soundProfile?: GlassShatterProfile
+        readonly presentation?: RunnerGlassPresentation
+      }
+    >
   >
   readonly environmentProfiles: Readonly<
     Record<string, { readonly assetProfileIds: readonly string[] }>

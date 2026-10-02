@@ -1,6 +1,11 @@
 // Museum sound — owned reference and fracture graphs with a soft, bounded suspension release.
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
+import type { GlassShatterProfile } from '../content/shatter-sounds'
+import { DEFAULT_SHATTER_PROFILE } from '../content/shatter-sounds'
 import type { GlassSound } from '../host'
+import type { ShatterBufferCache } from './shatter-buffer-cache'
+import { createShatterBufferCache, prepareShatterBuffers, silenceShatterCache, } from './shatter-buffer-cache'
+import { createShatterPlayer } from './shatter-player'
 
 const FLOOR = 0.0001
 const RELEASE_MS = 240
@@ -9,13 +14,24 @@ interface SoundGraph {
   nodes: AudioNode[]
 }
 
-export function createBrowserGlassSound(): GlassSound {
+export function createBrowserGlassSound(
+  options: {
+    assetUrl?: (id: string) => string
+    cache?: ShatterBufferCache
+    profile?: GlassShatterProfile
+    identity?: string
+    volume?: () => number
+  } = {},
+): GlassSound {
   let disposed = false
   let finished = false
   let releaseDeadline = 0
   let releaseTimer: ReturnType<typeof setTimeout> | undefined
   const graphs = new Set<SoundGraph>()
   const pending = new Set<(error: Error) => void>()
+  const preparation = new AbortController()
+  const cache = options.cache ?? createShatterBufferCache()
+  const profile = options.profile ?? DEFAULT_SHATTER_PROFILE
   const lease = acquireSharedAudioContext('glass-adventure-sound', {
     prepareToSuspend: () => {
       dispose()
@@ -25,6 +41,15 @@ export function createBrowserGlassSound(): GlassSound {
   const context = lease.ensure()
   const bus = context?.createGain() ?? null
   if (context && bus) bus.connect(context.destination)
+  const fracture =
+    context && bus
+      ? createShatterPlayer({
+          context,
+          output: bus,
+          cache,
+          volume: options.volume ?? (() => 0.65),
+        })
+      : null
 
   function retire(graph: SoundGraph): void {
     graph.source.onended = null
@@ -43,6 +68,7 @@ export function createBrowserGlassSound(): GlassSound {
     finished = true
     clearTimeout(releaseTimer)
     releaseDeadline = 0
+    void fracture?.dispose()
     for (const graph of graphs) retire(graph)
     bus?.disconnect()
     context?.removeEventListener('statechange', changed)
@@ -52,10 +78,18 @@ export function createBrowserGlassSound(): GlassSound {
   function dispose(): void {
     if (disposed) return
     disposed = true
+    preparation.abort()
+    const hasFracture = fracture?.active() ?? false
+    void fracture?.dispose()
     for (const reject of pending)
       reject(new Error('The reference was cancelled. Tap Start to try again.'))
     pending.clear()
-    if (!context || !bus || context.state !== 'running' || graphs.size === 0) {
+    if (
+      !context ||
+      !bus ||
+      context.state !== 'running' ||
+      (graphs.size === 0 && !hasFracture)
+    ) {
       finish()
       return
     }
@@ -215,36 +249,31 @@ export function createBrowserGlassSound(): GlassSound {
       // The quiet gap follows audio time; a frozen reference cannot later score itself.
       await waitForReference(at + 1.15)
     },
-    shatter() {
-      if (!context || !bus || disposed || context.state !== 'running') return
-      const at = context.currentTime
-      tone(164, at, 0.22, 0.12)
-      for (let i = 0; i < 12; i++) {
-        const u = i / 12
-        tone(
-          1700 + ((i * 1733) % 5700),
-          at + 0.035 + u * u * 1.35,
-          0.2 + u * 0.2,
-          0.055 * (1 - u * 0.7),
-        )
+    async prepareShatter() {
+      const quiet = silenceShatterCache(cache)
+      if (!context || !options.assetUrl || disposed) {
+        await quiet
+        return
       }
-      const length = Math.ceil(context.sampleRate * 0.22)
-      const buffer = context.createBuffer(1, length, context.sampleRate)
-      const data = buffer.getChannelData(0)
-      for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1
-      const crack = context.createBufferSource()
-      crack.buffer = buffer
-      const filter = context.createBiquadFilter()
-      filter.type = 'highpass'
-      filter.frequency.value = 2200
-      const envelope = context.createGain()
-      envelope.gain.setValueAtTime(FLOOR, at)
-      envelope.gain.exponentialRampToValueAtTime(0.18, at + 0.004)
-      envelope.gain.setTargetAtTime(0, at + 0.004, 0.028)
-      crack.connect(filter).connect(envelope).connect(bus)
-      own(crack, [filter, envelope])
-      crack.start(at)
-      crack.stop(at + 0.22)
+      const timeout = setTimeout(() => preparation.abort(), 5000)
+      try {
+        await Promise.all([
+          quiet,
+          prepareShatterBuffers(
+            cache,
+            context,
+            options.assetUrl,
+            [profile],
+            preparation.signal,
+          ),
+        ])
+      } finally {
+        clearTimeout(timeout)
+      }
+    },
+    shatter() {
+      if (!disposed)
+        fracture?.play(profile, options.identity ?? 'gallery-fracture', 2.7)
     },
     dispose,
   }

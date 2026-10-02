@@ -184,6 +184,7 @@ export interface RunnerSceneryWindow {
 
 export interface RunnerSceneryLayout {
   readonly laneCenters: CompiledRunnerCourse['laneCenters']
+  readonly cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile']
   readonly chunks: readonly {
     readonly id: string
     readonly index: number
@@ -558,6 +559,7 @@ export function createRunnerSceneryLayout(
   const visibility = createRunnerSceneryVisibilityContext(
     course.laneCenters,
     projectionChunks,
+    course.presentation.cameraProfile,
   )
   const handoffs = createRunnerSceneryHandoffs(
     course,
@@ -566,6 +568,7 @@ export function createRunnerSceneryLayout(
   )
   const layout: RunnerSceneryLayout = Object.freeze({
     laneCenters: course.laneCenters,
+    cameraProfile: course.presentation.cameraProfile,
     chunks,
     windows,
     handoffs,
@@ -655,6 +658,7 @@ export function runnerSceneryHandoffVisibility(
     createRunnerSceneryVisibilityContext(
       layout.laneCenters,
       sceneryProjectionChunks(layout.chunks),
+      layout.cameraProfile,
     )
   return runnerSceneryHandoffVisibilityAt(
     context,

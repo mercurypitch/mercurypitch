@@ -1,5 +1,6 @@
 // Glass adventure contracts — content, simulation and host-neutral observations.
 
+import type { GlassShatterProfile } from './content/shatter-sounds'
 import type { MelodyAttemptConfiguration, MelodyAttemptConfigurationResult, MelodyAttemptIdentity, MelodyJudgeSnapshot, MelodyLessonDefinition, } from './melody-contracts'
 import type { PitchWaveDefinition } from './pitch-wave'
 
@@ -249,6 +250,8 @@ export interface BreakableDefinition {
   /** Floor-mounted pane; its certified recipe supplies the contact envelope. */
   presentation?: { kind: 'barrier'; facingYaw: number }
   variant: string
+  /** Optional authored sound semantics; legacy exhibits use their render recipe's family. */
+  soundProfile?: GlassShatterProfile
   optional: boolean
   requiresCompleted?: readonly string[]
   challenge: ChallengeDefinition

@@ -245,6 +245,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
   let replaying = false
   const tone = createGlassTone(
     midiToFreq(modeMidi(fundamental(), room().modes[0] ?? 1)),
+    { form: 'panel', size: 'medium', material: 'thin-crystal' },
   )
   const input = createIntentSource()
 
@@ -557,7 +558,8 @@ export const ChamberStage = (props: ChamberStageProps) => {
         }
         breakAtWall = wallSeconds
         impact.start(wallSeconds)
-        tone.shatter(acc)
+        // Other panes and sung floor safety remain protected throughout play.
+        tone.shatter(acc, 0)
         setBroken(targets.filter((t) => t.broken).length)
       }
 
@@ -902,7 +904,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
     pace.micAsked()
     tone.start()
     try {
-      await applyPreferredInput()
+      await Promise.all([applyPreferredInput(), tone.prepareBreak()])
       if (left) return
       // A previous attempt may have left a live driver: `switchMic`
       // succeeds without lifting the gate, so the next tap on "Walk in"

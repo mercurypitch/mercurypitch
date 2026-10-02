@@ -125,6 +125,7 @@ function fixedStepActionBounds(
   launchOpenCourseSeconds: number,
   launchCloseCourseSeconds: number,
   actionDurationSeconds: number,
+  minimumActionDurationSeconds = actionDurationSeconds,
 ): { landingOpenCourseSeconds: number; landingCloseCourseSeconds: number } {
   const epochStarts = possibleEpochStarts(
     course,
@@ -136,7 +137,7 @@ function fixedStepActionBounds(
       ...epochStarts.map((epochStart) =>
         runnerFixedStepActionEnd(
           launchOpenCourseSeconds,
-          actionDurationSeconds,
+          minimumActionDurationSeconds,
           epochStart,
           movement.fixedStepSeconds,
         ),
@@ -289,6 +290,7 @@ export function compileRunnerObstacles(
             launchOpenCourseSeconds,
             launchCloseCourseSeconds,
             requiredTransitionSeconds,
+            movement.laneChangeSeconds,
           ),
           reachableLanes: safeLanes,
         },

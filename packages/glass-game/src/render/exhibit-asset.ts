@@ -89,12 +89,16 @@ export function prepareExhibitAsset(
     .makeScale(scale, scale, scale)
     .multiply(
       new Matrix4().makeTranslation(
-        -(bounds.min.x + bounds.max.x) / 2,
-        -bounds.min.y,
-        -(bounds.min.z + bounds.max.z) / 2,
+        recipe.preserveAuthoredOrigin === true
+          ? 0
+          : -(bounds.min.x + bounds.max.x) / 2,
+        recipe.preserveAuthoredOrigin === true ? 0 : -bounds.min.y,
+        recipe.preserveAuthoredOrigin === true
+          ? 0
+          : -(bounds.min.z + bounds.max.z) / 2,
       ),
     )
-  const table = createMaterialTable(library)
+  const table = createMaterialTable(library, recipe.bakeImportedMaterialUnits)
   const owned: BufferGeometry[] = []
   try {
     const geometry = flattenGeometry(intact, transform, table)
@@ -107,7 +111,13 @@ export function prepareExhibitAsset(
       part.translate(-centre.x, -centre.y, -centre.z)
       return { geometry: part, centre }
     })
-    const scaledMaterialNames = new Set(recipe.scaleImportedMaterialUnits ?? [])
+    // Full baked transforms already include display scale; the legacy named
+    // unit adjustment must not apply that scale a second time.
+    const scaledMaterialNames = new Set(
+      recipe.bakeImportedMaterialUnits === true
+        ? []
+        : (recipe.scaleImportedMaterialUnits ?? []),
+    )
     for (const material of table.materials) {
       if (!scaledMaterialNames.has(material.name)) continue
       const physical = material as MeshPhysicalMaterial

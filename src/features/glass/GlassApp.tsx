@@ -53,7 +53,7 @@ import { IconGlide, IconReplay, IconShatter } from './icons'
 // Type-only: the renderer module (and typegpu behind it) loads lazily at
 // Start so the landing ships zero renderer bytes.
 import type { GlassRenderer } from './renderer/GlassRenderer'
-import { playGlassShatter } from './sfx'
+import { disposeGlassShatter, playGlassShatter, prepareGlassShatter, } from './sfx'
 import type { TakeRecorder } from './take-recorder'
 import { createTakeRecorder } from './take-recorder'
 import type { GlassTake } from './take-strip'
@@ -590,6 +590,7 @@ export const GlassApp: Component = () => {
     f0?.dispose()
     f0 = null
     micManager.release(MIC_CONSUMER_ID)
+    disposeGlassShatter(audioContext)
     void audioContext?.close().catch(() => undefined)
     audioContext = null
   }
@@ -718,6 +719,7 @@ export const GlassApp: Component = () => {
     fxAudio = null
     f0?.dispose()
     f0 = null
+    disposeGlassShatter(audioContext)
     await audioContext?.close().catch(() => undefined)
     audioContext = new AudioContext()
     if (audioContext.state === 'suspended') {
@@ -726,6 +728,7 @@ export const GlassApp: Component = () => {
     if (stream) f0 = createF0Stream(audioContext, stream)
     fxAudio = createFxRack(audioContext)
     fxAudio.setSettings(fxSettings())
+    await prepareGlassShatter(audioContext)
   }
 
   /** Quiet check with one automatic graph rebuild for dead-zero inputs. */
@@ -821,6 +824,7 @@ export const GlassApp: Component = () => {
     try {
       audioContext = new AudioContext()
       if (audioContext.state === 'suspended') await audioContext.resume()
+      await prepareGlassShatter(audioContext)
       const stream = await micManager.acquire(MIC_CONSUMER_ID)
       f0 = createF0Stream(audioContext, stream)
       // On-device take recording (progressive enhancement, plan §8) and the

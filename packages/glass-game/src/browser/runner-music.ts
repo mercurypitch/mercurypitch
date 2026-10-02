@@ -2,7 +2,7 @@
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, } from '../runner/contracts'
 import { runnerNoteMidiAt } from '../runner/pitch'
-import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS,RUNNER_MAXIMUM_COURSE_SECONDS,  } from '../runner/resource-limits'
+import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, RUNNER_MAXIMUM_COURSE_SECONDS, } from '../runner/resource-limits'
 import { repairMuseumLoop } from './museum-loop'
 
 export const RUNNER_MUSIC_SAMPLE_RATE = 24_000

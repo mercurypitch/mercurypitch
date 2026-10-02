@@ -13,13 +13,14 @@ export function createKitInstance(
   materials: MuseumMaterials,
   overrides: Readonly<Record<string, string>> = {},
   library: MaterialLibrary,
+  options: { readonly shareGeometry?: boolean } = {},
 ): Group {
   const wrapper = new Group()
   const clone = source.clone(true)
   clone.traverse((object) => {
     const mesh = object as Mesh
     if (!mesh.isMesh) return
-    mesh.geometry = mesh.geometry.clone()
+    if (options.shareGeometry !== true) mesh.geometry = mesh.geometry.clone()
     let needsPlanarUv = false
     const choose = (material: Material) => {
       const override = overrides[material.name]
@@ -35,6 +36,7 @@ export function createKitInstance(
       : choose(mesh.material)
     // Some ornament exports have no UV; planar projection keeps marble continuous.
     if (!mesh.geometry.hasAttribute('uv') && needsPlanarUv) {
+      if (options.shareGeometry === true) mesh.geometry = mesh.geometry.clone()
       const position = mesh.geometry.getAttribute('position')
       const uv = new Float32Array(position.count * 2)
       for (let i = 0; i < position.count; i++) {
