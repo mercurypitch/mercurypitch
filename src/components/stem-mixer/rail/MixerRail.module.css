@@ -1,0 +1,68 @@
+/* MixerRail: the capsule, then the timeline, wrapping as one row. The
+   timeline's basis is the 380 px it needs to be worth dragging; below
+   that it starts a line of its own and grows to fill it. */
+
+.rail {
+  container: mixer-rail / inline-size;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Sized by its content: not a size container, which would measure as
+   empty and leave the focus pill no width at all. */
+.rail[data-fit='true'] {
+  container-type: normal;
+  width: auto;
+}
+
+.rail[data-vertical='true'] {
+  container-type: normal;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.timeline {
+  display: flex;
+  flex: 1 1 380px;
+  align-items: center;
+  min-width: 0;
+}
+
+/* ── Short of width ────────────────────────────────────────────────────
+   The capsule reads these (MixerCapsule.module.css lists them). Smaller
+   controls first; past that its groups wrap, and space between them
+   stands in for the hairlines, since a hairline at the start of a line
+   divides nothing. Set on the rail's children, which are the capsule and
+   the timeline's box.
+   The thresholds follow the capsule's measured width, which no state
+   changes: 554 px at full size, 492 px at the smaller size (Chromium,
+   October 2026). A control added to the capsule moves both. */
+@container mixer-rail (max-width: 560px) {
+  .rail > * {
+    --mixer-control-size: 28px;
+    --mixer-capsule-gap: 4px;
+    --mixer-group-gap: 3px;
+    --mixer-capsule-pad: 4px 6px;
+  }
+}
+
+@container mixer-rail (max-width: 495px) {
+  .rail > * {
+    --mixer-capsule-gap: 6px 12px;
+    --mixer-capsule-wrap: wrap;
+    --mixer-capsule-divider: none;
+  }
+}
+
+/* A finger needs 44 px however narrow the rail is. */
+@media (pointer: coarse) {
+  .rail > * {
+    --mixer-control-size: 44px;
+  }
+}

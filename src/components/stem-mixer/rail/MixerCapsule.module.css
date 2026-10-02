@@ -1,0 +1,276 @@
+/* MixerCapsule: the rail's controls in groups, split by 1x22 hairlines as
+   in the Jam room's capsule (JamControlBar.module.css).
+
+   Custom properties set its size and look, so a host changes them without
+   reaching into the capsule. Each has its default where it is read.
+     --mixer-control-size    every button and chip, square or tall (32px)
+     --mixer-control-bg      a control at rest
+     --mixer-control-border  its edge
+     --mixer-capsule-gap     between controls and hairlines (6px)
+     --mixer-group-gap       between controls in a group (4px)
+     --mixer-capsule-pad     inside the capsule's edge (5px 8px)
+     --mixer-capsule-wrap    nowrap, or wrap when the row is too narrow
+     --mixer-capsule-divider the hairlines' display: block, or none
+   MixerRail sets the size and spacing ones from its own width (its module
+   holds the container queries: Lightning CSS scopes a container's name to
+   the module that declares it). The chips read the first three. */
+
+.capsule {
+  --mixer-control-bg: color-mix(
+    in srgb,
+    var(--text-primary, #e6edf3) 6%,
+    transparent
+  );
+  --mixer-control-border: var(--border-subtle, #30363d);
+  --mixer-loop-a: #58a6ff;
+  --mixer-loop-b: #ff7b72;
+
+  display: flex;
+  flex: none;
+  flex-wrap: var(--mixer-capsule-wrap, nowrap);
+  align-items: center;
+  gap: var(--mixer-capsule-gap, 6px);
+  max-width: 100%;
+  padding: var(--mixer-capsule-pad, 5px 8px);
+  border: 1px solid var(--border-subtle, #30363d);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 3%, transparent);
+}
+
+/* Inside a host that draws the box (the focus pill): no second box, and
+   controls clear at rest, as the pill's glass had them. */
+.capsule[data-bare='true'] {
+  --mixer-control-bg: transparent;
+  --mixer-control-border: transparent;
+
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mixer-group-gap, 4px);
+}
+
+.divider {
+  display: var(--mixer-capsule-divider, block);
+  flex: none;
+  width: 1px;
+  height: 22px;
+  border-radius: 1px;
+  background: var(--border, #30363d);
+}
+
+/* The chip's wrapper exists for the tour to point at; it adds no box. */
+.slot {
+  display: inline-flex;
+  flex: none;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--mixer-control-size, 32px);
+  height: var(--mixer-control-size, 32px);
+  padding: 0;
+  border: 1px solid var(--mixer-control-border);
+  border-radius: 8px;
+  color: var(--text-secondary, #a8b3bf);
+  background: var(--mixer-control-bg);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Play is the one filled control: the thing to find first. */
+.play {
+  width: calc(var(--mixer-control-size, 32px) + 4px);
+  height: calc(var(--mixer-control-size, 32px) + 4px);
+  border-color: var(--accent, #58a6ff);
+  border-radius: 50%;
+  color: var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+}
+
+.play svg {
+  fill: currentColor;
+}
+
+@media (hover: hover) {
+  .play:hover:not(:disabled) {
+    color: var(--on-accent, #0d1117);
+    background: color-mix(in srgb, var(--accent, #58a6ff) 85%, white);
+  }
+}
+
+/* Stop reads as stop when the square is solid. */
+.stop svg {
+  fill: currentColor;
+}
+
+/* An on toggle (Loop, Monitor) in the accent, as the Jam room's are. */
+.toggle[aria-pressed='true'] {
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.16));
+}
+
+/* ── A and B ───────────────────────────────────────────────────────── */
+
+/* A ring with the letter in it; set, it fills in the colour the timeline
+   and the waveform draw that mark in. */
+.markGlyph {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mark[data-mark='a'] {
+  --mark-colour: var(--mixer-loop-a);
+}
+
+.mark[data-mark='b'] {
+  --mark-colour: var(--mixer-loop-b);
+}
+
+@media (hover: hover) {
+  .mark:hover:not(:disabled) {
+    color: var(--mark-colour);
+  }
+}
+
+.mark[data-set='true'] .markGlyph {
+  border-color: var(--mark-colour);
+  color: #0d1117;
+  background: var(--mark-colour);
+}
+
+/* ── Mic ───────────────────────────────────────────────────────────── */
+
+.mic[data-state='on'] {
+  border-color: var(--accent, #58a6ff);
+  color: var(--on-accent, #0d1117);
+  background: var(--accent, #58a6ff);
+  animation: micPulse 1.5s ease-in-out infinite;
+}
+
+@media (hover: hover) {
+  .mic[data-state='on']:hover:not(:disabled) {
+    color: var(--on-accent, #0d1117);
+    background: color-mix(in srgb, var(--accent, #58a6ff) 85%, white);
+  }
+}
+
+.mic[data-state='error'] {
+  border-color: var(--danger, #da3633);
+  color: var(--danger, #ff7b72);
+  background: color-mix(in srgb, var(--danger, #da3633) 18%, transparent);
+}
+
+@keyframes micPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(88, 166, 255, 0);
+  }
+}
+
+/* ── More ──────────────────────────────────────────────────────────── */
+
+/* The doubled class outranks OverflowMenu's own 44 px trigger floor,
+   which is meant for card lists, whatever order the sheets load in. */
+.more.more {
+  flex: none;
+  width: var(--mixer-control-size, 32px);
+  min-width: 0;
+  height: var(--mixer-control-size, 32px);
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--mixer-control-border);
+  border-radius: 8px;
+  color: var(--text-secondary, #a8b3bf);
+  background: var(--mixer-control-bg);
+}
+
+.more.more:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+/* ── Docked to a side edge ─────────────────────────────────────────── */
+
+.capsule[data-vertical='true'] {
+  flex-direction: column;
+}
+
+.capsule[data-vertical='true'] .group {
+  flex-direction: column;
+}
+
+.capsule[data-vertical='true'] .divider {
+  width: 22px;
+  height: 1px;
+}
+
+/* A finger needs 44 px, in a rail or out of one (MixerRail repeats this
+   after its narrow sizes, so the two agree whichever sheet loads last). */
+@media (pointer: coarse) {
+  .capsule {
+    --mixer-control-size: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic[data-state='on'] {
+    animation: none;
+  }
+
+  .btn {
+    transition: none;
+  }
+}
