@@ -17,6 +17,7 @@ import type { Accessor } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { LyricGlance } from '@/lib/lyric-glance'
 import type { KaraokeStageHosting } from './KaraokeMobileStage'
+import type { KeyShiftBinding } from './key-shift/KeyShiftControl'
 
 /** The guide vocal as the sing pill leaves it: its level, and whether it is off. */
 export interface GuideLevel {
@@ -64,6 +65,14 @@ export interface HostedMixerControls {
    * is drawn too small for the stage (Android's picture-in-picture window).
    */
   readonly lyricGlance: Accessor<LyricGlance>
+  /**
+   * The singer's key, for the room's options: the shift and the key it lands
+   * on, a step either way, 0 for the song's own key, and Find my key, whose
+   * wait and fit the sheet says while it holds them. The same binding the
+   * phone stage's key sheet uses. The room's stage has no key button: its
+   * landscape column is 236-286 px and the control needs about 324.
+   */
+  readonly key: KeyShiftBinding
 }
 
 export interface StemMixerHosting {

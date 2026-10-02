@@ -9,10 +9,11 @@
 // is taken off the screen and put back.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
-import type { Setter } from 'solid-js'
+import type { Accessor, Setter } from 'solid-js'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuideLevel, StemMixerHosting, } from '@/components/stem-mixer-hosting'
+import type { KeyShiftNotice } from '@/components/key-shift/KeyShiftControl'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import type { LyricGlance } from '@/lib/lyric-glance'
 import type { NativeDeviceApi, NativeMediaAction, } from '@/stores/native-shell-store'
@@ -46,6 +47,13 @@ interface FakeMixer {
   seek: Mock
   releaseMic: Mock
   resumeMic: Mock
+  /** The singer's key, as the mixer hands it to the room. */
+  keyShift: Accessor<number>
+  setKeyShift: Mock
+  findMyKey: Mock
+  /** The room's options holding Find my key's notices (true) or not. */
+  holdKeyNotices: Mock
+  setKeyNotice: Setter<KeyShiftNotice | null>
 }
 
 const mixers = vi.hoisted(() => ({ list: [] as FakeMixer[] }))
@@ -75,6 +83,10 @@ vi.mock('@/components/StemMixer', async () => {
         sweep: 0,
       })
       const [micOn, setMicOn] = createSignal(false)
+      const [keyShift, setKeyShiftValue] = createSignal(0)
+      const [keyNotice, setKeyNotice] = createSignal<KeyShiftNotice | null>(
+        null,
+      )
       const [guide, setGuideLevel] = createSignal<GuideLevel>({
         volume: 0.8,
         muted: false,
@@ -110,6 +122,11 @@ vi.mock('@/components/StemMixer', async () => {
         seek: vi.fn((seconds: number) => setElapsed(seconds)),
         releaseMic: vi.fn(() => setMicOn(false)),
         resumeMic: vi.fn(() => setMicOn(true)),
+        keyShift,
+        setKeyShift: vi.fn((value: number) => setKeyShiftValue(value)),
+        findMyKey: vi.fn(),
+        holdKeyNotices: vi.fn(),
+        setKeyNotice,
       }
       mixers.list.push(mixer)
       onMount(() => {
@@ -131,6 +148,17 @@ vi.mock('@/components/StemMixer', async () => {
           guide,
           setGuide: mixer.setGuide,
           lyricGlance,
+          key: {
+            value: keyShift,
+            heard: keyShift,
+            onChange: mixer.setKeyShift,
+            keyLabel: () => 'A major',
+            suggestion: () => null,
+            onFindKey: mixer.findMyKey,
+            disabledReason: () => undefined,
+            notice: keyNotice,
+            holdNotices: mixer.holdKeyNotices,
+          },
         })
       })
       onCleanup(() => {
@@ -1119,6 +1147,57 @@ describe('the Karaoke options', () => {
 
     expect(karaokePlayNext()).toBe(false)
     expect(localStorage.getItem('karaoke-room-play-next')).toBe('false')
+  })
+
+  it("move the key a step either way, and back to the song's own key", async () => {
+    // The stage's landscape column (236-286 px) has no room for the key, so
+    // in the room it is a row here (Phase 3 of the mixer rail plan).
+    await mountRoom()
+    const sheet = await openOptions()
+    const key = within(sheet).getByRole('group', { name: 'Key' })
+
+    fireEvent.click(within(key).getByRole('button', { name: 'Raise the key' }))
+    fireEvent.click(within(key).getByRole('button', { name: 'Raise the key' }))
+    const raised = [
+      current().keyShift(),
+      within(key).getByTestId('key-shift-value').textContent,
+    ]
+    fireEvent.click(
+      within(key).getByRole('button', {
+        name: 'Key +2, back to the original key',
+      }),
+    )
+
+    expect([raised, current().keyShift()]).toEqual([[2, '+2'], 0])
+  })
+
+  it('find my key from the row, and say its wait in the sheet, not over it', async () => {
+    await mountRoom()
+    const sheet = await openOptions()
+    const holdsOpen = current().holdKeyNotices.mock.calls.map(([held]) => held)
+
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Find my key' }))
+    current().setKeyNotice({
+      message: 'Finding the melody first. This takes a moment.',
+      tone: 'info',
+    })
+    const said = within(sheet).getByTestId(
+      'karaoke-options-key-status',
+    ).textContent
+    controls().closeRoomOverlay?.()
+
+    expect({
+      found: current().findMyKey.mock.calls.length,
+      said,
+      holds: [
+        holdsOpen,
+        current().holdKeyNotices.mock.calls.map(([held]) => held),
+      ],
+    }).toEqual({
+      found: 1,
+      said: 'Finding the melody first. This takes a moment.',
+      holds: [[true], [true, false]],
+    })
   })
 
   it('show the music level, and put it back to 100%', async () => {
