@@ -1732,3 +1732,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** pointer input updates the yaw target synchronously, while enclosure framing and the camera used for raycasting continue moving during subsequent rendered frames.
 **Rule:** wait for the actual rendered pose to converge before using a fixed projected click point. Sample after real presentation frames, allow the diagnostic publication cadence, and require consecutive stable positions within a bounded wait. Align measured position and camera yaw to the same frame: `step → refresh → render` can publish a current position with the preceding rendered yaw. Do not retry clicks or widen distance/time limits to hide mismatched observations.
 **See:** `apps/beside-cue/e2e/glass-adventure-artwork.e2e.ts`, `apps/beside-cue/e2e/helpers/glass-adventure-camera-route.ts`.
+
+### Verify movement cues from visible instructions and the actual camera
+
+**Symptom:** a runner bot completed jumps while players saw a confusing floor stripe or missed the useful cue.
+**Cause:** acting at a simulation-certified midpoint or on hidden cue-stage attributes bypassed the player-facing instruction; a low camera and thick landing slab hid the real gap.
+**Rule:** keep deterministic flight tests, add visible-copy action timing with a reaction delay, and inspect actual rendered takeoff/landing views. A controls-only renderer cannot certify scene readability. Use the full donor bounds, including hardware, when proving a visual opening is clear.
+**See:** `apps/beside-cue/e2e/glass-adventure-runner-responsive.e2e.ts`, `packages/glass-game/src/render/runner-world.test.ts`.

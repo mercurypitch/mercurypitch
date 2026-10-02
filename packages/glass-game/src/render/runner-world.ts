@@ -5,7 +5,7 @@ import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
-import { runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
+import { RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
 
 const Y_AXIS = new Vector3(0, 1, 0)
 
@@ -64,7 +64,14 @@ export function createRunnerWorld(
   const root = new Group()
   root.name = 'singing-current-world'
   const boxGeometry = new BoxGeometry(1, 1, 1)
-  const lipGeometry = new CylinderGeometry(0.085, 0.06, 1, 10, 1, false)
+  const lipGeometry = new CylinderGeometry(
+    RUNNER_GAP_LIP_RADIUS_METERS,
+    RUNNER_GAP_LIP_RADIUS_METERS,
+    1,
+    12,
+    1,
+    false,
+  )
   lipGeometry.rotateZ(Math.PI / 2)
   const pickupGeometry = new TorusGeometry(0.16, 0.035, 6, 24)
   const marble = new MeshPhysicalMaterial({
@@ -89,11 +96,6 @@ export function createRunnerWorld(
     color: 0xc5a75c,
     roughness: 0.55,
     metalness: 0.5,
-  })
-  const gapDepth = new MeshPhysicalMaterial({
-    color: 0x102a34,
-    roughness: 0.9,
-    metalness: 0.08,
   })
   const landing = new MeshPhysicalMaterial({
     color: 0x8ad8c8,
@@ -148,12 +150,12 @@ export function createRunnerWorld(
     const chunk = course.chunks.find((item) => item.id === id)!
     const group = new Group()
     group.name = `runner-chunk-${id}`
+    const gapSpans = runnerGapArtSpans(course, id)
     const stone: Matrix4[] = [],
       trim: Matrix4[] = [],
       lines: Matrix4[] = [],
       crystal: Matrix4[] = [],
       blockers: Matrix4[] = [],
-      gapVoids: Matrix4[] = [],
       takeoffLips: Matrix4[] = [],
       landingLips: Matrix4[] = [],
       landingBands: Matrix4[] = [],
@@ -167,13 +169,26 @@ export function createRunnerWorld(
         !cell.gapApron && chunk.index % 3 === 1 && width >= trackWidth * 0.9
       if (glass)
         crystal.push(box(x, course.groundFeetY, z, width / 3, 1, depth / 1.7))
-      else stone.push(box(x, course.groundFeetY - 0.19, z, width, 0.38, depth))
+      else {
+        const height = cell.gapApron ? RUNNER_GAP_APRON_THICKNESS_METERS : 0.38
+        stone.push(
+          box(x, course.groundFeetY - height / 2, z, width, height, depth),
+        )
+      }
       // Perimeter ribbons sit on solid geometry; never paint a path across a real gap.
       for (const edge of [cell.minX + 0.025, cell.maxX - 0.025])
         trim.push(box(edge, course.groundFeetY - 0.045, z, 0.04, 0.07, depth))
-      trim.push(
-        box(x, course.groundFeetY - 0.045, -cell.start, width, 0.07, 0.04),
+      const startsAtGapBoundary = gapSpans.some(
+        (gap) =>
+          cell.maxX > gap.minX &&
+          cell.minX < gap.maxX &&
+          (Math.abs(cell.start - gap.gapStart) < 1e-6 ||
+            Math.abs(cell.start - gap.gapEnd) < 1e-6),
       )
+      if (!startsAtGapBoundary)
+        trim.push(
+          box(x, course.groundFeetY - 0.045, -cell.start, width, 0.07, 0.04),
+        )
       for (const divide of laneDividers)
         if (divide > cell.minX && divide < cell.maxX)
           lines.push(
@@ -203,24 +218,13 @@ export function createRunnerWorld(
           ),
         )
       }
-    for (const gap of runnerGapArtSpans(course, id)) {
+    for (const gap of gapSpans) {
       const width = gap.maxX - gap.minX
       const x = (gap.minX + gap.maxX) / 2
-      const gapDepthMeters = gap.gapEnd - gap.gapStart
-      gapVoids.push(
-        box(
-          x,
-          gap.voidBottomY - 0.025,
-          -(gap.gapStart + gap.gapEnd) / 2,
-          width,
-          0.05,
-          gapDepthMeters,
-        ),
-      )
       takeoffLips.push(
         box(
           x,
-          course.groundFeetY - 0.055,
+          course.groundFeetY - RUNNER_GAP_LIP_RADIUS_METERS,
           -(gap.takeoffLipStart + gap.takeoffLipEnd) / 2,
           width,
           1,
@@ -230,8 +234,8 @@ export function createRunnerWorld(
       landingLips.push(
         box(
           x,
-          course.groundFeetY - 0.055,
-          -(gap.landingBandStart + 0.11),
+          course.groundFeetY - RUNNER_GAP_LIP_RADIUS_METERS,
+          -(gap.landingBandStart + RUNNER_GAP_LIP_RADIUS_METERS),
           width,
           1,
           1,
@@ -274,7 +278,6 @@ export function createRunnerWorld(
       batch(boxGeometry, gold, trim, 'gilt-runway-edges'),
       batch(boxGeometry, lane, lines, 'lane-inlays'),
       batch(boxGeometry, frost, blockers, 'frost-obstacles'),
-      batch(boxGeometry, gapDepth, gapVoids, 'runner-gap-void-depth'),
       batch(lipGeometry, gold, takeoffLips, 'runner-gap-takeoff-lips'),
       batch(lipGeometry, gold, landingLips, 'runner-gap-landing-lips'),
       batch(boxGeometry, landing, landingBands, 'runner-gap-landing-bands'),
@@ -370,7 +373,6 @@ export function createRunnerWorld(
       gold.dispose()
       frost.dispose()
       lane.dispose()
-      gapDepth.dispose()
       landing.dispose()
       jumpCue.dispose()
       crystalParts.forEach((part, index) => {

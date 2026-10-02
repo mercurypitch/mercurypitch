@@ -1,4 +1,4 @@
-// Responsive runner acceptance — act from visible cues, not hidden authored timestamps.
+// Responsive runner cue acceptance — visible pitch and movement prompts drive real controls.
 import { expect, test } from '@playwright/test'
 import { SINGING_CURRENT } from '../../../packages/glass-game/src/runner/first-course'
 import { installRunnerVoice } from './helpers/runner-voice-fixture'
@@ -7,7 +7,7 @@ import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
 test.setTimeout(150_000)
 
-test('visible cues allow a corrected note, reacted jumps and the complete ordered course @smoke', async ({
+test('visible prompts support a corrected note, reacted jumps and course completion @smoke', async ({
   page,
 }) => {
   await useRunnerControlsRenderer(page)
@@ -69,25 +69,41 @@ test('visible cues allow a corrected note, reacted jumps and the complete ordere
     ).toBeLessThan(SINGING_CURRENT.targets[0]!.contactCourseSeconds)
     const movement = page.getByTestId('runner-movement-hint')
     for (let stretch = 0; stretch < 2; stretch++) {
-      await expect(movement).toHaveAttribute('data-cue-stage', 'change-lane', {
-        timeout: 45_000,
-      })
+      await expect(
+        movement.getByText('Change lane', { exact: true }),
+      ).toBeVisible({ timeout: 45_000 })
+      await expect(
+        movement.getByText('Take the open side', { exact: true }),
+      ).toBeVisible()
+      // Both authored center-lane blockers leave either side open. Choose right
+      // consistently here; the separate actual-GPU proof covers reading the
+      // opening from the rendered scene.
       await page.waitForTimeout(250)
       await page.getByRole('button', { name: 'Right lane' }).click()
-      await expect(movement).toHaveAttribute('data-cue-stage', 'gap-ahead', {
-        timeout: 15_000,
-      })
-      await expect(movement).toHaveAttribute('data-cue-stage', 'jump', {
+      await expect(
+        movement.getByText('Gap ahead', { exact: true }),
+      ).toBeVisible({ timeout: 15_000 })
+      await expect(
+        movement.getByText('Watch the edge', { exact: true }),
+      ).toBeVisible()
+      await expect(movement.getByText('Jump', { exact: true })).toBeVisible({
         timeout: 8_000,
       })
+      await expect(movement.getByText('Now', { exact: true })).toBeVisible()
       // This deliberate reaction delay is inside the visible cue. It does not
       // consult a certified midpoint or bypass the real pointer input path.
       await page.waitForTimeout(250)
       await page.getByRole('button', { name: 'Jump', exact: true }).click()
-      await expect(movement).toHaveAttribute('data-cue-stage', 'landing')
-      await expect(runner).toHaveAttribute('data-player-grounded', 'true', {
+      const landing = movement.getByText('Landing', { exact: true })
+      await expect(landing).toBeVisible()
+      await expect(
+        movement.getByText('Keep your line', { exact: true }),
+      ).toBeVisible()
+      await expect(landing).toBeHidden({
         timeout: 3_000,
       })
+      // Recenter intentionally after the visible Landing prompt clears so the
+      // next identical center-lane stretch begins from its neutral lane.
       await page.getByRole('button', { name: 'Left lane' }).click()
     }
     await expect(runner).toHaveAttribute('data-phase', 'finished', {

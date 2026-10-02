@@ -372,6 +372,21 @@ describe('Singing Current pacing variants', () => {
       ['second-lane-gate', 86],
       ['second-jump', 93],
     ])
+    const responsiveGaps = SINGING_CURRENT_RESPONSIVE.obstacles.filter(
+      (obstacle) => obstacle.kind === 'gap',
+    )
+    expect(responsiveGaps.map((gap) => gap.id)).toEqual([
+      'first-jump',
+      'second-jump',
+    ])
+    expect(
+      responsiveGaps[0]!.maxCourseDistanceMeters -
+        responsiveGaps[0]!.minCourseDistanceMeters,
+    ).toBeCloseTo(1.2, 12)
+    expect(
+      responsiveGaps[1]!.maxCourseDistanceMeters -
+        responsiveGaps[1]!.minCourseDistanceMeters,
+    ).toBeCloseTo(1.35, 12)
     expect(
       SINGING_CURRENT_RESPONSIVE_SOURCE.checkpoints.map(({ id, atBeat }) => [
         id,
