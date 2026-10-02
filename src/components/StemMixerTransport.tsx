@@ -252,9 +252,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       >
         <MixerRail
           vertical={isVertical()}
-          // The bottom dock's pill is as wide as what is in it; the top
-          // dock's spans the stage, and the rail fills it.
-          fit={props.karaokeFocus() && dock() === 'bottom'}
           capsule={
             <MixerCapsule
               playing={props.playing()}

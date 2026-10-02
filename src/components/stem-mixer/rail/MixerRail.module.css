@@ -13,13 +13,6 @@
   min-width: 0;
 }
 
-/* Sized by its content: not a size container, which would measure as
-   empty and leave the focus pill no width at all. */
-.rail[data-fit='true'] {
-  container-type: normal;
-  width: auto;
-}
-
 .rail[data-vertical='true'] {
   container-type: normal;
   flex-direction: column;
