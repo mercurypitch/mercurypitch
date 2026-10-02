@@ -39,6 +39,7 @@ const test = base.extend<ShotOptions & ShotFixtures>({
   shotDir: ['', { option: true }],
   safeArea: [{ top: 0, bottom: 0 }, { option: true }],
   dropped: [{}, { option: true }],
+  systemSerif: [null, { option: true }],
   singer: ['mara', { option: true }],
   notDropped: [
     async ({ dropped }, use, info) => {
@@ -134,36 +135,21 @@ async function settle(page: Page): Promise<void> {
   )
 }
 
-/** The words a person can see on screen right now. */
-function visibleText(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const text: string[] = []
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-    )
-    while (walker.nextNode()) {
-      const node = walker.currentNode
-      const parent = node.parentElement
-      if (parent === null) continue
-      const style = window.getComputedStyle(parent)
-      if (style.visibility === 'hidden' || Number(style.opacity) === 0) continue
-      const range = document.createRange()
-      range.selectNodeContents(node)
-      const box = range.getBoundingClientRect()
-      if (
-        box.width > 0 &&
-        box.height > 0 &&
-        box.bottom > 0 &&
-        box.top < window.innerHeight &&
-        box.right > 0 &&
-        box.left < window.innerWidth
-      )
-        text.push(node.textContent ?? '')
-    }
-    return text.join(' ')
-  })
-}
+/**
+ * "Josh Woodward — Nothing in the Dark": a song credited as artist and
+ * title, the one place a spaced dash is the convention rather than a
+ * sentence. Two short runs of words with no sentence punctuation.
+ */
+const isCredit = (text: string): boolean =>
+  /^[^\u2014.!?;:]{1,60} \u2014 [^\u2014.!?;:]{1,80}$/u.test(text.trim())
+
+/**
+ * An em dash used as punctuation: one text node that holds both a dash and
+ * a word. A dash standing alone is the app's empty value ("—" on the pitch
+ * pill before a voice is heard), not a sentence.
+ */
+const proseDash = (text: string): boolean =>
+  /\u2014/u.test(text) && /\p{L}/u.test(text) && !isCredit(text)
 
 /**
  * Nothing a store screenshot must not carry: build identity, a developer
@@ -173,7 +159,18 @@ function visibleText(page: Page): Promise<string> {
 async function expectCleanFrame(page: Page): Promise<void> {
   await expect(page.locator('[role="alert"]:visible')).toHaveCount(0)
   await expect(page.locator('[data-testid="portable-console"]')).toHaveCount(0)
-  const text = await visibleText(page)
+  // What shows: text a clipping ancestor hides, or kept for screen readers
+  // only, is not in the frame.
+  const { words } = await wordsAndControls(page, 0)
+  const texts = words
+    .map((w) => w.text)
+    .filter((t, i, all) => i === 0 || all[i - 1] !== t)
+  // The owner's copy rule for visible English: no em dash in a sentence.
+  expect(
+    [...new Set(texts.filter(proseDash))],
+    'sentences with an em dash',
+  ).toEqual([])
+  const text = texts.join(' ')
   for (const forbidden of [
     /Developer/u,
     /\bconsole\b/iu,
@@ -230,36 +227,97 @@ interface CaptureLayout {
   readonly scale: number
   /** The box of the landmark the capture waited for. */
   readonly landmark: Box | null
-  /** Each visible line of each text node. */
+  /**
+   * Each visible line of each text node, cut to what its clipping ancestors
+   * let show. A line less than half visible is left out, and so is text
+   * kept for screen readers only.
+   */
   readonly words: readonly (Box & { readonly text: string })[]
-  /** Each visible button, link, field, tab, slider or switch. */
+  /** Each visible button, link, field, tab, slider or switch, cut the same way. */
   readonly controls: readonly (Box & { readonly label: string })[]
+  /**
+   * Controls that read as one object, which a cut must keep whole: a painted
+   * container holding two or more of them (a pill, a bar), or a row of them
+   * set close together (a chip row). `kind` says which; `size` is how many
+   * controls it holds.
+   */
+  readonly groups: readonly (Box & {
+    readonly kind: 'container' | 'row'
+    readonly size: number
+    readonly labels: readonly string[]
+  })[]
+  /** The Ear Lab's serif as this browser drew it (see `systemSerif`). */
+  readonly serif?: {
+    readonly text: string
+    readonly faces: readonly string[]
+    readonly expected: string | null
+  }
 }
 
-/** The words and controls on screen, read right after a screenshot. */
+/** The words, controls and control groups on screen, read right after a screenshot. */
 function wordsAndControls(
   page: Page,
-): Promise<Pick<CaptureLayout, 'words' | 'controls'>> {
-  return page.evaluate(() => {
-    const shown = (element: Element, box: DOMRect): boolean => {
-      const style = window.getComputedStyle(element)
-      return (
-        style.visibility !== 'hidden' &&
-        Number(style.opacity) !== 0 &&
-        box.width > 0 &&
-        box.height > 0 &&
-        box.bottom > 0 &&
-        box.right > 0 &&
-        box.top < window.innerHeight &&
-        box.left < window.innerWidth
-      )
+  minShare = 0.5,
+): Promise<Pick<CaptureLayout, 'words' | 'controls' | 'groups'>> {
+  return page.evaluate((share) => {
+    const viewport = {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
     }
-    const plain = (box: DOMRect) => ({
+    type Rect = { left: number; top: number; right: number; bottom: number }
+    const meet = (a: Rect, b: Rect): Rect => ({
+      left: Math.max(a.left, b.left),
+      top: Math.max(a.top, b.top),
+      right: Math.min(a.right, b.right),
+      bottom: Math.min(a.bottom, b.bottom),
+    })
+    const area = (r: Rect) =>
+      Math.max(0, r.right - r.left) * Math.max(0, r.bottom - r.top)
+    // What an element's clipping ancestors and the viewport leave of a box:
+    // the stage that scrolls, a sheet, a screen-reader-only span (1 x 1 px,
+    // overflow hidden) all clip.
+    const clipped = (element: Element, box: Rect): Rect => {
+      let out = meet(box, viewport)
+      for (
+        let e: Element | null = element;
+        e !== null && e !== document.documentElement;
+        e = e.parentElement
+      ) {
+        const style = window.getComputedStyle(e)
+        if (style.visibility === 'hidden' || Number(style.opacity) === 0) {
+          return { left: 0, top: 0, right: 0, bottom: 0 }
+        }
+        if (
+          e !== element &&
+          (style.overflowX !== 'visible' || style.overflowY !== 'visible')
+        ) {
+          out = meet(out, e.getBoundingClientRect())
+        }
+        if (
+          style.clip === 'rect(0px, 0px, 0px, 0px)' ||
+          style.clipPath === 'inset(50%)'
+        ) {
+          return { left: 0, top: 0, right: 0, bottom: 0 }
+        }
+      }
+      return out
+    }
+    const plain = (box: Rect) => ({
       x: Math.round(box.left * 100) / 100,
       y: Math.round(box.top * 100) / 100,
-      width: Math.round(box.width * 100) / 100,
-      height: Math.round(box.height * 100) / 100,
+      width: Math.round((box.right - box.left) * 100) / 100,
+      height: Math.round((box.bottom - box.top) * 100) / 100,
     })
+    // Enough of it shows (half, for the layout file): the part that does is
+    // what is recorded.
+    const showing = (element: Element, box: Rect): Rect | null => {
+      if (area(box) === 0) return null
+      const left = clipped(element, box)
+      return area(left) > 0 && area(left) >= area(box) * share ? left : null
+    }
+
     const words: (ReturnType<typeof plain> & { text: string })[] = []
     const walker = document.createTreeWalker(
       document.body,
@@ -272,24 +330,178 @@ function wordsAndControls(
       const range = document.createRange()
       range.selectNodeContents(node)
       for (const box of range.getClientRects()) {
-        if (shown(node.parentElement, box)) words.push({ text, ...plain(box) })
+        const left = showing(node.parentElement, box)
+        if (left !== null) words.push({ text, ...plain(left) })
       }
     }
-    const controls = [
+
+    const shownControls = [
       ...document.querySelectorAll(
         'button, a[href], input, select, textarea, [role="button"], [role="tab"], [role="slider"], [role="switch"]',
       ),
     ].flatMap((element) => {
-      const box = element.getBoundingClientRect()
-      if (!shown(element, box)) return []
+      const box = showing(element, element.getBoundingClientRect())
+      if (box === null) return []
       const label =
         element.getAttribute('aria-label') ??
         element.textContent?.trim().slice(0, 60) ??
         ''
-      return [{ label, ...plain(box) }]
+      return [{ element, label, box }]
     })
-    return { words, controls }
-  })
+    const controls = shownControls.map((c) => ({
+      label: c.label,
+      ...plain(c.box),
+    }))
+
+    // Groups. A painted container: the nearest ancestor that draws a box
+    // (a fill, an image, a border, a shadow or a backdrop blur) around two
+    // or more controls, short of a page-sized surface.
+    const alpha = (color: string): number => {
+      if (color === 'transparent') return 0
+      const slash = /\/\s*([\d.]+)(%?)\s*\)$/u.exec(color)
+      if (slash) return Number(slash[1]) / (slash[2] === '%' ? 100 : 1)
+      const comma = /^rgba\(.*,\s*([\d.]+)\s*\)$/u.exec(color)
+      return comma ? Number(comma[1]) : 1
+    }
+    const paints = (style: CSSStyleDeclaration): boolean =>
+      alpha(style.backgroundColor) > 0.05 ||
+      style.backgroundImage !== 'none' ||
+      style.boxShadow !== 'none' ||
+      (style.backdropFilter !== '' && style.backdropFilter !== 'none') ||
+      (['Top', 'Right', 'Bottom', 'Left'] as const).some(
+        (side) =>
+          Number.parseFloat(style[`border${side}Width`]) > 0 &&
+          style[`border${side}Style`] !== 'none' &&
+          alpha(style[`border${side}Color`]) > 0.05,
+      )
+    const pageArea = window.innerWidth * window.innerHeight
+    const groups: (ReturnType<typeof plain> & {
+      kind: 'container' | 'row'
+      size: number
+      labels: string[]
+    })[] = []
+    const seen = new Set<Element>()
+    for (const c of shownControls) {
+      for (
+        let e = c.element.parentElement;
+        e !== null && e !== document.body;
+        e = e.parentElement
+      ) {
+        const box = e.getBoundingClientRect()
+        if (box.width * box.height > pageArea / 2) break
+        const inside = shownControls.filter(
+          (o) => o.element !== e && e.contains(o.element),
+        )
+        if (inside.length < 2 || !paints(window.getComputedStyle(e))) continue
+        if (!seen.has(e)) {
+          seen.add(e)
+          const left = showing(e, box)
+          if (left !== null) {
+            groups.push({
+              kind: 'container',
+              size: inside.length,
+              labels: inside.map((o) => o.label.slice(0, 40)),
+              ...plain(left),
+            })
+          }
+        }
+        break
+      }
+    }
+    // A row: controls whose middles share a line and whose edges sit within
+    // 24 px of the next, like a chip row or a transport.
+    const parent = shownControls.map((_, i) => i)
+    const root = (i: number): number =>
+      parent[i] === i ? i : (parent[i] = root(parent[i]))
+    shownControls.forEach((a, i) => {
+      shownControls.forEach((b, j) => {
+        if (j <= i) return
+        const ha = a.box.bottom - a.box.top
+        const hb = b.box.bottom - b.box.top
+        if (Math.max(ha, hb) > 120) return
+        const sameLine =
+          Math.abs(
+            (a.box.top + a.box.bottom) / 2 - (b.box.top + b.box.bottom) / 2,
+          ) <=
+          0.3 * Math.min(ha, hb)
+        const gap =
+          Math.max(a.box.left, b.box.left) - Math.min(a.box.right, b.box.right)
+        if (sameLine && gap <= 24) parent[root(i)] = root(j)
+      })
+    })
+    const rows = new Map<number, typeof shownControls>()
+    shownControls.forEach((c, i) => {
+      const r = root(i)
+      rows.set(r, [...(rows.get(r) ?? []), c])
+    })
+    for (const row of rows.values()) {
+      if (row.length < 2) continue
+      groups.push({
+        kind: 'row',
+        size: row.length,
+        labels: row.map((o) => o.label.slice(0, 40)),
+        ...plain({
+          left: Math.min(...row.map((o) => o.box.left)),
+          top: Math.min(...row.map((o) => o.box.top)),
+          right: Math.max(...row.map((o) => o.box.right)),
+          bottom: Math.max(...row.map((o) => o.box.bottom)),
+        }),
+      })
+    }
+    return { words, controls, groups }
+  }, minShare)
+}
+
+/**
+ * The faces the browser drew an element's own text in, read through the
+ * DevTools protocol: the first serif-set line inside `within`. The page is
+ * marked to find the node and unmarked after.
+ */
+async function serifFaces(
+  page: Page,
+  within: string,
+): Promise<{ text: string; faces: string[] }> {
+  const text = await page.evaluate((selector) => {
+    const scope = document.querySelector(selector)
+    if (scope === null) return null
+    for (const element of scope.querySelectorAll('*')) {
+      if (!/Iowan Old Style/u.test(window.getComputedStyle(element).fontFamily))
+        continue
+      const own = [...element.childNodes].find(
+        (n) =>
+          n.nodeType === Node.TEXT_NODE && (n.textContent?.trim() ?? '') !== '',
+      )
+      if (own === undefined) continue
+      element.setAttribute('data-shot-serif', '')
+      return own.textContent?.trim() ?? ''
+    }
+    return null
+  }, within)
+  if (text === null) throw new Error(`No serif-set text inside ${within}.`)
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    await cdp.send('DOM.enable')
+    await cdp.send('CSS.enable')
+    const { root } = await cdp.send('DOM.getDocument', { depth: 0 })
+    const { nodeId } = await cdp.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: '[data-shot-serif]',
+    })
+    const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId })
+    return {
+      text,
+      faces: [...fonts]
+        .sort((a, b) => b.glyphCount - a.glyphCount)
+        .map((f) => f.familyName),
+    }
+  } finally {
+    await page.evaluate(() =>
+      document
+        .querySelector('[data-shot-serif]')
+        ?.removeAttribute('data-shot-serif'),
+    )
+    await cdp.detach()
+  }
 }
 
 /** For a screen that moves on its own, like a live trace. */
@@ -301,13 +513,23 @@ interface Moment {
   readonly attempts: number
 }
 
+interface CaptureOptions {
+  /** For a screen that moves on its own. */
+  readonly moment?: Moment
+  /**
+   * Where the screen sets type in the Ear Lab's serif: its face is read,
+   * recorded in the layout file and held to the project's `systemSerif`.
+   */
+  readonly serif?: string
+}
+
 async function capture(
   page: Page,
   info: TestInfo,
   shotDir: string,
   name: string,
   landmark: Locator,
-  moment?: Moment,
+  { moment, serif }: CaptureOptions = {},
 ): Promise<void> {
   expect(
     await page.evaluate(
@@ -324,7 +546,8 @@ async function capture(
   await settle(page)
   await expectCleanFrame(page)
   let png: Buffer | null = null
-  let onScreen: Pick<CaptureLayout, 'words' | 'controls'> | null = null
+  let onScreen: Pick<CaptureLayout, 'words' | 'controls' | 'groups'> | null =
+    null
   for (let attempt = 1; attempt <= (moment?.attempts ?? 1); attempt += 1) {
     await moment?.wait()
     const shot = await page.screenshot({
@@ -342,6 +565,10 @@ async function capture(
     throw new Error(`${name}: the screen moved on during every screenshot`)
   }
   await expect(landmark, 'the screen held still for the capture').toBeVisible()
+  expect(
+    [...new Set(onScreen.words.map((w) => w.text).filter(proseDash))],
+    'sentences with an em dash in the captured frame',
+  ).toEqual([])
 
   const folder = join(shotDir, info.project.name)
   mkdirSync(folder, { recursive: true })
@@ -376,18 +603,41 @@ async function capture(
     colorType: 2,
     hasTransparency: false,
   })
+  let serifFact: CaptureLayout['serif']
+  if (serif !== undefined) {
+    const expected =
+      (info.project.use as Partial<ShotOptions>).systemSerif ?? null
+    const drawn = await serifFaces(page, serif)
+    serifFact = { ...drawn, expected }
+    if (expected === null) {
+      // Iowan Old Style is Apple's: this machine cannot draw it, and no
+      // other face is passed off as it. The capture says what it used.
+      info.annotations.push({
+        type: 'serif',
+        description: `"${drawn.text}" is drawn in ${drawn.faces.join(', ')}, not Iowan Old Style, which only Apple ships`,
+      })
+      console.log(
+        `    ${info.project.name} ${name}: the Ear Lab serif is drawn in ${drawn.faces.join(', ')} here, not Iowan Old Style (Apple only)`,
+      )
+    } else {
+      expect(drawn.faces, `the face "${drawn.text}" is drawn in`).toEqual([
+        expected,
+      ])
+    }
+  }
   const layout: CaptureLayout = {
     viewport,
     scale,
     landmark: await landmark.boundingBox(),
     ...onScreen,
+    ...(serifFact === undefined ? {} : { serif: serifFact }),
   }
   writeFileSync(
     join(folder, `${name}.layout.json`),
     `${JSON.stringify(layout, null, 2)}\n`,
   )
   console.log(
-    `ok  ${info.project.name}/${name}.png  ${viewport.width * scale}x${viewport.height * scale}, ${onScreen.words.length} lines of words, ${onScreen.controls.length} controls`,
+    `ok  ${info.project.name}/${name}.png  ${viewport.width * scale}x${viewport.height * scale}, ${onScreen.words.length} lines of words, ${onScreen.controls.length} controls, ${onScreen.groups.length} groups${serifFact === undefined ? '' : `, serif ${serifFact.faces.join(', ')}`}`,
   )
 }
 
@@ -476,6 +726,85 @@ function onTheTopNote(page: Page): Moment {
   }
 }
 
+/**
+ * The Ear Lab bench scrolled so the six faculty dials lead its stage, read
+ * in cents and milliseconds, instead of the index above them. Then the
+ * nearest scroll position, within 160 px, where the dials show whole and no
+ * line of words is sliced by the stage's top or bottom edge: a store frame
+ * must not show half a "268" under the action row.
+ */
+async function benchAtFaculties(page: Page): Promise<void> {
+  const left = await page.evaluate(() => {
+    const faculties = document.querySelector<HTMLElement>(
+      '[data-tour="ear.faculties"]',
+    )
+    if (faculties === null) return { error: 'no faculties', cut: [] }
+    let stage = faculties.parentElement
+    while (
+      stage !== null &&
+      !(
+        /auto|scroll/u.test(window.getComputedStyle(stage).overflowY) &&
+        stage.scrollHeight > stage.clientHeight
+      )
+    ) {
+      stage = stage.parentElement
+    }
+    if (stage === null) return { error: 'the bench does not scroll', cut: [] }
+    const scroller = stage
+    const lines = (): { text: string; top: number; bottom: number }[] => {
+      const out: { text: string; top: number; bottom: number }[] = []
+      const walker = document.createTreeWalker(scroller, NodeFilter.SHOW_TEXT)
+      while (walker.nextNode()) {
+        const node = walker.currentNode
+        const text = node.textContent?.trim() ?? ''
+        const parent = node.parentElement
+        if (text === '' || parent === null) continue
+        const style = window.getComputedStyle(parent)
+        if (style.visibility === 'hidden' || Number(style.opacity) === 0)
+          continue
+        const range = document.createRange()
+        range.selectNodeContents(node)
+        for (const box of range.getClientRects()) {
+          if (box.width > 0 && box.height > 0) {
+            out.push({ text, top: box.top, bottom: box.bottom })
+          }
+        }
+      }
+      return out
+    }
+    const cutAt = (): string[] => {
+      const view = scroller.getBoundingClientRect()
+      const dials = faculties.getBoundingClientRect()
+      const whole = dials.top >= view.top && dials.bottom <= view.bottom
+      const sliced = lines()
+        .filter(
+          (l) =>
+            (l.top < view.top && l.bottom > view.top) ||
+            (l.top < view.bottom && l.bottom > view.bottom),
+        )
+        .map((l) => l.text.slice(0, 40))
+      return whole ? sliced : ['the faculty dials themselves', ...sliced]
+    }
+    const target =
+      scroller.scrollTop +
+      faculties.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top -
+      12
+    const max = scroller.scrollHeight - scroller.clientHeight
+    for (let step = 0; step <= 320; step += 1) {
+      const delta = step % 2 === 0 ? step / 2 : -(step + 1) / 2
+      scroller.scrollTop = Math.round(
+        Math.min(max, Math.max(0, target + delta)),
+      )
+      if (cutAt().length === 0) return { error: null, cut: [] }
+    }
+    scroller.scrollTop = Math.round(Math.min(max, Math.max(0, target)))
+    return { error: null, cut: cutAt() }
+  })
+  expect(left.error, 'the bench scrolls to its dials').toBeNull()
+  expect(left.cut, 'lines the stage would slice').toEqual([])
+}
+
 // ── The screens ─────────────────────────────────────────────
 
 // Screens 01 and 03 are a first run: nothing kept, nothing granted.
@@ -525,7 +854,7 @@ test('04-sing-live', async ({ page, shotDir }, info) => {
     shotDir,
     '04-sing-live',
     page.locator('[data-testid="sing-note-chip"]'),
-    onTheTopNote(page),
+    { moment: onTheTopNote(page) },
   )
 })
 
@@ -553,9 +882,30 @@ test('05-sing-take', async ({ page, shotDir }, info) => {
 test('06-ear-lab', async ({ page, shotDir }, info) => {
   await openApp(page)
   await tapRail(page, 'ear')
-  const title = page.locator('[data-testid="ear-bench-title"]')
-  await expect(title).toBeVisible()
-  await capture(page, info, shotDir, '06-ear-lab', title)
+  await expect(page.locator('[data-testid="ear-bench-title"]')).toBeVisible()
+  const faculties = page.locator('[data-tour="ear.faculties"]')
+  await benchAtFaculties(page)
+  // The units the store caption promises, on the dials that lead.
+  await expect(faculties).toContainText('¢')
+  await expect(faculties).toContainText('ms')
+  await capture(page, info, shotDir, '06-ear-lab', faculties, {
+    serif: '[data-tour="ear.faculties"]',
+  })
+})
+
+test('09-ear-report', async ({ page, shotDir }, info) => {
+  await openApp(page)
+  await tapRail(page, 'ear')
+  await expect(page.locator('[data-testid="ear-bench-title"]')).toBeVisible()
+  await page.getByRole('button', { name: 'Ear Report' }).tap()
+  const report = page.locator('[data-testid="ear-report"]')
+  await expect(report).toBeVisible()
+  // Mara's two threshold drills, traced in their own units.
+  await expect(report).toContainText('Hairline · threshold')
+  await expect(report).toContainText('The Grid · threshold')
+  await capture(page, info, shotDir, '09-ear-report', report, {
+    serif: '[data-testid="ear-report"]',
+  })
 })
 
 test('07-karaoke', async ({ page, shotDir }, info) => {
