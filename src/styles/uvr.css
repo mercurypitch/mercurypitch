@@ -215,6 +215,23 @@
   border-color: rgba(74, 222, 128, 0.2);
 }
 
+/* Those outlines are white at 6% and violet or green at 20-30%, drawn for a
+   dark panel. On a light one they measured 1.0:1 and 1.4:1, and the tabs had
+   no edges. Same states, in the light theme's own boundary and accent. */
+[data-theme='light'] .view-tab {
+  border-color: var(--border-strong);
+}
+
+[data-theme='light'] .view-tab:hover,
+[data-theme='light'] .view-tab.active {
+  border-color: var(--purple);
+}
+
+[data-theme='light'] .view-tab-sing:hover,
+[data-theme='light'] .view-tab-sing.active {
+  border-color: var(--green);
+}
+
 /* Processing Mode Toggle */
 /* Stacks the toggle row and, in server mode, the credits pill beneath it */
 .uvr-mode-stack {
