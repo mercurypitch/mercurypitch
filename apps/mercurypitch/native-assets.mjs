@@ -269,6 +269,55 @@ export const NATIVE_ASSETS = [
     reason:
       "Tokyo Cyber in both orientations, the Karaoke room's other free picture: the chip's picker offers every free room of the 'karaoke' surface (src/lib/backgrounds/background-catalog.ts), and a picked room the bundle did not carry would draw nothing offline.",
   },
+
+  // ── Progress ─────────────────────────────────────────────────
+  //
+  // TestFlight build 451 (owner, 2 Oct 2026): the medallions, the league
+  // trophy, the Atlas and the share card's plate all drew nothing, because
+  // none of them was listed. Progress names every one by absolute URL, most
+  // of them built at runtime from a row the worker sends, so no bundler saw
+  // them. probe-progress.mjs opens the page with a record on it and fails on
+  // any picture it names that the bundle does not serve.
+  {
+    glob: 'badges/*.webp',
+    reason:
+      "Every badge and achievement medallion, 192px: built from the row's icon (badgeArtSrc in src/features/challenges/badge-art.ts) for the milestone strip (src/features/progress/progress-view-model.ts) and the cabinet (src/features/progress/cabinet-view.ts). The seed's definitions name all 46, earned or not.",
+  },
+  ...[1, 2, 3, 4, 5, 6].map((rank) => ({
+    glob: `leagues/l${rank}.webp`,
+    reason: `The rung ${rank} trophy: the worker's leagues row names it as trophyAsset (workers/db-worker/migrations/0005_leagues.sql), and both the Progress league card (buildLeague in src/features/progress/progress-view-model.ts) and the Leaderboard's ladder (src/components/CommunityLeaderboard.tsx) draw it as-is. The -badge pins are drawn nowhere.`,
+  })),
+  {
+    glob: 'progress/resonance-atlas.webp',
+    reason:
+      "The Resonance Atlas plate behind the page's opening chapter: a CSS background (src/features/progress/ProgressPage.module.css).",
+  },
+  {
+    glob: 'progress/mercury-pressing.webp',
+    reason:
+      'The Pressing plate the share studio draws its card on, loaded into a canvas with new Image() (MERCURY_PRESSING_PLATE_URL in src/features/progress/share-card.ts).',
+  },
+
+  // ── The Leaderboard ──────────────────────────────────────────
+  //
+  // Same round, same cause: the Progress league card's "Open Leaderboard"
+  // leads here, and its ladder and podium drew nothing. The medallions its
+  // Legends view draws for past weeks' places are the badges/*.webp above.
+  {
+    glob: 'leagues/l7.webp',
+    reason:
+      "The mystery rung's trophy: the Leaderboard's ladder always draws it, a mystery rung counting as revealed (rungRevealed in src/components/CommunityLeaderboard.tsx). Progress never does: nobody stands in l7.",
+  },
+  {
+    glob: 'leagues/locked.webp',
+    reason:
+      "The veiled trophy the Leaderboard's ladder draws for every rung above the singer's own (LOCKED_TROPHY in src/components/CommunityLeaderboard.tsx).",
+  },
+  {
+    glob: 'leaderboard/place-*.webp',
+    reason:
+      "The podium's three places, 384px, full-bleed behind the top three of the Global and Friends boards (PODIUM_MEDALS in src/components/CommunityLeaderboard.tsx).",
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */

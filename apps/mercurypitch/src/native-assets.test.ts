@@ -24,6 +24,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
+import { badgeArtIcons, badgeArtSrc } from '@/features/challenges/badge-art'
+import { MERCURY_PRESSING_PLATE_URLS } from '@/features/progress/share-card'
 import type { BackgroundDefinition, PublicBackgroundSource, } from '@/lib/backgrounds/background-catalog'
 import { defaultBackground, listBackgrounds, } from '@/lib/backgrounds/background-catalog'
 // @ts-expect-error -- a plain .mjs manifest with no types, on purpose: the
@@ -314,5 +316,83 @@ describe('the native build, when a shipped file changes', () => {
     expect(source).toBeDefined()
     const changed = new RegExp(source!, 'u')
     expect(files.filter((file) => !changed.test(file))).toEqual([])
+  })
+})
+
+describe('the pictures Progress draws', () => {
+  // TestFlight build 451 (owner, 2 Oct 2026): Progress drew no medallions, no
+  // league trophy, no Atlas and no share plate. Each is named by absolute URL
+  // into public/, most of them built at runtime from a row the worker sends,
+  // and none was in the manifest. The probe (probe-progress.mjs) catches it
+  // in a built bundle; this catches it before one.
+  const shipped = new Set(publicFiles)
+  const read = (path: string): string =>
+    readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')
+  const unshipped = (urls: readonly string[]): string[] =>
+    urls.filter((url) => !shipped.has(url.replace(/^\//u, '')))
+
+  it('ships every medallion a badge or achievement icon can name', () => {
+    const urls = (badgeArtIcons() as string[]).map(
+      (icon) => badgeArtSrc(icon) as string,
+    )
+    expect(urls.length).toBeGreaterThan(40)
+    expect(unshipped(urls)).toEqual([])
+  })
+
+  it('ships the trophy of every rung', () => {
+    // Progress draws the singer's own rung (1 to 6); the Leaderboard's
+    // ladder draws all seven, the mystery rung included.
+    const rungs = [
+      ...read(
+        '../../../workers/db-worker/migrations/0005_leagues.sql',
+      ).matchAll(/'(\/leagues\/[^']+\.webp)', (?:'[^']*'|NULL), [01],/gu),
+    ].map((match) => match[1])
+    expect(rungs).toHaveLength(7)
+    expect(unshipped(rungs)).toEqual([])
+  })
+
+  it('ships the Atlas plate and the share plate', () => {
+    const css = read('../../../src/features/progress/ProgressPage.module.css')
+    const plates = [
+      ...[...css.matchAll(/url\('(\/[^']+)'\)/gu)].map((match) => match[1]),
+      ...Object.values(MERCURY_PRESSING_PLATE_URLS),
+    ]
+    expect(plates).toContain('/progress/resonance-atlas.webp')
+    expect(unshipped(plates)).toEqual([])
+  })
+})
+
+describe('the pictures the Leaderboard draws', () => {
+  // Reached from Progress's league card ("Open Leaderboard"), and as blank
+  // on build 451: the veiled trophy for the rungs above the singer's, and
+  // the podium's three places. Both are named in the component's source by
+  // absolute path, so read them from there, as the sing pill's check does.
+  const shipped = new Set(publicFiles)
+  const source = readFileSync(
+    fileURLToPath(
+      new URL(
+        '../../../src/components/CommunityLeaderboard.tsx',
+        import.meta.url,
+      ),
+    ),
+    'utf8',
+  )
+  const asked = [
+    ...new Set(
+      [...source.matchAll(/'\/([^']+\.webp)'/gu)].map((match) => match[1]),
+    ),
+  ].sort()
+
+  it('names the veiled trophy and the three podium places', () => {
+    expect(asked).toEqual([
+      'leaderboard/place-1.webp',
+      'leaderboard/place-2.webp',
+      'leaderboard/place-3.webp',
+      'leagues/locked.webp',
+    ])
+  })
+
+  it('ships every picture it names', () => {
+    expect(asked.filter((file) => !shipped.has(file))).toEqual([])
   })
 })
