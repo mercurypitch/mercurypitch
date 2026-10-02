@@ -41,6 +41,12 @@ export interface LoopRangeRailProps {
   /** Host snapping in canonical units, for example authored whole beats. */
   snapMarkValue?: (value: number, mark: 'A' | 'B') => number
   testIdPrefix: string
+  /**
+   * A host class on the frame. Its custom properties override the rail's
+   * palette and sizes when its rule outranks the module's `.frame` (a
+   * doubled class does).
+   */
+  class?: string
 }
 
 const SEEK_KEYS = new Set([
@@ -333,8 +339,9 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
 
   return (
     <div
-      class={styles.frame}
+      class={`${styles.frame} ${props.class ?? ''}`}
       data-focused={focused() ? 'true' : undefined}
+      data-active={(props.active?.() ?? true) ? 'true' : 'false'}
       data-testid={`${props.testIdPrefix}-loop-range`}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || !focused()) return
