@@ -486,9 +486,6 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Mirrors the Scrubber's preview so the time readouts track the finger.
   const [scrub, setScrub] = createSignal<number | null>(null)
 
-  const remaining = (): number =>
-    Math.max(0, props.duration() - (scrub() ?? props.elapsed()))
-
   const displayTitle = (): string =>
     (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim() || 'Your song'
 
@@ -1110,7 +1107,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         />
         <div class={styles.times}>
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
-          <span>-{formatTime(remaining())}</span>
+          {/* The song's length, as the desktop rail and the Jam room show
+              it, not the time left. */}
+          <span>{formatTime(props.duration())}</span>
         </div>
         <div
           class={styles.transport}
