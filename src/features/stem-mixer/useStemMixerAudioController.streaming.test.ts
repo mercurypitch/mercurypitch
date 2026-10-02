@@ -71,6 +71,8 @@ const CHUNK_SECONDS = 1024 / STEM_RATE
 let openedStreams = 0
 let disposedStreams = 0
 let chunkIterations = 0
+/** Stream openings still to fail, as a reclaimed decoder fails. */
+let failingIterations = 0
 
 /** False for a WKWebView with no WebCodecs AudioDecoder: nothing streams. */
 let decoderPresent = true
@@ -88,6 +90,10 @@ vi.mock('./stem-stream-source', () => ({
       durationSeconds: SONG_SECONDS,
       chunks: async function* (fromSeconds: number) {
         chunkIterations++
+        if (failingIterations > 0) {
+          failingIterations--
+          throw new Error('Codec reclaimed due to inactivity')
+        }
         for (let t = fromSeconds; t < SONG_SECONDS; t += CHUNK_SECONDS) {
           yield {
             buffer: fakeChunkBuffer(Math.min(CHUNK_SECONDS, SONG_SECONDS - t)),
@@ -112,7 +118,7 @@ vi.mock('./stem-stream-source', () => ({
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import { readLastSongPath, resetSongPathForTests } from './stem-load-path'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
-import { useStemMixerAudioController } from './useStemMixerAudioController'
+import { LOST_SOUND_NOTICE, useStemMixerAudioController, } from './useStemMixerAudioController'
 
 const VOCAL = 'https://cdn.example/song/vocal.m4a'
 const INSTRUMENTAL = 'https://cdn.example/song/instrumental.m4a'
@@ -315,6 +321,7 @@ beforeEach(() => {
   openedStreams = 0
   disposedStreams = 0
   chunkIterations = 0
+  failingIterations = 0
   decoderPresent = true
   streamable = true
   stemBytes = PAST_THE_GUARD
@@ -410,6 +417,64 @@ describe('opening a song on a phone', () => {
     h.dispose()
     // A demuxer and a WebCodecs decoder per stem, released with the room.
     expect(disposedStreams).toBe(2)
+  })
+})
+
+describe('a stem whose stream fails mid-song', () => {
+  beforeEach(() => {
+    // Play's unlock starts a silent clip, which jsdom cannot play.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+  })
+
+  /** Lets every voice's pump and its reopenings run. */
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 10; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+  }
+  const recorded = (event: string) =>
+    audioDiagnosticEntries().filter((entry) => entry.event === event)
+
+  it('reopens the stream and plays on', async () => {
+    deviceClass = 'mobile'
+    resetAudioDiagnosticsForTests()
+    const h = harness()
+    await h.controller.loadStems()
+    // Each stem's first opening fails once.
+    failingIterations = 2
+
+    h.controller.handlePlay()
+    await settle()
+
+    expect(h.controller.playing()).toBe(true)
+    expect(recorded('stream-retry').map((entry) => entry.detail.stem)).toEqual([
+      'Vocal',
+      'Instrumental',
+    ])
+    expect(recorded('stream-failed')).toHaveLength(0)
+    expect(h.notifications).not.toContain(LOST_SOUND_NOTICE)
+    h.dispose()
+  })
+
+  it('stops the run where it was, and says so, once reopening does not help', async () => {
+    deviceClass = 'mobile'
+    resetAudioDiagnosticsForTests()
+    const h = harness()
+    await h.controller.loadStems()
+    failingIterations = Number.POSITIVE_INFINITY
+
+    h.controller.handlePlay()
+    await settle()
+
+    // A song that says it plays and makes no sound is the thing to avoid:
+    // the transport now says paused, and play opens fresh decoders.
+    expect(h.controller.playing()).toBe(false)
+    expect(h.notifications).toContain(LOST_SOUND_NOTICE)
+    expect(recorded('stream-failed')[0]).toMatchObject({
+      failed: true,
+      detail: { stem: 'Vocal' },
+    })
+    h.dispose()
   })
 })
 

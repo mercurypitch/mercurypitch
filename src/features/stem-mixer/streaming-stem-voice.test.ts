@@ -16,15 +16,27 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { StemStreamChunk } from './streaming-stem-voice'
-import { createStreamingStemVoice } from './streaming-stem-voice'
+import { createStreamingStemVoice, PICK_UP_LEAD_SECONDS, STREAM_REOPEN_ATTEMPTS, WINDOW_FADE_IN_SECONDS, } from './streaming-stem-voice'
 
 const RATE = 48_000
+
+interface FakeGain {
+  connect: ReturnType<typeof vi.fn>
+  disconnect: ReturnType<typeof vi.fn>
+  gain: {
+    value: number
+    setValueAtTime: ReturnType<typeof vi.fn>
+    linearRampToValueAtTime: ReturnType<typeof vi.fn>
+  }
+}
 
 interface StartedSource {
   when: number
   offset: number | undefined
   duration: number | undefined
   frames: number
+  /** What the window plays into: the envelope, or a fade on its way there. */
+  into: unknown
   end: () => void
   stopped: number[]
 }
@@ -50,14 +62,23 @@ function fakeAudioBuffer(
 
 function fakeContext() {
   const started: StartedSource[] = []
+  const gains: FakeGain[] = []
   const context = {
     currentTime: 0,
     sampleRate: RATE,
-    createGain: () => ({
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      gain: { value: 1 },
-    }),
+    createGain: (): FakeGain => {
+      const gain: FakeGain = {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        gain: {
+          value: 1,
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+        },
+      }
+      gains.push(gain)
+      return gain
+    },
     createBuffer: (channels: number, frames: number, sampleRate: number) => {
       const data = Array.from(
         { length: channels },
@@ -87,6 +108,7 @@ function fakeContext() {
             offset,
             duration,
             frames: source.buffer?.length ?? 0,
+            into: source.connect.mock.calls[0]?.[0],
             end: () => source.onended?.(),
             stopped: record,
           })
@@ -99,7 +121,15 @@ function fakeContext() {
       return source
     },
   }
-  return { context: context as unknown as BaseAudioContext, started }
+  return {
+    context: context as unknown as BaseAudioContext,
+    started,
+    gains,
+    /** The clock moving on, as the audio thread moves it. */
+    setTime: (seconds: number) => {
+      context.currentTime = seconds
+    },
+  }
 }
 
 /** A stem that yields fixed-length chunks, counting what was asked of it. */
@@ -234,9 +264,9 @@ describe('where the windows land on the clock', () => {
     expect(started.map((s) => s.when)).toEqual([0, 4])
   })
 
-  it('starts a late window now rather than behind the beat', async () => {
-    const { context, started } = fakeContext()
-    ;(context as unknown as { currentTime: number }).currentTime = 5
+  it('starts a late window now, part way in, rather than behind the beat', async () => {
+    const { context, started, setTime } = fakeContext()
+    setTime(5)
     const stem = chunkedStem({ chunkSeconds: 1, totalSeconds: 30 })
 
     createStreamingStemVoice({
@@ -252,10 +282,203 @@ describe('where the windows land on the clock', () => {
     })
     await settle()
 
+    // The first window (0 to 2 s, due at 2 to 4) is all behind the clock and
+    // is not played at all: no single frame of it, which a stream catching
+    // up used to fire in a buzzing run. The second (due at 4 to 6) starts
+    // now, a second in.
+    expect(started).toHaveLength(1)
     expect(started[0].when).toBe(5)
-    // Two seconds of window, three seconds late: the whole thing is behind, so
-    // it plays a single frame to keep the bookkeeping moving.
-    expect(started[0].duration).toBeCloseTo(1 / RATE, 9)
+    expect(started[0].offset).toBeCloseTo(1, 9)
+    expect(started[0].duration).toBeUndefined()
+  })
+})
+
+describe('fading in', () => {
+  it('fades in only a window that does not carry on from the last', async () => {
+    const { context, started, gains } = fakeContext()
+    const envelope = { connect: vi.fn() }
+    const stem = chunkedStem({ chunkSeconds: 1, totalSeconds: 30 })
+
+    const voice = createStreamingStemVoice({
+      context,
+      destination: envelope as unknown as AudioNode,
+      open: stem.open,
+      atContextTime: 10,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 2,
+      lookaheadWindows: 3,
+    })
+    await settle()
+
+    // The first window starts from silence; the next two are seamless.
+    const envelopeNode: unknown = voice.envelope
+    const fade = gains.find((gain) => gain !== envelopeNode)
+    expect(started[0].into).toBe(fade)
+    expect(fade?.gain.setValueAtTime).toHaveBeenCalledWith(0, 10)
+    expect(fade?.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1,
+      10 + WINDOW_FADE_IN_SECONDS,
+    )
+    expect(started[1].into).toBe(voice.envelope)
+    expect(started[2].into).toBe(voice.envelope)
+  })
+
+  it('fades in a late window, which starts mid-sound', async () => {
+    const { context, started, setTime } = fakeContext()
+    setTime(3)
+    const stem = chunkedStem({ chunkSeconds: 1, totalSeconds: 30 })
+
+    const voice = createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open: stem.open,
+      atContextTime: 2,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 2,
+      lookaheadWindows: 2,
+    })
+    await settle()
+
+    expect(started[0].when).toBe(3)
+    expect(started[0].into).not.toBe(voice.envelope)
+    // The one after it is on time and carries straight on.
+    expect(started[1].when).toBe(4)
+    expect(started[1].into).toBe(voice.envelope)
+  })
+})
+
+describe('a stream that stalls', () => {
+  it('picks up at the clock instead of decoding the seconds it missed', async () => {
+    const { context, started, setTime } = fakeContext()
+    const opened: number[] = []
+    const stem = chunkedStem({ chunkSeconds: 0.5, totalSeconds: 600 })
+    const onSkip = vi.fn()
+
+    createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open: (from) => {
+        opened.push(from)
+        return stem.open(from)
+      },
+      atContextTime: 0,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 1,
+      lookaheadWindows: 1,
+      onSkip,
+    })
+    await settle()
+    expect(started).toHaveLength(1)
+    const pulledBeforeStall = stem.state.pulled
+
+    // The page was not run for twenty seconds; the first window's end is
+    // delivered only now.
+    setTime(20)
+    started[0].end()
+    await settle()
+
+    expect(onSkip).toHaveBeenCalledOnce()
+    expect(opened).toEqual([0, 20 + PICK_UP_LEAD_SECONDS])
+    expect(started[1].when).toBeCloseTo(20 + PICK_UP_LEAD_SECONDS, 9)
+    // A chunk to notice, then one window from the clock: not the forty
+    // half-second chunks between, each played as a click.
+    expect(stem.state.pulled - pulledBeforeStall).toBe(3)
+  })
+
+  it('never skips a stream that has not played yet, however slow', async () => {
+    const { context, started, setTime } = fakeContext()
+    setTime(30)
+    const onSkip = vi.fn()
+    const stem = chunkedStem({ chunkSeconds: 1, totalSeconds: 60 })
+
+    createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open: stem.open,
+      atContextTime: 0,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 2,
+      lookaheadWindows: 2,
+      onSkip,
+    })
+    await settle()
+
+    expect(onSkip).not.toHaveBeenCalled()
+    expect(started[0].when).toBe(30)
+  })
+})
+
+describe('a decoder that fails', () => {
+  it('reopens where the sound runs out, and carries on seamlessly', async () => {
+    const { context, started } = fakeContext()
+    const opened: number[] = []
+    const onRetry = vi.fn()
+    const onError = vi.fn()
+    const stem = chunkedStem({ chunkSeconds: 1, totalSeconds: 6 })
+    let failed = false
+    const open = async function* (
+      from: number,
+    ): AsyncGenerator<StemStreamChunk> {
+      opened.push(from)
+      for await (const chunk of stem.open(from)) {
+        if (!failed && chunk.timestamp >= 2) {
+          failed = true
+          throw new Error('codec reclaimed')
+        }
+        yield chunk
+      }
+    }
+
+    const voice = createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open,
+      atContextTime: 0,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 1,
+      lookaheadWindows: 10,
+      onRetry,
+      onError,
+    })
+    await settle()
+
+    expect(onRetry).toHaveBeenCalledOnce()
+    expect(onError).not.toHaveBeenCalled()
+    expect(opened).toEqual([0, 2])
+    expect(started.map((s) => s.when)).toEqual([0, 1, 2, 3, 4, 5])
+    expect(started[2].into).toBe(voice.envelope)
+  })
+
+  it('reports it once reopening has not helped', async () => {
+    const { context } = fakeContext()
+    const onRetry = vi.fn()
+    const onError = vi.fn()
+    const open = async function* (): AsyncGenerator<StemStreamChunk> {
+      yield { buffer: fakeAudioBuffer(1), timestamp: 0 }
+      throw new Error('decoder gave up')
+    }
+
+    createStreamingStemVoice({
+      context,
+      destination: context.createGain(),
+      open,
+      atContextTime: 0,
+      sourceOffsetSeconds: 0,
+      playbackRate: 1,
+      windowSeconds: 10,
+      lookaheadWindows: 2,
+      onRetry,
+      onError,
+    })
+    await settle()
+
+    expect(onRetry).toHaveBeenCalledTimes(STREAM_REOPEN_ATTEMPTS)
+    expect(onError).toHaveBeenCalledOnce()
   })
 })
 

@@ -6,6 +6,7 @@ import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
@@ -32,8 +33,9 @@ import { createHiddenClock } from './hidden-clock'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
+import { watchPlaybackReturn } from './playback-return-watch'
 import type { SongPathLog } from './stem-load-path'
-import { createSongPathLog } from './stem-load-path'
+import { createSongPathLog, PATH_SOURCE } from './stem-load-path'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
@@ -342,6 +344,9 @@ export function closeStemGain(
 }
 /** Ceiling for pitch detection and scoring. The device tier lowers it. */
 const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
+/** Said when a run stops because its sound did (stopForLostSound). */
+export const LOST_SOUND_NOTICE =
+  'The music stopped playing. Press play to carry on.'
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
 /** The live-pitch activation milestone uses the same supported range as the
@@ -1365,8 +1370,30 @@ export const useStemMixerAudioController = (
                   )
                   markEnvelopeWritten(lane)
                 },
+          onRetry: (error, attempt) => {
+            reportPlayback('stream-retry', {
+              stem: track.label,
+              attempt,
+              error: describeAudioError(error),
+            })
+          },
+          onSkip: (behindSeconds) => {
+            reportPlayback('stream-skip', {
+              stem: track.label,
+              behind: Math.round(behindSeconds * 1000) / 1000,
+            })
+          },
           onError: (error) => {
-            console.warn(`[StemMixer] ${track.label} stream stalled:`, error)
+            reportPlayback(
+              'stream-failed',
+              { stem: track.label, error: describeAudioError(error) },
+              true,
+            )
+            // After this call returns: `voice` is not assigned yet if the
+            // stream failed before its first await.
+            queueMicrotask(() => {
+              if (voice !== null) stopForLostSound(voice)
+            })
           },
         })
         if (isVocal && vocalAnalyser) {
@@ -1897,6 +1924,25 @@ export const useStemMixerAudioController = (
     return true
   }
 
+  // ── Sound that stopped by itself ─────────────────────────────
+  //
+  // A stem whose stream gave up (streaming-stem-voice.ts) goes quiet while
+  // the clock, and so the transport, runs on: a song that says it plays and
+  // makes no sound, with nothing to press that helps. The run stops instead,
+  // where it was, and play starts it again on fresh decoders.
+  const reportPlayback = audioReporter(PATH_SOURCE)
+  const stopForLostSound = (voice?: StreamingStemVoice): void => {
+    if (!playing()) return
+    if (
+      voice !== undefined &&
+      !deps.tracks().some((track) => track.streamVoice === voice)
+    ) {
+      return
+    }
+    handlePause()
+    deps.showNotification(LOST_SOUND_NOTICE, 'warning')
+  }
+
   // No frames reach a hidden page, so the frame loop above cannot end a
   // song a room keeps playing behind another app (hidden-clock.ts).
   const soundingNow = (): boolean => audioCtx !== null && playing()
@@ -1909,6 +1955,22 @@ export const useStemMixerAudioController = (
   }
   if (deps.followEndWhileHidden === true) {
     onCleanup(createHiddenClock(soundingNow, hiddenTick))
+    // The way back to the app, written down, and a song whose clock does
+    // not move after it stopped (playback-return-watch.ts).
+    onCleanup(
+      watchPlaybackReturn({
+        clock: () => audioCtx,
+        playing,
+        position: elapsed,
+        report: reportPlayback,
+        recover: () => {
+          if (audioCtx !== null) ensureAudioCtx()
+        },
+        giveUp: () => {
+          stopForLostSound()
+        },
+      }),
+    )
   }
 
   // ── Download ─────────────────────────────────────────────────
