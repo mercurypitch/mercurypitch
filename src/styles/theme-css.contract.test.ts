@@ -186,6 +186,18 @@ describe('theme CSS contract', () => {
     expect(unscopedClassRules(uvrCss, 'share-btn')).toEqual([])
   })
 
+  // Browsers give form controls their own font, so without this rule every
+  // button and input rendered in Arial beside text in the app font. The
+  // `font: inherit` shorthand would fix the family and also resize every
+  // control whose size the browser supplies, so the rule names only the family.
+  it('gives form controls the app font family without inheriting their size', () => {
+    const controls = cssBlock(APP_CSS, 'button,\ninput,\nselect,\ntextarea')
+
+    expect(controls).toMatch(/^\s*font-family: inherit;/m)
+    expect(controls).not.toMatch(/^\s*font:/m)
+    expect(APP_CSS).not.toMatch(/^\s*font:\s*inherit/m)
+  })
+
   it('uses readable foreground roles for small status and selected text', () => {
     const sessionBrowser = readFileSync(
       resolve(SRC_DIR, 'components/SessionBrowser.tsx'),

@@ -7,6 +7,18 @@
   box-sizing: border-box;
 }
 
+/* Form controls do not inherit the page's font family; browsers give them
+   their own, so every button, input, select and textarea rendered in Arial
+   while the text around it was in the app font. Family only: the `font:
+   inherit` shorthand would also pull the page's size into controls whose
+   size comes from the browser. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 /* Prevent FOUC - hide content until app loads */
 #root {
   visibility: hidden;
