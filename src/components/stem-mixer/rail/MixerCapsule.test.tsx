@@ -138,7 +138,7 @@ describe('MixerCapsule', () => {
 
   it('keeps a loop that is on reachable, so it can be turned off', () => {
     const { setLoopStart, setLoopEnabled } = mount()
-    // The L key turns a lone A on: it loops from A to the end.
+    // On with A alone, which loops from A to the end: however it got there.
     setLoopStart(5)
     setLoopEnabled(true)
 
