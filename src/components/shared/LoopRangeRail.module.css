@@ -1,3 +1,14 @@
+/* Guitar Night's warm palette is the default. A host restyles the rail
+   with a class on the frame (the `class` prop) whose rule outranks this
+   one, such as a doubled class: `:where()` would be tidier, but the
+   television floor (Chrome 79) drops a rule it cannot parse.
+
+   Further hooks, each defaulting to the look above:
+     --loop-range-marker-font     the A and B letters
+     --loop-range-marker-opacity  both marks, e.g. dimmed while the loop is off
+     --loop-range-region-border-style  the A-B region's edge while inactive
+     --loop-range-knob-size       a playhead knob at the progress end (0: none)
+     --loop-range-knob            its colour */
 .frame {
   --loop-range-track: rgba(244, 234, 219, 0.2);
   --loop-range-progress: rgba(224, 164, 93, 0.78);
@@ -40,12 +51,25 @@
   background: var(--loop-range-progress);
 }
 
+.progress::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: var(--loop-range-knob-size, 0);
+  height: var(--loop-range-knob-size, 0);
+  border-radius: 50%;
+  background: var(--loop-range-knob, var(--loop-range-progress));
+  content: '';
+  transform: translate(50%, -50%);
+}
+
 .region {
   position: absolute;
   z-index: 1;
   top: 50%;
   height: 12px;
-  border: 1px solid color-mix(in srgb, var(--loop-range-a) 48%, transparent);
+  border: 1px var(--loop-range-region-border-style, solid)
+    color-mix(in srgb, var(--loop-range-a) 48%, transparent);
   border-radius: 3px;
   background: var(--loop-range-region);
   transform: translateY(-50%);
@@ -53,6 +77,7 @@
 }
 
 .regionActive {
+  border-style: solid;
   background: color-mix(in srgb, var(--loop-range-a) 22%, transparent);
 }
 
@@ -82,6 +107,7 @@
   height: 44px;
   color: var(--loop-range-a);
   cursor: ew-resize;
+  opacity: var(--loop-range-marker-opacity, 1);
   transform: translateX(var(--loop-marker-shift, -50%));
   touch-action: none;
 }
@@ -113,7 +139,7 @@
   border-radius: 0.22rem;
   color: #100c08;
   background: var(--loop-range-a);
-  font-size: 0.55rem;
+  font-size: var(--loop-range-marker-font, 0.55rem);
   font-weight: 800;
   line-height: 1;
   text-align: center;
