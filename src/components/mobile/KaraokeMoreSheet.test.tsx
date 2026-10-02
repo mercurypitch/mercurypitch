@@ -1,5 +1,5 @@
 // ============================================================
-// KaraokeMoreSheet: speed and the A/B loop on the phone stage
+// KaraokeMoreSheet: the phone stage's options
 // ============================================================
 //
 // The phone stage had no speed and no loop at all (owner decision 1, 2
@@ -8,20 +8,49 @@
 // until A and B make a loop. A refused point says why inside the sheet,
 // where the singer is looking, not in a toast over it.
 //
+// Text size and the notes over the lyrics came in from the header after
+// (owner, 2 October 2026), grouped the way the room's options group them:
+// Lyrics (text size, the notes), then Playing (autoplay, speed, the loop).
+// The notes row is there only for a song that has its notes, as in the
+// room: absent, never dead.
+//
 // The binding below places points with the mixer's own rule
 // (placeLoopPoint), at a playhead the test moves, the way StemMixer wires
 // it.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { KaraokeMoreBinding } from '@/components/mobile/KaraokeMoreSheet'
+import type { KaraokeMoreBinding, KaraokeMoreLyrics, } from '@/components/mobile/KaraokeMoreSheet'
 import { KaraokeMoreSheet } from '@/components/mobile/KaraokeMoreSheet'
 import { placeLoopPoint } from '@/features/stem-mixer/loop-points'
 
 afterEach(cleanup)
 
-function mountSheet(opts: { autoplay?: boolean } = {}) {
+const SIZES = [
+  { value: 'smaller', label: 'Small' },
+  { value: 'current', label: 'Medium' },
+  { value: 'bigger', label: 'Large' },
+] as const
+
+function mountSheet(
+  opts: { autoplay?: boolean; noLoop?: boolean; hasNotes?: boolean } = {},
+) {
+  const [size, setSize] = createSignal<string>('current')
+  const [hasNotes, setHasNotes] = createSignal(opts.hasNotes === true)
+  const [notesOn, setNotesOn] = createSignal(false)
+  const lyrics: KaraokeMoreLyrics = {
+    sizes: SIZES.map((choice) => ({
+      label: choice.label,
+      chosen: () => size() === choice.value,
+      choose: () => setSize(choice.value),
+    })),
+    notes: {
+      has: hasNotes,
+      on: notesOn,
+      toggle: () => setNotesOn((on) => !on),
+    },
+  }
   const [speed, setSpeed] = createSignal(1)
   const [start, setStart] = createSignal<number | null>(null)
   const [end, setEnd] = createSignal<number | null>(null)
@@ -58,7 +87,8 @@ function mountSheet(opts: { autoplay?: boolean } = {}) {
     <KaraokeMoreSheet
       isOpen
       close={close}
-      binding={binding}
+      lyrics={lyrics}
+      binding={opts.noLoop === true ? undefined : binding}
       autoplay={
         opts.autoplay === true
           ? { on: autoplayOn, toggle: () => setAutoplayOn((on) => !on) }
@@ -66,7 +96,17 @@ function mountSheet(opts: { autoplay?: boolean } = {}) {
       }
     />
   ))
-  return { speed, start, end, loopOn, setPlayhead, autoplayOn }
+  return {
+    speed,
+    start,
+    end,
+    loopOn,
+    setPlayhead,
+    autoplayOn,
+    size,
+    setHasNotes,
+    notesOn,
+  }
 }
 
 const button = (name: string | RegExp) => screen.getByRole('button', { name })
@@ -257,5 +297,97 @@ describe('the next song', () => {
     expect(
       screen.queryAllByRole('switch').map((s) => s.getAttribute('aria-label')),
     ).toEqual(['Loop A to B'])
+  })
+})
+
+describe('the lyrics', () => {
+  it('offers the text sizes the room offers, and marks the one chosen', () => {
+    const { size } = mountSheet()
+    const sizes = within(screen.getByRole('group', { name: 'Text size' }))
+    const pressed = () =>
+      sizes
+        .getAllByRole('button')
+        .map((b) => [b.textContent?.trim(), b.getAttribute('aria-pressed')])
+    const before = pressed()
+
+    fireEvent.click(sizes.getByRole('button', { name: 'Large' }))
+
+    expect([before, size(), pressed()]).toEqual([
+      [
+        ['Small', 'false'],
+        ['Medium', 'true'],
+        ['Large', 'false'],
+      ],
+      'bigger',
+      [
+        ['Small', 'false'],
+        ['Medium', 'false'],
+        ['Large', 'true'],
+      ],
+    ])
+  })
+
+  it('has a notes row only once the song has its notes, and turns them on', () => {
+    const { setHasNotes, notesOn } = mountSheet()
+    const switches = () =>
+      screen.queryAllByRole('switch').map((s) => s.getAttribute('aria-label'))
+    const without = switches()
+
+    setHasNotes(true)
+    const withNotes = switches()
+    fireEvent.click(
+      screen.getByRole('switch', { name: 'Show notes over the lyrics' }),
+    )
+
+    expect([without, withNotes, notesOn()]).toEqual([
+      ['Loop A to B'],
+      ['Show notes over the lyrics', 'Loop A to B'],
+      true,
+    ])
+  })
+})
+
+describe('the order of the sheet', () => {
+  it('groups the lyrics first, then playing: autoplay, speed and the loop', () => {
+    mountSheet({ autoplay: true, hasNotes: true })
+    const sheet = screen.getByTestId('karaoke-more-sheet')
+
+    const headings = within(sheet)
+      .getAllByRole('heading')
+      .map((h) => h.textContent?.trim())
+    const controls = [
+      ...sheet.querySelectorAll(
+        '[role="group"], [role="radiogroup"], [role="switch"]',
+      ),
+    ].map((el) => el.getAttribute('aria-label'))
+
+    expect([headings, controls]).toEqual([
+      ['Lyrics', 'Playing'],
+      [
+        'Text size',
+        'Show notes over the lyrics',
+        'Play the next song automatically',
+        'Speed',
+        'Loop A to B',
+      ],
+    ])
+  })
+
+  it('keeps the lyrics and autoplay where the stage has no speed or loop', () => {
+    mountSheet({ autoplay: true, noLoop: true })
+
+    expect(
+      [
+        ...screen
+          .getByTestId('karaoke-more-sheet')
+          .querySelectorAll('[role="group"], [role="radiogroup"], button'),
+      ].map((el) => el.getAttribute('aria-label') ?? el.textContent?.trim()),
+    ).toEqual([
+      'Text size',
+      'Small',
+      'Medium',
+      'Large',
+      'Play the next song automatically',
+    ])
   })
 })
