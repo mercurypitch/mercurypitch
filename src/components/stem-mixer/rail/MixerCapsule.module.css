@@ -237,6 +237,28 @@
   background: var(--mixer-control-bg);
 }
 
+/* Under the pointer and while its menu is open, the tint the buttons beside
+   it take, not the menu's own solid hover: on the focus pill's glass a
+   solid fill reads as a box. Doubled and qualified to outrank
+   OverflowMenu's trigger states. */
+@media (hover: hover) {
+  .more.more:hover:not(:disabled) {
+    border-color: var(--mixer-control-border);
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.more.more[aria-expanded='true'] {
+  border-color: var(--mixer-control-border);
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
+}
+
 .more.more:focus-visible {
   outline: 2px solid var(--accent, #58a6ff);
   outline-offset: 2px;
