@@ -7,7 +7,8 @@
 //
 //   - a phone gets the phone stage upright and on its side (844x390 and
 //     780x360 are wider than the 768 px breakpoint, and got the desktop
-//     mixer);
+//     mixer), and on its side the stage takes two columns, the lyrics the
+//     full height beside the controls;
 //   - every control on screen is at least 44 px, nothing runs past the
 //     window, and the times read as played and length;
 //   - More holds speed and the A/B loop in 44 px targets, refuses B on A
@@ -262,6 +263,115 @@ for (const phone of PHONES) {
     })
   })
 }
+
+interface StageColumns {
+  /** The header and the bottom bar end left of where the lyrics begin. */
+  besideTheControls: boolean
+  /** The lyrics begin below the header and end above the bottom bar. */
+  oneColumn: boolean
+  lyricsHeight: number
+  pageScroll: number
+  /** In the window and in the lyrics' box, and a tap on it lands on it. */
+  pasteLyrics: boolean
+  openLrclib: boolean
+}
+
+/** How the stage lays out the lyrics against its controls. The seeded song
+    has no lyrics (LRCLIB is refused), so the lyrics show the finder. */
+function stageColumns(page: Page): Promise<StageColumns> {
+  return page.evaluate((sel) => {
+    const stage = document.querySelector<HTMLElement>(sel)
+    if (stage === null) throw new Error(`nothing matches ${sel}`)
+    // CSS modules name a class `<hash>_<local>`, in the build and in dev.
+    const part = (local: string): DOMRect => {
+      const element = [...stage.querySelectorAll<HTMLElement>('*')].find(
+        (node) =>
+          [...node.classList].some((name) => name.endsWith(`_${local}`)),
+      )
+      if (element === undefined) throw new Error(`the stage has no ${local}`)
+      return element.getBoundingClientRect()
+    }
+    const lyrics = part('lyrics')
+    const header = part('header')
+    const bottomBar = part('bottomBar')
+    const reachable = (name: string): boolean => {
+      const control = [
+        ...stage.querySelectorAll<HTMLElement>('button, a'),
+      ].find((element) => element.textContent?.trim() === name)
+      if (control === undefined) return false
+      const r = control.getBoundingClientRect()
+      const hit = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      )
+      return (
+        r.top >= Math.max(0, lyrics.top) &&
+        r.bottom <= Math.min(innerHeight, lyrics.bottom) &&
+        r.left >= 0 &&
+        r.right <= innerWidth &&
+        hit !== null &&
+        control.contains(hit)
+      )
+    }
+    return {
+      besideTheControls:
+        header.right <= lyrics.left && bottomBar.right <= lyrics.left,
+      oneColumn:
+        lyrics.top >= header.bottom - 0.5 &&
+        bottomBar.top >= lyrics.bottom - 0.5,
+      lyricsHeight: Math.round(lyrics.height),
+      pageScroll:
+        (document.scrollingElement?.scrollHeight ?? innerHeight) - innerHeight,
+      pasteLyrics: reachable('Paste lyrics'),
+      openLrclib: reachable('Open LRCLIB'),
+    }
+  }, STAGE)
+}
+
+// On its side the portrait column left the lyrics a 200 px strip at 844x390
+// and put Paste lyrics and Open LRCLIB below the window. The stage takes the
+// room's two columns there: the song and the controls on the left, the
+// lyrics the full height on the right.
+for (const phone of [PHONES[2], PHONES[3]]) {
+  test.describe(`a phone on its side at ${phone.width}x${phone.height}`, () => {
+    test.beforeEach(({ page }) => openOnPhone(page, phone))
+
+    test('gives the lyrics the full height beside the controls, and both ways to add lyrics in reach', async ({
+      page,
+    }) => {
+      expect(await stageColumns(page)).toEqual({
+        besideTheControls: true,
+        oneColumn: false,
+        lyricsHeight: phone.height,
+        pageScroll: 0,
+        pasteLyrics: true,
+        openLrclib: true,
+      })
+    })
+  })
+}
+
+test.describe('a phone upright at 360x780', () => {
+  test.beforeEach(({ page }) => openOnPhone(page, PHONES[0]))
+
+  test('keeps one column: the header, the lyrics, then the controls', async ({
+    page,
+  }) => {
+    const columns = await stageColumns(page)
+
+    expect({
+      besideTheControls: columns.besideTheControls,
+      oneColumn: columns.oneColumn,
+      pageScroll: columns.pageScroll,
+      pasteLyrics: columns.pasteLyrics,
+    }).toEqual({
+      besideTheControls: false,
+      oneColumn: true,
+      pageScroll: 0,
+      pasteLyrics: true,
+    })
+  })
+})
 
 /** Opens the key sheet and runs Find my key, picking a bass voice. */
 async function findMyKey(page: Page) {
