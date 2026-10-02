@@ -40,6 +40,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
 import { MUSIC_LEVEL } from '@/features/stem-mixer/master-headroom'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { dragPill } from '@/tests/helpers/pill-drag'
 
 beforeAll(() => {
@@ -431,5 +432,20 @@ describe('the keyboard', () => {
     expect(pill().getAttribute('title')).toMatch(
       /turn the backing track back up if your phone quietened it/i,
     )
+  })
+})
+
+describe('the control, on an iPad', () => {
+  it('says the iPad may have quietened the backing track', () => {
+    const restore = actAsIpad()
+    try {
+      mountWithLevel()
+
+      expect(pill().getAttribute('title')).toBe(
+        'Music level: drag to turn the backing track back up if your iPad quietened it',
+      )
+    } finally {
+      restore()
+    }
   })
 })

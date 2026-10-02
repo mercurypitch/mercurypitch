@@ -13,6 +13,7 @@ import { createSignal, onCleanup } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { BackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import { thisDeviceLower } from '@/lib/device-noun'
 import styles from './karaoke-room.module.css'
 
 interface KaraokeRoomPickerProps {
@@ -53,8 +54,8 @@ export const KaraokeRoomPicker: Component<KaraokeRoomPickerProps> = (props) => {
           <h2 class={styles.sheetTitle}>Your room</h2>
         </div>
         <p class={styles.groupNote}>
-          The room is the picture behind your songs. Your choice stays on this
-          phone.
+          The room is the picture behind your songs. Your choice stays on{' '}
+          {thisDeviceLower()}.
         </p>
 
         <PremiumBackgroundPicker

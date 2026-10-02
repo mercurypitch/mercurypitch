@@ -7,6 +7,7 @@
 // refused with its reason, and every refusal ends "Nothing was used."
 
 import { describe, expect, it, vi } from 'vitest'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { checkImport, IMPORT_ACCEPT, songTitleOf, } from './karaoke-import-checks'
 
 const MB = 1024 * 1024
@@ -143,5 +144,21 @@ describe('a song refused before it is sent', () => {
 
     expect(refusal?.title).toBe('This song is too big')
     expect(duration).not.toHaveBeenCalled()
+  })
+})
+
+describe('a song, on an iPad', () => {
+  it('does not fit on this iPad, and says so', async () => {
+    const restore = actAsIpad()
+    try {
+      const refusal = await checkImport(song('Harbour Lights.mp3', 8 * MB), {
+        ...fine,
+        hasRoom: vi.fn(async () => Promise.resolve(false)),
+      })
+
+      expect(refusal?.title).toBe('Not enough space on this iPad')
+    } finally {
+      restore()
+    }
   })
 })

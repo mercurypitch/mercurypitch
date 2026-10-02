@@ -19,6 +19,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
+import { thisDeviceLower } from '@/lib/device-noun'
 import type { SingTake } from '@/stores/sing-takes-store'
 import styles from './sing-room.module.css'
 import type { TakeSummary } from './take-summary'
@@ -132,7 +133,7 @@ export const SingTakeSheet: Component<SingTakeSheetProps> = (props) => (
           </div>
 
           <p classList={{ [styles.caption]: true, [styles.center]: true }}>
-            Keep stores it on this phone.
+            Keep stores it on {thisDeviceLower()}.
           </p>
         </div>
       )}

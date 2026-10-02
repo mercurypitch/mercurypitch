@@ -16,6 +16,7 @@ import { needsSignIn } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { wipeVoiceTakes } from '@/db/services/voice-take-service'
 import { clearLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { thisDevice, thisDeviceLower } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { RefreshIcon } from '../icons'
 import { STORAGE_COPY, takesLine } from './account-copy'
@@ -153,8 +154,8 @@ export function StorageScreen(): JSX.Element {
 
   function askStartFresh(): void {
     askSettings({
-      title: 'Start fresh on this phone?',
-      text: 'This phone gets a new identity. The history made under the old one cannot be reached from this phone again.',
+      title: `Start fresh on ${thisDeviceLower()}?`,
+      text: `${thisDevice()} gets a new identity. The history made under the old one cannot be reached from ${thisDeviceLower()} again.`,
       confirmLabel: 'Start fresh',
       destructive: true,
       onConfirm: startFresh,
@@ -173,7 +174,7 @@ export function StorageScreen(): JSX.Element {
                 </strong>
               </div>
               <p class="mp-storage__caption">
-                Kept by MercuryPitch on this phone
+                Kept by MercuryPitch on {thisDeviceLower()}
               </p>
               <div
                 class="mp-storage__bar"
@@ -285,7 +286,7 @@ export function StorageScreen(): JSX.Element {
                     id="start-fresh"
                     icon={<RefreshIcon />}
                     label="Start fresh"
-                    sub="A new identity for this phone"
+                    sub={`A new identity for ${thisDeviceLower()}`}
                     tone="danger"
                     onPress={askStartFresh}
                   />

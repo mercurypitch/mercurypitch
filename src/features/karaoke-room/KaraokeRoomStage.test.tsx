@@ -176,6 +176,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
   }),
 }))
 
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
@@ -957,5 +958,22 @@ describe('songs of your own (Stage 2)', () => {
     const sheet = await screen.findByTestId('karaoke-options')
 
     expect(within(sheet).queryByText('Songs this month')).toBeNull()
+  })
+})
+
+describe('the room picture, on an iPad', () => {
+  it('says the choice stays on this iPad', async () => {
+    const restore = actAsIpad()
+    try {
+      await mountRoom()
+
+      controls().openRoomPicker?.()
+      const picker = await screen.findByTestId('karaoke-room-picker')
+
+      expect(picker.textContent).toContain('Your choice stays on this iPad.')
+      expect(picker.textContent).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

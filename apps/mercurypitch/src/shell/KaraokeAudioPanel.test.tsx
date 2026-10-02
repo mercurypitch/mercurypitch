@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSongPathLog, resetSongPathForTests, } from '@/features/stem-mixer/stem-load-path'
 import { DECODE_PAST_GUARD_KEY, decodePastGuard, FORCE_NO_STREAM_KEY, noStreamForced, reloadStreamSwitchesForTests, } from '@/features/stem-mixer/stream-switches'
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KaraokeAudioPanel } from './KaraokeAudioPanel'
 import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
@@ -183,5 +184,25 @@ describe('the rows', () => {
       'streamed · 1.0 MB in 1 stem · a whole decode would hold about 10.0 MB · loading',
     )
     log.finished()
+  })
+})
+
+describe('on an iPad', () => {
+  it('names the iPad in what each switch does', () => {
+    const restore = actAsIpad()
+    try {
+      open()
+      const words = view?.container.textContent ?? ''
+
+      expect(words).toContain(
+        'The Karaoke room behaves as if this iPad had no AudioDecoder',
+      )
+      expect(words).toContain(
+        'If the app restarts, the iPad did not survive it',
+      )
+      expect(words).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

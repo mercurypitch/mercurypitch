@@ -17,6 +17,7 @@ import type * as AuthService from '@/db/services/auth-service'
 import type * as UserService from '@/db/services/user-service'
 import { wipeVoiceTakes } from '@/db/services/voice-take-service'
 import { clearLocalVoiceprints } from '@/db/services/voiceprint-service'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { STORAGE_COPY, takesLine } from './account-copy'
@@ -264,5 +265,32 @@ describe('Start fresh', () => {
     await open()
 
     expect(row('start-fresh')).toBeNull()
+  })
+})
+
+describe('on an iPad', () => {
+  it('says what is kept on this iPad, and Start fresh names it', async () => {
+    const restore = actAsIpad()
+    try {
+      await open()
+      const said = view?.container.textContent ?? ''
+      row('start-fresh')?.click()
+      const asked = alertText()
+
+      expect(said).toContain('Kept by MercuryPitch on this iPad')
+      expect(row('storage-takes')?.textContent).toContain(
+        '23 takes, only on this iPad',
+      )
+      expect(row('start-fresh')?.textContent).toContain(
+        'A new identity for this iPad',
+      )
+      expect(asked).toContain('Start fresh on this iPad?')
+      expect(asked).toContain(
+        'This iPad gets a new identity. The history made under the old one cannot be reached from this iPad again.',
+      )
+      expect(said + asked).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

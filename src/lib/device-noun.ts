@@ -6,6 +6,11 @@
 // row that read "iPad" (TestFlight 0.7.1). The noun is read here, on its
 // own, so a screen that only needs the word does not pull in the device
 // plugin and the alley that device-facts.ts reads its facts from.
+//
+// It lives in the shared `src/lib` rather than beside the native shell's
+// Settings because the rooms the shell hosts (Karaoke's import and library,
+// Sing's take sheet, the stem mixer) say "this phone" too, and they cannot
+// import from `apps/mercurypitch`. One detection, every sentence.
 
 /** What the device in hand is called in copy. */
 export type DeviceNoun = 'phone' | 'iPad' | 'tablet'
@@ -34,7 +39,41 @@ export function deviceNounFor(
   return 'phone'
 }
 
-/** "This phone", "This iPad" or "This tablet": the device in hand. */
+/**
+ * The device in hand, read on every call: a copy line built from it is
+ * right wherever it is first shown, and a test can change the navigator
+ * under it. "phone" with no navigator at all, as before there was a choice.
+ */
+export function deviceNoun(): DeviceNoun {
+  return typeof navigator === 'undefined' ? 'phone' : deviceNounFor(navigator)
+}
+
+/** "This phone", "This iPad" or "This tablet": a sentence's first words. */
 export function thisDevice(): string {
-  return `This ${deviceNounFor(navigator)}`
+  return `This ${deviceNoun()}`
+}
+
+/** "this phone", "this iPad" or "this tablet", inside a sentence. */
+export function thisDeviceLower(): string {
+  return `this ${deviceNoun()}`
+}
+
+/** "this phone's", "this iPad's" or "this tablet's". */
+export function thisDevicePossessive(): string {
+  return `this ${deviceNoun()}'s`
+}
+
+/** "your phone", "your iPad" or "your tablet", inside a sentence. */
+export function yourDevice(): string {
+  return `your ${deviceNoun()}`
+}
+
+/** "Your phone's", "Your iPad's" or "Your tablet's": a sentence's first words. */
+export function yourDevicePossessive(): string {
+  return `Your ${deviceNoun()}'s`
+}
+
+/** "the phone", "the iPad" or "the tablet", inside a sentence. */
+export function theDevice(): string {
+  return `the ${deviceNoun()}`
 }

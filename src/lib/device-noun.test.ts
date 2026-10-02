@@ -2,8 +2,9 @@
 // What the device in hand is called: a phone, an iPad or a tablet
 // ============================================================
 
-import { describe, expect, it } from 'vitest'
-import { deviceNounFor } from './device-noun'
+import { afterEach, describe, expect, it } from 'vitest'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
+import { deviceNoun, deviceNounFor, theDevice, thisDevice, thisDeviceLower, thisDevicePossessive, yourDevice, yourDevicePossessive, } from './device-noun'
 
 describe('what the device is called', () => {
   // Settings said "This phone" on an iPad, over a row that read "iPad"
@@ -53,5 +54,52 @@ describe('what the device is called', () => {
     expect(deviceNounFor({ userAgent: IPADOS, maxTouchPoints: 0 })).toBe(
       'phone',
     )
+  })
+})
+
+describe('the phrases copy builds from it', () => {
+  let restore: (() => void) | null = null
+  afterEach(() => {
+    restore?.()
+    restore = null
+  })
+
+  it('says "phone" in every form on a phone', () => {
+    expect(deviceNoun()).toBe('phone')
+    expect([
+      thisDevice(),
+      thisDeviceLower(),
+      thisDevicePossessive(),
+      yourDevice(),
+      yourDevicePossessive(),
+      theDevice(),
+    ]).toEqual([
+      'This phone',
+      'this phone',
+      "this phone's",
+      'your phone',
+      "Your phone's",
+      'the phone',
+    ])
+  })
+
+  it('names an iPad in every form, read from the navigator each time', () => {
+    restore = actAsIpad()
+    expect(deviceNoun()).toBe('iPad')
+    expect([
+      thisDevice(),
+      thisDeviceLower(),
+      thisDevicePossessive(),
+      yourDevice(),
+      yourDevicePossessive(),
+      theDevice(),
+    ]).toEqual([
+      'This iPad',
+      'this iPad',
+      "this iPad's",
+      'your iPad',
+      "Your iPad's",
+      'the iPad',
+    ])
   })
 })

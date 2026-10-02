@@ -12,10 +12,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
 import { deleteAccount } from '@/db/services/auth-service'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { pushed, resetRunShell } from '../run-shell-store'
-import { ACCOUNT_DELETED, DELETE_ACCOUNT, DELETE_QUESTION, } from './account-copy'
+import { accountDeleted, DELETE_ACCOUNT, DELETE_QUESTION } from './account-copy'
 import { accountDeletedNote, dismissAccountDeletedNote, resumeAfterDeletion, takeAccountDeleted, } from './account-deletion'
 import { restartApp } from './app-restart'
 import { DeleteAccountScreen } from './DeleteAccountScreen'
@@ -179,7 +180,7 @@ describe('after the restart', () => {
     resumeAfterDeletion()
 
     expect(pushed()).toBe('settings')
-    expect(accountDeletedNote()).toBe(ACCOUNT_DELETED)
+    expect(accountDeletedNote()).toBe(accountDeleted())
     expect(takeAccountDeleted()).toBe(false)
   })
 
@@ -188,5 +189,25 @@ describe('after the restart', () => {
 
     expect(pushed()).toBeNull()
     expect(accountDeletedNote()).toBeNull()
+  })
+})
+
+describe('on an iPad', () => {
+  it('says what stays on this iPad, before and after', () => {
+    const restore = actAsIpad()
+    try {
+      open()
+      sessionStorage.setItem('mp:account-deleted', '1')
+      resumeAfterDeletion()
+
+      expect(text()).toContain('What stays on this iPad')
+      expect(text()).toContain('They stay, under a new identity for this iPad.')
+      expect(text()).not.toMatch(/\bphones?\b/iu)
+      expect(accountDeletedNote()).toBe(
+        'Your account is deleted. Practice on this iPad stays here.',
+      )
+    } finally {
+      restore()
+    }
   })
 })

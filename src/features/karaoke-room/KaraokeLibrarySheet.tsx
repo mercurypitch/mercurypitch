@@ -26,6 +26,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { Sheet } from '@/components/mobile/Sheet'
+import { theDevice } from '@/lib/device-noun'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import styles from './karaoke-room.module.css'
 import { NoteGlyph } from './karaoke-room-glyphs'
@@ -183,7 +184,7 @@ export const KaraokeLibrarySheet: Component<KaraokeLibrarySheetProps> = (
               <For each={examples()}>{(song) => <Row song={song} />}</For>
             </ul>
             <p class={styles.groupNote}>
-              Part of the app: they play with the phone offline.
+              Part of the app: they play with {theDevice()} offline.
             </p>
           </section>
         </Show>

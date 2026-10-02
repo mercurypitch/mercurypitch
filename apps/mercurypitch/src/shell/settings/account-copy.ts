@@ -12,32 +12,45 @@
 //
 // Nothing here says "free", "paid" or a price. A claim like that belongs in
 // this file too, the day there is one to make.
+//
+// The app runs on an iPad and an Android tablet too, so a line that names
+// the device in hand reads it when it is shown (device-noun.ts): "this
+// phone" on a phone, "this iPad" on an iPad. The objects keep their shape;
+// those lines are getters, and the bare lines are functions.
+
+import { deviceNoun, thisDevice, thisDeviceLower } from '@/lib/device-noun'
 
 /** What an account adds: the offer and the Account screen both list these. */
-export const ACCOUNT_PROMISES = [
-  'Your whole history, not only what this phone keeps',
-  'On your next phone, and on the web',
-  'Still yours if this phone is lost',
-] as const
+export function accountPromises(): readonly string[] {
+  const here = thisDeviceLower()
+  return [
+    `Your whole history, not only what ${here} keeps`,
+    `On your next ${deviceNoun()}, and on the web`,
+    `Still yours if ${here} is lost`,
+  ]
+}
 
 /**
  * The line under the sign-in sheet's title. It says the account is reachable
  * from the next phone and from the web, so it is a promise like the three
  * above and lives with them.
  */
-export const SIGN_IN_EVERYWHERE =
-  'Use the same way on this phone, your next one and the web.'
+export function signInEverywhere(): string {
+  return `Use the same way on ${thisDeviceLower()}, your next one and the web.`
+}
 
 /** The title over the promises on the Account screen. */
 export const ACCOUNT_ADDS_TITLE = 'An account adds'
 
-/** What stays on the phone either way. Said wherever the promises are. */
-export const TAKES_STAY_ON_PHONE = 'Takes stay on this phone.'
+/** What stays on the device either way. Said wherever the promises are. */
+export function takesStayHere(): string {
+  return `Takes stay on ${thisDeviceLower()}.`
+}
 
 /**
  * The offer (S6 decision 02): a sheet once, after a take is kept in the Sing
  * room, and a card at the top of Settings until the singer says Later. Both
- * list ACCOUNT_PROMISES and end on TAKES_STAY_ON_PHONE.
+ * list accountPromises() and end on takesStayHere().
  */
 export const ACCOUNT_OFFER = {
   /** Over the sheet's title, when the take just kept is the phone's first. */
@@ -50,20 +63,26 @@ export const ACCOUNT_OFFER = {
 /** The Account row in Settings. */
 export const ACCOUNT_ROW = {
   label: 'Account',
-  signedOutSub: 'Practicing on this phone only',
+  get signedOutSub(): string {
+    return `Practicing on ${thisDeviceLower()} only`
+  },
   signedOutValue: 'Sign in',
 } as const
 
 /** The card on the Account screen with no account on the phone. */
 export const ACCOUNT_SIGNED_OUT = {
   title: 'No account yet',
-  body: 'Everything you practice is kept on this phone.',
+  get body(): string {
+    return `Everything you practice is kept on ${thisDeviceLower()}.`
+  },
 } as const
 
 /** The note over the card when the account cannot be reached (REQ-NAM-049). */
 export const ACCOUNT_OFFLINE = {
   title: 'Could not reach your account just now.',
-  body: 'You are still signed in on this phone; your practice here is safe.',
+  get body(): string {
+    return `You are still signed in on ${thisDeviceLower()}; your practice here is safe.`
+  },
 } as const
 
 /**
@@ -72,13 +91,17 @@ export const ACCOUNT_OFFLINE = {
  */
 export const ACCOUNT_SIGNED_OUT_HERE = {
   title: 'Signed out',
-  body: "Your account's history shows again when you sign in. Everything you practice is kept on this phone.",
+  get body(): string {
+    return `Your account's history shows again when you sign in. Everything you practice is kept on ${thisDeviceLower()}.`
+  },
 } as const
 
 /** The one question before signing out (4f, REQ-NAM-054). */
 export const SIGN_OUT_QUESTION = {
   title: 'Sign out?',
-  text: "Your practice stays on this phone. Sign in again any time to see your account's history.",
+  get text(): string {
+    return `Your practice stays on ${thisDeviceLower()}. Sign in again any time to see your account's history.`
+  },
   confirm: 'Sign out',
 } as const
 
@@ -95,8 +118,12 @@ export const RELAY_NOTE =
  */
 export const TWO_STEP = {
   label: 'Two-step sign-in',
-  offSub: 'Turn it on from the web. This phone asks for the code.',
-  onSub: 'Change it from the web. This phone asks for the code.',
+  get offSub(): string {
+    return `Turn it on from the web. ${thisDevice()} asks for the code.`
+  },
+  get onSub(): string {
+    return `Change it from the web. ${thisDevice()} asks for the code.`
+  },
 } as const
 
 /**
@@ -105,10 +132,16 @@ export const TWO_STEP = {
  * phone, and what did not: takes stay on the phone that kept them.
  */
 export const FILL_NOTE = {
-  lead: "Your account's history is on this phone now:",
-  takes: 'Takes stay on the phone that kept them.',
+  get lead(): string {
+    return `Your account's history is on ${thisDeviceLower()} now:`
+  },
+  get takes(): string {
+    return `Takes stay on the ${deviceNoun()} that kept them.`
+  },
   failedTitle: "Could not load your account's history just now.",
-  failedBody: 'What this phone kept is still here.',
+  get failedBody(): string {
+    return `What ${thisDeviceLower()} kept is still here.`
+  },
 } as const
 
 /** "38 runs and 2 voiceprints.", the counts after FILL_NOTE.lead. */
@@ -133,10 +166,14 @@ export const DELETE_ACCOUNT = {
     label: 'Sign in with Apple stops for MercuryPitch',
     sub: 'Apple is told to forget the link.',
   },
-  staysTitle: 'What stays on this phone',
+  get staysTitle(): string {
+    return `What stays on ${thisDeviceLower()}`
+  },
   stays: {
     label: 'Takes and practice kept here',
-    sub: 'They stay, under a new identity for this phone.',
+    get sub(): string {
+      return `They stay, under a new identity for ${thisDeviceLower()}.`
+    },
   },
   /** A way to delete it with no app (REQ-NAM-060). */
   elsewhere:
@@ -152,8 +189,9 @@ export const DELETE_QUESTION = {
 } as const
 
 /** The line on Settings after a deletion (5d, REQ-NAM-059). */
-export const ACCOUNT_DELETED =
-  'Your account is deleted. Practice on this phone stays here.'
+export function accountDeleted(): string {
+  return `Your account is deleted. Practice on ${thisDeviceLower()} stays here.`
+}
 
 /**
  * Storage (6a, 6b): where each kind of record is kept, as the Storage screen
@@ -163,19 +201,23 @@ export const ACCOUNT_DELETED =
  * back.
  */
 export const STORAGE_COPY = {
-  clearTakes:
-    'They are only on this phone, so they cannot come back. Your history and voiceprints stay.',
+  get clearTakes(): string {
+    return `They are only on ${thisDeviceLower()}, so they cannot come back. Your history and voiceprints stay.`
+  },
   clearVoiceprints: {
-    account:
-      'The copies on this phone go. Your account keeps the ones it holds.',
-    online:
-      'The copies on this phone go. Copies saved online with your history stay.',
-    phoneOnly:
-      'They are only on this phone, so they cannot come back. Your history and takes stay.',
+    get account(): string {
+      return `The copies on ${thisDeviceLower()} go. Your account keeps the ones it holds.`
+    },
+    get online(): string {
+      return `The copies on ${thisDeviceLower()} go. Copies saved online with your history stay.`
+    },
+    get phoneOnly(): string {
+      return `They are only on ${thisDeviceLower()}, so they cannot come back. Your history and takes stay.`
+    },
   },
 } as const
 
-/** The Takes row's line: "23 takes, only on this phone". */
+/** The Takes row's line: "23 takes, only on this phone" (or this iPad). */
 export function takesLine(count: number): string {
-  return `${count} ${count === 1 ? 'take' : 'takes'}, only on this phone`
+  return `${count} ${count === 1 ? 'take' : 'takes'}, only on ${thisDeviceLower()}`
 }

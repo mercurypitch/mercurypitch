@@ -13,9 +13,9 @@ import type { JSX } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
+import { thisDevice } from '@/lib/device-noun'
 import { showNotification } from '@/stores/notifications-store'
 import { PhoneIcon, WarnIcon } from '../icons'
-import { thisDevice } from './device-noun'
 import { SettingsGroup } from './SettingsList'
 
 /** "today", "yesterday", "3 days ago": precision nobody needs is noise. */

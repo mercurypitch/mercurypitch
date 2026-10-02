@@ -30,6 +30,7 @@ vi.mock('@/db/services/auth-service', () => ({
   }),
 }))
 
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { KaraokeSongs } from './karaoke-songs'
 import { awaitSubscription, collectLine, confirmCostLine, importLine, karaokeSongs, refreshKaraokeSongs, resetKaraokeSongsForTests, restoreNote, songsComeBackLine, songsLeftSentence, songsOnTheWay, songsOptionRow, STEMS_KEPT_DAYS, subscriptionStatusLine, } from './karaoke-songs'
 
@@ -265,5 +266,28 @@ describe('after the store says yes', () => {
     ).resolves.toEqual(waiting)
     expect(refresh).toHaveBeenCalledTimes(3)
     expect(songsOnTheWay()).toBe(false)
+  })
+})
+
+describe('the words, on an iPad', () => {
+  it('say the songs live on this iPad', () => {
+    const restore = actAsIpad()
+    try {
+      expect(collectLine(1)).toBe(
+        'Open Mercury Pitch within about a day to save it to this iPad.',
+      )
+      expect(
+        importLine({
+          left: 0,
+          subscribed: false,
+          renewsAt: null,
+          perPeriod: 20,
+        }),
+      ).toBe(
+        'Any song from Files. Our server separates the voice from the music, and the song then lives on this iPad. Part of the subscription.',
+      )
+    } finally {
+      restore()
+    }
   })
 })

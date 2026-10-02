@@ -57,6 +57,7 @@ vi.mock('@/stores/notifications-store', async (importOriginal) => {
 })
 
 import { StemMixer } from '@/components/StemMixer'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 
 beforeEach(() => {
   notes.shown = []
@@ -198,5 +199,24 @@ describe('the note the first time the mic goes on', () => {
         notes.shown.filter((m) => /noise cancelling/.test(m)),
       ).toHaveLength(1)
     })
+  })
+})
+
+describe('the note, on an iPad', () => {
+  it("names the iPad's noise cancelling", async () => {
+    const restore = actAsIpad()
+    try {
+      mountPhone()
+      fireEvent.click(screen.getByLabelText('Toggle your microphone'))
+
+      await waitFor(() => {
+        expect(notes.shown.join('\n')).toMatch(/noise cancelling/)
+      })
+      const note = notes.shown.find((m) => /noise cancelling/.test(m))!
+      expect(note).toContain("Your iPad's noise cancelling")
+      expect(note).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

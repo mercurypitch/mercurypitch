@@ -15,6 +15,7 @@
 import { hasRoomFor } from '@/db/durable-write'
 import { audioDurationSecs } from '@/lib/audio-duration'
 import { SERVER_MAX_UPLOAD_BYTES } from '@/lib/audio-upload-contract'
+import { thisDeviceLower } from '@/lib/device-noun'
 
 const MB = 1024 * 1024
 
@@ -88,6 +89,14 @@ function clock(seconds: number): string {
 
 const NOTHING_USED = 'Nothing was used.'
 
+/** The queue's refusal when the copy kept for a resend cannot be saved. */
+export function noRoomForCopy(): ImportRefusal {
+  return {
+    title: `Not enough space on ${thisDeviceLower()}`,
+    body: `Free up some space and try again. ${NOTHING_USED}`,
+  }
+}
+
 /** Null for a song that can be sent, else why it cannot. */
 export async function checkImport(
   file: File,
@@ -123,7 +132,7 @@ export async function checkImport(
   const needed = file.size + IMPORT_STEM_BYTES
   if (!(await deps.hasRoom(needed))) {
     return {
-      title: 'Not enough space on this phone',
+      title: `Not enough space on ${thisDeviceLower()}`,
       body: `Free up about ${Math.ceil(needed / MB)} MB and try again. ${NOTHING_USED}`,
     }
   }

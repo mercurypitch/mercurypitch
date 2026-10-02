@@ -10,6 +10,7 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SingTake } from '@/stores/sing-takes-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { historyLine, SingTakeSheet } from './SingTakeSheet'
 import type { TakeSummary } from './take-summary'
 
@@ -149,5 +150,20 @@ describe('the two answers', () => {
   it('shows nothing at all when there is no summary', () => {
     mount({ summary: null })
     expect(screen.queryByTestId('sing-take-sheet')).toBeNull()
+  })
+})
+
+describe('on an iPad', () => {
+  it('says Keep stores the take on this iPad', () => {
+    const restore = actAsIpad()
+    try {
+      mount()
+      const text = screen.getByTestId('sing-take-sheet').textContent ?? ''
+
+      expect(text).toContain('Keep stores it on this iPad.')
+      expect(text).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

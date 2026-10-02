@@ -174,6 +174,7 @@ vi.mock('./karaoke-songs', async (importOriginal) => ({
 import { TAB_KARAOKE, TAB_SINGING } from '@/features/tabs/constants'
 import { notifications, setNotifications } from '@/stores/notifications-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { ImportRow } from './karaoke-import-queue'
 import { duplicateOf, enqueueImports, IMPORT_QUEUE_CAP, importRowLine, importRows, importsInFlight, KARAOKE_IMPORT_SENDING_KEY, KARAOKE_IMPORTS_KEY, karaokeNewSongs, markKaraokeSongPlayed, removeImport, removeImportedSong, resetImportQueueForTests, retryImport, sendingTitle, setImportGateHandler, showImportGate, startKaraokeImportQueue, } from './karaoke-import-queue'
 import { karaokeSongRequest, resetKaraokeRoomForTests, } from './karaoke-room-store'
@@ -730,6 +731,25 @@ describe('a song that fails on the server', () => {
     ])
   })
 
+  it('names the iPad on an iPad, and still knows a copy an older build said was gone', async () => {
+    const restore = actAsIpad()
+    try {
+      await failed(
+        'The copy of this song on this phone is gone. Choose it again from Files.',
+      )
+
+      expect(importRows()[0]?.state).toEqual({
+        kind: 'failed',
+        reason: 'missing',
+      })
+      expect(lines()).toEqual([
+        'Long Road North: The copy of this song on this iPad is gone. Choose it again from Files.',
+      ])
+    } finally {
+      restore()
+    }
+  })
+
   it('fetches a separated song again for free when it only failed to save', async () => {
     const run = await failed(
       'Could not save the separated stems locally. Please try again.',
@@ -856,5 +876,40 @@ describe('the words', () => {
     expect(importRowLine({ kind: 'failed', reason: 'missing' })).toBe(
       'The copy of this song on this phone is gone. Choose it again from Files.',
     )
+  })
+})
+
+describe('the words, on an iPad', () => {
+  it('name the iPad wherever they named the phone', async () => {
+    const restore = actAsIpad()
+    try {
+      const said = {
+        network: importRowLine({ kind: 'waiting-network' }),
+        saving: importRowLine({ kind: 'saving' }),
+        expired: importRowLine({ kind: 'failed', reason: 'expired' }),
+        storage: importRowLine({ kind: 'failed', reason: 'storage' }),
+        notSaved: importRowLine({ kind: 'failed', reason: 'saving' }),
+        missing: importRowLine({ kind: 'failed', reason: 'missing' }),
+      }
+      await started()
+      fake.saveFails = true
+      const result = await enqueueImports([song('Harbour Lights.mp3')])
+
+      expect(said).toEqual({
+        network:
+          'Waiting for a connection. It is sent when the iPad is back online.',
+        saving: 'Saving to this iPad',
+        expired: 'This song expired on the server before it reached your iPad.',
+        storage: 'Not enough space on this iPad. Free up about 20 MB.',
+        notSaved: 'The song could not be saved to this iPad.',
+        missing:
+          'The copy of this song on this iPad is gone. Choose it again from Files.',
+      })
+      expect(result.refused[0]?.refusal.title).toBe(
+        'Not enough space on this iPad',
+      )
+    } finally {
+      restore()
+    }
   })
 })

@@ -92,6 +92,7 @@ vi.mock('@/db/services/auth-service', () => ({
 
 import type { KaraokeSubscriptionApi } from '@/stores/native-shell-store'
 import { registerShellApi } from '@/stores/native-shell-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { IMPORT_ACCEPT } from './karaoke-import-checks'
 import { karaokeSongs, resetKaraokeSongsForTests, songsOnTheWay, } from './karaoke-songs'
 import { KaraokeImport } from './KaraokeImport'
@@ -776,6 +777,82 @@ describe('the paywall', () => {
       )
     } finally {
       unregister()
+    }
+  })
+})
+
+describe('on an iPad', () => {
+  it('says the songs come from Files on this iPad and stay on it', async () => {
+    const restore = actAsIpad()
+    try {
+      resetKaraokeSongsForTests({
+        left: 0,
+        subscribed: false,
+        renewsAt: null,
+        perPeriod: 20,
+      })
+      mount()
+      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+      const paywall = await sheet('Sing your own songs')
+
+      for (const line of [
+        'Any song from Files on this iPad',
+        'Your songs stay on this iPad and play offline',
+      ]) {
+        expect(within(paywall).getByText(line)).toBeTruthy()
+      }
+      expect(paywall.textContent).not.toMatch(/\bphones?\b/iu)
+      cleanup()
+
+      resetKaraokeSongsForTests({ ...subscriber, left: 0 })
+      mount()
+      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+      const used = await sheet('No songs left this month')
+      expect(used.textContent).toContain(
+        'The songs you imported stay on this iPad and still play.',
+      )
+    } finally {
+      restore()
+    }
+  })
+
+  it('offers an account so the songs follow the singer to a new iPad', async () => {
+    const restore = actAsIpad()
+    const unregister = registerShellApi({
+      pushSettings: vi.fn(),
+      openSignIn: vi.fn(),
+      karaokeSubscription: {
+        subscribe: vi.fn(async () => Promise.resolve('purchased' as const)),
+        restore: vi.fn(async () => Promise.resolve('nothing' as const)),
+        offer: offered,
+      },
+    })
+    try {
+      resetKaraokeSongsForTests({
+        left: 0,
+        subscribed: false,
+        renewsAt: null,
+        perPeriod: 20,
+      })
+      mount()
+      fireEvent.click(screen.getByRole('button', { name: 'Import a song' }))
+      const paywall = await sheet('Sing your own songs')
+      const subscribe = (): HTMLButtonElement =>
+        within(paywall).getByRole('button', {
+          name: 'Subscribe',
+        }) as HTMLButtonElement
+      await waitFor(() => expect(subscribe().disabled).toBe(false))
+      server.next = subscriber
+
+      fireEvent.click(subscribe())
+
+      const offer = await sheet("You're subscribed")
+      expect(offer.textContent).toContain(
+        'Keep them with an account, so your subscription and your songs follow you to a new iPad.',
+      )
+    } finally {
+      unregister()
+      restore()
     }
   })
 })

@@ -11,6 +11,7 @@ import type * as AuthMeService from '@/db/services/auth-me-service'
 import type * as VoiceTakeService from '@/db/services/voice-take-service'
 import { resetKaraokeSongsForTests } from '@/features/karaoke-room/karaoke-songs'
 import type * as NativeBuild from '@/lib/native-build'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import type * as DeviceFactsModule from './device-facts'
@@ -75,5 +76,20 @@ describe("Settings' Karaoke row, in a build with Import", () => {
     expect(karaokeRow()?.textContent).toBe(
       'KaraokeSubscription, songs on this phone, lyrics',
     )
+  })
+})
+
+describe("Settings' Karaoke row, on an iPad", () => {
+  it('says the songs are on this iPad', () => {
+    const restore = actAsIpad()
+    try {
+      view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
+
+      expect(karaokeRow()?.textContent).toBe(
+        'KaraokeSubscription, songs on this iPad, lyrics',
+      )
+    } finally {
+      restore()
+    }
   })
 })

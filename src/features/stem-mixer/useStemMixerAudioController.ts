@@ -33,7 +33,7 @@ import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import type { SongPathLog } from './stem-load-path'
 import { createSongPathLog } from './stem-load-path'
-import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, NEEDS_STREAMING_MESSAGE, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
+import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
 import { stemTrackIsAudible } from './stem-mix-state'
 import { fillPeakEnvelopeWindow, markEnvelopeWritten, } from './stem-peak-envelope'
 import type { StemStream } from './stem-stream-source'
@@ -939,8 +939,9 @@ export const useStemMixerAudioController = (
                 ...(await shapeOf(bytes)),
               })
             }
-            refused = NEEDS_STREAMING_MESSAGE
-            throw new Error(NEEDS_STREAMING_MESSAGE)
+            const message = needsStreamingMessage()
+            refused = message
+            throw new Error(message)
           }
         }
         // A codec this platform will not decode, or a container mediabunny

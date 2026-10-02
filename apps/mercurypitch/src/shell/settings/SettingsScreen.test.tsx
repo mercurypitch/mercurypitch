@@ -11,7 +11,7 @@ import { getVoiceStorageSnapshot } from '@/db/services/voice-take-service'
 import { setTheme, setThemeSource, stopThemeAutoWatch, } from '@/stores/theme-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { ACCOUNT_DELETED, ACCOUNT_OFFER, ACCOUNT_ROW } from './account-copy'
+import { ACCOUNT_OFFER, ACCOUNT_ROW, accountDeleted } from './account-copy'
 import { dismissAccountDeletedNote, resumeAfterDeletion, } from './account-deletion'
 import { declineOffer, forgetAccountOffer, resetAccountOffer, } from './account-offer'
 import { refreshAccount, resetAccountState } from './account-state'
@@ -394,8 +394,8 @@ describe('Settings', () => {
     view.unmount()
     view = renderShell(() => <SettingsScreen onPush={vi.fn()} />)
 
-    expect(said).toContain(ACCOUNT_DELETED)
-    expect(view.container.textContent).not.toContain(ACCOUNT_DELETED)
+    expect(said).toContain(accountDeleted())
+    expect(view.container.textContent).not.toContain(accountDeleted())
     dismissAccountDeletedNote()
   })
 })

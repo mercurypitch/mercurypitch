@@ -14,10 +14,11 @@ import { TAB_SINGING } from '@/features/tabs/constants'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { clearSingTakes, keepSingTake } from '@/stores/sing-takes-store'
 import { setActiveTab } from '@/stores/ui-store'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { resetRunShell } from '../run-shell-store'
-import { ACCOUNT_OFFER, ACCOUNT_PROMISES, TAKES_STAY_ON_PHONE, } from './account-copy'
+import { ACCOUNT_OFFER, accountPromises, takesStayHere } from './account-copy'
 import { forgetAccountOffer, installAccountOffer, OFFER_BEAT_MS, offerCardShown, offerOpen, } from './account-offer'
 import { AccountOfferCard, AccountOfferSheet } from './AccountOffer'
 import { resetSignIn, signInOpen } from './sign-in-state'
@@ -78,8 +79,8 @@ describe('the sheet (2a)', () => {
     expect(offerOpen()).toBe(true)
     expect(words).toContain(ACCOUNT_OFFER.firstTake)
     expect(words).toContain(ACCOUNT_OFFER.title)
-    for (const promise of ACCOUNT_PROMISES) expect(words).toContain(promise)
-    expect(words).toContain(TAKES_STAY_ON_PHONE)
+    for (const promise of accountPromises()) expect(words).toContain(promise)
+    expect(words).toContain(takesStayHere())
   })
 
   it('gives Sign in and Later the same control, side by side, and no close button (REQ-NAM-012)', () => {
@@ -141,8 +142,8 @@ describe('the card (2b)', () => {
 
     expect(card?.getAttribute('aria-label')).toBe(ACCOUNT_OFFER.title)
     expect(words).toContain(ACCOUNT_OFFER.title)
-    for (const promise of ACCOUNT_PROMISES) expect(words).toContain(promise)
-    expect(words).toContain(TAKES_STAY_ON_PHONE)
+    for (const promise of accountPromises()) expect(words).toContain(promise)
+    expect(words).toContain(takesStayHere())
     expect(words).not.toContain(ACCOUNT_OFFER.firstTake)
     expect(q('offer-sign-in')?.className).toBe(
       'mp-set-button mp-set-button--small',
@@ -161,5 +162,21 @@ describe('the card (2b)', () => {
 
     expect(opened).toBe(true)
     expect(offerCardShown()).toBe(false)
+  })
+})
+
+describe('on an iPad', () => {
+  it('says the takes stay on this iPad, and what an account adds to it', () => {
+    const restore = actAsIpad()
+    try {
+      raise()
+
+      const words = q('account-offer')?.textContent ?? ''
+      expect(words).toContain('Takes stay on this iPad.')
+      expect(words).toContain('On your next iPad, and on the web')
+      expect(words).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })

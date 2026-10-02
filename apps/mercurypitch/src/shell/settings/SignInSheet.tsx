@@ -24,10 +24,11 @@ import Turnstile from '@/components/shared/Turnstile'
 import type { AuthResponse } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
+import { thisDeviceLower } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
 import { showNotification } from '@/stores/notifications-store'
 import { BackIcon, CloseIcon, MailIcon, WarnIcon } from '../icons'
-import { SIGN_IN_EVERYWHERE } from './account-copy'
+import { signInEverywhere } from './account-copy'
 import { markAccountFillDue } from './account-fill'
 import { refreshAccount } from './account-state'
 import { CodeBoxes } from './CodeBoxes'
@@ -65,8 +66,8 @@ function FailureLine(props: { flow: SignInFlow }): JSX.Element {
             <WarnIcon size={20} />
             <p>
               <strong>MercuryPitch could not reach your account.</strong> Check
-              the connection and try again. You are still practicing on this
-              phone.
+              the connection and try again. You are still practicing on{' '}
+              {thisDeviceLower()}.
             </p>
           </div>
         ) : (
@@ -85,7 +86,7 @@ function MethodsPane(props: { flow: SignInFlow }): JSX.Element {
     (provider === 'apple' ? appleSignInOffered() : nativeGoogleSignInOffered())
   return (
     <>
-      <p class="mp-signin__lead">{SIGN_IN_EVERYWHERE}</p>
+      <p class="mp-signin__lead">{signInEverywhere()}</p>
       <FailureLine flow={props.flow} />
       <div class="mp-signin__ways">
         <Show when={offered('apple')}>

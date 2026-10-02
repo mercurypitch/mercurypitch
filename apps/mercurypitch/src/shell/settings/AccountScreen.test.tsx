@@ -6,9 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthMeService from '@/db/services/auth-me-service'
 import { readMe } from '@/db/services/auth-me-service'
 import { setAuthToken } from '@/db/services/user-service'
+import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
-import { ACCOUNT_OFFLINE, ACCOUNT_PROMISES, ACCOUNT_SIGNED_OUT, } from './account-copy'
+import { ACCOUNT_OFFLINE, ACCOUNT_SIGNED_OUT, accountPromises, } from './account-copy'
 import { refreshAccount, resetAccountState } from './account-state'
 import { AccountScreen } from './AccountScreen'
 import { resetSignIn, signInOpen } from './sign-in-state'
@@ -81,7 +82,7 @@ describe('the Account screen', () => {
     view = renderShell(() => <AccountScreen />)
 
     expect(text()).toContain(ACCOUNT_SIGNED_OUT.title)
-    for (const promise of ACCOUNT_PROMISES) expect(text()).toContain(promise)
+    for (const promise of accountPromises()) expect(text()).toContain(promise)
     expect(readMeMock).not.toHaveBeenCalled()
   })
 
@@ -140,5 +141,25 @@ describe('the Account screen', () => {
 
     expect(text()).toContain('Alex')
     expect(text()).toContain(ACCOUNT_OFFLINE.title)
+  })
+})
+
+describe('on an iPad', () => {
+  it('says the practice is kept on this iPad, and what an account adds to it', () => {
+    const restore = actAsIpad()
+    try {
+      view = renderShell(() => <AccountScreen />)
+
+      expect(text()).toContain('Everything you practice is kept on this iPad.')
+      expect(text()).toContain(
+        'Your whole history, not only what this iPad keeps',
+      )
+      expect(text()).toContain('On your next iPad, and on the web')
+      expect(text()).toContain('Still yours if this iPad is lost')
+      expect(text()).toContain('Takes stay on this iPad.')
+      expect(text()).not.toMatch(/\bphones?\b/iu)
+    } finally {
+      restore()
+    }
   })
 })
