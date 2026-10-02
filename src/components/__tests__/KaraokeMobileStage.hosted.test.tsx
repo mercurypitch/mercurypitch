@@ -11,7 +11,7 @@
 // sing pill, the bottom bar, the load and error cards — is the stage it has
 // always been.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps, KaraokeStageHosting, } from '@/components/KaraokeMobileStage'
 import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
@@ -111,15 +111,13 @@ describe('the zen stage, hosted by the Karaoke room', () => {
     expect(stage.dataset.hosted).toBe('')
   })
 
-  it('has no Back, picture button or header toggles of its own', () => {
+  it('has no Back, picture button or More of its own', () => {
     renderInRoom(makeProps({ hosted: hosting() }))
     expect(screen.queryByLabelText('Back')).toBeNull()
-    expect(screen.queryByLabelText('Cycle the lyrics text size')).toBeNull()
-    expect(screen.queryByLabelText('Toggle autoplay')).toBeNull()
+    // The room's options sheet holds the text size, the notes and autoplay.
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
+    expect(screen.queryByRole('dialog', { name: 'More' })).toBeNull()
     expect(screen.queryByLabelText('Open the song list')).toBeNull()
-    expect(
-      screen.queryByLabelText('Toggle the sing-this-note labels'),
-    ).toBeNull()
     expect(screen.queryByText('Stage')).toBeNull()
   })
 
@@ -159,10 +157,19 @@ describe('the zen stage, hosted by the Karaoke room', () => {
     expect(screen.queryByText('Go back')).toBeNull()
   })
 
-  it('without a host it is the stage it was: its own Back and toggles', () => {
-    renderInRoom(makeProps())
-    expect(screen.getByLabelText('Back')).toBeTruthy()
-    expect(screen.getByLabelText('Cycle the lyrics text size')).toBeTruthy()
-    expect(screen.queryByTestId('karaoke-songline')).toBeNull()
+  it('without a host it is the stage it was: its own Back, and its options in More', () => {
+    const onBack = vi.fn()
+    renderInRoom(makeProps({ onBack }))
+    fireEvent.click(screen.getByLabelText('Back'))
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    const sizes = within(
+      screen.getByRole('dialog', { name: 'More' }),
+    ).getByRole('group', { name: 'Text size' })
+
+    expect([
+      onBack.mock.calls.length,
+      sizes.textContent,
+      screen.queryByTestId('karaoke-songline'),
+    ]).toEqual([1, 'SmallMediumLarge', null])
   })
 })
