@@ -31,12 +31,24 @@ interface ShotFixtures {
   /** Whose phone this is: Mara's lived-in one, or a fresh install. */
   singer: Singer
   standIn: StandInLog
+  /** Skips a screen this device drops (the config's `dropped`). */
+  notDropped: void
 }
 
 const test = base.extend<ShotOptions & ShotFixtures>({
   shotDir: ['', { option: true }],
   safeArea: [{ top: 0, bottom: 0 }, { option: true }],
+  dropped: [{}, { option: true }],
   singer: ['mara', { option: true }],
+  notDropped: [
+    async ({ dropped }, use, info) => {
+      // Set up before the page: a dropped screen is never opened.
+      const reason: string | undefined = dropped[info.title]
+      info.skip(reason !== undefined, `dropped on this device: ${reason}`)
+      await use()
+    },
+    { auto: true },
+  ],
   standIn: async ({ context, singer }, use) => {
     await use(await installStandInApi(context, { signedIn: singer === 'mara' }))
   },

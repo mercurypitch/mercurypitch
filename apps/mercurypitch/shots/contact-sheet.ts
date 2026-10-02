@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { ShotOptions } from '../playwright.shots.config'
 import { SHOT_NOW, SINGER } from './fixtures'
 
 interface PngFacts {
@@ -67,6 +68,13 @@ interface Device {
   readonly name: string
   readonly width: number
   readonly height: number
+  /** Screens this device does not capture, keyed by name, with the reason. */
+  readonly dropped: Readonly<Record<string, string>>
+}
+
+/** Why a screen is not captured on a device, or undefined if it should be. */
+function droppedReason(device: Device, screen: string): string | undefined {
+  return device.dropped[screen.replace(/\.png$/u, '')]
 }
 
 /** Every screen store.shots.ts writes, in story order. */
@@ -94,8 +102,12 @@ function escapeHtml(value: string): string {
 function cell(shotDir: string, device: Device, screen: string): string {
   const relative = `${device.name}/${screen}`
   const file = join(shotDir, relative)
+  const width = Math.round((IMAGE_HEIGHT_PX * device.width) / device.height)
+  const reason = droppedReason(device, screen)
+  if (reason !== undefined) {
+    return `<td><div class="missing dropped" style="width:${width}px"><p><strong>Dropped on this device</strong><br>${escapeHtml(reason)}</p></div><p class="caption">${escapeHtml(relative)}</p></td>`
+  }
   if (!existsSync(file)) {
-    const width = Math.round((IMAGE_HEIGHT_PX * device.width) / device.height)
     return `<td><div class="missing" style="width:${width}px">missing</div><p class="caption">${escapeHtml(relative)}</p></td>`
   }
   const facts = readPngFacts(file)
@@ -153,6 +165,7 @@ img { display: block; height: ${IMAGE_HEIGHT_PX}px; width: auto; border: 1px sol
 figcaption, .caption { margin: 8px 0 0; font: 0.8rem/1.4 ui-monospace, monospace; color: var(--muted); }
 .bad { color: var(--bad); font-weight: 700; }
 .missing { display: grid; place-items: center; height: ${IMAGE_HEIGHT_PX}px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.dropped p { max-width: 24rem; padding: 0 24px; text-align: center; }
 </style>
 </head>
 <body>
@@ -187,6 +200,7 @@ export default function writeContactSheet(config: FullConfig): void {
         name: project.name,
         width: viewport.width * scale,
         height: viewport.height * scale,
+        dropped: (project.use as Partial<ShotOptions>).dropped ?? {},
       },
     ]
   })
@@ -199,9 +213,11 @@ export default function writeContactSheet(config: FullConfig): void {
     SCREENS.map((name) => {
       const relative = `${device.name}/${name}`
       const file = join(shotDir, relative)
+      const dropped = droppedReason(device, name)
       return {
         file: relative,
         captured: existsSync(file),
+        ...(dropped === undefined ? {} : { dropped }),
         ...(existsSync(file)
           ? { ...readPngFacts(file), sha256: sha256(file) }
           : {}),

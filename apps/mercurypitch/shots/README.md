@@ -2,7 +2,8 @@
 
 `pnpm shots` builds the Mercury Pitch native bundle the way the store build
 presents it and captures eight screens on an iPhone, an iPad, an Android phone
-and two Android tablets. It is a local tool: PR Gate never runs it (the gate's
+and two Android tablets, and the two tablets again held sideways. It is a
+local tool: PR Gate never runs it (the gate's
 Playwright config is the root one, whose test directory is `src/e2e`), and a
 store screenshot is judged by eye, not asserted into CI.
 
@@ -19,6 +20,7 @@ Chromium (`pnpm exec playwright install chromium`) and ImageMagick with
 pnpm shots                              # every device, every screen
 pnpm shots --project iphone-6.9         # one device
 pnpm shots --project ipad-13 -g karaoke # one screen on one device
+pnpm shots --project play-tablet-10-landscape
 ```
 
 A run goes to `~/agent-out/mercurypitch/<date>/shots/<timestamp>/`, one
@@ -105,13 +107,15 @@ whatever the host resolves here.
 
 ## Devices and store sizes
 
-| Project          | Viewport    | Scale | Insets (top, bottom) | Pixels      | For                                          |
-| ---------------- | ----------- | ----- | -------------------- | ----------- | -------------------------------------------- |
-| `iphone-6.9`     | 440 x 956   | 3     | 62, 34               | 1320 x 2868 | App Store, 6.9-inch iPhone                   |
-| `ipad-13`        | 1032 x 1376 | 2     | 24, 20               | 2064 x 2752 | App Store, 13-inch iPad                      |
-| `play-phone`     | 390 x 780   | 2     | none                 | 780 x 1560  | Google Play phone, placed 1:1 in 1080 x 1920 |
-| `play-tablet-7`  | 612 x 1088  | 2     | none                 | 1224 x 2176 | Google Play, 7-inch tablet                   |
-| `play-tablet-10` | 810 x 1440  | 2     | none                 | 1620 x 2880 | Google Play, 10-inch tablet                  |
+| Project                    | Viewport    | Scale | Insets (top, bottom) | Pixels      | For                                          |
+| -------------------------- | ----------- | ----- | -------------------- | ----------- | -------------------------------------------- |
+| `iphone-6.9`               | 440 x 956   | 3     | 62, 34               | 1320 x 2868 | App Store, 6.9-inch iPhone                   |
+| `ipad-13`                  | 1032 x 1376 | 2     | 24, 20               | 2064 x 2752 | App Store, 13-inch iPad                      |
+| `play-phone`               | 390 x 780   | 2     | none                 | 780 x 1560  | Google Play phone, placed 1:1 in 1080 x 1920 |
+| `play-tablet-7`            | 612 x 1088  | 2     | none                 | 1224 x 2176 | Google Play, 7-inch tablet                   |
+| `play-tablet-10`           | 810 x 1440  | 2     | none                 | 1620 x 2880 | Google Play, 10-inch tablet                  |
+| `play-tablet-7-landscape`  | 1088 x 612  | 2     | none                 | 2176 x 1224 | Google Play, 7-inch tablet held sideways     |
+| `play-tablet-10-landscape` | 1440 x 810  | 2     | none                 | 2880 x 1620 | Google Play, 10-inch tablet held sideways    |
 
 The app targets iPad (`TARGETED_DEVICE_FAMILY = 1,2`), so App Store Connect
 asks for the iPad set. The Android manifest restricts no screen size, so Play
@@ -119,3 +123,28 @@ offers the app on tablets. Apple's sizes: the [screenshot
 specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications).
 Google's: the [preview asset
 requirements](https://support.google.com/googleplay/android-developer/answer/9866151).
+
+## Landscape
+
+The Android app locks no orientation (its manifest has no
+`screenOrientation`), so the tablet sets are also captured sideways, at 16:9
+with the short side over 1080, which is what Play's large-screen listing asks
+for. A landscape screen is the same walk at a wide viewport; nothing is
+rotated or recomposed.
+
+Not every screen holds up sideways. A device's `dropped` option (in
+`playwright.shots.config.ts`) names the screens it skips, each with the
+reason, judged by eye from a run that captured them. The contact sheet and
+`manifest.json` list them as dropped, not missing:
+
+- `03-sing-priming`, both tablets: a phone layout stretched sideways. The
+  drawing sits alone in the middle and the Continue button runs the full
+  width of the screen.
+- `06-ear-lab`, the 7-inch tablet: at 612 px tall the bench runs under its
+  action row. The practice estimate caption is cut off after "the fainter",
+  and the change since the last calibration is half hidden behind Run
+  Calibration. The 10-inch tablet keeps it.
+
+That leaves six landscape screens on the 7-inch tablet and seven on the
+10-inch. Play takes up to eight screenshots per device type, portrait and
+landscape together.
