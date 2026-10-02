@@ -787,6 +787,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }),
   )
 
+  // The mixer tour points at the desktop mixer: on the phone stage it has
+  // nothing to show, and its toast sat over the scrubber. So it is offered
+  // the first time this mount shows the mixer, never on the stage, which
+  // also keeps the one-time offer for a screen that can take it. Not
+  // mid-playlist either, where the focus is singing, not learning the UI.
+  let tourOfferDone = false
+  createEffect(
+    on(zenStage, (zen) => {
+      if (zen || tourOfferDone) return
+      tourOfferDone = true
+      if (!untrack(playlist.isPlaylistActive)) props.onOfferTour?.('mount')
+    }),
+  )
+
   // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
   // (keeping the song staged); otherwise it's the normal page-level back.
   const handleZenBack = (): void => {
@@ -2213,12 +2227,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
     canvas.initObserver()
     canvas.queueCanvasRedraw()
-
-    // Offer the mixer tour once — but not mid-playlist, where the focus is
-    // singing, not learning the UI.
-    if (!playlist.isPlaylistActive()) {
-      props.onOfferTour?.('mount')
-    }
 
     // The import and score dialogs, and any dialog, menu or listbox holding
     // the focus, keep their own keys. Without this the score dialog's
