@@ -9,7 +9,7 @@ import { SINGING_CURRENT } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
 import { disposeObject } from './dispose'
 import { createRunnerWorld } from './runner-world'
-import { RUNNER_GAP_APRON_METERS, runnerGapArtSpans, runnerTrackBounds, } from './runner-world-layout'
+import { RUNNER_GAP_APRON_METERS, RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerGapArtSpans, runnerTrackBounds, } from './runner-world-layout'
 
 it('instances reviewed crystal at the gameplay floor, reclaims retired chunks and disposes only owned resources', async () => {
   const bytes = readFileSync(
@@ -87,7 +87,7 @@ it('instances reviewed crystal at the gameplay floor, reclaims retired chunks an
   map.dispose()
 })
 
-it('leaves the gap face open while deep shadow, thin lips and runway cues stay below support', async () => {
+it('leaves the gap open to sky between thin marble caps and flush edge lines', async () => {
   const bytes = readFileSync(
     new URL(
       `../../../../apps/beside-cue/public/games/${GLASS_GAME_ASSET_FILES['living-crystal-platform-v2']}`,
@@ -130,13 +130,7 @@ it('leaves the gap face open while deep shadow, thin lips and runway cues stay b
   }
   const span = runnerGapArtSpans(SINGING_CURRENT, firstGap.chunkId)[0]!
   const track = runnerTrackBounds(SINGING_CURRENT)
-  const depth = instanceBounds(mesh('runner-gap-void-depth'))
-  expect(depth.min.x).toBeCloseTo(track.left, 5)
-  expect(depth.max.x).toBeCloseTo(track.right, 5)
-  expect(depth.min.z).toBeCloseTo(-span.gapEnd, 5)
-  expect(depth.max.z).toBeCloseTo(-span.gapStart, 5)
-  expect(depth.max.y).toBeLessThan(SINGING_CURRENT.groundFeetY - 1)
-
+  expect(world.root.getObjectByName('runner-gap-void-depth')).toBeUndefined()
   expect(world.root.getObjectByName('runner-gap-undercuts')).toBeUndefined()
 
   const range = (bounds: Box3) => ({
@@ -144,21 +138,57 @@ it('leaves the gap face open while deep shadow, thin lips and runway cues stay b
     end: -bounds.min.z,
   })
   const marbleAprons = mesh('pearl-runway')
-  const marbleRanges = Array.from({ length: marbleAprons.count }, (_, index) =>
-    range(instanceBounds(marbleAprons, index)),
+  const marbleBounds = Array.from({ length: marbleAprons.count }, (_, index) =>
+    instanceBounds(marbleAprons, index),
   )
-  expect(marbleRanges).toEqual(
-    expect.arrayContaining([
-      {
-        start: expect.closeTo(span.gapStart - RUNNER_GAP_APRON_METERS, 5),
-        end: expect.closeTo(span.gapStart, 5),
-      },
-      {
-        start: expect.closeTo(span.gapEnd, 5),
-        end: expect.closeTo(span.gapEnd + RUNNER_GAP_APRON_METERS, 5),
-      },
-    ]),
-  )
+  const expectThinApron = (start: number, end: number) => {
+    const bounds = marbleBounds
+      .filter((candidate) => {
+        const candidateRange = range(candidate)
+        return (
+          candidateRange.start >= start - 1e-5 &&
+          candidateRange.end <= end + 1e-5
+        )
+      })
+      .sort((a, b) => range(a).start - range(b).start)
+    expect(bounds.length).toBeGreaterThan(0)
+    expect(range(bounds[0]!).start).toBeCloseTo(start, 5)
+    expect(range(bounds.at(-1)!).end).toBeCloseTo(end, 5)
+    expect(
+      bounds.reduce(
+        (covered, candidate) =>
+          covered + range(candidate).end - range(candidate).start,
+        0,
+      ),
+    ).toBeCloseTo(end - start, 5)
+    bounds.forEach((candidate, index) => {
+      if (index > 0)
+        expect(range(bounds[index - 1]!).end).toBeCloseTo(
+          range(candidate).start,
+          5,
+        )
+      expect(candidate.max.y).toBeCloseTo(SINGING_CURRENT.groundFeetY, 5)
+      expect(candidate.min.y).toBeCloseTo(
+        SINGING_CURRENT.groundFeetY - RUNNER_GAP_APRON_THICKNESS_METERS,
+        5,
+      )
+    })
+  }
+  expectThinApron(span.gapStart - RUNNER_GAP_APRON_METERS, span.gapStart)
+  expectThinApron(span.gapEnd, span.gapEnd + RUNNER_GAP_APRON_METERS)
+
+  const gilt = mesh('gilt-runway-edges')
+  for (let index = 0; index < gilt.count; index++) {
+    const bounds = instanceBounds(gilt, index)
+    if (bounds.max.x - bounds.min.x < track.right - track.left - 0.1) continue
+    const ribbon = range(bounds)
+    expect(
+      Math.abs((ribbon.start + ribbon.end) / 2 - span.gapStart),
+    ).toBeGreaterThan(0.03)
+    expect(
+      Math.abs((ribbon.start + ribbon.end) / 2 - span.gapEnd),
+    ).toBeGreaterThan(0.03)
+  }
 
   // The donor hardware is 1.804m deep despite its 1.7m certified shell.
   // Aprons keep every overhanging rail well away from the actual opening.
@@ -172,8 +202,23 @@ it('leaves the gap face open while deep shadow, thin lips and runway cues stay b
   }
   const takeoff = instanceBounds(mesh('runner-gap-takeoff-lips'))
   const landing = instanceBounds(mesh('runner-gap-landing-lips'))
-  expect(-takeoff.min.z).toBeLessThan(span.gapStart)
-  expect(-landing.max.z).toBeGreaterThan(span.gapEnd)
+  expect(-takeoff.max.z).toBeCloseTo(
+    span.gapStart - RUNNER_GAP_LIP_RADIUS_METERS * 2,
+    5,
+  )
+  expect(-takeoff.min.z).toBeCloseTo(span.gapStart, 5)
+  expect(-landing.max.z).toBeCloseTo(span.gapEnd, 5)
+  expect(-landing.min.z).toBeCloseTo(
+    span.gapEnd + RUNNER_GAP_LIP_RADIUS_METERS * 2,
+    5,
+  )
+  for (const lip of [takeoff, landing]) {
+    expect(lip.max.y).toBeCloseTo(SINGING_CURRENT.groundFeetY, 5)
+    expect(lip.min.y).toBeCloseTo(
+      SINGING_CURRENT.groundFeetY - RUNNER_GAP_LIP_RADIUS_METERS * 2,
+      5,
+    )
+  }
 
   const band = instanceBounds(mesh('runner-gap-landing-bands'))
   expect(-band.max.z).toBeCloseTo(span.landingBandStart, 5)

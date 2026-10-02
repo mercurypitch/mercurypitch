@@ -1,11 +1,13 @@
 // Runner world layout — visible support, gap language and camera framing derive from compiled gameplay.
-import type { CompiledRunnerCourse } from '../runner/contracts'
+import type { CompiledRunnerCourse, CompiledRunnerGap, } from '../runner/contracts'
 import { runnerBeatToSeconds, runnerForwardSpeedAtSeconds, runnerSecondsToBeat, } from '../runner/tempo'
 
 export const RUNNER_MERC_VISUAL_HEIGHT_METERS = 0.82
 export const RUNNER_CAMERA_LANDSCAPE_FOLLOW = 0.28
 export const RUNNER_CAMERA_PORTRAIT_FOLLOW = 0.5
 export const RUNNER_GAP_APRON_METERS = 1.05
+export const RUNNER_GAP_APRON_THICKNESS_METERS = 0.06
+export const RUNNER_GAP_LIP_RADIUS_METERS = 0.025
 const COMPACT_LANE_SPAN_METERS = 2.75
 const CAMERA_FOLLOW_RESPONSE_SECONDS = 0.16
 
@@ -23,13 +25,11 @@ export interface RunnerGapArtConfig {
   /** Duration represented by the last ground-projected approach markers. */
   readonly projectedRunwaySeconds: number
   readonly landingBandMeters: number
-  readonly voidDepthMeters: number
 }
 
 export const DEFAULT_RUNNER_GAP_ART_CONFIG: RunnerGapArtConfig = Object.freeze({
   projectedRunwaySeconds: 0.8,
   landingBandMeters: 0.16,
-  voidDepthMeters: 2.4,
 })
 
 export interface RunnerGapArtSpan {
@@ -46,7 +46,6 @@ export interface RunnerGapArtSpan {
   readonly projectedRunwayEnd: number
   readonly landingBandStart: number
   readonly landingBandEnd: number
-  readonly voidBottomY: number
 }
 
 export interface RunnerFloorCell {
@@ -92,7 +91,7 @@ export function runnerFloorCells(
       ? course.lengthMeters + 6
       : chunk.maxCourseDistanceMeters
   const gaps = course.obstacles.filter(
-    (item) =>
+    (item): item is CompiledRunnerGap =>
       item.kind === 'gap' &&
       item.maxCourseDistanceMeters > start &&
       item.minCourseDistanceMeters < end,
@@ -187,9 +186,7 @@ export function runnerGapArtSpans(
     !Number.isFinite(config.projectedRunwaySeconds) ||
     config.projectedRunwaySeconds <= 0 ||
     !Number.isFinite(config.landingBandMeters) ||
-    config.landingBandMeters <= 0 ||
-    !Number.isFinite(config.voidDepthMeters) ||
-    config.voidDepthMeters <= 0
+    config.landingBandMeters <= 0
   )
     throw new Error('Runner gap art configuration must be finite and positive.')
   const { left, right } = runnerTrackBounds(course)
@@ -236,13 +233,7 @@ export function runnerGapArtSpans(
         const minX = Math.max(left, span.minLateralX)
         const maxX = Math.min(right, span.maxLateralX)
         if (maxX <= minX) return []
-        const lipDepth = Math.min(
-          0.22,
-          Math.max(
-            0.12,
-            (gap.maxCourseDistanceMeters - gap.minCourseDistanceMeters) * 0.24,
-          ),
-        )
+        const lipDepth = RUNNER_GAP_LIP_RADIUS_METERS * 2
         return [
           Object.freeze({
             id: `${gap.id}-${spanIndex}`,
@@ -261,7 +252,6 @@ export function runnerGapArtSpans(
               gap.landingEndCourseDistanceMeters,
               gap.maxCourseDistanceMeters + config.landingBandMeters,
             ),
-            voidBottomY: course.groundFeetY - config.voidDepthMeters,
           }),
         ]
       })

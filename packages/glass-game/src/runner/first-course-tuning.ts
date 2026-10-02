@@ -245,14 +245,14 @@ export const SINGING_CURRENT_RESPONSIVE_TUNING = {
     firstJump: {
       atBeat: 29,
       telegraphLeadBeats: 3,
-      lengthMeters: 0.8,
+      lengthMeters: 1.2,
       landingRunwayMeters: 2,
     },
     secondLaneGate: { atBeat: 86, telegraphLeadBeats: 3 },
     secondJump: {
       atBeat: 93,
       telegraphLeadBeats: 3,
-      lengthMeters: 0.95,
+      lengthMeters: 1.35,
       landingRunwayMeters: 2,
     },
   },

@@ -3,7 +3,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { SINGING_CURRENT } from '../runner/first-course'
 import { runnerBeatToSeconds } from '../runner/tempo'
-import { RUNNER_GAP_APRON_METERS, RUNNER_MERC_VISUAL_HEIGHT_METERS, runnerCameraFollowTarget, runnerCameraPose, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, stepRunnerCameraFollow, } from './runner-world-layout'
+import { RUNNER_GAP_APRON_METERS, RUNNER_GAP_LIP_RADIUS_METERS, RUNNER_MERC_VISUAL_HEIGHT_METERS, runnerCameraFollowTarget, runnerCameraPose, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, stepRunnerCameraFollow, } from './runner-world-layout'
 
 const course = SINGING_CURRENT
 const cells = course.chunks.flatMap((chunk) =>
@@ -186,6 +186,10 @@ describe('runner visible support', () => {
       )
       expect(cueEndSeconds - cueStartSeconds).toBeCloseTo(0.8, 8)
       expect(span.projectedRunwayEnd).toBeLessThan(span.takeoffLipStart)
+      expect(span.takeoffLipEnd - span.takeoffLipStart).toBeCloseTo(
+        RUNNER_GAP_LIP_RADIUS_METERS * 2,
+        8,
+      )
       expect(span.takeoffLipEnd).toBe(span.gapStart)
       expect(span.gapStart).toBe(gap.minCourseDistanceMeters)
       expect(span.gapEnd).toBe(gap.maxCourseDistanceMeters)
@@ -196,7 +200,6 @@ describe('runner visible support', () => {
       expect(span.landingBandEnd - span.landingBandStart).toBeCloseTo(0.16, 8)
       expect(span.minX).toBe(left)
       expect(span.maxX).toBe(right)
-      expect(span.voidBottomY).toBeLessThan(course.groundFeetY - 2)
     }
   })
 })

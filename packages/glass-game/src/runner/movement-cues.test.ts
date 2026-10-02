@@ -78,16 +78,17 @@ function prepareGap(
   return game
 }
 
-function advanceAt60Hz(
+function advanceAtRate(
   game: ReturnType<typeof createSongRunnerGame>,
   throughCourseSeconds: number,
+  framesPerSecond: number,
 ): void {
   let next = game.snapshot().courseSeconds
   while (
     game.snapshot().status === 'running' &&
     next < throughCourseSeconds - EPSILON
   ) {
-    next = Math.min(throughCourseSeconds, next + 1 / 60)
+    next = Math.min(throughCourseSeconds, next + 1 / framesPerSecond)
     game.advanceTo(epoch, next)
   }
 }
@@ -96,6 +97,8 @@ describe('runner movement cues', () => {
   it.each(variants)(
     'keeps every sampled %s Jump cue inside the real game survival window',
     (_name, course) => {
+      const frameRates =
+        course === SINGING_CURRENT_RESPONSIVE ? [15, 30, 60, 120] : [60]
       for (const gap of courseGaps(course)) {
         const useful = runnerUsefulJumpWindow(course, gap)!
         const samples = Array.from({ length: 7 }, (_, index) =>
@@ -108,20 +111,28 @@ describe('runner movement cues', () => {
                 6,
         )
 
-        for (const jumpCourseSeconds of samples) {
-          const game = prepareGap(course, gap, jumpCourseSeconds)
-          const certified = gap.certifiedActions[0]!
+        for (const framesPerSecond of frameRates)
+          for (const jumpCourseSeconds of samples) {
+            const game = prepareGap(course, gap, jumpCourseSeconds)
+            const certified = gap.certifiedActions[0]!
 
-          advanceAt60Hz(
-            game,
-            certified.landingCloseCourseSeconds +
-              course.movement.coyoteSeconds +
-              0.5,
-          )
+            advanceAtRate(
+              game,
+              certified.landingCloseCourseSeconds +
+                course.movement.coyoteSeconds +
+                0.5,
+              framesPerSecond,
+            )
 
-          expect(game.snapshot().status, gap.id).toBe('running')
-          expect(game.snapshot().player.grounded, gap.id).toBe(true)
-        }
+            expect(
+              game.snapshot().status,
+              `${gap.id} at ${framesPerSecond} Hz`,
+            ).toBe('running')
+            expect(
+              game.snapshot().player.grounded,
+              `${gap.id} at ${framesPerSecond} Hz`,
+            ).toBe(true)
+          }
       }
     },
   )
@@ -163,15 +174,17 @@ describe('runner movement cues', () => {
     const useful = runnerUsefulJumpWindow(course, gap)!
     const game = prepareGap(course, gap)
 
-    advanceAt60Hz(
+    advanceAtRate(
       game,
       gap.telegraphFromCourseSeconds + course.movement.fixedStepSeconds * 2,
+      60,
     )
     expect(runnerMovementCue(course, game.snapshot())?.stage).toBe('gap-ahead')
 
-    advanceAt60Hz(
+    advanceAtRate(
       game,
       (useful.launchOpenCourseSeconds + useful.launchCloseCourseSeconds) / 2,
+      60,
     )
     expect(game.snapshot().activeTarget).not.toBeNull()
     expect(runnerMovementCue(course, game.snapshot())?.stage).toBe('jump')
@@ -184,9 +197,10 @@ describe('runner movement cues', () => {
         action: 'jump',
       }),
     ).toBe(true)
-    advanceAt60Hz(
+    advanceAtRate(
       game,
       game.snapshot().courseSeconds + course.movement.fixedStepSeconds * 3,
+      60,
     )
     expect(runnerMovementCue(course, game.snapshot())?.stage).toBe('landing')
   })
