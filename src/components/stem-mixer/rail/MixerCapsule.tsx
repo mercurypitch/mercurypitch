@@ -19,8 +19,9 @@
 // `trailing`, and its stage toggles through `moreItems`.
 //
 // Sizes come from --mixer-control-size: 32 px, 28 px when MixerRail is
-// short of width, 44 px on a touch screen. The chips read the same
-// property, so the capsule stays one height.
+// short of width and in the focus pill, 44 px on a touch screen. The chips
+// read the same property, so the capsule stays one height. Docked to a
+// side edge (`vertical`), each group is a row and the groups stack.
 
 import type { Component, JSX } from 'solid-js'
 import { children, Show } from 'solid-js'
@@ -224,7 +225,11 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
 
       <span class={styles.divider} aria-hidden="true" />
 
-      <div class={styles.group} role="group" aria-label="Speed and key">
+      <div
+        class={`${styles.group} ${styles.chips}`}
+        role="group"
+        aria-label="Speed and key"
+      >
         <span class={styles.slot} data-tour="mixer.speed">
           <SpeedChip speed={props.speed} onSpeedChange={props.onSpeedChange} />
         </span>

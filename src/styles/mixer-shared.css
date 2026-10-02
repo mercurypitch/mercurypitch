@@ -58,9 +58,16 @@ input[type='range'] {
    Guitar 3D / practice ControlOverlay shell. Solid fallback first for
    engines without color-mix. The rail inside draws no box of its own here
    (MixerCapsule's bare look); its parts are styled in their own modules
-   (src/components/stem-mixer/rail/). */
+   (src/components/stem-mixer/rail/).
+   Compact by size, not by zoom: a zoom shrank the text with the controls,
+   to 9.8 px. The capsule reads these three (MixerCapsule.module.css), so
+   targets are 28 px and its text keeps its own size, 12 px and up. A touch
+   screen still gets 44 px targets: the capsule sets that on itself. */
 .stem-mixer--focus .sm-transport {
-  zoom: 0.82;
+  --mixer-control-size: 28px;
+  --mixer-capsule-gap: 4px;
+  --mixer-group-gap: 2px;
+
   background: var(--bg-card, #161b22);
   background: color-mix(in srgb, var(--bg-card, #161b22) 78%, transparent);
   backdrop-filter: blur(14px) saturate(135%);
@@ -73,37 +80,42 @@ input[type='range'] {
   z-index: 401;
 }
 
-/* Bottom Center Dock (Default) */
+/* Bottom Center Dock (Default). A set width rather than its content's, so
+   the rail inside lays out as the page's does (MixerRail): one row while
+   the timeline beside the controls keeps 380 px, two lines when it would
+   not. Capped so a wide screen still reads it as a pill. */
 .stem-mixer--focus-docked-bottom .sm-transport {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  width: min(calc(100% - 40px), 75rem);
   border-radius: 24px;
-  padding: 8px 16px;
-  max-width: calc(100vw - 40px);
+  padding: 6px 14px;
 }
 
-/* Left Center Dock */
-.stem-mixer--focus-docked-left .sm-transport {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 24px;
-  padding: 16px 8px;
-  max-height: calc(100vh - 40px);
-}
-
-/* Right Center Dock */
+/* Side docks. The capsule stacks its groups, one row each, and leaves the
+   timeline out (MixerRail, MixerCapsule). A window too short for that,
+   such as a phone on its side with 44 px targets, scrolls the pill rather
+   than cutting controls off. */
+.stem-mixer--focus-docked-left .sm-transport,
 .stem-mixer--focus-docked-right .sm-transport {
   position: absolute;
-  right: 20px;
   top: 50%;
   transform: translateY(-50%);
-  border-radius: 24px;
-  padding: 16px 8px;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 20px;
+  padding: 10px 8px;
+}
+
+.stem-mixer--focus-docked-left .sm-transport {
+  left: 20px;
+}
+
+.stem-mixer--focus-docked-right .sm-transport {
+  right: 20px;
 }
 
 /* Top Header Dock */
@@ -113,5 +125,5 @@ input[type='range'] {
   border-radius: 0;
   border-left: none;
   border-right: none;
-  padding: 12px 24px;
+  padding: 6px 16px;
 }

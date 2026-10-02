@@ -179,6 +179,96 @@ function railLayout(page: Page): Promise<RailLayout> {
   })
 }
 
+interface PillLayout {
+  /** Controls cut off by the pill's edge or the window's. */
+  cutOff: string[]
+  /** The smallest control's shorter side, as drawn. */
+  smallestTarget: number
+  /** The smallest text, as drawn: its font size times any zoom above it. */
+  smallestText: number
+  /**
+   * The song-position slider's width, the width of the timeline around it
+   * (times included), and whether it has a line of its own.
+   */
+  timeline: { w: number; box: number; ownLine: boolean } | null
+}
+
+/** The focus pill as a singer meets it. */
+function pillLayout(page: Page): Promise<PillLayout> {
+  return page.evaluate(() => {
+    const pill = document.querySelector('.sm-transport')
+    if (pill === null) throw new Error('no focus pill')
+    const box = pill.getBoundingClientRect()
+    const zoomOf = (element: Element): number => {
+      let zoom = 1
+      for (let at: Element | null = element; at; at = at.parentElement) {
+        const own = parseFloat(getComputedStyle(at).zoom)
+        if (own > 0) zoom *= own
+      }
+      return zoom
+    }
+    const controls = Array.from(
+      pill.querySelectorAll('button, input, [data-testid="dock-handle"]'),
+    ).filter((element) => {
+      const r = element.getBoundingClientRect()
+      return r.width > 0 && r.height > 0
+    })
+    const cutOff = controls
+      .filter((element) => {
+        const r = element.getBoundingClientRect()
+        return (
+          r.left < Math.max(0, box.left) - 0.5 ||
+          r.top < Math.max(0, box.top) - 0.5 ||
+          r.right > Math.min(window.innerWidth, box.right) + 0.5 ||
+          r.bottom > Math.min(window.innerHeight, box.bottom) + 0.5
+        )
+      })
+      .map(
+        (element) =>
+          element.getAttribute('aria-label') ??
+          element.getAttribute('data-testid') ??
+          element.tagName,
+      )
+    const sizes = controls.map((element) => {
+      const r = element.getBoundingClientRect()
+      return Math.min(r.width, r.height)
+    })
+    const texts = Array.from(pill.querySelectorAll('*'))
+      .filter(
+        (element) =>
+          element.getBoundingClientRect().width > 0 &&
+          Array.from(element.childNodes).some(
+            (node) =>
+              node.nodeType === Node.TEXT_NODE &&
+              (node.textContent ?? '').trim() !== '',
+          ),
+      )
+      .map(
+        (element) =>
+          parseFloat(getComputedStyle(element).fontSize) * zoomOf(element),
+      )
+    const around = pill.querySelector('[data-testid="mixer-timeline"]')
+    const slider = around?.querySelector('input[type="range"]') ?? null
+    const capsule = pill.querySelector('[data-testid="mixer-capsule"]')
+    const timeline =
+      around === null || slider === null || capsule === null
+        ? null
+        : {
+            w: slider.getBoundingClientRect().width,
+            box: around.getBoundingClientRect().width,
+            ownLine:
+              slider.getBoundingClientRect().top >=
+              capsule.getBoundingClientRect().bottom - 1,
+          }
+    return {
+      cutOff,
+      smallestTarget: Math.min(...sizes),
+      smallestText: Math.min(...texts),
+      timeline,
+    }
+  })
+}
+
 const songPosition = (page: Page) =>
   page.getByRole('slider', { name: 'Song position' })
 
@@ -358,6 +448,38 @@ for (const viewport of VIEWPORTS) {
       await pressOutside(page)
       await expect(lens).toHaveCount(0)
     })
+
+    test('docks the focus pill to every edge with every control in reach, none under 24 px or its text under 12 px', async ({
+      page,
+    }) => {
+      await page.locator('[data-tour="mixer.focus"]').click()
+      await expect(page.locator('.stem-mixer--focus')).toBeVisible()
+
+      for (const side of ['bottom', 'top', 'left', 'right'] as const) {
+        await dockTo(page, side)
+        const pill = await pillLayout(page)
+
+        expect.soft(pill.cutOff, `${side}: controls cut off`).toEqual([])
+        expect.soft(pill.smallestTarget, side).toBeGreaterThanOrEqual(24)
+        expect.soft(pill.smallestText, side).toBeGreaterThanOrEqual(12)
+        if (side === 'left' || side === 'right') {
+          // The side docks stack the controls and leave the timeline out.
+          expect.soft(pill.timeline, side).toBeNull()
+        } else {
+          // The page's rule: the timeline keeps 380 px or takes a line of
+          // its own, and is never squeezed under 200.
+          expect.soft(pill.timeline?.w ?? 0, side).toBeGreaterThanOrEqual(200)
+          expect
+            .soft(
+              pill.timeline?.ownLine === true ||
+                (pill.timeline?.box ?? 0) >= 380,
+              `${side}: a ${pill.timeline?.box} px timeline beside the controls`,
+            )
+            .toBe(true)
+        }
+      }
+    })
+
   })
 }
 

@@ -242,18 +242,23 @@
   outline-offset: 2px;
 }
 
-/* ── Docked to a side edge ─────────────────────────────────────────── */
+/* ── Docked to a side edge ─────────────────────────────────────────────
+   Each group is a row and the groups stack: thirteen controls in one
+   column would need about 400 px at 28 px, more than a phone on its side
+   has. The chips are wider than a control, so they stack inside their
+   group instead, and the pill is as narrow as the playback row. */
 
 .capsule[data-vertical='true'] {
   flex-direction: column;
 }
 
-.capsule[data-vertical='true'] .group {
+.capsule[data-vertical='true'] .chips {
   flex-direction: column;
 }
 
 .capsule[data-vertical='true'] .divider {
-  width: 22px;
+  align-self: stretch;
+  width: auto;
   height: 1px;
 }
 
