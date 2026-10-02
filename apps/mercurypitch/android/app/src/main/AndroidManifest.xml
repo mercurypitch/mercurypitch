@@ -63,4 +63,9 @@
          startForeground() with that type is allowed. Play Console asks for a
          foreground service declaration for it (media playback). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- The same service posts that notification, and lint refuses a build
+         targeting Android 13+ that posts one without declaring this. A media
+         session's notification is exempt from the runtime permission, so
+         nothing here asks the singer for it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
