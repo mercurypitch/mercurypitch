@@ -73,24 +73,16 @@ async function mountLoadedMixer(): Promise<void> {
 
 const buttonA = () => screen.getByRole('button', { name: 'Set loop start (A)' })
 const buttonB = () => screen.getByRole('button', { name: 'Set loop end (B)' })
-const loopToggle = () =>
-  screen.queryByRole('button', { name: /^(Enable|Disable) loop$/ })
+const loopToggle = () => screen.getByRole('button', { name: 'Loop' })
 const shown = () => notifications().map((note) => note.message)
 
-/** Click the timeline at `seconds` of the 12 s song, as a paused singer does. */
+/** Move the timeline to `seconds` of the 12 s song, as a paused singer does. */
 function seekTo(seconds: number): void {
-  const bar = document.querySelector<HTMLElement>('.sm-progress-bar')
-  if (bar === null) throw new Error('no timeline')
-  bar.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      width: 120,
-      height: 6,
-      right: 120,
-      bottom: 6,
-    }) as DOMRect
-  fireEvent.click(bar, { clientX: (seconds / 12) * 120 })
+  const slider = screen.getByRole<HTMLInputElement>('slider', {
+    name: 'Song position',
+  })
+  slider.value = String(seconds)
+  fireEvent.input(slider)
 }
 
 describe('loop points on the mixer rail', () => {
@@ -99,7 +91,7 @@ describe('loop points on the mixer rail', () => {
 
     fireEvent.click(buttonA())
 
-    expect(buttonA()).toHaveClass('sm-loop-btn--a-set')
+    expect(buttonA()).toHaveAttribute('data-set', 'true')
   })
 
   it('refuses a B on the same instant as A, and says why', async () => {
@@ -109,8 +101,8 @@ describe('loop points on the mixer rail', () => {
 
     fireEvent.click(buttonB())
 
-    expect(buttonB()).not.toHaveClass('sm-loop-btn--b-set')
-    expect(loopToggle()).toBeNull()
+    expect(buttonB()).toHaveAttribute('data-set', 'false')
+    expect(loopToggle()).toBeDisabled()
     expect(shown()).toContain(B_TOO_SOON)
   })
 
@@ -121,8 +113,8 @@ describe('loop points on the mixer rail', () => {
     fireEvent.keyDown(document.body, { key: 'a', code: 'KeyA' })
     fireEvent.keyDown(document.body, { key: 'b', code: 'KeyB' })
 
-    expect(buttonA()).toHaveClass('sm-loop-btn--a-set')
-    expect(buttonB()).not.toHaveClass('sm-loop-btn--b-set')
+    expect(buttonA()).toHaveAttribute('data-set', 'true')
+    expect(buttonB()).toHaveAttribute('data-set', 'false')
     expect(shown()).toContain(B_TOO_SOON)
   })
 })
