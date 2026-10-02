@@ -252,6 +252,48 @@ describe('OverflowMenu', () => {
     ).toBeInTheDocument()
   })
 
+  it('closes when the window resizes, rather than hanging where the trigger was', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+
+    fireEvent(window, new Event('resize'))
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('stays open while something else scrolls, and closes when its own page does', () => {
+    render(() => (
+      <>
+        <div data-testid="lyrics">words that scroll themselves</div>
+        <OverflowMenu
+          label="More actions"
+          items={[{ key: 'send', label: 'Send to device', onSelect: noop }]}
+        />
+      </>
+    ))
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+
+    fireEvent.scroll(screen.getByTestId('lyrics'))
+    expect(
+      screen.getByRole('menuitem', { name: 'Send to device' }),
+    ).toBeVisible()
+
+    fireEvent.scroll(document)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('leaves an Escape that a layer above it already used', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+    const claim = (event: KeyboardEvent) => event.preventDefault()
+    document.body.addEventListener('keydown', claim)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    document.body.removeEventListener('keydown', claim)
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Send to device' }),
+    ).toBeVisible()
+  })
+
   it('announces itself as a menu, not a button that does something', () => {
     render(() => (
       <OverflowMenu
