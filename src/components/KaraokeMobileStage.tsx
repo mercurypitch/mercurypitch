@@ -51,7 +51,7 @@ import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isShortTouchLandscape } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
@@ -1469,8 +1469,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         </div>
       }
     >
+      {/* On its side, the room's two columns: the song and the controls
+          on the left, the lyrics the full height on the right. */}
       <StageShell
-        class={`${styles.stage} mp-dark-stage`}
+        class={`${styles.stage} mp-dark-stage${isShortTouchLandscape() ? ` ${styles.sideways}` : ''}`}
         style={background.resolvedStyle()}
         testId="karaoke-mobile-stage"
       >

@@ -1409,3 +1409,110 @@
     bottom: calc(18px + var(--safe-bottom));
   }
 }
+
+/* ── The web's stage, on its side ──────────────────────────
+   The room's two columns (above), for the stage the web opens on a phone
+   held sideways: KaraokeMobileStage sets .sideways while
+   isShortTouchLandscape matches. The portrait column left the lyrics a
+   200 px strip at 844x390 and put Paste lyrics below the window.
+
+   Two things differ from the room. The left column is 320 px, not 286:
+   this transport also holds the key, and the mic pair, the transport and
+   the key take 320 px packed the way a 360 px phone packs them. And the
+   flow children are placed by name rather than all sent to one area: the
+   playlist overlay and its summary cover the stage from inside it, and an
+   absolutely placed child given a grid area would cover only that area.
+   The pitch ribbon has no class here; it falls into the first free cell of
+   the left column, the hint's row or the one under it.
+
+   `.stage.sideways` outweighs the kit's `.shell`, which sets the flex
+   column, whichever stylesheet loads first. */
+.stage.sideways {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head lyrics'
+    'hint lyrics'
+    'aside lyrics'
+    'bar lyrics';
+  column-gap: 26px;
+  padding: var(--safe-top, 0px) max(12px, var(--safe-right, 0px)) 0
+    max(16px, var(--safe-left, 0px));
+}
+
+.stage.sideways .header {
+  grid-area: head;
+  width: auto;
+  margin: 0;
+  padding: 8px 0 4px;
+}
+
+.stage.sideways .titleWrap {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.stage.sideways .notesHint {
+  grid-area: hint;
+  margin: 0.3rem 0 0;
+}
+
+/* The right padding keeps every line, and the finder, clear of the sing
+   pill in the corner. */
+.stage.sideways .lyrics {
+  grid-area: lyrics;
+  width: auto;
+  margin: 0;
+  padding: 14vh 54px 22vh 0;
+}
+
+.stage.sideways .lyricsEmpty {
+  padding: 8px 54px 8px 0;
+}
+
+.stage.sideways .noLyrics {
+  padding: 4px 0;
+}
+
+.stage.sideways .line {
+  font-size: calc(1.6rem * var(--lyrics-scale, 1));
+  margin-bottom: 0.8rem;
+}
+
+.stage.sideways .bottomBar {
+  grid-area: bar;
+  width: auto;
+  margin: 0;
+  padding: 6px 0 calc(8px + var(--safe-bottom));
+  background: none;
+}
+
+.stage.sideways .transport {
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.stage.sideways .transportSide {
+  flex: 0 1 auto;
+  gap: 6px;
+}
+
+.stage.sideways .transportMain {
+  gap: 10px;
+}
+
+.stage.sideways .transportSpacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stage.sideways .transportKeySlot {
+  flex: 0 1 98px;
+  min-width: 44px;
+}
+
+.stage.sideways .singPill {
+  right: max(12px, var(--safe-right, 0px));
+  bottom: calc(18px + var(--safe-bottom));
+}
