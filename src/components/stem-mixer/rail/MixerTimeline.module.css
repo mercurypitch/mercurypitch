@@ -44,6 +44,15 @@
   --loop-range-knob: var(--text-primary, #e6edf3);
 }
 
+/* An engine without color-mix() keeps the custom property but cannot use
+   it, and the track would vanish: the same tint as rgba (the default text
+   colour at 18%). */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .rail.rail {
+    --loop-range-track: rgba(230, 237, 243, 0.18);
+  }
+}
+
 /* A loop that is off still shows where it is, but plainly not playing:
    an outline with no fill, and the marks dimmed. */
 .rail[data-active='false'] {
