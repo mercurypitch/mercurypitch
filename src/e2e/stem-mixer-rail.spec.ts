@@ -7,8 +7,9 @@
 // claims only a browser can check, at three window sizes: the timeline
 // stays usable, nothing runs past the window, the row does not move when a
 // loop is set or the mic turns on, the key panel and the speed list close
-// on a press outside and on Escape, and a short loop's close-up opens clear
-// of the controls in type of 12 px or more, without shortening the track.
+// on a press outside and on Escape, a short loop's close-up opens clear
+// of the controls in type of 12 px or more, without shortening the track,
+// and a toast keeps off focus mode's pill docked at the top.
 // At 1440 px, an A-B loop also plays round without freezing, the close-up
 // stays on screen with the pill docked at the top, and the focus pill docks
 // to every edge from the More menu.
@@ -497,6 +498,51 @@ for (const viewport of VIEWPORTS) {
       const last = menu.locator('[role^="menuitem"]').last()
       await last.scrollIntoViewIfNeeded()
       await expect(last).toBeInViewport()
+    })
+
+    test('keeps a toast off the pill docked at the top', async ({ page }) => {
+      // Docked at the top, the pill is the window's top edge, the corner
+      // toasts used: at 844x390 one hid More and Exit while it showed.
+      await page.locator('[data-tour="mixer.focus"]').click()
+      await expect(page.locator('.stem-mixer--focus')).toBeVisible()
+      await dockTo(page, 'top')
+
+      // B at 0:00 with no A is refused, and the refusal is a toast.
+      await page.getByRole('button', { name: 'Set loop end (B)' }).click()
+      const toast = page
+        .getByRole('region', { name: 'Notifications' })
+        .getByText('The loop end (B) has to be at least 0.1 s after')
+      await expect(toast).toBeVisible()
+
+      const under = await page.evaluate(() => {
+        const region = document.querySelector(
+          '[role="region"][aria-label="Notifications"]',
+        )
+        const toasts = [...(region?.children ?? [])].map((t) =>
+          t.getBoundingClientRect(),
+        )
+        const controls = [
+          ...document.querySelectorAll(
+            '.sm-transport :is(button, [role="slider"], input)',
+          ),
+        ]
+        return controls
+          .filter((control) => {
+            const c = control.getBoundingClientRect()
+            return toasts.some(
+              (t) =>
+                Math.min(t.right, c.right) - Math.max(t.left, c.left) > 0.5 &&
+                Math.min(t.bottom, c.bottom) - Math.max(t.top, c.top) > 0.5,
+            )
+          })
+          .map(
+            (control) =>
+              control.getAttribute('aria-label') ??
+              control.textContent?.trim() ??
+              '',
+          )
+      })
+      expect(under).toEqual([])
     })
   })
 }
