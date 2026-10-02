@@ -269,6 +269,34 @@ export const NATIVE_ASSETS = [
     reason:
       "Tokyo Cyber in both orientations, the Karaoke room's other free picture: the chip's picker offers every free room of the 'karaoke' surface (src/lib/backgrounds/background-catalog.ts), and a picked room the bundle did not carry would draw nothing offline.",
   },
+
+  // ── Progress ─────────────────────────────────────────────────
+  //
+  // TestFlight build 451 (owner, 2 Oct 2026): the medallions, the league
+  // trophy, the Atlas and the share card's plate all drew nothing, because
+  // none of them was listed. Progress names every one by absolute URL, most
+  // of them built at runtime from a row the worker sends, so no bundler saw
+  // them. probe-progress.mjs opens the page with a record on it and fails on
+  // any picture it names that the bundle does not serve.
+  {
+    glob: 'badges/*.webp',
+    reason:
+      "Every badge and achievement medallion, 192px: built from the row's icon (badgeArtSrc in src/features/challenges/badge-art.ts) for the milestone strip (src/features/progress/progress-view-model.ts) and the cabinet (src/features/progress/cabinet-view.ts). The seed's definitions name all 46, earned or not.",
+  },
+  ...[1, 2, 3, 4, 5, 6].map((rank) => ({
+    glob: `leagues/l${rank}.webp`,
+    reason: `The rung ${rank} trophy on the Progress league card: the worker's leagues row names it as trophyAsset (workers/db-worker/migrations/0005_leagues.sql) and the card draws it as-is (buildLeague in src/features/progress/progress-view-model.ts). Rungs 1 to 6 only: l7 is the mystery rung nobody stands in, and the -badge pins are drawn nowhere.`,
+  })),
+  {
+    glob: 'progress/resonance-atlas.webp',
+    reason:
+      "The Resonance Atlas plate behind the page's opening chapter: a CSS background (src/features/progress/ProgressPage.module.css).",
+  },
+  {
+    glob: 'progress/mercury-pressing.webp',
+    reason:
+      'The Pressing plate the share studio draws its card on, loaded into a canvas with new Image() (MERCURY_PRESSING_PLATE_URL in src/features/progress/share-card.ts).',
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */
