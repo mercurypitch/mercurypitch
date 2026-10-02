@@ -118,22 +118,58 @@ function doorExtent(doors: readonly DoorSpec[]): {
 const BAND_SLACK = 6
 
 /**
+ * One anchor offset, moved just far enough that the doors' extent lands
+ * between `min` and `max` (the offsets that keep its far and its near edge
+ * inside the frame), and never outside the cover's own range [0, spare],
+ * where the plate would stop covering the screen. When the doors cannot fit
+ * both ways `max` wins: the edge nearest the top or the headline stays in,
+ * and the other runs under the dock or past the inset.
+ */
+function keepDoorsIn(
+  want: number,
+  min: number,
+  max: number,
+  spare: number,
+): number {
+  const inFrame = Math.min(Math.max(want, min), max)
+  return Math.max(0, Math.min(spare, inFrame))
+}
+
+/**
  * Where the plate is drawn for the alley.
  *
- * PORTRAIT is cover-fit, and the plate's horizontal anchor is a MAXIMUM: 72%
- * is where the lab framed the six doors at 393 x 852, but on a narrower or
- * taller screen the same anchor slides the Ear Lab's left jamb off the edge
- * (-7 px at 412 x 915). The anchor is pulled left just far enough to keep
- * that jamb at x >= 0, which also shows as much of the Guitar door as the
- * plate allows.
+ * A LANDSCAPE PLATE (wider than tall: the alley's own picture for a screen on
+ * its side) is cover-fit at its position, and both anchors give way to the
+ * frame as far as the cover allows: every door right of `frame.left` (the
+ * headline's column) and left of `frame.right` (the right safe-area inset),
+ * below `frame.top` (the safe top) and above `frame.bottom` (the dock). The
+ * picture always covers the screen. A phone at 2.17:1 has no width to spare
+ * and an iPad at 4:3 no height, so there the composition itself keeps the
+ * doors in, and the anchor that can move does.
  *
- * LANDSCAPE sizes the plate by the door band instead: the band fits between
- * `frame.top` (the safe top) and `frame.bottom` (the dock), and between
- * `frame.left` (the headline block's right edge: on its side the block stands
- * beside the doors, so the band keeps the full height) and `frame.right` (the
- * right safe-area inset), centred in that box. What the plate does not cover is the alley's own
- * ground colour. Cover-fit there would put the doors a screen and a half tall
- * behind a 393 px window.
+ * Where even the picture's left edge on the screen's leaves the first door
+ * under the column (a 16:9 phone: the 667 x 375 SE's cover puts the Ear Lab's
+ * jamb 7 px under it), the picture is drawn LARGER than cover, just enough to
+ * put that jamb the band's slack right of the column — but only while the
+ * last door's far jamb still clears `frame.right` at that size. A row too
+ * wide for its room at any size keeps the cover, and the column wins as
+ * above. Zooming never uncovers the screen: it only adds spare.
+ *
+ * A PORTRAIT PLATE in portrait is cover-fit, and the plate's horizontal
+ * anchor is a MAXIMUM: 72% is where the lab framed the six doors at 393 x 852,
+ * but on a narrower or taller screen the same anchor slides the Ear Lab's
+ * left jamb off the edge (-7 px at 412 x 915). The anchor is pulled left just
+ * far enough to keep that jamb at x >= 0, which also shows as much of the
+ * Guitar door as the plate allows.
+ *
+ * A PORTRAIT PLATE ON ITS SIDE — an alley with no picture of its own for a
+ * screen on its side — is sized by the door band instead: the band fits
+ * between `frame.top` (the safe top) and `frame.bottom` (the dock), and
+ * between `frame.left` (the headline block's right edge: on its side the
+ * block stands beside the doors, so the band keeps the full height) and
+ * `frame.right` (the right safe-area inset), centred in that box. What the
+ * plate does not cover is the alley's own ground colour. Cover-fit there
+ * would put the doors a screen and a half tall behind a 393 px window.
  */
 export function alleyFit(
   plate: PlateBox,
@@ -143,6 +179,31 @@ export function alleyFit(
   frame: AlleyFrame = { top: 0, bottom: h },
 ): CoverFit {
   const extent = doorExtent(doors)
+  if (plate.width > plate.height) {
+    const cover = Math.max(w / plate.width, h / plate.height)
+    const left = (frame.left ?? 0) + BAND_SLACK
+    const right = (frame.right ?? w) - BAND_SLACK
+    // The size that puts the first jamb at `left` with the picture's left
+    // edge on the screen's (ox = 0), used only while the row still fits.
+    const zoom = left / extent.x0
+    const scale = zoom > cover && extent.x1 * zoom <= right ? zoom : cover
+    const [fx, fy] = parsePosition(plate.position)
+    const spareX = plate.width * scale - w
+    const spareY = plate.height * scale - h
+    const ox = keepDoorsIn(
+      spareX * fx,
+      extent.x1 * scale - right,
+      extent.x0 * scale - left,
+      spareX,
+    )
+    const oy = keepDoorsIn(
+      spareY * fy,
+      extent.y1 * scale - (frame.bottom - BAND_SLACK),
+      extent.y0 * scale - (frame.top + BAND_SLACK),
+      spareY,
+    )
+    return fitOf(plate, scale, ox, oy)
+  }
   if (w > h) {
     const cover = Math.max(w / plate.width, h / plate.height)
     const left = frame.left ?? 0
@@ -597,6 +658,25 @@ export function placePanel(
     Math.min(Math.round(door.y1 + 14), floor - 12 - height),
   )
   return { x, y }
+}
+
+/**
+ * The card on a screen on its side. Under the door there is only the dock, so
+ * the card takes the headline's place in the column left of the doors, which
+ * the landscape picture keeps quiet: at the column's left edge (`left`, the
+ * block's own padding edge), `top` down (under the mark), and never on the
+ * dock. The door it names is the one lifted, rimmed and lit.
+ */
+export function placePanelInColumn(
+  left: number,
+  top: number,
+  floor: number,
+  height: number,
+): { x: number; y: number } {
+  return {
+    x: Math.round(left),
+    y: Math.max(16, Math.min(Math.round(top), floor - 12 - height)),
+  }
 }
 
 /** The 35% dim with the chosen door cut out of it (fill-rule evenodd). */

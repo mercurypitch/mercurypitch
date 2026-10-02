@@ -9,6 +9,9 @@ import { karaokeImportFor, portableConsoleFor, readEnvFiles, resolveApiBase, res
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
 import { NATIVE_PUBLIC_DIR, pitchEngineBytes, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
+// @ts-expect-error -- a plain .mjs helper with no types, like api-base.mjs:
+// the suite imports it too (src/native-font-aliases.test.ts).
+import { nativeFontAliases } from './native-font-aliases.mjs'
 
 // The same resolution the root config does, for the same constant. `@`
 // resolves to the root `src`, so the code reading __COMMIT_SHA__ is literally
@@ -205,6 +208,14 @@ export default defineConfig(({ mode, command }) => {
         },
       },
     ],
+
+    css: {
+      // The bundled fonts under the names the shared stacks ask for:
+      // 'Inter', not fontsource's 'Inter Variable' (native-font-aliases.mjs).
+      postcss: {
+        plugins: [nativeFontAliases()],
+      },
+    },
 
     resolve: {
       alias: {

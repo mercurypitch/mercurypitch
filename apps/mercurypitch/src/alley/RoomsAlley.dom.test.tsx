@@ -383,7 +383,7 @@ describe('a resize', () => {
 })
 
 describe('the dock', () => {
-  it('is watched, and its top is the floor of the band on a screen on its side', async () => {
+  it('is watched, and its top is the floor the doors keep above on a screen on its side', async () => {
     vi.stubGlobal('innerWidth', 852)
     vi.stubGlobal('innerHeight', 393)
     let dockTop = 321
@@ -403,12 +403,26 @@ describe('the dock', () => {
         Number.parseFloat(key.style.top) + Number.parseFloat(key.style.height)
       )
     }
-    expect(bottom()).toBeLessThanOrEqual(321)
+    const before = bottom()
+    expect(before).toBeLessThanOrEqual(321)
 
-    // The accessory slot grows: the dock's top rises, and the doors with it.
+    // The accessory slot grows (a run parked: its pill over the rail), and
+    // the dock's top rises. The landscape plate is cover-fit and its anchor
+    // already lifts the row as high as the picture can go and still cover
+    // the screen, so the doors hold still, above the new floor.
     dockTop = 250
     observer.callback([], observer as unknown as ResizeObserver)
     expect(bottom()).toBeLessThanOrEqual(250)
+    // A floor higher than the cover can reach moves nothing: the picture
+    // never leaves the screen's bottom edge to chase it.
+    dockTop = 200
+    observer.callback([], observer as unknown as ResizeObserver)
+    expect(bottom()).toBe(before)
+    const plate = el('alley-plate')
+    expect(
+      Number.parseFloat(plate.style.top) +
+        Number.parseFloat(plate.style.height),
+    ).toBeCloseTo(393, 1)
   })
 })
 
@@ -579,15 +593,62 @@ describe('each door is its own box', () => {
 })
 
 describe('the plate file', () => {
-  it('is the 1x on a DPR 3 screen on its side, where the band draws it small', async () => {
+  it('is the landscape 1x on a DPR 3 phone on its side', async () => {
+    // 852 / 1672 x 3 = 1.529 device px per unit: the 1x file's 1.531 holds.
     vi.stubGlobal('innerWidth', 852)
     vi.stubGlobal('innerHeight', 393)
     vi.stubGlobal('devicePixelRatio', 3)
     const { el } = await mountAlley()
     const plateModule = await import('./alley-plate')
     expect(el('alley-plate').getAttribute('src')).toBe(
+      plateModule.ALLEY_PLATE_LANDSCAPE.src,
+    )
+  })
+
+  it('turns with the screen, and so do the doors and every copy of it', async () => {
+    vi.stubGlobal('devicePixelRatio', 3)
+    const { el } = await mountAlley()
+    const plateModule = await import('./alley-plate')
+    const root = el('rooms-alley')
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    const turn = (w: number, h: number): void => {
+      Object.defineProperty(root, 'clientWidth', {
+        value: w,
+        configurable: true,
+      })
+      Object.defineProperty(root, 'clientHeight', {
+        value: h,
+        configurable: true,
+      })
+      observer.callback([], observer as unknown as ResizeObserver)
+    }
+    const paints = (): string[] =>
+      [...root.querySelectorAll('.mp-alley__paint img')].map(
+        (img) => img.getAttribute('src') ?? '',
+      )
+    const ear = (): number => Number.parseFloat(el('alley-door-ear').style.left)
+    expect(el('alley-plate').getAttribute('src')).toBe(
       plateModule.ALLEY_PLATE.src,
     )
+    const upright = ear()
+
+    turn(852, 393)
+    expect(el('alley-plate').getAttribute('src')).toBe(
+      plateModule.ALLEY_PLATE_LANDSCAPE.src,
+    )
+    // The doors' own copies of the plate are the same file, drawn the same.
+    expect(paints()).toEqual(
+      Array(6).fill(plateModule.ALLEY_PLATE_LANDSCAPE.src),
+    )
+    // And the Ear Lab door is where the landscape picture has it.
+    expect(ear()).toBeGreaterThan(300)
+
+    turn(393, 852)
+    expect(el('alley-plate').getAttribute('src')).toBe(
+      plateModule.ALLEY_PLATE.src,
+    )
+    expect(ear()).toBe(upright)
   })
 })
 
@@ -597,9 +658,9 @@ describe('the right safe-area inset', () => {
     vi.stubGlobal('innerHeight', 393)
     const { el } = await mountAlley()
     const root = el('rooms-alley')
-    // What mobile-kit.css resolves env(safe-area-inset-right) to. Wide, so
-    // the doors' own fit would cross it without the bound.
-    root.style.setProperty('--safe-right', '400px')
+    // What mobile-kit.css resolves env(safe-area-inset-right) to on an
+    // island phone on its side.
+    root.style.setProperty('--safe-right', '59px')
     const observer = FakeResizeObserver.last
     if (observer === null) throw new Error('no ResizeObserver')
     observer.callback([], observer as unknown as ResizeObserver)
@@ -607,16 +668,15 @@ describe('the right safe-area inset', () => {
     const right = (key: HTMLElement): number =>
       Number.parseFloat(key.style.left) + Number.parseFloat(key.style.width)
     const keys = [...root.querySelectorAll<HTMLElement>('.mp-alley__key')]
-    expect(Math.max(...keys.map(right))).toBeLessThanOrEqual(852 - 400)
+    expect(Math.max(...keys.map(right))).toBeLessThanOrEqual(852 - 59)
     const band = el('alley-hit')
-    expect(right(band)).toBeLessThanOrEqual(852 - 400)
+    expect(right(band)).toBeLessThanOrEqual(852 - 59)
   })
-})
 
-describe('the right safe-area inset, and the card', () => {
-  it('keeps the card under the door nearest it clear of it too', async () => {
-    // PR 859 final review, NB3: the doors and the band kept out of the
-    // inset, and the card centred under the door nearest it did not.
+  it('clamps the tap band to it even where the picture cannot move the doors', async () => {
+    // A phone on its side has no width of the picture to spare, so an inset
+    // wider than the composition allows for leaves the painted doors where
+    // they are. The surface that takes the taps still stops at the inset.
     vi.stubGlobal('innerWidth', 852)
     vi.stubGlobal('innerHeight', 393)
     const { el } = await mountAlley()
@@ -626,15 +686,75 @@ describe('the right safe-area inset, and the card', () => {
     if (observer === null) throw new Error('no ResizeObserver')
     observer.callback([], observer as unknown as ResizeObserver)
 
-    const right = (key: HTMLElement): number =>
-      Number.parseFloat(key.style.left) + Number.parseFloat(key.style.width)
-    const keys = [...root.querySelectorAll<HTMLElement>('.mp-alley__key')]
-    const nearest = keys.reduce((a, b) => (right(a) >= right(b) ? a : b))
-    el(`alley-door-${nearest.dataset.door ?? ''}`).click()
+    const band = el('alley-hit')
+    expect(
+      Number.parseFloat(band.style.left) + Number.parseFloat(band.style.width),
+    ).toBeLessThanOrEqual(852 - 400)
+  })
+})
+
+describe('the card', () => {
+  /** The headline block as alley.css lays it out on its side. */
+  const column = (el: (id: string) => HTMLElement): void => {
+    const top = el('alley-top')
+    top.style.paddingLeft = '59px'
+    Object.defineProperty(top, 'offsetWidth', {
+      value: 311,
+      configurable: true,
+    })
+    const mark = top.querySelector<HTMLElement>('.mp-alley__mark')
+    if (mark === null) throw new Error('no mark')
+    Object.defineProperty(mark, 'offsetTop', { value: 8, configurable: true })
+    Object.defineProperty(mark, 'offsetHeight', {
+      value: 28,
+      configurable: true,
+    })
+  }
+
+  it("takes the headline's column on a screen on its side, under the mark", async () => {
+    // The dock is under the door on its side (TestFlight 420: the card
+    // floated over the picture), so the card stands where the headline does.
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    const { el } = await mountAlley()
+    column(el)
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    observer.callback([], observer as unknown as ResizeObserver)
+
+    el('alley-door-guitar').click()
     const panel = el('alley-panel')
-    expect(Number.parseFloat(panel.style.left) + 236).toBeLessThanOrEqual(
-      852 - 400,
+    expect(panel.style.left).toBe('59px')
+    expect(panel.style.top).toBe('52px')
+    // Beside the doors, never over one: every door starts right of it.
+    const keys = [
+      ...el('rooms-alley').querySelectorAll<HTMLElement>('.mp-alley__key'),
+    ]
+    for (const key of keys) {
+      expect(Number.parseFloat(key.style.left)).toBeGreaterThanOrEqual(59 + 236)
+    }
+  })
+
+  it('still hangs under its door upright, whatever the column says', async () => {
+    const { el } = await mountAlley()
+    column(el)
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    observer.callback([], observer as unknown as ResizeObserver)
+
+    el('alley-door-sing').click()
+    const sing = el('alley-door-sing')
+    const panel = el('alley-panel')
+    // 14 px under the Sing door's sill (607.4), centred on it and kept 16 px
+    // inside the 393 px screen: placePanel, as before the landscape plate.
+    expect(Number.parseFloat(panel.style.top)).toBe(
+      Math.round(
+        Number.parseFloat(sing.style.top) +
+          Number.parseFloat(sing.style.height) +
+          14,
+      ),
     )
+    expect(panel.style.left).toBe('135px')
   })
 })
 

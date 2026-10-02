@@ -92,3 +92,18 @@ describe("the dock's band", () => {
     expect(declaration('.mp-layer.is-in', 'pointer-events')).toBe('auto')
   })
 })
+
+describe("the pill's state word", () => {
+  // "Retro Analog Studio· paused": the state is its own flex item, so its
+  // text starts a line of its own, and a line's leading space collapses under
+  // `nowrap`. The space before the dot is the separator the kit's grammar and
+  // the accessible name both have ("<room> · <state>"), so it stays a plain
+  // space in the DOM and the state keeps it by never collapsing white space.
+  it('keeps the space before its dot', () => {
+    expect(declaration('.mp-pill__state', 'white-space')).toBe('pre')
+  })
+
+  it('never shrinks, so the name is what gives way', () => {
+    expect(declaration('.mp-pill__state', 'flex')).toBe('0 0 auto')
+  })
+})

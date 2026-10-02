@@ -4197,10 +4197,10 @@ async function walkAlleySafeTop(browser, args, frame) {
 
 // ── The alley on its side ────────────────────────────────────
 //
-// Orientation is unlocked (owner decision Q-4). Turned on its side the plate
-// is sized by the door band, which sits between the headline block and the
-// dock, every door whole; and a rotation in the middle of an open ends with
-// the room on the new screen and no clone left behind.
+// Orientation is unlocked (owner decision Q-4). Turned on its side the alley
+// draws its own landscape picture, cover-fit, every door whole beside the
+// headline block and above the dock; and a rotation in the middle of an open
+// ends with the room on the new screen and no clone left behind.
 const LANDSCAPE_FRAMES = [{ width: 852, height: 393 }]
 
 async function walkAlleyLandscape(browser, args, frame) {
@@ -4259,8 +4259,11 @@ async function walkAlleyLandscape(browser, args, frame) {
       }
     })
     // The block stands beside the doors (S4 round 2, V3 option b): every
-    // door right of it, whole, between the top and the dock, and the band
-    // taller than the 116 px it had with the block above it.
+    // door right of it, whole, between the top and the dock. And no door
+    // narrower than the upright alley's narrowest, the Ear Lab's 28 px: the
+    // alley draws its own picture on its side now, and its doors are sized
+    // by that picture rather than by a band (the portrait plate on its side
+    // drew the Ear Lab 17 px wide, and under the block, 6).
     const doorTop = Math.min(...m.keys.map((k) => k.t))
     const doorBottom = Math.max(...m.keys.map((k) => k.b))
     const doorLeft = Math.min(...m.keys.map((k) => k.l))
@@ -4273,7 +4276,7 @@ async function walkAlleyLandscape(browser, args, frame) {
       m.bandLeft < m.blockRight - 0.5 ||
       doorTop < 0 ||
       doorBottom > m.dock + 0.5 ||
-      m.bandHeight < 232
+      Math.min(...widths) < 28
     ) {
       throw new Error(`landscape layout: ${JSON.stringify(m)}`)
     }

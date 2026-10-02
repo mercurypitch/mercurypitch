@@ -551,9 +551,13 @@
   white-space: nowrap;
 }
 
+/* `pre`, not `nowrap`: the state is a flex item of its own, so " · paused"
+   starts its own line, and `nowrap` collapses a line's leading space. The
+   pill read "Retro Analog Studio· paused". `pre` keeps the space and still
+   never wraps. */
 .mp-pill__state {
   flex: 0 0 auto;
-  white-space: nowrap;
+  white-space: pre;
 }
 
 /* 44pt, and it keeps it: the circle inside is the kit's 32, the target around

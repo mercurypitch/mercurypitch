@@ -1202,6 +1202,11 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     page.off('filechooser', noPicker)
     if (picker) failures.push('the paywall: the picker opened too')
     const offer = await sheetOf(paywall)
+    // Since #880 the price is the store's own, asked for as the paywall
+    // opens, in the singer's storefront. A browser has no store, so the plan
+    // line names the songs and no price at all (never one the store did not
+    // give), the note says why, and Subscribe stays off: it is there to tap
+    // only with a price in view (App Store 3.1.2).
     const wantOffer = {
       title: 'Sing your own songs',
       items: [
@@ -1210,8 +1215,9 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
         'Your songs stay on this phone and play offline',
       ],
       lines: [
-        '20 songs a month · €4.99',
-        'Renews every month until you cancel. Cancel any time in Settings.',
+        '20 songs a month',
+        'Mercury Pitch Cloud, monthly. Renews every month until you cancel. Cancel any time in Settings.',
+        'Subscriptions are not available yet.',
       ],
       buttons: ['Later', 'Subscribe', 'Restore purchases'],
       links: ['Terms of Use', 'Privacy Policy'],
@@ -1240,8 +1246,12 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
         `karaoke import: on its side (${paywallTurned.where}) the paywall shows Subscribe at ${paywallTurned.at.top}..${paywallTurned.at.bottom} without a scroll`,
       )
     }
-    await page.locator(`${paywall} button`, { hasText: /^Subscribe$/u }).tap()
-    await visible(`${paywall} >> text=Subscriptions are not available yet.`)
+    const subscribe = page.locator(`${paywall} button`, {
+      hasText: /^Subscribe$/u,
+    })
+    if (!(await subscribe.isDisabled())) {
+      failures.push('the paywall: Subscribe can be tapped with no price shown')
+    }
     await shoot(page, ctx, 'import-paywall')
     read.push(await sideways('the paywall', paywall))
     await page
@@ -1251,7 +1261,7 @@ export async function walkKaraokeImport(browser, args, frame, kit, target) {
     await page.locator(`${paywall} button[aria-label="Later"]`).tap()
     await hidden(paywall)
     steps.push(
-      `karaoke import: with no songs and no subscription Import is the paywall, no picker: "${offer.lines[0]}", Terms and Privacy; Subscribe says "Subscriptions are not available yet.", Restore "Purchases are not available yet."`,
+      `karaoke import: with no songs and no subscription Import is the paywall, no picker: "${offer.lines[0]}" with no price the store did not give, Terms and Privacy; with no store "${offer.lines[2]}" and Subscribe off, Restore "Purchases are not available yet."`,
     )
 
     const measured = read.filter((line) => line !== null)
