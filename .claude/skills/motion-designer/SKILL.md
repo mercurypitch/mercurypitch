@@ -201,21 +201,25 @@ Read `kit/business-motion-film/references/audio.md`, and the licensing rule in
   (boom, hiss, length). Set each one just above the music in its own frequency
   band, capped so nothing gets harsh.
 - Cut every scene change on a beat.
-- Always export a music-only version (`references/hyperframes-bridge.md` §
-  Music-only version).
+- Always export a music-only version, rendered from a sibling project with the
+  effect tracks hidden (`references/hyperframes-bridge.md` § One root per
+  project). Check the effects against it with `scripts/measure.py audio`.
 
 ## 9. Critic loop
 
 The builder never judges its own work.
 
 - After the storyboard, after each component and after each full render, spawn a
-  **new** `motion-critic` subagent. Give it only: the artifact path, the path to
-  `BRIEF.md`, the reference study folder, `SKILL_DIR`, where to write its report,
-  and for verification rounds the previous report's path.
+  **new** `motion-critic` subagent. Give it only: the round type, the artifact
+  path, the path to `BRIEF.md`, the reference study folder, the music-only
+  render (film rounds with sound), `SKILL_DIR`, a report path in a fresh
+  `review/critic-<round number>/` folder, and for verification rounds the
+  previous report's path.
 - Never tell a critic what you think you fixed or what you believe about the
   references. It pulls its own frames and measures for itself.
 - It returns a ranked list of problems with timestamps, ending with SHIP or ONE
-  MORE PASS.
+  MORE PASS. Save the returned text to the report path yourself: some harnesses
+  do not let a subagent write files, and the next round needs it.
 - Fix the biggest problem first, render, and send to a new critic that marks
   every previous item FIXED, PARTLY or STILL PRESENT and hunts for anything new
   that broke.

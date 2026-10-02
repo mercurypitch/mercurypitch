@@ -106,7 +106,12 @@ calls itself the "mandatory entry point" for any video request, so the
 motion-designer description, the director block and the new row in `CLAUDE.md`
 and `AGENTS.md` all say that video work starts in motion-designer, with
 HyperFrames skills underneath for syntax. `render` carries on past lint errors
-unless given `--strict`; the skill always passes it for final renders.
+unless given `--strict`; the skill always passes it for final renders. A project
+may hold only one root composition (`check` fails `multiple_root_compositions`),
+and render-time variables do not reach the audio, so each extra size and the
+music-only version are sibling projects. The `check` layout audit only compares
+text with text, so a title flying across an image goes unflagged; the critic
+caught exactly that.
 
 ### 3.4 The agent-architect prompt
 
@@ -145,24 +150,24 @@ zoom, not a dolly.
 
 ## 4. What is in this branch
 
-| Path                                                              | Purpose                                                                                                                         |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `.claude/skills/motion-designer/SKILL.md`                         | The director: the prompt's pipeline, fixed and wired to the kit, HyperFrames, the critic and this repository                    |
-| `.claude/skills/motion-designer/BRIEF-TEMPLATE.md`                | The brief, in HyperFrames' `BRIEF.md` format, with the unattended and render-authorisation switches                             |
-| `.claude/skills/motion-designer/references/hyperframes-bridge.md` | How to drive HyperFrames: pinned CLI, new project, director block, rules that bite, sizes, music-only version, telemetry        |
-| `.claude/skills/motion-designer/references/house-rules.md`        | MercuryPitch and Beside Cue brand, measured contrast, the facts file, real product capture, licensing, where work goes          |
-| `.claude/skills/motion-designer/references/measurement.md`        | Reading the numbers, calibrated thresholds, the kit script bugs                                                                 |
-| `.claude/skills/motion-designer/references/shot-grammar.md`       | Shot vocabulary from the Melies catalogue, rewritten for code: what each technique says, how to build it, its wrong cousin      |
-| `.claude/skills/motion-designer/scripts/measure.py`               | Render measurement: frozen time at two thresholds, loudness, timestamped sheets, dense transition sheets, brand-colour sampling |
-| `.claude/skills/motion-designer/scripts/reference_pass.py`        | Reference study: per-frame change, brightness, edges, cut detection, overview and dense sheets, a notes skeleton                |
-| `.claude/skills/motion-designer/scripts/smoke-test.sh`            | The end-to-end proof: scaffold, check, render twice, compare every frame, measure                                               |
-| `.claude/skills/motion-designer/templates/smoke-test.html`        | The 5-second MercuryPitch composition the smoke test renders                                                                    |
-| `.claude/skills/motion-designer/kit/`                             | The Motion Video Kit, byte-identical to upstream `255562b`, with `VENDORED.md` (provenance, hashes, audit, update steps)        |
-| `.claude/agents/motion-critic.md`                                 | The fresh critic subagent                                                                                                       |
-| `.claude/skills/agent-team-architect/SKILL.md`                    | The agent-team skill                                                                                                            |
-| `.claude/skills/agent-team-architect/references/source-prompt.md` | The image's prompt, verbatim                                                                                                    |
-| `.gitignore`, `.prettierignore`                                   | `output/motion/` stays out of git; the vendored kit stays out of Prettier                                                       |
-| `AGENTS.md`, `CLAUDE.md`                                          | A table row and a paragraph that make motion-designer the entry point for video work                                            |
+| Path                                                              | Purpose                                                                                                                                       |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.claude/skills/motion-designer/SKILL.md`                         | The director: the prompt's pipeline, fixed and wired to the kit, HyperFrames, the critic and this repository                                  |
+| `.claude/skills/motion-designer/BRIEF-TEMPLATE.md`                | The brief, in HyperFrames' `BRIEF.md` format, with the unattended and render-authorisation switches                                           |
+| `.claude/skills/motion-designer/references/hyperframes-bridge.md` | How to drive HyperFrames: pinned CLI, new project, director block, rules that bite, sizes, music-only version, telemetry                      |
+| `.claude/skills/motion-designer/references/house-rules.md`        | MercuryPitch and Beside Cue brand, measured contrast, the facts file, real product capture, licensing, where work goes                        |
+| `.claude/skills/motion-designer/references/measurement.md`        | Reading the numbers, calibrated thresholds, the kit script bugs                                                                               |
+| `.claude/skills/motion-designer/references/shot-grammar.md`       | Shot vocabulary from the Melies catalogue, rewritten for code: what each technique says, how to build it, its wrong cousin                    |
+| `.claude/skills/motion-designer/scripts/measure.py`               | Render measurement: holds, low motion, single-frame events, loudness, effects against music, timestamped and frame-exact sheets, brand colour |
+| `.claude/skills/motion-designer/scripts/reference_pass.py`        | Reference study: per-frame change, brightness, edges, cut detection, overview and dense sheets, a notes skeleton                              |
+| `.claude/skills/motion-designer/scripts/smoke-test.sh`            | The end-to-end proof: scaffold, check, render twice, compare every frame, measure                                                             |
+| `.claude/skills/motion-designer/templates/smoke-test.html`        | The 5-second MercuryPitch composition the smoke test renders                                                                                  |
+| `.claude/skills/motion-designer/kit/`                             | The Motion Video Kit, byte-identical to upstream `255562b`, with `VENDORED.md` (provenance, hashes, audit, update steps)                      |
+| `.claude/agents/motion-critic.md`                                 | The fresh critic subagent                                                                                                                     |
+| `.claude/skills/agent-team-architect/SKILL.md`                    | The agent-team skill                                                                                                                          |
+| `.claude/skills/agent-team-architect/references/source-prompt.md` | The image's prompt, verbatim                                                                                                                  |
+| `.gitignore`, `.prettierignore`                                   | `output/motion/` stays out of git; the vendored kit stays out of Prettier                                                                     |
+| `AGENTS.md`, `CLAUDE.md`                                          | A table row and a paragraph that make motion-designer the entry point for video work                                                          |
 
 ## 5. Install on the owner's machine
 
@@ -217,20 +222,22 @@ it off, because the skill pins CLI 0.8.97 and upgrades should be deliberate
 bash .claude/skills/motion-designer/scripts/smoke-test.sh "$(mktemp -d)"
 ```
 
-Expected, as it ran in the cloud session (65 s from a clean directory once npm
+Expected, as it ran in the cloud session (83 s from a clean directory once npm
 and Chrome were cached):
 
 ```text
-1/6 scaffolding .../motion-smoke
-2/6 fetching pinned GSAP 3.14.2 and the Outfit font
-3/6 check
-4/6 rendering twice at 1080p60
-5/6 comparing every frame
-6/6 measuring
+1/7 scaffolding .../motion-smoke
+2/7 fetching pinned GSAP 3.14.2 and the Outfit font
+3/7 check
+4/7 rendering twice at 1080p60
+5/7 comparing every frame
+6/7 rendering the music-only version and comparing the effect with it
+7/7 measuring
 
 SMOKE TEST PASSED
   render:        .../motion-smoke/renders/smoke-a.mp4 (300 identical frames in both takes)
-  measurements:  .../motion-smoke/review/summary.md
+  music only:    .../motion-smoke-music-only/renders/smoke-music-only.mp4
+  measurements:  .../motion-smoke/review/summary.md, .../motion-smoke/review/audio.md
   contact sheet: .../motion-smoke/review/sheet-01.jpg
   render path:   beginframe capture · software gpu · ...
 ```
@@ -314,7 +321,8 @@ the owner's decision.
 
 Report these to the owner:
 
-1. The smoke test's last seven lines, and its `review/sheet-01.jpg`.
+1. The smoke test's output from `SMOKE TEST PASSED` to the end, and its
+   `review/sheet-01.jpg`.
 2. The `/skills`, `/agents` and `/plugin` results from § 5.5.
 3. One short real run:
 
@@ -329,7 +337,13 @@ Report these to the owner:
    `DELIVERY.md`. Report the critic verdicts, the hard-hold and loudness
    numbers from `summary.md`, and anything the run could not do.
 
-4. A design-only run of the other skill on a real problem:
+4. A critic calibration: spawn `motion-critic` on the smoke render with only
+   paths (`round: film`, the artifact, the music-only render, a short brief,
+   `skill_dir`, a report path) and save the report it returns. Expect ONE MORE
+   PASS with specific, timestamped findings; the smoke film is a toolchain test,
+   so a SHIP would mean the critic is too lenient.
+
+5. A design-only run of the other skill on a real problem:
 
    ```text
    /agent-team-architect Plan slice G of docs/agent/REFACTOR-PLAN.md: moving the A-B loop state out of src/App.tsx into src/features/playback/.
@@ -403,9 +417,12 @@ Python 3 with numpy 2.4 and scipy 1.17.
   pass WCAG AA.
 - A 5-second 1080p60 delivery render took 18.8 s. A second render was
   byte-identical: all 300 frames and the audio.
-- `render -c vertical.html` produced 1080x1920. Marking the whoosh
-  `data-hidden` removed it from the mix (peak in its window fell from -23.5 to
-  -27.4 dB, the bed alone).
+- A second root file (`vertical.html`, `music-only.html`) renders with `-c`,
+  but `check` then fails the project with `multiple_root_compositions`, and a
+  render-time variable that hid the effect track left the audio byte-identical.
+  So every size and the music-only version are sibling projects. Marking the
+  whoosh `data-hidden` there does remove it from the mix (its window's peak fell
+  from -23.5 to -27.4 dB, the bed alone).
 - The kit's scripts all ran; the bugs in § 3.2 were reproduced, including a
   unit-level proof of the scientific-notation misread.
 - `measure.py` sampled the rendered background as exactly `#0d1117`.

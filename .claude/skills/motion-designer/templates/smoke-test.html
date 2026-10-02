@@ -4,7 +4,8 @@
   the pipeline end to end (local pinned GSAP, a local @font-face, an SVG brand
   mark, a persistent carried object, a foreground fly-through transition, a
   music bed and one whoosh). scripts/smoke-test.sh copies it into a fresh
-  HyperFrames project as index.html. It proves the toolchain, not the taste.
+  HyperFrames project as index.html. It proves the toolchain, not the taste:
+  a fresh motion-critic round on it still asks for one more pass.
 -->
 <html lang="en">
   <head>
@@ -52,6 +53,11 @@
         inset: 0;
         display: block;
       }
+      #lockup {
+        position: absolute;
+        inset: 0;
+        transform-origin: 945px 415px;
+      }
       #mark {
         position: absolute;
         left: 150px;
@@ -71,7 +77,6 @@
         letter-spacing: -0.02em;
         line-height: 1;
         color: #e6edf3;
-        transform-origin: 30% 50%;
       }
       #title .accent {
         color: #58a6ff;
@@ -102,9 +107,9 @@
         top: 312px;
         width: 900px;
         display: block;
-        font-size: 44px;
+        font-size: 64px;
         font-weight: 500;
-        color: #a8b3bf;
+        color: #e6edf3;
       }
     </style>
   </head>
@@ -135,18 +140,18 @@
           </defs>
           <path
             id="trail"
-            d="M 60 860 C 260 860 300 760 460 760 S 700 900 880 820 S 1160 640 1320 700 S 1640 820 1860 720"
+            d="M 150 860 C 300 860 330 760 460 760 S 700 900 880 820 S 1160 640 1320 700 S 1640 820 1860 720"
             fill="none"
             stroke="url(#spectrum)"
             stroke-width="10"
             stroke-linecap="round"
           />
           <g id="notes">
-            <circle class="note" cx="460" cy="760" r="18" fill="#58a6ff" />
-            <circle class="note" cx="700" cy="846" r="18" fill="#58a6ff" />
-            <circle class="note" cx="1000" cy="760" r="18" fill="#2dd4bf" />
-            <circle class="note" cx="1320" cy="700" r="18" fill="#2dd4bf" />
-            <circle class="note" cx="1640" cy="790" r="18" fill="#bc8cff" />
+            <circle class="note" r="18" fill="#58a6ff" />
+            <circle class="note" r="18" fill="#58a6ff" />
+            <circle class="note" r="18" fill="#2dd4bf" />
+            <circle class="note" r="18" fill="#2dd4bf" />
+            <circle class="note" r="18" fill="#bc8cff" />
           </g>
         </svg>
       </div>
@@ -172,10 +177,12 @@
         data-track-index="2"
       >
         <div id="stage-a" class="stage">
-          <img id="mark" src="assets/brand/mark.svg" alt="" />
-          <h1 id="title" data-layout-allow-overflow>
-            Find your <span class="accent">pitch.</span>
-          </h1>
+          <div id="lockup">
+            <img id="mark" src="assets/brand/mark.svg" alt="" />
+            <h1 id="title" data-layout-allow-overflow>
+              Find your <span class="accent">pitch.</span>
+            </h1>
+          </div>
         </div>
       </section>
 
@@ -199,13 +206,30 @@
       const length = trail.getTotalLength()
       trail.style.strokeDasharray = String(length)
 
+      // Every note sits on the contour: place each dot from the path itself.
+      const pointAtX = (x) => {
+        let best = trail.getPointAtLength(0)
+        for (let s = 0; s <= length; s += 1) {
+          const p = trail.getPointAtLength(s)
+          if (Math.abs(p.x - x) < Math.abs(best.x - x)) best = p
+        }
+        return best
+      }
+      const noteX = [460, 700, 1000, 1320, 1640]
+      document.querySelectorAll('.note').forEach((dot, i) => {
+        const p = pointAtX(noteX[i])
+        dot.setAttribute('cx', p.x.toFixed(1))
+        dot.setAttribute('cy', p.y.toFixed(1))
+      })
+
       const tl = gsap.timeline({ paused: true })
 
-      // Frame 0 is a finished picture: the contour is already a third drawn.
+      // Frame 0 is a finished picture: the contour is already a third drawn,
+      // and it draws at full speed from the first frame, easing out only.
       tl.fromTo(
         trail,
         { strokeDashoffset: length * 0.66 },
-        { strokeDashoffset: 0, duration: 3.2, ease: 'power2.inOut' },
+        { strokeDashoffset: 0, duration: 2.6, ease: 'power3.out' },
         0,
       )
 
@@ -223,33 +247,21 @@
         0,
       )
 
-      // The foreground becomes the transition: the title flies through the camera
-      // while scene B already waits underneath.
+      // The foreground becomes the transition: mark and title fly through the
+      // camera as one lockup while scene B already waits underneath.
       tl.fromTo(
-        '#title',
+        '#lockup',
         { scale: 1, opacity: 1 },
         { scale: 5, opacity: 0, duration: 0.4, ease: 'power3.in' },
         2.15,
       )
-      tl.fromTo(
-        '#mark',
-        { opacity: 1, x: 0 },
-        {
-          opacity: 0,
-          x: -220,
-          duration: 0.35,
-          ease: 'power3.in',
-          immediateRender: false,
-        },
-        2.15,
-      )
 
-      // Scene B: type enters from the opposite side and lands slowly enough to read.
+      // Scene B arrives on the same push axis and slows as it lands.
       tl.fromTo(
         '#headline-b',
-        { x: 160, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.7, ease: 'expo.out' },
-        2.56,
+        { scale: 1.12, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.7, ease: 'expo.out' },
+        2.55,
       )
       tl.fromTo(
         '#cta',

@@ -51,8 +51,8 @@ HYPERFRAMES_SKIP_SKILLS=1 npx --yes hyperframes@0.8.97 init output/motion/<slug>
 ```
 
 - `init` refuses a non-empty directory, so write `BRIEF.md` after it.
-- `--resolution portrait` starts a 9:16-first project. Otherwise add one root
-  file per extra size (§ More than one size).
+- `--resolution portrait` starts a 9:16-first project. Every extra size, and
+  the music-only version, is a sibling project (§ One root per project).
 - `init` pins the CLI in the project's `package.json` and writes a `CLAUDE.md`
   and an identical `AGENTS.md` telling agents to start at `/hyperframes`, which
   would run an interview. Append the director block below to both files.
@@ -128,24 +128,27 @@ npx --yes hyperframes@0.8.97 preview --background                  # only for a 
 - Measured here: 5 s at 1080p60, delivery quality, rendered in 19 s on 4 CPU
   cores with software GL, and two renders were byte-identical.
 
-## More than one size
+## One root per project: sizes and the music-only version
 
-Each size is its own root file with its own layout, for example `index.html`
-at 1920x1080 and `vertical.html` at 1080x1920 (change the viewport meta,
-`data-width`, `data-height` and the page size). Share assets and
-sub-compositions where the layout allows. Recompose for 9:16; never letterbox
-the 16:9 cut.
+`check` fails a project with more than one root-level composition file
+(`multiple_root_compositions`: the runtime may load both and play the audio
+twice), and render-time variables (`render --variables`) do not reach the
+audio, which is extracted from the authored HTML. Verified here: a variable that
+hid the effect track at runtime left the rendered audio byte-identical. So every
+variant is a sibling project that passes `check` on its own.
 
-```bash
-npx --yes hyperframes@0.8.97 render -c vertical.html --fps 60 --quality delivery --strict --output renders/<name>-9x16.mp4
-```
+- **Another size.** `<slug>-9x16/`, made with
+  `HYPERFRAMES_SKIP_SKILLS=1 npx --yes hyperframes@0.8.97 init <dir> --resolution portrait --non-interactive`,
+  with its own `index.html` recomposed for the format (never a letterboxed or
+  scaled 16:9 cut). Copy the shared assets and sub-compositions across.
+- **The music-only version.** Copy the finished project to
+  `<slug>-music-only/` (everything except `renders/`), add `data-hidden` to
+  every sound-effect `<audio>` in its `index.html`, keep the music, and render
+  it. Hiding the effect track removes it from the mix (verified). Then compare
+  the two with `scripts/measure.py audio <film> --music-only <music-only film>`.
 
-## Music-only version
-
-Copy the final root file, add `data-hidden` to every sound-effect `<audio>`
-(keep the music), and render the copy with `-c`. Verified: hiding the effect
-track removes it from the mix. Confirm with `scripts/measure.py render` that
-loudness changes only where effects were.
+`render -c <file>` renders one composition file; keep it for sub-composition
+lab renders, not for variants of the root.
 
 ## Unattended runs
 
@@ -162,8 +165,9 @@ bash scripts/smoke-test.sh <empty-work-dir>
 
 It scaffolds a project, fetches pinned GSAP and the Outfit font, writes the
 5-second composition from `templates/smoke-test.html`, runs `check`, renders
-twice at 1080p60, compares every frame, and measures the result. Expect
-`SMOKE TEST PASSED`.
+twice at 1080p60 and compares every frame, renders the music-only version from a
+sibling project and checks the effect against it, then measures the result.
+Expect `SMOKE TEST PASSED`.
 
 ## Telemetry
 

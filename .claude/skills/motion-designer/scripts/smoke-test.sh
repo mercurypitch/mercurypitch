@@ -38,12 +38,12 @@ mkdir -p "$WORK"
 WORK="$(cd "$WORK" && pwd)"
 PROJECT="$WORK/motion-smoke"
 
-echo "1/6 scaffolding $PROJECT"
+echo "1/7 scaffolding $PROJECT"
 HYPERFRAMES_SKIP_SKILLS=1 $HF init "$PROJECT" --non-interactive >"$WORK/init.log" 2>&1 ||
   fail "init failed; see $WORK/init.log"
 $HF browser ensure >"$WORK/browser.log" 2>&1 || fail "browser ensure failed; see $WORK/browser.log"
 
-echo "2/6 fetching pinned GSAP $GSAP_VERSION and the Outfit font"
+echo "2/7 fetching pinned GSAP $GSAP_VERSION and the Outfit font"
 cd "$PROJECT"
 mkdir -p assets/vendor assets/fonts assets/brand assets/audio renders
 curl -sSfL -o "assets/vendor/gsap-$GSAP_VERSION.min.js" \
@@ -62,27 +62,31 @@ else
   printf '%s\n' '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="256" r="246" fill="#8a97a6"/></svg>' >assets/brand/mark.svg
 fi
 
-# A quiet A-major pad as the music bed and one soft band-limited whoosh.
-ffmpeg -loglevel error -y -f lavfi -i "sine=f=220:d=5" -f lavfi -i "sine=f=277.18:d=5" \
-  -f lavfi -i "sine=f=329.63:d=5" -f lavfi -i "sine=f=110:d=5" -filter_complex \
-  "[0][1][2][3]amix=inputs=4:normalize=0,volume=0.12,tremolo=f=2:d=0.35,afade=t=in:d=0.02,afade=t=out:st=4.2:d=0.8,aformat=channel_layouts=stereo" \
+# The music bed: an A-major chord with upper voices phone speakers can play,
+# plus a quiet shaker pulse so the 2-8 kHz band is not empty (about -18 LUFS).
+# The whoosh is a soft band-limited air pass, about 1.4 LU over the bed.
+ffmpeg -loglevel error -y \
+  -f lavfi -i "sine=f=110:d=5" -f lavfi -i "sine=f=220:d=5" -f lavfi -i "sine=f=277.18:d=5" \
+  -f lavfi -i "sine=f=329.63:d=5" -f lavfi -i "sine=f=440:d=5" -f lavfi -i "sine=f=554.37:d=5" \
+  -f lavfi -i "sine=f=659.26:d=5" -f lavfi -i "anoisesrc=color=white:d=5:a=0.5:seed=7" \
+  -filter_complex "[7]highpass=f=3500,lowpass=f=9000,tremolo=f=4:d=1,volume=0.35[shaker];[0][1][2][3][4][5][6][shaker]amix=inputs=8:weights='0.6 0.5 0.4 0.4 0.3 0.2 0.2 1':normalize=0,volume=1.6,tremolo=f=2:d=0.25,afade=t=in:d=0.02,afade=t=out:st=4.2:d=0.8,aformat=channel_layouts=stereo" \
   -ar 48000 assets/audio/bed.wav
-ffmpeg -loglevel error -y -f lavfi -i "anoisesrc=color=pink:d=0.45:a=0.5" -af \
-  "highpass=f=250,lowpass=f=5000,afade=t=in:d=0.25:curve=qsin,afade=t=out:st=0.25:d=0.2:curve=qsin,volume=0.6,aformat=channel_layouts=stereo" \
+ffmpeg -loglevel error -y -f lavfi -i "anoisesrc=color=pink:d=0.45:a=0.5:seed=3" -af \
+  "highpass=f=250,lowpass=f=4000,afade=t=in:d=0.25:curve=qsin,afade=t=out:st=0.25:d=0.2:curve=qsin,volume=2.2,aformat=channel_layouts=stereo" \
   -ar 48000 assets/audio/whoosh.wav
 cp "$SKILL_DIR/templates/smoke-test.html" index.html
 
-echo "3/6 check"
+echo "3/7 check"
 $HF check >"$WORK/check.log" 2>&1 || fail "check failed; see $WORK/check.log"
 grep -q "Check passed" "$WORK/check.log" || fail "check did not pass; see $WORK/check.log"
 
-echo "4/6 rendering twice at 1080p60"
+echo "4/7 rendering twice at 1080p60"
 for take in a b; do
   $HF render --fps 60 --quality delivery --strict --output "renders/smoke-$take.mp4" \
     >"$WORK/render-$take.log" 2>&1 || fail "render $take failed; see $WORK/render-$take.log"
 done
 
-echo "5/6 comparing every frame"
+echo "5/7 comparing every frame"
 for take in a b; do
   ffmpeg -v error -i "renders/smoke-$take.mp4" -map 0:v -f framemd5 - |
     grep -v '^#' | awk -F, '{print $NF}' >"$WORK/frames-$take.md5"
@@ -92,17 +96,32 @@ frames=$(wc -l <"$WORK/frames-a.md5" | tr -d ' ')
 cmp -s "$WORK/frames-a.md5" "$WORK/frames-b.md5" || fail "the two renders differ: the composition is not deterministic"
 geometry=$(ffprobe -v error -select_streams v -show_entries stream=width,height,r_frame_rate -of csv=p=0 renders/smoke-a.mp4)
 [ "$geometry" = "1920,1080,60/1" ] || fail "unexpected picture: $geometry"
-ffprobe -v error -select_streams a -show_entries stream=codec_type -of csv=p=0 renders/smoke-a.mp4 |
-  grep -q audio || fail "the render has no audio stream"
+streams=$(ffprobe -v error -select_streams a -show_entries stream=codec_type -of csv=p=0 renders/smoke-a.mp4)
+[ "$streams" = "audio" ] || fail "the render has no audio stream"
 
-echo "6/6 measuring"
+echo "6/7 rendering the music-only version and comparing the effect with it"
+# A sibling project with every effect hidden: HyperFrames allows one root
+# composition per project, and render-time variables do not reach the audio.
+MUSIC="$WORK/motion-smoke-music-only"
+mkdir -p "$MUSIC/renders"
+for item in assets package.json hyperframes.json meta.json; do cp -R "$item" "$MUSIC/"; done
+sed 's/id="whoosh"/id="whoosh" data-hidden/' index.html >"$MUSIC/index.html"
+(cd "$MUSIC" && $HF render --fps 60 --quality draft --strict --output renders/smoke-music-only.mp4) \
+  >"$WORK/render-music-only.log" 2>&1 || fail "music-only render failed; see $WORK/render-music-only.log"
+python3 "$SKILL_DIR/scripts/measure.py" audio renders/smoke-a.mp4 \
+  --music-only "$MUSIC/renders/smoke-music-only.mp4" --out review >"$WORK/audio.log" 2>&1 ||
+  fail "measure.py audio failed; see $WORK/audio.log"
+grep -q '^| 2\.' review/audio.md || fail "the whoosh at 2.15 s was not found against the music-only render; see review/audio.md"
+
+echo "7/7 measuring"
 python3 "$SKILL_DIR/scripts/measure.py" render renders/smoke-a.mp4 --out review >"$WORK/measure.log" 2>&1 ||
   fail "measure.py failed; see $WORK/measure.log"
 
 echo
 echo "SMOKE TEST PASSED"
 echo "  render:        $PROJECT/renders/smoke-a.mp4 (300 identical frames in both takes)"
-echo "  measurements:  $PROJECT/review/summary.md"
+echo "  music only:    $MUSIC/renders/smoke-music-only.mp4"
+echo "  measurements:  $PROJECT/review/summary.md, $PROJECT/review/audio.md"
 echo "  contact sheet: $PROJECT/review/sheet-01.jpg"
 grep -E "^[[:space:]]*(beginframe|screenshot) capture" "$WORK/render-a.log" | head -1 |
   sed 's/^ */  render path:   /' || true
