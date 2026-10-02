@@ -2072,12 +2072,21 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       releaseMic: () => {
         if (mic.micActive()) void mic.toggleMic()
       },
+      micOn: mic.micActive,
+      resumeMic: () => {
+        if (!mic.micActive()) void mic.toggleMic()
+      },
       guide: () => ({ volume: vocal().volume, muted: vocal().muted }),
       setGuide: (guide) => {
         setTrackVolume('Vocal', guide.volume)
         if (vocal().muted !== guide.muted) toggleMute('Vocal')
       },
-      lyricGlance: () => lyricGlance(stableParsedLyrics(), currentLineIdx()),
+      lyricGlance: () =>
+        lyricGlance(
+          stableParsedLyrics(),
+          currentLineIdx(),
+          audio.audibleElapsed(),
+        ),
     })
 
     // Load cached data from IndexedDB in parallel:

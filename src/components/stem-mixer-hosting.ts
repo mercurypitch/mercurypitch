@@ -45,6 +45,13 @@ export interface HostedMixerControls {
    * (REQ-NRM-036). The mic chip turns it back on.
    */
   readonly releaseMic: () => void
+  /** The microphone is on. */
+  readonly micOn: Accessor<boolean>
+  /**
+   * Turn the microphone on, if it is off: the singer came back to a room
+   * that let it go when they left (KaraokeRoomStage.tsx, COMING BACK).
+   */
+  readonly resumeMic: () => void
   /**
    * The guide vocal, so a parked song comes back with it where the singer
    * left it. The mixer starts every mount at its own level; the music level

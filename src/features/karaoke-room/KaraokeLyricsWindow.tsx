@@ -9,12 +9,15 @@
 // song's title, smallest. No header, no bar, no buttons. The window's own
 // play and pause are Android's, from the media session.
 //
+// The line being sung lights up word by word as the stage's does: the sung
+// words white, the one being sung filling from the left, the rest dim.
+//
 // In a rest, and before the first line, there is no line being sung: the
 // line coming takes the big place, dimmed, so the window never goes blank
 // mid-song. A song with no lyrics shows its title there.
 
 import type { JSX } from 'solid-js'
-import { Show } from 'solid-js'
+import { Index, Show } from 'solid-js'
 import type { LyricGlance } from '@/lib/lyric-glance'
 import styles from './karaoke-room.module.css'
 
@@ -30,10 +33,10 @@ export function KaraokeLyricsWindow(
     props.glance.current !== null || props.glance.next !== null
   const waiting = (): boolean =>
     props.glance.current === null && props.glance.next !== null
-  const big = (): string =>
-    props.glance.current ?? props.glance.next ?? props.title
   const below = (): string | null =>
     props.glance.current === null ? null : props.glance.next
+  const sweeping = (index: number): boolean =>
+    index === props.glance.sungUpTo + 1 && props.glance.sweep > 0
 
   return (
     <div class={styles.lyricsWindow} data-testid="karaoke-lyrics-window">
@@ -45,7 +48,35 @@ export function KaraokeLyricsWindow(
         classList={{ [styles.windowWaiting]: waiting() }}
         data-testid="karaoke-lyrics-window-line"
       >
-        {big()}
+        <Show
+          when={props.glance.current !== null}
+          fallback={props.glance.next ?? props.title}
+        >
+          <Index each={props.glance.words}>
+            {(word, index) => (
+              <>
+                {index > 0 ? ' ' : ''}
+                <span
+                  class={styles.windowWord}
+                  classList={{
+                    [styles.windowSung]: index <= props.glance.sungUpTo,
+                    [styles.windowSweep]: sweeping(index),
+                  }}
+                  style={
+                    sweeping(index)
+                      ? {
+                          '--sweep': `${Math.round(props.glance.sweep * 100)}%`,
+                        }
+                      : undefined
+                  }
+                  data-sung={index <= props.glance.sungUpTo ? '' : undefined}
+                >
+                  {word()}
+                </span>
+              </>
+            )}
+          </Index>
+        </Show>
       </p>
       <Show when={below()}>
         {(next) => (

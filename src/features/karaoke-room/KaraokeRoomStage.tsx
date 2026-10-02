@@ -35,6 +35,11 @@
 //   being frozen), and its media buttons reach the run's own play, pause
 //   and stop. With it off, a song the app is sent away from pauses.
 //
+//   COMING BACK (owner, 2 Oct). A microphone the singer had on when they
+//   left comes back on when they do, for a run still going. Never behind
+//   another app, and never in the small window: nobody sings at the room
+//   from there.
+//
 //   IN A SMALL WINDOW (Android). With "Show lyrics in a small window" on,
 //   the default, a singer who leaves the app while a song plays keeps the
 //   room in a picture-in-picture window, over whatever app they went to:
@@ -82,6 +87,9 @@ import { useKaraokePictureInPicture } from './useKaraokePictureInPicture'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
+
+/** How long after the singer is back the microphone they had on returns. */
+export const MIC_RESTORE_DELAY_MS = 500
 
 /** One song put on the stage. A new cue is a new mixer. */
 interface Cue {
@@ -436,6 +444,32 @@ export const KaraokeRoomStage: Component = () => {
   const backgroundPlay = (): boolean =>
     device !== null && karaokeBackgroundPlay()
 
+  // The microphone on the way out and back in (see COMING BACK). Put back
+  // a moment after the return rather than on it: swiping Android's window
+  // away reports the window closed and the page hidden in either order, and
+  // the microphone must not come on for an instant behind the next app.
+  let micToRestore = false
+  let restoreTimer: ReturnType<typeof setTimeout> | undefined
+  const letMicGo = (controls: HostedMixerControls | null): void => {
+    if (controls === null) return
+    if (controls.micOn()) micToRestore = true
+    controls.releaseMic()
+  }
+  const restoreMicSoon = (): void => {
+    clearTimeout(restoreTimer)
+    if (!micToRestore) return
+    restoreTimer = setTimeout(() => {
+      restoreTimer = undefined
+      if (document.visibilityState === 'hidden' || inWindow()) return
+      micToRestore = false
+      const controls = mixer()
+      if (controls !== null && runOn()) controls.resumeMic()
+    }, MIC_RESTORE_DELAY_MS)
+  }
+  onCleanup(() => {
+    clearTimeout(restoreTimer)
+  })
+
   // The small window (see IN A SMALL WINDOW). What is open over the stage
   // closes as it opens: nobody can tap a sheet in there, and coming back
   // finds the stage.
@@ -443,11 +477,12 @@ export const KaraokeRoomStage: Component = () => {
     device,
     playing: isPlaying,
     onEnter: () => {
-      mixer()?.releaseMic()
+      letMicGo(mixer())
       setPickerOpen(false)
       setOptionsOpen(false)
       setLibraryOpen(false)
     },
+    onExit: restoreMicSoon,
   })
   // The run is the system's business while the song is behind another app,
   // and while it is in the window: that is where the window's play and
@@ -460,11 +495,15 @@ export const KaraokeRoomStage: Component = () => {
   const onVisibility = (): void => {
     const hidden = document.visibilityState === 'hidden'
     setPageHidden(hidden)
-    if (!hidden) return
+    if (!hidden) {
+      restoreMicSoon()
+      return
+    }
+    clearTimeout(restoreTimer)
     const controls = mixer()
     if (controls === null) return
     if (!backgroundPlay() && controls.playing()) controls.pause()
-    controls.releaseMic()
+    letMicGo(controls)
   }
   document.addEventListener('visibilitychange', onVisibility)
   onCleanup(() => {
@@ -557,22 +596,27 @@ export const KaraokeRoomStage: Component = () => {
       {/* data-room-background: the picture a door's clone waits on before it
           fades (apps/mercurypitch alley-entry.ts). */}
       <div class={styles.cover} data-room-background />
-      <Show when={cue()} keyed>
-        {(entry) => (
-          <StemMixer
-            sessionId={entry.song.sessionId}
-            stems={entry.stems}
-            songTitle={entry.song.title}
-            practiceMode="full"
-            requestedStems={{ vocal: true, instrumental: true }}
-            preset="performance"
-            showStageSettings={false}
-            autoPlay={entry.autoPlay}
-            initialSeekSec={entry.seekSec}
-            hosted={hostingFor(entry)}
-          />
-        )}
-      </Show>
+      {/* Unseen and out of reach under the small window: its pills and bar
+          would sit over the lyrics there, and a tap never reaches them. The
+          stage stays mounted, because it is the song's clock. */}
+      <div class={styles.stage} inert={inWindow()} data-testid="karaoke-stage">
+        <Show when={cue()} keyed>
+          {(entry) => (
+            <StemMixer
+              sessionId={entry.song.sessionId}
+              stems={entry.stems}
+              songTitle={entry.song.title}
+              practiceMode="full"
+              requestedStems={{ vocal: true, instrumental: true }}
+              preset="performance"
+              showStageSettings={false}
+              autoPlay={entry.autoPlay}
+              initialSeekSec={entry.seekSec}
+              hosted={hostingFor(entry)}
+            />
+          )}
+        </Show>
+      </div>
       <Show when={inWindow() ? cue() : null} keyed>
         {(entry) => (
           <KaraokeLyricsWindow
