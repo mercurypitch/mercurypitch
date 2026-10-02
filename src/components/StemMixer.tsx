@@ -7393,7 +7393,8 @@ export const StemMixerStyles: string = `
   min-width: 0;
   height: 44px;
   padding: 0 0.9rem;
-  font-size: 0.95rem;
+  /* 16 px: iOS zooms the page into any field set smaller on focus. */
+  font-size: 1rem;
   font-family: inherit;
   color: var(--fg-primary, #e6edf3);
   background: var(--lyf-surface);
