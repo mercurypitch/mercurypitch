@@ -1011,6 +1011,18 @@ export async function resumableServerSessions(): Promise<UvrSession[]> {
 const EXAMPLE_PROVIDER = 'examples'
 
 /**
+ * Whether a row is one of the shipped example songs rather than a song this
+ * device separated or the visitor brought. Its stems stream from R2 instead of
+ * living in uvrStemBlobs, and its `createdAt` is a sort key that files the
+ * examples below the visitor's own songs, not a date anything happened on.
+ */
+export function isShippedExample(
+  session: Pick<UvrSession, 'provider'> | undefined,
+): boolean {
+  return session?.provider === EXAMPLE_PROVIDER
+}
+
+/**
  * Remove 'completed' sessions whose playable stems are missing — the pre-fix
  * data loss. They can never open, so pruning them clears the confusing
  * "processed but can't open / retry" entries. Returns how many were pruned.
@@ -1022,7 +1034,7 @@ const EXAMPLE_PROVIDER = 'examples'
  */
 export async function pruneOrphanedCompletedSessions(): Promise<number> {
   const completed = getAllUvrSessions().filter(
-    (s) => s.status === 'completed' && s.provider !== EXAMPLE_PROVIDER,
+    (s) => s.status === 'completed' && !isShippedExample(s),
   )
   let pruned = 0
   let skipped = 0
