@@ -103,21 +103,34 @@ button.value:hover:not(:disabled),
   border-color: color-mix(in srgb, var(--warning, #d29922) 55%, transparent);
 }
 
-/* A finger's worth, for the phone stage's sheet. */
+/* A finger's worth, for the phone stage's sheet. The key's name has a line
+   of its own: beside the stepper, it pushed Find my key 38 px off a 360 px
+   phone once Find my key had named the key. */
 .keyShift[data-size='touch'] {
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin: 0;
   font-size: 0.95rem;
 }
 
+.keyShift[data-size='touch'] .label {
+  flex-basis: 100%;
+}
+
+/* The steps are 44 px inside the stepper's border, not 42 with it. */
 .keyShift[data-size='touch'] .stepper,
 .keyShift[data-size='touch'] .find {
-  height: 44px;
+  height: 46px;
   border-radius: 0.6rem;
 }
 
 .keyShift[data-size='touch'] .step {
   width: 44px;
+  height: 44px;
+}
+
+.keyShift[data-size='touch'] .value {
+  height: 44px;
 }
 
 .keyShift[data-size='touch'] .value {
