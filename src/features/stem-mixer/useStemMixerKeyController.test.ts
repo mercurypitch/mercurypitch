@@ -519,19 +519,36 @@ describe('what the mixer shows', () => {
     ])
   })
 
-  it('names the key the stepper lands on, even while Pitch Studio plays the original', () => {
+  it('names the key being heard', () => {
     const shown = startView()
     const { binding } = shown.view
     expect(binding.keyLabel()).toBeUndefined()
 
     shown.setDetected({ keyName: 'G', scaleType: 'major' })
     binding.onChange(2)
+    shown.setHeard(2)
     expect(binding.value()).toBe(2)
+    expect(binding.heard()).toBe(2)
     expect(binding.keyLabel()).toBe('A major')
 
     shown.setDetected({ keyName: 'A', scaleType: 'natural-minor' })
     binding.onChange(-2)
+    shown.setHeard(-2)
     expect(binding.keyLabel()).toBe('G minor')
+  })
+
+  it('names the song’s own key while Pitch Studio plays it, or there is no engine', () => {
+    const shown = startView()
+    const { binding } = shown.view
+    shown.setDetected({ keyName: 'G', scaleType: 'major' })
+    binding.onChange(2)
+
+    // Heard is 0 in both: the stepper keeps the singer’s +2 for later.
+    shown.setHeard(0)
+
+    expect(binding.keyLabel()).toBe('G major')
+    expect(binding.value()).toBe(2)
+    expect(binding.heard()).toBe(0)
   })
 
   it('spells the key the way it is written, flats and all', () => {
@@ -539,13 +556,13 @@ describe('what the mixer shows', () => {
     const { binding } = shown.view
 
     shown.setDetected({ keyName: 'D', scaleType: 'major' })
-    binding.onChange(-4)
+    shown.setHeard(-4)
     expect(binding.keyLabel()).toBe('B♭ major')
 
     shown.setDetected({ keyName: 'E', scaleType: 'natural-minor' })
-    binding.onChange(-1)
+    shown.setHeard(-1)
     expect(binding.keyLabel()).toBe('E♭ minor')
-    binding.onChange(4)
+    shown.setHeard(4)
     expect(binding.keyLabel()).toBe('G# minor')
   })
 
