@@ -257,7 +257,10 @@ describe('OverflowMenu', () => {
 
     fireEvent(window, new Event('resize'))
 
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('stays open while something else scrolls, and closes when its own page does', () => {
@@ -270,15 +273,15 @@ describe('OverflowMenu', () => {
         />
       </>
     ))
-    fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+    fireEvent.click(trigger)
 
     fireEvent.scroll(screen.getByTestId('lyrics'))
-    expect(
-      screen.getByRole('menuitem', { name: 'Send to device' }),
-    ).toBeVisible()
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
     fireEvent.scroll(document)
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('leaves an Escape that a layer above it already used', () => {
@@ -290,8 +293,12 @@ describe('OverflowMenu', () => {
     document.body.removeEventListener('keydown', claim)
 
     expect(
-      screen.getByRole('menuitem', { name: 'Send to device' }),
-    ).toBeVisible()
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('menu')).toHaveAttribute(
+      'aria-label',
+      'More actions',
+    )
   })
 
   it('announces itself as a menu, not a button that does something', () => {
