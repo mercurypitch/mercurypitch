@@ -14,7 +14,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuideLevel, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
-import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import type { NativeDeviceApi, NativeMediaAction, } from '@/stores/native-shell-store'
 import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 
 interface FakeMixer {
@@ -177,7 +177,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 }))
 
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
 
@@ -216,11 +216,20 @@ const DARK = example(
 interface FakeDevice extends NativeDeviceApi {
   acquireAudio: Mock
   keepAwake: Mock
+  holdAudioInBackground: Mock
+  nowPlaying: Mock
+  onMediaAction: Mock
   lease: {
     ensure: Mock
     unlock: Mock
     release: Mock
   }
+  /** Background holds taken and not let go yet. */
+  holds: () => number
+  /** A press on the system's media controls. */
+  press: (action: NativeMediaAction) => void
+  /** Media-button handlers still subscribed. */
+  mediaListeners: () => number
 }
 
 function fakeDevice(): FakeDevice {
@@ -229,11 +238,43 @@ function fakeDevice(): FakeDevice {
     unlock: vi.fn(async () => Promise.resolve(true)),
     release: vi.fn(),
   }
+  let holds = 0
+  const handlers = new Set<(action: NativeMediaAction) => void>()
   return {
     acquireAudio: vi.fn(() => lease),
     keepAwake: vi.fn(),
+    holdAudioInBackground: vi.fn(() => {
+      holds += 1
+      let released = false
+      return () => {
+        if (released) return
+        released = true
+        holds -= 1
+      }
+    }),
+    nowPlaying: vi.fn(),
+    onMediaAction: vi.fn((handler: (action: NativeMediaAction) => void) => {
+      handlers.add(handler)
+      return () => {
+        handlers.delete(handler)
+      }
+    }),
     lease,
+    holds: () => holds,
+    press: (action) => {
+      for (const handler of [...handlers]) handler(action)
+    },
+    mediaListeners: () => handlers.size,
   }
+}
+
+/** The OS taking the app away, or bringing it back. */
+function sendAppAway(away: boolean): void {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => (away ? 'hidden' : 'visible'),
+  })
+  document.dispatchEvent(new Event('visibilitychange'))
 }
 
 let device: FakeDevice
@@ -283,6 +324,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  Reflect.deleteProperty(document, 'visibilityState')
   unregisterDevice()
   resetRoomArrivalHolds()
   vi.clearAllMocks()
@@ -453,19 +495,154 @@ describe('parking, and coming back', () => {
     })
   })
 
-  it('pauses when the app is sent away', async () => {
+  it('pauses when the app is sent away, with background play off', async () => {
+    setKaraokeBackgroundPlay(false)
     await mountRoom()
     current().setLoading(false)
     current().setPlaying(true)
 
-    Object.defineProperty(document, 'visibilityState', {
-      configurable: true,
-      get: () => 'hidden',
-    })
-    document.dispatchEvent(new Event('visibilitychange'))
-    Reflect.deleteProperty(document, 'visibilityState')
+    sendAppAway(true)
 
     expect(current().pause).toHaveBeenCalledTimes(1)
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('behind another app', () => {
+  it('keeps playing when the app is sent away, and lets the microphone go', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    sendAppAway(true)
+
+    expect(current().pause).not.toHaveBeenCalled()
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+    expect(controls().isPlaying()).toBe(true)
+    expect(device.holds()).toBe(1)
+  })
+
+  it('holds the audio for the run, through the gap before the next song', async () => {
+    await mountRoom()
+    expect(device.holds()).toBe(0)
+    current().setLoading(false)
+    current().setPlaying(true)
+    expect(device.holds()).toBe(1)
+    sendAppAway(true)
+
+    current().setPlaying(false)
+    current().hosted.onEnded()
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+    expect(device.holds()).toBe(1)
+
+    controls().stop()
+    expect(device.holds()).toBe(0)
+  })
+
+  it('lets the audio go for a song paused back there, and takes it again on play', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    sendAppAway(true)
+
+    device.press('pause')
+    expect(current().pause).toHaveBeenCalledTimes(1)
+    expect(device.holds()).toBe(0)
+
+    device.press('play')
+    expect(current().play).toHaveBeenCalledTimes(1)
+    expect(device.holds()).toBe(1)
+  })
+
+  it('keeps a paused run held while the app is in front', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    controls().pause()
+
+    expect(controls().isPaused()).toBe(true)
+    expect(device.holds()).toBe(1)
+  })
+
+  it('tells the system what is playing, and that nothing is once the run is over', async () => {
+    await mountRoom()
+    expect(device.nowPlaying).not.toHaveBeenCalled()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith({
+      title: 'Goodbye to Spring',
+      artist: 'Josh Woodward · CC BY 4.0',
+      playing: true,
+    })
+
+    controls().pause()
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: false }),
+    )
+
+    controls().stop()
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('answers the media buttons, and leaves a playing song alone on play', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    device.press('play')
+    expect(current().play).not.toHaveBeenCalled()
+
+    device.press('pause')
+    expect(controls().isPaused()).toBe(true)
+
+    device.press('play')
+    expect(controls().isPlaying()).toBe(true)
+
+    device.press('stop')
+    expect(controls().isPlaying()).toBe(false)
+    expect(controls().isPaused()).toBe(false)
+    expect(current().seek).toHaveBeenLastCalledWith(0)
+  })
+
+  it('lets everything go when the room does', async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    expect(device.mediaListeners()).toBe(1)
+
+    unmount()
+
+    expect(device.holds()).toBe(0)
+    expect(device.mediaListeners()).toBe(0)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('does none of it with the setting off', async () => {
+    setKaraokeBackgroundPlay(false)
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    expect(device.holds()).toBe(0)
+    expect(device.nowPlaying).not.toHaveBeenCalled()
+    expect(device.mediaListeners()).toBe(0)
+  })
+
+  it('stops holding and announcing when the setting is turned off mid-song', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    expect(device.holds()).toBe(1)
+
+    setKaraokeBackgroundPlay(false)
+
+    expect(device.holds()).toBe(0)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+    expect(device.mediaListeners()).toBe(0)
   })
 })
 

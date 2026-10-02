@@ -22,6 +22,7 @@ describe('a first launch', () => {
 
     expect(store.karaokePinned()).toBe('none')
     expect(store.karaokePlayNext()).toBe(true)
+    expect(store.karaokeBackgroundPlay()).toBe(true)
     expect(store.karaokeLyricsSize()).toBe('current')
     expect(store.karaokeNoteGlyphs()).toBe(false)
     expect(store.lastSungSong()).toBeNull()
@@ -32,6 +33,7 @@ describe('a later launch', () => {
   it('finds what the singer set', async () => {
     localStorage.setItem('karaoke-room-pinned', 'notes')
     localStorage.setItem('karaoke-room-play-next', 'false')
+    localStorage.setItem('karaoke-room-background-play', 'false')
     localStorage.setItem('sm-zen-lyrics-size', 'bigger')
     localStorage.setItem('sm-zen-note-glyphs', 'true')
     localStorage.setItem(
@@ -43,6 +45,7 @@ describe('a later launch', () => {
 
     expect(store.karaokePinned()).toBe('notes')
     expect(store.karaokePlayNext()).toBe(false)
+    expect(store.karaokeBackgroundPlay()).toBe(false)
     expect(store.karaokeLyricsSize()).toBe('bigger')
     expect(store.karaokeNoteGlyphs()).toBe(true)
     expect(store.lastSungSong()).toBe('karaoke-night-demo:josephine')

@@ -231,11 +231,34 @@ export interface NativeAudioLease extends AudioContextLease {
  * web nothing does, and a room that finds nothing builds its own context
  * and leaves the screen to sleep as it always did.
  */
+/** A song the system's media controls can name. */
+export interface NativeNowPlaying {
+  readonly title: string
+  readonly artist?: string
+  readonly playing: boolean
+}
+
+/** A press on the system's media controls: notification, lock screen, headset. */
+export type NativeMediaAction = 'play' | 'pause' | 'stop'
+
 export interface NativeDeviceApi {
   /** A lease on the one shared AudioContext, under the owner's name. */
   acquireAudio: (owner: string) => NativeAudioLease
   /** Keep the screen on while a song plays, and let it sleep after. */
   keepAwake: (on: boolean) => void
+  /**
+   * Keep the AudioContext running behind another app. Returns the release.
+   * Taking it does not start anything; it stops the app leaving the
+   * foreground from parking a song that is playing.
+   */
+  holdAudioInBackground: (owner: string) => () => void
+  /**
+   * What the system shows as playing, or null for nothing. On Android a song
+   * playing or paused here is also what keeps the app from being frozen.
+   */
+  nowPlaying: (song: NativeNowPlaying | null) => void
+  /** The system's media buttons. Returns the unsubscribe. */
+  onMediaAction: (handler: (action: NativeMediaAction) => void) => () => void
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(

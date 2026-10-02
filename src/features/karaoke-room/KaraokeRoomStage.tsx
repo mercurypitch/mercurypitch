@@ -28,13 +28,20 @@
 //   THE DEVICE. The mixer plays on the app's one AudioContext, lent through
 //   the bridge (REQ-NRM-033), and the screen stays awake while a song plays.
 //
+//   BEHIND ANOTHER APP (owner, 2 Oct). With "Keep playing in the background"
+//   on, the default, a song the singer leaves the app on keeps playing: the
+//   microphone goes, as it does for a park, but not the song. The system is
+//   told what is playing (on Android that is also what keeps the app from
+//   being frozen), and its media buttons reach the run's own play, pause
+//   and stop. With it off, a song the app is sent away from pauses.
+//
 //   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
 //   songs on their way ("Separating 2") and opens the library, where they
 //   are; a song sung loses its New mark; and the options say how many songs
 //   are left, a tap from Settings, Karaoke.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { GuideLevel, HostedMixerControls, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { StemMixer } from '@/components/StemMixer'
 import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
@@ -45,14 +52,14 @@ import { cycleLyricsSize } from '@/features/stem-mixer/zen-navigation'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
-import type { PinnedRoomToggle } from '@/stores/native-shell-store'
+import type { NativeMediaAction, NativeNowPlaying, PinnedRoomToggle, } from '@/stores/native-shell-store'
 import { nativeDeviceApi, nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { importsInFlight, markKaraokeSongPlayed } from './karaoke-import-queue'
 import styles from './karaoke-room.module.css'
 import type { RoomSong, RoomStems } from './karaoke-room-library'
 import { hydrateSong, roomLibrary } from './karaoke-room-library'
 import type { ParkedSong } from './karaoke-room-store'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, karaokeNoteGlyphs, karaokePinned, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, lastSungSong, parkKaraokeSong, rememberSungSong, setKaraokeLyricsSize, setKaraokeNoteGlyphs, setKaraokePlayNext, setKaraokeStagedSong, takeKaraokeSongRequest, takeParkedKaraokeSong, } from './karaoke-room-store'
 import { karaokeSongs, songsOptionRow } from './karaoke-songs'
 import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
@@ -408,19 +415,89 @@ export const KaraokeRoomStage: Component = () => {
     )
   })
 
-  // No background audio in V1: a song the app is sent away from stops, and
-  // lets the microphone go. The place stays; play is one tap on the way back.
+  // A song the app is sent away from lets the microphone go either way. It
+  // keeps playing when the singer asked for that (see BEHIND ANOTHER APP);
+  // otherwise it pauses, and play is one tap on the way back.
+  const backgroundPlay = (): boolean =>
+    device !== null && karaokeBackgroundPlay()
+  const [pageHidden, setPageHidden] = createSignal(
+    document.visibilityState === 'hidden',
+  )
   const onVisibility = (): void => {
-    if (document.visibilityState !== 'hidden') return
+    const hidden = document.visibilityState === 'hidden'
+    setPageHidden(hidden)
+    if (!hidden) return
     const controls = mixer()
     if (controls === null) return
-    if (controls.playing()) controls.pause()
+    if (!backgroundPlay() && controls.playing()) controls.pause()
     controls.releaseMic()
   }
   document.addEventListener('visibilitychange', onVisibility)
   onCleanup(() => {
     document.removeEventListener('visibilitychange', onVisibility)
   })
+
+  // The clock keeps running behind another app for as long as the run does,
+  // through the gap between two songs, where the next one starts by itself.
+  // A song paused back there lets it go: a paused run is a loaded song that
+  // is not playing, and silence is no reason to keep the app awake.
+  const pausedRun = (): boolean => {
+    const controls = mixer()
+    return controls !== null && !controls.loading() && !controls.playing()
+  }
+  const holdingAudio = createMemo(
+    () => backgroundPlay() && runOn() && !(pageHidden() && pausedRun()),
+  )
+  createEffect(
+    on(holdingAudio, (hold) => {
+      if (!hold || device === null) return
+      onCleanup(device.holdAudioInBackground(KARAOKE_AUDIO_OWNER))
+    }),
+  )
+
+  // What the system shows as playing: the run's song, playing or paused,
+  // and nothing once the run is over.
+  let announced = false
+  const announce = (song: NativeNowPlaying | null): void => {
+    if (song === null && !announced) return
+    announced = song !== null
+    device?.nowPlaying(song)
+  }
+  createEffect(() => {
+    const entry = cue()
+    if (!backgroundPlay() || !runOn() || entry === null) {
+      announce(null)
+      return
+    }
+    const artist = entry.song.credit ?? entry.song.artist
+    announce({
+      title: entry.song.title,
+      ...(artist === null || artist === '' ? {} : { artist }),
+      playing: isPlaying(),
+    })
+  })
+  onCleanup(() => {
+    announce(null)
+  })
+
+  // The notification's buttons, the lock screen's and a headset's. Each
+  // checks the song first: play on a playing song would start it over from
+  // where it was last paused.
+  const onMediaButton = (action: NativeMediaAction): void => {
+    if (action === 'play') {
+      if (!isPlaying()) resume()
+    } else if (action === 'pause') {
+      if (isPlaying()) pause()
+    } else if (runOn()) {
+      stop()
+    }
+  }
+  createEffect(
+    on(backgroundPlay, (on) => {
+      if (!on || device === null) return
+      onCleanup(device.onMediaAction(onMediaButton))
+    }),
+  )
 
   // The screen stays on while a song plays, and only then.
   let awake = false

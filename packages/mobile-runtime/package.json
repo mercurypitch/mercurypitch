@@ -61,6 +61,7 @@
     "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/status-bar": "^8.0.3",
+    "@capgo/capacitor-media-session": "^8.0.32",
     "@revenuecat/purchases-capacitor": "^13.4.0",
     "@revenuecat/purchases-capacitor-ui": "^13.4.0",
     "capacitor-native-settings": "^8.2.0"
@@ -90,6 +91,9 @@
     "@capacitor/status-bar": {
       "optional": true
     },
+    "@capgo/capacitor-media-session": {
+      "optional": true
+    },
     "@revenuecat/purchases-capacitor": {
       "optional": true
     },
@@ -109,6 +113,7 @@
     "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/status-bar": "^8.0.3",
+    "@capgo/capacitor-media-session": "8.0.32",
     "@revenuecat/purchases-capacitor": "^13.4.0",
     "@revenuecat/purchases-capacitor-ui": "^13.4.0",
     "capacitor-native-settings": "^8.2.0",

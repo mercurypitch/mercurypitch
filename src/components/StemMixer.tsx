@@ -594,6 +594,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // context it lends (REQ-NRM-033).
     forceStream: hosted !== undefined,
     audioLease: hosted?.audio,
+    // The room may keep its song playing behind another app; it still ends.
+    followEndWhileHidden: hosted !== undefined,
   })
 
   // Backfill audio ctx holders for mic controller

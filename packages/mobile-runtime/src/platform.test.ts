@@ -30,6 +30,11 @@ const appPlugin = vi.hoisted(() => ({
   minimizeApp: vi.fn(),
   exitApp: vi.fn(),
 }))
+const mediaSession = vi.hoisted(() => ({
+  setMetadata: vi.fn(),
+  setPlaybackState: vi.fn(),
+  setActionHandler: vi.fn(),
+}))
 
 vi.mock('@capacitor/core', () => ({ Capacitor: capacitor }))
 
@@ -80,6 +85,11 @@ vi.mock('@capacitor/app', () => {
   return { App: appPlugin }
 })
 
+vi.mock('@capgo/capacitor-media-session', () => {
+  loaded.push('@capgo/capacitor-media-session')
+  return { MediaSession: mediaSession }
+})
+
 type Platform = typeof PlatformModule
 
 /** A fresh module graph per test, so "was it loaded" means this test. */
@@ -119,6 +129,10 @@ describe('on the web', () => {
     ['sharePayload', (p: Platform) => p.sharePayload({ text: 'hi' })],
     ['openAppSettings', (p: Platform) => p.openAppSettings()],
     ['minimizeApp', (p: Platform) => p.minimizeApp()],
+    [
+      'setNowPlaying',
+      (p: Platform) => p.setNowPlaying({ title: 'Song', playing: true }),
+    ],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
 
@@ -141,13 +155,16 @@ describe('on the web', () => {
 
     const stopBack = platform.onBackButton(handler)
     const stopState = platform.onAppState(handler)
+    const stopMedia = platform.onMediaAction(handler)
     await settle()
 
     expect(loaded).toEqual([])
     expect(appPlugin.addListener).not.toHaveBeenCalled()
+    expect(mediaSession.setActionHandler).not.toHaveBeenCalled()
     expect(() => {
       stopBack()
       stopState()
+      stopMedia()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -329,5 +346,147 @@ describe('on a phone', () => {
 
     await expect(platform.minimizeApp()).resolves.toBe(false)
     expect(appPlugin.exitApp).not.toHaveBeenCalled()
+  })
+
+  it('names the song before it says it is playing', async () => {
+    // Android starts its media foreground service on the state change, and
+    // the service's first notification shows whatever metadata it has.
+    const platform = await loadPlatform(true)
+    const order: string[] = []
+    mediaSession.setMetadata.mockImplementation(async () => {
+      order.push('metadata')
+    })
+    mediaSession.setPlaybackState.mockImplementation(async () => {
+      order.push('state')
+    })
+
+    await platform.setNowPlaying({
+      title: 'Harbour Lights',
+      artist: 'The Wharf',
+      playing: true,
+    })
+
+    expect(mediaSession.setMetadata).toHaveBeenCalledWith({
+      title: 'Harbour Lights',
+      artist: 'The Wharf',
+    })
+    expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
+      playbackState: 'playing',
+    })
+    expect(order).toEqual(['metadata', 'state'])
+  })
+
+  it('reports a paused song as paused, and leaves out an unknown artist', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
+
+    expect(mediaSession.setMetadata).toHaveBeenCalledWith({
+      title: 'Harbour Lights',
+    })
+    expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
+      playbackState: 'paused',
+    })
+  })
+
+  it('clears what is playing without naming anything', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.setNowPlaying(null)
+
+    expect(mediaSession.setMetadata).not.toHaveBeenCalled()
+    expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
+      playbackState: 'none',
+    })
+  })
+
+  it('survives a phone with no media session behind the plugin', async () => {
+    const platform = await loadPlatform(true)
+    mediaSession.setMetadata.mockRejectedValueOnce(
+      new Error('Media Session API not available in this browser.'),
+    )
+
+    await expect(
+      platform.setNowPlaying({ title: 'Harbour Lights', playing: true }),
+    ).resolves.toBeUndefined()
+  })
+
+  it('passes each media button to the handler, and clears them all on stop', async () => {
+    const platform = await loadPlatform(true)
+    const handler = vi.fn()
+
+    const stop = platform.onMediaAction(handler)
+    await settle()
+
+    const registered = mediaSession.setActionHandler.mock.calls.map(
+      ([options]) => (options as { action: string }).action,
+    )
+    expect(registered).toEqual(['play', 'pause', 'stop'])
+    for (const [options, press] of mediaSession.setActionHandler.mock.calls as [
+      { action: string },
+      () => void,
+    ][]) {
+      press()
+      expect(handler).toHaveBeenLastCalledWith(options.action)
+    }
+
+    mediaSession.setActionHandler.mockClear()
+    stop()
+    await settle()
+
+    expect(mediaSession.setActionHandler.mock.calls).toEqual([
+      [{ action: 'play' }, null],
+      [{ action: 'pause' }, null],
+      [{ action: 'stop' }, null],
+    ])
+  })
+
+  it('registers the buttons a platform has, and clears only those', async () => {
+    // iOS answers through the WebView's media session, which may not know
+    // every button. One refusal must not cost the others.
+    const platform = await loadPlatform(true)
+    mediaSession.setActionHandler.mockImplementation(
+      async ({ action }: { action: string }, handler: unknown) => {
+        if (action === 'stop' && handler !== null) {
+          throw new TypeError('stop is not a supported action')
+        }
+      },
+    )
+    const handler = vi.fn()
+
+    const stop = platform.onMediaAction(handler)
+    await settle()
+    const press = mediaSession.setActionHandler.mock.calls.find(
+      ([options]) => (options as { action: string }).action === 'pause',
+    )?.[1] as () => void
+    press()
+    expect(handler).toHaveBeenCalledWith('pause')
+
+    mediaSession.setActionHandler.mockClear()
+    stop()
+    await settle()
+
+    expect(mediaSession.setActionHandler.mock.calls).toEqual([
+      [{ action: 'play' }, null],
+      [{ action: 'pause' }, null],
+    ])
+    mediaSession.setActionHandler.mockReset()
+  })
+
+  it('takes a callback id from Android rather than a promise', async () => {
+    // Capacitor's bridge answers a callback method with the callback's id.
+    const platform = await loadPlatform(true)
+    mediaSession.setActionHandler.mockImplementation(() => '7')
+
+    const stop = platform.onMediaAction(vi.fn())
+    await settle()
+    stop()
+    await settle()
+
+    expect(mediaSession.setActionHandler).toHaveBeenCalledWith(
+      { action: 'stop' },
+      null,
+    )
+    mediaSession.setActionHandler.mockReset()
   })
 })

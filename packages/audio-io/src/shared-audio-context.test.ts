@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { acquireSharedAudioContext, cancelSharedAudioContextSuspension, resetSharedAudioContext, resumeSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
+import { acquireSharedAudioContext, cancelSharedAudioContextSuspension, holdSharedAudioContextInBackground, resetSharedAudioContext, resumeSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
 
 class FakeAudioContext {
   state = 'suspended'
@@ -416,6 +416,113 @@ describe('the shared audio context', () => {
 
     expect(built[0].suspendCount).toBe(1)
     expect(sharedAudioContextOwners()).toEqual([])
+  })
+})
+
+describe('a background hold', () => {
+  it('keeps a song playing behind a hidden page and a backgrounded app', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    holdSharedAudioContextInBackground('karaoke-room')
+
+    setPageHidden(true)
+    suspendSharedAudioContext()
+    await settle()
+
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
+  })
+
+  it('parks the clock when let go while the page is still hidden, and brings it back with the page', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    const release = holdSharedAudioContextInBackground('karaoke-room')
+    setPageHidden(true)
+    await settle()
+
+    release()
+    await settle()
+    expect(built[0].state).toBe('suspended')
+
+    setPageHidden(false)
+    await settle()
+    expect(built[0].state).toBe('running')
+  })
+
+  it('does not park a song someone came back to when the hold goes', async () => {
+    // The app went to the background during the song and came back; the
+    // singer then turns background play off with the song still playing.
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    const release = holdSharedAudioContextInBackground('karaoke-room')
+    setPageHidden(true)
+    suspendSharedAudioContext()
+    setPageHidden(false)
+    await settle()
+
+    release()
+    await settle()
+
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
+  })
+
+  it('leaves a visible page running when let go', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    const release = holdSharedAudioContextInBackground('karaoke-room')
+
+    release()
+    release()
+    await settle()
+
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
+  })
+
+  it('lets a play from the lock screen resume a clock parked behind a hidden page', async () => {
+    // Android's media notification: paused behind another app, the hold
+    // went; play takes it again before it unlocks.
+    const { built } = useFakeContexts()
+    const lease = acquireSharedAudioContext('karaoke-room')
+    await lease.unlock()
+    setPageHidden(true)
+    await settle()
+    expect(built[0].state).toBe('suspended')
+
+    holdSharedAudioContextInBackground('karaoke-room')
+
+    await expect(lease.unlock()).resolves.toBe(true)
+    expect(built[0].state).toBe('running')
+  })
+
+  it('stays parked until every hold has let go', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    const first = holdSharedAudioContextInBackground('karaoke-room')
+    const second = holdSharedAudioContextInBackground('guide-vocal')
+    setPageHidden(true)
+
+    first()
+    await settle()
+    expect(built[0].state).toBe('running')
+
+    second()
+    await settle()
+    expect(built[0].state).toBe('suspended')
+  })
+
+  it('resumes an interrupted context behind a hidden page while held', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('karaoke-room').unlock()
+    holdSharedAudioContextInBackground('karaoke-room')
+    setPageHidden(true)
+    await settle()
+
+    built[0].interrupt()
+    await settle()
+
+    expect(built[0].state).toBe('running')
   })
 })
 
