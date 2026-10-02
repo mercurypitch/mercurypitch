@@ -121,6 +121,56 @@ async function mountPlaying(): Promise<void> {
   await screen.findByRole('button', { name: 'Pause' })
 }
 
+/** The mixer, mounted as UvrPanel mounts it: with a tour to offer. */
+function mountOffering(): Array<'mount' | 'button'> {
+  const offers: Array<'mount' | 'button'> = []
+  render(() => (
+    <StemMixer
+      stems={{ vocal: 'blob:vocal', instrumental: 'blob:instrumental' }}
+      sessionId="sideways-tour"
+      songTitle="Consent"
+      onOfferTour={(trigger) => offers.push(trigger)}
+    />
+  ))
+  return offers
+}
+
+describe('the mixer tour offer', () => {
+  // The tour points at the desktop mixer. On the phone stage it had nothing
+  // to show, and its toast sat over the scrubber (360x780: y 663-721 against
+  // the slider at 646-690), and it used up the one-time offer doing so.
+
+  it('is made as the mixer mounts', async () => {
+    const offers = mountOffering()
+    await screen.findByRole('button', { name: 'Set loop start (A)' })
+
+    expect(offers).toEqual(['mount'])
+  })
+
+  it('is not made on the phone stage', async () => {
+    viewport.turn(true)
+    const offers = mountOffering()
+    await screen.findByRole('button', { name: 'Play' })
+
+    expect([stageShown(), offers]).toEqual(['phone', []])
+  })
+
+  it('waits for the mixer to show, then is made once', async () => {
+    viewport.turn(true)
+    const offers = mountOffering()
+    await screen.findByRole('button', { name: 'Play' })
+    const counts = [offers.length]
+
+    viewport.turn(false)
+    counts.push(offers.length)
+    viewport.turn(true)
+    viewport.turn(false)
+    counts.push(offers.length)
+
+    expect(counts).toEqual([0, 1, 1])
+  })
+})
+
 describe('turning a phone on its side', () => {
   it('swaps the desktop mixer for the phone stage, and back', async () => {
     await mountPlaying()
