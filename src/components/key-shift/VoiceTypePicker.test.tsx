@@ -1,8 +1,21 @@
 // "Find my key" with no known range asks for a voice type, or a measurement.
 import { fireEvent, render, screen } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as NativeBuild from '@/lib/native-build'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VoiceTypePicker } from './VoiceTypePicker'
+
+const build = vi.hoisted(() => ({ native: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  get IS_NATIVE_BUILD() {
+    return build.native
+  },
+}))
+
+afterEach(() => {
+  build.native = false
+})
 
 function open() {
   const onPick = vi.fn<(preset: VocalRangePreset) => void>()
@@ -45,6 +58,22 @@ describe('VoiceTypePicker', () => {
     expect(link.getAttribute('href')).toBe('/mirror')
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toContain('noopener')
+  })
+
+  it('offers no Voice Mirror in the native app, which has none', () => {
+    // The app has no /mirror (apps/mercurypitch SettingsScreen); the link
+    // opened a tab the app cannot show.
+    build.native = true
+    open()
+
+    const dialog = screen.getByRole('dialog', { name: /your voice/i })
+    expect({
+      links: screen.queryAllByRole('link').map((link) => link.textContent),
+      body: dialog.querySelector('p')?.textContent,
+    }).toEqual({
+      links: [],
+      body: 'Find my key moves the song into your range. Pick the voice closest to yours.',
+    })
   })
 
   it('cancels from the button and from Escape', () => {
