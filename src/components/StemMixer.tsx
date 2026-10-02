@@ -48,6 +48,7 @@ import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { isInsideOverlay } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
@@ -486,14 +487,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Escape exits focus mode only when the score dialog is not the active
   // surface. The dialog owns Escape while open, closes itself, and restores
-  // focus to the control that launched it.
+  // focus to the control that launched it. The same goes for any dialog,
+  // menu or listbox: one press closes the top layer only. On window, so
+  // every document-level menu has had its turn and could claim the key with
+  // preventDefault.
   createEffect(() => {
     if (!karaokeFocus() || scoreModalOpen()) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !scoreModalOpen()) setKaraokeFocus(false)
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (scoreModalOpen() || isInsideOverlay(e.target)) return
+      setKaraokeFocus(false)
     }
-    document.addEventListener('keydown', handler)
-    onCleanup(() => document.removeEventListener('keydown', handler))
+    window.addEventListener('keydown', handler)
+    onCleanup(() => window.removeEventListener('keydown', handler))
   })
 
   let micGrantedReported = false

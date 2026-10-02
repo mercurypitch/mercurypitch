@@ -35,9 +35,12 @@ export const VoiceTypePicker: Component<VoiceTypePickerProps> = (props) => {
   const bodyId = createUniqueId()
   const portalSkin = createPortalSkinBridge(() => props.open)
 
+  // Isolated: the mixer's shortcuts sit behind this dialog on the page, and
+  // Escape must close the picker without leaving focus mode as well.
   useFocusTrap(() => dialogRef, {
     isOpen: () => props.open,
     onClose: () => props.onCancel(),
+    isolateKeyboard: true,
   })
 
   return (

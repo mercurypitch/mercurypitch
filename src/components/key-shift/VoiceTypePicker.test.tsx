@@ -57,6 +57,23 @@ describe('VoiceTypePicker', () => {
     expect(onPick).not.toHaveBeenCalled()
   })
 
+  it('keeps its keys from the page behind it', () => {
+    const { onCancel } = open()
+    const page = vi.fn()
+    window.addEventListener('keydown', page)
+    try {
+      const voice = screen.getByRole('button', { name: /baritone/i })
+      fireEvent.keyDown(voice, { key: 'a', code: 'KeyA' })
+      fireEvent.keyDown(voice, { key: ' ', code: 'Space' })
+      fireEvent.keyDown(voice, { key: 'Escape', code: 'Escape' })
+    } finally {
+      window.removeEventListener('keydown', page)
+    }
+
+    expect(page).not.toHaveBeenCalled()
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
   it('renders nothing while closed', () => {
     render(() => (
       <VoiceTypePicker open={false} onPick={vi.fn()} onCancel={vi.fn()} />
