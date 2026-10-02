@@ -6,9 +6,11 @@
 // and the timeline keeps 380 px or takes a line of its own. These are the
 // claims only a browser can check, at three window sizes: the timeline
 // stays usable, nothing runs past the window, the row does not move when a
-// loop is set or the mic turns on, and the key panel and the speed list
-// close on a press outside and on Escape. At 1440 px, an A-B loop also
-// plays round without freezing, and the focus pill docks to every edge.
+// loop is set or the mic turns on, the key panel and the speed list close
+// on a press outside and on Escape, and a short loop's close-up opens clear
+// of the controls in type of 12 px or more. At 1440 px, an A-B loop also
+// plays round without freezing, the close-up stays on screen with the pill
+// docked at the top, and the focus pill docks to every edge.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -281,6 +283,48 @@ for (const viewport of VIEWPORTS) {
       await expect(speedList).toBeHidden()
       await expect(speedChip).toBeFocused()
     })
+
+    test('opens the close-up of a short loop clear of the controls, in text a person can read', async ({
+      page,
+    }) => {
+      // Four seconds of a thirty-second song is under 88 px of track, so the
+      // rail offers the A-B close-up, as it does on Guitar Night.
+      await setLoop(page, 10, 14)
+      await page.getByRole('button', { name: 'Focus the A B loop' }).click()
+      const lens = page.getByTestId('mixer-timeline-loop-precision-lens')
+      await expect(lens).toBeInViewport({ ratio: 1 })
+
+      const lensBox = await lens.boundingBox()
+      const capsuleBox = await page.getByTestId('mixer-capsule').boundingBox()
+      expect(lensBox).not.toBeNull()
+      expect(capsuleBox).not.toBeNull()
+      const overlaps =
+        lensBox!.x < capsuleBox!.x + capsuleBox!.width &&
+        capsuleBox!.x < lensBox!.x + lensBox!.width &&
+        lensBox!.y < capsuleBox!.y + capsuleBox!.height &&
+        capsuleBox!.y < lensBox!.y + lensBox!.height
+      expect(overlaps, 'the close-up covers the controls').toBe(false)
+
+      const sizes = await lens.evaluate((element) =>
+        Array.from(element.querySelectorAll('*'))
+          .filter(
+            (node) =>
+              node.children.length === 0 &&
+              (node.textContent ?? '').trim() !== '',
+          )
+          .map((node) => ({
+            text: (node.textContent ?? '').trim(),
+            px: parseFloat(getComputedStyle(node).fontSize),
+          })),
+      )
+      expect(sizes.map((size) => size.text)).toContain('A–B detail')
+      for (const size of sizes) {
+        expect(size.px, size.text).toBeGreaterThanOrEqual(12)
+      }
+
+      await page.keyboard.press('Escape')
+      await expect(lens).toHaveCount(0)
+    })
   })
 }
 
@@ -305,6 +349,26 @@ test.describe('the rail at 1440x900, playing', () => {
       .poll(() => playhead(page), often)
       .toBeGreaterThan(roundAgain + 0.3)
     await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  })
+
+  test('keeps the close-up on screen with the pill docked at the top', async ({
+    page,
+  }) => {
+    await setLoop(page, 10, 12)
+    await page.locator('[data-tour="mixer.focus"]').click()
+    const focus = page.locator('.stem-mixer--focus')
+    await expect(focus).toBeVisible()
+    await page.getByTestId('dock-handle').click()
+    await page.getByRole('button', { name: 'Dock top' }).click()
+
+    await page.getByRole('button', { name: 'Focus the A B loop' }).click()
+    const lens = page.getByTestId('mixer-timeline-loop-precision-lens')
+    await expect(lens).toBeInViewport({ ratio: 1 })
+
+    // Escape shuts the close-up and leaves karaoke mode alone.
+    await page.keyboard.press('Escape')
+    await expect(lens).toHaveCount(0)
+    await expect(focus).toBeVisible()
   })
 
   test('docks the focus pill to each edge, and Escape shuts the compass first', async ({

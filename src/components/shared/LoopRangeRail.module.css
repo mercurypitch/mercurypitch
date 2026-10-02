@@ -8,7 +8,8 @@
      --loop-range-marker-opacity  both marks, e.g. dimmed while the loop is off
      --loop-range-region-border-style  the A-B region's edge while inactive
      --loop-range-knob-size       a playhead knob at the progress end (0: none)
-     --loop-range-knob            its colour */
+     --loop-range-knob            its colour
+     --loop-range-lens-label-font the label over the A-B close-up */
 .frame {
   --loop-range-track: rgba(244, 234, 219, 0.2);
   --loop-range-progress: rgba(224, 164, 93, 0.78);
@@ -183,12 +184,20 @@
   box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.32);
 }
 
+/* Opened over the rail, in its place: the close-up stands in for the full
+   song while it is open, and covers nothing else. */
+.precisionLens[data-side='over'] {
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+}
+
 .precisionLabel {
   position: absolute;
   top: 0.26rem;
   left: 0.55rem;
   color: rgba(244, 234, 219, 0.58);
-  font-size: 0.52rem;
+  font-size: var(--loop-range-lens-label-font, 0.52rem);
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
