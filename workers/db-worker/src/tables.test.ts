@@ -122,6 +122,9 @@ describe('maskPublicRow — privateCols', () => {
     const withPrivate = Object.entries(TABLES)
       .filter(([, def]) => def.privateCols !== undefined)
       .map(([name, def]) => [name, def.privateCols] as const)
-    expect(withPrivate).toEqual([['pricingPlans', ['stripePriceId']]])
+    expect(withPrivate).toEqual([
+      ['pricingPlans', ['stripePriceId']],
+      ['promoCodes', ['code']],
+    ])
   })
 })

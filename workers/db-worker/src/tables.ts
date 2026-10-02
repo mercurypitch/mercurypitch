@@ -245,5 +245,15 @@ export const TABLES: Record<string, TableDef> = {
   // them, exactly like leaderboardEntries. See migrations/0005_leagues.sql.
   leagues: { access: 'admin', boolCols: ['isMystery'] },
   leaguePointsConfig: { access: 'admin' },
-  promoCodes: { access: 'admin', boolCols: ['active'] },
+  // Campaign config: public reads, writes require the X-Admin-Key. `code` is
+  // the whole credential (POST /api/billing/promo/redeem asks a verified
+  // account for nothing else), so serving it would hand out every campaign,
+  // advertised or not. Like every private column it cannot be filtered or
+  // sorted on either, so the generic reader will not confirm a guess. `id` is
+  // still listed to everyone, so it must never spell the code out.
+  promoCodes: {
+    access: 'admin',
+    boolCols: ['active'],
+    privateCols: ['code'],
+  },
 }
