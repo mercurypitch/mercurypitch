@@ -1,0 +1,98 @@
+/* LoopPointMenu: portalled to <body> with .mp-dark-stage, so it keeps the
+   stage's dark palette whatever the app theme. z-index 9000 is the app's
+   popover layer: over the focus-mode pill (401), under dialogs (10000+). */
+
+.menu {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 0.3rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.5rem;
+  background: var(--bg-secondary, #161b22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: menuIn 0.1s ease-out;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.time {
+  margin-bottom: 0.25rem;
+  padding: 0.35rem 0.55rem 0.45rem;
+  border-bottom: 1px solid var(--border-subtle, #30363d);
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 32px;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  border-radius: 0.35rem;
+  color: var(--text-primary, #e6edf3);
+  background: none;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--bg-tertiary, #21262d);
+  outline: none;
+}
+
+.item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent, #58a6ff);
+}
+
+.itemClear {
+  color: var(--text-secondary, #a8b3bf);
+}
+
+/* The same colours the waveform draws A and B in. */
+.dot {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  color: #0d1117;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dotA {
+  background: #58a6ff;
+}
+
+.dotB {
+  background: #ff7b72;
+}
+
+@media (pointer: coarse) {
+  .item {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
