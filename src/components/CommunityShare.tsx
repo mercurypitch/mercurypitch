@@ -552,6 +552,18 @@ export const CommunityShare: Component = () => {
     )
   }
 
+  /**
+   * How many of the board's rows this singer published: the profile's
+   * "Published" figure. Counted per owner, as the worker counts its own
+   * (grants.ts, sharesPosted). The board lists everyone's shares, and
+   * counting the list credited each singer with the whole community's.
+   */
+  const publishedByMe = (rows: readonly { userId?: string }[]): number => {
+    authVersion() // signing in changes whose shares these are
+    const me = getUserId()
+    return rows.filter((row) => row.userId === me).length
+  }
+
   /** The share awaiting "yes, take it down". */
   const [unpublishing, setUnpublishing] = createSignal<{
     kind: 'melody' | 'session'
@@ -1114,8 +1126,8 @@ export const CommunityShare: Component = () => {
             runScope={runScope()}
             onExplainRuns={() => setExplainingRuns(true)}
             streak={currentProfile().streak}
-            sharedMelodies={displayMelodies().length}
-            sharedSetlists={displaySessions().length}
+            sharedMelodies={publishedByMe(dbMelodies())}
+            sharedSetlists={publishedByMe(dbSessions())}
             twinName={latestTwin()}
             badges={earnedBadges()}
             onExploreVoiceConstellation={openVoiceConstellation}
