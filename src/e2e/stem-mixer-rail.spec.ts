@@ -480,6 +480,24 @@ for (const viewport of VIEWPORTS) {
       }
     })
 
+    test("keeps focus mode's More inside the window, its last row in reach", async ({
+      page,
+    }) => {
+      await page.locator('[data-tour="mixer.focus"]').click()
+      await expect(page.locator('.stem-mixer--focus')).toBeVisible()
+      await page.getByRole('button', { name: 'More playback options' }).click()
+      const menu = page.getByRole('menu')
+      await expect(menu).toBeVisible()
+
+      const box = await menu.boundingBox()
+      const size = page.viewportSize()
+      if (box === null || size === null) throw new Error('no menu box')
+      expect(box.y).toBeGreaterThanOrEqual(0)
+      expect(box.y + box.height).toBeLessThanOrEqual(size.height)
+      const last = menu.locator('[role^="menuitem"]').last()
+      await last.scrollIntoViewIfNeeded()
+      await expect(last).toBeInViewport()
+    })
   })
 }
 
