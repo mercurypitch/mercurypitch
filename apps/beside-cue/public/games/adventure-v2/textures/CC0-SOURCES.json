@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "license": "CC0-1.0",
   "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
   "sources": [
@@ -26,7 +26,17 @@
           "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
           "width": 1024,
           "height": 1024,
-          "imageMode": "RGB"
+          "imageMode": "RGB",
+          "sourceBitDepth": 16,
+          "runtimeDelivery": {
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-normal.webp",
+            "bytes": 1086824,
+            "sha256": "9bb946e5ae5d0a7f1c865bc285ec41f050d7d20a3b27abe32dc9aa42142e4b10",
+            "encoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; original16-bitPNG remains preserved. Canvas2D conversion is not the texture-upload authority.",
+            "width": 1024,
+            "height": 1024,
+            "gpuUploadedRgbaSha256": "c159dadf5ee2702ad3c353fa208b3d15ebbab4026d100146403b2727687b9d32"
+          }
         },
         {
           "assetId": "warm-carrara-roughness",
@@ -62,7 +72,17 @@
           "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
           "width": 1024,
           "height": 1024,
-          "imageMode": "RGB"
+          "imageMode": "RGB",
+          "sourceBitDepth": 16,
+          "runtimeDelivery": {
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-normal.webp",
+            "bytes": 236458,
+            "sha256": "0cdb17ce402f7932a492617d8935b8f5c538bf6c5e7153ea09a165c3fcaefa36",
+            "encoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; original16-bitPNG remains preserved. Canvas2D conversion is not the texture-upload authority.",
+            "width": 1024,
+            "height": 1024,
+            "gpuUploadedRgbaSha256": "696dc3d341e7151134cba44fb3dfd8e0d1f28af02835ddd391994e6d412cf73e"
+          }
         },
         {
           "assetId": "verde-marble-roughness",
@@ -98,7 +118,17 @@
           "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
           "width": 1024,
           "height": 1024,
-          "imageMode": "RGB"
+          "imageMode": "RGB",
+          "sourceBitDepth": 16,
+          "runtimeDelivery": {
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-normal.webp",
+            "bytes": 197060,
+            "sha256": "c741706cdaf34953922a79720641b11831f30388ba21826582c4a9ce863a760c",
+            "encoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; original16-bitPNG remains preserved. Canvas2D conversion is not the texture-upload authority.",
+            "width": 1024,
+            "height": 1024,
+            "gpuUploadedRgbaSha256": "75aeb5b9b08365c9048d8287795f4bf2ae66107675c0a85b8eeb706a1ed0dbb9"
+          }
         },
         {
           "assetId": "cream-limestone-roughness",
@@ -134,7 +164,17 @@
           "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
           "width": 1024,
           "height": 1024,
-          "imageMode": "RGB"
+          "imageMode": "RGB",
+          "sourceBitDepth": 16,
+          "runtimeDelivery": {
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-normal.webp",
+            "bytes": 145370,
+            "sha256": "c5284b23af6c7ffa91eaa98c8278e30cd874919ea5607341007c3238d43d63d1",
+            "encoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; original16-bitPNG remains preserved. Canvas2D conversion is not the texture-upload authority.",
+            "width": 1024,
+            "height": 1024,
+            "gpuUploadedRgbaSha256": "41a846f8b947efae15393a1d7754ea80f41108c95faa1c8b0bb912fceb3e6eed"
+          }
         },
         {
           "assetId": "brushed-brass-roughness",

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "assetVersion": 2,
-  "sourcePolicy": "Blender-authored V2 GLBs validated against preserved receipts; external CC0 texture and environment runtime files match their preserved source hashes.",
-  "scope": "All binary assets currently shipped from public/games/adventure-v2; provenance JSON and this manifest are excluded from totalBytes.",
-  "totalBytes": 27642985,
+  "assetVersion": 3,
+  "sourcePolicy": "Blender-authored V2 GLBs validated against preserved receipts; CC0 originals remain preserved. Four normal-map runtime deliveries are lossless WebP of exact verified RGBA8 NoColorSpace texture uploads, not a claim of preserving 16-bit source precision in WebP.",
+  "scope": "Active binary runtime deliveries under public/games/adventure-v2; provenance JSON, this manifest and retainedSourceAssets are excluded from totalBytes. Original normal PNGs remain public for provenance but are excluded from native staging.",
+  "totalBytes": 15584218,
   "provenance": {
     "file": "textures/CC0-SOURCES.json",
-    "bytes": 6456,
-    "sha256": "efdcf579794f64923daacde70a89679a5224a00422e3fb9d80e6de5906f9c29b",
+    "bytes": 9001,
+    "sha256": "e6b25e8cb291f57fe4d6e5d863e8cc922eb3b1800ddd6f7e01200838e81f0c0f",
     "source": "art/glass-adventure/v2/source-pbr/manifest.json"
   },
   "assets": [
@@ -91,9 +91,9 @@
     },
     {
       "id": "brushed-brass-normal",
-      "file": "textures/brushed-brass-normal.png",
-      "bytes": 2692053,
-      "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+      "file": "textures/brushed-brass-normal.webp",
+      "bytes": 145370,
+      "sha256": "c5284b23af6c7ffa91eaa98c8278e30cd874919ea5607341007c3238d43d63d1",
       "source": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_NormalGL.png",
       "sourceBytes": 2692053,
       "sourceSha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
@@ -102,7 +102,10 @@
       "provider": "ambientCG",
       "providerAssetId": "Metal034",
       "dimensions": [1024, 1024],
-      "imageMode": "RGB"
+      "imageMode": "RGB",
+      "runtimeEncoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; same resolution and normal convention.",
+      "preservedSourceFile": "textures/brushed-brass-normal.png",
+      "gpuUploadedRgbaSha256": "41a846f8b947efae15393a1d7754ea80f41108c95faa1c8b0bb912fceb3e6eed"
     },
     {
       "id": "brushed-brass-roughness",
@@ -136,9 +139,9 @@
     },
     {
       "id": "cream-limestone-normal",
-      "file": "textures/cream-limestone-normal.png",
-      "bytes": 2747140,
-      "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+      "file": "textures/cream-limestone-normal.webp",
+      "bytes": 197060,
+      "sha256": "c741706cdaf34953922a79720641b11831f30388ba21826582c4a9ce863a760c",
       "source": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_NormalGL.png",
       "sourceBytes": 2747140,
       "sourceSha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
@@ -147,7 +150,10 @@
       "provider": "ambientCG",
       "providerAssetId": "Travertine001",
       "dimensions": [1024, 1024],
-      "imageMode": "RGB"
+      "imageMode": "RGB",
+      "runtimeEncoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; same resolution and normal convention.",
+      "preservedSourceFile": "textures/cream-limestone-normal.png",
+      "gpuUploadedRgbaSha256": "75aeb5b9b08365c9048d8287795f4bf2ae66107675c0a85b8eeb706a1ed0dbb9"
     },
     {
       "id": "cream-limestone-roughness",
@@ -181,9 +187,9 @@
     },
     {
       "id": "verde-marble-normal",
-      "file": "textures/verde-marble-normal.png",
-      "bytes": 3381773,
-      "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+      "file": "textures/verde-marble-normal.webp",
+      "bytes": 236458,
+      "sha256": "0cdb17ce402f7932a492617d8935b8f5c538bf6c5e7153ea09a165c3fcaefa36",
       "source": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_NormalGL.png",
       "sourceBytes": 3381773,
       "sourceSha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
@@ -192,7 +198,10 @@
       "provider": "ambientCG",
       "providerAssetId": "Marble009",
       "dimensions": [1024, 1024],
-      "imageMode": "RGB"
+      "imageMode": "RGB",
+      "runtimeEncoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; same resolution and normal convention.",
+      "preservedSourceFile": "textures/verde-marble-normal.png",
+      "gpuUploadedRgbaSha256": "696dc3d341e7151134cba44fb3dfd8e0d1f28af02835ddd391994e6d412cf73e"
     },
     {
       "id": "verde-marble-roughness",
@@ -226,9 +235,9 @@
     },
     {
       "id": "warm-carrara-normal",
-      "file": "textures/warm-carrara-normal.png",
-      "bytes": 4903513,
-      "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
+      "file": "textures/warm-carrara-normal.webp",
+      "bytes": 1086824,
+      "sha256": "9bb946e5ae5d0a7f1c865bc285ec41f050d7d20a3b27abe32dc9aa42142e4b10",
       "source": "art/glass-adventure/v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_NormalGL.png",
       "sourceBytes": 4903513,
       "sourceSha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
@@ -237,7 +246,10 @@
       "provider": "ambientCG",
       "providerAssetId": "Marble004",
       "dimensions": [1024, 1024],
-      "imageMode": "RGB"
+      "imageMode": "RGB",
+      "runtimeEncoding": "Lossless WebP of verified RGBA8 NoColorSpace texture upload; same resolution and normal convention.",
+      "preservedSourceFile": "textures/warm-carrara-normal.png",
+      "gpuUploadedRgbaSha256": "c159dadf5ee2702ad3c353fa208b3d15ebbab4026d100146403b2727687b9d32"
     },
     {
       "id": "warm-carrara-roughness",
@@ -254,5 +266,36 @@
       "dimensions": [1024, 1024],
       "imageMode": "L"
     }
-  ]
+  ],
+  "retainedSourceAssets": [
+    {
+      "id": "brushed-brass-normal-source-16bit",
+      "file": "textures/brushed-brass-normal.png",
+      "bytes": 2692053,
+      "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+      "sourceBitDepth": 16
+    },
+    {
+      "id": "cream-limestone-normal-source-16bit",
+      "file": "textures/cream-limestone-normal.png",
+      "bytes": 2747140,
+      "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+      "sourceBitDepth": 16
+    },
+    {
+      "id": "verde-marble-normal-source-16bit",
+      "file": "textures/verde-marble-normal.png",
+      "bytes": 3381773,
+      "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+      "sourceBitDepth": 16
+    },
+    {
+      "id": "warm-carrara-normal-source-16bit",
+      "file": "textures/warm-carrara-normal.png",
+      "bytes": 4903513,
+      "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
+      "sourceBitDepth": 16
+    }
+  ],
+  "retainedSourceBytes": 13724479
 }

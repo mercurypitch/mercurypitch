@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, } from './game-assets.ts'
+import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
@@ -19,6 +19,13 @@ const R3_NATIVE_GAME_ASSETS = [
   'games/adventure-v2/garden-kit.glb',
   'games/adventure-v5/painting-garden.webp',
 ] as const
+const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
+  (asset) =>
+    (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
+    (asset.startsWith('shatter-sounds-v1/') && asset.endsWith('.mp3')) ||
+    (asset.startsWith('adventure-v2/textures/') &&
+      asset.endsWith('-normal.webp')),
+).map((asset) => `games/${asset}`)
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
 const repository = fileURLToPath(new URL('../../../', import.meta.url))
 const iosGuard = resolve('ios/App/scripts/validate-native-games-profile.sh')
@@ -93,6 +100,23 @@ describe('explicit native games profile', () => {
       expect(native.has(`games/${mobile}`)).toBe(true)
     }
     expect(native.has(`games/${glassGameAssetPath('merc')}`)).toBe(true)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.glb')),
+    ).toHaveLength(10)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.mp3')),
+    ).toHaveLength(14)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.webp')),
+    ).toHaveLength(4)
+    for (const asset of CURRENT_DELIVERY_GAME_ASSETS)
+      expect(native.has(asset), `${asset} must remain native`).toBe(true)
+    expect(NATIVE_SOURCE_NORMAL_GAME_ASSETS).toHaveLength(4)
+    for (const asset of NATIVE_SOURCE_NORMAL_GAME_ASSETS)
+      expect(
+        native.has(asset),
+        `${asset} is a production source, not native delivery`,
+      ).toBe(false)
   })
 
   it('includes each referenced glTF buffer and image in the shared offline package', () => {
@@ -246,6 +270,12 @@ describe('explicit native games profile', () => {
       put(directory, `dist/${asset}`, 'web-only dressing')
     put(directory, 'dist/glass-game/index.html', '<main>Museum preview</main>')
     put(directory, 'dist/games/glass3d/glass.glb', 'cabinet game asset')
+    put(directory, 'dist/games/future-v1/retained.bin', 'future source')
+    put(
+      directory,
+      'dist/games/adventure-v2/textures/future-normal.png',
+      'future normal',
+    )
 
     stageGamesProfile(directory, 'android', false)
 
@@ -255,6 +285,25 @@ describe('explicit native games profile', () => {
     expect(
       readFileSync(resolve(directory, 'dist/games/glass3d/glass.glb'), 'utf8'),
     ).toBe('cabinet game asset')
+    expect(
+      readFileSync(
+        resolve(directory, 'dist/games/future-v1/retained.bin'),
+        'utf8',
+      ),
+    ).toBe('future source')
+    expect(
+      readFileSync(
+        resolve(
+          directory,
+          'dist/games/adventure-v2/textures/future-normal.png',
+        ),
+        'utf8',
+      ),
+    ).toBe('future normal')
+    for (const asset of CURRENT_DELIVERY_GAME_ASSETS)
+      expect(readFileSync(resolve(directory, 'dist', asset), 'utf8')).toBe(
+        'fixture',
+      )
   })
 
   it('rejects an empty model download even when every required path exists', () => {
@@ -291,6 +340,8 @@ describe('explicit native games profile', () => {
   it('verifies every declared byte after Capacitor copies the native profile', () => {
     const directory = fixture()
     for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    for (const asset of CURRENT_DELIVERY_GAME_ASSETS)
+      put(directory, `dist/${asset}`, `${asset} delivery`)
     stageGamesProfile(directory, 'android', false)
     const nativePublic = resolve(
       directory,
@@ -299,6 +350,23 @@ describe('explicit native games profile', () => {
     cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
 
     expect(() => verifySyncedGamesProfile(directory, 'android')).not.toThrow()
+    const checksums = readFileSync(
+      resolve(nativePublic, nativeGamesChecksumFile),
+      'utf8',
+    )
+    for (const asset of NATIVE_SOURCE_NORMAL_GAME_ASSETS)
+      expect(checksums).not.toContain(asset)
+    for (const asset of CURRENT_DELIVERY_GAME_ASSETS) {
+      expect(checksums).toContain(`  ${asset}\n`)
+      expect(readFileSync(resolve(nativePublic, asset), 'utf8')).toBe(
+        `${asset} delivery`,
+      )
+      put(nativePublic, asset, 'corrupt delivery')
+      expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
+        `differs at ${asset}`,
+      )
+      put(nativePublic, asset, `${asset} delivery`)
+    }
     put(nativePublic, opalineAsset, 'corrupx')
     expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
       `differs at ${opalineAsset}`,

@@ -138,7 +138,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     MATERIALS.flatMap((material) =>
       MATERIAL_CHANNELS.map((channel) => {
         const id = `${material}-${channel}`
-        return [id, `adventure-v2/textures/${id}.png`]
+        return [
+          id,
+          `adventure-v2/textures/${id}.${channel === 'normal' ? 'webp' : 'png'}`,
+        ]
       }),
     ),
   ),

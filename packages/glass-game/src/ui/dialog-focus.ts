@@ -1,10 +1,12 @@
 // Adventure dialog focus — keyboard focus stays with the visible decision.
 export function focusDialog(element: HTMLElement): void {
   queueMicrotask(() => {
-    if (element.isConnected)
-      element
-        .querySelector<HTMLButtonElement>('button')
-        ?.focus({ preventScroll: true })
+    if (!element.isConnected) return
+    const initial =
+      element.querySelector<HTMLButtonElement>(
+        'button[data-dialog-initial-focus]:not(:disabled)',
+      ) ?? element.querySelector<HTMLButtonElement>('button:not(:disabled)')
+    initial?.focus({ preventScroll: true })
   })
 }
 

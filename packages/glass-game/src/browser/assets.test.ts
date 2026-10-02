@@ -40,6 +40,26 @@ describe('Glassworks asset contract', () => {
     )
   })
 
+  it('keeps material IDs stable while delivering only the normal channel as WebP', () => {
+    for (const material of [
+      'warm-carrara',
+      'verde-marble',
+      'cream-limestone',
+      'brushed-brass',
+    ]) {
+      const normal = `adventure-v2/textures/${material}-normal.webp`
+      expect(glassGameAssetPath(`${material}-normal`)).toBe(normal)
+      expect(GLASS_GAME_REQUIRED_FILES).toContain(normal)
+      expect(GLASS_GAME_REQUIRED_FILES).not.toContain(
+        `adventure-v2/textures/${material}-normal.png`,
+      )
+      for (const channel of ['basecolor', 'roughness'])
+        expect(glassGameAssetPath(`${material}-${channel}`)).toBe(
+          `adventure-v2/textures/${material}-${channel}.png`,
+        )
+    }
+  })
+
   it('preserves the authored fallback for development-only assets', () => {
     expect(glassGameAssetPath('fixture-vessel')).toBe(
       'adventure/fixture-vessel',

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// Dialog focus regressions — closed overflow content must not become a modal's tab boundary.
+// Dialog focus regressions — the primary decision and visible tab boundaries remain reachable.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { trapDialogKeys } from './dialog-focus'
+import { focusDialog, trapDialogKeys } from './dialog-focus'
 
 function mountDialog(contents: string): HTMLElement {
   document.body.innerHTML = `<section role="dialog">${contents}</section>`
@@ -23,6 +23,58 @@ function tabFrom(id: string, shiftKey = false): KeyboardEvent {
   control.dispatchEvent(event)
   return event
 }
+
+describe('dialog initial focus', () => {
+  afterEach(() => document.body.replaceChildren())
+
+  it('focuses the primary decision ahead of an optional sound control', async () => {
+    const dialog = mountDialog(`
+      <button id="sound">Sound / tune</button>
+      <button id="start" data-dialog-initial-focus>Start course</button>
+    `)
+
+    focusDialog(dialog)
+    await Promise.resolve()
+    expect(document.activeElement?.id).toBe('start')
+  })
+
+  it('uses an enabled fallback while preparing and the primary once ready', async () => {
+    const dialog = mountDialog(`
+      <button id="sound">Sound / tune</button>
+      <button id="start" data-dialog-initial-focus disabled>Start course</button>
+    `)
+
+    focusDialog(dialog)
+    await Promise.resolve()
+    expect(document.activeElement?.id).toBe('sound')
+
+    dialog.querySelector<HTMLButtonElement>('#start')!.disabled = false
+    focusDialog(dialog)
+    await Promise.resolve()
+    expect(document.activeElement?.id).toBe('start')
+  })
+
+  it('keeps the first enabled action for an unmarked dialog', async () => {
+    const dialog = mountDialog(`
+      <button id="preparing" disabled>Preparing</button>
+      <button id="cancel">Cancel</button>
+    `)
+
+    focusDialog(dialog)
+    await Promise.resolve()
+    expect(document.activeElement?.id).toBe('cancel')
+  })
+
+  it('does not move focus after the dialog has been removed', async () => {
+    const dialog = mountDialog('<button id="start">Start course</button>')
+    focusDialog(dialog)
+    document.body.innerHTML = '<button id="current">Current action</button>'
+    document.getElementById('current')!.focus()
+
+    await Promise.resolve()
+    expect(document.activeElement?.id).toBe('current')
+  })
+})
 
 describe('dialog tab boundaries', () => {
   beforeEach(() => {

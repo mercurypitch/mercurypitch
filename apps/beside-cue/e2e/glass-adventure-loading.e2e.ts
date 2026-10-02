@@ -147,7 +147,7 @@ test('required texture failure retries without resetting progress; context loss 
     releaseRetry = resolve
   })
   await page.route(
-    '**/games/adventure-v2/textures/warm-carrara-normal.png',
+    '**/games/adventure-v2/textures/warm-carrara-normal.webp',
     async (route) => {
       if (fail) {
         fail = false
@@ -230,7 +230,7 @@ test('installed assets advance the track; a held asset keeps it still while the 
     release = resolve
   })
   await page.route(
-    '**/games/adventure-v2/textures/warm-carrara-normal.png',
+    '**/games/adventure-v2/textures/warm-carrara-normal.webp',
     async (route) => {
       await held
       if (!page.isClosed()) await route.continue().catch(() => undefined)

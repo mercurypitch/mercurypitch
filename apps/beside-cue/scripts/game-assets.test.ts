@@ -2,7 +2,7 @@
 // Game asset packaging — exercise Vite's real public-copy lifecycle
 // ============================================================
 
-import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS } from '@irchiinnuss/glass-game/assets'
+import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_REQUIRED_FILES, } from '@irchiinnuss/glass-game/assets'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -14,6 +14,18 @@ const R3_NATIVE_GAME_ASSETS = [
   'games/adventure-v2/platform-kit.glb',
   'games/adventure-v2/garden-kit.glb',
   'games/adventure-v5/painting-garden.webp',
+] as const
+
+const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
+  (asset) =>
+    (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
+    (asset.startsWith('shatter-sounds-v1/') && asset.endsWith('.mp3')) ||
+    (asset.startsWith('adventure-v2/textures/') &&
+      asset.endsWith('-normal.webp')),
+).map((asset) => `games/${asset}`)
+const UNKNOWN_GAME_ASSETS = [
+  'games/future-v1/retained.bin',
+  'games/adventure-v2/textures/future-normal.png',
 ] as const
 
 let root: string
@@ -50,7 +62,11 @@ beforeEach(() => {
   seed('public/games/glass3d/merc.glb', 'merc source')
   for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
     seed(`public/${asset}`, `${asset} source`)
-  for (const asset of R3_NATIVE_GAME_ASSETS)
+  for (const asset of [
+    ...R3_NATIVE_GAME_ASSETS,
+    ...CURRENT_DELIVERY_GAME_ASSETS,
+    ...UNKNOWN_GAME_ASSETS,
+  ])
     seed(`public/${asset}`, `${asset} source`)
   for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
     seed(`public/games/${mobile}`, `${mobile} source`)
@@ -101,6 +117,11 @@ describe('direct Vite game asset packaging', () => {
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
     for (const asset of NATIVE_EXCLUDED_GAME_ASSETS)
       expect(contents(`output/${asset}`)).toBe(`${asset} source`)
+    for (const asset of [
+      ...CURRENT_DELIVERY_GAME_ASSETS,
+      ...UNKNOWN_GAME_ASSETS,
+    ])
+      expect(contents(`output/${asset}`)).toBe(`${asset} source`)
     for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
       expect(contents(`output/games/${mobile}`)).toBe(`${mobile} source`)
     expect(existsSync(join(root, 'output/ort/stale.wasm'))).toBe(false)
@@ -120,7 +141,20 @@ describe('direct Vite game asset packaging', () => {
     )
     for (const { mobile } of GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS)
       expect(contents(`output/games/${mobile}`)).toBe(`${mobile} source`)
-    for (const asset of R3_NATIVE_GAME_ASSETS)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.glb')),
+    ).toHaveLength(10)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.mp3')),
+    ).toHaveLength(14)
+    expect(
+      CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.webp')),
+    ).toHaveLength(4)
+    for (const asset of [
+      ...R3_NATIVE_GAME_ASSETS,
+      ...CURRENT_DELIVERY_GAME_ASSETS,
+      ...UNKNOWN_GAME_ASSETS,
+    ])
       expect(contents(`output/${asset}`)).toBe(`${asset} source`)
     expect(contents('output/games/glass3d/merc.glb')).toBe('merc source')
     expect(contents('output/models/swiftf0.onnx')).toBe('model source')

@@ -43,10 +43,22 @@ export const NATIVE_RETIRED_GAME_ASSETS = [
   'games/journey-map-v3/floating-museum-sculpture-kit-v3.glb',
 ] as const
 
+/**
+ * Sixteen-bit source normals remain public for production. Native ships the
+ * eight-bit WebP deliveries verified to preserve the renderer's RGBA8 upload.
+ */
+export const NATIVE_SOURCE_NORMAL_GAME_ASSETS = [
+  'games/adventure-v2/textures/warm-carrara-normal.png',
+  'games/adventure-v2/textures/verde-marble-normal.png',
+  'games/adventure-v2/textures/cream-limestone-normal.png',
+  'games/adventure-v2/textures/brushed-brass-normal.png',
+] as const
+
 export const NATIVE_EXCLUDED_GAME_ASSETS = Object.freeze([
   ...NATIVE_STANDALONE_ONLY_GAME_ASSETS,
   ...NATIVE_DESKTOP_ONLY_GAME_ASSETS,
   ...NATIVE_RETIRED_GAME_ASSETS,
+  ...NATIVE_SOURCE_NORMAL_GAME_ASSETS,
 ])
 
 /** Remove output that the native host cannot select, preserving public bytes. */
