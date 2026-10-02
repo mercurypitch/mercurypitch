@@ -336,7 +336,7 @@ export function useStemMixerKeyView(
         const detected = deps.detectedKey()
         if (detected === null) return undefined
         const scale = detected.scaleType === 'major' ? 'major' : 'minor'
-        return `${transposeKeyName(detected.keyName, deps.key.keyShift())} ${scale}`
+        return `${transposeKeyName(detected.keyName, deps.key.keyShift(), scale)} ${scale}`
       },
       suggestion: deps.key.suggestion,
       onFindKey: () => announce(deps.key.findMyKey()),

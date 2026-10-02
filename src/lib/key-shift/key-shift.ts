@@ -11,7 +11,7 @@
 // the tempo: `shifterSemitones(key, rate)` is what the engine is told.
 
 import { freqToMidiFloat } from '@/lib/pitch-pipeline/log-pitch'
-import { KEY_OFFSETS, midiToNote, NOTE_NAMES } from '@/lib/scale-data'
+import { KEY_OFFSETS, midiToNote } from '@/lib/scale-data'
 
 export const KEY_SHIFT_MIN = -6
 export const KEY_SHIFT_MAX = 6
@@ -49,12 +49,53 @@ export function formatKeyShift(semitones: number): string {
   return '0'
 }
 
-/** 'G' +2 → 'A'. Flats are read; the answer uses the app's sharp names. */
-export function transposeKeyName(keyName: string, semitones: number): string {
-  const offset = KEY_OFFSETS[keyName]
+// Each key as it is written, by pitch class from C: the spelling with fewer
+// accidentals, and at a tie of six, F# major and E♭ minor, the usual ones.
+// Sharps are '#', as in the app's note names; flats are '♭', as the stages
+// show them.
+const MAJOR_KEY_NAMES = [
+  'C',
+  'D♭',
+  'D',
+  'E♭',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'A♭',
+  'A',
+  'B♭',
+  'B',
+] as const
+const MINOR_KEY_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'E♭',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'B♭',
+  'B',
+] as const
+
+/**
+ * 'G' +2 → 'A', 'D' −4 → 'B♭'. Reads sharps and flats in either spelling,
+ * and names the result as its key is written in `mode`.
+ */
+export function transposeKeyName(
+  keyName: string,
+  semitones: number,
+  mode: 'major' | 'minor',
+): string {
+  const offset = KEY_OFFSETS[keyName.replace('♭', 'b').replace('♯', '#')]
   if (offset === undefined) return keyName
   const index = (((offset + Math.round(semitones)) % 12) + 12) % 12
-  return NOTE_NAMES[index] ?? keyName
+  const names = mode === 'major' ? MAJOR_KEY_NAMES : MINOR_KEY_NAMES
+  return names[index] ?? keyName
 }
 
 // Each of these returns the same array at 0, so memos downstream stay put.

@@ -534,6 +534,21 @@ describe('what the mixer shows', () => {
     expect(binding.keyLabel()).toBe('G minor')
   })
 
+  it('spells the key the way it is written, flats and all', () => {
+    const shown = startView()
+    const { binding } = shown.view
+
+    shown.setDetected({ keyName: 'D', scaleType: 'major' })
+    binding.onChange(-4)
+    expect(binding.keyLabel()).toBe('B♭ major')
+
+    shown.setDetected({ keyName: 'E', scaleType: 'natural-minor' })
+    binding.onChange(-1)
+    expect(binding.keyLabel()).toBe('E♭ minor')
+    binding.onChange(4)
+    expect(binding.keyLabel()).toBe('G# minor')
+  })
+
   it('says why the key cannot change right now', () => {
     const shown = startView()
     const { binding } = shown.view
