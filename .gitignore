@@ -21,6 +21,8 @@ node_modules/
 dist/
 build/
 output/marketing-captures/
+# motion-designer video projects: HyperFrames sources, renders and review frames
+output/motion/
 
 # Environment
 .env.local
