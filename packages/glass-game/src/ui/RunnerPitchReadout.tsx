@@ -14,12 +14,18 @@ export function RunnerPitchReadout(props: RunnerPitchReadoutProps) {
     <div
       class={styles.readout}
       data-pitch-state={readout().state}
+      data-score-eligible="true"
       aria-label="Your voice and target"
       aria-live="off"
     >
       <div class={styles.pitch}>
-        <span>Target</span>
-        <strong data-pitch-target>{readout().targetLabel}</strong>
+        <span>You</span>
+        <Show
+          when={readout().observedLabel}
+          fallback={<strong class={styles.noNote}>Waiting</strong>}
+        >
+          {(label) => <strong data-pitch-observed>{label()}</strong>}
+        </Show>
       </div>
       <div class={styles.coach}>
         <div class={styles.rail} aria-hidden="true">
@@ -47,13 +53,8 @@ export function RunnerPitchReadout(props: RunnerPitchReadoutProps) {
         </span>
       </div>
       <div class={styles.pitch}>
-        <span>You</span>
-        <Show
-          when={readout().observedLabel}
-          fallback={<strong class={styles.noNote}>No note</strong>}
-        >
-          {(label) => <strong data-pitch-observed>{label()}</strong>}
-        </Show>
+        <span>Target</span>
+        <strong data-pitch-target>{readout().targetLabel}</strong>
       </div>
     </div>
   )

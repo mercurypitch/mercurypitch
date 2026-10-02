@@ -3,11 +3,11 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { SINGING_CURRENT } from './first-course'
+import { SINGING_CURRENT_CURRENT } from './first-course'
 import { runnerNoteOffsetAt, runnerTargetMidiAt, runnerTargetNoteAt, } from './pitch'
 
 describe('song runner pitch contour', () => {
-  const arc = SINGING_CURRENT.targets.find(
+  const arc = SINGING_CURRENT_CURRENT.targets.find(
     (target) => target.id === 'arc-diadem',
   )!
 

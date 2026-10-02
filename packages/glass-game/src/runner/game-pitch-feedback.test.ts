@@ -99,7 +99,7 @@ describe('song runner pitch feedback envelope', () => {
     expect(game.snapshot().resolvedTargets[0]).toEqual(resolved)
   })
 
-  it('keeps score-valid evidence neutral once its capture is display-stale', () => {
+  it('keeps score-valid delayed evidence live from receipt while capture continuity stays intact', () => {
     expect(course.voice.judge.maximumDeliveryLatencySeconds).toBe(0.18)
     expect(course.voice.judge.maximumEvidenceGapSeconds).toBe(0.12)
     const game = gameAt()
@@ -117,8 +117,48 @@ describe('song runner pitch feedback envelope', () => {
     game.advanceTo(epoch, receivedCourseSeconds)
     const snapshot = game.snapshot().activeTarget!
 
-    expect(snapshot.pitchFeedback.state).toBe('neutral')
+    expect(snapshot.pitchFeedback.state).toBe('accepted')
     expect(snapshot.notes[0]!.fillProgress).toBeGreaterThan(0)
+
+    game.advanceTo(
+      epoch,
+      receivedCourseSeconds + course.voice.judge.maximumEvidenceGapSeconds,
+    )
+    expect(game.snapshot().activeTarget!.pitchFeedback.state).toBe('accepted')
+    game.advanceTo(
+      epoch,
+      receivedCourseSeconds +
+        course.voice.judge.maximumEvidenceGapSeconds +
+        step,
+    )
+    expect(game.snapshot().activeTarget!.pitchFeedback.state).toBe('neutral')
+  })
+
+  it('rejects receipt-time rollback while preserving later capture continuity', () => {
+    const game = gameAt()
+    const firstReceived = capture + 0.15
+    expect(
+      game.observe(
+        evidence(1, capture, {
+          receivedCourseSeconds: firstReceived,
+        }),
+      ),
+    ).toBe(true)
+    const secondCapture = capture + step
+    expect(
+      game.observe(
+        evidence(2, secondCapture, {
+          receivedCourseSeconds: firstReceived - step,
+        }),
+      ),
+    ).toBe(false)
+    expect(
+      game.observe(
+        evidence(2, secondCapture, {
+          receivedCourseSeconds: firstReceived + step,
+        }),
+      ),
+    ).toBe(true)
   })
 
   it.each(['pause', 'recovery'] as const)(

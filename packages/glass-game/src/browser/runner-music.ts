@@ -30,7 +30,7 @@ export function runnerVoiceSpans(
   }))
 }
 
-/** Keep the complete authored rhythm; a crowded window omits a preview, never speeds it up. */
+/** Keep each target's compiled preview duration; a crowded window omits it. */
 export function planRunnerPhraseGuides(
   course: CompiledRunnerCourse,
 ): readonly RunnerPhraseGuide[] {
@@ -45,13 +45,19 @@ export function planRunnerPhraseGuides(
   ]
   const result: RunnerPhraseGuide[] = []
   for (const target of course.targets) {
-    const duration = target.endCourseSeconds - target.onsetCourseSeconds
+    const duration = target.previewDurationSeconds
     let end =
       target.protectedFromCourseSeconds - RUNNER_VOICE_GUARD_SECONDS - 0.1
     const previous = result.at(-1)?.end ?? 0
     for (let attempt = 0; attempt <= forbidden.length; attempt++) {
       const start = end - duration
-      if (start < previous || start < 0) break
+      if (
+        start < previous ||
+        start < 0 ||
+        (target.completionPolicy === 'charge' &&
+          start < target.visibleFromCourseSeconds)
+      )
+        break
       const conflict = forbidden
         .filter((span) => start < span.end && end > span.start)
         .sort((a, b) => b.start - a.start)
@@ -158,15 +164,21 @@ export function renderRunnerMusic(
   }
   const root = comfortableMidi + course.voice.comfortableRootOffsetSemitones
   for (const guide of guides) {
+    const authoredDuration =
+      guide.target.endCourseSeconds - guide.target.onsetCourseSeconds
+    const previewScale = guide.target.previewDurationSeconds / authoredDuration
     for (const note of guide.target.notes) {
       const at =
-        guide.start + note.startCourseSeconds - guide.target.onsetCourseSeconds
-      const length = note.endCourseSeconds - note.startCourseSeconds
+        guide.start +
+        (note.startCourseSeconds - guide.target.onsetCourseSeconds) *
+          previewScale
+      const length =
+        (note.endCourseSeconds - note.startCourseSeconds) * previewScale
       let phase = 0
       add(at, length, 0.16, (time) => {
         const midi = runnerNoteMidiAt(
           note,
-          note.startCourseSeconds + time,
+          note.startCourseSeconds + time / previewScale,
           root,
         )
         phase += (2 * Math.PI * 440 * 2 ** ((midi - 69) / 12)) / rate

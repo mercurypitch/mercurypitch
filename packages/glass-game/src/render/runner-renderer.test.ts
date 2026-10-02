@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
   sceneryWarm: vi.fn(),
   sceneryRestore: vi.fn(),
   mercDispose: vi.fn(),
+  mercRoot: undefined as Group | undefined,
   worldUpdate: vi.fn(),
   targetUpdate: vi.fn(),
   precompile: vi.fn(),
@@ -170,8 +171,9 @@ beforeEach(() => {
       disconnect = state.observerDisconnect
     },
   )
+  state.mercRoot = new Group()
   state.merc.mockResolvedValue({
-    root: new Group(),
+    root: state.mercRoot,
     update: vi.fn(),
     dispose: state.mercDispose,
   })
@@ -327,6 +329,18 @@ describe('runner renderer ownership', () => {
     )
   })
 
+  it('applies the runner-only Merc presentation scale before the first draw', async () => {
+    const { renderer } = fixture()
+
+    await renderer.ready
+
+    expect(state.mercRoot!.scale.x).toBeCloseTo(0.82 / 0.55, 8)
+    expect(state.mercRoot!.scale.y).toBeCloseTo(0.82 / 0.55, 8)
+    expect(state.mercRoot!.scale.z).toBeCloseTo(0.82 / 0.55, 8)
+    expect(state.render).toHaveBeenCalledTimes(2)
+    renderer.dispose()
+  })
+
   it('forwards presentation elapsed time to target feedback', async () => {
     const { renderer, snapshot } = fixture()
     await renderer.ready
@@ -363,11 +377,12 @@ describe('runner renderer ownership', () => {
       'cloudway-lab-frost-gold-arch-desktop-v1',
       'museum-kit-v2',
       'museum-garden-v2',
+      'museum-arcade-v3',
+      'museum-canopy-v3',
     ])
     expect(state.texture.mock.calls.map(([id]) => id)).toEqual([
       'floor-marble',
       'museum-sky',
-      'painting-garden-v5',
     ])
     expect(state.sceneryCreate).toHaveBeenCalledOnce()
     expect(renderer.metrics()).toMatchObject({

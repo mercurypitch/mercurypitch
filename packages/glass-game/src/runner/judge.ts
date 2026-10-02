@@ -21,6 +21,7 @@ interface ReliableEndpoint {
 interface PitchFeedbackCandidate {
   readonly noteIndex: number
   readonly captureCourseSeconds: number
+  readonly receivedCourseSeconds: number
   readonly observedMidi: number
   readonly comparedTargetMidi: number
   readonly errorCents: number
@@ -32,10 +33,12 @@ interface TargetEvidence {
   previousReliable: ReliableEndpoint | null
   pitchFeedbackCandidate: PitchFeedbackCandidate | null
   readonly pendingPitchFeedbackCandidates: PitchFeedbackCandidate[]
+  completedAtCourseSeconds: number | null
 }
 
 export interface RunnerJudge {
   observe(evidence: RunnerVoiceEvidence): void
+  completionAtCourseSeconds(target: CompiledRunnerTarget): number | null
   result(target: CompiledRunnerTarget): RunnerTargetResult
   targetSnapshot(
     target: CompiledRunnerTarget,
@@ -106,9 +109,10 @@ function projectPitchFeedback(
     index < accumulated.pendingPitchFeedbackCandidates.length;
     index++
   ) {
+    const candidate = accumulated.pendingPitchFeedbackCandidates[index]!
     if (
-      accumulated.pendingPitchFeedbackCandidates[index]!.captureCourseSeconds >
-      courseSeconds + EPSILON
+      candidate.captureCourseSeconds > courseSeconds + EPSILON ||
+      candidate.receivedCourseSeconds > courseSeconds + EPSILON
     )
       break
     latestEligibleIndex = index
@@ -122,12 +126,19 @@ function projectPitchFeedback(
     )
   }
   const candidate = accumulated.pitchFeedbackCandidate
-  const activeNote = runnerTargetNoteAt(target.notes, courseSeconds)
+  const activeNote =
+    target.completionPolicy === 'charge'
+      ? target.notes.find(
+          (note) =>
+            accumulated.notes[note.index]!.reliableSeconds + EPSILON <
+            note.minimumReliableSeconds,
+        )
+      : runnerTargetNoteAt(target.notes, courseSeconds)
   if (
     phase !== 'judging' ||
     candidate === null ||
     candidate.captureCourseSeconds > courseSeconds + EPSILON ||
-    courseSeconds - candidate.captureCourseSeconds >
+    courseSeconds - candidate.receivedCourseSeconds >
       maximumEvidenceGapSeconds + EPSILON ||
     activeNote?.index !== candidate.noteIndex
   )
@@ -222,6 +233,7 @@ export function createRunnerJudge(
       previousReliable: null,
       pitchFeedbackCandidate: null,
       pendingPitchFeedbackCandidates: [],
+      completedAtCourseSeconds: null,
     }
     evidenceByTarget.set(target.id, created)
     return created
@@ -256,10 +268,21 @@ export function createRunnerJudge(
         clearContinuity()
       continuityTargetId = target.id
       const accumulated = targetEvidence(target)
-      const note = runnerTargetNoteAt(
-        target.notes,
-        observation.captureCourseSeconds,
-      )
+      const note =
+        target.completionPolicy === 'charge'
+          ? observation.captureCourseSeconds >=
+              target.onsetCourseSeconds - EPSILON &&
+            observation.captureCourseSeconds <=
+              target.endCourseSeconds + EPSILON &&
+            accumulated.completedAtCourseSeconds === null
+            ? target.notes.find(
+                (candidate) =>
+                  accumulated.notes[candidate.index]!.reliableSeconds +
+                    EPSILON <
+                  candidate.minimumReliableSeconds,
+              )
+            : undefined
+          : runnerTargetNoteAt(target.notes, observation.captureCourseSeconds)
       if (
         note === undefined ||
         observation.midi === null ||
@@ -270,11 +293,14 @@ export function createRunnerJudge(
         accumulated.pendingPitchFeedbackCandidates.length = 0
         return
       }
-      const targetMidi = runnerTargetMidiAt(
-        target.notes,
-        observation.captureCourseSeconds,
-        rootMidi,
-      )
+      const targetMidi =
+        target.completionPolicy === 'charge'
+          ? rootMidi + note.endOffsetSemitones
+          : runnerTargetMidiAt(
+              target.notes,
+              observation.captureCourseSeconds,
+              rootMidi,
+            )
       const feedback = classifyRunnerPitchFeedback(
         observation.midi,
         targetMidi,
@@ -293,6 +319,7 @@ export function createRunnerJudge(
       const feedbackCandidate: PitchFeedbackCandidate = {
         noteIndex: note.index,
         captureCourseSeconds: observation.captureCourseSeconds,
+        receivedCourseSeconds: observation.receivedCourseSeconds,
         observedMidi: feedback.observedMidi,
         comparedTargetMidi: feedback.comparedTargetMidi,
         errorCents: feedback.errorCents,
@@ -321,11 +348,15 @@ export function createRunnerJudge(
           delta <= course.voice.judge.maximumEvidenceGapSeconds + EPSILON
         ) {
           const clippedStart = Math.max(
-            note.startCourseSeconds,
+            target.completionPolicy === 'charge'
+              ? target.onsetCourseSeconds
+              : note.startCourseSeconds,
             previous.captureCourseSeconds,
           )
           const clippedEnd = Math.min(
-            note.endCourseSeconds,
+            target.completionPolicy === 'charge'
+              ? target.endCourseSeconds
+              : note.endCourseSeconds,
             observation.captureCourseSeconds,
           )
           const creditedSeconds = Math.max(0, clippedEnd - clippedStart)
@@ -336,11 +367,33 @@ export function createRunnerJudge(
             creditedSeconds
         }
       }
-      accumulated.previousReliable = {
-        noteIndex: note.index,
-        captureCourseSeconds: observation.captureCourseSeconds,
-        absoluteErrorCents,
+      const noteComplete =
+        accumulated.notes[note.index]!.reliableSeconds + EPSILON >=
+        note.minimumReliableSeconds
+      if (target.completionPolicy === 'charge' && noteComplete) {
+        accumulated.previousReliable = null
+        if (
+          accumulated.completedAtCourseSeconds === null &&
+          target.notes.every(
+            (candidate) =>
+              accumulated.notes[candidate.index]!.reliableSeconds + EPSILON >=
+              candidate.minimumReliableSeconds,
+          )
+        )
+          accumulated.completedAtCourseSeconds =
+            observation.receivedCourseSeconds
+      } else {
+        accumulated.previousReliable = {
+          noteIndex: note.index,
+          captureCourseSeconds: observation.captureCourseSeconds,
+          absoluteErrorCents,
+        }
       }
+    },
+    completionAtCourseSeconds(target) {
+      return target.completionPolicy === 'charge'
+        ? targetEvidence(target).completedAtCourseSeconds
+        : null
     },
     result(target) {
       const accumulated = targetEvidence(target)
@@ -359,7 +412,7 @@ export function createRunnerJudge(
           accumulated.notes[note.index]!.reliableSeconds + EPSILON >=
           note.minimumReliableSeconds,
       )
-      const grade =
+      let grade =
         everyNoteReliable && meanAbsoluteCents !== null
           ? ([...course.voice.judge.gradeBands]
               .sort((left, right) => right.grade - left.grade)
@@ -368,11 +421,23 @@ export function createRunnerJudge(
                   meanAbsoluteCents <= band.maximumMeanAbsoluteCents + EPSILON,
               )?.grade ?? null)
           : null
+      if (
+        target.completionPolicy === 'charge' &&
+        everyNoteReliable &&
+        meanAbsoluteCents !== null &&
+        meanAbsoluteCents <= course.voice.judge.centsTolerance + EPSILON &&
+        grade === null
+      )
+        grade = 1
       return {
         targetId: target.id,
         outcome: grade === null ? 'miss' : 'hit',
         grade,
-        resolvedAtCourseSeconds: target.settleAfterCourseSeconds,
+        resolvedAtCourseSeconds:
+          target.completionPolicy === 'charge' &&
+          accumulated.completedAtCourseSeconds !== null
+            ? accumulated.completedAtCourseSeconds
+            : target.settleAfterCourseSeconds,
         reliableSeconds,
         meanAbsoluteCents,
       }
@@ -381,7 +446,13 @@ export function createRunnerJudge(
       const accumulated = targetEvidence(target)
       const phase = phaseForTarget(target, courseSeconds)
       const activeNote =
-        runnerTargetNoteAt(target.notes, courseSeconds) ??
+        (target.completionPolicy === 'charge'
+          ? target.notes.find(
+              (note) =>
+                accumulated.notes[note.index]!.reliableSeconds + EPSILON <
+                note.minimumReliableSeconds,
+            )
+          : runnerTargetNoteAt(target.notes, courseSeconds)) ??
         (courseSeconds < target.onsetCourseSeconds
           ? target.notes[0]!
           : target.notes.at(-1)!)
@@ -389,11 +460,10 @@ export function createRunnerJudge(
         id: target.id,
         ...phase,
         noteIndex: activeNote.index,
-        currentTargetMidi: runnerTargetMidiAt(
-          target.notes,
-          courseSeconds,
-          rootMidi,
-        ),
+        currentTargetMidi:
+          target.completionPolicy === 'charge'
+            ? rootMidi + activeNote.endOffsetSemitones
+            : runnerTargetMidiAt(target.notes, courseSeconds, rootMidi),
         pitchFeedback: projectPitchFeedback(
           target,
           accumulated,
@@ -402,22 +472,26 @@ export function createRunnerJudge(
           course.voice.judge.maximumEvidenceGapSeconds,
         ),
         notes: target.notes.map((note) => {
-          const fillProgress = clamp01(
-            accumulated.notes[note.index]!.reliableSeconds /
-              note.minimumReliableSeconds,
-          )
+          const noteEvidence = accumulated.notes[note.index]!
+          const complete =
+            noteEvidence.reliableSeconds + EPSILON >=
+            note.minimumReliableSeconds
+          const fillProgress = complete
+            ? 1
+            : clamp01(
+                noteEvidence.reliableSeconds / note.minimumReliableSeconds,
+              )
           return {
             index: note.index,
             startMidi: rootMidi + note.startOffsetSemitones,
             endMidi: rootMidi + note.endOffsetSemitones,
             targetMidi: rootMidi + note.endOffsetSemitones,
             fillProgress,
-            state:
-              fillProgress >= 1
-                ? ('filled' as const)
-                : fillProgress > 0
-                  ? ('filling' as const)
-                  : ('hollow' as const),
+            state: complete
+              ? ('filled' as const)
+              : fillProgress > 0
+                ? ('filling' as const)
+                : ('hollow' as const),
           }
         }),
       }

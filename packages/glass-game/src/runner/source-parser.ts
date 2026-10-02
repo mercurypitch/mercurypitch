@@ -97,14 +97,53 @@ function parsePhrase(value: unknown, path: string): RunnerPhraseSource {
 
 function parseTarget(value: unknown, path: string): RunnerTargetSource {
   const source = runnerSourceRecord(value, path)
-  runnerSourceExactKeys(source, path, [
-    'id',
-    'atBeat',
-    'phraseId',
-    'displayLane',
-    'glassProfileId',
-    'requiredForGrade',
-  ])
+  runnerSourceExactKeys(
+    source,
+    path,
+    [
+      'id',
+      'atBeat',
+      'phraseId',
+      'displayLane',
+      'glassProfileId',
+      'requiredForGrade',
+    ],
+    ['completion'],
+  )
+  let completion: RunnerTargetSource['completion']
+  if (source.completion !== undefined) {
+    const completionPath = `${path}.completion`
+    const rawCompletion = runnerSourceRecord(source.completion, completionPath)
+    runnerSourceExactKeys(rawCompletion, completionPath, [
+      'kind',
+      'minimumReliableSecondsPerNote',
+      'previewDurationSeconds',
+      'contactAfterResponseSeconds',
+    ])
+    if (rawCompletion.kind !== 'charge')
+      runnerSourceFail(`${completionPath}.kind`, 'must be charge.')
+    completion = {
+      kind: 'charge',
+      minimumReliableSecondsPerNote: runnerSourceArray(
+        rawCompletion.minimumReliableSecondsPerNote,
+        `${completionPath}.minimumReliableSecondsPerNote`,
+        16,
+      ).map((entry, index) =>
+        runnerSourcePositive(
+          entry,
+          `${completionPath}.minimumReliableSecondsPerNote[${index}]`,
+        ),
+      ),
+      previewDurationSeconds: runnerSourcePositive(
+        rawCompletion.previewDurationSeconds,
+        `${completionPath}.previewDurationSeconds`,
+      ),
+      contactAfterResponseSeconds: runnerSourcePositive(
+        rawCompletion.contactAfterResponseSeconds,
+        `${completionPath}.contactAfterResponseSeconds`,
+      ),
+    }
+  }
   return {
     id: runnerSourceString(source.id, `${path}.id`),
     atBeat: runnerSourceFinite(source.atBeat, `${path}.atBeat`),
@@ -118,6 +157,7 @@ function parseTarget(value: unknown, path: string): RunnerTargetSource {
       source.requiredForGrade,
       `${path}.requiredForGrade`,
     ),
+    ...(completion === undefined ? {} : { completion }),
   }
 }
 

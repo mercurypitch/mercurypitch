@@ -89,6 +89,11 @@ export interface CompiledRunnerTarget {
   readonly displayLane: RunnerLane
   readonly glassProfileId: string
   readonly requiredForGrade: boolean
+  /** Scheduled preserves exact authored note windows; charge advances notes from accepted evidence. */
+  readonly completionPolicy: 'scheduled' | 'charge'
+  /** Stable policy identity carried into saved quality so changed challenges cannot reuse stale grades. */
+  readonly completionFingerprint: string
+  readonly previewDurationSeconds: number
   readonly notes: readonly CompiledRunnerNote[]
   readonly visibleFromCourseSeconds: number
   readonly emphasizedFromCourseSeconds: number
@@ -97,6 +102,8 @@ export interface CompiledRunnerTarget {
   readonly judgeOpenCourseSeconds: number
   readonly judgeCloseCourseSeconds: number
   readonly settleAfterCourseSeconds: number
+  /** Physical pane contact is independent from response close and late evidence settlement. */
+  readonly contactCourseSeconds: number
   readonly protectedFromCourseSeconds: number
   readonly protectedUntilCourseSeconds: number
 }
@@ -286,6 +293,7 @@ export interface SavedRunnerTargetQuality {
   readonly judgeProfileId: string
   readonly judgeProfileRevision: number
   readonly evidenceVersion: 'pitch-accuracy-v1'
+  readonly completionFingerprint: string
   readonly reliableSeconds: number
   readonly meanAbsoluteCents: number
 }
@@ -325,6 +333,8 @@ interface RunnerEventBase {
   readonly atBeat: number
 }
 
+export type RunnerRecoveryReason = 'fall' | 'collision' | 'frame-gap'
+
 export type RunnerEvent =
   | (RunnerEventBase & {
       readonly type: 'target-hit'
@@ -346,7 +356,7 @@ export type RunnerEvent =
     })
   | (RunnerEventBase & {
       readonly type: 'recovery-required'
-      readonly reason: 'fall' | 'frame-gap'
+      readonly reason: RunnerRecoveryReason
       readonly checkpointId: string
     })
   | (RunnerEventBase & {

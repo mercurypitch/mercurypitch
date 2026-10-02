@@ -143,4 +143,54 @@ describe('song runner progress', () => {
     expect(completed.completed).toBe(true)
     expect(completeRunnerProgress(completed)).toBe(completed)
   })
+
+  it('migrates legacy scheduled fingerprints but rejects stale charge policy quality', () => {
+    const scheduledTarget = SINGING_CURRENT_CURRENT.targets[0]!
+    const scheduled = createRunnerTargetQuality(
+      SINGING_CURRENT_CURRENT,
+      scheduledTarget.id,
+      3,
+      scheduledTarget.notes[0]!.minimumReliableSeconds,
+      10,
+    )
+    const { completionFingerprint: _legacyOmitted, ...legacyScheduled } =
+      scheduled
+    expect(
+      readSavedRunnerProgress(SINGING_CURRENT_CURRENT, {
+        version: 1,
+        courseId: SINGING_CURRENT_CURRENT.id,
+        courseRevision: SINGING_CURRENT_CURRENT.revision,
+        rewardsRevision: SINGING_CURRENT_CURRENT.rewards.revision,
+        completed: false,
+        bestTargetQualities: [legacyScheduled],
+        collectedRewardIds: [],
+      }).bestTargetQualities,
+    ).toEqual([scheduled])
+
+    const charge = createRunnerTargetQuality(
+      course,
+      target.id,
+      1,
+      minimumReliableSeconds - 5e-10,
+      course.voice.judge.centsTolerance + 5e-10,
+    )
+    const stale = readSavedRunnerProgress(course, {
+      version: 1,
+      courseId: course.id,
+      courseRevision: course.revision,
+      rewardsRevision: course.rewards.revision,
+      completed: false,
+      bestTargetQualities: [
+        { ...charge, completionFingerprint: 'charge-v1:retired' },
+      ],
+      collectedRewardIds: [],
+    })
+    expect(stale.bestTargetQualities).toEqual([])
+
+    const current = readSavedRunnerProgress(course, {
+      ...stale,
+      bestTargetQualities: [charge],
+    })
+    expect(current.bestTargetQualities).toEqual([charge])
+  })
 })

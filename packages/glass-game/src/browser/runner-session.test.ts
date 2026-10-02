@@ -243,6 +243,60 @@ describe('runner session readiness and clock', () => {
     h.session.dispose()
   })
 
+  it('ducks accompaniment for the next ordered charge note before its authored slot', async () => {
+    const fixture = runnerCourseFixture()
+    const scheduled = fixture.targets[0]!
+    const midpoint =
+      (scheduled.onsetCourseSeconds + scheduled.endCourseSeconds) / 2
+    const chargeCourse = {
+      ...fixture,
+      targets: [
+        {
+          ...scheduled,
+          completionPolicy: 'charge' as const,
+          completionFingerprint: 'charge-session-test-v1',
+          notes: [
+            {
+              ...scheduled.notes[0]!,
+              endBeat:
+                (scheduled.notes[0]!.startBeat + scheduled.notes[0]!.endBeat) /
+                2,
+              endCourseSeconds: midpoint,
+              minimumReliableSeconds: 0.05,
+            },
+            {
+              ...scheduled.notes[0]!,
+              index: 1,
+              startOffsetSemitones: 2,
+              endOffsetSemitones: 2,
+              startBeat:
+                (scheduled.notes[0]!.startBeat + scheduled.notes[0]!.endBeat) /
+                2,
+              startCourseSeconds: midpoint,
+              minimumReliableSeconds: 0.05,
+            },
+          ],
+        },
+      ],
+    }
+    const h = runnerSessionHarness(chargeCourse)
+    await h.running()
+    const anchor = h.audio[0]!.anchor!
+    for (let time = 0.2; time < scheduled.onsetCourseSeconds; time += 0.2)
+      h.courseTick(time)
+    for (const offset of [0.01, 0.04, 0.07])
+      h.emit(anchor.audioStartSeconds + scheduled.onsetCourseSeconds + offset)
+
+    expect(h.session.state().game.activeTarget).toMatchObject({
+      noteIndex: 1,
+      currentTargetMidi: 62,
+    })
+    expect(scheduled.onsetCourseSeconds + 0.08).toBeLessThan(midpoint)
+    h.emit(anchor.audioStartSeconds + scheduled.onsetCourseSeconds + 0.08, 62)
+    expect(h.audio[0]!.setVoiceActive).toHaveBeenLastCalledWith(true)
+    h.session.dispose()
+  })
+
   it('publishes fresh feedback immediately, expires it on course time, and does not revive it after resume', async () => {
     const h = runnerSessionHarness()
     await h.running()

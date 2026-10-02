@@ -17,17 +17,30 @@ function secondsAtDistance(distanceMeters: number): number {
 }
 
 describe('song runner movement', () => {
-  it('treats each full-width gap as one span without lane-boundary seams', () => {
+  it('treats each full-width gap as one merged lane footprint without boundary seams', () => {
+    const laneSpacing = course.laneCenters[1]! - course.laneCenters[0]!
+    const laneFootprint = {
+      minLateralX: course.laneCenters[0]! - laneSpacing / 2,
+      maxLateralX: course.laneCenters.at(-1)! + laneSpacing / 2,
+    }
     const gaps = course.obstacles.filter((obstacle) => obstacle.kind === 'gap')
     expect(gaps).toHaveLength(2)
     for (const gap of gaps) {
       const midpoint =
         (gap.minCourseDistanceMeters + gap.maxCourseDistanceMeters) / 2
-      expect(gap.lateralSpans).toEqual([{ minLateralX: -3, maxLateralX: 3 }])
-      expect(runnerHasGroundSupport(course, midpoint, -1)).toBe(false)
-      expect(runnerHasGroundSupport(course, midpoint, 1)).toBe(false)
-      expect(runnerHasGroundSupport(course, midpoint, 0)).toBe(false)
-      expect(runnerHasGroundSupport(course, midpoint, 2.8)).toBe(true)
+      expect(gap.lateralSpans).toEqual([laneFootprint])
+      for (const laneX of course.laneCenters)
+        expect(runnerHasGroundSupport(course, midpoint, laneX)).toBe(false)
+      for (let index = 1; index < course.laneCenters.length; index++) {
+        const seam =
+          (course.laneCenters[index - 1]! + course.laneCenters[index]!) / 2
+        expect(runnerHasGroundSupport(course, midpoint, seam)).toBe(false)
+      }
+      for (const outsideX of [
+        laneFootprint.minLateralX - course.movement.bodyRadius - 0.05,
+        laneFootprint.maxLateralX + course.movement.bodyRadius + 0.05,
+      ])
+        expect(runnerHasGroundSupport(course, midpoint, outsideX)).toBe(true)
     }
   })
 

@@ -5,12 +5,14 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { GlassMicrophoneInput } from '../host'
 import type { CompiledRunnerCourse, RunnerEvent } from '../runner/contracts'
+import { runnerMovementCue } from '../runner/movement-cues'
 import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
 import type { RunnerSessionFrame, RunnerSessionPhase, SongRunnerSession, } from '../runner/session-contracts'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import type { MicrophoneIssue } from './mic-error'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
+import { runnerDisplayNotationNotes, runnerEventAnnouncement, runnerMicrophoneStatus, runnerMovementCueCopy, runnerPauseMessage, runnerRecoveryCopy, runnerTargetResultNotice, runnerVoiceCue, } from './runner-hud'
 import { createRunnerInputEdges } from './runner-input'
 import { RunnerControls } from './RunnerControls'
 import { RunnerFinishRewards } from './RunnerFinishRewards'
@@ -118,38 +120,6 @@ function phaseAnnouncement(phase: RunnerSessionPhase): string | null {
   }
 }
 
-function eventAnnouncement(event: RunnerEvent): string {
-  switch (event.type) {
-    case 'target-hit':
-      return `Phrase complete: ${event.result.grade} ${event.result.grade === 1 ? 'star' : 'stars'}.`
-    case 'target-miss':
-      return 'That glass passed. Keep moving.'
-    case 'reward-collected':
-      return 'Discovery collected.'
-    case 'recovery-required':
-      return 'Returning to the last checkpoint.'
-    case 'course-finished':
-      return 'Course complete.'
-  }
-}
-
-function pauseMessage(
-  reason: ReturnType<SongRunnerSession['state']>['pauseReason'],
-) {
-  switch (reason) {
-    case 'background':
-      return 'The run paused when the app moved to the background.'
-    case 'audio-interrupted':
-      return 'Audio was interrupted. Resume when your sound is ready.'
-    case 'microphone-interrupted':
-      return 'The microphone stopped. Check your input before resuming.'
-    case 'renderer-unavailable':
-      return 'The scene paused while the display recovers.'
-    default:
-      return 'Resume from your last checkpoint when you are ready.'
-  }
-}
-
 function clampedPercent(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.round(Math.min(1, Math.max(0, value)) * 100)
@@ -175,6 +145,15 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     events: [],
   })
   const [announcement, setAnnouncement] = createSignal('')
+  const [lastRecoveryReason, setLastRecoveryReason] = createSignal<
+    Extract<RunnerEvent, { type: 'recovery-required' }>['reason'] | ''
+  >('')
+  const [lastTargetResult, setLastTargetResult] = createSignal<{
+    readonly id: string
+    readonly epoch: string
+    readonly outcome: 'hit' | 'miss'
+    readonly resolvedAtCourseSeconds: number
+  } | null>(null)
   let sceneContainer!: HTMLDivElement
   let dialogElement: HTMLElement | undefined
 
@@ -209,7 +188,10 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     const target = activeTarget()
     const compiled = compiledTarget()
     if (target !== null && compiled !== null)
-      return runnerNotationNotes(compiled.notes, target.notes)
+      return runnerDisplayNotationNotes(
+        compiled,
+        runnerNotationNotes(compiled.notes, target.notes),
+      )
     const readiness = state().readiness
     return [
       setupNote(
@@ -218,47 +200,79 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       ),
     ]
   })
-  const notationInstruction = createMemo(() => {
-    const current = activeTarget()
-    if (current !== null) {
-      const note = current.notes.find(
-        (candidate) => candidate.index === current.noteIndex,
-      )
-      if (note !== undefined)
-        return `Sing ${runnerMidiName(note.targetMidi).text}`
-    }
-    if (state().phase === 'readiness')
-      return `Hold ${runnerMidiName(state().readiness?.targetMidi ?? props.comfortableMidi).text}`
-    return 'Your note'
+  const voiceCue = createMemo(() => {
+    const target = activeTarget()
+    return target === null ? null : runnerVoiceCue(target)
+  })
+  const movementHint = createMemo(() =>
+    state().phase === 'running'
+      ? runnerMovementCue(props.course, game())
+      : null,
+  )
+  const movementCopy = createMemo(() => {
+    const hint = movementHint()
+    return hint === null ? null : runnerMovementCueCopy(hint)
+  })
+  const recentResult = createMemo(() => {
+    if (state().phase !== 'running') return null
+    return runnerTargetResultNotice(
+      props.course,
+      props.comfortableMidi,
+      lastTargetResult(),
+      game().epoch,
+      game().courseSeconds,
+    )
   })
   const showNotation = createMemo(
     () =>
       ['readiness', 'count-in'].includes(state().phase) ||
-      (state().phase === 'running' && activeTarget() !== null),
+      (state().phase === 'running' &&
+        activeTarget() !== null &&
+        movementHint() === null &&
+        recentResult() === null),
   )
-  const movementHint = createMemo(() => {
-    if (state().phase !== 'running' || activeTarget() !== null) return null
-    const current = game()
-    for (const obstacle of props.course.obstacles) {
-      const action = obstacle.certifiedActions[0]
-      if (
-        action === undefined ||
-        current.courseSeconds < obstacle.telegraphFromCourseSeconds ||
-        current.courseSeconds > action.launchCloseCourseSeconds
-      )
-        continue
-      if (
-        action.kind === 'lane-transition' &&
-        action.reachableLanes.includes(current.player.targetLane)
-      )
-        continue
-      if (action.kind === 'jump' && !current.player.grounded) continue
-      return {
-        obstacleId: obstacle.id,
-        text: action.kind === 'jump' ? 'Jump the gap' : 'Change lane',
-      }
-    }
-    return null
+  const notationPhaseLabel = createMemo(() => {
+    if (state().phase === 'readiness') return 'Match to start'
+    if (state().phase === 'count-in') return 'Get ready'
+    return voiceCue()?.label ?? 'Your note'
+  })
+  const notationInstruction = createMemo(() => {
+    if (state().phase === 'readiness')
+      return `Hold ${runnerMidiName(state().readiness?.targetMidi ?? props.comfortableMidi).text}`
+    if (state().phase === 'count-in')
+      return runnerMidiName(props.comfortableMidi).text
+    return voiceCue()?.instruction ?? 'Your note'
+  })
+  const notationDisplayLabel = createMemo(
+    () =>
+      runnerMidiName(pitchTarget()?.currentTargetMidi ?? props.comfortableMidi)
+        .text,
+  )
+  const notationScoreStatus = createMemo(() => {
+    if (state().phase === 'readiness') return 'Start note'
+    if (state().phase === 'count-in') return 'Scoring opens after count-in'
+    return voiceCue()?.scoreStatus ?? 'Scoring closed'
+  })
+  const showPitchReadout = createMemo(
+    () => state().phase === 'readiness' || voiceCue()?.scoringOpen === true,
+  )
+  const compactNotation = createMemo(
+    () =>
+      ['readiness', 'count-in'].includes(state().phase) ||
+      (compiledTarget()?.completionPolicy === 'charge' &&
+        notationNotes().length === 1),
+  )
+  const pendingNote = createMemo(() => {
+    if (movementHint() === null) return null
+    const target = activeTarget()
+    const cue = voiceCue()
+    if (
+      target === null ||
+      cue === null ||
+      (cue.stage !== 'listen' && cue.stage !== 'get-ready')
+    )
+      return null
+    return runnerMidiName(target.currentTargetMidi).text
   })
   const maximumStars = createMemo(
     () =>
@@ -289,14 +303,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       0,
     )
   })
-  const recoveryReason = createMemo(() => {
-    const events = frame().events
-    for (let index = events.length - 1; index >= 0; index--) {
-      const event = events[index]!
-      if (event.type === 'recovery-required') return event.reason
-    }
-    return ''
-  })
+  const recovery = createMemo(() => runnerRecoveryCopy(lastRecoveryReason()))
   const closedSetup = createMemo(
     () =>
       state().microphone === 'closed' &&
@@ -312,12 +319,38 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   createEffect(() => {
     const session = props.session
     let previousPhase = session.state().phase
+    setLastRecoveryReason('')
+    setLastTargetResult(null)
     setFrame({ state: session.state(), events: [] })
     const unsubscribe = session.subscribe((nextFrame) => {
       setFrame(nextFrame)
+      const previousResult = untrack(lastTargetResult)
+      if (
+        previousResult !== null &&
+        previousResult.epoch !== nextFrame.state.game.epoch
+      )
+        setLastTargetResult(null)
+      if (
+        previousPhase === 'recovering' &&
+        nextFrame.state.phase !== 'recovering'
+      )
+        setLastRecoveryReason('')
+      for (const event of nextFrame.events) {
+        if (event.type === 'recovery-required') {
+          setLastRecoveryReason(event.reason)
+          setLastTargetResult(null)
+        }
+        if (event.type === 'target-hit' || event.type === 'target-miss')
+          setLastTargetResult({
+            id: event.result.targetId,
+            epoch: event.epoch,
+            outcome: event.result.outcome,
+            resolvedAtCourseSeconds: event.result.resolvedAtCourseSeconds,
+          })
+      }
       const newestEvent = nextFrame.events.at(-1)
       if (newestEvent !== undefined)
-        setAnnouncement(eventAnnouncement(newestEvent))
+        setAnnouncement(runnerEventAnnouncement(newestEvent))
       else if (nextFrame.state.phase !== previousPhase) {
         const message = phaseAnnouncement(nextFrame.state.phase)
         if (message !== null) setAnnouncement(message)
@@ -378,7 +411,9 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           .length
       }
       data-run-stars={runStars()}
-      data-recovery-reason={recoveryReason()}
+      data-recovery-reason={lastRecoveryReason()}
+      data-voice-phase={voiceCue()?.stage ?? ''}
+      data-movement-cue={movementHint()?.stage ?? ''}
       data-target-lane={game().player.targetLane}
       data-player-feet-y={game().player.feetY.toFixed(3)}
       data-player-grounded={String(game().player.grounded)}
@@ -442,22 +477,54 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         <RunnerNotation
           notes={notationNotes()}
           activeNoteIndex={activeTarget()?.noteIndex ?? 0}
+          phaseLabel={notationPhaseLabel()}
+          displayLabel={notationDisplayLabel()}
           instruction={notationInstruction()}
           target={pitchTarget()}
+          showPitchReadout={showPitchReadout()}
+          microphoneStatus={runnerMicrophoneStatus(state().microphone)}
+          scoreStatus={notationScoreStatus()}
+          compact={compactNotation()}
+          shortHold={compiledTarget()?.completionPolicy === 'charge'}
         />
       </Show>
 
-      <Show when={movementHint()} keyed>
+      <Show when={movementHint()}>
         {(hint) => (
           <section
             class={styles.movementHint}
             role="status"
             aria-live="polite"
             data-testid="runner-movement-hint"
-            data-obstacle-id={hint.obstacleId}
+            data-obstacle-id={hint().obstacleId}
+            data-cue-stage={hint().stage}
           >
-            <span>Path ahead</span>
-            <strong>{hint.text}</strong>
+            <span>{movementCopy()!.instruction}</span>
+            <strong>{movementCopy()!.label}</strong>
+            <Show when={pendingNote()}>
+              {(note) => (
+                <small class={styles.nextNoteCue}>Next note: {note()}</small>
+              )}
+            </Show>
+          </section>
+        )}
+      </Show>
+
+      <Show when={movementHint() === null ? recentResult() : null}>
+        {(result) => (
+          <section
+            class={styles.releaseHint}
+            classList={{ [styles.missHint]: result().outcome === 'miss' }}
+            data-testid={
+              result().outcome === 'hit'
+                ? 'runner-release-hint'
+                : 'runner-miss-hint'
+            }
+            data-target-id={result().id}
+            data-target-outcome={result().outcome}
+          >
+            <span>{result().label}</span>
+            <strong>{result().instruction}</strong>
           </section>
         )}
       </Show>
@@ -539,9 +606,9 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           aria-labelledby="runner-recovery-title"
           onKeyDown={trapDialogKeys}
         >
-          <p class={styles.eyebrow}>Checkpoint ready</p>
-          <h1 id="runner-recovery-title">Try that stretch again</h1>
-          <p>Your settled notes and discoveries stay with you.</p>
+          <p class={styles.eyebrow}>{recovery().eyebrow}</p>
+          <h1 id="runner-recovery-title">{recovery().title}</h1>
+          <p>{recovery().detail}</p>
           <div class={styles.primaryActions}>
             <button
               type="button"
@@ -640,7 +707,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         >
           <p class={styles.eyebrow}>Checkpoint saved</p>
           <h1 id="runner-paused-title">Course paused</h1>
-          <p>{pauseMessage(state().pauseReason)}</p>
+          <p>{runnerPauseMessage(state().pauseReason)}</p>
           <Show when={props.presentationLoading === true}>
             <div class={styles.presentationStatus} role="status">
               <span class={styles.spinner} aria-hidden="true" />

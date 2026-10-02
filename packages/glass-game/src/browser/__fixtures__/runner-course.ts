@@ -92,6 +92,9 @@ export function runnerCourseFixture(
         displayLane: 1,
         glassProfileId: 'glass',
         requiredForGrade: true,
+        completionPolicy: 'scheduled',
+        completionFingerprint: 'scheduled-v1',
+        previewDurationSeconds: seconds(10) - seconds(8),
         visibleFromCourseSeconds: 0,
         emphasizedFromCourseSeconds: seconds(4),
         onsetCourseSeconds: seconds(8),
@@ -99,6 +102,7 @@ export function runnerCourseFixture(
         judgeOpenCourseSeconds: seconds(8) - 0.1,
         judgeCloseCourseSeconds: seconds(10),
         settleAfterCourseSeconds: seconds(10) + 0.15,
+        contactCourseSeconds: seconds(10),
         protectedFromCourseSeconds: seconds(7),
         protectedUntilCourseSeconds: seconds(12),
         notes: [

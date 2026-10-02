@@ -15,9 +15,10 @@ import type { GlassAssetQualityProfile } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
 import { createRunnerScenery } from './runner-scenery'
+import { runnerSceneryFogFar } from './runner-scenery-layout'
 import { createRunnerTargets } from './runner-targets'
 import { createRunnerWorld } from './runner-world'
-import { runnerCameraPose } from './runner-world-layout'
+import { RUNNER_MERC_VISUAL_HEIGHT_METERS, runnerCameraFollowTarget, runnerCameraPose, stepRunnerCameraFollow, } from './runner-world-layout'
 import { fitSkyBackdrop } from './sky-backdrop'
 import { canRenderViewport } from './viewport'
 
@@ -53,8 +54,8 @@ export function createSongRunnerRenderer(
   const abort = new AbortController()
   const scene = new Scene()
   scene.background = new Color(0xc8dce0)
-  scene.fog = new Fog(0xc8dce0, 18, 37)
-  const camera = new PerspectiveCamera(60, 1, 0.08, 65)
+  scene.fog = new Fog(0xc8dce0, 18, runnerSceneryFogFar(course.laneCenters))
+  const camera = new PerspectiveCamera(55, 1, 0.08, 75)
   const quality = resolveGlassRenderQuality('auto', {
     cssWidth: container.clientWidth,
     cssHeight: container.clientHeight,
@@ -98,6 +99,11 @@ export function createSongRunnerRenderer(
     verified = false,
     contextLost = false
   let latest: RunnerSnapshot | undefined
+  let cameraFollowX = runnerCameraFollowTarget(
+    options.initialSnapshot.player.lateralX,
+    course.laneCenters,
+  )
+  let cameraPose = runnerCameraPose(1, course.laneCenters)
   const key = new DirectionalLight(0xffdfaa, 2.5)
   key.position.set(-6, 9, 2)
   key.target.position.set(0, 0, -6)
@@ -112,6 +118,19 @@ export function createSongRunnerRenderer(
   const rim = new DirectionalLight(0x73ddd9, 0.65)
   rim.position.set(6, 4, -9)
   scene.add(new HemisphereLight(0xcceaff, 0x243e42, 0.7), key, key.target, rim)
+
+  function applyCameraPose() {
+    camera.position.set(
+      cameraPose.x + cameraFollowX,
+      cameraPose.y,
+      cameraPose.z,
+    )
+    camera.lookAt(
+      cameraPose.targetX + cameraFollowX,
+      cameraPose.targetY,
+      cameraPose.targetZ,
+    )
+  }
 
   function resize() {
     if (
@@ -128,9 +147,14 @@ export function createSongRunnerRenderer(
       height = container.clientHeight
     renderer.setSize(width, height, false)
     camera.aspect = width / height
-    const pose = runnerCameraPose(camera.aspect)
-    camera.position.set(pose.x, pose.y, pose.z)
-    camera.lookAt(0, pose.targetY, pose.targetZ)
+    cameraPose = runnerCameraPose(camera.aspect, course.laneCenters)
+    camera.fov = cameraPose.fovDegrees
+    cameraFollowX = runnerCameraFollowTarget(
+      (latest ?? options.initialSnapshot).player.lateralX,
+      course.laneCenters,
+      camera.aspect,
+    )
+    applyCameraPose()
     camera.updateProjectionMatrix()
     if (sky) fitSkyBackdrop(sky, width, height)
     shadowCadence.invalidate()
@@ -208,6 +232,9 @@ export function createSongRunnerRenderer(
         return
       }
       merc = nextMerc
+      // The shared loader normalizes Merc to 0.55m. Runner framing owns a
+      // larger presentation scale while compiled collision remains conservative.
+      merc.root.scale.setScalar(RUNNER_MERC_VISUAL_HEIGHT_METERS / 0.55)
       scene.add(merc.root)
       const marble = await texture('floor-marble')
       marble.wrapS = marble.wrapT = RepeatWrapping
@@ -224,7 +251,8 @@ export function createSongRunnerRenderer(
       if (disposed) return
       const museum = await model('museum-kit-v2')
       const garden = await model('museum-garden-v2')
-      const painting = await texture('painting-garden-v5')
+      const arcade = await model('museum-arcade-v3')
+      const canopy = await model('museum-canopy-v3')
       if (disposed) return
       world = createRunnerWorld(
         course,
@@ -243,7 +271,8 @@ export function createSongRunnerRenderer(
         course,
         museumScene: museum,
         gardenScene: garden,
-        paintingMap: painting,
+        arcadeScene: arcade,
+        canopyScene: canopy,
         reducedMotion: options.reducedMotion === true,
       })
       scene.add(world.root, targets.root, scenery.root)
@@ -289,6 +318,16 @@ export function createSongRunnerRenderer(
     world!.update(snapshot, dt)
     targets!.update(snapshot, dt)
     scenery!.update(snapshot, dt)
+    cameraFollowX = stepRunnerCameraFollow(
+      cameraFollowX,
+      runnerCameraFollowTarget(
+        snapshot.player.lateralX,
+        course.laneCenters,
+        camera.aspect,
+      ),
+      dt,
+    )
+    applyCameraPose()
     merc!.update(
       {
         player: {

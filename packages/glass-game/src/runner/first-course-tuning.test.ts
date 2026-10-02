@@ -4,8 +4,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { CompiledRunnerCourse } from './contracts'
-import { SINGING_CURRENT, SINGING_CURRENT_CATALOG, SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_SOURCE, SINGING_CURRENT_CURRENT_TRIAL, SINGING_CURRENT_LEARNING, SINGING_CURRENT_LEARNING_SOURCE, SINGING_CURRENT_LEARNING_TRIAL, SINGING_CURRENT_SOURCE, SINGING_CURRENT_TRIALS, } from './first-course'
-import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, } from './first-course-tuning'
+import { SINGING_CURRENT, SINGING_CURRENT_CATALOG, SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_SOURCE, SINGING_CURRENT_CURRENT_TRIAL, SINGING_CURRENT_LEARNING, SINGING_CURRENT_LEARNING_TRIAL, SINGING_CURRENT_RESPONSIVE, SINGING_CURRENT_RESPONSIVE_SOURCE, SINGING_CURRENT_RESPONSIVE_TRIAL, SINGING_CURRENT_SOURCE, SINGING_CURRENT_TRIALS, } from './first-course'
+import { SINGING_CURRENT_CURRENT_TUNING, SINGING_CURRENT_LEARNING_TUNING, SINGING_CURRENT_RESPONSIVE_TUNING, } from './first-course-tuning'
 import { runnerBeatToSeconds } from './tempo'
 
 const CURRENT_BOUNDARIES = [40, 57.77777777777778, 90.88122605363984]
@@ -204,7 +204,6 @@ describe('Singing Current pacing variants', () => {
       'museum-garden-v2',
       'museum-kit-v2',
       'museum-sky',
-      'painting-garden-v5',
     ])
   })
 
@@ -298,9 +297,104 @@ describe('Singing Current pacing variants', () => {
     ).toBeCloseTo(((4 * 60) / 84) * 0.52, 12)
   })
 
+  it('compiles the responsive audition as prompt ordered charges with delayed contact', () => {
+    expect(SINGING_CURRENT_RESPONSIVE).toMatchObject({
+      id: 'the-singing-current-v1',
+      revision: 3,
+      metersPerBeat: 1.5,
+      laneCenters: [-1.25, 0, 1.25],
+    })
+    expectBoundaries(
+      SINGING_CURRENT_RESPONSIVE,
+      [104, 112, 120],
+      [
+        (64 * 60) / 104,
+        (64 * 60) / 104 + (32 * 60) / 112,
+        (64 * 60) / 104 + (32 * 60) / 112 + (64 * 60) / 120,
+      ],
+    )
+
+    const expectedPhrases = [
+      ['home-window', 6, 4, 1, 0.6],
+      ['higher-carafe', 36, 4, 1, 0.6],
+      ['lower-diadem', 46, 4, 1, 0.6],
+      ['two-note-window', 56, 6, 2, 0.5],
+      ['arc-diadem', 70, 9, 3, 0.5],
+      ['melody-rehearsal', 104, 10, 5, 0.5],
+      ['two-note-revisit', 122, 6, 2, 0.5],
+      ['melody-finale', 146, 10, 5, 0.5],
+    ] as const
+    expect(SINGING_CURRENT_RESPONSIVE.targets).toHaveLength(
+      expectedPhrases.length,
+    )
+    for (const [index, expected] of expectedPhrases.entries()) {
+      const [id, onsetBeat, responseBeats, noteCount, holdSeconds] = expected
+      const target = SINGING_CURRENT_RESPONSIVE.targets[index]!
+      expect(target.id).toBe(id)
+      expect(target.completionPolicy).toBe('charge')
+      expect(target.completionFingerprint).toMatch(/^charge-v1:/)
+      expect(target.notes[0]!.startBeat).toBe(onsetBeat)
+      expect(target.notes.at(-1)!.endBeat).toBe(onsetBeat + responseBeats)
+      expect(target.notes).toHaveLength(noteCount)
+      expect(
+        target.notes.every(
+          (note) =>
+            note.connection === 'separate' &&
+            note.minimumReliableSeconds === holdSeconds,
+        ),
+      ).toBe(true)
+      expect(target.previewDurationSeconds).toBeCloseTo(0.6 * noteCount, 12)
+      expect(target.judgeOpenCourseSeconds).toBe(target.onsetCourseSeconds)
+      expect(target.judgeCloseCourseSeconds).toBe(target.endCourseSeconds)
+      expect(
+        target.settleAfterCourseSeconds - target.endCourseSeconds,
+      ).toBeCloseTo(0.18, 12)
+      expect(target.contactCourseSeconds - target.endCourseSeconds).toBeCloseTo(
+        1.1,
+        12,
+      )
+      expect(
+        target.contactCourseSeconds - target.settleAfterCourseSeconds,
+      ).toBeGreaterThanOrEqual(0.8)
+      expect(target.protectedUntilCourseSeconds).toBeGreaterThanOrEqual(
+        target.contactCourseSeconds,
+      )
+    }
+
+    expect(
+      SINGING_CURRENT_RESPONSIVE_SOURCE.obstacles.map(({ id, atBeat }) => [
+        id,
+        atBeat,
+      ]),
+    ).toEqual([
+      ['first-lane-gate', 19],
+      ['first-jump', 29],
+      ['second-lane-gate', 86],
+      ['second-jump', 93],
+    ])
+    expect(
+      SINGING_CURRENT_RESPONSIVE_SOURCE.checkpoints.map(({ id, atBeat }) => [
+        id,
+        atBeat,
+      ]),
+    ).toEqual([
+      ['start', 0],
+      ['tempo-step', 64],
+      ['melody', 96],
+    ])
+    const openingEnd = SINGING_CURRENT_RESPONSIVE.targets.find(
+      (target) => target.id === 'lower-diadem',
+    )!.endCourseSeconds
+    expect(openingEnd).toBeCloseTo((50 * 60) / 104, 12)
+    expect(openingEnd).toBeLessThan(30)
+    expect(SINGING_CURRENT_RESPONSIVE_TUNING.track.vocalLookaheadBeats).toBe(8)
+    expect(SINGING_CURRENT_RESPONSIVE_TUNING.track.vocalEmphasisBeats).toBe(1.2)
+  })
+
   it.each([
     ['current', SINGING_CURRENT_CURRENT],
     ['learning', SINGING_CURRENT_LEARNING],
+    ['responsive', SINGING_CURRENT_RESPONSIVE],
   ] as const)(
     'keeps %s certified around voice windows and checkpoints',
     (_name, course) => {
@@ -337,7 +431,7 @@ describe('Singing Current pacing variants', () => {
     },
   )
 
-  it('uses isolated trial identities while the selected aliases remain canonical learning', () => {
+  it('isolates legacy pace comparisons while selecting the responsive revision', () => {
     expect(SINGING_CURRENT_CURRENT_TRIAL).toMatchObject({
       id: 'the-singing-current-trial-current-v1',
       revision: 1,
@@ -347,6 +441,7 @@ describe('Singing Current pacing variants', () => {
       revision: 1,
     })
     expect(SINGING_CURRENT_TRIALS).toEqual({
+      responsive: SINGING_CURRENT_RESPONSIVE_TRIAL,
       current: SINGING_CURRENT_CURRENT_TRIAL,
       learning: SINGING_CURRENT_LEARNING_TRIAL,
     })
@@ -372,10 +467,10 @@ describe('Singing Current pacing variants', () => {
         (segment) => segment.bpm,
       ),
     ).toEqual([84, 96, 104])
-    expect(SINGING_CURRENT).toBe(SINGING_CURRENT_LEARNING)
-    expect(SINGING_CURRENT_SOURCE).toBe(SINGING_CURRENT_LEARNING_SOURCE)
+    expect(SINGING_CURRENT).toBe(SINGING_CURRENT_RESPONSIVE)
+    expect(SINGING_CURRENT_SOURCE).toBe(SINGING_CURRENT_RESPONSIVE_SOURCE)
     expect(SINGING_CURRENT_CATALOG).not.toBeUndefined()
     expect(SINGING_CURRENT_CURRENT_SOURCE.revision).toBe(1)
-    expect(SINGING_CURRENT_SOURCE.revision).toBe(2)
+    expect(SINGING_CURRENT_SOURCE.revision).toBe(3)
   })
 })

@@ -158,7 +158,13 @@
   backdrop-filter: blur(14px) saturate(1.15);
 }
 
-.movementHint {
+.compactNotation {
+  width: min(460px, calc(100% - 24px));
+  padding: 8px 12px 9px;
+}
+
+.movementHint,
+.releaseHint {
   position: absolute;
   z-index: 3;
   top: max(84px, calc(env(safe-area-inset-top) + 78px));
@@ -177,7 +183,16 @@
   backdrop-filter: blur(14px) saturate(1.15);
 }
 
-.movementHint span {
+.releaseHint {
+  background: rgb(231 251 248 / 93%);
+}
+
+.missHint {
+  background: rgb(255 247 231 / 94%);
+}
+
+.movementHint > span,
+.releaseHint > span {
   color: #6f634d;
   font-size: 10px;
   font-weight: 800;
@@ -185,24 +200,114 @@
   text-transform: uppercase;
 }
 
-.movementHint strong {
+.movementHint > strong,
+.releaseHint > strong {
   color: #584524;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 20px;
 }
 
-.notationHeading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 24px;
-  padding: 0 8px;
+.releaseHint > span,
+.releaseHint > strong {
+  color: #28605e;
 }
 
-.notationHeading strong {
+.missHint > span,
+.missHint > strong {
+  color: #765124;
+}
+
+.nextNoteCue {
+  margin-top: 4px;
+  padding-top: 5px;
+  border-top: 1px solid rgb(111 99 77 / 20%);
+  color: #5a665e;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.notationHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  padding: 0 6px 4px;
+}
+
+.voicePrompt {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.voicePrompt > span {
+  color: #8a612b;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.voicePrompt strong {
+  overflow: hidden;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voiceFacts {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.voiceFacts span {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgb(45 91 93 / 9%);
+  color: #456467;
+  font-size: 9px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.chargeMeter {
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+  padding: 3px 6px 0;
+  color: #456467;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.chargeMeter strong {
+  color: #765124;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chargeTrack {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(45 91 93 / 15%);
+}
+
+.chargeTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #dba4ad, #72cfc8 72%, #cf9d47);
+  transition: width 90ms linear;
 }
 
 .staff {
@@ -210,6 +315,10 @@
   width: 100%;
   height: 134px;
   overflow: visible;
+}
+
+.hiddenStaff {
+  display: none;
 }
 
 .withPitchReadout .staff {
@@ -261,8 +370,12 @@
   stroke-width: 3;
 }
 
-.noteHead {
+.noteBackdrop {
   fill: rgb(255 253 247 / 88%);
+}
+
+.noteHead {
+  fill: none;
   stroke: #6b5031;
   stroke-width: 2.5;
 }
@@ -666,10 +779,15 @@
     padding: 8px 8px 3px;
   }
 
-  .movementHint {
+  .movementHint,
+  .releaseHint {
     top: max(76px, calc(env(safe-area-inset-top) + 70px));
     min-width: min(208px, calc(100% - 24px));
     padding: 8px 14px;
+  }
+
+  .compactNotation {
+    width: min(460px, calc(100% - 24px));
   }
 
   .staff {
@@ -682,6 +800,10 @@
 
   .notationHeading strong {
     font-size: 16px;
+  }
+
+  .voiceFacts span {
+    padding-inline: 5px;
   }
 
   .controls {
@@ -737,10 +859,15 @@
     transform: none;
   }
 
-  .movementHint {
+  .movementHint,
+  .releaseHint {
     top: max(70px, calc(env(safe-area-inset-top) + 64px));
     left: max(12px, env(safe-area-inset-left));
     transform: none;
+  }
+
+  .compactNotation {
+    width: min(46vw, 440px);
   }
 
   .staff {
@@ -753,6 +880,14 @@
 
   .notationHeading {
     min-height: 18px;
+  }
+
+  .voicePrompt strong {
+    font-size: 15px;
+  }
+
+  .voiceFacts span {
+    font-size: 8px;
   }
 
   .controls {
@@ -784,7 +919,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .progressTrack span,
-  .readinessTrack span {
+  .readinessTrack span,
+  .chargeTrack > span {
     transition: none;
   }
 

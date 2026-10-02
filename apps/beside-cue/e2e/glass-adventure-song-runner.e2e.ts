@@ -2,7 +2,8 @@
 
 import { expect, test, type BrowserContext, type Locator, type Page, type Route, } from '@playwright/test'
 import { MUSEUM_CAMPAIGN } from '../../../packages/glass-game/src/content/campaign'
-import { SINGING_CURRENT } from '../../../packages/glass-game/src/runner/first-course'
+import type { CompiledRunnerCourse } from '../../../packages/glass-game/src/runner/contracts'
+import { SINGING_CURRENT, SINGING_CURRENT_TRIALS, } from '../../../packages/glass-game/src/runner/first-course'
 import { readSavedRunnerProgress } from '../../../packages/glass-game/src/runner/progress'
 import { omitRasterOutput } from './helpers/glass-adventure-controls'
 import { runnerCourseActions } from './helpers/runner-course-actions'
@@ -10,7 +11,9 @@ import { installRunnerVoice } from './helpers/runner-voice-fixture'
 import { createRunnerCourseProbe, useRunnerControlsRenderer, } from './helpers/runner-controls-renderer'
 import { verifyRunnerRendererStreaming } from './helpers/runner-renderer-smoke'
 
-const RUNNER_ACTIONS = runnerCourseActions(SINGING_CURRENT)
+const RESPONSIVE_RUNNER_ACTIONS = runnerCourseActions(SINGING_CURRENT)
+const CURRENT_COURSE = SINGING_CURRENT_TRIALS.current
+const CURRENT_RUNNER_ACTIONS = runnerCourseActions(CURRENT_COURSE)
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -32,10 +35,19 @@ test.setTimeout(180_000)
 
 async function openRunningCourse(
   page: Page,
-  followCourse = false,
+  options: {
+    readonly followCourse?: boolean
+    readonly pace?: 'current' | 'learning' | 'responsive'
+    readonly course?: CompiledRunnerCourse
+  } = {},
 ): Promise<Locator> {
-  await installRunnerVoice(page, followCourse)
-  const response = await page.goto('/glass-game/?layout=singing-current')
+  await installRunnerVoice(page, options.followCourse ?? false, {
+    course: options.course ?? SINGING_CURRENT,
+  })
+  const paceQuery = options.pace === undefined ? '' : `&pace=${options.pace}`
+  const response = await page.goto(
+    `/glass-game/?layout=singing-current${paceQuery}`,
+  )
   expect(response?.status()).toBe(200)
   const runner = page.getByTestId('song-runner')
   await expect(runner).toBeVisible()
@@ -252,6 +264,7 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   await page.evaluate(() => window.runnerVoiceFixture.silent())
   await expect(feedback).toHaveAttribute('data-pitch-state', 'neutral')
   await expect(feedback.locator('[data-pitch-observed]')).toHaveCount(0)
+  await expect(feedback).toContainText('Waiting')
   await expect(feedback).toContainText('Listening')
   await page.getByRole('button', { name: 'Pause course' }).click()
   await expect(runner).toHaveAttribute('data-phase', 'paused')
@@ -263,7 +276,11 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   // Resume rewinds to the safe checkpoint before this phrase. No captured
   // note from the previous microphone epoch may survive that restart.
   await expect(page.locator('[data-pitch-observed]')).toHaveCount(0)
-  await expect(feedback).toHaveAttribute('data-pitch-state', 'neutral')
+  await expect(feedback).toHaveCount(0)
+  const listening = page.getByLabel('Current melody')
+  await expect(listening).toHaveAttribute('data-voice-phase', 'listen')
+  await expect(listening).toContainText('Microphone ready')
+  await expect(listening).toContainText('Scoring opens at Sing')
   await page.evaluate(() => window.runnerVoiceFixture.dispose())
 })
 
@@ -352,14 +369,23 @@ test('a fall waits at the checkpoint for an explicit resume gesture @smoke', asy
 }) => {
   const runner = await openRunningCourse(page)
   const right = page.getByRole('button', { name: 'Right lane' })
-  await clickAtCourseSecond(page, runner, right, RUNNER_ACTIONS.firstLaneChange)
+  await clickAtCourseSecond(
+    page,
+    runner,
+    right,
+    RESPONSIVE_RUNNER_ACTIONS.firstLaneChange,
+  )
 
   await expect(runner).toHaveAttribute('data-phase', 'recovering', {
     timeout: 45_000,
   })
   await expect(runner).toHaveAttribute('data-microphone', 'closed')
   await expect(runner).toHaveAttribute('data-recovery-reason', 'fall')
-  const dialog = page.getByRole('dialog', { name: 'Try that stretch again' })
+  const dialog = page.getByRole('dialog', { name: 'Take the jump again' })
+  await expect(dialog).toContainText('Gap missed')
+  await expect(dialog).toContainText(
+    'Press Jump when the cue changes from Gap ahead to Jump.',
+  )
   const resume = dialog.getByRole('button', {
     name: 'Resume from checkpoint',
   })
@@ -486,7 +512,7 @@ test('runner unlock follows First Light and Leave returns to the campaign @smoke
   await expect(runner).toHaveCount(0)
 })
 
-test('the complete audio and control course judges every phrase and obstacle without recovery', async ({
+test('the complete scheduled Current course judges every phrase and obstacle without recovery', async ({
   page,
 }, testInfo) => {
   const courseProbe = createRunnerCourseProbe(page)
@@ -495,7 +521,11 @@ test('the complete audio and control course judges every phrase and obstacle wit
   // cases keep the real renderer; streaming and full hardware art have their
   // own checks, without weakening the production 250ms recovery threshold.
   await useRunnerControlsRenderer(page)
-  const runner = await openRunningCourse(page, true)
+  const runner = await openRunningCourse(page, {
+    followCourse: true,
+    pace: 'current',
+    course: CURRENT_COURSE,
+  })
   const presentation = page.getByTestId('runner-controls-presentation')
   await expect(presentation).toHaveCount(1)
   await courseProbe.install(runner)
@@ -507,29 +537,59 @@ test('the complete audio and control course judges every phrase and obstacle wit
   const notation = page.getByLabel('Current melody')
 
   try {
-    await expect(movementHint).toContainText('Change lane', { timeout: 30_000 })
+    await expect(movementHint).toHaveAttribute(
+      'data-cue-stage',
+      'change-lane',
+      { timeout: 30_000 },
+    )
+    await expect(movementHint).toContainText('Change lane')
     await expect(notation).toHaveCount(0)
     await clickAtCourseSecond(
       page,
       runner,
       right,
-      RUNNER_ACTIONS.firstLaneChange,
+      CURRENT_RUNNER_ACTIONS.firstLaneChange,
     )
     await expect(movementHint).toHaveCount(0)
-    await expect(movementHint).toContainText('Jump the gap', {
+    await expect(movementHint).toHaveAttribute('data-cue-stage', 'gap-ahead', {
       timeout: 10_000,
     })
-    await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.firstJump)
+    await expect(movementHint).toContainText('Gap ahead')
+    await expect(notation).toHaveCount(0)
+    await expect(movementHint).toHaveAttribute('data-cue-stage', 'jump', {
+      timeout: 10_000,
+    })
+    await expect(movementHint).toContainText('Jump')
+    await expect(notation).toHaveCount(0)
+    await clickAtCourseSecond(
+      page,
+      runner,
+      jump,
+      CURRENT_RUNNER_ACTIONS.firstJump,
+    )
+    await expect(movementHint).toHaveAttribute('data-cue-stage', 'landing')
+    await expect(movementHint).toContainText('Landing')
+    await expect(notation).toHaveCount(0)
     await expect(movementHint).toHaveCount(0)
     await expect(notation).toBeVisible({ timeout: 10_000 })
-    await clickAtCourseSecond(page, runner, left, RUNNER_ACTIONS.returnToMiddle)
+    await clickAtCourseSecond(
+      page,
+      runner,
+      left,
+      CURRENT_RUNNER_ACTIONS.returnToMiddle,
+    )
     await clickAtCourseSecond(
       page,
       runner,
       right,
-      RUNNER_ACTIONS.secondLaneChange,
+      CURRENT_RUNNER_ACTIONS.secondLaneChange,
     )
-    await clickAtCourseSecond(page, runner, jump, RUNNER_ACTIONS.secondJump)
+    await clickAtCourseSecond(
+      page,
+      runner,
+      jump,
+      CURRENT_RUNNER_ACTIONS.secondJump,
+    )
 
     await expect(runner).toHaveAttribute('data-phase', 'finished', {
       timeout: 100_000,
@@ -543,12 +603,12 @@ test('the complete audio and control course judges every phrase and obstacle wit
   await expect(presentation).toHaveAttribute('data-status', 'finished')
   expect(
     Number(await presentation.getAttribute('data-course-seconds')),
-  ).toBeCloseTo(SINGING_CURRENT.lengthCourseSeconds, 3)
+  ).toBeCloseTo(CURRENT_COURSE.lengthCourseSeconds, 3)
   await expect(runner).toHaveAttribute('data-resolved-targets', '8')
   await expect(runner).toHaveAttribute('data-hit-targets', '8')
   await expect(runner).toHaveAttribute('data-run-stars', '24')
   const saved = readSavedRunnerProgress(
-    SINGING_CURRENT,
+    CURRENT_COURSE,
     await page.evaluate(
       (id) =>
         JSON.parse(
@@ -556,21 +616,21 @@ test('the complete audio and control course judges every phrase and obstacle wit
             `beside-cue:glass-adventure:runner-progress:v1:${id}`,
           ) ?? 'null',
         ),
-      SINGING_CURRENT.id,
+      CURRENT_COURSE.id,
     ),
   )
   expect(saved.completed).toBe(true)
   expect(
     saved.bestTargetQualities.map((quality) => quality.targetId).sort(),
-  ).toEqual(SINGING_CURRENT.targets.map((target) => target.id).sort())
+  ).toEqual(CURRENT_COURSE.targets.map((target) => target.id).sort())
   expect(
     saved.bestTargetQualities.every((quality) => quality.grade === 3),
   ).toBe(true)
   expect(saved.collectedRewardIds).toEqual(
-    expect.arrayContaining(SINGING_CURRENT.rewards.finishRewardIds),
+    expect.arrayContaining(CURRENT_COURSE.rewards.finishRewardIds),
   )
   expect(saved.collectedRewardIds).toHaveLength(
-    SINGING_CURRENT.rewards.finishRewardIds.length + 1,
+    CURRENT_COURSE.rewards.finishRewardIds.length + 1,
   )
   const phases = timing?.phases ?? []
   expect(phases).not.toContain('recovering')
@@ -589,7 +649,7 @@ test('the complete audio and control course judges every phrase and obstacle wit
       sample.comparedTargetMidi !== null &&
       sample.observedMidi !== null,
   )
-  for (const target of SINGING_CURRENT.targets)
+  for (const target of CURRENT_COURSE.targets)
     expect(
       acceptedPitchFeedback.filter((sample) => sample.targetId === target.id),
       `${target.id} should publish accepted pitch labels during judging`,
@@ -605,7 +665,7 @@ test('the complete audio and control course judges every phrase and obstacle wit
     new Set(sequentialPitchFeedback.map((sample) => sample.targetLabel)).size,
   ).toBeGreaterThanOrEqual(2)
 
-  const glideTarget = SINGING_CURRENT.targets.find(
+  const glideTarget = CURRENT_COURSE.targets.find(
     (target) => target.id === 'arc-diadem',
   )
   expect(glideTarget).toBeDefined()
