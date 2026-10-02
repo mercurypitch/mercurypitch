@@ -12,7 +12,7 @@ import { hasStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
 import type { RecoveryAvailability } from '@/lib/uvr-session-recovery'
 import { canRetryUvrSession, getRecoveryCopy, loadRetainedOriginalSong, } from '@/lib/uvr-session-recovery'
-import { addSessionToGroup, createGroup, getAllUvrSessionsReactive, getGroupsReactive, removeSessionFromGroup, } from '@/stores/app-store'
+import { addSessionToGroup, createGroup, getAllUvrSessionsReactive, getGroupsReactive, isShippedExample, removeSessionFromGroup, } from '@/stores/app-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { UvrStatus } from '@/types/uvr'
 import { ExampleCredit } from './ExampleCredit'
@@ -521,33 +521,39 @@ export const UvrSessionResult: Component<SessionResultProps> = (props) => {
         </Show>
       </div>
 
-      {/* Info Grid */}
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-icon">
-            <Calendar />
-          </span>
-          <div class="info-content">
-            <span class="info-label">Created</span>
-            <span class="info-value">
-              {formatDate(session()?.createdAt ?? 0)}
-            </span>
-          </div>
-        </div>
-        <Show when={sizeLabel()}>
-          <div class="info-item">
-            <span class="info-icon">
-              <Box />
-            </span>
-            <div class="info-content">
-              <span class="info-label">On this device</span>
-              <span class="info-value" title={sizeDetail() ?? undefined}>
-                {sizeLabel()}
+      {/* Info Grid. A shipped example has no creation date: the seeder
+          files it on 1 Jan 2020 so it sorts below the visitor's own songs,
+          and this card used to print that sort key as "Created 1/1/2020". */}
+      <Show when={!isShippedExample(session()) || sizeLabel()}>
+        <div class="info-grid">
+          <Show when={!isShippedExample(session())}>
+            <div class="info-item">
+              <span class="info-icon">
+                <Calendar />
               </span>
+              <div class="info-content">
+                <span class="info-label">Created</span>
+                <span class="info-value">
+                  {formatDate(session()?.createdAt ?? 0)}
+                </span>
+              </div>
             </div>
-          </div>
-        </Show>
-      </div>
+          </Show>
+          <Show when={sizeLabel()}>
+            <div class="info-item">
+              <span class="info-icon">
+                <Box />
+              </span>
+              <div class="info-content">
+                <span class="info-label">On this device</span>
+                <span class="info-value" title={sizeDetail() ?? undefined}>
+                  {sizeLabel()}
+                </span>
+              </div>
+            </div>
+          </Show>
+        </div>
+      </Show>
 
       {/* Group Assignment — second tier: a song's group is set once and
           then read off the chip in the header. */}
