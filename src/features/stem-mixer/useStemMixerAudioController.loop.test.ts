@@ -9,10 +9,9 @@
 // clock, because the freeze lived in how the frame loop and the loop points
 // meet, not in either one alone.
 
-import { createRoot, createSignal } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { StemMixerAudioDeps } from './useStemMixerAudioController'
-import { useStemMixerAudioController } from './useStemMixerAudioController'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { AudioHarness } from '@/tests/helpers/stem-mixer-audio-harness'
+import { createAudioHarness, SONG_SECONDS, } from '@/tests/helpers/stem-mixer-audio-harness'
 
 // The silent <audio> that unlocks playback on iOS is a browser concern, and
 // jsdom cannot play it.
@@ -21,165 +20,16 @@ vi.mock('@/lib/audio-unlock', () => ({
   unlockAudio: () => undefined,
 }))
 
-const SONG_SECONDS = 30
-const FRAME_SECONDS = 0.05
-
-function fakeBuffer(): AudioBuffer {
-  return {
-    duration: SONG_SECONDS,
-    length: SONG_SECONDS * 48_000,
-    numberOfChannels: 1,
-    sampleRate: 48_000,
-    getChannelData: () => new Float32Array(8),
-  } as unknown as AudioBuffer
-}
-
-function fakeContext() {
-  const param = () => ({
-    value: 1,
-    setValueAtTime: vi.fn(),
-    linearRampToValueAtTime: vi.fn(),
-    setTargetAtTime: vi.fn(),
-    cancelScheduledValues: vi.fn(),
-  })
-  const node = () => ({ connect: vi.fn(), disconnect: vi.fn() })
-  return {
-    state: 'running',
-    currentTime: 0,
-    sampleRate: 48_000,
-    destination: {},
-    resume: vi.fn(async () => Promise.resolve()),
-    close: vi.fn(async () => Promise.resolve()),
-    createGain: () => ({ ...node(), gain: param() }),
-    createWaveShaper: () => ({ ...node(), curve: null, oversample: 'none' }),
-    createAnalyser: () => ({
-      ...node(),
-      fftSize: 2048,
-      smoothingTimeConstant: 0,
-      getFloatTimeDomainData: vi.fn(),
-    }),
-    createBufferSource: () => ({
-      ...node(),
-      buffer: null as AudioBuffer | null,
-      playbackRate: { value: 1 },
-      start: vi.fn(),
-      stop: vi.fn(),
-      onended: null as (() => void) | null,
-    }),
-    decodeAudioData: vi.fn(async () => Promise.resolve(fakeBuffer())),
-  }
-}
-
-function stemTrack(label: string, url: string) {
-  return {
-    label,
-    url,
-    color: '#fff',
-    buffer: null,
-    gainNode: null,
-    analyserNode: null,
-    sourceNode: null,
-    muted: false,
-    soloed: false,
-    volume: 1,
-  }
-}
-
-function harness() {
-  const [vocal, setVocal] = createSignal(stemTrack('Vocal', '/v.m4a'))
-  const [instrumental, setInstrumental] = createSignal(
-    stemTrack('Instrumental', '/i.m4a'),
-  )
-  const [midi, setMidi] = createSignal(stemTrack('MIDI', ''))
-  const [extras, setExtras] = createSignal([])
-  const [midiNotes, setMidiNotes] = createSignal([])
-  const noop = (): void => undefined
-  const deps = {
-    vocal,
-    setVocal,
-    instrumental,
-    setInstrumental,
-    midi,
-    setMidi,
-    extras,
-    setExtras,
-    tracks: () => [vocal(), instrumental()],
-    anySoloed: () => false,
-    PITCH_WINDOW_FILL_RATIO: 0.8,
-    midiNotes,
-    setMidiNotes,
-    canvas: {
-      syncCanvasSizes: noop,
-      drawWaveformOverview: noop,
-      drawLiveWaveform: noop,
-      drawPitchCanvas: noop,
-      drawMidiCanvas: noop,
-    },
-    updateCurrentLine: noop,
-    setCurrentLineIdx: noop,
-    setUserScrolled: noop,
-    micActive: () => false,
-    getMicAnalyserNode: () => null,
-    getMicPitchDetector: () => null,
-    getMicPitchHistory: () => [],
-    setMicPitch: noop,
-    comparisonData: () => [],
-    pushComparison: noop,
-    markLoopIteration: noop,
-    clearComparisonData: noop,
-    resetMicPitchHistory: noop,
-    computeScore: () => ({}),
-    setScore: noop,
-    setShowScore: noop,
-    resetScore: noop,
-    stems: { vocal: '/v.m4a', instrumental: '/i.m4a' },
-    songTitle: 'Goodbye to Spring',
-    showNotification: noop,
-  } as unknown as StemMixerAudioDeps
-  let controller!: ReturnType<typeof useStemMixerAudioController>
-  const dispose = createRoot((disposeRoot) => {
-    controller = useStemMixerAudioController(deps)
-    return disposeRoot
-  })
-  return { controller, dispose }
-}
-
-let context: ReturnType<typeof fakeContext>
-let frames: FrameRequestCallback[]
-let active: ReturnType<typeof harness> | null = null
-
-/** Advance the audio clock one frame at a time, running what each queued. */
-function runFrames(count: number): void {
-  for (let i = 0; i < count; i++) {
-    context.currentTime += FRAME_SECONDS
-    const due = frames
-    frames = []
-    for (const frame of due) frame(context.currentTime * 1000)
-  }
-}
+let active: AudioHarness | null = null
 
 async function loadedSong() {
-  active = harness()
-  await active.controller.loadStems()
-  expect(active.controller.duration()).toBe(SONG_SECONDS)
-  return active.controller
+  active = createAudioHarness()
+  await active.load()
+  expect(active.audio.duration()).toBe(SONG_SECONDS)
+  return active.audio
 }
 
-beforeEach(() => {
-  frames = []
-  context = fakeContext()
-  vi.stubGlobal('AudioContext', function AudioContextStub(): unknown {
-    return context
-  })
-  vi.stubGlobal('fetch', async () =>
-    Promise.resolve(new Response(new Uint8Array(64))),
-  )
-  vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
-    frames.push(frame)
-    return frames.length
-  })
-  vi.stubGlobal('cancelAnimationFrame', () => undefined)
-})
+const runFrames = (count: number): void => active?.runFrames(count)
 
 afterEach(() => {
   active?.dispose()
