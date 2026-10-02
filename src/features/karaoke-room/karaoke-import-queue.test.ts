@@ -517,6 +517,25 @@ describe('a song the server does not take', () => {
     expect(fake.runs).toHaveLength(2)
   })
 
+  it.each([502, 504])(
+    'reads a %i as the studio busy, not as a song that cannot be sent',
+    async (status) => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+      await started()
+      await enqueueImports([song('Harbour Lights.mp3')])
+      await settle()
+      ;(fake.runs[0] as FakeRun).reject(refusal(status))
+      await settle()
+      expect(lines()).toEqual([
+        'Harbour Lights: The studio is busy. Trying again in a minute.',
+      ])
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      await settle()
+      expect(fake.runs).toHaveLength(2)
+    },
+  )
+
   it('waits for a connection, and sends when the phone is back online', async () => {
     let online = false
     Object.defineProperty(navigator, 'onLine', {

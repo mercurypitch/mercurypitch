@@ -360,7 +360,9 @@ function refused(id: string, error: unknown, hidden: boolean): void {
     gate?.(untrack(karaokeSongs))
     return
   }
-  if (status === 429 || status === 503) {
+  // Busy, nothing spent. 502/504 too: a failed gateway, or a Worker older
+  // than its 503 for a job RunPod would not take (runpod-bridge studioBusy).
+  if (status === 429 || status === 502 || status === 503 || status === 504) {
     backInLine()
     setBusy(true)
     later(() => {

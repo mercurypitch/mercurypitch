@@ -40,6 +40,25 @@ function json(
   })
 }
 
+/** How long a singer is told to wait when RunPod would not take a job. */
+const STUDIO_BUSY_RETRY_SECONDS = 60
+
+/**
+ * RunPod would not take the job: an endpoint with no workers to give, a
+ * capacity limit, its API down. Nothing was spent, because the debit waits
+ * for an accepted job, so this is "busy, send it again in a minute" (503 with
+ * Retry-After), never a refusal: the app's import queue keeps the song in
+ * line on a 503 and tries again, where a 502 used to drop it as "could not be
+ * sent".
+ */
+function studioBusy(): Response {
+  return json(
+    { error: 'The studio is busy right now. Try again in a minute.' },
+    503,
+    { 'Retry-After': String(STUDIO_BUSY_RETRY_SECONDS) },
+  )
+}
+
 /**
  * Refuse RunPod-opted requests when RunPod is NOT configured, instead of
  * silently falling through to the CPU container. The server option is
@@ -531,12 +550,20 @@ async function startRunpodJob(
   // correlation key across worker logs, RunPod's console and the credit
   // ledger's jobRef.
   const sizeMb = ((file?.size ?? reuseKey?.size ?? 0) / 1_000_000).toFixed(1)
-  const res = await submitJob(cfg, endpointId, input)
-  if (res.id === undefined || res.id === '') {
+  const refused = (why: string): Response => {
     console.error(
-      `[runpod] submit failed (tier=${tier} file="${input.filename}" ${sizeMb}MB ${via}): ${res.error ?? 'no job id'}`,
+      `[runpod] submit failed (tier=${tier} file="${input.filename}" ${sizeMb}MB ${via}): ${why}`,
     )
-    return json({ error: res.error ?? 'RunPod did not return a job id' }, 502)
+    return studioBusy()
+  }
+  let res: Awaited<ReturnType<typeof submitJob>>
+  try {
+    res = await submitJob(cfg, endpointId, input)
+  } catch (err) {
+    return refused(err instanceof Error ? err.message : String(err))
+  }
+  if (res.id === undefined || res.id === '') {
+    return refused(res.error ?? 'no job id')
   }
   const sessionId = toSessionId(tier, res.id)
   console.log(
