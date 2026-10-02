@@ -775,6 +775,23 @@
   color: rgba(244, 236, 255, 0.7);
 }
 
+/* "Find my key", in the sheet while it is open: the wait, then the fit. */
+.keySheetStatus {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #f4ecff;
+}
+
+.keySheetStatus:empty {
+  display: none;
+}
+
+.keySheetStatus[data-tone='warning'],
+.keySheetStatus[data-tone='error'] {
+  color: #ffb4a8;
+}
+
 /* Below about 560px the mirrored layout stops being possible: two 44px
    controls on each side plus the 226px transport needs 498px of the bar's
    354px. So the pair keeps its natural width, the empty slot absorbs what is

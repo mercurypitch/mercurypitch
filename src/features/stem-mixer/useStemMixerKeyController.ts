@@ -32,7 +32,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
-import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import type { KeyShiftBinding, KeyShiftNotice, } from '@/components/key-shift/KeyShiftControl'
 import { clampKeyShift, formatKeyShift, transposeKeyName, transposeNamedNotes, transposeNotes, transposePitchReadings, } from '@/lib/key-shift/key-shift'
 import type { KeySuggestion, TimedNote } from '@/lib/key-shift/key-suggest'
 import { suggestKeyShift } from '@/lib/key-shift/key-suggest'
@@ -63,6 +63,49 @@ export type FindMyKeyResult =
 export const FIND_MY_KEY_CHANNEL = 'stem-mixer-find-my-key'
 
 type NoticeType = 'info' | 'success' | 'warning' | 'error'
+
+type Notify = (
+  message: string,
+  type: NoticeType,
+  options: { channel: string },
+) => void
+
+/**
+ * Where "find my key" speaks. A toast, except while a sheet holds its
+ * notices: the phone stage's key sheet covers the bottom of the screen,
+ * where a phone's toasts sit, so the wait and the fit landed on top of the
+ * sheet the singer had just used. Held, they are a line inside it, and a
+ * toast already up is taken down. Shut, the line is forgotten.
+ */
+export function createFindMyKeyNotices(toast: {
+  show: Notify
+  remove: (channel: string) => void
+}) {
+  const [notice, setNotice] = createSignal<KeyShiftNotice | null>(null)
+  let held = false
+  const notify: Notify = (message, type, options) => {
+    if (held && options.channel === FIND_MY_KEY_CHANNEL) {
+      setNotice({ message, tone: type })
+      return
+    }
+    toast.show(message, type, options)
+  }
+  const dismiss = (channel: string): void => {
+    if (channel === FIND_MY_KEY_CHANNEL) setNotice(null)
+    toast.remove(channel)
+  }
+  const hold = (next: boolean): void => {
+    held = next
+    setNotice(null)
+    if (next) toast.remove(FIND_MY_KEY_CHANNEL)
+  }
+  return {
+    notify,
+    dismiss,
+    hold,
+    notice: notice as Accessor<KeyShiftNotice | null>,
+  }
+}
 
 /** What "find my key" says once it has fitted the key. */
 function fitMessage(result: 'applied' | 'unchanged', keyShift: number): string {
