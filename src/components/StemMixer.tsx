@@ -76,6 +76,7 @@ import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
 import type { LoopPoint } from './stem-mixer/LoopPointMenu'
 import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
 import { MixerViewControls } from './stem-mixer/MixerViewControls'
+import { hasPlayableLoop } from './stem-mixer/rail/MixerCapsule'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -2249,7 +2250,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       }
       if (e.key === 'l' || e.key === 'L') {
         e.preventDefault()
-        audio.setLoopEnabled((prev) => !prev)
+        const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+        audio.setLoopEnabled((on) => !on && ready)
       }
     }
     window.addEventListener('keydown', handleKeyDown)

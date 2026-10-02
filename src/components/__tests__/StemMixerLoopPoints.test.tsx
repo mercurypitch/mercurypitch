@@ -117,4 +117,31 @@ describe('loop points on the mixer rail', () => {
     expect(buttonB()).toHaveAttribute('data-set', 'false')
     expect(shown()).toContain(B_TOO_SOON)
   })
+
+  // L follows the Loop button: with A alone there is no loop to turn on.
+  it('leaves the loop off when L is pressed with only A set', async () => {
+    await mountLoadedMixer()
+    seekTo(5)
+    fireEvent.click(buttonA())
+
+    fireEvent.keyDown(document.body, { key: 'l', code: 'KeyL' })
+
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
+    expect(loopToggle()).toBeDisabled()
+  })
+
+  it('turns an A-B loop off and on again from L', async () => {
+    await mountLoadedMixer()
+    seekTo(2)
+    fireEvent.click(buttonA())
+    seekTo(6)
+    // Placing B turns the loop on.
+    fireEvent.click(buttonB())
+    fireEvent.keyDown(document.body, { key: 'l', code: 'KeyL' })
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.keyDown(document.body, { key: 'l', code: 'KeyL' })
+
+    expect(loopToggle()).toHaveAttribute('aria-pressed', 'true')
+  })
 })

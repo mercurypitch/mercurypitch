@@ -90,8 +90,8 @@ export const MixerCapsule: Component<MixerCapsuleProps> = (props) => {
 
   const loopReady = (): boolean =>
     hasPlayableLoop(props.loopStart, props.loopEnd)
-  // On stays reachable however it got there (the L key turns a lone A on),
-  // so the singer can always turn it off.
+  // On stays reachable however it got there, so the singer can always turn
+  // it off. The L key follows this rule too (StemMixer's shortcuts).
   const loopToggleDisabled = (): boolean => !props.loopEnabled && !loopReady()
 
   const micState = (): MicState => {
