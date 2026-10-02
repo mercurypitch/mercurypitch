@@ -73,6 +73,7 @@ import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
 import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
+import { MixerViewControls } from './stem-mixer/MixerViewControls'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -2609,6 +2610,19 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                 </Show>
               </div>
             </div>
+            {/* The view settings sit on the title's line, so a header that
+                wraps keeps its actions on one row below them. */}
+            <div class="sm-header-view">
+              <MixerViewControls
+                layout={layout.workspaceLayout()}
+                onLayoutChange={(next) => {
+                  layout.setWorkspaceLayout(next)
+                  canvas.queueCanvasRedraw()
+                }}
+                sidebarHidden={layout.sidebarHidden()}
+                onToggleSidebar={() => layout.setSidebarHidden((was) => !was)}
+              />
+            </div>
             <div
               class="sm-header-actions"
               style={{ display: 'flex', gap: '0.5rem' }}
@@ -2889,11 +2903,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onPlay={audio.handlePlay}
             onPause={audio.handlePause}
             onSeek={handleSeek}
-            workspaceLayout={layout.workspaceLayout}
-            setWorkspaceLayout={layout.setWorkspaceLayout}
-            sidebarHidden={layout.sidebarHidden}
-            setSidebarHidden={layout.setSidebarHidden}
-            onQueueRedraw={() => canvas.queueCanvasRedraw()}
+            performanceLayout={() => layout.workspaceLayout() === 'performance'}
             micActive={mic.micActive}
             micError={mic.micError}
             onToggleMic={() => void mic.toggleMic()}
@@ -3450,12 +3460,24 @@ export const StemMixerStyles: string = `
 /* Header */
 .sm-header {
   display: flex;
+  /* Wraps rather than overflows: a long song title beside the full set of
+     actions can outgrow any width, not only the tablet seam below. */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.55rem 0.75rem;
   padding: 0.875rem 1.25rem;
   background: var(--bg-primary, #0d1117);
   border-bottom: 1px solid var(--border, #30363d);
   flex-shrink: 0;
+}
+
+/* Layout and sidebar (MixerViewControls): pushed to the right, beside the
+   actions on a wide header and on the title's line when it wraps. */
+.sm-header-view {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 /* The app sidebar leaves the full mixer with a tablet-sized content column
@@ -7005,40 +7027,6 @@ export const StemMixerStyles: string = `
   min-height: 22rem;
 }
 
-/* Column toggle */
-.sm-col-toggle {
-  display: flex;
-  gap: 2px;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 0.3rem;
-  padding: 2px;
-  margin: 0 0.5rem;
-}
-.sm-col-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.25rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.2rem;
-  color: var(--fg-tertiary, #484f58);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.sm-col-btn:hover {
-  color: var(--fg-secondary, #8b949e);
-}
-.sm-col-active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-.sm-col-active:hover {
-  color: var(--on-accent, #0d1117);
-}
-
 /* Transport */
 .sm-transport {
   display: flex;
@@ -7919,44 +7907,6 @@ export const StemMixerStyles: string = `
   padding: 0 !important;
   overflow: hidden !important;
   opacity: 0;
-}
-
-/* Sidebar toggle button */
-.sm-sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 0.5rem;
-}
-
-.sm-sidebar-toggle svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-sidebar-toggle:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-sidebar-toggle--active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  border-color: var(--accent, #58a6ff);
-}
-
-.sm-sidebar-toggle--active:hover {
-  background: var(--accent-hover, #79c0ff);
-  color: var(--on-accent, #0d1117);
 }
 
 /* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────

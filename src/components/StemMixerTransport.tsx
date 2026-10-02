@@ -7,7 +7,6 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
-import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 
 type DockPos = 'top' | 'bottom' | 'left' | 'right'
@@ -18,7 +17,7 @@ const DOCK_OPTIONS: readonly (readonly [DockPos, string, string])[] = [
   ['left', 'M4 12l6-6v4h8v4h-8v4z', 'Dock left'],
   ['right', 'M20 12l-6 6v-4H6v-4h8V6z', 'Dock right'],
 ]
-import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, SlidersHorizontal, } from './icons'
+import { GripVertical, Headphones, Loop, Mic, Minimize2, Pause, Play, SkipBack, } from './icons'
 
 export interface StemMixerTransportProps {
   // Audio / transport
@@ -31,12 +30,8 @@ export interface StemMixerTransportProps {
   onPause: () => void
   onSeek: (e: MouseEvent) => void
 
-  // Layout
-  workspaceLayout: Accessor<WorkspaceLayout>
-  setWorkspaceLayout: Setter<WorkspaceLayout>
-  sidebarHidden: Accessor<boolean>
-  setSidebarHidden: Setter<boolean>
-  onQueueRedraw: () => void
+  /** The performance layout always shows lyrics and never pitch. */
+  performanceLayout: Accessor<boolean>
 
   // Mic
   micActive: Accessor<boolean>
@@ -335,118 +330,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             </button>
           </Show>
 
-          <div class="sm-col-toggle">
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'auto-1col' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('auto-1col')
-                props.onQueueRedraw()
-              }}
-              title="Single column"
-              aria-label="Single column"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'auto-2col' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('auto-2col')
-                props.onQueueRedraw()
-              }}
-              title="Two columns auto"
-              aria-label="Two columns auto"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="3"
-                  y="4"
-                  width="8"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="13"
-                  y="4"
-                  width="8"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'fixed-2col' ? ' sm-col-active' : ''}`}
-              data-tour="mixer.layout-fixed"
-              onClick={() => {
-                props.setWorkspaceLayout('fixed-2col')
-                props.onQueueRedraw()
-              }}
-              title="Two columns fixed"
-              aria-label="Two columns fixed"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="2"
-                  y="3"
-                  width="8"
-                  height="18"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="12"
-                  y="3"
-                  width="10"
-                  height="18"
-                  rx="1"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-            </button>
-            <button
-              class={`sm-col-btn${props.workspaceLayout() === 'performance' ? ' sm-col-active' : ''}`}
-              onClick={() => {
-                props.setWorkspaceLayout('performance')
-                props.onQueueRedraw()
-              }}
-              title="Performance (karaoke stage — big centered lyrics)"
-              aria-label="Performance (karaoke stage — big centered lyrics)"
-            >
-              <svg viewBox="0 0 24 24" width="12" height="12">
-                <rect
-                  x="2"
-                  y="3"
-                  width="14"
-                  height="18"
-                  rx="1"
-                  fill="currentColor"
-                />
-                <rect
-                  x="18"
-                  y="3"
-                  width="4"
-                  height="18"
-                  rx="1"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-            </button>
-          </div>
-
           {/* ── Focus mode: panel visibility toggles ───────── */}
           <Show when={props.karaokeFocus()}>
             <div class="sm-focus-divider" />
@@ -479,7 +362,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
             </button>
             {/* Pitch + lyrics toggles do nothing in the performance layout
                 (lyrics always shown, pitch never) — only the waveform toggles. */}
-            <Show when={props.workspaceLayout() !== 'performance'}>
+            <Show when={!props.performanceLayout()}>
               <button
                 class="sm-focus-toggle-btn"
                 classList={{ 'sm-focus-toggle-btn--active': props.showPitch() }}
@@ -604,29 +487,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
                 disabledReason={key().disabledReason()}
               />
             )}
-          </Show>
-
-          {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}
-          <Show when={props.workspaceLayout() === 'fixed-2col'}>
-            <button
-              class="sm-sidebar-toggle"
-              classList={{
-                'sm-sidebar-toggle--active': !props.sidebarHidden(),
-              }}
-              onClick={() => props.setSidebarHidden((prev) => !prev)}
-              title={
-                props.sidebarHidden()
-                  ? 'Show mixer sidebar'
-                  : 'Hide mixer sidebar'
-              }
-              aria-label={
-                props.sidebarHidden()
-                  ? 'Show mixer sidebar'
-                  : 'Hide mixer sidebar'
-              }
-            >
-              <SlidersHorizontal />
-            </button>
           </Show>
 
           {/* ── Focus mode: exit button ───────────────────── */}
