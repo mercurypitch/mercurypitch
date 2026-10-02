@@ -969,11 +969,12 @@ export const CommunityShare: Component = () => {
         <Show when={activeTab() === 'sessions'}>
           {/* Says what this number is before anyone counts it against the
               run total on their profile. These are setlists somebody can
-              load and sing — publishing one is not a run, and never was. */}
+              load and sing — publishing one is not a run, and never was.
+              The board is everyone's, so the note does not call them yours. */}
           <p class={profileStyles.countsNote}>
-            These are setlists you published for other people to sing. They are
-            not runs, so they are counted apart from your practice, exercises
-            and challenges.{' '}
+            These are setlists the community has published for anyone to sing.
+            They are not runs, so they are counted apart from your practice,
+            exercises and challenges.{' '}
             <button
               type="button"
               class={profileStyles.countsNoteLink}

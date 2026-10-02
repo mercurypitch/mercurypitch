@@ -131,10 +131,24 @@ describe('Community > Sessions', () => {
 
     expect(
       await screen.findByText(
-        /setlists you published for other people to sing/i,
+        /setlists the community has published for anyone to sing/i,
       ),
     ).toBeInTheDocument()
     expect(screen.getByText(/They are\s+not runs/i)).toBeInTheDocument()
+  })
+
+  it("does not call the community's setlists yours", async () => {
+    // The tab is the public board, everyone's setlists side by side. The
+    // note above it used to say "setlists you published".
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+    ])
+
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    await screen.findByRole('button', { name: 'Open Their setlist' })
+
+    expect(screen.queryByText(/you published/i)).toBeNull()
   })
 
   it('opens the guide from that note', async () => {
