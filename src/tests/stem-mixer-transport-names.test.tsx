@@ -10,14 +10,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { StemMixerTransportProps } from '@/components/StemMixerTransport'
 import { StemMixerTransport } from '@/components/StemMixerTransport'
-import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 
 function props(
   overrides: Partial<StemMixerTransportProps> = {},
 ): StemMixerTransportProps {
   const [playing] = createSignal(false)
-  const [layout, setLayout] = createSignal<WorkspaceLayout>('auto-1col')
-  const [sidebarHidden, setSidebarHidden] = createSignal(false)
   const [karaokeFocus, setKaraokeFocus] = createSignal(false)
   const [showWaveform, setShowWaveform] = createSignal(true)
   const [showPitch, setShowPitch] = createSignal(true)
@@ -34,11 +31,7 @@ function props(
     onPlay: vi.fn(),
     onPause: vi.fn(),
     onSeek: vi.fn(),
-    workspaceLayout: layout,
-    setWorkspaceLayout: setLayout,
-    sidebarHidden,
-    setSidebarHidden,
-    onQueueRedraw: vi.fn(),
+    performanceLayout: () => false,
     micActive: () => false,
     micError: () => '',
     onToggleMic: vi.fn(),
