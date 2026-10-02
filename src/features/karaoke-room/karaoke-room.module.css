@@ -824,6 +824,18 @@
   z-index: calc(var(--z-toast, 20000) + 1);
 }
 
+/* The stage's slot: no box of its own, so the zen stage still fills the
+   room. The stage's pills and bar stack above the window (z-index 3 to 6
+   against its 1), so in the window the whole stage hides instead. Hidden,
+   not removed: it keeps laying out and keeps the song's clock. */
+.stage {
+  display: contents;
+}
+
+.inWindow .stage {
+  visibility: hidden;
+}
+
 .lyricsWindow {
   position: absolute;
   inset: 0;
@@ -871,6 +883,29 @@
 
 .windowWaiting {
   opacity: 0.6;
+}
+
+/* The line as it is sung, as on the stage (KaraokeMobileStage.module.css,
+   .wordSung and .wordActive): the words still to come dim, the sung ones
+   white, and the one being sung filling from the left. */
+.windowWord {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.windowSung {
+  color: #fff;
+}
+
+.windowSweep {
+  background: linear-gradient(
+    90deg,
+    #fff var(--sweep, 0%),
+    rgba(255, 255, 255, 0.55) var(--sweep, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .windowNext {

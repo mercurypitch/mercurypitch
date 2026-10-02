@@ -14,7 +14,7 @@
 // The window is somewhere other than the room, so it gets what leaving the
 // app gets: the microphone goes the moment the window opens (`onEnter`). A
 // hot microphone behind someone else's app is not something a singer asked
-// for. The mic chip turns it back on once they are back.
+// for. The room turns it back on once they are back (`onExit`).
 //
 // The shell is told (`setRoomInPictureInPicture`), so it takes its own
 // chrome off the screen while the window is up; the room cannot reach that.
@@ -34,6 +34,8 @@ export interface KaraokePictureInPictureOptions {
   readonly playing: Accessor<boolean>
   /** The window opened: let go of what the room should not hold in there. */
   readonly onEnter: () => void
+  /** The window closed, back to the full app or away with the window. */
+  readonly onExit?: () => void
 }
 
 /** Whether the room is in the window now. */
@@ -63,6 +65,7 @@ export function useKaraokePictureInPicture(
     device.onPictureInPicture((entered) => {
       setInWindow(entered)
       if (entered) options.onEnter()
+      else options.onExit?.()
     }),
   )
 

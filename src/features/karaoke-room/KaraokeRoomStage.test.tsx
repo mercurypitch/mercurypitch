@@ -36,6 +36,8 @@ interface FakeMixer {
   setMusicLevel: Setter<number>
   /** The line being sung and the next, as the stage has them. */
   setLyricGlance: Setter<LyricGlance>
+  /** The singer turning the microphone on or off on the stage. */
+  setMicOn: Setter<boolean>
   resetMusicLevel: Mock
   /** The room putting the guide back. */
   setGuide: Mock
@@ -43,6 +45,7 @@ interface FakeMixer {
   pause: Mock
   seek: Mock
   releaseMic: Mock
+  resumeMic: Mock
 }
 
 const mixers = vi.hoisted(() => ({ list: [] as FakeMixer[] }))
@@ -67,7 +70,11 @@ vi.mock('@/components/StemMixer', async () => {
       const [lyricGlance, setLyricGlance] = createSignal<LyricGlance>({
         current: null,
         next: null,
+        words: [],
+        sungUpTo: -1,
+        sweep: 0,
       })
+      const [micOn, setMicOn] = createSignal(false)
       const [guide, setGuideLevel] = createSignal<GuideLevel>({
         volume: 0.8,
         muted: false,
@@ -95,12 +102,14 @@ vi.mock('@/components/StemMixer', async () => {
         setHasNotes,
         setMusicLevel,
         setLyricGlance,
+        setMicOn,
         resetMusicLevel: vi.fn(() => setMusicLevel(0.7)),
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
         play: vi.fn(() => setPlaying(true)),
         pause: vi.fn(() => setPlaying(false)),
         seek: vi.fn((seconds: number) => setElapsed(seconds)),
-        releaseMic: vi.fn(),
+        releaseMic: vi.fn(() => setMicOn(false)),
+        resumeMic: vi.fn(() => setMicOn(true)),
       }
       mixers.list.push(mixer)
       onMount(() => {
@@ -117,6 +126,8 @@ vi.mock('@/components/StemMixer', async () => {
           seek: mixer.seek,
           resetMusicLevel: mixer.resetMusicLevel,
           releaseMic: mixer.releaseMic,
+          micOn,
+          resumeMic: mixer.resumeMic,
           guide,
           setGuide: mixer.setGuide,
           lyricGlance,
@@ -188,7 +199,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
-import { KaraokeRoomStage } from './KaraokeRoomStage'
+import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS } from './KaraokeRoomStage'
 
 const example = (slug: string, title: string, dir: string) => ({
   sessionId:
@@ -290,6 +301,17 @@ function fakeDevice(): FakeDevice {
       for (const handler of [...windowHandlers]) handler(inWindow)
     },
   }
+}
+
+/** A glance as the mixer hands it over, the first `sungUpTo + 1` words lit. */
+function glance(
+  current: string | null,
+  next: string | null,
+  sungUpTo?: number,
+  sweep = 0,
+): LyricGlance {
+  const words = current === null ? [] : current.split(' ')
+  return { current, next, words, sungUpTo: sungUpTo ?? words.length - 1, sweep }
 }
 
 /** The OS taking the app away, or bringing it back. */
@@ -696,10 +718,9 @@ describe('in the small window (Android)', () => {
 
   it('shows the line being sung, the next and the title, and nothing else', async () => {
     await playSong()
-    current().setLyricGlance({
-      current: 'The harbour lights are low',
-      next: 'And the tide is coming in',
-    })
+    current().setLyricGlance(
+      glance('The harbour lights are low', 'And the tide is coming in'),
+    )
 
     device.windowed(true)
 
@@ -710,7 +731,7 @@ describe('in the small window (Android)', () => {
     expect(within(lyricsWindow).queryAllByRole('button')).toHaveLength(0)
     expect(roomInPictureInPicture()).toBe(true)
 
-    current().setLyricGlance({ current: null, next: 'Hold the rope' })
+    current().setLyricGlance(glance(null, 'Hold the rope'))
     expect(screen.getByTestId('karaoke-lyrics-window-line').textContent).toBe(
       'Hold the rope',
     )
@@ -741,6 +762,41 @@ describe('in the small window (Android)', () => {
     expect(screen.queryByTestId('karaoke-lyrics-window')).toBeNull()
     expect(roomInPictureInPicture()).toBe(false)
     expect(screen.getByTestId('fake-mixer')).toBeTruthy()
+  })
+
+  it('keeps the stage running but out of reach under the window', async () => {
+    await playSong()
+    const stage = screen.getByTestId('karaoke-stage')
+    expect(stage.inert).toBe(false)
+
+    device.windowed(true)
+    expect(stage.inert).toBe(true)
+    expect(within(stage).getByTestId('fake-mixer')).toBeTruthy()
+
+    device.windowed(false)
+    expect(stage.inert).toBe(false)
+  })
+
+  it('lights the words sung so far, and the one being sung part way', async () => {
+    await playSong()
+    device.windowed(true)
+
+    current().setLyricGlance(
+      glance('The harbour lights are low', 'And the tide is coming in', 1, 0.5),
+    )
+
+    const line = screen.getByTestId('karaoke-lyrics-window-line')
+    expect(line.textContent).toBe('The harbour lights are low')
+    const words = [...line.querySelectorAll('span')]
+    expect(words.map((word) => word.hasAttribute('data-sung'))).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+    ])
+    expect(words[2].style.getPropertyValue('--sweep')).toBe('50%')
+    expect(words[3].style.getPropertyValue('--sweep')).toBe('')
   })
 
   it("gives the window Android's play and pause with background play off", async () => {
@@ -787,6 +843,103 @@ describe('in the small window (Android)', () => {
 
     expect(device.pictureInPictureAutoEnter).toHaveBeenLastCalledWith(false)
     expect(roomInPictureInPicture()).toBe(false)
+  })
+})
+
+describe('coming back to the room', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** A song playing, the microphone on or off; timers faked from here. */
+  const singing = async (micOn = true): Promise<void> => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setMicOn(micOn)
+    vi.useFakeTimers()
+  }
+
+  it('turns the microphone back on a moment after the singer returns', async () => {
+    await singing()
+    sendAppAway(true)
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+
+    sendAppAway(false)
+    expect(current().resumeMic).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+    expect(current().resumeMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves a microphone that was off, off', async () => {
+    await singing(false)
+    sendAppAway(true)
+    sendAppAway(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+    expect(current().resumeMic).not.toHaveBeenCalled()
+  })
+
+  it('waits for a return that lasts', async () => {
+    await singing()
+    sendAppAway(true)
+    sendAppAway(false)
+    sendAppAway(true)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+    expect(current().resumeMic).not.toHaveBeenCalled()
+
+    sendAppAway(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+    expect(current().resumeMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('brings it back to a song that paused when the app was left', async () => {
+    setKaraokeBackgroundPlay(false)
+    await singing()
+    sendAppAway(true)
+    expect(current().pause).toHaveBeenCalledTimes(1)
+
+    sendAppAway(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+    expect(current().resumeMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('brings it back as the small window opens out into the room', async () => {
+    await singing()
+    device.windowed(true)
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+
+    device.windowed(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+    expect(current().resumeMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps it off when the window is swiped away, until the app is back', async () => {
+    await singing()
+    device.windowed(true)
+
+    device.windowed(false)
+    sendAppAway(true)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+    expect(current().resumeMic).not.toHaveBeenCalled()
+
+    sendAppAway(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+    expect(current().resumeMic).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves it off once the run is over', async () => {
+    await singing()
+    sendAppAway(true)
+    controls().stop()
+
+    sendAppAway(false)
+    vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+    expect(current().resumeMic).not.toHaveBeenCalled()
   })
 })
 

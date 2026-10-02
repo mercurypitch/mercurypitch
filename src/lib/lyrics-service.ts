@@ -608,13 +608,13 @@ export function getCurrentLrcIndex(lines: LrcLine[], elapsed: number): number {
  *          current word are revealed.
  */
 export function computeActiveWord(
-  words: string[],
+  words: readonly string[],
   startTime: number,
   endTime: number,
-  wordTimes: number[] | undefined,
+  wordTimes: readonly number[] | undefined,
   elapsedTime: number,
-  wordEndTimes?: number[],
-  wordSweeps?: Record<number, WordSweepPoint[]>,
+  wordEndTimes?: readonly number[],
+  wordSweeps?: Readonly<Record<number, readonly WordSweepPoint[]>>,
 ): { activeUpTo: number; charProgress: number; fraction: number } {
   if (words.length === 0)
     return { activeUpTo: -1, charProgress: 0, fraction: 0 }

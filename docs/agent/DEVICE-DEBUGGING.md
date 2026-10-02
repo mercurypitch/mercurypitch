@@ -129,3 +129,19 @@ environment at each step — it gets its own recorder. `?voicelog=1` turns on
 which records what the speech recognizer did without ever recording what the
 singer said. That one is off by default and remembered across page loads;
 copy the shape if you build another.
+
+The audio record ([`audio-diagnostics`](../../src/lib/audio-diagnostics.ts))
+is always on: one `[audio]` console line per step a sound takes, and the
+Developer screen's Audio section copies the lot. For a Karaoke song kept
+playing behind another app, its `karaoke` entries say what the way back
+looked like:
+
+| Entry                           | What it says                                                                                                                           |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved |
+| `clock-stuck`                   | After the return the song said it played on a clock that did not move; the first asks for the clock back, the second stops the run     |
+| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                        |
+| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice            |
+
+Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts)
+and [`streaming-stem-voice.ts`](../../src/features/stem-mixer/streaming-stem-voice.ts).
