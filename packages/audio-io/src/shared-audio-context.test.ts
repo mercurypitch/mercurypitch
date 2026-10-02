@@ -449,40 +449,22 @@ describe('a background hold', () => {
     expect(built[0].state).toBe('running')
   })
 
-  it('carries out a backgrounded app’s suspension once the hold lets go', async () => {
-    // The app left the foreground during the song; the song ended there.
-    // Coming back is then the next gesture's job, as it is without a hold.
-    const { built } = useFakeContexts()
-    const lease = acquireSharedAudioContext('karaoke-room')
-    await lease.unlock()
-    const release = holdSharedAudioContextInBackground('karaoke-room')
-    suspendSharedAudioContext()
-    await settle()
-    expect(built[0].state).toBe('running')
-
-    release()
-    await settle()
-    expect(built[0].state).toBe('suspended')
-
-    setPageHidden(false)
-    await settle()
-    expect(built[0].state).toBe('suspended')
-
-    await lease.unlock()
-    expect(built[0].state).toBe('running')
-  })
-
-  it('forgets a deferred suspension the app came back from', async () => {
+  it('does not park a song someone came back to when the hold goes', async () => {
+    // The app went to the background during the song and came back; the
+    // singer then turns background play off with the song still playing.
     const { built } = useFakeContexts()
     await acquireSharedAudioContext('karaoke-room').unlock()
     const release = holdSharedAudioContextInBackground('karaoke-room')
+    setPageHidden(true)
     suspendSharedAudioContext()
-    cancelSharedAudioContextSuspension()
+    setPageHidden(false)
+    await settle()
 
     release()
     await settle()
 
     expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
   })
 
   it('leaves a visible page running when let go', async () => {

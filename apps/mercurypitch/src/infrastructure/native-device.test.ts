@@ -93,6 +93,7 @@ describe('the device a room reaches through the bridge', () => {
     expect(context.suspend).not.toHaveBeenCalled()
 
     release()
+    suspendSharedAudioContext()
     expect(context.suspend).toHaveBeenCalledTimes(1)
     lease.release()
   })

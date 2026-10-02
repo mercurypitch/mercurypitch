@@ -91,8 +91,6 @@ let explicitlySuspended = false
 let suspendTimer: ReturnType<typeof setTimeout> | undefined
 let suspendDeadline = 0
 let suspendGeneration = 0
-/** A native suspension that arrived while a hold kept the clock running. */
-let suspensionDeferred = false
 const backgroundHolds = new Set<symbol>()
 const owners = new Map<
   symbol,
@@ -324,11 +322,10 @@ export function acquireSharedAudioContext(
  */
 export function suspendSharedAudioContext(): void {
   // A hold outranks the app leaving the foreground: that is what it is for.
-  // The intent is kept, and carried out when the last hold lets go.
-  if (backgroundHolds.size > 0) {
-    suspensionDeferred = true
-    return
-  }
+  // Nothing is kept for later either. By the time the hold lets go the app
+  // may be in front again, and parking then would silence a song someone is
+  // listening to; one still behind another app parks with the hidden page.
+  if (backgroundHolds.size > 0) return
   explicitlySuspended = true
   suspendedByPage = false
   const audioContext = context
@@ -338,7 +335,6 @@ export function suspendSharedAudioContext(): void {
 /** Clears a native suspension intent without resuming playback or the clock. */
 export function cancelSharedAudioContextSuspension(): void {
   explicitlySuspended = false
-  suspensionDeferred = false
   cancelPendingSuspension()
 }
 
@@ -352,19 +348,14 @@ export function cancelSharedAudioContextSuspension(): void {
  * a clock that is running. The platform still has to allow the sound (an
  * audio background mode on iOS, a media foreground service on Android).
  *
- * Letting go of the last hold does what was held off: parks the clock if the
- * app went to the background meanwhile, or if the page is still hidden.
+ * Letting go of the last hold behind a hidden page parks the clock as the
+ * page would have, and it comes back with the page in the usual way.
  */
 export function holdSharedAudioContextInBackground(owner: string): () => void {
   const token = Symbol(owner)
   backgroundHolds.add(token)
   return () => {
     if (!backgroundHolds.delete(token) || backgroundHolds.size > 0) return
-    if (suspensionDeferred) {
-      suspensionDeferred = false
-      suspendSharedAudioContext()
-      return
-    }
     const audioContext = context
     if (audioContext !== undefined && isPageHidden())
       parkForHiddenPage(audioContext)
@@ -423,7 +414,6 @@ export function resetSharedAudioContext(
   context = undefined
   constructionFailed = false
   suspendedByPage = false
-  suspensionDeferred = false
   backgroundHolds.clear()
   owners.clear()
   makeContext = options.createContext ?? defaultContext
