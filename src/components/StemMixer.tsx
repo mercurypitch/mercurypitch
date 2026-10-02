@@ -53,7 +53,7 @@ import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isShortTouchLandscape } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
@@ -739,19 +739,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     deviceClass: deviceClass(),
   })
 
-  // Phone-width viewports get the zen Apple-Music-style stage instead of the
-  // desktop mixer — same controllers, different presentation. Width-based
-  // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
-  // mixer. Reactive, so a rotation or resize swaps the presentation without
-  // losing playback (the audio engine lives in setup, not in either JSX tree).
+  // Phones get the zen Apple-Music-style stage instead of the desktop
+  // mixer — same controllers, different presentation. Narrow, or short and
+  // touch on its side (not isMobile) so touch laptops and wide tablets keep
+  // the full mixer. Reactive, so a rotation or resize swaps the presentation
+  // without losing playback (the audio engine lives in setup, not in either
+  // JSX tree).
   // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
   // tab gets the same zen stage on phones as the standalone karaoke-night
   // page — the studio mixer is a desktop surface (decision D4).
   // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
   // same clean lyrics stage the phone gets automatically.
   // Hosted by the Karaoke room it is zen at every width: an 852-wide phone
-  // on its side is not narrow, and got the desktop mixer (K6).
-  const zenStage = () => hosted !== undefined || isNarrow() || karaokeZen()
+  // on its side is not narrow, and got the desktop mixer (K6). Off the room,
+  // a phone on its side gets the stage too (owner decision 2, 2 October
+  // 2026): short and touch, which keeps tablets and touch laptops on the
+  // mixer (isShortTouchLandscape).
+  const phoneStage = () => isNarrow() || isShortTouchLandscape()
+  const zenStage = () => hosted !== undefined || phoneStage() || karaokeZen()
 
   // ── "Why did the music get quiet?" ───────────────────────────
   // Opening a mic makes iOS switch the whole page to `playAndRecord` and
@@ -783,7 +788,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
   // (keeping the song staged); otherwise it's the normal page-level back.
   const handleZenBack = (): void => {
-    if (karaokeZen() && !isNarrow()) {
+    if (karaokeZen() && !phoneStage()) {
       setKaraokeZen(false)
     } else {
       props.onBack?.()
