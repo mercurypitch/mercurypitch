@@ -78,23 +78,6 @@ export interface TableDef {
    * columns and keeps the named ones out, which matches how these tables grow.
    */
   privateCols?: string[]
-  /**
-   * Hidden columns a non-admin may still look a row up BY, with an exact
-   * `?where[col]=value`, though the column never comes back. Only for a value
-   * the caller is meant to hold already: a promo code typed into the claim
-   * card has to find its own campaign.
-   *
-   * This reopens, for the named columns alone, the membership test the filter
-   * guard in index.ts closes: whether a row comes back says whether the guess
-   * exists, as often as anyone cares to ask, because generic reads carry no
-   * rate limit. So only an unguessable value stays private here. A sort stays
-   * refused: an exact match answers one guess, a sort ranks every hidden value
-   * against one you know.
-   *
-   * Must name a column the mask hides; tables.test.ts holds every
-   * declaration to that.
-   */
-  lookupCols?: string[]
 }
 
 /**
@@ -265,16 +248,12 @@ export const TABLES: Record<string, TableDef> = {
   // Campaign config: public reads, writes require the X-Admin-Key. `code` is
   // the whole credential (POST /api/billing/promo/redeem asks a verified
   // account for nothing else), so serving it would hand out every campaign,
-  // advertised or not. A client that already holds a code may still look its
-  // campaign window up by it: the launch pill and claim card ask for
-  // ?where[code]=PRODUCT_HUNT. Guessing a code that way is fine: an active
-  // code is for anyone who has it. What this stops is the table handing out
-  // codes nobody was given. `id` is still listed to everyone, so it must never
-  // spell the code out.
+  // advertised or not. Like every private column it cannot be filtered or
+  // sorted on either, so the generic reader will not confirm a guess. `id` is
+  // still listed to everyone, so it must never spell the code out.
   promoCodes: {
     access: 'admin',
     boolCols: ['active'],
     privateCols: ['code'],
-    lookupCols: ['code'],
   },
 }

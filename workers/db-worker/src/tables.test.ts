@@ -127,23 +127,4 @@ describe('maskPublicRow — privateCols', () => {
       ['promoCodes', ['code']],
     ])
   })
-
-  it('names every hidden column a non-admin may still look a row up by', () => {
-    // Each entry reopens, for that one column, the membership test the filter
-    // guard in index.ts closes, so each has to be a decision somebody made.
-    const withLookup = Object.entries(TABLES)
-      .filter(([, def]) => def.lookupCols !== undefined)
-      .map(([name, def]) => [name, def.lookupCols] as const)
-    expect(withLookup).toEqual([['promoCodes', ['code']]])
-    // A lookup column the mask does not hide needs no exemption. Declaring
-    // one means the mask was forgotten, and the column is being served.
-    for (const [name, cols] of withLookup) {
-      for (const col of cols ?? []) {
-        const row = { id: 'some-row', [col]: 'held-value' }
-        expect(
-          maskPublicRow(TABLES[name]!, row, null, false),
-        ).not.toHaveProperty(col)
-      }
-    }
-  })
 })

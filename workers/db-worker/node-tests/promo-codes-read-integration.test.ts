@@ -9,10 +9,11 @@
 // PRODUCT_HUNT is advertised anyway. A partner or support code added later
 // would not be.
 //
-// The web client still looks a campaign up BY its code: the header pill and
-// the claim card read their window from `?where[code]=PRODUCT_HUNT`. So the
-// column leaves every response but stays matchable. Real SQL, so the lookup is
-// shown to match a row, not merely to avoid a 400.
+// Masking the column is half of it. A filter is also a read: whether
+// `?where[code]=<guess>` brings a row back says whether the guess exists. So a
+// non-admin may neither filter nor sort on `code`, and nothing in the app
+// looks a campaign up by its code. Real SQL, so a refusal is shown to be a
+// refusal, not an empty result from a stubbed database.
 
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -25,16 +26,6 @@ const ADMIN_KEY = 'promo-read-test-admin'
 const PRIVATE_CODE = 'PARTNER_QX7M2'
 /** Seeded by migration 0045 under this id. */
 const LAUNCH_ID = 'promo-ph-2026'
-
-/** What the header pill and the claim card read off a campaign. */
-const WINDOW_FIELDS = [
-  'startsAt',
-  'expiresAt',
-  'active',
-  'credits',
-  'maxRedemptions',
-  'redemptionCount',
-] as const
 
 let sqlite: DatabaseSync
 let env: Env
@@ -63,6 +54,30 @@ async function readRows(
 
 const byId = (rows: Row[], id: string): Row | undefined =>
   rows.find((row) => row.id === id)
+
+/** Headers for a new account with a verified email: all redeeming asks for. */
+async function verifiedAccount(): Promise<Record<string, string>> {
+  const registered = await worker.fetch(
+    new Request('https://api.test/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'browser@example.com',
+        password: 'secret123',
+        displayName: 'Browser',
+      }),
+    }),
+    env,
+    {} as ExecutionContext,
+  )
+  expect(registered.status).toBe(200)
+  const { token, userId } = (await registered.json()) as {
+    token: string
+    userId: string
+  }
+  sqlite.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(userId)
+  return { Authorization: `Bearer ${token}` }
+}
 
 beforeEach(() => {
   sqlite = new DatabaseSync(':memory:')
@@ -120,29 +135,7 @@ describe('GET /api/promoCodes — what a non-admin reads', () => {
   })
 
   it('withholds it from a verified account, which is all redeeming needs', async () => {
-    const registered = await worker.fetch(
-      new Request('https://api.test/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'browser@example.com',
-          password: 'secret123',
-          displayName: 'Browser',
-        }),
-      }),
-      env,
-      {} as ExecutionContext,
-    )
-    expect(registered.status).toBe(200)
-    const { token, userId } = (await registered.json()) as {
-      token: string
-      userId: string
-    }
-    sqlite
-      .prepare('UPDATE users SET emailVerified = 1 WHERE id = ?')
-      .run(userId)
-
-    const headers = { Authorization: `Bearer ${token}` }
+    const headers = await verifiedAccount()
     const listed = await get('/api/promoCodes', headers)
     expect(listed.status).toBe(200)
     expect(await listed.text()).not.toContain(PRIVATE_CODE)
@@ -163,45 +156,33 @@ describe('GET /api/promoCodes — what a non-admin reads', () => {
   })
 })
 
-describe('GET /api/promoCodes?where[code]= — looking a campaign up', () => {
-  it("answers the launch UI's own lookup with the window and no code", async () => {
-    // The exact request the header pill and the claim card send.
-    const rows = await readRows('/api/promoCodes?where[code]=PRODUCT_HUNT')
-    expect(rows).toHaveLength(1)
-    const [launch] = rows
-    expect(launch!.id).toBe(LAUNCH_ID)
-    for (const field of WINDOW_FIELDS) expect(launch).toHaveProperty(field)
-    expect(typeof launch!.active).toBe('boolean')
-    expect(launch).not.toHaveProperty('code')
+describe('GET /api/promoCodes — filtering or sorting on the code', () => {
+  it('refuses ?where[code]= for an anonymous caller', async () => {
+    const response = await get('/api/promoCodes?where[code]=PRODUCT_HUNT')
+    expect(response.status).toBe(400)
+    // The refusal must not echo the guess back, or it answers the question
+    // it was meant to refuse.
+    expect(await response.text()).not.toContain('PRODUCT_HUNT')
   })
 
-  it('returns exactly the matched campaign, column for column', async () => {
-    expect(
-      await readRows(`/api/promoCodes?where[code]=${PRIVATE_CODE}`),
-    ).toEqual([
-      {
-        id: 'promo-partner',
-        credits: 20,
-        maxRedemptions: 50,
-        redemptionCount: 3,
-        startsAt: '2026-10-01T00:00:00.000Z',
-        expiresAt: '2026-12-31T23:59:59.000Z',
-        active: true,
-        createdAt: '2026-09-28T00:00:00.000Z',
-        updatedAt: '2026-09-28T00:00:00.000Z',
-      },
-    ])
-  })
-
-  it('matches nothing for a code that does not exist', async () => {
-    expect(await readRows('/api/promoCodes?where[code]=PARTNER_GUESS')).toEqual(
-      [],
+  it('refuses it for a verified account too', async () => {
+    const response = await get(
+      '/api/promoCodes?where[code]=PRODUCT_HUNT',
+      await verifiedAccount(),
     )
+    expect(response.status).toBe(400)
   })
 
-  it('still refuses to sort by code, which would rank the hidden values', async () => {
-    // An exact match answers one guess. A sort answers where every code sits
-    // relative to one you already know, without a single guess.
+  it('still lets the admin studio filter by code', async () => {
+    const rows = await readRows('/api/promoCodes?where[code]=PRODUCT_HUNT', {
+      'X-Admin-Key': ADMIN_KEY,
+    })
+    expect(rows.map((row) => row.id)).toEqual([LAUNCH_ID])
+    expect(rows[0]!.code).toBe('PRODUCT_HUNT')
+  })
+
+  it('refuses to sort by code, which would rank the hidden values', async () => {
+    // A sort ranks every code against one you already know, without a guess.
     const response = await get('/api/promoCodes?orderBy=code')
     expect(response.status).toBe(400)
     expect(await response.text()).not.toContain(PRIVATE_CODE)
