@@ -8,9 +8,10 @@
 // stays usable, nothing runs past the window, the row does not move when a
 // loop is set or the mic turns on, the key panel and the speed list close
 // on a press outside and on Escape, and a short loop's close-up opens clear
-// of the controls in type of 12 px or more. At 1440 px, an A-B loop also
-// plays round without freezing, the close-up stays on screen with the pill
-// docked at the top, and the focus pill docks to every edge.
+// of the controls in type of 12 px or more, without shortening the track.
+// At 1440 px, an A-B loop also plays round without freezing, the close-up
+// stays on screen with the pill docked at the top, and the focus pill docks
+// to every edge from the More menu.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -206,6 +207,23 @@ async function pressOutside(page: Page): Promise<void> {
   await page.mouse.click(rail.x + 4, rail.y + 4)
 }
 
+const DOCKS = {
+  top: 'Controls at the top',
+  bottom: 'Controls at the bottom',
+  left: 'Controls on the left',
+  right: 'Controls on the right',
+} as const
+
+/** Docks the focus pill from More, the way a singer picks an edge. */
+async function dockTo(page: Page, side: keyof typeof DOCKS): Promise<void> {
+  await page.getByRole('button', { name: 'More playback options' }).click()
+  await page.getByRole('menuitemradio', { name: DOCKS[side] }).click()
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  await expect(page.locator('.stem-mixer')).toHaveClass(
+    new RegExp(`stem-mixer--focus-docked-${side}`),
+  )
+}
+
 for (const viewport of VIEWPORTS) {
   test.describe(`the rail at ${viewport.width}x${viewport.height}`, () => {
     test.beforeEach(({ page }) => openSeededSong(page, viewport))
@@ -373,8 +391,7 @@ test.describe('the rail at 1440x900, playing', () => {
     await page.locator('[data-tour="mixer.focus"]').click()
     const focus = page.locator('.stem-mixer--focus')
     await expect(focus).toBeVisible()
-    await page.getByTestId('dock-handle').click()
-    await page.getByRole('button', { name: 'Dock top' }).click()
+    await dockTo(page, 'top')
 
     await page.getByRole('button', { name: 'Zoom to the loop' }).click()
     const lens = page.getByTestId('mixer-timeline-loop-precision-lens')
@@ -386,26 +403,31 @@ test.describe('the rail at 1440x900, playing', () => {
     await expect(focus).toBeVisible()
   })
 
-  test('docks the focus pill to each edge, and Escape shuts the compass first', async ({
+  test('docks the focus pill to each edge from More, and Escape shuts More first', async ({
     page,
   }) => {
     await page.locator('[data-tour="mixer.focus"]').click()
     const focus = page.locator('.stem-mixer--focus')
     const pill = page.locator('.sm-transport')
-    const handle = page.getByTestId('dock-handle')
-    const compass = page.getByTestId('dock-compass')
+    const more = page.getByRole('button', { name: 'More playback options' })
+    const menu = page.getByRole('menu', { name: 'More playback options' })
     await expect(focus).toBeVisible()
 
-    await handle.click()
-    await expect(compass).toBeVisible()
+    await more.click()
+    await expect(menu).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(compass).toBeHidden()
+    await expect(menu).toBeHidden()
     await expect(focus).toBeVisible()
 
     for (const side of ['top', 'left', 'right', 'bottom'] as const) {
-      await handle.click()
-      await page.getByRole('button', { name: `Dock ${side}` }).click()
-      await expect(compass).toBeHidden()
+      await dockTo(page, side)
+      // More says where the pill is now.
+      await more.click()
+      await expect(
+        page.getByRole('menuitemradio', { name: DOCKS[side] }),
+      ).toHaveAttribute('aria-checked', 'true')
+      await page.keyboard.press('Escape')
+      await expect(menu).toBeHidden()
 
       const box = await pill.boundingBox()
       expect(box).not.toBeNull()

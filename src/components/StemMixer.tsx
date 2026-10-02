@@ -2644,15 +2644,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             {/* The view settings sit on the title's line, so a header that
                 wraps keeps its actions on one row below them. */}
             <div class="sm-header-view">
-              <MixerViewControls
-                layout={layout.workspaceLayout()}
-                onLayoutChange={(next) => {
-                  layout.setWorkspaceLayout(next)
-                  canvas.queueCanvasRedraw()
-                }}
-                sidebarHidden={layout.sidebarHidden()}
-                onToggleSidebar={() => layout.setSidebarHidden((was) => !was)}
-              />
+              <MixerViewControls {...layout.viewControls} />
             </div>
             <div
               class="sm-header-actions"
@@ -2934,7 +2926,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onPlay={audio.handlePlay}
             onPause={audio.handlePause}
             onSeek={(seconds) => audio.seekTo(seconds)}
-            performanceLayout={() => layout.workspaceLayout() === 'performance'}
+            view={layout.viewControls}
             micActive={mic.micActive}
             micError={mic.micError}
             onToggleMic={() => void mic.toggleMic()}

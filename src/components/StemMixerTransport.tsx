@@ -3,35 +3,39 @@
 //
 // The rail (stem-mixer/rail/) takes values and callbacks; this file reads
 // the mixer's accessors into it, and adds what only the karaoke focus pill
-// has: the dock handle and its compass, the drop-zone preview while the
-// handle is dragged, the exit button, and the stage toggles (waveform,
-// pitch, lyrics), which sit in More as ticked rows.
+// has: the dock handle, the drop-zone preview while it is dragged, and the
+// exit button.
 //
-// The compass is portalled to <body>. The pill's transform and backdrop
-// filter make it the containing block for anything fixed inside it, so a
-// fixed backdrop drawn inside covered the pill and nothing else, and the
-// compass could not close on a press outside it. It closes by the app's
-// one rule for floating panels now (use-popover-layer).
+// Focus mode hides the mixer header and the panels' own toggles, so the
+// rail's More carries them there: the stage panels (waveform, pitch,
+// lyrics), the edge the controls dock to, the workspace layout and, in the
+// one layout that has it, the mixer sidebar. The layout rows and the sidebar
+// row are the header's own (MixerViewControls), driven by the same object.
+//
+// Docking is a choice in More. The handle stays a drag handle: dragged past
+// a few pixels it shows the edge it will land on (natural on touch), and a
+// plain press does nothing, so it cannot open something by accident.
 
 import type { Accessor, Component, Setter } from 'solid-js'
-import { createEffect, createSignal, For, Show } from 'solid-js'
-import { Portal } from 'solid-js/web'
+import { createSignal, Show } from 'solid-js'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
+import type { MixerViewControlsProps } from '@/components/stem-mixer/MixerViewControls'
+import { MIXER_LAYOUTS } from '@/components/stem-mixer/MixerViewControls'
 import { MixerCapsule } from '@/components/stem-mixer/rail/MixerCapsule'
 import { MixerRail } from '@/components/stem-mixer/rail/MixerRail'
 import { MixerTimeline } from '@/components/stem-mixer/rail/MixerTimeline'
-import { placePopover, usePopoverLayer } from '@/lib/use-popover-layer'
 import { CheckSmall, GripVertical, Minimize2 } from './icons'
 import styles from './StemMixerTransport.module.css'
 
 type DockPos = 'top' | 'bottom' | 'left' | 'right'
-/** [side, arrow-path, label] for the click-to-dock compass. */
-const DOCK_OPTIONS: readonly (readonly [DockPos, string, string])[] = [
-  ['top', 'M12 4l-6 6h4v8h4v-8h4z', 'Dock top'],
-  ['bottom', 'M12 20l6-6h-4V6h-4v8H6z', 'Dock bottom'],
-  ['left', 'M4 12l6-6v4h8v4h-8v4z', 'Dock left'],
-  ['right', 'M20 12l-6 6v-4H6v-4h8V6z', 'Dock right'],
+
+/** The edges the focus pill docks to, as More names them. */
+const DOCKS: readonly (readonly [DockPos, string])[] = [
+  ['top', 'Controls at the top'],
+  ['bottom', 'Controls at the bottom'],
+  ['left', 'Controls on the left'],
+  ['right', 'Controls on the right'],
 ]
 
 /** Pointer travel that turns a press on the handle into a drag. */
@@ -49,8 +53,11 @@ export interface StemMixerTransportProps {
   /** Moves the playhead to a time in the song, in seconds. */
   onSeek: (seconds: number) => void
 
-  // Workspace layout (switched from the mixer header)
-  performanceLayout: Accessor<boolean>
+  /**
+   * The workspace layout and the sidebar, as the mixer header shows them.
+   * More offers the same while focus mode hides the header.
+   */
+  view: MixerViewControlsProps
 
   // Mic
   micActive: Accessor<boolean>
@@ -105,14 +112,9 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     props.karaokeFocus() && (dock() === 'left' || dock() === 'right')
 
   // ── Dock handle ──────────────────────────────────────────────────
-  // Dual-purpose: a plain click opens the compass (fast, precise docking
-  // on a desk, the Chrome DevTools "Dock side" pattern), and a drag past
-  // a few pixels shows the edge it will land on (natural on touch).
+  // A drag past a few pixels shows the edge the pill will land on, and
+  // letting go docks it there. Short of that it is a press, and does nothing.
   const [dragHoverZone, setDragHoverZone] = createSignal<DockPos | null>(null)
-  const [compassOpen, setCompassOpen] = createSignal(false)
-  const [compassPos, setCompassPos] = createSignal({ x: 0, y: 0 })
-  let handle: HTMLDivElement | undefined
-  let compass: HTMLDivElement | undefined
   let dragStartX = 0
   let dragStartY = 0
   let didDrag = false
@@ -137,7 +139,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       return // still within click tolerance: not a drag yet
     }
     didDrag = true
-    setCompassOpen(false)
 
     // The edge the pointer is nearest.
     const distances: Record<DockPos, number> = {
@@ -157,47 +158,14 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     const target = e.currentTarget as HTMLElement
     if (!target.hasPointerCapture(e.pointerId)) return
     target.releasePointerCapture(e.pointerId)
-    if (didDrag) {
-      const zone = dragHoverZone()
-      if (zone !== null) props.setToolbarPosition?.(zone)
-      setDragHoverZone(null)
-    } else {
-      setCompassOpen((open) => !open)
-    }
+    if (!didDrag) return
+    const zone = dragHoverZone()
+    if (zone !== null) props.setToolbarPosition?.(zone)
+    setDragHoverZone(null)
   }
 
-  const dockTo = (side: DockPos) => {
-    props.setToolbarPosition?.(side)
-    setCompassOpen(false)
-  }
-
-  usePopoverLayer({
-    open: compassOpen,
-    onClose: () => setCompassOpen(false),
-    inside: () => [handle, compass],
-    anchor: () => handle,
-  })
-
-  createEffect(() => {
-    if (!compassOpen() || handle === undefined || compass === undefined) return
-    // Toward the stage, away from the edge the pill is docked on.
-    const { x, y } = placePopover(
-      handle.getBoundingClientRect(),
-      { width: compass.offsetWidth, height: compass.offsetHeight },
-      { width: window.innerWidth, height: window.innerHeight },
-      { axis: isVertical() ? 'inline' : 'block', align: 'start' },
-    )
-    setCompassPos({ x, y })
-  })
-
-  // Leaving focus mode with the compass open must not strand it.
-  createEffect(() => {
-    if (!props.karaokeFocus()) setCompassOpen(false)
-  })
-
-  // ── Stage toggles, in More while focus mode hides the panels' own ──
+  // ── More, in focus mode ──────────────────────────────────────────
   const stageRows = (): OverflowMenuItem[] => {
-    if (!props.karaokeFocus()) return []
     const rows: OverflowMenuItem[] = [
       {
         key: 'show-waveform',
@@ -210,7 +178,7 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
       },
     ]
     // The performance layout always shows the lyrics and never the pitch.
-    if (props.performanceLayout()) return rows
+    if (props.view.layout === 'performance') return rows
     rows.push(
       {
         key: 'show-pitch',
@@ -231,6 +199,45 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
     )
     return rows
   }
+
+  const dockRows = (): OverflowMenuItem[] =>
+    DOCKS.map(([side, label], index) => ({
+      key: `dock-${side}`,
+      label,
+      checked: dock() === side,
+      checkType: 'radio',
+      separatorBefore: index === 0,
+      icon: () => tick(dock() === side),
+      onSelect: () => props.setToolbarPosition?.(side),
+    }))
+
+  const viewRows = (): OverflowMenuItem[] => {
+    const rows: OverflowMenuItem[] = MIXER_LAYOUTS.map((option, index) => ({
+      key: `layout-${option.layout}`,
+      label: option.label,
+      checked: props.view.layout === option.layout,
+      checkType: 'radio',
+      separatorBefore: index === 0,
+      icon: () => tick(props.view.layout === option.layout),
+      onSelect: () => props.view.onLayoutChange(option.layout),
+    }))
+    // Only the fixed two-column layout has a sidebar to hide, as in the header.
+    if (props.view.layout === 'fixed-2col') {
+      rows.push({
+        key: 'sidebar',
+        label: 'Mixer sidebar',
+        checked: !props.view.sidebarHidden,
+        checkType: 'checkbox',
+        separatorBefore: true,
+        icon: () => tick(!props.view.sidebarHidden),
+        onSelect: () => props.view.onToggleSidebar(),
+      })
+    }
+    return rows
+  }
+
+  const focusRows = (): OverflowMenuItem[] =>
+    props.karaokeFocus() ? [...stageRows(), ...dockRows(), ...viewRows()] : []
 
   return (
     <>
@@ -270,21 +277,19 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               onToggleMic={() => props.onToggleMic()}
               micMonitorEnabled={props.micMonitorEnabled()}
               onToggleMicMonitor={() => props.onToggleMicMonitor()}
-              moreItems={stageRows()}
+              moreItems={focusRows()}
               vertical={isVertical()}
               bare={props.karaokeFocus()}
               leading={
                 props.karaokeFocus() ? (
                   <div
-                    ref={handle}
                     class={styles.handle}
-                    classList={{ [styles.handleOpen!]: compassOpen() }}
                     data-testid="dock-handle"
                     onPointerDown={handleDragStart}
                     onPointerMove={handleDragMove}
                     onPointerUp={handleDragEnd}
                     onPointerCancel={handleDragEnd}
-                    title="Click to dock (or drag)"
+                    title="Drag to move the controls to another edge"
                   >
                     <GripVertical />
                   </div>
@@ -322,41 +327,6 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
           }
         />
       </div>
-
-      <Show when={compassOpen()}>
-        <Portal>
-          <div
-            ref={compass}
-            class={`${styles.compass} mp-dark-stage`}
-            role="group"
-            aria-label="Dock the controls"
-            data-testid="dock-compass"
-            style={{
-              left: `${compassPos().x}px`,
-              top: `${compassPos().y}px`,
-            }}
-          >
-            <For each={DOCK_OPTIONS}>
-              {([side, path, label]) => (
-                <button
-                  type="button"
-                  class={styles.compassBtn}
-                  data-side={side}
-                  aria-pressed={dock() === side}
-                  onClick={() => dockTo(side)}
-                  title={label}
-                  aria-label={label}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14">
-                    <path fill="currentColor" d={path} />
-                  </svg>
-                </button>
-              )}
-            </For>
-            <span class={styles.hub} aria-hidden="true" />
-          </div>
-        </Portal>
-      </Show>
     </>
   )
 }

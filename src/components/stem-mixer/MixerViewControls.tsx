@@ -7,6 +7,10 @@
 //
 // The sidebar toggle only exists in the fixed two-column layout, the one
 // layout with a sidebar to hide.
+//
+// Focus mode hides the header. The rail's More menu offers the same layouts
+// and the same sidebar switch there (StemMixerTransport), named from
+// MIXER_LAYOUTS and driven by the same props object.
 
 import type { Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
@@ -72,7 +76,8 @@ const PerformanceIcon = () => (
   </svg>
 )
 
-const LAYOUTS: readonly {
+/** The four layouts, in the order and the words both places offer them. */
+export const MIXER_LAYOUTS: readonly {
   layout: MixerLayout
   label: string
   icon: () => JSX.Element
@@ -102,7 +107,7 @@ export const MixerViewControls: Component<MixerViewControlsProps> = (props) => {
   return (
     <div class={styles.viewControls}>
       <div class={styles.layouts} role="group" aria-label="Mixer layout">
-        <For each={LAYOUTS}>
+        <For each={MIXER_LAYOUTS}>
           {(option) => (
             <button
               type="button"

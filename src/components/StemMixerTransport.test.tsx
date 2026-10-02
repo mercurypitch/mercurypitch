@@ -9,8 +9,28 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import type { MixerLayout, MixerViewControlsProps, } from '@/components/stem-mixer/MixerViewControls'
 import type { StemMixerTransportProps } from '@/components/StemMixerTransport'
 import { StemMixerTransport } from '@/components/StemMixerTransport'
+
+/** The header's view controls, live, as the layout controller hands them. */
+function viewState(initial: MixerLayout) {
+  const [layout, setLayout] = createSignal<MixerLayout>(initial)
+  const [sidebarHidden, setSidebarHidden] = createSignal(false)
+  const onLayoutChange = vi.fn(setLayout)
+  const onToggleSidebar = vi.fn(() => setSidebarHidden((was) => !was))
+  const controls: MixerViewControlsProps = {
+    get layout() {
+      return layout()
+    },
+    onLayoutChange,
+    get sidebarHidden() {
+      return sidebarHidden()
+    },
+    onToggleSidebar,
+  }
+  return { controls, onLayoutChange, onToggleSidebar }
+}
 
 function props(
   overrides: Partial<StemMixerTransportProps> = {},
@@ -32,7 +52,7 @@ function props(
     onPlay: vi.fn(),
     onPause: vi.fn(),
     onSeek: vi.fn(),
-    performanceLayout: () => false,
+    view: viewState('auto-1col').controls,
     micActive: () => false,
     micError: () => '',
     onToggleMic: vi.fn(),
@@ -179,7 +199,10 @@ describe('StemMixerTransport in karaoke focus', () => {
   it('offers only the waveform in the performance layout', () => {
     render(() => (
       <StemMixerTransport
-        {...props({ karaokeFocus: () => true, performanceLayout: () => true })}
+        {...props({
+          karaokeFocus: () => true,
+          view: viewState('performance').controls,
+        })}
       />
     ))
     fireEvent.click(
@@ -197,6 +220,115 @@ describe('StemMixerTransport in karaoke focus', () => {
 
     expect(stageRows()).toEqual([])
     expect(screen.getByRole('menuitem', { name: 'Clear loop' })).toBeEnabled()
+  })
+
+  // Focus mode hides the mixer header, so More carries its view settings.
+  const openMore = () =>
+    fireEvent.click(
+      screen.getByRole('button', { name: 'More playback options' }),
+    )
+  /** More's rows whose key starts with `prefix`: [label, aria-checked]. */
+  const rowsKeyed = (prefix: string) =>
+    Array.from(
+      screen
+        .getByRole('menu')
+        .querySelectorAll(`[data-testid^="overflow-${prefix}"]`),
+    ).map((row) => [row.textContent?.trim(), row.getAttribute('aria-checked')])
+
+  it('docks the controls from More, ticking the edge they are on', () => {
+    const [position, setPosition] = createSignal<
+      'top' | 'bottom' | 'left' | 'right'
+    >('bottom')
+    const setToolbarPosition = vi.fn(setPosition)
+    render(() => (
+      <StemMixerTransport
+        {...props({
+          karaokeFocus: () => true,
+          toolbarPosition: position,
+          setToolbarPosition,
+        })}
+      />
+    ))
+    openMore()
+    expect(rowsKeyed('dock-')).toEqual([
+      ['Controls at the top', 'false'],
+      ['Controls at the bottom', 'true'],
+      ['Controls on the left', 'false'],
+      ['Controls on the right', 'false'],
+    ])
+
+    fireEvent.click(
+      screen.getByRole('menuitemradio', { name: 'Controls on the left' }),
+    )
+
+    expect(setToolbarPosition).toHaveBeenCalledWith('left')
+    openMore()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Controls on the left' }),
+    ).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('switches the layout from More, as the header does', () => {
+    const view = viewState('auto-1col')
+    render(() => (
+      <StemMixerTransport
+        {...props({ karaokeFocus: () => true, view: view.controls })}
+      />
+    ))
+    openMore()
+    expect(rowsKeyed('layout-')).toEqual([
+      ['Single column', 'true'],
+      ['Two columns auto', 'false'],
+      ['Two columns fixed', 'false'],
+      ['Performance: big centered lyrics', 'false'],
+    ])
+
+    fireEvent.click(
+      screen.getByRole('menuitemradio', { name: 'Two columns fixed' }),
+    )
+
+    expect(view.onLayoutChange).toHaveBeenCalledWith('fixed-2col')
+    openMore()
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Two columns fixed' }),
+    ).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('shows and hides the mixer sidebar from More, in the layout that has one', () => {
+    const view = viewState('fixed-2col')
+    render(() => (
+      <StemMixerTransport
+        {...props({ karaokeFocus: () => true, view: view.controls })}
+      />
+    ))
+    openMore()
+    expect(rowsKeyed('sidebar')).toEqual([['Mixer sidebar', 'true']])
+
+    fireEvent.click(
+      screen.getByRole('menuitemcheckbox', { name: 'Mixer sidebar' }),
+    )
+
+    expect(view.onToggleSidebar).toHaveBeenCalledTimes(1)
+    openMore()
+    expect(rowsKeyed('sidebar')).toEqual([['Mixer sidebar', 'false']])
+    fireEvent.click(
+      screen.getByRole('menuitemradio', { name: 'Two columns auto' }),
+    )
+    openMore()
+    expect(rowsKeyed('sidebar')).toEqual([])
+  })
+
+  it('leaves the dock, the layout and the sidebar to the header outside focus mode', () => {
+    render(() => (
+      <StemMixerTransport
+        {...props({ view: viewState('fixed-2col').controls })}
+      />
+    ))
+    openMore()
+
+    expect(rowsKeyed('dock-')).toEqual([])
+    expect(rowsKeyed('layout-')).toEqual([])
+    expect(rowsKeyed('sidebar')).toEqual([])
   })
 
   it('exits focus mode from its own button', () => {
