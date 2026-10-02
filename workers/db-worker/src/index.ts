@@ -386,10 +386,15 @@ async function handleList(
   // Asked twice so the refusal names what the caller actually did: a client
   // debugging `Cannot filter on "currentStreak"` against a request carrying no
   // filter at all has been sent looking in the wrong place.
+  //
+  // `lookupCols` are exempt from the filter check and only from it: a caller
+  // holding a promo code may find its campaign by the code, never sort by it.
   const hiddenFilter = hiddenReadColumn(
     def,
     admin,
-    q.filters.map(([col]) => col),
+    q.filters
+      .map(([col]) => col)
+      .filter((col) => def.lookupCols?.includes(col) !== true),
   )
   if (hiddenFilter !== null) {
     return respond(
