@@ -13,7 +13,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_KARAOKE, TAB_PROGRESS } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
-import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
+import { consumeRunParked, registerRunControls, setRoomInPictureInPicture, } from '@/stores/native-shell-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { parkRun, resetRunShell } from './run-shell-store'
 import { mirrorShellChrome } from './shell-attributes'
@@ -136,5 +136,42 @@ describe('the session pill, as an attribute', () => {
     dispose?.()
     dispose = null
     expect(document.documentElement.hasAttribute('data-shell-pill')).toBe(false)
+  })
+})
+
+describe('the small window, as an attribute', () => {
+  // Android's picture-in-picture window holds the Karaoke room's lyrics and
+  // nothing of the shell's; shell.css takes the chrome away on this.
+  afterEach(() => {
+    setRoomInPictureInPicture(false)
+  })
+
+  it('is on while a room is in the window, and gone once it is back', () => {
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    const root = document.documentElement
+    expect(root.hasAttribute('data-picture-in-picture')).toBe(false)
+
+    setRoomInPictureInPicture(true)
+    expect(root.getAttribute('data-picture-in-picture')).toBe('on')
+
+    setRoomInPictureInPicture(false)
+    expect(root.hasAttribute('data-picture-in-picture')).toBe(false)
+  })
+
+  it('takes the attribute away with the shell', () => {
+    createRoot((done) => {
+      dispose = done
+      mirrorShellChrome()
+    })
+    setRoomInPictureInPicture(true)
+
+    dispose?.()
+    dispose = null
+    expect(
+      document.documentElement.hasAttribute('data-picture-in-picture'),
+    ).toBe(false)
   })
 })

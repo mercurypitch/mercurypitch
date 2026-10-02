@@ -66,6 +66,14 @@
     0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+/* A room in Android's picture-in-picture window (shell-attributes.ts): the
+   window holds the room's compact view and nothing of the shell's. The More
+   sheet and the Keep alert portal outside `.mp-shell`; the room lifts its
+   window over them (karaoke-room.module.css, `.inWindow`). */
+:root[data-picture-in-picture='on'] .mp-shell {
+  display: none;
+}
+
 /* Reduced motion: every transition becomes a 120 ms opacity crossfade, from
    the OS setting or from the shell's own attribute (the latter is what a test
    can assert without a media query). Nothing moves, so the lift is zero and

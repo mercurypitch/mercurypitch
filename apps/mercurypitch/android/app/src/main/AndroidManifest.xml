@@ -19,7 +19,14 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTop"
+            android:supportsPictureInPicture="true"
             android:exported="true">
+
+            <!-- The Karaoke room's lyrics window (PictureInPicturePlugin.java).
+                 configChanges above already covers screenSize,
+                 smallestScreenSize, screenLayout and orientation, which is
+                 what keeps entering and leaving the window from recreating
+                 the activity and reloading the WebView mid-song. -->
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

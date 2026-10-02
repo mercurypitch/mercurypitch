@@ -19,8 +19,9 @@
 //   - the three settings the Options sheet holds. The lyrics size and the
 //     notes share zen's own keys (plan §4.3), so a singer who set them in
 //     the studio's player finds them set here;
-//   - whether a song keeps playing behind another app, which only Settings,
-//     Karaoke holds.
+//   - whether a song keeps playing behind another app, and whether leaving
+//     the app mid-song keeps the lyrics in a small window (Android), which
+//     only Settings, Karaoke holds.
 
 import { createSignal, untrack } from 'solid-js'
 import type { GuideLevel } from '@/components/stem-mixer-hosting'
@@ -35,6 +36,7 @@ export const KARAOKE_LYRICS_SIZE_KEY = 'sm-zen-lyrics-size'
 export const KARAOKE_NOTE_GLYPHS_KEY = 'sm-zen-note-glyphs'
 export const KARAOKE_PINNED_KEY = 'karaoke-room-pinned'
 export const KARAOKE_BACKGROUND_PLAY_KEY = 'karaoke-room-background-play'
+export const KARAOKE_PICTURE_IN_PICTURE_KEY = 'karaoke-room-picture-in-picture'
 
 /** The options a singer can pin beside the gear, or none. */
 export const KARAOKE_PINNABLE = ['lyrics-size', 'notes', 'play-next'] as const
@@ -70,6 +72,14 @@ const [backgroundPlay, setBackgroundPlaySignal] =
   createPersistedSignal<boolean>(KARAOKE_BACKGROUND_PLAY_KEY, true, {
     validator: isBoolean,
   })
+/**
+ * "Show lyrics in a small window": on, so a singer who leaves the app during
+ * a song keeps the words in a corner of the screen (Android only).
+ */
+const [pictureInPicture, setPictureInPictureSignal] =
+  createPersistedSignal<boolean>(KARAOKE_PICTURE_IN_PICTURE_KEY, true, {
+    validator: isBoolean,
+  })
 const [lyricsSize, setLyricsSizeSignal] = createPersistedSignal<ZenLyricsSize>(
   KARAOKE_LYRICS_SIZE_KEY,
   'current',
@@ -99,6 +109,7 @@ export function setKaraokePinned(choice: KaraokePinned): void {
 
 export const karaokePlayNext = playNext
 export const karaokeBackgroundPlay = backgroundPlay
+export const karaokePictureInPicture = pictureInPicture
 export const karaokeLyricsSize = lyricsSize
 export const karaokeNoteGlyphs = noteGlyphs
 
@@ -108,6 +119,10 @@ export function setKaraokePlayNext(on: boolean): void {
 
 export function setKaraokeBackgroundPlay(on: boolean): void {
   setBackgroundPlaySignal(on)
+}
+
+export function setKaraokePictureInPicture(on: boolean): void {
+  setPictureInPictureSignal(on)
 }
 
 export function setKaraokeLyricsSize(size: ZenLyricsSize): void {
@@ -204,6 +219,7 @@ export function resetKaraokeRoomForTests(): void {
   setSongRequest(null)
   setPlayNextSignal(true)
   setBackgroundPlaySignal(true)
+  setPictureInPictureSignal(true)
   setLyricsSizeSignal('current')
   setNoteGlyphsSignal(false)
   setPinnedSignal('none')
@@ -211,6 +227,7 @@ export function resetKaraokeRoomForTests(): void {
     localStorage.removeItem(KARAOKE_PINNED_KEY)
     localStorage.removeItem(KARAOKE_PLAY_NEXT_KEY)
     localStorage.removeItem(KARAOKE_BACKGROUND_PLAY_KEY)
+    localStorage.removeItem(KARAOKE_PICTURE_IN_PICTURE_KEY)
     localStorage.removeItem(KARAOKE_LYRICS_SIZE_KEY)
     localStorage.removeItem(KARAOKE_NOTE_GLYPHS_KEY)
   } catch {

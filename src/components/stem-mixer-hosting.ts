@@ -15,6 +15,7 @@
 
 import type { Accessor } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { LyricGlance } from '@/lib/lyric-glance'
 import type { KaraokeStageHosting } from './KaraokeMobileStage'
 
 /** The guide vocal as the sing pill leaves it: its level, and whether it is off. */
@@ -51,6 +52,11 @@ export interface HostedMixerControls {
    */
   readonly guide: Accessor<GuideLevel>
   readonly setGuide: (guide: GuideLevel) => void
+  /**
+   * The line being sung and the next, as text: what the room shows when it
+   * is drawn too small for the stage (Android's picture-in-picture window).
+   */
+  readonly lyricGlance: Accessor<LyricGlance>
 }
 
 export interface StemMixerHosting {

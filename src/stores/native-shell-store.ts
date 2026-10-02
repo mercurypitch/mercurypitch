@@ -259,6 +259,18 @@ export interface NativeDeviceApi {
   nowPlaying: (song: NativeNowPlaying | null) => void
   /** The system's media buttons. Returns the unsubscribe. */
   onMediaAction: (handler: (action: NativeMediaAction) => void) => () => void
+  /**
+   * While on, leaving the app puts it in Android's small floating window
+   * instead of behind everything. Nothing on iOS, whose window is for video.
+   */
+  pictureInPictureAutoEnter: (on: boolean) => void
+  /**
+   * The app entering that window (true) and leaving it (false). Returns the
+   * unsubscribe. Never called on iOS.
+   */
+  onPictureInPicture: (
+    handler: (inPictureInPicture: boolean) => void,
+  ) => () => void
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(
@@ -376,6 +388,24 @@ export function holdRoomArrival(): () => void {
     released = true
     setArrivalHolds((count) => Math.max(0, count - 1))
   }
+}
+
+// ── A room in the small window ───────────────────────────────
+//
+// On Android a room can go on in a picture-in-picture window after the
+// singer leaves the app (the Karaoke room's lyrics). That window is a few
+// centimetres across, and the room draws a compact view of itself into it.
+// The shell's chrome is not the room's to hide, so the room says it is in
+// there, and the shell takes its rail, header and sheets off the screen for
+// as long as it is (shell-attributes.ts, `data-picture-in-picture`).
+
+const [pictureInPicture, setPictureInPicture] = createSignal(false)
+
+/** True while a room is drawing itself for the small window. */
+export const roomInPictureInPicture = pictureInPicture
+
+export function setRoomInPictureInPicture(on: boolean): void {
+  setPictureInPicture(on)
 }
 
 // ── Where "Skip to main content" goes ────────────────────────

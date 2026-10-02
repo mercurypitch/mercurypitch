@@ -811,3 +811,69 @@
   margin-left: auto;
   padding-left: 12px;
 }
+
+/* ── The lyrics window (Android picture-in-picture) ───────────
+   While Android shows the room in its small floating window the viewport IS
+   that window, a few centimetres across, so every size here follows it.
+   The room lifts itself over everything that portals to <body> (sheets, the
+   More sheet, toasts); the shell has already taken its own chrome away
+   (shell.css, `data-picture-in-picture`). The window is opaque: the zen
+   stage under it keeps running the clock and the lyrics, unseen. */
+
+.inWindow {
+  z-index: calc(var(--z-toast, 20000) + 1);
+}
+
+.lyricsWindow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6vmin;
+  padding: 5vmin 6vw;
+  overflow: hidden;
+  text-align: center;
+  background-color: var(--bg-primary, #0d1117);
+  background-image:
+    linear-gradient(rgba(6, 8, 14, 0.74), rgba(6, 8, 14, 0.74)),
+    var(--mp-stage-image);
+  background-position: var(--mp-stage-position, 50% 50%);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.windowTitle,
+.windowNext {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windowTitle {
+  font: 600 clamp(9px, 4.4vw, 18px) / 1.2 var(--font-body, sans-serif);
+  color: var(--text-secondary, #9aa4b2);
+}
+
+.windowLine {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font: 700 clamp(14px, 8.4vw, 46px) / 1.15 var(--font-body, sans-serif);
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.windowWaiting {
+  opacity: 0.6;
+}
+
+.windowNext {
+  font: 500 clamp(11px, 5.2vw, 26px) / 1.2 var(--font-body, sans-serif);
+  color: rgba(255, 255, 255, 0.62);
+}

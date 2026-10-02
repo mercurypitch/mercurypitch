@@ -14,8 +14,9 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GuideLevel, StemMixerHosting, } from '@/components/stem-mixer-hosting'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
+import type { LyricGlance } from '@/lib/lyric-glance'
 import type { NativeDeviceApi, NativeMediaAction, } from '@/stores/native-shell-store'
-import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerNativeDevice, registerShellApi, resetRoomArrivalHolds, roomInPictureInPicture, } from '@/stores/native-shell-store'
 
 interface FakeMixer {
   sessionId: string
@@ -33,6 +34,8 @@ interface FakeMixer {
   setGuideLevel: Setter<GuideLevel>
   setHasNotes: Setter<boolean>
   setMusicLevel: Setter<number>
+  /** The line being sung and the next, as the stage has them. */
+  setLyricGlance: Setter<LyricGlance>
   resetMusicLevel: Mock
   /** The room putting the guide back. */
   setGuide: Mock
@@ -61,6 +64,10 @@ vi.mock('@/components/StemMixer', async () => {
       const [elapsed, setElapsed] = createSignal(0)
       const [hasNotes, setHasNotes] = createSignal(true)
       const [musicLevel, setMusicLevel] = createSignal(0.7)
+      const [lyricGlance, setLyricGlance] = createSignal<LyricGlance>({
+        current: null,
+        next: null,
+      })
       const [guide, setGuideLevel] = createSignal<GuideLevel>({
         volume: 0.8,
         muted: false,
@@ -87,6 +94,7 @@ vi.mock('@/components/StemMixer', async () => {
         setGuideLevel,
         setHasNotes,
         setMusicLevel,
+        setLyricGlance,
         resetMusicLevel: vi.fn(() => setMusicLevel(0.7)),
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
         play: vi.fn(() => setPlaying(true)),
@@ -111,6 +119,7 @@ vi.mock('@/components/StemMixer', async () => {
           releaseMic: mixer.releaseMic,
           guide,
           setGuide: mixer.setGuide,
+          lyricGlance,
         })
       })
       onCleanup(() => {
@@ -177,7 +186,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 }))
 
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
-import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePlayNext, } from './karaoke-room-store'
+import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
 import { KaraokeRoomStage } from './KaraokeRoomStage'
 
@@ -219,6 +228,8 @@ interface FakeDevice extends NativeDeviceApi {
   holdAudioInBackground: Mock
   nowPlaying: Mock
   onMediaAction: Mock
+  pictureInPictureAutoEnter: Mock
+  onPictureInPicture: Mock
   lease: {
     ensure: Mock
     unlock: Mock
@@ -230,6 +241,8 @@ interface FakeDevice extends NativeDeviceApi {
   press: (action: NativeMediaAction) => void
   /** Media-button handlers still subscribed. */
   mediaListeners: () => number
+  /** Android opening the small window (true) or closing it (false). */
+  windowed: (inWindow: boolean) => void
 }
 
 function fakeDevice(): FakeDevice {
@@ -240,6 +253,7 @@ function fakeDevice(): FakeDevice {
   }
   let holds = 0
   const handlers = new Set<(action: NativeMediaAction) => void>()
+  const windowHandlers = new Set<(inWindow: boolean) => void>()
   return {
     acquireAudio: vi.fn(() => lease),
     keepAwake: vi.fn(),
@@ -259,12 +273,22 @@ function fakeDevice(): FakeDevice {
         handlers.delete(handler)
       }
     }),
+    pictureInPictureAutoEnter: vi.fn(),
+    onPictureInPicture: vi.fn((handler: (inWindow: boolean) => void) => {
+      windowHandlers.add(handler)
+      return () => {
+        windowHandlers.delete(handler)
+      }
+    }),
     lease,
     holds: () => holds,
     press: (action) => {
       for (const handler of [...handlers]) handler(action)
     },
     mediaListeners: () => handlers.size,
+    windowed: (inWindow) => {
+      for (const handler of [...windowHandlers]) handler(inWindow)
+    },
   }
 }
 
@@ -643,6 +667,115 @@ describe('behind another app', () => {
     expect(device.holds()).toBe(0)
     expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
     expect(device.mediaListeners()).toBe(0)
+  })
+})
+
+describe('in the small window (Android)', () => {
+  const playSong = async (): Promise<() => void> => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    return unmount
+  }
+
+  it('lets the app go into the window only while a song plays', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    expect(device.pictureInPictureAutoEnter).not.toHaveBeenCalled()
+
+    current().setPlaying(true)
+    controls().pause()
+    controls().resume()
+
+    expect(device.pictureInPictureAutoEnter.mock.calls).toEqual([
+      [true],
+      [false],
+      [true],
+    ])
+  })
+
+  it('shows the line being sung, the next and the title, and nothing else', async () => {
+    await playSong()
+    current().setLyricGlance({
+      current: 'The harbour lights are low',
+      next: 'And the tide is coming in',
+    })
+
+    device.windowed(true)
+
+    const lyricsWindow = screen.getByTestId('karaoke-lyrics-window')
+    expect(lyricsWindow.textContent).toBe(
+      'Goodbye to SpringThe harbour lights are lowAnd the tide is coming in',
+    )
+    expect(within(lyricsWindow).queryAllByRole('button')).toHaveLength(0)
+    expect(roomInPictureInPicture()).toBe(true)
+
+    current().setLyricGlance({ current: null, next: 'Hold the rope' })
+    expect(screen.getByTestId('karaoke-lyrics-window-line').textContent).toBe(
+      'Hold the rope',
+    )
+    expect(screen.queryByTestId('karaoke-lyrics-window-next')).toBeNull()
+  })
+
+  it('lets the microphone go and closes what was open, the song still playing', async () => {
+    await playSong()
+    controls().openOptions?.()
+    await screen.findByTestId('karaoke-options')
+
+    device.windowed(true)
+
+    expect(current().releaseMic).toHaveBeenCalledTimes(1)
+    expect(current().pause).not.toHaveBeenCalled()
+    expect(controls().isPlaying()).toBe(true)
+    await vi.waitFor(() => {
+      expect(screen.queryByTestId('karaoke-options')).toBeNull()
+    })
+  })
+
+  it('gives the room back as it was on the way out of the window', async () => {
+    await playSong()
+    device.windowed(true)
+
+    device.windowed(false)
+
+    expect(screen.queryByTestId('karaoke-lyrics-window')).toBeNull()
+    expect(roomInPictureInPicture()).toBe(false)
+    expect(screen.getByTestId('fake-mixer')).toBeTruthy()
+  })
+
+  it("gives the window Android's play and pause with background play off", async () => {
+    setKaraokeBackgroundPlay(false)
+    await playSong()
+    expect(device.mediaListeners()).toBe(0)
+
+    device.windowed(true)
+    expect(device.mediaListeners()).toBe(1)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: 'Goodbye to Spring', playing: true }),
+    )
+    device.press('pause')
+    expect(controls().isPaused()).toBe(true)
+
+    device.windowed(false)
+    expect(device.mediaListeners()).toBe(0)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('stays out of the window with the setting off', async () => {
+    setKaraokePictureInPicture(false)
+    await playSong()
+
+    expect(device.pictureInPictureAutoEnter).not.toHaveBeenCalled()
+  })
+
+  it('turns the window off and lets go of it when the room does', async () => {
+    const unmount = await playSong()
+    device.windowed(true)
+
+    unmount()
+
+    expect(device.pictureInPictureAutoEnter).toHaveBeenLastCalledWith(false)
+    expect(roomInPictureInPicture()).toBe(false)
   })
 })
 

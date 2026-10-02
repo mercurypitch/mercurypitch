@@ -5,8 +5,8 @@
 // One import surface for the handful of things a phone can do and a browser
 // tab cannot: a tap you can feel, a screen that stays lit, a status bar that
 // reads against the page behind it, the system share sheet, the app's own row
-// in Settings, the Android back button, and the app going away and coming
-// back.
+// in Settings, the Android back button, the app going away and coming back,
+// and Android's picture-in-picture window.
 //
 // THE RULE THAT SHAPES EVERY FUNCTION BELOW. A plugin module is reached only
 // from inside a `Capacitor.isNativePlatform()` branch, through `await
@@ -35,7 +35,8 @@
 // plan task G1 calls for live in the app's platform seam, where the app knows
 // how many rooms are open. This file only knows how to reach the device.
 
-import { Capacitor } from '@capacitor/core'
+import type { PluginListenerHandle } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 import type { MediaSessionPlugin } from '@capgo/capacitor-media-session'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
@@ -256,6 +257,80 @@ export function onMediaAction(
           }
         },
       })
+    })()
+  })
+}
+
+// ------------------------------------------------------------
+// Picture in picture (Android)
+// ------------------------------------------------------------
+//
+// A small floating window the app keeps on screen after the singer leaves
+// it, as a video app does. The native half is not an npm plugin: it is a
+// class in the Mercury Pitch app itself (PictureInPicturePlugin.java, which
+// MainActivity registers), so an app without it answers `Unimplemented`,
+// and that is survived like any other missing plugin.
+//
+// Android only. iOS has picture-in-picture for video alone, and the web has
+// none for a page, so both get inert wrappers and the plugin is never even
+// registered there.
+
+/** The app's own plugin, as MainActivity registers it. */
+interface PictureInPicturePlugin {
+  setAutoEnter(options: { enabled: boolean }): Promise<void>
+  addListener(
+    eventName: 'pictureInPictureChange',
+    listener: (state: { inPictureInPicture?: boolean }) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+function isAndroid(): boolean {
+  return isNative() && Capacitor.getPlatform() === 'android'
+}
+
+// Registered on first use, once: Capacitor warns on a second registration.
+// A plain variable, never a promise's value. The proxy answers every
+// property, `then` included, so resolving a promise with it would hang.
+let pictureInPicturePlugin: PictureInPicturePlugin | null = null
+
+function pictureInPicture(): PictureInPicturePlugin {
+  pictureInPicturePlugin ??=
+    registerPlugin<PictureInPicturePlugin>('PictureInPicture')
+  return pictureInPicturePlugin
+}
+
+/**
+ * While on, leaving the app (the home gesture, the recents screen) puts it in
+ * a small window instead of behind everything. Off by default; the caller
+ * turns it on for exactly as long as there is something worth watching.
+ */
+export async function setPictureInPictureAutoEnter(on: boolean): Promise<void> {
+  if (!isAndroid()) return
+  await attempt(async () => {
+    await pictureInPicture().setAutoEnter({ enabled: on })
+  })
+}
+
+/** The app entering the small window (true) and leaving it (false). */
+export function onPictureInPicture(
+  handler: (inPictureInPicture: boolean) => void,
+): Unsubscribe {
+  if (!isAndroid()) return () => undefined
+
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        dispose(
+          await pictureInPicture().addListener(
+            'pictureInPictureChange',
+            (state) => {
+              handler(state.inPictureInPicture === true)
+            },
+          ),
+        )
+      } catch {
+        // No plugin behind the name in this build: no window, no events.
+      }
     })()
   })
 }
