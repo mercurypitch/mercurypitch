@@ -19,6 +19,10 @@
 // the tab is shown, so one measured in Voice Mirror's own tab counts as soon
 // as the singer comes back.
 //
+// What it says goes on one channel, so each notice replaces the last: "finding
+// the melody first" gives way to the outcome, and the singer is left with one
+// message. A failed detection says only what went wrong.
+//
 // useStemMixerKeyView is what the mixer shows of it. The notes, the MIDI
 // track, the offline contour and the word glyphs move with the key being
 // heard, which is 0 in Pitch Studio (it edits the song's own notes) and 0
@@ -38,16 +42,33 @@ import type { VocalRangePreset } from '@/stores/settings-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import type { ResolvedSingerRange } from './singer-range'
 import { resolveSingerRange, voiceTypeRange } from './singer-range'
+import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController'
 
 /**
+ * 'unchanged': the song is in the key that fits already, so nothing moved.
  * 'detecting': the melody is being found first; the fit follows on its own.
  * 'no-melody': there is none and it cannot be detected here.
  */
 export type FindMyKeyResult =
   | 'applied'
+  | 'unchanged'
   | 'needs-range'
   | 'detecting'
   | 'no-melody'
+
+/** Every "find my key" notice goes here, so each one replaces the last. */
+export const FIND_MY_KEY_CHANNEL = 'stem-mixer-find-my-key'
+
+type NoticeType = 'info' | 'success' | 'warning' | 'error'
+
+/** What "find my key" says once it has fitted the key. */
+function fitMessage(result: 'applied' | 'unchanged', keyShift: number): string {
+  if (result === 'applied')
+    return `Key ${formatKeyShift(keyShift)} fits your voice.`
+  return keyShift === 0
+    ? "The song's own key already fits your voice."
+    : `Key ${formatKeyShift(keyShift)} already fits your voice.`
+}
 
 export interface StemMixerKeyController {
   keyShift: Accessor<number>
@@ -68,10 +89,19 @@ export interface StemMixerKeyDeps {
   queueEntry: () => QueueEntry | null
   playlistId: () => string | null
   melody: () => readonly TimedNote[]
-  /** Finds the melody; null when that cannot run here (a streamed vocal). */
-  detectMelody?: () => Promise<void> | null
+  /**
+   * Finds the melody, saying nothing itself; null when that cannot run here
+   * (a streamed vocal).
+   */
+  detectMelody?: () => Promise<PitchAnalysisOutcome> | null
   /** For the outcome of a detection, which nobody is waiting on. */
-  notify?: (message: string, type: 'info' | 'success' | 'warning') => void
+  notify?: (
+    message: string,
+    type: NoticeType,
+    options: { channel: string },
+  ) => void
+  /** Clears a channel: the wait, when the analysis has said why it failed. */
+  dismiss?: (channel: string) => void
 }
 
 export function useStemMixerKeyController(
@@ -130,35 +160,48 @@ export function useStemMixerKeyController(
 
   const rangeKnown = () => range() !== null
 
-  const fitAfterDetection = () => {
+  const notify = (message: string, type: NoticeType) =>
+    deps.notify?.(message, type, { channel: FIND_MY_KEY_CHANNEL })
+
+  /** Moves to the fit; null when there is none to move to. */
+  const applyFit = (): 'applied' | 'unchanged' | null => {
+    const fit = suggestion()
+    if (fit === null) return null
+    if (fit.keyShift === keyShift()) return 'unchanged'
+    setKeyShift(fit.keyShift)
+    return 'applied'
+  }
+
+  const fitAfterDetection = (outcome: PitchAnalysisOutcome) => {
     detecting = false
     if (disposed) return
-    const fit = suggestion()
-    if (fit === null) {
-      deps.notify?.(
+    if (!outcome.ok) {
+      // Said once: here, or already by an analysis someone else started.
+      if (outcome.shown) deps.dismiss?.(FIND_MY_KEY_CHANNEL)
+      else notify(outcome.message, 'error')
+      return
+    }
+    const result = applyFit()
+    if (result === null) {
+      notify(
         'No melody was found in the vocal, so the song keeps its key.',
         'warning',
       )
       return
     }
-    setKeyShift(fit.keyShift)
-    deps.notify?.(
-      `Key ${formatKeyShift(fit.keyShift)} fits your voice.`,
-      'success',
+    notify(
+      fitMessage(result, keyShift()),
+      result === 'applied' ? 'success' : 'info',
     )
   }
 
   const fitOrDetect = (): FindMyKeyResult => {
-    const fit = suggestion()
-    if (fit !== null) {
-      setKeyShift(fit.keyShift)
-      return 'applied'
-    }
+    const fitted = applyFit()
+    if (fitted !== null) return fitted
     if (detecting) return 'detecting'
     const detection = deps.detectMelody?.() ?? null
     if (detection === null) return 'no-melody'
     detecting = true
-    // A failed detection has said why already; only a finished one reports.
     detection.then(fitAfterDetection, () => {
       detecting = false
     })
@@ -226,7 +269,8 @@ export interface StemMixerKeyViewDeps {
   editMode: Accessor<boolean>
   /** The vocal take's own key, as Pitch Studio detected it. */
   detectedKey: Accessor<{ keyName: string; scaleType: string } | null>
-  notify: (message: string, type: 'info') => void
+  /** On FIND_MY_KEY_CHANNEL, shared with the controller's own notices. */
+  notify: (message: string, type: 'info', options: { channel: string }) => void
 }
 
 export interface StemMixerKeyView {
@@ -253,15 +297,18 @@ export interface StemMixerKeyView {
 export function useStemMixerKeyView(
   deps: StemMixerKeyViewDeps,
 ): StemMixerKeyView {
-  // A fit that is applied shows on the stepper; these two would not.
+  // A fit that is applied shows on the stepper; the rest would not.
+  const say = (message: string) =>
+    deps.notify(message, 'info', { channel: FIND_MY_KEY_CHANNEL })
   const announce = (result: FindMyKeyResult) => {
     if (result === 'detecting')
-      deps.notify('Finding the melody first. This takes a moment.', 'info')
+      say('Finding the melody first. This takes a moment.')
     else if (result === 'no-melody')
-      deps.notify(
+      say(
         "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead.",
-        'info',
       )
+    else if (result === 'unchanged')
+      say(fitMessage('unchanged', deps.key.keyShift()))
   }
 
   return {
