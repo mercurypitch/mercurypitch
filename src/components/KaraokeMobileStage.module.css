@@ -39,8 +39,11 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px 6px;
+  /* 44 px buttons (the touch rule; they were 38) and gaps tightened to pay
+     for them: a 360 px phone with all six keeps 48 px for the title, where
+     it had 38. */
+  gap: 6px;
+  padding: 10px 10px 6px;
   flex-shrink: 0;
 }
 
@@ -48,8 +51,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -68,8 +71,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -90,10 +93,18 @@
    instead of crowding the buttons), which left the group stranded mid-header
    with a third of the column empty beside it. `margin-left: auto` is the half
    that does not depend on the title's width. */
+/* The stage picker's round trigger, 44 px here at every width: its own CSS
+   makes it 44 only up to 768 px, and a phone on its side is wider. */
+.headerPicker > button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   flex: none;
   margin-left: auto;
 }
@@ -102,8 +113,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;

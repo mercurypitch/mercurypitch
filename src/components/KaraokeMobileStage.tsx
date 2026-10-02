@@ -731,6 +731,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       <div class={styles.headerActions}>
         <Show when={props.showStageSettings !== false}>
           <PremiumBackgroundPicker
+            class={styles.headerPicker}
             controller={background}
             label="Stage"
             iconOnly
