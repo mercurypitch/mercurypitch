@@ -654,9 +654,40 @@ export function assignJamSongLines(
 }
 
 function broadcastSongWithParts(): void {
+  // Every manifest carries the key as it stands, so one still waiting to
+  // be sent for a key change has nothing left to say.
+  cancelKeyBroadcast()
   const song = jamSong()
   if (song === null) return
   jamService?.sendSong(songManifest(song, jamSongParts()))
+}
+
+/**
+ * How long the host's key presses settle before the room is told.
+ *
+ * Each key change goes out as the whole manifest, so stepping from 0 to +4
+ * one press at a time sent four of them, and every guest moved through each
+ * key on the way. The host hears every press at once; the room is sent the
+ * key the host stopped on.
+ */
+const KEY_BROADCAST_SETTLE_MS = 150
+let keyBroadcastTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelKeyBroadcast(): void {
+  if (keyBroadcastTimer === null) return
+  clearTimeout(keyBroadcastTimer)
+  keyBroadcastTimer = null
+}
+
+function scheduleKeyBroadcast(songId: string): void {
+  cancelKeyBroadcast()
+  keyBroadcastTimer = setTimeout(() => {
+    keyBroadcastTimer = null
+    // A different song, or none, or a room handed to someone else: the key
+    // this was for is gone with it.
+    if (jamSong()?.id !== songId || !jamIsHost()) return
+    broadcastSongWithParts()
+  }, KEY_BROADCAST_SETTLE_MS)
 }
 
 /** The room's key, in semitones from the song's own. */
@@ -677,6 +708,9 @@ export const [jamKeyShiftAvailable, setJamKeyShiftAvailable] = createSignal(
  * every peer shifts its own audio to it, the guide vocal included. The
  * take survives it (see onlyKeyChanged): the lines already sung were sung
  * against the same notes.
+ *
+ * The host's own audio moves on the press; the room is sent the key once
+ * the presses settle (KEY_BROADCAST_SETTLE_MS).
  */
 export function setJamRoomKeyShift(semitones: number): void {
   if (!jamIsHost()) return
@@ -686,7 +720,7 @@ export function setJamRoomKeyShift(semitones: number): void {
   if (next === (song.keyShift ?? 0)) return
   const { keyShift: _previous, ...rest } = song
   setJamSong(next === 0 ? rest : { ...rest, keyShift: next })
-  broadcastSongWithParts()
+  scheduleKeyBroadcast(song.id)
 }
 
 /**
@@ -3128,6 +3162,7 @@ function cleanupJam(): void {
     clearTimeout(shareDoneTimer)
     shareDoneTimer = null
   }
+  cancelKeyBroadcast()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
   for (const [peerId] of remoteAudioEls) stopPeerAudio(peerId)
   remoteAudioEls.clear()
