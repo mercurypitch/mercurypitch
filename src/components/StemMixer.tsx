@@ -570,11 +570,13 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     playlistId: () =>
       playlist.isPlaylistActive() ? playlist.activePlaylistId() : null,
     melody: () => songMelody(pitchAnalysis.editableNotes(), midiNotes()),
+    // Quiet: find my key reports the outcome itself, as one message.
     detectMelody: () =>
       vocalIsStreamed() || analysableVocal() === null
         ? null
-        : pitchAnalysis.runAnalysis(),
+        : pitchAnalysis.runAnalysis({ quiet: true }),
     notify: showNotification,
+    dismiss: removeNotificationsByChannel,
   })
 
   // ── Audio controller ─────────────────────────────────────────

@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { TimedNote } from '@/lib/key-shift/key-suggest'
 import type { QueueEntry } from '@/stores/karaoke-playlist-store'
+import { notifications, removeNotificationsByChannel, resetNotifications, showNotification, } from '@/stores/notifications-store'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import type { FindMyKeyResult } from './useStemMixerKeyController'
+import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController'
 
 const fakes = vi.hoisted(() => ({
   takes: [] as VoiceprintRecord[],
@@ -63,14 +65,23 @@ interface Harness {
   dispose: () => void
 }
 
+type Notify = (
+  message: string,
+  type: 'info' | 'success' | 'warning' | 'error',
+  options: { channel: string },
+) => void
+
 interface MountOptions {
   melody?: readonly TimedNote[]
   /** Runs as Pitch Studio's analysis would; null when it cannot run here. */
   detectMelody?: (
     setMelody: Setter<readonly TimedNote[]>,
-  ) => Promise<void> | null
-  notify?: (message: string, type: 'info' | 'success' | 'warning') => void
+  ) => Promise<PitchAnalysisOutcome> | null
+  notify?: Notify
+  dismiss?: (channel: string) => void
 }
+
+const FOUND: PitchAnalysisOutcome = { ok: true }
 
 function mount(
   sessionId: string,
@@ -96,6 +107,7 @@ function mount(
       melody,
       detectMelody: detect === undefined ? undefined : () => detect(setMelody),
       notify: options.notify,
+      dismiss: options.dismiss,
     })
     return { controller, setSessionId, setMelody, dispose }
   })
@@ -109,6 +121,7 @@ const start = (...args: Parameters<typeof mount>) => {
 
 beforeEach(() => {
   localStorage.clear()
+  resetNotifications()
   fakes.takes = []
   fakes.entryWrites = []
 })
@@ -290,11 +303,12 @@ describe('find my key', () => {
   })
 
   it('detects the melody first when there is none, then applies the fit and says so', async () => {
-    const notify = vi.fn<(message: string, type: string) => void>()
+    const notify = vi.fn<Notify>()
     // The analysis lands its notes later, as the real one does.
     const detectMelody = vi.fn((setMelody: Setter<readonly TimedNote[]>) =>
       Promise.resolve().then(() => {
         setMelody(MELODY)
+        return FOUND
       }),
     )
     harness = mount(freshSong(), null, null, {
@@ -313,14 +327,15 @@ describe('find my key', () => {
     expect(notify).toHaveBeenCalledWith(
       `Key ${String(controller.keyShift()).replace('-', '\u2212')} fits your voice.`,
       'success',
+      { channel: 'stem-mixer-find-my-key' },
     )
   })
 
   it('keeps the key when no melody turns up, and says so', async () => {
-    const notify = vi.fn<(message: string, type: string) => void>()
+    const notify = vi.fn<Notify>()
     harness = mount(freshSong(), null, null, {
       melody: [],
-      detectMelody: () => Promise.resolve(),
+      detectMelody: () => Promise.resolve(FOUND),
       notify,
     })
     const controller = harness.controller
@@ -331,6 +346,65 @@ describe('find my key', () => {
     await vi.waitFor(() => expect(notify).toHaveBeenCalledTimes(1))
     expect(notify.mock.calls[0][1]).toBe('warning')
     expect(controller.keyShift()).toBe(2)
+  })
+
+  it('shows only the error the analysis met when it fails', async () => {
+    const notify = vi.fn<Notify>()
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: () =>
+        Promise.resolve({
+          ok: false,
+          message: 'The vocal could not be read',
+          shown: false,
+        }),
+      notify,
+    })
+    const controller = harness.controller
+    controller.setKeyShift(2)
+
+    expect(controller.applyVoiceType('tenor')).toBe('detecting')
+
+    await vi.waitFor(() => expect(notify).toHaveBeenCalled())
+    expect(notify.mock.calls).toEqual([
+      [
+        'The vocal could not be read',
+        'error',
+        { channel: 'stem-mixer-find-my-key' },
+      ],
+    ])
+    expect(controller.keyShift()).toBe(2)
+  })
+
+  it('adds nothing to an error the analysis has shown itself', async () => {
+    const notify = vi.fn<Notify>()
+    const dismiss = vi.fn<(channel: string) => void>()
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: () =>
+        Promise.resolve({
+          ok: false,
+          message: 'The vocal could not be read',
+          shown: true,
+        }),
+      notify,
+      dismiss,
+    })
+
+    harness.controller.applyVoiceType('tenor')
+
+    await vi.waitFor(() => expect(dismiss).toHaveBeenCalled())
+    expect(dismiss.mock.calls).toEqual([['stem-mixer-find-my-key']])
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('says so when the song already sits at the key that fits', () => {
+    const controller = start(freshSong())
+    expect(controller.applyVoiceType('bass')).toBe('applied')
+    const fitted = controller.keyShift()
+
+    expect(controller.findMyKey()).toBe('unchanged')
+    expect(controller.keyShift()).toBe(fitted)
   })
 
   it('cannot fit where the melody cannot be detected', () => {
@@ -392,7 +466,10 @@ describe('what the mixer shows', () => {
         engineAvailable: available,
         editMode,
         detectedKey: detected,
-        notify: (message, type) => notices.push([message, type]),
+        notify: (message, type, options) => {
+          expect(options).toEqual({ channel: 'stem-mixer-find-my-key' })
+          notices.push([message, type])
+        },
       })
       return {
         view,
@@ -496,6 +573,20 @@ describe('what the mixer shows', () => {
     ])
   })
 
+  it('says so when the song already suits the singer', () => {
+    const shown = startView()
+    shown.fit.next = 'unchanged'
+
+    shown.view.binding.onFindKey()
+    shown.view.binding.onChange(2)
+    shown.view.binding.onFindKey()
+
+    expect(shown.notices).toEqual([
+      ["The song's own key already fits your voice.", 'info'],
+      ['Key +2 already fits your voice.', 'info'],
+    ])
+  })
+
   it('fits a picked voice type the way find my key does', () => {
     const shown = startView()
     shown.fit.next = 'detecting'
@@ -506,6 +597,47 @@ describe('what the mixer shows', () => {
     expect(shown.notices).toEqual([
       ['Finding the melody first. This takes a moment.', 'info'],
     ])
+  })
+})
+
+describe('find my key, as the singer sees it', () => {
+  it('keeps one notice on screen: the outcome replaces the wait', async () => {
+    const shown = createRoot((dispose) => {
+      const [melody, setMelody] = createSignal<readonly TimedNote[]>([])
+      const controller = useStemMixerKeyController({
+        sessionId: () => 'one-notice',
+        queueEntry: () => null,
+        playlistId: () => null,
+        melody,
+        detectMelody: () =>
+          Promise.resolve().then(() => {
+            setMelody(MELODY)
+            return FOUND
+          }),
+        notify: showNotification,
+        dismiss: removeNotificationsByChannel,
+      })
+      const view = useStemMixerKeyView({
+        key: controller,
+        heardShift: () => 0,
+        engineAvailable: () => true,
+        editMode: () => false,
+        detectedKey: () => null,
+        notify: showNotification,
+      })
+      return { controller, view, dispose }
+    })
+
+    shown.view.pickVoiceType('bass')
+    expect(notifications().map((note) => note.message)).toEqual([
+      'Finding the melody first. This takes a moment.',
+    ])
+
+    await vi.waitFor(() => expect(shown.controller.keyShift()).not.toBe(0))
+    expect(notifications().map((note) => note.message)).toEqual([
+      `Key ${String(shown.controller.keyShift()).replace('-', '\u2212')} fits your voice.`,
+    ])
+    shown.dispose()
   })
 })
 
