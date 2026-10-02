@@ -118,12 +118,14 @@ input[type='range'] {
   right: 20px;
 }
 
-/* Top Header Dock */
+/* Top Header Dock. The close-up of a short loop is centred on the
+   timeline and 7 px taller than it at each edge; 10 px of padding keeps it
+   inside the window when the timeline sits on the pill's first line. */
 .stem-mixer--focus-docked-top .sm-transport {
   position: relative; /* Not absolute, pushes content down */
   width: 100%;
   border-radius: 0;
   border-left: none;
   border-right: none;
-  padding: 6px 16px;
+  padding: 10px 16px;
 }
