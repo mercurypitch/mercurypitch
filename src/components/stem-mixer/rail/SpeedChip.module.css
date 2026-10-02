@@ -23,6 +23,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Under the pointer and while open, the tint the capsule's buttons take
+   (MixerCapsule.module.css), not the menu trigger's solid hover, which on
+   the focus pill's glass reads as a box. Qualified to outrank
+   OverflowMenu's trigger states. */
+@media (hover: hover) {
+  .chip.chip:hover:not(:disabled) {
+    border-color: var(--mixer-control-border, var(--border-subtle, #30363d));
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.chip.chip[aria-expanded='true'] {
+  border-color: var(--mixer-control-border, var(--border-subtle, #30363d));
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
+}
+
 .chip.chip:focus-visible {
   outline: 2px solid var(--accent, #58a6ff);
   outline-offset: 2px;

@@ -32,14 +32,21 @@
     border-color 0.15s ease;
 }
 
+/* Under the pointer and while open, the tint the capsule's buttons take
+   (MixerCapsule.module.css): a solid fill reads as a box on the focus
+   pill's glass. */
 @media (hover: hover) {
   .chip:hover {
-    background: var(--bg-tertiary, #21262d);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
   }
 }
 
 .chip[aria-expanded='true'] {
-  background: var(--bg-tertiary, #21262d);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
 }
 
 .chip:focus-visible {

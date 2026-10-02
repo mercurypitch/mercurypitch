@@ -543,6 +543,42 @@ test.describe('the rail at 1440x900, playing', () => {
     await expect(focus).toBeVisible()
   })
 
+  test("keeps the chips and More on the pill's glass under the pointer and while open", async ({
+    page,
+  }) => {
+    await page.locator('[data-tour="mixer.focus"]').click()
+    await expect(page.locator('.stem-mixer--focus')).toBeVisible()
+    // Read each fill as it settles, not partway through its fade.
+    await page.addStyleTag({
+      content: '* { transition: none !important; }',
+    })
+    /** The fill's alpha: 0 is clear glass, 1 a solid box. */
+    const fillAlpha = (testId: string) =>
+      page.getByTestId(testId).evaluate((element) => {
+        const colour = getComputedStyle(element).backgroundColor
+        const alpha = /\/\s*([\d.]+)\)|rgba\([^)]*,\s*([\d.]+)\)/.exec(colour)
+        return alpha === null ? 1 : Number(alpha[1] ?? alpha[2])
+      })
+
+    for (const testId of ['key-chip', 'speed-chip', 'mixer-more']) {
+      const control = page.getByTestId(testId)
+      await control.hover()
+      const hovered = await fillAlpha(testId)
+      await control.click()
+      await page.mouse.move(2, 2)
+      const open = await fillAlpha(testId)
+      await page.keyboard.press('Escape')
+
+      // A tint the glass shows through, as on the buttons beside them.
+      expect.soft(hovered, `${testId} under the pointer`).toBeGreaterThan(0)
+      expect
+        .soft(hovered, `${testId} under the pointer`)
+        .toBeLessThanOrEqual(0.2)
+      expect.soft(open, `${testId} while open`).toBeGreaterThan(0)
+      expect.soft(open, `${testId} while open`).toBeLessThanOrEqual(0.2)
+    }
+  })
+
   test('docks the focus pill to each edge from More, and Escape shuts More first', async ({
     page,
   }) => {
