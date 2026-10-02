@@ -183,7 +183,9 @@ function userBySub(sub: string): UserRow | undefined {
 }
 
 function userById(id: string): UserRow {
-  return sqlite.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow
+  return sqlite
+    .prepare('SELECT * FROM users WHERE id = ?')
+    .get(id) as unknown as UserRow
 }
 
 function displayNameOf(id: string): string | undefined {
@@ -273,8 +275,10 @@ function freshDatabase(
   stubApple()
 }
 
-beforeAll(async () => {
-  signing = await crypto.subtle.generateKey(
+// The Workers types give exportKey and generateKey one union return each; the
+// format and the algorithm decide which half, and here they are fixed.
+async function rsaKeyPair(): Promise<CryptoKeyPair> {
+  return (await crypto.subtle.generateKey(
     {
       name: 'RSASSA-PKCS1-v1_5',
       modulusLength: 2048,
@@ -283,8 +287,15 @@ beforeAll(async () => {
     },
     true,
     ['sign', 'verify'],
-  )
-  publicJwk = await crypto.subtle.exportKey('jwk', signing.publicKey)
+  )) as CryptoKeyPair
+}
+
+beforeAll(async () => {
+  signing = await rsaKeyPair()
+  publicJwk = (await crypto.subtle.exportKey(
+    'jwk',
+    signing.publicKey,
+  )) as JsonWebKey
 })
 
 afterEach(() => {
@@ -305,12 +316,15 @@ const signinSecrets: Partial<Env> = {
 }
 
 beforeAll(async () => {
-  const ec = await crypto.subtle.generateKey(
+  const ec = (await crypto.subtle.generateKey(
     { name: 'ECDSA', namedCurve: 'P-256' },
     true,
     ['sign', 'verify'],
-  )
-  const pkcs8 = await crypto.subtle.exportKey('pkcs8', ec.privateKey)
+  )) as CryptoKeyPair
+  const pkcs8 = (await crypto.subtle.exportKey(
+    'pkcs8',
+    ec.privateKey,
+  )) as ArrayBuffer
   const body = Buffer.from(pkcs8).toString('base64')
   signinSecrets.APPLE_SIGNIN_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`
 })
@@ -332,7 +346,7 @@ describe('POST /api/auth/apple', () => {
     expect(
       sqlite
         .prepare('SELECT displayName FROM userProfiles WHERE id = ?')
-        .get(created?.id),
+        .get(created!.id),
     ).toEqual({ displayName: 'Ada Lovelace' })
 
     const second = await signInWithApple()
@@ -435,16 +449,7 @@ describe('POST /api/auth/apple', () => {
   })
 
   it('refuses a token signed by anybody else', async () => {
-    const impostor = await crypto.subtle.generateKey(
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: 'SHA-256',
-      },
-      true,
-      ['sign', 'verify'],
-    )
+    const impostor = await rsaKeyPair()
     const now = Math.floor(Date.now() / 1000)
     const forged = await signAppleToken(
       {

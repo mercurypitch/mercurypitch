@@ -99,7 +99,7 @@ function consentOf(userId: string): ConsentRow {
       `SELECT newsletterOptIn, newsletterOptInAt, newsletterOptOutAt, newsletterSource
          FROM users WHERE id = ?`,
     )
-    .get(userId) as ConsentRow
+    .get(userId) as unknown as ConsentRow
 }
 
 function freshDatabase(): void {

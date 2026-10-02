@@ -1,0 +1,21 @@
+{
+  // The node-tests run under Node, not the Workers runtime: they open
+  // node:sqlite and read the migrations off disk with node:fs. Node's types
+  // go in this program only, so ../tsconfig.json keeps rejecting Node globals
+  // in worker source. `pnpm typecheck:db` checks both programs.
+  //
+  // The worker source these tests import is checked here a second time, with
+  // both sets of globals merged. So far they disagree only on timers, and
+  // there the merged view is the accurate one: nodejs_compat with a
+  // compatibility date from 2026-02-10 on gives the deployed worker Node's
+  // setTimeout, which returns a Timeout, not a number. A handle typed as
+  // ReturnType<typeof setTimeout> passes in both programs.
+  //
+  // It lives here, as a tsconfig.json beside the tests, so that editors and
+  // ESLint's project service find it too; they only look for that file name.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["**/*.ts"]
+}
