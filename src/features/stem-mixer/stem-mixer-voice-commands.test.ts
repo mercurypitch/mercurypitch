@@ -304,6 +304,8 @@ describe('stem mixer voice commands — key', () => {
     expect(fire(fixture, 'find my key')).toBe(
       'The melody cannot be found on this device',
     )
+    fixture.setFindResult('reading-range')
+    expect(fire(fixture, 'find my key')).toBe('Finding your key')
   })
 
   it('says why the key cannot change, and changes nothing', () => {

@@ -15,9 +15,10 @@
 // "Find my key" fits the melody to the singer's range (see singer-range.ts).
 // A suggestion is only ever applied when asked for. With no range yet it
 // opens the voice-type picker; with no melody yet it runs Pitch Studio's
-// detection once and fits when that is done. The range is read again whenever
-// the tab is shown, so one measured in Voice Mirror's own tab counts as soon
-// as the singer comes back.
+// detection once and fits when that is done. Asked before the stored range
+// has been read, it waits for the read rather than asking the singer for a
+// range they have. The range is read again whenever the tab is shown, so one
+// measured in Voice Mirror's own tab counts as soon as the singer comes back.
 //
 // What it says goes on one channel, so each notice replaces the last: "finding
 // the melody first" gives way to the outcome, and the singer is left with one
@@ -30,7 +31,7 @@
 // detected from the audio, which has already moved.
 
 import type { Accessor } from 'solid-js'
-import { createMemo, createSignal, onCleanup } from 'solid-js'
+import { createMemo, createSignal, onCleanup, untrack } from 'solid-js'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import { clampKeyShift, formatKeyShift, transposeKeyName, transposeNamedNotes, transposeNotes, transposePitchReadings, } from '@/lib/key-shift/key-shift'
 import type { KeySuggestion, TimedNote } from '@/lib/key-shift/key-suggest'
@@ -46,6 +47,7 @@ import type { PitchAnalysisOutcome } from './useStemMixerPitchAnalysisController
 
 /**
  * 'unchanged': the song is in the key that fits already, so nothing moved.
+ * 'reading-range': the stored range is still being read; the find follows.
  * 'detecting': the melody is being found first; the fit follows on its own.
  * 'no-melody': there is none and it cannot be detected here.
  */
@@ -53,6 +55,7 @@ export type FindMyKeyResult =
   | 'applied'
   | 'unchanged'
   | 'needs-range'
+  | 'reading-range'
   | 'detecting'
   | 'no-melody'
 
@@ -68,6 +71,19 @@ function fitMessage(result: 'applied' | 'unchanged', keyShift: number): string {
   return keyShift === 0
     ? "The song's own key already fits your voice."
     : `Key ${formatKeyShift(keyShift)} already fits your voice.`
+}
+
+/**
+ * The notice a result needs; null where the screen says it already: an
+ * applied fit moves the stepper, and the picker asks for a range itself.
+ */
+function findNotice(result: FindMyKeyResult, keyShift: number): string | null {
+  if (result === 'detecting')
+    return 'Finding the melody first. This takes a moment.'
+  if (result === 'no-melody')
+    return "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead."
+  if (result === 'unchanged') return fitMessage('unchanged', keyShift)
+  return null
 }
 
 export interface StemMixerKeyController {
@@ -116,20 +132,10 @@ export function useStemMixerKeyController(
   })
   // A pick made while the takes were still being read must win.
   let rangeRequest = 0
-  const readRange = () => {
-    const request = ++rangeRequest
-    void resolveSingerRange().then((resolved) => {
-      if (request === rangeRequest) setRange(resolved)
-    })
-  }
-  readRange()
-  const onVisibility = () => {
-    if (document.visibilityState === 'visible') readRange()
-  }
-  document.addEventListener('visibilitychange', onVisibility)
-  onCleanup(() =>
-    document.removeEventListener('visibilitychange', onVisibility),
-  )
+  // Until the stored range has been read once, no range means "not read
+  // yet", not "none": a find asked for meanwhile waits for the read.
+  let rangeRead = false
+  let findWaiting = false
 
   const keyShift = createMemo(() => {
     const entryKey = deps.queueEntry()?.keyShift
@@ -208,7 +214,7 @@ export function useStemMixerKeyController(
     return 'detecting'
   }
 
-  const findMyKey = (): FindMyKeyResult => {
+  const findWithRange = (): FindMyKeyResult => {
     if (!rangeKnown()) {
       setPickerOpen(true)
       return 'needs-range'
@@ -216,13 +222,49 @@ export function useStemMixerKeyController(
     return fitOrDetect()
   }
 
+  const findMyKey = (): FindMyKeyResult => {
+    if (!rangeRead && !rangeKnown()) {
+      findWaiting = true
+      return 'reading-range'
+    }
+    return findWithRange()
+  }
+
   const applyVoiceType = (preset: VocalRangePreset): FindMyKeyResult => {
     setVocalRangePreset(preset)
     rangeRequest++
+    rangeRead = true
     setRange(voiceTypeRange())
     setPickerOpen(false)
     return fitOrDetect()
   }
+
+  // A find asked for before the read: nobody is waiting on its answer, so
+  // it is said here.
+  const answerWaitingFind = () => {
+    if (!findWaiting || disposed) return
+    findWaiting = false
+    const notice = findNotice(findWithRange(), keyShift())
+    if (notice !== null) notify(notice, 'info')
+  }
+
+  const readRange = () => {
+    const request = ++rangeRequest
+    void resolveSingerRange().then((resolved) => {
+      if (request !== rangeRequest) return
+      setRange(resolved)
+      rangeRead = true
+      untrack(answerWaitingFind)
+    })
+  }
+  readRange()
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') readRange()
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+  onCleanup(() =>
+    document.removeEventListener('visibilitychange', onVisibility),
+  )
 
   return {
     keyShift,
@@ -297,18 +339,10 @@ export interface StemMixerKeyView {
 export function useStemMixerKeyView(
   deps: StemMixerKeyViewDeps,
 ): StemMixerKeyView {
-  // A fit that is applied shows on the stepper; the rest would not.
-  const say = (message: string) =>
-    deps.notify(message, 'info', { channel: FIND_MY_KEY_CHANNEL })
   const announce = (result: FindMyKeyResult) => {
-    if (result === 'detecting')
-      say('Finding the melody first. This takes a moment.')
-    else if (result === 'no-melody')
-      say(
-        "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead.",
-      )
-    else if (result === 'unchanged')
-      say(fitMessage('unchanged', deps.key.keyShift()))
+    const notice = findNotice(result, deps.key.keyShift())
+    if (notice !== null)
+      deps.notify(notice, 'info', { channel: FIND_MY_KEY_CHANNEL })
   }
 
   return {
