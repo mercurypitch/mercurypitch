@@ -1139,7 +1139,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               <div class={`${styles.transportSide} ${styles.transportKeySlot}`}>
                 <button
                   class={styles.keyBtn}
-                  classList={{ [styles.keyBtnOn]: key().value() !== 0 }}
+                  // Lit for a key the song is played in; the value can be a
+                  // kept key that Pitch Studio or a missing engine holds back.
+                  classList={{ [styles.keyBtnOn]: key().heard() !== 0 }}
                   data-testid="mobile-key-shift"
                   onClick={() => setKeySheetOpen(true)}
                   title="Change the key to suit your voice"
