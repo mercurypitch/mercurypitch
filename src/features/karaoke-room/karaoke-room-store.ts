@@ -18,7 +18,9 @@
 //   - the last song sung, which the room cues on arrival (D1 A);
 //   - the three settings the Options sheet holds. The lyrics size and the
 //     notes share zen's own keys (plan §4.3), so a singer who set them in
-//     the studio's player finds them set here.
+//     the studio's player finds them set here;
+//   - whether a song keeps playing behind another app, which only Settings,
+//     Karaoke holds.
 
 import { createSignal, untrack } from 'solid-js'
 import type { GuideLevel } from '@/components/stem-mixer-hosting'
@@ -32,6 +34,7 @@ export const KARAOKE_PLAY_NEXT_KEY = 'karaoke-room-play-next'
 export const KARAOKE_LYRICS_SIZE_KEY = 'sm-zen-lyrics-size'
 export const KARAOKE_NOTE_GLYPHS_KEY = 'sm-zen-note-glyphs'
 export const KARAOKE_PINNED_KEY = 'karaoke-room-pinned'
+export const KARAOKE_BACKGROUND_PLAY_KEY = 'karaoke-room-background-play'
 
 /** The options a singer can pin beside the gear, or none. */
 export const KARAOKE_PINNABLE = ['lyrics-size', 'notes', 'play-next'] as const
@@ -59,6 +62,14 @@ const [playNext, setPlayNextSignal] = createPersistedSignal<boolean>(
   true,
   { validator: isBoolean },
 )
+/**
+ * "Keep playing in the background": on (owner, 2 Oct), so a song carries on
+ * when the singer switches apps or locks the screen, as a music app's does.
+ */
+const [backgroundPlay, setBackgroundPlaySignal] =
+  createPersistedSignal<boolean>(KARAOKE_BACKGROUND_PLAY_KEY, true, {
+    validator: isBoolean,
+  })
 const [lyricsSize, setLyricsSizeSignal] = createPersistedSignal<ZenLyricsSize>(
   KARAOKE_LYRICS_SIZE_KEY,
   'current',
@@ -87,11 +98,16 @@ export function setKaraokePinned(choice: KaraokePinned): void {
 }
 
 export const karaokePlayNext = playNext
+export const karaokeBackgroundPlay = backgroundPlay
 export const karaokeLyricsSize = lyricsSize
 export const karaokeNoteGlyphs = noteGlyphs
 
 export function setKaraokePlayNext(on: boolean): void {
   setPlayNextSignal(on)
+}
+
+export function setKaraokeBackgroundPlay(on: boolean): void {
+  setBackgroundPlaySignal(on)
 }
 
 export function setKaraokeLyricsSize(size: ZenLyricsSize): void {
@@ -187,12 +203,14 @@ export function resetKaraokeRoomForTests(): void {
   setStagedSong(null)
   setSongRequest(null)
   setPlayNextSignal(true)
+  setBackgroundPlaySignal(true)
   setLyricsSizeSignal('current')
   setNoteGlyphsSignal(false)
   setPinnedSignal('none')
   try {
     localStorage.removeItem(KARAOKE_PINNED_KEY)
     localStorage.removeItem(KARAOKE_PLAY_NEXT_KEY)
+    localStorage.removeItem(KARAOKE_BACKGROUND_PLAY_KEY)
     localStorage.removeItem(KARAOKE_LYRICS_SIZE_KEY)
     localStorage.removeItem(KARAOKE_NOTE_GLYPHS_KEY)
   } catch {

@@ -6,14 +6,15 @@
 // its own gear; these are the two of them a singer may look for here
 // instead, the size of the lyrics and whether the next song follows. One
 // store under both (karaoke-room-store.ts), so what is set in one place is
-// what the other shows.
+// what the other shows. Whether a song keeps playing behind another app is
+// here only: it is set once, not per song.
 //
 // A build that imports songs (Stage 2) adds two groups above them, the
 // subscription and the songs on this phone (KaraokeSongsGroups.tsx).
 
 import type { JSX } from 'solid-js'
 import { For } from 'solid-js'
-import { KARAOKE_LYRICS_SIZE_LABELS, karaokeLyricsSize, karaokePlayNext, setKaraokeLyricsSize, setKaraokePlayNext, } from '@/features/karaoke-room/karaoke-room-store'
+import { KARAOKE_LYRICS_SIZE_LABELS, karaokeBackgroundPlay, karaokeLyricsSize, karaokePlayNext, setKaraokeBackgroundPlay, setKaraokeLyricsSize, setKaraokePlayNext, } from '@/features/karaoke-room/karaoke-room-store'
 import { ZEN_LYRICS_SIZES } from '@/features/stem-mixer/zen-navigation'
 import { KARAOKE_IMPORT } from '@/lib/native-build'
 import { KaraokeSongsGroups } from './KaraokeSongsGroups'
@@ -60,6 +61,20 @@ export function KaraokeSettingsScreen(): JSX.Element {
               label="Play the next song automatically"
               onChange={(next) => {
                 setKaraokePlayNext(next)
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          id="karaoke-background-play"
+          label="Keep playing in the background"
+          sub="The song carries on when you switch apps or lock the screen"
+          accessory={
+            <SettingsSwitch
+              checked={karaokeBackgroundPlay()}
+              label="Keep playing in the background"
+              onChange={(next) => {
+                setKaraokeBackgroundPlay(next)
               }}
             />
           }

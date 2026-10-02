@@ -422,8 +422,10 @@ describe('on a phone', () => {
       ([options]) => (options as { action: string }).action,
     )
     expect(registered).toEqual(['play', 'pause', 'stop'])
-    for (const [options, press] of mediaSession.setActionHandler.mock
-      .calls as [{ action: string }, () => void][]) {
+    for (const [options, press] of mediaSession.setActionHandler.mock.calls as [
+      { action: string },
+      () => void,
+    ][]) {
       press()
       expect(handler).toHaveBeenLastCalledWith(options.action)
     }

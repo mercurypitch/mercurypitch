@@ -28,6 +28,7 @@ import { freqToMidi, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cache'
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
+import { createHiddenClock } from './hidden-clock'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
@@ -202,6 +203,11 @@ export interface StemMixerAudioDeps {
    * holds one (REQ-NRM-039).
    */
   audioLease?: AudioContextLease
+  /**
+   * Keep noticing the song's end while the page is hidden: a room that lets
+   * a song play behind another app (hidden-clock.ts).
+   */
+  followEndWhileHidden?: boolean
 }
 
 export interface StemMixerAudioController {
@@ -1843,48 +1849,66 @@ export const useStemMixerAudioController = (
         deps.updateCurrentLine()
       }
 
-      // End detection is meaningless until the buffers report a real duration.
-      // Without this guard a tick that runs before decode finishes sees
-      // elapsedTime (~0) >= duration() (0) and reports a spurious "natural
-      // end" — in a karaoke playlist that instantly skips the song to the
-      // score/summary screen (the "second song ends before it starts" bug).
-      if (duration() <= 0) {
-        rafId = requestAnimationFrame(tick)
-        return
-      }
-
-      const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
-
-      // If playback re-entered the loop region, clear the escape flag
-      if (
-        seekedOutsideLoop &&
-        loopEnabled() &&
-        elapsedTime >= loopStart() &&
-        elapsedTime < loopEnd()
-      ) {
-        seekedOutsideLoop = false
-      }
-
-      if (elapsedTime >= endTime) {
-        if (loopEnabled() && !seekedOutsideLoop) {
-          setLoopCount(loopCount() + 1)
-          deps.markLoopIteration()
-          seekTo(loopStart())
-          rafId = requestAnimationFrame(tick)
-          return
-        }
-        // Outside loop or loop disabled — stop at end of track
-        if (elapsedTime >= duration()) {
-          // Natural end (not a manual stop) — notify the playlist to advance.
-          deps.onPlaybackEnded?.()
-          handleStop()
-          return
-        }
-      }
-
+      if (!followEnd(elapsedTime)) return
       rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
+  }
+
+  /**
+   * The loop's end and the song's, as the clock reads them. False once the
+   * song has stopped at its end, so the caller's loop goes no further.
+   */
+  const followEnd = (elapsedTime: number): boolean => {
+    // End detection is meaningless until the buffers report a real duration.
+    // Without this guard a tick that runs before decode finishes sees
+    // elapsedTime (~0) >= duration() (0) and reports a spurious "natural
+    // end" — in a karaoke playlist that instantly skips the song to the
+    // score/summary screen (the "second song ends before it starts" bug).
+    if (duration() <= 0) return true
+
+    const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
+
+    // If playback re-entered the loop region, clear the escape flag
+    if (
+      seekedOutsideLoop &&
+      loopEnabled() &&
+      elapsedTime >= loopStart() &&
+      elapsedTime < loopEnd()
+    ) {
+      seekedOutsideLoop = false
+    }
+
+    if (elapsedTime >= endTime) {
+      if (loopEnabled() && !seekedOutsideLoop) {
+        setLoopCount(loopCount() + 1)
+        deps.markLoopIteration()
+        seekTo(loopStart())
+        return true
+      }
+      // Outside loop or loop disabled — stop at end of track
+      if (elapsedTime >= duration()) {
+        // Natural end (not a manual stop) — notify the playlist to advance.
+        deps.onPlaybackEnded?.()
+        handleStop()
+        return false
+      }
+    }
+    return true
+  }
+
+  // No frames reach a hidden page, so the frame loop above cannot end a
+  // song a room keeps playing behind another app (hidden-clock.ts).
+  const soundingNow = (): boolean => audioCtx !== null && playing()
+  const hiddenTick = (): void => {
+    if (!audioCtx) return
+    const elapsedTime =
+      bufferPlayStart + (audioCtx.currentTime - wallPlayStart) * playbackSpeed
+    setElapsed(Math.min(elapsedTime, duration()))
+    followEnd(elapsedTime)
+  }
+  if (deps.followEndWhileHidden === true) {
+    onCleanup(createHiddenClock(soundingNow, hiddenTick))
   }
 
   // ── Download ─────────────────────────────────────────────────

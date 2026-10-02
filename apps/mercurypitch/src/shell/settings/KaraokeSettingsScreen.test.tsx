@@ -7,7 +7,7 @@
 // behind both, so a change in either place is the change in the other.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { karaokeLyricsSize, karaokePlayNext, resetKaraokeRoomForTests, setKaraokeLyricsSize, } from '@/features/karaoke-room/karaoke-room-store'
+import { karaokeBackgroundPlay, karaokeLyricsSize, karaokePlayNext, resetKaraokeRoomForTests, setKaraokeLyricsSize, } from '@/features/karaoke-room/karaoke-room-store'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { KaraokeSettingsScreen } from './KaraokeSettingsScreen'
@@ -86,5 +86,18 @@ describe('Settings, Karaoke', () => {
 
     expect(karaokePlayNext()).toBe(false)
     expect(next?.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('keeps a song playing in the background until that is turned off', () => {
+    const root = mount()
+    const background = root.querySelector<HTMLElement>(
+      '[role="switch"][aria-label="Keep playing in the background"]',
+    )
+    expect(background?.getAttribute('aria-checked')).toBe('true')
+
+    background?.click()
+
+    expect(karaokeBackgroundPlay()).toBe(false)
+    expect(background?.getAttribute('aria-checked')).toBe('false')
   })
 })
