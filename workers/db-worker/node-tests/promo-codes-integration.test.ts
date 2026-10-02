@@ -11,7 +11,12 @@
 // - Expired, not-yet-open, inactive and capped promo codes are rejected.
 // - The three writes of a grant land together or not at all.
 // - GET /api/billing/me reports redeemed promo codes reactively.
-// The seeded campaign row is checked separately, under a fixed clock.
+// - GET /api/billing/promo/featured offers the featured code only while it
+//   is open, and says nothing about its cap.
+// - Admin edits through the table API: dates are validated, the redemption
+//   counter is untouchable, and only one code can be featured.
+// The seeded campaign rows (PRODUCT_HUNT, then LAUNCH) are checked separately,
+// under a fixed clock.
 
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,6 +27,8 @@ import { applyMigrations, SqliteD1Database } from './sqlite-d1'
 let sqlite: DatabaseSync
 let perksSqlite: DatabaseSync
 let env: Env
+
+const ADMIN_KEY = 'test-admin-key-promo'
 
 interface Account {
   userId: string
@@ -145,6 +152,7 @@ describe('Promo codes integration', () => {
       JWT_SECRET: 'test-jwt-secret-promo',
       PASSWORD_SALT: 'test-salt',
       ALLOWED_ORIGINS: 'localhost',
+      ADMIN_KEY: ADMIN_KEY,
     } as unknown as Env
   })
 
@@ -496,6 +504,198 @@ describe('Promo codes integration', () => {
       expect(refused.status).toBe(400)
       const body = (await refused.json()) as { error: string }
       expect(body.error).toMatch(/expired/i)
+    })
+  })
+
+  describe('the seeded LAUNCH campaign', () => {
+    it('is seeded featured, open from 2 October 2026 to the end of 1 January 2027', () => {
+      const row = sqlite
+        .prepare(
+          'SELECT code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active, featured FROM promoCodes WHERE id = ?',
+        )
+        .get('promo-2026-q4') as Record<string, unknown>
+      expect(row).toEqual({
+        code: 'LAUNCH',
+        credits: 5,
+        maxRedemptions: 1000,
+        redemptionCount: 0,
+        startsAt: '2026-10-02T00:00:00.000Z',
+        expiresAt: '2027-01-01T23:59:59.000Z',
+        active: 1,
+        featured: 1,
+      })
+    })
+
+    it('redeems on the last day and refuses the day after', async () => {
+      vi.useFakeTimers({
+        toFake: ['Date'],
+        now: new Date('2027-01-01T22:00:00.000Z'),
+      })
+      const lastDay = await verified('New Year Singer')
+      const ok = await post(lastDay, '/api/billing/promo/redeem', {
+        code: 'LAUNCH',
+      })
+      expect(ok.status).toBe(200)
+      const granted = (await ok.json()) as { creditsGranted: number }
+      expect(granted.creditsGranted).toBe(5)
+
+      vi.setSystemTime(new Date('2027-01-02T00:00:00.000Z'))
+      const late = await verified('January Singer')
+      const refused = await post(late, '/api/billing/promo/redeem', {
+        code: 'LAUNCH',
+      })
+      expect(refused.status).toBe(400)
+      const body = (await refused.json()) as { error: string }
+      expect(body.error).toMatch(/expired/i)
+    })
+
+    it('refuses before it opens', async () => {
+      vi.useFakeTimers({
+        toFake: ['Date'],
+        now: new Date('2026-10-01T12:00:00.000Z'),
+      })
+      const early = await verified('Early October Singer')
+      const refused = await post(early, '/api/billing/promo/redeem', {
+        code: 'LAUNCH',
+      })
+      expect(refused.status).toBe(400)
+      const body = (await refused.json()) as { error: string }
+      expect(body.error).toMatch(/not active yet/i)
+    })
+  })
+
+  describe('GET /api/billing/promo/featured', () => {
+    async function featured(): Promise<unknown> {
+      // No Authorization header: the header pill asks before anyone signs in.
+      const response = await workerRequest('/api/billing/promo/featured')
+      expect(response.status).toBe(200)
+      return response.json()
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({
+        toFake: ['Date'],
+        now: new Date('2026-11-15T12:00:00.000Z'),
+      })
+    })
+
+    it('offers the featured code with only its code, credits and end', async () => {
+      expect(await featured()).toEqual({
+        promo: {
+          code: 'LAUNCH',
+          credits: 5,
+          expiresAt: '2027-01-01T23:59:59.000Z',
+        },
+      })
+    })
+
+    it('offers nothing once the featured code has ended', async () => {
+      vi.setSystemTime(new Date('2027-01-02T00:00:00.000Z'))
+      expect(await featured()).toEqual({ promo: null })
+    })
+
+    it('offers nothing while the featured code is switched off', async () => {
+      sqlite
+        .prepare("UPDATE promoCodes SET active = 0 WHERE code = 'LAUNCH'")
+        .run()
+      expect(await featured()).toEqual({ promo: null })
+    })
+
+    it('offers nothing once the featured code is fully claimed', async () => {
+      sqlite
+        .prepare(
+          "UPDATE promoCodes SET redemptionCount = 1000 WHERE code = 'LAUNCH'",
+        )
+        .run()
+      expect(await featured()).toEqual({ promo: null })
+    })
+
+    it('never offers an open code that is not featured', async () => {
+      // LAUNCH_TEST, seeded for every test, is open; only LAUNCH was featured.
+      sqlite
+        .prepare("UPDATE promoCodes SET featured = 0 WHERE code = 'LAUNCH'")
+        .run()
+      expect(await featured()).toEqual({ promo: null })
+    })
+  })
+
+  describe('editing codes through the admin table API', () => {
+    function patch(id: string, body: unknown): Promise<Response> {
+      return workerRequest(`/api/promoCodes/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': ADMIN_KEY,
+        },
+        body: JSON.stringify(body),
+      })
+    }
+
+    function launchRow(): Record<string, unknown> {
+      return sqlite
+        .prepare(
+          'SELECT credits, expiresAt, redemptionCount, featured FROM promoCodes WHERE id = ?',
+        )
+        .get('promo-2026-q4') as Record<string, unknown>
+    }
+
+    it('moves an end date', async () => {
+      const response = await patch('promo-2026-q4', {
+        expiresAt: '2027-01-31T23:59:59.000Z',
+      })
+      expect(response.status).toBe(200)
+      expect(launchRow().expiresAt).toBe('2027-01-31T23:59:59.000Z')
+    })
+
+    it('refuses an end date that is not a timestamp and keeps the old one', async () => {
+      const response = await patch('promo-2026-q4', {
+        expiresAt: '1.01.2027',
+      })
+      expect(response.status).toBe(400)
+      expect(launchRow().expiresAt).toBe('2027-01-01T23:59:59.000Z')
+    })
+
+    it('never lets a write move the redemption counter', async () => {
+      sqlite
+        .prepare(
+          "UPDATE promoCodes SET redemptionCount = 8 WHERE id = 'promo-2026-q4'",
+        )
+        .run()
+      const response = await patch('promo-2026-q4', {
+        redemptionCount: 0,
+        credits: 6,
+      })
+      expect(response.status).toBe(200)
+      expect(launchRow()).toMatchObject({ credits: 6, redemptionCount: 8 })
+    })
+
+    it('features a second code only after the first stops being featured', async () => {
+      const clash = await patch('promo-test', { featured: true })
+      expect(clash.status).toBe(400)
+      expect(launchRow().featured).toBe(1)
+
+      expect((await patch('promo-2026-q4', { featured: false })).status).toBe(
+        200,
+      )
+      expect((await patch('promo-test', { featured: true })).status).toBe(200)
+
+      const response = await workerRequest('/api/billing/promo/featured')
+      expect(await response.json()).toEqual({
+        promo: {
+          code: 'LAUNCH_TEST',
+          credits: 5,
+          expiresAt: '2099-01-01T00:00:00.000Z',
+        },
+      })
+    })
+
+    it('reads the featured flag back as a boolean', async () => {
+      const response = await workerRequest('/api/promoCodes/promo-2026-q4', {
+        headers: { 'X-Admin-Key': ADMIN_KEY },
+      })
+      expect(response.status).toBe(200)
+      const row = (await response.json()) as { featured: unknown }
+      expect(row.featured).toBe(true)
     })
   })
 })

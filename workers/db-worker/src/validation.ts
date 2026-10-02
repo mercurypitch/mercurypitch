@@ -3,6 +3,8 @@
 // so the main project's tests can import them without pulling the whole
 // worker — and its Cloudflare ambient types — into their compilation.
 
+import { validatePromoWrite } from './promo-rules'
+
 type Row = Record<string, unknown>
 
 /**
@@ -11,6 +13,9 @@ type Row = Record<string, unknown>
  * numbers. Returns an error message, or null when the body is acceptable.
  */
 export function validateWrite(entity: string, body: Row): string | null {
+  // Admin-only, but the dates decide when a code hands out credits: one that
+  // does not parse would otherwise never expire.
+  if (entity === 'promoCodes') return validatePromoWrite(body)
   if (entity === 'sessionRecords') {
     const inRange = (v: unknown, lo: number, hi: number): boolean =>
       v === undefined || (typeof v === 'number' && v >= lo && v <= hi)

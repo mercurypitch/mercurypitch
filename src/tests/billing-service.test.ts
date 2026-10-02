@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as AuthService from '@/db/services/auth-service'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, redeemPromoCode, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { fetchFeaturedPromo, fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, redeemPromoCode, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
 import * as UserService from '@/db/services/user-service'
 import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../workers/db-worker/src/billing-core'
 
@@ -144,6 +144,73 @@ describe('fetchPricing', () => {
     await expect(fetchPricing('https://api.test')).rejects.toThrow(
       'Failed to load pricing',
     )
+  })
+})
+
+describe('fetchFeaturedPromo', () => {
+  const LAUNCH = {
+    code: 'LAUNCH',
+    credits: 5,
+    expiresAt: '2027-01-01T23:59:59.000Z',
+  }
+
+  function answer(body: unknown, ok = true) {
+    return vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok,
+      status: ok ? 200 : 503,
+      json: () => Promise.resolve(body),
+    } as Response)
+  }
+
+  it('returns the code the server features', async () => {
+    const fetchSpy = answer({ promo: LAUNCH })
+    expect(await fetchFeaturedPromo('https://api.test')).toEqual(LAUNCH)
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe(
+      'https://api.test/api/billing/promo/featured',
+    )
+  })
+
+  it('returns an offer that never ends', async () => {
+    answer({ promo: { ...LAUNCH, expiresAt: null } })
+    expect(await fetchFeaturedPromo('https://api.test')).toEqual({
+      ...LAUNCH,
+      expiresAt: null,
+    })
+  })
+
+  it('returns null when nothing is featured', async () => {
+    answer({ promo: null })
+    expect(await fetchFeaturedPromo('https://api.test')).toBeNull()
+  })
+
+  it('does not ask when no API is configured', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch')
+    expect(await fetchFeaturedPromo('')).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a server error', () => answer({ promo: LAUNCH }, false)],
+    [
+      'a network failure',
+      () =>
+        vi
+          .spyOn(global, 'fetch')
+          .mockRejectedValue(new TypeError('Failed to fetch')),
+    ],
+    [
+      'credits that are not a number',
+      () => answer({ promo: { ...LAUNCH, credits: 'five' } }),
+    ],
+    ['zero credits', () => answer({ promo: { ...LAUNCH, credits: 0 } })],
+    ['an empty code', () => answer({ promo: { ...LAUNCH, code: '' } })],
+    [
+      'an end date that does not parse',
+      () => answer({ promo: { ...LAUNCH, expiresAt: 'soon' } }),
+    ],
+  ])('returns null instead of throwing on %s', async (_label, arrange) => {
+    arrange()
+    await expect(fetchFeaturedPromo('https://api.test')).resolves.toBeNull()
   })
 })
 

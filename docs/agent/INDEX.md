@@ -232,6 +232,7 @@ These are the rules that break things when ignored.
 | [karaoke-settings-store.ts](../../src/stores/karaoke-settings-store.ts) | 50 | Karaoke Settings Store — the preferences the Karaoke tab actually honours These used to live behind the cogwheel in the Karaoke tab heade... |
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
+| [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
 | [usage-store.ts](../../src/stores/usage-store.ts) | 50 | Usage store — lightweight cumulative "has really used the app" tracking Persists two coarse signals across sessions: - usageMs: foregroun... |
@@ -260,7 +261,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 26.2k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 26.4k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -398,6 +399,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/progress/ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 1.5k |
 | [src/lib/backgrounds/background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 1.5k |
 | [src/lib/vocal-analyzer.ts](../../src/lib/vocal-analyzer.ts) | 1.5k |
+| [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.5k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
@@ -405,7 +407,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 1.4k |
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
-| [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.4k |
 | [workers/db-worker/src/email.ts](../../workers/db-worker/src/email.ts) | 1.4k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.3k |

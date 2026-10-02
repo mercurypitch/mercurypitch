@@ -25,7 +25,9 @@ const ADMIN_KEY = 'promo-read-test-admin'
 /** A code nobody advertises: the case the mask exists for. */
 const PRIVATE_CODE = 'PARTNER_QX7M2'
 /** Seeded by migration 0045 under this id. */
-const LAUNCH_ID = 'promo-ph-2026'
+const PRODUCT_HUNT_ID = 'promo-ph-2026'
+/** Seeded by migration 0054, the code the app features. */
+const LAUNCH_ID = 'promo-2026-q4'
 
 let sqlite: DatabaseSync
 let env: Env
@@ -110,8 +112,9 @@ describe('GET /api/promoCodes — what a non-admin reads', () => {
   it('lists every campaign to an anonymous caller without its code', async () => {
     const rows = await readRows('/api/promoCodes')
     expect(rows.map((row) => row.id).sort()).toEqual([
-      'promo-partner',
       LAUNCH_ID,
+      'promo-partner',
+      PRODUCT_HUNT_ID,
     ])
     for (const row of rows) expect(row).not.toHaveProperty('code')
   })
@@ -122,6 +125,7 @@ describe('GET /api/promoCodes — what a non-admin reads', () => {
     const body = await (await get('/api/promoCodes')).text()
     expect(body).not.toContain(PRIVATE_CODE)
     expect(body).not.toContain('PRODUCT_HUNT')
+    expect(body).not.toContain('LAUNCH')
     expect(body).not.toContain('"code"')
   })
 
@@ -148,7 +152,7 @@ describe('GET /api/promoCodes — what a non-admin reads', () => {
     const admin = { 'X-Admin-Key': ADMIN_KEY }
     const rows = await readRows('/api/promoCodes', admin)
     expect(byId(rows, 'promo-partner')?.code).toBe(PRIVATE_CODE)
-    expect(byId(rows, LAUNCH_ID)?.code).toBe('PRODUCT_HUNT')
+    expect(byId(rows, PRODUCT_HUNT_ID)?.code).toBe('PRODUCT_HUNT')
 
     const single = await get('/api/promoCodes/promo-partner', admin)
     expect(single.status).toBe(200)
@@ -177,7 +181,7 @@ describe('GET /api/promoCodes — filtering or sorting on the code', () => {
     const rows = await readRows('/api/promoCodes?where[code]=PRODUCT_HUNT', {
       'X-Admin-Key': ADMIN_KEY,
     })
-    expect(rows.map((row) => row.id)).toEqual([LAUNCH_ID])
+    expect(rows.map((row) => row.id)).toEqual([PRODUCT_HUNT_ID])
     expect(rows[0]!.code).toBe('PRODUCT_HUNT')
   })
 

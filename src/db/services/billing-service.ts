@@ -399,6 +399,50 @@ export function isTierSoon(
   return plan.amount == null && plan.credits == null
 }
 
+/** The code the app offers with one click (GET /api/billing/promo/featured). */
+export interface FeaturedPromo {
+  code: string
+  credits: number
+  /** When the offer ends (UTC); null when it has no end. */
+  expiresAt: string | null
+}
+
+function isFeaturedPromo(value: unknown): value is FeaturedPromo {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<FeaturedPromo>
+  return (
+    typeof candidate.code === 'string' &&
+    candidate.code !== '' &&
+    typeof candidate.credits === 'number' &&
+    Number.isInteger(candidate.credits) &&
+    candidate.credits > 0 &&
+    (candidate.expiresAt === null ||
+      (typeof candidate.expiresAt === 'string' &&
+        Number.isFinite(Date.parse(candidate.expiresAt))))
+  )
+}
+
+/**
+ * The promo the server features, or null: none featured, none open, no API
+ * configured, or an answer that does not read as one. Never throws. The
+ * offer is an extra; a failed look-up must not break the header that asks.
+ */
+export async function fetchFeaturedPromo(
+  base?: string,
+): Promise<FeaturedPromo | null> {
+  const b = apiBase(base)
+  if (b === '') return null
+  try {
+    const res = await fetch(`${b}/api/billing/promo/featured`)
+    if (!res.ok) return null
+    const body = (await res.json()) as { promo?: unknown } | null
+    const promo = body?.promo
+    return isFeaturedPromo(promo) ? promo : null
+  } catch {
+    return null
+  }
+}
+
 export interface RedeemPromoResponse {
   success: boolean
   code: string
