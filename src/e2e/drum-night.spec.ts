@@ -2278,6 +2278,31 @@ test('sets, moves, clears, and scrubs the authored A B loop with a real pointer 
     .toEqual(['false', 'true'])
 })
 
+test('gives the loop track the whole rail at 320px while no close-up is offered', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.goto('/drum-night', { waitUntil: 'domcontentloaded' })
+
+  const frame = page.getByTestId('drum-night-loop-range')
+  const track = frame.locator('input[type="range"]')
+  await expect(track).toBeVisible()
+  await expect(
+    frame.getByRole('button', { name: 'Focus the A B loop' }),
+  ).toHaveCount(0)
+  const [frameBox, trackBox] = await Promise.all([
+    frame.boundingBox(),
+    track.boundingBox(),
+  ])
+  if (frameBox === null || trackBox === null) {
+    throw new Error('the loop rail is missing geometry')
+  }
+  // Keeping the close-up button's place is the karaoke mixer's choice. A
+  // phone's drum track has none to spare: an empty 44 px slot took a fifth
+  // of it.
+  expect(frameBox.width - trackBox.width).toBeLessThan(12)
+})
+
 test('keeps quarter-beat marks and end-boundary controls pointer-safe at 320px @smoke', async ({
   page,
 }) => {
