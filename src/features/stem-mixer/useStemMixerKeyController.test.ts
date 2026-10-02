@@ -83,6 +83,26 @@ interface MountOptions {
 
 const FOUND: PitchAnalysisOutcome = { ok: true }
 
+const MEASURED_TAKE: VoiceprintRecord = {
+  id: 'take',
+  takenAt: '2026-09-20',
+  twin: null,
+  source: 'mirror',
+  summary: {
+    lowMidi: 45,
+    highMidi: 67,
+    semitones: 22,
+    accuracy: null,
+    steadiness: null,
+  },
+}
+
+/** Lets the stored range's read (voiceprints, then Settings) come back. */
+const rangeRead = () =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, 0)
+  })
+
 function mount(
   sessionId: string,
   queueEntry: QueueEntry | null = null,
@@ -222,7 +242,7 @@ describe('where a change is remembered', () => {
 describe('find my key', () => {
   it('asks for a voice type when no range is known, then applies the fit', async () => {
     const controller = start(freshSong())
-    await Promise.resolve()
+    await rangeRead()
 
     expect(controller.rangeKnown()).toBe(false)
     expect(controller.findMyKey()).toBe('needs-range')
@@ -263,7 +283,7 @@ describe('find my key', () => {
 
   it('reads a range measured in another tab once this one is shown again', async () => {
     const controller = start(freshSong())
-    await Promise.resolve()
+    await rangeRead()
     expect(controller.findMyKey()).toBe('needs-range')
 
     fakes.takes = [
@@ -293,7 +313,7 @@ describe('find my key', () => {
 
   it('opens the voice-type picker for a singer with no range, and closes it on a pick', async () => {
     const controller = start(freshSong())
-    await Promise.resolve()
+    await rangeRead()
 
     expect(controller.findMyKey()).toBe('needs-range')
     expect(controller.voiceTypePickerOpen()).toBe(true)
@@ -405,6 +425,48 @@ describe('find my key', () => {
 
     expect(controller.findMyKey()).toBe('unchanged')
     expect(controller.keyShift()).toBe(fitted)
+  })
+
+  it('waits for the stored range instead of asking for one the singer has', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const controller = start(freshSong())
+
+    expect(controller.findMyKey()).toBe('reading-range')
+    expect(controller.voiceTypePickerOpen()).toBe(false)
+
+    await vi.waitFor(() => expect(controller.keyShift()).not.toBe(0))
+    expect(controller.keyShift()).toBe(controller.suggestion()?.keyShift)
+    expect(controller.voiceTypePickerOpen()).toBe(false)
+  })
+
+  it('asks for a voice type once the read has found none', async () => {
+    const controller = start(freshSong())
+
+    expect(controller.findMyKey()).toBe('reading-range')
+    expect(controller.voiceTypePickerOpen()).toBe(false)
+
+    await vi.waitFor(() => expect(controller.voiceTypePickerOpen()).toBe(true))
+  })
+
+  it('says what it went on to do once the range is read', async () => {
+    fakes.takes = [MEASURED_TAKE]
+    const notify = vi.fn<Notify>()
+    harness = mount(freshSong(), null, null, {
+      melody: [],
+      detectMelody: () => null,
+      notify,
+    })
+
+    expect(harness.controller.findMyKey()).toBe('reading-range')
+
+    await vi.waitFor(() => expect(notify).toHaveBeenCalled())
+    expect(notify.mock.calls).toEqual([
+      [
+        "Find my key needs the song's melody, and it cannot be found on this device. Set the key with − and + instead.",
+        'info',
+        { channel: 'stem-mixer-find-my-key' },
+      ],
+    ])
   })
 
   it('cannot fit where the melody cannot be detected', () => {
@@ -589,6 +651,7 @@ describe('what the mixer shows', () => {
       'no-melody',
       'applied',
       'needs-range',
+      'reading-range',
     ]
 
     for (const result of results) {
