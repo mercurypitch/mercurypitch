@@ -254,6 +254,21 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'clear loop')).toBe('Loop cleared')
   })
 
+  it('toggles the loop on only once A and B make one, and off always', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+    // A alone would loop from A to the song's end; the Loop button and L wait
+    // for B, and so does the spoken toggle.
+    expect(fire(fixture, 'toggle loop')).toBe('Set A and B first')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+
+    fixture.deps.loop.setEnd(45)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop on')
+    expect(fixture.deps.loop.enabled()).toBe(true)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop off')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
   it('steps and sets the mixer speed with the multiplier rule', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'faster')).toBe('Speed 1.5x')
