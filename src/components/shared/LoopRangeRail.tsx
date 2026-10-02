@@ -1,9 +1,20 @@
 // LoopRangeRail is a zero-safe seek rail with canonical A/B editing on a separate display axis.
 // ============================================================
+//
+// A short loop gets a close-up of A to B, opened from a button at the end of
+// the rail. The button's place is kept whether it is offered or not, so the
+// track does not get shorter, and every point on it move, at the moment B
+// makes a short loop.
+//
+// The close-up floats over the rail, so it closes by the app's one rule for
+// floating panels (use-popover-layer): a press outside, or Escape. The rail
+// it magnifies counts as inside: seeking on it, or dragging a mark there,
+// keeps the close-up open.
 
 import type { Accessor, Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Maximize2, Minimize2 } from '@/components/icons'
+import { usePopoverLayer } from '@/lib/use-popover-layer'
 import type { DragGestureEndReason, DragGestureOptions } from './drag-gesture'
 import { dragGesture } from './drag-gesture'
 import type { LoopRangeDomain } from './loop-range-rail'
@@ -52,6 +63,14 @@ export interface LoopRangeRailProps {
    * in its place, for a host whose rail has controls close above it.
    */
   lensSide?: 'above' | 'over'
+  /**
+   * The close-up button's name and tooltip while the close-up is shut, in
+   * the host's words. Without one it keeps Guitar Night's: "Focus A–B",
+   * read out as "Focus the A B loop".
+   */
+  zoomInLabel?: string
+  /** The same while it is open. Default "Full score". */
+  zoomOutLabel?: string
 }
 
 const SEEK_KEYS = new Set([
@@ -69,8 +88,10 @@ const clamp = (value: number, minimum: number, maximum: number): number =>
   Math.min(maximum, Math.max(minimum, value))
 
 export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
+  let frame: HTMLDivElement | undefined
   let rail: HTMLDivElement | undefined
   let precisionRail: HTMLDivElement | undefined
+  let focusButton: HTMLButtonElement | undefined
   const [railWidth, setRailWidth] = createSignal(0)
   const [focused, setFocused] = createSignal(false)
   const [dragTarget, setDragTarget] = createSignal<'A' | 'B' | null>(null)
@@ -275,6 +296,19 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
     if (markSpan() === null) setFocused(false)
   })
 
+  usePopoverLayer({
+    open: focused,
+    onClose: (reason) => {
+      const hadFocus = frame?.contains(document.activeElement) === true
+      setFocused(false)
+      if (reason === 'escape' && hadFocus) focusButton?.focus()
+    },
+    inside: () => [frame],
+    // Drawn in the rail's own box, the close-up moves with the rail: a scroll
+    // or a resize cannot leave it stranded, so neither closes it.
+    pinned: () => true,
+  })
+
   onMount(() => {
     const element = rail
     if (element === undefined) return
@@ -344,15 +378,11 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
 
   return (
     <div
+      ref={frame}
       class={`${styles.frame} ${props.class ?? ''}`}
       data-focused={focused() ? 'true' : undefined}
       data-active={(props.active?.() ?? true) ? 'true' : 'false'}
       data-testid={`${props.testIdPrefix}-loop-range`}
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape' || !focused()) return
-        event.preventDefault()
-        setFocused(false)
-      }}
     >
       <div ref={rail} class={styles.rail}>
         <div class={styles.track} aria-hidden="true" />
@@ -442,13 +472,20 @@ export const LoopRangeRail: Component<LoopRangeRailProps> = (props) => {
 
       <Show when={focused() || focusOffered()}>
         <button
+          ref={focusButton}
           type="button"
           class={styles.focusAction}
           aria-pressed={focused()}
           aria-label={
-            focused() ? 'Close the focused loop editor' : 'Focus the A B loop'
+            focused()
+              ? (props.zoomOutLabel ?? 'Close the focused loop editor')
+              : (props.zoomInLabel ?? 'Focus the A B loop')
           }
-          title={focused() ? 'Full score' : 'Focus A–B'}
+          title={
+            focused()
+              ? (props.zoomOutLabel ?? 'Full score')
+              : (props.zoomInLabel ?? 'Focus A–B')
+          }
           onClick={() => setFocused((current) => !current)}
         >
           <span aria-hidden="true">

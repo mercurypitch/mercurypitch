@@ -306,3 +306,114 @@ describe('LoopRangeRail', () => {
     )
   })
 })
+
+// The close-up of a short loop: what its button is called, and how it
+// closes. It floats over the rail, so it closes by the app's one rule for
+// floating panels (use-popover-layer): a press outside the rail, or Escape.
+describe('LoopRangeRail close-up', () => {
+  beforeEach(() => {
+    // 4 s of a 120 s song on a 400 px rail is 13 px: the close-up is offered.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => rect(100, 400),
+    )
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
+
+  function mountCloseUp(
+    labels: { zoomInLabel?: string; zoomOutLabel?: string } = {},
+  ) {
+    render(() => (
+      <LoopRangeRail
+        axisDomain={() => ({ start: 0, end: 120 })}
+        axisValue={() => 30}
+        markDomain={() => ({ start: 0, end: 120 })}
+        markA={() => 20}
+        markB={() => 24}
+        toAxis={(seconds) => seconds}
+        fromAxis={(seconds) => seconds}
+        formatAxisValue={String}
+        formatMarkValue={String}
+        seekLabel="Song position"
+        onSeek={vi.fn()}
+        onMoveMarkA={vi.fn()}
+        onMoveMarkB={vi.fn()}
+        testIdPrefix="close-up"
+        {...labels}
+      />
+    ))
+  }
+
+  const lens = () => screen.queryByTestId('close-up-loop-precision-lens')
+
+  it("names its button in the host's words, open and closed", () => {
+    mountCloseUp({
+      zoomInLabel: 'Zoom to the loop',
+      zoomOutLabel: 'Show the whole song',
+    })
+    const zoomIn = screen.getByRole('button', { name: 'Zoom to the loop' })
+    expect(zoomIn).toHaveAttribute('title', 'Zoom to the loop')
+
+    fireEvent.click(zoomIn)
+
+    const zoomOut = screen.getByRole('button', { name: 'Show the whole song' })
+    expect(zoomOut).toHaveAttribute('title', 'Show the whole song')
+    expect(zoomOut).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it("keeps Guitar Night's words when the host names nothing", () => {
+    mountCloseUp()
+    const zoomIn = screen.getByRole('button', { name: 'Focus the A B loop' })
+    expect(zoomIn).toHaveAttribute('title', 'Focus A–B')
+
+    fireEvent.click(zoomIn)
+
+    expect(
+      screen.getByRole('button', { name: 'Close the focused loop editor' }),
+    ).toHaveAttribute('title', 'Full score')
+  })
+
+  it('closes on a press outside the rail', () => {
+    mountCloseUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Focus the A B loop' }))
+    expect(lens()).not.toBeNull()
+
+    fireEvent.pointerDown(document.body)
+
+    expect(lens()).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Focus the A B loop' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('stays open for a press inside it or on the rail it magnifies', () => {
+    mountCloseUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Focus the A B loop' }))
+
+    fireEvent.pointerDown(lens()!)
+    fireEvent.pointerDown(screen.getByRole('slider', { name: 'Song position' }))
+
+    expect(lens()).not.toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Close the focused loop editor' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('closes on Escape wherever the focus is, and keeps the key from what is underneath', () => {
+    mountCloseUp()
+    fireEvent.click(screen.getByRole('button', { name: 'Focus the A B loop' }))
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    })
+
+    document.body.dispatchEvent(escape)
+
+    expect(lens()).toBeNull()
+    expect(escape.defaultPrevented).toBe(true)
+  })
+})

@@ -287,10 +287,19 @@ for (const viewport of VIEWPORTS) {
     test('opens the close-up of a short loop clear of the controls, in text a person can read', async ({
       page,
     }) => {
+      const before = await railLayout(page)
       // Four seconds of a thirty-second song is under 88 px of track, so the
       // rail offers the A-B close-up, as it does on Guitar Night.
       await setLoop(page, 10, 14)
-      await page.getByRole('button', { name: 'Focus the A B loop' }).click()
+      const zoomIn = page.getByRole('button', { name: 'Zoom to the loop' })
+      await expect(zoomIn).toBeVisible()
+      // Offering it moves nothing: the track keeps its length, so no point
+      // on it shifts under the pointer the moment B makes a short loop.
+      expect((await railLayout(page)).timeline.w).toBeCloseTo(
+        before.timeline.w,
+        1,
+      )
+      await zoomIn.click()
       const lens = page.getByTestId('mixer-timeline-loop-precision-lens')
       await expect(lens).toBeInViewport({ ratio: 1 })
 
@@ -323,6 +332,12 @@ for (const viewport of VIEWPORTS) {
       }
 
       await page.keyboard.press('Escape')
+      await expect(lens).toHaveCount(0)
+
+      // It floats over the rail, so a press anywhere else closes it too.
+      await zoomIn.click()
+      await expect(lens).toBeVisible()
+      await pressOutside(page)
       await expect(lens).toHaveCount(0)
     })
   })
@@ -361,7 +376,7 @@ test.describe('the rail at 1440x900, playing', () => {
     await page.getByTestId('dock-handle').click()
     await page.getByRole('button', { name: 'Dock top' }).click()
 
-    await page.getByRole('button', { name: 'Focus the A B loop' }).click()
+    await page.getByRole('button', { name: 'Zoom to the loop' }).click()
     const lens = page.getByTestId('mixer-timeline-loop-precision-lens')
     await expect(lens).toBeInViewport({ ratio: 1 })
 

@@ -17,7 +17,8 @@
 // never put where the loop rule would refuse it.
 //
 // A short loop gets the rail's close-up of A to B. It opens over the
-// timeline, in its place, so it covers none of the controls around it.
+// timeline, in its place, so it covers none of the controls around it, and
+// its button speaks of the song: "Zoom to the loop", "Show the whole song".
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
@@ -147,6 +148,8 @@ export const MixerTimeline: Component<MixerTimelineProps> = (props) => {
           onMoveMarkB={(seconds) => props.onMoveLoopPoint('B', seconds)}
           testIdPrefix="mixer-timeline"
           lensSide="over"
+          zoomInLabel="Zoom to the loop"
+          zoomOutLabel="Show the whole song"
         />
       </div>
       <span class={styles.time} data-testid="mixer-time-total">
