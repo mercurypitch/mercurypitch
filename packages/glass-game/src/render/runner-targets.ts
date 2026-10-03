@@ -331,15 +331,21 @@ export function createRunnerTargets(
       reducedMotion,
       (library) => {
         const lease = pool.acquire(recipe, library)
-        if (finishes)
-          for (const material of lease.materials)
-            finishRunnerWallMaterial(
-              material,
-              finishes,
-              lease.geometry.hasAttribute('uv'),
-            )
-        assetTransform = lease.transform.clone()
-        return lease
+        try {
+          if (finishes)
+            for (const material of lease.materials)
+              finishRunnerWallMaterial(
+                material,
+                finishes,
+                lease.geometry.hasAttribute('uv'),
+              )
+          assetTransform = lease.transform.clone()
+          return lease
+        } catch (error) {
+          // The vessel cannot release a lease that failed before handoff.
+          lease.release()
+          throw error
+        }
       },
       { castShardShadows: false },
     )
