@@ -177,14 +177,16 @@ describe('arriving in the Karaoke room', () => {
     screen.getByTestId('karaoke-mobile-stage').dataset.revealed === ''
 
   it('stays out of sight and out of reach while its song loads', () => {
-    renderInRoom(makeProps({ hosted: hosting(), loading: () => true }))
+    renderInRoom(
+      makeProps({ hosted: hosting({ arriving: true }), loading: () => true }),
+    )
     expect(revealed()).toBe(false)
     expect(screen.getByTestId('karaoke-mobile-stage').inert).toBe(true)
   })
 
   it('appears once its song is ready, and stays when another load starts', () => {
     const [loading, setLoading] = createSignal(true)
-    renderInRoom(makeProps({ hosted: hosting(), loading }))
+    renderInRoom(makeProps({ hosted: hosting({ arriving: true }), loading }))
     setLoading(false)
     expect(revealed()).toBe(true)
     expect(screen.getByTestId('karaoke-mobile-stage').inert).toBe(false)
@@ -195,7 +197,9 @@ describe('arriving in the Karaoke room', () => {
   it('shows a slow load after a moment, so the singer sees it working', () => {
     vi.useFakeTimers()
     try {
-      renderInRoom(makeProps({ hosted: hosting(), loading: () => true }))
+      renderInRoom(
+        makeProps({ hosted: hosting({ arriving: true }), loading: () => true }),
+      )
       vi.advanceTimersByTime(HOSTED_REVEAL_GRACE_MS - 1)
       expect(revealed()).toBe(false)
       vi.advanceTimersByTime(1)
@@ -205,10 +209,20 @@ describe('arriving in the Karaoke room', () => {
     }
   })
 
+  // Only the song the room opens with waits. A song changed in the room
+  // replaces a stage the singer was already using, so blanking the room
+  // until it loaded hid the bar mid-run and lost the taps meant for it.
+  it('shows a song changed in the room at once, loading card and all', () => {
+    renderInRoom(makeProps({ hosted: hosting(), loading: () => true }))
+    expect(revealed()).toBe(true)
+    expect(screen.getByTestId('karaoke-mobile-stage').inert).toBe(false)
+    expect(screen.getByText('Raising the curtain…')).toBeTruthy()
+  })
+
   it('shows a song that could not load at once', () => {
     renderInRoom(
       makeProps({
-        hosted: hosting(),
+        hosted: hosting({ arriving: true }),
         loading: () => true,
         loadError: () => 'This song could not be loaded.',
       }),

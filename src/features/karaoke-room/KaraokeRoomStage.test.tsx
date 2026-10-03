@@ -1179,6 +1179,20 @@ describe('the next song', () => {
     expect(current().autoPlay).not.toBe(true)
     expect(current().hosted.hasPrev()).toBe(true)
   })
+
+  // The song the room opens with keeps its stage out of sight until it is
+  // ready; a song changed in the room replaces a stage in use, so it shows at
+  // once rather than blanking the room under the singer's thumb.
+  it('holds back only the stage of the song it arrived with', async () => {
+    await mountRoom()
+    expect(current().hosted.stage.arriving).toBe(true)
+
+    current().hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+    expect(current().hosted.stage.arriving).not.toBe(true)
+  })
 })
 
 describe('the library', () => {

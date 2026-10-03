@@ -103,12 +103,15 @@ interface Cue {
   readonly seekSec: number | undefined
   /** The guide vocal to put back once the mixer is up, or null. */
   readonly guide: GuideLevel | null
+  /** The song the room opened with; see `KaraokeStageHosting.arriving`. */
+  readonly arriving: boolean
 }
 
 interface CueOptions {
   readonly autoPlay: boolean
   readonly seekSec?: number
   readonly guide?: GuideLevel | null
+  readonly arriving?: boolean
 }
 
 /**
@@ -192,6 +195,7 @@ export const KaraokeRoomStage: Component = () => {
       autoPlay: options.autoPlay,
       seekSec: options.seekSec,
       guide: options.guide ?? null,
+      arriving: options.arriving === true,
     })
   }
 
@@ -217,6 +221,7 @@ export const KaraokeRoomStage: Component = () => {
       autoPlay: false,
       seekSec: resuming && parked.seconds > 0 ? parked.seconds : undefined,
       guide: resuming ? parked.guide : null,
+      arriving: true,
     })
   })
 
@@ -281,6 +286,7 @@ export const KaraokeRoomStage: Component = () => {
         const coming = KARAOKE_IMPORT ? importsInFlight() : 0
         return coming > 0 ? `Separating ${coming}` : null
       },
+      arriving: entry.arriving,
     },
     attach: (controls) => {
       if (entry.key !== cueToken) return
