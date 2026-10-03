@@ -9,6 +9,184 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.15] - 2026-10-03
+
+157 commits since `v0.9.14` (82 on `main`'s first-parent line): PRs
+#880, #882, #884, #885, #894, #895, #896, #897, #900, #901, #902, #903, #904,
+#905, #906, #907, #909, #910, #911, #912, #913, #915, #916, #917, #918 and
+#919, plus direct commits for Glassworks, the free monthly song, the native
+console and Google sign-in on Android. Most of it is the native app, which a
+visitor to mercurypitch.com never runs. The sections below say which build
+each change reaches. Reviewed before the tag in three read-only passes
+(billing and workers; karaoke, lyrics and Sing; Glass and the native shell),
+with every touched test file run on its own under Node 22.
+
+### Web and API: the server names the promo, and LAUNCH runs to New Year (#896, #901)
+
+The web client no longer carries the offered code. Until now it hardcoded
+PRODUCT_HUNT and its end date, so the offer vanished from the app on
+2026-09-30 whatever the row said. Migration 0054 adds `promoCodes.featured`
+with a partial unique index (at most one featured code), and the public
+`GET /api/billing/promo/featured` names that code only while it can be
+redeemed (60 s browser cache). `src/stores/promo-store.ts` asks once per page
+load and does not retry, so a page loaded while the old DB worker still
+serves shows no pill until a reload. The header pill (main shell only: `/`,
+`/ear-lab`, `/jam`, `/pitch-training`) and the Credits card follow it;
+claiming still needs a registered account with a confirmed email.
+
+0054 seeds LAUNCH as `promo-2026-q4`: 5 credits, cap 1000, from 2026-10-02
+through 2027-01-01T23:59:59Z, featured. It is an `INSERT OR IGNORE` and
+`code` is UNIQUE, so a pre-existing LAUNCH row or id would have left nothing
+featured. A read-only check of prod on 2026-10-03 found only `promo-ph-2026`
+(expired 2026-09-30, 8 redemptions) and no `featured` column, so the
+migration inserts and features LAUNCH. Dates, switch and cap change through
+admin `PATCH /api/promoCodes/promo-2026-q4` (validated by
+`workers/db-worker/src/promo-rules.ts`) or the report console's Edit codes
+card, never by another migration. After the deploy,
+`GET https://api.mercurypitch.com/api/billing/promo/featured` must name
+LAUNCH.
+
+#896 makes `code` a private column: non-admin reads omit it, and
+`?where[code]=` or `orderBy=code` answer 400. Until this deploy every prod
+code was publicly readable; prod holds only PRODUCT_HUNT, which was
+advertised anyway. A PRODUCT_HUNT claimant can claim LAUNCH as well.
+
+### API: the app's free song, store review and sandbox purchases (#882, #885, 4e451246f)
+
+All three are reached only from the native app; web origins are refused or
+never take these paths. Migrations 0051 to 0054 apply on the tag through
+`deploy-db.yml` (backup, reconcile, migrate), before the DB worker deploys.
+
+- **Free monthly song once per confirmed email** (4e451246f, f6be41eea,
+  migration 0053): an HMAC of the address under `FREE_SONG_EMAIL_SECRET`
+  (set on prod) records the month's claim, and no email is stored. A secret
+  shorter than 32 bytes falls back to per-account only, with a warning in
+  the log. Plus-addressing still gets around it.
+- **Play review access** (#882, migration 0051): a review code, checked
+  against `REVIEW_ACCESS_CODE_SHA256`, unlocks 3 songs on up to 20 accounts.
+  Android origin only; 5 tries an hour per account and 20 per IP.
+- **Sandbox purchases on production** (#885, migration 0052): honored only
+  while `REVENUECAT_SANDBOX_ON_PRODUCTION=bounded`, which is unset on prod
+  and set only for a store review, with a daily cap.
+
+### Web and API: separation (#905, #880)
+
+- #905: a job RunPod will not take answers 503 "The studio is busy right
+  now. Try again in a minute." instead of 502. Nothing is spent either way.
+  The native import queue retries 502, 503 and 504 every 60 s; the web never
+  loads it.
+- #880, worker side: a web separation retries its debit once after 250 ms
+  when the DB worker marks it retryable (`uvr-metering.ts`). `forApp` is set
+  only for native-origin requests. For the few minutes the new main worker
+  can meet the old DB worker during the deploy, a native separation would
+  spend web credits.
+
+### Web: karaoke on phones, and the lyrics (#909, #913, #915, #917)
+
+- **Streaming stems** (#909; phones with `AudioDecoder`): every start, seek
+  and loop fades in over 15 ms; a stem window the clock has already passed is
+  dropped instead of playing as a one-frame click; a stream more than 4 s
+  behind reopens at the clock; a decode error is retried twice, and a third
+  pauses the song with "The music stopped playing. Press play to carry on."
+  (v0.9.14 logged it and played on without that stem).
+  **Known issue:** a packet that fails in the same place every time is
+  retried from that place (`pickUpPoint` in `streaming-stem-voice.ts`), so the
+  song pauses each time the decoder nears it, up to two 4 s windows before
+  the playhead, and never plays past it or ends. It needs a corrupt or
+  truncated stem; reproduced on a synthetic 60 s stem with a bad packet at
+  58 s. The fix goes with the stem mixer refactor.
+- **Lyrics re-center on resize** (#913): `KaraokeMobileStage` puts the
+  current line back in the middle when the sheet changes size, unless the
+  singer scrolled in the last 3.5 s. With no synced lyrics the finder shares
+  that scroller and a resize scrolls it to the top; whether a soft keyboard
+  does that while someone types is unverified on a device.
+- **Pause on the audio clock** (#917): `handlePause` calls `catchUpClocks`,
+  so pause and resume start from the audio clock rather than the last drawn
+  frame. The rest of #917 is native only.
+- **The held last word** (#915): for songs with a stored note analysis, a
+  line's end and its last word's sweep follow the sung note
+  (`lyric-sung-end`) and ignore the next line's early pickup.
+- **`.lyricsfile` export** (#915): `lyricsfileInputFromCanonical` puts word
+  timings on their own line after a rest, and inline-timed songs (the
+  examples) now export `words:` blocks. Serializer and parser are unchanged;
+  a file exported by v0.9.14 reads as written, misplaced word timings
+  included.
+
+### Web: the Break Glass challenge plays a recorded shatter (d206f9870)
+
+Two sampled takes (`shatter-sounds-v1/large-panel-01` and `-02`, served from
+`/glass-game-assets`) replace the synthesized break, at the volume of
+Glassworks' museum audio setting. Things to watch: the page waits for the
+sounds (up to 5 s) before asking for the microphone; a failed download
+leaves that session's breaks silent; the decoded-length cap in
+`shatter-buffer-cache.ts` (408,000 samples) rejects both takes on a 192 kHz
+output device; a museum mute carries over to `/glass`, which has no control
+to undo it. `/glass` now needs `/glass-game-assets` to stay served.
+
+### Web: smaller changes
+
+- 7eace9cf2: asking for a mailed code again shows "Still nothing? Check the
+  address and your spam folder, or try again in an hour." Every successful
+  sign-in goes through one `signedIn()` helper.
+- #897: iPad and tablet wording in the music level tooltip, the
+  noise-cancelling hint and the too-big-song message (`device-noun.ts`). An
+  Android tablet whose Chrome requests desktop sites still says "phone".
+- #884: notifications on a notched phone held sideways keep clear of the
+  notch. The rest of #884 is under `:root[data-native-shell]`.
+- #911: em dashes out of the Ear Lab copy (Ear Report, field book, regulator).
+- #904: every pitch canvas now reads `performance.now()` and an optional
+  window accessor per point; the drawing is unchanged on the web.
+
+### Glassworks at `/glass-game`: still unlisted on production (#894 and direct commits)
+
+**Not announced in `CHANGELOG.md`**, which ships inside the web app. The
+v0.9.14 hide (#883, `VITE_GLASSWORKS_LISTED`) is unchanged and nothing new
+points at `/glass-game` on prod. New on dev: Merc's narration and attentive
+idle (57ac846f6); dimensional living crystal studies with renderer gates
+(6e3b3805f); results, automatic singing and an optional crystal course
+(0754d0e2e); wide exhibits and pause controls that fit a phone, and mobile
+asset tiers (1f0298bd0, 0d9d1fba1); pearl currents and progressive Rosebud
+shattering (d09995112); living glass through the Thawing Song (d581f76f1);
+the Diadem Tide and Lotus exhibits (3d907185c); the Singing Current moving
+course (ccdd1b8d9) with live pitch, a gentler configurable pace, museum
+scenery, soundtrack controls and authored runner glass (c49cea9bc, 99f3b9522,
+7458f8646, fdc5d62d9, d206f9870); singing that starts at visible circle
+contact and tiered melody correction (d6f631827, 2b14bb772); corridor camera
+and touch fixes (#894 and others). The Resonance Conservatory now starts
+locked until earned.
+
+Assets: 236 staged files, 336.4 MiB. 42 new files add 52.45 MiB and 10
+recompressed ones save 19.28 MiB; the largest file (25,596,100 B) is
+unchanged and under the 25 MiB limit. Each deploy's Git LFS download grew
+from 204 MiB to 239 MiB.
+
+### Native app only (not in the web build)
+
+Mercury Pitch Cloud sold in the app, with web credits kept out of it (#880);
+Play review access (#882); the status bar and the Ear Lab pill (#884); the
+Rooms screen's own picture and the app's own fonts (#895); device names in
+the native sheets (#897); the pictures Progress and the Leaderboard draw
+(#903); a song that keeps playing in the background (#906); the lyrics in a
+small window on Android (#907); the small window, the microphone on return
+(#909); store shots and their Ear Lab seed (#910, #911, #912); the lyrics back
+in view after picture-in-picture, and a debug console switch (#913); a moving
+progress bar in the media notification (#916); seek, a steady pause and
+artwork in the system's media player (#917); the last song's artist cleared,
+and "Unknown artist" for a song without one (#919); the account-deletion
+link in About (b1ff2b23c); the Rooms welcome's door count (5a560d3fc); the
+floating developer console out of the store build (830f1fabc, f0703d70b);
+Google sign-in on Android (9832ba3f2); the debug APK's name (b62762355); and
+the native release packaging heap (50bce9b46). These ship through `mp-v*`
+tags; `mp-v0.8.7` (TestFlight 509) carries #915 to #918.
+
+### Tooling and tests
+
+- #900: the motion-designer, motion-critic and agent-team-architect skills.
+- #902: the SQLite node-tests are typechecked, and that check now gates the
+  prod DB deploy.
+- #918: the Glassworks voice test counts Merc's narration by its file, not
+  its length, after a recorded shatter of 0.878 s passed for narration.
+
 ## [0.9.14] - 2026-09-28
 
 283 commits since `v0.9.13` (73 on `main`'s first-parent line): PRs #859,

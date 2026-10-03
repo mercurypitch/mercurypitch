@@ -5,6 +5,40 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.15] - 2026-10-03
+
+The code LAUNCH gives five free cloud credits through January 1, and karaoke
+on a phone plays cleaner.
+
+### Added
+
+- **Five free credits with the code LAUNCH.** Tap **Promo** in the header to
+  claim them, once per account with a confirmed email, through January 1.
+  Credits pay for cloud vocal separation.
+
+### Changed
+
+- **Phone karaoke plays cleaner.** Starting, seeking and looping no longer
+  click, and music that falls behind catches up with the words. If the music
+  stops, the song pauses and tells you.
+- **The line you are singing comes back to the middle.** Turn your phone or
+  resize the window and the karaoke lyrics center on it again.
+- **Held last words light up for as long as you hold them.** A line's last
+  word now follows the note you sing, not the start of the next line.
+- **The glass challenge sounds like glass.** When your voice breaks it, you
+  hear a recorded shatter.
+
+### Fixed
+
+- **A busy cloud studio says so.** When the separation servers cannot take a
+  song, you are asked to try again in a minute. No credits are spent.
+- **A downloaded .lyricsfile keeps every word's timing on its own line**, and
+  the example songs now include word timing.
+- **Smaller things.** Asking for a sign-in code again says what to check if
+  the first one did not arrive. On an iPad or tablet, karaoke tips say iPad or
+  tablet, not phone. On a phone turned sideways, notifications stay clear of
+  the notch.
+
 ## [0.9.14] - 2026-09-28
 
 A jam room can now send an instrument as well as a voice, and a new page
