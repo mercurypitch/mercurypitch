@@ -135,11 +135,36 @@ async function openMuseum(
     let midi = 57
     let narrationStarts = 0
     let referenceStarts = 0
+    // Merc's lines and the shatter recordings are both one-shot decoded
+    // buffers of similar length (0.9-3 s), so duration cannot tell them
+    // apart. Tag each decoded buffer with the file it came from instead.
+    const responseUrls = new WeakMap<ArrayBuffer, string>()
+    const readBytes = Response.prototype.arrayBuffer
+    Response.prototype.arrayBuffer = async function () {
+      const bytes = await readBytes.call(this)
+      responseUrls.set(bytes, this.url)
+      return bytes
+    }
+    const narrationBuffers = new WeakSet<AudioBuffer>()
+    const decode = BaseAudioContext.prototype.decodeAudioData
+    BaseAudioContext.prototype.decodeAudioData = async function (
+      bytes,
+      ...callbacks
+    ) {
+      // Decoding detaches the bytes, so read the URL first.
+      const url = responseUrls.get(bytes) ?? ''
+      const buffer = await decode.call(this, bytes, ...callbacks)
+      // Merc's narration ships as adventure-voice-*/merc-*.mp3.
+      if (/\/merc-[^/]*\.mp3$/.test(new URL(url, location.href).pathname))
+        narrationBuffers.add(buffer)
+      return buffer
+    }
     const startBuffer = AudioBufferSourceNode.prototype.start
     AudioBufferSourceNode.prototype.start = function (...args) {
-      // Reference notes are oscillators; crack noise is shorter than 0.8s.
-      // This observes actual spoken buffer playback without replacing it.
-      if (!this.loop && (this.buffer?.duration ?? 0) > 0.8) narrationStarts++
+      // Reference notes are oscillators. This observes actual spoken buffer
+      // playback without replacing it.
+      if (this.buffer !== null && narrationBuffers.has(this.buffer))
+        narrationStarts++
       startBuffer.apply(this, args)
     }
     const microphoneOscillators = new WeakSet<OscillatorNode>()
