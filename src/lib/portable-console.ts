@@ -40,6 +40,14 @@ const MAX_TEXT = 2000
 
 const STORAGE_KEY = 'mp:portableConsole'
 const QUERY_KEY = 'console'
+/**
+ * Whether the panel is drawn at all. Minimised still leaves its dot on every
+ * screen, and that dot is in the shot when a test build's screen is recorded
+ * for a store (owner, 3 Oct). Off draws nothing, while the capture goes on.
+ * Switched from the native Developer screen, which every test build has, so
+ * off is never a trap: the switch that turned it off brings it back.
+ */
+const ON_SCREEN_KEY = 'mp:portableConsole:onScreen'
 
 /**
  * Where the capture survives a page load.
@@ -80,6 +88,7 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 let entries: PortableConsoleEntry[] = []
 let visible = true
+let onScreen = true
 let origin = 0
 let uninstall: (() => void) | null = null
 let persistTimer: ReturnType<typeof setTimeout> | null = null
@@ -261,6 +270,7 @@ export function initPortableConsoleVisibility(
     else if (asked === '1' || asked === 'true')
       localStorage.removeItem(STORAGE_KEY)
     visible = localStorage.getItem(STORAGE_KEY) !== '0'
+    onScreen = localStorage.getItem(ON_SCREEN_KEY) !== '0'
   } catch {
     // Storage refused (private mode). Default to shown: the flag was set on
     // purpose, and an invisible debug build helps nobody.
@@ -277,6 +287,22 @@ export function setPortableConsoleVisible(next: boolean): void {
   try {
     if (next) localStorage.removeItem(STORAGE_KEY)
     else localStorage.setItem(STORAGE_KEY, '0')
+  } catch {
+    // Not remembering it is survivable.
+  }
+  notify()
+}
+
+/** False when the Developer screen has taken the panel off the screen. */
+export function portableConsoleOnScreen(): boolean {
+  return onScreen
+}
+
+export function setPortableConsoleOnScreen(next: boolean): void {
+  onScreen = next
+  try {
+    if (next) localStorage.removeItem(ON_SCREEN_KEY)
+    else localStorage.setItem(ON_SCREEN_KEY, '0')
   } catch {
     // Not remembering it is survivable.
   }
@@ -337,6 +363,7 @@ export function resetPortableConsoleForTests(): void {
   entries = []
   listeners.clear()
   visible = true
+  onScreen = true
   origin = 0
   try {
     sessionStorage.removeItem(PERSIST_KEY)

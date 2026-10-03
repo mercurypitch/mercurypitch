@@ -183,6 +183,17 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // The console's own off switch: minimised it still leaves its dot on every
+  // screen, which is in the shot when a test build is recorded for a store
+  // (owner, 3 Oct). Same gate, same reason.
+  void import('./shell/DebugConsolePanel').then((module) => {
+    const Panel = module.DebugConsolePanel
+    registerDeveloperSection({
+      id: 'debug-console',
+      title: 'Debug console',
+      render: () => <Panel />,
+    })
+  })
   // And whether the web view was ever turned: a line in the same record at
   // launch and for every change after it, so the copied report says so even
   // when the Developer screen was opened long after the turn.

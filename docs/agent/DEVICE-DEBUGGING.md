@@ -37,6 +37,13 @@ hypothetical, it is what a phone reported on 2026-09-10.
 brings it back), for when it is standing in front of the thing being
 tested. Hiding it does not stop the capture.
 
+Minimised still leaves a dot on every screen. A native test build has a
+switch for that: Developer → Debug console → "Show the debug console".
+Off draws nothing at all, which is what a screen recording for a store needs
+(the picture-in-picture window, background playback); the capture goes on,
+and turning it back on returns the panel with everything it saw. It is
+remembered across launches (`mp:portableConsole:onScreen`).
+
 The panel deliberately passes taps through everywhere except its own
 controls, and flips between the top and bottom edge in one tap. Both
 placement traps that forced this are written up in the header of

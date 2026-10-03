@@ -26,7 +26,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { render } from 'solid-js/web'
 import { Copy, Trash2 } from '@/components/icons'
-import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleVisible, setPortableConsoleVisible, } from '@/lib/portable-console'
+import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleOnScreen, portableConsoleVisible, setPortableConsoleVisible, } from '@/lib/portable-console'
 import styles from '@/styles/PortableConsole.module.css'
 
 const HOST_ID = 'mp-portable-console'
@@ -207,6 +207,22 @@ export const PortableConsole: Component = () => {
 }
 
 /**
+ * The panel, or nothing at all while the Developer screen has it off the
+ * screen. Minimised still leaves its dot on every page, and a test build
+ * recorded for a store must not have the console in the shot (owner, 3 Oct).
+ * The capture goes on underneath, and the panel comes back with its log.
+ */
+export const PortableConsoleOnScreen: Component = () => {
+  const [on, setOn] = createSignal(portableConsoleOnScreen())
+  onCleanup(onPortableConsole(() => setOn(portableConsoleOnScreen())))
+  return (
+    <Show when={on()}>
+      <PortableConsole />
+    </Show>
+  )
+}
+
+/**
  * Start capturing and mount the panel on its own root.
  *
  * Called from every entry — this app has several documents, and the bug being
@@ -224,5 +240,5 @@ export function setupPortableConsole(): void {
   const host = document.createElement('div')
   host.id = HOST_ID
   document.body.appendChild(host)
-  render(() => <PortableConsole />, host)
+  render(() => <PortableConsoleOnScreen />, host)
 }
