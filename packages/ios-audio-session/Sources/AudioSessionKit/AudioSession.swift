@@ -56,14 +56,21 @@ import AVFoundation
 import Foundation
 
 public enum AudioSession {
-    private static let desiredOptions: AVAudioSession.CategoryOptions = [
-        .defaultToSpeaker, .allowBluetoothA2DP, .mixWithOthers,
+    private static let speakerOptions: AVAudioSession.CategoryOptions = [
+        .defaultToSpeaker, .allowBluetoothA2DP,
     ]
+    /// True from launch; see `setMixesWithOthers(_:)` for when it is not.
+    private static var mixesWithOthers = true
+    private static var desiredOptions: AVAudioSession.CategoryOptions {
+        mixesWithOthers ? speakerOptions.union(.mixWithOthers) : speakerOptions
+    }
     private static var isRoutingToSpeaker = false
 
     private static func categoryNeedsRepair(_ session: AVAudioSession) -> Bool {
+        let options = session.categoryOptions
         let hasDesiredOptions =
-            session.categoryOptions.intersection(desiredOptions) == desiredOptions
+            options.intersection(speakerOptions) == speakerOptions &&
+            options.contains(.mixWithOthers) == mixesWithOthers
         return session.category != .playAndRecord ||
             session.mode != .default ||
             !hasDesiredOptions
@@ -76,7 +83,8 @@ public enum AudioSession {
     /// the app; `.defaultToSpeaker` is the half that actually fixes the
     /// earpiece; `.allowBluetoothA2DP` so headphones and speakers still
     /// win when they are connected; `.mixWithOthers` so a player humming
-    /// along to their own music is not silenced by us.
+    /// along to their own music is not silenced by us, except while a song
+    /// of the app's own is playing (`setMixesWithOthers`).
     @discardableResult
     private static func applyIfNeeded(_ session: AVAudioSession) -> Bool {
         guard categoryNeedsRepair(session) else { return false }
@@ -188,10 +196,37 @@ public enum AudioSession {
         }
     }
 
+    /// Whether the app's sound mixes with other apps'. On from launch.
+    ///
+    /// iOS gives the lock screen's Now Playing, Control Center's player and
+    /// their buttons only to an app whose session does not mix. An app
+    /// playing a song of its own turns mixing off for it, which pauses
+    /// another app's music as any music player does, and back on once
+    /// nothing is playing. An app that never calls this keeps mixing.
+    ///
+    /// Checked against the live session on every call, never against the
+    /// last one: WebKit reconfigures the session as the page's audio starts
+    /// and stops (a page whose Web Audio falls silent can be moved to the
+    /// ambient category, which always mixes), so a repeat has to repair it.
+    public static func setMixesWithOthers(_ mixes: Bool) {
+        mixesWithOthers = mixes
+        let session = AVAudioSession.sharedInstance()
+        guard applyIfNeeded(session) else { return }
+        do {
+            // Already active; activating it again as a session that does not
+            // mix is what takes the other app's music off.
+            try session.setActive(true)
+        } catch {
+            NSLog("[AudioSession] setActive failed: \(error.localizedDescription)")
+        }
+        routeToSpeakerIfNeeded()
+    }
+
     /// What the session actually is right now, for the dev readout.
     public static func describe() -> String {
         let session = AVAudioSession.sharedInstance()
         let outputs = session.currentRoute.outputs.map(\.portType.rawValue).joined(separator: ",")
-        return "category=\(session.category.rawValue) mode=\(session.mode.rawValue) out=\(outputs.isEmpty ? "none" : outputs)"
+        let mixes = session.categoryOptions.contains(.mixWithOthers)
+        return "category=\(session.category.rawValue) mode=\(session.mode.rawValue) mixes=\(mixes) out=\(outputs.isEmpty ? "none" : outputs)"
     }
 }
