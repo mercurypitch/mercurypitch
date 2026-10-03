@@ -28,10 +28,44 @@ export const SUNG_END_RELEASE_SEC = 0.35
 export const SUNG_END_MIN_SPAN_SEC = 0.6
 
 /**
+ * How far before a window's end the next line's first note may start.
+ * A singer comes in a little ahead of the line's stamp: across the example
+ * songs the next line's first note starts up to ~0.45 s early.
+ */
+export const NEXT_LINE_LEAD_SEC = 0.5
+
+/** A note that starts this long after the voice last stopped opens a new
+ *  phrase, rather than continuing the one before it. */
+export const PHRASE_GAP_SEC = 0.25
+
+/**
+ * Whether `note` is the start of what comes after the window: it starts in
+ * the last NEXT_LINE_LEAD_SEC of the window, after the voice had stopped.
+ * Counted as this window's vocal it would stretch the line, and its last
+ * word, over the whole silence before the next line ("dark" in Nothing in
+ * the Dark, held to 114 s, swept until the next line at 125.36 s because
+ * "Broken" comes in at 125.31 s). A note that carries on without a break
+ * from the one before it is a held syllable, and stays.
+ */
+function opensNextLine(
+  note: SungNote,
+  notes: readonly SungNote[],
+  windowEnd: number,
+): boolean {
+  if (note.startBeat < windowEnd - NEXT_LINE_LEAD_SEC) return false
+  for (const other of notes) {
+    if (other === note || other.startBeat >= note.startBeat) continue
+    if (other.endBeat > note.startBeat - PHRASE_GAP_SEC) return false
+  }
+  return true
+}
+
+/**
  * The latest note end among notes overlapping [windowStart, windowEnd),
  * clamped to the window — or null when no note overlaps (instrumental
  * stretch, or the analysis missed the phrase; callers keep their own
- * fallback then).
+ * fallback then). The next line's first note, sung a little early, is not
+ * part of the window (`opensNextLine`).
  */
 export function sungEndWithin(
   notes: readonly SungNote[],
@@ -42,7 +76,9 @@ export function sungEndWithin(
   for (const note of notes) {
     if (note.endBeat <= windowStart || note.startBeat >= windowEnd) continue
     const end = Math.min(note.endBeat, windowEnd)
-    if (latest === null || end > latest) latest = end
+    if (latest !== null && end <= latest) continue
+    if (opensNextLine(note, notes, windowEnd)) continue
+    latest = end
   }
   return latest
 }
