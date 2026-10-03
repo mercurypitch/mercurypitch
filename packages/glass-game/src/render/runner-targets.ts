@@ -9,6 +9,8 @@ import { runnerSecondsToBeat } from '../runner/tempo'
 import { getBreakableRenderRecipe } from './catalog'
 import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
+import type { MaterialFinishBank } from './material-finishes'
+import { finishRunnerWallMaterial } from './material-finishes'
 import { createRunnerNoteCards } from './runner-note-cards'
 import { createRunnerTargetFeedback } from './runner-target-feedback'
 import { RUNNER_TARGET_FEEDBACK_PRESENTATION, runnerTargetFeedbackForPane, } from './runner-target-feedback-config'
@@ -289,6 +291,7 @@ export function createRunnerTargets(
   bundle: string,
   comfortableMidi: number,
   reducedMotion: boolean,
+  finishes?: MaterialFinishBank,
 ) {
   const root = new Group()
   root.name = 'runner-musical-glass'
@@ -328,8 +331,21 @@ export function createRunnerTargets(
       reducedMotion,
       (library) => {
         const lease = pool.acquire(recipe, library)
-        assetTransform = lease.transform.clone()
-        return lease
+        try {
+          if (finishes)
+            for (const material of lease.materials)
+              finishRunnerWallMaterial(
+                material,
+                finishes,
+                lease.geometry.hasAttribute('uv'),
+              )
+          assetTransform = lease.transform.clone()
+          return lease
+        } catch (error) {
+          // The vessel cannot release a lease that failed before handoff.
+          lease.release()
+          throw error
+        }
       },
       { castShardShadows: false },
     )
@@ -353,6 +369,19 @@ export function createRunnerTargets(
             vessel.materialLibrary,
             { shareGeometry: target.glassPresentation !== undefined },
           )
+          if (finishes)
+            frame.traverse((object) => {
+              const mesh = object as Mesh
+              if (!mesh.isMesh) return
+              for (const material of Array.isArray(mesh.material)
+                ? mesh.material
+                : [mesh.material])
+                finishRunnerWallMaterial(
+                  material,
+                  finishes,
+                  mesh.geometry.hasAttribute('uv'),
+                )
+            })
           frame.applyMatrix4(transform)
           vessel.addPersistent(frame)
           frames.push(frame)

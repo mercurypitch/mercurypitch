@@ -1,6 +1,7 @@
 // Singing Current renderer — one stable third-person view of a bounded, audio-clock-driven world.
 import type { Object3D, Texture } from 'three'
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, WebGLRenderer, } from 'three'
+import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '../content/material-finishes'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
@@ -10,6 +11,7 @@ import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
+import { createMaterialFinishBank } from './material-finishes'
 import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
 import type { GlassAssetQualityProfile } from './render-quality'
@@ -255,7 +257,7 @@ export function createSongRunnerRenderer(
       const marble = await texture('floor-marble')
       marble.wrapS = marble.wrapT = RepeatWrapping
       marble.repeat.set(2, 2)
-      sky = await texture('museum-sky')
+      sky = await texture('floating-museum-cloudscape-v3')
       scene.background = sky
       resize()
       const crystal = await model('living-crystal-platform-v2')
@@ -285,11 +287,17 @@ export function createSongRunnerRenderer(
       const arcade = await model('museum-arcade-v3')
       const canopy = await model('museum-canopy-v3')
       if (disposed) return
+      const finishTextures = new Map<string, Texture>()
+      for (const id of RUNNER_MATERIAL_FINISH_TEXTURE_IDS)
+        finishTextures.set(id, await texture(id))
+      if (disposed) return
+      const finishes = createMaterialFinishBank(finishTextures)
       world = createRunnerWorld(
         course,
         crystal,
         marble,
         options.reducedMotion === true,
+        finishes,
       )
       targets = createRunnerTargets(
         course,
@@ -297,9 +305,11 @@ export function createSongRunnerRenderer(
         '',
         comfortableMidi,
         options.reducedMotion === true,
+        finishes,
       )
       scenery = createRunnerScenery({
         course,
+        finishes,
         museumScene: museum,
         gardenScene: garden,
         arcadeScene: arcade,

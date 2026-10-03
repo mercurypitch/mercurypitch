@@ -15,14 +15,20 @@ const state = vi.hoisted(() => ({
   feedbackUpdate: vi.fn(),
   feedbackDispose: vi.fn(),
   poolClose: vi.fn(),
+  leaseRelease: vi.fn(),
   drawText: vi.fn(),
 }))
 
 vi.mock('./exhibit-geometry-pool', async () => {
-  const { Matrix4 } = await import('three')
+  const { Matrix4, PlaneGeometry, MeshPhysicalMaterial } = await import('three')
   return {
     createExhibitGeometryPool: () => ({
-      acquire: () => ({ transform: new Matrix4() }),
+      acquire: () => ({
+        transform: new Matrix4(),
+        geometry: new PlaneGeometry(),
+        materials: [new MeshPhysicalMaterial({ name: 'W01 optical glass' })],
+        release: state.leaseRelease,
+      }),
       close: state.poolClose,
     }),
   }
@@ -72,6 +78,7 @@ vi.mock('./runner-target-feedback', async () => {
   }
 })
 
+import { createMaterialFinishBank } from './material-finishes'
 import { createRunnerTargets } from './runner-targets'
 
 const NEUTRAL: RunnerPitchFeedback = {
@@ -160,6 +167,28 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('runner targets live feedback', () => {
+  it('releases an acquired lease when finish setup fails before the vessel owns it', () => {
+    const course = runnerCourseFixture()
+    const snapshot = createSongRunnerGame(course, {
+      comfortableMidi: 60,
+    }).snapshot()
+    const targets = createRunnerTargets(
+      course,
+      new Group(),
+      'test-bundle',
+      60,
+      false,
+      createMaterialFinishBank(new Map()),
+    )
+    expect(() => targets.update(snapshot, 0)).toThrow(
+      'Missing material finish texture',
+    )
+    expect(state.leaseRelease).toHaveBeenCalledTimes(1)
+    targets.dispose()
+    expect(state.poolClose).toHaveBeenCalledTimes(1)
+    expect(state.leaseRelease).toHaveBeenCalledTimes(1)
+  })
+
   it('shows authoritative charge even after instantaneous pitch feedback becomes neutral', () => {
     const course = runnerCourseFixture()
     const initial = createSongRunnerGame(course, {
