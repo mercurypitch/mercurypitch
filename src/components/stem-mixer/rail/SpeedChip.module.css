@@ -1,0 +1,72 @@
+/* SpeedChip: the speed on a chip the capsule's height. The doubled class
+   outranks OverflowMenu's own trigger sizing (a 44px floor meant for card
+   lists), whatever order the two stylesheets load in. */
+
+.chip.chip {
+  gap: 0.25rem;
+  /* The widest speed ("0.75x") and the chevron: the chip does not change
+     width when the speed does. */
+  min-width: 4.75rem;
+  /* The capsule's control size and look (MixerCapsule.module.css). */
+  min-height: var(--mixer-control-size, 32px);
+  padding: 0 0.5rem 0 0.6rem;
+  border: 1px solid var(--mixer-control-border, var(--border-subtle, #30363d));
+  border-radius: 0.5rem;
+  color: var(--text-primary, #e6edf3);
+  background: var(
+    --mixer-control-bg,
+    color-mix(in srgb, var(--text-primary, #e6edf3) 6%, transparent)
+  );
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Under the pointer and while open, the tint the capsule's buttons take
+   (MixerCapsule.module.css), not the menu trigger's solid hover, which on
+   the focus pill's glass reads as a box. Qualified to outrank
+   OverflowMenu's trigger states. */
+@media (hover: hover) {
+  .chip.chip:hover:not(:disabled) {
+    border-color: var(--mixer-control-border, var(--border-subtle, #30363d));
+    color: var(--text-primary, #e6edf3);
+    background: color-mix(
+      in srgb,
+      var(--text-primary, #e6edf3) 12%,
+      transparent
+    );
+  }
+}
+
+.chip.chip[aria-expanded='true'] {
+  border-color: var(--mixer-control-border, var(--border-subtle, #30363d));
+  color: var(--text-primary, #e6edf3);
+  background: color-mix(in srgb, var(--text-primary, #e6edf3) 16%, transparent);
+}
+
+.chip.chip:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+.chip svg {
+  flex: none;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.value {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+/* A short list: as wide as its rows need, not the menu default. */
+.panel.panel {
+  min-width: 7.5rem;
+}
+
+@media (pointer: coarse) {
+  .chip.chip {
+    min-height: 44px;
+  }
+}

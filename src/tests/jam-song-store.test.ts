@@ -778,3 +778,60 @@ describe('telling the room a song has no pitch guide', () => {
     expect(store.jamSong()).not.toHaveProperty('pitchGuide')
   })
 })
+
+describe('the room key', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(true)
+    store.selectJamSong(song())
+  })
+
+  it('is the song’s own key until the host moves it', () => {
+    expect(store.jamRoomKeyShift()).toBe(0)
+    store.setJamRoomKeyShift(-2)
+    expect(store.jamRoomKeyShift()).toBe(-2)
+    expect(store.jamSong()?.keyShift).toBe(-2)
+  })
+
+  it('stays within the shifter’s reach, and is dropped at the original', () => {
+    store.setJamRoomKeyShift(9)
+    expect(store.jamRoomKeyShift()).toBe(6)
+    store.setJamRoomKeyShift(0)
+    expect(store.jamSong()).not.toHaveProperty('keyShift')
+  })
+
+  it('is the host’s alone to change', () => {
+    store.setJamIsHost(false)
+    store.setJamRoomKeyShift(3)
+    expect(store.jamRoomKeyShift()).toBe(0)
+  })
+
+  it('keeps the lines already sung', () => {
+    store.recordJamLineScore({
+      lineIndex: 0,
+      startSec: 0,
+      endSec: 1,
+      score: 80,
+      voiced: true,
+      noteCount: 2,
+    })
+    const before = store.jamSongLineScores()
+    store.setJamRoomKeyShift(2)
+    expect(store.jamSongLineScores()).toBe(before)
+  })
+
+  it('starts a new song in its own key', () => {
+    store.setJamRoomKeyShift(2)
+    store.selectJamSong(song({ id: 'other' }))
+    expect(store.jamRoomKeyShift()).toBe(0)
+  })
+
+  it('does nothing without a song', () => {
+    store.clearJamSong()
+    store.setJamRoomKeyShift(2)
+    expect(store.jamSong()).toBeNull()
+    expect(store.jamRoomKeyShift()).toBe(0)
+  })
+})

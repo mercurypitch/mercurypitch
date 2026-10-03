@@ -4,7 +4,7 @@
 
 import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { Accessor, Setter } from 'solid-js'
-import { createSignal, onCleanup } from 'solid-js'
+import { batch, createEffect, createSignal, on, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
 import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
@@ -30,10 +30,14 @@ import { readCachedSongAudio, writeCachedSongAudio, } from '@/lib/song-audio-cac
 import { sliderToGain } from '@/lib/volume-curve'
 import { createStemMixerFrameScheduler } from './frame-scheduler'
 import { createHiddenClock } from './hidden-clock'
+import type { LoopPointPlacement } from './loop-points'
+import { LOOP_MIN_GAP, loopSpan, placeLoopPoint as placeLoop, } from './loop-points'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import { watchPlaybackReturn } from './playback-return-watch'
+import { createStemKeyControl } from './stem-key-control'
+import { audibleSongTime, shiftDetectedPitch } from './stem-key-timing'
 import type { SongPathLog } from './stem-load-path'
 import { createSongPathLog, PATH_SOURCE } from './stem-load-path'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
@@ -187,6 +191,15 @@ export interface StemMixerAudioDeps {
   onPlaybackDiscarded?: () => void
   onMicFrame?: (frame: { f0: number; conf: number; rms: number }) => void
 
+  /** Karaoke key, −6..+6 semitones; speed never changes it. */
+  keyShift?: Accessor<number>
+  /** Drums skip the shifter (delayed to stay in time). Default true. */
+  keepDrums?: Accessor<boolean>
+  /** The guide vocal reaches the speakers; a silent guide is not shifted. */
+  vocalAudible?: Accessor<boolean>
+  /** Pitch Studio edits the song's own notes: play the original key. */
+  keyShiftSuspended?: Accessor<boolean>
+
   showNotification: (
     msg: string,
     type?: 'info' | 'success' | 'warning' | 'error',
@@ -279,13 +292,28 @@ export interface StemMixerAudioController {
   speed: Accessor<number>
   setSpeed: (speed: number) => void
 
-  // Loop
+  // Key shift
+  /** Extra delay the key shifter adds on the way to the speakers; 0 unshifted. */
+  keyShiftLatencySec: () => number
+  /** False without AudioWorklet, or once the engine failed to load. */
+  keyShiftAvailable: Accessor<boolean>
+  /** The key the listener hears: 0 in Pitch Studio or without the engine. */
+  effectiveShift: Accessor<number>
+
+  // Loop: A and B in seconds, null until set (see loop-points.ts)
   loopEnabled: Accessor<boolean>
   setLoopEnabled: Setter<boolean>
-  loopStart: Accessor<number>
-  setLoopStart: Setter<number>
-  loopEnd: Accessor<number>
-  setLoopEnd: Setter<number>
+  loopStart: Accessor<number | null>
+  setLoopStart: Setter<number | null>
+  loopEnd: Accessor<number | null>
+  setLoopEnd: Setter<number | null>
+  /**
+   * Set A or B at `time` by the loop-point rule, or refuse it with the
+   * reason. A placed B turns the loop on.
+   */
+  placeLoopPoint: (which: 'A' | 'B', time: number) => LoopPointPlacement
+  /** The least time between A and B that placeLoopPoint accepts. */
+  loopMinGap: number
   clearLoop: () => void
   loopCount: Accessor<number>
   resetLoopCount: () => void
@@ -396,6 +424,27 @@ export const useStemMixerAudioController = (
   const [windowDuration, setWindowDuration] = createSignal(30)
   const [speed, setSpeedLocal] = createSignal(1.0)
 
+  // ── Key shift ─────────────────────────────────────────────────
+  // Stems reach the master through the key graph's buses; at key 0 and
+  // speed 1 those buses go straight through. See stem-key-control.ts.
+  const keyControl = createStemKeyControl({
+    keyShift: () => deps.keyShift?.() ?? 0,
+    suspended: () => deps.keyShiftSuspended?.() ?? false,
+    vocalAudible: () => deps.vocalAudible?.() ?? true,
+    speed,
+    playing: () => playing(),
+    keepDrums: () => deps.keepDrums?.() ?? true,
+    // Phones and televisions take the lighter engine setting.
+    preset: sessionDeviceClass() === 'desktop' ? 'default' : 'cheaper',
+    onUnavailable: (error) => {
+      console.warn('[StemMixer] key change unavailable:', error)
+      deps.showNotification(
+        'Changing the key is not available right now, so the song plays in its original key.',
+        'warning',
+      )
+    },
+  })
+
   // ── Music level ─────────────────────────────────────────────
   // The master used to be a hardcoded 0.7 with no way to reach it. On iOS a
   // live mic drops the whole page's output and nothing in the app can undo
@@ -421,9 +470,12 @@ export const useStemMixerAudioController = (
 
   // ── Loop signals ────────────────────────────────────────────
   const [loopEnabled, setLoopEnabled] = createSignal(false)
-  const [loopStart, setLoopStart] = createSignal(0)
-  const [loopEnd, setLoopEnd] = createSignal(0)
+  const [loopStart, setLoopStart] = createSignal<number | null>(null)
+  const [loopEnd, setLoopEnd] = createSignal<number | null>(null)
   const [loopCount, setLoopCount] = createSignal(0)
+  /** The span the clock wraps in, or null when it plays straight on. */
+  const activeLoop = () =>
+    loopSpan(loopEnabled(), { start: loopStart(), end: loopEnd() }, duration())
 
   // When the user manually seeks outside the loop region, we stop
   // enforcing the loop boundary until playback re-enters A–B.
@@ -651,6 +703,7 @@ export const useStemMixerAudioController = (
       mainGain.connect(softClip)
       softClip.connect(audioCtx.destination)
       softClipNode = softClip
+      keyControl.attach(audioCtx, mainGain)
       vocalAnalyser = audioCtx.createAnalyser()
       vocalAnalyser.fftSize = PITCH_FFT_SIZE
       vocalAnalyser.smoothingTimeConstant = 0.3
@@ -674,6 +727,9 @@ export const useStemMixerAudioController = (
   }
 
   const detachGraph = (): void => {
+    // The key graph goes too: attach() skips a context it already holds, so a
+    // lent context handed back again would keep it wired to the old master.
+    keyControl.dispose()
     for (const node of [mainGain, softClipNode, vocalAnalyser]) {
       try {
         node?.disconnect()
@@ -1335,7 +1391,7 @@ export const useStemMixerAudioController = (
       analyser.smoothingTimeConstant = 0.8
 
       gain.connect(analyser)
-      analyser.connect(mainGain!)
+      analyser.connect(keyControl.busFor(track.label) ?? mainGain!)
 
       // A streamed stem has no whole buffer to hand a source node. Its voice
       // schedules windows against this same `ctx.currentTime`, which is what
@@ -1537,6 +1593,15 @@ export const useStemMixerAudioController = (
     }, FADE_OUT_MS + 50)
   }
 
+  /** New sources from the playhead, through the transport's own fades. */
+  const restartSourcesAtPlayhead = () => {
+    const currentElapsed = elapsed()
+    disconnectSources()
+    createSources(currentElapsed)
+    wallPlayStart = audioCtx!.currentTime
+    bufferPlayStart = currentElapsed
+  }
+
   // ── Speed ────────────────────────────────────────────────────
   const setSpeed = (newSpeed: number) => {
     const clamped = Math.max(0.25, Math.min(2.0, newSpeed))
@@ -1544,14 +1609,24 @@ export const useStemMixerAudioController = (
     playbackSpeed = clamped
     setSpeedLocal(clamped)
 
-    if (playing()) {
-      const currentElapsed = elapsed()
-      disconnectSources()
-      createSources(currentElapsed)
-      wallPlayStart = audioCtx!.currentTime
-      bufferPlayStart = currentElapsed
-    }
+    if (playing()) restartSourcesAtPlayhead()
   }
+
+  // "Leave drums unshifted" picks the key-graph bus a Drums source joins, and
+  // a source joins one as it is made. Changed mid-song, the drums move at once
+  // the way a speed change does, rather than at the next pause or seek.
+  createEffect(
+    on(
+      () => deps.keepDrums?.() ?? true,
+      () => {
+        if (!playing()) return
+        if (deps.tracks().some((track) => track.label === 'Drums')) {
+          restartSourcesAtPlayhead()
+        }
+      },
+      { defer: true },
+    ),
+  )
 
   // ── Transport ────────────────────────────────────────────────
   const handlePlay = () => {
@@ -1653,11 +1728,8 @@ export const useStemMixerAudioController = (
     setAudibleElapsed(pauseOffset)
 
     // Track whether this seek lands outside the active loop region
-    if (
-      loopEnabled() &&
-      loopEnd() > 0 &&
-      (pauseOffset < loopStart() || pauseOffset > loopEnd())
-    ) {
+    const span = activeLoop()
+    if (span !== null && (pauseOffset < span.start || pauseOffset > span.end)) {
       seekedOutsideLoop = true
     }
 
@@ -1725,9 +1797,14 @@ export const useStemMixerAudioController = (
         } catch {
           audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
         }
-        const audibleTime =
-          bufferPlayStart +
-          Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
+        // The key shifter delays everything it touches by its latency.
+        const audibleTime = audibleSongTime(
+          bufferPlayStart,
+          audibleContextTime,
+          wallPlayStart,
+          playbackSpeed,
+          keyControl.latencySec(),
+        )
         setAudibleElapsed(Math.min(audibleTime, duration()))
 
         const mappingActive = deps.lyricsMappingActive?.() === true
@@ -1761,7 +1838,11 @@ export const useStemMixerAudioController = (
             if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
               vocalAnalyser.getFloatTimeDomainData(vocalTimeData)
               const raw = pitchDetector!.detect(vocalTimeData)
-              const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
+              const smoothed = smoothPitch(stemSmoother, raw, elapsedTime)
+              // Tapped before the shifter: the reference is what is heard.
+              const pitch =
+                smoothed &&
+                shiftDetectedPitch(smoothed, keyControl.shiftSemitones())
               setCurrentPitch(pitch)
 
               if (pitch) {
@@ -1894,23 +1975,26 @@ export const useStemMixerAudioController = (
     // score/summary screen (the "second song ends before it starts" bug).
     if (duration() <= 0) return true
 
-    const endTime = loopEnabled() && loopEnd() > 0 ? loopEnd() : duration()
+    // A span too short to play is no loop at all: wrapping it would seek
+    // back to A on every frame and hold the song there.
+    const span = activeLoop()
+    const endTime = span?.end ?? duration()
 
     // If playback re-entered the loop region, clear the escape flag
     if (
       seekedOutsideLoop &&
-      loopEnabled() &&
-      elapsedTime >= loopStart() &&
-      elapsedTime < loopEnd()
+      span !== null &&
+      elapsedTime >= span.start &&
+      elapsedTime < span.end
     ) {
       seekedOutsideLoop = false
     }
 
     if (elapsedTime >= endTime) {
-      if (loopEnabled() && !seekedOutsideLoop) {
+      if (span !== null && !seekedOutsideLoop) {
         setLoopCount(loopCount() + 1)
         deps.markLoopIteration()
-        seekTo(loopStart())
+        seekTo(span.start)
         return true
       }
       // Outside loop or loop disabled — stop at end of track
@@ -2016,10 +2100,29 @@ export const useStemMixerAudioController = (
     }
   }
 
+  const placeLoopPoint = (
+    which: 'A' | 'B',
+    time: number,
+  ): LoopPointPlacement => {
+    const result = placeLoop(which, time, {
+      start: loopStart(),
+      end: loopEnd(),
+    })
+    if (result.placed) {
+      const { points } = result
+      batch(() => {
+        setLoopStart(points.start)
+        setLoopEnd(points.end)
+        if (which === 'B') setLoopEnabled(true)
+      })
+    }
+    return result
+  }
+
   const clearLoop = () => {
     setLoopEnabled(false)
-    setLoopStart(0)
-    setLoopEnd(0)
+    setLoopStart(null)
+    setLoopEnd(null)
     setLoopCount(0)
   }
   return {
@@ -2057,6 +2160,9 @@ export const useStemMixerAudioController = (
     handleDownload,
     speed,
     setSpeed,
+    keyShiftLatencySec: keyControl.latencySec,
+    keyShiftAvailable: keyControl.available,
+    effectiveShift: keyControl.appliedKey,
     // Loop
     loopEnabled,
     setLoopEnabled,
@@ -2064,6 +2170,8 @@ export const useStemMixerAudioController = (
     setLoopStart,
     loopEnd,
     setLoopEnd,
+    placeLoopPoint,
+    loopMinGap: LOOP_MIN_GAP,
     clearLoop,
     loopCount,
     resetLoopCount: () => setLoopCount(0),

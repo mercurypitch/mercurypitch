@@ -4,6 +4,7 @@
 
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal } from 'solid-js'
+import type { MixerViewControlsProps } from '@/components/stem-mixer/MixerViewControls'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -26,6 +27,8 @@ interface CanvasView {
   drawLiveWaveform: () => void
   drawPitchCanvas: () => void
   drawMidiCanvas: () => void
+  /** Redraws every canvas on the next frame, once the new layout has laid out. */
+  queueCanvasRedraw: () => void
 }
 
 export interface StemMixerLayoutDeps {
@@ -48,6 +51,12 @@ export interface StemMixerLayoutController {
   fixedPanelHeights: Accessor<Record<string, number>>
   setFixedPanelHeights: Setter<Record<string, number>>
   panels: Accessor<WorkspacePanel[]>
+  /**
+   * The layout switch and the sidebar toggle, read live: the mixer header
+   * draws them, and the rail's More offers the same while focus mode hides
+   * the header.
+   */
+  viewControls: MixerViewControlsProps
 
   // Helpers
   getPanel: (id: string) => WorkspacePanel
@@ -345,6 +354,21 @@ export const useStemMixerLayoutController = (
     handleFixedResizeEnd(e)
   }
 
+  // ── View controls (header, and More in focus mode) ────────────
+  const viewControls: MixerViewControlsProps = {
+    get layout() {
+      return workspaceLayout()
+    },
+    onLayoutChange: (next) => {
+      setWorkspaceLayout(next)
+      deps.canvas.queueCanvasRedraw()
+    },
+    get sidebarHidden() {
+      return sidebarHidden()
+    },
+    onToggleSidebar: () => setSidebarHidden((was) => !was),
+  }
+
   return {
     workspaceLayout,
     setWorkspaceLayout,
@@ -353,6 +377,7 @@ export const useStemMixerLayoutController = (
     fixedPanelHeights,
     setFixedPanelHeights,
     panels,
+    viewControls,
     getPanel,
     panelStyle,
     reorderPanels,

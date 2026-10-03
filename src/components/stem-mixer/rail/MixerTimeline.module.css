@@ -1,0 +1,62 @@
+/* MixerTimeline: elapsed, the slider, total. It fills whatever MixerRail
+   gives it; the rail decides when it drops to a line of its own. */
+
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Tabular figures and a floor of five, so 9:59 turning 10:00 is the only
+   time the slider's length moves. */
+.time {
+  flex: none;
+  min-width: 5ch;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.slider {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The mixer's palette on the shared rail: A and B in the colours the
+   waveform draws them in, the progress in the accent, a knob to grab.
+   Doubled to outrank the rail's own defaults on the same element. */
+.rail.rail {
+  --loop-range-track: color-mix(
+    in srgb,
+    var(--text-primary, #e6edf3) 18%,
+    transparent
+  );
+  --loop-range-progress: var(--accent, #58a6ff);
+  --loop-range-a: #58a6ff;
+  --loop-range-b: #ff7b72;
+  --loop-range-region: rgba(88, 166, 255, 0.14);
+  --loop-range-marker-font: 0.75rem;
+  --loop-range-lens-label-font: 0.75rem;
+  --loop-range-knob-size: 12px;
+  --loop-range-knob: var(--text-primary, #e6edf3);
+}
+
+/* An engine without color-mix() keeps the custom property but cannot use
+   it, and the track would vanish: the same tint as rgba (the default text
+   colour at 18%). */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .rail.rail {
+    --loop-range-track: rgba(230, 237, 243, 0.18);
+  }
+}
+
+/* A loop that is off still shows where it is, but plainly not playing:
+   an outline with no fill, and the marks dimmed. */
+.rail[data-active='false'] {
+  --loop-range-region: transparent;
+  --loop-range-region-border-style: dashed;
+  --loop-range-marker-opacity: 0.55;
+}

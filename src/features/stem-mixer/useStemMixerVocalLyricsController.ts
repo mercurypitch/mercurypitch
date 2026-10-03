@@ -25,7 +25,8 @@ export interface UseStemMixerVocalLyricsControllerDeps {
     offlineMergedNotes: Accessor<MergedNote[]>
     isAnalyzing: Accessor<boolean>
     progress: Accessor<number>
-    runAnalysis: () => Promise<void>
+    /** Its outcome goes unread: the analysis reports for itself here. */
+    runAnalysis: () => Promise<unknown>
   }
   whisper: {
     segments: Accessor<WhisperSegment[]>

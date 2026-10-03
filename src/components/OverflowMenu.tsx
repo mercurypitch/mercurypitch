@@ -14,10 +14,16 @@
 // On a narrow screen it is a bottom sheet instead of a popover. A
 // popover anchored to a card in a two-column phone layout has nowhere to
 // go: it either runs off the edge or covers the thing it belongs to.
+//
+// It closes by the app's one rule for floating panels (use-popover-layer):
+// a press outside, a scroll that moves the trigger, a resize, and Escape
+// for the top layer only. The sheet is pinned to the viewport, so only a
+// press outside or Escape closes it.
 
 import type { Component, JSX } from 'solid-js'
 import { children, createEffect, createMemo, createSignal, Index, onCleanup, Show, } from 'solid-js'
 import { Portal } from 'solid-js/web'
+import { placePopover, usePopoverLayer } from '@/lib/use-popover-layer'
 import { isNarrow } from '@/lib/use-viewport'
 import styles from './OverflowMenu.module.css'
 
@@ -61,11 +67,6 @@ export interface OverflowMenuProps {
   testId?: string
 }
 
-/** Clear of the viewport edge, so the panel never sits flush against it. */
-const MARGIN = 8
-/** Gap between the trigger and the panel. */
-const GAP = 6
-
 export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
   const [open, setOpen] = createSignal(false)
   const [pos, setPos] = createSignal({ x: 0, y: 0 })
@@ -88,22 +89,13 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
 
   const place = (): void => {
     if (trigger === undefined || panel === undefined || sheet()) return
-    const t = trigger.getBoundingClientRect()
-    const w = panel.offsetWidth
-    const h = panel.offsetHeight
-
     // Right-aligned to the trigger, then pulled back inside the viewport —
     // a card at the right edge of the grid would otherwise open past it.
-    let x = t.right - w
-    x = Math.min(
-      Math.max(MARGIN, x),
-      Math.max(MARGIN, window.innerWidth - w - MARGIN),
+    const { x, y } = placePopover(
+      trigger.getBoundingClientRect(),
+      { width: panel.offsetWidth, height: panel.offsetHeight },
+      { width: window.innerWidth, height: window.innerHeight },
     )
-
-    let y = t.bottom + GAP
-    if (y + h > window.innerHeight - MARGIN && t.top - GAP - h > MARGIN) {
-      y = t.top - GAP - h
-    }
     setPos({ x, y })
   }
 
@@ -140,6 +132,13 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
     if (props.disabled === true && open()) close(false)
   })
 
+  usePopoverLayer({
+    open,
+    onClose: (reason) => close(reason === 'escape'),
+    inside: () => [trigger, panel],
+    pinned: sheet,
+  })
+
   createEffect(() => {
     if (!open()) return
     place()
@@ -147,19 +146,7 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
     // lands inside the menu they just opened rather than behind it.
     requestAnimationFrame(() => focusRow(0))
 
-    const onPointerDown = (e: PointerEvent): void => {
-      const target = e.target as Node | null
-      if (target === null) return
-      if (trigger?.contains(target) === true) return
-      if (panel?.contains(target) === true) return
-      close(false)
-    }
     const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        close()
-        return
-      }
       if (panel?.contains(document.activeElement) !== true) return
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -175,23 +162,8 @@ export const OverflowMenu: Component<OverflowMenuProps> = (props) => {
         focusRow(focusable().length - 1)
       }
     }
-    // A card list scrolls. A popover that stays where the trigger used to
-    // be is worse than no popover.
-    const onScroll = (): void => {
-      if (!sheet()) close(false)
-    }
-
-    document.addEventListener('pointerdown', onPointerDown, true)
     document.addEventListener('keydown', onKeyDown)
-    window.addEventListener('scroll', onScroll, true)
-    window.addEventListener('resize', place)
-
-    onCleanup(() => {
-      document.removeEventListener('pointerdown', onPointerDown, true)
-      document.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('scroll', onScroll, true)
-      window.removeEventListener('resize', place)
-    })
+    onCleanup(() => document.removeEventListener('keydown', onKeyDown))
   })
 
   // A card can be deleted while its own menu is open; without this the

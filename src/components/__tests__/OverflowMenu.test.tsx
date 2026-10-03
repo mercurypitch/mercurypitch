@@ -252,6 +252,55 @@ describe('OverflowMenu', () => {
     ).toBeInTheDocument()
   })
 
+  it('closes when the window resizes, rather than hanging where the trigger was', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+
+    fireEvent(window, new Event('resize'))
+
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('stays open while something else scrolls, and closes when its own page does', () => {
+    render(() => (
+      <>
+        <div data-testid="lyrics">words that scroll themselves</div>
+        <OverflowMenu
+          label="More actions"
+          items={[{ key: 'send', label: 'Send to device', onSelect: noop }]}
+        />
+      </>
+    ))
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+    fireEvent.click(trigger)
+
+    fireEvent.scroll(screen.getByTestId('lyrics'))
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.scroll(document)
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('leaves an Escape that a layer above it already used', () => {
+    open([{ key: 'send', label: 'Send to device', onSelect: noop }])
+    const claim = (event: KeyboardEvent) => event.preventDefault()
+    document.body.addEventListener('keydown', claim)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    document.body.removeEventListener('keydown', claim)
+
+    expect(
+      screen.getByRole('button', { name: 'More actions' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('menu')).toHaveAttribute(
+      'aria-label',
+      'More actions',
+    )
+  })
+
   it('announces itself as a menu, not a button that does something', () => {
     render(() => (
       <OverflowMenu

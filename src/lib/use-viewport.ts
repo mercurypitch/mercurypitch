@@ -20,12 +20,25 @@ export const BREAKPOINTS = {
   tiny: 480,
 } as const
 
+/**
+ * The tallest a touch screen held sideways can be and still count as a phone
+ * (CSS px). Phones on their side are 360 to about 450 px tall (Pixel 8 Pro:
+ * 448, iPhone Pro Max: 430, before the browser's own bars take their share);
+ * the smallest tablets are about 520 even with Chrome's bars (an 8-inch
+ * Android, 962x601). 500 sits between them, and it is the height the hosted
+ * Karaoke stage already calls short (KaraokeMobileStage.module.css).
+ */
+export const SHORT_LANDSCAPE_MAX_HEIGHT = 500
+
 // "Small screen OR touch device" — for interaction defaults (dock side, hiding
 // touch-only chrome). Matches the existing de-facto prefersTopDock query.
 const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px), (pointer: coarse)`
 // Width-only — for layout decisions that hinge on the breakpoint itself, e.g.
 // "is the sidebar an off-canvas drawer right now?" (its CSS is max-width:768).
 const NARROW_QUERY = `(max-width: ${BREAKPOINTS.mobile}px)`
+// A phone on its side: wider than the breakpoint, so not narrow, and short.
+// The pointer keeps a short desktop window, and a touch laptop's mouse, out.
+const SHORT_TOUCH_LANDSCAPE_QUERY = `(pointer: coarse) and (orientation: landscape) and (max-height: ${SHORT_LANDSCAPE_MAX_HEIGHT}px)`
 
 function createReactiveMatch(query: string): () => boolean {
   // SSR / non-DOM guard — behave as desktop when there's no matchMedia.
@@ -63,6 +76,16 @@ export const isMobile: () => boolean = createReactiveMatch(MOBILE_QUERY)
  * sidebar drawer); use `isMobile` for touch-aware interaction defaults.
  */
 export const isNarrow: () => boolean = createReactiveMatch(NARROW_QUERY)
+
+/**
+ * Reactive: a touch screen held sideways that is too short for a desktop
+ * layout — a phone on its side (844x390, 780x360). Not narrow, so width-only
+ * checks miss it. Tablets and touch laptops at their normal heights do not
+ * count; see SHORT_LANDSCAPE_MAX_HEIGHT.
+ */
+export const isShortTouchLandscape: () => boolean = createReactiveMatch(
+  SHORT_TOUCH_LANDSCAPE_QUERY,
+)
 
 /** Hook-style alias for ergonomics in components. */
 export function useIsMobile(): () => boolean {

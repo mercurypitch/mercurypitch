@@ -110,19 +110,25 @@ banners below have moved and the list is no longer exhaustive — re-grep
 `^\s*// ──` first, and add any new section to this table before starting.
 Remaining seams, roughly in dependency order:
 
-| Slice | Sections                                                   | Target                                                                                                                                                                           |
-| ----- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A     | Karaoke playlist integration (344), Zen transport (461)    | `useStemMixerTransportController.ts`                                                                                                                                             |
-| B     | Volume/Mute/Solo (1354), Stem controls props bundle (1426) | `useStemMixerStemControls.ts`                                                                                                                                                    |
-| C1    | Pitch-word alignment memo (1330)                           | DONE: note-source ladder is `selectAlignmentNotes()` in `transcription-alignment-utils.ts`, where its siblings already live. The memo keeps the signal reads and the diagnostics |
-| C2    | Auto word-sync (1728)                                      | Still open. Reactive orchestration (confirm dialog, notifications) — belongs in the lyrics controller, not in a pure module                                                      |
-| C3    | Loop lyric↔audio sync (1120)                               | Still open, and mis-filed here: it is A/B loop plumbing, not word-sync. Belongs with slice A's transport work                                                                    |
-| D     | Melody audition synth (1549)                               | DONE: `useStemMixerMelodyAuditionController.ts` — a Solid hook rather than `melody-synth.ts`, which is a pure audio graph with no Solid import; same call as F                   |
-| E     | Circular Progress (111), Karaoke Focus Mode (160)          | plain components in `src/features/stem-mixer/`                                                                                                                                   |
-| F     | "From vocal" lyrics generation (1627)                      | DONE (#683): `useStemMixerVocalLyricsController.ts` — a Solid hook rather than `lrc-gen-engine.ts`, because the code is reactive orchestration, not engine logic                 |
+| Slice | Sections                                                   | Target                                                                                                                                                                                      |
+| ----- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A     | Karaoke playlist integration (344), Zen transport (461)    | `useStemMixerTransportController.ts`                                                                                                                                                        |
+| B     | Volume/Mute/Solo (1354), Stem controls props bundle (1426) | `useStemMixerStemControls.ts`                                                                                                                                                               |
+| C1    | Pitch-word alignment memo (1330)                           | DONE: note-source ladder is `selectAlignmentNotes()` in `transcription-alignment-utils.ts`, where its siblings already live. The memo keeps the signal reads and the diagnostics            |
+| C2    | Auto word-sync (1728)                                      | Still open. Reactive orchestration (confirm dialog, notifications) — belongs in the lyrics controller, not in a pure module                                                                 |
+| C3    | Loop lyric↔audio sync (1120)                               | Still open, and mis-filed here: it is A/B loop plumbing, not word-sync. Belongs with slice A's transport work                                                                               |
+| D     | Melody audition synth (1549)                               | DONE: `useStemMixerMelodyAuditionController.ts` — a Solid hook rather than `melody-synth.ts`, which is a pure audio graph with no Solid import; same call as F                              |
+| E     | Circular Progress (111), Karaoke Focus Mode (160)          | plain components in `src/features/stem-mixer/`                                                                                                                                              |
+| F     | "From vocal" lyrics generation (1627)                      | DONE (#683): `useStemMixerVocalLyricsController.ts` — a Solid hook rather than `lrc-gen-engine.ts`, because the code is reactive orchestration, not engine logic                            |
+| G     | Key controller (561), the key view (1320)                  | DONE as hooks (#857): `useStemMixerKeyController` and `useStemMixerKeyView` in `useStemMixerKeyController.ts`. What stays here is their deps; the rail's KeyChip takes the binding as props |
 
 Slices C, D and F move code into files that **already exist**; those are the
 cheapest and should go first.
+
+The playback rail's CSS has left the template string (#857): the rail is
+`src/components/stem-mixer/rail/`, each part with its own CSS module, and
+`StemMixerTransport.tsx` only adapts the mixer's accessors to it. Slice A's
+controller would feed that adapter.
 
 ### 3.2 App.tsx → 4,723 to ~800
 

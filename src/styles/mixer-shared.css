@@ -54,88 +54,20 @@ input[type='range'] {
   padding: 0;
 }
 
-/* ── Focus mode: toggle buttons ──────────────────────────────── */
-
-/* Quiet glass buttons (control-bar style): transparent at rest, tinted on
-   hover, accent glow when active — they only ever render on the glass pill. */
-.sm-focus-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.sm-focus-toggle-btn:hover {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-focus-toggle-btn--active,
-.sm-focus-toggle-btn--active:hover {
-  color: var(--accent, #58a6ff);
-  border-color: color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
-  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
-  box-shadow: 0 0 10px
-    color-mix(in srgb, var(--accent, #58a6ff) 28%, transparent);
-}
-
-.sm-focus-toggle-btn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.sm-focus-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-
-.sm-transport--vertical .sm-focus-divider {
-  width: 20px;
-  height: 1px;
-  margin: 4px 0;
-}
-
-.sm-focus-exit-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--fg-tertiary, #8b949e);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.sm-focus-exit-btn:hover {
-  color: var(--error, #f85149);
-  background: color-mix(in srgb, var(--error, #f85149) 14%, transparent);
-}
-
 /* Transport floating pill in focus mode — frosted glass matching the
    Guitar 3D / practice ControlOverlay shell. Solid fallback first for
-   engines without color-mix. */
+   engines without color-mix. The rail inside draws no box of its own here
+   (MixerCapsule's bare look); its parts are styled in their own modules
+   (src/components/stem-mixer/rail/).
+   Compact by size, not by zoom: a zoom shrank the text with the controls,
+   to 9.8 px. The capsule reads these three (MixerCapsule.module.css), so
+   targets are 28 px and its text keeps its own size, 12 px and up. A touch
+   screen still gets 44 px targets: the capsule sets that on itself. */
 .stem-mixer--focus .sm-transport {
-  zoom: 0.82;
+  --mixer-control-size: 28px;
+  --mixer-capsule-gap: 4px;
+  --mixer-group-gap: 2px;
+
   background: var(--bg-card, #161b22);
   background: color-mix(in srgb, var(--bg-card, #161b22) 78%, transparent);
   backdrop-filter: blur(14px) saturate(135%);
@@ -148,114 +80,52 @@ input[type='range'] {
   z-index: 401;
 }
 
-/* Inside the glass pill the opaque button chrome reads as gray blocks —
-   strip it to quiet glass: transparent at rest, tinted on hover; accent
-   fills (play, active mic/layout/sidebar states) re-asserted below. */
-.stem-mixer--focus .sm-transport .sm-transport-btn,
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn,
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle {
-  background: transparent;
-  border-color: transparent;
-}
-
-.stem-mixer--focus .sm-transport .sm-transport-btn:hover:not(:disabled),
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn:hover:not(:disabled),
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle:hover {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.stem-mixer--focus .sm-transport .sm-transport-play,
-.stem-mixer--focus .sm-transport .sm-transport-play:hover:not(:disabled) {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  box-shadow: 0 3px 12px
-    color-mix(in srgb, var(--accent, #58a6ff) 40%, transparent);
-}
-
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn--active,
-.stem-mixer--focus
-  .sm-transport
-  .sm-mic-toggle-btn--active:hover:not(:disabled) {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-
-.stem-mixer--focus .sm-transport .sm-mic-toggle-btn--error {
-  background: color-mix(in srgb, var(--danger, #da3633) 20%, transparent);
-  color: var(--danger, #da3633);
-}
-
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active,
-.stem-mixer--focus .sm-transport .sm-sidebar-toggle--active:hover {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-
-.stem-mixer--focus .sm-transport .sm-col-toggle {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 7%, transparent);
-}
-
-.stem-mixer--focus .sm-transport .sm-speed-select {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 7%, transparent);
-  border-color: transparent;
-}
-
-.stem-mixer--focus .sm-transport .sm-speed-select:hover {
-  border-color: color-mix(in srgb, var(--border, #30363d) 80%, transparent);
-}
-
-.stem-mixer--focus .sm-transport .sm-speed-select:focus {
-  border-color: var(--accent, #58a6ff);
-}
-
-.stem-mixer--focus .sm-transport .sm-progress-bar {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 12%, transparent);
-}
-
-.stem-mixer--focus .sm-transport .sm-focus-divider {
-  background: color-mix(in srgb, var(--border, #30363d) 60%, transparent);
-}
-
-/* Bottom Center Dock (Default) */
+/* Bottom Center Dock (Default). A set width rather than its content's, so
+   the rail inside lays out as the page's does (MixerRail): one row while
+   the timeline beside the controls keeps 380 px, two lines when it would
+   not. Capped so a wide screen still reads it as a pill. */
 .stem-mixer--focus-docked-bottom .sm-transport {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  width: min(calc(100% - 40px), 75rem);
   border-radius: 24px;
-  padding: 8px 16px;
-  max-width: calc(100vw - 40px);
+  padding: 6px 14px;
 }
 
-/* Left Center Dock */
-.stem-mixer--focus-docked-left .sm-transport {
-  position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 24px;
-  padding: 16px 8px;
-  max-height: calc(100vh - 40px);
-}
-
-/* Right Center Dock */
+/* Side docks. The capsule stacks its groups, one row each, and leaves the
+   timeline out (MixerRail, MixerCapsule). A window too short for that,
+   such as a phone on its side with 44 px targets, scrolls the pill rather
+   than cutting controls off. */
+.stem-mixer--focus-docked-left .sm-transport,
 .stem-mixer--focus-docked-right .sm-transport {
   position: absolute;
-  right: 20px;
   top: 50%;
   transform: translateY(-50%);
-  border-radius: 24px;
-  padding: 16px 8px;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 20px;
+  padding: 10px 8px;
 }
 
-/* Top Header Dock */
+.stem-mixer--focus-docked-left .sm-transport {
+  left: 20px;
+}
+
+.stem-mixer--focus-docked-right .sm-transport {
+  right: 20px;
+}
+
+/* Top Header Dock. The close-up of a short loop is centred on the
+   timeline and 7 px taller than it at each edge; 10 px of padding keeps it
+   inside the window when the timeline sits on the pill's first line. */
 .stem-mixer--focus-docked-top .sm-transport {
   position: relative; /* Not absolute, pushes content down */
   width: 100%;
   border-radius: 0;
   border-left: none;
   border-right: none;
-  padding: 12px 24px;
+  padding: 10px 16px;
 }

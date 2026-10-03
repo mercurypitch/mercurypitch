@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
 import type { StemMixerVoiceDeps, StemMixerVoiceTrack, } from './stem-mixer-voice-commands'
 import { createStemMixerVoiceCommands } from './stem-mixer-voice-commands'
+import type { FindMyKeyResult } from './useStemMixerKeyController'
 
 interface Fixture {
   deps: StemMixerVoiceDeps
@@ -10,6 +11,9 @@ interface Fixture {
   track: (label: string) => StemMixerVoiceTrack
   setPlaying: (v: boolean) => void
   setPlaylistActive: (v: boolean) => void
+  setKey: (semitones: number) => void
+  setFindResult: (result: FindMyKeyResult) => void
+  setKeyDisabled: (reason: string | undefined) => void
 }
 
 function makeFixture(): Fixture {
@@ -19,9 +23,12 @@ function makeFixture(): Fixture {
   let seekedTo: number | null = null
   let speed = 1
   let loopEnabled = false
-  let loopStart = 0
-  let loopEnd = 0
+  let loopStart: number | null = null
+  let loopEnd: number | null = null
   let songsOpen = false
+  let keyShift = 0
+  let findResult: FindMyKeyResult = 'applied'
+  let keyDisabledReason: string | undefined
   const tracks: StemMixerVoiceTrack[] = [
     { label: 'Vocal', muted: false, soloed: false, volume: 0.8 },
     { label: 'Instrumental', muted: true, soloed: false, volume: 0.8 },
@@ -88,8 +95,8 @@ function makeFixture(): Fixture {
       clear: () => {
         calls.push('loop:clear')
         loopEnabled = false
-        loopStart = 0
-        loopEnd = 0
+        loopStart = null
+        loopEnd = null
       },
     },
     playlist: {
@@ -102,6 +109,18 @@ function makeFixture(): Fixture {
         return true
       },
     },
+    keyShift: () => keyShift,
+    setKeyShift: (semitones) => {
+      calls.push(`key:${String(semitones)}`)
+      keyShift = semitones
+    },
+    // The controller's own: a known range moves the key to the fit.
+    findMyKey: () => {
+      calls.push('findMyKey')
+      if (findResult === 'applied') keyShift = -3
+      return findResult
+    },
+    keyShiftDisabledReason: () => keyDisabledReason,
     songsSidebar: {
       isOpen: () => songsOpen,
       open: () => {
@@ -125,6 +144,15 @@ function makeFixture(): Fixture {
     },
     setPlaylistActive: (v) => {
       playlistActive = v
+    },
+    setKey: (semitones) => {
+      keyShift = semitones
+    },
+    setFindResult: (result) => {
+      findResult = result
+    },
+    setKeyDisabled: (reason) => {
+      keyDisabledReason = reason
     },
   }
 }
@@ -226,6 +254,21 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'clear loop')).toBe('Loop cleared')
   })
 
+  it('toggles the loop on only once A and B make one, and off always', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+    // A alone would loop from A to the song's end; the Loop button and L wait
+    // for B, and so does the spoken toggle.
+    expect(fire(fixture, 'toggle loop')).toBe('Set A and B first')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+
+    fixture.deps.loop.setEnd(45)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop on')
+    expect(fixture.deps.loop.enabled()).toBe(true)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop off')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
   it('steps and sets the mixer speed with the multiplier rule', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'faster')).toBe('Speed 1.5x')
@@ -233,6 +276,70 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'half speed')).toBe('Speed 0.5x')
     expect(fire(fixture, '10 x')).toBe('Speed 2x')
     expect(fire(fixture, 'speed 75 percent')).toBe('Speed 0.75x')
+  })
+})
+
+describe('stem mixer voice commands — key', () => {
+  it('steps the key a semitone at a time and stops at ±6, saying so', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'key up')).toBe('Key +1')
+    expect(fire(fixture, 'raise the key')).toBe('Key +2')
+    expect(fire(fixture, 'lower the key')).toBe('Key +1')
+    expect(fire(fixture, 'down a semitone')).toBe('Key 0')
+
+    fixture.setKey(6)
+    expect(fire(fixture, 'key up')).toBe('Key already +6, the highest')
+    expect(fixture.deps.keyShift()).toBe(6)
+    fixture.setKey(-6)
+    expect(fire(fixture, 'key down')).toBe('Key already \u22126, the lowest')
+    expect(fixture.deps.keyShift()).toBe(-6)
+    expect(fixture.calls).toEqual(['key:1', 'key:2', 'key:1', 'key:0'])
+  })
+
+  it('goes back to the original key', () => {
+    const fixture = makeFixture()
+    fixture.setKey(-2)
+
+    expect(fire(fixture, 'original key')).toBe('Original key')
+    expect(fixture.deps.keyShift()).toBe(0)
+    expect(fire(fixture, 'back to the original key')).toBe(
+      'Already in the original key',
+    )
+  })
+
+  it('finds my key, or says what it needs first', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'find my key')).toBe('Key \u22123')
+
+    fixture.setFindResult('needs-range')
+    expect(fire(fixture, 'find my key')).toBe('Pick your voice type')
+    fixture.setFindResult('detecting')
+    expect(fire(fixture, 'find my key')).toBe('Finding the melody first')
+    fixture.setFindResult('no-melody')
+    expect(fire(fixture, 'find my key')).toBe(
+      'The melody cannot be found on this device',
+    )
+    fixture.setFindResult('reading-range')
+    expect(fire(fixture, 'find my key')).toBe('Finding your key')
+  })
+
+  it('says why the key cannot change, and changes nothing', () => {
+    const fixture = makeFixture()
+    fixture.setKeyDisabled('Pitch Studio plays the original key')
+
+    expect(fire(fixture, 'key up')).toBe('Pitch Studio plays the original key')
+    expect(fire(fixture, 'find my key')).toBe(
+      'Pitch Studio plays the original key',
+    )
+    expect(fixture.deps.keyShift()).toBe(0)
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('leaves "keys up" to the piano stem', () => {
+    const fixture = makeFixture()
+
+    expect(fire(fixture, 'keys up')).toBe('No piano stem in this mix')
+    expect(fixture.deps.keyShift()).toBe(0)
   })
 })
 

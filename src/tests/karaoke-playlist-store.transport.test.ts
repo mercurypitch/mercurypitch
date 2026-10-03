@@ -12,7 +12,7 @@ const adapter = new InMemoryAdapter()
 vi.mock('@/db', () => ({ getDb: async () => adapter }))
 
 import type { KaraokeSongScore } from '@/stores/karaoke-playlist-store'
-import { addItem, advance, beginCountdown, beginCurrentSong, createPlaylist, createPlaylistWithItems, currentIndex, currentSong, deletePlaylist, getPlaylist, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, phase, prev, queue, removeItem, renamePlaylist, reorderItems, reportSongScore, restartPlaylist, setItemShuffleWithinGroup, setItemSinger, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, stopPlaylist, } from '@/stores/karaoke-playlist-store'
+import { addItem, advance, beginCountdown, beginCurrentSong, createPlaylist, createPlaylistWithItems, currentIndex, currentSong, deletePlaylist, getPlaylist, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, phase, prev, queue, removeItem, renamePlaylist, reorderItems, reportSongScore, restartPlaylist, setItemKeyShift, setItemShuffleWithinGroup, setItemSinger, setPlaylistPlayMode, setPlaylistShuffleOrder, startPlaylist, stopPlaylist, } from '@/stores/karaoke-playlist-store'
 
 const SCORE: KaraokeSongScore = {
   totalNotes: 10,
@@ -158,6 +158,37 @@ describe('playlist CRUD', () => {
     expect(pl.items[0].shuffleWithinGroup).toBe(true)
     expect(pl.shuffleOrder).toBe(true)
     expect(pl.playMode).toBe('roundRobin')
+  })
+})
+
+describe('per-entry key', () => {
+  it('stores an entry key as whole semitones inside −6..+6, or clears it', async () => {
+    const pl = await createPlaylist('Keys')
+    await addItem(pl.id, { kind: 'session', refId: 's1' })
+    const itemId = getPlaylist(pl.id)?.items[0]?.id ?? ''
+
+    await setItemKeyShift(pl.id, itemId, 8.2)
+    expect(getPlaylist(pl.id)?.items[0]?.keyShift).toBe(6)
+
+    await setItemKeyShift(pl.id, itemId, 0)
+    expect(getPlaylist(pl.id)?.items[0]?.keyShift).toBe(0)
+
+    await setItemKeyShift(pl.id, itemId, undefined)
+    expect(getPlaylist(pl.id)?.items[0]).not.toHaveProperty('keyShift')
+  })
+
+  it('moves the songs already queued for that entry, and only those', async () => {
+    const pl = await startedPlaylist(['s1', 's2'])
+    const [first, second] = getPlaylist(pl.id)?.items ?? []
+
+    const saving = setItemKeyShift(pl.id, first.id, -3)
+    // At once, not after the database write: the stage reads it right away.
+    expect(currentSong()?.keyShift).toBe(-3)
+    await saving
+
+    expect(queue().map((entry) => entry.keyShift)).toEqual([-3, undefined])
+    expect(currentSong()?.keyShift).toBe(-3)
+    expect(queue()[1].itemId).toBe(second.id)
   })
 })
 
