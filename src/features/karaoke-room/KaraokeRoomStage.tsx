@@ -529,7 +529,12 @@ export const KaraokeRoomStage: Component = () => {
   )
 
   // What the system shows as playing: the run's song, playing or paused,
-  // and nothing once the run is over.
+  // and nothing once the run is over. With it goes where the song is, for
+  // the notification's progress bar and the lock screen's, read off the
+  // clock the lyrics follow so the bar and the words agree. Told again on
+  // play, pause, a jump (a seek, a line tapped, a loop going round), a new
+  // speed and a song length arriving, and never per frame: the system runs
+  // the bar on by itself from the last report.
   let announced = false
   const announce = (song: NativeNowPlaying | null): void => {
     if (song === null && !announced) return
@@ -543,10 +548,18 @@ export const KaraokeRoomStage: Component = () => {
       return
     }
     const artist = entry.song.credit ?? entry.song.artist
+    // Between two songs there is no mixer yet: no length, so no bar, rather
+    // than the last song's.
+    const controls = mixer()
+    const playing = isPlaying()
+    controls?.jumps()
     announce({
       title: entry.song.title,
       ...(artist === null || artist === '' ? {} : { artist }),
-      playing: isPlaying(),
+      playing,
+      position: controls === null ? 0 : untrack(controls.audibleElapsed),
+      duration: controls?.duration() ?? 0,
+      rate: controls?.speed() ?? 1,
     })
   })
   onCleanup(() => {

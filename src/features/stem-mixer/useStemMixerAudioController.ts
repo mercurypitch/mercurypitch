@@ -237,6 +237,13 @@ export interface StemMixerAudioController {
   elapsed: Accessor<number>
   /** Song position that has reached the output device, for lyric visuals. */
   audibleElapsed: Accessor<number>
+  /**
+   * Goes up by one each time the position jumps rather than runs on: a seek,
+   * a tap on a lyric line, a loop going round, a stop or a restart. Lets a
+   * listener that must not follow every frame (the system's media controls)
+   * hear about the moves that matter.
+   */
+  jumps: Accessor<number>
   duration: Accessor<number>
   currentPitch: Accessor<DetectedPitch | null>
 
@@ -388,6 +395,10 @@ export const useStemMixerAudioController = (
   const [playing, setPlayingLocal] = createSignal(false)
   const [elapsed, setElapsed] = createSignal(0)
   const [audibleElapsed, setAudibleElapsed] = createSignal(0)
+  const [jumps, setJumps] = createSignal(0)
+  const jumped = (): void => {
+    setJumps((count) => count + 1)
+  }
   const [duration, setDuration] = createSignal(0)
   const [currentPitch, setCurrentPitch] = createSignal<DetectedPitch | null>(
     null,
@@ -1608,6 +1619,7 @@ export const useStemMixerAudioController = (
     setPlayingLocal(false)
     setElapsed(0)
     setAudibleElapsed(0)
+    jumped()
     setCurrentPitch(null)
     pitchHistory = []
     deps.resetMicPitchHistory()
@@ -1632,6 +1644,7 @@ export const useStemMixerAudioController = (
     setPlayingLocal(false)
     setElapsed(0)
     setAudibleElapsed(0)
+    jumped()
     setCurrentPitch(null)
     pitchHistory = []
     pitchDetector?.resetHistory()
@@ -1651,6 +1664,7 @@ export const useStemMixerAudioController = (
     pauseOffset = Math.min(time, duration())
     setElapsed(pauseOffset)
     setAudibleElapsed(pauseOffset)
+    jumped()
 
     // Track whether this seek lands outside the active loop region
     if (
@@ -1687,6 +1701,32 @@ export const useStemMixerAudioController = (
   let activeAnchor = deps.PITCH_WINDOW_FILL_RATIO
   let isRecentering = false
 
+  // AudioContext.currentTime describes the rendering timeline, which can
+  // lead what the listener actually hears by the device output latency.
+  // Drive lyrics from the output timestamp when the browser exposes it.
+  const audibleSongTime = (ctx: AudioContext, now: number): number => {
+    let audibleContextTime = now
+    try {
+      const output = ctx.getOutputTimestamp()
+      const outputContextTime = output.contextTime
+      if (
+        outputContextTime !== undefined &&
+        Number.isFinite(outputContextTime) &&
+        outputContextTime > 0
+      ) {
+        audibleContextTime = outputContextTime
+      } else {
+        audibleContextTime = now - Math.max(0, ctx.outputLatency ?? 0)
+      }
+    } catch {
+      audibleContextTime = now - Math.max(0, ctx.outputLatency ?? 0)
+    }
+    const audibleTime =
+      bufferPlayStart +
+      Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
+    return Math.min(audibleTime, duration())
+  }
+
   // ── RAF Loop ─────────────────────────────────────────────────
   const startRafLoop = () => {
     const tick = (rafTimestampMs: number) => {
@@ -1705,30 +1745,7 @@ export const useStemMixerAudioController = (
       const frame = frameScheduler.next(rafTimestampMs / 1000)
       if (frame.present) {
         setElapsed(Math.min(elapsedTime, duration()))
-
-        // AudioContext.currentTime describes the rendering timeline, which can
-        // lead what the listener actually hears by the device output latency.
-        // Drive lyrics from the output timestamp when the browser exposes it.
-        let audibleContextTime = now
-        try {
-          const output = audioCtx.getOutputTimestamp()
-          const outputContextTime = output.contextTime
-          if (
-            outputContextTime !== undefined &&
-            Number.isFinite(outputContextTime) &&
-            outputContextTime > 0
-          ) {
-            audibleContextTime = outputContextTime
-          } else {
-            audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
-          }
-        } catch {
-          audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
-        }
-        const audibleTime =
-          bufferPlayStart +
-          Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
-        setAudibleElapsed(Math.min(audibleTime, duration()))
+        setAudibleElapsed(audibleSongTime(audioCtx, now))
 
         const mappingActive = deps.lyricsMappingActive?.() === true
         if (mappingActive && !mappingWasActive) {
@@ -1948,9 +1965,13 @@ export const useStemMixerAudioController = (
   const soundingNow = (): boolean => audioCtx !== null && playing()
   const hiddenTick = (): void => {
     if (!audioCtx) return
-    const elapsedTime =
-      bufferPlayStart + (audioCtx.currentTime - wallPlayStart) * playbackSpeed
+    const now = audioCtx.currentTime
+    const elapsedTime = bufferPlayStart + (now - wallPlayStart) * playbackSpeed
     setElapsed(Math.min(elapsedTime, duration()))
+    // The lyrics' clock as well: nothing draws it back here, but the system's
+    // media controls read it, and a pause pressed in the notification would
+    // otherwise put their bar back where the app was left.
+    setAudibleElapsed(audibleSongTime(audioCtx, now))
     followEnd(elapsedTime)
   }
   if (deps.followEndWhileHidden === true) {
@@ -2039,6 +2060,7 @@ export const useStemMixerAudioController = (
     playing,
     elapsed,
     audibleElapsed,
+    jumps,
     duration,
     currentPitch,
     windowStart,

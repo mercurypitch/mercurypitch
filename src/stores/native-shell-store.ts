@@ -231,11 +231,17 @@ export interface NativeAudioLease extends AudioContextLease {
  * web nothing does, and a room that finds nothing builds its own context
  * and leaves the screen to sleep as it always did.
  */
-/** A song the system's media controls can name. */
+/** A song the system's media controls can name, and where it is. */
 export interface NativeNowPlaying {
   readonly title: string
   readonly artist?: string
   readonly playing: boolean
+  /** Seconds into the song, on the clock the lyrics follow. */
+  readonly position?: number
+  /** The song's length in seconds, or 0 while it is not known. */
+  readonly duration?: number
+  /** How fast it plays: 1 is as written. */
+  readonly rate?: number
 }
 
 /** A press on the system's media controls: notification, lock screen, headset. */

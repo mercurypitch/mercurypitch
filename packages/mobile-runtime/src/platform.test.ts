@@ -37,6 +37,7 @@ const mediaSession = vi.hoisted(() => ({
   setMetadata: vi.fn(),
   setPlaybackState: vi.fn(),
   setActionHandler: vi.fn(),
+  setPositionState: vi.fn(),
 }))
 
 // The app's own picture-in-picture plugin, reached through registerPlugin
@@ -384,6 +385,9 @@ describe('on a phone', () => {
     mediaSession.setPlaybackState.mockImplementation(async () => {
       order.push('state')
     })
+    mediaSession.setPositionState.mockImplementation(async () => {
+      order.push('position')
+    })
 
     await platform.setNowPlaying({
       title: 'Harbour Lights',
@@ -398,7 +402,10 @@ describe('on a phone', () => {
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'playing',
     })
-    expect(order).toEqual(['metadata', 'state'])
+    // The position goes last. iOS re-anchors its lock-screen clock to the
+    // stored elapsed time on every write, and its state change sets the rate
+    // to 1, so anything written after the position would undo it.
+    expect(order).toEqual(['metadata', 'state', 'position'])
   })
 
   it('reports a paused song as paused, and leaves out an unknown artist', async () => {
@@ -422,6 +429,203 @@ describe('on a phone', () => {
     expect(mediaSession.setMetadata).not.toHaveBeenCalled()
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'none',
+    })
+  })
+
+  // The notification's progress bar (Android) and the lock screen's (iOS)
+  // draw from the position state alone: the length, where the song is, and
+  // how fast it moves. The system runs the bar on from the last report, so a
+  // report is due on a change, never on a frame.
+  describe('the progress bar', () => {
+    const lastPosition = (): unknown =>
+      mediaSession.setPositionState.mock.calls.at(-1)?.[0]
+
+    it('gives a playing song its length, its place and its speed', async () => {
+      const platform = await loadPlatform(true)
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 42.5,
+        duration: 246,
+        rate: 1.25,
+      })
+
+      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
+      expect(lastPosition()).toEqual({
+        duration: 246,
+        position: 42.5,
+        playbackRate: 1.25,
+      })
+    })
+
+    it('plays at normal speed when the caller names no rate', async () => {
+      const platform = await loadPlatform(true)
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 3,
+        duration: 246,
+      })
+
+      expect(lastPosition()).toEqual({
+        duration: 246,
+        position: 3,
+        playbackRate: 1,
+      })
+    })
+
+    it('holds the bar still on a paused song', async () => {
+      // Rate 0: iOS stops its clock on it. Android keeps a paused state still
+      // whatever the rate, and reads 0 as 1 for when play comes back.
+      const platform = await loadPlatform(true)
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: false,
+        position: 97.25,
+        duration: 246,
+        rate: 1.25,
+      })
+
+      expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
+        playbackState: 'paused',
+      })
+      expect(lastPosition()).toEqual({
+        duration: 246,
+        position: 97.25,
+        playbackRate: 0,
+      })
+    })
+
+    it('moves the bar to wherever a seek lands', async () => {
+      const platform = await loadPlatform(true)
+      const song = { title: 'Harbour Lights', playing: true, duration: 246 }
+
+      await platform.setNowPlaying({ ...song, position: 42.5 })
+      await platform.setNowPlaying({ ...song, position: 180 })
+      await platform.setNowPlaying({ ...song, position: 12 })
+
+      expect(
+        mediaSession.setPositionState.mock.calls.map(
+          ([options]) => (options as { position: number }).position,
+        ),
+      ).toEqual([42.5, 180, 12])
+    })
+
+    it('swaps in the next song’s length, and shows none while it is unknown', async () => {
+      const platform = await loadPlatform(true)
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 200,
+        duration: 246,
+      })
+      // The next song is on the stage and still loading: no length yet.
+      await platform.setNowPlaying({ title: 'Low Tide', playing: false })
+      expect(lastPosition()).toEqual({
+        duration: 0,
+        position: 0,
+        playbackRate: 0,
+      })
+
+      await platform.setNowPlaying({
+        title: 'Low Tide',
+        playing: true,
+        position: 0,
+        duration: 181.5,
+      })
+      expect(lastPosition()).toEqual({
+        duration: 181.5,
+        position: 0,
+        playbackRate: 1,
+      })
+    })
+
+    it('keeps the place inside the song', async () => {
+      // iOS clamps the elapsed time to the length itself; Android draws a
+      // thumb past the end. Neither gets a negative or a NaN.
+      const platform = await loadPlatform(true)
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 250,
+        duration: 246,
+      })
+      expect(lastPosition()).toMatchObject({ position: 246 })
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: -0.02,
+        duration: 246,
+      })
+      expect(lastPosition()).toMatchObject({ position: 0 })
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: Number.NaN,
+        duration: Number.NaN,
+        rate: Number.NaN,
+      })
+      expect(lastPosition()).toEqual({
+        duration: 0,
+        position: 0,
+        playbackRate: 1,
+      })
+    })
+
+    it('empties the bar when the session ends', async () => {
+      // Android stops its service on 'none' but keeps the numbers, and hands
+      // them to the next session's first notification.
+      const platform = await loadPlatform(true)
+      const order: string[] = []
+      mediaSession.setPlaybackState.mockImplementation(async () => {
+        order.push('state')
+      })
+      mediaSession.setPositionState.mockImplementation(async () => {
+        order.push('position')
+      })
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 42.5,
+        duration: 246,
+      })
+      order.length = 0
+      await platform.setNowPlaying(null)
+
+      expect(lastPosition()).toEqual({
+        duration: 0,
+        position: 0,
+        playbackRate: 0,
+      })
+      expect(order).toEqual(['state', 'position'])
+    })
+
+    it('still names the song on a phone whose plugin has no position', async () => {
+      const platform = await loadPlatform(true)
+      mediaSession.setPositionState.mockRejectedValueOnce(
+        new Error('Unimplemented'),
+      )
+
+      await expect(
+        platform.setNowPlaying({
+          title: 'Harbour Lights',
+          playing: true,
+          position: 1,
+          duration: 246,
+        }),
+      ).resolves.toBeUndefined()
+      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
+      expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
+        playbackState: 'playing',
+      })
     })
   })
 

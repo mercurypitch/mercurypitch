@@ -29,6 +29,12 @@ interface FakeMixer {
   setPlaying: Setter<boolean>
   setLoading: Setter<boolean>
   setElapsed: Setter<number>
+  /** The clock the lyrics follow: what has reached the speakers. */
+  setAudibleElapsed: Setter<number>
+  /** The position jumping as a seek or a tapped line moves it. */
+  jump: (seconds: number) => void
+  setSpeed: Setter<number>
+  setDuration: Setter<number>
   setLoadError: Setter<string>
   /** The singer moving the sing pill. */
   setGuideLevel: Setter<GuideLevel>
@@ -65,6 +71,16 @@ vi.mock('@/components/StemMixer', async () => {
       const [loading, setLoading] = createSignal(true)
       const [loadError, setLoadError] = createSignal('')
       const [elapsed, setElapsed] = createSignal(0)
+      const [audibleElapsed, setAudibleElapsed] = createSignal(0)
+      const [jumps, setJumps] = createSignal(0)
+      const [speed, setSpeed] = createSignal(1)
+      const [duration, setDuration] = createSignal(246)
+      // As the real mixer moves both clocks and then says it jumped.
+      const jump = (seconds: number): void => {
+        setElapsed(seconds)
+        setAudibleElapsed(seconds)
+        setJumps((count) => count + 1)
+      }
       const [hasNotes, setHasNotes] = createSignal(true)
       const [musicLevel, setMusicLevel] = createSignal(0.7)
       const [lyricGlance, setLyricGlance] = createSignal<LyricGlance>({
@@ -97,6 +113,10 @@ vi.mock('@/components/StemMixer', async () => {
         setPlaying,
         setLoading,
         setElapsed,
+        setAudibleElapsed,
+        jump,
+        setSpeed,
+        setDuration,
         setLoadError,
         setGuideLevel,
         setHasNotes,
@@ -107,7 +127,7 @@ vi.mock('@/components/StemMixer', async () => {
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
         play: vi.fn(() => setPlaying(true)),
         pause: vi.fn(() => setPlaying(false)),
-        seek: vi.fn((seconds: number) => setElapsed(seconds)),
+        seek: vi.fn((seconds: number) => jump(seconds)),
         releaseMic: vi.fn(() => setMicOn(false)),
         resumeMic: vi.fn(() => setMicOn(true)),
       }
@@ -118,7 +138,10 @@ vi.mock('@/components/StemMixer', async () => {
           loading,
           loadError,
           elapsed,
-          duration: () => 246,
+          audibleElapsed,
+          jumps,
+          speed,
+          duration,
           hasNotes,
           musicLevel,
           play: mixer.play,
@@ -623,6 +646,9 @@ describe('behind another app', () => {
       title: 'Goodbye to Spring',
       artist: 'Josh Woodward · CC BY 4.0',
       playing: true,
+      position: 0,
+      duration: 246,
+      rate: 1,
     })
 
     controls().pause()
@@ -632,6 +658,79 @@ describe('behind another app', () => {
 
     controls().stop()
     expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('tells the system where the song is, on the clock the lyrics follow', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    // The render clock runs ahead of the speakers by the output latency.
+    // The lyrics follow the speakers, and so does the bar.
+    current().setElapsed(12.75)
+    current().setAudibleElapsed(12.5)
+
+    current().setPlaying(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        playing: true,
+        position: 12.5,
+        duration: 246,
+        rate: 1,
+      }),
+    )
+    const told = device.nowPlaying.mock.calls.length
+
+    // The clock running on is the system's to draw, not news.
+    current().setElapsed(30.25)
+    current().setAudibleElapsed(30)
+    expect(device.nowPlaying).toHaveBeenCalledTimes(told)
+
+    // A seek, or a line tapped: the bar goes where the song went.
+    current().jump(101)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 101 }),
+    )
+
+    // A pause holds the bar where the lyrics stopped.
+    current().setAudibleElapsed(140.5)
+    controls().pause()
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: false, position: 140.5 }),
+    )
+
+    // A slower song moves the bar slower.
+    controls().resume()
+    current().setSpeed(0.75)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 140.5, rate: 0.75 }),
+    )
+  })
+
+  it("puts the next song's length on the bar, never the last one's", async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().jump(200)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ position: 200, duration: 246 }),
+    )
+    const first = current()
+
+    first.hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current()).not.toBe(first)
+    })
+    // Still loading: no length yet, so no bar.
+    current().setDuration(0)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ position: 0, duration: 0 }),
+    )
+
+    current().setDuration(181.5)
+    current().setLoading(false)
+    current().setPlaying(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 0, duration: 181.5 }),
+    )
   })
 
   it('answers the media buttons, and leaves a playing song alone on play', async () => {
