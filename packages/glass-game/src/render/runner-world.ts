@@ -5,6 +5,7 @@ import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
+import type { MaterialFinishBank } from './material-finishes'
 import { RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
 
 const Y_AXIS = new Vector3(0, 1, 0)
@@ -57,6 +58,7 @@ export function createRunnerWorld(
   crystalScene: Object3D,
   marbleMap: Texture,
   reducedMotion: boolean,
+  finishes?: MaterialFinishBank,
 ) {
   const donor = crystalScene.getObjectByName(LIVING_CRYSTAL_PLATFORM_NODES.root)
   if (!donor) throw new Error('Runner crystal support is missing.')
@@ -77,14 +79,15 @@ export function createRunnerWorld(
   const marble = new MeshPhysicalMaterial({
     color: 0xf4eee0,
     map: marbleMap,
-    roughness: 0.24,
-    metalness: 0.05,
-    clearcoat: 0.6,
+    roughness: 0.3,
+    metalness: 0,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.2,
   })
   const gold = new MeshPhysicalMaterial({
-    color: 0xd6a648,
-    roughness: 0.23,
-    metalness: 0.88,
+    color: 0xe8c781,
+    roughness: 0.26,
+    metalness: 1,
   })
   const frost = new MeshPhysicalMaterial({
     color: 0x86cbd3,
@@ -117,7 +120,7 @@ export function createRunnerWorld(
     variant: 'pearl-roots',
     seed: course.seed,
     reducedMotion,
-    intensity: 1.1,
+    intensity: 0.75,
   })
   const crystalParts = [
     contract.shell,
@@ -131,6 +134,13 @@ export function createRunnerWorld(
         index === 2 ? roots.material : (mesh.material as Material).clone(),
     }
   })
+  if (finishes) {
+    finishes.apply(
+      crystalParts[0]!.material as MeshPhysicalMaterial,
+      'champagne-crystal',
+      false,
+    )
+  }
   const installed = new Map<
     string,
     {
@@ -176,8 +186,8 @@ export function createRunnerWorld(
         )
       }
       // Perimeter ribbons sit on solid geometry; never paint a path across a real gap.
-      for (const edge of [cell.minX + 0.025, cell.maxX - 0.025])
-        trim.push(box(edge, course.groundFeetY - 0.045, z, 0.04, 0.07, depth))
+      for (const edge of [cell.minX + 0.055, cell.maxX - 0.055])
+        trim.push(box(edge, course.groundFeetY - 0.045, z, 0.1, 0.07, depth))
       const startsAtGapBoundary = gapSpans.some(
         (gap) =>
           cell.maxX > gap.minX &&
