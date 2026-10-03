@@ -753,6 +753,79 @@ describe('behind another app', () => {
     expect(current().seek).toHaveBeenLastCalledWith(0)
   })
 
+  it("seeks where the system's progress bar is let go, and tells the bar", async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    device.press({ seekTo: 101.5 })
+
+    expect(current().seek).toHaveBeenLastCalledWith(101.5)
+    expect(controls().isPlaying()).toBe(true)
+    // The jump is what reports the place again: the bar runs on from it.
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 101.5 }),
+    )
+  })
+
+  it('keeps a seek inside the song', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    device.press({ seekTo: 300 })
+    expect(current().seek).toHaveBeenLastCalledWith(246)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ position: 246, duration: 246 }),
+    )
+
+    device.press({ seekTo: -2 })
+    expect(current().seek).toHaveBeenLastCalledWith(0)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ position: 0 }),
+    )
+  })
+
+  it('leaves a paused song paused where the bar lands', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    controls().pause()
+    current().play.mockClear()
+
+    device.press({ seekTo: 60 })
+
+    expect(current().seek).toHaveBeenLastCalledWith(60)
+    expect(current().play).not.toHaveBeenCalled()
+    expect(controls().isPaused()).toBe(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: false, position: 60 }),
+    )
+  })
+
+  it('takes no seek while the next song loads, or once the run is over', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    const first = current()
+
+    // Next, mid-run: the run goes on while the next song loads.
+    first.hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current()).not.toBe(first)
+    })
+    device.press({ seekTo: 30 })
+    expect(current().seek).not.toHaveBeenCalled()
+
+    current().setLoading(false)
+    current().setPlaying(true)
+    controls().stop()
+    current().seek.mockClear()
+
+    device.press({ seekTo: 30 })
+    expect(current().seek).not.toHaveBeenCalled()
+  })
+
   it('lets everything go when the room does', async () => {
     const unmount = await mountRoom()
     current().setLoading(false)

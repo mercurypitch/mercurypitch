@@ -244,8 +244,20 @@ export interface NativeNowPlaying {
   readonly rate?: number
 }
 
-/** A press on the system's media controls: notification, lock screen, headset. */
-export type NativeMediaAction = 'play' | 'pause' | 'stop'
+/**
+ * The system's progress bar let go at a place in the song: the notification's
+ * and the shade's on Android, the lock screen's on both.
+ */
+export interface NativeMediaSeek {
+  /** Seconds into the song, as the platform reported them: not clamped. */
+  readonly seekTo: number
+}
+
+/**
+ * What the system's media controls ask: a press (the notification, the lock
+ * screen, a headset), or a seek.
+ */
+export type NativeMediaAction = 'play' | 'pause' | 'stop' | NativeMediaSeek
 
 export interface NativeDeviceApi {
   /** A lease on the one shared AudioContext, under the owner's name. */
@@ -263,7 +275,7 @@ export interface NativeDeviceApi {
    * playing or paused here is also what keeps the app from being frozen.
    */
   nowPlaying: (song: NativeNowPlaying | null) => void
-  /** The system's media buttons. Returns the unsubscribe. */
+  /** The system's media buttons and progress bar. Returns the unsubscribe. */
   onMediaAction: (handler: (action: NativeMediaAction) => void) => () => void
   /**
    * While on, leaving the app puts it in Android's small floating window

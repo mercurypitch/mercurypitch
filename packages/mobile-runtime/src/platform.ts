@@ -187,10 +187,74 @@ export interface NowPlaying {
   readonly rate?: number
 }
 
-/** A system media button: the notification, the lock screen, a headset. */
-export type MediaAction = 'play' | 'pause' | 'stop'
+/**
+ * The system's progress bar let go at a place in the song: the notification's
+ * and the shade's on Android, the lock screen's on both.
+ */
+export interface MediaSeek {
+  /** Seconds into the song, as the platform reported them: not clamped. */
+  readonly seekTo: number
+}
 
-const MEDIA_ACTIONS: readonly MediaAction[] = ['play', 'pause', 'stop']
+/**
+ * What the system's media controls ask of a song: a button (the
+ * notification, the lock screen, a headset), or a seek.
+ */
+export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek
+
+/**
+ * What is registered, in the plugin's names: the three buttons, and the bar.
+ * Registering 'seekto' is what lets the bar be dragged: Android adds
+ * ACTION_SEEK_TO to the session's actions for it, and iOS turns on its
+ * changePlaybackPositionCommand.
+ */
+const MEDIA_ACTIONS = ['play', 'pause', 'stop', 'seekto'] as const
+
+type RegisteredAction = (typeof MEDIA_ACTIONS)[number]
+
+/** What the plugin reports with an action: its name, and a seek's target. */
+interface ActionDetails {
+  readonly action?: unknown
+  readonly seekTime?: unknown
+}
+
+/**
+ * The plugin's own event, which its typings leave out. iOS's native half
+ * reports every press through it (see `listenOnIos`).
+ */
+interface MediaSessionEvents {
+  addListener(
+    eventName: 'actionHandler',
+    listener: (details: ActionDetails | null | undefined) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+/**
+ * How long the copies of one iOS press keep arriving. They come back to back,
+ * one per command target, so this only has to outlast a busy main thread; a
+ * person pressing the same button twice this fast asks for nothing new.
+ */
+const PRESS_COPIES_MS = 250
+
+function isRegisteredAction(action: unknown): action is RegisteredAction {
+  return MEDIA_ACTIONS.some((name) => name === action)
+}
+
+/**
+ * An action as the handler hears it. A seek carries where the bar was let go
+ * (`seekTime`, in seconds on both platforms), and one with no usable place
+ * in it is no seek at all.
+ */
+function heard(
+  action: RegisteredAction,
+  details: ActionDetails | null | undefined,
+): MediaAction | null {
+  if (action !== 'seekto') return action
+  const seconds = details?.seekTime
+  return typeof seconds === 'number' && Number.isFinite(seconds)
+    ? { seekTo: seconds }
+    : null
+}
 
 /** The progress bar's numbers, in the plugin's own shape. */
 interface PositionState {
@@ -258,17 +322,26 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
 }
 
 /**
- * The system's media buttons, all through one handler. The unsubscribe clears
- * the plugin's handlers again, so a room that is gone is never asked to play.
+ * The system's media buttons and its progress bar, all through one handler.
+ * The unsubscribe clears the plugin's handlers again, so a room that is gone
+ * is never asked to play.
  *
- * Each button is registered on its own. iOS answers through the WebView's
- * own media session, which may not know every button, and one it refuses
- * must not leave the others unregistered or uncleared.
+ * Each action is registered on its own: a platform that refuses one must not
+ * leave the others unregistered or uncleared. Android answers through the
+ * handler given here. iOS's native half does not (see `listenOnIos`).
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
 ): Unsubscribe {
   if (!isNative()) return () => undefined
+
+  const deliver = (
+    action: RegisteredAction,
+    details: ActionDetails | null | undefined,
+  ): void => {
+    const asked = heard(action, details)
+    if (asked !== null) handler(asked)
+  }
 
   return lazyListener((dispose) => {
     void (async () => {
@@ -280,11 +353,12 @@ export function onMediaAction(
         // nothing, as they always did.
         return
       }
-      const registered: MediaAction[] = []
+      const events = isIos() ? await listenOnIos(session, deliver) : null
+      const registered: RegisteredAction[] = []
       for (const action of MEDIA_ACTIONS) {
         try {
-          await session.setActionHandler({ action }, () => {
-            handler(action)
+          await session.setActionHandler({ action }, (details) => {
+            deliver(action, details)
           })
           registered.push(action)
         } catch {
@@ -293,6 +367,7 @@ export function onMediaAction(
       }
       dispose({
         remove: async () => {
+          await events?.remove().catch(() => undefined)
           for (const action of registered) {
             // Android hands back a callback id here, not a promise: await
             // it, never chain on it.
@@ -306,6 +381,40 @@ export function onMediaAction(
       })
     })()
   })
+}
+
+function isIos(): boolean {
+  return isNative() && Capacitor.getPlatform() === 'ios'
+}
+
+/**
+ * iOS's native half reports the lock screen's presses through the plugin's
+ * 'actionHandler' event, never through the handler `setActionHandler` was
+ * given: that method is a promise to the bridge, and the bridge drops a
+ * promise method's second argument. It also never removes a command target.
+ * Every `setActionHandler` call adds one, clears included, so a press
+ * arrives once for every call ever made for that button; the copies of one
+ * press are heard once. Null when the event cannot be listened to.
+ */
+async function listenOnIos(
+  session: MediaSessionPlugin,
+  deliver: (action: RegisteredAction, details: ActionDetails) => void,
+): Promise<PluginListenerHandle | null> {
+  const events = session as MediaSessionPlugin & MediaSessionEvents
+  let last = { key: '', at: Number.NEGATIVE_INFINITY }
+  try {
+    return await events.addListener('actionHandler', (details) => {
+      const action = details?.action
+      if (!isRegisteredAction(action)) return
+      const key = `${action} ${String(details?.seekTime)}`
+      const at = Date.now()
+      if (key === last.key && at - last.at < PRESS_COPIES_MS) return
+      last = { key, at }
+      deliver(action, details ?? {})
+    })
+  } catch {
+    return null
+  }
 }
 
 // ------------------------------------------------------------

@@ -402,6 +402,7 @@ Grep for the symbol and read the surrounding range instead.
 | [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.5k |
 | [src/components/CommunityLeaderboard.tsx](../../src/components/CommunityLeaderboard.tsx) | 1.4k |
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
+| [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
 | [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.4k |
 | [src/features/guitar-night/useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 1.4k |
@@ -409,7 +410,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
 | [workers/db-worker/src/email.ts](../../workers/db-worker/src/email.ts) | 1.4k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
-| [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |

@@ -46,6 +46,11 @@ export interface HostedMixerControls {
   readonly musicLevel: Accessor<number>
   readonly play: () => void
   readonly pause: () => void
+  /**
+   * Go to a place in the song the way a tapped lyric line does: the line
+   * sung there at once, back in the middle of the stage. A playing song
+   * plays on from there; a paused one stays paused.
+   */
   readonly seek: (seconds: number) => void
   /** Back to the shipped level: the Options sheet's "Reset to 100%". */
   readonly resetMusicLevel: () => void
