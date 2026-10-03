@@ -297,6 +297,33 @@ describe('share flows', () => {
     const rows = await repo.findAll()
     expect((rows[0] as unknown as { userId: string }).userId).toBe(getUserId())
   })
+
+  it('tells the board whose share each card is, so it can tell yours from theirs', async () => {
+    await saveSharedMelody({ name: 'Mine', items: melodyItems, author: 'Me' })
+    await saveSharedSession({
+      name: 'My setlist',
+      items: [],
+      author: 'Me',
+      results: [80],
+    })
+    await adapter.getRepository('sharedMelodies').create({
+      userId: 'someone-else',
+      melodyId: '',
+      melodyName: 'Theirs',
+      author: 'Them',
+      itemsJson: JSON.stringify(melodyItems),
+      tags: [],
+      isPublic: true,
+    } as never)
+
+    const melodies = await loadSharedMelodies()
+    const sessions = await loadSharedSessions()
+
+    expect(Object.fromEntries(melodies.map((m) => [m.name, m.userId]))).toEqual(
+      { Mine: getUserId(), Theirs: 'someone-else' },
+    )
+    expect(sessions.map((s) => s.userId)).toEqual([getUserId()])
+  })
 })
 
 // ── Streak (profile-backed) ─────────────────────────────────────

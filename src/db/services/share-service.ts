@@ -11,6 +11,9 @@ import { findOwnProfile } from '@/db/services/user-service'
 
 export interface SharedMelodyView {
   id: string
+  /** Who published it. The board is everyone's, so this is what tells a
+   *  singer's own card (the one they may take down) from anyone else's. */
+  userId: string
   name: string
   items: unknown[]
   author: string
@@ -20,6 +23,8 @@ export interface SharedMelodyView {
 
 export interface SharedSessionView {
   id: string
+  /** Who published it. See SharedMelodyView.userId. */
+  userId: string
   name: string
   items: unknown[]
   author: string
@@ -71,6 +76,7 @@ export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
     })
     return items.map((m) => ({
       id: m.id,
+      userId: m.userId,
       name: m.melodyName,
       items: z.array(MelodyItemSchema).parse(safeJsonParse(m.itemsJson)),
       author: m.author ?? 'Unknown',
@@ -93,6 +99,7 @@ export async function loadSharedSessions(): Promise<SharedSessionView[]> {
     })
     return items.map((s) => ({
       id: s.id,
+      userId: s.userId,
       name: s.sessionName,
       items: [],
       author: s.author ?? 'Unknown',
@@ -148,6 +155,7 @@ export async function saveSharedMelody(data: {
     })
     return {
       id: created.id,
+      userId: created.userId,
       name: created.melodyName,
       items: safeJsonParse(created.itemsJson),
       author: created.author ?? 'Unknown',
@@ -186,6 +194,7 @@ export async function saveSharedSession(data: {
     })
     return {
       id: created.id,
+      userId: created.userId,
       name: created.sessionName,
       items: [],
       author: created.author ?? 'Unknown',

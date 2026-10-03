@@ -4,6 +4,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { exampleSessionFrom } from '@/features/karaoke-night/examples-library'
 import { saveAllUvrSessions } from '@/stores/app-store'
 import type { UvrSession } from '@/types/uvr'
 import { UvrSessionResult } from '../UvrSessionResult'
@@ -215,6 +216,34 @@ describe('UvrSessionResult Component', () => {
       const dateText = screen.getByText(/Created/).nextElementSibling
       expect(dateText).toBeTruthy()
       expect(dateText?.textContent?.length).toBeGreaterThan(0)
+    })
+
+    it('shows no creation date on a shipped example', () => {
+      // The seeder files every example on 1 Jan 2020 so it sorts below the
+      // visitor's own songs. That is a sort key, not a date to show.
+      const example = exampleSessionFrom(
+        {
+          slug: 'josephine',
+          title: 'Josephine',
+          artist: 'Josh Woodward',
+          attribution: { text: '', url: '', license: '', licenseUrl: '' },
+          stems: {
+            vocal: 'https://r2.example/demo/josephine/vocal.m4a',
+            instrumental: 'https://r2.example/demo/josephine/instrumental.m4a',
+          },
+        },
+        0,
+      )
+      seedSession({ ...example })
+
+      render(() => (
+        <UvrSessionResult {...defaultProps} sessionId={example.sessionId} />
+      ))
+
+      expect(screen.getByText('Josh Woodward — Josephine')).toBeInTheDocument()
+      expect(screen.queryByText('Created')).toBeNull()
+      // Nor the sort key itself, in any date format.
+      expect(document.body.textContent).not.toMatch(/2020/)
     })
 
     it('renders file size when original file exists', () => {

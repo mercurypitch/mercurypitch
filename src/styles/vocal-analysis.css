@@ -2274,6 +2274,33 @@
     padding: 8px 4px;
     font-size: 0.75rem;
   }
+  /* Six columns came to 457px in a 300-370px box at 320-390px, so Sessions
+     and Best sat past the edge. A phone keeps rank, singer, score and the
+     number the board is ranked by; the singer's card, a tap away, has the
+     rest. The fixed widths go too: they summed to more than the box. */
+  .leaderboard-table
+    :is(
+      .streak-th,
+      .streak-td,
+      .sessions-th,
+      .sessions-td,
+      .best-th,
+      .best-td
+    ) {
+    display: none;
+  }
+  .leaderboard-table[data-category='streak'] :is(.streak-th, .streak-td),
+  .leaderboard-table[data-category='sessions'] :is(.sessions-th, .sessions-td),
+  .leaderboard-table[data-category='best-score'] :is(.best-th, .best-td) {
+    display: table-cell;
+  }
+  .leaderboard-table th {
+    width: auto;
+    min-width: 0;
+  }
+  .user-name {
+    overflow-wrap: anywhere;
+  }
   .user-td {
     gap: 6px;
   }
@@ -4254,6 +4281,14 @@
   .community-share-tab::before {
     display: none;
   }
+}
+
+/* The art is near-black and there is no light version of it. Over the light
+   page at 55% it made a mid-grey ground, and the header's subtitle measured
+   1.3:1 against it, the title 3.5:1. The Exercises backdrop sits out the
+   light theme for the same reason (exercises.css). */
+[data-theme='light'] .community-share-tab::before {
+  display: none;
 }
 
 /* ── The panel fills the window ──────────────────────────────────── */
