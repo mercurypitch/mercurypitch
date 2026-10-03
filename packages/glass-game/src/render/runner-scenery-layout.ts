@@ -217,7 +217,7 @@ const COURSE_MOTIFS: readonly RunnerSceneryMotif[] = Object.freeze([
     side: -1,
     architectureBeatOffset: 7.6,
     architectureScale: 1.06,
-    poolBeatOffset: 3.6,
+    poolBeatOffset: 8.4,
     poolTerraceScale: 1,
   },
   {
