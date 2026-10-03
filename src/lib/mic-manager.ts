@@ -75,6 +75,14 @@ export const BACKGROUND_HOLD_IDS: readonly string[] = ['routine']
 // (typically a previous handle that has not finished releasing yet).
 const BUSY_RETRY_DELAY_MS = 250
 
+/**
+ * The error name openDevice throws where the page cannot ask for a microphone
+ * at all: no navigator.mediaDevices, as on an insecure origin, in some
+ * embedded views and in some television browsers. Reaching through it anyway
+ * threw a TypeError whose raw text became the copy.
+ */
+const NO_CAPTURE = 'NoCaptureError'
+
 function classifyError(err: unknown): MicError {
   const name = (err as { name?: string } | null | undefined)?.name
   const rawMessage = (err as { message?: string } | null | undefined)?.message
@@ -97,6 +105,12 @@ function classifyError(err: unknown): MicError {
     case 'NotFoundError':
     case 'DevicesNotFoundError':
       return { kind: 'no-device', message: 'No microphone was found.' }
+    case NO_CAPTURE:
+      // A retry cannot help, so it is a missing device, not a busy one.
+      return {
+        kind: 'no-device',
+        message: 'This browser cannot use a microphone.',
+      }
     default:
       return {
         kind: 'unknown',
@@ -285,6 +299,11 @@ export class MicManager {
   }
 
   private async openDevice(): Promise<MediaStream> {
+    if (typeof navigator.mediaDevices?.getUserMedia !== 'function') {
+      const err = new Error('navigator.mediaDevices.getUserMedia is missing')
+      err.name = NO_CAPTURE
+      throw err
+    }
     try {
       return await navigator.mediaDevices.getUserMedia(this.buildConstraints())
     } catch (err) {

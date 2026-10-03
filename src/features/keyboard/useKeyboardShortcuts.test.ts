@@ -2,6 +2,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import { useKeyboardShortcuts } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, TAB_SINGING } from '@/features/tabs/constants'
+import * as transportStore from '@/stores/transport-store'
 import type { PlaybackMode } from '@/types'
 
 function mountShortcuts(handlers: {
@@ -92,6 +93,24 @@ describe('the V voice-control shortcuts', () => {
     keydown({ code: 'Slash', key: '?', shiftKey: true })
     expect(shortcutHelp).toHaveBeenCalledTimes(1)
     expect(showCommands).not.toHaveBeenCalled()
+    dispose()
+  })
+})
+
+describe('the speed keys', () => {
+  // A television leaves both arrows to its remote's D-pad instead;
+  // useKeyboardShortcuts.tv.test.ts holds that.
+  it('Up and Down step the playback speed', async () => {
+    transportStore.setPlaybackSpeed(1)
+    const dispose = mountShortcuts({})
+    await Promise.resolve()
+
+    keydown({ code: 'ArrowUp' })
+    expect(transportStore.playbackSpeed()).toBe(1.5)
+
+    keydown({ code: 'ArrowDown' })
+    keydown({ code: 'ArrowDown' })
+    expect(transportStore.playbackSpeed()).toBe(0.75)
     dispose()
   })
 })

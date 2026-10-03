@@ -326,7 +326,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | low      | `src/lib/lyrics-service.ts:280`                                      | Timeout timer and abort listener leak whenever the lyrics fetch rejects                                                     | likely     | reported                                   |
 | low      | `src/lib/vocal-analyzer.ts:320`                                      | computeHNR returns -Infinity for hnrDb when no harmonic bin carries energy                                                  | possible   | reported                                   |
 | low      | `workers/db-worker/src/auth.ts:1361`                                 | verifyState decodes the OAuth state signature outside any try/catch — malformed state returns 500, not 400                  | certain    | reported                                   |
-| low      | `workers/db-worker/src/auth.ts:2093`                                 | Device-link poll token hash compared with !== (non-constant-time)                                                           | possible   | reported                                   |
+| low      | `workers/db-worker/src/auth.ts:3298`                                 | Device-link poll token hash compared with !== (non-constant-time)                                                           | possible   | reported                                   |
 | low      | `workers/db-worker/src/index.ts:2133`                                | decodeURIComponent on the path segment throws on malformed percent-encoding, yielding 500                                   | certain    | reported                                   |
 | low      | `workers/db-worker/src/index.ts:236`                                 | Unvalidated offset query parameter is bound to SQL as NaN                                                                   | possible   | reported                                   |
 
@@ -928,7 +928,7 @@ This is precisely the bug the codebase already identified and fixed in `verifyJw
 
 ### [low] Device-link poll token hash compared with !== (non-constant-time)
 
-`workers/db-worker/src/auth.ts:2093` — confidence: possible — status: reported
+`workers/db-worker/src/auth.ts:3298` — confidence: possible — status: reported
 
 `handleDeviceLinkPoll` compares the SHA-256 of the presented poll token against the stored hash with a plain `!==`, which short-circuits on the first differing byte. Every other secret comparison in this worker deliberately routes through the exported `timingSafeEqual` helper (index.ts:244 for ADMIN_KEY, testing-accounts.ts:657 for TESTING_PROVISION_KEY, billing.ts:832 for BILLING_SERVICE_KEY, jam-room.ts:468 for ownerToken), and auth.ts:387 documents exactly why. This one site was missed.
 

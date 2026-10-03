@@ -5,6 +5,15 @@ work — kept beside [device-sync.md](device-sync.md) because the two compose:
 this is the no-account, one-song, standing-in-the-living-room path; account
 sync is the everything-everywhere path. Neither blocks the other.
 
+**Status 2026-09-29.** The pairing shipped by another route than the one below
+(PR #501): the QR encodes the P2P sync room (`#/sync:CODE`, in
+`SyncDevicesModal`), not the jam room link, and `src/components/QrCode.tsx`
+draws it with `uqr`, so the "no runtime QR library" note below is history. TV
+sign-in by phone (`#/link:CODE`) shipped beside it. Still open: an action on
+the TV notice, a QR sized for a room (it renders at 168 px), and a QR in
+`JamInviteModal`. Tracked in [tv-apps-and-phone-mic.md](tv-apps-and-phone-mic.md)
+§2.
+
 ## The problem
 
 A TV browser has no file manager, so songs cannot be uploaded there. Today the
