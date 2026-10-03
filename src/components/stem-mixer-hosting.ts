@@ -31,6 +31,15 @@ export interface HostedMixerControls {
   readonly loadError: Accessor<string>
   /** Seconds into the song. */
   readonly elapsed: Accessor<number>
+  /**
+   * Seconds into the song as the lyrics follow it: what has reached the
+   * speakers. The system's progress bar reads this one, so the two agree.
+   */
+  readonly audibleElapsed: Accessor<number>
+  /** Goes up by one each time the position jumps: a seek, a line tapped. */
+  readonly jumps: Accessor<number>
+  /** How fast the song plays: 1 is as written. */
+  readonly speed: Accessor<number>
   readonly duration: Accessor<number>
   /** The song has its notes (a stored analysis), so notes can be shown. */
   readonly hasNotes: Accessor<boolean>

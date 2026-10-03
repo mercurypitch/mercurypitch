@@ -179,6 +179,12 @@ export interface NowPlaying {
   readonly title: string
   readonly artist?: string
   readonly playing: boolean
+  /** Seconds into the song. Absent reads as the start. */
+  readonly position?: number
+  /** The song's length in seconds. Absent or 0 while it is not known. */
+  readonly duration?: number
+  /** How fast it plays while playing: 1 is as written. Absent reads as 1. */
+  readonly rate?: number
 }
 
 /** A system media button: the notification, the lock screen, a headset. */
@@ -186,18 +192,58 @@ export type MediaAction = 'play' | 'pause' | 'stop'
 
 const MEDIA_ACTIONS: readonly MediaAction[] = ['play', 'pause', 'stop']
 
+/** The progress bar's numbers, in the plugin's own shape. */
+interface PositionState {
+  readonly duration: number
+  readonly position: number
+  readonly playbackRate: number
+}
+
+/** An empty bar: no length, nothing played, standing still. */
+const NO_POSITION: PositionState = { duration: 0, position: 0, playbackRate: 0 }
+
+const finiteOr = (value: number | undefined, fallback: number): number =>
+  value !== undefined && Number.isFinite(value) ? value : fallback
+
+/**
+ * The progress bar for a song. A paused song gets rate 0: iOS stops its
+ * lock-screen clock on it, and Android, which keeps a paused state still
+ * whatever the rate, reads 0 as 1.
+ */
+function positionOf(song: NowPlaying): PositionState {
+  const duration = Math.max(0, finiteOr(song.duration, 0))
+  const position = Math.min(duration, Math.max(0, finiteOr(song.position, 0)))
+  const rate = finiteOr(song.rate, 1)
+  return {
+    duration,
+    position,
+    playbackRate: song.playing ? (rate > 0 ? rate : 1) : 0,
+  }
+}
+
 /**
  * Tell the system what is playing, or null when nothing is.
  *
  * Null is the plugin's 'none', which on Android stops the foreground service
  * and takes its notification away. The metadata goes first, so the service's
  * first notification already names the song.
+ *
+ * The position goes last, every time. Android draws the notification's bar
+ * from it (the length reaches the session's metadata through this call, not
+ * through setMetadata) and runs the bar on from the last report at the rate
+ * given, so a report is due on play, pause, a seek or a new length, never on
+ * a frame. iOS rewrites its whole Now Playing record on every call, which
+ * re-anchors the lock screen's clock to the stored elapsed time, and its
+ * state change sets the rate to 1: a position written before either would be
+ * undone. Null empties the bar as well, because Android keeps the numbers
+ * across a stopped session and shows them in the next one's notification.
  */
 export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
   await attempt(async () => {
     const { MediaSession } = await import('@capgo/capacitor-media-session')
     if (song === null) {
       await MediaSession.setPlaybackState({ playbackState: 'none' })
+      await MediaSession.setPositionState(NO_POSITION)
       return
     }
     await MediaSession.setMetadata({
@@ -207,6 +253,7 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
     await MediaSession.setPlaybackState({
       playbackState: song.playing ? 'playing' : 'paused',
     })
+    await MediaSession.setPositionState(positionOf(song))
   })
 }
 

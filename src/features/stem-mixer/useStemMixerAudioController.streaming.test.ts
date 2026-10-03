@@ -116,6 +116,7 @@ vi.mock('./stem-stream-source', () => ({
 }))
 
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
+import { HIDDEN_TICK_MS } from './hidden-clock'
 import { readLastSongPath, resetSongPathForTests } from './stem-load-path'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
 import { LOST_SOUND_NOTICE, useStemMixerAudioController, } from './useStemMixerAudioController'
@@ -147,6 +148,8 @@ function fullyDecodedBuffer(): AudioBuffer {
 }
 
 let decodeCalls = 0
+/** The context the mixer built last, so a case can move its clock. */
+let lastContext: { currentTime: number } | null = null
 /** Called as a decode starts: what the record says at that moment. */
 let onDecode: (() => void) | null = null
 
@@ -335,7 +338,9 @@ beforeEach(() => {
     ),
   )
   vi.stubGlobal('AudioContext', function AudioContextStub(): unknown {
-    return fakeAudioContext()
+    const context = fakeAudioContext() as { currentTime: number }
+    lastContext = context
+    return context
   })
 })
 
@@ -791,6 +796,75 @@ describe('the crash test, outside a native build', () => {
     expect(decodeCalls).toBe(0)
     expect(h.controller.loadErrorRetryable()).toBe(false)
     switches.pastGuard = false
+    h.dispose()
+  })
+})
+
+// What a room hosting the mixer reads for the system's progress bar: the
+// clock the lyrics follow, and a count of the times the position jumped
+// rather than ran on (KaraokeRoomStage.tsx).
+describe('the clocks a hosting room reads', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    Reflect.deleteProperty(document, 'visibilityState')
+  })
+
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 10; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+  }
+  const sendPageAway = (): void => {
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+  }
+
+  it('counts a seek, a stop and a restart as jumps', async () => {
+    deviceClass = 'mobile'
+    const h = harness()
+    await h.controller.loadStems()
+    expect(h.controller.jumps()).toBe(0)
+
+    h.controller.seekTo(42)
+    expect(h.controller.jumps()).toBe(1)
+    expect(h.controller.audibleElapsed()).toBe(42)
+
+    h.controller.handleStop()
+    expect(h.controller.jumps()).toBe(2)
+    h.controller.seekTo(10)
+    h.controller.handleRestart()
+    expect(h.controller.jumps()).toBe(4)
+    expect(h.controller.audibleElapsed()).toBe(0)
+    h.dispose()
+  })
+
+  it('keeps the lyrics clock running behind another app', async () => {
+    // Nothing draws there, but a pause pressed in the notification reads
+    // this clock, and a frozen one would put the bar back where the app
+    // was left.
+    deviceClass = 'mobile'
+    const h = harness({ followEndWhileHidden: true })
+    await h.controller.loadStems()
+    h.controller.handlePlay()
+    await settle()
+    expect(h.controller.playing()).toBe(true)
+    const startedAt = h.controller.audibleElapsed()
+
+    vi.useFakeTimers()
+    sendPageAway()
+    lastContext!.currentTime += 30
+    vi.advanceTimersByTime(HIDDEN_TICK_MS)
+
+    expect(h.controller.audibleElapsed()).toBeCloseTo(startedAt + 30, 1)
+    h.controller.handlePause()
+    expect(h.controller.audibleElapsed()).toBeCloseTo(startedAt + 30, 1)
+    expect(h.controller.jumps()).toBe(0)
     h.dispose()
   })
 })

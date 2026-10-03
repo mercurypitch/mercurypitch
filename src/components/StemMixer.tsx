@@ -2058,6 +2058,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       loading: audio.loading,
       loadError: audio.loadError,
       elapsed: audio.elapsed,
+      audibleElapsed: audio.audibleElapsed,
+      jumps: audio.jumps,
+      speed: audio.speed,
       duration: audio.duration,
       hasNotes: () =>
         pitchAnalysis.offlineSegmentedNotes().length > 0 ||
