@@ -628,6 +628,7 @@ export const KaraokeRoomStage: Component = () => {
       {/* data-room-background: the picture a door's clone waits on before it
           fades (apps/mercurypitch alley-entry.ts). */}
       <div class={styles.cover} data-room-background />
+      <div class={styles.scrim} data-room-scrim />
       {/* Unseen and out of reach under the small window: its pills and bar
           would sit over the lyrics there, and a tap never reaches them. The
           stage stays mounted, because it is the song's clock. */}

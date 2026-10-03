@@ -12,9 +12,10 @@
 // always been.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { KaraokeMobileStageProps, KaraokeStageHosting, } from '@/components/KaraokeMobileStage'
-import { KaraokeMobileStage } from '@/components/KaraokeMobileStage'
+import { HOSTED_REVEAL_GRACE_MS, KaraokeMobileStage, } from '@/components/KaraokeMobileStage'
 import { ZEN_LYRICS_SCALE } from '@/features/stem-mixer/zen-navigation'
 
 beforeAll(() => {
@@ -164,5 +165,54 @@ describe('the zen stage, hosted by the Karaoke room', () => {
     expect(screen.getByLabelText('Back')).toBeTruthy()
     expect(screen.getByLabelText('Cycle the lyrics text size')).toBeTruthy()
     expect(screen.queryByTestId('karaoke-songline')).toBeNull()
+  })
+})
+
+// The room dims its own picture from its first frame. A hosted stage shown
+// while its song loaded put its loading card, and the lyric sheet's first
+// frame, over that picture for a tenth of a second on the way in, then cut
+// them away: the flicker on entering the room (owner, 3 Oct).
+describe('arriving in the Karaoke room', () => {
+  const revealed = (): boolean =>
+    screen.getByTestId('karaoke-mobile-stage').dataset.revealed === ''
+
+  it('stays out of sight and out of reach while its song loads', () => {
+    renderInRoom(makeProps({ hosted: hosting(), loading: () => true }))
+    expect(revealed()).toBe(false)
+    expect(screen.getByTestId('karaoke-mobile-stage').inert).toBe(true)
+  })
+
+  it('appears once its song is ready, and stays when another load starts', () => {
+    const [loading, setLoading] = createSignal(true)
+    renderInRoom(makeProps({ hosted: hosting(), loading }))
+    setLoading(false)
+    expect(revealed()).toBe(true)
+    expect(screen.getByTestId('karaoke-mobile-stage').inert).toBe(false)
+    setLoading(true)
+    expect(revealed()).toBe(true)
+  })
+
+  it('shows a slow load after a moment, so the singer sees it working', () => {
+    vi.useFakeTimers()
+    try {
+      renderInRoom(makeProps({ hosted: hosting(), loading: () => true }))
+      vi.advanceTimersByTime(HOSTED_REVEAL_GRACE_MS - 1)
+      expect(revealed()).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(revealed()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shows a song that could not load at once', () => {
+    renderInRoom(
+      makeProps({
+        hosted: hosting(),
+        loading: () => true,
+        loadError: () => 'This song could not be loaded.',
+      }),
+    )
+    expect(revealed()).toBe(true)
   })
 })

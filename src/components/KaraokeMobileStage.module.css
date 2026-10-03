@@ -1101,7 +1101,10 @@
    stage fills it rather than portalling over it, starts under the room
    header the shell draws (its 52 px row over the safe area), and leaves the
    picture to the room's own [data-room-background], which the alley's door
-   hands over to. What the stage keeps of its background is the plum veil. */
+   hands over to. The plum veil over that picture is the room's too
+   ([data-room-scrim]), so the room arrives dimmed before this stage mounts.
+   The stage fades in once its song is ready (`data-revealed`, set by
+   `KaraokeMobileStage`), instead of cutting in over the picture. */
 .hosted {
   position: absolute;
   inset: 0;
@@ -1110,14 +1113,20 @@
   overflow: hidden;
   padding-top: calc(var(--safe-top, 0px) + 52px);
   color: var(--stage-color);
-  background: linear-gradient(
-    180deg,
-    rgba(14, 6, 25, 0.9) 0%,
-    rgba(18, 8, 31, 0.72) 45%,
-    rgba(10, 4, 18, 0.94) 100%
-  );
+  opacity: 0;
+  transition: opacity 0.22s ease-out;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.hosted[data-revealed] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hosted {
+    transition: none;
+  }
 }
 
 /* The song line: title, credit, and the library behind a tap. */

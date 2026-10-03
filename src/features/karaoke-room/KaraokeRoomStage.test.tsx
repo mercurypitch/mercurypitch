@@ -1512,6 +1512,22 @@ describe('the room picture', () => {
     ).not.toBeNull()
   })
 
+  // The veil used to come with the stage, which mounts only once its song is
+  // cued: the door handed over to the bright picture, and the stage dimmed it
+  // in one frame on its way in (owner, 3 Oct).
+  it('is dimmed by the room itself, before the stage arrives', () => {
+    holdRoomArrival()
+    render(() => <KaraokeRoomStage />)
+
+    const picture = screen
+      .getByTestId('karaoke-room')
+      .querySelector('[data-room-background]')
+    expect(picture?.nextElementSibling?.hasAttribute('data-room-scrim')).toBe(
+      true,
+    )
+    expect(mixers.list).toHaveLength(0)
+  })
+
   it('is chosen from the chip, and Back closes the chooser first', async () => {
     await mountRoom()
 
