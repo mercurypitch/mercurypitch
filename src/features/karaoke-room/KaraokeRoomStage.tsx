@@ -103,12 +103,15 @@ interface Cue {
   readonly seekSec: number | undefined
   /** The guide vocal to put back once the mixer is up, or null. */
   readonly guide: GuideLevel | null
+  /** The song the room opened with; see `KaraokeStageHosting.arriving`. */
+  readonly arriving: boolean
 }
 
 interface CueOptions {
   readonly autoPlay: boolean
   readonly seekSec?: number
   readonly guide?: GuideLevel | null
+  readonly arriving?: boolean
 }
 
 /**
@@ -192,6 +195,7 @@ export const KaraokeRoomStage: Component = () => {
       autoPlay: options.autoPlay,
       seekSec: options.seekSec,
       guide: options.guide ?? null,
+      arriving: options.arriving === true,
     })
   }
 
@@ -217,6 +221,7 @@ export const KaraokeRoomStage: Component = () => {
       autoPlay: false,
       seekSec: resuming && parked.seconds > 0 ? parked.seconds : undefined,
       guide: resuming ? parked.guide : null,
+      arriving: true,
     })
   })
 
@@ -281,6 +286,7 @@ export const KaraokeRoomStage: Component = () => {
         const coming = KARAOKE_IMPORT ? importsInFlight() : 0
         return coming > 0 ? `Separating ${coming}` : null
       },
+      arriving: entry.arriving,
     },
     attach: (controls) => {
       if (entry.key !== cueToken) return
@@ -628,6 +634,7 @@ export const KaraokeRoomStage: Component = () => {
       {/* data-room-background: the picture a door's clone waits on before it
           fades (apps/mercurypitch alley-entry.ts). */}
       <div class={styles.cover} data-room-background />
+      <div class={styles.scrim} data-room-scrim />
       {/* Unseen and out of reach under the small window: its pills and bar
           would sit over the lyrics there, and a tap never reaches them. The
           stage stays mounted, because it is the song's clock. */}

@@ -97,6 +97,13 @@ export interface KaraokeStageHosting {
   noteGlyphs: () => boolean
   /** A short count beside the title while songs are on their way. */
   badge?: () => string | null
+  /**
+   * The song the room opened with. Its stage stays out of sight until the
+   * song is ready, so the room arrives without a loading card cutting in over
+   * its picture. A song changed in the room shows at once: it replaces a
+   * stage the singer was already using.
+   */
+  arriving?: boolean
 }
 
 export interface KaraokeMobileStageProps {
@@ -234,6 +241,13 @@ export interface KaraokeMobileStageProps {
 
 const DEFAULT_VOCAL_VOLUME = 0.8
 
+/**
+ * How long an arriving stage waits out of sight for its song before it shows
+ * the load anyway. Most songs are ready well inside it, so the singer never sees a
+ * loading card; one that is still downloading after it shows its progress.
+ */
+export const HOSTED_REVEAL_GRACE_MS = 600
+
 function formatTime(sec: number): string {
   if (!isFinite(sec) || sec < 0) sec = 0
   const m = Math.floor(sec / 60)
@@ -251,6 +265,24 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   /** The stage's own way out. Hosted, the room header's Back is the only one. */
   const backHandler = (): (() => void) | undefined =>
     hosting === undefined ? props.onBack : undefined
+
+  /**
+   * Whether the stage is in view. The room draws its picture and the dimming
+   * over it from its first frame; the song it arrives with mounts this stage
+   * once it is cued, and showing it straight away put the loading card, and
+   * the lyric sheet's first empty frame, over that picture for a tenth of a
+   * second on the way in. An arriving stage shows once the song is ready,
+   * after the grace on a slow download, or at once with an error. Once shown
+   * it stays: a retry keeps its own loading card in view.
+   */
+  const [revealed, setRevealed] = createSignal(hosting?.arriving !== true)
+  if (hosting?.arriving === true) {
+    const grace = setTimeout(() => setRevealed(true), HOSTED_REVEAL_GRACE_MS)
+    onCleanup(() => clearTimeout(grace))
+    createEffect(() => {
+      if (!props.loading() || props.loadError() !== '') setRevealed(true)
+    })
+  }
 
   /**
    * The clock for anything the singer follows by ear.
@@ -1339,6 +1371,8 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           class={`${styles.stage} ${styles.hosted} mp-dark-stage`}
           data-testid="karaoke-mobile-stage"
           data-hosted=""
+          data-revealed={revealed() ? '' : undefined}
+          inert={!revealed()}
         >
           {content()}
         </div>

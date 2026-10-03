@@ -29,6 +29,20 @@
   background-repeat: no-repeat;
 }
 
+/* The plum veil the lyrics read against. It is the room's, not the stage's:
+   the stage mounts only once its song is cued, and a veil that came with it
+   dimmed the picture in one frame on the way in. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 6, 25, 0.9) 0%,
+    rgba(18, 8, 31, 0.72) 45%,
+    rgba(10, 4, 18, 0.94) 100%
+  );
+}
+
 /* ── The library sheet (§3) ───────────────────────────────────
    One vertical list. A long title wraps rather than scroll sideways, and
    every row keeps the 44 px touch floor. */

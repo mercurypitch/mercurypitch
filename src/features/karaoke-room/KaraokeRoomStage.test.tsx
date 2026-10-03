@@ -1179,6 +1179,20 @@ describe('the next song', () => {
     expect(current().autoPlay).not.toBe(true)
     expect(current().hosted.hasPrev()).toBe(true)
   })
+
+  // The song the room opens with keeps its stage out of sight until it is
+  // ready; a song changed in the room replaces a stage in use, so it shows at
+  // once rather than blanking the room under the singer's thumb.
+  it('holds back only the stage of the song it arrived with', async () => {
+    await mountRoom()
+    expect(current().hosted.stage.arriving).toBe(true)
+
+    current().hosted.onNext()
+    await vi.waitFor(() => {
+      expect(current().sessionId).toBe(JOSEPHINE.sessionId)
+    })
+    expect(current().hosted.stage.arriving).not.toBe(true)
+  })
 })
 
 describe('the library', () => {
@@ -1510,6 +1524,22 @@ describe('the room picture', () => {
       room.querySelector('[data-room-background]'),
       'the element the door grows into',
     ).not.toBeNull()
+  })
+
+  // The veil used to come with the stage, which mounts only once its song is
+  // cued: the door handed over to the bright picture, and the stage dimmed it
+  // in one frame on its way in (owner, 3 Oct).
+  it('is dimmed by the room itself, before the stage arrives', () => {
+    holdRoomArrival()
+    render(() => <KaraokeRoomStage />)
+
+    const picture = screen
+      .getByTestId('karaoke-room')
+      .querySelector('[data-room-background]')
+    expect(picture?.nextElementSibling?.hasAttribute('data-room-scrim')).toBe(
+      true,
+    )
+    expect(mixers.list).toHaveLength(0)
   })
 
   it('is chosen from the chip, and Back closes the chooser first', async () => {
