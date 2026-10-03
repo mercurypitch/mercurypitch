@@ -20,7 +20,7 @@ import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyri
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
-import { lyricsfileToStoredLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
+import { lyricsfileInputFromCanonical, lyricsfileToStoredLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
@@ -1448,26 +1448,32 @@ export function useStemMixerLyricsController(
    */
   const handleDownloadLyricsfile = () => {
     const canonical = canonicalLrcLines()
-    const lines =
+    const stores = {
+      wordTimings: wordTimings(),
+      wordEndTimings: wordEndTimings(),
+      wordSweepTimings: wordSweepTimings(),
+    }
+    // Timed lyrics: each written line takes its own timings, renumbered past
+    // the rests, with its inline stamps when the mapper recorded none
+    // (lyricsfileInputFromCanonical). Plain text is numbered as it stands.
+    const timed =
       canonical.length > 0
-        ? canonical
-            .filter((entry) => entry.type === 'line')
-            .map((entry) => ({ time: entry.time, text: entry.text }))
-        : (rawLyricsText() !== ''
-            ? rawLyricsText().split('\n')
-            : lyricsLines()
-          ).map((text) => ({ time: 0, text }))
-    if (lines.length === 0) return
+        ? lyricsfileInputFromCanonical(canonical, stores)
+        : {
+            lines: (rawLyricsText() !== ''
+              ? rawLyricsText().split('\n')
+              : lyricsLines()
+            ).map((text) => ({ time: 0, text })),
+            ...stores,
+          }
+    if (timed.lines.length === 0) return
 
     const text = serialiseLyricsfile({
-      lines,
+      ...timed,
       metadata: {
         title: deps.songTitle === '' ? undefined : deps.songTitle,
         durationMs: deps.duration() > 0 ? deps.duration() * 1000 : undefined,
       },
-      wordTimings: wordTimings(),
-      wordEndTimings: wordEndTimings(),
-      wordSweepTimings: wordSweepTimings(),
     })
 
     const base = (loadPersistedLyrics()?.filename ?? 'lyrics').replace(
@@ -1567,13 +1573,19 @@ export function useStemMixerLyricsController(
         let wordEndTimes =
           entry.lrcIndex >= 0 ? wordEndTimings()[entry.lrcIndex] : undefined
         if (entry.words.length > 0 && notes.length > 0) {
-          displayEnd = clampLineEndToVocal(entry.time, endTime, notes)
+          displayEnd = clampLineEndToVocal(
+            entry.time,
+            endTime,
+            notes,
+            entry.wordTimes?.at(-1),
+          )
           const lastIdx = (entry.wordTimes?.length ?? 0) - 1
           if (lastIdx >= 0 && wordEndTimes?.[lastIdx] === undefined) {
             const lastEnd = synthesizeLastWordEnd(
               entry.wordTimes,
               displayEnd,
               notes,
+              endTime,
             )
             if (lastEnd !== undefined) {
               const filled = wordEndTimes ? [...wordEndTimes] : []

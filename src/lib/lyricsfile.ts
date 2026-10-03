@@ -21,7 +21,7 @@
 // strings. The app's `split(/\s+/)` model throws it away, so `splitWithSpacing`
 // exists to put it back rather than assuming one space between words.
 
-import type { WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
+import type { CanonicalLrcEntry, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 import { formatTimeLrc, stampedLrcLine } from './lrc-generator'
 import { withLrcTimingMetadata } from './lrc-timing-metadata'
 import type { LrcLine } from './lyrics-service'
@@ -79,6 +79,54 @@ export function splitWithSpacing(line: string): string[] {
     const end = i === matches.length - 1 ? line.length : matches[i + 1].index
     return line.slice(start, end)
   })
+}
+
+/** The app's timing stores, keyed the way the app keys them. */
+export interface LyricsTimingStores {
+  /** Word starts the mapper recorded, by LRC line index (rests counted). */
+  wordTimings: WordTimingsMap
+  /** Word ends, by LRC line index. */
+  wordEndTimings: WordTimingsMap
+  /** Sub-word splits, by LRC line index. */
+  wordSweepTimings: WordSweepTimingsMap
+}
+
+/**
+ * What `serialiseLyricsfile` needs from a song's canonical lines.
+ *
+ * Two things the stores do not do on their own. Their keys are LRC line
+ * indices, which count rests, while a lyricsfile numbers only the lines it
+ * writes; so every timing is moved to the number of the line it belongs to.
+ * And the mapper's store holds only what the mapper recorded: a song whose
+ * word timing is inline in its LRC (`[01:52.91] the [01:53.23] dark`) has an
+ * empty one, so a line's own stamps stand in when the mapper has none.
+ */
+export function lyricsfileInputFromCanonical(
+  canonical: readonly CanonicalLrcEntry[],
+  stores: LyricsTimingStores,
+): Pick<
+  SerialiseLyricsfileInput,
+  'lines' | 'wordTimings' | 'wordEndTimings' | 'wordSweepTimings'
+> {
+  const lines: LrcLine[] = []
+  const wordTimings: WordTimingsMap = {}
+  const wordEndTimings: WordTimingsMap = {}
+  const wordSweepTimings: WordSweepTimingsMap = {}
+  for (const entry of canonical) {
+    if (entry.type !== 'line') continue
+    const lineIdx = lines.length
+    lines.push({ time: entry.time, text: entry.text })
+    const lrcIdx = entry.lrcIndex
+    const starts =
+      (lrcIdx >= 0 ? stores.wordTimings[lrcIdx] : undefined) ?? entry.wordTimes
+    if (starts !== undefined) wordTimings[lineIdx] = [...starts]
+    if (lrcIdx < 0) continue
+    const ends = stores.wordEndTimings[lrcIdx]
+    if (ends !== undefined) wordEndTimings[lineIdx] = ends
+    const sweeps = stores.wordSweepTimings[lrcIdx]
+    if (sweeps !== undefined) wordSweepTimings[lineIdx] = sweeps
+  }
+  return { lines, wordTimings, wordEndTimings, wordSweepTimings }
 }
 
 /** Seconds to whole milliseconds, which is the unit the spec uses. */

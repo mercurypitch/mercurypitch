@@ -20,6 +20,35 @@ describe('sungEndWithin', () => {
     expect(sungEndWithin([note(0, 3)], 3, 6)).toBeNull()
     expect(sungEndWithin([note(6, 8)], 3, 6)).toBeNull()
   })
+
+  // Nothing in the Dark: "dark" from 113.23 s, held to 114.015 s; "Broken"
+  // opens the next line at 125.36 s and its note starts at 125.311 s.
+  it("leaves out the next line's first note, sung a little early", () => {
+    const notes = [
+      note(111.933, 113.433),
+      note(113.433, 114.015),
+      note(125.311, 125.811),
+    ]
+    expect(sungEndWithin(notes, 113.23, 125.36)).toBeCloseTo(114.015, 5)
+    expect(sungEndWithin(notes, 109.41, 125.36)).toBeCloseTo(114.015, 5)
+  })
+
+  it('keeps a held syllable that runs on into the next line', () => {
+    // No break before it: the voice carries on, so it is this line's.
+    const notes = [note(53.5, 54.43), note(54.433, 55.633)]
+    expect(sungEndWithin(notes, 54.11, 54.77)).toBeCloseTo(54.77, 5)
+  })
+
+  it('keeps a late note that starts well before the next line', () => {
+    expect(sungEndWithin([note(1, 2), note(10.4, 12)], 0, 11)).toBeCloseTo(
+      11,
+      5,
+    )
+  })
+
+  it('is null when the only note is the next line coming in', () => {
+    expect(sungEndWithin([note(9.7, 10.5)], 5, 10)).toBeNull()
+  })
 })
 
 describe('clampLineEndToVocal', () => {
@@ -53,6 +82,64 @@ describe('synthesizeLastWordEnd', () => {
     expect(synthesizeLastWordEnd(undefined, 45, [note(39, 40)])).toBeUndefined()
     expect(synthesizeLastWordEnd([], 45, [note(39, 40)])).toBeUndefined()
     expect(synthesizeLastWordEnd([39.2], 45, [note(50, 51)])).toBeUndefined()
+  })
+
+  it('ends a held last word with its note, not at the next line', () => {
+    const notes = [
+      note(111.933, 113.433),
+      note(113.433, 114.015),
+      note(125.311, 125.811),
+    ]
+    const lineEnd = clampLineEndToVocal(109.41, 125.36, notes)
+    expect(lineEnd).toBeCloseTo(114.015 + SUNG_END_RELEASE_SEC, 5)
+    expect(synthesizeLastWordEnd([109.41, 113.23], lineEnd, notes)).toBeCloseTo(
+      114.015 + SUNG_END_RELEASE_SEC,
+      5,
+    )
+  })
+
+  // A line from 10.0 to 13.0 whose last word, "go", is sung late after a
+  // pause and is over before the next line's stamp.
+  it('keeps a last word sung late in the window, before the next stamp', () => {
+    const notes = [note(10, 11.4), note(12.6, 12.9)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 12.6)
+    expect(lineEnd).toBe(13)
+    expect(synthesizeLastWordEnd([10, 10.5, 12.6], lineEnd, notes)).toBe(
+      Math.min(13, 12.9 + SUNG_END_RELEASE_SEC),
+    )
+  })
+
+  it("ends the last word at its own note, before the next line's pickup", () => {
+    // "home" at 11.0 on the 10.0-11.4 note; the next line's pickup is sung
+    // after a breath and is over before its 13.0 stamp.
+    const notes = [note(10, 11.4), note(12.6, 12.9)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 11)
+    expect(synthesizeLastWordEnd([10, 10.5, 11], lineEnd, notes)).toBeCloseTo(
+      11.4 + SUNG_END_RELEASE_SEC,
+      5,
+    )
+  })
+
+  it('carries a word across the gap between its syllables', () => {
+    // "be-tween" in Josephine: its two notes 0.37 s apart, the next line
+    // two seconds away.
+    const notes = [note(17.511, 19.711), note(20.082, 20.664)]
+    expect(synthesizeLastWordEnd([17.27, 19.69], 22.53, notes)).toBeCloseTo(
+      20.664 + SUNG_END_RELEASE_SEC,
+      5,
+    )
+  })
+
+  it('is undefined when the only note after the last word is the next line', () => {
+    // The analysis missed "go": the only note in its window is the next
+    // line coming in early, across the stamp.
+    const notes = [note(10, 11.4), note(12.7, 13.5)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 12.4)
+    expect(synthesizeLastWordEnd([10, 10.5, 12.4], lineEnd, notes)).toBe(
+      undefined,
+    )
+    // ...and the line still ends after "go" has started.
+    expect(lineEnd).toBeGreaterThan(12.4)
   })
 
   it('rejects an end at or before the word start', () => {
