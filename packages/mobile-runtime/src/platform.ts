@@ -37,7 +37,8 @@
 
 import type { PluginListenerHandle } from '@capacitor/core'
 import { Capacitor, registerPlugin } from '@capacitor/core'
-import type { MediaSessionPlugin } from '@capgo/capacitor-media-session'
+import type { MediaSessionPlugin, MetadataOptions, } from '@capgo/capacitor-media-session'
+import { artworkDataUrl } from './artwork-data'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
 export type Unsubscribe = () => void
@@ -178,6 +179,11 @@ export async function setStatusBar(style: StatusBarStyle): Promise<void> {
 export interface NowPlaying {
   readonly title: string
   readonly artist?: string
+  /**
+   * The picture the system shows with the song, by a URL the app can fetch:
+   * behind it in Android's media player, beside it on the lock screen.
+   */
+  readonly artwork?: string
   readonly playing: boolean
   /** Seconds into the song. Absent reads as the start. */
   readonly position?: number
@@ -285,6 +291,9 @@ function positionOf(song: NowPlaying): PositionState {
   }
 }
 
+/** The last report asked for; the next one starts once it is done. */
+let reportsInFlight: Promise<void> = Promise.resolve()
+
 /**
  * Tell the system what is playing, or null when nothing is.
  *
@@ -306,8 +315,29 @@ function positionOf(song: NowPlaying): PositionState {
  *
  * Null empties the bar as well, because Android keeps the numbers across a
  * stopped session and shows them in the next one's notification.
+ *
+ * One report at a time, in the order they were made: iOS answers setMetadata
+ * only once it has decoded the artwork, while its other calls go through at
+ * once, so a pause reported just before a play could otherwise land last.
  */
 export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
+  const report = reportsInFlight.then(async () => writeNowPlaying(song))
+  reportsInFlight = report.catch(() => undefined)
+  await report
+}
+
+/** The song's name, and its picture when it has one that could be read. */
+async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
+  const artwork =
+    song.artwork === undefined ? null : await artworkDataUrl(song.artwork)
+  return {
+    title: song.title,
+    ...(song.artist === undefined ? {} : { artist: song.artist }),
+    ...(artwork === null ? {} : { artwork: [{ src: artwork }] }),
+  }
+}
+
+async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
   await attempt(async () => {
     const { MediaSession } = await import('@capgo/capacitor-media-session')
     if (song === null) {
@@ -315,6 +345,7 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
       await MediaSession.setPositionState(NO_POSITION)
       return
     }
+    const metadata = await metadataOf(song)
     const position = positionOf(song)
     try {
       await MediaSession.setPositionState(position)
@@ -322,10 +353,7 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
       // A plugin with no position must still name the song. The last write
       // fails the same way and ends the report there.
     }
-    await MediaSession.setMetadata({
-      title: song.title,
-      ...(song.artist === undefined ? {} : { artist: song.artist }),
-    })
+    await MediaSession.setMetadata(metadata)
     await MediaSession.setPlaybackState({
       playbackState: song.playing ? 'playing' : 'paused',
     })

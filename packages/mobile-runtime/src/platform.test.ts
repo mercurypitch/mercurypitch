@@ -670,6 +670,102 @@ describe('on a phone', () => {
     })
   })
 
+  // Android's player draws the picture behind the song, and iOS's lock screen
+  // beside it. Neither native half can load an app URL, so it goes as data.
+  describe("the song's picture", () => {
+    const PICTURE = '/now-playing.webp'
+    /** The bytes 1, 2, 3, as iOS serves a bundled file: status 0, a body. */
+    const servePicture = (): ReturnType<typeof vi.fn> => {
+      const fetch = vi.fn(async () => ({
+        ok: false,
+        status: 0,
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      }))
+      vi.stubGlobal('fetch', fetch)
+      return fetch
+    }
+    const pictureSent = (call: number): unknown =>
+      (mediaSession.setMetadata.mock.calls[call]?.[0] as { artwork?: unknown })
+        ?.artwork
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('hands the picture over as data, read once for every report', async () => {
+      const platform = await loadPlatform(true)
+      const fetch = servePicture()
+      const song = { title: 'Harbour Lights', artwork: PICTURE }
+
+      await platform.setNowPlaying({ ...song, playing: true })
+      await platform.setNowPlaying({ ...song, playing: false })
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch.mock.calls[0]?.[0]).toBe(PICTURE)
+      const data = [{ src: 'data:image/webp;base64,AQID' }]
+      expect(pictureSent(0)).toEqual(data)
+      expect(pictureSent(1)).toEqual(data)
+    })
+
+    it('names the song without a picture it cannot read, and reads it next time', async () => {
+      const platform = await loadPlatform(true)
+      const fetch = servePicture()
+      fetch.mockRejectedValueOnce(new Error('offline'))
+      const song = { title: 'Harbour Lights', playing: true, artwork: PICTURE }
+
+      await platform.setNowPlaying(song)
+      expect(mediaSession.setMetadata).toHaveBeenLastCalledWith({
+        title: 'Harbour Lights',
+      })
+
+      await platform.setNowPlaying(song)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(pictureSent(1)).toEqual([{ src: 'data:image/webp;base64,AQID' }])
+    })
+
+    it('lands reports in the order they were made, however long a picture takes', async () => {
+      // iOS answers setMetadata once it has decoded the picture, and its
+      // state and position calls go through at once: a pause reported just
+      // before a play must not land after it.
+      const platform = await loadPlatform(true, 'ios')
+      servePicture()
+      const song = {
+        title: 'Harbour Lights',
+        position: 121,
+        duration: 246,
+        artwork: PICTURE,
+      }
+      let decoded: (() => void) | undefined
+      mediaSession.setMetadata.mockImplementationOnce(
+        async () =>
+          new Promise<void>((resolve) => {
+            decoded = resolve
+          }),
+      )
+
+      const paused = platform.setNowPlaying({ ...song, playing: false })
+      // Play pressed while iOS is still decoding the pause's picture.
+      await vi.waitFor(() => {
+        expect(decoded).toBeDefined()
+      })
+      const played = platform.setNowPlaying({ ...song, playing: true })
+      await settle()
+      decoded?.()
+      await Promise.all([paused, played])
+
+      expect(
+        mediaSession.setPlaybackState.mock.calls.map(
+          ([options]) => (options as { playbackState: string }).playbackState,
+        ),
+      ).toEqual(['paused', 'playing'])
+      expect(mediaSession.setPositionState.mock.calls.at(-1)?.[0]).toEqual({
+        duration: 246,
+        position: 121,
+        playbackRate: 1,
+      })
+    })
+  })
+
   it('survives a phone with no media session behind the plugin', async () => {
     const platform = await loadPlatform(true)
     mediaSession.setMetadata.mockRejectedValueOnce(

@@ -14,6 +14,13 @@ import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '
 import { keepAwake, onMediaAction, onPictureInPicture, setNowPlaying, setPictureInPictureAutoEnter, } from '@irchiinnuss/mobile-runtime/platform'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
+/**
+ * The picture the system's media controls show with every song: behind it in
+ * Android's media player and its notification, beside it on the lock screen.
+ * native-only/now-playing.webp, served at the bundle's root (native-assets.mjs).
+ */
+const NOW_PLAYING_ARTWORK = '/now-playing.webp'
+
 export function createNativeDevice(): NativeDeviceApi {
   return {
     acquireAudio: (owner) => acquireSharedAudioContext(owner),
@@ -25,7 +32,9 @@ export function createNativeDevice(): NativeDeviceApi {
     holdAudioInBackground: (owner) => holdSharedAudioContextInBackground(owner),
     nowPlaying: (song) => {
       // As with keep-awake: a phone without the plugin shows nothing.
-      void setNowPlaying(song).catch(() => undefined)
+      void setNowPlaying(
+        song === null ? null : { ...song, artwork: NOW_PLAYING_ARTWORK },
+      ).catch(() => undefined)
     },
     onMediaAction: (handler) => onMediaAction(handler),
     pictureInPictureAutoEnter: (on) => {
