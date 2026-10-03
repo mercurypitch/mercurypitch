@@ -326,13 +326,17 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
   await report
 }
 
-/** The song's name, and its picture when it has one that could be read. */
+/**
+ * The song's name and artist, and its picture when it has one that could be
+ * read. The artist always goes, empty for a song without one: both plugins
+ * keep any field a report leaves out, so the last song's would stay on.
+ */
 async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
   const artwork =
     song.artwork === undefined ? null : await artworkDataUrl(song.artwork)
   return {
     title: song.title,
-    ...(song.artist === undefined ? {} : { artist: song.artist }),
+    artist: song.artist ?? '',
     ...(artwork === null ? {} : { artwork: [{ src: artwork }] }),
   }
 }

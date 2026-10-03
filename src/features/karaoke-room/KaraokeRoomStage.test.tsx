@@ -222,7 +222,7 @@ vi.mock('@/lib/backgrounds/background-surface', () => ({
 import { actAsIpad } from '@/tests/helpers/ipad-navigator'
 import { KARAOKE_LAST_SONG_KEY, KARAOKE_PINNED_KEY, karaokeLyricsSize, karaokeNoteGlyphs, karaokePlayNext, karaokeSongRequest, karaokeStagedSong, requestKaraokeSong, resetKaraokeRoomForTests, setKaraokeBackgroundPlay, setKaraokePictureInPicture, setKaraokePlayNext, } from './karaoke-room-store'
 import { resetKaraokeSongsForTests } from './karaoke-songs'
-import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS } from './KaraokeRoomStage'
+import { KaraokeRoomStage, MIC_RESTORE_DELAY_MS, UNKNOWN_ARTIST, } from './KaraokeRoomStage'
 
 const example = (slug: string, title: string, dir: string) => ({
   sessionId:
@@ -658,6 +658,21 @@ describe('behind another app', () => {
 
     controls().stop()
     expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('names an unknown artist for a song without one', async () => {
+    library.rows = [{ ...GOODBYE, artist: null, credit: null }, JOSEPHINE]
+    await mountRoom()
+    current().setLoading(false)
+
+    current().setPlaying(true)
+
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        title: 'Goodbye to Spring',
+        artist: UNKNOWN_ARTIST,
+      }),
+    )
   })
 
   it('tells the system where the song is, on the clock the lyrics follow', async () => {
