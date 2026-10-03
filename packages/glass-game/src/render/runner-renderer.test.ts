@@ -382,7 +382,14 @@ describe('runner renderer ownership', () => {
     ])
     expect(state.texture.mock.calls.map(([id]) => id)).toEqual([
       'floor-marble',
-      'museum-sky',
+      'floating-museum-cloudscape-v3',
+      'finish-champagne-crystal-roughness',
+      'finish-champagne-crystal-normal',
+      'finish-etched-frost-glass-roughness',
+      'finish-etched-frost-glass-normal',
+      'finish-celadon-porcelain-basecolor',
+      'finish-celadon-porcelain-roughness',
+      'finish-celadon-porcelain-normal',
     ])
     expect(state.sceneryCreate).toHaveBeenCalledOnce()
     expect(renderer.metrics()).toMatchObject({
