@@ -1957,6 +1957,16 @@
   box-shadow: 0 12px 32px rgba(17, 12, 34, 0.16);
 }
 
+/* The file input covers the zone at opacity 0, so its own focus ring is
+   drawn but never seen: a keyboard user tabbed onto the zone and nothing
+   changed. The zone wears the ring for it while the input has keyboard
+   focus. Enter and Space still reach the input and open the picker. */
+.upload-zone:has(> .file-input:focus-visible) {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .upload-zone.dragging {
   border-color: var(--accent);
   background:
@@ -3066,6 +3076,24 @@
   padding: 0;
 }
 
+/* On a touch screen the 32px button keeps its look but takes taps across
+   46x46: a transparent box 7px beyond its border on every side (8px from
+   the padding box, which is where `inset` measures from). 44 is the floor;
+   the spare pixel a side keeps it there when the card lands on a fractional
+   position. It is the only control in the header row, so the extra 7px
+   lands on nothing else. */
+@media (pointer: coarse) {
+  .session-header-actions .session-result-more {
+    position: relative;
+  }
+
+  .session-header-actions .session-result-more::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+}
+
 /* The second tier's switch. Full width and quiet: it is a disclosure, not
    an action, and it must not compete with View Results. */
 .session-more-toggle {
@@ -3347,14 +3375,16 @@
   border-color: rgba(59, 130, 246, 0.4);
 }
 
+/* Text and tint come from theme tokens: #8b5cf6 on this tint read 4.16:1
+   on the default theme and 3.3:1 on Forest (app.css, "Stem colours"). */
 .stem-pill-midi {
-  color: #8b5cf6;
+  color: var(--stem-midi-fg);
   border-color: rgba(139, 92, 246, 0.25);
-  background: rgba(139, 92, 246, 0.08);
+  background: var(--stem-midi-surface);
 }
 
 .stem-pill-midi:hover {
-  background: rgba(139, 92, 246, 0.15);
+  background: var(--stem-midi-surface-hover);
   border-color: rgba(139, 92, 246, 0.4);
 }
 
