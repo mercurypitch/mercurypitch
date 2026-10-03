@@ -411,16 +411,31 @@ describe('on a phone', () => {
     expect(order).toEqual(['position', 'metadata', 'state', 'position'])
   })
 
-  it('reports a paused song as paused, and leaves out an unknown artist', async () => {
+  it('reports a paused song as paused', async () => {
     const platform = await loadPlatform(true)
 
     await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
 
-    expect(mediaSession.setMetadata).toHaveBeenCalledWith({
-      title: 'Harbour Lights',
-    })
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'paused',
+    })
+  })
+
+  it('clears the artist when the next song has none', async () => {
+    // Both plugins keep any field a report leaves out, so a song without an
+    // artist would show the last song's.
+    const platform = await loadPlatform(true)
+
+    await platform.setNowPlaying({
+      title: 'Harbour Lights',
+      artist: 'The Wharf',
+      playing: true,
+    })
+    await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+
+    expect(mediaSession.setMetadata).toHaveBeenLastCalledWith({
+      title: 'Low Tide',
+      artist: '',
     })
   })
 
@@ -663,6 +678,7 @@ describe('on a phone', () => {
       expect(mediaSession.setPositionState).toHaveBeenCalledTimes(2)
       expect(mediaSession.setMetadata).toHaveBeenCalledWith({
         title: 'Harbour Lights',
+        artist: '',
       })
       expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
         playbackState: 'playing',
@@ -716,6 +732,7 @@ describe('on a phone', () => {
       await platform.setNowPlaying(song)
       expect(mediaSession.setMetadata).toHaveBeenLastCalledWith({
         title: 'Harbour Lights',
+        artist: '',
       })
 
       await platform.setNowPlaying(song)
