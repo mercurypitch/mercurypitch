@@ -39,13 +39,25 @@ export const NEXT_LINE_LEAD_SEC = 0.5
 export const PHRASE_GAP_SEC = 0.25
 
 /**
- * Whether `note` is the start of what comes after the window: it starts in
- * the last NEXT_LINE_LEAD_SEC of the window, after the voice had stopped.
- * Counted as this window's vocal it would stretch the line, and its last
- * word, over the whole silence before the next line ("dark" in Nothing in
- * the Dark, held to 114 s, swept until the next line at 125.36 s because
- * "Broken" comes in at 125.31 s). A note that carries on without a break
- * from the one before it is a held syllable, and stays.
+ * How long after a word's stamp its first detected note may start and still
+ * be that word's. Stamps sit on the consonant, and the analysis drops short
+ * and unvoiced notes, so the first pitched note of a word arrives late: for
+ * the last words of the three bundled songs, up to 0.45 s late, and 0.85 s
+ * for a "Josephine" whose first syllable was not detected at all.
+ */
+export const WORD_ONSET_LAG_SEC = 0.9
+
+/**
+ * Whether `note` is the next line coming in early: it starts in the last
+ * NEXT_LINE_LEAD_SEC of the window, after the voice had stopped, and it is
+ * still sounding when the window ends. Counted as this window's vocal it
+ * would stretch the line over the whole silence before the next line
+ * ("dark" in Nothing in the Dark, held to 114 s, swept until the next line
+ * at 125.36 s because "Broken" comes in at 125.31 s).
+ *
+ * A note that carries on without a break is a held syllable, and stays. So
+ * does a word sung late in the window that is over before the next stamp:
+ * that is this line's last word, not the next line's first.
  */
 function opensNextLine(
   note: SungNote,
@@ -53,6 +65,7 @@ function opensNextLine(
   windowEnd: number,
 ): boolean {
   if (note.startBeat < windowEnd - NEXT_LINE_LEAD_SEC) return false
+  if (note.endBeat <= windowEnd) return false
   for (const other of notes) {
     if (other === note || other.startBeat >= note.startBeat) continue
     if (other.endBeat > note.startBeat - PHRASE_GAP_SEC) return false
@@ -64,8 +77,8 @@ function opensNextLine(
  * The latest note end among notes overlapping [windowStart, windowEnd),
  * clamped to the window — or null when no note overlaps (instrumental
  * stretch, or the analysis missed the phrase; callers keep their own
- * fallback then). The next line's first note, sung a little early, is not
- * part of the window (`opensNextLine`).
+ * fallback then). The next line coming in early is not part of the window
+ * (`opensNextLine`).
  */
 export function sungEndWithin(
   notes: readonly SungNote[],
@@ -87,36 +100,83 @@ export function sungEndWithin(
  * A line's display end clamped to when the vocal actually finishes
  * (plus the release tail). Without overlapping notes the original end
  * is kept — never guess shorter than the evidence.
+ *
+ * With `lastWordStart`, the end never comes before the line's last word
+ * has started and had its release tail: an analysis that missed that word
+ * must not end the line ahead of it.
  */
 export function clampLineEndToVocal(
   lineStart: number,
   lineEnd: number,
   notes: readonly SungNote[],
+  lastWordStart?: number,
 ): number {
   const sungEnd = sungEndWithin(notes, lineStart, lineEnd)
   if (sungEnd === null) return lineEnd
-  return Math.max(
-    lineStart + SUNG_END_MIN_SPAN_SEC,
-    Math.min(lineEnd, sungEnd + SUNG_END_RELEASE_SEC),
+  const floor =
+    lastWordStart === undefined
+      ? lineStart + SUNG_END_MIN_SPAN_SEC
+      : Math.max(
+          lineStart + SUNG_END_MIN_SPAN_SEC,
+          lastWordStart + SUNG_END_RELEASE_SEC,
+        )
+  return Math.min(
+    lineEnd,
+    Math.max(floor, Math.min(lineEnd, sungEnd + SUNG_END_RELEASE_SEC)),
   )
 }
 
 /**
+ * The longest silence inside one word. A word's syllables can be detected
+ * as separate notes with a gap between them where a consonant sits: the
+ * bundled songs have "Jo-sephine" with 0.27 s between its notes and
+ * "be-tween" with 0.37 s. A longer silence is a breath, and ends the word.
+ */
+export const WORD_GAP_MAX_SEC = 0.5
+
+/**
  * An end time for the LAST word of a word-timed line when the mapping
- * recorded only starts: the vocal's end within the word's window.
- * Undefined when no note overlaps — computeActiveWord then keeps its
- * conservative gap/syllable estimate.
+ * recorded only starts: where the word's own sound stops.
+ *
+ * The word starts with the first note that reaches past its stamp and
+ * begins no later than WORD_ONSET_LAG_SEC after it, and runs on through the
+ * notes that follow it. It stops at the first silence that is a breath
+ * rather than a consonant: one longer than WORD_GAP_MAX_SEC, or one longer
+ * than PHRASE_GAP_SEC that leads into the last NEXT_LINE_LEAD_SEC before
+ * the next line, where what follows is the next line's pickup even when it
+ * is over before that line's stamp. Undefined when the word has no note of
+ * its own: computeActiveWord then keeps its conservative gap/syllable
+ * estimate.
+ *
+ * `nextLineAt` is the next line's start, when `lineEnd` has already been
+ * clamped to the vocal; it defaults to `lineEnd`.
  */
 export function synthesizeLastWordEnd(
   wordTimes: readonly number[] | undefined,
   lineEnd: number,
   notes: readonly SungNote[],
+  nextLineAt: number = lineEnd,
 ): number | undefined {
   if (wordTimes === undefined || wordTimes.length === 0) return undefined
   const lastStart = wordTimes[wordTimes.length - 1]
-  const sungEnd = sungEndWithin(notes, lastStart, lineEnd)
-  if (sungEnd === null) return undefined
-  const end = Math.min(lineEnd, sungEnd + SUNG_END_RELEASE_SEC)
+  const inWindow = notes
+    .filter((note) => note.endBeat > lastStart && note.startBeat < lineEnd)
+    .sort((a, b) => a.startBeat - b.startBeat)
+  const first = inWindow[0]
+  if (first === undefined || first.startBeat > lastStart + WORD_ONSET_LAG_SEC)
+    return undefined
+  if (opensNextLine(first, notes, nextLineAt)) return undefined
+  let runEnd = first.endBeat
+  for (const note of inWindow.slice(1)) {
+    const gap = note.startBeat - runEnd
+    const breath =
+      gap > WORD_GAP_MAX_SEC ||
+      (gap > PHRASE_GAP_SEC &&
+        note.startBeat >= nextLineAt - NEXT_LINE_LEAD_SEC)
+    if (breath) break
+    runEnd = Math.max(runEnd, note.endBeat)
+  }
+  const end = Math.min(lineEnd, runEnd + SUNG_END_RELEASE_SEC)
   return end > lastStart + 0.05 ? end : undefined
 }
 

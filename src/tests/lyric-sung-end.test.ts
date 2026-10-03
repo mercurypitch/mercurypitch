@@ -98,6 +98,50 @@ describe('synthesizeLastWordEnd', () => {
     )
   })
 
+  // A line from 10.0 to 13.0 whose last word, "go", is sung late after a
+  // pause and is over before the next line's stamp.
+  it('keeps a last word sung late in the window, before the next stamp', () => {
+    const notes = [note(10, 11.4), note(12.6, 12.9)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 12.6)
+    expect(lineEnd).toBe(13)
+    expect(synthesizeLastWordEnd([10, 10.5, 12.6], lineEnd, notes)).toBe(
+      Math.min(13, 12.9 + SUNG_END_RELEASE_SEC),
+    )
+  })
+
+  it("ends the last word at its own note, before the next line's pickup", () => {
+    // "home" at 11.0 on the 10.0-11.4 note; the next line's pickup is sung
+    // after a breath and is over before its 13.0 stamp.
+    const notes = [note(10, 11.4), note(12.6, 12.9)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 11)
+    expect(synthesizeLastWordEnd([10, 10.5, 11], lineEnd, notes)).toBeCloseTo(
+      11.4 + SUNG_END_RELEASE_SEC,
+      5,
+    )
+  })
+
+  it('carries a word across the gap between its syllables', () => {
+    // "be-tween" in Josephine: its two notes 0.37 s apart, the next line
+    // two seconds away.
+    const notes = [note(17.511, 19.711), note(20.082, 20.664)]
+    expect(synthesizeLastWordEnd([17.27, 19.69], 22.53, notes)).toBeCloseTo(
+      20.664 + SUNG_END_RELEASE_SEC,
+      5,
+    )
+  })
+
+  it('is undefined when the only note after the last word is the next line', () => {
+    // The analysis missed "go": the only note in its window is the next
+    // line coming in early, across the stamp.
+    const notes = [note(10, 11.4), note(12.7, 13.5)]
+    const lineEnd = clampLineEndToVocal(10, 13, notes, 12.4)
+    expect(synthesizeLastWordEnd([10, 10.5, 12.4], lineEnd, notes)).toBe(
+      undefined,
+    )
+    // ...and the line still ends after "go" has started.
+    expect(lineEnd).toBeGreaterThan(12.4)
+  })
+
   it('rejects an end at or before the word start', () => {
     // Note fully before the last word's start-bounded window.
     expect(synthesizeLastWordEnd([41], 45, [note(39, 40.5)])).toBeUndefined()

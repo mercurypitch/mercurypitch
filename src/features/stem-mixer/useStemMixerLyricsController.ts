@@ -1573,13 +1573,19 @@ export function useStemMixerLyricsController(
         let wordEndTimes =
           entry.lrcIndex >= 0 ? wordEndTimings()[entry.lrcIndex] : undefined
         if (entry.words.length > 0 && notes.length > 0) {
-          displayEnd = clampLineEndToVocal(entry.time, endTime, notes)
+          displayEnd = clampLineEndToVocal(
+            entry.time,
+            endTime,
+            notes,
+            entry.wordTimes?.at(-1),
+          )
           const lastIdx = (entry.wordTimes?.length ?? 0) - 1
           if (lastIdx >= 0 && wordEndTimes?.[lastIdx] === undefined) {
             const lastEnd = synthesizeLastWordEnd(
               entry.wordTimes,
               displayEnd,
               notes,
+              endTime,
             )
             if (lastEnd !== undefined) {
               const filled = wordEndTimes ? [...wordEndTimes] : []
