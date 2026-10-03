@@ -203,8 +203,12 @@ public enum AudioSession {
     /// playing a song of its own turns mixing off for it, which pauses
     /// another app's music as any music player does, and back on once
     /// nothing is playing. An app that never calls this keeps mixing.
+    ///
+    /// Checked against the live session on every call, never against the
+    /// last one: WebKit reconfigures the session as the page's audio starts
+    /// and stops (a page whose Web Audio falls silent can be moved to the
+    /// ambient category, which always mixes), so a repeat has to repair it.
     public static func setMixesWithOthers(_ mixes: Bool) {
-        guard mixes != mixesWithOthers else { return }
         mixesWithOthers = mixes
         let session = AVAudioSession.sharedInstance()
         guard applyIfNeeded(session) else { return }

@@ -471,7 +471,8 @@ async function setSessionMixes(mixes: boolean): Promise<void> {
     }
   } catch {
     // No switch in this build: the session keeps mixing, and the song plays
-    // on without the lock screen.
+    // on without the lock screen. Said once per report, so a phone shows it.
+    console.info('[audio session] no switch in this build')
   }
 }
 

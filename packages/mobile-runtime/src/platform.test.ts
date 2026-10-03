@@ -512,12 +512,33 @@ describe('on a phone', () => {
       audioSessionPlugin.setMixesWithOthers.mockRejectedValueOnce(
         new Error('"AudioSession" plugin is not implemented on ios'),
       )
+      const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
 
       await platform.setNowPlaying({ title: 'Low Tide', playing: true })
 
       expect(mediaSession.setMetadata).toHaveBeenCalledWith({
         title: 'Low Tide',
         artist: '',
+      })
+      // Said where a phone shows it: the debug console.
+      expect(info).toHaveBeenCalledWith(
+        '[audio session] no switch in this build',
+      )
+      info.mockRestore()
+    })
+
+    it('asks again on every report of it playing', async () => {
+      // The switch checks the live session each time, which WebKit may have
+      // moved back to one that mixes while the song was paused.
+      const platform = await loadPlatform(true, 'ios')
+
+      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+      await platform.setNowPlaying({ title: 'Low Tide', playing: false })
+      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+
+      expect(audioSessionPlugin.setMixesWithOthers).toHaveBeenCalledTimes(2)
+      expect(audioSessionPlugin.setMixesWithOthers).toHaveBeenLastCalledWith({
+        mixes: false,
       })
     })
 
