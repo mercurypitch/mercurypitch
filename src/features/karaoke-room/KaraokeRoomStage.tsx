@@ -91,6 +91,9 @@ export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
 /** How long after the singer is back the microphone they had on returns. */
 export const MIC_RESTORE_DELAY_MS = 500
 
+/** What the system's media player shows for a song with no artist. */
+export const UNKNOWN_ARTIST = 'Unknown artist'
+
 /** One song put on the stage. A new cue is a new mixer. */
 interface Cue {
   readonly key: number
@@ -547,6 +550,8 @@ export const KaraokeRoomStage: Component = () => {
       announce(null)
       return
     }
+    // The system's player always names an artist, as other music players do:
+    // a song without one says so rather than leaving the line blank.
     const artist = entry.song.credit ?? entry.song.artist
     // Between two songs there is no mixer yet: no length, so no bar, rather
     // than the last song's.
@@ -555,7 +560,7 @@ export const KaraokeRoomStage: Component = () => {
     controls?.jumps()
     announce({
       title: entry.song.title,
-      ...(artist === null || artist === '' ? {} : { artist }),
+      artist: artist === null || artist.trim() === '' ? UNKNOWN_ARTIST : artist,
       playing,
       position: controls === null ? 0 : untrack(controls.audibleElapsed),
       duration: controls?.duration() ?? 0,
