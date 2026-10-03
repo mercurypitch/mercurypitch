@@ -289,18 +289,23 @@ function positionOf(song: NowPlaying): PositionState {
  * Tell the system what is playing, or null when nothing is.
  *
  * Null is the plugin's 'none', which on Android stops the foreground service
- * and takes its notification away. The metadata goes first, so the service's
- * first notification already names the song.
+ * and takes its notification away. The metadata goes before the state, so the
+ * service's first notification already names the song.
  *
- * The position goes last, every time. Android draws the notification's bar
- * from it (the length reaches the session's metadata through this call, not
- * through setMetadata) and runs the bar on from the last report at the rate
- * given, so a report is due on play, pause, a seek or a new length, never on
- * a frame. iOS rewrites its whole Now Playing record on every call, which
- * re-anchors the lock screen's clock to the stored elapsed time, and its
- * state change sets the rate to 1: a position written before either would be
- * undone. Null empties the bar as well, because Android keeps the numbers
- * across a stopped session and shows them in the next one's notification.
+ * Android draws the notification's bar from the position (the length reaches
+ * the session's metadata through this call, not through setMetadata) and runs
+ * the bar on from the last report at the rate given, so a report is due on
+ * play, pause, a seek or a new length, never on a frame.
+ *
+ * The position goes first and last. Both plugins keep the last one they were
+ * given and show it again, stamped now, whenever they publish: Android on a
+ * new state, iOS on every call, as it rewrites its whole Now Playing record.
+ * Written after the state, a pause showed the bar for a frame at the last
+ * report's place (where the song started or last jumped to). Written only
+ * first, a slowed song would lose its rate on iOS, whose state change sets 1.
+ *
+ * Null empties the bar as well, because Android keeps the numbers across a
+ * stopped session and shows them in the next one's notification.
  */
 export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
   await attempt(async () => {
@@ -310,6 +315,13 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
       await MediaSession.setPositionState(NO_POSITION)
       return
     }
+    const position = positionOf(song)
+    try {
+      await MediaSession.setPositionState(position)
+    } catch {
+      // A plugin with no position must still name the song. The last write
+      // fails the same way and ends the report there.
+    }
     await MediaSession.setMetadata({
       title: song.title,
       ...(song.artist === undefined ? {} : { artist: song.artist }),
@@ -317,7 +329,7 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
     await MediaSession.setPlaybackState({
       playbackState: song.playing ? 'playing' : 'paused',
     })
-    await MediaSession.setPositionState(positionOf(song))
+    await MediaSession.setPositionState(position)
   })
 }
 

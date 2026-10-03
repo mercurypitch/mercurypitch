@@ -1583,7 +1583,20 @@ export const useStemMixerAudioController = (
     deps.onPlaybackStarted?.()
   }
 
+  // Where the song is by the audio clock, not by the last frame drawn: a
+  // pause pressed in the notification lands between frames, or behind
+  // another app up to a second after the last tick (hidden-clock.ts). What
+  // the pause reports, and where play picks up, is where the song stopped.
+  const catchUpClocks = (): void => {
+    if (!audioCtx || !playing()) return
+    const now = audioCtx.currentTime
+    const elapsedTime = bufferPlayStart + (now - wallPlayStart) * playbackSpeed
+    setElapsed(Math.min(elapsedTime, duration()))
+    setAudibleElapsed(audibleSongTime(audioCtx, now))
+  }
+
   const handlePause = () => {
+    catchUpClocks()
     pauseOffset = elapsed()
     disconnectSources()
     setPlayingLocal(false)

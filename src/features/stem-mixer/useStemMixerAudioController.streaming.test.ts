@@ -867,4 +867,24 @@ describe('the clocks a hosting room reads', () => {
     expect(h.controller.jumps()).toBe(0)
     h.dispose()
   })
+
+  it('pauses where the audio clock is, not at the last frame drawn', async () => {
+    // A pause pressed in the notification lands between frames, or behind
+    // another app up to a second after the last tick. The place it reports,
+    // and the place play picks up from, are where the song stopped.
+    deviceClass = 'mobile'
+    const h = harness()
+    await h.controller.loadStems()
+    h.controller.handlePlay()
+    await settle()
+    const startedAt = h.controller.audibleElapsed()
+
+    lastContext!.currentTime += 43
+    h.controller.handlePause()
+
+    expect(h.controller.audibleElapsed()).toBeCloseTo(startedAt + 43, 1)
+    expect(h.controller.elapsed()).toBeCloseTo(startedAt + 43, 1)
+    expect(h.controller.jumps()).toBe(0)
+    h.dispose()
+  })
 })

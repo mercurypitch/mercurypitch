@@ -404,10 +404,11 @@ describe('on a phone', () => {
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'playing',
     })
-    // The position goes last. iOS re-anchors its lock-screen clock to the
-    // stored elapsed time on every write, and its state change sets the rate
-    // to 1, so anything written after the position would undo it.
-    expect(order).toEqual(['metadata', 'state', 'position'])
+    // The position goes first and last. Both plugins show the last position
+    // they hold whenever they publish, so it has to be in place before the
+    // metadata and the state go out, and iOS's state change sets the rate
+    // back to 1, so it goes again after.
+    expect(order).toEqual(['position', 'metadata', 'state', 'position'])
   })
 
   it('reports a paused song as paused, and leaves out an unknown artist', async () => {
@@ -453,12 +454,9 @@ describe('on a phone', () => {
         rate: 1.25,
       })
 
-      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
-      expect(lastPosition()).toEqual({
-        duration: 246,
-        position: 42.5,
-        playbackRate: 1.25,
-      })
+      const bar = { duration: 246, position: 42.5, playbackRate: 1.25 }
+      // The same numbers twice: before the writes that show them, and after.
+      expect(mediaSession.setPositionState.mock.calls).toEqual([[bar], [bar]])
     })
 
     it('plays at normal speed when the caller names no rate', async () => {
@@ -513,7 +511,44 @@ describe('on a phone', () => {
         mediaSession.setPositionState.mock.calls.map(
           ([options]) => (options as { position: number }).position,
         ),
-      ).toEqual([42.5, 180, 12])
+      ).toEqual([42.5, 42.5, 180, 180, 12, 12])
+    })
+
+    // The system's player as the plugins drive it. Each keeps the last
+    // position it was given and shows it again, stamped now, on every write
+    // that publishes: Android on a new state and on a position, iOS on any
+    // call at all, since it rewrites its whole Now Playing record each time.
+    const watchTheBar = (): number[] => {
+      const shown: number[] = []
+      let place = 0
+      const show = async (): Promise<void> => {
+        shown.push(place)
+      }
+      mediaSession.setMetadata.mockImplementation(show)
+      mediaSession.setPlaybackState.mockImplementation(show)
+      mediaSession.setPositionState.mockImplementation(
+        async (state: { position: number }) => {
+          place = state.position
+          shown.push(place)
+        },
+      )
+      return shown
+    }
+
+    it('pauses the bar where the song stopped, not where it last started', async () => {
+      // A run started from a tapped line at 1:18 and played on to 2:01, the
+      // system running the bar on from the 1:18 report by itself. Pause in
+      // the notification must not put the bar back at 1:18, not for a frame.
+      const platform = await loadPlatform(true)
+      const shown = watchTheBar()
+      const song = { title: 'Harbour Lights', duration: 246 }
+      await platform.setNowPlaying({ ...song, playing: true, position: 78 })
+      shown.length = 0
+
+      await platform.setNowPlaying({ ...song, playing: false, position: 121 })
+
+      expect(shown).not.toContain(78)
+      expect(new Set(shown)).toEqual(new Set([121]))
     })
 
     it('swaps in the next song’s length, and shows none while it is unknown', async () => {
@@ -612,9 +647,10 @@ describe('on a phone', () => {
 
     it('still names the song on a phone whose plugin has no position', async () => {
       const platform = await loadPlatform(true)
-      mediaSession.setPositionState.mockRejectedValueOnce(
-        new Error('Unimplemented'),
-      )
+      const unimplemented = new Error('Unimplemented')
+      mediaSession.setPositionState
+        .mockRejectedValueOnce(unimplemented)
+        .mockRejectedValueOnce(unimplemented)
 
       await expect(
         platform.setNowPlaying({
@@ -624,7 +660,10 @@ describe('on a phone', () => {
           duration: 246,
         }),
       ).resolves.toBeUndefined()
-      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
+      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(2)
+      expect(mediaSession.setMetadata).toHaveBeenCalledWith({
+        title: 'Harbour Lights',
+      })
       expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
         playbackState: 'playing',
       })
