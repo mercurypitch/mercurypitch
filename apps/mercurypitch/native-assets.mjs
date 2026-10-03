@@ -318,6 +318,20 @@ export const NATIVE_ASSETS = [
     reason:
       "The podium's three places, 384px, full-bleed behind the top three of the Global and Friends boards (PODIUM_MEDALS in src/components/CommunityLeaderboard.tsx).",
   },
+
+  // ── The system's media controls ──────────────────────────────
+  //
+  // The picture Android's media player draws behind a playing song (the
+  // notification and the shade, centre-cropped under a dark scrim) and the
+  // iOS lock screen shows beside it. One for every song until songs carry
+  // their own. 768 x 768 WebP q90: Android scales session artwork down to
+  // 320dp a side anyway, 640 px on a 2x tablet.
+  {
+    glob: 'now-playing.webp',
+    root: 'native',
+    reason:
+      "The system media controls' picture for every song: the device names it with each song it reports (NOW_PLAYING_ARTWORK in apps/mercurypitch/src/infrastructure/native-device.ts), and setNowPlaying reads it into the media session as data (packages/mobile-runtime/src/artwork-data.ts).",
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */

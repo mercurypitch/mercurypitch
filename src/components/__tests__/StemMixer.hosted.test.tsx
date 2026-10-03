@@ -314,123 +314,177 @@ describe('a song the room cannot play on this phone', () => {
   })
 })
 
+// ── "Nothing in the Dark", as the bundle ships it ────────────────────────
+//
+// It ends a line on "dark" at 113.23 s and holds it to about 114 s; the next
+// line starts at 125.36 s.
+
+/** The bundle's examples, from the repository root vitest runs in. */
+const EXAMPLES = 'apps/mercurypitch/native-only/karaoke/examples'
+const SONG = 'nothing-in-the-dark'
+/** Half a second into the held "dark". */
+const AT = 113.8
+/** The line sung at `AT`. */
+const DARK_LINE = 'Try to see it all but there is nothing in the dark'
+
+async function seedTheExample(): Promise<string> {
+  const { readFileSync } = await import('node:fs')
+  const { resolve } = await import('node:path')
+  const file = (path: string) => resolve(process.cwd(), EXAMPLES, path)
+  const manifest = JSON.parse(readFileSync(file('manifest.json'), 'utf8')) as {
+    songs: { slug: string; notes?: string }[]
+  }
+  const song = manifest.songs.find((s) => s.slug === SONG)!
+  const notesBytes = readFileSync(file(`${SONG}/notes.json`))
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : String(input)
+    if (url === song.notes) {
+      return new Response(new Uint8Array(notesBytes), { status: 200 })
+    }
+    return {
+      ok: false,
+      status: 0,
+      body: null,
+      headers: new Headers(),
+      arrayBuffer: async () => new ArrayBuffer(64),
+    }
+  })
+  const { demoSessionId, seedDemoLyrics } =
+    await import('@/features/karaoke-night/demo-song')
+  const { seedBundledNotes } =
+    await import('@/features/karaoke-night/bundled-notes')
+  const { loadPitchAnalysisFromDbStrict } =
+    await import('@/db/services/session-pitch-analysis-service')
+  await seedDemoLyrics(song as Parameters<typeof seedDemoLyrics>[0])
+  // False once an earlier test in this file has stored them: either way,
+  // the notes must be there.
+  await seedBundledNotes(song as Parameters<typeof seedBundledNotes>[0])
+  expect(
+    await loadPitchAnalysisFromDbStrict(demoSessionId(SONG)),
+  ).not.toBeNull()
+  return demoSessionId(SONG)
+}
+
+/** The example on a hosted mixer, loaded, with its lyrics on the stage. */
+async function mountTheExample(): Promise<() => HostedMixerControls> {
+  const sessionId = await seedTheExample()
+  const { host, controls } = hosting()
+  render(() => (
+    <StemMixer
+      stems={{
+        vocal: `/karaoke/examples/${SONG}/vocal.m4a`,
+        instrumental: `/karaoke/examples/${SONG}/instrumental.m4a`,
+      }}
+      sessionId={sessionId}
+      songTitle="Nothing in the Dark"
+      preset="performance"
+      showStageSettings={false}
+      practiceMode="full"
+      requestedStems={{ vocal: true, instrumental: true }}
+      karaokeReferenceVocal
+      hosted={host}
+    />
+  ))
+  await waitFor(() => {
+    expect(controls()?.hasNotes()).toBe(true)
+    expect(controls()!.loading()).toBe(false)
+    expect(controls()!.duration()).toBeGreaterThan(AT)
+    expect(screen.getByTestId('karaoke-lyrics').textContent).toContain(
+      'nothing in the dark',
+    )
+  })
+  return () => controls()!
+}
+
+/** The stage's current line: its words, and the sweep on the active one. */
+function stageLine(): { text: string; sweep: string | null } | null {
+  const lyrics = screen.getByTestId('karaoke-lyrics')
+  const current = [...lyrics.querySelectorAll('p')].find((p) =>
+    [...p.classList].some((c) => c.includes('current')),
+  )
+  if (current === undefined) return null
+  const swept = [...current.querySelectorAll('span')].find(
+    (span) => span.style.getPropertyValue('--sweep') !== '',
+  )
+  return {
+    text: (current.textContent ?? '').trim(),
+    sweep: swept?.style.getPropertyValue('--sweep') ?? null,
+  }
+}
+
+/** Frames that arrive, which this suite's never do (setup-common.ts). */
+function letFramesRun(): void {
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
+    setTimeout(() => cb(performance.now()), 0),
+  )
+}
+
 // ── A held last word, lit for as long as it is held ──────────────────────
 //
-// "Nothing in the Dark" ends a line on "dark" at 113.23 s and holds it to
-// about 114 s; the next line starts at 125.36 s. The example ships only word
-// starts for that line, so the end comes from the notes it ships with
-// (bundled-notes.ts) and the sung-end rule (lyric-sung-end.ts). Both the
-// stage and the small window must sweep "dark" across the held note: not
-// across the eleven silent seconds after it, and not in a third of a second.
+// The example ships only word starts for the line that ends on "dark", so
+// the end comes from the notes it ships with (bundled-notes.ts) and the
+// sung-end rule (lyric-sung-end.ts). Both the stage and the small window
+// must sweep "dark" across the held note: not across the eleven silent
+// seconds after it, and not in a third of a second.
 describe('a held last word in the room', () => {
-  /** The bundle's examples, from the repository root vitest runs in. */
-  const EXAMPLES = 'apps/mercurypitch/native-only/karaoke/examples'
-  const SONG = 'nothing-in-the-dark'
-  /** Half a second into the held "dark". */
-  const AT = 113.8
-
-  async function seedTheExample(): Promise<string> {
-    const { readFileSync } = await import('node:fs')
-    const { resolve } = await import('node:path')
-    const file = (path: string) => resolve(process.cwd(), EXAMPLES, path)
-    const manifest = JSON.parse(
-      readFileSync(file('manifest.json'), 'utf8'),
-    ) as { songs: { slug: string; notes?: string }[] }
-    const song = manifest.songs.find((s) => s.slug === SONG)!
-    const notesBytes = readFileSync(file(`${SONG}/notes.json`))
-    vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : String(input)
-      if (url === song.notes) {
-        return new Response(new Uint8Array(notesBytes), { status: 200 })
-      }
-      return {
-        ok: false,
-        status: 0,
-        body: null,
-        headers: new Headers(),
-        arrayBuffer: async () => new ArrayBuffer(64),
-      }
-    })
-    const { demoSessionId, seedDemoLyrics } =
-      await import('@/features/karaoke-night/demo-song')
-    const { seedBundledNotes } =
-      await import('@/features/karaoke-night/bundled-notes')
-    await seedDemoLyrics(song as Parameters<typeof seedDemoLyrics>[0])
-    expect(
-      await seedBundledNotes(song as Parameters<typeof seedBundledNotes>[0]),
-    ).toBe(true)
-    return demoSessionId(SONG)
-  }
-
-  /** The stage's current line: its words, and the sweep on the active one. */
-  function stageLine(): { text: string; sweep: string | null } | null {
-    const lyrics = screen.getByTestId('karaoke-lyrics')
-    const current = [...lyrics.querySelectorAll('p')].find((p) =>
-      [...p.classList].some((c) => c.includes('current')),
-    )
-    if (current === undefined) return null
-    const swept = [...current.querySelectorAll('span')].find(
-      (span) => span.style.getPropertyValue('--sweep') !== '',
-    )
-    return {
-      text: (current.textContent ?? '').trim(),
-      sweep: swept?.style.getPropertyValue('--sweep') ?? null,
-    }
-  }
-
   it('sweeps "dark" across the held note, on the stage and in the window', async () => {
-    const sessionId = await seedTheExample()
-    const { host, controls } = hosting()
-    render(() => (
-      <StemMixer
-        stems={{
-          vocal: `/karaoke/examples/${SONG}/vocal.m4a`,
-          instrumental: `/karaoke/examples/${SONG}/instrumental.m4a`,
-        }}
-        sessionId={sessionId}
-        songTitle="Nothing in the Dark"
-        preset="performance"
-        showStageSettings={false}
-        practiceMode="full"
-        requestedStems={{ vocal: true, instrumental: true }}
-        karaokeReferenceVocal
-        hosted={host}
-      />
-    ))
-    await waitFor(() => {
-      expect(controls()?.hasNotes()).toBe(true)
-      expect(controls()!.loading()).toBe(false)
-      expect(controls()!.duration()).toBeGreaterThan(AT)
-      expect(screen.getByTestId('karaoke-lyrics').textContent).toContain(
-        'nothing in the dark',
-      )
-    })
-    // The suite's frames never come (setup-common.ts); a seek finds its line
-    // on the frame after it, so this one needs that frame to arrive.
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) =>
-      setTimeout(() => cb(performance.now()), 0),
-    )
-    controls()!.seek(AT)
-    expect(controls()!.elapsed()).toBe(AT)
+    const controls = await mountTheExample()
+    // About the sweep, not the seek: frames arrive, as on a phone in front.
+    letFramesRun()
+    controls().seek(AT)
+    expect(controls().elapsed()).toBe(AT)
 
     // The held note ends at 114.015 s (the notes' own analysis); the sung
     // end adds the release tail, so "dark" runs 113.23 s to 114.365 s.
     const expected = (AT - 113.23) / (114.0154 + 0.35 - 113.23)
     await waitFor(() => {
-      const glance = controls()!.lyricGlance()
+      const glance = controls().lyricGlance()
       expect(glance.words.at(-1)).toBe('dark')
-      expect(glance.current).toBe(
-        'Try to see it all but there is nothing in the dark',
-      )
+      expect(glance.current).toBe(DARK_LINE)
       expect(glance.sungUpTo).toBe(10)
       expect(glance.sweep).toBeCloseTo(expected, 2)
     })
     await waitFor(() => {
       const line = stageLine()
-      expect(line?.text).toBe(
-        'Try to see it all but there is nothing in the dark',
-      )
+      expect(line?.text).toBe(DARK_LINE)
       expect(line?.sweep).toBe(`${(expected * 100).toFixed(1)}%`)
+    })
+  })
+})
+
+// ── A seek the room asks for lands as a tapped line does ─────────────────
+//
+// The room seeks the mixer for the system's progress bar: the notification
+// and the shade on Android, the lock screen. The app is usually behind
+// another one then, where no frame comes to find the new line, and the
+// singer may have scrolled the lyrics away just before. A tapped line copes
+// with both, and so must this.
+describe('a seek the room asks for', () => {
+  it('finds the line it lands on without waiting for a frame', async () => {
+    const controls = await mountTheExample()
+
+    controls().seek(AT)
+
+    // No frame has run: none ever does in this suite.
+    expect(controls().lyricGlance().current).toBe(DARK_LINE)
+    expect(stageLine()?.text).toBe(DARK_LINE)
+  })
+
+  it('puts that line back in the middle, after the singer scrolled away', async () => {
+    const controls = await mountTheExample()
+    // Frames arrive here, so only the scroll is under test.
+    letFramesRun()
+    fireEvent.wheel(screen.getByTestId('karaoke-lyrics'))
+    const centre = vi.mocked(Element.prototype.scrollIntoView)
+    centre.mockClear()
+
+    controls().seek(AT)
+
+    await waitFor(() => {
+      const centred = centre.mock.contexts.map((line) =>
+        ((line as HTMLElement).textContent ?? '').trim(),
+      )
+      expect(centred).toContain(DARK_LINE)
     })
   })
 })

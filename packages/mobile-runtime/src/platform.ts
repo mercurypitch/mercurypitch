@@ -37,7 +37,8 @@
 
 import type { PluginListenerHandle } from '@capacitor/core'
 import { Capacitor, registerPlugin } from '@capacitor/core'
-import type { MediaSessionPlugin } from '@capgo/capacitor-media-session'
+import type { MediaSessionPlugin, MetadataOptions, } from '@capgo/capacitor-media-session'
+import { artworkDataUrl } from './artwork-data'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
 export type Unsubscribe = () => void
@@ -178,6 +179,11 @@ export async function setStatusBar(style: StatusBarStyle): Promise<void> {
 export interface NowPlaying {
   readonly title: string
   readonly artist?: string
+  /**
+   * The picture the system shows with the song, by a URL the app can fetch:
+   * behind it in Android's media player, beside it on the lock screen.
+   */
+  readonly artwork?: string
   readonly playing: boolean
   /** Seconds into the song. Absent reads as the start. */
   readonly position?: number
@@ -187,10 +193,74 @@ export interface NowPlaying {
   readonly rate?: number
 }
 
-/** A system media button: the notification, the lock screen, a headset. */
-export type MediaAction = 'play' | 'pause' | 'stop'
+/**
+ * The system's progress bar let go at a place in the song: the notification's
+ * and the shade's on Android, the lock screen's on both.
+ */
+export interface MediaSeek {
+  /** Seconds into the song, as the platform reported them: not clamped. */
+  readonly seekTo: number
+}
 
-const MEDIA_ACTIONS: readonly MediaAction[] = ['play', 'pause', 'stop']
+/**
+ * What the system's media controls ask of a song: a button (the
+ * notification, the lock screen, a headset), or a seek.
+ */
+export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek
+
+/**
+ * What is registered, in the plugin's names: the three buttons, and the bar.
+ * Registering 'seekto' is what lets the bar be dragged: Android adds
+ * ACTION_SEEK_TO to the session's actions for it, and iOS turns on its
+ * changePlaybackPositionCommand.
+ */
+const MEDIA_ACTIONS = ['play', 'pause', 'stop', 'seekto'] as const
+
+type RegisteredAction = (typeof MEDIA_ACTIONS)[number]
+
+/** What the plugin reports with an action: its name, and a seek's target. */
+interface ActionDetails {
+  readonly action?: unknown
+  readonly seekTime?: unknown
+}
+
+/**
+ * The plugin's own event, which its typings leave out. iOS's native half
+ * reports every press through it (see `listenOnIos`).
+ */
+interface MediaSessionEvents {
+  addListener(
+    eventName: 'actionHandler',
+    listener: (details: ActionDetails | null | undefined) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+/**
+ * How long the copies of one iOS press keep arriving. They come back to back,
+ * one per command target, so this only has to outlast a busy main thread; a
+ * person pressing the same button twice this fast asks for nothing new.
+ */
+const PRESS_COPIES_MS = 250
+
+function isRegisteredAction(action: unknown): action is RegisteredAction {
+  return MEDIA_ACTIONS.some((name) => name === action)
+}
+
+/**
+ * An action as the handler hears it. A seek carries where the bar was let go
+ * (`seekTime`, in seconds on both platforms), and one with no usable place
+ * in it is no seek at all.
+ */
+function heard(
+  action: RegisteredAction,
+  details: ActionDetails | null | undefined,
+): MediaAction | null {
+  if (action !== 'seekto') return action
+  const seconds = details?.seekTime
+  return typeof seconds === 'number' && Number.isFinite(seconds)
+    ? { seekTo: seconds }
+    : null
+}
 
 /** The progress bar's numbers, in the plugin's own shape. */
 interface PositionState {
@@ -221,24 +291,53 @@ function positionOf(song: NowPlaying): PositionState {
   }
 }
 
+/** The last report asked for; the next one starts once it is done. */
+let reportsInFlight: Promise<void> = Promise.resolve()
+
 /**
  * Tell the system what is playing, or null when nothing is.
  *
  * Null is the plugin's 'none', which on Android stops the foreground service
- * and takes its notification away. The metadata goes first, so the service's
- * first notification already names the song.
+ * and takes its notification away. The metadata goes before the state, so the
+ * service's first notification already names the song.
  *
- * The position goes last, every time. Android draws the notification's bar
- * from it (the length reaches the session's metadata through this call, not
- * through setMetadata) and runs the bar on from the last report at the rate
- * given, so a report is due on play, pause, a seek or a new length, never on
- * a frame. iOS rewrites its whole Now Playing record on every call, which
- * re-anchors the lock screen's clock to the stored elapsed time, and its
- * state change sets the rate to 1: a position written before either would be
- * undone. Null empties the bar as well, because Android keeps the numbers
- * across a stopped session and shows them in the next one's notification.
+ * Android draws the notification's bar from the position (the length reaches
+ * the session's metadata through this call, not through setMetadata) and runs
+ * the bar on from the last report at the rate given, so a report is due on
+ * play, pause, a seek or a new length, never on a frame.
+ *
+ * The position goes first and last. Both plugins keep the last one they were
+ * given and show it again, stamped now, whenever they publish: Android on a
+ * new state, iOS on every call, as it rewrites its whole Now Playing record.
+ * Written after the state, a pause showed the bar for a frame at the last
+ * report's place (where the song started or last jumped to). Written only
+ * first, a slowed song would lose its rate on iOS, whose state change sets 1.
+ *
+ * Null empties the bar as well, because Android keeps the numbers across a
+ * stopped session and shows them in the next one's notification.
+ *
+ * One report at a time, in the order they were made: iOS answers setMetadata
+ * only once it has decoded the artwork, while its other calls go through at
+ * once, so a pause reported just before a play could otherwise land last.
  */
 export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
+  const report = reportsInFlight.then(async () => writeNowPlaying(song))
+  reportsInFlight = report.catch(() => undefined)
+  await report
+}
+
+/** The song's name, and its picture when it has one that could be read. */
+async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
+  const artwork =
+    song.artwork === undefined ? null : await artworkDataUrl(song.artwork)
+  return {
+    title: song.title,
+    ...(song.artist === undefined ? {} : { artist: song.artist }),
+    ...(artwork === null ? {} : { artwork: [{ src: artwork }] }),
+  }
+}
+
+async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
   await attempt(async () => {
     const { MediaSession } = await import('@capgo/capacitor-media-session')
     if (song === null) {
@@ -246,29 +345,43 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
       await MediaSession.setPositionState(NO_POSITION)
       return
     }
-    await MediaSession.setMetadata({
-      title: song.title,
-      ...(song.artist === undefined ? {} : { artist: song.artist }),
-    })
+    const metadata = await metadataOf(song)
+    const position = positionOf(song)
+    try {
+      await MediaSession.setPositionState(position)
+    } catch {
+      // A plugin with no position must still name the song. The last write
+      // fails the same way and ends the report there.
+    }
+    await MediaSession.setMetadata(metadata)
     await MediaSession.setPlaybackState({
       playbackState: song.playing ? 'playing' : 'paused',
     })
-    await MediaSession.setPositionState(positionOf(song))
+    await MediaSession.setPositionState(position)
   })
 }
 
 /**
- * The system's media buttons, all through one handler. The unsubscribe clears
- * the plugin's handlers again, so a room that is gone is never asked to play.
+ * The system's media buttons and its progress bar, all through one handler.
+ * The unsubscribe clears the plugin's handlers again, so a room that is gone
+ * is never asked to play.
  *
- * Each button is registered on its own. iOS answers through the WebView's
- * own media session, which may not know every button, and one it refuses
- * must not leave the others unregistered or uncleared.
+ * Each action is registered on its own: a platform that refuses one must not
+ * leave the others unregistered or uncleared. Android answers through the
+ * handler given here. iOS's native half does not (see `listenOnIos`).
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
 ): Unsubscribe {
   if (!isNative()) return () => undefined
+
+  const deliver = (
+    action: RegisteredAction,
+    details: ActionDetails | null | undefined,
+  ): void => {
+    const asked = heard(action, details)
+    if (asked !== null) handler(asked)
+  }
 
   return lazyListener((dispose) => {
     void (async () => {
@@ -280,11 +393,12 @@ export function onMediaAction(
         // nothing, as they always did.
         return
       }
-      const registered: MediaAction[] = []
+      const events = isIos() ? await listenOnIos(session, deliver) : null
+      const registered: RegisteredAction[] = []
       for (const action of MEDIA_ACTIONS) {
         try {
-          await session.setActionHandler({ action }, () => {
-            handler(action)
+          await session.setActionHandler({ action }, (details) => {
+            deliver(action, details)
           })
           registered.push(action)
         } catch {
@@ -293,6 +407,7 @@ export function onMediaAction(
       }
       dispose({
         remove: async () => {
+          await events?.remove().catch(() => undefined)
           for (const action of registered) {
             // Android hands back a callback id here, not a promise: await
             // it, never chain on it.
@@ -306,6 +421,40 @@ export function onMediaAction(
       })
     })()
   })
+}
+
+function isIos(): boolean {
+  return isNative() && Capacitor.getPlatform() === 'ios'
+}
+
+/**
+ * iOS's native half reports the lock screen's presses through the plugin's
+ * 'actionHandler' event, never through the handler `setActionHandler` was
+ * given: that method is a promise to the bridge, and the bridge drops a
+ * promise method's second argument. It also never removes a command target.
+ * Every `setActionHandler` call adds one, clears included, so a press
+ * arrives once for every call ever made for that button; the copies of one
+ * press are heard once. Null when the event cannot be listened to.
+ */
+async function listenOnIos(
+  session: MediaSessionPlugin,
+  deliver: (action: RegisteredAction, details: ActionDetails) => void,
+): Promise<PluginListenerHandle | null> {
+  const events = session as MediaSessionPlugin & MediaSessionEvents
+  let last = { key: '', at: Number.NEGATIVE_INFINITY }
+  try {
+    return await events.addListener('actionHandler', (details) => {
+      const action = details?.action
+      if (!isRegisteredAction(action)) return
+      const key = `${action} ${String(details?.seekTime)}`
+      const at = Date.now()
+      if (key === last.key && at - last.at < PRESS_COPIES_MS) return
+      last = { key, at }
+      deliver(action, details ?? {})
+    })
+  } catch {
+    return null
+  }
 }
 
 // ------------------------------------------------------------

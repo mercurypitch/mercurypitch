@@ -983,6 +983,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     audio.seekTo(target)
   }
 
+  // A tapped lyric line's seek: the pitch window moves with the song.
+  const seekToWithWindow = (t: number): void => {
+    audio.seekTo(t)
+    audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
+  }
+
   // ── Lyrics controller ─────────────────────────────────────────
   const {
     // Signals
@@ -1147,10 +1153,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     // Lazy closure: pitchAnalysis is initialized after this controller,
     // and the accessor is only invoked from memos once setup completes.
     melodyNotes: () => pitchAnalysis.editableNotes(),
-    seekToWithWindow: (t: number) => {
-      audio.seekTo(t)
-      audio.setWindowStart(Math.max(0, t - audio.windowDuration() * 0.3))
-    },
+    seekToWithWindow,
     // The standalone karaoke stage reads from across the room: big centered
     // lyrics by default, with page-local alignment prefs.
     ...(isPerformancePreset
@@ -1168,6 +1171,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Backfill holder refs that audio controller needs
   setUserScrolledForAudio = setUserScrolled
+
+  // A seek the room asks for (the system's progress bar seeks through it)
+  // lands as a tapped line does. The line sung there is found at once, not
+  // on the next frame, which never comes while the app is behind another
+  // one; and the stage puts that line back in the middle even if the singer
+  // had scrolled away.
+  const [lyricsRefollow, setLyricsRefollow] = createSignal(0)
+  const seekLikeLine = (seconds: number): void => {
+    seekToWithWindow(seconds)
+    updateCurrentLine()
+    setLyricsRefollow((count) => count + 1)
+  }
 
   // ── Loop lyric → audio time sync ──────────────────────────────────
   const onSetLoopLyric = (idx: number) => {
@@ -2068,7 +2083,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       musicLevel: audio.musicLevel,
       play: () => audio.handlePlay(),
       pause: () => audio.handlePause(),
-      seek: (seconds) => audio.seekTo(seconds),
+      seek: seekLikeLine,
       resetMusicLevel: () => {
         audio.setMusicLevel(audio.musicLevelRange.defaultValue)
       },
@@ -2381,6 +2396,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onVocalVolume={(v) => setTrackVolume('Vocal', v)}
             parsedLyrics={stableParsedLyrics}
             currentLineIdx={currentLineIdx}
+            refollowLyrics={lyricsRefollow}
             lyricsLoading={lyricsLoading}
             computeActiveWord={computeActiveWord}
             onLineClick={handleLyricLineClick}

@@ -566,11 +566,25 @@ export const KaraokeRoomStage: Component = () => {
     announce(null)
   })
 
+  // The system's progress bar: the notification's and the shade's, and the
+  // lock screen's. Wherever it is let go, the song lands inside itself and
+  // keeps playing or stays paused. The mixer moves the lyrics as a tapped
+  // line does, and its jump tells the bar where the song went (above).
+  const seekFromSystem = (seconds: number): void => {
+    const controls = mixer()
+    if (controls === null || controls.loading() || !runOn()) return
+    const length = controls.duration()
+    if (!(length > 0)) return
+    controls.seek(Math.min(length, Math.max(0, seconds)))
+  }
+
   // The notification's buttons, the lock screen's and a headset's. Each
   // checks the song first: play on a playing song would start it over from
   // where it was last paused.
   const onMediaButton = (action: NativeMediaAction): void => {
-    if (action === 'play') {
+    if (typeof action === 'object') {
+      seekFromSystem(action.seekTo)
+    } else if (action === 'play') {
       if (!isPlaying()) resume()
     } else if (action === 'pause') {
       if (isPlaying()) pause()

@@ -8,6 +8,8 @@
 // keep-awake reach the Karaoke room through the bridge, and this is the side
 // of it that the app fills in: the broker's lease, by name, and the plugin.
 
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const platform = vi.hoisted(() => ({
@@ -23,6 +25,8 @@ const platform = vi.hoisted(() => ({
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
 
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io'
+// @ts-expect-error -- a plain .mjs manifest with no types, read as is.
+import { globToRegExp, NATIVE_ASSETS } from '../../native-assets.mjs'
 import { createNativeDevice } from './native-device'
 
 function fakeContext() {
@@ -113,7 +117,32 @@ describe('the device a room reaches through the bridge', () => {
     device.nowPlaying(null)
     await Promise.resolve()
 
-    expect(platform.setNowPlaying.mock.calls).toEqual([[song], [null]])
+    expect(platform.setNowPlaying.mock.calls).toEqual([
+      [{ ...song, artwork: '/now-playing.webp' }],
+      [null],
+    ])
+  })
+
+  it('gives every song a picture the native bundle ships', () => {
+    // A URL with nothing behind it fails nowhere: the notification simply
+    // shows no picture. So the file has to be listed, and has to be there.
+    const device = createNativeDevice()
+    device.nowPlaying({ title: 'Harbour Lights', playing: false })
+
+    const sent = platform.setNowPlaying.mock.calls.at(-1)?.[0] as {
+      artwork?: string
+    }
+    const path = (sent.artwork ?? '').replace(/^\//u, '')
+    const shipped = (
+      NATIVE_ASSETS as ReadonlyArray<{ glob: string; root?: 'native' }>
+    ).filter((entry) => entry.root === 'native')
+    expect(
+      shipped.some((entry) => (globToRegExp(entry.glob) as RegExp).test(path)),
+    ).toBe(true)
+    const file = fileURLToPath(
+      new URL(`../../native-only/${path}`, import.meta.url),
+    )
+    expect(existsSync(file)).toBe(true)
   })
 
   it('passes the system media buttons through, with their unsubscribe', () => {

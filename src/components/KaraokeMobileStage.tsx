@@ -140,6 +140,13 @@ export interface KaraokeMobileStageProps {
   // Lyrics (stem-mixer lyrics controller)
   parsedLyrics: () => Map<number, ParsedLine>
   currentLineIdx: () => number
+  /**
+   * Goes up by one when the song was moved from outside the stage the way a
+   * tapped line moves it (the room's seek, for the system's progress bar):
+   * the stage lets go of a manual scroll and puts the current line back in
+   * the middle. Absent, nothing outside the stage does that.
+   */
+  refollowLyrics?: () => number
   lyricsLoading: () => boolean
   computeActiveWord: (
     words: string[],
@@ -549,14 +556,22 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Deliberately overrides a manual scroll: the reflow just invalidated
   // that position anyway.
   const notedActive = (): boolean => noteGlyphsOn() && hasNoteData()
+  /** Back on the line being sung, wherever the singer had scrolled. */
+  const refollow = (): void => {
+    setUserScrolled(false)
+    const idx = props.currentLineIdx()
+    if (idx < 0) scrollLyricsToTop()
+    else centerLine(idx, true)
+  }
   createEffect(
     on([notedActive, lyricsSize], (_, prev) => {
       if (prev === undefined) return // mount — the line-follow effect owns it
-      setUserScrolled(false)
-      const idx = props.currentLineIdx()
-      if (idx < 0) scrollLyricsToTop()
-      else centerLine(idx, true)
+      refollow()
     }),
+  )
+  // A seek from outside the stage that lands as a tapped line does.
+  createEffect(
+    on(() => props.refollowLyrics?.() ?? 0, refollow, { defer: true }),
   )
 
   // ── Live pitch coach (mic + ribbon) ───────────────────────────

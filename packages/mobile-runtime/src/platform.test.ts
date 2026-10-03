@@ -10,7 +10,7 @@
 // Capacitor's `Unimplemented`, and every wrapper has to survive that — which
 // is the whole reason these wrappers exist instead of direct plugin calls.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as PlatformModule from './platform'
 
 const loaded = vi.hoisted(() => [] as string[])
@@ -38,6 +38,8 @@ const mediaSession = vi.hoisted(() => ({
   setPlaybackState: vi.fn(),
   setActionHandler: vi.fn(),
   setPositionState: vi.fn(),
+  // Not in the plugin's typings: iOS's native half reports presses here.
+  addListener: vi.fn(),
 }))
 
 // The app's own picture-in-picture plugin, reached through registerPlugin
@@ -402,10 +404,11 @@ describe('on a phone', () => {
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'playing',
     })
-    // The position goes last. iOS re-anchors its lock-screen clock to the
-    // stored elapsed time on every write, and its state change sets the rate
-    // to 1, so anything written after the position would undo it.
-    expect(order).toEqual(['metadata', 'state', 'position'])
+    // The position goes first and last. Both plugins show the last position
+    // they hold whenever they publish, so it has to be in place before the
+    // metadata and the state go out, and iOS's state change sets the rate
+    // back to 1, so it goes again after.
+    expect(order).toEqual(['position', 'metadata', 'state', 'position'])
   })
 
   it('reports a paused song as paused, and leaves out an unknown artist', async () => {
@@ -451,12 +454,9 @@ describe('on a phone', () => {
         rate: 1.25,
       })
 
-      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
-      expect(lastPosition()).toEqual({
-        duration: 246,
-        position: 42.5,
-        playbackRate: 1.25,
-      })
+      const bar = { duration: 246, position: 42.5, playbackRate: 1.25 }
+      // The same numbers twice: before the writes that show them, and after.
+      expect(mediaSession.setPositionState.mock.calls).toEqual([[bar], [bar]])
     })
 
     it('plays at normal speed when the caller names no rate', async () => {
@@ -511,7 +511,44 @@ describe('on a phone', () => {
         mediaSession.setPositionState.mock.calls.map(
           ([options]) => (options as { position: number }).position,
         ),
-      ).toEqual([42.5, 180, 12])
+      ).toEqual([42.5, 42.5, 180, 180, 12, 12])
+    })
+
+    // The system's player as the plugins drive it. Each keeps the last
+    // position it was given and shows it again, stamped now, on every write
+    // that publishes: Android on a new state and on a position, iOS on any
+    // call at all, since it rewrites its whole Now Playing record each time.
+    const watchTheBar = (): number[] => {
+      const shown: number[] = []
+      let place = 0
+      const show = async (): Promise<void> => {
+        shown.push(place)
+      }
+      mediaSession.setMetadata.mockImplementation(show)
+      mediaSession.setPlaybackState.mockImplementation(show)
+      mediaSession.setPositionState.mockImplementation(
+        async (state: { position: number }) => {
+          place = state.position
+          shown.push(place)
+        },
+      )
+      return shown
+    }
+
+    it('pauses the bar where the song stopped, not where it last started', async () => {
+      // A run started from a tapped line at 1:18 and played on to 2:01, the
+      // system running the bar on from the 1:18 report by itself. Pause in
+      // the notification must not put the bar back at 1:18, not for a frame.
+      const platform = await loadPlatform(true)
+      const shown = watchTheBar()
+      const song = { title: 'Harbour Lights', duration: 246 }
+      await platform.setNowPlaying({ ...song, playing: true, position: 78 })
+      shown.length = 0
+
+      await platform.setNowPlaying({ ...song, playing: false, position: 121 })
+
+      expect(shown).not.toContain(78)
+      expect(new Set(shown)).toEqual(new Set([121]))
     })
 
     it('swaps in the next song’s length, and shows none while it is unknown', async () => {
@@ -610,9 +647,10 @@ describe('on a phone', () => {
 
     it('still names the song on a phone whose plugin has no position', async () => {
       const platform = await loadPlatform(true)
-      mediaSession.setPositionState.mockRejectedValueOnce(
-        new Error('Unimplemented'),
-      )
+      const unimplemented = new Error('Unimplemented')
+      mediaSession.setPositionState
+        .mockRejectedValueOnce(unimplemented)
+        .mockRejectedValueOnce(unimplemented)
 
       await expect(
         platform.setNowPlaying({
@@ -622,9 +660,108 @@ describe('on a phone', () => {
           duration: 246,
         }),
       ).resolves.toBeUndefined()
-      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(1)
+      expect(mediaSession.setPositionState).toHaveBeenCalledTimes(2)
+      expect(mediaSession.setMetadata).toHaveBeenCalledWith({
+        title: 'Harbour Lights',
+      })
       expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
         playbackState: 'playing',
+      })
+    })
+  })
+
+  // Android's player draws the picture behind the song, and iOS's lock screen
+  // beside it. Neither native half can load an app URL, so it goes as data.
+  describe("the song's picture", () => {
+    const PICTURE = '/now-playing.webp'
+    /** The bytes 1, 2, 3, as iOS serves a bundled file: status 0, a body. */
+    const servePicture = (): ReturnType<typeof vi.fn> => {
+      const fetch = vi.fn(async () => ({
+        ok: false,
+        status: 0,
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      }))
+      vi.stubGlobal('fetch', fetch)
+      return fetch
+    }
+    const pictureSent = (call: number): unknown =>
+      (mediaSession.setMetadata.mock.calls[call]?.[0] as { artwork?: unknown })
+        ?.artwork
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('hands the picture over as data, read once for every report', async () => {
+      const platform = await loadPlatform(true)
+      const fetch = servePicture()
+      const song = { title: 'Harbour Lights', artwork: PICTURE }
+
+      await platform.setNowPlaying({ ...song, playing: true })
+      await platform.setNowPlaying({ ...song, playing: false })
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch.mock.calls[0]?.[0]).toBe(PICTURE)
+      const data = [{ src: 'data:image/webp;base64,AQID' }]
+      expect(pictureSent(0)).toEqual(data)
+      expect(pictureSent(1)).toEqual(data)
+    })
+
+    it('names the song without a picture it cannot read, and reads it next time', async () => {
+      const platform = await loadPlatform(true)
+      const fetch = servePicture()
+      fetch.mockRejectedValueOnce(new Error('offline'))
+      const song = { title: 'Harbour Lights', playing: true, artwork: PICTURE }
+
+      await platform.setNowPlaying(song)
+      expect(mediaSession.setMetadata).toHaveBeenLastCalledWith({
+        title: 'Harbour Lights',
+      })
+
+      await platform.setNowPlaying(song)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(pictureSent(1)).toEqual([{ src: 'data:image/webp;base64,AQID' }])
+    })
+
+    it('lands reports in the order they were made, however long a picture takes', async () => {
+      // iOS answers setMetadata once it has decoded the picture, and its
+      // state and position calls go through at once: a pause reported just
+      // before a play must not land after it.
+      const platform = await loadPlatform(true, 'ios')
+      servePicture()
+      const song = {
+        title: 'Harbour Lights',
+        position: 121,
+        duration: 246,
+        artwork: PICTURE,
+      }
+      let decoded: (() => void) | undefined
+      mediaSession.setMetadata.mockImplementationOnce(
+        async () =>
+          new Promise<void>((resolve) => {
+            decoded = resolve
+          }),
+      )
+
+      const paused = platform.setNowPlaying({ ...song, playing: false })
+      // Play pressed while iOS is still decoding the pause's picture.
+      await vi.waitFor(() => {
+        expect(decoded).toBeDefined()
+      })
+      const played = platform.setNowPlaying({ ...song, playing: true })
+      await settle()
+      decoded?.()
+      await Promise.all([paused, played])
+
+      expect(
+        mediaSession.setPlaybackState.mock.calls.map(
+          ([options]) => (options as { playbackState: string }).playbackState,
+        ),
+      ).toEqual(['paused', 'playing'])
+      expect(mediaSession.setPositionState.mock.calls.at(-1)?.[0]).toEqual({
+        duration: 246,
+        position: 121,
+        playbackRate: 1,
       })
     })
   })
@@ -650,12 +787,14 @@ describe('on a phone', () => {
     const registered = mediaSession.setActionHandler.mock.calls.map(
       ([options]) => (options as { action: string }).action,
     )
-    expect(registered).toEqual(['play', 'pause', 'stop'])
+    expect(registered).toEqual(['play', 'pause', 'stop', 'seekto'])
     for (const [options, press] of mediaSession.setActionHandler.mock.calls as [
       { action: string },
-      () => void,
+      (details: { action: string }) => void,
     ][]) {
-      press()
+      if (options.action === 'seekto') continue
+      // Android's half resolves the kept call with the action's own name.
+      press({ action: options.action })
       expect(handler).toHaveBeenLastCalledWith(options.action)
     }
 
@@ -667,7 +806,156 @@ describe('on a phone', () => {
       [{ action: 'play' }, null],
       [{ action: 'pause' }, null],
       [{ action: 'stop' }, null],
+      [{ action: 'seekto' }, null],
     ])
+  })
+
+  describe('the progress bar, dragged', () => {
+    /** The callback the room's 'seekto' registration handed the plugin. */
+    const seekCallback = () =>
+      mediaSession.setActionHandler.mock.calls.find(
+        ([options]) => (options as { action: string }).action === 'seekto',
+      )?.[1] as (details: unknown) => void
+
+    it('hands the handler where the bar was let go', async () => {
+      // Android's MediaSessionCallback.onSeekTo reports milliseconds as
+      // seconds: { action: 'seekto', seekTime: pos / 1000 }. Registering
+      // the handler is what puts ACTION_SEEK_TO in the session's actions,
+      // the one thing that makes the bar draggable.
+      const platform = await loadPlatform(true)
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      seekCallback()({ action: 'seekto', seekTime: 97.25 })
+
+      expect(handler).toHaveBeenCalledTimes(1)
+      expect(handler).toHaveBeenCalledWith({ seekTo: 97.25 })
+      // The callback is Android's answer; its half fires no event.
+      expect(mediaSession.addListener).not.toHaveBeenCalled()
+    })
+
+    it('passes the place on as the platform gave it, for the room to clamp', async () => {
+      const platform = await loadPlatform(true)
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      seekCallback()({ action: 'seekto', seekTime: 312 })
+      seekCallback()({ action: 'seekto', seekTime: -0.5 })
+
+      expect(handler.mock.calls).toEqual([
+        [{ seekTo: 312 }],
+        [{ seekTo: -0.5 }],
+      ])
+    })
+
+    it('ignores a seek that names no place', async () => {
+      const platform = await loadPlatform(true)
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      seekCallback()({ action: 'seekto' })
+      seekCallback()({ action: 'seekto', seekTime: null })
+      seekCallback()({ action: 'seekto', seekTime: Number.NaN })
+      // The bridge hands an error back as (null, error).
+      seekCallback()(null)
+
+      expect(handler).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('on iOS', () => {
+    // iOS's native half registers each command on MPRemoteCommandCenter and
+    // reports a press through the plugin's 'actionHandler' event. It never
+    // calls the handler setActionHandler was given (the bridge drops a
+    // promise method's second argument), and it never removes a command
+    // target, so a press arrives once for every setActionHandler call ever
+    // made for that button, clears included.
+    const emitter = () =>
+      mediaSession.addListener.mock.calls.find(
+        ([event]) => event === 'actionHandler',
+      )?.[1] as (details: unknown) => void
+
+    beforeEach(() => {
+      mediaSession.addListener.mockResolvedValue(listenerHandle())
+    })
+    afterEach(() => {
+      mediaSession.addListener.mockReset()
+      vi.restoreAllMocks()
+    })
+
+    it('hears the lock screen through the plugin event, seeks included', async () => {
+      const platform = await loadPlatform(true, 'ios')
+      const handle = listenerHandle()
+      mediaSession.addListener.mockResolvedValue(handle)
+      const handler = vi.fn()
+
+      const stop = platform.onMediaAction(handler)
+      await settle()
+      emitter()({ action: 'pause' })
+      emitter()({ action: 'seekto', seekTime: 61.5 })
+      emitter()({ action: 'play' })
+
+      expect(handler.mock.calls).toEqual([
+        ['pause'],
+        [{ seekTo: 61.5 }],
+        ['play'],
+      ])
+
+      stop()
+      await settle()
+      expect(handle.remove).toHaveBeenCalledTimes(1)
+    })
+
+    it('hears one press once, however many copies arrive', async () => {
+      const platform = await loadPlatform(true, 'ios')
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      for (let copy = 0; copy < 3; copy += 1) {
+        emitter()({ action: 'seekto', seekTime: 42 })
+      }
+      for (let copy = 0; copy < 3; copy += 1) {
+        emitter()({ action: 'pause' })
+      }
+      // Something else is a new press, even straight after.
+      emitter()({ action: 'seekto', seekTime: 50 })
+
+      expect(handler.mock.calls).toEqual([
+        [{ seekTo: 42 }],
+        ['pause'],
+        [{ seekTo: 50 }],
+      ])
+    })
+
+    it('hears the same button again once its copies are past', async () => {
+      const platform = await loadPlatform(true, 'ios')
+      const now = vi.spyOn(Date, 'now').mockReturnValue(10_000)
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      emitter()({ action: 'pause' })
+      now.mockReturnValue(10_600)
+      emitter()({ action: 'pause' })
+
+      expect(handler.mock.calls).toEqual([['pause'], ['pause']])
+    })
+
+    it('ignores an event for a button it never registered', async () => {
+      const platform = await loadPlatform(true, 'ios')
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      emitter()({ action: 'nexttrack' })
+      emitter()(undefined)
+
+      expect(handler).not.toHaveBeenCalled()
+    })
   })
 
   it('registers the buttons a platform has, and clears only those', async () => {
@@ -698,6 +986,7 @@ describe('on a phone', () => {
     expect(mediaSession.setActionHandler.mock.calls).toEqual([
       [{ action: 'play' }, null],
       [{ action: 'pause' }, null],
+      [{ action: 'seekto' }, null],
     ])
     mediaSession.setActionHandler.mockReset()
   })
