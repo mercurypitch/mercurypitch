@@ -342,6 +342,36 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     ),
   )
 
+  // A resize leaves the sheet where its old size put it. Back from Android's
+  // picture-in-picture window, where it was a few centimetres tall, the line
+  // being sung sat off screen until the next line started (owner, 3 Oct); a
+  // phone turned on its side does the same. So when the sheet changes size it
+  // puts the current line back in the middle at once: no glide, because the
+  // jump is the fix, and not while the singer has scrolled away on purpose.
+  // The first report is the sheet's starting size, which the effect above
+  // has already handled.
+  let sizeWatch: ResizeObserver | undefined
+  onCleanup(() => sizeWatch?.disconnect())
+  const followResize = (scroller: HTMLDivElement): void => {
+    if (typeof ResizeObserver === 'undefined') return
+    sizeWatch?.disconnect()
+    let width = -1
+    let height = -1
+    sizeWatch = new ResizeObserver((records) => {
+      const box = records[records.length - 1]?.contentRect
+      if (box === undefined) return
+      const first = width < 0
+      const changed = box.width !== width || box.height !== height
+      width = box.width
+      height = box.height
+      if (first || !changed || userScrolled()) return
+      const idx = props.currentLineIdx()
+      if (idx < 0) scroller.scrollTo({ top: 0, behavior: 'auto' })
+      else centerLine(idx, false)
+    })
+    sizeWatch.observe(scroller)
+  }
+
   // Back-to-beginning control (position-based, like a phone music player): a
   // first press seeks the current song to its start; a second press while
   // already near the start steps to the previous item. See resolveBackIntent.
@@ -802,7 +832,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
 
       {/* ── Lyrics ─────────────────────────────────────────── */}
       <div
-        ref={scrollerRef}
+        ref={(el) => {
+          scrollerRef = el
+          followResize(el)
+        }}
         class={styles.lyrics}
         data-testid={hosting === undefined ? undefined : 'karaoke-lyrics'}
         classList={{
