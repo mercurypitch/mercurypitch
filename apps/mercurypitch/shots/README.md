@@ -58,10 +58,14 @@ long as it was sung, and one sung right after the start runs from 18:39 to
 18:40.
 
 - **Mara's phone** (screens 02 and 04 to 09): signed in to a fictional account
-  (`mara@example.com`), the microphone granted before, five kept Sing takes
-  over the past week, and five weeks of Ear Lab practice with two
-  calibrations. That is her progress as the native rooms keep it: the take
-  card reads the takes back, the Ear Lab bench reads the calibrations.
+  (`mara@example.com`), the microphone granted before and its round trip
+  measured, five kept Sing takes over the past week, and twelve weeks of Ear
+  Lab practice: readings, ratings, six calibrations and the misses each drill
+  counted. That is her progress as the native rooms keep it: the take card
+  reads the takes back, the Ear Lab bench reads the calibrations, and the Ear
+  Report traces all of it. Three gaps stay on purpose, each because filling
+  it would put a percentage or an em dash in the frame: Drift (its unit is a
+  percentage), the desk, and Leap and Stack's misses (see `fixtures.ts`).
 - **A fresh install** (screens 01 and 03): nothing kept and nothing granted.
 
 The microphone is `shots/voice.ts`: a phrase synthesised into a WAV that
