@@ -3,6 +3,7 @@
 import type { BufferGeometry, Material, Object3D, TypedArray } from 'three'
 import { DynamicDrawUsage, Group, InstancedMesh, Matrix4 } from 'three'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
+import type { MaterialFinishBank } from './material-finishes'
 import { buildRunnerSceneryDonorAssembly } from './runner-scenery-geometry'
 import type { RunnerSceneryKind, RunnerSceneryWindow, } from './runner-scenery-layout'
 import { createRunnerSceneryLayout, runnerSceneryPlacementMatrix, } from './runner-scenery-layout'
@@ -14,6 +15,7 @@ export interface RunnerSceneryOptions {
   readonly gardenScene: Object3D
   readonly arcadeScene: Object3D
   readonly canopyScene: Object3D
+  readonly finishes?: MaterialFinishBank
   readonly reducedMotion: boolean
 }
 
@@ -141,7 +143,14 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     for (const kind of ['terrace', 'canopy', 'arcade'] as const) {
       const parts = buildRunnerSceneryDonorAssembly(kind, donorScenes)
       parts.forEach(({ geometry }) => ownedGeometries.push(geometry))
-      createPool(kind, parts)
+      const finishedParts = parts.map((part) => {
+        if (part.material.name !== 'museum_petrol' || !options.finishes)
+          return part
+        const material = options.finishes.create('celadon-porcelain')
+        ownedMaterials.push(material)
+        return { ...part, material }
+      })
+      createPool(kind, finishedParts)
     }
     createPool('water', [
       { geometry: sourcePool.geometry, material: sourcePool.material },

@@ -9,6 +9,7 @@
 // The export resolves to an explicit .ts path for Node's native-build scripts.
 import { SINGING_CURRENT_WALL_ASSET_FILES } from '@irchiinnuss/glass-game/current-wall-profiles'
 import { MERC_ENCORE_VARIANTS } from '@irchiinnuss/glass-game/encore-examples'
+import { MATERIAL_FINISH_FILES } from '@irchiinnuss/glass-game/material-finishes'
 import { SHATTER_SOUND_ASSET_FILES } from '@irchiinnuss/glass-game/shatter-sounds'
 import { MERC_SONGBOOK_ASSETS } from '@irchiinnuss/glass-game/songbook-content'
 
@@ -128,6 +129,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     ]),
   ),
   ...SHATTER_SOUND_ASSET_FILES,
+  ...MATERIAL_FINISH_FILES,
   ...SINGING_CURRENT_WALL_ASSET_FILES,
   'audio-m01-loop': 'adventure-audio-v1/m01-loop.mp3',
   'audio-m03-loop': 'adventure-audio-v1/m03-loop.mp3',
@@ -170,6 +172,7 @@ export const GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS = Object.freeze([
 ] as const)
 
 const MANIFEST_FILES = [
+  'material-finish-v1/manifest.json',
   'adventure/manifest.json',
   'adventure-v2/manifest.json',
   'adventure-v3/manifest.json',
