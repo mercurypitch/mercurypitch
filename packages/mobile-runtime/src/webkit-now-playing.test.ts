@@ -7,9 +7,10 @@
 // and seeked as WebKit does, interruptions included, and a session that
 // keeps what it was told.
 
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
-import { claimCarrier, listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 /**
  * An `<audio>` element, as far as the carrier uses one, with the bookkeeping
@@ -60,6 +61,13 @@ class FakeCarrier extends EventTarget {
   })
 
   readonly load = vi.fn()
+
+  /** What the element says of FLAC: nothing, where it would not play it. */
+  flac = ''
+
+  canPlayType(type: string): string {
+    return type === 'audio/flac' ? this.flac : ''
+  }
 
   get src(): string {
     return this.source ?? ''
@@ -199,6 +207,14 @@ const song = (changes: Partial<WebKitSong> = {}): WebKitSong => ({
   rate: 1,
   ...changes,
 })
+
+/** A press of a lock-screen button, as WebKit hands it to its handler. */
+const press = (action: WebKitAction, details: object): void => {
+  const call = session.setActionHandler.mock.calls.find(
+    ([name]) => name === action,
+  )
+  ;(call?.[1] as (details: object) => void)(details)
+}
 
 let session: ReturnType<typeof fakeSession>
 let carrier: FakeCarrier
@@ -635,13 +651,6 @@ describe('what the system does to the song', () => {
 })
 
 describe('the buttons', () => {
-  const press = (action: WebKitAction, details: object): void => {
-    const call = session.setActionHandler.mock.calls.find(
-      ([name]) => name === action,
-    )
-    ;(call?.[1] as (details: object) => void)(details)
-  }
-
   it('hands each press to the listener, a seek’s place included', () => {
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)
@@ -680,6 +689,20 @@ describe('the buttons', () => {
     // Playing now: a press leaves it be.
     press('play', { action: 'play' })
     expect(carrier.play).toHaveBeenCalledTimes(2)
+  })
+
+  it('hands a skip on with its seconds', () => {
+    // With a handler of the page's, WebKit no longer skips the carrier.
+    const deliver = vi.fn()
+    listenOnWebKit([...ACTIONS, 'seekbackward', 'seekforward'], deliver)
+
+    press('seekforward', { action: 'seekforward', seekOffset: 10 })
+    press('seekbackward', { action: 'seekbackward' })
+
+    expect(deliver.mock.calls).toEqual([
+      ['seekforward', { action: 'seekforward', seekOffset: 10 }],
+      ['seekbackward', { action: 'seekbackward' }],
+    ])
   })
 
   it('keeps the buttons WebKit has when it refuses one, and clears only those', () => {
@@ -769,6 +792,243 @@ describe('a press of play', () => {
   })
 })
 
+describe('presses that waited while the app slept', () => {
+  // A paused song lets iOS freeze the app behind another one. A press on
+  // the lock screen then waits, and runs as the app comes back, long after.
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** A song paused on the lock screen, the app behind another one. */
+  function pausedBehindAnotherApp(deliver: Mock): void {
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    page.turn('hidden')()
+  }
+
+  /** iOS freezes the app: the clock runs on, the page's timers do not. */
+  function sleep(ms: number): void {
+    vi.setSystemTime(Date.now() + ms)
+  }
+
+  it('drops one that comes as the app comes back', () => {
+    const deliver = vi.fn()
+    pausedBehindAnotherApp(deliver)
+    sleep(60_000)
+
+    press('play', { action: 'play' })
+    page.turn('visible')()
+    vi.advanceTimersByTime(1000)
+
+    expect(deliver).not.toHaveBeenCalled()
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] play waited while the app slept: dropped',
+    )
+  })
+
+  it('drops one that comes just after the app came back, and no later one', () => {
+    const deliver = vi.fn()
+    pausedBehindAnotherApp(deliver)
+    sleep(60_000)
+    page.turn('visible')()
+
+    press('play', { action: 'play' })
+    expect(deliver).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1500)
+    press('play', { action: 'play' })
+    expect(deliver).toHaveBeenCalledWith('play', { action: 'play' })
+  })
+
+  it('carries out one that woke the app behind another one', () => {
+    const deliver = vi.fn()
+    pausedBehindAnotherApp(deliver)
+    sleep(60_000)
+
+    press('play', { action: 'play' })
+    expect(deliver).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(400)
+
+    expect(deliver).toHaveBeenCalledWith('play', { action: 'play' })
+    expect(carrier.play).toHaveBeenCalledTimes(2)
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] play came as the app woke behind another app: carried out',
+    )
+  })
+
+  it('hears one at once while the app runs behind another one', () => {
+    const deliver = vi.fn()
+    pausedBehindAnotherApp(deliver)
+    vi.advanceTimersByTime(30_000)
+
+    press('pause', { action: 'pause' })
+
+    expect(deliver).toHaveBeenCalledWith('pause', { action: 'pause' })
+  })
+})
+
+describe('play from behind the app', () => {
+  // After another app took the sound, WebKit's session for the page is
+  // ambient, and a carrier that starts under it mixes: the other app plays
+  // on, and the song plays where nobody hears it.
+  let audioSession: { type: string; readonly state: string }
+  let types: string[]
+
+  beforeEach(() => {
+    types = []
+    let type = 'auto'
+    audioSession = {
+      get type() {
+        return type
+      },
+      set type(value: string) {
+        types.push(value)
+        type = value
+      },
+      state: 'inactive',
+    }
+    vi.stubGlobal('navigator', { mediaSession: session, audioSession })
+  })
+
+  /** A song another app's sound paused, the app behind that app. */
+  function pausedByAnotherApp(deliver: Mock): void {
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.interrupt()
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    page.turn('hidden')()
+  }
+
+  it('asks for a session that does not mix, for the moment the carrier starts', () => {
+    const deliver = vi.fn()
+    pausedByAnotherApp(deliver)
+    let typeAtPlay = ''
+    const play = carrier.play.getMockImplementation()
+    carrier.play.mockImplementationOnce(async () => {
+      typeAtPlay = audioSession.type
+      await play?.()
+    })
+
+    press('play', { action: 'play' })
+
+    expect(typeAtPlay).toBe('playback')
+    expect(types).toEqual(['playback', 'auto'])
+    expect(carrier.paused).toBe(false)
+    expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] play from behind the app took the sound from another app (session inactive, then inactive)',
+    )
+  })
+
+  it('leaves the song paused, as it was, when the other app keeps the sound', () => {
+    const deliver = vi.fn()
+    pausedByAnotherApp(deliver)
+    // WebKit starts an element inside play(), or not at all.
+    carrier.play.mockRejectedValueOnce(
+      new DOMException('Not now', 'NotAllowedError'),
+    )
+
+    press('play', { action: 'play' })
+
+    expect(carrier.paused).toBe(true)
+    expect(types).toEqual(['playback', 'auto'])
+    expect(deliver.mock.calls).toEqual([['pause', {}]])
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] play pressed, but another app keeps the sound: the song stays paused (session inactive, then inactive)',
+    )
+
+    // Still the system's pause: the other app done with the word to
+    // resume, the song plays again.
+    carrier.endInterruption(true)
+    carrier.settle()
+    expect(deliver.mock.calls).toEqual([
+      ['pause', {}],
+      ['play', {}],
+    ])
+  })
+
+  it('lets the press go on when the carrier is refused with no other app playing', () => {
+    // The song plays without its carrier, as it did before a refusal was
+    // ever heard: the next report tries the carrier again.
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    page.turn('hidden')()
+    carrier.play.mockRejectedValueOnce(
+      new DOMException('Not now', 'NotAllowedError'),
+    )
+
+    press('play', { action: 'play' })
+
+    expect(carrier.paused).toBe(true)
+    expect(types).toEqual([])
+    expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
+  })
+
+  it('asks for nothing with the app in front', () => {
+    const deliver = vi.fn()
+    pausedByAnotherApp(deliver)
+    page.turn('visible')()
+
+    press('play', { action: 'play' })
+
+    expect(types).toEqual([])
+    expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
+  })
+
+  it('asks for nothing when no other app plays', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    page.turn('hidden')()
+
+    press('play', { action: 'play' })
+
+    expect(types).toEqual([])
+    expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
+  })
+
+  it('asks when the lyrics window says another app plays', () => {
+    // The singer paused the song, then started the other app's sound.
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    page.turn('hidden')()
+
+    expect(takeTheSound({ otherAudio: true })).toBe(true)
+    expect(types).toEqual(['playback', 'auto'])
+    expect(carrier.paused).toBe(false)
+  })
+
+  it('goes on as before with no song on the lock screen, or one playing', () => {
+    page.turn('hidden')()
+    expect(takeTheSound({ otherAudio: true })).toBe(true)
+    showOnWebKit(song())
+    carrier.settle()
+
+    expect(takeTheSound({ otherAudio: true })).toBe(true)
+    expect(types).toEqual([])
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('holding the playback session', () => {
   // While the carrier holds it, the app's unlock clip stands aside: beside
   // the carrier, WebKit could show the clip on the lock screen, send it a
@@ -838,30 +1098,61 @@ describe('holding the playback session', () => {
   })
 })
 
-describe('the silence', () => {
-  it('is a 16-bit PCM WAV file longer than WebKit’s floor for Now Playing', () => {
-    const wav = new DataView(silentWav(4, 48_000))
-    const text = (at: number, length: number): string =>
-      String.fromCharCode(...new Uint8Array(wav.buffer, at, length))
-    const dataBytes = wav.getUint32(40, true)
+describe('the long carrier', () => {
+  // Each time the carrier goes round, the lock screen's bar is moved to
+  // 0:00 for a moment (onCarrierRound). An hour of silence goes round once a
+  // song, where four seconds of it go round all through one.
+  beforeEach(() => {
+    resetWebKitNowPlaying({
+      createCarrier: () => carrier as unknown as Carrier,
+      silence: (kind) => `blob:${kind}`,
+      now: () => clock,
+      page,
+    })
+  })
 
-    expect([text(0, 4), text(8, 4), text(12, 4), text(36, 4)]).toEqual([
-      'RIFF',
-      'WAVE',
-      'fmt ',
-      'data',
-    ])
-    expect(wav.getUint32(4, true)).toBe(36 + dataBytes)
-    expect(wav.getUint16(20, true)).toBe(1)
-    expect(wav.getUint16(22, true)).toBe(2)
-    expect(wav.getUint32(24, true)).toBe(48_000)
-    expect(wav.getUint16(34, true)).toBe(16)
-    expect(wav.byteLength).toBe(44 + dataBytes)
-    // WebKit shows an audio element as Now Playing past 0.95 s.
-    expect(dataBytes / wav.getUint32(28, true)).toBe(4)
-    expect(new Uint8Array(wav.buffer, 44).every((byte) => byte === 0)).toBe(
-      true,
+  it('plays an hour of silence where the WebView takes FLAC', () => {
+    carrier.flac = 'maybe'
+    showOnWebKit(song())
+
+    expect(carrier.src).toBe('blob:long')
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('plays the short one where it does not', () => {
+    showOnWebKit(song())
+
+    expect(carrier.src).toBe('blob:short')
+  })
+
+  it('gives way to the short one for good when it will not load, and plays on', () => {
+    carrier.flac = 'maybe'
+    showOnWebKit(song())
+    carrier.settle()
+
+    carrier.dispatchEvent(new Event('error'))
+
+    expect(carrier.src).toBe('blob:short')
+    expect(carrier.play).toHaveBeenCalledTimes(2)
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] the long carrier would not load; the short one goes round every few seconds',
     )
+    showOnWebKit(null)
+    showOnWebKit(song())
+    expect(carrier.src).toBe('blob:short')
+  })
+
+  it('leaves a paused song paused as it gives way', () => {
+    carrier.flac = 'maybe'
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+
+    carrier.dispatchEvent(new Event('error'))
+
+    expect(carrier.src).toBe('blob:short')
+    expect(carrier.play).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -297,9 +297,19 @@ export interface StemMixerAudioController {
    * Returns the milliseconds the fade needs before the clock may stop.
    */
   prepareToSuspend: () => number
+  /**
+   * The milliseconds left of the fade the last stop started (a pause, or
+   * the sources let go): the graph and the clock wait that long.
+   */
+  releaseLeft: () => number
   handleStop: () => void
   handleRestart: () => void
   seekTo: (time: number) => void
+  /**
+   * Seconds into the song by the audio clock this instant: `elapsed` moves
+   * with the frames, and behind another app once a second.
+   */
+  positionNow: () => number
   speed: Accessor<number>
   setSpeed: (speed: number) => void
 
@@ -333,6 +343,7 @@ export interface StemMixerAudioController {
    * Take the mixer's own nodes off the context and forget it, without
    * closing it: the way out for a mixer on a lent context. The next
    * `ensureAudioCtx` builds a fresh graph on whatever the lease lends.
+   * A fade still running is cut off with the nodes: wait `releaseLeft()`.
    */
   detachGraph: () => void
 }
@@ -1819,6 +1830,8 @@ export const useStemMixerAudioController = (
   // song pauses with its own fade first, and the clock waits for it
   // (packages/audio-io, prepareToSuspend). A fade already running, a pause
   // pressed just before or this one asked twice, gets the rest of its time.
+  const releaseLeft = (): number => Math.max(0, releaseUntil - Date.now())
+
   const prepareToSuspend = (): number => {
     if (playing()) {
       reportPlayback('suspend-fade', {
@@ -1826,7 +1839,7 @@ export const useStemMixerAudioController = (
       })
       handlePause()
     }
-    return Math.max(0, releaseUntil - Date.now())
+    return releaseLeft()
   }
 
   const handleStop = () => {
@@ -1892,6 +1905,11 @@ export const useStemMixerAudioController = (
     canvas.drawMidiCanvas()
     canvas.drawLiveWaveform()
     handlePlay()
+  }
+
+  const positionNow = (): number => {
+    catchUpClocks()
+    return playing() ? elapsed() : pauseOffset
   }
 
   const seekTo = (time: number) => {
@@ -2306,6 +2324,8 @@ export const useStemMixerAudioController = (
     handlePlay,
     handlePause,
     prepareToSuspend,
+    releaseLeft,
+    positionNow,
     handleStop,
     handleRestart,
     seekTo,

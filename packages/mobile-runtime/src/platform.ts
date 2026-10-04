@@ -41,7 +41,7 @@ import { artworkDataUrl } from './artwork-data'
 import type { Unsubscribe } from './native-calls'
 import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-calls'
 import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
-import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 export type { Unsubscribe } from './native-calls'
 export type { PictureInPictureLyrics } from './picture-in-picture'
@@ -196,10 +196,18 @@ export interface MediaSeek {
 }
 
 /**
- * What the system's media controls ask of a song: a button (the
- * notification, the lock screen, a headset), or a seek.
+ * iOS: the lock screen's skip back or forward, which it draws as 10 s, from
+ * wherever the song is now. Negative goes back.
  */
-export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek
+export interface MediaSkip {
+  readonly skipBy: number
+}
+
+/**
+ * What the system's media controls ask of a song: a button (the
+ * notification, the lock screen, a headset), a seek, or a skip.
+ */
+export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek | MediaSkip
 
 /**
  * What is registered, in the plugin's names, which are the Media Session
@@ -210,23 +218,48 @@ export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek
  */
 const MEDIA_ACTIONS = ['play', 'pause', 'stop', 'seekto'] as const
 
-type RegisteredAction = (typeof MEDIA_ACTIONS)[number]
+/**
+ * iOS adds the skips its lock screen and Control Center already draw.
+ * Unregistered, WebKit hands them to the carrier, which skips its own
+ * silence and leaves the song where it was. Android leaves them out: its
+ * notification would grow two buttons nobody asked for.
+ */
+const WEBKIT_ACTIONS = [
+  ...MEDIA_ACTIONS,
+  'seekbackward',
+  'seekforward',
+] as const
 
-/** What a platform reports with an action: its name, and a seek's target. */
+type RegisteredAction = (typeof WEBKIT_ACTIONS)[number]
+
+/** How far a skip goes when the press does not say: the lock screen's 10 s. */
+const SKIP_SECONDS = 10
+
+/** What a platform reports with an action: its name, a seek's target, a skip's length. */
 interface ActionDetails {
   readonly action?: unknown
   readonly seekTime?: unknown
+  readonly seekOffset?: unknown
 }
 
 /**
  * An action as the handler hears it. A seek carries where the bar was let go
  * (`seekTime`, in seconds on both platforms), and one with no usable place
- * in it is no seek at all.
+ * in it is no seek at all. A skip carries how far (`seekOffset`), or goes
+ * the lock screen's 10 s.
  */
 function heard(
   action: RegisteredAction,
   details: ActionDetails | null | undefined,
 ): MediaAction | null {
+  if (action === 'seekbackward' || action === 'seekforward') {
+    const offset = details?.seekOffset
+    const seconds =
+      typeof offset === 'number' && Number.isFinite(offset) && offset > 0
+        ? offset
+        : SKIP_SECONDS
+    return { skipBy: action === 'seekforward' ? seconds : -seconds }
+  }
   if (action !== 'seekto') return action
   const seconds = details?.seekTime
   return typeof seconds === 'number' && Number.isFinite(seconds)
@@ -380,7 +413,9 @@ async function showThroughWebKit(song: NowPlaying | null): Promise<void> {
  * handler given here. On iOS the buttons reach WebKit's media session
  * instead, and with them the system pausing the song for another app or a
  * call (see webkit-now-playing.ts); the lyrics window's play and pause come
- * from the app's own plugin.
+ * from the app's own plugin. A play from either takes the sound before the
+ * handler hears it, and one that cannot is never heard: the song stays
+ * paused rather than play in silence under another app (`takeTheSound`).
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
@@ -396,10 +431,20 @@ export function onMediaAction(
   }
 
   if (isIos()) {
-    const fromWebKit = webKitNowPlayingAvailable()
-      ? listenOnWebKit(MEDIA_ACTIONS, deliver)
+    const withWebKit = webKitNowPlayingAvailable()
+    const fromWebKit = withWebKit
+      ? listenOnWebKit(WEBKIT_ACTIONS, deliver)
       : () => undefined
-    const fromTheWindow = listenToTheWindow(handler)
+    const fromTheWindow = listenToTheWindow((action, press) => {
+      if (
+        action === 'play' &&
+        withWebKit &&
+        !takeTheSound({ otherAudio: press.otherAudio })
+      ) {
+        return
+      }
+      handler(action)
+    })
     return () => {
       fromWebKit()
       fromTheWindow()
@@ -464,6 +509,15 @@ export function onNowPlayingHoldsAudio(
 export function claimNowPlaying(): void {
   if (!isIos() || !webKitNowPlayingAvailable()) return
   claimCarrier()
+}
+
+/**
+ * Whether the microphone coming on takes the sound from another app, as a
+ * song starting does: on iOS, where WebKit's session for recording never
+ * mixes. Android's microphone leaves another app's sound alone.
+ */
+export function micStopsOtherApps(): boolean {
+  return isIos()
 }
 
 /**

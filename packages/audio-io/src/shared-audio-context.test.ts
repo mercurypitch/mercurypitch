@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { acquireSharedAudioContext, cancelSharedAudioContextSuspension, holdSharedAudioContextInBackground, resetSharedAudioContext, resumeSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
+import { acquireSharedAudioContext, cancelSharedAudioContextSuspension, holdSharedAudioContextInBackground, RELEASE_GRACE_MS, resetSharedAudioContext, resumeSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
 
 class FakeAudioContext {
   state = 'suspended'
@@ -366,20 +366,52 @@ describe('the shared audio context', () => {
   })
 
   it('parks the clock when the last lease goes, and never closes it', async () => {
+    vi.useFakeTimers()
     const { built } = useFakeContexts()
     const output = acquireSharedAudioContext('asset-output')
     const tuner = acquireSharedAudioContext('tap-tuner')
     await output.unlock()
 
     tuner.release()
-    await settle()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
     expect(built[0].state).toBe('running')
 
     output.release()
-    await settle()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
     expect(built[0].state).toBe('suspended')
     expect(built[0].closeCount).toBe(0)
     expect(sharedAudioContextOwners()).toEqual([])
+  })
+
+  it('lets a fade on the way out play to its end before the clock parks', async () => {
+    // A song left while it plays fades for 50 ms and stops after: a clock
+    // suspended at once cuts it mid-note, which clicks.
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const room = acquireSharedAudioContext('karaoke-room')
+    await room.unlock()
+
+    room.release()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS - 1)
+    expect(built[0].state).toBe('running')
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(built[0].state).toBe('suspended')
+  })
+
+  it('leaves the clock to a lease taken while the last one let go', async () => {
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const room = acquireSharedAudioContext('karaoke-room')
+    await room.unlock()
+
+    room.release()
+    const next = acquireSharedAudioContext('home-preview')
+    next.ensure()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
+
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
   })
 
   it('gives a re-acquiring lane the same context back', async () => {
@@ -426,13 +458,14 @@ describe('the shared audio context', () => {
   })
 
   it('ignores a double release', async () => {
+    vi.useFakeTimers()
     const { built } = useFakeContexts()
     const lease = acquireSharedAudioContext('tap-driver')
     await lease.unlock()
 
     lease.release()
     lease.release()
-    await settle()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
 
     expect(built[0].suspendCount).toBe(1)
     expect(sharedAudioContextOwners()).toEqual([])

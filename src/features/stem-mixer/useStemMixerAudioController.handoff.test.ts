@@ -448,4 +448,19 @@ describe('the clock about to stop', () => {
     expect(recorded('suspend-fade')).toHaveLength(0)
     dispose()
   })
+
+  it('says what is left of a fade without starting one', () => {
+    // The room's mixer going away waits for it before it lets the graph go.
+    const { controller, dispose } = harness()
+    controller.handlePlay()
+    expect(controller.releaseLeft()).toBe(0)
+    controller.handlePause()
+    vi.advanceTimersByTime(30)
+
+    expect(controller.releaseLeft()).toBe(50)
+    vi.advanceTimersByTime(50)
+    expect(controller.releaseLeft()).toBe(0)
+    expect(recorded('suspend-fade')).toHaveLength(0)
+    dispose()
+  })
 })

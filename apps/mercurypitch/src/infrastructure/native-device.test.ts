@@ -28,6 +28,7 @@ const platform = vi.hoisted(() => ({
     vi.fn(),
   ),
   claimNowPlaying: vi.fn(),
+  micStopsOtherApps: vi.fn(() => false),
 }))
 
 const unlock = vi.hoisted(() => ({
@@ -158,6 +159,12 @@ describe('the device a room reaches through the bridge', () => {
       new URL(`../../native-only/${path}`, import.meta.url),
     )
     expect(existsSync(file)).toBe(true)
+  })
+
+  it('says whether the microphone takes the sound from other apps', () => {
+    expect(createNativeDevice().micStopsOtherApps).toBe(false)
+    platform.micStopsOtherApps.mockReturnValueOnce(true)
+    expect(createNativeDevice().micStopsOtherApps).toBe(true)
   })
 
   it('passes the system media buttons through, with their unsubscribe', () => {

@@ -150,7 +150,12 @@ These are rules for this feature and anything built on it later.
 - The iOS Now Playing report (`setNowPlaying`) also sends the clock to the
   plugin, so the window and the lock screen run from one report.
 - The window's play and pause arrive as `pictureInPictureAction` and go to
-  the `onMediaAction` handlers, as a lock-screen press does.
+  the `onMediaAction` handlers, as a lock-screen press does. Each carries
+  when it was pressed (`at`) and whether another app's sound was playing
+  (`otherAudio`). One older than 3 s waited for the app to run again and is
+  dropped. A play takes the sound first (`takeTheSound`, see
+  [ios-audio-handoff.md](ios-audio-handoff.md)), and is dropped when it
+  cannot.
 - Native log lines arrive as `pictureInPictureLog` and are written with
   `console.info('[lyrics window] ...')`, so they show in the in-app console.
 
@@ -183,6 +188,9 @@ These are rules for this feature and anything built on it later.
 - `apps/mercurypitch/src/ios-lyrics-window.test.ts` reads the wiring off the
   sources: the registration, the names on both sides of the bridge, the
   Xcode project, and the App Review rule that nothing starts the window.
+- The window's play and pause do not turn its clock: the report that
+  follows does. Turned at once, a play that could not take the sound from
+  the app in front ran the lyrics on in silence (build 539).
 - `timeRangeForPlayback` is always finite: the song's length, or one hour
   while it is unknown (an infinite range has cost 100% CPU since iOS 16.1).
   `requiresLinearPlayback` is on, so the window has no skip buttons.
@@ -206,7 +214,8 @@ Native sends it as an event; the page writes it.
 - `isPictureInPicturePossible` changing;
 - will start, did start, failed to start (domain, code, message), the retry,
   will stop, did stop, restore to the app;
-- play and pause pressed in the window;
+- play and pause pressed in the window, and on the page, a press dropped
+  because it waited while the app slept;
 - the audio session when arming and when the window opens: category, mode,
   options, other audio playing, output route;
 - renderer trouble: no pixel buffer, no sample buffer, the layer failed

@@ -38,7 +38,11 @@
 //   COMING BACK (owner, 2 Oct). A microphone the singer had on when they
 //   left comes back on when they do, for a run still going. Never behind
 //   another app, and never in the small window: nobody sings at the room
-//   from there.
+//   from there. On iOS the microphone coming on takes the sound from any
+//   other app, as a song starting does (owner, 4 Oct), so there it comes
+//   back with the song: at once for a song playing as the singer returns,
+//   and with the next press of play for a paused one. Whatever they were
+//   listening to meanwhile plays on until then.
 //
 //   IN A SMALL WINDOW (Android). With "Show lyrics in a small window" on,
 //   the default, a singer who leaves the app while a song plays keeps the
@@ -482,6 +486,9 @@ export const KaraokeRoomStage: Component = () => {
     restoreTimer = setTimeout(() => {
       restoreTimer = undefined
       if (document.visibilityState === 'hidden' || inWindow()) return
+      // iOS: it would stop whatever the singer was listening to meanwhile.
+      // It waits for the song instead (see the effect below).
+      if (device?.micStopsOtherApps === true && !isPlaying()) return
       micToRestore = false
       const controls = mixer()
       if (controls !== null && runOn()) controls.resumeMic()
@@ -489,6 +496,22 @@ export const KaraokeRoomStage: Component = () => {
   }
   onCleanup(() => {
     clearTimeout(restoreTimer)
+  })
+  // A microphone kept for the song comes back as the song plays, whichever
+  // way play was pressed.
+  createEffect(
+    on(
+      isPlaying,
+      (playing) => {
+        if (playing) restoreMicSoon()
+      },
+      { defer: true },
+    ),
+  )
+  // Turned on by hand meanwhile, the microphone needs no putting back, and
+  // one the singer then turns off again stays off.
+  createEffect(() => {
+    if (mixer()?.micOn() === true) micToRestore = false
   })
   // The small window (see IN A SMALL WINDOW). What is open over the stage
   // closes as it opens: nobody can tap a sheet in there, and coming back
@@ -618,9 +641,18 @@ export const KaraokeRoomStage: Component = () => {
 
   // The notification's buttons, the lock screen's and a headset's. Each
   // checks the song first: play on a playing song would start it over from
-  // where it was last paused.
+  // where it was last paused. A skip (iOS's 10 s back and forward) counts
+  // from where the song is by the audio clock, which behind the app is
+  // ahead of the last tick.
   const onMediaButton = (action: NativeMediaAction): void => {
     if (typeof action === 'object') {
+      if ('skipBy' in action) {
+        const controls = mixer()
+        if (controls !== null) {
+          seekFromSystem(controls.positionNow() + action.skipBy)
+        }
+        return
+      }
       seekFromSystem(action.seekTo)
     } else if (action === 'play') {
       if (!isPlaying()) resume()

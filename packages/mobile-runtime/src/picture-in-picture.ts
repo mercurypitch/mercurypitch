@@ -56,7 +56,13 @@ interface PictureInPicturePlugin {
   ): Promise<PluginListenerHandle>
   addListener(
     eventName: 'pictureInPictureAction',
-    listener: (event: { action?: unknown }) => void,
+    listener: (event: {
+      action?: unknown
+      /** iOS: when it was pressed, in ms since 1970. */
+      at?: unknown
+      /** iOS: whether another app's sound was playing as it was pressed. */
+      otherAudio?: unknown
+    }) => void,
   ): Promise<PluginListenerHandle>
   addListener(
     eventName: 'pictureInPictureLog' | 'audioSessionLog',
@@ -188,9 +194,22 @@ export function tellTheWindowTheClock(song: WindowClockReport): void {
   })
 }
 
+/** What iOS said as the window's button was pressed. */
+export interface WindowPress {
+  /** Another app's sound was playing. */
+  readonly otherAudio: boolean
+}
+
+/**
+ * A press older than this waited for the page: iOS froze the app behind
+ * the other one, and the press runs as it comes back. Dropped, it cannot
+ * start the song long after it was pressed.
+ */
+export const WINDOW_PRESS_STALE_MS = 3000
+
 /** iOS: the window's own play and pause, as the media handlers hear them. */
 export function listenToTheWindow(
-  handler: (action: 'play' | 'pause') => void,
+  handler: (action: 'play' | 'pause', press: WindowPress) => void,
 ): Unsubscribe {
   return lazyListener((dispose) => {
     void (async () => {
@@ -199,9 +218,16 @@ export function listenToTheWindow(
           await pictureInPicture().addListener(
             'pictureInPictureAction',
             (event) => {
-              if (event.action === 'play' || event.action === 'pause') {
-                handler(event.action)
+              if (event.action !== 'play' && event.action !== 'pause') return
+              const waited =
+                typeof event.at === 'number' ? Date.now() - event.at : 0
+              if (waited > WINDOW_PRESS_STALE_MS) {
+                console.info(
+                  `[lyrics window] ${event.action} waited ${Math.round(waited / 1000)} s while the app slept: dropped`,
+                )
+                return
               }
+              handler(event.action, { otherAudio: event.otherAudio === true })
             },
           ),
         )

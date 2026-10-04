@@ -2076,6 +2076,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       loading: audio.loading,
       loadError: audio.loadError,
       elapsed: audio.elapsed,
+      positionNow: () => audio.positionNow(),
       audibleElapsed: audio.audibleElapsed,
       jumps: audio.jumps,
       speed: audio.speed,
@@ -2328,9 +2329,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       delete smWin.__smResizeEnd
     }
     // A lent context is the room's, and closing it would cost a gesture to
-    // get back (REQ-NRM-038): the mixer takes its own nodes off it instead.
+    // get back (REQ-NRM-038): the mixer takes its own nodes off it instead,
+    // once the fade disconnectSources started has played out. Taken off at
+    // once, a song left while it played stops mid-note: a click.
     if (hosted !== undefined) {
-      audio.detachGraph()
+      const fading = audio.releaseLeft()
+      if (fading > 0) {
+        setTimeout(audio.detachGraph, fading)
+      } else {
+        audio.detachGraph()
+      }
       return
     }
     const ctx = audio.getAudioCtx()

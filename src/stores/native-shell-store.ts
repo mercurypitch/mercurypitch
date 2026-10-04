@@ -269,12 +269,30 @@ export interface NativeMediaSeek {
 }
 
 /**
- * What the system's media controls ask: a press (the notification, the lock
- * screen, a headset), or a seek.
+ * iOS: the lock screen's skip back or forward, from wherever the song is
+ * now. Seconds; negative goes back.
  */
-export type NativeMediaAction = 'play' | 'pause' | 'stop' | NativeMediaSeek
+export interface NativeMediaSkip {
+  readonly skipBy: number
+}
+
+/**
+ * What the system's media controls ask: a press (the notification, the lock
+ * screen, a headset), a seek, or a skip.
+ */
+export type NativeMediaAction =
+  | 'play'
+  | 'pause'
+  | 'stop'
+  | NativeMediaSeek
+  | NativeMediaSkip
 
 export interface NativeDeviceApi {
+  /**
+   * Whether the microphone coming on takes the sound from another app, as
+   * a song starting does (iOS). Not on Android.
+   */
+  micStopsOtherApps: boolean
   /** A lease on the one shared AudioContext, under the owner's name. */
   acquireAudio: (
     owner: string,

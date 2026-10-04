@@ -46,13 +46,31 @@
 // While the app is in front, WebKit keeps Now Playing out of Control Center
 // (`allowsNowPlayingControlsVisibility` is false for a visible page). The
 // lock screen, and Control Center over another app, show it.
+//
+// A paused song lets the app sleep, and iOS suspends it a while later. The
+// lock screen still shows the song, but a press there waits until the app
+// next runs, and arrives then with any others, as the app comes back to the
+// front. A press that waited like that is dropped (waited-presses.ts): it
+// would start the song, or move it, long after it was pressed.
+
+import type { SilenceKind } from './carrier-silence'
+import { silenceBlob } from './carrier-silence'
+import type { PressGuardHost } from './waited-presses'
+import { guardPresses } from './waited-presses'
 
 /** The buttons the room answers, in the Media Session API's names. */
-export type WebKitAction = 'play' | 'pause' | 'stop' | 'seekto'
+export type WebKitAction =
+  | 'play'
+  | 'pause'
+  | 'stop'
+  | 'seekto'
+  | 'seekbackward'
+  | 'seekforward'
 
-/** What a press carries: a seek's place, in seconds. */
+/** What a press carries: a seek's place, or a skip's length, in seconds. */
 export interface WebKitActionDetails {
   readonly seekTime?: unknown
+  readonly seekOffset?: unknown
 }
 
 /** A song as the lock screen shows it, clamped by the caller. */
@@ -86,6 +104,7 @@ export type Carrier = Pick<
   | 'play'
   | 'pause'
   | 'load'
+  | 'canPlayType'
   | 'hasAttribute'
   | 'removeAttribute'
   | 'addEventListener'
@@ -100,55 +119,21 @@ export interface WebKitNowPlayingOptions {
   /** Test seam. Production makes a detached `<audio>` element. */
   readonly createCarrier?: () => Carrier
   /** Test seam. Production makes a blob: URL of generated silence. */
-  readonly silence?: () => string
+  readonly silence?: (kind: SilenceKind) => string
   /** Test seam. Production reads `performance.now()`. */
   readonly now?: () => number
 }
 
-/**
- * Seconds of silence the carrier loops: past WebKit's 0.95 s, and long
- * enough that it goes round seldom (see `onCarrierRound`).
- */
-const CARRIER_SECONDS = 4
-
-/**
- * The iPhone's own output rate, in stereo, 16-bit. unmute.js, which plays
- * silence beside Web Audio for the same reason, warns that silence of a lower
- * quality can drag Web Audio's output down with it on iOS.
- */
-const CARRIER_SAMPLE_RATE = 48_000
-const CARRIER_CHANNELS = 2
-
-/** A 16-bit PCM WAV file of silence, `seconds` long. */
-export function silentWav(seconds: number, sampleRate: number): ArrayBuffer {
-  const blockAlign = CARRIER_CHANNELS * 2
-  const dataBytes = Math.round(seconds * sampleRate) * blockAlign
-  const wav = new DataView(new ArrayBuffer(44 + dataBytes))
-  const text = (at: number, value: string): void => {
-    for (let i = 0; i < value.length; i += 1) {
-      wav.setUint8(at + i, value.charCodeAt(i))
-    }
-  }
-  text(0, 'RIFF')
-  wav.setUint32(4, 36 + dataBytes, true)
-  text(8, 'WAVE')
-  text(12, 'fmt ')
-  wav.setUint32(16, 16, true)
-  wav.setUint16(20, 1, true)
-  wav.setUint16(22, CARRIER_CHANNELS, true)
-  wav.setUint32(24, sampleRate, true)
-  wav.setUint32(28, sampleRate * blockAlign, true)
-  wav.setUint16(32, blockAlign, true)
-  wav.setUint16(34, 16, true)
-  text(36, 'data')
-  wav.setUint32(40, dataBytes, true)
-  // The samples are the buffer's own zeros.
-  return wav.buffer
-}
-
 let options: WebKitNowPlayingOptions = {}
 let carrier: Carrier | null = null
-let silenceUrl: string | null = null
+const silenceUrls = new Map<SilenceKind, string>()
+
+/**
+ * Which silence the carrier has: long once it is known the WebView plays
+ * it, and short for good once it would not load (`onCarrierError`).
+ */
+let carrierKind: SilenceKind = 'short'
+let longRefused = false
 
 /**
  * What the song last asked of the carrier. The carrier's own pause and play
@@ -258,7 +243,30 @@ function watchThePage(): void {
       pageShownAt = now()
     }
     pageSeen = page.visibilityState
+    presses.follow()
   })
+}
+
+// Presses that waited while the app slept (waited-presses.ts).
+const pressHost: PressGuardHost = {
+  hidden: () => thePage()?.visibilityState === 'hidden',
+  songShown: () => shown !== null,
+}
+let presses = guardPresses(pressHost)
+
+type Deliver = (action: WebKitAction, details: WebKitActionDetails) => void
+
+/**
+ * Play takes the sound first (`takeTheSound`), and stays unheard when the
+ * sound stays with another app: the song does not start in silence.
+ */
+function carryOut(
+  action: WebKitAction,
+  details: WebKitActionDetails,
+  deliver: Deliver,
+): void {
+  if (action === 'play' && !takeTheSound()) return
+  deliver(action, details)
 }
 
 /**
@@ -285,12 +293,31 @@ function onCarrierPlaying(): void {
 /**
  * The carrier going round. WebKit answers every seek of the element, a loop
  * included, by moving the session's place to the element's own
- * (MediaElementSession::clientCharacteristicsChanged), which would send the
- * lock screen's bar back to 0:00 every few seconds. The song's place goes
- * straight back.
+ * (MediaElementSession::clientCharacteristicsChanged), and tells the lock
+ * screen so before this puts the song's place back. Most of the time the
+ * second word lands; now and then the lock screen keeps the first, and its
+ * bar runs on from 0:00 while the song plays where it is. The long carrier
+ * goes round once an hour of singing, the short one every four seconds.
  */
 function onCarrierRound(): void {
   placeBar(placeNow())
+}
+
+/**
+ * A carrier this WebView would not load: the long silence gives way to the
+ * short one, which every WebView with a media element plays, for the rest
+ * of the session, and the carrier plays on if the song does.
+ */
+function onCarrierError(): void {
+  const element = carrier
+  if (element === null || carrierKind !== 'long') return
+  console.info(
+    '[now playing] the long carrier would not load; the short one goes round every few seconds',
+  )
+  longRefused = true
+  carrierKind = 'short'
+  element.src = silence('short')
+  if (wanted === 'playing') playCarrier(element)
 }
 
 function theCarrier(): Carrier {
@@ -304,6 +331,7 @@ function theCarrier(): Carrier {
   made.addEventListener('play', onCarrierPlay)
   made.addEventListener('playing', onCarrierPlaying)
   made.addEventListener('seeked', onCarrierRound)
+  made.addEventListener('error', onCarrierError)
   carrier = made
   watchThePage()
   return made
@@ -323,15 +351,24 @@ function playCarrier(element: Carrier): void {
   })
 }
 
-function silence(): string {
-  silenceUrl ??=
-    options.silence?.() ??
-    URL.createObjectURL(
-      new Blob([silentWav(CARRIER_SECONDS, CARRIER_SAMPLE_RATE)], {
-        type: 'audio/wav',
-      }),
-    )
-  return silenceUrl
+function silence(kind: SilenceKind): string {
+  const made = silenceUrls.get(kind)
+  if (made !== undefined) return made
+  const url = options.silence?.(kind) ?? URL.createObjectURL(silenceBlob(kind))
+  silenceUrls.set(kind, url)
+  return url
+}
+
+/** The silence for a carrier about to be given one: long where it can be. */
+function silenceFor(element: Carrier): string {
+  let flac = ''
+  try {
+    flac = element.canPlayType('audio/flac')
+  } catch {
+    // A media element that cannot say plays the short silence.
+  }
+  carrierKind = !longRefused && flac !== '' ? 'long' : 'short'
+  return silence(carrierKind)
 }
 
 /** Where the song is now: the last report, run on at its speed. */
@@ -361,6 +398,7 @@ function putAway(session: MediaSession): void {
   systemPaused = false
   shown = null
   named = null
+  presses.follow()
   session.metadata = null
   session.playbackState = 'none'
   try {
@@ -415,7 +453,11 @@ export function showOnWebKit(song: WebKitSong | null): void {
   wanted = song.playing ? 'playing' : 'paused'
   session.playbackState = wanted
   placeBar(song.position)
+  console.info(
+    `[now playing] bar at ${song.position.toFixed(1)} s of ${song.duration.toFixed(1)}, ${wanted}`,
+  )
   const element = theCarrier()
+  presses.follow()
   if (!song.playing) {
     if (song.interrupted === true && element.paused) {
       // The song heard the interruption before the carrier's pause event
@@ -431,7 +473,7 @@ export function showOnWebKit(song: WebKitSong | null): void {
   }
   // The song plays by its own word now; no pause of the system's is left to undo.
   systemPaused = false
-  if (!element.hasAttribute('src')) element.src = silence()
+  if (!element.hasAttribute('src')) element.src = silenceFor(element)
   if (element.paused) playCarrier(element)
 }
 
@@ -455,33 +497,135 @@ export function claimCarrier(): void {
   playCarrier(element)
 }
 
+/** WebKit's audio session for the page (Safari 16.4), where there is one. */
+interface PageAudioSession {
+  type: string
+  readonly state?: string
+}
+
+function pageAudioSession(): PageAudioSession | null {
+  const found = (navigator as { audioSession?: PageAudioSession }).audioSession
+  return found !== undefined && typeof found.type === 'string' ? found : null
+}
+
+/**
+ * Ask WebKit for a playback session that does not mix, for the moment a
+ * carrier starts, and hand back what puts the page's own word back.
+ *
+ * After another app took the sound, WebKit's session is ambient, and it
+ * activates that before it changes it to playback for the carrier: ambient
+ * mixes, so the other app plays on, and the silent switch mutes the song.
+ * Asked for, playback is what activates, and iOS either lets the app take
+ * the sound, or refuses, which leaves the carrier paused.
+ * Left asked for, it would make Web Audio a Now Playing item of its own,
+ * whose buttons pause the clock instead of reaching the room (see the
+ * header), so it goes back at once.
+ */
+function askForPlayback(): (() => void) | null {
+  const audioSession = pageAudioSession()
+  if (audioSession === null) return null
+  const before = audioSession.type
+  try {
+    audioSession.type = 'playback'
+  } catch {
+    return null
+  }
+  return () => {
+    try {
+      audioSession.type = before
+    } catch {
+      // Left as it is: WebKit drops it for a page that goes away.
+    }
+  }
+}
+
+export interface TakeTheSoundOptions {
+  /** iOS's word, at the press, that another app's sound is playing. */
+  readonly otherAudio?: boolean
+}
+
+/**
+ * A press of play from the lock screen, Control Center, a headset or the
+ * small window, before the song hears it: the carrier takes the sound
+ * first, and false says another app's sound kept it, so the song stays
+ * paused rather than play in silence under that app. A carrier refused
+ * with no other app's sound playing lets the press go on as it always did:
+ * the song plays, and the next report tries the carrier again.
+ *
+ * With the app behind another one, and that app's sound playing (the window
+ * says so, or the system paused the song for it), the carrier asks for a
+ * session that does not mix (`askForPlayback`). WebKit starts an element
+ * inside play() itself, so a carrier still paused afterwards was refused.
+ *
+ * True with no song on the lock screen, or a carrier already playing: the
+ * press goes on as it always did.
+ */
+export function takeTheSound(choice: TakeTheSoundOptions = {}): boolean {
+  const element = carrier
+  if (element === null || !element.hasAttribute('src') || !element.paused) {
+    return true
+  }
+  const behind = thePage()?.visibilityState === 'hidden'
+  const othersPlaying = choice.otherAudio === true || systemPaused
+  const wantedBefore = wanted
+  const systemPausedBefore = systemPaused
+  const sessionBefore = pageAudioSession()?.state
+  const giveBack = behind && othersPlaying ? askForPlayback() : null
+  try {
+    claimCarrier()
+  } finally {
+    giveBack?.()
+  }
+  const sessionAfter = pageAudioSession()?.state
+  const sessions =
+    sessionBefore === undefined
+      ? ''
+      : ` (session ${sessionBefore}, then ${sessionAfter ?? 'unknown'})`
+  if (!element.paused) {
+    if (giveBack !== null) {
+      console.info(
+        `[now playing] play from behind the app took the sound from another app${sessions}`,
+      )
+    }
+    return true
+  }
+  // Refused with no other app's sound in the way (playCarrier logs why).
+  if (!othersPlaying) return true
+  wanted = wantedBefore
+  systemPaused = systemPausedBefore
+  console.info(
+    `[now playing] play pressed, but another app keeps the sound: the song stays paused${sessions}`,
+  )
+  return false
+}
+
 /**
  * Hear the lock screen's buttons, Control Center's and a headset's, and what
  * the system does to the carrier, all through `deliver`. A button WebKit
  * does not know is skipped; the others still register. The unsubscribe
  * clears what this call registered, unless a newer listener has taken over.
  *
- * Play pressed while the song plays and the carrier does not (its play was
- * refused) plays the carrier again. The lock screen shows that song paused,
- * and the room, already playing, has nothing new to report.
+ * A press that may have waited while the app slept goes through
+ * the guard first (waited-presses.ts). Play takes the sound before it is heard
+ * (`takeTheSound`): pressed while the song plays and the carrier does not
+ * (its play was refused), it plays the carrier again, and the room, already
+ * playing, has nothing new to report.
  */
 export function listenOnWebKit(
   actions: readonly WebKitAction[],
-  deliver: (action: WebKitAction, details: WebKitActionDetails) => void,
+  deliver: Deliver,
 ): () => void {
   const session = navigator.mediaSession
   const registered: WebKitAction[] = []
   for (const action of actions) {
     try {
       session.setActionHandler(action, (details) => {
-        if (
-          action === 'play' &&
-          wanted === 'playing' &&
-          carrier?.paused === true
-        ) {
-          playCarrier(carrier)
-        }
-        deliver(action, details)
+        presses.hear({
+          action,
+          carryOut: () => {
+            carryOut(action, details, deliver)
+          },
+        })
       })
       registered.push(action)
     } catch {
@@ -532,7 +676,11 @@ export function resetWebKitNowPlaying(
 ): void {
   options = next
   carrier = null
-  silenceUrl = null
+  silenceUrls.clear()
+  carrierKind = 'short'
+  longRefused = false
+  presses.stop()
+  presses = guardPresses(pressHost)
   wanted = 'none'
   shown = null
   shownAt = 0

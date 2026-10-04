@@ -67,7 +67,10 @@ export interface SharedAudioLease {
   ensure(): AudioContext | null
   /** ensure() and resume(), from inside the gesture. False when unavailable. */
   unlock(): Promise<boolean>
-  /** Drop the claim. Safe to call twice; the last one out suspends the clock. */
+  /**
+   * Drop the claim. Safe to call twice; the last one out suspends the clock,
+   * RELEASE_GRACE_MS later, unless another lease has taken it by then.
+   */
   release(): void
 }
 
@@ -112,6 +115,13 @@ function cancelPendingSuspension(): void {
   suspendDeadline = 0
 }
 
+/**
+ * How long the last lease out leaves the clock running: a fade its owner
+ * started on the way out (a song left while it played, 50 ms and the stop
+ * after it) plays to the end. Stopped mid-fade, the sound clicks.
+ */
+export const RELEASE_GRACE_MS = 120
+
 function requestSuspension(audioContext: AudioContext): void {
   let grace = 0
   // A callback can release its own lease; don't iterate a live ownership map.
@@ -125,6 +135,19 @@ function requestSuspension(audioContext: AudioContext): void {
     }
   }
   if (audioContext.state !== 'running') return
+  parkAfter(audioContext, grace)
+}
+
+/**
+ * Suspend the clock `grace` ms from now, or at once for none. A park the
+ * last release asked for (`ownerless`) leaves the clock to a lease taken
+ * meanwhile.
+ */
+function parkAfter(
+  audioContext: AudioContext,
+  grace: number,
+  ownerless = false,
+): void {
   const deadline = Date.now() + grace
   // Repeated native/page events must never prolong a release already underway.
   if (suspendTimer !== undefined && suspendDeadline <= deadline) return
@@ -134,6 +157,7 @@ function requestSuspension(audioContext: AudioContext): void {
     if (generation !== suspendGeneration || context !== audioContext) return
     suspendTimer = undefined
     suspendDeadline = 0
+    if (ownerless && owners.size > 0) return
     if (audioContext.state !== 'running') return
     try {
       void Promise.resolve(audioContext.suspend()).catch(() => undefined)
@@ -282,16 +306,12 @@ export function acquireSharedAudioContext(
       owners.delete(token)
       // The context outlives every lease — closing it would cost a gesture to
       // get back. Park the clock instead, so a forgotten oscillator cannot
-      // keep the output stream alive between screens.
+      // keep the output stream alive between screens, a moment later, so a
+      // fade on the way out is not cut short (RELEASE_GRACE_MS).
       const audioContext = context
       if (owners.size > 0 || audioContext === undefined) return
       if (audioContext.state !== 'running') return
-      cancelPendingSuspension()
-      try {
-        void Promise.resolve(audioContext.suspend()).catch(() => undefined)
-      } catch {
-        // Already suspended, interrupted or closed. Nothing to park.
-      }
+      parkAfter(audioContext, RELEASE_GRACE_MS, true)
     },
   }
 }

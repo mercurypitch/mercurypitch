@@ -117,17 +117,91 @@ What changed:
   an iPhone the page stays the room while the window is open
   (`windowShowsThePage`).
 
+## Build 539
+
+What the phone showed:
+
+1. Our lyrics window open, YouTube or YouTube Music playing: play in our
+   window ran the lyrics on, but the song stayed silent and YouTube played
+   on.
+2. Control Center's and the lock screen's bar now and then jumped to 0:00
+   and ran on from there, while the song played where it was. Leaving the
+   app and coming back put it right.
+3. Locked for a while with the song paused, play on the lock screen did
+   nothing. Opened later, the app was playing the song from somewhere.
+4. The 10 s back and forward buttons did nothing to the song.
+5. Once, a pop leaving Karaoke Night for the rooms.
+6. Coming back to the room with the mic on stopped YouTube, the song paused.
+
+Why:
+
+1. The window turned its own clock to playing on the press, before the page
+   said anything. Behind YouTube, WebKit activates the page's session as
+   ambient before it makes it playback, so the carrier started under a
+   session that mixes: YouTube played on and nobody heard the song.
+2. WebKit moves the session's place to the element's own on every seek of
+   any media element, a loop included
+   (`MediaElementSession::clientCharacteristicsChanged`), and tells the lock
+   screen later, from a task. The four-second carrier went round 15 times a
+   minute, so each round sent 0:00 and then our correction, and now and then
+   the lock screen kept the first.
+3. A paused song lets iOS suspend the app. The press waits in WebKit until
+   the app runs again, and plays the song then.
+4. With no handler for `seekforward` and `seekbackward`, WebKit skips the
+   element it plays: the carrier.
+5. The hosted mixer let its graph go at once on the way out, in the middle
+   of its own fade, and the shared clock parked as soon as the last lease
+   went.
+6. Capture changes WebKit's category: the 2 Oct rule.
+
+What changed:
+
+- The window's play and pause no longer turn its clock: the page's report
+  does. A play from the window, the lock screen or a headset takes the
+  sound first (`takeTheSound`). Behind another app whose sound plays (the
+  window says so with `isOtherAudioPlaying`, or the system paused the song),
+  the page asks WebKit for a `playback` session for the moment the carrier
+  starts (`navigator.audioSession.type`), then gives the page its own type
+  back. A carrier still paused after `play()` was refused, and the press is
+  dropped: the song stays paused, and so does the window.
+- The carrier is an hour of FLAC silence (673 KB, built in about 10 ms)
+  where the WebView takes FLAC, so it goes round once an hour. The
+  four-second WAV stays for a WebView that says no, or will not load it.
+- A press that waited while the app slept is dropped. While the page is
+  hidden with a song on the lock screen it beats once a second; a press
+  after a long gap, or within 1.5 s of one ending, is held 400 ms and
+  dropped if the app comes to the front in that time. The window's presses
+  carry the time they were pressed, and one older than 3 s is dropped.
+- iOS registers `seekforward` and `seekbackward`, and the room skips from
+  where the audio clock is (`positionNow`). Android is unchanged.
+- The hosted mixer waits for its fade (`releaseLeft`) before it lets the
+  graph go, and the shared clock parks 120 ms after the last lease goes
+  (`RELEASE_GRACE_MS`), unless a new lease came in that time.
+- Decided by the owner on 4 Oct: on iOS the mic comes back with the room
+  only while the song plays. A paused song keeps it for the next press of
+  play, so whatever plays meanwhile keeps playing. Android is unchanged.
+
+What iOS still decides: whether an app behind another one may take the
+sound. When it refuses, the press does nothing you can see, and the log
+says so.
+
 ## Where it lives
 
-| File                                                                  | What it does                                                                                     |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `packages/audio-io/src/shared-audio-context.ts`                       | No resume on `statechange`, or for an interrupted context                                        |
-| `src/lib/audio-unlock.ts`                                             | `unlockForPlayback`: the session first, then the clock                                           |
-| `packages/mobile-runtime/src/webkit-now-playing.ts`                   | `claimCarrier`, and a pause the system made                                                      |
-| `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check, the trip home, the fade before a suspend |
-| `src/features/stem-mixer/playback-return-watch.ts`                    | `watchClockMoves`, shared by the start check and the return watch                                |
-| `src/features/karaoke-room/KaraokeRoomStage.tsx`                      | `interrupted` in the Now Playing report, `keepsPlayingHidden`, the lease's `prepareToSuspend`    |
-| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift` | `AudioSessionWatch`: the `[audio session]` log                                                   |
+| File                                                                  | What it does                                                                                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `packages/audio-io/src/shared-audio-context.ts`                       | No resume on `statechange`, or for an interrupted context; parks 120 ms after the last lease                               |
+| `src/lib/audio-unlock.ts`                                             | `unlockForPlayback`: the session first, then the clock                                                                     |
+| `packages/mobile-runtime/src/webkit-now-playing.ts`                   | `claimCarrier`, a pause the system made, `takeTheSound`, which silence the carrier plays                                   |
+| `packages/mobile-runtime/src/carrier-silence.ts`                      | The silence: an hour of FLAC, four seconds of WAV                                                                          |
+| `packages/mobile-runtime/src/waited-presses.ts`                       | Presses that waited while the app slept                                                                                    |
+| `packages/mobile-runtime/src/picture-in-picture.ts`                   | The window's presses: their stamp and `otherAudio`, stale ones dropped                                                     |
+| `packages/mobile-runtime/src/platform.ts`                             | The 10 s skips (`skipBy`), `micStopsOtherApps`                                                                             |
+| `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check, the trip home, the fade before a suspend                           |
+| `src/features/stem-mixer/playback-return-watch.ts`                    | `watchClockMoves`, shared by the start check and the return watch                                                          |
+| `src/features/karaoke-room/KaraokeRoomStage.tsx`                      | `interrupted` in the Now Playing report, `keepsPlayingHidden`, the lease's `prepareToSuspend`, the iOS mic rule, the skips |
+| `src/components/StemMixer.tsx`                                        | The hosted mixer lets its graph go after its fade                                                                          |
+| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift` | `AudioSessionWatch`: the `[audio session]` log; each window press's `at` and `otherAudio`                                  |
+| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`       | The window's play and pause wait for the page's report                                                                     |
 
 ## Reading a device log
 
@@ -137,7 +211,10 @@ The portable console in a TestFlight build has all of it:
   (with `hidden`), `background-resume` (with `hiddenForMs`), `suspend-fade`,
   `clock-stuck` (with `attempt`), `clock-restart`.
 - `[now playing]` lines from the carrier, including "play pressed: the
-  carrier takes the sound first".
+  carrier takes the sound first", where the bar was put on each report, a
+  press dropped because it waited while the app slept, and whether a play
+  from behind the app took the sound
+  ([DEVICE-DEBUGGING.md](../../agent/DEVICE-DEBUGGING.md) lists them).
 - `[audio session]` lines from the app's own session, each with the time
   iOS said it: another app's sound starting and stopping, interruptions,
   route changes, and what played elsewhere as the app came and went. These
@@ -157,6 +234,9 @@ Each with YouTube's picture-in-picture open and the song loaded:
 - Repeat the switch quickly, five times each way: no silent "playing".
 - A call during the song: the song pauses, and comes back on its own when
   the call ends (with background play on).
+- Our window open, YouTube playing, play in our window: the song plays and
+  YouTube stops, or, if iOS refuses, the window stays paused. Never lyrics
+  running in silence.
 
 Without YouTube:
 
@@ -167,12 +247,18 @@ Without YouTube:
 - Background play off, play, swipe home: the song stops without a buzz,
   and coming back is quiet too.
 - Background play off, play, open Control Center: the song pauses.
+- Scrub the bar in Control Center and on the lock screen a dozen times over
+  a few minutes: it never jumps to 0:00.
+- The 10 s buttons move the song 10 s, and stop at its start.
+- Pause, lock the phone for ten minutes, press play: it plays, or nothing
+  happens; opening the app later never finds the song playing on its own.
+- Mic on, pause, leave, play YouTube, come back: YouTube keeps playing until
+  play; then the song plays and the mic comes back.
 
 ## Open
 
-- With the mic on, coming back to the room reopens the mic after 500 ms,
-  and capture changes WebKit's category, which silences YouTube even when
-  the song is paused. Waiting for play would break the 2 Oct rule that a
-  song paused on the way out comes back to an open mic. The owner decides.
+- Whether iOS lets a play from behind the app take the sound from the app
+  in front. The window and the lock screen now say so either way; the log
+  of a device test tells which.
 - With background play off there is no carrier, so after a call the song
   stays paused until play.
