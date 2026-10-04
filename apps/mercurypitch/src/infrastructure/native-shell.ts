@@ -78,7 +78,9 @@ export function installNativeShell(
   // Leaving the foreground stops the sound rather than ducking it, with one
   // exception: a Karaoke song the singer chose to keep hearing (Settings,
   // Karaoke, "Keep playing in the background") holds the clock, and this
-  // suspension waits until the hold lets go (packages/audio-io).
+  // suspension waits until the hold lets go (packages/audio-io). A song that
+  // stops here pauses with its fade first (`prepareToSuspend`): a clock
+  // stopped mid-note cuts it off with a buzz.
   //
   // COMING BACK IS NOT WIRED HERE, and it is not always the next tap either.
   // `packages/audio-io` follows the page as well: a WebView the OS takes away

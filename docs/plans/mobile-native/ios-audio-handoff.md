@@ -1,6 +1,7 @@
 # iOS: handing the sound to another app and taking it back
 
-**Status:** shipped in the TestFlight build after 527. **Date:** 2026-10-04.
+**Status:** the handoff shipped in TestFlight build 533 (#926). The trip to
+the background below follows in the build after 533. **Date:** 2026-10-04.
 
 What the Karaoke room does when another app (YouTube's picture-in-picture,
 a call, Siri) takes the sound, and when the singer takes it back.
@@ -47,7 +48,9 @@ coming back resumed it too. Each resume was playback starting, so:
 
 1. **Never resume what the system interrupted.** Not on `statechange`, not
    on a tap, not when the page comes back. The system ends an interruption,
-   or the singer's next press of play does.
+   or the singer's next press of play does. The one exception is the trip
+   to the background, below: an interruption WebKit makes itself, for a
+   song the singer asked to keep.
 2. **On play, take the session first, then the clock.** The unlock clip
    plays first, or, while the lock screen's carrier holds the session, the
    carrier plays. The clock resumes after it, so the second call is the
@@ -57,28 +60,81 @@ coming back resumed it too. Each resume was playback starting, so:
    still does not move stops, and the singer reads
    "The song didn't start. Press play to try again."
 4. **Pause with the interruption.** An `'interrupted'` clock pauses the
-   transport, so the button tells the truth.
+   transport, so the button tells the truth (the trip to the background
+   excepted).
 5. **Say whose pause it was.** The Now Playing report carries
    `interrupted`, so the carrier keeps a pause the system made and plays
    again when a call ends with the word to resume.
 
+## The trip to the background (build 533)
+
+What the phone showed, with YouTube no longer fighting the room:
+
+1. Background play on, a song playing, swipe home: the lyrics window
+   opened, and about half a second later the song paused.
+2. The window open, the app opened from its icon: the window stayed, and
+   the room showed lyrics frames over its background until the window was
+   closed by hand. The window's own return button worked.
+3. Background play off: a loud buzz on leaving the app, and sometimes on
+   coming back, as if a note were cut off.
+
+Why:
+
+1. WebKit keeps Web Audio out of the background on its own.
+   `MediaSessionManageriOS::resetRestrictions` gives Web Audio
+   `BackgroundProcessPlaybackRestricted`, so
+   `applicationDidEnterBackground` begins an `EnteringBackground`
+   interruption: the clock goes `'interrupted'` on every trip home, and
+   `applicationWillEnterForeground` ends it with `MayResumePlaying`. A resume
+   in the background is allowed (`sessionWillBeginPlayback` checks nothing
+   about the background for Web Audio). Before #926 the shared context
+   resumed it on `statechange`, which is how background play worked in 527. Rule 1 took that away, and rule 4 paused the song.
+2. The window was asked to stop on `willEnterForeground`, before the app is
+   active, and iOS can ignore that. Meanwhile the page showed Android's
+   lyrics overlay: on Android the window is the page, shrunk, but on an
+   iPhone the window draws its own frames.
+3. The shell parks the shared clock when the app stops being active
+   (Capacitor's `appStateChange`, on `willResignActive`). The room asked
+   for no time first, so the clock stopped in the middle of the waveform:
+   that cut is the buzz. The fade the room's own pause scheduled then ran
+   on the parked clock, so it played out on the way back.
+
+What changed:
+
+- A room that keeps playing behind other apps (`keepsPlayingHidden`:
+  background play on, or the window open) resumes the clock when the
+  interruption is the trip home. That is one that lands within 1.5 s after
+  the page hides (`ENTERING_BACKGROUND_MS`), or one that lands first, while
+  the page is still visible, when the page hides within 0.7 s
+  (`LEAVE_WAIT_MS`). Any other interruption still pauses the song, so with
+  background play on, one in front pauses 0.7 s late.
+- Before the shell parks the clock, a playing song pauses with its fade,
+  and the clock waits for it (`prepareToSuspend`, 80 ms). A fade already
+  running, from a pause just before or a second request, gets the rest of
+  its time. With background play off, Control Center and the notification
+  center now pause the song cleanly.
+- The window stops again once the app is active (`didBecomeActive`), and on
+  an iPhone the page stays the room while the window is open
+  (`windowShowsThePage`).
+
 ## Where it lives
 
-| File                                                                  | What it does                                                      |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `packages/audio-io/src/shared-audio-context.ts`                       | No resume on `statechange`, or for an interrupted context         |
-| `src/lib/audio-unlock.ts`                                             | `unlockForPlayback`: the session first, then the clock            |
-| `packages/mobile-runtime/src/webkit-now-playing.ts`                   | `claimCarrier`, and a pause the system made                       |
-| `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check            |
-| `src/features/stem-mixer/playback-return-watch.ts`                    | `watchClockMoves`, shared by the start check and the return watch |
-| `src/features/karaoke-room/KaraokeRoomStage.tsx`                      | `interrupted` in the Now Playing report                           |
-| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift` | `AudioSessionWatch`: the `[audio session]` log                    |
+| File                                                                  | What it does                                                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `packages/audio-io/src/shared-audio-context.ts`                       | No resume on `statechange`, or for an interrupted context                                        |
+| `src/lib/audio-unlock.ts`                                             | `unlockForPlayback`: the session first, then the clock                                           |
+| `packages/mobile-runtime/src/webkit-now-playing.ts`                   | `claimCarrier`, and a pause the system made                                                      |
+| `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check, the trip home, the fade before a suspend |
+| `src/features/stem-mixer/playback-return-watch.ts`                    | `watchClockMoves`, shared by the start check and the return watch                                |
+| `src/features/karaoke-room/KaraokeRoomStage.tsx`                      | `interrupted` in the Now Playing report, `keepsPlayingHidden`, the lease's `prepareToSuspend`    |
+| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift` | `AudioSessionWatch`: the `[audio session]` log                                                   |
 
 ## Reading a device log
 
 The portable console in a TestFlight build has all of it:
 
-- `[audio]` lines from the mixer: `play` (with `clockWas`), `statechange`,
+- `[audio]` lines from the mixer: `play` (with `clockWas`), `statechange`
+  (with `hidden`), `background-resume` (with `hiddenForMs`), `suspend-fade`,
   `clock-stuck` (with `attempt`), `clock-restart`.
 - `[now playing]` lines from the carrier, including "play pressed: the
   carrier takes the sound first".
@@ -101,6 +157,16 @@ Each with YouTube's picture-in-picture open and the song loaded:
 - Repeat the switch quickly, five times each way: no silent "playing".
 - A call during the song: the song pauses, and comes back on its own when
   the call ends (with background play on).
+
+Without YouTube:
+
+- Background play on, play, swipe home: the song keeps playing and the
+  window opens.
+- With the window open, open the app from its icon: the window closes and
+  the room is there.
+- Background play off, play, swipe home: the song stops without a buzz,
+  and coming back is quiet too.
+- Background play off, play, open Control Center: the song pauses.
 
 ## Open
 
