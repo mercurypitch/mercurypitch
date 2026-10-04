@@ -131,7 +131,7 @@ These are rules for this feature and anything built on it later.
 - `useKaraokePictureInPicture.ts` works on iOS too. On iOS it arms only while
   "Keep playing in the background" is on (`needsBackgroundPlay`).
 
-### Platform (`packages/mobile-runtime/src/platform.ts`)
+### Platform (`packages/mobile-runtime/src/picture-in-picture.ts`, re-exported by `platform.ts`)
 
 - The `PictureInPicture` plugin name is shared with Android. On iOS it has
   `setAutoEnter({ enabled })` as Android does, plus `setLyrics({ json })`

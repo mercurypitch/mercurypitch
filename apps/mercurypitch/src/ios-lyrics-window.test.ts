@@ -38,7 +38,9 @@ const SWIFT = {
 }
 const STORYBOARD = read(`${APP}Base.lproj/Main.storyboard`)
 const PROJECT = read('../ios/App/App.xcodeproj/project.pbxproj')
-const PLATFORM = read('../../../packages/mobile-runtime/src/platform.ts')
+const JS_SIDE = read(
+  '../../../packages/mobile-runtime/src/picture-in-picture.ts',
+)
 const SCRIPT_TS = read('../../../src/lib/lyric-window-script.ts')
 
 describe('the plugin', () => {
@@ -56,7 +58,7 @@ describe('the plugin', () => {
 
   it('goes by the name the JavaScript side asks for, Android’s too', () => {
     expect(SWIFT.plugin).toContain('public let jsName = "PictureInPicture"')
-    expect(PLATFORM).toContain(
+    expect(JS_SIDE).toContain(
       "registerPlugin<PictureInPicturePlugin>('PictureInPicture')",
     )
   })
@@ -70,7 +72,7 @@ describe('the plugin', () => {
       expect(SWIFT.plugin).toContain(
         `@objc func ${method}(_ call: CAPPluginCall)`,
       )
-      expect(PLATFORM).toContain(`.${method}(`)
+      expect(JS_SIDE).toContain(`.${method}(`)
     },
   )
 
@@ -82,7 +84,7 @@ describe('the plugin', () => {
     expect(SWIFT.plugin).toContain(
       `notifyListeners("${event}", data: ["${field}":`,
     )
-    expect(PLATFORM).toContain(`'${event}'`)
+    expect(JS_SIDE).toContain(`'${event}'`)
   })
 
   it('reads the clock under the names the JavaScript side sends', () => {
