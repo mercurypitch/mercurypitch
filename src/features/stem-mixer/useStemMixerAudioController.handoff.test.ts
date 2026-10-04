@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { audioDiagnosticEntries, resetAudioDiagnosticsForTests, } from '@/lib/audio-diagnostics'
 import { START_CHECK_MS } from './playback-return-watch'
 import type { StemMixerAudioDeps } from './useStemMixerAudioController'
-import { SILENT_START_NOTICE, useStemMixerAudioController, } from './useStemMixerAudioController'
+import { ENTERING_BACKGROUND_MS, LEAVE_WAIT_MS, SILENT_START_NOTICE, useStemMixerAudioController, } from './useStemMixerAudioController'
 
 /** An audio context whose state and clock the test moves, as iOS would. */
 class FakeClock extends EventTarget {
@@ -303,6 +303,129 @@ describe('a press of play in the room', () => {
 
     expect(clock.suspend).not.toHaveBeenCalled()
     expect(controller.playing()).toBe(true)
+    dispose()
+  })
+})
+
+/** The page hiding behind another app, or coming back, as WebKit says. */
+function setPageHidden(hidden: boolean): void {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(
+    hidden ? 'hidden' : 'visible',
+  )
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+
+describe('the trip to the background', () => {
+  // WebKit parks Web Audio on every trip there, as the page hides. A room
+  // that keeps the song playing behind other apps resumes the clock.
+  const keeping = {
+    keepsPlayingHidden: () => true,
+  } as Partial<StemMixerAudioDeps>
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  it('plays on when iOS parks the clock as the page hides', () => {
+    const { clock, controller, dispose } = harness(keeping)
+    controller.handlePlay()
+
+    setPageHidden(true)
+    clock.goes('interrupted')
+
+    expect(clock.state).toBe('running')
+    expect(controller.playing()).toBe(true)
+    expect(controller.interrupted()).toBe(false)
+    expect(recorded('background-resume')).toHaveLength(1)
+    dispose()
+  })
+
+  it('plays on when iOS parks the clock a moment before the page hides', () => {
+    const { clock, controller, dispose } = harness(keeping)
+    controller.handlePlay()
+
+    clock.goes('interrupted')
+    expect(controller.playing()).toBe(true)
+    setPageHidden(true)
+
+    expect(clock.state).toBe('running')
+    expect(controller.playing()).toBe(true)
+    expect(controller.interrupted()).toBe(false)
+    dispose()
+  })
+
+  it('pauses for another app when the page stays in front', async () => {
+    const { clock, controller, dispose } = harness(keeping)
+    controller.handlePlay()
+
+    clock.goes('interrupted')
+    await vi.advanceTimersByTimeAsync(LEAVE_WAIT_MS)
+
+    expect(controller.playing()).toBe(false)
+    expect(controller.interrupted()).toBe(true)
+    expect(clock.state).toBe('interrupted')
+    dispose()
+  })
+
+  it('pauses for another app long after the page hid', async () => {
+    const { clock, controller, dispose } = harness(keeping)
+    controller.handlePlay()
+    setPageHidden(true)
+
+    await vi.advanceTimersByTimeAsync(ENTERING_BACKGROUND_MS + 1)
+    clock.goes('interrupted')
+
+    expect(controller.playing()).toBe(false)
+    expect(controller.interrupted()).toBe(true)
+    expect(recorded('background-resume')).toHaveLength(0)
+    dispose()
+  })
+
+  it('stops waiting when the clock comes back by itself', async () => {
+    const { clock, controller, dispose } = harness(keeping)
+    controller.handlePlay()
+
+    clock.goes('interrupted')
+    clock.goes('running')
+    await vi.advanceTimersByTimeAsync(LEAVE_WAIT_MS)
+
+    expect(controller.playing()).toBe(true)
+    expect(controller.interrupted()).toBe(false)
+    dispose()
+  })
+
+  it('pauses as before in a room that lets the song pause behind other apps', () => {
+    const { clock, controller, dispose } = harness({
+      keepsPlayingHidden: () => false,
+    } as Partial<StemMixerAudioDeps>)
+    controller.handlePlay()
+
+    setPageHidden(true)
+    clock.goes('interrupted')
+
+    expect(controller.playing()).toBe(false)
+    expect(controller.interrupted()).toBe(true)
+    dispose()
+  })
+})
+
+describe('the clock about to stop', () => {
+  it('pauses a playing song with its fade, and asks the clock to wait for it', () => {
+    const { controller, dispose } = harness()
+    controller.handlePlay()
+
+    expect(controller.prepareToSuspend()).toBe(80)
+    expect(controller.playing()).toBe(false)
+    expect(recorded('suspend-fade')).toHaveLength(1)
+    dispose()
+  })
+
+  it('asks for no time when nothing plays', () => {
+    const { controller, dispose } = harness()
+    controller.ensureAudioCtx()
+
+    expect(controller.prepareToSuspend()).toBe(0)
+    expect(recorded('suspend-fade')).toHaveLength(0)
     dispose()
   })
 })

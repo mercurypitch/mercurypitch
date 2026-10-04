@@ -210,6 +210,12 @@ export interface StemMixerAudioDeps {
    * a song play behind another app (hidden-clock.ts).
    */
   followEndWhileHidden?: boolean
+  /**
+   * The room keeps the song playing behind another app ("Keep playing in the
+   * background", or the lyrics window). On iOS the trip there parks Web
+   * Audio, and the clock is then resumed rather than the song paused.
+   */
+  keepsPlayingHidden?: () => boolean
 }
 
 export interface StemMixerAudioController {
@@ -286,6 +292,11 @@ export interface StemMixerAudioController {
   // Transport
   handlePlay: () => void
   handlePause: () => void
+  /**
+   * The shared clock is about to stop: a playing song pauses with its fade.
+   * Returns the milliseconds the fade needs before the clock may stop.
+   */
+  prepareToSuspend: () => number
   handleStop: () => void
   handleRestart: () => void
   seekTo: (time: number) => void
@@ -331,6 +342,16 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
+/** The fade a song pausing for the clock stopping needs, and some slack. */
+const SUSPEND_FADE_MS = FADE_OUT_MS + 30
+/**
+ * iOS parks Web Audio as the app goes behind another and the page hides,
+ * in either order and within moments. An interruption this soon after the
+ * page hid is that trip; one later is another app taking the sound.
+ */
+export const ENTERING_BACKGROUND_MS = 1500
+/** How long an interruption in front waits for the page to hide. */
+export const LEAVE_WAIT_MS = 700
 /** Slack after the fade before a source may stop (tail below -40 dB). */
 export const STEM_STOP_SLACK_SECS = 0.03
 
@@ -666,7 +687,37 @@ export const useStemMixerAudioController = (
   // does, the session first (handlePlay). A call that ends with the word to
   // resume brings the song back through the lock screen's carrier
   // (docs/plans/mobile-native/ios-audio-handoff.md).
+  //
+  // One interruption is not another app. WebKit parks Web Audio on every
+  // trip to the background (its background restriction), as the page hides.
+  // A room that keeps the song playing back there resumes the clock at once:
+  // that is the song the singer asked to keep, and no other app has the
+  // sound. The page hides within moments of it, in either order.
   let watchedClock: AudioContext | null = null
+  let hiddenAt = Number.NEGATIVE_INFINITY
+  let leaveWait: ReturnType<typeof setTimeout> | undefined
+  const pageIsHidden = (): boolean =>
+    typeof document !== 'undefined' && document.visibilityState === 'hidden'
+  const clockInterrupted = (): boolean =>
+    audioCtx !== null && String(audioCtx.state) === 'interrupted'
+  const stopLeaveWait = (): void => {
+    clearTimeout(leaveWait)
+    leaveWait = undefined
+  }
+  const pauseForInterruption = (): void => {
+    stopLeaveWait()
+    // Paused before it is marked: a report that found the song still playing
+    // would play the lock screen's carrier into the interruption.
+    handlePause()
+    setInterrupted(true)
+  }
+  const playOnBehindTheApp = (): void => {
+    stopLeaveWait()
+    reportPlayback('background-resume', {
+      hiddenForMs: Math.max(0, Math.round(Date.now() - hiddenAt)),
+    })
+    ensureAudioCtx()
+  }
   const onClockState = (): void => {
     const ctx = audioCtx
     if (ctx === null) return
@@ -674,13 +725,44 @@ export const useStemMixerAudioController = (
     reportPlayback('statechange', {
       state,
       playing: playing(),
+      hidden: pageIsHidden(),
       clock: Math.round(ctx.currentTime * 1000) / 1000,
     })
-    if (state !== 'interrupted' || !playing()) return
-    // Paused before it is marked: a report that found the song still playing
-    // would play the lock screen's carrier into the interruption.
-    handlePause()
-    setInterrupted(true)
+    if (state !== 'interrupted') {
+      stopLeaveWait()
+      return
+    }
+    if (!playing()) return
+    if (deps.keepsPlayingHidden?.() === true) {
+      if (!pageIsHidden()) {
+        // The page may be about to hide: the trip to the background, then.
+        leaveWait ??= setTimeout(() => {
+          leaveWait = undefined
+          if (clockInterrupted() && playing()) pauseForInterruption()
+        }, LEAVE_WAIT_MS)
+        return
+      }
+      if (Date.now() - hiddenAt <= ENTERING_BACKGROUND_MS) {
+        playOnBehindTheApp()
+        return
+      }
+    }
+    pauseForInterruption()
+  }
+  const onPageVisibility = (): void => {
+    if (!pageIsHidden()) return
+    hiddenAt = Date.now()
+    if (leaveWait === undefined) return
+    // The interruption came first and the page is hiding now.
+    stopLeaveWait()
+    if (clockInterrupted() && playing()) playOnBehindTheApp()
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onPageVisibility)
+    onCleanup(() => {
+      document.removeEventListener('visibilitychange', onPageVisibility)
+      stopLeaveWait()
+    })
   }
   const unwatchClock = (): void => {
     if (typeof watchedClock?.removeEventListener === 'function') {
@@ -1727,6 +1809,21 @@ export const useStemMixerAudioController = (
     deps.onPlaybackPaused?.()
   }
 
+  // The shared clock is about to stop: the app leaving with nothing to keep
+  // the song playing there, or the page hiding without a hold. A clock that
+  // stops in the middle of a note cuts it off (iOS can make the cut a loud
+  // buzz) and plays the rest of the fade when it next runs, so a playing
+  // song pauses with its own fade first, and the clock waits for it
+  // (packages/audio-io, prepareToSuspend).
+  const prepareToSuspend = (): number => {
+    if (!playing()) return 0
+    reportPlayback('suspend-fade', {
+      position: Math.round(elapsed() * 1000) / 1000,
+    })
+    handlePause()
+    return SUSPEND_FADE_MS
+  }
+
   const handleStop = () => {
     stopStartCheck()
     setInterrupted(false)
@@ -2203,6 +2300,7 @@ export const useStemMixerAudioController = (
     addExtraStem,
     handlePlay,
     handlePause,
+    prepareToSuspend,
     handleStop,
     handleRestart,
     seekTo,

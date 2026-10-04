@@ -51,6 +51,8 @@ interface FakeMixer {
   setGuide: Mock
   play: Mock
   pause: Mock
+  /** The clock about to stop: a playing song pauses with its fade. */
+  prepareToSuspend: Mock
   seek: Mock
   releaseMic: Mock
   resumeMic: Mock
@@ -131,6 +133,11 @@ vi.mock('@/components/StemMixer', async () => {
         setGuide: vi.fn((level: GuideLevel) => setGuideLevel(level)),
         play: vi.fn(() => setPlaying(true)),
         pause: vi.fn(() => setPlaying(false)),
+        prepareToSuspend: vi.fn(() => {
+          if (!playing()) return 0
+          setPlaying(false)
+          return 80
+        }),
         seek: vi.fn((seconds: number) => jump(seconds)),
         releaseMic: vi.fn(() => setMicOn(false)),
         resumeMic: vi.fn(() => setMicOn(true)),
@@ -151,6 +158,7 @@ vi.mock('@/components/StemMixer', async () => {
           musicLevel,
           play: mixer.play,
           pause: mixer.pause,
+          prepareToSuspend: mixer.prepareToSuspend,
           seek: mixer.seek,
           resetMusicLevel: mixer.resetMusicLevel,
           releaseMic: mixer.releaseMic,
@@ -1091,6 +1099,24 @@ describe('in the small window (iOS)', () => {
     expect(lyricsSent().at(-1)).toBeNull()
   })
 
+  it('keeps the room on the page while the window is open', async () => {
+    // iOS's window draws the lyrics itself: the page is not in it, and the
+    // shell keeps its chrome.
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    device.windowed(true)
+
+    expect(screen.queryByTestId('karaoke-lyrics-window')).toBeNull()
+    expect(screen.getByTestId('karaoke-stage').hasAttribute('inert')).toBe(
+      false,
+    )
+    expect(roomInPictureInPicture()).toBe(false)
+    // The window is still open as far as the room's sound goes.
+    expect(current().hosted.keepsPlayingHidden?.()).toBe(true)
+  })
+
   it('opens only while the song keeps playing behind other apps', async () => {
     setKaraokeBackgroundPlay(false)
     await mountRoom()
@@ -1632,12 +1658,36 @@ describe('the device', () => {
   it("plays on the app's one AudioContext, and gives it back on the way out", async () => {
     const unmount = await mountRoom()
 
-    expect(device.acquireAudio).toHaveBeenCalledWith('karaoke-room')
+    expect(device.acquireAudio).toHaveBeenCalledWith('karaoke-room', {
+      prepareToSuspend: expect.any(Function),
+    })
     current().hosted.audio?.ensure()
     expect(device.lease.ensure).toHaveBeenCalled()
 
     unmount()
     expect(device.lease.release).toHaveBeenCalledTimes(1)
+  })
+
+  it('pauses a playing song with its fade before the clock stops', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    const options = device.acquireAudio.mock.calls[0]?.[1] as {
+      prepareToSuspend: () => number
+    }
+
+    expect(options.prepareToSuspend()).toBe(80)
+    expect(current().prepareToSuspend).toHaveBeenCalledTimes(1)
+    // Paused already: nothing left to fade.
+    expect(options.prepareToSuspend()).toBe(0)
+  })
+
+  it('tells the mixer whether the song keeps playing behind other apps', async () => {
+    await mountRoom()
+
+    expect(current().hosted.keepsPlayingHidden?.()).toBe(true)
+    setKaraokeBackgroundPlay(false)
+    expect(current().hosted.keepsPlayingHidden?.()).toBe(false)
   })
 
   it('keeps the screen awake while a song plays, and only then', async () => {

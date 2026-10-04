@@ -90,7 +90,7 @@ import { KaraokeLibrarySheet } from './KaraokeLibrarySheet'
 import { KaraokeLyricsWindow } from './KaraokeLyricsWindow'
 import { KaraokeRoomOptions } from './KaraokeRoomOptions'
 import { KaraokeRoomPicker } from './KaraokeRoomPicker'
-import { useKaraokePictureInPicture } from './useKaraokePictureInPicture'
+import { useKaraokePictureInPicture, windowShowsThePage, } from './useKaraokePictureInPicture'
 
 /** The owner name the room holds the shared AudioContext under. */
 export const KARAOKE_AUDIO_OWNER = 'karaoke-room'
@@ -148,7 +148,11 @@ export function arrivalSong(
 
 export const KaraokeRoomStage: Component = () => {
   const device = untrack(nativeDeviceApi)
-  const lease = device?.acquireAudio(KARAOKE_AUDIO_OWNER)
+  // Before the clock stops (the app leaving, the page hiding without a
+  // hold) a playing song pauses with its fade, never mid-note.
+  const lease = device?.acquireAudio(KARAOKE_AUDIO_OWNER, {
+    prepareToSuspend: () => mixer()?.prepareToSuspend() ?? 0,
+  })
   onCleanup(() => {
     lease?.release()
   })
@@ -280,6 +284,7 @@ export const KaraokeRoomStage: Component = () => {
 
   const hostingFor = (entry: Cue): StemMixerHosting => ({
     audio: lease,
+    keepsPlayingHidden: () => systemPlayback(),
     stage: {
       byline: () => entry.song.credit ?? entry.song.artist,
       onOpenLibrary: () => {
@@ -514,6 +519,9 @@ export const KaraokeRoomStage: Component = () => {
   // pause come from, and the hold keeps the clock running if the app is
   // reported as gone while the window is still up.
   const systemPlayback = (): boolean => backgroundPlay() || inWindow()
+  // The room's compact view, for a window that shows the page (Android).
+  // iOS's window draws the lyrics itself, and the page stays the room.
+  const pageInWindow = (): boolean => inWindow() && windowShowsThePage(device)
   const [pageHidden, setPageHidden] = createSignal(
     document.visibilityState === 'hidden',
   )
@@ -646,7 +654,7 @@ export const KaraokeRoomStage: Component = () => {
   return (
     <div
       class={styles.room}
-      classList={{ [styles.inWindow]: inWindow() }}
+      classList={{ [styles.inWindow]: pageInWindow() }}
       data-testid="karaoke-room"
       style={background.resolvedStyle()}
     >
@@ -657,7 +665,11 @@ export const KaraokeRoomStage: Component = () => {
       {/* Unseen and out of reach under the small window: its pills and bar
           would sit over the lyrics there, and a tap never reaches them. The
           stage stays mounted, because it is the song's clock. */}
-      <div class={styles.stage} inert={inWindow()} data-testid="karaoke-stage">
+      <div
+        class={styles.stage}
+        inert={pageInWindow()}
+        data-testid="karaoke-stage"
+      >
         <Show when={cue()} keyed>
           {(entry) => (
             <StemMixer
@@ -675,7 +687,7 @@ export const KaraokeRoomStage: Component = () => {
           )}
         </Show>
       </div>
-      <Show when={inWindow() ? cue() : null} keyed>
+      <Show when={pageInWindow() ? cue() : null} keyed>
         {(entry) => (
           <KaraokeLyricsWindow
             title={entry.song.title}

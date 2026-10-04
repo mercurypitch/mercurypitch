@@ -223,6 +223,15 @@ export interface NativeAudioLease extends AudioContextLease {
   release(): void
 }
 
+/** What a claimant asks of the clock when it is about to stop. */
+export interface NativeAudioLeaseOptions {
+  /**
+   * The clock is about to be parked: cancel or fade what plays, and return
+   * the milliseconds the fade needs (at most 250 are granted).
+   */
+  readonly prepareToSuspend?: () => number
+}
+
 /**
  * What a room under `src/` needs from the device and cannot import.
  *
@@ -267,7 +276,10 @@ export type NativeMediaAction = 'play' | 'pause' | 'stop' | NativeMediaSeek
 
 export interface NativeDeviceApi {
   /** A lease on the one shared AudioContext, under the owner's name. */
-  acquireAudio: (owner: string) => NativeAudioLease
+  acquireAudio: (
+    owner: string,
+    options?: NativeAudioLeaseOptions,
+  ) => NativeAudioLease
   /** Keep the screen on while a song plays, and let it sleep after. */
   keepAwake: (on: boolean) => void
   /**

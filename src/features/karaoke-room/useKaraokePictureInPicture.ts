@@ -56,6 +56,15 @@ export interface KaraokePictureInPictureOptions {
   readonly onExit?: () => void
 }
 
+/**
+ * Whether the window shows the page itself (Android), so the room draws its
+ * compact view into it. iOS's window draws the lyrics natively, and the page
+ * stays the room.
+ */
+export function windowShowsThePage(device: NativeDeviceApi | null): boolean {
+  return device !== null && device.pictureInPictureLyrics === null
+}
+
 /** Whether the room is in the window now. */
 export function useKaraokePictureInPicture(
   options: KaraokePictureInPictureOptions,
@@ -99,9 +108,11 @@ export function useKaraokePictureInPicture(
     }),
   )
 
+  // The shell's chrome goes only where the page is what the window shows.
+  const showsPage = windowShowsThePage(device)
   createEffect(
     on(inWindow, (entered) => {
-      setRoomInPictureInPicture(entered)
+      setRoomInPictureInPicture(entered && showsPage)
     }),
   )
   onCleanup(() => {

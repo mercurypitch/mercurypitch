@@ -598,6 +598,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     audioLease: hosted?.audio,
     // The room may keep its song playing behind another app; it still ends.
     followEndWhileHidden: hosted !== undefined,
+    keepsPlayingHidden: hosted?.keepsPlayingHidden,
   })
 
   // Backfill audio ctx holders for mic controller
@@ -2085,6 +2086,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       musicLevel: audio.musicLevel,
       play: () => audio.handlePlay(),
       pause: () => audio.handlePause(),
+      prepareToSuspend: () => audio.prepareToSuspend(),
       seek: seekLikeLine,
       resetMusicLevel: () => {
         audio.setMusicLevel(audio.musicLevelRange.defaultValue)

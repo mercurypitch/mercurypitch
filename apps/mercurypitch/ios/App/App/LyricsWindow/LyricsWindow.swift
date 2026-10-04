@@ -88,6 +88,15 @@ final class LyricsWindow: NSObject {
             name: UIApplication.willEnterForegroundNotification,
             object: nil
         )
+        // iOS can ignore a stop asked for before the app is active again,
+        // which left the window up over the app (build 533): asked again
+        // once it is.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appIsActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
     }
 
     // MARK: - What the page says
@@ -320,6 +329,14 @@ final class LyricsWindow: NSObject {
     @objc private func appCameBack() {
         guard let controller, controller.isPictureInPictureActive else { return }
         say("the app is back in front: closing the window")
+        controller.stopPictureInPicture()
+    }
+
+    /// The same, once the app is active: the stop asked for on the way in
+    /// may not have been taken.
+    @objc private func appIsActive() {
+        guard let controller, controller.isPictureInPictureActive else { return }
+        say("the app is active and the window still open: closing it")
         controller.stopPictureInPicture()
     }
 
