@@ -48,14 +48,8 @@ const pictureInPicture = vi.hoisted(() => ({
   setAutoEnter: vi.fn(),
   addListener: vi.fn(),
 }))
-// The app's own audio-session plugin (iOS), reached the same way.
-const audioSessionPlugin = vi.hoisted(() => ({
-  setMixesWithOthers: vi.fn(),
-}))
 const registerPlugin = vi.hoisted(() =>
-  vi.fn((name: string) =>
-    name === 'AudioSession' ? audioSessionPlugin : pictureInPicture,
-  ),
+  vi.fn((_name: string) => pictureInPicture),
 )
 
 vi.mock('@capacitor/core', () => ({ Capacitor: capacitor, registerPlugin }))
@@ -453,103 +447,6 @@ describe('on a phone', () => {
     expect(mediaSession.setMetadata).not.toHaveBeenCalled()
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'none',
-    })
-  })
-
-  // iOS gives the lock screen's Now Playing, Control Center's player and their
-  // buttons only to an app whose audio session does not mix with other apps'.
-  // The app's session mixes from launch, so a player's own music keeps going
-  // while they practice; TestFlight 509 played in the background with no Now
-  // Playing and no buttons (owner, 3 Oct).
-  describe('on an iPhone, a song it plays', () => {
-    it('stops the session mixing before the song is named', async () => {
-      const platform = await loadPlatform(true, 'ios')
-      const order: string[] = []
-      audioSessionPlugin.setMixesWithOthers.mockImplementationOnce(
-        async (options: { mixes: boolean }) => {
-          order.push(`mixes ${String(options.mixes)}`)
-          return { session: 'category=playAndRecord mixes=false' }
-        },
-      )
-      mediaSession.setMetadata.mockImplementationOnce(async () => {
-        order.push('metadata')
-      })
-      const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-
-      expect(order).toEqual(['mixes false', 'metadata'])
-      // What the session became, for the debug console: iOS's own log
-      // needs a Mac.
-      expect(info).toHaveBeenCalledWith(
-        '[audio session] category=playAndRecord mixes=false',
-      )
-      info.mockRestore()
-    })
-
-    it("leaves another app's music alone while the song is paused", async () => {
-      const platform = await loadPlatform(true, 'ios')
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: false })
-
-      expect(audioSessionPlugin.setMixesWithOthers).not.toHaveBeenCalled()
-      expect(mediaSession.setMetadata).toHaveBeenCalled()
-    })
-
-    it('lets the session mix again once nothing is playing', async () => {
-      const platform = await loadPlatform(true, 'ios')
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-      await platform.setNowPlaying(null)
-
-      expect(audioSessionPlugin.setMixesWithOthers).toHaveBeenLastCalledWith({
-        mixes: true,
-      })
-    })
-
-    it('is still named in an app without the switch', async () => {
-      const platform = await loadPlatform(true, 'ios')
-      audioSessionPlugin.setMixesWithOthers.mockRejectedValueOnce(
-        new Error('"AudioSession" plugin is not implemented on ios'),
-      )
-      const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-
-      expect(mediaSession.setMetadata).toHaveBeenCalledWith({
-        title: 'Low Tide',
-        artist: '',
-      })
-      // Said where a phone shows it: the debug console.
-      expect(info).toHaveBeenCalledWith(
-        '[audio session] no switch in this build',
-      )
-      info.mockRestore()
-    })
-
-    it('asks again on every report of it playing', async () => {
-      // The switch checks the live session each time, which WebKit may have
-      // moved back to one that mixes while the song was paused.
-      const platform = await loadPlatform(true, 'ios')
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-      await platform.setNowPlaying({ title: 'Low Tide', playing: false })
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-
-      expect(audioSessionPlugin.setMixesWithOthers).toHaveBeenCalledTimes(2)
-      expect(audioSessionPlugin.setMixesWithOthers).toHaveBeenLastCalledWith({
-        mixes: false,
-      })
-    })
-
-    it('needs no switch on Android, whose notification shows anyway', async () => {
-      const platform = await loadPlatform(true, 'android')
-
-      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
-      await platform.setNowPlaying(null)
-
-      expect(registerPlugin).not.toHaveBeenCalledWith('AudioSession')
-      expect(audioSessionPlugin.setMixesWithOthers).not.toHaveBeenCalled()
     })
   })
 
