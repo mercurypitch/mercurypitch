@@ -49,8 +49,15 @@
 //   there whatever "Keep playing in the background" says, because the page
 //   is still on the screen; the system is told what plays, so the window
 //   has Android's play and pause. Coming back to the app restores the room
-//   as it was (useKaraokePictureInPicture.ts). iOS has no such window for
-//   anything but video, and nothing here changes it.
+//   as it was (useKaraokePictureInPicture.ts).
+//
+//   IN A SMALL WINDOW (iOS). iOS puts only video in its window, so the app
+//   draws the lyrics there natively, from the song's lyrics worked out ahead
+//   (lyric-window-script.ts) and the clock the lock screen is told. The page
+//   is hidden behind the other app meanwhile, so the window opens only with
+//   "Keep playing in the background" on, and its play and pause reach the
+//   run as the lock screen's do. Coming back to the app closes it
+//   (docs/plans/mobile-native/ios-lyrics-window.md).
 //
 //   SONGS OF YOUR OWN (Stage 2, KARAOKE_IMPORT). The song line counts the
 //   songs on their way ("Separating 2") and opens the library, where they
@@ -485,6 +492,16 @@ export const KaraokeRoomStage: Component = () => {
   const inWindow = useKaraokePictureInPicture({
     device,
     playing: isPlaying,
+    backgroundPlay,
+    // On iOS the window draws the lyrics itself, from the whole song worked
+    // out ahead; the mixer has them once the song is in.
+    lyrics: () => {
+      const entry = cue()
+      const controls = mixer()
+      return entry === null || controls === null
+        ? null
+        : controls.lyricWindowScript(entry.song.title)
+    },
     onEnter: () => {
       letMicGo(mixer())
       setPickerOpen(false)

@@ -8,8 +8,9 @@
 // store under both (karaoke-room-store.ts), so what is set in one place is
 // what the other shows. Whether a song keeps playing behind another app is
 // here only: it is set once, not per song. So is whether leaving the app
-// mid-song keeps the lyrics in a small window, which is Android's alone: iOS
-// has picture-in-picture for video only, so an iPhone is not offered it.
+// mid-song keeps the lyrics in a small window, on a phone: the web has none.
+// An iPhone's window opens only for a song that keeps playing in the
+// background (useKaraokePictureInPicture.ts), and its row says so.
 //
 // A build that imports songs (Stage 2) adds two groups above them, the
 // subscription and the songs on this phone (KaraokeSongsGroups.tsx).
@@ -32,11 +33,18 @@ import { SettingsSwitch } from './SettingsSwitch'
 const SongsGroups = (): JSX.Element =>
   KARAOKE_IMPORT ? <KaraokeSongsGroups /> : null
 
-/** Whether this phone is offered the lyrics window: Android only. */
+/** Whether this phone is offered the lyrics window: a phone, not the web. */
 export function lyricsWindowShown(
   platform: string = Capacitor.getPlatform(),
 ): boolean {
-  return platform === 'android'
+  return platform === 'android' || platform === 'ios'
+}
+
+/** What the lyrics window row says it does, on this phone. */
+function lyricsWindowSub(platform: string = Capacitor.getPlatform()): string {
+  return platform === 'ios'
+    ? 'With the song playing in the background, the lyrics stay in a corner of the screen when you leave the app'
+    : 'When you leave the app during a song, the lyrics stay in a corner of the screen'
 }
 
 export interface KaraokeSettingsScreenProps {
@@ -100,7 +108,7 @@ export function KaraokeSettingsScreen(
           <SettingsRow
             id="karaoke-picture-in-picture"
             label="Show lyrics in a small window"
-            sub="When you leave the app during a song, the lyrics stay in a corner of the screen"
+            sub={lyricsWindowSub(props.platform)}
             accessory={
               <SettingsSwitch
                 checked={karaokePictureInPicture()}

@@ -120,10 +120,20 @@ describe('Settings, Karaoke', () => {
     expect(lyricsWindow?.getAttribute('aria-checked')).toBe('false')
   })
 
-  it('does not offer the lyrics window on iOS, or on the web', () => {
-    expect(mount('ios').querySelector(WINDOW_SWITCH)).toBeNull()
-    view?.unmount()
+  it('offers the lyrics window on iOS, for a song that plays in the background', () => {
+    const root = mount('ios')
+    const lyricsWindow = root.querySelector<HTMLElement>(WINDOW_SWITCH)
+    expect(lyricsWindow?.getAttribute('aria-checked')).toBe('true')
+    expect(root.textContent).toContain(
+      'With the song playing in the background, the lyrics stay in a corner of the screen when you leave the app',
+    )
 
+    lyricsWindow?.click()
+
+    expect(karaokePictureInPicture()).toBe(false)
+  })
+
+  it('does not offer the lyrics window on the web', () => {
     expect(mount().querySelector(WINDOW_SWITCH)).toBeNull()
   })
 })
