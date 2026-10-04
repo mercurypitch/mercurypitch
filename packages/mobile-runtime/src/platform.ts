@@ -39,6 +39,7 @@ import type { PluginListenerHandle } from '@capacitor/core'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import type { MediaSessionPlugin, MetadataOptions, } from '@capgo/capacitor-media-session'
 import { artworkDataUrl } from './artwork-data'
+import { listenOnWebKit, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
 export type Unsubscribe = () => void
@@ -171,9 +172,10 @@ export async function setStatusBar(style: StatusBarStyle): Promise<void> {
 // service is frozen within seconds, WebView and song with it, and the media
 // session plugin is what runs one (type mediaPlayback) while a song is playing
 // or paused, with its notification and its play and pause buttons. On iOS the
-// audio background mode keeps the app going by itself; the plugin only feeds
-// the lock screen's Now Playing, which iOS shows for a session that does not
-// mix with others (AudioSessionKit's mixes, so expect little there).
+// audio background mode keeps the app going by itself, and the lock screen's
+// Now Playing has to come from WebKit, whose session plays the song: the
+// plugin's MPNowPlayingInfoCenter belongs to the app's own process and never
+// shows (see webkit-now-playing.ts). The plugin is Android's alone.
 
 /** A song the system's media controls can name. */
 export interface NowPlaying {
@@ -209,41 +211,20 @@ export interface MediaSeek {
 export type MediaAction = 'play' | 'pause' | 'stop' | MediaSeek
 
 /**
- * What is registered, in the plugin's names: the three buttons, and the bar.
- * Registering 'seekto' is what lets the bar be dragged: Android adds
- * ACTION_SEEK_TO to the session's actions for it, and iOS turns on its
- * changePlaybackPositionCommand.
+ * What is registered, in the plugin's names, which are the Media Session
+ * API's too: the three buttons, and the bar. Registering 'seekto' is what
+ * lets the bar be dragged: Android adds ACTION_SEEK_TO to the session's
+ * actions for it, and on iOS WebKit hands the bar to the handler instead of
+ * seeking the carrier.
  */
 const MEDIA_ACTIONS = ['play', 'pause', 'stop', 'seekto'] as const
 
 type RegisteredAction = (typeof MEDIA_ACTIONS)[number]
 
-/** What the plugin reports with an action: its name, and a seek's target. */
+/** What a platform reports with an action: its name, and a seek's target. */
 interface ActionDetails {
   readonly action?: unknown
   readonly seekTime?: unknown
-}
-
-/**
- * The plugin's own event, which its typings leave out. iOS's native half
- * reports every press through it (see `listenOnIos`).
- */
-interface MediaSessionEvents {
-  addListener(
-    eventName: 'actionHandler',
-    listener: (details: ActionDetails | null | undefined) => void,
-  ): Promise<PluginListenerHandle>
-}
-
-/**
- * How long the copies of one iOS press keep arriving. They come back to back,
- * one per command target, so this only has to outlast a busy main thread; a
- * person pressing the same button twice this fast asks for nothing new.
- */
-const PRESS_COPIES_MS = 250
-
-function isRegisteredAction(action: unknown): action is RegisteredAction {
-  return MEDIA_ACTIONS.some((name) => name === action)
 }
 
 /**
@@ -276,9 +257,9 @@ const finiteOr = (value: number | undefined, fallback: number): number =>
   value !== undefined && Number.isFinite(value) ? value : fallback
 
 /**
- * The progress bar for a song. A paused song gets rate 0: iOS stops its
- * lock-screen clock on it, and Android, which keeps a paused state still
- * whatever the rate, reads 0 as 1.
+ * The progress bar for a song, as the plugin takes it. A paused song gets
+ * rate 0, which the plugin's iOS half needed to stop its clock; Android keeps
+ * a paused state still whatever the rate, and reads 0 as 1.
  */
 function positionOf(song: NowPlaying): PositionState {
   const duration = Math.max(0, finiteOr(song.duration, 0))
@@ -297,28 +278,31 @@ let reportsInFlight: Promise<void> = Promise.resolve()
 /**
  * Tell the system what is playing, or null when nothing is.
  *
- * Null is the plugin's 'none', which on Android stops the foreground service
- * and takes its notification away. The metadata goes before the state, so the
- * service's first notification already names the song.
+ * On iOS that goes to WebKit's own Now Playing (`showThroughWebKit`). On
+ * Android it goes to the plugin, where null is 'none', which stops the
+ * foreground service and takes its notification away. The metadata goes
+ * before the state, so the service's first notification already names the
+ * song.
  *
  * Android draws the notification's bar from the position (the length reaches
  * the session's metadata through this call, not through setMetadata) and runs
  * the bar on from the last report at the rate given, so a report is due on
- * play, pause, a seek or a new length, never on a frame.
+ * play, pause, a seek or a new length, never on a frame. WebKit runs the lock
+ * screen's bar the same way.
  *
- * The position goes first and last. Both plugins keep the last one they were
- * given and show it again, stamped now, whenever they publish: Android on a
- * new state, iOS on every call, as it rewrites its whole Now Playing record.
- * Written after the state, a pause showed the bar for a frame at the last
- * report's place (where the song started or last jumped to). Written only
- * first, a slowed song would lose its rate on iOS, whose state change sets 1.
+ * The position goes first and last. The plugin keeps the last one it was
+ * given and shows it again, stamped now, whenever it publishes: Android on a
+ * new state. Written after the state, a pause showed the bar for a frame at
+ * the last report's place (where the song started or last jumped to). The
+ * last write was for the plugin's iOS half, which needed it to keep a slowed
+ * song's rate and no longer runs; on Android it repeats the first.
  *
  * Null empties the bar as well, because Android keeps the numbers across a
  * stopped session and shows them in the next one's notification.
  *
- * One report at a time, in the order they were made: iOS answers setMetadata
- * only once it has decoded the artwork, while its other calls go through at
- * once, so a pause reported just before a play could otherwise land last.
+ * One report at a time, in the order they were made: each waits for the
+ * song's picture to be read, and on Android for the plugin's answers, so a
+ * pause reported just before a play could otherwise land last.
  */
 export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
   const report = reportsInFlight.then(async () => writeNowPlaying(song))
@@ -328,8 +312,8 @@ export async function setNowPlaying(song: NowPlaying | null): Promise<void> {
 
 /**
  * The song's name and artist, and its picture when it has one that could be
- * read. The artist always goes, empty for a song without one: both plugins
- * keep any field a report leaves out, so the last song's would stay on.
+ * read. The artist always goes, empty for a song without one: the plugin
+ * keeps any field a report leaves out, so the last song's would stay on.
  */
 async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
   const artwork =
@@ -342,6 +326,10 @@ async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
 }
 
 async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
+  if (isIos()) {
+    await showThroughWebKit(song)
+    return
+  }
   await attempt(async () => {
     const { MediaSession } = await import('@capgo/capacitor-media-session')
     if (song === null) {
@@ -366,13 +354,42 @@ async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
 }
 
 /**
+ * iOS: the song on the lock screen through WebKit (see webkit-now-playing.ts),
+ * named and placed as the plugin's reports are. WebKit refuses a rate of 0,
+ * so a paused song keeps its speed and the paused state stops the bar. A
+ * WebView without the Media Session API shows nothing, as the plugin did.
+ */
+async function showThroughWebKit(song: NowPlaying | null): Promise<void> {
+  if (!webKitNowPlayingAvailable()) return
+  if (song === null) {
+    showOnWebKit(null)
+    return
+  }
+  const artwork =
+    song.artwork === undefined ? null : await artworkDataUrl(song.artwork)
+  const duration = Math.max(0, finiteOr(song.duration, 0))
+  const rate = finiteOr(song.rate, 1)
+  showOnWebKit({
+    title: song.title,
+    artist: song.artist ?? '',
+    artwork,
+    playing: song.playing,
+    position: Math.min(duration, Math.max(0, finiteOr(song.position, 0))),
+    duration,
+    rate: rate > 0 ? rate : 1,
+  })
+}
+
+/**
  * The system's media buttons and its progress bar, all through one handler.
- * The unsubscribe clears the plugin's handlers again, so a room that is gone
- * is never asked to play.
+ * The unsubscribe clears the handlers again, so a room that is gone is never
+ * asked to play.
  *
  * Each action is registered on its own: a platform that refuses one must not
  * leave the others unregistered or uncleared. Android answers through the
- * handler given here. iOS's native half does not (see `listenOnIos`).
+ * handler given here. On iOS the buttons reach WebKit's media session
+ * instead, and with them the system pausing the song for another app or a
+ * call (see webkit-now-playing.ts).
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
@@ -387,6 +404,12 @@ export function onMediaAction(
     if (asked !== null) handler(asked)
   }
 
+  if (isIos()) {
+    return webKitNowPlayingAvailable()
+      ? listenOnWebKit(MEDIA_ACTIONS, deliver)
+      : () => undefined
+  }
+
   return lazyListener((dispose) => {
     void (async () => {
       let session: MediaSessionPlugin
@@ -397,7 +420,6 @@ export function onMediaAction(
         // nothing, as they always did.
         return
       }
-      const events = isIos() ? await listenOnIos(session, deliver) : null
       const registered: RegisteredAction[] = []
       for (const action of MEDIA_ACTIONS) {
         try {
@@ -411,7 +433,6 @@ export function onMediaAction(
       }
       dispose({
         remove: async () => {
-          await events?.remove().catch(() => undefined)
           for (const action of registered) {
             // Android hands back a callback id here, not a promise: await
             // it, never chain on it.
@@ -429,36 +450,6 @@ export function onMediaAction(
 
 function isIos(): boolean {
   return isNative() && Capacitor.getPlatform() === 'ios'
-}
-
-/**
- * iOS's native half reports the lock screen's presses through the plugin's
- * 'actionHandler' event, never through the handler `setActionHandler` was
- * given: that method is a promise to the bridge, and the bridge drops a
- * promise method's second argument. It also never removes a command target.
- * Every `setActionHandler` call adds one, clears included, so a press
- * arrives once for every call ever made for that button; the copies of one
- * press are heard once. Null when the event cannot be listened to.
- */
-async function listenOnIos(
-  session: MediaSessionPlugin,
-  deliver: (action: RegisteredAction, details: ActionDetails) => void,
-): Promise<PluginListenerHandle | null> {
-  const events = session as MediaSessionPlugin & MediaSessionEvents
-  let last = { key: '', at: Number.NEGATIVE_INFINITY }
-  try {
-    return await events.addListener('actionHandler', (details) => {
-      const action = details?.action
-      if (!isRegisteredAction(action)) return
-      const key = `${action} ${String(details?.seekTime)}`
-      const at = Date.now()
-      if (key === last.key && at - last.at < PRESS_COPIES_MS) return
-      last = { key, at }
-      deliver(action, details ?? {})
-    })
-  } catch {
-    return null
-  }
 }
 
 // ------------------------------------------------------------
