@@ -1,21 +1,21 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# R8 rules for the release build (app/build.gradle).
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Most of what has to survive R8 already says so itself: @capacitor/android
+# keeps every plugin and its @PluginMethod methods, the social login plugin
+# keeps Capacitor, the Facebook SDK and Google sign-in whole, and RevenueCat
+# and OkHttp bring their own rules. What is left is ours.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# The page reaches native through the WebView's JavaScript interface, which
+# calls its methods by name.
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# The app's own code: MainActivity and the picture-in-picture plugin, whose
+# methods the page calls by name. Capacitor's rules cover the plugin today;
+# this keeps the next one safe as well.
+-keep class com.irchiinnuss.mercurypitch.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Line numbers in Play's crash reports, without the source file names.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

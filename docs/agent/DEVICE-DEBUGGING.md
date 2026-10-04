@@ -143,12 +143,35 @@ Developer screen's Audio section copies the lot. For a Karaoke song kept
 playing behind another app, its `karaoke` entries say what the way back
 looked like:
 
-| Entry                           | What it says                                                                                                                           |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved |
-| `clock-stuck`                   | After the return the song said it played on a clock that did not move; the first asks for the clock back, the second stops the run     |
-| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                        |
-| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice            |
+| Entry                           | What it says                                                                                                                                                |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                      |
+| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                             |
+| `statechange`                   | The clock changed state while the room watched it; on iOS `interrupted` means a call, Siri or another app took the sound, and a playing song pauses with it |
+| `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run with a notice             |
+| `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back                                                                       |
+| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                             |
+| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                 |
 
-Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts)
-and [`streaming-stem-voice.ts`](../../src/features/stem-mixer/streaming-stem-voice.ts).
+Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts),
+[`useStemMixerAudioController.ts`](../../src/features/stem-mixer/useStemMixerAudioController.ts)
+and [`streaming-stem-voice.ts`](../../src/features/stem-mixer/streaming-stem-voice.ts). On iOS the
+app's own plugin adds `[audio session]` lines beside them: another app's sound
+starting and stopping, interruptions and routes, each with the time iOS said it
+([`ios-audio-handoff.md`](../plans/mobile-native/ios-audio-handoff.md)).
+
+## A crash only in a Play build
+
+The Android build Play installs is shrunk and renamed by R8
+(`apps/mercurypitch/android/app/build.gradle`); the debug APK is not. A crash,
+or a plugin call that does nothing, in a Play build and never in the debug APK
+is most likely code R8 removed or renamed because only reflection reached it.
+Play Console's crash reports show the real names: the bundle carries R8's
+mapping. The fix is a keep rule in
+`apps/mercurypitch/android/app/proguard-rules.pro`; the rules each plugin
+brings itself are in its `android/` folder (`consumerProguardFiles`).
+
+To try a release build on a phone, install it from Play's internal testing
+track. Sideloading the release APK means uninstalling the debug build first
+(they are signed with different keys), and that deletes what the app keeps on
+the phone.
