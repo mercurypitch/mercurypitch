@@ -3,31 +3,45 @@
 // ============================================================
 //
 // Node has no media element and no navigator.mediaSession, so both are
-// stand-ins: a carrier that keeps `paused` and fires play, pause and seeked
-// as an `<audio>` does, and a session that keeps what it was told.
+// stand-ins: a carrier that keeps `paused` and queues play, playing, pause
+// and seeked as WebKit does, interruptions included, and a session that
+// keeps what it was told.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
-import { listenOnWebKit, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
-/** An `<audio>` element, as far as the carrier uses one. */
+/**
+ * An `<audio>` element, as far as the carrier uses one. As in WebKit,
+ * `paused` changes at once and the events follow a task later: `settle()`
+ * fires the ones queued so far. An interruption pauses it and remembers
+ * whether to resume; a pause while it lasts forgets that, and a play ends it.
+ */
 class FakeCarrier extends EventTarget {
   loop = false
   preload = ''
   disableRemotePlayback = false
   paused = true
   private source: string | null = null
+  private queued: string[] = []
+  private interrupted = false
+  private resumeWhenOver = false
 
   readonly play = vi.fn(async () => {
+    this.interrupted = false
     if (!this.paused) return
     this.paused = false
-    this.dispatchEvent(new Event('play'))
+    this.queued.push('play', 'playing')
   })
 
   readonly pause = vi.fn(() => {
+    if (this.interrupted) {
+      this.resumeWhenOver = false
+      return
+    }
     if (this.paused) return
     this.paused = true
-    this.dispatchEvent(new Event('pause'))
+    this.queued.push('pause')
   })
 
   readonly load = vi.fn()
@@ -48,26 +62,41 @@ class FakeCarrier extends EventTarget {
     if (name === 'src') this.source = null
   }
 
-  /** What WebKit does when another app takes the sound, or a call comes. */
-  interrupt(): void {
-    this.paused = true
-    this.dispatchEvent(new Event('pause'))
+  /** Fire the events queued so far, in order. */
+  settle(): void {
+    const events = this.queued
+    this.queued = []
+    for (const type of events) this.dispatchEvent(new Event(type))
   }
 
-  /** What WebKit does when a call ends with the system's word to resume. */
-  resumeAfterInterruption(): void {
+  /** Another app takes the sound, or a call comes. */
+  interrupt(): void {
+    this.interrupted = true
+    this.resumeWhenOver = !this.paused
+    if (this.paused) return
+    this.paused = true
+    this.queued.push('pause')
+  }
+
+  /** The call ends, with or without the system's word to resume. */
+  endInterruption(mayResume: boolean): void {
+    if (!this.interrupted) return
+    this.interrupted = false
+    if (!mayResume || !this.resumeWhenOver) return
     this.paused = false
-    this.dispatchEvent(new Event('play'))
+    this.queued.push('play', 'playing')
   }
 
   /** The loop going back to its start. */
   goRound(): void {
-    this.dispatchEvent(new Event('seeked'))
+    this.queued.push('seeked')
   }
 }
 
 class FakeMetadata {
   static made = 0
+  /** Set to make the next one throw, as WebKit does for a bad address. */
+  static refuseNext = false
   readonly title: string
   readonly artist: string
   readonly artwork: readonly { readonly src: string }[]
@@ -77,6 +106,10 @@ class FakeMetadata {
     artist: string
     artwork: readonly { readonly src: string }[]
   }) {
+    if (FakeMetadata.refuseNext) {
+      FakeMetadata.refuseNext = false
+      throw new TypeError('Invalid URL')
+    }
     FakeMetadata.made += 1
     this.title = init.title
     this.artist = init.artist
@@ -116,6 +149,7 @@ beforeEach(() => {
   carrier = new FakeCarrier()
   clock = 0
   FakeMetadata.made = 0
+  FakeMetadata.refuseNext = false
   vi.stubGlobal('navigator', { mediaSession: session })
   vi.stubGlobal('MediaMetadata', FakeMetadata)
   vi.spyOn(console, 'info').mockImplementation(() => undefined)
@@ -198,12 +232,27 @@ describe('a song on the lock screen', () => {
     expect(session.metadata?.artwork).toEqual([])
   })
 
+  it('plays the carrier without a name WebKit refused, and names it next time', () => {
+    FakeMetadata.refuseNext = true
+
+    expect(() => {
+      showOnWebKit(song())
+    }).not.toThrow()
+    expect(session.metadata).toBeNull()
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+
+    showOnWebKit(song({ position: 150 }))
+    expect(session.metadata).toMatchObject({ title: 'Harbour Lights' })
+  })
+
   it('puts everything away when the song is gone', () => {
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)
     showOnWebKit(song())
+    carrier.settle()
 
     showOnWebKit(null)
+    carrier.settle()
 
     expect(session.metadata).toBeNull()
     expect(session.playbackState).toBe('none')
@@ -253,6 +302,7 @@ describe('a song on the lock screen', () => {
         'NotAllowedError',
       )
     })
+    carrier.settle()
     expect(deliver).not.toHaveBeenCalled()
   })
 
@@ -276,6 +326,7 @@ describe('the carrier going round', () => {
     clock = 4000
 
     carrier.goRound()
+    carrier.settle()
 
     expect(session.setPositionState).toHaveBeenLastCalledWith({
       duration: 200,
@@ -288,6 +339,7 @@ describe('the carrier going round', () => {
     showOnWebKit(song({ position: 10, duration: 200, rate: 1.5 }))
     clock = 4000
     carrier.goRound()
+    carrier.settle()
     expect(session.setPositionState).toHaveBeenLastCalledWith({
       duration: 200,
       playbackRate: 1.5,
@@ -297,6 +349,7 @@ describe('the carrier going round', () => {
     showOnWebKit(song({ position: 198, duration: 200 }))
     clock = 8000
     carrier.goRound()
+    carrier.settle()
     expect(session.setPositionState).toHaveBeenLastCalledWith({
       duration: 200,
       playbackRate: 1,
@@ -309,6 +362,7 @@ describe('the carrier going round', () => {
     clock = 10_000
 
     carrier.goRound()
+    carrier.settle()
 
     expect(session.setPositionState).toHaveBeenLastCalledWith({
       duration: 246,
@@ -323,8 +377,10 @@ describe('what the system does to the song', () => {
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)
     showOnWebKit(song())
+    carrier.settle()
 
     carrier.interrupt()
+    carrier.settle()
 
     expect(deliver.mock.calls).toEqual([['pause', {}]])
   })
@@ -334,27 +390,71 @@ describe('what the system does to the song', () => {
     listenOnWebKit(ACTIONS, deliver)
 
     showOnWebKit(song())
+    carrier.settle()
     showOnWebKit(song({ playing: false }))
+    carrier.settle()
     showOnWebKit(song())
+    carrier.settle()
 
     expect(carrier.play).toHaveBeenCalledTimes(2)
     expect(deliver).not.toHaveBeenCalled()
   })
 
-  it('plays the song again when the system resumes the carrier', () => {
+  it('hears nothing from events the song has overtaken', () => {
+    // WebKit fires them a task late. Paused and played again before the
+    // pause arrives, the song must not hear that pause as the system's;
+    // played and paused again, it must not hear that play.
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)
     showOnWebKit(song())
-    carrier.interrupt()
-    // The room paused, as it was asked to.
-    showOnWebKit(song({ playing: false }))
+    carrier.settle()
 
-    carrier.resumeAfterInterruption()
+    showOnWebKit(song({ playing: false }))
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    showOnWebKit(song())
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+
+    expect(deliver).not.toHaveBeenCalled()
+  })
+
+  it('plays the song again when a call ends with the word to resume', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.interrupt()
+    carrier.settle()
+
+    // The room paused, as it was asked to. The carrier is paused already,
+    // and pausing it again would tell WebKit not to resume it.
+    showOnWebKit(song({ playing: false }))
+    expect(carrier.pause).not.toHaveBeenCalled()
+
+    carrier.endInterruption(true)
+    carrier.settle()
 
     expect(deliver.mock.calls).toEqual([
       ['pause', {}],
       ['play', {}],
     ])
+  })
+
+  it('leaves the song paused when a call ends without the word to resume', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.interrupt()
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+
+    carrier.endInterruption(false)
+    carrier.settle()
+
+    expect(deliver.mock.calls).toEqual([['pause', {}]])
   })
 
   it('stops telling a listener that has gone', () => {
@@ -363,7 +463,9 @@ describe('what the system does to the song', () => {
     stop()
 
     showOnWebKit(song())
+    carrier.settle()
     carrier.interrupt()
+    carrier.settle()
 
     expect(deliver).not.toHaveBeenCalled()
   })
@@ -391,6 +493,30 @@ describe('the buttons', () => {
       ['seekto', { action: 'seekto', seekTime: 61.5 }],
       ['pause', { action: 'pause' }],
     ])
+  })
+
+  it('plays a carrier that would not play when play is pressed', async () => {
+    // The song plays, but its carrier was refused: the lock screen shows it
+    // paused, and the room, already playing, has nothing new to report.
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    carrier.play.mockRejectedValueOnce(
+      new DOMException('Not now', 'NotAllowedError'),
+    )
+    showOnWebKit(song())
+    await vi.waitFor(() => {
+      expect(console.info).toHaveBeenCalled()
+    })
+    expect(carrier.paused).toBe(true)
+
+    press('play', { action: 'play' })
+    expect(carrier.play).toHaveBeenCalledTimes(2)
+    expect(carrier.paused).toBe(false)
+    expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
+
+    // Playing now: a press leaves it be.
+    press('play', { action: 'play' })
+    expect(carrier.play).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the buttons WebKit has when it refuses one, and clears only those', () => {
@@ -424,9 +550,80 @@ describe('the buttons', () => {
     expect(session.setActionHandler).not.toHaveBeenCalled()
 
     showOnWebKit(song())
+    carrier.settle()
     carrier.interrupt()
+    carrier.settle()
     expect(second).toHaveBeenCalledWith('pause', {})
     expect(first).not.toHaveBeenCalled()
+  })
+})
+
+describe('holding the playback session', () => {
+  // While the carrier holds it, the app's unlock clip stands aside: beside
+  // the carrier, WebKit could show the clip on the lock screen, send it a
+  // headset's press, and keep the app there after the song has gone.
+
+  it('holds it once the carrier sounds, and gives it back with the song', () => {
+    const heard = vi.fn()
+    onCarrierHolding(heard)
+
+    showOnWebKit(song())
+    expect(heard).not.toHaveBeenCalled()
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    showOnWebKit(song())
+    carrier.settle()
+    expect(heard.mock.calls).toEqual([[true]])
+
+    showOnWebKit(null)
+    expect(heard.mock.calls).toEqual([[true], [false]])
+  })
+
+  it('never holds it for a song that has never played', () => {
+    const heard = vi.fn()
+    onCarrierHolding(heard)
+
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    showOnWebKit(null)
+
+    expect(heard).not.toHaveBeenCalled()
+  })
+
+  it('takes no word from a carrier sounding after its song was put away', () => {
+    const heard = vi.fn()
+    onCarrierHolding(heard)
+
+    showOnWebKit(song())
+    showOnWebKit(null)
+    carrier.settle()
+
+    expect(heard).not.toHaveBeenCalled()
+  })
+
+  it('tells a listener that comes while it holds at once', () => {
+    showOnWebKit(song())
+    carrier.settle()
+    const heard = vi.fn()
+
+    onCarrierHolding(heard)
+
+    expect(heard.mock.calls).toEqual([[true]])
+  })
+
+  it('stops telling a listener that has gone, but not a newer one', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const stopFirst = onCarrierHolding(first)
+    onCarrierHolding(second)
+    stopFirst()
+
+    showOnWebKit(song())
+    carrier.settle()
+
+    expect(first).not.toHaveBeenCalled()
+    expect(second.mock.calls).toEqual([[true]])
   })
 })
 

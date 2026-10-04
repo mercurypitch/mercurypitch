@@ -20,14 +20,22 @@ const platform = vi.hoisted(() => ({
     Promise.resolve(),
   ),
   onPictureInPicture: vi.fn((_handler: (inPip: boolean) => void) => vi.fn()),
+  onNowPlayingHoldsAudio: vi.fn((_listener: (holds: boolean) => void) =>
+    vi.fn(),
+  ),
+}))
+
+const unlock = vi.hoisted(() => ({
+  standUnlockClipAside: vi.fn((_aside: boolean) => undefined),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
+vi.mock('@/lib/audio-unlock', () => unlock)
 
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io'
 // @ts-expect-error -- a plain .mjs manifest with no types, read as is.
 import { globToRegExp, NATIVE_ASSETS } from '../../native-assets.mjs'
-import { createNativeDevice } from './native-device'
+import { createNativeDevice, standUnlockClipAsideForNowPlaying, } from './native-device'
 
 function fakeContext() {
   return {
@@ -186,6 +194,20 @@ describe('the device a room reaches through the bridge', () => {
     unsubscribe()
 
     expect(handler).toHaveBeenCalledWith(true)
+    expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('stands the unlock clip aside while the lock screen’s carrier holds the session', () => {
+    const stop = vi.fn()
+    platform.onNowPlayingHoldsAudio.mockReturnValueOnce(stop)
+
+    const release = standUnlockClipAsideForNowPlaying()
+    const heard = platform.onNowPlayingHoldsAudio.mock.calls[0]?.[0]
+    heard?.(true)
+    heard?.(false)
+    release()
+
+    expect(unlock.standUnlockClipAside.mock.calls).toEqual([[true], [false]])
     expect(stop).toHaveBeenCalledTimes(1)
   })
 })

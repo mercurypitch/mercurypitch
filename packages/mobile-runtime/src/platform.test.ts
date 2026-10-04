@@ -182,6 +182,7 @@ describe('on the web', () => {
     const stopState = platform.onAppState(handler)
     const stopMedia = platform.onMediaAction(handler)
     const stopWindow = platform.onPictureInPicture(handler)
+    const stopHolding = platform.onNowPlayingHoldsAudio(handler)
     await settle()
 
     expect(loaded).toEqual([])
@@ -193,6 +194,7 @@ describe('on the web', () => {
       stopState()
       stopMedia()
       stopWindow()
+      stopHolding()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -1000,6 +1002,8 @@ describe('on a phone', () => {
     it('takes the song away again', async () => {
       const platform = await loadOnIos()
       await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      expect(webKit.metadata).not.toBeNull()
+      expect(carrier.hasAttribute('src')).toBe(true)
 
       await platform.setNowPlaying(null)
 
@@ -1042,6 +1046,23 @@ describe('on a phone', () => {
       expect(handler.mock.calls).toEqual([['pause']])
     })
 
+    it('tells the app while the carrier holds the playback session', async () => {
+      const platform = await loadOnIos()
+      const holds = vi.fn()
+
+      const stop = platform.onNowPlayingHoldsAudio(holds)
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      // The carrier sounding is what takes the session, not the report.
+      expect(holds).not.toHaveBeenCalled()
+      carrier.dispatchEvent(new Event('playing'))
+      await platform.setNowPlaying(null)
+      stop()
+      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+      carrier.dispatchEvent(new Event('playing'))
+
+      expect(holds.mock.calls).toEqual([[true], [false]])
+    })
+
     it('shows nothing, and loads nothing, in a WebView without the API', async () => {
       vi.stubGlobal('navigator', {})
       const platform = await loadOnIos()
@@ -1050,11 +1071,25 @@ describe('on a phone', () => {
         platform.setNowPlaying({ title: 'Harbour Lights', playing: true }),
       ).resolves.toBeUndefined()
       platform.onMediaAction(vi.fn())()
+      const holds = vi.fn()
+      platform.onNowPlayingHoldsAudio(holds)()
       await settle()
 
       expect(carrier.play).not.toHaveBeenCalled()
+      expect(holds).not.toHaveBeenCalled()
       expect(loaded).not.toContain('@capgo/capacitor-media-session')
     })
+  })
+
+  it('has no lock-screen carrier on Android, so nothing to hear of one', async () => {
+    const platform = await loadPlatform(true)
+    const holds = vi.fn()
+
+    const stop = platform.onNowPlayingHoldsAudio(holds)
+    await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+    stop()
+
+    expect(holds).not.toHaveBeenCalled()
   })
 
   it('registers the buttons a platform has, and clears only those', async () => {

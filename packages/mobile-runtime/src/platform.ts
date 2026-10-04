@@ -39,7 +39,7 @@ import type { PluginListenerHandle } from '@capacitor/core'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import type { MediaSessionPlugin, MetadataOptions, } from '@capgo/capacitor-media-session'
 import { artworkDataUrl } from './artwork-data'
-import { listenOnWebKit, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { listenOnWebKit, onCarrierHolding, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 /** Removes whatever the registering call installed. Safe to call twice. */
 export type Unsubscribe = () => void
@@ -450,6 +450,18 @@ export function onMediaAction(
 
 function isIos(): boolean {
   return isNative() && Capacitor.getPlatform() === 'ios'
+}
+
+/**
+ * iOS: hears WebKit's lock-screen carrier take the playback session (true)
+ * and give it back (false), so the app's own unlock clip can stand aside
+ * meanwhile (see webkit-now-playing.ts). Nothing on Android or the web.
+ */
+export function onNowPlayingHoldsAudio(
+  listener: (holds: boolean) => void,
+): Unsubscribe {
+  if (!isIos() || !webKitNowPlayingAvailable()) return () => undefined
+  return onCarrierHolding(listener)
 }
 
 // ------------------------------------------------------------
