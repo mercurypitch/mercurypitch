@@ -170,6 +170,85 @@ describe('iOS audio unlock', () => {
     uninstall()
   })
 
+  it('takes the session with the clip before the clock, for a press of play', async () => {
+    const { unlockForPlayback } = await import('@/lib/audio-unlock')
+    const context = createAudioContext('suspended')
+    const ensure = vi.fn(() => context as unknown as AudioContext)
+
+    expect(unlockForPlayback(ensure)).toBe(context)
+
+    expect(playSilent).toHaveBeenCalledBefore(ensure)
+    expect(ensure).toHaveBeenCalledBefore(context.resume)
+  })
+
+  it('has the carrier take the session while the clip stands aside', async () => {
+    const { standUnlockClipAside, unlockForPlayback } =
+      await import('@/lib/audio-unlock')
+    const context = createAudioContext('interrupted' as AudioContextState)
+    const take = vi.fn()
+    standUnlockClipAside(true, take)
+
+    unlockForPlayback(() => context as unknown as AudioContext)
+
+    expect(take).toHaveBeenCalledBefore(context.resume)
+    expect(playSilent).not.toHaveBeenCalled()
+  })
+
+  it('never has the carrier take the session for a tap that is not play', async () => {
+    const { installAudioUnlock, standUnlockClipAside, unlockAudio } =
+      await import('@/lib/audio-unlock')
+    const context = createAudioContext('suspended')
+    const take = vi.fn()
+    standUnlockClipAside(true, take)
+    const uninstall = installAudioUnlock(
+      () => context as unknown as AudioContext,
+    )
+
+    unlockAudio(context as unknown as AudioContext)
+    document.dispatchEvent(new Event('pointerup'))
+
+    expect(take).not.toHaveBeenCalled()
+    uninstall()
+  })
+
+  it('forgets the carrier once the clip is back', async () => {
+    const { standUnlockClipAside, unlockForPlayback } =
+      await import('@/lib/audio-unlock')
+    const take = vi.fn()
+    standUnlockClipAside(true, take)
+    standUnlockClipAside(false)
+
+    unlockForPlayback(() => null)
+
+    expect(take).not.toHaveBeenCalled()
+    expect(playSilent).toHaveBeenCalledOnce()
+  })
+
+  it.each(['a tap', 'the page coming back'])(
+    'leaves a context another app interrupted alone on %s',
+    async (event) => {
+      const { installAudioUnlock } = await import('@/lib/audio-unlock')
+      const context = createAudioContext('interrupted' as AudioContextState)
+      const uninstall = installAudioUnlock(
+        () => context as unknown as AudioContext,
+      )
+
+      if (event === 'a tap') {
+        document.dispatchEvent(new Event('pointerup'))
+      } else {
+        setVisibility('hidden')
+        setVisibility('visible')
+      }
+      await Promise.resolve()
+
+      // A resume here would take the sound back from the other app.
+      expect(context.resume).not.toHaveBeenCalled()
+      expect(context.suspend).not.toHaveBeenCalled()
+      expect(playSilent).not.toHaveBeenCalled()
+      uninstall()
+    },
+  )
+
   it('does not recycle the context after its listener is removed', async () => {
     const { installAudioUnlock } = await import('@/lib/audio-unlock')
     const context = createAudioContext()

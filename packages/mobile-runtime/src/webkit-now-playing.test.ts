@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
-import { listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 /**
  * An `<audio>` element, as far as the carrier uses one, with the bookkeeping
@@ -583,6 +583,25 @@ describe('what the system does to the song', () => {
     })
   }
 
+  it('plays the song again after a call the song heard first', () => {
+    // The song's clock reports the interruption before the carrier's pause
+    // event arrives: the room's paused report says why.
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+
+    carrier.interrupt()
+    showOnWebKit(song({ playing: false, interrupted: true }))
+    carrier.settle()
+    expect(carrier.pause).not.toHaveBeenCalled()
+
+    carrier.endInterruption(true)
+    carrier.settle()
+
+    expect(deliver.mock.calls).toEqual([['play', {}]])
+  })
+
   it('follows the system playing the carrier only to undo its own pause', () => {
     // The song paused in the app, then the system playing the carrier, as
     // WebKit can after a suspension: the song stays paused, and so does the
@@ -699,6 +718,54 @@ describe('the buttons', () => {
     carrier.settle()
     expect(second).toHaveBeenCalledWith('pause', {})
     expect(first).not.toHaveBeenCalled()
+  })
+})
+
+describe('a press of play', () => {
+  it('plays the carrier of a paused song at once, ahead of the report', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+
+    claimCarrier()
+    expect(carrier.play).toHaveBeenCalledTimes(2)
+    carrier.settle()
+    showOnWebKit(song())
+
+    // The report finds it playing, and its play was the song's own.
+    expect(carrier.play).toHaveBeenCalledTimes(2)
+    expect(carrier.paused).toBe(false)
+    expect(deliver).not.toHaveBeenCalled()
+  })
+
+  it('takes the sound back from another app', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.interrupt()
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+
+    claimCarrier()
+    carrier.settle()
+
+    expect(carrier.paused).toBe(false)
+    expect(deliver.mock.calls).toEqual([['pause', {}]])
+  })
+
+  it('leaves a song that never played, or was put away, to its report', () => {
+    claimCarrier()
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(null)
+
+    claimCarrier()
+
+    expect(carrier.play).toHaveBeenCalledTimes(1)
   })
 })
 

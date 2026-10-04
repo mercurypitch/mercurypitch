@@ -27,10 +27,13 @@ const platform = vi.hoisted(() => ({
   onNowPlayingHoldsAudio: vi.fn((_listener: (holds: boolean) => void) =>
     vi.fn(),
   ),
+  claimNowPlaying: vi.fn(),
 }))
 
 const unlock = vi.hoisted(() => ({
-  standUnlockClipAside: vi.fn((_aside: boolean) => undefined),
+  standUnlockClipAside: vi.fn(
+    (_aside: boolean, _take?: () => void) => undefined,
+  ),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', () => platform)
@@ -233,7 +236,11 @@ describe('the device a room reaches through the bridge', () => {
     heard?.(false)
     release()
 
-    expect(unlock.standUnlockClipAside.mock.calls).toEqual([[true], [false]])
+    // Aside, a press of play has the carrier take the sound back first.
+    expect(unlock.standUnlockClipAside.mock.calls).toEqual([
+      [true, platform.claimNowPlaying],
+      [false, platform.claimNowPlaying],
+    ])
     expect(stop).toHaveBeenCalledTimes(1)
   })
 })

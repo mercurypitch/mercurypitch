@@ -183,6 +183,7 @@ describe('on the web', () => {
       'setPictureInPictureLyrics',
       (p: Platform) => p.setPictureInPictureLyrics(SCRIPT),
     ],
+    ['claimNowPlaying', (p: Platform) => p.claimNowPlaying()],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
 
@@ -1072,6 +1073,37 @@ describe('on a phone', () => {
       expect(handler.mock.calls).toEqual([['pause']])
     })
 
+    it('has the carrier take the sound first on a press of play', async () => {
+      const platform = await loadOnIos()
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
+
+      platform.claimNowPlaying()
+
+      expect(carrier.play).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps the system’s pause when the song heard the interruption first', async () => {
+      const platform = await loadOnIos()
+      const handler = vi.fn()
+      platform.onMediaAction(handler)
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+
+      // Another app took the sound, and the song's clock said so first.
+      carrier.paused = true
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: false,
+        interrupted: true,
+      })
+      // A call ends with the word to resume: WebKit plays the carrier again.
+      carrier.paused = false
+      carrier.dispatchEvent(new Event('play'))
+
+      expect(carrier.pause).not.toHaveBeenCalled()
+      expect(handler.mock.calls).toEqual([['play']])
+    })
+
     it('tells the app while the carrier holds the playback session', async () => {
       const platform = await loadOnIos()
       const holds = vi.fn()
@@ -1257,6 +1289,28 @@ describe('picture in picture', () => {
 
     expect(info.mock.calls).toEqual([
       ['[lyrics window] armed: a song is playing'],
+    ])
+    info.mockRestore()
+  })
+
+  it("writes what iOS does to the app's sound to the console as well", async () => {
+    const platform = await loadPlatform(true, 'ios')
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+    await platform.setPictureInPictureAutoEnter(true)
+    await settle()
+
+    const logs = pictureInPicture.addListener.mock.calls.filter(
+      ([name]) => name === 'audioSessionLog',
+    )
+    expect(logs).toHaveLength(1)
+    const say = logs[0]?.[1] as (event: { message?: unknown }) => void
+    say({ message: "16:20:31.402 another app's sound started" })
+    say({ message: 42 })
+
+    expect(info.mock.calls).toEqual([
+      ["[audio session] 16:20:31.402 another app's sound started"],
     ])
     info.mockRestore()
   })

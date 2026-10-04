@@ -243,6 +243,11 @@ export interface NativeNowPlaying {
   readonly duration?: number
   /** How fast it plays: 1 is as written. */
   readonly rate?: number
+  /**
+   * Paused because the system took the sound (another app, a call), not by
+   * a press: iOS can then bring the song back when a call ends.
+   */
+  readonly interrupted?: boolean
 }
 
 /**

@@ -311,26 +311,46 @@ describe('the shared audio context', () => {
     expect(built[0].suspendCount).toBe(0)
   })
 
-  it('lets outputs observe an interruption before attempting an automatic resume', async () => {
+  it('leaves an interruption to the system, and the next press of play takes the sound back', async () => {
     const { built } = useFakeContexts()
-    await acquireSharedAudioContext('asset-output').unlock()
-    const seen: string[] = []
-    built[0].addEventListener('statechange', () => seen.push(built[0].state))
+    const lease = acquireSharedAudioContext('sing-driver:glass')
+    await lease.unlock()
+
+    // Another app took the sound: a resume now would take it straight back.
     built[0].interrupt()
-    expect(seen[0]).toBe('interrupted')
     await settle()
+    expect(built[0].state).toBe('interrupted')
+    expect(built[0].resumeCount).toBe(1)
+
+    await lease.unlock()
     expect(built[0].state).toBe('running')
   })
 
-  it('resumes an interrupted context while the page is in front', async () => {
+  it('does not take an interrupted context back when the page comes back', async () => {
     const { built } = useFakeContexts()
     await acquireSharedAudioContext('sing-driver:glass').unlock()
+    setPageHidden(true)
+    await settle()
+    expect(built[0].state).toBe('suspended')
 
     built[0].interrupt()
+    setPageHidden(false)
     await settle()
 
-    expect(built[0].state).toBe('running')
-    expect(built[0].resumeCount).toBe(2)
+    expect(built[0].state).toBe('interrupted')
+    expect(built[0].resumeCount).toBe(1)
+  })
+
+  it('does not take an interrupted context back on the way in from the background', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('asset-output').unlock()
+    built[0].interrupt()
+
+    resumeSharedAudioContext()
+    await settle()
+
+    expect(built[0].state).toBe('interrupted')
+    expect(built[0].resumeCount).toBe(1)
   })
 
   it('leaves an interruption alone while the page is hidden', async () => {
@@ -512,17 +532,19 @@ describe('a background hold', () => {
     expect(built[0].state).toBe('suspended')
   })
 
-  it('resumes an interrupted context behind a hidden page while held', async () => {
+  it('leaves an interrupted context behind a hidden page while held', async () => {
     const { built } = useFakeContexts()
     await acquireSharedAudioContext('karaoke-room').unlock()
     holdSharedAudioContextInBackground('karaoke-room')
     setPageHidden(true)
     await settle()
 
+    // The song behind another app, and that app starts its own: it keeps it.
     built[0].interrupt()
     await settle()
 
-    expect(built[0].state).toBe('running')
+    expect(built[0].state).toBe('interrupted')
+    expect(built[0].resumeCount).toBe(1)
   })
 })
 

@@ -16,6 +16,8 @@
 // clock, which rides on every Now Playing report. The window's play and pause
 // reach the media handlers as a lock-screen press does, and what the window
 // does is written to the console as `[lyrics window] ...`, for a device test.
+// The same plugin says what iOS does to the app's sound, as `[audio session]
+// ...`: another app's sound starting and stopping, a call, the route.
 //
 // The web has no window for a page: inert wrappers, and the plugin is never
 // even registered there.
@@ -57,7 +59,7 @@ interface PictureInPicturePlugin {
     listener: (event: { action?: unknown }) => void,
   ): Promise<PluginListenerHandle>
   addListener(
-    eventName: 'pictureInPictureLog',
+    eventName: 'pictureInPictureLog' | 'audioSessionLog',
     listener: (event: { message?: unknown }) => void,
   ): Promise<PluginListenerHandle>
 }
@@ -103,29 +105,38 @@ let pictureInPicturePlugin: PictureInPicturePlugin | null = null
 function pictureInPicture(): PictureInPicturePlugin {
   pictureInPicturePlugin ??=
     registerPlugin<PictureInPicturePlugin>('PictureInPicture')
-  if (isIos()) watchWindowLog(pictureInPicturePlugin)
+  if (isIos()) watchNativeLogs(pictureInPicturePlugin)
   return pictureInPicturePlugin
 }
 
-// The iOS window's own account of itself, for as long as the app runs. The
-// plugin keeps every line from before this listens, so the first ones (the
-// plugin loading, whether the phone has a window at all) are not lost.
-let windowLogWatched = false
+// The iOS plugin's own account of the window and of the app's sound, for as
+// long as the app runs. The plugin keeps every line from before this
+// listens, so the first ones (the plugin loading, whether the phone has a
+// window at all, what was playing elsewhere) are not lost; each carries the
+// time iOS said it, to line up against the page's audio record.
+let nativeLogsWatched = false
 
-function watchWindowLog(plugin: PictureInPicturePlugin): void {
-  if (windowLogWatched) return
-  windowLogWatched = true
-  void (async () => {
-    try {
-      await plugin.addListener('pictureInPictureLog', (event) => {
-        if (typeof event.message === 'string') {
-          console.info(`[lyrics window] ${event.message}`)
-        }
-      })
-    } catch {
-      // No plugin behind the name in this build: nothing to hear.
-    }
-  })()
+const NATIVE_LOGS = [
+  ['pictureInPictureLog', '[lyrics window]'],
+  ['audioSessionLog', '[audio session]'],
+] as const
+
+function watchNativeLogs(plugin: PictureInPicturePlugin): void {
+  if (nativeLogsWatched) return
+  nativeLogsWatched = true
+  for (const [eventName, prefix] of NATIVE_LOGS) {
+    void (async () => {
+      try {
+        await plugin.addListener(eventName, (event) => {
+          if (typeof event.message === 'string') {
+            console.info(`${prefix} ${event.message}`)
+          }
+        })
+      } catch {
+        // No plugin behind the name in this build: nothing to hear.
+      }
+    })()
+  }
 }
 
 /**

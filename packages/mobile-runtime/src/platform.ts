@@ -41,7 +41,7 @@ import { artworkDataUrl } from './artwork-data'
 import type { Unsubscribe } from './native-calls'
 import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-calls'
 import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
-import { listenOnWebKit, onCarrierHolding, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 export type { Unsubscribe } from './native-calls'
 export type { PictureInPictureLyrics } from './picture-in-picture'
@@ -178,6 +178,12 @@ export interface NowPlaying {
   readonly duration?: number
   /** How fast it plays while playing: 1 is as written. Absent reads as 1. */
   readonly rate?: number
+  /**
+   * iOS: paused because the system took the sound (another app, a call),
+   * not by a press. The lock screen's carrier is left as the system left it,
+   * so a call that ends with the word to resume brings the song back.
+   */
+  readonly interrupted?: boolean
 }
 
 /**
@@ -360,6 +366,7 @@ async function showThroughWebKit(song: NowPlaying | null): Promise<void> {
     position: Math.min(duration, Math.max(0, finiteOr(song.position, 0))),
     duration,
     rate: rate > 0 ? rate : 1,
+    interrupted: song.interrupted === true,
   })
 }
 
@@ -447,6 +454,16 @@ export function onNowPlayingHoldsAudio(
 ): Unsubscribe {
   if (!isIos() || !webKitNowPlayingAvailable()) return () => undefined
   return onCarrierHolding(listener)
+}
+
+/**
+ * iOS: a press of play is about to start the song on the lock screen. Its
+ * carrier plays now, from inside the press, ahead of the song's clock (see
+ * webkit-now-playing.ts, `claimCarrier`). Nothing on Android or the web.
+ */
+export function claimNowPlaying(): void {
+  if (!isIos() || !webKitNowPlayingAvailable()) return
+  claimCarrier()
 }
 
 /**
