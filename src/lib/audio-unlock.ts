@@ -21,10 +21,12 @@
 // installAudioUnlock(getCtx) additionally arms document-level listeners so
 // the first tap anywhere primes the session, and re-resumes the context
 // when the tab becomes visible again (iOS suspends/interrupts contexts on
-// tab switch and screen lock).
+// tab switch and screen lock). standUnlockClipAside() hands the clip's job
+// to an element that does it already: the iOS app's lock-screen carrier.
 
 let silentEl: HTMLAudioElement | null = null
 let sessionPrimed = false
+let standingAside = false
 
 interface AudioActivationTarget {
   getAudioContext: () => AudioContext | null
@@ -71,26 +73,57 @@ function silentWavUrl(): string {
  *  context. Must be called from inside a user gesture to have effect;
  *  calling it anywhere else is harmless. */
 export function unlockAudio(ctx?: AudioContext | null): void {
-  try {
-    if (silentEl === null) {
-      silentEl = new Audio(silentWavUrl())
-      silentEl.setAttribute('playsinline', '')
-      silentEl.preload = 'auto'
-    }
-    const p = silentEl.play()
+  if (standingAside) {
+    // Another element holds the session (see standUnlockClipAside).
     sessionPrimed = true
-    void p?.catch(() => {
-      // Autoplay-blocked outside a gesture — the next real gesture retries.
-      sessionPrimed = false
-    })
-  } catch {
-    /* media element unavailable — nothing to promote */
+  } else {
+    try {
+      if (silentEl === null) {
+        silentEl = new Audio(silentWavUrl())
+        silentEl.setAttribute('playsinline', '')
+        silentEl.preload = 'auto'
+      }
+      silentEl.muted = false
+      const p = silentEl.play()
+      sessionPrimed = true
+      void p?.catch(() => {
+        // Autoplay-blocked outside a gesture — the next real gesture retries.
+        sessionPrimed = false
+      })
+    } catch {
+      /* media element unavailable — nothing to promote */
+    }
   }
   if (ctx && ctx.state !== 'running') {
     void ctx.resume().catch(() => {
       /* not in a gesture yet — a later gesture will retry */
     })
   }
+}
+
+/**
+ * Stand the clip aside while another element holds the playback session, and
+ * bring it back after.
+ *
+ * In the iOS app a Karaoke song puts a carrier of its own on the lock screen
+ * (mobile-runtime's webkit-now-playing): looping silence that keeps the
+ * session promoted, as this clip does. Beside it the clip is a rival. WebKit
+ * shows on the lock screen whichever element a tap played last, sends a
+ * headset's press to whichever started last, and, once the app is on the
+ * lock screen, offers even a 0.1 s clip, which would keep it there after the
+ * song has gone. Aside, the clip is muted, which WebKit never offers, and an
+ * unlock does not play it. Brought back, it stays muted until the next
+ * unlock: unmuted at once, it would qualify again before WebKit has taken
+ * the app off the lock screen.
+ */
+export function standUnlockClipAside(aside: boolean): void {
+  standingAside = aside
+  if (aside) {
+    if (silentEl !== null) silentEl.muted = true
+    return
+  }
+  // Nothing holds the session now: the next tap plays the clip again.
+  sessionPrimed = false
 }
 
 /**

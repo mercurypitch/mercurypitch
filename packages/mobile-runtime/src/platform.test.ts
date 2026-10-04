@@ -182,6 +182,7 @@ describe('on the web', () => {
     const stopState = platform.onAppState(handler)
     const stopMedia = platform.onMediaAction(handler)
     const stopWindow = platform.onPictureInPicture(handler)
+    const stopHolding = platform.onNowPlayingHoldsAudio(handler)
     await settle()
 
     expect(loaded).toEqual([])
@@ -193,6 +194,7 @@ describe('on the web', () => {
       stopState()
       stopMedia()
       stopWindow()
+      stopHolding()
     }).not.toThrow()
     expect(handler).not.toHaveBeenCalled()
   })
@@ -404,10 +406,10 @@ describe('on a phone', () => {
     expect(mediaSession.setPlaybackState).toHaveBeenCalledWith({
       playbackState: 'playing',
     })
-    // The position goes first and last. Both plugins show the last position
-    // they hold whenever they publish, so it has to be in place before the
-    // metadata and the state go out, and iOS's state change sets the rate
-    // back to 1, so it goes again after.
+    // The position goes first and last. The plugin shows the last position
+    // it holds whenever it publishes, so it has to be in place before the
+    // metadata and the state go out; the last write was for the plugin's iOS
+    // half (see setNowPlaying).
     expect(order).toEqual(['position', 'metadata', 'state', 'position'])
   })
 
@@ -422,7 +424,7 @@ describe('on a phone', () => {
   })
 
   it('clears the artist when the next song has none', async () => {
-    // Both plugins keep any field a report leaves out, so a song without an
+    // The plugin keeps any field a report leaves out, so a song without an
     // artist would show the last song's.
     const platform = await loadPlatform(true)
 
@@ -450,9 +452,8 @@ describe('on a phone', () => {
     })
   })
 
-  // The notification's progress bar (Android) and the lock screen's (iOS)
-  // draw from the position state alone: the length, where the song is, and
-  // how fast it moves. The system runs the bar on from the last report, so a
+  // The notification's progress bar (Android) draws from the position state
+  // alone: the length, where the song is, and how fast it moves. The system runs the bar on from the last report, so a
   // report is due on a change, never on a frame.
   describe('the progress bar', () => {
     const lastPosition = (): unknown =>
@@ -686,8 +687,8 @@ describe('on a phone', () => {
     })
   })
 
-  // Android's player draws the picture behind the song, and iOS's lock screen
-  // beside it. Neither native half can load an app URL, so it goes as data.
+  // Android's player draws the picture behind the song. Its native half
+  // cannot load an app URL, so it goes as data (to WebKit too, see 'on iOS').
   describe("the song's picture", () => {
     const PICTURE = '/now-playing.webp'
     /** The bytes 1, 2, 3, as iOS serves a bundled file: status 0, a body. */
@@ -741,10 +742,10 @@ describe('on a phone', () => {
     })
 
     it('lands reports in the order they were made, however long a picture takes', async () => {
-      // iOS answers setMetadata once it has decoded the picture, and its
-      // state and position calls go through at once: a pause reported just
-      // before a play must not land after it.
-      const platform = await loadPlatform(true, 'ios')
+      // A plugin that answers setMetadata only once it has decoded the
+      // picture, and its state and position calls at once, must not let a
+      // pause reported just before a play land after it.
+      const platform = await loadPlatform(true)
       servePicture()
       const song = {
         title: 'Harbour Lights',
@@ -884,36 +885,141 @@ describe('on a phone', () => {
   })
 
   describe('on iOS', () => {
-    // iOS's native half registers each command on MPRemoteCommandCenter and
-    // reports a press through the plugin's 'actionHandler' event. It never
-    // calls the handler setActionHandler was given (the bridge drops a
-    // promise method's second argument), and it never removes a command
-    // target, so a press arrives once for every setActionHandler call ever
-    // made for that button, clears included.
-    const emitter = () =>
-      mediaSession.addListener.mock.calls.find(
-        ([event]) => event === 'actionHandler',
-      )?.[1] as (details: unknown) => void
+    // The lock screen's Now Playing is WebKit's (webkit-now-playing.ts): the
+    // song goes to navigator.mediaSession beside a silent carrier, and the
+    // plugin, whose MPNowPlayingInfoCenter never shows, is not even loaded.
+    // Both stand-ins are the least the platform layer needs; the carrier's
+    // own behavior is tested beside it.
+    class Carrier extends EventTarget {
+      loop = false
+      preload = ''
+      disableRemotePlayback = false
+      paused = true
+      private source: string | null = null
+      readonly play = vi.fn(async () => {
+        this.paused = false
+        this.dispatchEvent(new Event('play'))
+      })
+      readonly pause = vi.fn(() => {
+        if (this.paused) return
+        this.paused = true
+        this.dispatchEvent(new Event('pause'))
+      })
+      readonly load = vi.fn()
+      get src(): string {
+        return this.source ?? ''
+      }
+      set src(value: string) {
+        this.source = value
+      }
+      hasAttribute(name: string): boolean {
+        return name === 'src' && this.source !== null
+      }
+      removeAttribute(name: string): void {
+        if (name === 'src') this.source = null
+      }
+    }
+    class Metadata {
+      constructor(readonly init: object) {}
+    }
+    const webKit = {
+      metadata: null as Metadata | null,
+      playbackState: 'none',
+      setPositionState: vi.fn(),
+      setActionHandler: vi.fn(),
+    }
+    let carrier: Carrier
+
+    async function loadOnIos(): Promise<Platform> {
+      const platform = await loadPlatform(true, 'ios')
+      // The module instance the platform just imported, after the reset.
+      const { resetWebKitNowPlaying } = await import('./webkit-now-playing')
+      resetWebKitNowPlaying({
+        createCarrier: () => carrier as never,
+        silence: () => 'blob:silence',
+      })
+      return platform
+    }
+
+    const press = (action: string, details: object): void => {
+      const call = webKit.setActionHandler.mock.calls.find(
+        ([name]) => name === action,
+      )
+      ;(call?.[1] as (details: object) => void)(details)
+    }
 
     beforeEach(() => {
-      mediaSession.addListener.mockResolvedValue(listenerHandle())
+      carrier = new Carrier()
+      webKit.metadata = null
+      webKit.playbackState = 'none'
+      vi.stubGlobal('navigator', { mediaSession: webKit })
+      vi.stubGlobal('MediaMetadata', Metadata)
+      vi.spyOn(console, 'info').mockImplementation(() => undefined)
     })
     afterEach(() => {
-      mediaSession.addListener.mockReset()
+      vi.unstubAllGlobals()
       vi.restoreAllMocks()
     })
 
-    it('hears the lock screen through the plugin event, seeks included', async () => {
-      const platform = await loadPlatform(true, 'ios')
-      const handle = listenerHandle()
-      mediaSession.addListener.mockResolvedValue(handle)
+    it('shows the song through WebKit, its picture as data, never through the plugin', async () => {
+      const platform = await loadOnIos()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: false,
+          status: 0,
+          arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+        })),
+      )
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        artist: 'The Wharf',
+        artwork: '/now-playing.webp',
+        playing: true,
+        position: 121,
+        duration: 246,
+        // WebKit refuses a rate of 0.
+        rate: 0,
+      })
+
+      expect(webKit.metadata?.init).toEqual({
+        title: 'Harbour Lights',
+        artist: 'The Wharf',
+        artwork: [{ src: 'data:image/webp;base64,AQID' }],
+      })
+      expect(webKit.playbackState).toBe('playing')
+      expect(webKit.setPositionState).toHaveBeenLastCalledWith({
+        duration: 246,
+        playbackRate: 1,
+        position: 121,
+      })
+      expect(carrier.play).toHaveBeenCalledTimes(1)
+      expect(loaded).not.toContain('@capgo/capacitor-media-session')
+      expect(mediaSession.setMetadata).not.toHaveBeenCalled()
+    })
+
+    it('takes the song away again', async () => {
+      const platform = await loadOnIos()
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      expect(webKit.metadata).not.toBeNull()
+      expect(carrier.hasAttribute('src')).toBe(true)
+
+      await platform.setNowPlaying(null)
+
+      expect(webKit.metadata).toBeNull()
+      expect(webKit.playbackState).toBe('none')
+      expect(carrier.hasAttribute('src')).toBe(false)
+    })
+
+    it('hears the lock screen through WebKit, seeks included', async () => {
+      const platform = await loadOnIos()
       const handler = vi.fn()
 
       const stop = platform.onMediaAction(handler)
-      await settle()
-      emitter()({ action: 'pause' })
-      emitter()({ action: 'seekto', seekTime: 61.5 })
-      emitter()({ action: 'play' })
+      press('pause', { action: 'pause' })
+      press('seekto', { action: 'seekto', seekTime: 61.5 })
+      press('play', { action: 'play' })
 
       expect(handler.mock.calls).toEqual([
         ['pause'],
@@ -922,62 +1028,73 @@ describe('on a phone', () => {
       ])
 
       stop()
+      expect(webKit.setActionHandler).toHaveBeenLastCalledWith('seekto', null)
       await settle()
-      expect(handle.remove).toHaveBeenCalledTimes(1)
+      expect(loaded).not.toContain('@capgo/capacitor-media-session')
     })
 
-    it('hears one press once, however many copies arrive', async () => {
-      const platform = await loadPlatform(true, 'ios')
+    it('pauses the room when the system pauses the song', async () => {
+      const platform = await loadOnIos()
       const handler = vi.fn()
-
       platform.onMediaAction(handler)
-      await settle()
-      for (let copy = 0; copy < 3; copy += 1) {
-        emitter()({ action: 'seekto', seekTime: 42 })
-      }
-      for (let copy = 0; copy < 3; copy += 1) {
-        emitter()({ action: 'pause' })
-      }
-      // Something else is a new press, even straight after.
-      emitter()({ action: 'seekto', seekTime: 50 })
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
 
-      expect(handler.mock.calls).toEqual([
-        [{ seekTo: 42 }],
-        ['pause'],
-        [{ seekTo: 50 }],
-      ])
+      // Another app took the sound: WebKit pauses the carrier.
+      carrier.paused = true
+      carrier.dispatchEvent(new Event('pause'))
+
+      expect(handler.mock.calls).toEqual([['pause']])
     })
 
-    it('hears the same button again once its copies are past', async () => {
-      const platform = await loadPlatform(true, 'ios')
-      const now = vi.spyOn(Date, 'now').mockReturnValue(10_000)
-      const handler = vi.fn()
+    it('tells the app while the carrier holds the playback session', async () => {
+      const platform = await loadOnIos()
+      const holds = vi.fn()
 
-      platform.onMediaAction(handler)
-      await settle()
-      emitter()({ action: 'pause' })
-      now.mockReturnValue(10_600)
-      emitter()({ action: 'pause' })
+      const stop = platform.onNowPlayingHoldsAudio(holds)
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      // The carrier sounding is what takes the session, not the report.
+      expect(holds).not.toHaveBeenCalled()
+      carrier.dispatchEvent(new Event('playing'))
+      await platform.setNowPlaying(null)
+      stop()
+      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+      carrier.dispatchEvent(new Event('playing'))
 
-      expect(handler.mock.calls).toEqual([['pause'], ['pause']])
+      expect(holds.mock.calls).toEqual([[true], [false]])
     })
 
-    it('ignores an event for a button it never registered', async () => {
-      const platform = await loadPlatform(true, 'ios')
-      const handler = vi.fn()
+    it('shows nothing, and loads nothing, in a WebView without the API', async () => {
+      vi.stubGlobal('navigator', {})
+      const platform = await loadOnIos()
 
-      platform.onMediaAction(handler)
+      await expect(
+        platform.setNowPlaying({ title: 'Harbour Lights', playing: true }),
+      ).resolves.toBeUndefined()
+      platform.onMediaAction(vi.fn())()
+      const holds = vi.fn()
+      platform.onNowPlayingHoldsAudio(holds)()
       await settle()
-      emitter()({ action: 'nexttrack' })
-      emitter()(undefined)
 
-      expect(handler).not.toHaveBeenCalled()
+      expect(carrier.play).not.toHaveBeenCalled()
+      expect(holds).not.toHaveBeenCalled()
+      expect(loaded).not.toContain('@capgo/capacitor-media-session')
     })
   })
 
+  it('has no lock-screen carrier on Android, so nothing to hear of one', async () => {
+    const platform = await loadPlatform(true)
+    const holds = vi.fn()
+
+    const stop = platform.onNowPlayingHoldsAudio(holds)
+    await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+    stop()
+
+    expect(holds).not.toHaveBeenCalled()
+  })
+
   it('registers the buttons a platform has, and clears only those', async () => {
-    // iOS answers through the WebView's media session, which may not know
-    // every button. One refusal must not cost the others.
+    // A platform may not know every button. One refusal must not cost the
+    // others.
     const platform = await loadPlatform(true)
     mediaSession.setActionHandler.mockImplementation(
       async ({ action }: { action: string }, handler: unknown) => {

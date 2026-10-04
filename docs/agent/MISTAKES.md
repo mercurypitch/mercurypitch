@@ -325,6 +325,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** accumulate only consecutive capture timestamps; evaluate arriving-input health separately from capture gaps. Interleave delayed captures with animation ticks in regressions instead of testing each stream alone.
 **See:** `packages/glass-game/src/browser/runner-session.test.ts` and `runner-session-course.test.ts`.
 
+### Put an iOS song on the lock screen through WebKit, never the app's audio session
+
+**Symptom:** the media session plugin wrote MPNowPlayingInfoCenter on every play and pause, and iOS showed no lock-screen player. Making the app's AVAudioSession non-mixable while a song played (#922) still showed nothing, and broke playback on device: a song started over another app stayed silent behind a pause button, and one interrupted by YouTube never recovered.
+**Cause:** the Karaoke song is Web Audio, rendered in WebKit's GPU process under WebKit's own AVAudioSession. iOS shows Now Playing for the session that plays, and WebKit publishes it only for a media element it finds eligible. The app process's session plays nothing; changing it at runtime interrupted WebKit's audio instead.
+**Rule:** never change the app's AVAudioSession at runtime under WebKit's audio (#923 reverted it). Lock-screen metadata, position and buttons go through `navigator.mediaSession` beside a silent `<audio>` carrier that WebKit counts as the playing element. WebKit resets the session's position to the carrier's own on every seek of it, its loop included, so the song's position is set again on `seeked`. Keep every other media element out of its way: WebKit shows on the lock screen the element a tap played last and sends a headset's toggle to the one that started last, so the unlock clip in `src/lib/audio-unlock.ts` stands aside, muted and unplayed, while the carrier holds the session.
+**See:** `packages/mobile-runtime/src/webkit-now-playing.ts`, `standUnlockClipAside` in `src/lib/audio-unlock.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

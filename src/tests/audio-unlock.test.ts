@@ -129,6 +129,47 @@ describe('iOS audio unlock', () => {
     uninstall()
   })
 
+  it('stands the clip aside while another element holds the session', async () => {
+    const { standUnlockClipAside, unlockAudio } =
+      await import('@/lib/audio-unlock')
+    const context = createAudioContext('suspended')
+    unlockAudio(context as unknown as AudioContext)
+    const clip = vi.mocked(Audio).mock.results[0]?.value as { muted?: boolean }
+    expect(clip.muted).toBe(false)
+
+    standUnlockClipAside(true)
+    context.state = 'suspended'
+    unlockAudio(context as unknown as AudioContext)
+
+    // Muted, WebKit never offers it to the lock screen, and it is not played.
+    expect(clip.muted).toBe(true)
+    expect(playSilent).toHaveBeenCalledOnce()
+    // The context still wakes inside the gesture.
+    expect(context.resume).toHaveBeenCalledTimes(2)
+  })
+
+  it('brings the clip back muted, to play again at the next tap', async () => {
+    const { installAudioUnlock, standUnlockClipAside, unlockAudio } =
+      await import('@/lib/audio-unlock')
+    const context = createAudioContext()
+    unlockAudio(context as unknown as AudioContext)
+    const clip = vi.mocked(Audio).mock.results[0]?.value as { muted?: boolean }
+    const uninstall = installAudioUnlock(
+      () => context as unknown as AudioContext,
+    )
+    standUnlockClipAside(true)
+
+    standUnlockClipAside(false)
+    // Unmuted at once, it would keep the app on the lock screen.
+    expect(clip.muted).toBe(true)
+
+    document.dispatchEvent(new Event('pointerup'))
+
+    expect(clip.muted).toBe(false)
+    expect(playSilent).toHaveBeenCalledTimes(2)
+    uninstall()
+  })
+
   it('does not recycle the context after its listener is removed', async () => {
     const { installAudioUnlock } = await import('@/lib/audio-unlock')
     const context = createAudioContext()

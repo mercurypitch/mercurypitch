@@ -11,7 +11,8 @@
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { keepAwake, onMediaAction, onPictureInPicture, setNowPlaying, setPictureInPictureAutoEnter, } from '@irchiinnuss/mobile-runtime/platform'
+import { keepAwake, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, setNowPlaying, setPictureInPictureAutoEnter, } from '@irchiinnuss/mobile-runtime/platform'
+import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
 /**
@@ -43,4 +44,13 @@ export function createNativeDevice(): NativeDeviceApi {
     },
     onPictureInPicture: (handler) => onPictureInPicture(handler),
   }
+}
+
+/**
+ * While iOS's lock-screen carrier holds the playback session, the silent
+ * unlock clip stands aside, so the two never compete for the lock screen or
+ * a headset's press (see standUnlockClipAside). Once, from `main.tsx`.
+ */
+export function standUnlockClipAsideForNowPlaying(): () => void {
+  return onNowPlayingHoldsAudio(standUnlockClipAside)
 }
