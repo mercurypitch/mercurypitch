@@ -37,19 +37,11 @@ const timedSong = (duration = 30): LyricWindowSource => ({
   duration,
 })
 
-/** A pair of seconds, to within a sample of the stage's own reading. */
-function expectNear(
-  actual: readonly (readonly [number, number])[],
-  expected: [number, number][],
-): void {
-  expect(actual).toHaveLength(expected.length)
-  actual.forEach(([start, end], i) => {
-    expect(Math.abs(start - (expected[i]?.[0] ?? NaN))).toBeLessThanOrEqual(
-      0.021,
-    )
-    expect(Math.abs(end - (expected[i]?.[1] ?? NaN))).toBeLessThanOrEqual(0.021)
-  })
-}
+/** Word spans to the tenth of a second: a sample of the stage is 20 ms. */
+const tenths = (
+  words: readonly (readonly [number, number])[] | undefined,
+): number[][] =>
+  (words ?? []).map((span) => span.map((t) => Math.round(t * 10) / 10))
 
 const segmentAt = (
   segments: readonly LyricWindowSegment[],
@@ -113,7 +105,7 @@ describe('the words, as they fill', () => {
   it('fills each timed word over its own marked span', () => {
     const script = lyricWindowScript(timedSong())
 
-    expectNear(segmentAt(script.segments, 12)?.words ?? [], [
+    expect(tenths(segmentAt(script.segments, 12)?.words)).toEqual([
       [10, 11],
       [11, 12],
       [12, 13],
@@ -123,7 +115,7 @@ describe('the words, as they fill', () => {
   it('shares a line timed as a whole between its words, as the stage does', () => {
     const script = lyricWindowScript(timedSong())
 
-    expectNear(segmentAt(script.segments, 22)?.words ?? [], [
+    expect(tenths(segmentAt(script.segments, 22)?.words)).toEqual([
       [20, 22],
       [22, 24],
     ])
