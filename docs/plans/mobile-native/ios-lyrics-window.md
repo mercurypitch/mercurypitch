@@ -157,8 +157,9 @@ These are rules for this feature and anything built on it later.
   WebView, a 16:9 band across the middle of the screen, so the window grows
   out of where the lyrics are. Arms automatic start while lyrics are set and
   auto-enter is on; disarms otherwise. Keeps the clock and the layer's
-  control timebase. Retries a start that fails with
-  `PGPegasusErrorDomain -1003` once. Stops the window when the app comes
+  control timebase. Re-arms after a start that fails (iOS sometimes
+  refuses one with `PGPegasusErrorDomain -1003`), for the next swipe home;
+  it never starts the window itself. Stops the window when the app comes
   back to the foreground.
 - `LyricsWindowScript.swift`: the script, decoded with `Codable`, and the
   lookup of the segment at a time.
@@ -171,6 +172,9 @@ These are rules for this feature and anything built on it later.
 - `ViewController.swift`: a `CAPBridgeViewController` subclass that registers
   the plugin in `capacitorDidLoad()`. `SceneDelegate` and `Main.storyboard`
   use it.
+- `apps/mercurypitch/src/ios-lyrics-window.test.ts` reads the wiring off the
+  sources: the registration, the names on both sides of the bridge, the
+  Xcode project, and the App Review rule that nothing starts the window.
 - `timeRangeForPlayback` is always finite: the song's length, or one hour
   while it is unknown (an infinite range has cost 100% CPU since iOS 16.1).
   `requiresLinearPlayback` is on, so the window has no skip buttons.
@@ -236,5 +240,6 @@ Native sends it as an event; the page writes it.
 2. The layer sits behind the WebView. If iOS will not open a window from a
    covered layer, `isPictureInPicturePossible` stays false in the log.
 3. The window may go blank when another app starts a call (seen on iOS 18).
-4. A start can fail with `-1003`; one retry.
+4. A start can fail with `-1003`. The window re-arms for the next swipe
+   home; it is never started from code.
 5. Battery: 15 frames a second while the window is open, 2 while armed.
