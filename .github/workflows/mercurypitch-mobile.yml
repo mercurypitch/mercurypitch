@@ -173,6 +173,11 @@ jobs:
       # without its platform's key sells nothing and says "not available
       # yet" (apps/mercurypitch/src/infrastructure/purchases-setup.ts).
       testflight-purchase-mode: store
+      # The release APK was 98.7 MB against the default 100 MB ceiling at
+      # mp-v0.8.11, before R8. The owner raised the ceiling to 150 MB on
+      # 4 Oct 2026; the warning stays at the default 60 MB, so every run
+      # still shows the size it is over.
+      size-fail-mb: 150
       # What a store binary has to be true of: the wasm runtime and the model
       # are vendored AND referenced, and nothing sells anything. The checks
       # live in apps/mercurypitch/scripts/assert-bundle.mjs, which the PR
