@@ -6,7 +6,8 @@
 // tab cannot: a tap you can feel, a screen that stays lit, a status bar that
 // reads against the page behind it, the system share sheet, the app's own row
 // in Settings, the Android back button, the app going away and coming back,
-// and Android's picture-in-picture window.
+// and the picture-in-picture window (picture-in-picture.ts, re-exported
+// here).
 //
 // THE RULE THAT SHAPES EVERY FUNCTION BELOW. A plugin module is reached only
 // from inside a `Capacitor.isNativePlatform()` branch, through `await
@@ -35,14 +36,21 @@
 // plan task G1 calls for live in the app's platform seam, where the app knows
 // how many rooms are open. This file only knows how to reach the device.
 
-import type { PluginListenerHandle } from '@capacitor/core'
-import { Capacitor, registerPlugin } from '@capacitor/core'
 import type { MediaSessionPlugin, MetadataOptions, } from '@capgo/capacitor-media-session'
 import { artworkDataUrl } from './artwork-data'
+import type { Unsubscribe } from './native-calls'
+import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-calls'
+import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
 import { listenOnWebKit, onCarrierHolding, showOnWebKit, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
-/** Removes whatever the registering call installed. Safe to call twice. */
-export type Unsubscribe = () => void
+export type { Unsubscribe } from './native-calls'
+export type { PictureInPictureLyrics } from './picture-in-picture'
+export {
+  onPictureInPicture,
+  pictureInPictureNeedsLyrics,
+  setPictureInPictureAutoEnter,
+  setPictureInPictureLyrics,
+} from './picture-in-picture'
 
 /**
  * Which way the status bar's own text should read. The names are the
@@ -71,29 +79,6 @@ export interface BackButtonEvent {
 export type BackButtonHandler = (event: BackButtonEvent) => void
 
 export type AppLifecycleHandler = (state: AppLifecycleState) => void
-
-function isNative(): boolean {
-  return Capacitor.isNativePlatform()
-}
-
-/**
- * Runs a native call and answers whether it actually happened.
- *
- * A plugin whose native half was never installed rejects with Capacitor's
- * `Unimplemented`, and so does one called on a platform that does not
- * implement it (`minimizeApp` on iOS). Neither is an error a product can act
- * on, and neither is worth an unhandled rejection, so both come back as
- * `false`.
- */
-async function attempt(run: () => Promise<unknown>): Promise<boolean> {
-  if (!isNative()) return false
-  try {
-    await run()
-    return true
-  } catch {
-    return false
-  }
-}
 
 // ------------------------------------------------------------
 // Haptics
@@ -252,9 +237,6 @@ interface PositionState {
 
 /** An empty bar: no length, nothing played, standing still. */
 const NO_POSITION: PositionState = { duration: 0, position: 0, playbackRate: 0 }
-
-const finiteOr = (value: number | undefined, fallback: number): number =>
-  value !== undefined && Number.isFinite(value) ? value : fallback
 
 /**
  * The progress bar for a song, as the plugin takes it. A paused song gets
@@ -455,10 +437,6 @@ export function onMediaAction(
   })
 }
 
-function isIos(): boolean {
-  return isNative() && Capacitor.getPlatform() === 'ios'
-}
-
 /**
  * iOS: hears WebKit's lock-screen carrier take the playback session (true)
  * and give it back (false), so the app's own unlock clip can stand aside
@@ -469,224 +447,6 @@ export function onNowPlayingHoldsAudio(
 ): Unsubscribe {
   if (!isIos() || !webKitNowPlayingAvailable()) return () => undefined
   return onCarrierHolding(listener)
-}
-
-// ------------------------------------------------------------
-// Picture in picture (Android and iOS)
-// ------------------------------------------------------------
-//
-// A small floating window the app keeps on screen after the singer leaves
-// it, as a video app does. The native half is not an npm plugin: it lives in
-// the Mercury Pitch app itself, under one name on both phones, so an app
-// without it answers `Unimplemented`, and that is survived like any other
-// missing plugin.
-//
-// Android (PictureInPicturePlugin.java, which MainActivity registers) shrinks
-// the whole app into the window, page and all, and the page draws what is in
-// it. iOS puts only video in its window, and a page behind another app cannot
-// draw: there the app's own plugin (ios/App/App/LyricsWindow/) draws the
-// lyrics, from the song's lyric timing (`setPictureInPictureLyrics`) and its
-// clock, which rides on every Now Playing report. The window's play and pause
-// reach the media handlers as a lock-screen press does, and what the window
-// does is written to the console as `[lyrics window] ...`, for a device test.
-//
-// The web has no window for a page: inert wrappers, and the plugin is never
-// even registered there.
-
-/** Where the song is, as the iOS window keeps it: a Now Playing report. */
-interface PictureInPictureClock {
-  readonly playing: boolean
-  readonly position: number
-  readonly rate: number
-  readonly duration: number
-}
-
-/** The app's own plugin, as MainActivity and the iOS app register it. */
-interface PictureInPicturePlugin {
-  setAutoEnter(options: { enabled: boolean }): Promise<void>
-  /** iOS: the song's lyric timing as JSON, or no `json` to take it away. */
-  setLyrics(options: { json?: string }): Promise<void>
-  /** iOS: where the song is. */
-  setClock(options: PictureInPictureClock): Promise<void>
-  addListener(
-    eventName: 'pictureInPictureChange',
-    listener: (state: { inPictureInPicture?: boolean }) => void,
-  ): Promise<PluginListenerHandle>
-  addListener(
-    eventName: 'pictureInPictureAction',
-    listener: (event: { action?: unknown }) => void,
-  ): Promise<PluginListenerHandle>
-  addListener(
-    eventName: 'pictureInPictureLog',
-    listener: (event: { message?: unknown }) => void,
-  ): Promise<PluginListenerHandle>
-}
-
-/**
- * What the iOS window draws, and when: the app builds it from the lyrics the
- * stage lights (lyric-window-script.ts). Times are seconds into the song.
- */
-export interface PictureInPictureLyrics {
-  readonly title: string
-  /** The song's length, 0 while it is not known. */
-  readonly duration: number
-  /** In song order; each runs until the next one's `at`. */
-  readonly segments: readonly {
-    readonly at: number
-    /** The words of the line being sung, none in a rest. */
-    readonly current: readonly string[]
-    /** The next line with words, or null after the last. */
-    readonly next: string | null
-    /** Per word of `current`: when it starts to fill, and when it is lit. */
-    readonly words: readonly (readonly [number, number])[]
-  }[]
-}
-
-function isAndroid(): boolean {
-  return isNative() && Capacitor.getPlatform() === 'android'
-}
-
-/** A phone with the window: Android's of the app, iOS's of the lyrics. */
-function hasPictureInPicture(): boolean {
-  return isAndroid() || isIos()
-}
-
-/**
- * Whether the window draws the lyrics itself, from a script the page hands
- * it (`setPictureInPictureLyrics`): iOS. Android's window shows the page.
- */
-export function pictureInPictureNeedsLyrics(): boolean {
-  return isIos()
-}
-
-// Registered on first use, once: Capacitor warns on a second registration.
-// A plain variable, never a promise's value. The proxy answers every
-// property, `then` included, so resolving a promise with it would hang.
-let pictureInPicturePlugin: PictureInPicturePlugin | null = null
-
-function pictureInPicture(): PictureInPicturePlugin {
-  pictureInPicturePlugin ??=
-    registerPlugin<PictureInPicturePlugin>('PictureInPicture')
-  if (isIos()) watchWindowLog(pictureInPicturePlugin)
-  return pictureInPicturePlugin
-}
-
-// The iOS window's own account of itself, for as long as the app runs. The
-// plugin keeps every line from before this listens, so the first ones (the
-// plugin loading, whether the phone has a window at all) are not lost.
-let windowLogWatched = false
-
-function watchWindowLog(plugin: PictureInPicturePlugin): void {
-  if (windowLogWatched) return
-  windowLogWatched = true
-  void (async () => {
-    try {
-      await plugin.addListener('pictureInPictureLog', (event) => {
-        if (typeof event.message === 'string') {
-          console.info(`[lyrics window] ${event.message}`)
-        }
-      })
-    } catch {
-      // No plugin behind the name in this build: nothing to hear.
-    }
-  })()
-}
-
-/**
- * While on, leaving the app (the home gesture, the recents screen) opens the
- * small window instead of putting the app behind everything. Off by
- * default; the caller turns it on for exactly as long as there is something
- * worth watching.
- */
-export async function setPictureInPictureAutoEnter(on: boolean): Promise<void> {
-  if (!hasPictureInPicture()) return
-  await attempt(async () => {
-    await pictureInPicture().setAutoEnter({ enabled: on })
-  })
-}
-
-/**
- * iOS: what the window draws for the song in the room, or null when the room
- * has none, which also closes a window that is open. Android's window shows
- * the page itself and needs nothing.
- */
-export async function setPictureInPictureLyrics(
-  lyrics: PictureInPictureLyrics | null,
-): Promise<void> {
-  if (!isIos()) return
-  await attempt(async () => {
-    await pictureInPicture().setLyrics(
-      lyrics === null ? {} : { json: JSON.stringify(lyrics) },
-    )
-  })
-}
-
-/**
- * iOS: the window's clock, from the Now Playing report the lock screen gets:
- * the window runs on from it as the lock screen's bar does.
- */
-function tellTheWindowTheClock(song: NowPlaying): void {
-  const duration = Math.max(0, finiteOr(song.duration, 0))
-  const rate = finiteOr(song.rate, 1)
-  void attempt(async () => {
-    await pictureInPicture().setClock({
-      playing: song.playing,
-      position: Math.min(
-        duration > 0 ? duration : Number.POSITIVE_INFINITY,
-        Math.max(0, finiteOr(song.position, 0)),
-      ),
-      rate: rate > 0 ? rate : 1,
-      duration,
-    })
-  })
-}
-
-/** iOS: the window's own play and pause, as the media handlers hear them. */
-function listenToTheWindow(
-  handler: (action: MediaAction) => void,
-): Unsubscribe {
-  return lazyListener((dispose) => {
-    void (async () => {
-      try {
-        dispose(
-          await pictureInPicture().addListener(
-            'pictureInPictureAction',
-            (event) => {
-              if (event.action === 'play' || event.action === 'pause') {
-                handler(event.action)
-              }
-            },
-          ),
-        )
-      } catch {
-        // No plugin behind the name in this build: no window, no buttons.
-      }
-    })()
-  })
-}
-
-/** The app entering the small window (true) and leaving it (false). */
-export function onPictureInPicture(
-  handler: (inPictureInPicture: boolean) => void,
-): Unsubscribe {
-  if (!hasPictureInPicture()) return () => undefined
-
-  return lazyListener((dispose) => {
-    void (async () => {
-      try {
-        dispose(
-          await pictureInPicture().addListener(
-            'pictureInPictureChange',
-            (state) => {
-              handler(state.inPictureInPicture === true)
-            },
-          ),
-        )
-      } catch {
-        // No plugin behind the name in this build: no window, no events.
-      }
-    })()
-  })
 }
 
 /**
@@ -776,39 +536,6 @@ export async function openAppSettings(): Promise<boolean> {
       optionIOS: IOSSettings.App,
     })
   })
-}
-
-// ------------------------------------------------------------
-// Listeners
-// ------------------------------------------------------------
-//
-// Both registrations are asynchronous (the plugin resolves a handle) while
-// both callers want an unsubscribe they can hold immediately. So each returns
-// a synchronous function that either removes the handle or, if the handle has
-// not arrived yet, marks the registration stale so it is removed on arrival.
-// Without that second half, a listener installed by a screen that unmounts
-// during its own registration outlives the screen.
-
-function lazyListener(
-  register: (dispose: (handle: { remove(): Promise<void> }) => void) => void,
-): Unsubscribe {
-  let cancelled = false
-  let handle: { remove(): Promise<void> } | null = null
-
-  register((registered) => {
-    if (cancelled) {
-      void registered.remove().catch(() => undefined)
-      return
-    }
-    handle = registered
-  })
-
-  return () => {
-    cancelled = true
-    const current = handle
-    handle = null
-    if (current !== null) void current.remove().catch(() => undefined)
-  }
 }
 
 /**
