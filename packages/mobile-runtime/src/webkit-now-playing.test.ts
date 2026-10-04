@@ -12,10 +12,19 @@ import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
 import { listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, silentWav, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 /**
- * An `<audio>` element, as far as the carrier uses one. As in WebKit,
- * `paused` changes at once and the events follow a task later: `settle()`
- * fires the ones queued so far. An interruption pauses it and remembers
- * whether to resume; a pause while it lasts forgets that, and a play ends it.
+ * An `<audio>` element, as far as the carrier uses one, with the bookkeeping
+ * WebKit keeps for it (PlatformMediaSession). As in WebKit, `paused` changes
+ * at once and the events follow a task later: `settle()` fires the ones
+ * queued so far.
+ *
+ * Interruptions stack. The first suspends the element and keeps the state
+ * to restore; one that comes while another is active is ignored. Ending one
+ * pops the top, and only the last one, if it was not ignored, restores the
+ * state, playing the element again when it was playing and the end says it
+ * may. A play sets the state to restore to playing without popping, and also
+ * ends a system interruption (the call or the other app) for good; a pause
+ * while suspended only changes what is restored. The app going away suspends
+ * an element that is not playing, and coming back ends that.
  */
 class FakeCarrier extends EventTarget {
   loop = false
@@ -24,21 +33,27 @@ class FakeCarrier extends EventTarget {
   paused = true
   private source: string | null = null
   private queued: string[] = []
-  private interrupted = false
-  private resumeWhenOver = false
+  private state: 'paused' | 'playing' | 'interrupted' = 'paused'
+  private restoring: 'paused' | 'playing' = 'paused'
+  private interruptions: { readonly ignored: boolean }[] = []
+  private systemInterruption = false
 
   readonly play = vi.fn(async () => {
-    this.interrupted = false
-    if (!this.paused) return
-    this.paused = false
-    this.queued.push('play', 'playing')
+    if (this.systemInterruption) {
+      this.systemInterruption = false
+      this.endOne(false)
+    }
+    this.restoring = 'playing'
+    this.state = 'playing'
+    this.start()
   })
 
   readonly pause = vi.fn(() => {
-    if (this.interrupted) {
-      this.resumeWhenOver = false
+    if (this.state === 'interrupted') {
+      this.restoring = 'paused'
       return
     }
+    this.state = 'paused'
     if (this.paused) return
     this.paused = true
     this.queued.push('pause')
@@ -71,25 +86,70 @@ class FakeCarrier extends EventTarget {
 
   /** Another app takes the sound, or a call comes. */
   interrupt(): void {
-    this.interrupted = true
-    this.resumeWhenOver = !this.paused
-    if (this.paused) return
-    this.paused = true
-    this.queued.push('pause')
+    this.systemInterruption = true
+    this.beginOne()
   }
 
   /** The call ends, with or without the system's word to resume. */
   endInterruption(mayResume: boolean): void {
-    if (!this.interrupted) return
-    this.interrupted = false
-    if (!mayResume || !this.resumeWhenOver) return
-    this.paused = false
-    this.queued.push('play', 'playing')
+    if (!this.systemInterruption) return
+    this.systemInterruption = false
+    this.endOne(mayResume)
+  }
+
+  /** The app goes away (the page hides): a carrier not playing is suspended. */
+  appLeft(): void {
+    if (this.paused) this.beginOne()
+  }
+
+  /** The app comes back: a carrier not playing has its suspension ended. */
+  appReturned(): void {
+    if (this.paused) this.endOne(true)
   }
 
   /** The loop going back to its start. */
   goRound(): void {
     this.queued.push('seeked')
+  }
+
+  private start(): void {
+    if (!this.paused) return
+    this.paused = false
+    this.queued.push('play', 'playing')
+  }
+
+  private beginOne(): void {
+    if (this.interruptions.some((one) => !one.ignored)) {
+      this.interruptions.push({ ignored: true })
+      return
+    }
+    this.interruptions.push({ ignored: false })
+    this.restoring = this.state === 'playing' ? 'playing' : 'paused'
+    this.state = 'interrupted'
+    if (this.paused) return
+    this.paused = true
+    this.queued.push('pause')
+  }
+
+  private endOne(mayResume: boolean): void {
+    const ended = this.interruptions.pop()
+    if (ended === undefined || ended.ignored) return
+    if (this.interruptions.some((one) => !one.ignored)) return
+    this.state = this.restoring
+    if (mayResume && this.restoring === 'playing') this.start()
+  }
+}
+
+/** The document, as far as the carrier watches it: the app showing or not. */
+class FakePage extends EventTarget {
+  visibilityState: DocumentVisibilityState = 'visible'
+
+  /** Hide or show, and queue the event that says so, as WebKit does. */
+  turn(state: DocumentVisibilityState): () => void {
+    this.visibilityState = state
+    return () => {
+      this.dispatchEvent(new Event('visibilitychange'))
+    }
   }
 }
 
@@ -142,11 +202,13 @@ const song = (changes: Partial<WebKitSong> = {}): WebKitSong => ({
 
 let session: ReturnType<typeof fakeSession>
 let carrier: FakeCarrier
+let page: FakePage
 let clock = 0
 
 beforeEach(() => {
   session = fakeSession()
   carrier = new FakeCarrier()
+  page = new FakePage()
   clock = 0
   FakeMetadata.made = 0
   FakeMetadata.refuseNext = false
@@ -157,6 +219,7 @@ beforeEach(() => {
     createCarrier: () => carrier as unknown as Carrier,
     silence: () => 'blob:silence',
     now: () => clock,
+    page,
   })
 })
 
@@ -455,6 +518,87 @@ describe('what the system does to the song', () => {
     carrier.settle()
 
     expect(deliver.mock.calls).toEqual([['pause', {}]])
+  })
+
+  /** The app going away, then coming back, the page's event last or first. */
+  const leave = (): void => {
+    carrier.appLeft()
+    page.turn('hidden')()
+    carrier.settle()
+  }
+  const comeBack = (eventFirst: boolean): void => {
+    const announce = page.turn('visible')
+    carrier.appReturned()
+    if (eventFirst) announce()
+    carrier.settle()
+    if (!eventFirst) announce()
+    carrier.settle()
+  }
+
+  for (const eventFirst of [false, true]) {
+    const order = eventFirst ? 'its event first' : 'its event last'
+
+    it(`keeps a song paused on the lock screen paused as the app comes back (${order})`, () => {
+      // Paused in the app, then the phone locked: WebKit suspends the paused
+      // carrier. Play and pause on the lock screen leave WebKit owing it a
+      // play, which it makes as the phone is unlocked.
+      const deliver = vi.fn()
+      listenOnWebKit(ACTIONS, deliver)
+      showOnWebKit(song())
+      carrier.settle()
+      showOnWebKit(song({ playing: false }))
+      carrier.settle()
+      leave()
+      showOnWebKit(song())
+      carrier.settle()
+      showOnWebKit(song({ playing: false }))
+      carrier.settle()
+
+      clock = 60_000
+      comeBack(eventFirst)
+
+      expect(deliver).not.toHaveBeenCalled()
+      expect(carrier.paused).toBe(true)
+    })
+
+    it(`keeps a song a call paused paused when the app comes back after it (${order})`, () => {
+      // The call takes the phone, so the app is away when it ends: WebKit
+      // resumes nothing then, and plays the carrier as the app comes back.
+      const deliver = vi.fn()
+      listenOnWebKit(ACTIONS, deliver)
+      showOnWebKit(song())
+      carrier.settle()
+      carrier.interrupt()
+      carrier.settle()
+      showOnWebKit(song({ playing: false }))
+      leave()
+      carrier.endInterruption(true)
+      carrier.settle()
+
+      clock = 300_000
+      comeBack(eventFirst)
+
+      expect(deliver.mock.calls).toEqual([['pause', {}]])
+      expect(carrier.paused).toBe(true)
+    })
+  }
+
+  it('follows the system playing the carrier only to undo its own pause', () => {
+    // The song paused in the app, then the system playing the carrier, as
+    // WebKit can after a suspension: the song stays paused, and so does the
+    // lock screen.
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+
+    carrier.paused = false
+    carrier.dispatchEvent(new Event('play'))
+
+    expect(deliver).not.toHaveBeenCalled()
+    expect(carrier.paused).toBe(true)
   })
 
   it('stops telling a listener that has gone', () => {

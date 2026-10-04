@@ -24,9 +24,16 @@
 // in src/lib/audio-unlock.ts took the same session on every play tap before
 // it, so a song starting stops another app's sound as it always did. Another
 // app taking the sound, or a call, pauses the carrier, and the song pauses
-// with it; a call that ends with the system's word to resume plays it again,
-// and the song comes back with it. WebKit resumes only an element nothing
-// paused during the call, so a carrier that is already paused is left alone.
+// with it. A call that ends with the system's word to resume, while the app
+// is in front, plays the carrier again, and the song comes back with it.
+// WebKit resumes only an element nothing paused during the call, so a
+// carrier that is already paused is left alone.
+//
+// WebKit also suspends a paused carrier while the app is away, and may play
+// it again as the app comes back, after a call that ended meanwhile, or when
+// the lock screen played and paused the song in between. The song never
+// follows a play like that (`onCarrierPlay`): it would start out loud as the
+// phone is unlocked.
 //
 // While the carrier holds the session, the unlock clip stands aside
 // (`onCarrierHolding`). WebKit shows on the lock screen whichever element a
@@ -77,7 +84,12 @@ export type Carrier = Pick<
   | 'addEventListener'
 >
 
+/** The part of the document the carrier watches: whether the app shows. */
+export type Page = Pick<Document, 'visibilityState' | 'addEventListener'>
+
 export interface WebKitNowPlayingOptions {
+  /** Test seam. Production watches the document. */
+  readonly page?: Page
   /** Test seam. Production makes a detached `<audio>` element. */
   readonly createCarrier?: () => Carrier
   /** Test seam. Production makes a blob: URL of generated silence. */
@@ -151,6 +163,22 @@ let named: string | null = null
 let systemHeard: ((action: 'play' | 'pause') => void) | null = null
 let listening: object | null = null
 
+/**
+ * Whether the last pause of the carrier was the system's, and the song was
+ * told so. Only that pause may be undone by the system playing it again.
+ */
+let systemPaused = false
+
+/**
+ * How long after the app shows a play of the carrier counts as coming with
+ * it: WebKit queues that play beside the visibility event, in no set order.
+ */
+const SHOWING_MS = 1000
+
+/** What the page last said of itself, and when it last came to the front. */
+let pageSeen: DocumentVisibilityState = 'visible'
+let pageShownAt = Number.NEGATIVE_INFINITY
+
 /** Whether the carrier holds the playback session, and who hears it change. */
 let holding = false
 let holdingHeard: ((holding: boolean) => void) | null = null
@@ -183,18 +211,58 @@ export function webKitNowPlayingAvailable(): boolean {
 function onCarrierPause(): void {
   if (wanted !== 'playing' || carrier?.paused !== true) return
   console.info('[now playing] the system paused the song')
+  systemPaused = true
   systemHeard?.('pause')
 }
 
 /**
- * The carrier playing while the song is paused: WebKit resuming it after an
- * interruption that ended with the system's word to resume. Stale, as a
- * pause can be, once the carrier is paused again.
+ * The carrier playing while the song is paused. WebKit resuming it after an
+ * interruption that ended with the system's word to resume plays the song
+ * again too, but only when the system's own pause stopped it, and not as the
+ * app comes back: WebKit plays a carrier it suspended for the app being away
+ * then, whatever paused the song. Any other play is put back, so the lock
+ * screen keeps showing the song paused. Stale, as a pause can be, once the
+ * carrier is paused again.
  */
 function onCarrierPlay(): void {
-  if (wanted !== 'paused' || carrier?.paused !== false) return
-  console.info('[now playing] the system resumed the song')
-  systemHeard?.('play')
+  const element = carrier
+  if (wanted !== 'paused' || element?.paused !== false) return
+  if (systemPaused && !pageJustShown()) {
+    systemPaused = false
+    console.info('[now playing] the system resumed the song')
+    systemHeard?.('play')
+    return
+  }
+  console.info('[now playing] WebKit played the carrier; the song stays paused')
+  element.pause()
+}
+
+function thePage(): Page | null {
+  return options.page ?? (typeof document === 'undefined' ? null : document)
+}
+
+/** Follow the app going away and coming back. Once, with the first carrier. */
+function watchThePage(): void {
+  const page = thePage()
+  if (page === null) return
+  pageSeen = page.visibilityState
+  page.addEventListener('visibilitychange', () => {
+    if (page.visibilityState === 'visible' && pageSeen !== 'visible') {
+      pageShownAt = now()
+    }
+    pageSeen = page.visibilityState
+  })
+}
+
+/**
+ * Whether the app is coming to the front: shown already with its event
+ * still to come, or shown a moment ago.
+ */
+function pageJustShown(): boolean {
+  const page = thePage()
+  if (page === null) return false
+  if (page.visibilityState === 'visible' && pageSeen !== 'visible') return true
+  return now() - pageShownAt < SHOWING_MS
 }
 
 /**
@@ -230,6 +298,7 @@ function theCarrier(): Carrier {
   made.addEventListener('playing', onCarrierPlaying)
   made.addEventListener('seeked', onCarrierRound)
   carrier = made
+  watchThePage()
   return made
 }
 
@@ -282,6 +351,7 @@ function placeBar(position: number): void {
 /** Nothing playing: no name, no bar, and no carrier, so no Now Playing. */
 function putAway(session: MediaSession): void {
   wanted = 'none'
+  systemPaused = false
   shown = null
   named = null
   session.metadata = null
@@ -345,6 +415,8 @@ export function showOnWebKit(song: WebKitSong | null): void {
     if (!element.paused) element.pause()
     return
   }
+  // The song plays by its own word now; no pause of the system's is left to undo.
+  systemPaused = false
   if (!element.hasAttribute('src')) element.src = silence()
   if (element.paused) playCarrier(element)
 }
@@ -435,4 +507,7 @@ export function resetWebKitNowPlaying(
   listening = null
   holding = false
   holdingHeard = null
+  systemPaused = false
+  pageSeen = 'visible'
+  pageShownAt = Number.NEGATIVE_INFINITY
 }
