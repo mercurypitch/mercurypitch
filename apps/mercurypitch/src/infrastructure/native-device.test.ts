@@ -20,6 +20,10 @@ const platform = vi.hoisted(() => ({
     Promise.resolve(),
   ),
   onPictureInPicture: vi.fn((_handler: (inPip: boolean) => void) => vi.fn()),
+  pictureInPictureNeedsLyrics: vi.fn(() => false),
+  setPictureInPictureLyrics: vi.fn(async (_script: unknown) =>
+    Promise.resolve(),
+  ),
   onNowPlayingHoldsAudio: vi.fn((_listener: (holds: boolean) => void) =>
     vi.fn(),
   ),
@@ -195,6 +199,28 @@ describe('the device a room reaches through the bridge', () => {
 
     expect(handler).toHaveBeenCalledWith(true)
     expect(stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('hands the lyrics to an iOS window, and survives a refusal', async () => {
+    platform.pictureInPictureNeedsLyrics.mockReturnValueOnce(true)
+    platform.setPictureInPictureLyrics.mockImplementationOnce(async () =>
+      Promise.reject(new Error('not available')),
+    )
+    const device = createNativeDevice()
+    const script = { title: 'Harbour Lights', duration: 0, segments: [] }
+
+    expect(() => device.pictureInPictureLyrics?.(script)).not.toThrow()
+    device.pictureInPictureLyrics?.(null)
+    await Promise.resolve()
+
+    expect(platform.setPictureInPictureLyrics.mock.calls).toEqual([
+      [script],
+      [null],
+    ])
+  })
+
+  it('has no lyrics to hand an Android window, which shows the page', () => {
+    expect(createNativeDevice().pictureInPictureLyrics).toBeNull()
   })
 
   it('stands the unlock clip aside while the lock screen’s carrier holds the session', () => {

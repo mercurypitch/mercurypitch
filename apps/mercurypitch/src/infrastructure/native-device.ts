@@ -5,13 +5,13 @@
 // What the Karaoke room needs and cannot import: the app's one AudioContext
 // and its background hold (`packages/audio-io`, which the root package does
 // not depend on), and the screen's keep-awake, the system's media controls
-// and Android's picture-in-picture window (`@irchiinnuss/mobile-runtime/
+// and the picture-in-picture window (`@irchiinnuss/mobile-runtime/
 // platform`, which eslint keeps out of `src/`).
 // Registered once from `main.tsx` through `registerNativeDevice`; the web
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { keepAwake, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, setNowPlaying, setPictureInPictureAutoEnter, } from '@irchiinnuss/mobile-runtime/platform'
+import { keepAwake, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
@@ -43,6 +43,12 @@ export function createNativeDevice(): NativeDeviceApi {
       void setPictureInPictureAutoEnter(on).catch(() => undefined)
     },
     onPictureInPicture: (handler) => onPictureInPicture(handler),
+    pictureInPictureLyrics: pictureInPictureNeedsLyrics()
+      ? (script) => {
+          // As with the window itself: a phone without it shows nothing.
+          void setPictureInPictureLyrics(script).catch(() => undefined)
+        }
+      : null,
   }
 }
 

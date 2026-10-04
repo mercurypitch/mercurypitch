@@ -327,6 +327,7 @@ async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
 
 async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
   if (isIos()) {
+    if (song !== null) tellTheWindowTheClock(song)
     await showThroughWebKit(song)
     return
   }
@@ -389,7 +390,8 @@ async function showThroughWebKit(song: NowPlaying | null): Promise<void> {
  * leave the others unregistered or uncleared. Android answers through the
  * handler given here. On iOS the buttons reach WebKit's media session
  * instead, and with them the system pausing the song for another app or a
- * call (see webkit-now-playing.ts).
+ * call (see webkit-now-playing.ts); the lyrics window's play and pause come
+ * from the app's own plugin.
  */
 export function onMediaAction(
   handler: (action: MediaAction) => void,
@@ -405,9 +407,14 @@ export function onMediaAction(
   }
 
   if (isIos()) {
-    return webKitNowPlayingAvailable()
+    const fromWebKit = webKitNowPlayingAvailable()
       ? listenOnWebKit(MEDIA_ACTIONS, deliver)
       : () => undefined
+    const fromTheWindow = listenToTheWindow(handler)
+    return () => {
+      fromWebKit()
+      fromTheWindow()
+    }
   }
 
   return lazyListener((dispose) => {
@@ -465,30 +472,91 @@ export function onNowPlayingHoldsAudio(
 }
 
 // ------------------------------------------------------------
-// Picture in picture (Android)
+// Picture in picture (Android and iOS)
 // ------------------------------------------------------------
 //
 // A small floating window the app keeps on screen after the singer leaves
-// it, as a video app does. The native half is not an npm plugin: it is a
-// class in the Mercury Pitch app itself (PictureInPicturePlugin.java, which
-// MainActivity registers), so an app without it answers `Unimplemented`,
-// and that is survived like any other missing plugin.
+// it, as a video app does. The native half is not an npm plugin: it lives in
+// the Mercury Pitch app itself, under one name on both phones, so an app
+// without it answers `Unimplemented`, and that is survived like any other
+// missing plugin.
 //
-// Android only. iOS has picture-in-picture for video alone, and the web has
-// none for a page, so both get inert wrappers and the plugin is never even
-// registered there.
+// Android (PictureInPicturePlugin.java, which MainActivity registers) shrinks
+// the whole app into the window, page and all, and the page draws what is in
+// it. iOS puts only video in its window, and a page behind another app cannot
+// draw: there the app's own plugin (ios/App/App/LyricsWindow/) draws the
+// lyrics, from the song's lyric timing (`setPictureInPictureLyrics`) and its
+// clock, which rides on every Now Playing report. The window's play and pause
+// reach the media handlers as a lock-screen press does, and what the window
+// does is written to the console as `[lyrics window] ...`, for a device test.
+//
+// The web has no window for a page: inert wrappers, and the plugin is never
+// even registered there.
 
-/** The app's own plugin, as MainActivity registers it. */
+/** Where the song is, as the iOS window keeps it: a Now Playing report. */
+interface PictureInPictureClock {
+  readonly playing: boolean
+  readonly position: number
+  readonly rate: number
+  readonly duration: number
+}
+
+/** The app's own plugin, as MainActivity and the iOS app register it. */
 interface PictureInPicturePlugin {
   setAutoEnter(options: { enabled: boolean }): Promise<void>
+  /** iOS: the song's lyric timing as JSON, or no `json` to take it away. */
+  setLyrics(options: { json?: string }): Promise<void>
+  /** iOS: where the song is. */
+  setClock(options: PictureInPictureClock): Promise<void>
   addListener(
     eventName: 'pictureInPictureChange',
     listener: (state: { inPictureInPicture?: boolean }) => void,
   ): Promise<PluginListenerHandle>
+  addListener(
+    eventName: 'pictureInPictureAction',
+    listener: (event: { action?: unknown }) => void,
+  ): Promise<PluginListenerHandle>
+  addListener(
+    eventName: 'pictureInPictureLog',
+    listener: (event: { message?: unknown }) => void,
+  ): Promise<PluginListenerHandle>
+}
+
+/**
+ * What the iOS window draws, and when: the app builds it from the lyrics the
+ * stage lights (lyric-window-script.ts). Times are seconds into the song.
+ */
+export interface PictureInPictureLyrics {
+  readonly title: string
+  /** The song's length, 0 while it is not known. */
+  readonly duration: number
+  /** In song order; each runs until the next one's `at`. */
+  readonly segments: readonly {
+    readonly at: number
+    /** The words of the line being sung, none in a rest. */
+    readonly current: readonly string[]
+    /** The next line with words, or null after the last. */
+    readonly next: string | null
+    /** Per word of `current`: when it starts to fill, and when it is lit. */
+    readonly words: readonly (readonly [number, number])[]
+  }[]
 }
 
 function isAndroid(): boolean {
   return isNative() && Capacitor.getPlatform() === 'android'
+}
+
+/** A phone with the window: Android's of the app, iOS's of the lyrics. */
+function hasPictureInPicture(): boolean {
+  return isAndroid() || isIos()
+}
+
+/**
+ * Whether the window draws the lyrics itself, from a script the page hands
+ * it (`setPictureInPictureLyrics`): iOS. Android's window shows the page.
+ */
+export function pictureInPictureNeedsLyrics(): boolean {
+  return isIos()
 }
 
 // Registered on first use, once: Capacitor warns on a second registration.
@@ -499,18 +567,101 @@ let pictureInPicturePlugin: PictureInPicturePlugin | null = null
 function pictureInPicture(): PictureInPicturePlugin {
   pictureInPicturePlugin ??=
     registerPlugin<PictureInPicturePlugin>('PictureInPicture')
+  if (isIos()) watchWindowLog(pictureInPicturePlugin)
   return pictureInPicturePlugin
 }
 
+// The iOS window's own account of itself, for as long as the app runs. The
+// plugin keeps every line from before this listens, so the first ones (the
+// plugin loading, whether the phone has a window at all) are not lost.
+let windowLogWatched = false
+
+function watchWindowLog(plugin: PictureInPicturePlugin): void {
+  if (windowLogWatched) return
+  windowLogWatched = true
+  void (async () => {
+    try {
+      await plugin.addListener('pictureInPictureLog', (event) => {
+        if (typeof event.message === 'string') {
+          console.info(`[lyrics window] ${event.message}`)
+        }
+      })
+    } catch {
+      // No plugin behind the name in this build: nothing to hear.
+    }
+  })()
+}
+
 /**
- * While on, leaving the app (the home gesture, the recents screen) puts it in
- * a small window instead of behind everything. Off by default; the caller
- * turns it on for exactly as long as there is something worth watching.
+ * While on, leaving the app (the home gesture, the recents screen) opens the
+ * small window instead of putting the app behind everything. Off by
+ * default; the caller turns it on for exactly as long as there is something
+ * worth watching.
  */
 export async function setPictureInPictureAutoEnter(on: boolean): Promise<void> {
-  if (!isAndroid()) return
+  if (!hasPictureInPicture()) return
   await attempt(async () => {
     await pictureInPicture().setAutoEnter({ enabled: on })
+  })
+}
+
+/**
+ * iOS: what the window draws for the song in the room, or null when the room
+ * has none, which also closes a window that is open. Android's window shows
+ * the page itself and needs nothing.
+ */
+export async function setPictureInPictureLyrics(
+  lyrics: PictureInPictureLyrics | null,
+): Promise<void> {
+  if (!isIos()) return
+  await attempt(async () => {
+    await pictureInPicture().setLyrics(
+      lyrics === null ? {} : { json: JSON.stringify(lyrics) },
+    )
+  })
+}
+
+/**
+ * iOS: the window's clock, from the Now Playing report the lock screen gets:
+ * the window runs on from it as the lock screen's bar does.
+ */
+function tellTheWindowTheClock(song: NowPlaying): void {
+  const duration = Math.max(0, finiteOr(song.duration, 0))
+  const rate = finiteOr(song.rate, 1)
+  void attempt(async () => {
+    await pictureInPicture().setClock({
+      playing: song.playing,
+      position: Math.min(
+        duration > 0 ? duration : Number.POSITIVE_INFINITY,
+        Math.max(0, finiteOr(song.position, 0)),
+      ),
+      rate: rate > 0 ? rate : 1,
+      duration,
+    })
+  })
+}
+
+/** iOS: the window's own play and pause, as the media handlers hear them. */
+function listenToTheWindow(
+  handler: (action: MediaAction) => void,
+): Unsubscribe {
+  return lazyListener((dispose) => {
+    void (async () => {
+      try {
+        dispose(
+          await pictureInPicture().addListener(
+            'pictureInPictureAction',
+            (event) => {
+              if (event.action === 'play' || event.action === 'pause') {
+                handler(event.action)
+              }
+            },
+          ),
+        )
+      } catch {
+        // No plugin behind the name in this build: no window, no buttons.
+      }
+    })()
   })
 }
 
@@ -518,7 +669,7 @@ export async function setPictureInPictureAutoEnter(on: boolean): Promise<void> {
 export function onPictureInPicture(
   handler: (inPictureInPicture: boolean) => void,
 ): Unsubscribe {
-  if (!isAndroid()) return () => undefined
+  if (!hasPictureInPicture()) return () => undefined
 
   return lazyListener((dispose) => {
     void (async () => {
