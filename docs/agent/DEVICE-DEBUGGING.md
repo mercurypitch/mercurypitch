@@ -143,15 +143,17 @@ Developer screen's Audio section copies the lot. For a Karaoke song kept
 playing behind another app, its `karaoke` entries say what the way back
 looked like:
 
-| Entry                           | What it says                                                                                                                                                |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                      |
-| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                             |
-| `statechange`                   | The clock changed state while the room watched it; on iOS `interrupted` means a call, Siri or another app took the sound, and a playing song pauses with it |
-| `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run with a notice             |
-| `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back                                                                       |
-| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                             |
-| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                 |
+| Entry                           | What it says                                                                                                                                                                                                                                                    |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page-hidden`, `page-visible`   | Playing or not, the song position, the clock's state and time; on the way back, how long the page was away and how far the clock moved                                                                                                                          |
+| `play`                          | A press of play: the clock's state before it (`clockWas`) and the song position                                                                                                                                                                                 |
+| `statechange`                   | The clock changed state while the room watched it, and whether the page was hidden; on iOS `interrupted` means a call, Siri, another app or the trip to the background took the sound, and a playing song pauses with it unless it keeps playing behind the app |
+| `background-resume`             | The interruption that comes with the app going to the background, resumed for a song that keeps playing there; `hiddenForMs` is how long the page had been hidden                                                                                               |
+| `suspend-fade`                  | The shared clock was about to stop (the app leaving with nothing to keep the song playing), so the playing song paused with its fade first                                                                                                                      |
+| `clock-stuck`                   | The clock did not move after a press of play (700 ms) or after the return; the first restarts the clock, the second stops the run with a notice                                                                                                                 |
+| `clock-restart`                 | The clock was suspended and resumed (or resumed from stopped) to bring its sound back                                                                                                                                                                           |
+| `stream-skip`                   | A stem fell more than a window behind the clock (the page or its decoder was paused) and picked up at the clock                                                                                                                                                 |
+| `stream-retry`, `stream-failed` | A stem's decoder failed and was reopened; `stream-failed` is the one reopening did not fix, and the run stops with a notice                                                                                                                                     |
 
 Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-return-watch.ts),
 [`useStemMixerAudioController.ts`](../../src/features/stem-mixer/useStemMixerAudioController.ts)

@@ -336,8 +336,15 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** on iOS, after YouTube's picture-in-picture played, play in the Karaoke room sometimes did nothing or showed playing in silence; play pressed in YouTube's window stopped again about half a second later.
 **Cause:** a `statechange` listener, the tap unlock and the page-return resume all resumed an `'interrupted'` context. In WebKit, playback starting ends every interruption and takes the sound back, so YouTube stopped; and a resume before iOS's "ended" left WebKit's audio session marked interrupted, so the next take-over was dropped ("already interrupted!") and the clock said `'running'` with no output.
-**Rule:** leave an interruption to the system and to the next press of play. On play, take the session first (unlock clip or Now Playing carrier), then resume the clock; check the clock moves, restart it once, then stop and say so.
+**Rule:** leave an interruption to the system and to the next press of play. On play, take the session first (unlock clip or Now Playing carrier), then resume the clock; check the clock moves, restart it once, then stop and say so. The trip to the background is the one exception (next entry).
 **See:** `packages/audio-io/src/shared-audio-context.ts`, `src/lib/audio-unlock.ts`, `docs/plans/mobile-native/ios-audio-handoff.md`.
+
+### The trip to the background interrupts Web Audio too (iOS)
+
+**Symptom:** with background play on, swiping home opened the lyrics window and paused the song half a second later. With it off, leaving the app made a loud buzz, and coming back sometimes played the end of the note.
+**Cause:** WebKit interrupts Web Audio whenever the app enters the background (`BackgroundProcessPlaybackRestricted`, an `EnteringBackground` interruption), and the room paused with every interruption. Separately, the shell parked the shared clock on `willResignActive` with no time for a fade, so the clock stopped mid-waveform and the fade ran when it next started.
+**Rule:** a room that keeps playing behind other apps resumes the interruption that comes with the page hiding (up to 1.5 s after it, or 0.7 s before it); every other interruption pauses. Anything playing on the shared clock answers `prepareToSuspend` with its fade and the time left on it.
+**See:** `src/features/stem-mixer/useStemMixerAudioController.ts`, `packages/audio-io/src/shared-audio-context.ts`, `docs/plans/mobile-native/ios-audio-handoff.md`.
 
 ## Framework
 

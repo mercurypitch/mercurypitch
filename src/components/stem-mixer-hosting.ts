@@ -53,6 +53,11 @@ export interface HostedMixerControls {
   readonly play: () => void
   readonly pause: () => void
   /**
+   * The room's clock is about to stop (the app leaving, the page hiding):
+   * a playing song pauses with its fade. Returns the milliseconds to wait.
+   */
+  readonly prepareToSuspend: () => number
+  /**
    * Go to a place in the song the way a tapped lyric line does: the line
    * sung there at once, back in the middle of the stage. A playing song
    * plays on from there; a paused one stays paused.
@@ -111,4 +116,9 @@ export interface StemMixerHosting {
   readonly onNext: () => void
   /** The song reached its end by itself (not a stop). */
   readonly onEnded: () => void
+  /**
+   * The room keeps the song playing behind another app: "Keep playing in
+   * the background", or the lyrics window.
+   */
+  readonly keepsPlayingHidden?: Accessor<boolean>
 }

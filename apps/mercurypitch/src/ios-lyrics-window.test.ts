@@ -114,6 +114,14 @@ describe('the script', () => {
 describe('App Review', () => {
   const allSwift = Object.values(SWIFT).join('\n')
 
+  it('closes the window once the app is active again, not only as it returns', () => {
+    // iOS can ignore a stop asked for before the app is active (build 533).
+    expect(SWIFT.window).toContain(
+      'UIApplication.willEnterForegroundNotification',
+    )
+    expect(SWIFT.window).toContain('UIApplication.didBecomeActiveNotification')
+  })
+
   it('never starts the window from code, only arms it for iOS to open', () => {
     expect(allSwift).not.toMatch(/\.startPictureInPicture\(/u)
     expect(SWIFT.window).toContain(

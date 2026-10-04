@@ -24,7 +24,7 @@ const NOW_PLAYING_ARTWORK = '/now-playing.webp'
 
 export function createNativeDevice(): NativeDeviceApi {
   return {
-    acquireAudio: (owner) => acquireSharedAudioContext(owner),
+    acquireAudio: (owner, options) => acquireSharedAudioContext(owner, options),
     keepAwake: (on) => {
       // A phone without the plugin keeps its own sleep rules; nothing about
       // a song is worth an unhandled rejection.

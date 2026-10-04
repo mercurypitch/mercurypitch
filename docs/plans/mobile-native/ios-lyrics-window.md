@@ -1,7 +1,9 @@
 # iOS lyrics window (picture in picture)
 
-Status: approved (owner, 4 Oct 2026), built for a device test. Builds on #924
-(the lock screen's Now Playing through WebKit).
+Status: approved (owner, 4 Oct 2026), in TestFlight build 533 (#925). The
+fixes from its device test (the song pausing after the swipe home, the window
+staying open on a return through the icon) follow in the build after 533.
+Builds on #924 (the lock screen's Now Playing through WebKit).
 
 ## What it is
 
@@ -26,7 +28,9 @@ On iPhone the window also needs "Keep playing in the background" (on by
 default). Leaving the app hides the page, and without that setting the room
 pauses the song on the way out, so a window would open on a paused song.
 
-Coming back to the app closes the window, as a video app's does.
+Coming back to the app closes the window, as a video app's does. While the
+window is open the app itself stays the room: the window draws its own
+frames, so unlike Android's, it is not the page shrunk.
 
 Not in scope: a button that opens the window from inside the app, scrubbing
 or skipping from the window, the window anywhere but the Karaoke room, iPad.
@@ -130,6 +134,9 @@ These are rules for this feature and anything built on it later.
   sends the script when it changes, and null when it leaves.
 - `useKaraokePictureInPicture.ts` works on iOS too. On iOS it arms only while
   "Keep playing in the background" is on (`needsBackgroundPlay`).
+  `windowShowsThePage` says whether the window shows the page (Android) or
+  draws its own frames (iOS); only the first turns the room into the
+  window's lyrics view.
 
 ### Platform (`packages/mobile-runtime/src/picture-in-picture.ts`, re-exported by `platform.ts`)
 
@@ -160,7 +167,8 @@ These are rules for this feature and anything built on it later.
   control timebase. Re-arms after a start that fails (iOS sometimes
   refuses one with `PGPegasusErrorDomain -1003`), for the next swipe home;
   it never starts the window itself. Stops the window when the app comes
-  back to the foreground.
+  back to the foreground, and again once it is active
+  (`didBecomeActive`): iOS can ignore a stop made before then.
 - `LyricsWindowScript.swift`: the script, decoded with `Codable`, and the
   lookup of the segment at a time.
 - `LyricsWindowRenderer.swift`: draws a frame (640x360 BGRA, from a pixel
@@ -219,12 +227,14 @@ Native sends it as an event; the page writes it.
 
 ### On the phone
 
-1. Play a song, swipe home: the window opens, the words fill in time.
+1. Play a song, swipe home: the window opens, the words fill in time, and
+   the song keeps playing.
 2. Pause and play from the window: the song follows; so does the lock screen.
 3. Leave the window open for a few minutes: still in time, the phone not hot.
 4. Tap the window's return button: back in the room, the song playing.
 5. Close the window: the song plays on; the lock screen still controls it.
-6. Open the app from its icon while the window is up: the window closes.
+6. Open the app from its icon while the window is up: the window closes,
+   and the app shows the room.
 7. Pause in the room, swipe home: no window.
 8. Turn the setting off, play, swipe home: no window.
 9. Leave the room while the window is open: it closes.
