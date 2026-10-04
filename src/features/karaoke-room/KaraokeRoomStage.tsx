@@ -485,7 +485,6 @@ export const KaraokeRoomStage: Component = () => {
   onCleanup(() => {
     clearTimeout(restoreTimer)
   })
-
   // The small window (see IN A SMALL WINDOW). What is open over the stage
   // closes as it opens: nobody can tap a sheet in there, and coming back
   // finds the stage.
@@ -588,6 +587,9 @@ export const KaraokeRoomStage: Component = () => {
       position: controls === null ? 0 : untrack(controls.audibleElapsed),
       duration: controls?.duration() ?? 0,
       rate: controls?.speed() ?? 1,
+      // Paused for a call or another app, not by a press: iOS may bring it
+      // back when a call ends (webkit-now-playing).
+      interrupted: !playing && controls?.interrupted() === true,
     })
   })
   onCleanup(() => {

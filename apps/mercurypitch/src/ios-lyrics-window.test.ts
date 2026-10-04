@@ -80,6 +80,7 @@ describe('the plugin', () => {
     ['pictureInPictureChange', 'inPictureInPicture'],
     ['pictureInPictureAction', 'action'],
     ['pictureInPictureLog', 'message'],
+    ['audioSessionLog', 'message'],
   ])('sends %s, which the JavaScript side listens to', (event, field) => {
     expect(SWIFT.plugin).toContain(
       `notifyListeners("${event}", data: ["${field}":`,

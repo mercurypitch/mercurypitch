@@ -39,7 +39,9 @@
 // (`onCarrierHolding`). WebKit shows on the lock screen whichever element a
 // tap played last, sends a headset's press to whichever started last, and,
 // once the app is on the lock screen, offers even that 0.1 s clip, which
-// would keep the app there after the song has gone.
+// would keep the app there after the song has gone. A press of play then has
+// the carrier take the session in the clip's place, ahead of the song's
+// clock (`claimCarrier`).
 //
 // While the app is in front, WebKit keeps Now Playing out of Control Center
 // (`allowsNowPlayingControlsVisibility` is false for a visible page). The
@@ -66,6 +68,11 @@ export interface WebKitSong {
   readonly duration: number
   /** How fast it plays. Never 0, which WebKit refuses. */
   readonly rate: number
+  /**
+   * Paused because the system took the sound (another app, a call), not by
+   * a press. A carrier the system paused with it is left as it is.
+   */
+  readonly interrupted?: boolean
 }
 
 /** The part of an `<audio>` element the carrier needs. A test hands in its own. */
@@ -410,6 +417,13 @@ export function showOnWebKit(song: WebKitSong | null): void {
   placeBar(song.position)
   const element = theCarrier()
   if (!song.playing) {
+    if (song.interrupted === true && element.paused) {
+      // The song heard the interruption before the carrier's pause event
+      // came: the pause is still the system's, and a call that ends with the
+      // word to resume may still bring the song back (onCarrierPlay).
+      systemPaused = true
+      return
+    }
     // Never a carrier the system has paused already: pausing it again tells
     // WebKit not to resume it when the call ends.
     if (!element.paused) element.pause()
@@ -419,6 +433,26 @@ export function showOnWebKit(song: WebKitSong | null): void {
   systemPaused = false
   if (!element.hasAttribute('src')) element.src = silence()
   if (element.paused) playCarrier(element)
+}
+
+/**
+ * A press of play, before the song starts: the carrier of a song already on
+ * the lock screen plays now, from inside the press, so it holds the playback
+ * session before the song's clock resumes (audio-unlock's
+ * `unlockForPlayback`). After another app had the sound, that order is what
+ * makes WebKit activate its session for real, rather than leave the clock
+ * reporting 'running' with no output (docs/plans/mobile-native/
+ * ios-audio-handoff.md). A song's first play shows it through the report.
+ */
+export function claimCarrier(): void {
+  const element = carrier
+  if (element === null || !element.hasAttribute('src')) return
+  // The song's own play, as the report that follows will say.
+  wanted = 'playing'
+  systemPaused = false
+  if (!element.paused) return
+  console.info('[now playing] play pressed: the carrier takes the sound first')
+  playCarrier(element)
 }
 
 /**

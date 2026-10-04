@@ -26,6 +26,7 @@ studio users graduate to.
 | [native-feel-research.md](native-feel-research.md)     | Research: what makes web apps feel native (sourced)                                                                      |
 | [store-review-purchases.md](store-review-purchases.md) | Sandbox purchases on production for a store review: the switch, its bounds, and the on/off order                         |
 | [ios-lyrics-window.md](ios-lyrics-window.md)           | The Karaoke room's lyrics in iOS's picture-in-picture window: the App Review rules, the native window, the device checks |
+| [ios-audio-handoff.md](ios-audio-handoff.md)           | Handing the sound to another app and taking it back on iOS: why WebKit fought the page, the rules, the device checks     |
 | [mockups.html](mockups.html)                           | Phone-frame mockups of the redesigned screens                                                                            |
 
 ## Decisions (2026-07-18, interview)

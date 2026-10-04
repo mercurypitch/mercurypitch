@@ -27,6 +27,8 @@ interface FakeMixer {
   hosted: StemMixerHosting
   alive: boolean
   setPlaying: Setter<boolean>
+  /** The system taking the sound: the real mixer pauses and says so. */
+  setInterrupted: Setter<boolean>
   setLoading: Setter<boolean>
   setElapsed: Setter<number>
   /** The clock the lyrics follow: what has reached the speakers. */
@@ -68,6 +70,7 @@ vi.mock('@/components/StemMixer', async () => {
       hosted: StemMixerHosting
     }) => {
       const [playing, setPlaying] = createSignal(false)
+      const [interrupted, setInterrupted] = createSignal(false)
       const [loading, setLoading] = createSignal(true)
       const [loadError, setLoadError] = createSignal('')
       const [elapsed, setElapsed] = createSignal(0)
@@ -111,6 +114,7 @@ vi.mock('@/components/StemMixer', async () => {
         ...given,
         alive: true,
         setPlaying,
+        setInterrupted,
         setLoading,
         setElapsed,
         setAudibleElapsed,
@@ -135,6 +139,7 @@ vi.mock('@/components/StemMixer', async () => {
       onMount(() => {
         given.hosted.attach({
           playing,
+          interrupted,
           loading,
           loadError,
           elapsed,
@@ -657,15 +662,35 @@ describe('behind another app', () => {
       position: 0,
       duration: 246,
       rate: 1,
+      interrupted: false,
     })
 
     controls().pause()
     expect(device.nowPlaying).toHaveBeenLastCalledWith(
-      expect.objectContaining({ playing: false }),
+      expect.objectContaining({ playing: false, interrupted: false }),
     )
 
     controls().stop()
     expect(device.nowPlaying).toHaveBeenLastCalledWith(null)
+  })
+
+  it('tells the system a pause was its own when it took the sound', async () => {
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    // A call or another app: the mixer pauses, then says why.
+    current().setPlaying(false)
+    current().setInterrupted(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: false, interrupted: true }),
+    )
+
+    current().setInterrupted(false)
+    current().setPlaying(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, interrupted: false }),
+    )
   })
 
   it('names an unknown artist for a song without one', async () => {

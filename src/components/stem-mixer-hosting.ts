@@ -28,6 +28,11 @@ export interface GuideLevel {
 /** What the mixer hands its room once it is set up. */
 export interface HostedMixerControls {
   readonly playing: Accessor<boolean>
+  /**
+   * Paused because the system took the sound (a call, Siri, another app),
+   * until the singer next plays, pauses or stops the song.
+   */
+  readonly interrupted: Accessor<boolean>
   readonly loading: Accessor<boolean>
   readonly loadError: Accessor<string>
   /** Seconds into the song. */

@@ -332,6 +332,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** never change the app's AVAudioSession at runtime under WebKit's audio (#923 reverted it). Lock-screen metadata, position and buttons go through `navigator.mediaSession` beside a silent `<audio>` carrier that WebKit counts as the playing element. WebKit resets the session's position to the carrier's own on every seek of it, its loop included, so the song's position is set again on `seeked`. Keep every other media element out of its way: WebKit shows on the lock screen the element a tap played last and sends a headset's toggle to the one that started last, so the unlock clip in `src/lib/audio-unlock.ts` stands aside, muted and unplayed, while the carrier holds the session.
 **See:** `packages/mobile-runtime/src/webkit-now-playing.ts`, `standUnlockClipAside` in `src/lib/audio-unlock.ts`.
 
+### Never resume an AudioContext that iOS interrupted
+
+**Symptom:** on iOS, after YouTube's picture-in-picture played, play in the Karaoke room sometimes did nothing or showed playing in silence; play pressed in YouTube's window stopped again about half a second later.
+**Cause:** a `statechange` listener, the tap unlock and the page-return resume all resumed an `'interrupted'` context. In WebKit, playback starting ends every interruption and takes the sound back, so YouTube stopped; and a resume before iOS's "ended" left WebKit's audio session marked interrupted, so the next take-over was dropped ("already interrupted!") and the clock said `'running'` with no output.
+**Rule:** leave an interruption to the system and to the next press of play. On play, take the session first (unlock clip or Now Playing carrier), then resume the clock; check the clock moves, restart it once, then stop and say so.
+**See:** `packages/audio-io/src/shared-audio-context.ts`, `src/lib/audio-unlock.ts`, `docs/plans/mobile-native/ios-audio-handoff.md`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

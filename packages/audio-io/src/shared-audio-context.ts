@@ -30,9 +30,17 @@
 //   - Never close it in the app. close() is one-way, and a replacement would
 //     need a fresh gesture the player has no reason to give. Leases suspend
 //     the context; only tests dispose it.
-//   - Watch `statechange`. iOS parks a context at 'interrupted' for a phone
-//     call, Siri, or another app taking the route, and that event is the only
-//     notice we get. 'interrupted' is not in the DOM's AudioContextState.
+//   - Leave an interruption to the system and to the player. iOS parks a
+//     context at 'interrupted' (not in the DOM's AudioContextState) for a
+//     phone call, Siri, or another app taking the sound. WebKit resumes it
+//     by itself when a call ends with the system's word to resume. Anything
+//     else waits for the player's next press of play. A resume() from here
+//     would end WebKit's interruption for every sound in the page and take
+//     the sound back from the other app (YouTube stopped half a second after
+//     it started). It would also leave WebKit's audio session marked
+//     interrupted, so the other app's next take-over goes unnoticed and the
+//     clock reports 'running' with no output behind it
+//     (docs/plans/mobile-native/ios-audio-handoff.md).
 //   - Follow the page. Beside Cue's frame loop stops when the tab hides; the
 //     sound stops with it and comes back on the way in. The one exception is
 //     a background hold: a song the player asked to keep hearing behind
@@ -177,22 +185,6 @@ function parkIfNoLongerActive(audioContext: AudioContext): boolean {
   return true
 }
 
-function handleStateChange(): void {
-  const audioContext = context
-  if (audioContext === undefined || !isInterrupted(audioContext)) return
-  // Only reach for it while the page is in front, or while a hold keeps the
-  // clock running behind it — otherwise a resume from the background is
-  // refused anyway, and the visibility handler will retry.
-  if (owners.size === 0 || hiddenWithoutHold() || explicitlySuspended) return
-  // Outputs must observe the interruption before a resume can make their
-  // disconnected sources' audio clocks advance again.
-  queueMicrotask(() => {
-    if (context !== audioContext || !isInterrupted(audioContext)) return
-    if (owners.size === 0 || hiddenWithoutHold() || explicitlySuspended) return
-    resumeQuietly(audioContext)
-  })
-}
-
 function parkForHiddenPage(audioContext: AudioContext): void {
   if (audioContext.state === 'running' && !explicitlySuspended)
     suspendedByPage = true
@@ -218,15 +210,14 @@ function handleVisibilityChange(): void {
   // Nobody is listening: leave the hardware parked rather than waking it,
   // and keep the flag so the next lease still gets its clock back.
   if (owners.size === 0) return
-  if (!suspendedByPage && !isInterrupted(audioContext)) return
+  // What the page parked comes back with it. What the system interrupted
+  // waits for the system, or for the next press of play (see the header).
+  if (!suspendedByPage || isInterrupted(audioContext)) return
   suspendedByPage = false
   resumeQuietly(audioContext)
 }
 
-function attachListeners(audioContext: AudioContext): void {
-  if (typeof audioContext.addEventListener === 'function') {
-    audioContext.addEventListener('statechange', handleStateChange)
-  }
+function attachListeners(): void {
   if (pageListenerAttached || typeof document === 'undefined') return
   document.addEventListener('visibilitychange', handleVisibilityChange)
   pageListenerAttached = true
@@ -244,7 +235,7 @@ function ensureContext(): AudioContext | null {
   }
   if (created === undefined) return null
   context = created
-  attachListeners(created)
+  attachListeners()
   return created
 }
 
@@ -365,7 +356,8 @@ export function holdSharedAudioContextInBackground(owner: string): () => void {
 /**
  * Recovers an already-owned foreground clock without creating audio or
  * replaying stopped sources. Call after clearing native suspension intent.
- * A platform refusal remains retryable through the next gesture's unlock().
+ * A platform refusal remains retryable through the next gesture's unlock(),
+ * and so does a clock the system interrupted (see the header).
  */
 export function resumeSharedAudioContext(): void {
   const audioContext = context
@@ -374,7 +366,8 @@ export function resumeSharedAudioContext(): void {
     owners.size === 0 ||
     hiddenWithoutHold() ||
     explicitlySuspended ||
-    audioContext.state === 'closed'
+    audioContext.state === 'closed' ||
+    isInterrupted(audioContext)
   ) {
     return
   }
@@ -398,9 +391,6 @@ export function resetSharedAudioContext(
   cancelSharedAudioContextSuspension()
   const audioContext = context
   if (audioContext !== undefined) {
-    if (typeof audioContext.removeEventListener === 'function') {
-      audioContext.removeEventListener('statechange', handleStateChange)
-    }
     try {
       void Promise.resolve(audioContext.close()).catch(() => undefined)
     } catch {

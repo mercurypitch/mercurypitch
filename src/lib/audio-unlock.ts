@@ -27,6 +27,8 @@
 let silentEl: HTMLAudioElement | null = null
 let sessionPrimed = false
 let standingAside = false
+/** What takes the session for a press of play while the clip stands aside. */
+let sessionTaker: (() => void) | null = null
 
 interface AudioActivationTarget {
   getAudioContext: () => AudioContext | null
@@ -69,6 +71,39 @@ function silentWavUrl(): string {
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }))
 }
 
+/** iOS's own context state, which the DOM's AudioContextState does not name:
+ *  a call, Siri, or another app has the sound. */
+function isInterrupted(ctx: AudioContext): boolean {
+  return String(ctx.state) === 'interrupted'
+}
+
+function playClip(): void {
+  try {
+    if (silentEl === null) {
+      silentEl = new Audio(silentWavUrl())
+      silentEl.setAttribute('playsinline', '')
+      silentEl.preload = 'auto'
+    }
+    silentEl.muted = false
+    const p = silentEl.play()
+    sessionPrimed = true
+    void p?.catch(() => {
+      // Autoplay-blocked outside a gesture — the next real gesture retries.
+      sessionPrimed = false
+    })
+  } catch {
+    /* media element unavailable — nothing to promote */
+  }
+}
+
+function resumeClock(ctx: AudioContext | null | undefined): void {
+  if (ctx && ctx.state !== 'running') {
+    void ctx.resume().catch(() => {
+      /* not in a gesture yet — a later gesture will retry */
+    })
+  }
+}
+
 /** Play the silent clip (promoting the audio session) and resume the
  *  context. Must be called from inside a user gesture to have effect;
  *  calling it anywhere else is harmless. */
@@ -77,28 +112,36 @@ export function unlockAudio(ctx?: AudioContext | null): void {
     // Another element holds the session (see standUnlockClipAside).
     sessionPrimed = true
   } else {
-    try {
-      if (silentEl === null) {
-        silentEl = new Audio(silentWavUrl())
-        silentEl.setAttribute('playsinline', '')
-        silentEl.preload = 'auto'
-      }
-      silentEl.muted = false
-      const p = silentEl.play()
-      sessionPrimed = true
-      void p?.catch(() => {
-        // Autoplay-blocked outside a gesture — the next real gesture retries.
-        sessionPrimed = false
-      })
-    } catch {
-      /* media element unavailable — nothing to promote */
-    }
+    playClip()
   }
-  if (ctx && ctx.state !== 'running') {
-    void ctx.resume().catch(() => {
-      /* not in a gesture yet — a later gesture will retry */
-    })
+  resumeClock(ctx)
+}
+
+/**
+ * For a press of play: the playback session first, then the clock, both
+ * inside the gesture and before anything is awaited. `ensure` makes the
+ * clock, or hands back the one there is, and may resume it itself.
+ *
+ * The order is WebKit's. It activates its audio session explicitly only for
+ * sound that is already playing. A clock resumed first starts its output
+ * under a session nothing activated: after another app had the sound, WebKit
+ * still counts the session interrupted, misses that app's next take-over, and
+ * the clock reports 'running' with no output behind it. The carrier or the
+ * clip playing first makes the clock's resume the activation that clears it
+ * (docs/plans/mobile-native/ios-audio-handoff.md).
+ */
+export function unlockForPlayback(
+  ensure: () => AudioContext | null,
+): AudioContext | null {
+  if (standingAside) {
+    sessionPrimed = true
+    sessionTaker?.()
+  } else {
+    playClip()
   }
+  const ctx = ensure()
+  resumeClock(ctx)
+  return ctx
 }
 
 /**
@@ -115,9 +158,14 @@ export function unlockAudio(ctx?: AudioContext | null): void {
  * unlock does not play it. Brought back, it stays muted until the next
  * unlock: unmuted at once, it would qualify again before WebKit has taken
  * the app off the lock screen.
+ *
+ * `take` is what a press of play does instead while the clip stands aside
+ * (`unlockForPlayback`): the carrier playing at once, ahead of the clock.
+ * A tap anywhere else never calls it.
  */
-export function standUnlockClipAside(aside: boolean): void {
+export function standUnlockClipAside(aside: boolean, take?: () => void): void {
   standingAside = aside
+  sessionTaker = aside ? (take ?? null) : null
   if (aside) {
     if (silentEl !== null) silentEl.muted = true
     return
@@ -161,7 +209,14 @@ async function recoverAfterBackground(ctx: AudioContext): Promise<void> {
 /**
  * Arm document-level unlock: every tap re-checks the context (cheap no-op
  * once running + primed), and visibility changes recover a context iOS
- * suspended or interrupted in the background. Returns an uninstaller.
+ * suspended in the background. Returns an uninstaller.
+ *
+ * Neither touches a context iOS interrupted: a call, Siri or another app has
+ * the sound then, and a tap on the page, or the page coming back, is not a
+ * press of play. Taking the sound back is play's to do (`unlockForPlayback`);
+ * from anywhere else it stops the other app, and leaves this one's clock
+ * reporting 'running' with no output (docs/plans/mobile-native/
+ * ios-audio-handoff.md).
  */
 export function installAudioUnlock(
   getCtx: () => AudioContext | null,
@@ -171,6 +226,7 @@ export function installAudioUnlock(
 
   const onGesture = (): void => {
     const ctx = getCtx()
+    if (ctx !== null && isInterrupted(ctx)) return
     if (sessionPrimed && (ctx === null || ctx.state === 'running')) return
     unlockAudio(ctx)
   }
@@ -194,7 +250,7 @@ export function installAudioUnlock(
     }
 
     const ctx = getCtx()
-    if (!ctx) return
+    if (!ctx || isInterrupted(ctx)) return
 
     if (returnedFromBackground) {
       void recoverAfterBackground(ctx)

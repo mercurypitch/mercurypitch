@@ -7,7 +7,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { createSignal, onCleanup } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import { audioReporter, describeAudioError } from '@/lib/audio-diagnostics'
-import { installAudioUnlock, unlockAudio } from '@/lib/audio-unlock'
+import { installAudioUnlock, unlockForPlayback } from '@/lib/audio-unlock'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
 import { analysisFps, deviceClass as sessionDeviceClass, presentationFps, readDeviceProbe, recordAnimationFrame, } from '@/lib/device-tier'
 import type { DownloadProgress } from '@/lib/fetch-progress'
@@ -33,7 +33,7 @@ import { createHiddenClock } from './hidden-clock'
 import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } from './master-headroom'
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
-import { watchPlaybackReturn } from './playback-return-watch'
+import { START_CHECK_MS, watchClockMoves, watchPlaybackReturn, } from './playback-return-watch'
 import type { SongPathLog } from './stem-load-path'
 import { createSongPathLog, PATH_SOURCE } from './stem-load-path'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
@@ -234,6 +234,12 @@ export interface StemMixerAudioController {
   midiProgress: Accessor<number>
   midiPhase: Accessor<'detecting' | 'synthesizing' | 'rendering'>
   playing: Accessor<boolean>
+  /**
+   * The system took the sound while the song played (a call, Siri, another
+   * app), and the song paused for it. Until the singer next plays, pauses or
+   * stops it.
+   */
+  interrupted: Accessor<boolean>
   elapsed: Accessor<number>
   /** Song position that has reached the output device, for lyric visuals. */
   audibleElapsed: Accessor<number>
@@ -354,6 +360,9 @@ const MAX_ANALYSIS_FRAMES_PER_SECOND = 30
 /** Said when a run stops because its sound did (stopForLostSound). */
 export const LOST_SOUND_NOTICE =
   'The music stopped playing. Press play to carry on.'
+/** A press of play whose clock never moved, even restarted once. */
+export const SILENT_START_NOTICE =
+  "The song didn't start. Press play to try again."
 const PERFORMANCE_LOG_INTERVAL_MS = 2000
 
 /** The live-pitch activation milestone uses the same supported range as the
@@ -393,6 +402,8 @@ export const useStemMixerAudioController = (
     'detecting' | 'synthesizing' | 'rendering'
   >('detecting')
   const [playing, setPlayingLocal] = createSignal(false)
+  const [interrupted, setInterrupted] = createSignal(false)
+  const reportPlayback = audioReporter(PATH_SOURCE)
   const [elapsed, setElapsed] = createSignal(0)
   const [audibleElapsed, setAudibleElapsed] = createSignal(0)
   const [jumps, setJumps] = createSignal(0)
@@ -647,10 +658,50 @@ export const useStemMixerAudioController = (
     }
   }
 
+  // ── The system taking the sound ──────────────────────────────
+  //
+  // iOS moves the clock to 'interrupted' for a call, Siri, or another app
+  // taking the sound. The song pauses with it, so the transport says what is
+  // true, and nothing here resumes the clock: the singer's next press of play
+  // does, the session first (handlePlay). A call that ends with the word to
+  // resume brings the song back through the lock screen's carrier
+  // (docs/plans/mobile-native/ios-audio-handoff.md).
+  let watchedClock: AudioContext | null = null
+  const onClockState = (): void => {
+    const ctx = audioCtx
+    if (ctx === null) return
+    const state = String(ctx.state)
+    reportPlayback('statechange', {
+      state,
+      playing: playing(),
+      clock: Math.round(ctx.currentTime * 1000) / 1000,
+    })
+    if (state !== 'interrupted' || !playing()) return
+    // Paused before it is marked: a report that found the song still playing
+    // would play the lock screen's carrier into the interruption.
+    handlePause()
+    setInterrupted(true)
+  }
+  const unwatchClock = (): void => {
+    if (typeof watchedClock?.removeEventListener === 'function') {
+      watchedClock.removeEventListener('statechange', onClockState)
+    }
+    watchedClock = null
+  }
+  const watchClock = (ctx: AudioContext): void => {
+    if (watchedClock === ctx) return
+    unwatchClock()
+    if (typeof ctx.addEventListener !== 'function') return
+    ctx.addEventListener('statechange', onClockState)
+    watchedClock = ctx
+  }
+  onCleanup(unwatchClock)
+
   // ── Audio Context ────────────────────────────────────────────
   const ensureAudioCtx = () => {
     if (!audioCtx) {
       audioCtx = deps.audioLease?.ensure() ?? new AudioContext()
+      watchClock(audioCtx)
       mainGain = audioCtx.createGain()
       mainGain.gain.value = musicLevel()
       // The master ends in a soft clipper, not the raw destination: the music
@@ -697,6 +748,7 @@ export const useStemMixerAudioController = (
     vocalAnalyser = null
     pitchDetector = null
     audioCtx = null
+    unwatchClock()
   }
 
   // iOS: first tap anywhere primes the playback audio session (the ring/silent
@@ -1565,10 +1617,68 @@ export const useStemMixerAudioController = (
   }
 
   // ── Transport ────────────────────────────────────────────────
+  // A clock that says it runs and does not move: stopping it and starting it
+  // again makes WebKit start its output for real, which is what leaving the
+  // room and coming back did by hand. One that is not running is resumed.
+  const restartClock = (): void => {
+    const ctx = audioCtx
+    if (ctx === null) return
+    reportPlayback('clock-restart', { state: String(ctx.state) })
+    if (ctx.state !== 'running') {
+      ensureAudioCtx()
+      return
+    }
+    void ctx
+      .suspend()
+      .then(() => ctx.resume())
+      .catch(() => undefined)
+  }
+
+  // A press of play is checked a moment later in a room that hosts the
+  // mixer: a clock iOS left 'running' with no output is restarted once, and
+  // a song that still makes no sound stops and says so, rather than showing
+  // playing in silence (watchClockMoves).
+  let stopStartCheck = (): void => undefined
+  onCleanup(() => {
+    stopStartCheck()
+  })
+  const stopForSilentStart = (): void => {
+    if (!playing()) return
+    handlePause()
+    // Parked, so the next press of play starts the clock for real.
+    void audioCtx?.suspend().catch(() => undefined)
+    deps.showNotification(SILENT_START_NOTICE, 'warning')
+  }
+  const checkTheStart = (): void => {
+    stopStartCheck()
+    if (deps.followEndWhileHidden !== true || audioCtx === null) return
+    stopStartCheck = watchClockMoves(
+      {
+        clock: () => audioCtx,
+        playing,
+        report: reportPlayback,
+        recover: restartClock,
+        giveUp: stopForSilentStart,
+        checkAfterMs: START_CHECK_MS,
+        facts: () => ({
+          state: audioCtx === null ? 'none' : String(audioCtx.state),
+          position: Math.round(elapsed() * 1000) / 1000,
+        }),
+      },
+      audioCtx.currentTime,
+    )
+  }
+
   const handlePlay = () => {
     // Runs inside the play gesture — the one moment iOS lets us both resume
-    // the context and promote the audio session past the silent switch.
-    unlockAudio(ensureAudioCtx())
+    // the context and promote the audio session past the silent switch. The
+    // session goes first and the clock after it (unlockForPlayback): after
+    // another app had the sound, the other way round leaves the clock
+    // reporting 'running' with no output. Only a press of play takes the
+    // sound back from another app.
+    const clockWas = audioCtx === null ? 'none' : String(audioCtx.state)
+    unlockForPlayback(ensureAudioCtx)
+    setInterrupted(false)
     disconnectSources()
     createSources(pauseOffset)
     wallPlayStart = audioCtx!.currentTime
@@ -1581,6 +1691,11 @@ export const useStemMixerAudioController = (
     frameScheduler.reset()
     startRafLoop()
     deps.onPlaybackStarted?.()
+    reportPlayback('play', {
+      clockWas,
+      position: Math.round(pauseOffset * 1000) / 1000,
+    })
+    checkTheStart()
   }
 
   // Where the song is by the audio clock, not by the last frame drawn: a
@@ -1596,6 +1711,8 @@ export const useStemMixerAudioController = (
   }
 
   const handlePause = () => {
+    stopStartCheck()
+    setInterrupted(false)
     catchUpClocks()
     pauseOffset = elapsed()
     disconnectSources()
@@ -1611,6 +1728,8 @@ export const useStemMixerAudioController = (
   }
 
   const handleStop = () => {
+    stopStartCheck()
+    setInterrupted(false)
     let completedScore: MicScore | null = null
     if (deps.micActive() && deps.comparisonData().length > 0) {
       const s = deps.computeScore()
@@ -1960,7 +2079,6 @@ export const useStemMixerAudioController = (
   // the clock, and so the transport, runs on: a song that says it plays and
   // makes no sound, with nothing to press that helps. The run stops instead,
   // where it was, and play starts it again on fresh decoders.
-  const reportPlayback = audioReporter(PATH_SOURCE)
   const stopForLostSound = (voice?: StreamingStemVoice): void => {
     if (!playing()) return
     if (
@@ -1997,9 +2115,7 @@ export const useStemMixerAudioController = (
         playing,
         position: elapsed,
         report: reportPlayback,
-        recover: () => {
-          if (audioCtx !== null) ensureAudioCtx()
-        },
+        recover: restartClock,
         giveUp: () => {
           stopForLostSound()
         },
@@ -2071,6 +2187,7 @@ export const useStemMixerAudioController = (
     midiProgress,
     midiPhase,
     playing,
+    interrupted,
     elapsed,
     audibleElapsed,
     jumps,
