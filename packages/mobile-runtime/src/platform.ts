@@ -345,12 +345,10 @@ async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
   await attempt(async () => {
     const { MediaSession } = await import('@capgo/capacitor-media-session')
     if (song === null) {
-      await setSessionMixes(true)
       await MediaSession.setPlaybackState({ playbackState: 'none' })
       await MediaSession.setPositionState(NO_POSITION)
       return
     }
-    if (song.playing) await setSessionMixes(false)
     const metadata = await metadataOf(song)
     const position = positionOf(song)
     try {
@@ -431,49 +429,6 @@ export function onMediaAction(
 
 function isIos(): boolean {
   return isNative() && Capacitor.getPlatform() === 'ios'
-}
-
-// iOS gives the lock screen's Now Playing, Control Center's player and their
-// buttons only to an app whose audio session does not mix with other apps'.
-// The app's session mixes from launch (AudioSessionKit), so a player humming
-// along to their own music keeps it. A song that plays turns mixing off before
-// it is named, which pauses another app's music as any player does; a paused
-// one leaves the session as it is, and nothing playing turns mixing back on.
-//
-// The switch is the app's own plugin (AudioSessionPlugin, which the app's
-// bridge registers in SceneDelegate.swift), so an app without it answers
-// `Unimplemented`, and its song is still named.
-
-/** The app's own plugin, as its bridge registers it. */
-interface AudioSessionPlugin {
-  setMixesWithOthers(options: {
-    mixes: boolean
-  }): Promise<{ session?: string } | undefined>
-}
-
-// Registered on first use, once, and held in a plain variable: see
-// `pictureInPicturePlugin` for why never a promise's value.
-let audioSessionPlugin: AudioSessionPlugin | null = null
-
-function audioSession(): AudioSessionPlugin {
-  audioSessionPlugin ??= registerPlugin<AudioSessionPlugin>('AudioSession')
-  return audioSessionPlugin
-}
-
-async function setSessionMixes(mixes: boolean): Promise<void> {
-  if (!isIos()) return
-  try {
-    const answer = await audioSession().setMixesWithOthers({ mixes })
-    // What the session became, for the debug console: iOS's own log needs
-    // a Mac to read.
-    if (typeof answer?.session === 'string') {
-      console.info(`[audio session] ${answer.session}`)
-    }
-  } catch {
-    // No switch in this build: the session keeps mixing, and the song plays
-    // on without the lock screen. Said once per report, so a phone shows it.
-    console.info('[audio session] no switch in this build')
-  }
 }
 
 /**
