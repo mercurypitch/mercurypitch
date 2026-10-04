@@ -414,6 +414,41 @@ describe('the shared audio context', () => {
     expect(built[0].suspendCount).toBe(0)
   })
 
+  it('keeps the app leaving parked though the last lease lets go and another comes', async () => {
+    // The release's own grace is shorter than the fade the app asked for;
+    // a lease taken inside it must not undo the park the app's leaving asked for.
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const room = acquireSharedAudioContext('karaoke-room', {
+      prepareToSuspend: () => 240,
+    })
+    await room.unlock()
+    suspendSharedAudioContext()
+
+    room.release()
+    acquireSharedAudioContext('home-preview').ensure()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
+
+    expect(built[0].suspendCount).toBe(1)
+  })
+
+  it('keeps the app leaving parked when it comes during the last release', async () => {
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const room = acquireSharedAudioContext('karaoke-room')
+    await room.unlock()
+
+    room.release()
+    const next = acquireSharedAudioContext('home-preview', {
+      prepareToSuspend: () => 240,
+    })
+    next.ensure()
+    suspendSharedAudioContext()
+    await vi.advanceTimersByTimeAsync(RELEASE_GRACE_MS)
+
+    expect(built[0].suspendCount).toBe(1)
+  })
+
   it('gives a re-acquiring lane the same context back', async () => {
     const { built } = useFakeContexts()
     const first = acquireSharedAudioContext('sing-driver:glass')

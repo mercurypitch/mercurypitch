@@ -102,6 +102,8 @@ let explicitlySuspended = false
 let suspendTimer: ReturnType<typeof setTimeout> | undefined
 let suspendDeadline = 0
 let suspendGeneration = 0
+/** The pending park is the last release's, which a lease taken meanwhile undoes. */
+let suspendOwnerless = false
 const backgroundHolds = new Set<symbol>()
 const owners = new Map<
   symbol,
@@ -113,6 +115,7 @@ function cancelPendingSuspension(): void {
   if (suspendTimer !== undefined) clearTimeout(suspendTimer)
   suspendTimer = undefined
   suspendDeadline = 0
+  suspendOwnerless = false
 }
 
 /**
@@ -141,7 +144,8 @@ function requestSuspension(audioContext: AudioContext): void {
 /**
  * Suspend the clock `grace` ms from now, or at once for none. A park the
  * last release asked for (`ownerless`) leaves the clock to a lease taken
- * meanwhile.
+ * meanwhile; one asked for in its own right (the app leaving) keeps its
+ * word, whichever of the two comes first.
  */
 function parkAfter(
   audioContext: AudioContext,
@@ -150,14 +154,19 @@ function parkAfter(
 ): void {
   const deadline = Date.now() + grace
   // Repeated native/page events must never prolong a release already underway.
-  if (suspendTimer !== undefined && suspendDeadline <= deadline) return
+  if (suspendTimer !== undefined && suspendDeadline <= deadline) {
+    if (!ownerless) suspendOwnerless = false
+    return
+  }
+  const explicitPending = suspendTimer !== undefined && !suspendOwnerless
   cancelPendingSuspension()
+  suspendOwnerless = ownerless && !explicitPending
   const generation = suspendGeneration
   const suspend = (): void => {
     if (generation !== suspendGeneration || context !== audioContext) return
     suspendTimer = undefined
     suspendDeadline = 0
-    if (ownerless && owners.size > 0) return
+    if (suspendOwnerless && owners.size > 0) return
     if (audioContext.state !== 'running') return
     try {
       void Promise.resolve(audioContext.suspend()).catch(() => undefined)
