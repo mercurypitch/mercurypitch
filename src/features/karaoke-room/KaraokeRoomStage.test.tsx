@@ -154,6 +154,11 @@ vi.mock('@/components/StemMixer', async () => {
           guide,
           setGuide: mixer.setGuide,
           lyricGlance,
+          lyricWindowScript: (title: string) => ({
+            title,
+            duration: duration(),
+            segments: [],
+          }),
         })
       })
       onCleanup(() => {
@@ -264,6 +269,8 @@ interface FakeDevice extends NativeDeviceApi {
   onMediaAction: Mock
   pictureInPictureAutoEnter: Mock
   onPictureInPicture: Mock
+  /** Null as on Android; a test of iOS's window sets one. */
+  pictureInPictureLyrics: Mock | null
   lease: {
     ensure: Mock
     unlock: Mock
@@ -314,6 +321,7 @@ function fakeDevice(): FakeDevice {
         windowHandlers.delete(handler)
       }
     }),
+    pictureInPictureLyrics: null,
     lease,
     holds: () => holds,
     press: (action) => {
@@ -1030,6 +1038,47 @@ describe('in the small window (Android)', () => {
 
     expect(device.pictureInPictureAutoEnter).toHaveBeenLastCalledWith(false)
     expect(roomInPictureInPicture()).toBe(false)
+  })
+})
+
+describe('in the small window (iOS)', () => {
+  // iOS draws the window itself, from the lyrics worked out ahead.
+  beforeEach(() => {
+    device.pictureInPictureLyrics = vi.fn()
+  })
+  const lyricsSent = (): unknown[] =>
+    device.pictureInPictureLyrics?.mock.calls.map(([script]) => script) ?? []
+
+  it("hands the window the song's lyrics, and takes them away with the room", async () => {
+    const unmount = await mountRoom()
+    current().setLoading(false)
+
+    expect(lyricsSent().at(-1)).toEqual({
+      title: 'Goodbye to Spring',
+      duration: 246,
+      segments: [],
+    })
+
+    current().setDuration(250)
+    expect(lyricsSent().at(-1)).toMatchObject({ duration: 250 })
+
+    unmount()
+    expect(lyricsSent().at(-1)).toBeNull()
+  })
+
+  it('opens only while the song keeps playing behind other apps', async () => {
+    setKaraokeBackgroundPlay(false)
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+
+    expect(device.pictureInPictureAutoEnter).not.toHaveBeenCalled()
+    expect(lyricsSent().at(-1) ?? null).toBeNull()
+
+    setKaraokeBackgroundPlay(true)
+
+    expect(device.pictureInPictureAutoEnter.mock.calls).toEqual([[true]])
+    expect(lyricsSent().at(-1)).toMatchObject({ title: 'Goodbye to Spring' })
   })
 })
 

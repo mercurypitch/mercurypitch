@@ -46,6 +46,8 @@ const mediaSession = vi.hoisted(() => ({
 // rather than a module, so "registered" is what stands for "loaded" there.
 const pictureInPicture = vi.hoisted(() => ({
   setAutoEnter: vi.fn(),
+  setLyrics: vi.fn(),
+  setClock: vi.fn(),
   addListener: vi.fn(),
 }))
 const registerPlugin = vi.hoisted(() =>
@@ -138,6 +140,26 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+/** A song's lyrics as the iOS window takes them: one line, then a rest. */
+const SCRIPT = {
+  title: 'Harbour Lights',
+  duration: 246,
+  segments: [
+    { at: 0, current: [], next: 'Hold the rope', words: [] },
+    {
+      at: 10,
+      current: ['Hold', 'the', 'rope'],
+      next: null,
+      words: [
+        [10, 11],
+        [11, 12],
+        [12, 13],
+      ] as [number, number][],
+    },
+    { at: 14, current: [], next: null, words: [] },
+  ],
+}
+
 describe('on the web', () => {
   it.each([
     ['hapticTap', (p: Platform) => p.hapticTap()],
@@ -156,6 +178,10 @@ describe('on the web', () => {
     [
       'setPictureInPictureAutoEnter',
       (p: Platform) => p.setPictureInPictureAutoEnter(true),
+    ],
+    [
+      'setPictureInPictureLyrics',
+      (p: Platform) => p.setPictureInPictureLyrics(SCRIPT),
     ],
   ])('%s evaluates no plugin module at all', async (_name, call) => {
     const platform = await loadPlatform(false)
@@ -1063,6 +1089,56 @@ describe('on a phone', () => {
       expect(holds.mock.calls).toEqual([[true], [false]])
     })
 
+    it('gives the lyrics window the clock with every report', async () => {
+      const platform = await loadOnIos()
+      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: true,
+        position: 121,
+        duration: 246,
+        rate: 0,
+      })
+      await platform.setNowPlaying({
+        title: 'Harbour Lights',
+        playing: false,
+        position: 300,
+        duration: 246,
+        rate: 0.75,
+      })
+      await platform.setNowPlaying({ title: 'Low Tide', playing: true })
+      await platform.setNowPlaying(null)
+
+      expect(pictureInPicture.setClock.mock.calls).toEqual([
+        [{ playing: true, position: 121, rate: 1, duration: 246 }],
+        [{ playing: false, position: 246, rate: 0.75, duration: 246 }],
+        [{ playing: true, position: 0, rate: 1, duration: 0 }],
+      ])
+    })
+
+    it("hears the lyrics window's play and pause as a lock-screen press", async () => {
+      const platform = await loadOnIos()
+      const handle = listenerHandle()
+      pictureInPicture.addListener.mockResolvedValue(handle)
+      const handler = vi.fn()
+
+      const stop = platform.onMediaAction(handler)
+      await settle()
+      const window = pictureInPicture.addListener.mock.calls.find(
+        ([event]) => event === 'pictureInPictureAction',
+      )
+      const press = window?.[1] as (event: { action?: unknown }) => void
+      press({ action: 'pause' })
+      press({ action: 'play' })
+      press({ action: 'skip' })
+      press({})
+      stop()
+
+      expect(handler.mock.calls).toEqual([['pause'], ['play']])
+      expect(handle.remove).toHaveBeenCalled()
+    })
+
     it('shows nothing, and loads nothing, in a WebView without the API', async () => {
       vi.stubGlobal('navigator', {})
       const platform = await loadOnIos()
@@ -1157,18 +1233,77 @@ describe('picture in picture', () => {
     ])
   })
 
-  it('does nothing on iOS, where the window is for video only', async () => {
+  it('turns auto-enter on and off on iOS, and writes what the window says to the console', async () => {
     const platform = await loadPlatform(true, 'ios')
-    const handler = vi.fn()
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
 
     await platform.setPictureInPictureAutoEnter(true)
-    const stop = platform.onPictureInPicture(handler)
+    await platform.setPictureInPictureAutoEnter(false)
     await settle()
-    stop()
+
+    expect(registerPlugin.mock.calls).toEqual([['PictureInPicture']])
+    expect(pictureInPicture.setAutoEnter.mock.calls).toEqual([
+      [{ enabled: true }],
+      [{ enabled: false }],
+    ])
+    const logs = pictureInPicture.addListener.mock.calls.filter(
+      ([name]) => name === 'pictureInPictureLog',
+    )
+    expect(logs).toHaveLength(1)
+    const say = logs[0]?.[1] as (event: { message?: unknown }) => void
+    say({ message: 'armed: a song is playing' })
+    say({})
+
+    expect(info.mock.calls).toEqual([
+      ['[lyrics window] armed: a song is playing'],
+    ])
+    info.mockRestore()
+  })
+
+  it('hands the iOS window the lyrics as JSON, and takes them away', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+
+    await platform.setPictureInPictureLyrics(SCRIPT)
+    await platform.setPictureInPictureLyrics(null)
+
+    const [given, taken] = pictureInPicture.setLyrics.mock.calls
+    expect(JSON.parse((given?.[0] as { json: string }).json)).toEqual(SCRIPT)
+    expect(taken).toEqual([{}])
+  })
+
+  it('sends no lyrics on Android, whose window shows the page itself', async () => {
+    const platform = await loadPlatform(true)
+
+    await platform.setPictureInPictureLyrics(SCRIPT)
 
     expect(registerPlugin).not.toHaveBeenCalled()
-    expect(pictureInPicture.setAutoEnter).not.toHaveBeenCalled()
-    expect(pictureInPicture.addListener).not.toHaveBeenCalled()
+    expect(pictureInPicture.setLyrics).not.toHaveBeenCalled()
+  })
+
+  it('survives an iOS build with no plugin behind the name', async () => {
+    const platform = await loadPlatform(true, 'ios')
+    const missing = new Error(
+      '"PictureInPicture" plugin is not implemented on ios',
+    )
+    pictureInPicture.addListener.mockRejectedValue(missing)
+    pictureInPicture.setLyrics.mockRejectedValueOnce(missing)
+    pictureInPicture.setAutoEnter.mockRejectedValueOnce(missing)
+
+    await expect(
+      platform.setPictureInPictureLyrics(SCRIPT),
+    ).resolves.toBeUndefined()
+    await expect(
+      platform.setPictureInPictureAutoEnter(true),
+    ).resolves.toBeUndefined()
+    const stop = platform.onPictureInPicture(vi.fn())
+    await settle()
+
+    expect(() => {
+      stop()
+    }).not.toThrow()
+    pictureInPicture.addListener.mockReset()
   })
 
   it('survives a build with no plugin behind the name', async () => {
@@ -1193,26 +1328,29 @@ describe('picture in picture', () => {
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it('reports the window coming and going', async () => {
-    const platform = await loadPlatform(true)
-    pictureInPicture.addListener.mockResolvedValue(listenerHandle())
-    const handler = vi.fn()
+  it.each(['android', 'ios'] as const)(
+    'reports the window coming and going on %s',
+    async (name) => {
+      const platform = await loadPlatform(true, name)
+      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+      const handler = vi.fn()
 
-    platform.onPictureInPicture(handler)
-    await settle()
+      platform.onPictureInPicture(handler)
+      await settle()
 
-    expect(pictureInPicture.addListener.mock.calls[0]?.[0]).toBe(
-      'pictureInPictureChange',
-    )
-    const emit = pictureInPicture.addListener.mock.calls[0]?.[1] as (state: {
-      inPictureInPicture?: boolean
-    }) => void
-    emit({ inPictureInPicture: true })
-    emit({ inPictureInPicture: false })
-    emit({})
+      const change = pictureInPicture.addListener.mock.calls.find(
+        ([event]) => event === 'pictureInPictureChange',
+      )
+      const emit = change?.[1] as (state: {
+        inPictureInPicture?: boolean
+      }) => void
+      emit({ inPictureInPicture: true })
+      emit({ inPictureInPicture: false })
+      emit({})
 
-    expect(handler.mock.calls).toEqual([[true], [false], [false]])
-  })
+      expect(handler.mock.calls).toEqual([[true], [false], [false]])
+    },
+  )
 
   it('removes a listener unsubscribed before its handle arrived', async () => {
     const platform = await loadPlatform(true)

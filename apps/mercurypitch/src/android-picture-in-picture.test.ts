@@ -30,7 +30,9 @@ const MANIFEST = read('../android/app/src/main/AndroidManifest.xml').replace(
   /<!--[\s\S]*?-->/gu,
   '',
 )
-const PLATFORM = read('../../../packages/mobile-runtime/src/platform.ts')
+const JS_SIDE = read(
+  '../../../packages/mobile-runtime/src/picture-in-picture.ts',
+)
 
 const pluginName = /@CapacitorPlugin\(\s*name\s*=\s*"([^"]+)"/u.exec(
   PLUGIN,
@@ -47,7 +49,7 @@ describe('the plugin', () => {
     // Strings on both sides, so no compiler checks them.
     expect(pluginName).toBe('PictureInPicture')
     expect(ACTIVITY).toContain(`getPlugin("${pluginName}")`)
-    expect(PLATFORM).toContain(
+    expect(JS_SIDE).toContain(
       `registerPlugin<PictureInPicturePlugin>('${pluginName}')`,
     )
   })
@@ -55,7 +57,7 @@ describe('the plugin', () => {
   it('reports the window under the event name the JavaScript side listens to', () => {
     const event = /EVENT_CHANGE\s*=\s*"([^"]+)"/u.exec(PLUGIN)?.[1]
     expect(event).toBeDefined()
-    expect(PLATFORM).toContain(`'${event}'`)
+    expect(JS_SIDE).toContain(`'${event}'`)
     expect(PLUGIN).toContain(
       'data.put("inPictureInPicture", inPictureInPicture)',
     )

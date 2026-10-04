@@ -40,6 +40,7 @@ import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { lyricGlance } from '@/lib/lyric-glance'
+import { lyricWindowScript } from '@/lib/lyric-window-script'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
@@ -2105,6 +2106,14 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           currentLineIdx(),
           audio.audibleElapsed(),
         ),
+      lyricWindowScript: (title) =>
+        lyricWindowScript({
+          title,
+          lines: stableParsedLyrics(),
+          timed: canonicalLrcLines(),
+          untimedCount: lyricsLines().length,
+          duration: audio.duration(),
+        }),
     })
 
     // Load cached data from IndexedDB in parallel:

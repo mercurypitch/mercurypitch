@@ -55,8 +55,11 @@ export const NO_LYRIC_GLANCE: LyricGlance = {
 const text = (line: GlanceLine | undefined): string | null =>
   line === undefined || line.words.length === 0 ? null : line.words.join(' ')
 
-/** How far the voice is through `line` at `elapsed` seconds into the song. */
-function progress(
+/**
+ * How far the voice is through `line` at `elapsed` seconds into the song.
+ * Also what the iOS lyrics window's script is read off (lyric-window-script.ts).
+ */
+export function lineProgress(
   line: GlanceLine,
   elapsed: number | undefined,
 ): Pick<LyricGlance, 'sungUpTo' | 'sweep'> {
@@ -103,5 +106,5 @@ export function lyricGlance(
   if (line === undefined || current === null) {
     return { ...NO_LYRIC_GLANCE, next }
   }
-  return { current, next, words: line.words, ...progress(line, elapsed) }
+  return { current, next, words: line.words, ...lineProgress(line, elapsed) }
 }

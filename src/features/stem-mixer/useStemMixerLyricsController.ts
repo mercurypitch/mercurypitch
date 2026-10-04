@@ -14,10 +14,11 @@ import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
 import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
+import { lyricLineAt } from '@/lib/lyric-line-at'
 import type { SungNote } from '@/lib/lyric-sung-end'
 import { clampLineEndToVocal, synthesizeLastWordEnd, } from '@/lib/lyric-sung-end'
 import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyrics-service'
-import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
+import { computeActiveWord, extractTitle, fetchLyricsById, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
 import { lyricsfileInputFromCanonical, lyricsfileToStoredLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
@@ -1018,25 +1019,16 @@ export function useStemMixerLyricsController(
 
   // ── Playback tracking ─────────────────────────────────────────────
 
+  // The rule is shared with the iOS lyrics window (lyric-line-at.ts), which
+  // has to light the line this does.
   const updateCurrentLine = () => {
-    const canonical = canonicalLrcLines()
-    if (canonical.length > 0) {
-      const elapsed = deps.elapsed()
-      let idx = -1
-      for (let i = 0; i < canonical.length; i++) {
-        if (canonical[i].time <= elapsed) idx = canonical[i].canonicalIndex
-        else break
-      }
-      setCurrentLineIdx(idx)
-    } else if (lyricsLines().length > 0 && deps.duration() > 0) {
-      setCurrentLineIdx(
-        getCurrentLineIndex(
-          lyricsLines().length,
-          deps.elapsed(),
-          deps.duration(),
-        ),
-      )
-    }
+    const idx = lyricLineAt(
+      canonicalLrcLines(),
+      lyricsLines().length,
+      deps.elapsed(),
+      deps.duration(),
+    )
+    if (idx !== null) setCurrentLineIdx(idx)
   }
 
   // ── Lyric line click ──────────────────────────────────────────────

@@ -16,6 +16,7 @@
 import type { Accessor } from 'solid-js'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
 import type { LyricGlance } from '@/lib/lyric-glance'
+import type { LyricWindowScript } from '@/lib/lyric-window-script'
 import type { KaraokeStageHosting } from './KaraokeMobileStage'
 
 /** The guide vocal as the sing pill leaves it: its level, and whether it is off. */
@@ -78,6 +79,13 @@ export interface HostedMixerControls {
    * is drawn too small for the stage (Android's picture-in-picture window).
    */
   readonly lyricGlance: Accessor<LyricGlance>
+  /**
+   * The whole song's lyrics worked out ahead, named `title`: what iOS's
+   * lyrics window draws while the page is hidden behind another app
+   * (lyric-window-script.ts). Built on each call, from the lyrics the stage
+   * lights; a caller memoizes it.
+   */
+  readonly lyricWindowScript: (title: string) => LyricWindowScript
 }
 
 export interface StemMixerHosting {

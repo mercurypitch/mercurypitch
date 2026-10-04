@@ -34,6 +34,7 @@
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { LyricWindowScript } from '@/lib/lyric-window-script'
 import type { SettingsSection } from '@/stores/settings-section'
 
 /** What the shell's transport drives, supplied by the room that owns the run. */
@@ -278,17 +279,25 @@ export interface NativeDeviceApi {
   /** The system's media buttons and progress bar. Returns the unsubscribe. */
   onMediaAction: (handler: (action: NativeMediaAction) => void) => () => void
   /**
-   * While on, leaving the app puts it in Android's small floating window
-   * instead of behind everything. Nothing on iOS, whose window is for video.
+   * While on, leaving the app opens a small floating window instead of
+   * putting the app behind everything: Android's of the whole app, iOS's of
+   * the lyrics alone.
    */
   pictureInPictureAutoEnter: (on: boolean) => void
   /**
    * The app entering that window (true) and leaving it (false). Returns the
-   * unsubscribe. Never called on iOS.
+   * unsubscribe.
    */
   onPictureInPicture: (
     handler: (inPictureInPicture: boolean) => void,
   ) => () => void
+  /**
+   * iOS: what the window draws, the song's lyrics worked out ahead, or null
+   * when the room has no song, which closes a window that is open. The page
+   * is hidden behind another app while the window is up, so the window
+   * draws itself. Null on Android, whose window shows the page.
+   */
+  pictureInPictureLyrics: ((script: LyricWindowScript | null) => void) | null
 }
 
 const [runControls, setRunControls] = createSignal<NativeRunControls | null>(

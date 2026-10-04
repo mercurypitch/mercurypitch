@@ -74,7 +74,8 @@ const [backgroundPlay, setBackgroundPlaySignal] =
   })
 /**
  * "Show lyrics in a small window": on, so a singer who leaves the app during
- * a song keeps the words in a corner of the screen (Android only).
+ * a song keeps the words in a corner of the screen (on a phone; on an iPhone
+ * only while the song keeps playing in the background).
  */
 const [pictureInPicture, setPictureInPictureSignal] =
   createPersistedSignal<boolean>(KARAOKE_PICTURE_IN_PICTURE_KEY, true, {

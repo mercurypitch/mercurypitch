@@ -17,6 +17,11 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
+		C7A1D5E00000000000001000 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000000 /* ViewController.swift */; };
+		C7A1D5E00000000000001001 /* LyricsWindowPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000001 /* LyricsWindowPlugin.swift */; };
+		C7A1D5E00000000000001002 /* LyricsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000002 /* LyricsWindow.swift */; };
+		C7A1D5E00000000000001003 /* LyricsWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000003 /* LyricsWindowScript.swift */; };
+		C7A1D5E00000000000001004 /* LyricsWindowRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +37,11 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		C7A1D5E00000000000000000 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		C7A1D5E00000000000000001 /* LyricsWindowPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindowPlugin.swift; sourceTree = "<group>"; };
+		C7A1D5E00000000000000002 /* LyricsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindow.swift; sourceTree = "<group>"; };
+		C7A1D5E00000000000000003 /* LyricsWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindowScript.swift; sourceTree = "<group>"; };
+		C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsWindowRenderer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +78,8 @@
 			isa = PBXGroup;
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				C7A1D5E00000000000000000 /* ViewController.swift */,
+				C7A1D5E0000000000000200A /* LyricsWindow */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -79,6 +91,17 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		C7A1D5E0000000000000200A /* LyricsWindow */ = {
+			isa = PBXGroup;
+			children = (
+				C7A1D5E00000000000000001 /* LyricsWindowPlugin.swift */,
+				C7A1D5E00000000000000002 /* LyricsWindow.swift */,
+				C7A1D5E00000000000000003 /* LyricsWindowScript.swift */,
+				C7A1D5E00000000000000004 /* LyricsWindowRenderer.swift */,
+			);
+			path = LyricsWindow;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -166,6 +189,11 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+				C7A1D5E00000000000001000 /* ViewController.swift in Sources */,
+				C7A1D5E00000000000001001 /* LyricsWindowPlugin.swift in Sources */,
+				C7A1D5E00000000000001002 /* LyricsWindow.swift in Sources */,
+				C7A1D5E00000000000001003 /* LyricsWindowScript.swift in Sources */,
+				C7A1D5E00000000000001004 /* LyricsWindowRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
