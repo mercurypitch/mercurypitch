@@ -185,6 +185,36 @@ What iOS still decides: whether an app behind another one may take the
 sound. When it refuses, the press does nothing you can see, and the log
 says so.
 
+## Build 543
+
+What the phone showed: the bar in Control Center and on the lock screen
+could be dragged, but it went straight back to where the song was, and
+the song did not move. The 10 s buttons did nothing. Everything else from
+539 held.
+
+Why: iOS asks WebKit whether the song can be moved, and WebKit answers for
+one sound only, the one that started last
+(`PlatformMediaSessionManager::computeSupportsSeeking` asks its current
+session). A Web Audio clock always says no (`AudioContext::supportsSeeking`),
+and every clock that starts becomes that sound: the song's own as it plays,
+the resume as the app goes behind another one, the microphone's. WebKit
+then answers the bar and both skips with `CommandFailed`
+(`RemoteCommandListenerCocoa`), and the lock screen puts the bar back. In
+539 the four-second carrier started again each time it went round, so
+within four seconds of a clock starting it was in front again. The hour of
+FLAC goes round once an hour.
+
+What changed: playing a carrier that already plays starts nothing, but
+WebKit counts it as a start (`HTMLMediaElement::playInternal`). While the
+song plays, the carrier is played again on each report, as the page hides
+or shows, and once a second (`carrier-in-front.ts`). A paused carrier never
+is: that would take the sound from another app.
+
+What it does not fix: a paused song. Its carrier pauses while the song's
+clock still runs, and WebKit moves a pausing sound behind every one still
+playing (`PlatformMediaSessionManager::sessionWillEndPlayback`), so the bar
+and the skips of a paused song can still go back where they were.
+
 ## Where it lives
 
 | File                                                                  | What it does                                                                                                               |
@@ -194,6 +224,7 @@ says so.
 | `packages/mobile-runtime/src/webkit-now-playing.ts`                   | `claimCarrier`, a pause the system made, `takeTheSound`, which silence the carrier plays                                   |
 | `packages/mobile-runtime/src/carrier-silence.ts`                      | The silence: an hour of FLAC, four seconds of WAV                                                                          |
 | `packages/mobile-runtime/src/waited-presses.ts`                       | Presses that waited while the app slept                                                                                    |
+| `packages/mobile-runtime/src/carrier-in-front.ts`                     | The carrier played again while it plays, so WebKit lets the bar and skips move the song                                    |
 | `packages/mobile-runtime/src/picture-in-picture.ts`                   | The window's presses: their stamp and `otherAudio`, stale ones dropped                                                     |
 | `packages/mobile-runtime/src/platform.ts`                             | The 10 s skips (`skipBy`), `micStopsOtherApps`                                                                             |
 | `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check, the trip home, the fade before a suspend                           |
@@ -249,7 +280,11 @@ Without YouTube:
 - Background play off, play, open Control Center: the song pauses.
 - Scrub the bar in Control Center and on the lock screen a dozen times over
   a few minutes: it never jumps to 0:00.
-- The 10 s buttons move the song 10 s, and stop at its start.
+- Play, lock the phone, and at once drag the bar on the lock screen: the
+  song moves there. Again a few seconds later, and again over Control
+  Center with another app open.
+- The 10 s buttons move the song 10 s while it plays, stop at its start,
+  and at its end go where dragging the bar to the end goes.
 - Pause, lock the phone for ten minutes, press play: it plays, or nothing
   happens; opening the app later never finds the song playing on its own.
 - Mic on, pause, leave, play YouTube, come back: YouTube keeps playing until
@@ -262,3 +297,6 @@ Without YouTube:
   of a device test tells which.
 - With background play off there is no carrier, so after a call the song
   stays paused until play.
+- The bar and the skips of a paused song (Build 543). Keeping its carrier
+  in front would mean pausing the carrier only after the song's clock has
+  parked, which the carrier does not know today.

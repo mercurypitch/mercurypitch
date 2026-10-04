@@ -52,7 +52,13 @@
 // next runs, and arrives then with any others, as the app comes back to the
 // front. A press that waited like that is dropped (waited-presses.ts): it
 // would start the song, or move it, long after it was pressed.
+//
+// WebKit lets the lock screen move the song only while the carrier is the
+// sound that started last, and the song's clock starts after it. A carrier
+// that plays is played again to stay in front (carrier-in-front.ts).
 
+import type { InFrontHost } from './carrier-in-front'
+import { keepInFront } from './carrier-in-front'
 import type { SilenceKind } from './carrier-silence'
 import { silenceBlob } from './carrier-silence'
 import type { PressGuardHost } from './waited-presses'
@@ -244,6 +250,10 @@ function watchThePage(): void {
     }
     pageSeen = page.visibilityState
     presses.follow()
+    // Hiding is when the lock screen and Control Center can show the song,
+    // and the song's clock is resumed soon after (ios-audio-handoff.md).
+    front.now()
+    front.follow()
   })
 }
 
@@ -253,6 +263,20 @@ const pressHost: PressGuardHost = {
   songShown: () => shown !== null,
 }
 let presses = guardPresses(pressHost)
+
+// The carrier ahead of the song's clock, so the bar and skips work
+// (carrier-in-front.ts).
+const frontHost: InFrontHost = {
+  playingCarrier: () =>
+    carrier !== null &&
+    wanted === 'playing' &&
+    !systemPaused &&
+    !carrier.paused &&
+    carrier.hasAttribute('src')
+      ? carrier
+      : null,
+}
+let front = keepInFront(frontHost)
 
 type Deliver = (action: WebKitAction, details: WebKitActionDetails) => void
 
@@ -399,6 +423,7 @@ function putAway(session: MediaSession): void {
   shown = null
   named = null
   presses.follow()
+  front.stop()
   session.metadata = null
   session.playbackState = 'none'
   try {
@@ -459,6 +484,7 @@ export function showOnWebKit(song: WebKitSong | null): void {
   const element = theCarrier()
   presses.follow()
   if (!song.playing) {
+    front.stop()
     if (song.interrupted === true && element.paused) {
       // The song heard the interruption before the carrier's pause event
       // came: the pause is still the system's, and a call that ends with the
@@ -474,7 +500,11 @@ export function showOnWebKit(song: WebKitSong | null): void {
   // The song plays by its own word now; no pause of the system's is left to undo.
   systemPaused = false
   if (!element.hasAttribute('src')) element.src = silenceFor(element)
+  // Playing already, the carrier may stand behind a clock that started
+  // since: WebKit would refuse the bar (carrier-in-front.ts).
   if (element.paused) playCarrier(element)
+  else front.now()
+  front.follow()
 }
 
 /**
@@ -681,6 +711,8 @@ export function resetWebKitNowPlaying(
   longRefused = false
   presses.stop()
   presses = guardPresses(pressHost)
+  front.stop()
+  front = keepInFront(frontHost)
   wanted = 'none'
   shown = null
   shownAt = 0

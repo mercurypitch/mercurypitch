@@ -758,8 +758,11 @@ describe('a press of play', () => {
     carrier.settle()
     showOnWebKit(song())
 
-    // The report finds it playing, and its play was the song's own.
-    expect(carrier.play).toHaveBeenCalledTimes(2)
+    // The report finds it playing, and its play was the song's own. The
+    // report plays it once more, which starts nothing: it puts the carrier
+    // back in front of the clock the song resumed (carrier-in-front.ts).
+    expect(carrier.play).toHaveBeenCalledTimes(3)
+    carrier.settle()
     expect(carrier.paused).toBe(false)
     expect(deliver).not.toHaveBeenCalled()
   })
@@ -1153,6 +1156,103 @@ describe('the long carrier', () => {
 
     expect(carrier.src).toBe('blob:short')
     expect(carrier.play).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("the carrier in front of the song's clock", () => {
+  // WebKit lets the lock screen move the song only while the carrier is the
+  // sound that started last. The song's clock starting since stands in front
+  // of it, and playing the carrier that already plays puts it back.
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** A song that plays, its carrier playing under it, its plays forgotten. */
+  function playing(): void {
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.play.mockClear()
+  }
+
+  it('plays a carrier that plays again on each report, which starts nothing', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    playing()
+
+    showOnWebKit(song({ position: 150 }))
+    carrier.settle()
+
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+    expect(carrier.paused).toBe(false)
+    expect(deliver).not.toHaveBeenCalled()
+  })
+
+  it('plays it again once a second while the song plays', () => {
+    playing()
+
+    vi.advanceTimersByTime(3000)
+
+    expect(carrier.play).toHaveBeenCalledTimes(3)
+  })
+
+  it('plays it again as the page hides, where the lock screen shows it', () => {
+    playing()
+
+    page.turn('hidden')()
+
+    expect(carrier.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('never plays the carrier of a paused song', () => {
+    playing()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+
+    page.turn('hidden')()
+    vi.advanceTimersByTime(5000)
+
+    expect(carrier.play).not.toHaveBeenCalled()
+    expect(carrier.paused).toBe(true)
+  })
+
+  it('never plays a carrier the system paused', () => {
+    const deliver = vi.fn()
+    listenOnWebKit(ACTIONS, deliver)
+    playing()
+    carrier.interrupt()
+    carrier.settle()
+
+    vi.advanceTimersByTime(5000)
+    page.turn('hidden')()
+
+    expect(carrier.play).not.toHaveBeenCalled()
+    expect(deliver.mock.calls).toEqual([['pause', {}]])
+  })
+
+  it('stops once the song is put away', () => {
+    playing()
+    showOnWebKit(null)
+
+    vi.advanceTimersByTime(5000)
+
+    expect(carrier.play).not.toHaveBeenCalled()
+  })
+
+  it('keeps it in front again when the song plays after a pause', () => {
+    playing()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
+    showOnWebKit(song())
+    carrier.settle()
+    carrier.play.mockClear()
+
+    vi.advanceTimersByTime(2000)
+
+    expect(carrier.play).toHaveBeenCalledTimes(2)
   })
 })
 
