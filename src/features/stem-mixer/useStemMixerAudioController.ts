@@ -342,8 +342,6 @@ export interface StemMixerAudioController {
 const FFT_SIZE = 256
 const PITCH_FFT_SIZE = 1024
 const FADE_OUT_MS = 50
-/** The fade a song pausing for the clock stopping needs, and some slack. */
-const SUSPEND_FADE_MS = FADE_OUT_MS + 30
 /**
  * iOS parks Web Audio as the app goes behind another and the page hides,
  * in either order and within moments. An interruption this soon after the
@@ -354,6 +352,8 @@ export const ENTERING_BACKGROUND_MS = 1500
 export const LEAVE_WAIT_MS = 700
 /** Slack after the fade before a source may stop (tail below -40 dB). */
 export const STEM_STOP_SLACK_SECS = 0.03
+/** A fade out and its slack, by the wall clock: what a stopping clock waits. */
+const RELEASE_MS = Math.round(FADE_OUT_MS + STEM_STOP_SLACK_SECS * 1000)
 
 /**
  * Close one stem's gain with the documented release shape
@@ -1594,6 +1594,8 @@ export const useStemMixerAudioController = (
     }
   }
 
+  /** When the last fade of a playing song ends, by the wall clock. */
+  let releaseUntil = 0
   const disconnectSources = () => {
     const ctx = audioCtx
 
@@ -1608,6 +1610,7 @@ export const useStemMixerAudioController = (
       const now = ctx.currentTime
       const fadeOutSecs = FADE_OUT_MS / 1000
       const stopTime = now + fadeOutSecs + STEM_STOP_SLACK_SECS
+      if (playing()) releaseUntil = Date.now() + RELEASE_MS
       for (const nodes of nodesToDisconnect) {
         if (nodes.gainNode) {
           closeStemGain(nodes.gainNode.gain, now, fadeOutSecs)
@@ -1814,14 +1817,16 @@ export const useStemMixerAudioController = (
   // stops in the middle of a note cuts it off (iOS can make the cut a loud
   // buzz) and plays the rest of the fade when it next runs, so a playing
   // song pauses with its own fade first, and the clock waits for it
-  // (packages/audio-io, prepareToSuspend).
+  // (packages/audio-io, prepareToSuspend). A fade already running, a pause
+  // pressed just before or this one asked twice, gets the rest of its time.
   const prepareToSuspend = (): number => {
-    if (!playing()) return 0
-    reportPlayback('suspend-fade', {
-      position: Math.round(elapsed() * 1000) / 1000,
-    })
-    handlePause()
-    return SUSPEND_FADE_MS
+    if (playing()) {
+      reportPlayback('suspend-fade', {
+        position: Math.round(elapsed() * 1000) / 1000,
+      })
+      handlePause()
+    }
+    return Math.max(0, releaseUntil - Date.now())
   }
 
   const handleStop = () => {

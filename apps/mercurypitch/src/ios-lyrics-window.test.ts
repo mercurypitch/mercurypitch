@@ -116,7 +116,9 @@ describe('App Review', () => {
 
   it('closes the window once the app is active again, not only as it returns', () => {
     // iOS can ignore a stop asked for before the app is active (build 533).
-    expect(SWIFT.window).toContain('UIApplication.willEnterForegroundNotification')
+    expect(SWIFT.window).toContain(
+      'UIApplication.willEnterForegroundNotification',
+    )
     expect(SWIFT.window).toContain('UIApplication.didBecomeActiveNotification')
   })
 

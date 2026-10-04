@@ -410,6 +410,10 @@ describe('the trip to the background', () => {
 })
 
 describe('the clock about to stop', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
   it('pauses a playing song with its fade, and asks the clock to wait for it', () => {
     const { controller, dispose } = harness()
     controller.handlePlay()
@@ -417,6 +421,22 @@ describe('the clock about to stop', () => {
     expect(controller.prepareToSuspend()).toBe(80)
     expect(controller.playing()).toBe(false)
     expect(recorded('suspend-fade')).toHaveLength(1)
+    dispose()
+  })
+
+  it('gives a fade already running the rest of its time', () => {
+    const { controller, dispose } = harness()
+    controller.handlePlay()
+    controller.handlePause()
+    vi.advanceTimersByTime(30)
+
+    // A pause pressed just before the app left, then the page hiding too.
+    expect(controller.prepareToSuspend()).toBe(50)
+    vi.advanceTimersByTime(20)
+    expect(controller.prepareToSuspend()).toBe(30)
+    vi.advanceTimersByTime(30)
+    expect(controller.prepareToSuspend()).toBe(0)
+    expect(recorded('suspend-fade')).toHaveLength(0)
     dispose()
   })
 
