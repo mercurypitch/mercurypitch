@@ -28,8 +28,14 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 shrinks, optimises and renames the build Play installs; the
+            // debug APK is left as it was. Capacitor's own rules keep every
+            // plugin and the methods the page calls by name, and ours are in
+            // proguard-rules.pro. The bundle carries R8's mapping, so Play's
+            // crash reports keep their real names.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
