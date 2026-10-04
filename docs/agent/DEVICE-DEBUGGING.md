@@ -179,6 +179,12 @@ writes `[now playing]` lines, and the lyrics window `[lyrics window]` ones:
 The two about the sound end with WebKit's own session state before and after
 the press, as `(session inactive, then active)`.
 
+A drag of the lock screen's bar that springs back, or a 10 s button that does
+nothing, leaves no line: WebKit refused it before the page heard anything,
+because the carrier was not the sound that started last
+([`carrier-in-front.ts`](../../packages/mobile-runtime/src/carrier-in-front.ts)).
+A press the room did hear moves the bar, and the next `bar at` line says where.
+
 ## A crash only in a Play build
 
 The Android build Play installs is shrunk and renamed by R8
