@@ -11,7 +11,7 @@
 // registers nothing.
 
 import { acquireSharedAudioContext, holdSharedAudioContextInBackground, } from '@irchiinnuss/audio-io'
-import { claimNowPlaying, keepAwake, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
+import { claimNowPlaying, keepAwake, micStopsOtherApps, onMediaAction, onNowPlayingHoldsAudio, onPictureInPicture, pictureInPictureNeedsLyrics, setNowPlaying, setPictureInPictureAutoEnter, setPictureInPictureLyrics, } from '@irchiinnuss/mobile-runtime/platform'
 import { standUnlockClipAside } from '@/lib/audio-unlock'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 
@@ -24,6 +24,7 @@ const NOW_PLAYING_ARTWORK = '/now-playing.webp'
 
 export function createNativeDevice(): NativeDeviceApi {
   return {
+    micStopsOtherApps: micStopsOtherApps(),
     acquireAudio: (owner, options) => acquireSharedAudioContext(owner, options),
     keepAwake: (on) => {
       // A phone without the plugin keeps its own sleep rules; nothing about

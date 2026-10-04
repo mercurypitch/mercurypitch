@@ -39,7 +39,14 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
                 self?.notifyListeners("pictureInPictureChange", data: ["inPictureInPicture": inWindow])
             }
             window.pressed = { [weak self] action in
-                self?.notifyListeners("pictureInPictureAction", data: ["action": action])
+                // When, so the page can tell a press that waited for it while
+                // iOS froze the app, and whether another app's sound plays,
+                // which a play from here has to take.
+                self?.notifyListeners("pictureInPictureAction", data: [
+                    "action": action,
+                    "at": Date().timeIntervalSince1970 * 1000,
+                    "otherAudio": AVAudioSession.sharedInstance().isOtherAudioPlaying
+                ])
             }
             self.window = window
             self.sessionWatch = AudioSessionWatch { [weak self] message in

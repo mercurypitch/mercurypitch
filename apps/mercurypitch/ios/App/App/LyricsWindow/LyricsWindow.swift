@@ -355,12 +355,16 @@ final class LyricsWindow: NSObject {
 
 extension LyricsWindow: AVPictureInPictureSampleBufferPlaybackDelegate {
     func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
-        say("\(playing ? "play" : "pause") pressed in the window")
-        // Shown at once; the page's next report confirms it.
-        clock = Clock(playing: playing, position: clock.time(), rate: clock.rate, duration: clock.duration)
-        setTimebase()
-        pictureInPictureController.invalidatePlaybackState()
+        say("\(playing ? "play" : "pause") pressed in the window; \(session())")
+        // Not shown until the page says so: its report turns the clock.
+        // Shown at once, a play that cannot take the sound from the app in
+        // front ran the lyrics on in silence.
         pressed(playing ? "play" : "pause")
+        // A press the page could not carry out sends no report: the window
+        // asks again in a moment, so its button shows the song as it is.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.controller?.invalidatePlaybackState()
+        }
     }
 
     func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {

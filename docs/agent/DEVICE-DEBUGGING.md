@@ -162,6 +162,23 @@ app's own plugin adds `[audio session]` lines beside them: another app's sound
 starting and stopping, interruptions and routes, each with the time iOS said it
 ([`ios-audio-handoff.md`](../plans/mobile-native/ios-audio-handoff.md)).
 
+The iOS lock screen's carrier
+([`webkit-now-playing.ts`](../../packages/mobile-runtime/src/webkit-now-playing.ts))
+writes `[now playing]` lines, and the lyrics window `[lyrics window]` ones:
+
+| Line                                                                   | What it says                                                                                                             |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `bar at 61.5 s of 246.0, playing`                                      | The place each report gave the lock screen's bar. A bar seen at 0:00 with no line at 0 was moved by WebKit, not the room |
+| `play waited while the app slept: dropped`                             | A press iOS held while the app was frozen, let go as the app came back                                                   |
+| `play came as the app woke behind another app: carried out`            | A press that may have waited, but the app stayed behind: it was the singer's                                             |
+| `play from behind the app took the sound from another app`             | A play from the window or the lock screen took the sound from the app in front                                           |
+| `play pressed, but another app keeps the sound: the song stays paused` | iOS refused it: the song stays paused rather than play in silence                                                        |
+| `the long carrier would not load; ...`                                 | This WebView refused the hour of FLAC silence, so the bar may jump to 0:00 again                                         |
+| `[lyrics window] play waited 12 s while the app slept: dropped`        | The same as the first, for the window's buttons                                                                          |
+
+The two about the sound end with WebKit's own session state before and after
+the press, as `(session inactive, then active)`.
+
 ## A crash only in a Play build
 
 The Android build Play installs is shrunk and renamed by R8

@@ -82,10 +82,17 @@ describe('the plugin', () => {
     ['pictureInPictureLog', 'message'],
     ['audioSessionLog', 'message'],
   ])('sends %s, which the JavaScript side listens to', (event, field) => {
-    expect(SWIFT.plugin).toContain(
-      `notifyListeners("${event}", data: ["${field}":`,
+    expect(SWIFT.plugin).toMatch(
+      new RegExp(`notifyListeners\\("${event}", data: \\[\\s*"${field}":`, 'u'),
     )
     expect(JS_SIDE).toContain(`'${event}'`)
+  })
+
+  it('stamps a press of the window with its time and the other app’s sound', () => {
+    for (const field of ['at', 'otherAudio']) {
+      expect(SWIFT.plugin).toContain(`"${field}":`)
+      expect(JS_SIDE).toContain(`event.${field}`)
+    }
   })
 
   it('reads the clock under the names the JavaScript side sends', () => {

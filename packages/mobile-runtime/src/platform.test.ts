@@ -975,6 +975,14 @@ describe('on a phone', () => {
       ;(call?.[1] as (details: object) => void)(details)
     }
 
+    /** The lyrics window's button, as the plugin sends it. */
+    const windowPress = (): ((event: object) => void) => {
+      const window = pictureInPicture.addListener.mock.calls.find(
+        ([event]) => event === 'pictureInPictureAction',
+      )
+      return window?.[1] as (event: object) => void
+    }
+
     beforeEach(() => {
       carrier = new Carrier()
       webKit.metadata = null
@@ -1039,7 +1047,7 @@ describe('on a phone', () => {
       expect(carrier.hasAttribute('src')).toBe(false)
     })
 
-    it('hears the lock screen through WebKit, seeks included', async () => {
+    it('hears the lock screen through WebKit, seeks and skips included', async () => {
       const platform = await loadOnIos()
       const handler = vi.fn()
 
@@ -1047,15 +1055,26 @@ describe('on a phone', () => {
       press('pause', { action: 'pause' })
       press('seekto', { action: 'seekto', seekTime: 61.5 })
       press('play', { action: 'play' })
+      press('seekforward', { action: 'seekforward', seekOffset: 15 })
+      press('seekbackward', { action: 'seekbackward' })
+      // iOS's own buttons say 10 s: a skip with no use of an offset is that.
+      press('seekforward', { action: 'seekforward', seekOffset: -5 })
 
       expect(handler.mock.calls).toEqual([
         ['pause'],
         [{ seekTo: 61.5 }],
         ['play'],
+        [{ skipBy: 15 }],
+        [{ skipBy: -10 }],
+        [{ skipBy: 10 }],
       ])
 
       stop()
-      expect(webKit.setActionHandler).toHaveBeenLastCalledWith('seekto', null)
+      expect(webKit.setActionHandler).toHaveBeenCalledWith('seekto', null)
+      expect(webKit.setActionHandler).toHaveBeenLastCalledWith(
+        'seekforward',
+        null,
+      )
       await settle()
       expect(loaded).not.toContain('@capgo/capacitor-media-session')
     })
@@ -1169,6 +1188,43 @@ describe('on a phone', () => {
 
       expect(handler.mock.calls).toEqual([['pause'], ['play']])
       expect(handle.remove).toHaveBeenCalled()
+    })
+
+    it('drops a press of the lyrics window that waited while the app slept', async () => {
+      const platform = await loadOnIos()
+      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+      const handler = vi.fn()
+
+      platform.onMediaAction(handler)
+      await settle()
+      windowPress()({ action: 'play', at: Date.now() - 60_000 })
+      windowPress()({ action: 'pause', at: Date.now() - 1000 })
+
+      expect(handler.mock.calls).toEqual([['pause']])
+      expect(console.info).toHaveBeenCalledWith(
+        '[lyrics window] play waited 60 s while the app slept: dropped',
+      )
+    })
+
+    it("leaves the song paused when the window's play cannot take the sound", async () => {
+      const platform = await loadOnIos()
+      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
+      const handler = vi.fn()
+      platform.onMediaAction(handler)
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
+      await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
+      await settle()
+
+      // WebKit starts an element inside play(), or not at all.
+      carrier.play.mockRejectedValueOnce(
+        new DOMException('Not now', 'NotAllowedError'),
+      )
+      windowPress()({ action: 'play', otherAudio: true })
+      expect(handler).not.toHaveBeenCalled()
+
+      windowPress()({ action: 'play', otherAudio: true })
+      expect(handler.mock.calls).toEqual([['play']])
+      expect(carrier.paused).toBe(false)
     })
 
     it('shows nothing, and loads nothing, in a WebView without the API', async () => {

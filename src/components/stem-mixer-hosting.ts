@@ -38,6 +38,11 @@ export interface HostedMixerControls {
   /** Seconds into the song. */
   readonly elapsed: Accessor<number>
   /**
+   * Seconds into the song by the audio clock this instant. `elapsed` moves
+   * with the frames, and behind another app once a second.
+   */
+  readonly positionNow: () => number
+  /**
    * Seconds into the song as the lyrics follow it: what has reached the
    * speakers. The system's progress bar reads this one, so the two agree.
    */

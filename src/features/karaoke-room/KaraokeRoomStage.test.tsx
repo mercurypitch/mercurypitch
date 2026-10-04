@@ -54,6 +54,8 @@ interface FakeMixer {
   /** The clock about to stop: a playing song pauses with its fade. */
   prepareToSuspend: Mock
   seek: Mock
+  /** Where the song is by the audio clock: the elapsed time, here. */
+  positionNow: Mock
   releaseMic: Mock
   resumeMic: Mock
 }
@@ -139,6 +141,7 @@ vi.mock('@/components/StemMixer', async () => {
           return 80
         }),
         seek: vi.fn((seconds: number) => jump(seconds)),
+        positionNow: vi.fn(() => elapsed()),
         releaseMic: vi.fn(() => setMicOn(false)),
         resumeMic: vi.fn(() => setMicOn(true)),
       }
@@ -150,6 +153,7 @@ vi.mock('@/components/StemMixer', async () => {
           loading,
           loadError,
           elapsed,
+          positionNow: mixer.positionNow,
           audibleElapsed,
           jumps,
           speed,
@@ -275,6 +279,8 @@ const DARK = example(
 )
 
 interface FakeDevice extends NativeDeviceApi {
+  /** False as on Android; a test of iOS's microphone sets it. */
+  micStopsOtherApps: boolean
   acquireAudio: Mock
   keepAwake: Mock
   holdAudioInBackground: Mock
@@ -309,6 +315,7 @@ function fakeDevice(): FakeDevice {
   const handlers = new Set<(action: NativeMediaAction) => void>()
   const windowHandlers = new Set<(inWindow: boolean) => void>()
   return {
+    micStopsOtherApps: false,
     acquireAudio: vi.fn(() => lease),
     keepAwake: vi.fn(),
     holdAudioInBackground: vi.fn(() => {
@@ -842,6 +849,32 @@ describe('behind another app', () => {
     )
   })
 
+  it('skips from where the song is now, and stays inside it', async () => {
+    // iOS's 10 s back and forward, counted from the audio clock.
+    await mountRoom()
+    current().setLoading(false)
+    current().setPlaying(true)
+    current().setElapsed(100)
+
+    device.press({ skipBy: 10 })
+    expect(current().seek).toHaveBeenLastCalledWith(110)
+    expect(controls().isPlaying()).toBe(true)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 110 }),
+    )
+
+    device.press({ skipBy: -10 })
+    expect(current().seek).toHaveBeenLastCalledWith(100)
+
+    current().setElapsed(4)
+    device.press({ skipBy: -10 })
+    expect(current().seek).toHaveBeenLastCalledWith(0)
+
+    current().setElapsed(240)
+    device.press({ skipBy: 10 })
+    expect(current().seek).toHaveBeenLastCalledWith(246)
+  })
+
   it('leaves a paused song paused where the bar lands', async () => {
     await mountRoom()
     current().setLoading(false)
@@ -1227,6 +1260,75 @@ describe('coming back to the room', () => {
     vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
 
     expect(current().resumeMic).not.toHaveBeenCalled()
+  })
+
+  describe('on iOS, where the microphone stops other apps', () => {
+    // It would stop whatever the singer put on meanwhile (owner, 4 Oct).
+    beforeEach(() => {
+      device.micStopsOtherApps = true
+    })
+
+    it('keeps it for the next press of play on a paused song', async () => {
+      setKaraokeBackgroundPlay(false)
+      await singing()
+      sendAppAway(true)
+      sendAppAway(false)
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+      expect(current().resumeMic).not.toHaveBeenCalled()
+
+      controls().resume()
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+      expect(current().resumeMic).toHaveBeenCalledTimes(1)
+    })
+
+    it('brings it back at once to a song still playing', async () => {
+      await singing()
+      sendAppAway(true)
+      sendAppAway(false)
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+      expect(current().resumeMic).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits for the app when play comes from the lock screen', async () => {
+      await singing()
+      sendAppAway(true)
+      device.press('pause')
+      device.press('play')
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+      expect(current().resumeMic).not.toHaveBeenCalled()
+
+      sendAppAway(false)
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+      expect(current().resumeMic).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves off a microphone the singer turned on and off again meanwhile', async () => {
+      setKaraokeBackgroundPlay(false)
+      await singing()
+      sendAppAway(true)
+      sendAppAway(false)
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+      current().setMicOn(true)
+      current().setMicOn(false)
+      controls().resume()
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+      expect(current().resumeMic).not.toHaveBeenCalled()
+    })
+
+    it('leaves a microphone that was off, off, whatever plays', async () => {
+      setKaraokeBackgroundPlay(false)
+      await singing(false)
+      sendAppAway(true)
+      sendAppAway(false)
+      controls().resume()
+      vi.advanceTimersByTime(MIC_RESTORE_DELAY_MS)
+
+      expect(current().resumeMic).not.toHaveBeenCalled()
+    })
   })
 })
 

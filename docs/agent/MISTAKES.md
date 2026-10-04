@@ -329,7 +329,7 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** the media session plugin wrote MPNowPlayingInfoCenter on every play and pause, and iOS showed no lock-screen player. Making the app's AVAudioSession non-mixable while a song played (#922) still showed nothing, and broke playback on device: a song started over another app stayed silent behind a pause button, and one interrupted by YouTube never recovered.
 **Cause:** the Karaoke song is Web Audio, rendered in WebKit's GPU process under WebKit's own AVAudioSession. iOS shows Now Playing for the session that plays, and WebKit publishes it only for a media element it finds eligible. The app process's session plays nothing; changing it at runtime interrupted WebKit's audio instead.
-**Rule:** never change the app's AVAudioSession at runtime under WebKit's audio (#923 reverted it). Lock-screen metadata, position and buttons go through `navigator.mediaSession` beside a silent `<audio>` carrier that WebKit counts as the playing element. WebKit resets the session's position to the carrier's own on every seek of it, its loop included, so the song's position is set again on `seeked`. Keep every other media element out of its way: WebKit shows on the lock screen the element a tap played last and sends a headset's toggle to the one that started last, so the unlock clip in `src/lib/audio-unlock.ts` stands aside, muted and unplayed, while the carrier holds the session.
+**Rule:** never change the app's AVAudioSession at runtime under WebKit's audio (#923 reverted it). Lock-screen metadata, position and buttons go through `navigator.mediaSession` beside a silent `<audio>` carrier that WebKit counts as the playing element. WebKit resets the session's position to the carrier's own on every seek of it, its loop included, and the lock screen can keep that over the song's position set again on `seeked`: the carrier is an hour long, so it does not go round mid-song, and the skip buttons have handlers, so WebKit never skips it. Keep every other media element out of its way: WebKit shows on the lock screen the element a tap played last and sends a headset's toggle to the one that started last, so the unlock clip in `src/lib/audio-unlock.ts` stands aside, muted and unplayed, while the carrier holds the session.
 **See:** `packages/mobile-runtime/src/webkit-now-playing.ts`, `standUnlockClipAside` in `src/lib/audio-unlock.ts`.
 
 ### Never resume an AudioContext that iOS interrupted
@@ -345,6 +345,20 @@ must import the inventory in a child Node process as well as through Vitest.
 **Cause:** WebKit interrupts Web Audio whenever the app enters the background (`BackgroundProcessPlaybackRestricted`, an `EnteringBackground` interruption), and the room paused with every interruption. Separately, the shell parked the shared clock on `willResignActive` with no time for a fade, so the clock stopped mid-waveform and the fade ran when it next started.
 **Rule:** a room that keeps playing behind other apps resumes the interruption that comes with the page hiding (up to 1.5 s after it, or 0.7 s before it); every other interruption pauses. Anything playing on the shared clock answers `prepareToSuspend` with its fade and the time left on it.
 **See:** `src/features/stem-mixer/useStemMixerAudioController.ts`, `packages/audio-io/src/shared-audio-context.ts`, `docs/plans/mobile-native/ios-audio-handoff.md`.
+
+### Treat a lock-screen press that waited while the app slept as stale (iOS)
+
+**Symptom:** after the phone sat locked with the song paused, play on the lock screen did nothing; opened later, the app played the song from somewhere.
+**Cause:** a paused song lets iOS suspend the app. WebKit keeps the press and delivers it when the page runs again, which can be minutes later, as the app comes to the front.
+**Rule:** never act on a press that may have waited. The page beats while hidden with a song on the lock screen and holds a press that follows a gap; the app coming to the front drops it. Native buttons stamp their presses (`at`), and the page drops old ones.
+**See:** `packages/mobile-runtime/src/waited-presses.ts`, `listenToTheWindow` in `packages/mobile-runtime/src/picture-in-picture.ts`.
+
+### Show a play from behind another app only once the page says it plays (iOS)
+
+**Symptom:** with YouTube playing, play in our lyrics window ran the lyrics on in silence, and YouTube kept playing.
+**Cause:** the window turned its clock on the press. After another app took the sound, WebKit activates the page's session as ambient, which mixes, before it makes it playback.
+**Rule:** native controls wait for the page's report. A play from behind the app sets `navigator.audioSession.type = 'playback'` for the moment the carrier starts, puts the old type back, and reads `paused`: WebKit starts an element inside `play()`, so still paused means refused, and the song stays paused.
+**See:** `takeTheSound` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`.
 
 ## Framework
 
