@@ -13,9 +13,10 @@ const TEXTURE_LIMITS = {
   roughnessMap: PACKED_DATA_LIMIT,
   metalnessMap: PACKED_DATA_LIMIT,
   aoMap: PACKED_DATA_LIMIT,
+  transmissionMap: PACKED_DATA_LIMIT,
 } as const
 
-type TextureSlot = keyof typeof TEXTURE_LIMITS
+export type AssetTextureSlot = keyof typeof TEXTURE_LIMITS
 
 interface ImageDimensions {
   readonly height: number
@@ -169,11 +170,11 @@ function imageStates(root: Object3D) {
         states.set(image, state)
       }
       for (const [slot, maximumDimension] of Object.entries(TEXTURE_LIMITS) as [
-        TextureSlot,
+        AssetTextureSlot,
         number,
       ][]) {
         const texture = (
-          material as Material & Partial<Record<TextureSlot, Texture>>
+          material as Material & Partial<Record<AssetTextureSlot, Texture>>
         )[slot]
         if (texture?.isTexture !== true) continue
         const image = texture.source.data as TexImageSource | undefined
@@ -195,6 +196,26 @@ export function collectAssetTextureImages(root: Object3D): Set<TexImageSource> {
   return new Set(imageStates(root).keys())
 }
 
+/** RGBA8 image plus mip estimate; excludes driver copies and render targets. */
+export function estimateAssetTextureBytes(root: Object3D): number {
+  let bytes = 0
+  for (const [image, state] of imageStates(root)) {
+    const size = dimensions(image)
+    if (size === undefined) continue
+    let { width, height } = size
+    const mipmaps = [...state.textures].some(
+      (texture) => texture.generateMipmaps,
+    )
+    bytes += width * height * 4
+    while (mipmaps && (width > 1 || height > 1)) {
+      width = Math.max(1, Math.floor(width / 2))
+      height = Math.max(1, Math.floor(height / 2))
+      bytes += width * height * 4
+    }
+  }
+  return bytes
+}
+
 /** Releases an unpublished scene's unique decoded images after its textures. */
 export function releaseAssetTextureImages(root: Object3D): number {
   let released = 0
@@ -214,6 +235,60 @@ function isAborted(signal: AbortSignal | undefined): boolean {
   return signal?.aborted === true
 }
 
+async function resizeProfileImage(
+  image: TexImageSource,
+  maximumDimension: number,
+  resizeImage: ResizeAssetImage,
+  signal: AbortSignal | undefined,
+): Promise<TexImageSource | undefined> {
+  if (isAborted(signal)) throw assetProfileAbortError()
+  const target = constrainedDimensions(image, maximumDimension)
+  if (target === undefined) return undefined
+  const resized = await resizeImage(image, target)
+  if (isAborted(signal)) {
+    if (resized !== image) releaseAssetImage(resized)
+    throw assetProfileAbortError()
+  }
+  const actual = dimensions(resized)
+  if (actual?.width !== target.width || actual.height !== target.height) {
+    if (resized !== image) releaseAssetImage(resized)
+    throw new Error('The mobile texture resize returned invalid dimensions.')
+  }
+  return resized
+}
+
+/** Profiles one exclusively owned image; the caller still owns texture disposal. */
+export async function applyOwnedAssetTextureProfile(
+  texture: Texture,
+  slot: AssetTextureSlot,
+  profile: GlassAssetQualityProfile,
+  resizeImage: ResizeAssetImage = resizeBrowserImage,
+  signal?: AbortSignal,
+): Promise<AssetTextureProfileMetrics> {
+  if (isAborted(signal)) throw assetProfileAbortError()
+  if (profile === 'full') return { resizedSources: 0, releasedSources: 0 }
+  const image = texture.source.data as TexImageSource | null | undefined
+  if (image === undefined || image === null)
+    return { resizedSources: 0, releasedSources: 0 }
+  const resized = await resizeProfileImage(
+    image,
+    TEXTURE_LIMITS[slot],
+    resizeImage,
+    signal,
+  )
+  if (isAborted(signal)) {
+    if (resized !== undefined && resized !== image) releaseAssetImage(resized)
+    throw assetProfileAbortError()
+  }
+  if (resized === undefined) return { resizedSources: 0, releasedSources: 0 }
+  texture.source.data = resized
+  texture.needsUpdate = true
+  return {
+    resizedSources: 1,
+    releasedSources: resized !== image && releaseAssetImage(image) ? 1 : 0,
+  }
+}
+
 /** Applies a deterministic decoded-image budget without changing geometry. */
 export async function applyAssetTextureProfile(
   root: Object3D,
@@ -231,20 +306,17 @@ export async function applyAssetTextureProfile(
   for (const [image, state] of byImage) {
     if (isAborted(signal)) throw assetProfileAbortError()
     if (state.maximumDimension === 0) continue
-    const target = constrainedDimensions(image, state.maximumDimension)
-    if (target === undefined) continue
-    const resized = await resizeImage(image, target)
+    const resized = await resizeProfileImage(
+      image,
+      state.maximumDimension,
+      resizeImage,
+      signal,
+    )
     if (isAborted(signal)) {
-      if (resized !== image) releaseAssetImage(resized)
+      if (resized !== undefined && resized !== image) releaseAssetImage(resized)
       throw assetProfileAbortError()
     }
-    const actual = dimensions(resized)
-    if (actual?.width !== target.width || actual.height !== target.height) {
-      if (resized !== image) releaseAssetImage(resized)
-      throw new Error(
-        'The mobile GLB texture resize returned invalid dimensions.',
-      )
-    }
+    if (resized === undefined) continue
     state.sources.forEach((source) => {
       source.data = resized
     })

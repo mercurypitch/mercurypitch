@@ -37,6 +37,7 @@ export function setupGameDiagnostics(): void {
           scene: ownership?.scene ?? 'unknown',
           lifecycle: ownership?.lifecycle ?? 'unknown',
           instance: ownership?.instance,
+          ...ownership?.snapshot,
           drawingBuffer: [canvas.width, canvas.height],
           viewport: [canvas.clientWidth, canvas.clientHeight],
           visibility: document.visibilityState,

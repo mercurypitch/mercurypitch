@@ -5,6 +5,145 @@ import { describe, expect, it, vi } from 'vitest'
 import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, MAXIMUM_JOURNEY_FRAME_SECONDS, } from './resources'
 
 describe('journey glTF loading', () => {
+  it('profiles shared mobile images before publishing and owns the resized image through material replacement', async () => {
+    const original = { width: 2048, height: 1024, close: vi.fn() }
+    const resized = { width: 1024, height: 512, close: vi.fn() }
+    const texture = new Texture(original as unknown as ImageBitmap)
+    const shared = new Texture(original as unknown as ImageBitmap)
+    const material = new MeshBasicMaterial({ map: texture })
+    const scene = new Group()
+    scene.add(
+      new Mesh(new BoxGeometry(), material),
+      new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map: shared })),
+    )
+    let finishResize!: (image: TexImageSource) => void
+    const resizeImage = vi.fn(
+      () =>
+        new Promise<TexImageSource>((resolve) => {
+          finishResize = resolve
+        }),
+    )
+    let published = false
+    const pending = loadJourneyGltf('/map.glb', new AbortController().signal, {
+      fetch: vi.fn().mockResolvedValue(new Response(new Uint8Array(64))),
+      parse: vi.fn().mockResolvedValue({ scene, animations: [] }),
+      assetProfile: 'mobile',
+      resizeImage,
+    }).then((document) => {
+      published = true
+      return document
+    })
+
+    await vi.waitFor(() => expect(resizeImage).toHaveBeenCalledOnce())
+    expect(resizeImage).toHaveBeenCalledWith(original, {
+      width: 1024,
+      height: 512,
+    })
+    expect(published).toBe(false)
+    expect(original.close).not.toHaveBeenCalled()
+    finishResize(resized as unknown as ImageBitmap)
+    const document = await pending
+    expect(texture.image).toBe(resized)
+    expect(shared.image).toBe(resized)
+    expect(original.close).toHaveBeenCalledOnce()
+    expect(resized.close).not.toHaveBeenCalled()
+
+    // Presentation can hide both texture references; the document keeps their owner.
+    material.map = null
+    scene.children[1]!.visible = false
+    const second = scene.children[1] as Mesh
+    second.material = new MeshBasicMaterial()
+    document.dispose()
+    document.dispose()
+    expect(original.close).toHaveBeenCalledOnce()
+    expect(resized.close).toHaveBeenCalledOnce()
+  })
+
+  it('preserves full-profile image dimensions and never invokes the mobile resize', async () => {
+    const original = { width: 2048, height: 2048, close: vi.fn() }
+    const texture = new Texture(original as unknown as ImageBitmap)
+    const textureDispose = vi.spyOn(texture, 'dispose')
+    const scene = new Group()
+    scene.add(
+      new Mesh(new BoxGeometry(), new MeshBasicMaterial({ map: texture })),
+    )
+    const resizeImage = vi.fn()
+    const document = await loadJourneyGltf(
+      '/map.glb',
+      new AbortController().signal,
+      {
+        fetch: vi.fn().mockResolvedValue(new Response(new Uint8Array(64))),
+        parse: vi.fn().mockResolvedValue({ scene, animations: [] }),
+        assetProfile: 'full',
+        resizeImage,
+      },
+    )
+
+    expect(resizeImage).not.toHaveBeenCalled()
+    expect(texture.image).toBe(original)
+    expect(original.close).not.toHaveBeenCalled()
+    document.dispose()
+    expect(original.close).toHaveBeenCalledOnce()
+    expect(original.close.mock.invocationCallOrder[0]).toBeGreaterThan(
+      textureDispose.mock.invocationCallOrder[0]!,
+    )
+  })
+
+  it.each(['failure', 'abort', 'invalid dimensions'] as const)(
+    'retires current images exactly once after a partial mobile resize: %s',
+    async (outcome) => {
+      const first = { width: 2048, height: 2048, close: vi.fn() }
+      const second = { width: 2048, height: 2048, close: vi.fn() }
+      const resizedFirst = { width: 1024, height: 1024, close: vi.fn() }
+      const resizedSecond = {
+        width: outcome === 'invalid dimensions' ? 512 : 1024,
+        height: 1024,
+        close: vi.fn(),
+      }
+      const geometry = new BoxGeometry()
+      const geometryDispose = vi.spyOn(geometry, 'dispose')
+      const firstTexture = new Texture(first as unknown as ImageBitmap)
+      const secondTexture = new Texture(second as unknown as ImageBitmap)
+      const secondTextureDispose = vi.spyOn(secondTexture, 'dispose')
+      const scene = new Group()
+      scene.add(
+        new Mesh(geometry, new MeshBasicMaterial({ map: firstTexture })),
+        new Mesh(geometry, new MeshBasicMaterial({ map: secondTexture })),
+      )
+      const controller = new AbortController()
+      const failure = new Error('second image resize failed')
+      const resizeImage = vi
+        .fn()
+        .mockResolvedValueOnce(resizedFirst)
+        .mockImplementationOnce(() => {
+          if (outcome === 'failure') return Promise.reject(failure)
+          if (outcome === 'abort') controller.abort()
+          return Promise.resolve(resizedSecond)
+        })
+      const pending = loadJourneyGltf('/map.glb', controller.signal, {
+        fetch: vi.fn().mockResolvedValue(new Response(new Uint8Array(64))),
+        parse: vi.fn().mockResolvedValue({ scene, animations: [] }),
+        assetProfile: 'mobile',
+        resizeImage,
+      })
+
+      if (outcome === 'failure') await expect(pending).rejects.toBe(failure)
+      else if (outcome === 'abort')
+        await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+      else await expect(pending).rejects.toThrow('invalid dimensions')
+      expect(first.close).toHaveBeenCalledOnce()
+      expect(resizedFirst.close).toHaveBeenCalledOnce()
+      expect(second.close).toHaveBeenCalledOnce()
+      expect(resizedSecond.close).toHaveBeenCalledTimes(
+        outcome === 'failure' ? 0 : 1,
+      )
+      expect(geometryDispose).toHaveBeenCalledOnce()
+      expect(second.close.mock.invocationCallOrder[0]).toBeGreaterThan(
+        secondTextureDispose.mock.invocationCallOrder[0]!,
+      )
+    },
+  )
+
   it('closes each owned decoded image once after its document is retired', async () => {
     const bitmap = { width: 512, height: 512, close: vi.fn() }
     const texture = new Texture(bitmap as unknown as ImageBitmap)

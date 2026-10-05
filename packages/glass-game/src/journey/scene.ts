@@ -3,10 +3,11 @@
 import type { Object3D } from 'three'
 import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereLight, Mesh, MeshStandardMaterial, PerspectiveCamera, Raycaster, RingGeometry, Scene, SRGBColorSpace, Vector2, Vector3, WebGLRenderer, } from 'three'
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
+import { estimateAssetTextureBytes } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
 import { verifyFirstFrame } from '../render/first-frame'
-import { registerGraphicsCanvas, retireGraphicsCanvas, } from '../render/graphics-diagnostics'
+import { getGraphicsCanvasDiagnostic, registerGraphicsCanvas, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from '../render/graphics-diagnostics'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from '../render/render-performance-governor'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from '../render/render-quality'
 import { canRenderViewport } from '../render/viewport'
@@ -311,6 +312,10 @@ function buildMuseumJourneyScene(
   water.setReducedMotion(reducedMotion)
   scene.add(water.root)
   let publishedMetrics = false
+  let diagnosticsDirty = true
+  let textureEstimateDirty = true
+  let estimatedTextureBytes = 0
+  let lastDiagnosticsSeconds = -Infinity
   let shadowUpdated = false
 
   function publishCameraState(): void {
@@ -359,6 +364,7 @@ function buildMuseumJourneyScene(
       journeyMarkerPoint(stage, JOURNEY_MEDALLION_CLEARANCE_Y),
     )
     models?.setSelected(stage, immediate || reducedMotion)
+    diagnosticsDirty = true
     if (immediate || reducedMotion) {
       target.copy(desiredTarget)
       cameraDistance = desiredDistance
@@ -460,10 +466,30 @@ function buildMuseumJourneyScene(
       projectionSettled = true
       resolveProjection()
     }
-    if (models !== undefined && !publishedMetrics) {
+    if (
+      models !== undefined &&
+      (!publishedMetrics ||
+        diagnosticsDirty ||
+        visibleSeconds - lastDiagnosticsSeconds >= 1)
+    ) {
+      if (textureEstimateDirty) {
+        estimatedTextureBytes = estimateAssetTextureBytes(models.root)
+        textureEstimateDirty = false
+      }
+      const metrics = collectMetrics()
+      updateGraphicsCanvasSnapshot(renderer.domElement, {
+        selectedStageId,
+        assetProfile: quality.assetProfile,
+        drawCalls: metrics.drawCalls,
+        triangles: metrics.triangles,
+        textures: metrics.textures,
+        geometries: metrics.geometries,
+        estimatedTextureBytes,
+      })
       publishedMetrics = true
-      renderer.domElement.dataset.rendererMetrics =
-        JSON.stringify(collectMetrics())
+      diagnosticsDirty = false
+      lastDiagnosticsSeconds = visibleSeconds
+      renderer.domElement.dataset.rendererMetrics = JSON.stringify(metrics)
     }
   }
   const loop = createJourneyFrameLoop(renderFrame)
@@ -615,6 +641,8 @@ function buildMuseumJourneyScene(
     mercUrl,
     abort.signal,
     {
+      assetProfile: quality.assetProfile,
+      maximumConcurrentBundleLoads: quality.maximumConcurrentBundleLoads,
       sculptureUrl,
       architectureUrl,
       mysteryPortraitUrl,
@@ -629,7 +657,10 @@ function buildMuseumJourneyScene(
     () => (contextLost ? 'failed' : disposed ? 'disposed' : 'active'),
     (loaded) => {
       const display = createJourneyProgressDisplay(definition, loaded, {
+        assetProfile: quality.assetProfile,
         onChange(snapshot) {
+          textureEstimateDirty = true
+          diagnosticsDirty = true
           if (!disposed && !contextLost)
             renderer.domElement.dataset.journeyProgress =
               JSON.stringify(snapshot)
@@ -711,6 +742,14 @@ function buildMuseumJourneyScene(
       )
         return
       selectedStageId = stageId
+      const previousSnapshot = getGraphicsCanvasDiagnostic(
+        renderer.domElement,
+      )?.snapshot
+      if (previousSnapshot !== undefined)
+        updateGraphicsCanvasSnapshot(renderer.domElement, {
+          ...previousSnapshot,
+          selectedStageId,
+        })
       updateDesiredView()
     },
     setProgress(progress) {

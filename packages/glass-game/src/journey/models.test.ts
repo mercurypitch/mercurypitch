@@ -56,6 +56,115 @@ function createArchitectureScene(includeConservatory = true): Group {
 }
 
 describe('journey map model loading', () => {
+  it.each([
+    {
+      assetProfile: 'mobile' as const,
+      maximumConcurrentBundleLoads: 1 as const,
+    },
+    { assetProfile: 'full' as const, maximumConcurrentBundleLoads: 2 as const },
+  ])(
+    'bounds $assetProfile GLB preparation and profiles every document',
+    async (policy) => {
+      const documents = Array.from({ length: 3 }, () => ({
+        scene: new Group(),
+        animations: [],
+        dispose: vi.fn(),
+      }))
+      const failure = new Error('architecture unavailable')
+      const finishLoads: (() => void)[] = []
+      let active = 0
+      let peak = 0
+      const loadGltf = vi.fn(() => {
+        const index = loadGltf.mock.calls.length - 1
+        active++
+        peak = Math.max(peak, active)
+        return new Promise<JourneyGltfDocument>((resolve, reject) => {
+          finishLoads.push(() => {
+            if (index === 3) reject(failure)
+            else resolve(documents[index]!)
+          })
+        }).finally(() => {
+          active--
+        })
+      })
+      const signal = new AbortController().signal
+      const pending = loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        signal,
+        {
+          ...policy,
+          loadGltf,
+          sculptureUrl: '/sculpture.glb',
+          architectureUrl: '/architecture.glb',
+        },
+      ).catch((error: unknown) => error)
+
+      await vi.waitFor(() => expect(loadGltf).toHaveBeenCalled())
+      const initiallyStarted = loadGltf.mock.calls.length
+      for (let index = 0; index < 4; index++) {
+        await vi.waitFor(() => expect(finishLoads.length).toBeGreaterThan(0))
+        finishLoads.shift()!()
+      }
+      expect(await pending).toBe(failure)
+      expect(initiallyStarted).toBe(policy.maximumConcurrentBundleLoads)
+      expect(peak).toBe(policy.maximumConcurrentBundleLoads)
+      for (const url of [
+        '/map.glb',
+        '/merc.glb',
+        '/sculpture.glb',
+        '/architecture.glb',
+      ])
+        expect(loadGltf).toHaveBeenCalledWith(url, signal, {
+          assetProfile: policy.assetProfile,
+        })
+      for (const document of documents)
+        expect(document.dispose).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('does not decode queued GLBs after cancellation and retires the active document', async () => {
+    const document = { scene: new Group(), animations: [], dispose: vi.fn() }
+    let finishMap!: (document: JourneyGltfDocument) => void
+    const loadGltf = vi.fn((url: string) =>
+      url === '/map.glb'
+        ? new Promise<JourneyGltfDocument>((resolve) => {
+            finishMap = resolve
+          })
+        : Promise.resolve({
+            scene: new Group(),
+            animations: [],
+            dispose: vi.fn(),
+          }),
+    )
+    const controller = new AbortController()
+    const pending = loadJourneyMapModels(
+      FLOATING_MUSEUM_JOURNEY,
+      '/map.glb',
+      '/merc.glb',
+      controller.signal,
+      {
+        loadGltf,
+        assetProfile: 'mobile',
+        maximumConcurrentBundleLoads: 1,
+        sculptureUrl: '/sculpture.glb',
+        architectureUrl: '/architecture.glb',
+      },
+    ).catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(loadGltf).toHaveBeenCalled())
+    controller.abort()
+    finishMap(document)
+    expect(await pending).toMatchObject({ name: 'AbortError' })
+    expect(loadGltf).toHaveBeenCalledExactlyOnceWith(
+      '/map.glb',
+      controller.signal,
+      { assetProfile: 'mobile' },
+    )
+    expect(document.dispose).toHaveBeenCalledOnce()
+  })
+
   it('retires assembled scenery when mascot normalization fails', async () => {
     const kitScene = createKitScene()
     const kit = { scene: kitScene, animations: [], dispose: vi.fn() }
@@ -357,12 +466,15 @@ describe('journey map model loading', () => {
       roughnessMap: new Texture(),
       dispose: vi.fn(),
     }
+    const loadMarbleTextures = vi.fn().mockResolvedValue(marbleTextures)
+    const loadTexture = vi.fn().mockResolvedValue(new Texture())
     const models = await loadJourneyMapModels(
       FLOATING_MUSEUM_JOURNEY,
       '/map.glb',
       '/merc.glb',
       new AbortController().signal,
       {
+        assetProfile: 'mobile',
         loadGltf: vi
           .fn()
           .mockResolvedValueOnce(kit)
@@ -374,8 +486,22 @@ describe('journey map model loading', () => {
           normal: '/normal.webp',
           roughness: '/roughness.webp',
         },
-        loadMarbleTextures: vi.fn().mockResolvedValue(marbleTextures),
+        loadMarbleTextures,
+        mysteryPortraitUrl: '/mystery.webp',
+        loadTexture,
       },
+    )
+
+    expect(loadMarbleTextures).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(AbortSignal),
+      undefined,
+      { assetProfile: 'mobile' },
+    )
+    expect(loadTexture).toHaveBeenCalledWith(
+      '/mystery.webp',
+      expect.any(AbortSignal),
+      { assetProfile: 'mobile' },
     )
 
     const finish = models.root.getObjectByName(

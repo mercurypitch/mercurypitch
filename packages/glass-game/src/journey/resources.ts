@@ -2,8 +2,10 @@
 
 import type { AnimationClip, Group } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { collectAssetTextureImages, releaseAssetImage, } from '../render/asset-texture-profile'
+import type { ResizeAssetImage } from '../render/asset-texture-profile'
+import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetImage, } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 
 export interface JourneyGltfDocument {
   scene: Group
@@ -28,6 +30,8 @@ function isGitLfsPointer(bytes: ArrayBuffer): boolean {
 
 export interface JourneyGltfLoadOptions {
   fetch?: typeof fetch
+  assetProfile?: GlassAssetQualityProfile
+  resizeImage?: ResizeAssetImage
   parse?: (
     bytes: ArrayBuffer,
     resourcePath: string,
@@ -75,7 +79,7 @@ export async function loadJourneyGltf(
     })
   }
   // Keep the decoded image owners even if presentation later replaces a material.
-  const decodedImages = collectAssetTextureImages(parsed.scene)
+  let decodedImages = collectAssetTextureImages(parsed.scene)
   let disposed = false
   const dispose = () => {
     if (disposed) return
@@ -87,6 +91,25 @@ export async function loadJourneyGltf(
       decodedImages.clear()
     }
   }
+  if (signal.aborted) {
+    dispose()
+    throw abortError()
+  }
+  try {
+    await applyAssetTextureProfile(
+      parsed.scene,
+      options.assetProfile ?? 'full',
+      options.resizeImage,
+      signal,
+    )
+  } catch (error) {
+    // The profile already closes replaced originals. Retire only the current
+    // images: completed replacements and originals not yet resized.
+    decodedImages = collectAssetTextureImages(parsed.scene)
+    dispose()
+    throw signal.aborted ? abortError() : error
+  }
+  decodedImages = collectAssetTextureImages(parsed.scene)
   if (signal.aborted) {
     dispose()
     throw abortError()

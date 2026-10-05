@@ -4,6 +4,7 @@ import type { MeshBasicMaterial } from 'three'
 import { DoubleSide, Group, Mesh, MeshStandardMaterial, PlaneGeometry, Texture, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
+import type { JourneyProgressDisplayOptions } from './progress'
 import { createJourneyProgressDisplay } from './progress'
 
 const DEFINITION: MuseumJourneyDefinition = {
@@ -44,7 +45,8 @@ function deferred<T>() {
 }
 
 function fixture(
-  loadTexture: (url: string, signal: AbortSignal) => Promise<Texture>,
+  loadTexture: NonNullable<JourneyProgressDisplayOptions['loadTexture']>,
+  assetProfile?: JourneyProgressDisplayOptions['assetProfile'],
 ) {
   const sharedMaterial = new MeshStandardMaterial({ color: 0x224943 })
   const surface = new Mesh(new PlaneGeometry(1, 1), sharedMaterial)
@@ -63,7 +65,7 @@ function fixture(
       portraitSurfaces: new Map([['authored-monument', surface]]),
       portraitMysteries: new Map([['authored-monument', mystery]]),
     },
-    { loadTexture },
+    { loadTexture, assetProfile },
   )
   return { display, markers, mystery, sharedMaterial, sibling, surface }
 }
@@ -117,7 +119,11 @@ describe('journey progress display', () => {
         portrait: { id: 'saved-collectible-id', imageUrl: '/portrait.webp' },
       },
     ])
-    expect(load).toHaveBeenCalledWith('/portrait.webp', expect.any(AbortSignal))
+    expect(load).toHaveBeenCalledWith(
+      '/portrait.webp',
+      expect.any(AbortSignal),
+      { assetProfile: 'full' },
+    )
     expect(mystery.visible).toBe(true)
     expect(surface.material).toBe(sharedMaterial)
 
@@ -249,5 +255,36 @@ describe('journey progress display', () => {
     expect(texture.repeat.toArray()).toEqual([-1, -1])
     expect(texture.offset.toArray()).toEqual([1, 1])
     display.dispose()
+  })
+
+  it('passes the map mobile profile to earned portraits and retires a late owned image once', async () => {
+    const pending = deferred<Texture>()
+    const load = vi.fn<
+      NonNullable<JourneyProgressDisplayOptions['loadTexture']>
+    >(() => pending.promise)
+    const { display, mystery, sharedMaterial, surface } = fixture(
+      load,
+      'mobile',
+    )
+    const bitmap = { width: 683, height: 1024, close: vi.fn() }
+    const texture = new Texture(bitmap)
+    const dispose = vi.spyOn(texture, 'dispose')
+
+    display.setProgress([
+      { stageId: 'gallery', portrait: { imageUrl: '/earned.webp' } },
+    ])
+    expect(load).toHaveBeenCalledWith('/earned.webp', expect.any(AbortSignal), {
+      assetProfile: 'mobile',
+    })
+    const signal = load.mock.calls[0]![1]
+    display.dispose()
+    display.dispose()
+    expect(signal.aborted).toBe(true)
+    pending.resolve(texture)
+    await pending.promise
+    await vi.waitFor(() => expect(dispose).toHaveBeenCalledOnce())
+    expect(bitmap.close).toHaveBeenCalledOnce()
+    expect(surface.material).toBe(sharedMaterial)
+    expect(mystery.visible).toBe(true)
   })
 })

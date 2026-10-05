@@ -761,11 +761,28 @@ it.each([true, false])(
     )
     try {
       expect(state.setPixelRatio).toHaveBeenLastCalledWith(mobile ? 1.25 : 1.8)
+      expect(state.loadModels).toHaveBeenCalledWith(
+        DEFINITION,
+        'map',
+        'merc',
+        expect.any(AbortSignal),
+        expect.objectContaining({
+          assetProfile: mobile ? 'mobile' : 'full',
+          maximumConcurrentBundleLoads: mobile ? 1 : 2,
+        }),
+      )
       for (let i = 0; i < 30; i++) state.renderFrame?.(i * 0.05, 0.05)
       expect(scene.getMetrics().adaptiveQualityActive).toBe(false)
       await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
       state.renderFrame?.(2, 0.016)
       await scene.ready
+      expect(
+        getGraphicsCanvasDiagnostic(state.canvas!)?.snapshot,
+      ).toMatchObject({
+        selectedStageId: 'stage',
+        assetProfile: mobile ? 'mobile' : 'full',
+        estimatedTextureBytes: 0,
+      })
       scene.setForeground(false)
       for (let i = 0; i < 30; i++) state.renderFrame?.(i * 0.05, 0.05)
       expect(scene.getMetrics().adaptiveQualityActive).toBe(false)

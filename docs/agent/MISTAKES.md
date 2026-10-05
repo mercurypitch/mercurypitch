@@ -1851,3 +1851,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** shadow updates were manual; the cube pass was the first draw of a shadow receiver, before the comparison texture had been initialized.
 **Rule:** mark the shadow map for update before the first capture, restore temporary capture-only objects in `finally`, and check the actual WebGL error stream from a fresh context.
 **See:** `packages/glass-game/src/render/runner-look.ts`, `runner-look.test.ts`.
+
+### Apply the asset profile in every scene loader, independently of resolution
+
+**Symptom:** iOS lost the museum context on entry or island switching despite a mobile drawing buffer; the galleries could still play.
+**Cause:** the museum selected mobile pixels and shadows but never passed its texture profile to the model loaders. First-visible islands uploaded more full-size images. The browser probe measured this avoidable residency, not the iOS driver's exact reset cause.
+**Rule:** carry the profile through GLBs, separate PBR maps and earned portraits before upload; bound concurrent decode/resize work. Measure allocations while visiting every view, not only the first ready frame, and keep physical-device acceptance separate from a desktop GPU test.
+**See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/e2e/glass-adventure-map-memory.e2e.ts`.
