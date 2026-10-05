@@ -1809,3 +1809,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** acting at a simulation-certified midpoint or on hidden cue-stage attributes bypassed the player-facing instruction; a low camera and thick landing slab hid the real gap.
 **Rule:** keep deterministic flight tests, add visible-copy action timing with a reaction delay, and inspect actual rendered takeoff/landing views. A controls-only renderer cannot certify scene readability. Use the full donor bounds, including hardware, when proving a visual opening is clear.
 **See:** `apps/beside-cue/e2e/glass-adventure-runner-responsive.e2e.ts`, `packages/glass-game/src/render/runner-world.test.ts`.
+
+### Initialize the shadow comparison texture before the first reflection capture
+
+**Symptom:** a fresh runner renderer reported `GL_INVALID_OPERATION: sampler type does not match texture format` during its preparation-time cube capture.
+**Cause:** shadow updates were manual; the cube pass was the first draw of a shadow receiver, before the comparison texture had been initialized.
+**Rule:** mark the shadow map for update before the first capture, restore temporary capture-only objects in `finally`, and check the actual WebGL error stream from a fresh context.
+**See:** `packages/glass-game/src/render/runner-look.ts`, `runner-look.test.ts`.

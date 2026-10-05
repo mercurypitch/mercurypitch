@@ -3,13 +3,14 @@ import type { CompiledRunnerCourse, CompiledRunnerGap, } from '../runner/contrac
 import { runnerBeatToSeconds, runnerForwardSpeedAtSeconds, runnerSecondsToBeat, } from '../runner/tempo'
 
 export const RUNNER_MERC_VISUAL_HEIGHT_METERS = 0.82
+export const RUNNER_RESPONSIVE_MERC_VISUAL_HEIGHT_METERS = 0.95
 export const RUNNER_CAMERA_LANDSCAPE_FOLLOW = 0.28
-export const RUNNER_CAMERA_PORTRAIT_FOLLOW = 0.5
+export const RUNNER_CAMERA_PORTRAIT_FOLLOW = 0.85
 export const RUNNER_GAP_APRON_METERS = 1.05
 export const RUNNER_GAP_APRON_THICKNESS_METERS = 0.06
 export const RUNNER_GAP_LIP_RADIUS_METERS = 0.025
 const COMPACT_LANE_SPAN_METERS = 2.75
-const CAMERA_FOLLOW_RESPONSE_SECONDS = 0.16
+const CAMERA_FOLLOW_RESPONSE_SECONDS = 0.04
 
 export interface RunnerCameraPose {
   readonly fovDegrees: number
@@ -259,7 +260,19 @@ export function runnerGapArtSpans(
   )
 }
 
-/** Camera follows the compact rev3 runner while retaining a legacy-wide fallback. */
+/** Responsive visual size is independent of collision; legacy visits retain their original Merc. */
+export function runnerMercVisualHeightMeters(
+  laneCenters: CompiledRunnerCourse['laneCenters'] = [-2, 0, 2],
+  profile?: CompiledRunnerCourse['presentation']['cameraProfile'],
+): number {
+  return profile === 'responsive-close' ||
+    (profile !== 'legacy-wide' &&
+      laneCenters[2] - laneCenters[0] <= COMPACT_LANE_SPAN_METERS)
+    ? RUNNER_RESPONSIVE_MERC_VISUAL_HEIGHT_METERS
+    : RUNNER_MERC_VISUAL_HEIGHT_METERS
+}
+
+/** Camera follows the responsive runner while retaining a legacy-wide fallback. */
 export function runnerCameraPose(
   aspect: number,
   laneCenters: CompiledRunnerCourse['laneCenters'] = [-2, 0, 2],
@@ -273,13 +286,13 @@ export function runnerCameraPose(
   ) {
     const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))
     return Object.freeze({
-      fovDegrees: 55 + portraitBlend * 7,
+      fovDegrees: 55 + portraitBlend * 5,
       x: 0,
-      y: 1.72,
-      z: 4.9,
+      y: 1.8,
+      z: 4.4,
       targetX: 0,
-      targetY: 0.52,
-      targetZ: -4.8,
+      targetY: 0.55 + portraitBlend * 0.77,
+      targetZ: -4.5,
     })
   }
   const distance = Math.max(5.2, 3.3 / (Math.tan(Math.PI / 6) * safeAspect))

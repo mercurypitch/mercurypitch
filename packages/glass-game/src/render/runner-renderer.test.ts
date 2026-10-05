@@ -18,6 +18,10 @@ const state = vi.hoisted(() => ({
   merc: vi.fn(),
   imageRelease: vi.fn(),
   environmentDispose: vi.fn(),
+  environmentCapture: vi.fn(),
+  openingCreate: vi.fn(),
+  openingUpdate: vi.fn(),
+  openingDispose: vi.fn(),
   worldDispose: vi.fn(),
   targetDispose: vi.fn(),
   sceneryDispose: vi.fn(),
@@ -80,6 +84,7 @@ vi.mock('./asset-texture-profile', () => ({
 vi.mock('./environment', () => ({
   createMuseumEnvironment: () => ({
     load: vi.fn().mockResolvedValue(undefined),
+    capture: state.environmentCapture,
     dispose: state.environmentDispose,
   }),
 }))
@@ -107,6 +112,18 @@ vi.mock('./runner-targets', () => ({
 }))
 
 import { createSongRunnerRenderer } from './runner-renderer'
+
+vi.mock('./runner-opening', () => ({
+  createRunnerOpening: (options: unknown) => {
+    state.openingCreate(options)
+    return {
+      root: new Group(),
+      update: state.openingUpdate,
+      dispose: state.openingDispose,
+      metrics: () => ({ drawBatches: 4, triangles: 2400 }),
+    }
+  },
+}))
 
 vi.mock('./runner-scenery', () => ({
   createRunnerScenery: (options: unknown) => {
@@ -138,8 +155,17 @@ function ownedScene() {
   return { root, geometryDispose, materialDispose }
 }
 
-function fixture() {
-  const course = runnerCourseFixture(),
+function fixture(dressedOpening = false) {
+  const source = runnerCourseFixture()
+  const course = dressedOpening
+      ? {
+          ...source,
+          presentation: {
+            ...source.presentation,
+            cameraProfile: 'responsive-close' as const,
+          },
+        }
+      : source,
     snapshot = createSongRunnerGame(course, { comfortableMidi: 60 }).snapshot()
   const container = {
     clientWidth: 800,
@@ -186,6 +212,45 @@ afterEach(() => {
 })
 
 describe('runner renderer ownership', () => {
+  it('captures only during preparation and retires the dressed opening with the visit', async () => {
+    const { renderer, snapshot } = fixture(true)
+    await renderer.ready
+    expect(state.environmentCapture).toHaveBeenCalledOnce()
+    expect(state.openingCreate).toHaveBeenCalledOnce()
+    expect(state.merc).toHaveBeenCalledWith(expect.any(String), {
+      initialFacingYaw: Math.PI,
+    })
+    expect(state.sceneryCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ skipFirstChunks: 2 }),
+    )
+    expect(state.openingUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+      state.environmentCapture.mock.invocationCallOrder[0]!,
+    )
+    expect(state.environmentCapture.mock.invocationCallOrder[0]).toBeLessThan(
+      state.precompile.mock.invocationCallOrder[0]!,
+    )
+    for (let frame = 0; frame < 4; frame++) renderer.render(snapshot, 1 / 60)
+    expect(state.environmentCapture).toHaveBeenCalledOnce()
+    expect(renderer.metrics()).toMatchObject({
+      sceneryBatches: 7,
+      sceneryTriangles: 3600,
+    })
+    renderer.dispose()
+    renderer.dispose()
+    expect(state.openingDispose).toHaveBeenCalledOnce()
+  })
+
+  it('retires a dressed opening when the reflection capture fails before readiness', async () => {
+    state.environmentCapture.mockImplementationOnce(() => {
+      throw new Error('probe failed')
+    })
+    const { renderer } = fixture(true)
+    await expect(renderer.ready).rejects.toThrow('probe failed')
+    expect(state.openingDispose).toHaveBeenCalledOnce()
+    expect(state.environmentDispose).toHaveBeenCalledOnce()
+    expect(state.precompile).not.toHaveBeenCalled()
+  })
+
   it('disposes the partial scene on a missing mandatory texture', async () => {
     state.texture.mockRejectedValueOnce(new Error('Missing texture'))
     const { renderer } = fixture()

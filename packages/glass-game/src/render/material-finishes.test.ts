@@ -13,6 +13,56 @@ function fixture() {
 }
 
 describe('authored material finish bank', () => {
+  it('retains the authored botanical wall map across intact and shard leases without owning it', () => {
+    const bank = createMaterialFinishBank(new Map())
+    const map = new Texture()
+    const disposed = vi.spyOn(map, 'dispose')
+    const source = new MeshPhysicalMaterial({
+      name: 'W06 optical glass',
+      roughnessMap: map,
+      thickness: 0.006,
+    })
+    source.userData.runnerOpeningFinish = 'botanical-edge-v1'
+    const library = createMaterialLibrary()
+    const intact = library.clone(source) as MeshPhysicalMaterial
+    const shard = library.clone(source.clone()) as MeshPhysicalMaterial
+    const leasedMap = intact.roughnessMap!
+    const leasedDispose = vi.spyOn(leasedMap, 'dispose')
+    expect(leasedMap).not.toBe(map)
+    expect(leasedMap.source).toBe(map.source)
+    for (const material of [intact, shard]) {
+      finishRunnerWallMaterial(material, bank, true)
+      expect(material.roughnessMap).toBe(leasedMap)
+      expect(material.roughness).toBe(1)
+      expect(material.normalMap).toBeNull()
+      expect(material.thickness).toBe(0.006)
+      expect(material.userData.materialFinish).toBe('etched-frost-glass')
+    }
+    expect(map.colorSpace).toBe(NoColorSpace)
+    expect(source.userData.materialFinish).toBeUndefined()
+    library.dispose()
+    expect(leasedDispose).toHaveBeenCalledOnce()
+    expect(disposed).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])(
+    'rejects a broken authored frost contract before changing material, UV=%s',
+    (mapped) => {
+      const bank = createMaterialFinishBank(new Map())
+      const material = new MeshPhysicalMaterial({
+        name: 'W06 optical glass',
+        roughness: 0.7,
+      })
+      material.userData.runnerOpeningFinish = 'botanical-edge-v1'
+      if (!mapped) material.roughnessMap = new Texture()
+      expect(() => finishRunnerWallMaterial(material, bank, mapped)).toThrow(
+        'authored wall UVs',
+      )
+      expect(material.roughness).toBe(0.7)
+      expect(material.userData.materialFinish).toBeUndefined()
+    },
+  )
+
   it('keeps roughness and normal linear, color in sRGB, and frost mapped to one complete pane', () => {
     const { bank } = fixture()
     const porcelain = bank.create('celadon-porcelain')

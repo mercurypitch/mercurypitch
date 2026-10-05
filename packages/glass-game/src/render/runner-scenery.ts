@@ -17,6 +17,7 @@ export interface RunnerSceneryOptions {
   readonly canopyScene: Object3D
   readonly finishes?: MaterialFinishBank
   readonly reducedMotion: boolean
+  readonly skipFirstChunks?: number
 }
 
 export interface RunnerSceneryMetrics {
@@ -58,13 +59,18 @@ function maximumKindCount(
 function matricesForKind(
   windows: readonly RunnerSceneryWindow[],
   kind: RunnerSceneryKind,
+  skipFirstChunks: number,
 ) {
   return new Map(
     windows.map((window) => [
       window.key,
       Object.freeze(
         window.placements
-          .filter((placement) => placement.kind === kind)
+          .filter(
+            (placement) =>
+              placement.kind === kind &&
+              placement.chunkIndex >= skipFirstChunks,
+          )
           .map((placement) => runnerSceneryPlacementMatrix(placement)),
       ),
     ]),
@@ -115,12 +121,17 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     }[],
   ) => {
     const capacity = maximumKindCount(layout.windows, kind)
-    const matricesByWindow = matricesForKind(layout.windows, kind)
+    const matricesByWindow = matricesForKind(
+      layout.windows,
+      kind,
+      options.skipFirstChunks ?? 0,
+    )
     const warmupMatrix = [...matricesByWindow.values()].find(
       (matrices) => matrices.length > 0,
     )?.[0]
-    if (!warmupMatrix)
-      throw new Error(`Runner scenery has no authored ${kind} placement.`)
+    // An authored opening may replace every placement on a short course.
+    // Such a pool has nothing to draw or warm; its donor buffers still retire below.
+    if (!warmupMatrix) return
     const poolMeshes = parts.map(({ geometry, material }, partIndex) => {
       const mesh = configureMesh(
         new InstancedMesh(geometry, material, capacity),

@@ -14,6 +14,45 @@ import { loadAdventureMerc, mercMoveTimeScale } from './merc'
 
 afterEach(() => vi.restoreAllMocks())
 
+it('starts the runner facing the course before any animation or simulation tick', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValueOnce(gltf)
+  const actor = await loadAdventureMerc('local-test-merc.glb', {
+    initialFacingYaw: Math.PI,
+  })
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  snapshot.player.facingYaw = 0
+  try {
+    expect(actor.root.rotation.y).toBe(Math.PI)
+    const initial = structuredClone(snapshot)
+    actor.update(snapshot, 0, false)
+    expect(actor.root.rotation.y).toBe(Math.PI)
+    actor.update(snapshot, 1 / 60, false)
+    expect(actor.root.rotation.y).toBe(Math.PI)
+    expect(snapshot).toEqual(initial)
+  } finally {
+    actor.dispose()
+  }
+})
+
+it.each([undefined, NaN, Infinity, -Infinity])(
+  'retains the default initial yaw for omitted or non-finite yaw %s',
+  async (initialFacingYaw) => {
+    const gltf = await parseActualMerc()
+    vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValueOnce(gltf)
+    const actor = await loadAdventureMerc('local-test-merc.glb', {
+      initialFacingYaw,
+    })
+    try {
+      expect(actor.root.rotation.y).toBe(0)
+      actor.update(createGlassGame(GLASSWORKS).snapshot(), 0, false)
+      expect(actor.root.rotation.y).toBe(0)
+    } finally {
+      actor.dispose()
+    }
+  },
+)
+
 it('matches Merc move cadence to pace while bounding feathered and future speeds', () => {
   expect(mercMoveTimeScale(1.15)).toBeCloseTo(1)
   expect(mercMoveTimeScale(1.55)).toBeCloseTo(1.55 / 1.15)

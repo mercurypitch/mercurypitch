@@ -100,6 +100,23 @@ export function finishRunnerWallMaterial(
 ): void {
   if (!(material instanceof MeshPhysicalMaterial)) return
   if (/^W\d{2} optical glass$/.test(material.name)) {
+    if (
+      material.name === 'W06 optical glass' &&
+      material.userData.runnerOpeningFinish === 'botanical-edge-v1'
+    ) {
+      const authoredRoughness = material.roughnessMap
+      if (!mapped || authoredRoughness === null)
+        throw new Error(
+          'Botanical frost requires its authored wall UVs and roughness map.',
+        )
+      // The same wall-space image spans the intact pane and all fracture pieces.
+      // A generic tiled swatch would erase its clear center and reveal shard seams.
+      bank.apply(material, 'etched-frost-glass', false)
+      material.roughnessMap = authoredRoughness
+      material.roughness = 1
+      material.normalMap = null
+      return
+    }
     bank.apply(
       material,
       material.name.startsWith('W06')

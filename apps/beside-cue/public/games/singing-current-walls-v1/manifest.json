@@ -122,8 +122,8 @@
         "sha256": "e2aeb0ec9038f3ad3cbcc42752288aa1c3fda009367ead1c1138df10eaec3fd4",
         "triangles": 338789,
         "decodedGeometryBytes": 6425480,
-        "maxBoundErrorMeters": 1.4036632811659233e-5,
-        "maxRelativeShardVolumeError": 7.910599216731782e-5,
+        "maxBoundErrorMeters": 0.000014036632811659233,
+        "maxRelativeShardVolumeError": 0.00007910599216731782,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -245,8 +245,8 @@
         "sha256": "227e7fc6d137f2cc3b5f77fc82f74a4ec0617b954fab7837efa3fcd9c2596711",
         "triangles": 159844,
         "decodedGeometryBytes": 3412328,
-        "maxBoundErrorMeters": 1.3468332256016957e-5,
-        "maxRelativeShardVolumeError": 9.35749624359804e-5,
+        "maxBoundErrorMeters": 0.000013468332256016957,
+        "maxRelativeShardVolumeError": 0.0000935749624359804,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -436,7 +436,7 @@
         "sha256": "2de098d767bf1a6031cef7c7aafe1d75e4979b367a2f7422704c68f0ff378886",
         "triangles": 240458,
         "decodedGeometryBytes": 5153536,
-        "maxBoundErrorMeters": 1.295529189743877e-5,
+        "maxBoundErrorMeters": 0.00001295529189743877,
         "maxRelativeShardVolumeError": 0.000172520065416135,
         "compression": {
           "method": "Meshopt",
@@ -519,12 +519,12 @@
       },
       "delivery": {
         "file": "singing-current-walls-v1/w04.glb",
-        "bytes": 826000,
-        "sha256": "55a1a567e4e1d41b938b7eb6f9453da6e5913594ba45752d94782c1e2a96cec6",
-        "triangles": 172841,
-        "decodedGeometryBytes": 3258050,
-        "maxBoundErrorMeters": 2.2971138408600655e-5,
-        "maxRelativeShardVolumeError": 8.073948869590986e-5,
+        "bytes": 811456,
+        "sha256": "f6d5ed3b70c8ad88b86c3b3464bcf1017ea9dff41e063efc6818ea7dc8ff2d2d",
+        "triangles": 168526,
+        "decodedGeometryBytes": 3208640,
+        "maxBoundErrorMeters": 0,
+        "maxRelativeShardVolumeError": 0,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -533,6 +533,36 @@
           "topologyReduced": false,
           "note": "Quantization is bounded precision, not mathematically lossless."
         }
+      },
+      "runnerOpeningArt": {
+        "revision": "runner-opening-v1",
+        "archiveRelativePath": "glass-adventure/runner-opening-v1/assets/wall-candidates",
+        "sourceMasterSha256": "6eadc8320965431715a043c6f0bbc03a16514322de24973fa28a204302d1c231",
+        "candidateRawSha256": "31e0d27fefccff4179be38150519771afcc62868d954d8268cfaabef87a2889c",
+        "assembledRawSha256": "3edc483bccb06a0e5f191f5e12caafa6f60fbd37831849d12317f73f57adbb4b",
+        "recipeFiles": [
+          "build-wall-candidates.py",
+          "assemble-wall-candidates.mjs",
+          "verify-wall-candidates.mjs",
+          "install-wall-candidates.mjs"
+        ],
+        "materialIntegrationContract": {
+          "runnerOpeningFinish": "geometry-facets-v1",
+          "texturePolicy": "scalar",
+          "borderUvAbsent": true
+        },
+        "goldGeometryNormalsMatchOriginalDeliveryAtSixDecimals": true,
+        "intactAndShardGeometryUnchanged": true,
+        "authoredIntactAndShardUvMaxError": 5.960464477539063e-8,
+        "packedIntactAndShardUvMaxError": 0.000026882007472494186,
+        "addedOpticalVolumesMeters3": [
+          {
+            "node": "current_w04_frame_facets",
+            "meters3": 0.038315461473846846
+          }
+        ],
+        "embeddedImageCount": 0,
+        "imagePurpose": "None; border facets and ribbons are real geometry."
       }
     },
     {
@@ -640,8 +670,8 @@
         "sha256": "090873eed610c098f80b6c9b8e2a40c9ee41c7a764bff12329ff63455a85d56b",
         "triangles": 141302,
         "decodedGeometryBytes": 3013202,
-        "maxBoundErrorMeters": 1.770043313897851e-5,
-        "maxRelativeShardVolumeError": 8.835570209083473e-5,
+        "maxBoundErrorMeters": 0.00001770043313897851,
+        "maxRelativeShardVolumeError": 0.00008835570209083473,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -784,12 +814,12 @@
       },
       "delivery": {
         "file": "singing-current-walls-v1/w06.glb",
-        "bytes": 953444,
-        "sha256": "11f45d11d49fbdcb8b4b74e160c399794ca9e933df5c7af7300b6617ee113474",
+        "bytes": 1121432,
+        "sha256": "2ab19cb4a917dbb196bd9e7cf23ff242f1196d4861238e01088718d85b1c79c3",
         "triangles": 191885,
         "decodedGeometryBytes": 4150158,
-        "maxBoundErrorMeters": 1.7075209096995003e-5,
-        "maxRelativeShardVolumeError": 0.00010113132393318214,
+        "maxBoundErrorMeters": 0,
+        "maxRelativeShardVolumeError": 0,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -798,6 +828,33 @@
           "topologyReduced": false,
           "note": "Quantization is bounded precision, not mathematically lossless."
         }
+      },
+      "runnerOpeningArt": {
+        "revision": "runner-opening-v1",
+        "archiveRelativePath": "glass-adventure/runner-opening-v1/assets/wall-candidates",
+        "sourceMasterSha256": "5854a3118c0fd3af25901169392eb8152432802a8ec30923675c6ff233054429",
+        "candidateRawSha256": "54f50f3d07463ad015b8371b7330608a525e2aaca6513592ff45a6faa3fc15c6",
+        "assembledRawSha256": "097e4caf4a31fcb80c5e5c894ec16e94e0176935e8879ab4469ab3e3e8c44f52",
+        "recipeFiles": [
+          "build-wall-candidates.py",
+          "assemble-wall-candidates.mjs",
+          "verify-wall-candidates.mjs",
+          "install-wall-candidates.mjs"
+        ],
+        "materialIntegrationContract": {
+          "runnerOpeningFinish": "botanical-edge-v1",
+          "roughnessMapPolicy": "preserve-authored",
+          "normalMapPolicy": "flat",
+          "uvSpace": "wall-family-v1",
+          "roughnessColorSpace": "linear"
+        },
+        "goldGeometryNormalsMatchOriginalDeliveryAtSixDecimals": true,
+        "intactAndShardGeometryUnchanged": true,
+        "authoredIntactAndShardUvMaxError": 1.1920928955078125e-7,
+        "packedIntactAndShardUvMaxError": 0.00002255427439190605,
+        "addedOpticalVolumesMeters3": [],
+        "embeddedImageCount": 1,
+        "imagePurpose": "Linear botanical edge roughness; clear notation and center. No baked guide lighting."
       }
     },
     {
@@ -911,8 +968,8 @@
         "sha256": "78b82319d1e084ffaccc352290cc1fd7002e225d281b3505c7ffee9f02bb2c48",
         "triangles": 299610,
         "decodedGeometryBytes": 5833628,
-        "maxBoundErrorMeters": 2.0897089771154675e-5,
-        "maxRelativeShardVolumeError": 9.945172493766721e-5,
+        "maxBoundErrorMeters": 0.000020897089771154675,
+        "maxRelativeShardVolumeError": 0.00009945172493766721,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -1030,12 +1087,12 @@
       },
       "delivery": {
         "file": "singing-current-walls-v1/w08.glb",
-        "bytes": 1154616,
-        "sha256": "2b26329b84cb724d1a0f68aec636d62a4321fef6d6c86a5e90b15ff7af2a15a1",
-        "triangles": 233017,
-        "decodedGeometryBytes": 4461798,
-        "maxBoundErrorMeters": 2.106552014227714e-5,
-        "maxRelativeShardVolumeError": 7.8819839593966e-5,
+        "bytes": 1149704,
+        "sha256": "1c9d4e16f6fa63e0ff6acc230464a2571865569e68e08b4f264642381ce20187",
+        "triangles": 237298,
+        "decodedGeometryBytes": 4411236,
+        "maxBoundErrorMeters": 0,
+        "maxRelativeShardVolumeError": 0,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -1044,6 +1101,44 @@
           "topologyReduced": false,
           "note": "Quantization is bounded precision, not mathematically lossless."
         }
+      },
+      "runnerOpeningArt": {
+        "revision": "runner-opening-v1",
+        "archiveRelativePath": "glass-adventure/runner-opening-v1/assets/wall-candidates",
+        "sourceMasterSha256": "9fb33d4252a8c1900cddc1c9da4c0b79a92cbaadd5ab64f33d0db3885779c7f5",
+        "candidateRawSha256": "79200683be5ecd6e5731ea48a3ab1c33a43809785204ac1bff2f345cdb9c055f",
+        "assembledRawSha256": "63d768e56bb04cd98ec37731119c227ba31c4d8cfde1c8bbb124f179cb496770",
+        "recipeFiles": [
+          "build-wall-candidates.py",
+          "assemble-wall-candidates.mjs",
+          "verify-wall-candidates.mjs",
+          "install-wall-candidates.mjs"
+        ],
+        "materialIntegrationContract": {
+          "runnerOpeningFinish": "geometry-ribbons-v1",
+          "texturePolicy": "scalar",
+          "borderUvAbsent": true
+        },
+        "goldGeometryNormalsMatchOriginalDeliveryAtSixDecimals": true,
+        "intactAndShardGeometryUnchanged": true,
+        "authoredIntactAndShardUvMaxError": 1.1920928955078125e-7,
+        "packedIntactAndShardUvMaxError": 0.000016866582652652617,
+        "addedOpticalVolumesMeters3": [
+          {
+            "node": "current_w08_frame_opal_almond",
+            "meters3": 0.0006119382971921715
+          },
+          {
+            "node": "current_w08_frame_ribbon_0",
+            "meters3": 0.010755708258064081
+          },
+          {
+            "node": "current_w08_frame_ribbon_1",
+            "meters3": 0.03077688099488475
+          }
+        ],
+        "embeddedImageCount": 0,
+        "imagePurpose": "None; border facets and ribbons are real geometry."
       }
     },
     {
@@ -1182,8 +1277,8 @@
         "sha256": "aab6cbe24a8f08d971c37f192a044d374488844cb990d7d48784c202d4776a7e",
         "triangles": 254050,
         "decodedGeometryBytes": 4643286,
-        "maxBoundErrorMeters": 1.732928965292313e-5,
-        "maxRelativeShardVolumeError": 8.500013629796835e-5,
+        "maxBoundErrorMeters": 0.00001732928965292313,
+        "maxRelativeShardVolumeError": 0.00008500013629796835,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -1361,8 +1456,8 @@
         "sha256": "5a2f524effa84b25a9eb15e525408f490ffa111b60fe77bfe24a4ce46c3c8fad",
         "triangles": 367966,
         "decodedGeometryBytes": 7948720,
-        "maxBoundErrorMeters": 7.292983320361657e-6,
-        "maxRelativeShardVolumeError": 9.767451993274387e-5,
+        "maxBoundErrorMeters": 0.000007292983320361657,
+        "maxRelativeShardVolumeError": 0.00009767451993274387,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -1373,5 +1468,13 @@
         }
       }
     }
-  ]
+  ],
+  "runnerOpeningArt": {
+    "revision": "runner-opening-v1",
+    "archiveRelativePath": "glass-adventure/runner-opening-v1",
+    "walls": ["W04", "W08", "W06"],
+    "profiles": "Existing full/mobile profiles share these same deliveries; no additional profile variant or runtime ID.",
+    "geometryScope": "Authored perimeter volumes only. Gold donor, pane/shard geometry, bounds, contact and course IDs are preserved.",
+    "imageScope": "One W06 authored linear roughness map, shared by intact and shards. No guide art or baked scene lighting."
+  }
 }

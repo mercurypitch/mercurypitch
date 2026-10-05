@@ -17,11 +17,14 @@ import { precompileRendererPrograms } from './program-precompile'
 import type { GlassAssetQualityProfile } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
+import { captureRunnerImageLight,RUNNER_LOOK } from './runner-look'
+import { createRunnerOpening } from './runner-opening'
+import { RUNNER_OPENING_REPLACED_CHUNKS } from './runner-opening-layout'
 import { createRunnerScenery } from './runner-scenery'
 import { runnerSceneryFogFar } from './runner-scenery-layout'
 import { createRunnerTargets } from './runner-targets'
 import { createRunnerWorld } from './runner-world'
-import { RUNNER_MERC_VISUAL_HEIGHT_METERS, runnerCameraFollowTarget, runnerCameraPose, stepRunnerCameraFollow, } from './runner-world-layout'
+import { runnerCameraFollowTarget, runnerCameraPose, runnerMercVisualHeightMeters, stepRunnerCameraFollow, } from './runner-world-layout'
 import { fitSkyBackdrop } from './sky-backdrop'
 import { canRenderViewport } from './viewport'
 
@@ -76,7 +79,8 @@ export function createSongRunnerRenderer(
   })
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.9
+  renderer.toneMappingExposure = RUNNER_LOOK.exposure
+  scene.environmentIntensity = RUNNER_LOOK.environmentIntensity
   renderer.transmissionResolutionScale = quality.transmissionResolutionScale
   renderer.setPixelRatio(
     effectiveGlassPixelRatio(window.devicePixelRatio, quality),
@@ -99,6 +103,7 @@ export function createSongRunnerRenderer(
   let world: ReturnType<typeof createRunnerWorld> | undefined
   let targets: ReturnType<typeof createRunnerTargets> | undefined
   let scenery: ReturnType<typeof createRunnerScenery> | undefined
+  let opening: ReturnType<typeof createRunnerOpening> | undefined
   let merc: Awaited<ReturnType<typeof loadAdventureMerc>> | undefined
   let sky: Texture | undefined
   let disposed = false,
@@ -117,20 +122,37 @@ export function createSongRunnerRenderer(
     course.laneCenters,
     course.presentation.cameraProfile,
   )
-  const key = new DirectionalLight(0xffdfaa, 2.5)
-  key.position.set(-6, 9, 2)
+  const key = new DirectionalLight(
+    RUNNER_LOOK.key.color,
+    RUNNER_LOOK.key.intensity,
+  )
+  key.position.set(...RUNNER_LOOK.key.position)
   key.target.position.set(0, 0, -6)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
-  key.shadow.camera.left = key.shadow.camera.bottom = -12
-  key.shadow.camera.right = key.shadow.camera.top = 12
-  key.shadow.camera.near = 0.5
-  key.shadow.camera.far = 35
-  key.shadow.bias = -0.00015
-  key.shadow.normalBias = 0.025
-  const rim = new DirectionalLight(0x73ddd9, 0.65)
-  rim.position.set(6, 4, -9)
-  scene.add(new HemisphereLight(0xcceaff, 0x243e42, 0.7), key, key.target, rim)
+  key.shadow.camera.left = key.shadow.camera.bottom =
+    -RUNNER_LOOK.shadow.halfExtent
+  key.shadow.camera.right = key.shadow.camera.top =
+    RUNNER_LOOK.shadow.halfExtent
+  key.shadow.camera.near = RUNNER_LOOK.shadow.near
+  key.shadow.camera.far = RUNNER_LOOK.shadow.far
+  key.shadow.bias = RUNNER_LOOK.shadow.bias
+  key.shadow.normalBias = RUNNER_LOOK.shadow.normalBias
+  const rim = new DirectionalLight(
+    RUNNER_LOOK.rim.color,
+    RUNNER_LOOK.rim.intensity,
+  )
+  rim.position.set(...RUNNER_LOOK.rim.position)
+  scene.add(
+    new HemisphereLight(
+      RUNNER_LOOK.fill.sky,
+      RUNNER_LOOK.fill.ground,
+      RUNNER_LOOK.fill.intensity,
+    ),
+    key,
+    key.target,
+    rim,
+  )
 
   function applyCameraPose() {
     camera.position.set(
@@ -199,6 +221,7 @@ export function createSongRunnerRenderer(
     renderer.domElement.removeEventListener('webglcontextlost', lost)
     targets?.dispose()
     scenery?.dispose()
+    opening?.dispose()
     world?.dispose()
     merc?.dispose()
     environment?.dispose()
@@ -244,7 +267,9 @@ export function createSongRunnerRenderer(
       resize()
       environment = createMuseumEnvironment(renderer, scene)
       // Decode large bundles sequentially on phones; no all-course asset spike.
-      const nextMerc = await loadAdventureMerc(assetUrl('merc'))
+      const nextMerc = await loadAdventureMerc(assetUrl('merc'), {
+        initialFacingYaw: Math.PI,
+      })
       if (disposed) {
         nextMerc.dispose()
         return
@@ -252,7 +277,12 @@ export function createSongRunnerRenderer(
       merc = nextMerc
       // The shared loader normalizes Merc to 0.55m. Runner framing owns a
       // larger presentation scale while compiled collision remains conservative.
-      merc.root.scale.setScalar(RUNNER_MERC_VISUAL_HEIGHT_METERS / 0.55)
+      merc.root.scale.setScalar(
+        runnerMercVisualHeightMeters(
+          course.laneCenters,
+          course.presentation.cameraProfile,
+        ) / 0.55,
+      )
       scene.add(merc.root)
       const marble = await texture('floor-marble')
       marble.wrapS = marble.wrapT = RepeatWrapping
@@ -307,7 +337,21 @@ export function createSongRunnerRenderer(
         options.reducedMotion === true,
         finishes,
       )
+      const dressedOpening =
+        course.presentation.cameraProfile === 'responsive-close'
+      if (dressedOpening)
+        opening = createRunnerOpening({
+          course,
+          finishes,
+          museum,
+          garden,
+          arcade,
+          canopy,
+          marble,
+          reducedMotion: options.reducedMotion === true,
+        })
       scenery = createRunnerScenery({
+        skipFirstChunks: dressedOpening ? RUNNER_OPENING_REPLACED_CHUNKS : 0,
         course,
         finishes,
         museumScene: museum,
@@ -317,11 +361,19 @@ export function createSongRunnerRenderer(
         reducedMotion: options.reducedMotion === true,
       })
       scene.add(world.root, targets.root, scenery.root)
-      await environment.load(assetUrl('museum-environment-v2'), () => disposed)
+      if (opening) scene.add(opening.root)
       if (disposed) return
       world.update(options.initialSnapshot, 0)
       targets.update(options.initialSnapshot, 0)
       scenery.update(options.initialSnapshot, 0)
+      opening?.update(options.initialSnapshot, 0)
+      captureRunnerImageLight(
+        environment,
+        renderer,
+        scene,
+        [merc.root, targets.root],
+        quality,
+      )
       installBackdropFog(scene, sky)
       await scenery.withWarmupState(async () => {
         await precompileRendererPrograms(renderer, scene, camera, abort.signal)
@@ -359,6 +411,7 @@ export function createSongRunnerRenderer(
     world!.update(snapshot, dt)
     targets!.update(snapshot, dt)
     scenery!.update(snapshot, dt)
+    opening?.update(snapshot, dt)
     cameraFollowX = stepRunnerCameraFollow(
       cameraFollowX,
       runnerCameraFollowTarget(
@@ -419,8 +472,12 @@ export function createSongRunnerRenderer(
       residentChunks: world?.metrics().residentChunks ?? 0,
       targets: targets?.metrics().targets ?? 0,
       sceneryChunks: scenery?.metrics().residentChunks ?? 0,
-      sceneryBatches: scenery?.metrics().drawBatches ?? 0,
-      sceneryTriangles: scenery?.metrics().triangles ?? 0,
+      sceneryBatches:
+        (scenery?.metrics().drawBatches ?? 0) +
+        (opening?.metrics().drawBatches ?? 0),
+      sceneryTriangles:
+        (scenery?.metrics().triangles ?? 0) +
+        (opening?.metrics().triangles ?? 0),
     }),
     dispose,
   }
