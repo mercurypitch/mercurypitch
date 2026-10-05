@@ -41,7 +41,7 @@ import { artworkDataUrl } from './artwork-data'
 import type { Unsubscribe } from './native-calls'
 import { attempt, finiteOr, isIos, isNative, lazyListener, } from './native-calls'
 import { listenToTheWindow, tellTheWindowTheClock } from './picture-in-picture'
-import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
+import { claimCarrier, listenOnWebKit, onCarrierHolding, showOnWebKit, systemPausedTheSong, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
 export type { Unsubscribe } from './native-calls'
 export type { PictureInPictureLyrics } from './picture-in-picture'
@@ -348,7 +348,14 @@ async function metadataOf(song: NowPlaying): Promise<MetadataOptions> {
 
 async function writeNowPlaying(song: NowPlaying | null): Promise<void> {
   if (isIos()) {
-    if (song !== null) tellTheWindowTheClock(song)
+    if (song !== null) {
+      // The room hears the system's pause of the carrier as a press, so its
+      // report may not say it was the system's.
+      tellTheWindowTheClock({
+        ...song,
+        interrupted: song.interrupted === true || systemPausedTheSong(),
+      })
+    }
     await showThroughWebKit(song)
     return
   }

@@ -173,8 +173,12 @@ writes `[now playing]` lines, and the lyrics window `[lyrics window]` ones:
 | `play came as the app woke behind another app: carried out`            | A press that may have waited, but the app stayed behind: it was the singer's                                             |
 | `play from behind the app took the sound from another app`             | A play from the window or the lock screen took the sound from the app in front                                           |
 | `play pressed, but another app keeps the sound: the song stays paused` | iOS refused it: the song stays paused rather than play in silence                                                        |
+| `play pressed behind another app whose sound plays: ...`               | A play from the window behind that app's sound, refused at once: iOS would refuse it                                     |
+| `the bar is where it was: put on to 0.25 s, ...`                       | A jump to where the bar already was, moved a hair so the lock screen's counter starts again                              |
 | `the long carrier would not load; ...`                                 | This WebView refused the hour of FLAC silence, so the bar may jump to 0:00 again                                         |
 | `[lyrics window] play waited 12 s while the app slept: dropped`        | The same as the first, for the window's buttons                                                                          |
+| `[lyrics window] closing the window: another app took the sound, ...`  | The system paused the song for another app's sound; the window closed rather than offer a play that cannot work          |
+| `[lyrics window] paused for a call: the window stays`                  | The same pause, for a call: the window stays up for the song to come back                                                |
 
 The two about the sound end with WebKit's own session state before and after
 the press, as `(session inactive, then active)`.
