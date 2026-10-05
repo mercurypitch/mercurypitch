@@ -250,10 +250,10 @@ function watchThePage(): void {
     }
     pageSeen = page.visibilityState
     presses.follow()
-    // Hiding is when the lock screen and Control Center can show the song,
-    // and the song's clock is resumed soon after (ios-audio-handoff.md).
+    // Hiding is when the lock screen and Control Center can show the song;
+    // coming back is when the song's clock is cycled (audio-unlock). The
+    // clock's resume behind the app reports again (carrier-in-front.ts).
     front.now()
-    front.follow()
   })
 }
 
@@ -504,7 +504,6 @@ export function showOnWebKit(song: WebKitSong | null): void {
   // since: WebKit would refuse the bar (carrier-in-front.ts).
   if (element.paused) playCarrier(element)
   else front.now()
-  front.follow()
 }
 
 /**

@@ -2079,6 +2079,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       positionNow: () => audio.positionNow(),
       audibleElapsed: audio.audibleElapsed,
       jumps: audio.jumps,
+      clockStarts: audio.clockStarts,
       speed: audio.speed,
       duration: audio.duration,
       hasNotes: () =>

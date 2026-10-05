@@ -464,3 +464,55 @@ describe('the clock about to stop', () => {
     dispose()
   })
 })
+
+describe('the clock starting while the song plays', () => {
+  // WebKit counts a clock that starts as the sound that started last, in
+  // front of the lock screen's carrier. The room reports again on each start
+  // so the carrier is played back in front of it (carrier-in-front.ts).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  it('counts each start while the song plays', () => {
+    const { clock, controller, dispose } = harness()
+    controller.handlePlay()
+    expect(controller.clockStarts()).toBe(0)
+
+    // The way back from the background cycles the clock (audio-unlock).
+    clock.goes('suspended')
+    clock.goes('running')
+    clock.goes('suspended')
+    clock.goes('running')
+
+    expect(controller.clockStarts()).toBe(2)
+    dispose()
+  })
+
+  it('counts the resume behind the app on the trip to the background', () => {
+    const { clock, controller, dispose } = harness({
+      keepsPlayingHidden: () => true,
+    } as Partial<StemMixerAudioDeps>)
+    controller.handlePlay()
+    setPageHidden(true)
+
+    clock.goes('interrupted')
+    clock.goes('running')
+
+    expect(controller.playing()).toBe(true)
+    expect(controller.clockStarts()).toBe(1)
+    dispose()
+  })
+
+  it('counts nothing for a paused song, or for a clock that stops', () => {
+    const { clock, controller, dispose } = harness()
+    controller.handlePlay()
+    controller.handlePause()
+
+    clock.goes('suspended')
+    clock.goes('running')
+    clock.goes('interrupted')
+
+    expect(controller.clockStarts()).toBe(0)
+    dispose()
+  })
+})
