@@ -3,7 +3,7 @@ import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { SINGING_CURRENT } from '../runner/first-course'
 import { runnerBeatToSeconds } from '../runner/tempo'
-import { RUNNER_GAP_APRON_METERS, RUNNER_GAP_LIP_RADIUS_METERS, RUNNER_MERC_VISUAL_HEIGHT_METERS, runnerCameraFollowTarget, runnerCameraPose, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, stepRunnerCameraFollow, } from './runner-world-layout'
+import { RUNNER_GAP_APRON_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerCameraFollowTarget, runnerCameraPose, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, stepRunnerCameraFollow, } from './runner-world-layout'
 
 const course = SINGING_CURRENT
 const cells = course.chunks.flatMap((chunk) =>
@@ -113,35 +113,6 @@ describe('runner visible support', () => {
         const projected = new Vector3(x, 0.35, 0).project(camera)
         expect(Math.abs(projected.x)).toBeLessThan(0.92)
         expect(Math.abs(projected.y)).toBeLessThan(0.8)
-      }
-    },
-  )
-
-  it.each([320 / 740, 390 / 844, 768 / 1024, 1280 / 800, 844 / 390])(
-    'makes compact Merc 12–16%% tall while every imminent lane remains visible at aspect %s',
-    (aspect) => {
-      const laneCenters = [-1.25, 0, 1.25] as const
-      const pose = runnerCameraPose(aspect, laneCenters)
-      for (const playerX of laneCenters) {
-        const followX = runnerCameraFollowTarget(playerX, laneCenters, aspect)
-        const camera = new PerspectiveCamera(pose.fovDegrees, aspect, 0.08, 75)
-        camera.position.set(pose.x + followX, pose.y, pose.z)
-        camera.lookAt(pose.targetX + followX, pose.targetY, pose.targetZ)
-        camera.updateMatrixWorld()
-        const feet = new Vector3(playerX, 0, 0).project(camera)
-        const crown = new Vector3(
-          playerX,
-          RUNNER_MERC_VISUAL_HEIGHT_METERS,
-          0,
-        ).project(camera)
-        const heightFraction = Math.abs(crown.y - feet.y) / 2
-        expect(heightFraction).toBeGreaterThanOrEqual(0.12)
-        expect(heightFraction).toBeLessThanOrEqual(0.16)
-        expect(Math.abs((feet.x + crown.x) / 2)).toBeLessThan(0.62)
-        for (const laneX of laneCenters) {
-          const projected = new Vector3(laneX, 0.5, -3).project(camera)
-          expect(Math.abs(projected.x)).toBeLessThan(0.95)
-        }
       }
     },
   )

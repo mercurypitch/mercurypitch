@@ -38,6 +38,11 @@ export interface AdventureMercPresentation {
   turnDeltaSeconds?: number
 }
 
+export interface AdventureMercLoadOptions {
+  /** Render-only initial root yaw, before any presentation or simulation tick. */
+  readonly initialFacingYaw?: number
+}
+
 export function mercMoveTimeScale(horizontalSpeed: number): number {
   const speed =
     Number.isFinite(horizontalSpeed) && horizontalSpeed > 0
@@ -49,7 +54,10 @@ export function mercMoveTimeScale(horizontalSpeed: number): number {
   )
 }
 
-export async function loadAdventureMerc(url: string) {
+export async function loadAdventureMerc(
+  url: string,
+  options: AdventureMercLoadOptions = {},
+) {
   const asset = await loadMercModel(url, { castShadows: true })
   const body = asset.body
   const bounds = asset.bounds
@@ -60,6 +68,8 @@ export async function loadAdventureMerc(url: string) {
   const visualGroundY = bounds.min.y
   const root = new Group()
   root.name = 'adventure-merc'
+  const initialFacingYaw = options.initialFacingYaw ?? 0
+  if (Number.isFinite(initialFacingYaw)) root.rotation.y = initialFacingYaw
   root.add(body)
   const mixer = new AnimationMixer(body)
   const presentationPose = createMercPresentationPose(body)

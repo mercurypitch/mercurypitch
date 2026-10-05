@@ -179,6 +179,49 @@ function waterMeshes(root: Object3D): InstancedMesh[] {
 }
 
 describe('runner scenery', () => {
+  it('omits the replaced opening chunks without restoring them during warmup or checkpoint replay', async () => {
+    const source = donors()
+    const scenery = createRunnerScenery({
+      course: SINGING_CURRENT,
+      museumScene: source.museum,
+      gardenScene: source.garden,
+      arcadeScene: source.arcade,
+      canopyScene: source.canopy,
+      reducedMotion: false,
+      skipFirstChunks: 2,
+    })
+    scenery.update(snapshot(0))
+    expect(scenery.metrics().drawBatches).toBe(0)
+    await scenery.withWarmupState(async () => {
+      expect(instanceMeshes(scenery.root).every((mesh) => mesh.count > 0)).toBe(
+        true,
+      )
+    })
+    expect(scenery.metrics().drawBatches).toBe(0)
+    scenery.update(snapshot(105))
+    expect(scenery.metrics().drawBatches).toBeGreaterThan(0)
+    scenery.update(snapshot(0))
+    expect(scenery.metrics().drawBatches).toBe(0)
+    scenery.dispose()
+  })
+
+  it('supports courses whose authored opening replaces all scenery placements', async () => {
+    const source = donors()
+    const scenery = createRunnerScenery({
+      course: SINGING_CURRENT,
+      museumScene: source.museum,
+      gardenScene: source.garden,
+      arcadeScene: source.arcade,
+      canopyScene: source.canopy,
+      reducedMotion: false,
+      skipFirstChunks: SINGING_CURRENT.chunks.length,
+    })
+    await scenery.withWarmupState(async () => {})
+    expect(scenery.metrics().drawBatches).toBe(0)
+    expect(scenery.root.children).toHaveLength(0)
+    scenery.dispose()
+  })
+
   it('bakes finished donor child transforms once and only changes fixed pool matrices', () => {
     const { scenery } = fixture()
     const meshes = instanceMeshes(scenery.root)
