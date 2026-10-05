@@ -42,9 +42,34 @@ const LYRICS = [
 ].join('\n')
 
 async function openSongRoom(page: Page): Promise<void> {
-  await page.route('**/demo/goodbye-to-spring/*.m4a', (route) =>
-    route.fulfill({ contentType: 'audio/wav', body: TONE_WAV }),
-  )
+  // Match the bucket's range responses so lyric clicks move the media clock.
+  // See serveSeekableTone in jam-lyrics-follow.spec.ts.
+  await page.route('**/demo/goodbye-to-spring/*.m4a', async (route) => {
+    const total = TONE_WAV.byteLength
+    const asked = /bytes=(\d+)-(\d*)/.exec(
+      route.request().headers().range ?? '',
+    )
+    if (asked === null) {
+      await route.fulfill({
+        contentType: 'audio/wav',
+        headers: { 'Accept-Ranges': 'bytes' },
+        body: TONE_WAV,
+      })
+      return
+    }
+    const start = Number(asked[1])
+    const end =
+      asked[2] === '' ? total - 1 : Math.min(Number(asked[2]), total - 1)
+    await route.fulfill({
+      status: 206,
+      contentType: 'audio/wav',
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes ${start}-${end}/${total}`,
+      },
+      body: TONE_WAV.subarray(start, end + 1),
+    })
+  })
   await page.route('**/demo/goodbye-to-spring/lyrics.lrc', (route) =>
     route.fulfill({ contentType: 'text/plain', body: LYRICS }),
   )
@@ -151,8 +176,28 @@ test.describe('a song room on a desk', () => {
     await expect(page.getByLabel('Lyric position')).toHaveText(
       'Intro · 3 lines',
     )
+    // Lyrics can arrive before the media becomes seekable.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const audio = document.querySelector('audio')
+          return audio && audio.seekable.length > 0
+            ? audio.seekable.end(audio.seekable.length - 1)
+            : 0
+        }),
+      )
+      .toBeGreaterThanOrEqual(TONE_SEC)
     await page.locator('[data-line="1"]').click()
     await expect(page.getByLabel('Lyric position')).toHaveText('Line 2 / 3')
+    // The label must describe the completed media seek, not a transient store write.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const audio = document.querySelector('audio')
+          return audio?.seeking === false ? audio.currentTime : -1
+        }),
+      )
+      .toBeCloseTo(1.5, 2)
 
     // The timeline is outside the stage that owns the audio now; a press on
     // it still has to move the song.
