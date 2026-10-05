@@ -218,4 +218,91 @@ describe('camera heading intent', () => {
         }),
       ).toBeCloseTo(requestedHeading)
   })
+
+  it.each(['keyboard', 'stick'] as const)(
+    'finishes a confirmed %s corridor redirect as travel settles within the heading threshold',
+    (kind) => {
+      const intent = createCameraHeadingIntent()
+      intent.rebase(kind)
+      const requestedHeading = Math.PI / 4
+      const corridorHeading = Math.PI / 2
+      const intermediateHeading = requestedHeading + 0.19
+      const moving = {
+        ...SAMPLE,
+        allowForwardDiagonalFollow: true,
+        elapsedSeconds: 0.4,
+        keyboardHeading: requestedHeading,
+        effectiveHeading: requestedHeading,
+        facingYaw: requestedHeading,
+      }
+      expect(intent.target(moving)).toBeCloseTo(requestedHeading)
+      const redirected = {
+        ...moving,
+        elapsedSeconds: 0.1,
+        displacementDistance: MOVEMENT.radius,
+        effectiveHeading: corridorHeading,
+        facingYaw: corridorHeading,
+      }
+      expect(intent.target(redirected)).toBeCloseTo(corridorHeading)
+      expect(
+        intent.target({
+          ...redirected,
+          effectiveHeading: intermediateHeading,
+          facingYaw: intermediateHeading,
+        }),
+      ).toBeCloseTo(intermediateHeading)
+
+      const settling = {
+        ...redirected,
+        displacementDistance: MOVEMENT.radius / 2,
+        effectiveHeading: requestedHeading,
+        facingYaw: requestedHeading,
+      }
+      expect(intent.target(settling)).toBeCloseTo(intermediateHeading)
+      // A near-heading sample cannot spend stopped time to finish the redirect.
+      expect(
+        intent.target({
+          ...settling,
+          displacementDistance: 0,
+          elapsedSeconds: 1,
+        }),
+      ).toBeCloseTo(intermediateHeading)
+      expect(intent.target(settling)).toBeCloseTo(requestedHeading)
+    },
+  )
+
+  it('retains the blocked-heading dwell while a confirmed redirect settles nearby', () => {
+    const intent = createCameraHeadingIntent()
+    intent.rebase('keyboard')
+    const requestedHeading = Math.PI / 4
+    const corridorHeading = Math.PI / 2
+    const confirmed = {
+      ...SAMPLE,
+      allowForwardDiagonalFollow: true,
+      elapsedSeconds: 0.4,
+      keyboardHeading: requestedHeading,
+    }
+    expect(intent.target(confirmed)).toBeCloseTo(requestedHeading)
+    expect(
+      intent.target({
+        ...confirmed,
+        displacementDistance: MOVEMENT.radius,
+        effectiveHeading: corridorHeading,
+      }),
+    ).toBeCloseTo(corridorHeading)
+
+    const blocked = {
+      ...confirmed,
+      elapsedSeconds: 0.2,
+      moving: false,
+      effectiveHeading: null,
+      facingYaw: corridorHeading - 0.2,
+    }
+    expect(intent.target(blocked)).toBeCloseTo(corridorHeading)
+    expect(
+      intent.target({ ...blocked, facingYaw: corridorHeading + 0.4 }),
+    ).toBeCloseTo(corridorHeading)
+    expect(intent.target(blocked)).toBeCloseTo(corridorHeading)
+    expect(intent.target(blocked)).toBeCloseTo(blocked.facingYaw)
+  })
 })

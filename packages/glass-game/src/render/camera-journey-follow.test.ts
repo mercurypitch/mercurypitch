@@ -47,16 +47,18 @@ describe('Journey camera follow from real movement contacts', () => {
       const input = createAdventureInput()
       camera.update(game.snapshot(), frame)
       camera.recenter()
-      const step = () => {
+      const step = (dt = frame) => {
         camera.setMovementActive(input.hasMovementIntent())
         const changed = input.consumeMovementReferenceChange()
         if (changed !== null)
           camera.rebaseMovement(changed, input.desiredTravelYaw(0) ?? undefined)
-        game.step(input.read(camera.movementYaw()), frame)
-        camera.update(game.snapshot(), frame)
+        game.step(input.read(camera.movementYaw()), dt)
+        camera.update(game.snapshot(), dt)
       }
       input.key(keyboardEvent('KeyW'), true)
-      for (let elapsed = 0; elapsed < 0.05; elapsed += frame) step()
+      // Keep the authored lead-in at 50 ms even when a render frame is longer.
+      for (let elapsed = 0; elapsed < 0.05 - 1e-9; elapsed += frame)
+        step(Math.min(frame, 0.05 - elapsed))
       input.key(keyboardEvent('KeyD'), true)
       step()
       const heldBasis = camera.movementYaw()

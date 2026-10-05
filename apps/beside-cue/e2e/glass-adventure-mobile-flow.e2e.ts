@@ -203,8 +203,9 @@ async function driveFixedTouchUntilAction(
   offset: { x: number; y: number },
   actionVisible: boolean,
 ): Promise<TouchTraceSample[]> {
+  // Include travel in the first simulated frame, before the action changes.
+  const trace: TouchTraceSample[] = [await touchSample(page)]
   const { cdp, center } = await beginStick(page, context)
-  const trace: TouchTraceSample[] = []
   try {
     await moveStick(cdp, center, offset)
     for (let frame = 0; frame < 60; frame++) {

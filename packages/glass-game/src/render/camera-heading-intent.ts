@@ -42,6 +42,7 @@ export function createCameraHeadingIntent() {
   let stickHeading: number | null = null
   let stickFollowHeading: number | null = null
   let keyboardHeading: number | null = null
+  let followingEffectiveHeading = false
   let effectiveHeadingCandidate: number | null = null
   let effectiveHeadingDistance = 0
   let effectiveHeadingSeconds = 0
@@ -86,6 +87,7 @@ export function createCameraHeadingIntent() {
       stickHeading = null
       stickFollowHeading = null
       keyboardHeading = null
+      followingEffectiveHeading = false
       resetEffectiveHeading()
     },
     reset() {
@@ -95,6 +97,7 @@ export function createCameraHeadingIntent() {
       stickHeading = null
       stickFollowHeading = null
       keyboardHeading = null
+      followingEffectiveHeading = false
       resetEffectiveHeading()
     },
     target(sample: CameraHeadingIntentSample): number | null {
@@ -115,8 +118,9 @@ export function createCameraHeadingIntent() {
             stickFollowHeading ?? sample.movementReferenceYaw
           if (
             effectiveHeading === null ||
-            Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
-              ENCLOSED_DIAGONAL_HEADING_MINIMUM
+            (!followingEffectiveHeading &&
+              Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
+                ENCLOSED_DIAGONAL_HEADING_MINIMUM)
           ) {
             resetEffectiveHeading()
             return stickFollowHeading
@@ -129,6 +133,7 @@ export function createCameraHeadingIntent() {
             )
           ) {
             stickFollowHeading = effectiveHeading
+            followingEffectiveHeading = true
             resetEffectiveHeading()
           }
           return stickFollowHeading
@@ -170,8 +175,9 @@ export function createCameraHeadingIntent() {
         if (
           sample.allowForwardDiagonalFollow !== true ||
           effectiveHeading === null ||
-          Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
-            ENCLOSED_DIAGONAL_HEADING_MINIMUM
+          (!followingEffectiveHeading &&
+            Math.abs(shortestAngleDelta(currentHeading, effectiveHeading)) <
+              ENCLOSED_DIAGONAL_HEADING_MINIMUM)
         ) {
           resetEffectiveHeading()
           return currentHeading
@@ -184,6 +190,10 @@ export function createCameraHeadingIntent() {
           )
         ) {
           keyboardHeading = effectiveHeading
+          // A render sample can confirm an intermediate heading while Merc
+          // accelerates out of a wall slide. Let that physical redirect settle
+          // below the initial turn threshold, with the same travel/dwell guard.
+          followingEffectiveHeading = true
           resetEffectiveHeading()
         }
         return keyboardHeading ?? currentHeading

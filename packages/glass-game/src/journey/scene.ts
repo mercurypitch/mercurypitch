@@ -190,7 +190,13 @@ function buildMuseumJourneyScene(
       globalThis.navigator?.userAgent ?? '',
     ),
   })
-  const pixelRatio = effectiveGlassPixelRatio(window.devicePixelRatio, quality)
+  const pixelRatio = effectiveGlassPixelRatio(window.devicePixelRatio, {
+    ...quality,
+    // Retain the map's established desktop detail; the common mobile policy
+    // and its slow-frame safeguard are the device stability change here.
+    maximumPixelRatio:
+      quality.profile === 'high' ? 1.8 : quality.maximumPixelRatio,
+  })
   const shadowCadence = createShadowUpdateCadence(quality.shadowFrameInterval)
   const performanceGovernor = createRenderPerformanceGovernor(
     'auto',
