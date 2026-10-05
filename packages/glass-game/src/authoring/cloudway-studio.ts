@@ -1,5 +1,6 @@
 // Cloudway studio adapter — bounded external documents use the game's authoritative compiler.
 
+import { CLOUDWAY_FOG_DEFAULTS, CLOUDWAY_FOG_LIMITS, } from '../content/cloudway-visibility.ts'
 import { crystalInteriorStudySource } from '../content/crystal-interior-study.ts'
 import promenade from '../content/data/cloudway-crystal-promenade.course.json' with { type: 'json' }
 import thawing from '../content/data/cloudway-thawing-song.course.json' with { type: 'json' }
@@ -39,6 +40,11 @@ export function cloudwayStudioCatalog() {
   return structuredClone({
     schema: 'mercurypitch.cloudway-studio-catalog',
     version: 1,
+    courseSchemaVersions: [2, 3, 4],
+    visibility: {
+      defaults: CLOUDWAY_FOG_DEFAULTS,
+      limits: CLOUDWAY_FOG_LIMITS,
+    },
     platforms: Object.values(profiles.platforms),
     barriers: Object.values(profiles.barriers),
     encounterVariants: profiles.encounterVariants,

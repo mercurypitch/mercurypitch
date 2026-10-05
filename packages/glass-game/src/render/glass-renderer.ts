@@ -14,7 +14,7 @@ import { createAtmosphere } from './atmosphere'
 import { installBackdropFog } from './backdrop-fog'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
-import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR, isCloudwayLevel, } from './cloudway-scene'
+import { CLOUDWAY_FOG_COLOR, isCloudwayLevel, resolveCloudwayFog, } from './cloudway-scene'
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
@@ -190,8 +190,9 @@ function createGlassRendererInstance(
     releaseDecodedAssetImages()
   })
   const scene = new Scene()
+  const cloudwayFog = resolveCloudwayFog(level)
   scene.fog = isCloudwayLevel(level)
-    ? new Fog(CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_NEAR, CLOUDWAY_FOG_FAR)
+    ? new Fog(CLOUDWAY_FOG_COLOR, cloudwayFog.nearMeters, cloudwayFog.farMeters)
     : new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level, {
     reducedMotion: options.reducedMotion,

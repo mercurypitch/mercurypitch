@@ -5,7 +5,8 @@ import { Box3, BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStanda
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_PLATFORM_SUPPORT, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
 import type { BreakableSnapshot, GameSnapshot, LevelDefinition, } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
-import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
+import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
+import { resolveCloudwayFog } from './cloudway-scene'
 import { removeKitGeometry } from './kit-instance'
 import type { LivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
@@ -240,6 +241,8 @@ export function createLivingCrystalPlatformRenderer(
   const root = new Group()
   root.name = 'living-crystal-platform-art'
   const viewSelector = createCloudwayPlatformViewSelector({
+    maxDistance:
+      resolveCloudwayFog(level).farMeters + CLOUDWAY_PLATFORM_FOG_CULL_MARGIN,
     shadowDirection: { x: 0, y: -1, z: 0 },
     shadowReceiverMinimumY: 0,
   })

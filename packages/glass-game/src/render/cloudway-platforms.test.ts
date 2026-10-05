@@ -272,6 +272,51 @@ describe('Cloudway platform renderer', () => {
     disposeMaterials(Object.values(palette))
   })
 
+  it.each([14, 30])(
+    'uses the authored %sm fade for actual donor batches',
+    (farMeters) => {
+      const palette = materials()
+      const library = createMaterialLibrary()
+      const source = donorScene()
+      const platform = {
+        ...CLOUDWAY_GLASS_RIBBON.platforms[0]!,
+        minX: -1,
+        maxX: 1,
+        minZ: 22,
+        maxZ: 24,
+      }
+      const level: LevelDefinition = {
+        ...CLOUDWAY_GLASS_RIBBON,
+        platforms: [platform],
+        presentation: {
+          ...CLOUDWAY_GLASS_RIBBON.presentation!,
+          fog: { kind: 'linear', nearMeters: 9, farMeters },
+        },
+      }
+      const root = new Group()
+      const renderer = createCloudwayPlatformRenderer(
+        level,
+        root,
+        floors(level),
+        palette,
+        library,
+      )
+      renderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+      renderer.update(snapshot(platformStates(), [platform.id]))
+      renderer.cullForView(
+        cameraLookingAt({ x: 0, y: 2, z: 0 }, { x: 0, y: 0, z: 22 }),
+      )
+      expect(instance(root, 'cloudway-stable-Cloudway_Marble__Top').count).toBe(
+        farMeters === 14 ? 0 : 1,
+      )
+      renderer.dispose()
+      disposeObject(root, library.materials)
+      disposeObject(source)
+      library.dispose()
+      disposeMaterials(Object.values(palette))
+    },
+  )
+
   it('uses complete ornament bounds and the live moving offset at the fog edge', () => {
     const palette = materials()
     const library = createMaterialLibrary()

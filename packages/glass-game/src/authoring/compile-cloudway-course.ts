@@ -6,6 +6,7 @@ import type { CloudwayCourseProfileCatalog } from './cloudway-course-profiles'
 import type { CloudwayCourseDocumentSource } from './cloudway-course-source'
 import { array, bounds3, CLOUDWAY_GAP_TOLERANCE, exactKeys, fail, finite, identifierSet, positive, record, string, stringArray, vec3, } from './cloudway-course-validation.ts'
 import { compileEncounter, requireKnownReferences, validateEncounterGraph, validateStaticAnchor, } from './compile-cloudway-encounters.ts'
+import { compileCloudwayFog } from './compile-cloudway-fog.ts'
 import { compileCloudwayInteriors } from './compile-cloudway-interiors.ts'
 import { compileCloudwayMelodyLesson, validateMelodyRoute, } from './compile-cloudway-melody.ts'
 import { compileGap, compilePlatform } from './compile-cloudway-platforms.ts'
@@ -62,7 +63,7 @@ function compileCourse(
   raw: unknown,
   catalog: CloudwayCourseProfileCatalog,
   path: string,
-  schemaVersion: 2 | 3,
+  schemaVersion: 2 | 3 | 4,
 ): LevelDefinition {
   const source = record(raw, path)
   exactKeys(
@@ -84,7 +85,7 @@ function compileCourse(
       'fallBelow',
       'presentation',
     ],
-    schemaVersion === 3 ? ['melodyLesson', 'rewards'] : ['rewards'],
+    schemaVersion >= 3 ? ['melodyLesson', 'rewards'] : ['rewards'],
   )
 
   const platformValues = array(source.platforms, `${path}.platforms`).map(
@@ -341,8 +342,9 @@ function compileCourse(
     presentation,
     `${path}.presentation`,
     ['worldBounds', 'lightBounds', 'audioSceneId'],
-    ['crystalInteriors'],
+    schemaVersion === 4 ? ['crystalInteriors', 'fog'] : ['crystalInteriors'],
   )
+  const fog = compileCloudwayFog(presentation.fog, `${path}.presentation.fog`)
   const audioSceneId = presentation.audioSceneId
   if (
     audioSceneId !== 'museum' &&
@@ -426,6 +428,7 @@ function compileCourse(
     solids: encounterValues.flatMap((encounter) => encounter.solids),
     presentation: {
       theme: 'cloudway',
+      ...(fog === undefined ? {} : { fog }),
       worldBounds,
       lightBounds,
       rooms: [],
@@ -456,8 +459,12 @@ export function compileCloudwayCourseDocument(
   exactKeys(document, 'courseDocument', ['schema', 'schemaVersion', 'courses'])
   if (document.schema !== COURSE_SCHEMA)
     fail('courseDocument.schema', `must be "${COURSE_SCHEMA}".`)
-  if (document.schemaVersion !== 2 && document.schemaVersion !== 3)
-    fail('courseDocument.schemaVersion', 'must be 2 or 3.')
+  if (
+    document.schemaVersion !== 2 &&
+    document.schemaVersion !== 3 &&
+    document.schemaVersion !== 4
+  )
+    fail('courseDocument.schemaVersion', 'must be 2, 3 or 4.')
   const schemaVersion = document.schemaVersion
   const courses = array(document.courses, 'courseDocument.courses').map(
     (course, index) =>

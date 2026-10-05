@@ -1,10 +1,10 @@
 // Cloudway course source — JSON-safe placements for measured linear routes.
 
-import type { Bounds3, CrystalInteriorPresentationDefinition, PlatformRenderQuarterTurns, Vec3, } from '../contracts'
+import type { Bounds3, CrystalInteriorPresentationDefinition, LevelFogDefinition, PlatformRenderQuarterTurns, Vec3, } from '../contracts'
 
 export interface CloudwayCourseDocumentSource {
   schema: 'mercurypitch.cloudway-course'
-  schemaVersion: 2 | 3
+  schemaVersion: 2 | 3 | 4
   courses: readonly CloudwayCourseSource[]
 }
 
@@ -39,6 +39,7 @@ export interface CloudwayCourseSource {
   melodyLesson?: CloudwayMelodyLessonSource
   fallBelow: number
   presentation: {
+    fog?: LevelFogDefinition
     worldBounds: Bounds3
     lightBounds: Bounds3
     audioSceneId: 'museum' | 'garden' | 'gallery'

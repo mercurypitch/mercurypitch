@@ -17,7 +17,7 @@ const stationHold = {
 
 export function compileCloudwayChallenge(
   source: Record<string, unknown>,
-  schemaVersion: 2 | 3,
+  schemaVersion: 2 | 3 | 4,
   path: string,
 ): ChallengeDefinition {
   if (schemaVersion === 2) {
