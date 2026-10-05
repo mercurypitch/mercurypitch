@@ -585,15 +585,6 @@ function askForPlayback(): (() => void) | null {
   }
 }
 
-/**
- * Whether the system paused the song on the lock screen, for another app's
- * sound or a call, and has not played it again. The lyrics window hears it
- * with the clock (platform.ts).
- */
-export function systemPausedTheSong(): boolean {
-  return systemPaused
-}
-
 export interface TakeTheSoundOptions {
   /** iOS's word, at the press, that another app's sound is playing. */
   readonly otherAudio?: boolean

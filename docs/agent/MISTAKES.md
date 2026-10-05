@@ -357,8 +357,15 @@ must import the inventory in a child Node process as well as through Vitest.
 
 **Symptom:** with YouTube playing, play in our lyrics window ran the lyrics on in silence, and YouTube kept playing (builds 527 and 549).
 **Cause:** in 527 the window turned its clock on the press, and after another app took the sound, WebKit activates the page's session as ambient, which mixes. In 549 the page read the carrier's play as iOS's yes, but WebKit asks iOS for the sound only once something of the page already plays (`PlatformMediaSessionManager::maybeActivateAudioSession`). With the song paused, the carrier started without asking; the song's clock asked next and was refused, because iOS does not let an app in the background take the sound from one that plays.
-**Rule:** native controls wait for the page's report. Behind another app whose sound plays now (the window's `otherAudio`), say no at once, and close the window for that app's sound (never for a call). A play from behind the app after the other app went quiet sets `navigator.audioSession.type = 'playback'` for the moment the carrier starts and puts the old type back. A carrier still paused means refused; one that plays is not proof of a yes.
-**See:** `takeTheSound` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `closeIfTakenOver` in `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`.
+**Rule:** native controls wait for the page's report. Behind another app whose sound plays now (the window's `otherAudio`), say no at once. A play from behind the app after the other app went quiet sets `navigator.audioSession.type = 'playback'` for the moment the carrier starts and puts the old type back. A carrier still paused means refused; one that plays is not proof of a yes.
+**See:** `takeTheSound` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`.
+
+### Read "another app's sound" as possibly the song itself (iOS)
+
+**Symptom:** the `[audio session]` log showed "another app's sound started; other audio playing" with no other app open (build 556).
+**Cause:** WebKit plays in its own process. The app's own `AVAudioSession` hears it as another app: `isOtherAudioPlaying` and the silence hint turn on with each play of ours and off with each pause.
+**Rule:** a line that follows a play or a pause of ours is the song. Never read `isOtherAudioPlaying` as proof of another app; it is true while our own song plays. And do not plan on closing the lyrics window from the background: iOS ignored `stopPictureInPicture()` there (the log shows the stop asked for and no `closing` from AVKit).
+**See:** `AudioSessionWatch` in `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift`, `docs/plans/mobile-native/ios-audio-handoff.md` (Build 556).
 
 ### Tell the lock screen a new place, not the same one twice (iOS)
 

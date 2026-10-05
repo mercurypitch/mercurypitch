@@ -1,7 +1,6 @@
 import AVFoundation
 import AVKit
 import AudioSessionKit
-import CallKit
 import CoreMedia
 import UIKit
 
@@ -38,8 +37,6 @@ final class LyricsWindow: NSObject {
         var position: Double = 0
         var rate: Double = 1
         var duration: Double = 0
-        /// Paused by the system: another app's sound, or a call.
-        var interrupted = false
         /// When the report came, on the host clock.
         var at: Double = CACurrentMediaTime()
 
@@ -70,10 +67,6 @@ final class LyricsWindow: NSObject {
     private var timebase: CMTimebase?
     private var controller: AVPictureInPictureController?
     private var possibleWatch: NSKeyValueObservation?
-    /// The phone's calls: a call's pause leaves the window up.
-    private let calls = CXCallObserver()
-    /// A second look at a system pause, for another app's sound that starts late.
-    private var takeoverLook: DispatchWorkItem?
     private var pump: DispatchSourceTimer?
     private var framesPerSecond = 0
 
@@ -135,29 +128,19 @@ final class LyricsWindow: NSObject {
         arm()
     }
 
-    /// A Now Playing report: where the song is now, and whether the system
-    /// paused it.
-    func setClock(playing: Bool, position: Double, rate: Double, duration: Double, interrupted: Bool) {
-        clock = Clock(
-            playing: playing,
-            position: position,
-            rate: rate,
-            duration: duration,
-            interrupted: !playing && interrupted
-        )
+    /// A Now Playing report: where the song is now.
+    func setClock(playing: Bool, position: Double, rate: Double, duration: Double) {
+        clock = Clock(playing: playing, position: position, rate: rate, duration: duration)
         setTimebase()
         controller?.invalidatePlaybackState()
         say(String(
             format: "clock: %@ at %.2f s of %.0f, rate %.2f",
-            playing ? "playing" : clock.interrupted ? "paused by the system" : "paused",
+            playing ? "playing" : "paused",
             position,
             duration,
             rate
         ))
         if !open { drawFrame() }
-        takeoverLook?.cancel()
-        takeoverLook = nil
-        if clock.interrupted { closeIfTakenOver(lookAgain: true) }
     }
 
     // MARK: - The layer and the controller
@@ -333,39 +316,6 @@ final class LyricsWindow: NSObject {
             )
         }
         return sample
-    }
-
-    // MARK: - Another app's sound
-
-    /// The song paused by the system for another app's sound, with the app
-    /// behind it: iOS does not let an app in the background take the sound
-    /// from one that plays, so a play in the window could only run the lyrics
-    /// in silence (build 549). The window closes, as the song left. A call is
-    /// different: the song can come back after it, so the window stays. So
-    /// does a system pause with no other app's sound, a moment later too.
-    private func closeIfTakenOver(lookAgain: Bool) {
-        guard let controller, controller.isPictureInPictureActive else { return }
-        if calls.calls.contains(where: { !$0.hasEnded }) {
-            say("paused for a call: the window stays")
-            return
-        }
-        guard AVAudioSession.sharedInstance().isOtherAudioPlaying else {
-            guard lookAgain else {
-                say("paused by the system, and no other app's sound plays: the window stays")
-                return
-            }
-            let look = DispatchWorkItem { [weak self] in
-                guard let self else { return }
-                self.takeoverLook = nil
-                guard self.clock.interrupted else { return }
-                self.closeIfTakenOver(lookAgain: false)
-            }
-            takeoverLook = look
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: look)
-            return
-        }
-        say("closing the window: another app took the sound, and a play here cannot take it back; \(session())")
-        controller.stopPictureInPicture()
     }
 
     // MARK: - The app coming and going

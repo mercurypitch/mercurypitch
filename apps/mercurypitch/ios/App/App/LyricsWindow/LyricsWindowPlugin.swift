@@ -93,15 +93,8 @@ public class LyricsWindowPlugin: CAPPlugin, CAPBridgedPlugin {
         let position = call.getDouble("position") ?? 0
         let rate = call.getDouble("rate") ?? 1
         let duration = call.getDouble("duration") ?? 0
-        let interrupted = call.getBool("interrupted") ?? false
         DispatchQueue.main.async { [weak self] in
-            self?.window?.setClock(
-                playing: playing,
-                position: position,
-                rate: rate,
-                duration: duration,
-                interrupted: interrupted
-            )
+            self?.window?.setClock(playing: playing, position: position, rate: rate, duration: duration)
             call.resolve()
         }
     }

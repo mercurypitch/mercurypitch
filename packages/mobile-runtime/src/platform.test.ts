@@ -1162,77 +1162,10 @@ describe('on a phone', () => {
       await platform.setNowPlaying(null)
 
       expect(pictureInPicture.setClock.mock.calls).toEqual([
-        [
-          {
-            playing: true,
-            position: 121,
-            rate: 1,
-            duration: 246,
-            interrupted: false,
-          },
-        ],
-        [
-          {
-            playing: false,
-            position: 246,
-            rate: 0.75,
-            duration: 246,
-            interrupted: false,
-          },
-        ],
-        [
-          {
-            playing: true,
-            position: 0,
-            rate: 1,
-            duration: 0,
-            interrupted: false,
-          },
-        ],
+        [{ playing: true, position: 121, rate: 1, duration: 246 }],
+        [{ playing: false, position: 246, rate: 0.75, duration: 246 }],
+        [{ playing: true, position: 0, rate: 1, duration: 0 }],
       ])
-    })
-
-    it('tells the lyrics window when the system paused the song', async () => {
-      // Behind another app's sound the window closes (LyricsWindow.swift).
-      const platform = await loadOnIos()
-      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
-      const interrupted = (): unknown[] =>
-        pictureInPicture.setClock.mock.calls.map(
-          ([clock]) => (clock as { interrupted: boolean }).interrupted,
-        )
-      platform.onMediaAction(vi.fn())
-
-      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
-      await platform.setNowPlaying({
-        title: 'Harbour Lights',
-        playing: false,
-        interrupted: true,
-      })
-      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
-      // The carrier's pause came first: the room heard it as a press.
-      carrier.paused = true
-      carrier.dispatchEvent(new Event('pause'))
-      await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
-      // The singer's own pause is not the system's.
-      await platform.setNowPlaying({ title: 'Harbour Lights', playing: true })
-      await platform.setNowPlaying({ title: 'Harbour Lights', playing: false })
-
-      expect(interrupted()).toEqual([false, true, false, true, false, false])
-    })
-
-    it('never tells the window a playing song was paused by the system', async () => {
-      const platform = await loadOnIos()
-      pictureInPicture.addListener.mockResolvedValue(listenerHandle())
-
-      await platform.setNowPlaying({
-        title: 'Harbour Lights',
-        playing: true,
-        interrupted: true,
-      })
-
-      expect(pictureInPicture.setClock).toHaveBeenLastCalledWith(
-        expect.objectContaining({ playing: true, interrupted: false }),
-      )
     })
 
     it("hears the lyrics window's play and pause as a lock-screen press", async () => {
