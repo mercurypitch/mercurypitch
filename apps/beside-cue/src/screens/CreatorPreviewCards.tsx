@@ -5,6 +5,7 @@
 import { For } from 'solid-js'
 
 export type CreatorPreviewPick =
+  | 'singing-current'
   | 'creator-gallery'
   | 'echo-curator'
   | 'songbook'
@@ -19,6 +20,12 @@ const CREATOR_PREVIEWS: readonly {
   name: string
   blurb: string
 }[] = [
+  {
+    id: 'singing-current',
+    name: 'The Singing Current',
+    blurb:
+      'Sing through a floating glassway. Steer around obstacles, jump the gaps and carry the melody onward.',
+  },
   {
     id: 'songbook',
     name: 'Merc’s little songbook',

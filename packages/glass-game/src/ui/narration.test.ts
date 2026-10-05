@@ -104,6 +104,50 @@ describe('adventure narration', () => {
     expect(audio.play).toHaveBeenCalledTimes(2)
   })
 
+  it('retries an unstarted welcome on a later gesture after capture is cancelled', async () => {
+    const { audio, subject } = fixture()
+    const pending = deferred()
+    vi.mocked(audio.play).mockReturnValueOnce(pending.promise)
+    subject.welcomeGesture()
+    await subject.silenceForVoice()
+    pending.resolve(false)
+    await pending.promise
+    subject.welcomeGesture()
+    expect(audio.play).toHaveBeenCalledTimes(1)
+
+    // The visit pauses narration before cancelling the capture session.
+    subject.pause()
+    subject.releaseVoice()
+    expect(audio.play).toHaveBeenCalledTimes(1)
+    subject.welcomeGesture()
+    await Promise.resolve()
+    subject.welcomeGesture()
+    expect(audio.play).toHaveBeenCalledTimes(2)
+    expect(audio.play).toHaveBeenLastCalledWith('tutorial-note')
+  })
+
+  it('keeps an already started welcome consumed after capture is cancelled', async () => {
+    const { audio, subject } = fixture()
+    subject.welcomeGesture()
+    await Promise.resolve()
+    await subject.silenceForVoice()
+    subject.pause()
+    subject.releaseVoice()
+    subject.welcomeGesture()
+    expect(audio.play).toHaveBeenCalledExactlyOnceWith('tutorial-note')
+  })
+
+  it('lets a break reaction retire the unplayed welcome even if that reaction cannot start', async () => {
+    const { audio, subject } = fixture()
+    await subject.silenceForVoice()
+    subject.releaseVoice()
+    vi.mocked(audio.play).mockResolvedValueOnce(false)
+    subject.breakCompleted('path-opened')
+    await Promise.resolve()
+    subject.welcomeGesture()
+    expect(audio.play).toHaveBeenCalledExactlyOnceWith('required-break')
+  })
+
   it('maps real access outcomes and neutral celebrations to approved cues', () => {
     const { audio, subject } = fixture()
     expect(subject.breakCompleted('path-opened')).toEqual({
@@ -161,7 +205,7 @@ describe('adventure narration', () => {
     expect(audio.play).toHaveBeenCalledExactlyOnceWith('optional-break')
   })
 
-  it('consumes a pending welcome before capture so it cannot replace the success cue', async () => {
+  it('retires a cancelled welcome when success supplies the next cue', async () => {
     const { audio, subject } = fixture()
     const stale = deferred()
     vi.mocked(audio.play).mockReturnValueOnce(stale.promise)

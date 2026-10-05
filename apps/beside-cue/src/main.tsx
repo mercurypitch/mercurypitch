@@ -15,6 +15,12 @@ import { createDefaultAppServices } from './app-services'
 import { isDevSeedEnabled } from './dev/dev-seed-flag'
 import { isOnboardingReviewEnabled } from './onboarding-review'
 
+// Keep this literal gate so release bundles contain no console implementation.
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+  const { setupGameDiagnostics } = await import('./dev/game-diagnostics')
+  setupGameDiagnostics()
+}
+
 const root = document.querySelector<HTMLDivElement>('#root')
 
 if (root === null) {

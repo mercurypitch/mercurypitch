@@ -3,6 +3,7 @@ import { createSignal, onCleanup, Show, untrack } from 'solid-js'
 import { createBrowserRunnerHost, resolveRunnerComfortableMidi, runnerComfortableMidiRange, } from '../browser/runner-host'
 import { createBrowserRunnerSession } from '../browser/runner-session'
 import type { GlassGameHost, GlassMicrophoneInput } from '../host'
+import { reportGraphicsFailure, reportGraphicsLoad, } from '../render/graphics-diagnostics'
 import type { GlassAssetQualityProfile } from '../render/render-quality'
 import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
@@ -109,15 +110,28 @@ function RunnerVisit(props: {
             state.phase,
           )
         )
-          failed('The view is unavailable. Retry to return to your checkpoint.')
-      } catch {
-        failed('The graphics stopped. Retry to return to your checkpoint.')
+          failed(
+            'The view is unavailable. Retry to return to your checkpoint.',
+            'frame',
+            new Error('Renderer returned no usable frame'),
+          )
+      } catch (cause) {
+        failed(
+          'The graphics stopped. Retry to return to your checkpoint.',
+          'frame',
+          cause,
+        )
       }
     }),
   )
 
-  function failed(message: string) {
+  function failed(
+    message: string,
+    stage: 'frame' | 'context-lost' | 'asset-load',
+    cause: unknown,
+  ) {
     if (disposed) return
+    reportGraphicsFailure('singing-current', stage, cause)
     generation++
     const old = renderer
     renderer = undefined
@@ -131,6 +145,7 @@ function RunnerVisit(props: {
   async function load() {
     if (!container || disposed) return
     const current = ++generation
+    reportGraphicsLoad('singing-current', props.course.id, 'loading')
     renderer?.dispose()
     renderer = undefined
     session.setPresentationReady(false)
@@ -150,6 +165,8 @@ function RunnerVisit(props: {
             if (current === generation)
               failed(
                 'The graphics stopped. Retry to return to your checkpoint.',
+                'context-lost',
+                new Error('WebGL context lost'),
               )
           },
         },
@@ -163,10 +180,15 @@ function RunnerVisit(props: {
       if (!next.render(session.state().game, 0))
         throw new Error('No usable first frame')
       session.setPresentationReady(true)
+      reportGraphicsLoad('singing-current', props.course.id, 'ready')
       setLoading(false)
-    } catch {
+    } catch (cause) {
       if (!disposed && current === generation)
-        failed('The scene could not load. Check your connection and retry.')
+        failed(
+          'The scene could not load. Check your connection and retry.',
+          'asset-load',
+          cause,
+        )
     }
   }
   const input = untrack(() => props.host.microphoneInput)

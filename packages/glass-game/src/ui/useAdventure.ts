@@ -9,6 +9,7 @@ import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
+import { reportGraphicsLoad } from '../render/graphics-diagnostics'
 import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, } from '../render/render-quality'
 import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
@@ -538,6 +539,7 @@ export function useAdventure(
     if (!alive) return
     prepareForLoading()
     const generation = loading.beginAttempt()
+    reportGraphicsLoad('gallery', level.id, 'loading')
     const previous = renderer
     renderer = null
     rendererGeneration = 0
@@ -725,6 +727,8 @@ export function useAdventure(
           }
           if (rendered && activeRenderer === renderer && needsStableFrame) {
             loading.frameRendered(rendererGeneration)
+            if (loading.state().phase === 'ready')
+              reportGraphicsLoad('gallery', level.id, 'ready')
           }
         } catch (cause) {
           failRendererAttempt({

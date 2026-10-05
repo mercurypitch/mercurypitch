@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   cleanupFailure: new Error('renderer cleanup failed'),
   environmentShouldFail: true,
   rendererDispose: vi.fn(),
+  setPixelRatio: vi.fn(),
   forceContextLoss: vi.fn(),
   canvasRemove: vi.fn(),
   skyDispose: vi.fn(),
@@ -63,7 +64,14 @@ vi.mock('three', async (original) => ({
       reset: vi.fn(),
     }
     shadowMap = { enabled: false }
-    setPixelRatio = vi.fn()
+    pixelRatio = 1
+    setPixelRatio(value: number) {
+      this.pixelRatio = value
+      state.setPixelRatio(value)
+    }
+    getPixelRatio() {
+      return this.pixelRatio
+    }
     setSize = vi.fn()
     getContext = () => ({
       drawingBufferWidth: 1024,
@@ -590,6 +598,69 @@ it('rejects first-frame GPU errors through the map failure lifecycle', async () 
     expect(signal.aborted).toBe(true)
     state.renderFrame?.(1, 0.016)
     expect(state.getError).toHaveBeenCalledOnce()
+  } finally {
+    scene.dispose()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('bounds mobile map pixels and adapts only after a fully loaded slow window', async () => {
+  stubBrowser()
+  vi.stubGlobal('window', {
+    devicePixelRatio: 3,
+    matchMedia: () => ({ matches: true }),
+  })
+  state.environmentShouldFail = false
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', new Group()]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map(),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  state.loadModels.mockResolvedValueOnce(model)
+  const scene = createMuseumJourneyScene(
+    {
+      append: vi.fn(),
+      clientWidth: 390,
+      clientHeight: 844,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect: vi.fn(),
+      onFailure: vi.fn(),
+    },
+  )
+  try {
+    expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.25)
+    for (let i = 0; i < 30; i++) state.renderFrame?.(i * 0.05, 0.05)
+    expect(scene.getMetrics().adaptiveQualityActive).toBe(false)
+    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+    state.renderFrame?.(2, 0.016)
+    await scene.ready
+    scene.setForeground(false)
+    for (let i = 0; i < 30; i++) state.renderFrame?.(i * 0.05, 0.05)
+    expect(scene.getMetrics().adaptiveQualityActive).toBe(false)
+    scene.setForeground(true)
+    for (let i = 0; i < 23; i++) state.renderFrame?.(i * 0.05, 0.05)
+    expect(scene.getMetrics().adaptiveQualityActive).toBe(false)
+    state.renderFrame?.(1.2, 0.05)
+    expect(scene.getMetrics()).toMatchObject({
+      adaptiveQualityActive: true,
+      actualPixelRatio: 1,
+      actualShadowFrameInterval: 4,
+    })
+    expect(state.setPixelRatio).toHaveBeenCalledTimes(2)
+    scene.dispose()
+    state.renderFrame?.(4, 0.1)
+    expect(state.setPixelRatio).toHaveBeenCalledTimes(2)
   } finally {
     scene.dispose()
     vi.unstubAllGlobals()

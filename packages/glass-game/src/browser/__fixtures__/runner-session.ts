@@ -196,7 +196,7 @@ export function runnerSessionHarness(
 
   function ready() {
     const start = now + 0.01
-    for (let i = 0; i <= 8; i++) emit(start + i * 0.05)
+    for (let i = 0; i <= 16; i++) emit(start + i * 0.05)
   }
 
   function courseTick(seconds: number) {

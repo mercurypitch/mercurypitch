@@ -25,9 +25,10 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, } from 'solid-js'
 import { render } from 'solid-js/web'
-import { Copy, Trash2 } from '@/components/icons'
-import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleOnScreen, portableConsoleVisible, setPortableConsoleVisible, } from '@/lib/portable-console'
-import styles from '@/styles/PortableConsole.module.css'
+import type { PortableConsoleOptions } from '../lib/portable-console'
+import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleOnScreen, portableConsoleVisible, setPortableConsoleVisible, } from '../lib/portable-console'
+import styles from '../styles/PortableConsole.module.css'
+import { Copy, Trash2 } from './icons'
 
 const HOST_ID = 'mp-portable-console'
 
@@ -230,12 +231,14 @@ export const PortableConsoleOnScreen: Component = () => {
  * `import.meta.env.VITE_PORTABLE_CONSOLE`, so a normal build never imports
  * this module at all.
  */
-export function setupPortableConsole(): void {
+export function setupPortableConsole(
+  options: PortableConsoleOptions & { minimised?: boolean } = {},
+): void {
   if (typeof document === 'undefined') return
   // Capture first: the lines worth having are the ones from startup, before
   // anything renders.
-  installPortableConsole()
-  initPortableConsoleVisibility()
+  installPortableConsole(options)
+  initPortableConsoleVisibility(window.location.search, options.minimised)
   if (document.getElementById(HOST_ID) !== null) return
   const host = document.createElement('div')
   host.id = HOST_ID

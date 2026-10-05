@@ -9,7 +9,22 @@
 import type * as PitchEngine from '@irchiinnuss/pitch-engine'
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as BuildInfo from '@/build-info'
 import type * as Warm from '@/games/glass3d/runtime/warm'
+
+const build = vi.hoisted(() => ({ channel: 'dev' }))
+vi.mock('@/build-info', async (importOriginal) => {
+  const original = await importOriginal<typeof BuildInfo>()
+  return {
+    ...original,
+    BUILD: {
+      ...original.BUILD,
+      get channel() {
+        return build.channel
+      },
+    },
+  }
+})
 
 /** The pitch engine's one spare, kept the way it keeps it: a warm while
  * one waits keeps it rather than doubling it, a stream takes it, and
@@ -92,6 +107,7 @@ vi.mock('@/games/adventure/CreatorAudition', () => ({
 vi.mock('@/games/adventure/AdventureScreen', () => ({
   AdventureScreen: (props: {
     campaign?: boolean
+    runner?: boolean
     level?: { id: string }
     onExit(): void
   }) => (
@@ -99,6 +115,7 @@ vi.mock('@/games/adventure/AdventureScreen', () => ({
       data-testid="adventure-host"
       data-level={props.level?.id}
       data-campaign={String(props.campaign === true)}
+      data-runner={String(props.runner === true)}
       onClick={() => props.onExit()}
     >
       Leave adventure
@@ -116,6 +133,8 @@ const idle = (): void => {
 }
 
 beforeEach(() => {
+  build.channel = 'dev'
+  window.history.replaceState({}, '', '/')
   detector.spare = null
   detector.spawned = 0
   page.queued.clear()
@@ -144,6 +163,41 @@ describe('the games list warming the detector (P7)', () => {
 })
 
 describe('owner-build adventure entries', () => {
+  it.each(['dev', 'ci'])(
+    'opens the runner from the %s list and returns without mounting the campaign',
+    (channel) => {
+      build.channel = channel
+      render(() => <GamesScreen onBack={() => {}} />)
+      fireEvent.click(
+        screen.getByRole('button', { name: /The Singing Current/u }),
+      )
+      const host = screen.getByTestId('adventure-host')
+      expect(host).toHaveAttribute('data-runner', 'true')
+      expect(host).toHaveAttribute('data-campaign', 'false')
+      expect(screen.queryByTestId('legacy-journey')).toBeNull()
+      fireEvent.click(host)
+      expect(
+        screen.getByRole('button', { name: /The Singing Current/u }),
+      ).toBeEnabled()
+    },
+  )
+
+  it.each([
+    ['release', '/'],
+    ['dev', '/?progression=earned'],
+  ])('keeps creator entries out of the %s progression list', (channel, url) => {
+    build.channel = channel
+    window.history.replaceState({}, '', url)
+    render(() => <GamesScreen onBack={() => {}} />)
+    expect(
+      screen.queryByRole('button', { name: /The Singing Current/u }),
+    ).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /Little discoveries/u }),
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: /Glassworks/u })).toBeEnabled()
+  })
+
   it('opens the Pearl Turn as an isolated study without altering the campaign', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /The Pearl Turn/u }))

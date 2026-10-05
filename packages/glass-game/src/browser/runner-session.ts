@@ -9,7 +9,7 @@ import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
 import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-host'
 import { createRunnerReadinessTracker } from './runner-readiness'
 
-const READINESS_SECONDS = 0.35
+const READINESS_SECONDS = 0.7
 const REFERENCE_IDLE = Object.freeze({ phase: 'idle', error: null } as const)
 let nextEpoch = 0
 

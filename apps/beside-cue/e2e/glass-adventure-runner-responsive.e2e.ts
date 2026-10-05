@@ -61,10 +61,12 @@ async function expectFullRunnerHeading(
 for (const viewport of [
   { width: 320, height: 740 },
   { width: 390, height: 844 },
+  { width: 844, height: 390 },
+  { width: 844, height: 310 },
   { width: 768, height: 1024 },
   { width: 1440, height: 900 },
 ]) {
-  test.describe(`runner note heading ${viewport.width}px`, () => {
+  test.describe(`runner note heading ${viewport.width} by ${viewport.height}`, () => {
     test.use({ viewport, hasTouch: viewport.width < 600 })
 
     test('full target notes and status badges fit through preparation and listening @smoke', async ({

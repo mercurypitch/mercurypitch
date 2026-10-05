@@ -5,6 +5,7 @@ import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { GlassMuseumAudio } from '../host'
 import type { MuseumJourneyStageProgress } from '../journey/progress'
 import type { MuseumJourneyScene, MuseumJourneyStageLabelProjection, } from '../journey/scene'
+import { reportGraphicsFailure, reportGraphicsLoad, } from '../render/graphics-diagnostics'
 import type { IslandTrialView } from './IslandTrials'
 import { IslandTrials } from './IslandTrials'
 import styles from './MuseumJourney.module.css'
@@ -213,6 +214,7 @@ export function MuseumJourney(props: {
     const definition = props.definition
     const assetUrl = props.assetUrl
     const attempt = ++generation
+    reportGraphicsLoad('museum-map', definition.id, 'loading')
     scene?.dispose()
     scene = undefined
     updateProjectedStageLabels([])
@@ -243,6 +245,7 @@ export function MuseumJourney(props: {
               },
               onFailure(error) {
                 if (attempt !== generation) return
+                reportGraphicsFailure('museum-map', 'frame', error)
                 setMapError(
                   error instanceof Error ? error.message : 'The map paused.',
                 )
@@ -252,6 +255,7 @@ export function MuseumJourney(props: {
           )
         } catch (error) {
           if (attempt !== generation) return
+          reportGraphicsFailure('museum-map', 'initialization', error)
           setMapError(
             error instanceof Error
               ? error.message
@@ -268,10 +272,14 @@ export function MuseumJourney(props: {
         scene = handle
         void handle.ready.then(
           () => {
-            if (attempt === generation && scene === handle) setMapState('ready')
+            if (attempt === generation && scene === handle) {
+              reportGraphicsLoad('museum-map', definition.id, 'ready')
+              setMapState('ready')
+            }
           },
           (error: unknown) => {
             if (attempt !== generation || scene !== handle) return
+            reportGraphicsFailure('museum-map', 'asset-load', error)
             handle.dispose()
             scene = undefined
             setMapError(
@@ -285,6 +293,7 @@ export function MuseumJourney(props: {
       })
       .catch((error: unknown) => {
         if (attempt !== generation) return
+        reportGraphicsFailure('museum-map', 'module-load', error)
         setReloadRequired(true)
         setMapError(
           error instanceof Error

@@ -29,6 +29,11 @@ on:
       - 'packages/purchase-kit/**'
       - 'gradle/signing.gradle'
       - '.gitattributes'
+      - 'src/components/PortableConsole.tsx'
+      - 'src/components/icons.tsx'
+      - 'src/lib/portable-console.ts'
+      - 'src/styles/PortableConsole.module.css'
+      - 'scripts/assert-no-portable-console.mjs'
       - 'package.json'
       - 'pnpm-lock.yaml'
       # The size gate's measurement lives in a script, not inline in the
@@ -73,7 +78,7 @@ jobs:
       signing-env-prefix: BESIDE_CUE
       profile-build-setting: BESIDE_CUE_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|glass-game|mobile-runtime|pitch-engine|ios-audio-session|purchase-kit)/|gradle/signing\.gradle$|\.gitattributes$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|glass-game|mobile-runtime|pitch-engine|ios-audio-session|purchase-kit)/|src/(components/(PortableConsole|icons)\.tsx|lib/portable-console\.ts|styles/PortableConsole\.module\.css)$|scripts/assert-no-portable-console\.mjs$|gradle/signing\.gradle$|\.gitattributes$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
       # The hash of the store reviewer's unlock code. Not a secret (it is a
       # digest), so it lives in a repository variable; the code itself is in
       # the vault and is only ever typed into App Store Connect and Play.

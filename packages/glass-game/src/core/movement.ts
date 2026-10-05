@@ -23,7 +23,9 @@ export const MOVEMENT = {
   radius: 0.16,
   height: 0.5,
   fixedStep: 1 / 120,
-  maximumSteps: 5,
+  // Catch up ordinary mobile hitches through 100 ms without dropping travel.
+  // Keep a bounded budget after suspension so collision work cannot spiral.
+  maximumSteps: 12,
 } as const
 
 const LEGACY_MOVEMENT: LevelMovementDefinition = {

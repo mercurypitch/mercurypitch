@@ -52,8 +52,9 @@ const ON_SCREEN_KEY = 'mp:portableConsole:onScreen'
 /**
  * Where the capture survives a page load.
  *
- * sessionStorage, not localStorage: it is per tab, so two tabs do not write
- * over each other, and it lives exactly as long as the tab being tested.
+ * Browser captures use sessionStorage: tabs do not overwrite one another.
+ * Native test hosts can opt into localStorage to retain the bounded capture
+ * after a WebView restart. That option is never enabled in a store release.
  *
  * This is not a nicety. Several of this app's rooms are SEPARATE DOCUMENTS —
  * walking into Karaoke Night is a full page load — and the bug this was built
@@ -81,6 +82,20 @@ export interface PortableConsoleEntry {
   at: number
   level: PortableConsoleLevel
   text: string
+}
+
+export interface PortableConsoleOptions {
+  /** Test-build host name in a copied report. */
+  appName?: string
+  /** Native test builds can retain the bounded log after a WebView restart. */
+  persistence?: 'session' | 'device'
+}
+
+let appName = 'MercuryPitch'
+let persistence: 'session' | 'device' = 'session'
+
+function logStorage(): Storage {
+  return persistence === 'device' ? localStorage : sessionStorage
 }
 
 type Listener = () => void
@@ -135,7 +150,14 @@ export function recordPortableConsole(
   const text = args.map(render).join(' ').slice(0, MAX_TEXT)
   entries.push({ at: now - origin, level, text })
   if (entries.length > MAX_ENTRIES) entries = entries.slice(-MAX_ENTRIES)
-  schedulePersist()
+  // A native WebView may disappear immediately after reporting an error.
+  // Routine output stays batched, and ordinary browser tabs keep their policy.
+  if (
+    persistence === 'device' &&
+    ['error', 'onerror', 'unhandled'].includes(level)
+  )
+    persistNow()
+  else schedulePersist()
   notify()
 }
 
@@ -145,8 +167,8 @@ function persistNow(): void {
     persistTimer = null
   }
   try {
-    sessionStorage.setItem(PERSIST_KEY, JSON.stringify(entries))
-    sessionStorage.setItem(PERSIST_ORIGIN_KEY, String(origin))
+    logStorage().setItem(PERSIST_KEY, JSON.stringify(entries))
+    logStorage().setItem(PERSIST_ORIGIN_KEY, String(origin))
   } catch {
     // Quota or private mode. The in-memory log still works for this page.
   }
@@ -169,17 +191,31 @@ function schedulePersist(): void {
  */
 function restore(): void {
   try {
-    const raw = sessionStorage.getItem(PERSIST_KEY)
-    const storedOrigin = Number(sessionStorage.getItem(PERSIST_ORIGIN_KEY))
+    const raw = logStorage().getItem(PERSIST_KEY)
+    const storedOrigin = Number(logStorage().getItem(PERSIST_ORIGIN_KEY))
     if (raw === null) return
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return
-    entries = parsed.filter(
-      (entry): entry is PortableConsoleEntry =>
-        typeof entry === 'object' &&
-        entry !== null &&
-        typeof (entry as PortableConsoleEntry).text === 'string',
-    )
+    entries = parsed
+      .filter(
+        (entry): entry is PortableConsoleEntry =>
+          typeof entry === 'object' &&
+          entry !== null &&
+          typeof (entry as PortableConsoleEntry).text === 'string' &&
+          typeof (entry as PortableConsoleEntry).at === 'number' &&
+          Number.isFinite((entry as PortableConsoleEntry).at) &&
+          [
+            'log',
+            'info',
+            'warn',
+            'error',
+            'debug',
+            'onerror',
+            'unhandled',
+          ].includes((entry as PortableConsoleEntry).level),
+      )
+      .slice(-MAX_ENTRIES)
+      .map((entry) => ({ ...entry, text: entry.text.slice(0, MAX_TEXT) }))
     if (Number.isFinite(storedOrigin) && storedOrigin > 0) origin = storedOrigin
   } catch {
     // A corrupt or foreign value is not worth failing a debug build over.
@@ -191,8 +227,12 @@ function restore(): void {
  * wrapping an already-wrapped console is how a "capture" ends up recording
  * itself and hanging the tab.
  */
-export function installPortableConsole(): () => void {
+export function installPortableConsole(
+  options: PortableConsoleOptions = {},
+): () => void {
   if (uninstall !== null) return uninstall
+  appName = options.appName ?? 'MercuryPitch'
+  persistence = options.persistence ?? 'session'
   restore()
 
   const levels: PortableConsoleLevel[] = [
@@ -257,6 +297,7 @@ export function installPortableConsole(): () => void {
  */
 export function initPortableConsoleVisibility(
   search = window.location.search,
+  defaultMinimised = false,
 ): void {
   let asked: string | null = null
   try {
@@ -268,13 +309,20 @@ export function initPortableConsoleVisibility(
     if (asked === '0' || asked === 'false')
       localStorage.setItem(STORAGE_KEY, '0')
     else if (asked === '1' || asked === 'true')
-      localStorage.removeItem(STORAGE_KEY)
-    visible = localStorage.getItem(STORAGE_KEY) !== '0'
+      localStorage.setItem(STORAGE_KEY, '1')
+    const saved = localStorage.getItem(STORAGE_KEY)
+    visible =
+      saved === null
+        ? !defaultMinimised || asked === '1' || asked === 'true'
+        : saved !== '0'
     onScreen = localStorage.getItem(ON_SCREEN_KEY) !== '0'
   } catch {
     // Storage refused (private mode). Default to shown: the flag was set on
     // purpose, and an invisible debug build helps nobody.
-    visible = asked !== '0' && asked !== 'false'
+    visible =
+      asked === '1' ||
+      asked === 'true' ||
+      (!defaultMinimised && asked !== '0' && asked !== 'false')
   }
 }
 
@@ -285,7 +333,7 @@ export function portableConsoleVisible(): boolean {
 export function setPortableConsoleVisible(next: boolean): void {
   visible = next
   try {
-    if (next) localStorage.removeItem(STORAGE_KEY)
+    if (next) localStorage.setItem(STORAGE_KEY, '1')
     else localStorage.setItem(STORAGE_KEY, '0')
   } catch {
     // Not remembering it is survivable.
@@ -322,8 +370,8 @@ export function clearPortableConsole(): void {
   entries = []
   origin = 0
   try {
-    sessionStorage.removeItem(PERSIST_KEY)
-    sessionStorage.removeItem(PERSIST_ORIGIN_KEY)
+    logStorage().removeItem(PERSIST_KEY)
+    logStorage().removeItem(PERSIST_ORIGIN_KEY)
   } catch {
     // Nothing to do; the in-memory log is already empty.
   }
@@ -345,7 +393,7 @@ export function formatPortableConsoleEntry(
  */
 export function formatPortableConsole(): string {
   return [
-    'MercuryPitch portable console',
+    `${appName} portable console`,
     `when: ${new Date().toISOString()}`,
     `url: ${window.location.href}`,
     `agent: ${navigator.userAgent}`,
@@ -366,9 +414,11 @@ export function resetPortableConsoleForTests(): void {
   onScreen = true
   origin = 0
   try {
-    sessionStorage.removeItem(PERSIST_KEY)
-    sessionStorage.removeItem(PERSIST_ORIGIN_KEY)
+    logStorage().removeItem(PERSIST_KEY)
+    logStorage().removeItem(PERSIST_ORIGIN_KEY)
   } catch {
     // ignored
   }
+  appName = 'MercuryPitch'
+  persistence = 'session'
 }

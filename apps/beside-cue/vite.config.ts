@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
+import { portableConsoleEnabled } from './scripts/portable-console-policy'
 import { gameAssetsPlugin } from './scripts/game-assets'
 import { assertPurchaseBuildSafe } from './src/purchases/purchase-build-policy'
 
@@ -108,6 +109,8 @@ export default defineConfig(({ mode, command }) => {
       (process.env.GITHUB_REF ?? '').startsWith('refs/tags/bc-v'),
     )
   }
+  const diagnostics = portableConsoleEnabled(env)
+  let diagnosticsOutputDirectory = ''
   const gamesEnabled = env.VITE_BESIDE_CUE_GAMES === '1'
   const nativeGamesProfile =
     gamesEnabled &&
@@ -123,6 +126,30 @@ export default defineConfig(({ mode, command }) => {
     plugins: [
       ...(mode === 'https' && https === undefined ? [basicSsl()] : []),
       solid(),
+      {
+        name: 'beside-cue-diagnostics-boundary',
+        apply: 'build',
+        configResolved(config) {
+          diagnosticsOutputDirectory = resolve(config.root, config.build.outDir)
+        },
+        closeBundle() {
+          if (diagnostics) return
+          execFileSync(
+            process.execPath,
+            [
+              fileURLToPath(
+                new URL(
+                  '../../scripts/assert-no-portable-console.mjs',
+                  import.meta.url,
+                ),
+              ),
+              diagnosticsOutputDirectory,
+              '--store-binary',
+            ],
+            { stdio: 'inherit' },
+          )
+        },
+      },
       gameAssetsPlugin(gamesEnabled, undefined, nativeGamesProfile),
     ],
     resolve: {
@@ -148,6 +175,9 @@ export default defineConfig(({ mode, command }) => {
       dedupe: ['solid-js'],
     },
     define: {
+      'import.meta.env.VITE_PORTABLE_CONSOLE': JSON.stringify(
+        diagnostics ? 'true' : 'false',
+      ),
       __APP_VERSION__: JSON.stringify(pkgVersion()),
       __APP_COMMIT__: JSON.stringify(commit()),
       __APP_DIRTY__: JSON.stringify(dirty()),
