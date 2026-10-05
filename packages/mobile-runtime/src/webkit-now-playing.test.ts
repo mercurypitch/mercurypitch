@@ -452,6 +452,123 @@ describe('the carrier going round', () => {
   })
 })
 
+describe('the same place twice', () => {
+  // iOS starts the lock screen's counter again only when it is told
+  // something new: -10 s at the start, pressed again, played from 0:00 while
+  // the counter ran on from the last press (build 549).
+
+  it('puts a repeat a moment on, a hair faster', () => {
+    showOnWebKit(song({ position: 0 }))
+    clock = 3000
+
+    showOnWebKit(song({ position: 0 }))
+
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1.0001,
+      position: 0.25,
+    })
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] the bar is where it was: put on to 0.25 s, so the lock screen counts from there again',
+    )
+  })
+
+  it('puts the next repeat at the place itself, which is new again', () => {
+    showOnWebKit(song({ position: 0 }))
+    clock = 3000
+    showOnWebKit(song({ position: 0 }))
+    clock = 6000
+
+    showOnWebKit(song({ position: 0 }))
+
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0,
+    })
+  })
+
+  it('puts a repeat at the very end a moment back', () => {
+    showOnWebKit(song({ position: 246 }))
+    clock = 3000
+
+    showOnWebKit(song({ position: 300 }))
+
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1.0001,
+      position: 245.75,
+    })
+  })
+
+  it('leaves one moment told twice alone', () => {
+    showOnWebKit(song({ position: 0 }))
+    clock = 100
+
+    showOnWebKit(song({ position: 0 }))
+
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0,
+    })
+  })
+
+  it('leaves a new place, or a new speed, alone', () => {
+    showOnWebKit(song({ position: 0 }))
+    clock = 3000
+    showOnWebKit(song({ position: 0.5 }))
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0.5,
+    })
+
+    clock = 6000
+    showOnWebKit(song({ position: 0.5, rate: 0.75 }))
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 0.75,
+      position: 0.5,
+    })
+  })
+
+  it('leaves a paused song alone, and the play that follows its pause', () => {
+    // A paused bar does not run, and playing it again is news to iOS.
+    showOnWebKit(song({ position: 5 }))
+    showOnWebKit(song({ playing: false, position: 0 }))
+    clock = 3000
+    showOnWebKit(song({ playing: false, position: 0 }))
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0,
+    })
+
+    clock = 6000
+    showOnWebKit(song({ position: 0 }))
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0,
+    })
+  })
+
+  it('forgets the place with the song', () => {
+    showOnWebKit(song({ position: 0 }))
+    showOnWebKit(null)
+    clock = 3000
+
+    showOnWebKit(song({ position: 0 }))
+
+    expect(session.setPositionState).toHaveBeenLastCalledWith({
+      duration: 246,
+      playbackRate: 1,
+      position: 0,
+    })
+  })
+})
+
 describe('what the system does to the song', () => {
   it('pauses the song when the system pauses the carrier', () => {
     const deliver = vi.fn()
@@ -1008,16 +1125,34 @@ describe('play from behind the app', () => {
     expect(deliver).toHaveBeenLastCalledWith('play', { action: 'play' })
   })
 
-  it('asks when the lyrics window says another app plays', () => {
-    // The singer paused the song, then started the other app's sound.
+  it('says no at once when the lyrics window says another app plays', () => {
+    // iOS keeps the sound with that app, and WebKit would not say so in
+    // time: the carrier would start unasked, then the song's clock would be
+    // refused, and the window would run the lyrics in silence (build 549).
     showOnWebKit(song())
     carrier.settle()
     showOnWebKit(song({ playing: false }))
     carrier.settle()
     page.turn('hidden')()
+    carrier.play.mockClear()
+
+    expect(takeTheSound({ otherAudio: true })).toBe(false)
+    expect(types).toEqual([])
+    expect(carrier.play).not.toHaveBeenCalled()
+    expect(carrier.paused).toBe(true)
+    expect(console.info).toHaveBeenCalledWith(
+      '[now playing] play pressed behind another app whose sound plays: iOS keeps the sound there, so the song stays paused',
+    )
+  })
+
+  it('tries the carrier with the app in front, whatever the window says', () => {
+    showOnWebKit(song())
+    carrier.settle()
+    showOnWebKit(song({ playing: false }))
+    carrier.settle()
 
     expect(takeTheSound({ otherAudio: true })).toBe(true)
-    expect(types).toEqual(['playback', 'auto'])
+    expect(types).toEqual([])
     expect(carrier.paused).toBe(false)
   })
 

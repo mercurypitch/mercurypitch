@@ -61,6 +61,7 @@ import type { InFrontHost } from './carrier-in-front'
 import { keepInFront } from './carrier-in-front'
 import type { SilenceKind } from './carrier-silence'
 import { silenceBlob } from './carrier-silence'
+import { watchTheSamePlace } from './same-place-twice'
 import type { PressGuardHost } from './waited-presses'
 import { guardPresses } from './waited-presses'
 
@@ -150,6 +151,8 @@ let wanted: 'none' | 'paused' | 'playing' = 'none'
 /** The last report, and when it came: where the bar goes back to. */
 let shown: WebKitSong | null = null
 let shownAt = 0
+/** Where the bar was last put: a repeat of it goes a hair on. */
+const lastPlace = watchTheSamePlace()
 
 /**
  * The name, artist and picture last handed over. A report that only moves
@@ -402,17 +405,30 @@ function placeNow(): number {
   return Math.min(shown.duration, Math.max(0, shown.position + ran))
 }
 
-/** The lock screen's bar: the song's length, a place in it, its speed. */
+/**
+ * The lock screen's bar: the song's length, a place in it, its speed. A
+ * repeat of the last place goes a hair on, or iOS keeps its counter
+ * running (same-place-twice.ts).
+ */
 function placeBar(position: number): void {
   if (shown === null) return
+  const at = now()
+  const placing = lastPlace.place({ ...shown, position }, at)
   try {
     navigator.mediaSession.setPositionState({
       duration: shown.duration,
-      playbackRate: shown.rate,
-      position: Math.min(shown.duration, Math.max(0, position)),
+      playbackRate: placing.rate,
+      position: placing.position,
     })
   } catch {
     // A state WebKit will not take: the bar waits for the next report.
+    return
+  }
+  lastPlace.took(placing, shown.playing, at)
+  if (placing.repeat) {
+    console.info(
+      `[now playing] the bar is where it was: put on to ${placing.position.toFixed(2)} s, so the lock screen counts from there again`,
+    )
   }
 }
 
@@ -422,6 +438,7 @@ function putAway(session: MediaSession): void {
   systemPaused = false
   shown = null
   named = null
+  lastPlace.forget()
   presses.follow()
   front.stop()
   session.metadata = null
@@ -568,6 +585,15 @@ function askForPlayback(): (() => void) | null {
   }
 }
 
+/**
+ * Whether the system paused the song on the lock screen, for another app's
+ * sound or a call, and has not played it again. The lyrics window hears it
+ * with the clock (platform.ts).
+ */
+export function systemPausedTheSong(): boolean {
+  return systemPaused
+}
+
 export interface TakeTheSoundOptions {
   /** iOS's word, at the press, that another app's sound is playing. */
   readonly otherAudio?: boolean
@@ -581,10 +607,19 @@ export interface TakeTheSoundOptions {
  * with no other app's sound playing lets the press go on as it always did:
  * the song plays, and the next report tries the carrier again.
  *
- * With the app behind another one, and that app's sound playing (the window
- * says so, or the system paused the song for it), the carrier asks for a
- * session that does not mix (`askForPlayback`). WebKit starts an element
- * inside play() itself, so a carrier still paused afterwards was refused.
+ * With the app behind another one whose sound plays now (the window says
+ * so), the answer is no at once. iOS does not let an app in the background
+ * take the sound from one that plays (AVAudioSession's
+ * cannotInterruptOthers), and WebKit would not say so in time: it asks iOS
+ * for the sound only once something of the page already plays
+ * (PlatformMediaSessionManager::maybeActivateAudioSession). The carrier's
+ * play passed unasked, the song's clock, asking next, was refused, and the
+ * window ran the lyrics on in silence (build 549).
+ *
+ * With the app behind, and the song still paused by the system for another
+ * app that has gone quiet since, the carrier asks for a session that does
+ * not mix (`askForPlayback`). WebKit starts an element inside play()
+ * itself, so a carrier still paused afterwards was refused.
  *
  * True with no song on the lock screen, or a carrier already playing: the
  * press goes on as it always did.
@@ -595,6 +630,12 @@ export function takeTheSound(choice: TakeTheSoundOptions = {}): boolean {
     return true
   }
   const behind = thePage()?.visibilityState === 'hidden'
+  if (behind && choice.otherAudio === true) {
+    console.info(
+      '[now playing] play pressed behind another app whose sound plays: iOS keeps the sound there, so the song stays paused',
+    )
+    return false
+  }
   const othersPlaying = choice.otherAudio === true || systemPaused
   const wantedBefore = wanted
   const systemPausedBefore = systemPaused
@@ -715,6 +756,7 @@ export function resetWebKitNowPlaying(
   wanted = 'none'
   shown = null
   shownAt = 0
+  lastPlace.forget()
   named = null
   systemHeard = null
   listening = null

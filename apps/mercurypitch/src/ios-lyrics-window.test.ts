@@ -96,12 +96,37 @@ describe('the plugin', () => {
   })
 
   it('reads the clock under the names the JavaScript side sends', () => {
-    for (const field of ['playing', 'position', 'rate', 'duration']) {
+    for (const field of [
+      'playing',
+      'position',
+      'rate',
+      'duration',
+      'interrupted',
+    ]) {
       expect(SWIFT.plugin).toMatch(
         new RegExp(`call\\.get\\w+\\("${field}"\\)`, 'u'),
       )
+      expect(JS_SIDE).toContain(`${field}:`)
     }
     expect(SWIFT.plugin).toContain('call.getString("json")')
+  })
+})
+
+describe('the window', () => {
+  it('closes for another app’s sound, never for a call', () => {
+    // Behind that app, a play in the window could only run the lyrics in
+    // silence (build 549). A call's pause ends with the song back.
+    expect(SWIFT.window).toContain('import CallKit')
+    expect(SWIFT.window).toContain('CXCallObserver()')
+    expect(SWIFT.window).toContain(
+      'calls.calls.contains(where: { !$0.hasEnded })',
+    )
+    expect(SWIFT.window).toContain(
+      'AVAudioSession.sharedInstance().isOtherAudioPlaying',
+    )
+    expect(SWIFT.window).toMatch(
+      /if clock\.interrupted \{ closeIfTakenOver\(lookAgain: true\) \}/u,
+    )
   })
 })
 

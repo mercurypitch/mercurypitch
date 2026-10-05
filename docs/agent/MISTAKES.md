@@ -355,10 +355,17 @@ must import the inventory in a child Node process as well as through Vitest.
 
 ### Show a play from behind another app only once the page says it plays (iOS)
 
-**Symptom:** with YouTube playing, play in our lyrics window ran the lyrics on in silence, and YouTube kept playing.
-**Cause:** the window turned its clock on the press. After another app took the sound, WebKit activates the page's session as ambient, which mixes, before it makes it playback.
-**Rule:** native controls wait for the page's report. A play from behind the app sets `navigator.audioSession.type = 'playback'` for the moment the carrier starts, puts the old type back, and reads `paused`: WebKit starts an element inside `play()`, so still paused means refused, and the song stays paused.
-**See:** `takeTheSound` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`.
+**Symptom:** with YouTube playing, play in our lyrics window ran the lyrics on in silence, and YouTube kept playing (builds 527 and 549).
+**Cause:** in 527 the window turned its clock on the press, and after another app took the sound, WebKit activates the page's session as ambient, which mixes. In 549 the page read the carrier's play as iOS's yes, but WebKit asks iOS for the sound only once something of the page already plays (`PlatformMediaSessionManager::maybeActivateAudioSession`). With the song paused, the carrier started without asking; the song's clock asked next and was refused, because iOS does not let an app in the background take the sound from one that plays.
+**Rule:** native controls wait for the page's report. Behind another app whose sound plays now (the window's `otherAudio`), say no at once, and close the window for that app's sound (never for a call). A play from behind the app after the other app went quiet sets `navigator.audioSession.type = 'playback'` for the moment the carrier starts and puts the old type back. A carrier still paused means refused; one that plays is not proof of a yes.
+**See:** `takeTheSound` in `packages/mobile-runtime/src/webkit-now-playing.ts`, `closeIfTakenOver` in `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`.
+
+### Tell the lock screen a new place, not the same one twice (iOS)
+
+**Symptom:** -10 s near the start of a song put the lock screen's counter at 0:00 the first time. Pressed again, the song played from 0:00 while the counter ran on from the first press: 0:02, 0:05 (build 549).
+**Cause:** each press reported position 0 at the same speed. Our side and WebKit pass every report on, so iOS keeps its own clock when told the same place again (inferred: MediaRemote is private). A jump to a new place always worked.
+**Rule:** a report that lands where the bar was last put, while playing, at the same speed and 500 ms or more later, goes 0.25 s on at 1.0001 times the speed. The next report puts both back.
+**See:** `packages/mobile-runtime/src/same-place-twice.ts`, `docs/plans/mobile-native/ios-audio-handoff.md` (Build 549).
 
 ### Keep the Now Playing carrier the sound that started last (iOS)
 
