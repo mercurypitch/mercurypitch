@@ -10,6 +10,7 @@ import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-h
 import { createRunnerReadinessTracker } from './runner-readiness'
 
 const READINESS_SECONDS = 0.35
+const REFERENCE_IDLE = Object.freeze({ phase: 'idle', error: null } as const)
 let nextEpoch = 0
 
 /** Only scheduling is injected; tests still exercise the real core and timestamp routing. */
@@ -52,6 +53,7 @@ export function createBrowserRunnerSession(
     musicMuted: audioPreferences.musicMuted,
     audioPreferences,
     backing: null,
+    referencePlayback: REFERENCE_IDLE,
     pauseReason: null,
     error: null,
   })
@@ -66,6 +68,7 @@ export function createBrowserRunnerSession(
   let unsubscribeVoice: (() => void) | undefined,
     unsubscribeAudio: (() => void) | undefined
   let pending: Promise<void> | null = null
+  let referencePending: Promise<void> | null = null
   let quiet: Promise<void> = Promise.resolve()
   let takingOver = false
   let schedule: RunnerAudioSchedule | null = null
@@ -147,6 +150,7 @@ export function createBrowserRunnerSession(
   function invalidate(): void {
     attempt++
     pending = null
+    referencePending = null
     closeResources()
   }
 
@@ -162,6 +166,7 @@ export function createBrowserRunnerSession(
       microphone: 'closed',
       readiness: null,
       countIn: null,
+      referencePlayback: REFERENCE_IDLE,
       pauseReason: reason,
       error: null,
     })
@@ -176,6 +181,7 @@ export function createBrowserRunnerSession(
       microphone: 'closed',
       readiness: null,
       countIn: null,
+      referencePlayback: REFERENCE_IDLE,
       pauseReason: null,
       error,
     })
@@ -403,13 +409,13 @@ export function createBrowserRunnerSession(
     advance(now)
   }
 
-  function prepareAudio(): RunnerAudioTransport {
+  function prepareAudio(
+    onInterruption = () => pause('audio-interrupted'),
+  ): RunnerAudioTransport {
     const next = host.createRunnerAudio(course, comfortableMidi)
     audio = next
     next.setPreferences(state.audioPreferences)
-    unsubscribeAudio = next.subscribeInterruption(() =>
-      pause('audio-interrupted'),
-    )
+    unsubscribeAudio = next.subscribeInterruption(onInterruption)
     return next
   }
 
@@ -430,6 +436,7 @@ export function createBrowserRunnerSession(
       prepared?.release()
       return Promise.resolve()
     }
+    referencePending = null
     closeResources()
     game.pause()
     const token = ++attempt
@@ -461,6 +468,7 @@ export function createBrowserRunnerSession(
         readiness: null,
         countIn: null,
         backing: null,
+        referencePlayback: REFERENCE_IDLE,
       },
       [],
       true,
@@ -570,8 +578,9 @@ export function createBrowserRunnerSession(
       !host.takeOverMicrophone
     )
       return
+    invalidate()
     takingOver = true
-    const token = ++attempt
+    const token = attempt
     let prepared: GlassVoicePreparation
     try {
       prepared = host.prepareVoiceGesture()
@@ -586,7 +595,11 @@ export function createBrowserRunnerSession(
     }
     void prepared.ready.catch(() => undefined)
     preparation = prepared
-    publish({ phase: 'preparing', microphone: 'closed' })
+    publish({
+      phase: 'preparing',
+      microphone: 'closed',
+      referencePlayback: REFERENCE_IDLE,
+    })
     if (!current(token)) {
       takingOver = false
       prepared.release()
@@ -620,6 +633,59 @@ export function createBrowserRunnerSession(
     if (!['readiness', 'count-in', 'running'].includes(state.phase))
       await releaseUnused()
   }
+
+  function hearReference(): Promise<void> {
+    if (referencePending) return referencePending
+    if (
+      disposed ||
+      pending ||
+      takingOver ||
+      !foreground ||
+      state.microphone !== 'closed' ||
+      state.referencePlayback.phase !== 'idle' ||
+      !['idle', 'paused', 'error'].includes(state.phase)
+    )
+      return Promise.resolve()
+    invalidate()
+    const token = attempt
+    let next: RunnerAudioTransport | undefined
+    let error: string | null = null
+    publish({ referencePlayback: { phase: 'preparing', error: null } })
+    if (!current(token)) return Promise.resolve()
+    const work = (async () => {
+      try {
+        next = prepareAudio(() => {
+          if (!current(token)) return
+          error = 'Note playback was interrupted. Tap Hear note to try again.'
+          closeResources()
+        })
+        // Unlock in the direct gesture, but keep any retired output tail out
+        // of this example. Disposal also settles an unfinished unlock.
+        const available = await Promise.race([
+          Promise.all([next.unlock(), quiet]).then(([ready]) => ready),
+          next.finished.then(() => false),
+        ])
+        if (!current(token)) return
+        if (!available) throw new Error('Audio is unavailable.')
+        publish({ referencePlayback: { phase: 'playing', error: null } })
+        if (!current(token)) return
+        await Promise.race([next.hearReference(comfortableMidi), next.finished])
+      } catch {
+        if (current(token))
+          error ??= 'The note could not play. Tap Hear note to try again.'
+      } finally {
+        if (current(token)) closeResources()
+        await next?.finished
+        if (current(token))
+          publish({ referencePlayback: { phase: 'idle', error } })
+      }
+    })()
+    referencePending = work.finally(() => {
+      if (current(token)) referencePending = null
+    })
+    return referencePending
+  }
+
   const unsubscribeForeground = host.subscribeForeground((value) => {
     foreground = value
     if (!value && !disposed) pause('background')
@@ -640,48 +706,16 @@ export function createBrowserRunnerSession(
       if (disposed) return Promise.resolve()
       invalidate()
       game.pause()
-      publish({ phase: 'paused', microphone: 'closed', error: null })
+      publish({
+        phase: 'paused',
+        microphone: 'closed',
+        error: null,
+        referencePlayback: REFERENCE_IDLE,
+      })
       return begin('fresh')
     },
     pause,
-    async hearReference() {
-      if (
-        disposed ||
-        pending ||
-        !foreground ||
-        state.microphone !== 'closed' ||
-        !['idle', 'paused', 'error'].includes(state.phase)
-      )
-        return
-      const previous = state.phase
-      invalidate()
-      const token = attempt
-      let next: RunnerAudioTransport | undefined
-      publish({ phase: 'preparing', error: null })
-      if (!current(token)) return
-      try {
-        next = prepareAudio()
-        if (!(await next.unlock())) throw new Error('Audio is unavailable.')
-        if (!current(token)) return
-        await next.hearReference(comfortableMidi)
-      } catch {
-        if (current(token))
-          fail({
-            code: 'audio-unavailable',
-            message: 'Audio could not start. Tap Hear note to try again.',
-            canRetry: true,
-          })
-      } finally {
-        next?.dispose()
-        if (current(token)) {
-          closeResources()
-          publish({
-            phase: previous === 'idle' ? 'idle' : 'paused',
-            microphone: 'closed',
-          })
-        }
-      }
-    },
+    hearReference,
     input(action) {
       const now = audio?.currentAudioSeconds()
       if (
@@ -732,7 +766,10 @@ export function createBrowserRunnerSession(
       presentationReady = value
       if (
         !value &&
-        ['preparing', 'readiness', 'count-in', 'running'].includes(state.phase)
+        (state.referencePlayback.phase !== 'idle' ||
+          ['preparing', 'readiness', 'count-in', 'running'].includes(
+            state.phase,
+          ))
       )
         pause('renderer-unavailable')
       else if (value) maybeCountIn()
@@ -749,6 +786,7 @@ export function createBrowserRunnerSession(
         microphone: 'closed',
         readiness: null,
         countIn: null,
+        referencePlayback: REFERENCE_IDLE,
       })
       listeners.clear()
     },

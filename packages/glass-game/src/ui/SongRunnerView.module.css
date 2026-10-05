@@ -654,6 +654,14 @@
   justify-self: start;
 }
 
+.referenceStatus {
+  min-height: 2.5em;
+  margin: 0;
+  color: #365b5e;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
 .statusPanel,
 .readinessPanel {
   display: grid;

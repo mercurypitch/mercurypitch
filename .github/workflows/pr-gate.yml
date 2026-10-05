@@ -498,6 +498,7 @@ jobs:
             replay,
             resonance,
             runner-readiness,
+            runner-reference,
             runner-responsive,
             runner-sound,
             song-runner,
