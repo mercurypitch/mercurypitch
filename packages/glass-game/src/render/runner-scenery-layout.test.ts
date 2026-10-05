@@ -19,6 +19,13 @@ const courses = [
       cameraProfile: 'steering-close',
     },
   },
+  {
+    ...SINGING_CURRENT_CONTINUOUS_TRIAL,
+    presentation: {
+      ...SINGING_CURRENT_CONTINUOUS_TRIAL.presentation,
+      cameraProfile: 'steering-angled',
+    },
+  },
 ] as const
 
 function boundsFor(kind: string, course: CompiledRunnerCourse) {

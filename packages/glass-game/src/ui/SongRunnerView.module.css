@@ -136,31 +136,6 @@
   stroke-width: 2;
 }
 
-.notationPanel {
-  position: absolute;
-  z-index: 3;
-  top: max(76px, calc(env(safe-area-inset-top) + 70px));
-  left: 50%;
-  width: min(680px, calc(100% - 24px));
-  padding: 9px 15px 6px;
-  transform: translateX(-50%);
-  border: 1px solid rgb(255 255 255 / 62%);
-  border-radius: 20px;
-  background: linear-gradient(
-    135deg,
-    rgb(255 253 247 / 91%),
-    rgb(233 253 250 / 86%)
-  );
-  box-shadow: 0 16px 42px rgb(14 45 48 / 16%);
-  pointer-events: none;
-  backdrop-filter: blur(14px) saturate(1.15);
-}
-
-.compactNotation {
-  width: min(460px, calc(100% - 24px));
-  padding: 8px 12px 9px;
-}
-
 .movementHint,
 .releaseHint {
   position: absolute;
@@ -222,195 +197,6 @@
   color: #5a665e;
   font-size: 11px;
   font-weight: 750;
-}
-
-.notationHeading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 28px;
-  padding: 0 6px 4px;
-}
-
-.voicePrompt {
-  display: flex;
-  /* Keep the complete note while the status badges wrap beside it. */
-  flex-shrink: 0;
-  min-width: 0;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.voicePrompt > span {
-  color: #8a612b;
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.voicePrompt strong {
-  overflow: hidden;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.voiceFacts {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-.voiceFacts span {
-  padding: 3px 6px;
-  border-radius: 999px;
-  background: rgb(45 91 93 / 9%);
-  color: #456467;
-  font-size: 9px;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.chargeMeter {
-  display: grid;
-  grid-template-columns: auto minmax(80px, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 22px;
-  padding: 3px 6px 0;
-  color: #456467;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.chargeMeter strong {
-  min-width: 4ch;
-  color: #765124;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.chargeTrack {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgb(45 91 93 / 15%);
-}
-
-.chargeTrack > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #dba4ad, #72cfc8 72%, #cf9d47);
-}
-
-.staff {
-  display: block;
-  width: 100%;
-  height: 134px;
-  overflow: visible;
-}
-
-.hiddenStaff {
-  display: none;
-}
-
-.withPitchReadout .staff {
-  height: 114px;
-}
-
-.staffLines line,
-.ledger,
-.stem,
-.glide,
-.flag {
-  fill: none;
-  stroke: #6b5031;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.staffLines line {
-  stroke-width: 1.35;
-  opacity: 0.66;
-}
-
-.clef {
-  fill: #a06d2d;
-  font:
-    italic 700 30px Georgia,
-    serif;
-}
-
-.octaveClef {
-  fill: #8a612b;
-  font:
-    800 9px system-ui,
-    sans-serif;
-}
-
-.ledger,
-.stem {
-  stroke-width: 2.2;
-}
-
-.glide {
-  stroke: #519a96;
-  stroke-dasharray: 5 4;
-  stroke-width: 3;
-}
-
-.flag {
-  stroke-width: 3;
-}
-
-.noteBackdrop {
-  fill: rgb(255 253 247 / 88%);
-}
-
-.noteHead {
-  fill: none;
-  stroke: #6b5031;
-  stroke-width: 2.5;
-}
-
-.noteFill {
-  fill: #e6aab3;
-}
-
-.note[data-state='filled'] .noteFill {
-  fill: #72cfc8;
-}
-
-.activeNote .noteHead {
-  filter: drop-shadow(0 0 7px rgb(225 158 57 / 74%));
-  stroke: #a86f24;
-  stroke-width: 3.2;
-}
-
-.accidental,
-.noteLabel {
-  fill: #60492f;
-  font-weight: 800;
-}
-
-.accidental {
-  font-size: 18px;
-}
-
-.noteLabel {
-  font-size: 12px;
-}
-
-.dot {
-  fill: #6b5031;
 }
 
 .controls {
@@ -679,51 +465,6 @@
   overflow: auto;
 }
 
-.readinessPanel .notationPanel {
-  position: static;
-  width: 100%;
-  padding: 0;
-  transform: none;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.readinessPanel .notationHeading {
-  align-items: stretch;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0;
-}
-
-.readinessPanel .voicePrompt {
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.readinessPanel .voicePrompt > span {
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-.readinessPanel .voicePrompt strong {
-  overflow: visible;
-  font-size: clamp(30px, 5vw, 40px);
-  line-height: 1;
-}
-
-.readinessPanel .voiceFacts {
-  justify-content: center;
-}
-
-.readinessPanel .chargeMeter {
-  padding-top: 8px;
-  font-size: 12px;
-}
-
 .readinessPanel .inlineActions {
   justify-content: center;
   gap: 8px;
@@ -833,52 +574,11 @@
     display: none;
   }
 
-  .notationPanel {
-    top: max(72px, calc(env(safe-area-inset-top) + 66px));
-    padding: 8px 8px 3px;
-  }
-
-  .notationHeading {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .voicePrompt strong {
-    flex-shrink: 0;
-    overflow: visible;
-    text-overflow: clip;
-  }
-
-  .voiceFacts {
-    justify-content: flex-start;
-  }
-
   .movementHint,
   .releaseHint {
     top: max(76px, calc(env(safe-area-inset-top) + 70px));
     min-width: min(208px, calc(100% - 24px));
     padding: 8px 14px;
-  }
-
-  .compactNotation {
-    width: min(460px, calc(100% - 24px));
-  }
-
-  .staff {
-    height: 126px;
-  }
-
-  .withPitchReadout .staff {
-    height: 106px;
-  }
-
-  .notationHeading strong {
-    font-size: 16px;
-  }
-
-  .voiceFacts span {
-    padding-inline: 5px;
   }
 
   .controls {
@@ -935,45 +635,12 @@
     border-radius: 13px;
   }
 
-  .notationPanel {
-    top: max(62px, calc(env(safe-area-inset-top) + 56px));
-    left: max(12px, env(safe-area-inset-left));
-    /* Keep the centre of the course clear when the singing staff expands. */
-    width: min(44vw, calc(50vw - 48px), 440px);
-    padding: 6px 8px;
-    transform: none;
-  }
-
   .movementHint,
   .releaseHint {
     top: max(62px, calc(env(safe-area-inset-top) + 56px));
     left: max(12px, env(safe-area-inset-left));
     padding: 7px 12px;
     transform: none;
-  }
-
-  .compactNotation {
-    width: min(44vw, calc(50vw - 48px), 440px);
-  }
-
-  .staff {
-    height: 92px;
-  }
-
-  .withPitchReadout .staff {
-    height: 60px;
-  }
-
-  .notationHeading {
-    min-height: 18px;
-  }
-
-  .voicePrompt strong {
-    font-size: 15px;
-  }
-
-  .voiceFacts span {
-    font-size: 8px;
   }
 
   .controls {
@@ -1011,30 +678,6 @@
     border-radius: 18px;
   }
 
-  .readinessPanel .notationPanel {
-    grid-column: 1 / -1;
-  }
-
-  .readinessPanel .notationHeading {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .readinessPanel .voicePrompt {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 7px;
-  }
-
-  .readinessPanel .voicePrompt strong {
-    font-size: 28px;
-  }
-
-  .readinessPanel .voiceFacts {
-    justify-content: flex-end;
-  }
-
   .readinessPanel > p {
     grid-column: 1;
     justify-self: start;
@@ -1057,8 +700,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .progressTrack span,
-  .chargeTrack > span {
+  .progressTrack span {
     transition: none;
   }
 

@@ -1,5 +1,5 @@
 // Runner sound and tune panel — saved backing/example levels with native modal focus and access to existing note setup.
-import { createEffect, createMemo, createSignal, onCleanup, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
 import type { GlassMicrophoneInput } from '../host'
 import { runnerMidiName } from '../runner/notation'
 import type { RunnerAudioPreferences, RunnerBackingAvailability, RunnerReferencePlayback, } from '../runner/session-contracts'
@@ -88,7 +88,24 @@ export function RunnerSetup(props: RunnerSetupProps) {
   )
 }
 
+export type RunnerCameraChoice =
+  | 'responsive-close'
+  | 'steering-close'
+  | 'steering-angled'
+export interface RunnerCameraControls {
+  readonly disabled?: boolean
+  readonly profile: RunnerCameraChoice
+  readonly onChange: (profile: RunnerCameraChoice) => void
+}
+
+const CAMERA_VIEWS = [
+  { profile: 'responsive-close', label: 'Standard' },
+  { profile: 'steering-close', label: 'Closer' },
+  { profile: 'steering-angled', label: 'Angled' },
+] as const
+
 interface RunnerSoundTuneProps {
+  cameraControls?: RunnerCameraControls
   openRequest: number
   canChangeNote: boolean
   restoreFocus(): boolean
@@ -186,6 +203,28 @@ export function RunnerSoundTune(props: RunnerSoundTuneProps) {
           Music steps out while you sing. Note examples and the count-in have
           their own level.
         </p>
+        <Show when={props.cameraControls}>
+          {(controls) => (
+            <fieldset class={styles.cameraViews}>
+              <legend>Camera view</legend>
+              <div>
+                <For each={CAMERA_VIEWS}>
+                  {(view) => (
+                    <button
+                      type="button"
+                      class={styles.cameraChoice}
+                      disabled={controls().disabled}
+                      aria-pressed={controls().profile === view.profile}
+                      onClick={() => controls().onChange(view.profile)}
+                    >
+                      {view.label}
+                    </button>
+                  )}
+                </For>
+              </div>
+            </fieldset>
+          )}
+        </Show>
         <label class={styles.volume}>
           <span>
             Music <output>{percentage(props.preferences.musicVolume)}%</output>

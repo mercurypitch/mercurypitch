@@ -21,7 +21,7 @@ interface AdventureScreenProps {
   runner?: boolean
   runnerPace?: SingingCurrentTrialPace
   runnerSteering?: 'continuous'
-  runnerCamera?: 'close'
+  runnerCamera?: 'close' | 'angled'
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   const assetProfile = nativeGameAssetProfile(
@@ -71,14 +71,18 @@ export function AdventureScreen(props: AdventureScreenProps) {
     >
       <SongRunnerScreen
         host={host}
+        allowCameraTuning={props.runnerSteering === 'continuous'}
         course={
           props.runnerSteering === 'continuous'
-            ? props.runnerCamera === 'close'
+            ? props.runnerCamera === 'close' || props.runnerCamera === 'angled'
               ? {
                   ...SINGING_CURRENT_CONTINUOUS_TRIAL,
                   presentation: {
                     ...SINGING_CURRENT_CONTINUOUS_TRIAL.presentation,
-                    cameraProfile: 'steering-close',
+                    cameraProfile:
+                      props.runnerCamera === 'angled'
+                        ? 'steering-angled'
+                        : 'steering-close',
                   },
                 }
               : SINGING_CURRENT_CONTINUOUS_TRIAL

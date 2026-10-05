@@ -35,11 +35,13 @@ vi.mock('@irchiinnuss/glass-game/runner', () => ({
   },
   SongRunnerScreen: (props: {
     course?: { id: string; presentation?: { cameraProfile: string } }
+    allowCameraTuning?: boolean
   }) => (
     <div
       data-testid="runner"
       data-course={props.course?.id ?? 'canonical'}
       data-camera={props.course?.presentation?.cameraProfile}
+      data-camera-tuning={String(props.allowCameraTuning === true)}
     />
   ),
 }))
@@ -100,7 +102,7 @@ describe('Glassworks build access', () => {
     )
   })
 
-  it.each([undefined, 'close'] as const)(
+  it.each([undefined, 'close', 'angled'] as const)(
     'opens isolated steering with independent %s camera',
     (camera) => {
       render(() => (
@@ -117,7 +119,15 @@ describe('Glassworks build access', () => {
       )
       expect(screen.getByTestId('runner')).toHaveAttribute(
         'data-camera',
-        camera === 'close' ? 'steering-close' : 'responsive-close',
+        camera === 'angled'
+          ? 'steering-angled'
+          : camera === 'close'
+            ? 'steering-close'
+            : 'responsive-close',
+      )
+      expect(screen.getByTestId('runner')).toHaveAttribute(
+        'data-camera-tuning',
+        'true',
       )
     },
   )

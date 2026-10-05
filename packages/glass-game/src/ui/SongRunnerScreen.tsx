@@ -9,6 +9,7 @@ import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
 import type { CompiledRunnerCourse } from '../runner/contracts'
 import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
+import type { RunnerCameraChoice } from './RunnerSoundTune'
 import { SongRunnerView } from './SongRunnerView'
 
 export { SINGING_CURRENT_TRIALS }
@@ -16,6 +17,7 @@ export { SINGING_CURRENT_CONTINUOUS_TRIAL }
 export type SingingCurrentTrialPace = keyof typeof SINGING_CURRENT_TRIALS
 
 export interface SongRunnerScreenProps {
+  readonly allowCameraTuning?: boolean
   readonly host: GlassGameHost
   readonly course?: CompiledRunnerCourse
   readonly assetProfile?: GlassAssetQualityProfile
@@ -43,6 +45,7 @@ export function SongRunnerScreen(props: SongRunnerScreenProps) {
           host={props.host}
           course={selected.course}
           comfortableMidi={selected.midi}
+          allowCameraTuning={props.allowCameraTuning}
           assetProfile={props.assetProfile}
           onExit={() => {
             if (props.onExit) props.onExit()
@@ -67,6 +70,7 @@ export function SongRunnerScreen(props: SongRunnerScreenProps) {
 }
 
 function RunnerVisit(props: {
+  allowCameraTuning?: boolean
   host: GlassGameHost
   course: CompiledRunnerCourse
   comfortableMidi: number
@@ -81,6 +85,14 @@ function RunnerVisit(props: {
       course: props.course,
       comfortableMidi: props.comfortableMidi,
       host,
+    }),
+  )
+  const [cameraProfile, setCameraProfile] = createSignal<RunnerCameraChoice>(
+    untrack(() => {
+      const profile = props.course.presentation.cameraProfile
+      return profile === 'steering-close' || profile === 'steering-angled'
+        ? profile
+        : 'responsive-close'
     }),
   )
   const [loading, setLoading] = createSignal(true)
@@ -155,7 +167,15 @@ function RunnerVisit(props: {
     try {
       const next = createSongRunnerRenderer(
         container,
-        props.course,
+        props.allowCameraTuning === true
+          ? {
+              ...props.course,
+              presentation: {
+                ...props.course.presentation,
+                cameraProfile: cameraProfile(),
+              },
+            }
+          : props.course,
         props.comfortableMidi,
         host.assetUrl,
         {
@@ -214,6 +234,31 @@ function RunnerVisit(props: {
   })
   return (
     <SongRunnerView
+      cameraControls={
+        props.allowCameraTuning === true
+          ? {
+              profile: cameraProfile(),
+              disabled: loading() || error() !== undefined,
+              onChange: (profile) => {
+                if (disposed || !renderer || profile === cameraProfile()) return
+                try {
+                  // Pause notifications stop the frame loop before it can publish
+                  // the paused snapshot to the renderer. Sync it without time advancing.
+                  if (!renderer.render(session.state().game, 0))
+                    throw new Error('No usable frame for camera change')
+                  if (renderer.setCameraProfile(profile))
+                    setCameraProfile(profile)
+                } catch (cause) {
+                  failed(
+                    'The view is unavailable. Retry to return to your checkpoint.',
+                    'frame',
+                    cause,
+                  )
+                }
+              },
+            }
+          : undefined
+      }
       course={props.course}
       session={session}
       assetUrl={host.assetUrl}

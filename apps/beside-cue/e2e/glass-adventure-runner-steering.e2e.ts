@@ -210,7 +210,7 @@ for (const viewport of [
   { width: 844, height: 310 },
   { width: 740, height: 360 },
 ]) {
-  test(`three-note staff keeps Merc visible at ${viewport.width}x${viewport.height} @smoke`, async ({
+  test(`three-note ribbon keeps Merc visible at ${viewport.width}x${viewport.height} @smoke`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport)
@@ -244,5 +244,127 @@ for (const viewport of [
       ),
     })
     await page.evaluate(() => window.runnerVoiceFixture.dispose())
+  })
+}
+
+test('ribbon advances to the charged note without losing the complete phrase @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 })
+  await installRunnerVoice(page)
+  await useRunnerControlsRenderer(page)
+  await useRunnerThreeNoteLayout(page, {
+    activeNoteIndex: 1,
+    fillProgress: 0.4,
+  })
+  await page.goto('/glass-game/?layout=singing-current&steering=continuous')
+  await expect(page.getByTestId('song-runner')).toHaveAttribute(
+    'data-phase',
+    'running',
+  )
+  const ribbon = page.getByLabel('Current melody')
+  await expect(ribbon).toContainText('2/3')
+  await expect(
+    ribbon.getByRole('progressbar', { name: 'Note charge' }),
+  ).toHaveAttribute('aria-valuenow', '40')
+  await expect(
+    ribbon.getByLabel('Notes and holds').locator(':scope > span'),
+  ).toHaveCount(2)
+  await expect(
+    ribbon.getByRole('list', { name: 'Complete melody' }).locator('li'),
+  ).toHaveCount(3)
+  await expect(ribbon).toHaveCSS('pointer-events', 'none')
+  await page.evaluate(() => window.runnerVoiceFixture.dispose())
+})
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 568, height: 320 },
+]) {
+  test(`compiled glide ribbon fits ${viewport.width}px without crowding the scene @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await installRunnerVoice(page)
+    await useRunnerControlsRenderer(page)
+    await useRunnerThreeNoteLayout(page, {
+      activeNoteIndex: 1,
+      fillProgress: 0.4,
+      phrase: 'glides',
+    })
+    await page.goto('/glass-game/?layout=singing-current&pace=current')
+    await expect(page.getByTestId('song-runner')).toHaveAttribute(
+      'data-phase',
+      'running',
+    )
+    const ribbon = page.getByLabel('Current melody')
+    const panel = (await ribbon.boundingBox())!
+    await expect(ribbon).toContainText('2/5')
+    const notes = ribbon
+      .getByLabel('Notes and holds')
+      .locator(':scope > span:visible')
+    expect(await notes.count()).toBeGreaterThanOrEqual(2)
+    const position = ribbon.getByLabel('Note 2 of 5')
+    const rightLimit = (await position.boundingBox())!.x
+    let previousRight = panel.x
+    for (const note of await notes.all()) {
+      await expect(note.locator('strong')).toContainText('→')
+      const bounds = (await note.locator('strong').boundingBox())!
+      expect(bounds.x).toBeGreaterThanOrEqual(previousRight)
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(rightLimit)
+      previousRight = bounds.x + bounds.width
+    }
+    if (viewport.width === 568) {
+      await expect(notes).toHaveCount(2)
+      await expect(position.locator('strong:visible')).toHaveText('+2')
+    }
+    await expect(
+      ribbon.getByRole('list', { name: 'Complete melody' }).locator('li'),
+    ).toHaveCount(5)
+    await page.screenshot({
+      path: testInfo.outputPath(`glide-ribbon-${viewport.width}px.png`),
+    })
+  })
+}
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 568, height: 320 },
+]) {
+  test(`upcoming compiled glide cue fits ${viewport.width}px @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await installRunnerVoice(page)
+    await useRunnerControlsRenderer(page)
+    await useRunnerThreeNoteLayout(page, {
+      activeNoteIndex: 0,
+      fillProgress: 0,
+      phrase: 'glides',
+      upcoming: true,
+    })
+    await page.goto('/glass-game/?layout=singing-current&pace=current')
+    await expect(page.getByTestId('song-runner')).toHaveAttribute(
+      'data-phase',
+      'running',
+    )
+    const cue = page.getByTestId('runner-upcoming-cue')
+    await expect(cue).toBeVisible()
+    const bounds = (await cue.boundingBox())!
+    expect(bounds.x).toBeGreaterThanOrEqual(10)
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width - 10)
+    const notes = cue
+      .getByLabel('Notes and holds')
+      .locator(':scope > span:visible')
+    let previousRight = bounds.x
+    for (const note of await notes.all()) {
+      const box = (await note.boundingBox())!
+      expect(box.x).toBeGreaterThanOrEqual(previousRight)
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width)
+      previousRight = box.x + box.width
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(`upcoming-glides-${viewport.width}px.png`),
+    })
   })
 }

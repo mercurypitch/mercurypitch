@@ -5,6 +5,8 @@ import type { CompiledRunnerCourse } from '../runner/contracts'
 import { runnerCameraFollowTarget, runnerCameraPose, } from './runner-world-layout'
 
 export const RUNNER_SCENERY_FOG_FAR = 37
+// The oblique view sees retiring side art longer; this veil preserves two-chunk handoffs.
+export const RUNNER_SCENERY_ANGLED_FOG_FAR = 35
 export const RUNNER_SCENERY_LEGACY_FOG_FAR = 30
 export const RUNNER_SCENERY_VALIDATED_ASPECTS = Object.freeze([
   320 / 740,
@@ -49,6 +51,7 @@ export function runnerSceneryFogFar(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): number {
+  if (cameraProfile === 'steering-angled') return RUNNER_SCENERY_ANGLED_FOG_FAR
   return cameraProfile === 'responsive-close' ||
     cameraProfile === 'steering-close' ||
     (cameraProfile === undefined && laneCenters[2] - laneCenters[0] <= 2.75)

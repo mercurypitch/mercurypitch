@@ -60,17 +60,35 @@ function cameraFor(
   return camera
 }
 
-describe.each([
-  ...viewports,
-  { width: 320, height: 740 },
-  { width: 844, height: 310 },
-])('closer steering camera at $width×$height', (viewport) => {
+describe.each(
+  [
+    ...viewports,
+    { width: 320, height: 740 },
+    { width: 844, height: 310 },
+  ].flatMap((viewport) => [
+    {
+      ...viewport,
+      profile: 'steering-close' as const,
+      minimumHeight: 0.2,
+      maximumHeight: 0.24,
+    },
+    {
+      ...viewport,
+      profile: 'steering-angled' as const,
+      minimumHeight: 0.18,
+      maximumHeight: 0.23,
+    },
+  ]),
+)('$profile camera at $width×$height', (viewport) => {
+  const { profile, minimumHeight, maximumHeight } = viewport
   const aspect = viewport.width / viewport.height
   it('gives the real Merc more presence with clear feet and no edge or jump clipping', () => {
     for (let frame = 0; frame < 100; frame++) poseMerc(0)
-    const centre = projectedBody(cameraFor(aspect, 0, 'steering-close'))
-    expect((centre.maxY - centre.minY) / 2).toBeGreaterThanOrEqual(0.2)
-    expect((centre.maxY - centre.minY) / 2).toBeLessThanOrEqual(0.24)
+    const centre = projectedBody(cameraFor(aspect, 0, profile))
+    expect((centre.maxY - centre.minY) / 2).toBeGreaterThanOrEqual(
+      minimumHeight,
+    )
+    expect((centre.maxY - centre.minY) / 2).toBeLessThanOrEqual(maximumHeight)
     expect((1 - centre.minY) / 2).toBeGreaterThan(0.72)
     expect((1 - centre.minY) / 2).toBeLessThan(0.84)
     const edge = 3 - course.movement.bodyRadius
@@ -79,7 +97,7 @@ describe.each([
       x,
       course.laneCenters,
       aspect,
-      'steering-close',
+      profile,
       true,
     )
     for (let frame = 0; frame < 180; frame++) {
@@ -98,21 +116,51 @@ describe.each([
       )
       followX = stepRunnerCameraFollow(
         followX,
-        runnerCameraFollowTarget(
-          x,
-          course.laneCenters,
-          aspect,
-          'steering-close',
-          true,
-        ),
+        runnerCameraFollowTarget(x, course.laneCenters, aspect, profile, true),
         1 / 60,
       )
       poseMerc(x, y)
-      const body = projectedBody(cameraFor(aspect, followX, 'steering-close'))
+      const body = projectedBody(cameraFor(aspect, followX, profile))
       expect(body.minX).toBeGreaterThan(-0.96)
       expect(body.maxX).toBeLessThan(0.96)
       expect(body.minY).toBeGreaterThan(-0.96)
       expect(body.maxY).toBeLessThan(0.96)
+    }
+  })
+  it('shows the terrain under Merc and both gap lips across the full continuous track', () => {
+    const trackEdge = 3 - course.movement.bodyRadius
+    for (const playerX of [-trackEdge, 0, trackEdge]) {
+      const followX = runnerCameraFollowTarget(
+        playerX,
+        course.laneCenters,
+        aspect,
+        profile,
+        true,
+      )
+      const camera = cameraFor(aspect, followX, profile)
+      for (const gap of course.obstacles) {
+        if (gap.kind !== 'gap') continue
+        const useful = runnerUsefulJumpWindow(course, gap)!
+        const seconds = useful.launchOpenCourseSeconds + 0.25
+        const distance =
+          runnerSecondsToBeat(course.tempoSegments, seconds) *
+          course.metersPerBeat
+        for (const x of [
+          playerX - course.movement.bodyRadius,
+          playerX,
+          playerX + course.movement.bodyRadius,
+        ]) {
+          for (const z of [
+            0,
+            distance - gap.minCourseDistanceMeters,
+            distance - gap.maxCourseDistanceMeters,
+          ]) {
+            const point = new Vector3(x, 0, z).project(camera)
+            expect(Math.abs(point.x)).toBeLessThan(0.96)
+            expect(Math.abs(point.y)).toBeLessThan(0.96)
+          }
+        }
+      }
     }
   })
 })

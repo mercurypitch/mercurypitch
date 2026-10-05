@@ -235,14 +235,16 @@ for (const viewport of [
       0.75,
     )
     await expect(notation).toContainText('Sing to start')
-    await expect(notation.locator('strong[aria-label]')).toHaveText('A#3')
+    await expect(
+      notation.getByLabel('Notes and holds').locator('strong').first(),
+    ).toHaveText('A#3')
     await expect(
       page.getByRole('progressbar', { name: 'Ready note' }),
     ).toHaveCount(1)
     await page.evaluate(() => window.runnerVoiceFixture.dispose())
   })
 
-  test(`starting hold percentage matches the visible fill at ${viewport.width} by ${viewport.height} @smoke`, async ({
+  test(`starting hold progress matches the medallion fill at ${viewport.width} by ${viewport.height} @smoke`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport)
@@ -281,19 +283,14 @@ for (const viewport of [
               const meter = document.querySelector<HTMLElement>(
                 '[aria-label="Current melody"] [role="progressbar"]',
               )!
-              const fill = meter.firstElementChild!
+              const fill = meter.querySelector<HTMLElement>('[data-note-fill]')!
               const value = Number(meter.getAttribute('aria-valuenow'))
               if (value > 0)
                 recorded.push({
                   value,
-                  displayed: Number(
-                    meter
-                      .parentElement!.querySelector('strong')!
-                      .textContent!.replace('%', ''),
-                  ),
+                  displayed: Number.parseFloat(fill.style.height),
                   visible:
-                    (fill.getBoundingClientRect().width /
-                      meter.getBoundingClientRect().width) *
+                    (fill.getBoundingClientRect().height / meter.clientHeight) *
                     100,
                 })
               requestAnimationFrame(sample)

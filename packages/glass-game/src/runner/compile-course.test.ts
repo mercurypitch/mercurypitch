@@ -77,6 +77,22 @@ function mutableJsonClone<T>(value: T): Mutable<T> {
 }
 
 describe('song runner course compiler', () => {
+  it('compiles an angled camera as presentation only, preserving timing and gameplay', () => {
+    const source = responsiveSourceClone()
+    source.courses[0]!.presentation.cameraProfile = 'steering-angled'
+    const compiled = compileSongRunnerCourseDocument(
+      source,
+      SINGING_CURRENT_RESPONSIVE_CATALOG,
+    )[0]!
+    expect(compiled).toEqual({
+      ...SINGING_CURRENT_RESPONSIVE,
+      presentation: {
+        ...SINGING_CURRENT_RESPONSIVE.presentation,
+        cameraProfile: 'steering-angled',
+      },
+    })
+  })
+
   it.each([1.5, 17, 1e9])(
     'rejects unsupported count-in allocation for %s beats',
     (countInBeats) => {

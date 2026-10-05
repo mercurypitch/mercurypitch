@@ -1,49 +1,32 @@
 .cue {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 4px 10px;
+  gap: 8px;
   margin-top: 4px;
-  padding-top: 5px;
-  border-top: 1px solid rgb(40 96 94 / 18%);
+  padding-top: 3px;
   color: #244d51;
-  font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.15;
 }
-
 .label {
+  max-width: 48px;
   font-size: 11px;
   font-weight: 650;
+  text-align: center;
 }
-.notes {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 12px;
-}
-.note {
-  display: inline-flex;
-  gap: 4px;
-  align-items: baseline;
-  white-space: nowrap;
-}
-.note strong {
-  font-size: 14px;
-}
-.note > span {
-  color: #456a68;
+.remaining {
+  color: #496f65;
   font-size: 11px;
-  font-variant-numeric: tabular-nums;
+  font-weight: 750;
 }
-
-@media (max-height: 560px) and (orientation: landscape) {
-  .cue {
-    margin-top: 2px;
-    padding-top: 2px;
-    gap: 2px 8px;
-  }
-  .note strong {
-    font-size: 12px;
-  }
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

@@ -52,7 +52,7 @@ export function RunnerPitchReadout(props: RunnerPitchReadoutProps) {
           {readout().cue}
         </span>
       </div>
-      <div class={styles.pitch}>
+      <div class={styles.targetText}>
         <span>Target</span>
         <strong data-pitch-target>{readout().targetLabel}</strong>
       </div>

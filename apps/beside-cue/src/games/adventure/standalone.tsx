@@ -186,7 +186,11 @@ async function mount(): Promise<void> {
             : undefined
         }
         runnerCamera={
-          runner && query.get('camera') === 'close' ? 'close' : undefined
+          runner && query.get('camera') === 'angled'
+            ? 'angled'
+            : runner && query.get('camera') === 'close'
+              ? 'close'
+              : undefined
         }
         campaign={
           !import.meta.env.DEV ||

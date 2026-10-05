@@ -40,6 +40,9 @@ export interface SongRunnerRenderer {
   readonly ready: Promise<void>
   render(snapshot: RunnerSnapshot, deltaSeconds: number): boolean
   resize(): void
+  setCameraProfile(
+    profile: CompiledRunnerCourse['presentation']['cameraProfile'],
+  ): boolean
   metrics(): {
     drawCalls: number
     triangles: number
@@ -62,14 +65,16 @@ export function createSongRunnerRenderer(
   assetUrl: (id: string) => string,
   options: SongRunnerRendererOptions,
 ): SongRunnerRenderer {
+  let cameraProfile = course.presentation.cameraProfile
   const abort = new AbortController()
   const scene = new Scene()
   scene.background = new Color(0xc8dce0)
-  scene.fog = new Fog(
+  const fog = new Fog(
     0xc8dce0,
     18,
-    runnerSceneryFogFar(course.laneCenters, course.presentation.cameraProfile),
+    runnerSceneryFogFar(course.laneCenters, cameraProfile),
   )
+  scene.fog = fog
   const camera = new PerspectiveCamera(55, 1, 0.08, 75)
   const quality = resolveGlassRenderQuality('auto', {
     cssWidth: container.clientWidth,
@@ -125,14 +130,10 @@ export function createSongRunnerRenderer(
     options.initialSnapshot.player.lateralX,
     course.laneCenters,
     1,
-    course.presentation.cameraProfile,
+    cameraProfile,
     course.movement.kind === 'continuous',
   )
-  let cameraPose = runnerCameraPose(
-    1,
-    course.laneCenters,
-    course.presentation.cameraProfile,
-  )
+  let cameraPose = runnerCameraPose(1, course.laneCenters, cameraProfile)
   const key = new DirectionalLight(
     RUNNER_LOOK.key.color,
     RUNNER_LOOK.key.intensity,
@@ -193,23 +194,61 @@ export function createSongRunnerRenderer(
       height = container.clientHeight
     renderer.setSize(width, height, false)
     camera.aspect = width / height
+    refreshCameraPose()
+    if (sky) fitSkyBackdrop(sky, width, height)
+    shadowCadence.invalidate()
+  }
+
+  function refreshCameraPose() {
     cameraPose = runnerCameraPose(
       camera.aspect,
       course.laneCenters,
-      course.presentation.cameraProfile,
+      cameraProfile,
     )
     camera.fov = cameraPose.fovDegrees
     cameraFollowX = runnerCameraFollowTarget(
       (latest ?? options.initialSnapshot).player.lateralX,
       course.laneCenters,
       camera.aspect,
-      course.presentation.cameraProfile,
+      cameraProfile,
       course.movement.kind === 'continuous',
     )
     applyCameraPose()
     camera.updateProjectionMatrix()
-    if (sky) fitSkyBackdrop(sky, width, height)
     shadowCadence.invalidate()
+  }
+
+  function setCameraProfile(
+    profile: CompiledRunnerCourse['presentation']['cameraProfile'],
+  ): boolean {
+    if (
+      disposed ||
+      contextLost ||
+      !loaded ||
+      !scenery ||
+      latest?.status === 'running' ||
+      !canRenderViewport(
+        container.clientWidth,
+        container.clientHeight,
+        renderer.getPixelRatio(),
+      )
+    )
+      return false
+    if (
+      profile !== 'responsive-close' &&
+      profile !== 'steering-close' &&
+      profile !== 'steering-angled'
+    )
+      return false
+    if (profile === cameraProfile) return true
+    if (!scenery.setCameraProfile(profile)) return false
+    cameraProfile = profile
+    fog.far = runnerSceneryFogFar(course.laneCenters, profile)
+    merc!.root.scale.setScalar(
+      runnerMercVisualHeightMeters(course.laneCenters, profile) / 0.55,
+    )
+    refreshCameraPose()
+    return render(latest ?? options.initialSnapshot, 0)
   }
 
   function lost(event: Event) {
@@ -292,10 +331,7 @@ export function createSongRunnerRenderer(
       // The shared loader normalizes Merc to 0.55m. Runner framing owns a
       // larger presentation scale while compiled collision remains conservative.
       merc.root.scale.setScalar(
-        runnerMercVisualHeightMeters(
-          course.laneCenters,
-          course.presentation.cameraProfile,
-        ) / 0.55,
+        runnerMercVisualHeightMeters(course.laneCenters, cameraProfile) / 0.55,
       )
       scene.add(merc.root)
       const marble = await texture('floor-marble')
@@ -352,8 +388,9 @@ export function createSongRunnerRenderer(
         finishes,
       )
       const dressedOpening =
-        course.presentation.cameraProfile === 'responsive-close' ||
-        course.presentation.cameraProfile === 'steering-close'
+        cameraProfile === 'responsive-close' ||
+        cameraProfile === 'steering-close' ||
+        cameraProfile === 'steering-angled'
       if (dressedOpening)
         opening = createRunnerOpening({
           course,
@@ -447,7 +484,7 @@ export function createSongRunnerRenderer(
         snapshot.player.lateralX,
         course.laneCenters,
         camera.aspect,
-        course.presentation.cameraProfile,
+        cameraProfile,
         course.movement.kind === 'continuous',
       ),
       dt,
@@ -496,6 +533,7 @@ export function createSongRunnerRenderer(
     ready,
     render,
     resize,
+    setCameraProfile,
     metrics: () => ({
       adaptiveQualityActive: performanceGovernor.metrics().adapted,
       actualPixelRatio: renderer.getPixelRatio(),

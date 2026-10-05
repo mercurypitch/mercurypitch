@@ -17,11 +17,13 @@ import { runnerUpcomingCue } from './runner-upcoming-cue'
 import { RunnerControls } from './RunnerControls'
 import { RunnerFinishRewards } from './RunnerFinishRewards'
 import { RunnerNotation } from './RunnerNotation'
+import type { RunnerCameraControls } from './RunnerSoundTune'
 import { RunnerSetup, RunnerSoundTune } from './RunnerSoundTune'
 import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
 
 interface SongRunnerViewProps {
+  cameraControls?: RunnerCameraControls
   course: CompiledRunnerCourse
   session: SongRunnerSession
   assetUrl(id: string): string
@@ -42,7 +44,7 @@ interface SongRunnerViewProps {
 function phaseAnnouncement(phase: RunnerSessionPhase): string | null {
   switch (phase) {
     case 'readiness':
-      return 'Sing the note shown and hold it until the bar fills.'
+      return 'Sing the note shown and hold until the note fills.'
     case 'count-in':
       return 'Get ready. Count-in started.'
     case 'running':
@@ -194,11 +196,6 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       return runnerMidiName(props.comfortableMidi).text
     return voiceCue()?.instruction ?? 'Your note'
   })
-  const notationDisplayLabel = createMemo(
-    () =>
-      runnerMidiName(pitchTarget()?.currentTargetMidi ?? props.comfortableMidi)
-        .text,
-  )
   const notationScoreStatus = createMemo(() => {
     if (state().phase === 'readiness') return 'Start note'
     if (state().phase === 'count-in') return 'Scoring opens after count-in'
@@ -206,12 +203,6 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   })
   const showPitchReadout = createMemo(
     () => state().phase === 'readiness' || voiceCue()?.scoringOpen === true,
-  )
-  const compactNotation = createMemo(
-    () =>
-      ['readiness', 'count-in'].includes(state().phase) ||
-      (compiledTarget()?.completionPolicy === 'charge' &&
-        notationNotes().length === 1),
   )
   const upcomingCue = createMemo(() =>
     state().phase === 'running'
@@ -398,6 +389,9 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       data-lateral-velocity={game().player.lateralVelocityMetersPerSecond.toFixed(
         3,
       )}
+      data-camera-profile={
+        props.cameraControls?.profile ?? props.course.presentation.cameraProfile
+      }
       data-player-feet-y={game().player.feetY.toFixed(3)}
       data-player-grounded={String(game().player.grounded)}
     >
@@ -430,6 +424,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <span class={styles.combo}>{game().combo} in a row</span>
         </Show>
         <RunnerSoundTune
+          cameraControls={props.cameraControls}
           openRequest={soundRequest()}
           canChangeNote={state().phase !== 'finished'}
           restoreFocus={() => {
@@ -475,23 +470,20 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           aria-label={phase() === 'readiness' ? 'Start note' : undefined}
         >
           <RunnerNotation
+            embedded={phase() === 'readiness'}
             notes={notationNotes()}
             activeNoteIndex={activeTarget()?.noteIndex ?? 0}
             phaseLabel={notationPhaseLabel()}
-            displayLabel={notationDisplayLabel()}
             instruction={notationInstruction()}
             target={pitchTarget()}
             showPitchReadout={showPitchReadout()}
             microphoneStatus={runnerMicrophoneStatus(state().microphone)}
             scoreStatus={notationScoreStatus()}
-            compact={compactNotation()}
-            shortHold={compiledTarget()?.completionPolicy === 'charge'}
-            meterLabel={phase() === 'readiness' ? 'Hold' : undefined}
             meterName={phase() === 'readiness' ? 'Ready note' : undefined}
             upcomingCue={upcomingCue()}
           />
           <Show when={phase() === 'readiness'}>
-            <p>Hold this note until the bar fills.</p>
+            <p>Hold until the note fills.</p>
             <p
               class={styles.readinessInput}
               data-testid="runner-readiness-input"

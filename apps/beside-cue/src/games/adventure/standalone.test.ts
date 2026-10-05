@@ -8,7 +8,7 @@ const mounted = vi.hoisted(() => ({
   levels: [] as (LevelDefinition | undefined)[],
   runners: [] as boolean[],
   steering: [] as ('continuous' | undefined)[],
-  cameras: [] as ('close' | undefined)[],
+  cameras: [] as ('close' | 'angled' | undefined)[],
   runnerPaces: [] as ('current' | 'learning' | 'responsive' | undefined)[],
 }))
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
@@ -22,7 +22,7 @@ vi.mock('./AdventureScreen', () => ({
     level?: LevelDefinition
     runner?: boolean
     runnerSteering?: 'continuous'
-    runnerCamera?: 'close'
+    runnerCamera?: 'close' | 'angled'
     runnerPace?: 'current' | 'learning' | 'responsive'
   }) => {
     mounted.levels.push(untrack(() => props.level))
@@ -71,6 +71,15 @@ async function mountAt(development: boolean, layout: string, pace?: string) {
 describe('standalone development route', () => {
   it.each([
     ['dev', 'singing-current', 'continuous', 'close', 'continuous', 'close'],
+    ['dev', 'singing-current', 'continuous', 'angled', 'continuous', 'angled'],
+    [
+      'release',
+      'singing-current',
+      'continuous',
+      'angled',
+      undefined,
+      undefined,
+    ],
     ['ci', 'singing-current', 'continuous', 'default', 'continuous', undefined],
     ['ci', 'singing-current', 'lanes', 'close', undefined, 'close'],
     ['dev', 'singing-current', 'other', 'other', undefined, undefined],

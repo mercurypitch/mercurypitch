@@ -168,3 +168,39 @@
   outline: 3px solid #28716f;
   outline-offset: 3px;
 }
+
+.cameraViews {
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.cameraViews legend {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.cameraViews > div {
+  display: flex;
+  gap: 6px;
+}
+.cameraChoice {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid #a4bfbc;
+  border-radius: 12px;
+  background: #edf7f3;
+  color: #244d51;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cameraChoice[aria-pressed='true'] {
+  background: #244d51;
+  border-color: #244d51;
+  color: #fffdf7;
+}
+.cameraChoice:focus-visible {
+  outline: 3px solid #28716f;
+  outline-offset: 3px;
+}

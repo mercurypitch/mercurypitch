@@ -4,10 +4,10 @@ import type { InstancedMesh, Material, Object3D, ShaderMaterial } from 'three'
 import { BoxGeometry, Float32BufferAttribute, Group, Matrix4, Mesh, MeshStandardMaterial, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { RunnerSnapshot } from '../runner/contracts'
-import { SINGING_CURRENT } from '../runner/first-course'
+import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
 import { createRunnerScenery } from './runner-scenery'
-import { createRunnerSceneryLayout } from './runner-scenery-layout'
+import { createRunnerSceneryLayout, runnerSceneryPlacementMatrix, } from './runner-scenery-layout'
 
 interface DonorFixture {
   readonly museum: Group
@@ -157,10 +157,10 @@ function instanceMeshes(root: Object3D): InstancedMesh[] {
   )
 }
 
-function fixture(reducedMotion = false) {
+function fixture(reducedMotion = false, course = SINGING_CURRENT) {
   const source = donors()
   const scenery = createRunnerScenery({
-    course: SINGING_CURRENT,
+    course,
     museumScene: source.museum,
     gardenScene: source.garden,
     arcadeScene: source.arcade,
@@ -179,6 +179,90 @@ function waterMeshes(root: Object3D): InstancedMesh[] {
 }
 
 describe('runner scenery', () => {
+  it('switches certified camera handoffs at the current distance using the same fixed GPU pools', async () => {
+    const course = SINGING_CURRENT_CONTINUOUS_TRIAL
+    const { scenery } = fixture(false, course)
+    const original = createRunnerSceneryLayout(course)
+    const angled = createRunnerSceneryLayout({
+      ...course,
+      presentation: {
+        ...course.presentation,
+        cameraProfile: 'steering-angled',
+      },
+    })
+    const index = original.handoffs.findIndex(
+      (handoff, i) =>
+        handoff.atCourseDistanceMeters !==
+        angled.handoffs[i]!.atCourseDistanceMeters,
+    )
+    expect(index).toBeGreaterThanOrEqual(0)
+    const distance =
+      (original.handoffs[index]!.atCourseDistanceMeters +
+        angled.handoffs[index]!.atCourseDistanceMeters) /
+      2
+    expect(original.select(distance).key).not.toBe(angled.select(distance).key)
+    scenery.update(snapshot(distance, 'paused'))
+    const meshes = instanceMeshes(scenery.root)
+    const identities = meshes.map((mesh) => ({
+      geometry: mesh.geometry,
+      material: mesh.material,
+      matrix: mesh.instanceMatrix,
+      buffer: mesh.instanceMatrix.array.buffer,
+    }))
+    const beforeBytes = scenery.metrics().buffersBytes
+    const waterTime = (waterMeshes(scenery.root)[0]!.material as ShaderMaterial)
+      .uniforms.uTime!.value
+    for (const profile of [
+      'steering-angled',
+      'steering-close',
+      'responsive-close',
+      'steering-angled',
+    ] as const) {
+      expect(scenery.setCameraProfile(profile)).toBe(true)
+      const expected = createRunnerSceneryLayout({
+        ...course,
+        presentation: { ...course.presentation, cameraProfile: profile },
+      }).select(distance)
+      const terrace = meshes.find((mesh) =>
+        mesh.name.includes('runner-scenery-terrace-'),
+      )!
+      const placements = expected.placements.filter(
+        (placement) => placement.kind === 'terrace',
+      )
+      expect(terrace.count).toBe(placements.length)
+      placements.forEach((placement, placementIndex) => {
+        const actual = new Matrix4()
+        terrace.getMatrixAt(placementIndex, actual)
+        const target = runnerSceneryPlacementMatrix(placement)
+        actual.elements.forEach((value, element) =>
+          expect(value).toBeCloseTo(target.elements[element]!, 5),
+        )
+      })
+      meshes.forEach((mesh, meshIndex) => {
+        const identity = identities[meshIndex]!
+        expect(mesh.geometry).toBe(identity.geometry)
+        expect(mesh.material).toBe(identity.material)
+        expect(mesh.instanceMatrix).toBe(identity.matrix)
+        expect(mesh.instanceMatrix.array.buffer).toBe(identity.buffer)
+      })
+      expect(scenery.metrics().residentChunks).toBe(2)
+      expect(scenery.metrics().buffersBytes).toBe(beforeBytes)
+      expect(scenery.root.position.z).toBe(distance)
+      expect(
+        (waterMeshes(scenery.root)[0]!.material as ShaderMaterial).uniforms
+          .uTime!.value,
+      ).toBe(waterTime)
+    }
+    const versions = meshes.map((mesh) => mesh.instanceMatrix.version)
+    expect(scenery.setCameraProfile('steering-angled')).toBe(true)
+    expect(meshes.map((mesh) => mesh.instanceMatrix.version)).toEqual(versions)
+    await scenery.withWarmupState(async () => {
+      expect(scenery.setCameraProfile('responsive-close')).toBe(false)
+    })
+    scenery.dispose()
+    expect(scenery.setCameraProfile('responsive-close')).toBe(false)
+  })
+
   it('omits the replaced opening chunks without restoring them during warmup or checkpoint replay', async () => {
     const source = donors()
     const scenery = createRunnerScenery({
