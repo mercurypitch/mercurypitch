@@ -1754,6 +1754,20 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Rule:** inspect the failing response and hydrate the exact runtime inventory before regenerating art; private source symlinks do not supply public runtime deliveries. The gallery guard names unresolved pointers, while native builds verify their inventory.
 **See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/scripts/native-games.ts`.
 
+### Verify native route dependencies beyond a self-consistent inventory
+
+**Symptom:** the runner appeared in TestFlight's Games list but failed loading, although every packaged asset matched its checksum.
+**Cause:** native staging still pruned two runner scenery models as standalone-only; its checksum inventory faithfully described the incomplete package.
+**Rule:** when exposing a native route, verify its mandatory assets survive public-copy pruning and platform staging, then exercise the packaged route. A matching inventory proves integrity, not dependency completeness.
+**See:** `apps/beside-cue/scripts/game-assets.ts`, `apps/beside-cue/scripts/native-games.test.ts`.
+
+### Close owned decoded images when retiring a GLTF document
+
+**Symptom:** returning to the floating museum after several galleries lost the active iOS graphics context.
+**Cause:** the audit found map documents disposing GPU textures while retaining decoded ImageBitmaps, and failed scenes remaining allocated until retry. Those are avoidable memory costs; the device reset's exact trigger is not established.
+**Rule:** close each uniquely owned decoded image after its last consumer retires, including late-abort loads. Retire failed scenes immediately and distinguish intentional context disposal from an active failure in device logs.
+**See:** `packages/glass-game/src/journey/resources.ts`, `packages/glass-game/src/journey/scene.ts`, `apps/beside-cue/src/dev/game-diagnostics.ts`.
+
 ### Assert the loaded asset tier in visual comparisons
 
 **Symptom:** changing textures, shadows and glass geometry appeared to leave a platform defect unchanged.

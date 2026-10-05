@@ -2,6 +2,7 @@
 
 import type { AnimationClip, Group } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { collectAssetTextureImages, releaseAssetImage, } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
 
 export interface JourneyGltfDocument {
@@ -73,19 +74,27 @@ export async function loadJourneyGltf(
       cause: error,
     })
   }
+  // Keep the decoded image owners even if presentation later replaces a material.
+  const decodedImages = collectAssetTextureImages(parsed.scene)
+  let disposed = false
+  const dispose = () => {
+    if (disposed) return
+    disposed = true
+    try {
+      disposeObject(parsed.scene)
+    } finally {
+      decodedImages.forEach((image) => releaseAssetImage(image))
+      decodedImages.clear()
+    }
+  }
   if (signal.aborted) {
-    disposeObject(parsed.scene)
+    dispose()
     throw abortError()
   }
-  let disposed = false
   return {
     scene: parsed.scene,
     animations: parsed.animations,
-    dispose() {
-      if (disposed) return
-      disposed = true
-      disposeObject(parsed.scene)
-    },
+    dispose,
   }
 }
 

@@ -6,6 +6,7 @@ import type { AnimationAction, AnimationClip, Object3D, SkinnedMesh, WebGLRender
 import { ACESFilmicToneMapping, AnimationMixer, Box3, CircleGeometry, DirectionalLight, Group, HemisphereLight, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, PerspectiveCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import { disposeObject } from './dispose'
 import { verifyFirstFrame } from './first-frame'
+import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
 import { createReflectionTexture } from './materials'
 import type { MercModelAsset } from './merc-model'
 import { loadMercModel } from './merc-model'
@@ -42,6 +43,10 @@ const PREVIEW_CLIP_NAMES = new Set(['welcome', 'listen', 'laugh'])
 
 function requireStudioRenderTargets(renderer: WebGLRenderer): void {
   const context = renderer.getContext()
+  // Keep the existing conservative preview profile during scene loading.
+  // The half-float reflection source itself no longer needs float-linear, but
+  // relaxing this guard would add a second animated context on affected phones.
+  // Validate that peak-memory cost separately from the main-scene repair.
   if (
     context.getExtension('EXT_color_buffer_float') === null ||
     context.getExtension('OES_texture_float_linear') === null
@@ -307,6 +312,7 @@ export function createLoadingMerc(
   const release = (): void => {
     if (disposed) return
     disposed = true
+    retireGraphicsCanvas(canvas)
     abort.abort()
     if (raf !== 0) cancelAnimationFrame(raf)
     raf = 0
@@ -417,6 +423,7 @@ export function createLoadingMerc(
       antialias: true,
       powerPreference: 'low-power',
     })
+    registerGraphicsCanvas(canvas, 'loading-merc')
     renderer.outputColorSpace = SRGBColorSpace
     renderer.toneMapping = ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.02

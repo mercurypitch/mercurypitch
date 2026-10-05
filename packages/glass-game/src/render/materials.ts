@@ -2,7 +2,7 @@
 // Museum materials — veined stone, warm brass and directional glass reflections.
 // ============================================================
 
-import { CanvasTexture, DataTexture, EquirectangularReflectionMapping, FloatType, LinearFilter, MeshPhysicalMaterial, RepeatWrapping, RGBAFormat, SRGBColorSpace, Vector2, } from 'three'
+import { CanvasTexture, DataTexture, DataUtils, EquirectangularReflectionMapping, HalfFloatType, LinearFilter, MeshPhysicalMaterial, RepeatWrapping, RGBAFormat, SRGBColorSpace, Vector2, } from 'three'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 
 export const MUSEUM_COLORS = {
@@ -58,7 +58,10 @@ export function createReflectionTexture(
 ): DataTexture {
   const width = 512
   const height = 256
-  const data = new Float32Array(width * height * 4)
+  // WebGL2 filters RGBA16F linearly without OES_texture_float_linear, while
+  // retaining the bright HDR key used by PMREM and the authored reflections.
+  const data = new Uint16Array(width * height * 4)
+  const alpha = DataUtils.toHalfFloat(1)
   for (let y = 0; y < height; y++) {
     const latitude = ((y + 0.5) / height - 0.5) * Math.PI
     const dy = Math.sin(latitude)
@@ -74,31 +77,40 @@ export function createReflectionTexture(
       const rim =
         Math.pow(Math.max(0, dx * 0.8 + dy * 0.35 + dz * -0.48), 25) * 3
       const i = (y * width + x) * 4
-      data[i] =
+      data[i] = DataUtils.toHalfFloat(
         0.018 +
-        sky * 0.16 +
-        horizon * 0.9 +
-        key +
-        rim * 0.12 +
-        ground * (options.lowerHemisphereFill?.[0] ?? 0)
-      data[i + 1] =
+          sky * 0.16 +
+          horizon * 0.9 +
+          key +
+          rim * 0.12 +
+          ground * (options.lowerHemisphereFill?.[0] ?? 0),
+      )
+      data[i + 1] = DataUtils.toHalfFloat(
         0.03 +
-        sky * 0.3 +
-        horizon * 0.55 +
-        key * 0.79 +
-        rim * 0.65 +
-        ground * (options.lowerHemisphereFill?.[1] ?? 0)
-      data[i + 2] =
+          sky * 0.3 +
+          horizon * 0.55 +
+          key * 0.79 +
+          rim * 0.65 +
+          ground * (options.lowerHemisphereFill?.[1] ?? 0),
+      )
+      data[i + 2] = DataUtils.toHalfFloat(
         0.045 +
-        sky * 0.42 +
-        horizon * 0.29 +
-        key * 0.5 +
-        rim * 0.85 +
-        ground * (options.lowerHemisphereFill?.[2] ?? 0)
-      data[i + 3] = 1
+          sky * 0.42 +
+          horizon * 0.29 +
+          key * 0.5 +
+          rim * 0.85 +
+          ground * (options.lowerHemisphereFill?.[2] ?? 0),
+      )
+      data[i + 3] = alpha
     }
   }
-  const texture = new DataTexture(data, width, height, RGBAFormat, FloatType)
+  const texture = new DataTexture(
+    data,
+    width,
+    height,
+    RGBAFormat,
+    HalfFloatType,
+  )
   texture.mapping = EquirectangularReflectionMapping
   texture.magFilter = texture.minFilter = LinearFilter
   texture.needsUpdate = true

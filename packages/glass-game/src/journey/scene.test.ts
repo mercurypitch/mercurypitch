@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
   waterDispose: vi.fn(),
   environmentDispose: vi.fn(),
   environmentLoad: vi.fn(() => Promise.resolve()),
+  canvas: undefined as HTMLCanvasElement | undefined,
   loadModels: vi.fn(),
   loopDispose: vi.fn(),
   loopSetForeground: vi.fn(),
@@ -83,6 +84,9 @@ vi.mock('three', async (original) => ({
     })
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
+    constructor() {
+      state.canvas = this.domElement as unknown as HTMLCanvasElement
+    }
   },
 }))
 
@@ -147,6 +151,7 @@ vi.mock('../render/environment', () => ({
   },
 }))
 
+import { getGraphicsCanvasDiagnostic } from '../render/graphics-diagnostics'
 import { createMuseumJourneyScene } from './scene'
 
 const DEFINITION: MuseumJourneyDefinition = {
@@ -183,6 +188,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   state.environmentShouldFail = true
   state.renderFrame = undefined
+  state.canvas = undefined
   state.resize = undefined
   state.getError.mockReset().mockReturnValue(0)
   state.canvasListeners.clear()
@@ -246,6 +252,10 @@ it('retires acquired owners and preserves the original construction failure', ()
   expect(state.forceContextLoss).toHaveBeenCalledOnce()
   expect(state.canvasRemove).toHaveBeenCalledOnce()
   expect(append).not.toHaveBeenCalled()
+  expect(getGraphicsCanvasDiagnostic(state.canvas!)).toMatchObject({
+    scene: 'museum-map',
+    lifecycle: 'disposed',
+  })
 })
 
 it.each([0, 1, 1024])(
@@ -513,6 +523,18 @@ it('retires active gestures and ignores selection mutations after context loss',
     const modelSignal = state.loadModels.mock.calls[0]?.[3] as AbortSignal
     expect(modelSignal.aborted).toBe(false)
     const selectionsBeforeLoss = model.setSelected.mock.calls.length
+    const pendingPointerDown = state.canvasListeners.get('pointerdown') as (
+      event: PointerEvent,
+    ) => void
+    const pendingPointerUp = state.canvasListeners.get('pointerup') as (
+      event: PointerEvent,
+    ) => void
+    let diagnosticAtForcedLoss: ReturnType<typeof getGraphicsCanvasDiagnostic>
+    let listenersAtForcedLoss: number | undefined
+    state.forceContextLoss.mockImplementationOnce(() => {
+      listenersAtForcedLoss = state.canvasListeners.size
+      diagnosticAtForcedLoss = getGraphicsCanvasDiagnostic(state.canvas!)
+    })
 
     dispatchCanvasEvent('pointerdown', {
       pointerId: 1,
@@ -523,17 +545,17 @@ it('retires active gestures and ignores selection mutations after context loss',
     dispatchCanvasEvent('webglcontextlost', {
       preventDefault,
     } as unknown as Event)
-    dispatchCanvasEvent('pointerup', {
+    pendingPointerUp({
       pointerId: 1,
       clientX: 512,
       clientY: 384,
     } as PointerEvent)
-    dispatchCanvasEvent('pointerdown', {
+    pendingPointerDown({
       pointerId: 2,
       clientX: 512,
       clientY: 384,
     } as PointerEvent)
-    dispatchCanvasEvent('pointerup', {
+    pendingPointerUp({
       pointerId: 2,
       clientX: 512,
       clientY: 384,
@@ -546,9 +568,106 @@ it('retires active gestures and ignores selection mutations after context loss',
     expect(onSelect).not.toHaveBeenCalled()
     expect(intersect).not.toHaveBeenCalled()
     expect(model.setSelected).toHaveBeenCalledTimes(selectionsBeforeLoss)
+    expect(model.dispose).toHaveBeenCalledOnce()
+    expect(state.rendererDispose).toHaveBeenCalledOnce()
+    expect(state.forceContextLoss).toHaveBeenCalledOnce()
+    expect(state.loopDispose).toHaveBeenCalledOnce()
+    expect(state.skyDispose).toHaveBeenCalledOnce()
+    expect(state.waterDispose).toHaveBeenCalledOnce()
+    expect(state.environmentDispose).toHaveBeenCalledOnce()
+    expect(state.canvasRemove).toHaveBeenCalledOnce()
+    expect(listenersAtForcedLoss).toBe(0)
+    expect(diagnosticAtForcedLoss).toMatchObject({
+      scene: 'museum-map',
+      lifecycle: 'disposed',
+    })
+    scene.setForeground(true)
+    renderFrame(1, 0.016)
+    scene.dispose()
+    scene.dispose()
+    expect(model.dispose).toHaveBeenCalledOnce()
+    expect(state.rendererDispose).toHaveBeenCalledOnce()
+    expect(state.forceContextLoss).toHaveBeenCalledOnce()
   } finally {
     scene.dispose()
     intersect.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('retires a failed map before a pending model resolves and never installs that model', async () => {
+  state.environmentShouldFail = false
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', new Group()]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map(),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  let resolveModels!: (value: typeof model) => void
+  state.loadModels.mockReturnValueOnce(
+    new Promise<typeof model>((resolve) => {
+      resolveModels = resolve
+    }),
+  )
+  const onFailure = vi.fn()
+  stubBrowser()
+  const scene = createMuseumJourneyScene(
+    {
+      append: vi.fn(),
+      clientWidth: 1024,
+      clientHeight: 768,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect: vi.fn(),
+      onFailure,
+    },
+  )
+  const failure = scene.ready.catch((error: unknown) => error)
+  try {
+    const activeDiagnostic = getGraphicsCanvasDiagnostic(state.canvas!)
+    const pendingFrame = state.renderFrame
+    dispatchCanvasEvent('webglcontextlost', {
+      preventDefault: vi.fn(),
+    } as unknown as Event)
+
+    expect(onFailure).toHaveBeenCalledOnce()
+    expect(state.rendererDispose).toHaveBeenCalledOnce()
+    expect(state.forceContextLoss).toHaveBeenCalledOnce()
+    expect(state.skyDispose).toHaveBeenCalledOnce()
+    expect(state.environmentDispose).toHaveBeenCalledOnce()
+    expect(activeDiagnostic).toMatchObject({
+      scene: 'museum-map',
+      lifecycle: 'active',
+    })
+    resolveModels(model)
+    expect(await failure).toMatchObject({
+      message: expect.stringContaining('graphics context'),
+    })
+
+    pendingFrame?.(1, 0.016)
+    scene.setSelected('stage')
+    scene.dispose()
+    expect(model.dispose).toHaveBeenCalledOnce()
+    expect(model.root.parent).toBeNull()
+    expect(model.setSelected).not.toHaveBeenCalled()
+    expect(model.update).not.toHaveBeenCalled()
+    expect(state.rendererDispose).toHaveBeenCalledOnce()
+    expect(state.forceContextLoss).toHaveBeenCalledOnce()
+    expect(state.loopDispose).toHaveBeenCalledOnce()
+    expect(state.waterDispose).toHaveBeenCalledOnce()
+  } finally {
+    scene.dispose()
+    resolveModels(model)
+    await failure
     vi.unstubAllGlobals()
   }
 })

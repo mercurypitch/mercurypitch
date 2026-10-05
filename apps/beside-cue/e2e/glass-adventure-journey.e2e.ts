@@ -285,6 +285,8 @@ test('map asset failure and WebGL context loss recover with one live canvas', as
   })
   expect(contextLost).toBe(true)
   await expect(frame).toHaveAttribute('data-map-state', 'failed')
+  // A failed renderer must release its context before the user chooses Retry.
+  await expect(frame.locator('canvas')).toHaveCount(0)
   await lobby.getByRole('button', { name: 'Retry interactive map' }).click()
   await expect(frame).toHaveAttribute('data-map-state', 'ready', {
     timeout: 60_000,

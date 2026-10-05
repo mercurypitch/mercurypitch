@@ -6,6 +6,7 @@ import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/mu
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
 import { verifyFirstFrame } from '../render/first-frame'
+import { registerGraphicsCanvas, retireGraphicsCanvas, } from '../render/graphics-diagnostics'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from '../render/render-performance-governor'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from '../render/render-quality'
 import { canRenderViewport } from '../render/viewport'
@@ -173,9 +174,11 @@ function buildMuseumJourneyScene(
     alpha: false,
     powerPreference: 'high-performance',
   })
+  registerGraphicsCanvas(renderer.domElement, 'museum-map')
   onConstructionFailure(() => renderer.domElement.remove())
   onConstructionFailure(() => renderer.forceContextLoss())
   onConstructionFailure(() => renderer.dispose())
+  onConstructionFailure(() => retireGraphicsCanvas(renderer.domElement))
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.86
@@ -587,15 +590,11 @@ function buildMuseumJourneyScene(
   function failGraphics(error: Error): void {
     if (disposed || contextLost) return
     contextLost = true
-    abort.abort()
-    loop.setForeground(false)
-    gestures.reset()
     setViewChanged(false)
-    options.onProjectStageLabels?.([])
-    progressDisplay?.dispose()
-    progressDisplay = undefined
-    delete renderer.domElement.dataset.journeyProgress
     failProjection(error)
+    // A failed map has no recovery loop. Retire its context and decoded resources
+    // before Retry constructs another owner or Three restores this renderer.
+    retireScene()
     options.onFailure(error)
   }
   const onContextLost = (event: Event): void => {
@@ -661,6 +660,46 @@ function buildMuseumJourneyScene(
       throw new Error('The floating museum lost its graphics context.')
     if (!disposed) performanceGovernor.activate()
   })
+  void ready.catch(() => undefined)
+
+  function retireScene(): void {
+    if (disposed) return
+    disposed = true
+    failProjection(new DOMException('Journey scene disposed.', 'AbortError'))
+    options.onProjectStageLabels?.([])
+    abort.abort()
+    loop.setForeground(false)
+    loop.dispose()
+    performanceGovernor.dispose()
+    observer.disconnect()
+    gestures.reset()
+    renderer.domElement.removeEventListener('pointerdown', onPointerDown)
+    renderer.domElement.removeEventListener('pointermove', onPointerMove)
+    renderer.domElement.removeEventListener('pointerup', onPointerUp)
+    renderer.domElement.removeEventListener('pointercancel', onPointerCancel)
+    renderer.domElement.removeEventListener(
+      'lostpointercapture',
+      onLostPointerCapture,
+    )
+    renderer.domElement.removeEventListener('wheel', onWheel)
+    renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
+    progressDisplay?.dispose()
+    progressDisplay = undefined
+    delete renderer.domElement.dataset.journeyProgress
+    models?.dispose()
+    models = undefined
+    water.dispose()
+    environment.dispose()
+    sky.dispose()
+    disposeObject(scene)
+    scene.background = null
+    scene.clear()
+    sun.shadow.dispose()
+    retireGraphicsCanvas(renderer.domElement)
+    renderer.dispose()
+    renderer.forceContextLoss()
+    renderer.domElement.remove()
+  }
 
   return {
     ready,
@@ -707,38 +746,6 @@ function buildMuseumJourneyScene(
     getMetrics() {
       return collectMetrics()
     },
-    dispose() {
-      if (disposed) return
-      disposed = true
-      failProjection(new DOMException('Journey scene disposed.', 'AbortError'))
-      options.onProjectStageLabels?.([])
-      abort.abort()
-      loop.dispose()
-      performanceGovernor.dispose()
-      observer.disconnect()
-      gestures.reset()
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown)
-      renderer.domElement.removeEventListener('pointermove', onPointerMove)
-      renderer.domElement.removeEventListener('pointerup', onPointerUp)
-      renderer.domElement.removeEventListener('pointercancel', onPointerCancel)
-      renderer.domElement.removeEventListener(
-        'lostpointercapture',
-        onLostPointerCapture,
-      )
-      renderer.domElement.removeEventListener('wheel', onWheel)
-      renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
-      progressDisplay?.dispose()
-      progressDisplay = undefined
-      models?.dispose()
-      water.dispose()
-      environment.dispose()
-      sky.dispose()
-      disposeObject(scene)
-      sun.shadow.dispose()
-      renderer.dispose()
-      renderer.forceContextLoss()
-      renderer.domElement.remove()
-      void ready.catch(() => undefined)
-    },
+    dispose: retireScene,
   }
 }

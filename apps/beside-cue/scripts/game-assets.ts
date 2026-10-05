@@ -18,14 +18,11 @@ const ORT_FILES = [
 ] as const
 
 /**
- * Dressing used only by the legacy Glassworks scene mounted from the separate
- * web preview entry. Native navigation enters the campaign or Promenade from
- * GamesScreen and never mounts that entry or scene.
+ * Dressing used only by the legacy Glassworks web preview. The arcade and
+ * canopy are shared with the in-app Singing Current and must remain native.
  */
 export const NATIVE_STANDALONE_ONLY_GAME_ASSETS = [
   'games/adventure-v3/gilded-column.glb',
-  'games/adventure-v3/garden-arcade.glb',
-  'games/adventure-v3/observatory-canopy.glb',
 ] as const
 
 /** Desktop alternatives whose reviewed mobile counterpart is packaged native. */

@@ -21,6 +21,7 @@ import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
 import { createGalleryInspection } from './gallery-inspection'
 import type { GlassRenderer, GlassRendererOptions, } from './glass-renderer-contracts'
+import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
@@ -144,6 +145,7 @@ function createGlassRendererInstance(
     powerPreference: 'high-performance',
   })
   renderer.outputColorSpace = SRGBColorSpace
+  registerGraphicsCanvas(renderer.domElement, 'gallery')
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.9
   const renderContext = renderer.getContext()
@@ -179,6 +181,7 @@ function createGlassRendererInstance(
     decodedAssetImages.clear()
   }
   registerPartialCleanup(() => {
+    retireGraphicsCanvas(renderer.domElement)
     assetLoads.abort()
     programPrecompile.abort()
     renderer.dispose()
@@ -695,6 +698,7 @@ function createGlassRendererInstance(
     dispose() {
       if (disposed) return
       disposed = true
+      retireGraphicsCanvas(renderer.domElement)
       assetLoads.abort()
       programPrecompile.abort()
       loading.freeze()
