@@ -110,12 +110,18 @@ test('mouse selects, zooms, orbits and resets without entering a gallery @smoke'
     waterTriangles: number
     waterDrawCalls: number
     secondaryRenderPasses: number
+    actualShadowFrameInterval: number
   } | null
   expect(metrics).toMatchObject({
     waterTriangles: 2136,
     waterDrawCalls: 5,
-    secondaryRenderPasses: 1,
   })
+  expect([1, 2, 4]).toContain(metrics?.actualShadowFrameInterval)
+  // Live snapshots can land on a cached-shadow frame in mobile/adaptive mode.
+  // Water still adds no offscreen pass; at most one shadow pass is permitted.
+  const allowedShadowPasses =
+    metrics?.actualShadowFrameInterval === 1 ? [1] : [0, 1]
+  expect(allowedShadowPasses).toContain(metrics?.secondaryRenderPasses)
   expect(metrics?.drawCalls).toBeGreaterThan(0)
   expect(metrics?.triangles).toBeGreaterThan(99_000)
 

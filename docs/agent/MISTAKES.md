@@ -1858,3 +1858,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the museum selected mobile pixels and shadows but never passed its texture profile to the model loaders. First-visible islands uploaded more full-size images. The browser probe measured this avoidable residency, not the iOS driver's exact reset cause.
 **Rule:** carry the profile through GLBs, separate PBR maps and earned portraits before upload; bound concurrent decode/resize work. Measure allocations while visiting every view, not only the first ready frame, and keep physical-device acceptance separate from a desktop GPU test.
 **See:** `packages/glass-game/src/journey/resources.ts`, `apps/beside-cue/e2e/glass-adventure-map-memory.e2e.ts`.
+
+### Assert render passes against the sampled frame's shadow cadence
+
+**Symptom:** a museum browser test failed with zero secondary passes after live diagnostics replaced a cached first-frame snapshot.
+**Cause:** the test required one shadow pass on every frame, although mobile and adaptive profiles intentionally reuse shadows between updates.
+**Rule:** require exactly one pass for an every-frame cadence; permit only zero or one for the configured skipped-frame cadences. Keep water draw/triangle budgets and ordinary scene assertions intact. Do not force redundant shadow rendering or lengthen test timeouts to satisfy a stale snapshot assumption.
+**See:** `packages/glass-game/src/journey/scene.ts`, `apps/beside-cue/e2e/glass-adventure-journey.e2e.ts`.
