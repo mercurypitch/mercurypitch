@@ -23,7 +23,7 @@ export interface CompiledRunnerTempoSegment {
   readonly bpm: number
 }
 
-export interface CompiledRunnerMovementProfile {
+interface RunnerMovementProfileBase {
   readonly id: string
   readonly revision: number
   readonly fixedStepSeconds: number
@@ -36,6 +36,35 @@ export interface CompiledRunnerMovementProfile {
   readonly maxJumpRiseMeters: number
   readonly coyoteSeconds: number
   readonly jumpBufferSeconds: number
+}
+
+export type CompiledRunnerMovementProfile = RunnerMovementProfileBase &
+  (
+    | { readonly kind?: 'lanes' }
+    | {
+        readonly kind: 'continuous'
+        readonly maxLateralSpeedMetersPerSecond: number
+        readonly lateralAccelerationMetersPerSecondSquared: number
+        readonly lateralBrakingMetersPerSecondSquared: number
+        readonly edgePolicy: 'contained'
+      }
+  )
+
+export interface RunnerLateralCorridor {
+  readonly minLateralX: number
+  readonly maxLateralX: number
+}
+
+/** A bounded entry domain with a tested held-axis route into a clear corridor. */
+export interface RunnerContinuousCertificate {
+  readonly version: 1
+  readonly entry: RunnerLateralCorridor
+  readonly maximumEntrySpeedMetersPerSecond: number
+  readonly safeCorridors: readonly (RunnerLateralCorridor & {
+    readonly axis: -1 | 1
+  })[]
+  readonly requiredManeuverSeconds: number
+  readonly inputMarginSeconds: number
 }
 
 export interface CompiledRunnerJudgeProfile {
@@ -114,7 +143,8 @@ export interface CompiledRunnerTarget {
 }
 
 export interface CompiledRunnerActionWindow {
-  readonly kind: 'lane-transition' | 'jump'
+  readonly kind: 'lane-transition' | 'continuous-steer' | 'jump'
+  readonly continuous?: RunnerContinuousCertificate
   readonly launchOpenCourseSeconds: number
   readonly launchCloseCourseSeconds: number
   readonly landingOpenCourseSeconds: number
@@ -189,7 +219,7 @@ export interface CompiledRunnerRewardDefinition {
 
 export interface CompiledRunnerCourse {
   readonly schema: 'mercurypitch.song-runner.compiled'
-  readonly version: 1
+  readonly version: 1 | 2
   readonly id: string
   readonly revision: number
   readonly title: string
@@ -215,17 +245,25 @@ export interface CompiledRunnerCourse {
     readonly musicProfileId: string
     readonly notationProfileId: string
     /** Authored close camera survives physical lane-width changes. Omission preserves legacy behavior. */
-    readonly cameraProfile?: 'responsive-close' | 'legacy-wide'
+    readonly cameraProfile?:
+      | 'responsive-close'
+      | 'legacy-wide'
+      | 'steering-close'
   }
   readonly preloadAssetProfileIds: readonly string[]
 }
 
-export interface RunnerInput {
+interface RunnerInputStamp {
   readonly epoch: RunnerEpoch
   readonly sequence: number
   readonly atCourseSeconds: number
-  readonly action: 'lane-left' | 'lane-right' | 'jump'
 }
+
+export type RunnerInput = RunnerInputStamp &
+  (
+    | { readonly action: 'lane-left' | 'lane-right' | 'jump' }
+    | { readonly action: 'steer'; readonly axis: number }
+  )
 
 export interface RunnerVoiceEvidence {
   readonly epoch: RunnerEpoch
@@ -306,6 +344,7 @@ export interface SavedRunnerTargetQuality {
 }
 
 export interface RunnerSnapshot {
+  readonly movementMode: 'lanes' | 'continuous'
   readonly courseId: string
   readonly courseRevision: number
   readonly epoch: RunnerEpoch | null
@@ -318,6 +357,7 @@ export interface RunnerSnapshot {
   readonly player: {
     readonly targetLane: RunnerLane
     readonly lateralX: number
+    readonly lateralVelocityMetersPerSecond: number
     readonly feetY: number
     readonly verticalVelocityMetersPerSecond: number
     readonly grounded: boolean

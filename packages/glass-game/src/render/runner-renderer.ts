@@ -126,6 +126,7 @@ export function createSongRunnerRenderer(
     course.laneCenters,
     1,
     course.presentation.cameraProfile,
+    course.movement.kind === 'continuous',
   )
   let cameraPose = runnerCameraPose(
     1,
@@ -203,6 +204,7 @@ export function createSongRunnerRenderer(
       course.laneCenters,
       camera.aspect,
       course.presentation.cameraProfile,
+      course.movement.kind === 'continuous',
     )
     applyCameraPose()
     camera.updateProjectionMatrix()
@@ -350,7 +352,8 @@ export function createSongRunnerRenderer(
         finishes,
       )
       const dressedOpening =
-        course.presentation.cameraProfile === 'responsive-close'
+        course.presentation.cameraProfile === 'responsive-close' ||
+        course.presentation.cameraProfile === 'steering-close'
       if (dressedOpening)
         opening = createRunnerOpening({
           course,
@@ -445,6 +448,7 @@ export function createSongRunnerRenderer(
         course.laneCenters,
         camera.aspect,
         course.presentation.cameraProfile,
+        course.movement.kind === 'continuous',
       ),
       dt,
     )
@@ -458,7 +462,7 @@ export function createSongRunnerRenderer(
             z: 0,
           },
           velocity: {
-            x: 0,
+            x: snapshot.player.lateralVelocityMetersPerSecond ?? 0,
             y: snapshot.player.verticalVelocityMetersPerSecond,
             z:
               snapshot.status === 'running'

@@ -29,8 +29,18 @@ vi.mock('@irchiinnuss/glass-game/solid', () => ({
 }))
 vi.mock('@irchiinnuss/glass-game/runner', () => ({
   SINGING_CURRENT_TRIALS: runnerTrials,
-  SongRunnerScreen: (props: { course?: { id: string } }) => (
-    <div data-testid="runner" data-course={props.course?.id ?? 'canonical'} />
+  SINGING_CURRENT_CONTINUOUS_TRIAL: {
+    id: 'the-singing-current-trial-continuous-v1',
+    presentation: { cameraProfile: 'responsive-close' },
+  },
+  SongRunnerScreen: (props: {
+    course?: { id: string; presentation?: { cameraProfile: string } }
+  }) => (
+    <div
+      data-testid="runner"
+      data-course={props.course?.id ?? 'canonical'}
+      data-camera={props.course?.presentation?.cameraProfile}
+    />
   ),
 }))
 
@@ -87,6 +97,45 @@ describe('Glassworks build access', () => {
     expect(screen.getByTestId('runner')).toHaveAttribute(
       'data-course',
       'canonical',
+    )
+  })
+
+  it.each([undefined, 'close'] as const)(
+    'opens isolated steering with independent %s camera',
+    (camera) => {
+      render(() => (
+        <AdventureScreen
+          runner
+          runnerSteering="continuous"
+          runnerCamera={camera}
+          onExit={() => undefined}
+        />
+      ))
+      expect(screen.getByTestId('runner')).toHaveAttribute(
+        'data-course',
+        'the-singing-current-trial-continuous-v1',
+      )
+      expect(screen.getByTestId('runner')).toHaveAttribute(
+        'data-camera',
+        camera === 'close' ? 'steering-close' : 'responsive-close',
+      )
+    },
+  )
+
+  it('cannot use the steering preview to bypass release progression', () => {
+    build.channel = 'release'
+    render(() => (
+      <AdventureScreen
+        runner
+        runnerSteering="continuous"
+        runnerCamera="close"
+        onExit={() => undefined}
+      />
+    ))
+    expect(screen.queryByTestId('runner')).toBeNull()
+    expect(screen.getByTestId('campaign')).toHaveAttribute(
+      'data-unlocked',
+      'false',
     )
   })
 

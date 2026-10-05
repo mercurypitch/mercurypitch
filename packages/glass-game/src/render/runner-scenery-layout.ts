@@ -185,6 +185,7 @@ export interface RunnerSceneryWindow {
 export interface RunnerSceneryLayout {
   readonly laneCenters: CompiledRunnerCourse['laneCenters']
   readonly cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile']
+  readonly lateralRange?: readonly [number, number]
   readonly chunks: readonly {
     readonly id: string
     readonly index: number
@@ -556,10 +557,19 @@ export function createRunnerSceneryLayout(
     }),
   )
   const projectionChunks = sceneryProjectionChunks(chunks)
+  const bounds = runnerTrackBounds(course)
+  const lateralRange: readonly [number, number] | undefined =
+    course.movement.kind === 'continuous'
+      ? [
+          bounds.left + course.movement.bodyRadius,
+          bounds.right - course.movement.bodyRadius,
+        ]
+      : undefined
   const visibility = createRunnerSceneryVisibilityContext(
     course.laneCenters,
     projectionChunks,
     course.presentation.cameraProfile,
+    lateralRange,
   )
   const handoffs = createRunnerSceneryHandoffs(
     course,
@@ -569,6 +579,7 @@ export function createRunnerSceneryLayout(
   const layout: RunnerSceneryLayout = Object.freeze({
     laneCenters: course.laneCenters,
     cameraProfile: course.presentation.cameraProfile,
+    lateralRange,
     chunks,
     windows,
     handoffs,
@@ -659,6 +670,7 @@ export function runnerSceneryHandoffVisibility(
       layout.laneCenters,
       sceneryProjectionChunks(layout.chunks),
       layout.cameraProfile,
+      layout.lateralRange,
     )
   return runnerSceneryHandoffVisibilityAt(
     context,

@@ -1,7 +1,7 @@
 // Runner studio adapter: private editors compile exact source with the accepted responsive catalog.
 
 import { compileSongRunnerCourseDocument, RUNNER_MAXIMUM_CHUNKS, } from '../runner/compile-course.ts'
-import { SINGING_CURRENT_CATALOG, SINGING_CURRENT_SOURCE_DOCUMENT, } from '../runner/first-course.ts'
+import { SINGING_CURRENT_CONTINUOUS_CATALOG, SINGING_CURRENT_CONTINUOUS_SOURCE_DOCUMENT, SINGING_CURRENT_SOURCE_DOCUMENT, } from '../runner/first-course.ts'
 import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, RUNNER_MAXIMUM_COURSE_SECONDS, } from '../runner/resource-limits.ts'
 
 export const RUNNER_STUDIO_LIMITS = {
@@ -22,12 +22,12 @@ export const RUNNER_STUDIO_LIMITS = {
 /** Content fingerprint for catalog selection, not a security credential. */
 function catalogFingerprint(): string {
   let hash = 2166136261
-  for (const char of JSON.stringify(SINGING_CURRENT_CATALOG))
+  for (const char of JSON.stringify(SINGING_CURRENT_CONTINUOUS_CATALOG))
     hash = Math.imul(hash ^ char.charCodeAt(0), 16777619)
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
-export const RUNNER_STUDIO_CATALOG_ID = `singing-current-responsive-v3-${catalogFingerprint()}`
+export const RUNNER_STUDIO_CATALOG_ID = `singing-current-steering-v4-${catalogFingerprint()}`
 
 /** Snapshot includes only supported runtime profiles; future wall families remain plans. */
 export function runnerStudioCatalog() {
@@ -37,12 +37,17 @@ export function runnerStudioCatalog() {
     catalogId: RUNNER_STUDIO_CATALOG_ID,
     sourceSchema: 'mercurypitch.song-runner-course',
     sourceVersion: 1,
-    profiles: SINGING_CURRENT_CATALOG,
+    profiles: SINGING_CURRENT_CONTINUOUS_CATALOG,
     examples: [
       {
         id: 'singing-current',
         title: 'The Singing Current',
         document: SINGING_CURRENT_SOURCE_DOCUMENT,
+      },
+      {
+        id: 'singing-current-continuous',
+        title: 'Continuous steering study',
+        document: SINGING_CURRENT_CONTINUOUS_SOURCE_DOCUMENT,
       },
     ],
     limits: RUNNER_STUDIO_LIMITS,
@@ -67,7 +72,10 @@ export function compileRunnerStudioDocument(
     throw new Error(
       `$.courses must contain at most ${RUNNER_STUDIO_LIMITS.maxCourses} courses.`,
     )
-  return compileSongRunnerCourseDocument(raw, SINGING_CURRENT_CATALOG)
+  return compileSongRunnerCourseDocument(
+    raw,
+    SINGING_CURRENT_CONTINUOUS_CATALOG,
+  )
 }
 
 /** Compiler evidence does not certify art, microphone acoustics or physical-device feel. */

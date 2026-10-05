@@ -4,7 +4,7 @@
 
 import type { RunnerInput } from '../runner/contracts'
 
-export type RunnerControlAction = RunnerInput['action']
+export type RunnerControlAction = Exclude<RunnerInput['action'], 'steer'>
 
 export interface RunnerKeyboardEdgeEvent {
   readonly code: string

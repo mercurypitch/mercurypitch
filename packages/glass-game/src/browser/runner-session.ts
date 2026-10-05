@@ -1,7 +1,7 @@
 // Runner session — cancellable readiness, one continuous mic and capture-clock epochs around the pure course.
 import type { PitchObservation } from '../contracts'
 import type { GlassVoicePreparation, GlassVoiceSession } from '../host'
-import type { CompiledRunnerCourse, RunnerEvent } from '../runner/contracts'
+import type { CompiledRunnerCourse, RunnerEvent, RunnerInput, } from '../runner/contracts'
 import { createSongRunnerGame } from '../runner/game'
 import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerPauseReason, RunnerSessionFrame, RunnerSessionState, SongRunnerHost, SongRunnerSession, } from '../runner/session-contracts'
 import { clampRunnerAudioPreferences } from '../runner/session-contracts'
@@ -690,6 +690,29 @@ export function createBrowserRunnerSession(
     foreground = value
     if (!value && !disposed) pause('background')
   })
+
+  function submitInput(
+    command:
+      | { action: Exclude<RunnerInput['action'], 'steer'> }
+      | { action: 'steer'; axis: number },
+  ): boolean {
+    const now = audio?.currentAudioSeconds()
+    if (disposed || state.phase !== 'running' || epoch === null || now == null)
+      return false
+    if (excessiveGap(now)) {
+      advance(now)
+      return false
+    }
+    const accepted = game.input({
+      epoch,
+      sequence: ++inputSequence,
+      atCourseSeconds: courseTime(now),
+      ...command,
+    })
+    advance(now)
+    return accepted
+  }
+
   const session: SongRunnerSession = {
     state: () => state,
     subscribe(listener) {
@@ -716,27 +739,10 @@ export function createBrowserRunnerSession(
     },
     pause,
     hearReference,
-    input(action) {
-      const now = audio?.currentAudioSeconds()
-      if (
-        disposed ||
-        state.phase !== 'running' ||
-        epoch === null ||
-        now == null
-      )
-        return false
-      if (excessiveGap(now)) {
-        advance(now)
-        return false
-      }
-      const accepted = game.input({
-        epoch,
-        sequence: ++inputSequence,
-        atCourseSeconds: courseTime(now),
-        action,
-      })
-      advance(now)
-      return accepted
+    input: (action) => submitInput({ action }),
+    steer(axis) {
+      if (!Number.isFinite(axis) || axis < -1 || axis > 1) return false
+      return submitInput({ action: 'steer', axis })
     },
     setMusicMuted(value) {
       session.setAudioPreferences({ musicMuted: value })

@@ -57,6 +57,37 @@ export function validateRunnerMovement(
       `${path}.movementProfileId`,
       'references a malformed movement profile.',
     )
+  if (
+    movement.kind !== undefined &&
+    movement.kind !== 'lanes' &&
+    movement.kind !== 'continuous'
+  )
+    runnerSourceFail(
+      `${path}.movementProfileId`,
+      'references an unsupported movement capability.',
+    )
+  if (
+    movement.kind === 'continuous' &&
+    (movement.edgePolicy !== 'contained' ||
+      [
+        movement.maxLateralSpeedMetersPerSecond,
+        movement.lateralAccelerationMetersPerSecondSquared,
+        movement.lateralBrakingMetersPerSecondSquared,
+      ].some((value) => !Number.isFinite(value) || value <= 0))
+  )
+    runnerSourceFail(
+      `${path}.movementProfileId`,
+      'references malformed continuous steering.',
+    )
+  if (
+    movement.kind === 'continuous' &&
+    movement.bodyRadius * 2 >=
+      (course.track.laneCenters[2] - course.track.laneCenters[0]) * 1.5
+  )
+    runnerSourceFail(
+      `${path}.movementProfileId`,
+      'body must fit inside the continuous track.',
+    )
   const derivedRise =
     movement.jumpVelocityMetersPerSecond ** 2 /
     (2 * movement.gravityMetersPerSecondSquared)

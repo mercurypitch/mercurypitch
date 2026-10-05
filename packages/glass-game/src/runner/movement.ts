@@ -2,8 +2,11 @@
 // Song runner movement — fixed-step lanes, jump support, and swept collisions.
 // ============================================================
 
+import type { RunnerLateralSegment } from './continuous-lateral'
+import { stepContinuousRunnerMovement } from './continuous-movement'
 import type { CompiledRunnerBlocker, CompiledRunnerCourse, RunnerInput, RunnerLane, } from './contracts'
 import { runnerBeatToDistance, runnerSecondsToBeat } from './tempo'
+import { runnerTrackBounds } from './track-bounds'
 
 const EPSILON = 1e-9
 
@@ -17,6 +20,8 @@ interface LaneTransition {
 export interface RunnerMovementState {
   targetLane: RunnerLane
   lateralX: number
+  lateralVelocityMetersPerSecond: number
+  steeringAxis: number
   feetY: number
   verticalVelocityMetersPerSecond: number
   grounded: boolean
@@ -26,6 +31,7 @@ export interface RunnerMovementState {
 }
 
 export interface RunnerMovementStepResult {
+  readonly lateralSegments?: readonly RunnerLateralSegment[]
   readonly collided: boolean
   readonly fell: boolean
 }
@@ -107,6 +113,8 @@ export function runnerHasGroundSupport(
   lateralX: number,
 ): boolean {
   const radius = course.movement.bodyRadius
+  const track =
+    course.movement.kind === 'continuous' ? runnerTrackBounds(course) : null
   for (const obstacle of course.obstacles) {
     if (obstacle.kind !== 'gap') continue
     if (
@@ -119,8 +127,10 @@ export function runnerHasGroundSupport(
     if (
       obstacle.lateralSpans.some(
         (span) =>
-          lateralX > span.minLateralX + radius + EPSILON &&
-          lateralX < span.maxLateralX - radius - EPSILON,
+          ((track !== null && span.minLateralX <= track.left + EPSILON) ||
+            lateralX > span.minLateralX + radius + EPSILON) &&
+          ((track !== null && span.maxLateralX >= track.right - EPSILON) ||
+            lateralX < span.maxLateralX - radius - EPSILON),
       )
     )
       return false
@@ -136,6 +146,8 @@ export function createRunnerMovementState(
   return {
     targetLane: lane,
     lateralX: course.laneCenters[lane],
+    lateralVelocityMetersPerSecond: 0,
+    steeringAxis: 0,
     feetY,
     verticalVelocityMetersPerSecond: 0,
     grounded: true,
@@ -164,11 +176,17 @@ export function applyRunnerMovementInput(
   state: RunnerMovementState,
   action: RunnerInput['action'],
   atCourseSeconds: number,
+  axis = 0,
 ): void {
+  if (action === 'steer') {
+    if (course.movement.kind === 'continuous') state.steeringAxis = axis
+    return
+  }
   if (action === 'jump') {
     state.jumpBufferRemainingSeconds = course.movement.jumpBufferSeconds
     return
   }
+  if (course.movement.kind === 'continuous') return
   const delta = action === 'lane-left' ? -1 : 1
   const targetLane = Math.max(
     0,
@@ -195,6 +213,15 @@ export function stepRunnerMovement(
   const deltaSeconds = endCourseSeconds - startCourseSeconds
   const startDistance = courseDistanceAt(course, startCourseSeconds)
   const endDistance = courseDistanceAt(course, endCourseSeconds)
+  if (course.movement.kind === 'continuous')
+    return stepContinuousRunnerMovement(
+      course,
+      state,
+      deltaSeconds,
+      startDistance,
+      endDistance,
+      (distance, x) => runnerHasGroundSupport(course, distance, x),
+    )
   const startX = state.lateralX
   const startFeetY = state.feetY
 

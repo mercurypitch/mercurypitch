@@ -7,6 +7,8 @@ import type { BuildInfo } from '@/build-info'
 const mounted = vi.hoisted(() => ({
   levels: [] as (LevelDefinition | undefined)[],
   runners: [] as boolean[],
+  steering: [] as ('continuous' | undefined)[],
+  cameras: [] as ('close' | undefined)[],
   runnerPaces: [] as ('current' | 'learning' | 'responsive' | undefined)[],
 }))
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
@@ -19,11 +21,15 @@ vi.mock('./AdventureScreen', () => ({
   AdventureScreen: (props: {
     level?: LevelDefinition
     runner?: boolean
+    runnerSteering?: 'continuous'
+    runnerCamera?: 'close'
     runnerPace?: 'current' | 'learning' | 'responsive'
   }) => {
     mounted.levels.push(untrack(() => props.level))
     mounted.runners.push(untrack(() => props.runner === true))
     mounted.runnerPaces.push(untrack(() => props.runnerPace))
+    mounted.steering.push(untrack(() => props.runnerSteering))
+    mounted.cameras.push(untrack(() => props.runnerCamera))
     return null
   },
 }))
@@ -32,6 +38,8 @@ beforeEach(() => {
   vi.resetModules()
   mounted.levels.length = 0
   mounted.runners.length = 0
+  mounted.steering.length = 0
+  mounted.cameras.length = 0
   mounted.runnerPaces.length = 0
   build.channel = 'dev'
   document.body.innerHTML = '<div id="root"></div>'
@@ -52,11 +60,50 @@ async function mountAt(development: boolean, layout: string, pace?: string) {
     `/glass-game/?layout=${layout}${paceQuery}`,
   )
   await import('./standalone')
-  await vi.waitFor(() => expect(mounted.levels).toHaveLength(1))
+  // The first development-level import compiles the content catalog; wait for
+  // that mount to finish before resetting globals for the next route case.
+  await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
+    timeout: 5000,
+  })
   return mounted.levels[0]
 }
 
 describe('standalone development route', () => {
+  it.each([
+    ['dev', 'singing-current', 'continuous', 'close', 'continuous', 'close'],
+    ['ci', 'singing-current', 'continuous', 'default', 'continuous', undefined],
+    ['ci', 'singing-current', 'lanes', 'close', undefined, 'close'],
+    ['dev', 'singing-current', 'other', 'other', undefined, undefined],
+    ['release', 'singing-current', 'continuous', 'close', undefined, undefined],
+    ['dev', 'journey', 'continuous', 'close', undefined, undefined],
+  ] as const)(
+    'gates %s/%s steering=%s camera=%s independently',
+    async (
+      channel,
+      layout,
+      steering,
+      camera,
+      expectedSteering,
+      expectedCamera,
+    ) => {
+      build.channel = channel
+      vi.stubEnv('DEV', channel === 'dev')
+      window.history.replaceState(
+        {},
+        '',
+        `/glass-game/?layout=${layout}&steering=${steering}&camera=${camera}`,
+      )
+      await import('./standalone')
+      // The first development-level import compiles the content catalog; wait for
+      // that mount to finish before resetting globals for the next route case.
+      await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
+        timeout: 5000,
+      })
+      expect(mounted.steering).toEqual([expectedSteering])
+      expect(mounted.cameras).toEqual([expectedCamera])
+    },
+  )
+
   it.each([
     ['dev', 'current', true],
     ['ci', 'learning', false],
@@ -163,7 +210,11 @@ describe('standalone development route', () => {
       '/glass-game/?layout=living-crystal&interior=living-amber',
     )
     await import('./standalone')
-    await vi.waitFor(() => expect(mounted.levels).toHaveLength(1))
+    // The first development-level import compiles the content catalog; wait for
+    // that mount to finish before resetting globals for the next route case.
+    await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
+      timeout: 5000,
+    })
     expect(mounted.levels[0]?.id).toBe(
       'living-crystal-living-amber-art-study-v2',
     )

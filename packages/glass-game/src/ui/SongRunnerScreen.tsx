@@ -8,10 +8,11 @@ import type { GlassAssetQualityProfile } from '../render/render-quality'
 import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
 import type { CompiledRunnerCourse } from '../runner/contracts'
-import { SINGING_CURRENT, SINGING_CURRENT_TRIALS } from '../runner/first-course'
+import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
 import { SongRunnerView } from './SongRunnerView'
 
 export { SINGING_CURRENT_TRIALS }
+export { SINGING_CURRENT_CONTINUOUS_TRIAL }
 export type SingingCurrentTrialPace = keyof typeof SINGING_CURRENT_TRIALS
 
 export interface SongRunnerScreenProps {

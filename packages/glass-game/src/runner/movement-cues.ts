@@ -1,5 +1,6 @@
 // Song runner movement cues — turn certified geometry into safe, playable HUD phases.
 
+import { runnerReachableContinuousCorridor } from './continuous-certificates'
 import type { CompiledRunnerActionWindow, CompiledRunnerCourse, CompiledRunnerGap, CompiledRunnerObstacle, RunnerSnapshot, } from './contracts'
 import { runnerBeatToSeconds } from './tempo'
 
@@ -13,6 +14,7 @@ export interface RunnerUsefulJumpWindow {
 export interface RunnerMovementCue {
   readonly obstacleId: string
   readonly stage: 'gap-ahead' | 'jump' | 'landing' | 'change-lane'
+  readonly direction?: 'left' | 'right'
 }
 
 function jumpAction(gap: CompiledRunnerGap): CompiledRunnerActionWindow | null {
@@ -72,6 +74,17 @@ export function runnerUsefulJumpWindow(
       launchCloseCourseSeconds: certified.launchCloseCourseSeconds,
     }
 
+  if (course.movement.kind === 'continuous')
+    return {
+      launchOpenCourseSeconds: Math.max(
+        launchOpenCourseSeconds,
+        certified.launchOpenCourseSeconds + innerStep,
+      ),
+      launchCloseCourseSeconds: Math.min(
+        launchCloseCourseSeconds,
+        certified.launchCloseCourseSeconds - innerStep,
+      ),
+    }
   return { launchOpenCourseSeconds, launchCloseCourseSeconds }
 }
 
@@ -120,9 +133,39 @@ function gapCue(
 }
 
 function blockerCue(
+  course: CompiledRunnerCourse,
   obstacle: Exclude<CompiledRunnerObstacle, CompiledRunnerGap>,
   snapshot: Pick<RunnerSnapshot, 'courseSeconds' | 'player'>,
 ): RunnerMovementCue | null {
+  if (course.movement.kind === 'continuous') {
+    if (snapshot.courseSeconds < obstacle.telegraphFromCourseSeconds - EPSILON)
+      return null
+    const corridor = runnerReachableContinuousCorridor(
+      course,
+      obstacle,
+      snapshot.player.lateralX,
+      snapshot.player.lateralVelocityMetersPerSecond,
+      snapshot.courseSeconds,
+    )
+    if (corridor === null) return null
+    const x = snapshot.player.lateralX
+    const velocity = snapshot.player.lateralVelocityMetersPerSecond
+    const stoppingDistance =
+      velocity ** 2 / (2 * course.movement.lateralBrakingMetersPerSecondSquared)
+    const stopX = x + Math.sign(velocity) * stoppingDistance
+    if (
+      x >= corridor.minLateralX &&
+      x <= corridor.maxLateralX &&
+      stopX >= corridor.minLateralX &&
+      stopX <= corridor.maxLateralX
+    )
+      return null
+    return {
+      obstacleId: obstacle.id,
+      stage: 'change-lane',
+      direction: corridor.axis === 1 ? 'right' : 'left',
+    }
+  }
   const action = obstacle.certifiedActions.find(
     (candidate) => candidate.kind === 'lane-transition',
   )
@@ -150,7 +193,7 @@ export function runnerMovementCue(
       cue:
         obstacle.kind === 'gap'
           ? gapCue(course, obstacle, snapshot)
-          : blockerCue(obstacle, snapshot),
+          : blockerCue(course, obstacle, snapshot),
     }))
     .filter(
       (

@@ -938,7 +938,8 @@
   .notationPanel {
     top: max(62px, calc(env(safe-area-inset-top) + 56px));
     left: max(12px, env(safe-area-inset-left));
-    width: min(54vw, 540px);
+    /* Keep the centre of the course clear when the singing staff expands. */
+    width: min(44vw, calc(50vw - 48px), 440px);
     padding: 6px 8px;
     transform: none;
   }
@@ -952,7 +953,7 @@
   }
 
   .compactNotation {
-    width: min(46vw, 440px);
+    width: min(44vw, calc(50vw - 48px), 440px);
   }
 
   .staff {
@@ -960,7 +961,7 @@
   }
 
   .withPitchReadout .staff {
-    height: 72px;
+    height: 60px;
   }
 
   .notationHeading {
