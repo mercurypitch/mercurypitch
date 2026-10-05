@@ -1,6 +1,6 @@
 // Graphics diagnostics tests — original failures stay actionable and arbitrary payloads stay private.
 import { expect, it, vi } from 'vitest'
-import { getGraphicsCanvasDiagnostic, registerGraphicsCanvas, reportGraphicsFailure,retireGraphicsCanvas,  } from './graphics-diagnostics'
+import { getGraphicsCanvasDiagnostic, registerGraphicsCanvas, reportGraphicsFailure, retireGraphicsCanvas, } from './graphics-diagnostics'
 
 it('keeps renderer ownership distinct across retry and retirement snapshots', () => {
   const first = {} as HTMLCanvasElement
