@@ -523,8 +523,8 @@
         "sha256": "f6d5ed3b70c8ad88b86c3b3464bcf1017ea9dff41e063efc6818ea7dc8ff2d2d",
         "triangles": 168526,
         "decodedGeometryBytes": 3208640,
-        "maxBoundErrorMeters": 0,
-        "maxRelativeShardVolumeError": 0,
+        "maxBoundErrorMeters": 0.000022971138408600655,
+        "maxRelativeShardVolumeError": 0.00008073948869590986,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -540,6 +540,12 @@
         "sourceMasterSha256": "6eadc8320965431715a043c6f0bbc03a16514322de24973fa28a204302d1c231",
         "candidateRawSha256": "31e0d27fefccff4179be38150519771afcc62868d954d8268cfaabef87a2889c",
         "assembledRawSha256": "3edc483bccb06a0e5f191f5e12caafa6f60fbd37831849d12317f73f57adbb4b",
+        "shippingComparison": {
+          "reference": "Candidate compared with the original decoded shipping GLB.",
+          "baselineSha256": "55a1a567e4e1d41b938b7eb6f9453da6e5913594ba45752d94782c1e2a96cec6",
+          "maxBoundDeltaMeters": 0,
+          "maxRelativeShardVolumeDelta": 0
+        },
         "recipeFiles": [
           "build-wall-candidates.py",
           "assemble-wall-candidates.mjs",
@@ -818,8 +824,8 @@
         "sha256": "2ab19cb4a917dbb196bd9e7cf23ff242f1196d4861238e01088718d85b1c79c3",
         "triangles": 191885,
         "decodedGeometryBytes": 4150158,
-        "maxBoundErrorMeters": 0,
-        "maxRelativeShardVolumeError": 0,
+        "maxBoundErrorMeters": 0.000017075209096995003,
+        "maxRelativeShardVolumeError": 0.00010113132393318214,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -835,6 +841,12 @@
         "sourceMasterSha256": "5854a3118c0fd3af25901169392eb8152432802a8ec30923675c6ff233054429",
         "candidateRawSha256": "54f50f3d07463ad015b8371b7330608a525e2aaca6513592ff45a6faa3fc15c6",
         "assembledRawSha256": "097e4caf4a31fcb80c5e5c894ec16e94e0176935e8879ab4469ab3e3e8c44f52",
+        "shippingComparison": {
+          "reference": "Candidate compared with the original decoded shipping GLB.",
+          "baselineSha256": "11f45d11d49fbdcb8b4b74e160c399794ca9e933df5c7af7300b6617ee113474",
+          "maxBoundDeltaMeters": 0,
+          "maxRelativeShardVolumeDelta": 0
+        },
         "recipeFiles": [
           "build-wall-candidates.py",
           "assemble-wall-candidates.mjs",
@@ -1091,8 +1103,8 @@
         "sha256": "1c9d4e16f6fa63e0ff6acc230464a2571865569e68e08b4f264642381ce20187",
         "triangles": 237298,
         "decodedGeometryBytes": 4411236,
-        "maxBoundErrorMeters": 0,
-        "maxRelativeShardVolumeError": 0,
+        "maxBoundErrorMeters": 0.00002106552014227714,
+        "maxRelativeShardVolumeError": 0.000078819839593966,
         "compression": {
           "method": "Meshopt",
           "positionBits": 16,
@@ -1108,6 +1120,12 @@
         "sourceMasterSha256": "9fb33d4252a8c1900cddc1c9da4c0b79a92cbaadd5ab64f33d0db3885779c7f5",
         "candidateRawSha256": "79200683be5ecd6e5731ea48a3ab1c33a43809785204ac1bff2f345cdb9c055f",
         "assembledRawSha256": "63d768e56bb04cd98ec37731119c227ba31c4d8cfde1c8bbb124f179cb496770",
+        "shippingComparison": {
+          "reference": "Candidate compared with the original decoded shipping GLB.",
+          "baselineSha256": "2b26329b84cb724d1a0f68aec636d62a4321fef6d6c86a5e90b15ff7af2a15a1",
+          "maxBoundDeltaMeters": 0,
+          "maxRelativeShardVolumeDelta": 0
+        },
         "recipeFiles": [
           "build-wall-candidates.py",
           "assemble-wall-candidates.mjs",

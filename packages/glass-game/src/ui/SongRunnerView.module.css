@@ -787,6 +787,22 @@
     padding: 8px 8px 3px;
   }
 
+  .notationHeading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .voicePrompt strong {
+    flex-shrink: 0;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .voiceFacts {
+    justify-content: flex-start;
+  }
+
   .movementHint,
   .releaseHint {
     top: max(76px, calc(env(safe-area-inset-top) + 70px));
