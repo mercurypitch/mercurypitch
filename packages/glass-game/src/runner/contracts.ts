@@ -249,6 +249,7 @@ export interface CompiledRunnerCourse {
       | 'responsive-close'
       | 'legacy-wide'
       | 'steering-close'
+      | 'steering-angled'
   }
   readonly preloadAssetProfileIds: readonly string[]
 }

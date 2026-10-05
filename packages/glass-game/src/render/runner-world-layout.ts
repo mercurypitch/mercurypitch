@@ -16,6 +16,20 @@ export const RUNNER_STEERING_CLOSE_CAMERA = Object.freeze({
   distanceMeters: 3.9,
   portraitTargetLiftMeters: 0.68,
 })
+/** Camera taste knobs in world metres; camera and target translate together during steering. */
+export const RUNNER_STEERING_ANGLED_CAMERA = Object.freeze({
+  sideOffsetMeters: 1.05,
+  portraitSideOffsetMeters: 0.8,
+  heightMeters: 2.4,
+  distanceMeters: 4.1,
+  targetSideMeters: -0.85,
+  portraitTargetSideMeters: -0.4,
+  targetHeightMeters: 0.05,
+  targetDistanceMeters: -4.5,
+  portraitTargetLiftMeters: 0.3,
+  fovDegrees: 52,
+  portraitFovLiftDegrees: 3,
+})
 export const RUNNER_GAP_APRON_METERS = 1.05
 export const RUNNER_GAP_APRON_THICKNESS_METERS = 0.06
 export const RUNNER_GAP_LIP_RADIUS_METERS = 0.025
@@ -267,6 +281,7 @@ export function runnerMercVisualHeightMeters(
 ): number {
   return profile === 'responsive-close' ||
     profile === 'steering-close' ||
+    profile === 'steering-angled' ||
     (profile !== 'legacy-wide' &&
       laneCenters[2] - laneCenters[0] <= COMPACT_LANE_SPAN_METERS)
     ? RUNNER_RESPONSIVE_MERC_VISUAL_HEIGHT_METERS
@@ -281,6 +296,28 @@ export function runnerCameraPose(
 ): RunnerCameraPose {
   const safeAspect = Math.max(0.3, Math.min(3, aspect))
   const laneSpan = laneCenters[2] - laneCenters[0]
+  if (profile === 'steering-angled') {
+    const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))
+    const tuning = RUNNER_STEERING_ANGLED_CAMERA
+    return Object.freeze({
+      fovDegrees:
+        tuning.fovDegrees + portraitBlend * tuning.portraitFovLiftDegrees,
+      x:
+        tuning.sideOffsetMeters +
+        portraitBlend *
+          (tuning.portraitSideOffsetMeters - tuning.sideOffsetMeters),
+      y: tuning.heightMeters,
+      z: tuning.distanceMeters,
+      targetX:
+        tuning.targetSideMeters +
+        portraitBlend *
+          (tuning.portraitTargetSideMeters - tuning.targetSideMeters),
+      targetY:
+        tuning.targetHeightMeters +
+        portraitBlend * tuning.portraitTargetLiftMeters,
+      targetZ: tuning.targetDistanceMeters,
+    })
+  }
   if (
     profile === 'responsive-close' ||
     profile === 'steering-close' ||
@@ -327,6 +364,7 @@ export function runnerCameraFollowTarget(
     profile === 'legacy-wide' ||
     (profile !== 'responsive-close' &&
       profile !== 'steering-close' &&
+      profile !== 'steering-angled' &&
       laneCenters[2] - laneCenters[0] > COMPACT_LANE_SPAN_METERS)
   )
     return 0

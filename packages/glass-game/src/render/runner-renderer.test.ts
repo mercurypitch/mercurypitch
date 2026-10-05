@@ -4,7 +4,9 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Texture } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runnerCourseFixture } from '../browser/__fixtures__/runner-course'
 import { deferred, flush } from '../browser/__fixtures__/runner-session'
+import { SINGING_CURRENT_CONTINUOUS_TRIAL } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
+import { runnerCameraFollowTarget, runnerCameraPose, } from './runner-world-layout'
 
 const state = vi.hoisted(() => ({
   render: vi.fn(),
@@ -29,6 +31,7 @@ const state = vi.hoisted(() => ({
   sceneryDispose: vi.fn(),
   sceneryCreate: vi.fn(),
   sceneryUpdate: vi.fn(),
+  scenerySetCamera: vi.fn(),
   sceneryWarm: vi.fn(),
   sceneryRestore: vi.fn(),
   mercDispose: vi.fn(),
@@ -136,6 +139,7 @@ vi.mock('./runner-scenery', () => ({
     return {
       root: new Group(),
       update: state.sceneryUpdate,
+      setCameraProfile: state.scenerySetCamera,
       dispose: state.sceneryDispose,
       metrics: () => ({ residentChunks: 2, drawBatches: 3, triangles: 1200 }),
       async withWarmupState(callback: () => Promise<void>) {
@@ -160,8 +164,10 @@ function ownedScene() {
   return { root, geometryDispose, materialDispose }
 }
 
-function fixture(dressedOpening = false) {
-  const source = runnerCourseFixture()
+function fixture(dressedOpening = false, continuous = false) {
+  const source = continuous
+    ? SINGING_CURRENT_CONTINUOUS_TRIAL
+    : runnerCourseFixture()
   const course = dressedOpening
       ? {
           ...source,
@@ -212,12 +218,108 @@ beforeEach(() => {
   state.texture.mockImplementation(async () => new Texture())
   state.model.mockImplementation(async () => new Group())
   state.precompile.mockResolvedValue(undefined)
+  state.scenerySetCamera.mockReturnValue(true)
 })
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('runner renderer ownership', () => {
+  it('changes a paused camera and fog together without reloading, warming or advancing the session', async () => {
+    const { renderer, snapshot, container } = fixture(true, true)
+    expect(renderer.setCameraProfile('steering-angled')).toBe(false)
+    await renderer.ready
+    const paused = {
+      ...snapshot,
+      status: 'paused' as const,
+      courseDistanceMeters: 108,
+      courseSeconds: 36,
+      player: { ...snapshot.player, lateralX: 1.2 },
+    }
+    renderer.render(paused, 0)
+    const before = {
+      models: state.model.mock.calls.length,
+      textures: state.texture.mock.calls.length,
+      draws: state.render.mock.calls.length,
+    }
+    expect(renderer.setCameraProfile('steering-angled')).toBe(true)
+    expect(state.scenerySetCamera).toHaveBeenCalledExactlyOnceWith(
+      'steering-angled',
+    )
+    expect(state.render).toHaveBeenCalledTimes(before.draws + 1)
+    const [scene, camera] = state.render.mock.lastCall! as [
+      Three.Scene,
+      Three.PerspectiveCamera,
+    ]
+    const pose = runnerCameraPose(
+      container.clientWidth / container.clientHeight,
+      SINGING_CURRENT_CONTINUOUS_TRIAL.laneCenters,
+      'steering-angled',
+    )
+    const follow = runnerCameraFollowTarget(
+      paused.player.lateralX,
+      SINGING_CURRENT_CONTINUOUS_TRIAL.laneCenters,
+      camera.aspect,
+      'steering-angled',
+      true,
+    )
+    expect(camera.position.toArray()).toEqual([pose.x + follow, pose.y, pose.z])
+    expect((scene.fog as Three.Fog).far).toBe(35)
+    expect(state.worldUpdate).toHaveBeenLastCalledWith(paused, 0)
+    expect(state.targetUpdate).toHaveBeenLastCalledWith(paused, 0)
+    expect(state.sceneryUpdate).toHaveBeenLastCalledWith(paused, 0)
+    expect(state.model).toHaveBeenCalledTimes(before.models)
+    expect(state.texture).toHaveBeenCalledTimes(before.textures)
+    expect(state.sceneryCreate).toHaveBeenCalledOnce()
+    expect(state.environmentCapture).toHaveBeenCalledOnce()
+    expect(state.precompile).toHaveBeenCalledOnce()
+    expect(state.merc).toHaveBeenCalledOnce()
+    expect(state.dispose).not.toHaveBeenCalled()
+    expect(renderer.setCameraProfile('steering-angled')).toBe(true)
+    expect(state.render).toHaveBeenCalledTimes(before.draws + 1)
+    expect(state.scenerySetCamera).toHaveBeenCalledOnce()
+    expect(renderer.setCameraProfile('responsive-close')).toBe(true)
+    expect((scene.fog as Three.Fog).far).toBe(37)
+    Object.defineProperty(container, 'clientWidth', {
+      value: 0,
+      configurable: true,
+    })
+    const sceneryChanges = state.scenerySetCamera.mock.calls.length
+    expect(renderer.setCameraProfile('steering-close')).toBe(false)
+    expect(state.scenerySetCamera).toHaveBeenCalledTimes(sceneryChanges)
+    expect((scene.fog as Three.Fog).far).toBe(37)
+    Object.defineProperty(container, 'clientWidth', {
+      value: 800,
+      configurable: true,
+    })
+    renderer.render({ ...paused, status: 'running' }, 0)
+    expect(renderer.setCameraProfile('steering-close')).toBe(false)
+    renderer.render(paused, 0)
+    expect(renderer.setCameraProfile('legacy-wide')).toBe(false)
+    state.scenerySetCamera.mockReturnValueOnce(false)
+    expect(renderer.setCameraProfile('steering-close')).toBe(false)
+    expect((scene.fog as Three.Fog).far).toBe(37)
+    renderer.dispose()
+    expect(renderer.setCameraProfile('steering-close')).toBe(false)
+  })
+
+  it('rejects camera changes while shaders warm or the graphics context is lost', async () => {
+    const pending = deferred<undefined>()
+    state.precompile.mockReturnValueOnce(pending.promise)
+    const { renderer } = fixture(true)
+    await vi.waitFor(() => expect(state.precompile).toHaveBeenCalledOnce())
+    expect(renderer.setCameraProfile('steering-angled')).toBe(false)
+    expect(state.scenerySetCamera).not.toHaveBeenCalled()
+    pending.resolve(undefined)
+    await renderer.ready
+    state.listeners.get('webglcontextlost')?.(
+      new Event('webglcontextlost', { cancelable: true }),
+    )
+    expect(renderer.setCameraProfile('steering-angled')).toBe(false)
+    expect(state.scenerySetCamera).not.toHaveBeenCalled()
+    renderer.dispose()
+  })
+
   it('captures only during preparation and retires the dressed opening with the visit', async () => {
     const { renderer, snapshot } = fixture(true)
     await renderer.ready

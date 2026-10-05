@@ -102,6 +102,7 @@ export interface SongRunnerCourseSource {
       | 'responsive-close'
       | 'legacy-wide'
       | 'steering-close'
+      | 'steering-angled'
   }
 }
 

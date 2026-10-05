@@ -102,7 +102,9 @@ function geometryBytes(geometry: BufferGeometry): number {
 export function createRunnerScenery(options: RunnerSceneryOptions) {
   const root = new Group()
   root.name = 'runner-scenery'
-  const layout = createRunnerSceneryLayout(options.course)
+  let cameraProfile = options.course.presentation.cameraProfile
+  let layout = createRunnerSceneryLayout(options.course)
+  const layoutsByProfile = new Map([[cameraProfile, layout]])
   const ownedGeometries: BufferGeometry[] = []
   const ownedMaterials: Material[] = []
   const meshes: InstancedMesh[] = []
@@ -112,6 +114,7 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
   let warming = false
   let activeWindow = layout.windows[0]!
   let presentationSeconds = 0
+  let courseDistanceMeters = 0
 
   const createPool = (
     kind: RunnerSceneryKind,
@@ -212,6 +215,7 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
 
   const update = (snapshot: RunnerSnapshot, deltaSeconds = 0) => {
     if (disposed) return
+    courseDistanceMeters = snapshot.courseDistanceMeters
     root.position.z = snapshot.courseDistanceMeters
     const selected = layout.select(snapshot.courseDistanceMeters)
     if (selected !== activeWindow) applyWindow(selected)
@@ -222,6 +226,30 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     )
       presentationSeconds += Math.min(deltaSeconds, 0.1)
     sourcePool.setPresentation(presentationSeconds, options.reducedMotion)
+  }
+
+  /** Change only the handoff schedule; every donor, GPU buffer and pool stays owned by this visit. */
+  const setCameraProfile = (
+    profile: CompiledRunnerCourse['presentation']['cameraProfile'],
+  ): boolean => {
+    if (disposed || warming) return false
+    if (profile === cameraProfile) return true
+    const nextLayout =
+      layoutsByProfile.get(profile) ??
+      createRunnerSceneryLayout({
+        ...options.course,
+        presentation: {
+          ...options.course.presentation,
+          cameraProfile: profile,
+        },
+      })
+    layoutsByProfile.set(profile, nextLayout)
+    layout = nextLayout
+    cameraProfile = profile
+    const selected = layout.select(courseDistanceMeters)
+    if (selected.key !== activeWindow.key) applyWindow(selected)
+    else activeWindow = selected
+    return true
   }
 
   const metrics = (): RunnerSceneryMetrics =>
@@ -287,6 +315,7 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
   const dispose = () => {
     if (disposed) return
     disposed = true
+    layoutsByProfile.clear()
     root.clear()
     meshes.forEach((mesh) => mesh.dispose())
     ownedGeometries.forEach((geometry) => geometry.dispose())
@@ -294,5 +323,5 @@ export function createRunnerScenery(options: RunnerSceneryOptions) {
     sourcePool.dispose()
   }
 
-  return { root, update, metrics, withWarmupState, dispose }
+  return { root, update, metrics, setCameraProfile, withWarmupState, dispose }
 }

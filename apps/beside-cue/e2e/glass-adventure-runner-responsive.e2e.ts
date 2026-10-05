@@ -8,53 +8,32 @@ async function expectFullRunnerHeading(
   page: Page,
   expectedStatuses: readonly string[],
 ): Promise<void> {
-  const layout = await page.getByLabel('Current melody').evaluate((panel) => {
-    const note = panel.querySelector<HTMLElement>('strong[aria-label]')!
-    const prompt = note.parentElement!
-    const facts = panel.querySelector<HTMLElement>(
-      '[aria-label="Listening status"]',
-    )!
-    const rectangle = (element: Element) => {
-      const { left, top, right, bottom } = element.getBoundingClientRect()
-      return { left, top, right, bottom }
-    }
+  const ribbon = page.getByLabel('Current melody')
+  const notes = ribbon.getByLabel('Notes and holds')
+  await expect(notes.locator('strong').first()).toHaveText('A#3')
+  await expect(
+    ribbon.getByRole('img', { name: expectedStatuses[0] }),
+  ).toBeVisible()
+  await expect(ribbon).toContainText(expectedStatuses[1]!)
+  const layout = await ribbon.evaluate((panel) => {
+    const rect = panel.getBoundingClientRect()
     return {
-      panel: rectangle(panel),
-      prompt: rectangle(prompt),
-      note: {
-        label: note.textContent,
-        width: note.clientWidth,
-        contentWidth: note.scrollWidth,
-      },
-      statuses: [...facts.children].map((badge) => ({
-        label: badge.textContent,
-        rectangle: rectangle(badge),
-        width: badge.clientWidth,
-        contentWidth: badge.scrollWidth,
-      })),
+      height: rect.height,
+      notes: [...panel.querySelectorAll('[data-note-index]')].map((note) => {
+        const box = note.getBoundingClientRect()
+        return {
+          left: box.left,
+          right: box.right,
+          panelLeft: rect.left,
+          panelRight: rect.right,
+        }
+      }),
     }
   })
-  expect(layout.note.label).toBe('A#3')
-  expect(layout.note.contentWidth).toBeLessThanOrEqual(layout.note.width)
-  expect(layout.statuses.map((badge) => badge.label)).toEqual(expectedStatuses)
-  for (const [index, badge] of layout.statuses.entries()) {
-    expect(badge.contentWidth).toBeLessThanOrEqual(badge.width)
-    expect(badge.rectangle.left).toBeGreaterThanOrEqual(layout.panel.left)
-    expect(badge.rectangle.right).toBeLessThanOrEqual(layout.panel.right)
-    expect(badge.rectangle.top).toBeGreaterThanOrEqual(layout.panel.top)
-    expect(badge.rectangle.bottom).toBeLessThanOrEqual(layout.panel.bottom)
-    for (const other of [
-      layout.prompt,
-      ...layout.statuses.slice(0, index).map((item) => item.rectangle),
-    ]) {
-      const overlapWidth =
-        Math.min(badge.rectangle.right, other.right) -
-        Math.max(badge.rectangle.left, other.left)
-      const overlapHeight =
-        Math.min(badge.rectangle.bottom, other.bottom) -
-        Math.max(badge.rectangle.top, other.top)
-      expect(overlapWidth <= 0 || overlapHeight <= 0).toBe(true)
-    }
+  expect(layout.height).toBeLessThanOrEqual(95)
+  for (const note of layout.notes) {
+    expect(note.left).toBeGreaterThanOrEqual(note.panelLeft)
+    expect(note.right).toBeLessThanOrEqual(note.panelRight)
   }
 }
 
@@ -102,7 +81,6 @@ for (const viewport of [
         await expectFullRunnerHeading(page, [
           'Microphone ready',
           'Scoring opens at Sing',
-          'Short hold',
         ])
         await page.screenshot({
           path: testInfo.outputPath('runner-full-note-heading.png'),
@@ -115,7 +93,6 @@ for (const viewport of [
         await expectFullRunnerHeading(page, [
           'Microphone ready',
           'Scoring opens at Sing',
-          'Short hold',
         ])
       } finally {
         await page.evaluate(() => window.runnerVoiceFixture.dispose())

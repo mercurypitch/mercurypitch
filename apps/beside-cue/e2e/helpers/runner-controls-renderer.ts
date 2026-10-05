@@ -37,10 +37,12 @@ const createControlsRenderer: typeof createSongRunnerRenderer = (container) => {
   marker.dataset.testid = 'runner-controls-presentation'
   container.append(marker)
   let disposed = false
+  let lastStatus: string | undefined
   return {
     ready: Promise.resolve(),
     render(snapshot) {
       if (disposed) return false
+      lastStatus = snapshot.status
       const activeTarget = snapshot.activeTarget
       const pitchFeedback = activeTarget?.pitchFeedback
       marker.dataset.courseSeconds = String(snapshot.courseSeconds)
@@ -63,6 +65,11 @@ const createControlsRenderer: typeof createSongRunnerRenderer = (container) => {
         activeTarget?.notes.reduce((sum, note) => sum + note.fillProgress, 0) ??
           0,
       )
+      return true
+    },
+    setCameraProfile(profile) {
+      if (disposed || lastStatus === 'running') return false
+      marker.dataset.cameraProfile = profile
       return true
     },
     resize() {},

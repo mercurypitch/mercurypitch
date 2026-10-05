@@ -91,8 +91,12 @@ function expectOnScreen(object: Object3D, camera: PerspectiveCamera) {
   for (const x of [bounds.min.x, bounds.max.x])
     for (const y of [bounds.min.y, bounds.max.y]) {
       const point = new Vector3(x, y, bounds.max.z).project(camera)
-      expect(Math.abs(point.x)).toBeLessThan(0.96)
-      expect(Math.abs(point.y)).toBeLessThan(0.96)
+      expect(Math.abs(point.x), JSON.stringify(camera.userData)).toBeLessThan(
+        0.96,
+      )
+      expect(Math.abs(point.y), JSON.stringify(camera.userData)).toBeLessThan(
+        0.96,
+      )
     }
 }
 
@@ -182,38 +186,52 @@ describe.each(Object.values(SINGING_CURRENT_WALL_PROFILES))(
               const size = new Box3().setFromObject(card).getSize(new Vector3())
               expect(size.x).toBeCloseTo(anchor.width, 5)
               expect(size.y).toBeCloseTo(anchor.height, 5)
-              for (const aspect of [
-                390 / 844,
-                768 / 1024,
-                1440 / 900,
-                844 / 390,
-              ]) {
-                const pose = runnerCameraPose(
-                  aspect,
-                  course.laneCenters,
-                  course.presentation.cameraProfile,
-                )
-                const followX = runnerCameraFollowTarget(
-                  course.laneCenters[displayLane],
-                  course.laneCenters,
-                  aspect,
-                  course.presentation.cameraProfile,
-                )
-                const camera = new PerspectiveCamera(
-                  pose.fovDegrees,
-                  aspect,
-                  0.08,
-                  75,
-                )
-                camera.position.set(pose.x + followX, pose.y, pose.z)
-                camera.lookAt(
-                  pose.targetX + followX,
-                  pose.targetY,
-                  pose.targetZ,
-                )
-                camera.updateMatrixWorld(true)
-                expectOnScreen(card, camera)
-              }
+              for (const cameraProfile of [
+                course.presentation.cameraProfile,
+                'steering-angled',
+              ] as const)
+                for (const aspect of [
+                  390 / 844,
+                  768 / 1024,
+                  1440 / 900,
+                  844 / 390,
+                  ...(cameraProfile === 'steering-angled'
+                    ? [320 / 740, 844 / 310]
+                    : []),
+                ]) {
+                  const pose = runnerCameraPose(
+                    aspect,
+                    course.laneCenters,
+                    cameraProfile,
+                  )
+                  const followX = runnerCameraFollowTarget(
+                    course.laneCenters[displayLane],
+                    course.laneCenters,
+                    aspect,
+                    cameraProfile,
+                    cameraProfile === 'steering-angled',
+                  )
+                  const camera = new PerspectiveCamera(
+                    pose.fovDegrees,
+                    aspect,
+                    0.08,
+                    75,
+                  )
+                  camera.position.set(pose.x + followX, pose.y, pose.z)
+                  camera.lookAt(
+                    pose.targetX + followX,
+                    pose.targetY,
+                    pose.targetZ,
+                  )
+                  camera.updateMatrixWorld(true)
+                  camera.userData = {
+                    cameraProfile,
+                    aspect,
+                    displayLane,
+                    wall: profile.id,
+                  }
+                  expectOnScreen(card, camera)
+                }
             }
 
             const contactDistance =
