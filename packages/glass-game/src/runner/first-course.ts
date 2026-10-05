@@ -534,6 +534,45 @@ export const SINGING_CURRENT_TRIALS = {
   learning: SINGING_CURRENT_LEARNING_TRIAL,
 } as const
 
+const continuousProfile = {
+  ...SINGING_CURRENT_RESPONSIVE_CATALOG.movementProfiles['runner-beginner-v1'],
+  id: 'runner-continuous-study-v1',
+  kind: 'continuous',
+  maxLateralSpeedMetersPerSecond: 5,
+  lateralAccelerationMetersPerSecondSquared: 20,
+  lateralBrakingMetersPerSecondSquared: 28,
+  edgePolicy: 'contained',
+} as const
+export const SINGING_CURRENT_CONTINUOUS_CATALOG = {
+  ...SINGING_CURRENT_RESPONSIVE_CATALOG,
+  movementProfiles: {
+    ...SINGING_CURRENT_RESPONSIVE_CATALOG.movementProfiles,
+    [continuousProfile.id]: continuousProfile,
+  },
+} as const satisfies SongRunnerCourseCatalog
+export const SINGING_CURRENT_CONTINUOUS_SOURCE = {
+  ...SINGING_CURRENT_RESPONSIVE_SOURCE,
+  id: 'the-singing-current-trial-continuous-v1',
+  revision: 1,
+  movementProfileId: continuousProfile.id,
+  rewards: {
+    ...SINGING_CURRENT_RESPONSIVE_SOURCE.rewards,
+    pickups: SINGING_CURRENT_RESPONSIVE_SOURCE.rewards.pickups.map(
+      (pickup) => ({ ...pickup, id: `study-${pickup.id}` }),
+    ),
+    finishRewardIds: ['study-continuous-finish'],
+  },
+} as const satisfies SongRunnerCourseSource
+export const SINGING_CURRENT_CONTINUOUS_SOURCE_DOCUMENT = {
+  schema: 'mercurypitch.song-runner-course',
+  version: 1,
+  courses: [SINGING_CURRENT_CONTINUOUS_SOURCE],
+} as const satisfies SongRunnerSourceDocument
+export const SINGING_CURRENT_CONTINUOUS_TRIAL = compileSongRunnerCourseDocument(
+  SINGING_CURRENT_CONTINUOUS_SOURCE_DOCUMENT,
+  SINGING_CURRENT_CONTINUOUS_CATALOG,
+)[0]!
+
 export const SINGING_CURRENT_CATALOG = SINGING_CURRENT_RESPONSIVE_CATALOG
 export const SINGING_CURRENT_SOURCE = SINGING_CURRENT_RESPONSIVE_SOURCE
 export const SINGING_CURRENT_SOURCE_DOCUMENT =

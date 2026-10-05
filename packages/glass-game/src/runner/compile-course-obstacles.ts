@@ -4,12 +4,14 @@
 
 import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, runnerIntervalsOverlap, } from './compile-course-helpers.ts'
 import type { RunnerProtectedWindow } from './compile-course-targets.ts'
+import { runnerContinuousBlockerCertificate, validateContinuousRunnerReachability, } from './continuous-certificates.ts'
 import type { CompiledRunnerActionWindow, CompiledRunnerCheckpoint, CompiledRunnerCourse, CompiledRunnerObstacle, RunnerLane, } from './contracts.ts'
 import { runnerFixedStepActionEnd, runnerFixedStepAtOrAfter, } from './fixed-step.ts'
 import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, } from './resource-limits.ts'
 import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
 import { runnerSourceFail, runnerSourceUniqueIds } from './source.ts'
 import { runnerBeatToDistance, runnerBeatToSeconds } from './tempo.ts'
+import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 function validateObstacleProfile(
   profile: RunnerObstacleCatalogProfile,
@@ -266,8 +268,19 @@ export function compileRunnerObstacles(
         ),
         1,
       )
+      const continuous =
+        movement.kind === 'continuous'
+          ? runnerContinuousBlockerCertificate(
+              course,
+              movement,
+              minLateralX,
+              maxLateralX,
+            )
+          : undefined
       const requiredTransitionSeconds =
-        movement.laneChangeSeconds * maximumLaneChanges
+        continuous === undefined
+          ? movement.laneChangeSeconds * maximumLaneChanges
+          : continuous.requiredManeuverSeconds + continuous.inputMarginSeconds
       const launchCloseCourseSeconds =
         collisionEntrySeconds - requiredTransitionSeconds
       if (
@@ -280,7 +293,9 @@ export function compileRunnerObstacles(
         )
       certifiedActions = [
         {
-          kind: 'lane-transition',
+          kind:
+            continuous === undefined ? 'lane-transition' : 'continuous-steer',
+          ...(continuous === undefined ? {} : { continuous }),
           launchOpenCourseSeconds,
           launchCloseCourseSeconds,
           ...fixedStepActionBounds(
@@ -290,7 +305,9 @@ export function compileRunnerObstacles(
             launchOpenCourseSeconds,
             launchCloseCourseSeconds,
             requiredTransitionSeconds,
-            movement.laneChangeSeconds,
+            continuous === undefined
+              ? movement.laneChangeSeconds
+              : requiredTransitionSeconds,
           ),
           reachableLanes: safeLanes,
         },
@@ -338,6 +355,28 @@ export function compileRunnerObstacles(
       certifiedActions = [
         {
           kind: 'jump',
+          ...(movement.kind !== 'continuous'
+            ? {}
+            : {
+                continuous: {
+                  version: 1 as const,
+                  entry: runnerBodyLateralBounds({
+                    laneCenters: course.track.laneCenters,
+                    movement,
+                  }),
+                  maximumEntrySpeedMetersPerSecond:
+                    movement.maxLateralSpeedMetersPerSecond,
+                  safeCorridors: ([-1, 1] as const).map((axis) => ({
+                    ...runnerBodyLateralBounds({
+                      laneCenters: course.track.laneCenters,
+                      movement,
+                    }),
+                    axis,
+                  })),
+                  requiredManeuverSeconds: flightSeconds,
+                  inputMarginSeconds: movement.fixedStepSeconds,
+                },
+              }),
           launchOpenCourseSeconds,
           launchCloseCourseSeconds,
           ...fixedStepActionBounds(
@@ -359,6 +398,17 @@ export function compileRunnerObstacles(
             course.track.laneCenters[lane] + profile.laneHalfWidthMeters,
         })),
       )
+      if (
+        movement.kind === 'continuous' &&
+        certifiedActions[0]!.landingCloseCourseSeconds >
+          secondsAtDistance(
+            maxCourseDistanceMeters + profile.landingRunwayMeters,
+          )
+      )
+        runnerSourceFail(
+          obstaclePath,
+          'continuous jump exceeds the authored landing runway.',
+        )
       compiled = {
         kind: 'gap',
         id: obstacle.id,
@@ -440,6 +490,16 @@ export function validateRunnerReachability(
   movement: CompiledRunnerCourse['movement'],
   path: string,
 ): void {
+  if (movement.kind === 'continuous') {
+    validateContinuousRunnerReachability(
+      course,
+      obstacles,
+      tempoSegments,
+      movement,
+      path,
+    )
+    return
+  }
   const finishSeconds = runnerBeatToSeconds(
     tempoSegments,
     course.track.lengthBeats,

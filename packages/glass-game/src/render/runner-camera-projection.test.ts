@@ -47,18 +47,75 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function cameraFor(aspect: number, followX = 0) {
-  const pose = runnerCameraPose(
-    aspect,
-    course.laneCenters,
-    course.presentation.cameraProfile,
-  )
+function cameraFor(
+  aspect: number,
+  followX = 0,
+  profile = course.presentation.cameraProfile,
+) {
+  const pose = runnerCameraPose(aspect, course.laneCenters, profile)
   const camera = new PerspectiveCamera(pose.fovDegrees, aspect, 0.08, 75)
   camera.position.set(pose.x + followX, pose.y, pose.z)
   camera.lookAt(pose.targetX + followX, pose.targetY, pose.targetZ)
   camera.updateMatrixWorld(true)
   return camera
 }
+
+describe.each([
+  ...viewports,
+  { width: 320, height: 740 },
+  { width: 844, height: 310 },
+])('closer steering camera at $width×$height', (viewport) => {
+  const aspect = viewport.width / viewport.height
+  it('gives the real Merc more presence with clear feet and no edge or jump clipping', () => {
+    for (let frame = 0; frame < 100; frame++) poseMerc(0)
+    const centre = projectedBody(cameraFor(aspect, 0, 'steering-close'))
+    expect((centre.maxY - centre.minY) / 2).toBeGreaterThanOrEqual(0.2)
+    expect((centre.maxY - centre.minY) / 2).toBeLessThanOrEqual(0.24)
+    expect((1 - centre.minY) / 2).toBeGreaterThan(0.72)
+    expect((1 - centre.minY) / 2).toBeLessThan(0.84)
+    const edge = 3 - course.movement.bodyRadius
+    let x = -edge
+    let followX = runnerCameraFollowTarget(
+      x,
+      course.laneCenters,
+      aspect,
+      'steering-close',
+      true,
+    )
+    for (let frame = 0; frame < 180; frame++) {
+      const seconds = frame / 60
+      // Includes both boundaries, a full-speed reversal and worst follow lag.
+      x =
+        frame < 90
+          ? Math.min(edge, -edge + seconds * 5)
+          : Math.max(-edge, edge - (seconds - 1.5) * 5)
+      const jumpSeconds = seconds % 1.5
+      const y = Math.max(
+        0,
+        course.movement.jumpVelocityMetersPerSecond * jumpSeconds -
+          (course.movement.gravityMetersPerSecondSquared * jumpSeconds ** 2) /
+            2,
+      )
+      followX = stepRunnerCameraFollow(
+        followX,
+        runnerCameraFollowTarget(
+          x,
+          course.laneCenters,
+          aspect,
+          'steering-close',
+          true,
+        ),
+        1 / 60,
+      )
+      poseMerc(x, y)
+      const body = projectedBody(cameraFor(aspect, followX, 'steering-close'))
+      expect(body.minX).toBeGreaterThan(-0.96)
+      expect(body.maxX).toBeLessThan(0.96)
+      expect(body.minY).toBeGreaterThan(-0.96)
+      expect(body.maxY).toBeLessThan(0.96)
+    }
+  })
+})
 
 function poseMerc(x: number, y = 0, dt = 1 / 60) {
   merc.update(

@@ -2,6 +2,8 @@
 // Song runner game — deterministic epochs, movement, judging, recovery, and saves.
 // ============================================================
 
+import type { RunnerLateralSegment } from './continuous-lateral'
+import { continuousRunnerSweepIntersectsCircle } from './continuous-movement'
 import type { CompiledRunnerCheckpoint, CompiledRunnerCourse, CreateSongRunnerGameOptions, RunnerBeginEpochResult, RunnerEpoch, RunnerEvent, RunnerInput, RunnerRecoveryReason, RunnerSnapshot, RunnerTargetResult, RunnerVoiceEvidence, SavedRunnerProgress, SongRunnerGame, } from './contracts'
 import { runnerFixedStepAtOrAfter } from './fixed-step'
 import { createRunnerJudge } from './judge'
@@ -29,7 +31,10 @@ function validateFactory(
 ): void {
   if (
     course.schema !== 'mercurypitch.song-runner.compiled' ||
-    course.version !== 1 ||
+    (course.movement.kind !== undefined &&
+      course.movement.kind !== 'lanes' &&
+      course.movement.kind !== 'continuous') ||
+    course.version !== (course.movement.kind === 'continuous' ? 2 : 1) ||
     course.checkpoints.length === 0 ||
     course.checkpoints[0]!.courseSeconds !== 0 ||
     course.chunks.length === 0
@@ -242,6 +247,8 @@ export function createSongRunnerGame(
   ): void => {
     if (status === 'recovering') return
     status = 'recovering'
+    movement.steeringAxis = 0
+    movement.lateralVelocityMetersPerSecond = 0
     recoveryCheckpointId = lastCheckpointId
     queuedInputs = []
     judge.clearContinuity()
@@ -274,6 +281,7 @@ export function createSongRunnerGame(
     endCourseSeconds: number,
     startX: number,
     endX: number,
+    lateralSegments?: readonly RunnerLateralSegment[],
   ): void => {
     const startDistance = runnerCourseDistanceAt(course, startCourseSeconds)
     const endDistance = runnerCourseDistanceAt(course, endCourseSeconds)
@@ -285,15 +293,29 @@ export function createSongRunnerGame(
       )
         continue
       if (
-        runnerSweepIntersectsCircle(
-          startDistance,
-          endDistance,
-          startX,
-          endX,
-          pickup.courseDistanceMeters,
-          pickup.lateralX,
-          pickup.radius + course.movement.bodyRadius,
-        )
+        lateralSegments !== undefined
+          ? lateralSegments.some((segment) =>
+              continuousRunnerSweepIntersectsCircle(
+                segment,
+                startDistance +
+                  ((endDistance - startDistance) * segment.startSeconds) /
+                    (endCourseSeconds - startCourseSeconds),
+                (endDistance - startDistance) /
+                  (endCourseSeconds - startCourseSeconds),
+                pickup.courseDistanceMeters,
+                pickup.lateralX,
+                pickup.radius + course.movement.bodyRadius,
+              ),
+            )
+          : runnerSweepIntersectsCircle(
+              startDistance,
+              endDistance,
+              startX,
+              endX,
+              pickup.courseDistanceMeters,
+              pickup.lateralX,
+              pickup.radius + course.movement.bodyRadius,
+            )
       )
         collectRewards([pickup.id], pickup.courseSeconds)
     }
@@ -323,6 +345,7 @@ export function createSongRunnerGame(
         movement,
         queued.input.action,
         queued.quantizedCourseSeconds,
+        queued.input.action === 'steer' ? queued.input.axis : 0,
       )
     }
   }
@@ -339,7 +362,13 @@ export function createSongRunnerGame(
     )
     courseSeconds = nextCourseSeconds
     resolveTargetsThrough(courseSeconds)
-    collectPickups(startCourseSeconds, courseSeconds, startX, movement.lateralX)
+    collectPickups(
+      startCourseSeconds,
+      courseSeconds,
+      startX,
+      movement.lateralX,
+      movementResult.lateralSegments,
+    )
     certifyCheckpoints(courseSeconds)
     if (movementResult.collided || movementResult.fell) {
       enterRecovery(
@@ -389,7 +418,14 @@ export function createSongRunnerGame(
       nextInput.atCourseSeconds > course.lengthCourseSeconds + EPSILON ||
       (nextInput.action !== 'lane-left' &&
         nextInput.action !== 'lane-right' &&
-        nextInput.action !== 'jump')
+        nextInput.action !== 'jump' &&
+        nextInput.action !== 'steer') ||
+      (nextInput.action === 'steer' &&
+        (course.movement.kind !== 'continuous' ||
+          !Number.isFinite(nextInput.axis) ||
+          Math.abs(nextInput.axis) > 1)) ||
+      (course.movement.kind === 'continuous' &&
+        (nextInput.action === 'lane-left' || nextInput.action === 'lane-right'))
     )
       return false
     const quantizedCourseSeconds = runnerFixedStepAtOrAfter(
@@ -400,6 +436,13 @@ export function createSongRunnerGame(
     if (quantizedCourseSeconds > course.lengthCourseSeconds + EPSILON)
       return false
     lastInputSequence = nextInput.sequence
+    // Keep one latest axis value per simulation boundary, never accumulate presentation frames.
+    if (nextInput.action === 'steer')
+      queuedInputs = queuedInputs.filter(
+        (queued) =>
+          queued.input.action !== 'steer' ||
+          queued.quantizedCourseSeconds !== quantizedCourseSeconds,
+      )
     queuedInputs.push({ input: { ...nextInput }, quantizedCourseSeconds })
     queuedInputs.sort(
       (left, right) =>
@@ -522,6 +565,8 @@ export function createSongRunnerGame(
       .slice(0, 2)
       .map((target) => target.id)
     return {
+      movementMode:
+        course.movement.kind === 'continuous' ? 'continuous' : 'lanes',
       courseId: course.id,
       courseRevision: course.revision,
       epoch,
@@ -534,6 +579,7 @@ export function createSongRunnerGame(
       player: {
         targetLane: movement.targetLane,
         lateralX: movement.lateralX,
+        lateralVelocityMetersPerSecond: movement.lateralVelocityMetersPerSecond,
         feetY: movement.feetY,
         verticalVelocityMetersPerSecond:
           movement.verticalVelocityMetersPerSecond,
@@ -578,6 +624,8 @@ export function createSongRunnerGame(
     pause() {
       if (status === 'running') {
         status = 'paused'
+        movement.steeringAxis = 0
+        movement.lateralVelocityMetersPerSecond = 0
         queuedInputs = []
         judge.clearContinuity()
       }

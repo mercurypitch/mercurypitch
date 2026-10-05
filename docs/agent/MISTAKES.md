@@ -1653,7 +1653,11 @@ the settled camera had both subjects in view.
 for the production camera's settled state before diagnosing composition. Keep
 resize behavior tests separate. Do not change camera geometry to compensate for
 a stale capture or assume wall-clock delay equals simulated camera time in an
-occluded window.
+occluded window. If both baseline and candidate stall while preparing in a
+hidden headful window, compare with an isolated hardware-headless browser and
+record its actual GL renderer before changing game readiness or clock limits.
+The runner comparison completed normally with hardware headless while both
+hidden headful variants stalled; this was not evidence to weaken recovery.
 **See:** `packages/glass-game/src/render/challenge-camera.ts`,
 `apps/beside-cue/e2e/glass-adventure-thawing-living-art.e2e.ts`.
 

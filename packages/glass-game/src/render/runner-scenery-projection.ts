@@ -14,6 +14,7 @@ export const RUNNER_SCENERY_VALIDATED_ASPECTS = Object.freeze([
   1440 / 900,
   740 / 360,
   21 / 9,
+  844 / 310,
 ])
 
 export interface RunnerSceneryHandoff {
@@ -32,6 +33,7 @@ interface RunnerSceneryCameraReceipt {
   readonly playerLateralX: number
   readonly camera: PerspectiveCamera
   readonly frustum: Frustum
+  readonly followOffsetRange?: readonly [number, number]
 }
 
 export interface RunnerSceneryVisibilityContext {
@@ -39,6 +41,7 @@ export interface RunnerSceneryVisibilityContext {
   readonly cameraProfile: CompiledRunnerCourse['presentation']['cameraProfile']
   readonly boxesByChunk: ReadonlyMap<string, readonly Box3[]>
   readonly cameras: readonly RunnerSceneryCameraReceipt[]
+  readonly continuous: boolean
 }
 
 /** Wide comparison courses use a nearer veil so dense art can still hand off unseen. */
@@ -47,6 +50,7 @@ export function runnerSceneryFogFar(
   cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): number {
   return cameraProfile === 'responsive-close' ||
+    cameraProfile === 'steering-close' ||
     (cameraProfile === undefined && laneCenters[2] - laneCenters[0] <= 2.75)
     ? RUNNER_SCENERY_FOG_FAR
     : RUNNER_SCENERY_LEGACY_FOG_FAR
@@ -57,6 +61,7 @@ function cameraFor(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   playerLateralX: number,
   cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
+  continuous = false,
 ): PerspectiveCamera {
   const pose = runnerCameraPose(aspect, laneCenters, cameraProfile)
   const followX = runnerCameraFollowTarget(
@@ -64,6 +69,7 @@ function cameraFor(
     laneCenters,
     aspect,
     cameraProfile,
+    continuous,
   )
   const camera = new PerspectiveCamera(pose.fovDegrees, aspect, 0.08, 75)
   camera.position.set(pose.x + followX, pose.y, pose.z)
@@ -78,8 +84,15 @@ function cameraReceipt(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   playerLateralX: number,
   cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
+  continuous = false,
 ): RunnerSceneryCameraReceipt {
-  const camera = cameraFor(aspect, laneCenters, playerLateralX, cameraProfile)
+  const camera = cameraFor(
+    aspect,
+    laneCenters,
+    playerLateralX,
+    cameraProfile,
+    continuous,
+  )
   const projectionView = new Matrix4().multiplyMatrices(
     camera.projectionMatrix,
     camera.matrixWorldInverse,
@@ -96,11 +109,59 @@ export function createRunnerSceneryVisibilityContext(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   chunks: readonly RunnerSceneryProjectionChunk[],
   cameraProfile?: CompiledRunnerCourse['presentation']['cameraProfile'],
+  lateralRange?: readonly [number, number],
 ): RunnerSceneryVisibilityContext {
   const boxesByChunk = new Map<string, readonly Box3[]>()
   for (const chunk of chunks) boxesByChunk.set(chunk.id, chunk.bounds)
   const cameras: RunnerSceneryCameraReceipt[] = []
   for (const aspect of RUNNER_SCENERY_VALIDATED_ASPECTS) {
+    if (lateralRange) {
+      const center = (lateralRange[0] + lateralRange[1]) / 2
+      const receipt = cameraReceipt(
+        aspect,
+        laneCenters,
+        center,
+        cameraProfile,
+        true,
+      )
+      const centerFollow = runnerCameraFollowTarget(
+        center,
+        laneCenters,
+        aspect,
+        cameraProfile,
+        true,
+      )
+      const firstOffset =
+        runnerCameraFollowTarget(
+          lateralRange[0],
+          laneCenters,
+          aspect,
+          cameraProfile,
+          true,
+        ) - centerFollow
+      const lastOffset =
+        runnerCameraFollowTarget(
+          lateralRange[1],
+          laneCenters,
+          aspect,
+          cameraProfile,
+          true,
+        ) - centerFollow
+      // Follow moves camera and target by the same X, with no rotation. Its
+      // bounded lag remains between targets. Expanding each box by the inverse
+      // translation interval covers every intermediate camera, even when a
+      // narrow near-plane object fits between a finite set of sample probes.
+      cameras.push(
+        Object.freeze({
+          ...receipt,
+          followOffsetRange: Object.freeze([
+            Math.min(firstOffset, lastOffset),
+            Math.max(firstOffset, lastOffset),
+          ] as const),
+        }),
+      )
+      continue
+    }
     const followPositions = [laneCenters[0], 0, laneCenters[2]]
     const seenFollowXs = new Set<number>()
     for (const playerLateralX of followPositions) {
@@ -109,25 +170,40 @@ export function createRunnerSceneryVisibilityContext(
         laneCenters,
         aspect,
         cameraProfile,
+        lateralRange !== undefined,
       )
       if (seenFollowXs.has(followX)) continue
       seenFollowXs.add(followX)
       cameras.push(
-        cameraReceipt(aspect, laneCenters, playerLateralX, cameraProfile),
+        cameraReceipt(
+          aspect,
+          laneCenters,
+          playerLateralX,
+          cameraProfile,
+          lateralRange !== undefined,
+        ),
       )
     }
   }
-  return Object.freeze({ laneCenters, cameraProfile, boxesByChunk, cameras })
+  return Object.freeze({
+    laneCenters,
+    cameraProfile,
+    boxesByChunk,
+    cameras,
+    continuous: lateralRange !== undefined,
+  })
 }
 
 function minimumViewDepth(
   box: Box3,
   camera: PerspectiveCamera,
   courseDistanceMeters: number,
+  minFollowOffset = 0,
+  maxFollowOffset = 0,
 ): number {
   let minimum = Number.POSITIVE_INFINITY
   const elements = camera.matrixWorldInverse.elements
-  for (const x of [box.min.x, box.max.x])
+  for (const x of [box.min.x - maxFollowOffset, box.max.x - minFollowOffset])
     for (const y of [box.min.y, box.max.y])
       for (const z of [box.min.z, box.max.z])
         minimum = Math.min(
@@ -148,14 +224,16 @@ function translatedIntersectsFrustum(
   box: Box3,
   courseDistanceMeters: number,
   frustum: Frustum,
+  minFollowOffset = 0,
+  maxFollowOffset = 0,
 ): boolean {
   translatedBounds.min.set(
-    box.min.x,
+    box.min.x - maxFollowOffset,
     box.min.y,
     box.min.z + courseDistanceMeters,
   )
   translatedBounds.max.set(
-    box.max.x,
+    box.max.x - minFollowOffset,
     box.max.y,
     box.max.z + courseDistanceMeters,
   )
@@ -168,19 +246,38 @@ function visibilityAtDistance(
   incomingChunkId: string,
   courseDistanceMeters: number,
   receipt: RunnerSceneryCameraReceipt,
+  includeContinuousEnvelope = false,
 ): {
   readonly outgoingVisible: boolean
   readonly incomingFullyFogged: boolean
 } {
   const outgoing = context.boxesByChunk.get(outgoingChunkId)!
   const incoming = context.boxesByChunk.get(incomingChunkId)!
+  const minOffset = includeContinuousEnvelope
+    ? (receipt.followOffsetRange?.[0] ?? 0)
+    : 0
+  const maxOffset = includeContinuousEnvelope
+    ? (receipt.followOffsetRange?.[1] ?? 0)
+    : 0
   return Object.freeze({
     outgoingVisible: outgoing.some((box) =>
-      translatedIntersectsFrustum(box, courseDistanceMeters, receipt.frustum),
+      translatedIntersectsFrustum(
+        box,
+        courseDistanceMeters,
+        receipt.frustum,
+        minOffset,
+        maxOffset,
+      ),
     ),
     incomingFullyFogged: incoming.every(
       (box) =>
-        minimumViewDepth(box, receipt.camera, courseDistanceMeters) >=
+        minimumViewDepth(
+          box,
+          receipt.camera,
+          courseDistanceMeters,
+          minOffset,
+          maxOffset,
+        ) >=
         runnerSceneryFogFar(context.laneCenters, context.cameraProfile) + 0.2,
     ),
   })
@@ -242,6 +339,7 @@ export function createRunnerSceneryHandoffs(
           incoming.id,
           distance,
           receipt,
+          true,
         ),
       )
     // Both predicates are monotone as the moving root carries outgoing art
@@ -294,12 +392,14 @@ export function runnerSceneryHandoffVisibilityAt(
             context.laneCenters,
             aspect,
             context.cameraProfile,
+            context.continuous,
           ) -
             runnerCameraFollowTarget(
               playerLateralX,
               context.laneCenters,
               aspect,
               context.cameraProfile,
+              context.continuous,
             ),
         ) < 1e-12,
     ) ??
@@ -308,6 +408,7 @@ export function runnerSceneryHandoffVisibilityAt(
       context.laneCenters,
       playerLateralX,
       context.cameraProfile,
+      context.continuous,
     )
   return visibilityAtDistance(
     context,

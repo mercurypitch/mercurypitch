@@ -101,6 +101,11 @@ export function runnerMovementCueCopy(cue: RunnerMovementCue): {
     case 'landing':
       return { label: 'Landing', instruction: 'Keep your line' }
     case 'change-lane':
+      if (cue.direction)
+        return {
+          label: `Steer ${cue.direction}`,
+          instruction: 'Take the open side',
+        }
       return { label: 'Change lane', instruction: 'Take the open side' }
   }
 }
@@ -131,7 +136,7 @@ export function runnerRecoveryCopy(
       eyebrow: 'Path blocked',
       title: 'Try this stretch again',
       detail:
-        'Use the lane controls to take the open side. Your settled notes and discoveries stay with you.',
+        'Steer toward the open side. Your settled notes and discoveries stay with you.',
     }
   return {
     eyebrow: 'Checkpoint ready',

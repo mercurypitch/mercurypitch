@@ -6,7 +6,9 @@ import { createMemo, createUniqueId, For, Show } from 'solid-js'
 import type { RunnerTargetSnapshot } from '../runner/contracts'
 import type { RunnerNotationNote } from '../runner/notation'
 import { layoutRunnerNotation } from '../runner/notation'
+import type { RunnerUpcomingCue as UpcomingCue } from './runner-upcoming-cue'
 import { RunnerPitchReadout } from './RunnerPitchReadout'
+import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
 
 interface RunnerNotationProps {
@@ -26,6 +28,7 @@ interface RunnerNotationProps {
   shortHold: boolean
   meterLabel?: string
   meterName?: string
+  upcomingCue?: UpcomingCue | null
 }
 
 export function RunnerNotation(props: RunnerNotationProps) {
@@ -255,6 +258,9 @@ export function RunnerNotation(props: RunnerNotationProps) {
           </div>
           <strong>{chargePercent()}%</strong>
         </div>
+      </Show>
+      <Show when={props.upcomingCue}>
+        {(cue) => <RunnerUpcomingCue cue={cue()} />}
       </Show>
     </section>
   )

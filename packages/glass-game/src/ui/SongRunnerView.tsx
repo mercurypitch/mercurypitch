@@ -10,12 +10,15 @@ import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
 import type { RunnerSessionFrame, RunnerSessionPhase, SongRunnerSession, } from '../runner/session-contracts'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import { createRunnerContinuousInput } from './runner-continuous-input'
 import { runnerDisplayNotationNotes, runnerEventAnnouncement, runnerMicrophoneStatus, runnerMovementCueCopy, runnerPauseMessage, runnerRecoveryCopy, runnerTargetResultNotice, runnerVoiceCue, } from './runner-hud'
 import { createRunnerInputEdges } from './runner-input'
+import { runnerUpcomingCue } from './runner-upcoming-cue'
 import { RunnerControls } from './RunnerControls'
 import { RunnerFinishRewards } from './RunnerFinishRewards'
 import { RunnerNotation } from './RunnerNotation'
 import { RunnerSetup, RunnerSoundTune } from './RunnerSoundTune'
+import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
 
 interface SongRunnerViewProps {
@@ -100,7 +103,14 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   const state = createMemo(() => frame().state)
   const phase = createMemo(() => state().phase)
   const game = createMemo(() => state().game)
-  const input = createRunnerInputEdges((action) => props.session.input(action))
+  const steering = untrack(() => props.course.movement.kind === 'continuous')
+    ? createRunnerContinuousInput(
+        () => props.session.input('jump'),
+        (axis) => props.session.steer(axis),
+      )
+    : undefined
+  const input =
+    steering ?? createRunnerInputEdges((action) => props.session.input(action))
   const progress = createMemo(() =>
     clampedPercent(game().courseBeat / props.course.lengthBeats),
   )
@@ -203,18 +213,11 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       (compiledTarget()?.completionPolicy === 'charge' &&
         notationNotes().length === 1),
   )
-  const pendingNote = createMemo(() => {
-    if (movementHint() === null) return null
-    const target = activeTarget()
-    const cue = voiceCue()
-    if (
-      target === null ||
-      cue === null ||
-      (cue.stage !== 'listen' && cue.stage !== 'get-ready')
-    )
-      return null
-    return runnerMidiName(target.currentTargetMidi).text
-  })
+  const upcomingCue = createMemo(() =>
+    state().phase === 'running'
+      ? runnerUpcomingCue(props.course, game(), props.comfortableMidi)
+      : null,
+  )
   const maximumStars = createMemo(
     () =>
       props.course.targets.filter((target) => target.requiredForGrade).length *
@@ -389,6 +392,12 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       data-voice-phase={voiceCue()?.stage ?? ''}
       data-movement-cue={movementHint()?.stage ?? ''}
       data-target-lane={game().player.targetLane}
+      data-movement-mode={game().movementMode}
+      data-lateral-x={game().player.lateralX.toFixed(3)}
+      data-player-x={game().player.lateralX.toFixed(3)}
+      data-lateral-velocity={game().player.lateralVelocityMetersPerSecond.toFixed(
+        3,
+      )}
       data-player-feet-y={game().player.feetY.toFixed(3)}
       data-player-grounded={String(game().player.grounded)}
     >
@@ -479,6 +488,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             shortHold={compiledTarget()?.completionPolicy === 'charge'}
             meterLabel={phase() === 'readiness' ? 'Hold' : undefined}
             meterName={phase() === 'readiness' ? 'Ready note' : undefined}
+            upcomingCue={upcomingCue()}
           />
           <Show when={phase() === 'readiness'}>
             <p>Hold this note until the bar fills.</p>
@@ -527,10 +537,8 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           >
             <span>{movementCopy()!.instruction}</span>
             <strong>{movementCopy()!.label}</strong>
-            <Show when={pendingNote()}>
-              {(note) => (
-                <small class={styles.nextNoteCue}>Next note: {note()}</small>
-              )}
+            <Show when={upcomingCue()}>
+              {(cue) => <RunnerUpcomingCue cue={cue()} />}
             </Show>
           </section>
         )}
@@ -551,12 +559,33 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           >
             <span>{result().label}</span>
             <strong>{result().instruction}</strong>
+            <Show when={upcomingCue()}>
+              {(cue) => <RunnerUpcomingCue cue={cue()} />}
+            </Show>
+          </section>
+        )}
+      </Show>
+
+      <Show
+        when={
+          !showNotation() && movementHint() === null && recentResult() === null
+            ? upcomingCue()
+            : null
+        }
+      >
+        {(cue) => (
+          <section class={styles.movementHint}>
+            <RunnerUpcomingCue cue={cue()} />
           </section>
         )}
       </Show>
 
       <Show when={state().phase === 'running'}>
-        <RunnerControls input={input} disabled={state().phase !== 'running'} />
+        <RunnerControls
+          input={input}
+          steering={steering}
+          disabled={state().phase !== 'running'}
+        />
       </Show>
 
       <Show when={state().phase === 'preparing'}>

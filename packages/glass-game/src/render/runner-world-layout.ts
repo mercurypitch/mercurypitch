@@ -1,11 +1,21 @@
 // Runner world layout — visible support, gap language and camera framing derive from compiled gameplay.
 import type { CompiledRunnerCourse, CompiledRunnerGap, } from '../runner/contracts'
 import { runnerBeatToSeconds, runnerForwardSpeedAtSeconds, runnerSecondsToBeat, } from '../runner/tempo'
+import { runnerTrackBounds } from '../runner/track-bounds'
+
+export { runnerTrackBounds } from '../runner/track-bounds'
 
 export const RUNNER_MERC_VISUAL_HEIGHT_METERS = 0.82
 export const RUNNER_RESPONSIVE_MERC_VISUAL_HEIGHT_METERS = 0.95
 export const RUNNER_CAMERA_LANDSCAPE_FOLLOW = 0.28
 export const RUNNER_CAMERA_PORTRAIT_FOLLOW = 0.85
+export const RUNNER_CONTINUOUS_CAMERA_LANDSCAPE_FOLLOW = 0.5
+export const RUNNER_CONTINUOUS_CAMERA_PORTRAIT_FOLLOW = 0.95
+export const RUNNER_STEERING_CLOSE_CAMERA = Object.freeze({
+  heightMeters: 1.65,
+  distanceMeters: 3.9,
+  portraitTargetLiftMeters: 0.68,
+})
 export const RUNNER_GAP_APRON_METERS = 1.05
 export const RUNNER_GAP_APRON_THICKNESS_METERS = 0.06
 export const RUNNER_GAP_LIP_RADIUS_METERS = 0.025
@@ -56,16 +66,6 @@ export interface RunnerFloorCell {
   readonly start: number
   readonly end: number
   readonly gapApron: boolean
-}
-
-export function runnerTrackBounds(
-  course: Pick<CompiledRunnerCourse, 'laneCenters'>,
-) {
-  const halfLane = (course.laneCenters[2] - course.laneCenters[0]) / 4
-  return Object.freeze({
-    left: course.laneCenters[0] - halfLane,
-    right: course.laneCenters[2] + halfLane,
-  })
 }
 
 /** Visual lane seams sit halfway between the compiled collision lanes. */
@@ -266,6 +266,7 @@ export function runnerMercVisualHeightMeters(
   profile?: CompiledRunnerCourse['presentation']['cameraProfile'],
 ): number {
   return profile === 'responsive-close' ||
+    profile === 'steering-close' ||
     (profile !== 'legacy-wide' &&
       laneCenters[2] - laneCenters[0] <= COMPACT_LANE_SPAN_METERS)
     ? RUNNER_RESPONSIVE_MERC_VISUAL_HEIGHT_METERS
@@ -282,16 +283,23 @@ export function runnerCameraPose(
   const laneSpan = laneCenters[2] - laneCenters[0]
   if (
     profile === 'responsive-close' ||
+    profile === 'steering-close' ||
     (profile !== 'legacy-wide' && laneSpan <= COMPACT_LANE_SPAN_METERS)
   ) {
     const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))
+    const closer = profile === 'steering-close'
     return Object.freeze({
       fovDegrees: 55 + portraitBlend * 5,
       x: 0,
-      y: 1.8,
-      z: 4.4,
+      y: closer ? RUNNER_STEERING_CLOSE_CAMERA.heightMeters : 1.8,
+      z: closer ? RUNNER_STEERING_CLOSE_CAMERA.distanceMeters : 4.4,
       targetX: 0,
-      targetY: 0.55 + portraitBlend * 0.77,
+      targetY:
+        0.55 +
+        portraitBlend *
+          (closer
+            ? RUNNER_STEERING_CLOSE_CAMERA.portraitTargetLiftMeters
+            : 0.77),
       targetZ: -4.5,
     })
   }
@@ -313,20 +321,26 @@ export function runnerCameraFollowTarget(
   laneCenters: CompiledRunnerCourse['laneCenters'],
   aspect = 1,
   profile?: CompiledRunnerCourse['presentation']['cameraProfile'],
+  continuous = false,
 ): number {
   if (
     profile === 'legacy-wide' ||
     (profile !== 'responsive-close' &&
+      profile !== 'steering-close' &&
       laneCenters[2] - laneCenters[0] > COMPACT_LANE_SPAN_METERS)
   )
     return 0
   if (!Number.isFinite(lateralX)) return 0
   const safeAspect = Math.max(0.3, Math.min(3, aspect))
   const portraitBlend = Math.max(0, Math.min(1, (1 - safeAspect) / 0.55))
-  const strength =
-    RUNNER_CAMERA_LANDSCAPE_FOLLOW +
-    portraitBlend *
-      (RUNNER_CAMERA_PORTRAIT_FOLLOW - RUNNER_CAMERA_LANDSCAPE_FOLLOW)
+  const strength = continuous
+    ? RUNNER_CONTINUOUS_CAMERA_LANDSCAPE_FOLLOW +
+      portraitBlend *
+        (RUNNER_CONTINUOUS_CAMERA_PORTRAIT_FOLLOW -
+          RUNNER_CONTINUOUS_CAMERA_LANDSCAPE_FOLLOW)
+    : RUNNER_CAMERA_LANDSCAPE_FOLLOW +
+      portraitBlend *
+        (RUNNER_CAMERA_PORTRAIT_FOLLOW - RUNNER_CAMERA_LANDSCAPE_FOLLOW)
   return lateralX * strength
 }
 

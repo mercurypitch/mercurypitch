@@ -4,7 +4,7 @@ import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
-import { SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
+import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
@@ -20,6 +20,8 @@ interface AdventureScreenProps {
   campaign?: boolean
   runner?: boolean
   runnerPace?: SingingCurrentTrialPace
+  runnerSteering?: 'continuous'
+  runnerCamera?: 'close'
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   const assetProfile = nativeGameAssetProfile(
@@ -70,9 +72,19 @@ export function AdventureScreen(props: AdventureScreenProps) {
       <SongRunnerScreen
         host={host}
         course={
-          props.runnerPace === undefined
-            ? undefined
-            : SINGING_CURRENT_TRIALS[props.runnerPace]
+          props.runnerSteering === 'continuous'
+            ? props.runnerCamera === 'close'
+              ? {
+                  ...SINGING_CURRENT_CONTINUOUS_TRIAL,
+                  presentation: {
+                    ...SINGING_CURRENT_CONTINUOUS_TRIAL.presentation,
+                    cameraProfile: 'steering-close',
+                  },
+                }
+              : SINGING_CURRENT_CONTINUOUS_TRIAL
+            : props.runnerPace === undefined
+              ? undefined
+              : SINGING_CURRENT_TRIALS[props.runnerPace]
         }
         assetProfile={assetProfile}
       />

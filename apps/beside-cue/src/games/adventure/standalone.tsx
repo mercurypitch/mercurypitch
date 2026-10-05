@@ -180,6 +180,14 @@ async function mount(): Promise<void> {
         level={level}
         runner={runner}
         runnerPace={runner ? selectedRunnerPace(query) : undefined}
+        runnerSteering={
+          runner && query.get('steering') === 'continuous'
+            ? 'continuous'
+            : undefined
+        }
+        runnerCamera={
+          runner && query.get('camera') === 'close' ? 'close' : undefined
+        }
         campaign={
           !import.meta.env.DEV ||
           new URLSearchParams(window.location.search).get('campaign') === '1'

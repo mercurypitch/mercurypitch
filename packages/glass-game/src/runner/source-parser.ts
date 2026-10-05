@@ -325,7 +325,8 @@ export function parseRunnerCourseSource(
   if (
     presentation.cameraProfile !== undefined &&
     presentation.cameraProfile !== 'responsive-close' &&
-    presentation.cameraProfile !== 'legacy-wide'
+    presentation.cameraProfile !== 'legacy-wide' &&
+    presentation.cameraProfile !== 'steering-close'
   )
     runnerSourceFail(
       `${path}.presentation.cameraProfile`,

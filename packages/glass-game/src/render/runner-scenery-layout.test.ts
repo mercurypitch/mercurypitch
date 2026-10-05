@@ -3,7 +3,7 @@
 import { Box3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import type { CompiledRunnerCourse } from '../runner/contracts'
-import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, SINGING_CURRENT_RESPONSIVE, } from '../runner/first-course'
+import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, SINGING_CURRENT_RESPONSIVE, } from '../runner/first-course'
 import { createRunnerSceneryLayout, RUNNER_SCENERY_VALIDATED_ASPECTS, runnerSceneryHandoffVisibility, runnerSceneryPlacementBounds, } from './runner-scenery-layout'
 import { runnerTrackBounds } from './runner-world-layout'
 
@@ -11,6 +11,14 @@ const courses = [
   SINGING_CURRENT_RESPONSIVE,
   SINGING_CURRENT_CURRENT,
   SINGING_CURRENT_LEARNING,
+  SINGING_CURRENT_CONTINUOUS_TRIAL,
+  {
+    ...SINGING_CURRENT_CONTINUOUS_TRIAL,
+    presentation: {
+      ...SINGING_CURRENT_CONTINUOUS_TRIAL.presentation,
+      cameraProfile: 'steering-close',
+    },
+  },
 ] as const
 
 function boundsFor(kind: string, course: CompiledRunnerCourse) {
@@ -191,6 +199,16 @@ describe('runner scenery layout', () => {
             course.laneCenters[0],
             0,
             course.laneCenters[2],
+            ...(layout.lateralRange
+              ? Array.from(
+                  { length: 25 },
+                  (_, index) =>
+                    layout.lateralRange![0] +
+                    ((layout.lateralRange![1] - layout.lateralRange![0]) *
+                      index) /
+                      24,
+                )
+              : []),
           ]) {
             const receipt = runnerSceneryHandoffVisibility(
               layout,

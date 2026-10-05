@@ -98,7 +98,10 @@ export interface SongRunnerCourseSource {
     readonly musicProfileId: string
     readonly notationProfileId: string
     /** Authored close camera survives physical lane-width changes. Omission preserves legacy behavior. */
-    readonly cameraProfile?: 'responsive-close' | 'legacy-wide'
+    readonly cameraProfile?:
+      | 'responsive-close'
+      | 'legacy-wide'
+      | 'steering-close'
   }
 }
 

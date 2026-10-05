@@ -502,6 +502,7 @@ jobs:
             runner-reference,
             runner-responsive,
             runner-sound,
+            runner-steering,
             song-runner,
             songbook,
             solids,

@@ -1,0 +1,175 @@
+/* Continuous runner controls own their touch area, chrome and short-landscape layout. */
+.controls {
+  position: absolute;
+  z-index: 5;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  right: max(14px, env(safe-area-inset-right));
+  left: max(14px, env(safe-area-inset-left));
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.steering,
+.jump {
+  box-sizing: border-box;
+  min-height: 80px;
+  border: 1px solid rgb(255 255 255 / 75%);
+  border-radius: 25px;
+  background: rgb(255 253 247 / 92%);
+  box-shadow: 0 8px 24px rgb(14 45 48 / 20%);
+  color: #214b4f;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.steering {
+  position: relative;
+  flex: 0 1 188px;
+  padding: 0;
+  overflow: hidden;
+  cursor: ew-resize;
+}
+
+.steering:focus-visible,
+.jump:focus-visible {
+  outline: 3px solid #bd923c;
+  outline-offset: 3px;
+}
+
+.steering[aria-disabled='true'],
+.jump:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rail {
+  position: absolute;
+  top: 12px;
+  left: 22px;
+  right: 22px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rail svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.centre {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #659187;
+}
+
+.thumb {
+  position: absolute;
+  top: 8px;
+  left: calc(50% - 18px);
+  height: 36px;
+  width: 36px;
+  border: 1px solid #d5b16b;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fafff8, #a9d9cc 65%, #7bafa3);
+  box-shadow: 0 2px 5px rgb(27 61 56 / 15%);
+  pointer-events: none;
+}
+
+.steering[data-steering-active='true'] {
+  border-color: #ba943f;
+  background: #edf9f2;
+}
+
+.label,
+.hint {
+  position: absolute;
+  right: 0;
+  left: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.label {
+  top: 45px;
+}
+.hint {
+  top: 61px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #4c6966;
+}
+
+.jump {
+  flex: 0 0 82px;
+  display: grid;
+  place-items: center;
+  padding: 9px 12px;
+  background: linear-gradient(150deg, #fffaed, #ffe5de);
+  cursor: pointer;
+}
+
+.jump svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jump:active {
+  background: #e7fbf8;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .controls {
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .steering {
+    flex-basis: 160px;
+  }
+  .steering,
+  .jump {
+    min-height: 58px;
+    border-radius: 18px;
+  }
+  .rail {
+    top: 7px;
+  }
+  .thumb {
+    top: 3px;
+  }
+  .label {
+    top: 38px;
+    font-size: 11px;
+  }
+  .hint {
+    display: none;
+  }
+  .jump {
+    flex-basis: 66px;
+    padding: 4px;
+  }
+  .jump svg {
+    width: 24px;
+    height: 24px;
+  }
+}
