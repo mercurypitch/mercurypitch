@@ -28,13 +28,11 @@ On iPhone the window also needs "Keep playing in the background" (on by
 default). Leaving the app hides the page, and without that setting the room
 pauses the song on the way out, so a window would open on a paused song.
 
-Coming back to the app closes the window, as a video app's does. So does
-another app taking the sound: behind that app, a play in the window could
-not take it back, since iOS does not let an app in the background
-interrupt one that plays. A call leaves the window up, since the song can
-come back after it. While the window is open the app itself stays the
-room: the window draws its own frames, so unlike Android's, it is not the
-page shrunk.
+Coming back to the app closes the window, as a video app's does. While the
+window is open the app itself stays the room: the window draws its own
+frames, so unlike Android's, it is not the page shrunk. iOS ignores a
+close asked for while the app is behind (build 556), so nothing else
+closes it.
 
 Not in scope: a button that opens the window from inside the app, scrubbing
 or skipping from the window, the window anywhere but the Karaoke room, iPad.
@@ -201,8 +199,8 @@ These are rules for this feature and anything built on it later.
 
 ### Clock
 
-The page's Now Playing report (playing, position, rate, duration, and
-whether the system paused the song) is the clock. Native keeps the report and the time it came, and works out
+The page's Now Playing report (playing, position, rate, duration) is the
+clock. Native keeps the report and the time it came, and works out
 `t = position + (playing ? elapsed * rate : 0)`, clamped to the song. A
 report comes on every play, pause, jump and new length, never per frame.
 
@@ -251,10 +249,9 @@ Native sends it as an event; the page writes it.
 7. Pause in the room, swipe home: no window.
 8. Turn the setting off, play, swipe home: no window.
 9. Leave the room while the window is open: it closes.
-10. A call while the window is open: the song pauses; the window shows it
-    and stays.
-11. YouTube full screen while the window is open: the song pauses and the
-    window closes.
+10. A call while the window is open: the song pauses; the window shows it.
+11. YouTube full screen while the window is open: the song pauses; the
+    window stays, paused, and play in it does nothing while YouTube plays.
 12. If the window never opens: send the `[lyrics window]` lines.
 
 ## Risks

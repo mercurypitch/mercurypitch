@@ -291,20 +291,51 @@ What changed:
   both back (`same-place-twice.ts`).
 - Behind another app whose sound plays now (the window's `otherAudio`),
   `takeTheSound` says no at once. The song and the window stay paused.
-- The window hears with each clock whether the system paused the song
-  (`interrupted`: the room's own word, or `systemPausedTheSong()`, since
-  the room hears the carrier's pause as a press). A song the system paused
-  for another app's sound closes the window. A call leaves it up, since
-  the song can come back after one (CallKit's `CXCallObserver`), and so
-  does a system pause with no other app's sound, looked at again a
-  second later.
+- The window heard with each clock whether the system paused the song,
+  and closed for another app's sound but not for a call (CallKit's
+  `CXCallObserver`). Removed after build 556: iOS ignored the stop.
 
 What it does not fix: a play from the lock screen while another app's
 sound plays still tries the carrier (`askForPlayback`), with no word on
 that app's sound to refuse it with. iOS shows the playing app's controls
-there, not ours, so it should not come up. And Siri or an alarm that
-plays its own sound closes the window as another app would; the song can
-still come back after it, without the window.
+there, not ours, so it should not come up.
+
+## Build 556
+
+What the phone showed: -10 s at the start put the counter at 0:00 every
+time, and play in the window while YouTube played did nothing. But the
+window never closed when YouTube took the sound, and after that it was
+stuck: play in it, even with YouTube paused, ran the lyrics with no sound.
+Opening the app brought the sound back. An alarm was different: after it,
+play in the window worked.
+
+What the log said:
+
+- iOS ignored the close. `closing the window: another app took the sound`
+  is there, and no `closing` from AVKit follows, as one always does when a
+  stop is taken. A stop asked for while the app is behind does nothing.
+- Every play from the window after YouTube took the sound logged
+  `karaoke play clockWas=suspended` and never `statechange state=running`.
+  A play from the window before YouTube shows `running` 50 ms later. Only
+  the app in front got the sound back: `clock-stuck`, `clock-restart`,
+  then `running`.
+- The `[audio session]` lines count the song itself as another app's
+  sound. WebKit plays in its own process, so the app's session hears it as
+  another app: "another app's sound started; other audio playing" follows
+  each play of ours and stops with each pause.
+
+Why the window got stuck: after another app has interrupted it, WebKit's
+session has to be made active again, and iOS refuses that to an app in
+the background for a session that does not mix (AVAudioSession's
+`cannotInterruptOthers`). An alarm or a call ends its interruption and
+gives the word to resume; YouTube, paused, keeps its session, so that word
+never comes. The carrier's play passes without asking (Build 549), the
+room reports playing, and the check that the clock moves
+(`watchClockMoves`) skips a hidden page, so nothing notices until the app
+is in front.
+
+What changed: the close and CallKit are gone. The window stays up, and a
+play in it while another app's sound plays is still refused at once.
 
 ## Where it lives
 
@@ -317,14 +348,14 @@ still come back after it, without the window.
 | `packages/mobile-runtime/src/carrier-silence.ts`                      | The silence: an hour of FLAC, four seconds of WAV                                                                                                        |
 | `packages/mobile-runtime/src/waited-presses.ts`                       | Presses that waited while the app slept                                                                                                                  |
 | `packages/mobile-runtime/src/carrier-in-front.ts`                     | The carrier played again at moments of ours while it plays, never on a timer, so WebKit lets the bar and skips move the song                             |
-| `packages/mobile-runtime/src/picture-in-picture.ts`                   | The window's presses: their stamp and `otherAudio`, stale ones dropped; the window's clock, with `interrupted`                                           |
+| `packages/mobile-runtime/src/picture-in-picture.ts`                   | The window's presses: their stamp and `otherAudio`, stale ones dropped                                                                                   |
 | `packages/mobile-runtime/src/platform.ts`                             | The 10 s skips (`skipBy`), `micStopsOtherApps`                                                                                                           |
 | `src/features/stem-mixer/useStemMixerAudioController.ts`              | The interrupted pause, `restartClock`, the start check, the trip home, the fade before a suspend, `clockStarts`                                          |
 | `src/features/stem-mixer/playback-return-watch.ts`                    | `watchClockMoves`, shared by the start check and the return watch                                                                                        |
 | `src/features/karaoke-room/KaraokeRoomStage.tsx`                      | `interrupted` in the Now Playing report, a report on each clock start, `keepsPlayingHidden`, the lease's `prepareToSuspend`, the iOS mic rule, the skips |
 | `src/components/StemMixer.tsx`                                        | The hosted mixer lets its graph go after its fade                                                                                                        |
 | `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindowPlugin.swift` | `AudioSessionWatch`: the `[audio session]` log; each window press's `at` and `otherAudio`                                                                |
-| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`       | The window's play and pause wait for the page's report; it closes for another app's sound, never for a call                                              |
+| `apps/mercurypitch/ios/App/App/LyricsWindow/LyricsWindow.swift`       | The window's play and pause wait for the page's report                                                                                                   |
 
 ## Reading a device log
 
@@ -341,8 +372,9 @@ The portable console in a TestFlight build has all of it:
 - `[audio session]` lines from the app's own session, each with the time
   iOS said it: another app's sound starting and stopping, interruptions,
   route changes, and what played elsewhere as the app came and went. These
-  are the app's session, not WebKit's, but the other app's start and stop
-  land at the same moment for both.
+  are the app's session, not WebKit's, and WebKit plays in its own process:
+  "another app's sound" is the song itself whenever it follows a play or a
+  pause of ours (Build 556).
 
 ## Phone checks
 
@@ -361,8 +393,9 @@ Each with YouTube's picture-in-picture open and the song loaded:
 - A call during the song: the song pauses, and comes back on its own when
   the call ends (with background play on).
 - The song behind our window, then YouTube full screen, play: the song
-  pauses and the window closes. Open the app and press play: the song
-  plays and YouTube stops.
+  pauses and the window stays, paused. Play in it does nothing while
+  YouTube plays. Open the app and press play: the song plays and YouTube
+  stops.
 - A call with the window open: the window stays, and the song comes back
   after the call.
 
@@ -396,6 +429,10 @@ Without YouTube:
 
 ## Open
 
+- A play from behind the app after another app interrupted the song,
+  with that app paused but still holding its session (YouTube): iOS does
+  not let the clock start, and the lyrics run with no sound until the app
+  is in front (Build 556).
 - Whether iOS starts the lock screen's counter again for a place 0.25 s on
   at 1.0001 times the speed (Build 549). If not, the place has to move
   further.

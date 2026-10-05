@@ -33,8 +33,6 @@ interface WindowClockReport {
   readonly position?: number
   readonly duration?: number
   readonly rate?: number
-  /** Paused by the system, for another app's sound or a call. */
-  readonly interrupted?: boolean
 }
 
 /** Where the song is, as the iOS window keeps it: a Now Playing report. */
@@ -43,8 +41,6 @@ interface PictureInPictureClock {
   readonly position: number
   readonly rate: number
   readonly duration: number
-  /** Paused by the system: the window closes, unless for a call. */
-  readonly interrupted: boolean
 }
 
 /** The app's own plugin, as MainActivity and the iOS app register it. */
@@ -180,10 +176,7 @@ export async function setPictureInPictureLyrics(
 
 /**
  * iOS: the window's clock, from the Now Playing report the lock screen gets:
- * the window runs on from it as the lock screen's bar does. A song the
- * system paused for another app's sound closes the window, though not for a
- * call (LyricsWindow.swift): from behind that app, a play in the window
- * cannot take the sound back.
+ * the window runs on from it as the lock screen's bar does.
  */
 export function tellTheWindowTheClock(song: WindowClockReport): void {
   const duration = Math.max(0, finiteOr(song.duration, 0))
@@ -197,7 +190,6 @@ export function tellTheWindowTheClock(song: WindowClockReport): void {
       ),
       rate: rate > 0 ? rate : 1,
       duration,
-      interrupted: !song.playing && song.interrupted === true,
     })
   })
 }

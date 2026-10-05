@@ -160,7 +160,9 @@ Sources: [`playback-return-watch.ts`](../../src/features/stem-mixer/playback-ret
 and [`streaming-stem-voice.ts`](../../src/features/stem-mixer/streaming-stem-voice.ts). On iOS the
 app's own plugin adds `[audio session]` lines beside them: another app's sound
 starting and stopping, interruptions and routes, each with the time iOS said it
-([`ios-audio-handoff.md`](../plans/mobile-native/ios-audio-handoff.md)).
+([`ios-audio-handoff.md`](../plans/mobile-native/ios-audio-handoff.md)). WebKit
+plays in its own process, so "another app's sound" right after a play or a
+pause of ours is the song itself.
 
 The iOS lock screen's carrier
 ([`webkit-now-playing.ts`](../../packages/mobile-runtime/src/webkit-now-playing.ts))
@@ -177,8 +179,6 @@ writes `[now playing]` lines, and the lyrics window `[lyrics window]` ones:
 | `the bar is where it was: put on to 0.25 s, ...`                       | A jump to where the bar already was, moved a hair so the lock screen's counter starts again                              |
 | `the long carrier would not load; ...`                                 | This WebView refused the hour of FLAC silence, so the bar may jump to 0:00 again                                         |
 | `[lyrics window] play waited 12 s while the app slept: dropped`        | The same as the first, for the window's buttons                                                                          |
-| `[lyrics window] closing the window: another app took the sound, ...`  | The system paused the song for another app's sound; the window closed rather than offer a play that cannot work          |
-| `[lyrics window] paused for a call: the window stays`                  | The same pause, for a call: the window stays up for the song to come back                                                |
 
 The two about the sound end with WebKit's own session state before and after
 the press, as `(session inactive, then active)`.
