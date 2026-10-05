@@ -362,10 +362,10 @@ must import the inventory in a child Node process as well as through Vitest.
 
 ### Keep the Now Playing carrier the sound that started last (iOS)
 
-**Symptom:** in build 543 the lock screen's and Control Center's bar could be dragged but went straight back, and the 10 s buttons did nothing. In 539, with a four-second carrier, the same bar worked.
-**Cause:** WebKit lets the system seek only when its current media session, the one that started last, supports seeking (`computeSupportsSeeking`), and a Web Audio clock never does. Every clock start (play, the resume as the app goes behind another one, the microphone) put a clock in front. The four-second carrier started again at every loop and got back in front; the hour-long carrier never did. The cost of making the loop rare was hidden in the loop.
-**Rule:** while the song plays, play the carrier again (it starts nothing; WebKit counts it as a start) on each report, as the page turns, and once a second. Never play a paused carrier to get it in front: that takes the sound from another app. A paused song's carrier pauses behind a clock that still runs, so its bar can still be refused.
-**See:** `packages/mobile-runtime/src/carrier-in-front.ts`, `docs/plans/mobile-native/ios-audio-handoff.md` (Build 543).
+**Symptom:** in build 543 the lock screen's and Control Center's bar could be dragged but went straight back, and the 10 s buttons did nothing. In 539, with a four-second carrier, the same bar worked. In 546, with the carrier played once a second to fix that, starting YouTube sometimes played it for a moment and stopped it again.
+**Cause:** WebKit lets the system seek only when its current media session, the one that started last, supports seeking (`computeSupportsSeeking`), and a Web Audio clock never does. Every clock start (play, the resume as the app goes behind another one, the microphone) put a clock in front. The four-second carrier started again at every loop and got back in front; the hour-long carrier never did. The cost of making the loop rare was hidden in the loop. A play also asks for the session to be activated: one that lands after another app took the sound, before the page has heard, takes it back (`RemoteAudioSessionProxyManager::tryToSetActiveForProcess`).
+**Rule:** while the song plays, play the carrier again (it starts nothing; WebKit counts it as a start) at moments of ours only: each report, the page turning, and the song's clock starting (the room reports again), at once and once more 250 ms later. Never on a timer: a play that lands just after another app takes the sound takes it back. Never play a paused carrier to get it in front: that takes the sound from another app. A paused song's carrier pauses behind a clock that still runs, so its bar can still be refused.
+**See:** `packages/mobile-runtime/src/carrier-in-front.ts`, `docs/plans/mobile-native/ios-audio-handoff.md` (Build 543, Build 546).
 
 ## Framework
 

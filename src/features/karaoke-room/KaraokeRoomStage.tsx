@@ -589,8 +589,8 @@ export const KaraokeRoomStage: Component = () => {
   // the notification's progress bar and the lock screen's, read off the
   // clock the lyrics follow so the bar and the words agree. Told again on
   // play, pause, a jump (a seek, a line tapped, a loop going round), a new
-  // speed and a song length arriving, and never per frame: the system runs
-  // the bar on by itself from the last report.
+  // speed, a song length arriving and the song's clock starting, and never
+  // per frame: the system runs the bar on by itself from the last report.
   let announced = false
   const announce = (song: NativeNowPlaying | null): void => {
     if (song === null && !announced) return
@@ -611,6 +611,10 @@ export const KaraokeRoomStage: Component = () => {
     const controls = mixer()
     const playing = isPlaying()
     controls?.jumps()
+    // The clock starting puts it in front of the lock screen's carrier, and
+    // the bar and skips stop working on iOS until the carrier is played
+    // again, which a report does (carrier-in-front.ts).
+    controls?.clockStarts()
     announce({
       title: entry.song.title,
       artist: artist === null || artist.trim() === '' ? UNKNOWN_ARTIST : artist,

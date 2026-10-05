@@ -35,6 +35,8 @@ interface FakeMixer {
   setAudibleElapsed: Setter<number>
   /** The position jumping as a seek or a tapped line moves it. */
   jump: (seconds: number) => void
+  /** The song's clock starting while it plays: its resume behind the app. */
+  clockStart: () => void
   setSpeed: Setter<number>
   setDuration: Setter<number>
   setLoadError: Setter<string>
@@ -80,6 +82,7 @@ vi.mock('@/components/StemMixer', async () => {
       const [elapsed, setElapsed] = createSignal(0)
       const [audibleElapsed, setAudibleElapsed] = createSignal(0)
       const [jumps, setJumps] = createSignal(0)
+      const [clockStarts, setClockStarts] = createSignal(0)
       const [speed, setSpeed] = createSignal(1)
       const [duration, setDuration] = createSignal(246)
       // As the real mixer moves both clocks and then says it jumped.
@@ -87,6 +90,10 @@ vi.mock('@/components/StemMixer', async () => {
         setElapsed(seconds)
         setAudibleElapsed(seconds)
         setJumps((count) => count + 1)
+      }
+      // As the real mixer counts its clock starting while the song plays.
+      const clockStart = (): void => {
+        setClockStarts((count) => count + 1)
       }
       const [hasNotes, setHasNotes] = createSignal(true)
       const [musicLevel, setMusicLevel] = createSignal(0.7)
@@ -123,6 +130,7 @@ vi.mock('@/components/StemMixer', async () => {
         setElapsed,
         setAudibleElapsed,
         jump,
+        clockStart,
         setSpeed,
         setDuration,
         setLoadError,
@@ -156,6 +164,7 @@ vi.mock('@/components/StemMixer', async () => {
           positionNow: mixer.positionNow,
           audibleElapsed,
           jumps,
+          clockStarts,
           speed,
           duration,
           hasNotes,
@@ -765,6 +774,23 @@ describe('behind another app', () => {
     current().setSpeed(0.75)
     expect(device.nowPlaying).toHaveBeenLastCalledWith(
       expect.objectContaining({ playing: true, position: 140.5, rate: 0.75 }),
+    )
+  })
+
+  it("tells the system again when the song's clock starts", async () => {
+    // On iOS the clock starting takes the lock screen's bar and skips from
+    // the carrier, and a report puts it back (carrier-in-front.ts).
+    await mountRoom()
+    current().setLoading(false)
+    current().setAudibleElapsed(42.5)
+    current().setPlaying(true)
+    const told = device.nowPlaying.mock.calls.length
+
+    current().clockStart()
+
+    expect(device.nowPlaying).toHaveBeenCalledTimes(told + 1)
+    expect(device.nowPlaying).toHaveBeenLastCalledWith(
+      expect.objectContaining({ playing: true, position: 42.5 }),
     )
   })
 

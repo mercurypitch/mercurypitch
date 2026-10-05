@@ -9,6 +9,7 @@
 
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ONCE_MORE_MS } from './carrier-in-front'
 import type { Carrier, WebKitAction, WebKitSong } from './webkit-now-playing'
 import { claimCarrier, listenOnWebKit, onCarrierHolding, resetWebKitNowPlaying, showOnWebKit, takeTheSound, webKitNowPlayingAvailable, } from './webkit-now-playing'
 
@@ -1162,7 +1163,8 @@ describe('the long carrier', () => {
 describe("the carrier in front of the song's clock", () => {
   // WebKit lets the lock screen move the song only while the carrier is the
   // sound that started last. The song's clock starting since stands in front
-  // of it, and playing the carrier that already plays puts it back.
+  // of it, and playing the carrier that already plays puts it back: at our
+  // own moments only, never on a timer (carrier-in-front.ts).
   beforeEach(() => {
     vi.useFakeTimers()
   })
@@ -1175,6 +1177,7 @@ describe("the carrier in front of the song's clock", () => {
   function playing(): void {
     showOnWebKit(song())
     carrier.settle()
+    vi.advanceTimersByTime(ONCE_MORE_MS)
     carrier.play.mockClear()
   }
 
@@ -1191,12 +1194,18 @@ describe("the carrier in front of the song's clock", () => {
     expect(deliver).not.toHaveBeenCalled()
   })
 
-  it('plays it again once a second while the song plays', () => {
+  it('plays it once more a moment after the report, then leaves it be', () => {
     playing()
 
-    vi.advanceTimersByTime(3000)
+    showOnWebKit(song({ position: 150 }))
+    vi.advanceTimersByTime(ONCE_MORE_MS)
+    expect(carrier.play).toHaveBeenCalledTimes(2)
 
-    expect(carrier.play).toHaveBeenCalledTimes(3)
+    // Build 546 played it once a second. One of those plays, landing just
+    // after YouTube took the sound, took it back: YouTube started, then
+    // stopped (docs/plans/mobile-native/ios-audio-handoff.md).
+    vi.advanceTimersByTime(60_000)
+    expect(carrier.play).toHaveBeenCalledTimes(2)
   })
 
   it('plays it again as the page hides, where the lock screen shows it', () => {
@@ -1205,6 +1214,8 @@ describe("the carrier in front of the song's clock", () => {
     page.turn('hidden')()
 
     expect(carrier.play).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(ONCE_MORE_MS)
+    expect(carrier.play).toHaveBeenCalledTimes(2)
   })
 
   it('never plays the carrier of a paused song', () => {
@@ -1219,10 +1230,12 @@ describe("the carrier in front of the song's clock", () => {
     expect(carrier.paused).toBe(true)
   })
 
-  it('never plays a carrier the system paused', () => {
+  it('never plays a carrier the system paused, not even a moment after a report', () => {
     const deliver = vi.fn()
     listenOnWebKit(ACTIONS, deliver)
     playing()
+    showOnWebKit(song({ position: 150 }))
+    carrier.play.mockClear()
     carrier.interrupt()
     carrier.settle()
 
@@ -1233,26 +1246,19 @@ describe("the carrier in front of the song's clock", () => {
     expect(deliver.mock.calls).toEqual([['pause', {}]])
   })
 
-  it('stops once the song is put away', () => {
+  it('forgets the once more when the song pauses or is put away', () => {
     playing()
-    showOnWebKit(null)
-
-    vi.advanceTimersByTime(5000)
-
-    expect(carrier.play).not.toHaveBeenCalled()
-  })
-
-  it('keeps it in front again when the song plays after a pause', () => {
-    playing()
+    showOnWebKit(song({ position: 150 }))
     showOnWebKit(song({ playing: false }))
     carrier.settle()
     showOnWebKit(song())
     carrier.settle()
+    showOnWebKit(null)
     carrier.play.mockClear()
 
-    vi.advanceTimersByTime(2000)
+    vi.advanceTimersByTime(5000)
 
-    expect(carrier.play).toHaveBeenCalledTimes(2)
+    expect(carrier.play).not.toHaveBeenCalled()
   })
 })
 

@@ -256,6 +256,14 @@ export interface StemMixerAudioController {
    * hear about the moves that matter.
    */
   jumps: Accessor<number>
+  /**
+   * Goes up by one each time the song's clock starts running while the song
+   * plays: a press of play, its resume behind the app, its cycle on the way
+   * back. WebKit then counts the clock as the sound that started last, and
+   * the lock screen's carrier has to be put back in front of it
+   * (packages/mobile-runtime/src/carrier-in-front.ts).
+   */
+  clockStarts: Accessor<number>
   duration: Accessor<number>
   currentPitch: Accessor<DetectedPitch | null>
 
@@ -439,6 +447,7 @@ export const useStemMixerAudioController = (
   const [elapsed, setElapsed] = createSignal(0)
   const [audibleElapsed, setAudibleElapsed] = createSignal(0)
   const [jumps, setJumps] = createSignal(0)
+  const [clockStarts, setClockStarts] = createSignal(0)
   const jumped = (): void => {
     setJumps((count) => count + 1)
   }
@@ -741,6 +750,7 @@ export const useStemMixerAudioController = (
     })
     if (state !== 'interrupted') {
       stopLeaveWait()
+      if (state === 'running' && playing()) setClockStarts((n) => n + 1)
       return
     }
     if (!playing()) return
@@ -2311,6 +2321,7 @@ export const useStemMixerAudioController = (
     elapsed,
     audibleElapsed,
     jumps,
+    clockStarts,
     duration,
     currentPitch,
     windowStart,

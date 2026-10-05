@@ -49,6 +49,8 @@ export interface HostedMixerControls {
   readonly audibleElapsed: Accessor<number>
   /** Goes up by one each time the position jumps: a seek, a line tapped. */
   readonly jumps: Accessor<number>
+  /** Goes up by one each time the song's clock starts running while it plays. */
+  readonly clockStarts: Accessor<number>
   /** How fast the song plays: 1 is as written. */
   readonly speed: Accessor<number>
   readonly duration: Accessor<number>
