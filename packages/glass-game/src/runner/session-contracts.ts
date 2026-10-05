@@ -59,6 +59,11 @@ export interface RunnerBackingAvailability {
   readonly ambience: boolean
 }
 
+export interface RunnerReferencePlayback {
+  readonly phase: 'idle' | 'preparing' | 'playing'
+  readonly error: string | null
+}
+
 export interface RunnerSessionState {
   readonly phase: RunnerSessionPhase
   readonly game: RunnerSnapshot
@@ -76,6 +81,8 @@ export interface RunnerSessionState {
   readonly musicMuted: boolean
   readonly audioPreferences: RunnerAudioPreferences
   readonly backing: RunnerBackingAvailability | null
+  /** Reference playback leaves the closed-capture setup and its context mounted. */
+  readonly referencePlayback: RunnerReferencePlayback
   readonly pauseReason: RunnerPauseReason | null
   readonly error: {
     readonly code:

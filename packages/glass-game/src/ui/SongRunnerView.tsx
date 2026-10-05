@@ -98,6 +98,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   let soundReturnTarget: HTMLButtonElement | undefined
 
   const state = createMemo(() => frame().state)
+  const phase = createMemo(() => state().phase)
   const game = createMemo(() => state().game)
   const input = createRunnerInputEdges((action) => props.session.input(action))
   const progress = createMemo(() =>
@@ -305,9 +306,11 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   })
 
   createEffect(() => {
-    const phase = state().phase
+    const nextPhase = phase()
     presentationReady()
-    if (!['idle', 'paused', 'recovering', 'error', 'finished'].includes(phase))
+    if (
+      !['idle', 'paused', 'recovering', 'error', 'finished'].includes(nextPhase)
+    )
       return
     queueMicrotask(() => {
       if (dialogElement !== undefined) focusDialog(dialogElement)
@@ -684,6 +687,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               comfortableMidi={props.comfortableMidi}
               minimumMidi={props.comfortableMidiRange.minimumMidi}
               maximumMidi={props.comfortableMidiRange.maximumMidi}
+              referencePlayback={state().referencePlayback}
               onComfortableMidiChange={props.onComfortableMidiChange}
               onHearReference={hearReference}
             />
@@ -762,6 +766,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               comfortableMidi={props.comfortableMidi}
               minimumMidi={props.comfortableMidiRange.minimumMidi}
               maximumMidi={props.comfortableMidiRange.maximumMidi}
+              referencePlayback={state().referencePlayback}
               onComfortableMidiChange={props.onComfortableMidiChange}
               onHearReference={hearReference}
             />
@@ -823,6 +828,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               comfortableMidi={props.comfortableMidi}
               minimumMidi={props.comfortableMidiRange.minimumMidi}
               maximumMidi={props.comfortableMidiRange.maximumMidi}
+              referencePlayback={state().referencePlayback}
               onComfortableMidiChange={props.onComfortableMidiChange}
               onHearReference={hearReference}
             />

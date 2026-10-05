@@ -2,7 +2,7 @@
 import { createEffect, createMemo, createSignal, onCleanup, Show, untrack, } from 'solid-js'
 import type { GlassMicrophoneInput } from '../host'
 import { runnerMidiName } from '../runner/notation'
-import type { RunnerAudioPreferences, RunnerBackingAvailability, } from '../runner/session-contracts'
+import type { RunnerAudioPreferences, RunnerBackingAvailability, RunnerReferencePlayback, } from '../runner/session-contracts'
 import { trapDialogKeys } from './dialog-focus'
 import type { MicrophoneIssue } from './mic-error'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
@@ -15,6 +15,7 @@ interface RunnerSetupProps {
   comfortableMidi: number
   minimumMidi: number
   maximumMidi: number
+  referencePlayback: RunnerReferencePlayback
   onComfortableMidiChange(midi: number): void
   onHearReference(): void
 }
@@ -26,6 +27,14 @@ export function RunnerSetup(props: RunnerSetupProps) {
   )
   createEffect(() => setDraftMidi(props.comfortableMidi))
   const label = createMemo(() => runnerMidiName(draftMidi()).text)
+  const hearingNote = createMemo(() => props.referencePlayback.phase !== 'idle')
+  const referenceStatus = createMemo(() => {
+    if (props.referencePlayback.error !== null)
+      return props.referencePlayback.error
+    if (props.referencePlayback.phase === 'preparing') return 'Preparing note'
+    if (props.referencePlayback.phase === 'playing') return 'Playing note'
+    return ''
+  })
 
   return (
     <div class={setupStyles.setup}>
@@ -57,10 +66,17 @@ export function RunnerSetup(props: RunnerSetupProps) {
         <button
           type="button"
           class={setupStyles.secondaryButton}
-          onClick={() => props.onHearReference()}
+          aria-disabled={hearingNote()}
+          aria-busy={hearingNote()}
+          onClick={() => {
+            if (!hearingNote()) props.onHearReference()
+          }}
         >
           Hear note
         </button>
+        <p class={setupStyles.referenceStatus} role="status" aria-live="polite">
+          {referenceStatus()}
+        </p>
       </div>
       <Show when={props.microphoneInput !== undefined}>
         <MicrophoneInputRecovery
