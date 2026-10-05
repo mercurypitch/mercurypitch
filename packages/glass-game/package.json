@@ -12,6 +12,7 @@
     "./campaign": "./src/ui/GlassCampaign.tsx",
     "./browser": "./src/browser/browser-host.ts",
     "./assets": "./src/browser/assets.ts",
+    "./graphics-diagnostics": "./src/render/graphics-diagnostics.ts",
     "./encore-examples": "./src/content/encore-examples.ts",
     "./echo-curator": "./src/echo-curator.ts",
     "./promenade": "./src/content/cloudway-laboratory.ts",

@@ -1,4 +1,38 @@
 // Graphics diagnostics — bounded failure context for the device console, without save data or audio.
+type GraphicsCanvasScene =
+  | 'museum-map'
+  | 'gallery'
+  | 'singing-current'
+  | 'loading-merc'
+interface GraphicsCanvasDiagnostic {
+  scene: GraphicsCanvasScene
+  instance: number
+  lifecycle: 'active' | 'disposed'
+}
+const canvases = new WeakMap<HTMLCanvasElement, GraphicsCanvasDiagnostic>()
+let nextInstance = 0
+
+/** Weak ownership metadata never keeps a retired canvas or renderer alive. */
+export function registerGraphicsCanvas(
+  canvas: HTMLCanvasElement,
+  scene: GraphicsCanvasScene,
+): void {
+  canvases.set(canvas, { scene, instance: ++nextInstance, lifecycle: 'active' })
+}
+
+/** Call before deliberate forceContextLoss; its event may arrive asynchronously. */
+export function retireGraphicsCanvas(canvas: HTMLCanvasElement): void {
+  const diagnostic = canvases.get(canvas)
+  if (diagnostic !== undefined) diagnostic.lifecycle = 'disposed'
+}
+
+export function getGraphicsCanvasDiagnostic(
+  canvas: HTMLCanvasElement,
+): Readonly<GraphicsCanvasDiagnostic> | undefined {
+  const diagnostic = canvases.get(canvas)
+  return diagnostic === undefined ? undefined : { ...diagnostic }
+}
+
 export function reportGraphicsFailure(
   scene: 'museum-map' | 'singing-current',
   stage:

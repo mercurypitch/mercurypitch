@@ -11,6 +11,7 @@ import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
+import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
 import { createMaterialFinishBank } from './material-finishes'
 import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
@@ -82,6 +83,7 @@ export function createSongRunnerRenderer(
     powerPreference: 'high-performance',
   })
   renderer.outputColorSpace = SRGBColorSpace
+  registerGraphicsCanvas(renderer.domElement, 'singing-current')
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = RUNNER_LOOK.exposure
   scene.environmentIntensity = RUNNER_LOOK.environmentIntensity
@@ -224,6 +226,7 @@ export function createSongRunnerRenderer(
   function dispose() {
     if (disposed) return
     disposed = true
+    retireGraphicsCanvas(renderer.domElement)
     performanceGovernor.dispose()
     abort.abort()
     observer.disconnect()

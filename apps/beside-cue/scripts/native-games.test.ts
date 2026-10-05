@@ -3,6 +3,8 @@
 // ============================================================
 
 import { GLASS_GAME_NATIVE_MOBILE_ASSET_PAIRS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, } from '@irchiinnuss/glass-game/assets'
+import { SINGING_CURRENT_WALL_PROFILES } from '@irchiinnuss/glass-game/current-wall-profiles'
+import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '@irchiinnuss/glass-game/material-finishes'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -19,6 +21,19 @@ const R3_NATIVE_GAME_ASSETS = [
   'games/adventure-v2/garden-kit.glb',
   'games/adventure-v5/painting-garden.webp',
 ] as const
+// Readiness dependencies are independent of the packaging exclusion policy.
+const RUNNER_READY_GAME_ASSETS = [
+  'merc',
+  'floor-marble',
+  'floating-museum-cloudscape-v3',
+  'living-crystal-platform-v2',
+  'museum-kit-v2',
+  'museum-garden-v2',
+  'museum-arcade-v3',
+  'museum-canopy-v3',
+  ...RUNNER_MATERIAL_FINISH_TEXTURE_IDS,
+  ...Object.values(SINGING_CURRENT_WALL_PROFILES).map(({ bundle }) => bundle),
+].map((id) => `games/${glassGameAssetPath(id)}`)
 const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
   (asset) =>
     (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
@@ -64,6 +79,54 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
+  it('declares every in-app runner readiness dependency for offline delivery', () => {
+    for (const asset of RUNNER_READY_GAME_ASSETS)
+      expect(
+        requiredGameAssets.includes(asset),
+        `${asset} must be available before runner ready`,
+      ).toBe(true)
+  })
+
+  it.each(['android', 'ios'] as const)(
+    'retains and verifies runner dependencies through the %s native sync',
+    (platform) => {
+      const directory = fixture()
+      for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+      for (const asset of RUNNER_READY_GAME_ASSETS)
+        put(directory, `dist/${asset}`, `${asset} runner`)
+      if (platform === 'ios')
+        put(
+          directory,
+          'ios/App/App/Info.plist',
+          readFileSync(resolve('ios/App/App/Info.plist'), 'utf8'),
+        )
+      stageGamesProfile(directory, platform, false)
+      const nativePublic = resolve(
+        directory,
+        platform === 'android'
+          ? 'android/app/src/main/assets/public'
+          : 'ios/App/App/public',
+      )
+      cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
+      expect(() => verifySyncedGamesProfile(directory, platform)).not.toThrow()
+      const checksums = readFileSync(
+        resolve(nativePublic, nativeGamesChecksumFile),
+        'utf8',
+      )
+      for (const asset of RUNNER_READY_GAME_ASSETS) {
+        expect(checksums.includes(`  ${asset}\n`), asset).toBe(true)
+        expect(readFileSync(resolve(nativePublic, asset), 'utf8')).toBe(
+          `${asset} runner`,
+        )
+      }
+      const arcade = `games/${glassGameAssetPath('museum-arcade-v3')}`
+      rmSync(resolve(nativePublic, arcade))
+      expect(() => verifySyncedGamesProfile(directory, platform)).toThrow(
+        arcade,
+      )
+    },
+  )
+
   it('subtracts exactly native-ineligible bytes and keeps each mobile alternative', () => {
     const native = new Set(requiredGameAssets)
     const webOnly = GLASS_GAME_REQUIRED_FILES.map(

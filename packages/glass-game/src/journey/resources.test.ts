@@ -1,10 +1,43 @@
 // Journey resource tests — retired parses dispose and hidden time cannot leak.
 
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three'
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Texture } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { acceptJourneyResource, createJourneyFrameLoop, loadJourneyGltf, MAXIMUM_JOURNEY_FRAME_SECONDS, } from './resources'
 
 describe('journey glTF loading', () => {
+  it('closes each owned decoded image once after its document is retired', async () => {
+    const bitmap = { width: 512, height: 512, close: vi.fn() }
+    const texture = new Texture(bitmap as unknown as ImageBitmap)
+    const sharedImageTexture = new Texture(bitmap as unknown as ImageBitmap)
+    const textureDispose = vi.spyOn(texture, 'dispose')
+    const sharedTextureDispose = vi.spyOn(sharedImageTexture, 'dispose')
+    const geometry = new BoxGeometry()
+    const scene = new Group()
+    scene.add(
+      new Mesh(geometry, new MeshBasicMaterial({ map: texture })),
+      new Mesh(geometry, new MeshBasicMaterial({ map: sharedImageTexture })),
+    )
+    const document = await loadJourneyGltf(
+      '/map.glb',
+      new AbortController().signal,
+      {
+        fetch: vi.fn().mockResolvedValue(new Response(new Uint8Array(64))),
+        parse: vi.fn().mockResolvedValue({ scene, animations: [] }),
+      },
+    )
+
+    expect(bitmap.close).not.toHaveBeenCalled()
+    document.dispose()
+    document.dispose()
+
+    expect(textureDispose).toHaveBeenCalledOnce()
+    expect(sharedTextureDispose).toHaveBeenCalledOnce()
+    expect(bitmap.close).toHaveBeenCalledOnce()
+    expect(bitmap.close.mock.invocationCallOrder[0]).toBeGreaterThan(
+      sharedTextureDispose.mock.invocationCallOrder[0]!,
+    )
+  })
+
   it('loads an ordinary glTF document through the real parser and default fetch', async () => {
     const bytes = new TextEncoder().encode(
       JSON.stringify({
@@ -211,7 +244,9 @@ describe('journey glTF loading', () => {
       | ((value: { scene: Group; animations: [] }) => void)
       | undefined
     const geometry = new BoxGeometry()
-    const material = new MeshBasicMaterial()
+    const bitmap = { width: 512, height: 512, close: vi.fn() }
+    const texture = new Texture(bitmap as unknown as ImageBitmap)
+    const material = new MeshBasicMaterial({ map: texture })
     const disposeGeometry = vi.spyOn(geometry, 'dispose')
     const disposeMaterial = vi.spyOn(material, 'dispose')
     const scene = new Group()
@@ -233,6 +268,7 @@ describe('journey glTF loading', () => {
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     expect(disposeGeometry).toHaveBeenCalledOnce()
     expect(disposeMaterial).toHaveBeenCalledOnce()
+    expect(bitmap.close).toHaveBeenCalledOnce()
   })
 })
 

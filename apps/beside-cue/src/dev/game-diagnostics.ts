@@ -1,5 +1,6 @@
 // Game device diagnostics — reuse the portable console and record bounded graphics lifecycle clues.
 import { Capacitor } from '@capacitor/core'
+import { getGraphicsCanvasDiagnostic } from '@irchiinnuss/glass-game/graphics-diagnostics'
 import { setupPortableConsole } from '../../../../src/components/PortableConsole'
 import { BUILD } from '../build-info'
 
@@ -30,12 +31,19 @@ export function setupGameDiagnostics(): void {
       (event) => {
         const canvas = event.target
         if (!(canvas instanceof HTMLCanvasElement)) return
-        console.warn('[Glassworks graphics lifecycle]', {
+        const ownership = getGraphicsCanvasDiagnostic(canvas)
+        const report = {
           event: type,
+          scene: ownership?.scene ?? 'unknown',
+          lifecycle: ownership?.lifecycle ?? 'unknown',
+          instance: ownership?.instance,
           drawingBuffer: [canvas.width, canvas.height],
           viewport: [canvas.clientWidth, canvas.clientHeight],
           visibility: document.visibilityState,
-        })
+        }
+        if (ownership?.lifecycle === 'disposed')
+          console.info('[Glassworks graphics lifecycle]', report)
+        else console.warn('[Glassworks graphics lifecycle]', report)
       },
       true,
     )

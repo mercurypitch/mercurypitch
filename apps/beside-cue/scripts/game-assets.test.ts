@@ -16,6 +16,13 @@ const R3_NATIVE_GAME_ASSETS = [
   'games/adventure-v5/painting-garden.webp',
 ] as const
 
+// The in-app runner needs these before its first frame, even though the
+// standalone Glassworks preview uses the same dressing.
+const RUNNER_SCENERY_GAME_ASSETS = [
+  'games/adventure-v3/garden-arcade.glb',
+  'games/adventure-v3/observatory-canopy.glb',
+] as const
+
 const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
   (asset) =>
     (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
@@ -64,6 +71,7 @@ beforeEach(() => {
     seed(`public/${asset}`, `${asset} source`)
   for (const asset of [
     ...R3_NATIVE_GAME_ASSETS,
+    ...RUNNER_SCENERY_GAME_ASSETS,
     ...CURRENT_DELIVERY_GAME_ASSETS,
     ...UNKNOWN_GAME_ASSETS,
   ])
@@ -78,6 +86,14 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
 describe('direct Vite game asset packaging', () => {
+  it('retains the in-app runner scenery in a native Vite build', async () => {
+    await compile(true, 'output', undefined, true)
+    for (const asset of RUNNER_SCENERY_GAME_ASSETS) {
+      expect(existsSync(join(root, 'output', asset)), asset).toBe(true)
+      expect(contents(`output/${asset}`)).toBe(`${asset} source`)
+    }
+  })
+
   it.each(['public', 'public/nested', 'public/..nested', '.'])(
     'refuses output overlapping public sources: %s',
     async (output) => {

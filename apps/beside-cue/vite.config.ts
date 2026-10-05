@@ -3,10 +3,10 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig, loadEnv } from 'vite'
+import { defaultClientConditions, defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
-import { portableConsoleEnabled } from './scripts/portable-console-policy'
 import { gameAssetsPlugin } from './scripts/game-assets'
+import { portableConsoleEnabled } from './scripts/portable-console-policy'
 import { assertPurchaseBuildSafe } from './src/purchases/purchase-build-policy'
 
 // Build provenance, baked in. See src/build-info.ts for why.
@@ -153,7 +153,16 @@ export default defineConfig(({ mode, command }) => {
       gameAssetsPlugin(gamesEnabled, undefined, nativeGamesProfile),
     ],
     resolve: {
+      // ORT's official external-runtime export uses the pair staged in /ort.
+      // Keep this resolution in workers too, without emitting an unused WASM.
+      conditions: [
+        ...defaultClientConditions,
+        'onnxruntime-web-use-extern-wasm',
+      ],
       alias: [
+        // Beside Cue only selects the CPU execution provider. The default ORT
+        // entry selects JSEP and requests a different, unstaged runtime pair.
+        { find: /^onnxruntime-web$/u, replacement: 'onnxruntime-web/wasm' },
         // The B-side games are in a build only with VITE_BESIDE_CUE_GAMES=1.
         // Otherwise their one entry resolves to a stub, and no games module
         // is loaded at all (src/games/entry.ts says why that matters).
