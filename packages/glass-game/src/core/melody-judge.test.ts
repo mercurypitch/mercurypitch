@@ -201,6 +201,107 @@ describe('live melody judge', () => {
     expect(twoStar.snapshot().retryCount).toBeGreaterThan(0)
   })
 
+  it.each([1, 2, 3] as const)(
+    'recovers from a wrong note through a brief unvoiced transition at tier %s',
+    (tier) => {
+      const policy = melodyJudgePolicyForTier(tier)
+      const judge = createMelodyJudge(compiled('first-arc'), policy)
+      const state = { sequence: 0, captureSeconds: 0 }
+      while (judge.snapshot().phase === 'acquiring') emit(judge, state, 60)
+      const before = judge.snapshot()
+
+      const wrongFrames = Math.floor(
+        (policy.mismatchGraceSeconds * 0.75) / HOP_SECONDS,
+      )
+      for (let index = 0; index < wrongFrames; index++) emit(judge, state, 65)
+      emit(judge, state, null)
+      expect(judge.snapshot()).toMatchObject({
+        progress: before.progress,
+        retryCount: 0,
+        complete: false,
+      })
+
+      emit(judge, state, before.targetMidi)
+      expect(judge.snapshot()).toMatchObject({
+        phase: 'following',
+        retryCount: 0,
+      })
+      for (let index = 0; index < 6; index++)
+        emit(judge, state, before.targetMidi)
+      expect(judge.snapshot().progress).toBeGreaterThan(before.progress)
+    },
+  )
+
+  it('does not renew mismatch grace with alternating wrong notes and detector dropouts', () => {
+    const policy = melodyJudgePolicyForTier(1)
+    const judge = createMelodyJudge(compiled('first-arc'), policy)
+    const state = { sequence: 0, captureSeconds: 0 }
+    while (judge.snapshot().phase === 'acquiring') emit(judge, state, 60)
+    const before = judge.snapshot()
+    const deadline = state.captureSeconds + policy.mismatchGraceSeconds
+    emit(judge, state, 65)
+    let index = 0
+    while (state.captureSeconds <= deadline + 1e-9) {
+      emit(judge, state, index++ % 2 === 0 ? null : 65)
+      expect(judge.snapshot()).toMatchObject({
+        progress: before.progress,
+        retryCount: 0,
+      })
+    }
+
+    emit(judge, state, null)
+    expect(judge.snapshot()).toMatchObject({
+      phase: 'acquiring',
+      progress: 0,
+      retryCount: 1,
+      complete: false,
+    })
+  })
+
+  it('limits sustained silence independently of the longer wrong-note grace', () => {
+    const policy = melodyJudgePolicyForTier(1)
+    const judge = createMelodyJudge(compiled('first-arc'), policy)
+    const state = { sequence: 0, captureSeconds: 0 }
+    while (judge.snapshot().phase === 'acquiring') emit(judge, state, 60)
+    const before = judge.snapshot()
+    const deadline = state.captureSeconds + policy.dropoutGraceSeconds
+    emit(judge, state, 65)
+    while (state.captureSeconds <= deadline + 1e-9) emit(judge, state, null)
+    expect(judge.snapshot()).toMatchObject({
+      progress: before.progress,
+      retryCount: 0,
+    })
+
+    emit(judge, state, null)
+    expect(judge.snapshot()).toMatchObject({
+      phase: 'acquiring',
+      progress: 0,
+      retryCount: 1,
+      complete: false,
+    })
+  })
+
+  it.each([
+    { delay: 0, retries: 0 },
+    { delay: HOP_SECONDS, retries: 1 },
+  ])(
+    'enforces the wrong-note deadline on a correct return after $delay seconds',
+    ({ delay, retries }) => {
+      const policy = melodyJudgePolicyForTier(1)
+      const judge = createMelodyJudge(compiled('first-arc'), policy)
+      const state = { sequence: 0, captureSeconds: 0 }
+      while (judge.snapshot().phase === 'acquiring') emit(judge, state, 60)
+      const target = judge.snapshot().targetMidi
+      const deadline = state.captureSeconds + policy.mismatchGraceSeconds
+      while (state.captureSeconds < deadline - 1e-9) emit(judge, state, 65)
+      state.captureSeconds = deadline + delay
+
+      emit(judge, state, target)
+      expect(judge.snapshot().retryCount).toBe(retries)
+      expect(judge.snapshot().complete).toBe(false)
+    },
+  )
+
   it.each([0.7, 1, 1.5])(
     'accepts the full ascending and descending contour at %sx reference pace',
     (pace) => {

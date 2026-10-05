@@ -135,6 +135,28 @@ async function observeTierOneGraceSequence(
       }
       return points
     }
+    // A CI reset can outlive the brief recovery state. Retain the observed
+    // guide transitions and audio clock without changing the probe's timing.
+    const history: Array<{
+      audioSeconds: number
+      progress: number
+      guide: string
+    }> = []
+    const rememberObservation = (): void => {
+      const observation = {
+        audioSeconds: Number(window.thawingInput.audioTime().toFixed(3)),
+        progress: progressValue(),
+        guide: guide.textContent ?? '',
+      }
+      const previous = history.at(-1)
+      if (
+        previous?.progress === observation.progress &&
+        previous.guide === observation.guide
+      )
+        return
+      history.push(observation)
+      if (history.length > 32) history.shift()
+    }
     const waitFor = async (
       predicate: () => boolean,
       description: string,
@@ -148,6 +170,7 @@ async function observeTierOneGraceSequence(
         }
         function check(): void {
           try {
+            rememberObservation()
             if (!predicate()) return
             finish()
             resolve()
@@ -163,8 +186,13 @@ async function observeTierOneGraceSequence(
           subtree: true,
         })
         timeout = window.setTimeout(() => {
+          rememberObservation()
           finish()
-          reject(new Error(`Timed out waiting for ${description}.`))
+          reject(
+            new Error(
+              `Timed out waiting for ${description}. Observations: ${JSON.stringify(history)}`,
+            ),
+          )
         }, 5_000)
         check()
       })
