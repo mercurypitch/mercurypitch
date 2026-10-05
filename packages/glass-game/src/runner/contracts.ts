@@ -152,6 +152,26 @@ export interface CompiledRunnerActionWindow {
   readonly reachableLanes: readonly RunnerLane[]
 }
 
+/** A single convex solid, extruded across X and normalized to the blocker bounds. */
+export interface RunnerBlockerConvexCollisionProfile {
+  readonly kind: 'convex-yz'
+  readonly vertices: readonly {
+    readonly zFraction: number
+    readonly yFraction: number
+  }[]
+}
+
+export type RunnerBlockerCollisionProfile =
+  | RunnerBlockerConvexCollisionProfile
+  | {
+      readonly kind: 'convex-yz-bands'
+      readonly bands: readonly {
+        readonly minXFraction: number
+        readonly maxXFraction: number
+        readonly vertices: RunnerBlockerConvexCollisionProfile['vertices']
+      }[]
+    }
+
 export interface CompiledRunnerBlocker {
   readonly kind: 'blocker'
   readonly id: string
@@ -165,6 +185,12 @@ export interface CompiledRunnerBlocker {
   readonly minY: number
   readonly maxY: number
   readonly authoredLaneMask: readonly RunnerLane[]
+  readonly collisionProfile?: RunnerBlockerCollisionProfile
+  readonly traversal?: {
+    readonly kind: 'jump-over'
+    readonly landingStartCourseDistanceMeters: number
+    readonly landingEndCourseDistanceMeters: number
+  }
   readonly certifiedActions: readonly CompiledRunnerActionWindow[]
 }
 

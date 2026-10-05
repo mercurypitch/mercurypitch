@@ -2,15 +2,17 @@
 // Song runner safety compiler — obstacle envelopes, routes, and checkpoints.
 // ============================================================
 
+import { runnerValidBlockerCollisionProfile } from './blocker-collision.ts'
 import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, runnerIntervalsOverlap, } from './compile-course-helpers.ts'
 import type { RunnerProtectedWindow } from './compile-course-targets.ts'
+import { runnerHurdleJumpWindow } from './compile-hurdle.ts'
 import { runnerContinuousBlockerCertificate, validateContinuousRunnerReachability, } from './continuous-certificates.ts'
 import type { CompiledRunnerActionWindow, CompiledRunnerCheckpoint, CompiledRunnerCourse, CompiledRunnerObstacle, RunnerLane, } from './contracts.ts'
 import { runnerFixedStepActionEnd, runnerFixedStepAtOrAfter, } from './fixed-step.ts'
 import { RUNNER_MAXIMUM_COUNT_IN_BEATS, RUNNER_MAXIMUM_COUNT_IN_SECONDS, } from './resource-limits.ts'
 import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerCourseSource, } from './source.ts'
 import { runnerSourceFail, runnerSourceUniqueIds } from './source.ts'
-import { runnerBeatToDistance, runnerBeatToSeconds } from './tempo.ts'
+import { runnerBeatToDistance, runnerBeatToSeconds, runnerSecondsToBeat, } from './tempo.ts'
 import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 function validateObstacleProfile(
@@ -58,6 +60,25 @@ function validateObstacleProfile(
       runnerSourceFail(
         path,
         'must have matching ordered visible and collision bounds.',
+      )
+    if (
+      profile.traversal !== undefined &&
+      (profile.traversal.kind !== 'jump-over' ||
+        !Number.isFinite(profile.traversal.landingRunwayMeters) ||
+        profile.traversal.landingRunwayMeters <= 0 ||
+        profile.minYOffsetMeters !== 0)
+    )
+      runnerSourceFail(
+        path,
+        'references a malformed jump-over traversal profile.',
+      )
+    if (
+      profile.collisionProfile !== undefined &&
+      !runnerValidBlockerCollisionProfile(profile.collisionProfile)
+    )
+      runnerSourceFail(
+        path,
+        'requires a convex Y/Z collision profile with 3 to 16 vertices, at most 8 contiguous X bands and matching normalized bounds.',
       )
     return
   }
@@ -227,7 +248,7 @@ export function compileRunnerObstacles(
       const unmaskedLanes = ([0, 1, 2] as const).filter(
         (lane) => !obstacle.laneMask.includes(lane),
       )
-      if (unmaskedLanes.length === 0)
+      if (unmaskedLanes.length === 0 && profile.traversal === undefined)
         runnerSourceFail(
           `${obstaclePath}.laneMask`,
           'blockers must leave at least one lane open.',
@@ -246,7 +267,7 @@ export function compileRunnerObstacles(
           laneX > maxLateralX + movement.bodyRadius + RUNNER_COMPILER_EPSILON
         )
       })
-      if (safeLanes.length === 0)
+      if (safeLanes.length === 0 && profile.traversal === undefined)
         runnerSourceFail(
           `${obstaclePath}.laneMask`,
           'blockers must leave at least one lane clear of the runner body.',
@@ -255,63 +276,137 @@ export function compileRunnerObstacles(
         centerDistance - profile.longitudinalHalfLengthMeters
       const maxCourseDistanceMeters =
         centerDistance + profile.longitudinalHalfLengthMeters
-      const collisionEntrySeconds = secondsAtDistance(
-        minCourseDistanceMeters - movement.bodyRadius,
-      )
-      const launchOpenCourseSeconds = runnerBeatToSeconds(
-        tempoSegments,
-        Math.max(0, obstacle.atBeat - profile.telegraphLeadBeats),
-      )
-      const maximumLaneChanges = Math.max(
-        ...([0, 1, 2] as const).map((from) =>
-          Math.min(...safeLanes.map((safe) => Math.abs(safe - from))),
-        ),
-        1,
-      )
-      const continuous =
-        movement.kind === 'continuous'
-          ? runnerContinuousBlockerCertificate(
-              course,
-              movement,
-              minLateralX,
-              maxLateralX,
-            )
-          : undefined
-      const requiredTransitionSeconds =
-        continuous === undefined
-          ? movement.laneChangeSeconds * maximumLaneChanges
-          : continuous.requiredManeuverSeconds + continuous.inputMarginSeconds
-      const launchCloseCourseSeconds =
-        collisionEntrySeconds - requiredTransitionSeconds
-      if (
-        launchCloseCourseSeconds <
-        launchOpenCourseSeconds - RUNNER_COMPILER_EPSILON
-      )
-        runnerSourceFail(
+      let traversal: Extract<
+        CompiledRunnerObstacle,
+        { kind: 'blocker' }
+      >['traversal']
+      if (profile.traversal?.kind === 'jump-over') {
+        const jump = runnerHurdleJumpWindow(
+          profile,
+          movement,
+          minCourseDistanceMeters,
+          maxCourseDistanceMeters,
+          telegraphFromCourseSeconds,
+          secondsAtDistance,
           obstaclePath,
-          'does not leave a certified lane-transition window.',
         )
-      certifiedActions = [
-        {
-          kind:
-            continuous === undefined ? 'lane-transition' : 'continuous-steer',
-          ...(continuous === undefined ? {} : { continuous }),
-          launchOpenCourseSeconds,
-          launchCloseCourseSeconds,
-          ...fixedStepActionBounds(
-            course,
-            tempoSegments,
-            movement,
+        const landing = fixedStepActionBounds(
+          course,
+          tempoSegments,
+          movement,
+          jump.launchOpenCourseSeconds,
+          jump.launchCloseCourseSeconds,
+          jump.flightSeconds,
+        )
+        if (
+          landing.landingCloseCourseSeconds >
+          secondsAtDistance(
+            jump.landingEndCourseDistanceMeters - movement.bodyRadius,
+          )
+        )
+          runnerSourceFail(
+            obstaclePath,
+            'hurdle jump exceeds the authored landing runway.',
+          )
+        const entry = runnerBodyLateralBounds({
+          laneCenters: course.track.laneCenters,
+          movement,
+        })
+        certifiedActions = [
+          {
+            kind: 'jump',
+            ...(movement.kind !== 'continuous'
+              ? {}
+              : {
+                  continuous: {
+                    version: 1 as const,
+                    entry,
+                    maximumEntrySpeedMetersPerSecond:
+                      movement.maxLateralSpeedMetersPerSecond,
+                    safeCorridors: ([-1, 1] as const).map((axis) => ({
+                      ...entry,
+                      axis,
+                    })),
+                    requiredManeuverSeconds: jump.flightSeconds,
+                    inputMarginSeconds: movement.fixedStepSeconds * 2,
+                  },
+                }),
+            launchOpenCourseSeconds: jump.launchOpenCourseSeconds,
+            launchCloseCourseSeconds: jump.launchCloseCourseSeconds,
+            ...landing,
+            reachableLanes: ([0, 1, 2] as const).filter(
+              (lane) =>
+                course.track.laneCenters[lane] >=
+                  minLateralX - movement.bodyRadius &&
+                course.track.laneCenters[lane] <=
+                  maxLateralX + movement.bodyRadius,
+            ),
+          },
+        ]
+        traversal = {
+          kind: 'jump-over',
+          landingStartCourseDistanceMeters: maxCourseDistanceMeters,
+          landingEndCourseDistanceMeters: jump.landingEndCourseDistanceMeters,
+        }
+      } else {
+        const collisionEntrySeconds = secondsAtDistance(
+          minCourseDistanceMeters - movement.bodyRadius,
+        )
+        const launchOpenCourseSeconds = runnerBeatToSeconds(
+          tempoSegments,
+          Math.max(0, obstacle.atBeat - profile.telegraphLeadBeats),
+        )
+        const maximumLaneChanges = Math.max(
+          ...([0, 1, 2] as const).map((from) =>
+            Math.min(...safeLanes.map((safe) => Math.abs(safe - from))),
+          ),
+          1,
+        )
+        const continuous =
+          movement.kind === 'continuous'
+            ? runnerContinuousBlockerCertificate(
+                course,
+                movement,
+                minLateralX,
+                maxLateralX,
+              )
+            : undefined
+        const requiredTransitionSeconds =
+          continuous === undefined
+            ? movement.laneChangeSeconds * maximumLaneChanges
+            : continuous.requiredManeuverSeconds + continuous.inputMarginSeconds
+        const launchCloseCourseSeconds =
+          collisionEntrySeconds - requiredTransitionSeconds
+        if (
+          launchCloseCourseSeconds <
+          launchOpenCourseSeconds - RUNNER_COMPILER_EPSILON
+        )
+          runnerSourceFail(
+            obstaclePath,
+            'does not leave a certified lane-transition window.',
+          )
+        certifiedActions = [
+          {
+            kind:
+              continuous === undefined ? 'lane-transition' : 'continuous-steer',
+            ...(continuous === undefined ? {} : { continuous }),
             launchOpenCourseSeconds,
             launchCloseCourseSeconds,
-            requiredTransitionSeconds,
-            continuous === undefined
-              ? movement.laneChangeSeconds
-              : requiredTransitionSeconds,
-          ),
-          reachableLanes: safeLanes,
-        },
-      ]
+            ...fixedStepActionBounds(
+              course,
+              tempoSegments,
+              movement,
+              launchOpenCourseSeconds,
+              launchCloseCourseSeconds,
+              requiredTransitionSeconds,
+              continuous === undefined
+                ? movement.laneChangeSeconds
+                : requiredTransitionSeconds,
+            ),
+            reachableLanes: safeLanes,
+          },
+        ]
+      }
       compiled = {
         kind: 'blocker',
         id: obstacle.id,
@@ -329,6 +424,10 @@ export function compileRunnerObstacles(
         minY: course.track.groundFeetY + profile.minYOffsetMeters,
         maxY: course.track.groundFeetY + profile.maxYOffsetMeters,
         authoredLaneMask: obstacle.laneMask,
+        ...(profile.collisionProfile === undefined
+          ? {}
+          : { collisionProfile: profile.collisionProfile }),
+        ...(traversal === undefined ? {} : { traversal }),
         certifiedActions,
       }
     } else {
@@ -448,6 +547,50 @@ export function compileRunnerObstacles(
     return compiled
   })
 
+  for (const [index, obstacle] of obstacles.entries()) {
+    if (obstacle.kind !== 'blocker' || obstacle.traversal === undefined)
+      continue
+    const action = obstacle.certifiedActions[0]!
+    const takeoffStart =
+      runnerBeatToDistance(
+        runnerSecondsToBeat(tempoSegments, action.launchOpenCourseSeconds),
+        course.track.metersPerBeat,
+      ) - movement.bodyRadius
+    const takeoffEnd =
+      runnerBeatToDistance(
+        runnerSecondsToBeat(tempoSegments, action.launchCloseCourseSeconds),
+        course.track.metersPerBeat,
+      ) + movement.bodyRadius
+    for (const other of obstacles) {
+      if (other === obstacle) continue
+      if (
+        other.kind === 'gap' &&
+        runnerIntervalsOverlap(
+          takeoffStart,
+          takeoffEnd,
+          other.minCourseDistanceMeters,
+          other.maxCourseDistanceMeters,
+        )
+      )
+        runnerSourceFail(
+          `${path}.obstacles[${index}]`,
+          `hurdle takeoff intersects gap "${other.id}".`,
+        )
+      if (
+        runnerIntervalsOverlap(
+          obstacle.traversal.landingStartCourseDistanceMeters,
+          obstacle.traversal.landingEndCourseDistanceMeters,
+          other.minCourseDistanceMeters,
+          other.maxCourseDistanceMeters,
+        )
+      )
+        runnerSourceFail(
+          `${path}.obstacles[${index}]`,
+          `hurdle landing runway intersects obstacle "${other.id}".`,
+        )
+    }
+  }
+
   for (let index = 1; index < obstacles.length; index++) {
     const prior = obstacles[index - 1]!
     const current = obstacles[index]!
@@ -469,6 +612,11 @@ export function compileRunnerObstacles(
             RUNNER_COMPILER_EPSILON
       )
         continue
+      if (earlier.traversal !== undefined || current.traversal !== undefined)
+        runnerSourceFail(
+          `${path}.obstacles[${index}]`,
+          `jump-over body collision envelope overlaps obstacle "${earlier.id}".`,
+        )
       if (
         !earlier.certifiedActions[0]!.reachableLanes.some((lane) =>
           current.certifiedActions[0]!.reachableLanes.includes(lane),
@@ -522,7 +670,7 @@ export function validateRunnerReachability(
       if (collisionExitDistance < checkpointDistance - RUNNER_COMPILER_EPSILON)
         continue
       const action = obstacle.certifiedActions[0]!
-      if (obstacle.kind === 'blocker') {
+      if (action.kind !== 'jump') {
         const collisionEntrySeconds = secondsAtDistance(
           obstacle.minCourseDistanceMeters - movement.bodyRadius,
         )

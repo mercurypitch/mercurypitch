@@ -17,8 +17,12 @@ export interface RunnerMovementCue {
   readonly direction?: 'left' | 'right'
 }
 
-function jumpAction(gap: CompiledRunnerGap): CompiledRunnerActionWindow | null {
-  return gap.certifiedActions.find((action) => action.kind === 'jump') ?? null
+function jumpAction(
+  obstacle: CompiledRunnerObstacle,
+): CompiledRunnerActionWindow | null {
+  return (
+    obstacle.certifiedActions.find((action) => action.kind === 'jump') ?? null
+  )
 }
 
 function courseSecondsAtDistance(
@@ -42,10 +46,19 @@ function courseSecondsAtDistance(
  */
 export function runnerUsefulJumpWindow(
   course: CompiledRunnerCourse,
-  gap: CompiledRunnerGap,
+  gap: CompiledRunnerObstacle,
 ): RunnerUsefulJumpWindow | null {
   const certified = jumpAction(gap)
   if (certified === null) return null
+  if (gap.kind === 'blocker') {
+    if (gap.traversal?.kind !== 'jump-over') return null
+    return {
+      launchOpenCourseSeconds:
+        certified.launchOpenCourseSeconds + course.movement.fixedStepSeconds,
+      launchCloseCourseSeconds:
+        certified.launchCloseCourseSeconds - course.movement.fixedStepSeconds,
+    }
+  }
 
   const flightSeconds =
     (2 * course.movement.jumpVelocityMetersPerSecond) /
@@ -88,9 +101,9 @@ export function runnerUsefulJumpWindow(
   return { launchOpenCourseSeconds, launchCloseCourseSeconds }
 }
 
-function gapCue(
+function jumpCue(
   course: CompiledRunnerCourse,
-  gap: CompiledRunnerGap,
+  gap: CompiledRunnerObstacle,
   snapshot: Pick<
     RunnerSnapshot,
     'courseSeconds' | 'courseDistanceMeters' | 'player'
@@ -101,9 +114,14 @@ function gapCue(
   if (action === null || useful === null) return null
 
   const seconds = snapshot.courseSeconds
+  const landingEnd =
+    gap.kind === 'gap'
+      ? gap.landingEndCourseDistanceMeters
+      : gap.traversal?.landingEndCourseDistanceMeters
+  if (landingEnd === undefined) return null
   const closeEnoughToLand =
     snapshot.courseDistanceMeters <=
-    gap.landingEndCourseDistanceMeters + course.movement.bodyRadius + EPSILON
+    landingEnd + course.movement.bodyRadius + EPSILON
   if (
     !snapshot.player.grounded &&
     seconds >= gap.telegraphFromCourseSeconds - EPSILON &&
@@ -124,6 +142,7 @@ function gapCue(
     return { obstacleId: gap.id, stage: 'jump' }
 
   if (
+    gap.kind === 'gap' &&
     seconds >= gap.telegraphFromCourseSeconds - EPSILON &&
     seconds < useful.launchOpenCourseSeconds - EPSILON
   )
@@ -191,8 +210,8 @@ export function runnerMovementCue(
     .map((obstacle) => ({
       obstacle,
       cue:
-        obstacle.kind === 'gap'
-          ? gapCue(course, obstacle, snapshot)
+        obstacle.kind === 'gap' || obstacle.traversal?.kind === 'jump-over'
+          ? jumpCue(course, obstacle, snapshot)
           : blockerCue(course, obstacle, snapshot),
     }))
     .filter(

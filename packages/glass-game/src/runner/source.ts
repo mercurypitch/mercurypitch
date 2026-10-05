@@ -4,7 +4,7 @@
 
 import type { RunnerGlassPresentation } from '../content/runner-glass-presentation.ts'
 import type { GlassShatterProfile } from '../content/shatter-sounds.ts'
-import type { CompiledRunnerMovementProfile, CompiledRunnerVoiceProfile, RunnerLane, } from './contracts.ts'
+import type { CompiledRunnerMovementProfile, CompiledRunnerVoiceProfile, RunnerBlockerCollisionProfile, RunnerLane, } from './contracts.ts'
 import type { RunnerTempoPoint } from './tempo.ts'
 
 export interface RunnerPhraseNoteSource {
@@ -132,6 +132,12 @@ export interface RunnerBlockerCatalogProfile {
   readonly visibleMaxYOffsetMeters: number
   readonly telegraphLeadBeats: number
   readonly assetProfileIds: readonly string[]
+  readonly collisionProfile?: RunnerBlockerCollisionProfile
+  /** Omitted profiles keep the existing lane/steering avoidance certificate. */
+  readonly traversal?: {
+    readonly kind: 'jump-over'
+    readonly landingRunwayMeters: number
+  }
 }
 
 export interface RunnerGapCatalogProfile {

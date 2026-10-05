@@ -2,10 +2,12 @@
 import type { BufferGeometry, Material, Object3D, Texture } from 'three'
 import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, Quaternion, TorusGeometry, Vector3, } from 'three'
 import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile'
+import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
 import type { MaterialFinishBank } from './material-finishes'
+import { createRunnerObstacleArt } from './runner-obstacles'
 import { RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
 
 const Y_AXIS = new Vector3(0, 1, 0)
@@ -59,10 +61,12 @@ export function createRunnerWorld(
   marbleMap: Texture,
   reducedMotion: boolean,
   finishes?: MaterialFinishBank,
+  obstacleSources: ReadonlyMap<string, Object3D> = new Map(),
 ) {
   const donor = crystalScene.getObjectByName(LIVING_CRYSTAL_PLATFORM_NODES.root)
   if (!donor) throw new Error('Runner crystal support is missing.')
   const contract = validateLivingCrystalPlatformDonor(donor)
+  const obstacleArt = createRunnerObstacleArt(course, obstacleSources)
   const root = new Group()
   root.name = 'singing-current-world'
   const boxGeometry = new BoxGeometry(1, 1, 1)
@@ -213,7 +217,11 @@ export function createRunnerWorld(
           )
     }
     for (const obstacle of course.obstacles)
-      if (obstacle.chunkId === id && obstacle.kind === 'blocker') {
+      if (
+        obstacle.chunkId === id &&
+        obstacle.kind === 'blocker' &&
+        !runnerObstacleArt(obstacle.profileId)
+      ) {
         blockers.push(
           box(
             (obstacle.minLateralX + obstacle.maxLateralX) / 2,
@@ -284,6 +292,7 @@ export function createRunnerWorld(
       }
     }
     const meshes = [
+      ...obstacleArt.chunk(id),
       batch(boxGeometry, marble, stone, 'pearl-runway'),
       batch(boxGeometry, gold, trim, 'gilt-runway-edges'),
       batch(boxGeometry, lane, lines, 'lane-inlays'),
@@ -376,6 +385,7 @@ export function createRunnerWorld(
       root.clear()
       root.removeFromParent()
       installed.clear()
+      obstacleArt.dispose()
       boxGeometry.dispose()
       lipGeometry.dispose()
       pickupGeometry.dispose()

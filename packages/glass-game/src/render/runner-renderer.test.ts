@@ -4,6 +4,7 @@ import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Texture } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runnerCourseFixture } from '../browser/__fixtures__/runner-course'
 import { deferred, flush } from '../browser/__fixtures__/runner-session'
+import { SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY } from '../runner/crystal-obstacle-study'
 import { SINGING_CURRENT_CONTINUOUS_TRIAL } from '../runner/first-course'
 import { createSongRunnerGame } from '../runner/game'
 import { runnerCameraFollowTarget, runnerCameraPose, } from './runner-world-layout'
@@ -164,10 +165,16 @@ function ownedScene() {
   return { root, geometryDispose, materialDispose }
 }
 
-function fixture(dressedOpening = false, continuous = false) {
-  const source = continuous
-    ? SINGING_CURRENT_CONTINUOUS_TRIAL
-    : runnerCourseFixture()
+function fixture(
+  dressedOpening = false,
+  continuous = false,
+  crystalStudy = false,
+) {
+  const source = crystalStudy
+    ? SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
+    : continuous
+      ? SINGING_CURRENT_CONTINUOUS_TRIAL
+      : runnerCourseFixture()
   const course = dressedOpening
       ? {
           ...source,
@@ -572,6 +579,45 @@ describe('runner renderer ownership', () => {
       sceneryTriangles: 1200,
     })
     renderer.dispose()
+  })
+
+  it('loads each obstacle bundle once for the crystal study and retires the owned donors', async () => {
+    const bulwark = ownedScene(),
+      hurdle = ownedScene()
+    state.model.mockImplementation(async (id: string) => {
+      if (id === 'runner-crystal-bulwark-v1') return bulwark.root
+      if (id === 'runner-rose-hurdle-v1') return hurdle.root
+      return new Group()
+    })
+    const { renderer } = fixture(true, true, true)
+    await renderer.ready
+    const ids = state.model.mock.calls.map(([id]) => id)
+    expect(ids.filter((id) => id === 'runner-crystal-bulwark-v1')).toHaveLength(
+      1,
+    )
+    expect(ids.filter((id) => id === 'runner-rose-hurdle-v1')).toHaveLength(1)
+    renderer.dispose()
+    renderer.dispose()
+    for (const asset of [bulwark, hurdle]) {
+      expect(asset.geometryDispose).toHaveBeenCalledOnce()
+      expect(asset.materialDispose).toHaveBeenCalledOnce()
+    }
+  })
+
+  it('retires prior obstacle donors when a required hurdle fails to load', async () => {
+    const bulwark = ownedScene()
+    state.model.mockImplementation(async (id: string) => {
+      if (id === 'runner-crystal-bulwark-v1') return bulwark.root
+      if (id === 'runner-rose-hurdle-v1') throw new Error('Missing hurdle')
+      return new Group()
+    })
+    const { renderer } = fixture(true, true, true)
+    await expect(renderer.ready).rejects.toThrow('Missing hurdle')
+    expect(bulwark.geometryDispose).toHaveBeenCalledOnce()
+    expect(bulwark.materialDispose).toHaveBeenCalledOnce()
+    expect(state.worldUpdate).not.toHaveBeenCalled()
+    expect(state.render).not.toHaveBeenCalled()
+    expect(state.dispose).toHaveBeenCalledOnce()
   })
 
   it('rejects a missing garden and retires the already loaded museum instead of exposing partial scenery', async () => {

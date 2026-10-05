@@ -2,6 +2,7 @@
 import type { Object3D, Texture } from 'three'
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, WebGLRenderer, } from 'three'
 import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '../content/material-finishes'
+import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
@@ -341,6 +342,13 @@ export function createSongRunnerRenderer(
       scene.background = sky
       resize()
       const crystal = await model('living-crystal-platform-v2')
+      const obstacleSources = new Map<string, Object3D>()
+      for (const obstacle of course.obstacles) {
+        if (obstacle.kind !== 'blocker') continue
+        const profile = runnerObstacleArt(obstacle.profileId)
+        if (profile && !obstacleSources.has(profile.bundle))
+          obstacleSources.set(profile.bundle, await model(profile.bundle))
+      }
       const wallSources = new Map<
         string,
         { source: Object3D; bundle: string }
@@ -378,6 +386,7 @@ export function createSongRunnerRenderer(
         marble,
         options.reducedMotion === true,
         finishes,
+        obstacleSources,
       )
       targets = createRunnerTargets(
         course,

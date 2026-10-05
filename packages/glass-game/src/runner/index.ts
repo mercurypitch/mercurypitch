@@ -5,6 +5,7 @@
 export type * from './contracts'
 export * from './compile-course'
 export * from './first-course'
+export * from './crystal-obstacle-study'
 export * from './game'
 export * from './movement'
 export * from './pitch'

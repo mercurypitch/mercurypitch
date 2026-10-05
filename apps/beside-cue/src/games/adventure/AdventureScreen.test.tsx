@@ -29,6 +29,14 @@ vi.mock('@irchiinnuss/glass-game/solid', () => ({
 }))
 vi.mock('@irchiinnuss/glass-game/runner', () => ({
   SINGING_CURRENT_TRIALS: runnerTrials,
+  SINGING_CURRENT_CRYSTAL_STUDY: {
+    id: 'the-singing-current-trial-crystal-lanes-v1',
+    presentation: { cameraProfile: 'responsive-close' },
+  },
+  SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY: {
+    id: 'the-singing-current-trial-crystal-continuous-v1',
+    presentation: { cameraProfile: 'responsive-close' },
+  },
   SINGING_CURRENT_CONTINUOUS_TRIAL: {
     id: 'the-singing-current-trial-continuous-v1',
     presentation: { cameraProfile: 'responsive-close' },
@@ -139,6 +147,43 @@ describe('Glassworks build access', () => {
         runner
         runnerSteering="continuous"
         runnerCamera="close"
+        onExit={() => undefined}
+      />
+    ))
+    expect(screen.queryByTestId('runner')).toBeNull()
+    expect(screen.getByTestId('campaign')).toHaveAttribute(
+      'data-unlocked',
+      'false',
+    )
+  })
+
+  it.each([undefined, 'continuous'] as const)(
+    'keeps crystal obstacle %s rewards in an isolated course',
+    (steering) => {
+      render(() => (
+        <AdventureScreen
+          runner
+          runnerSteering={steering}
+          runnerObstacles="crystal-study"
+          runnerCamera="angled"
+          onExit={() => undefined}
+        />
+      ))
+      expect(screen.getByTestId('runner')).toHaveAttribute(
+        'data-course',
+        steering === 'continuous'
+          ? 'the-singing-current-trial-crystal-continuous-v1'
+          : 'the-singing-current-trial-crystal-lanes-v1',
+      )
+    },
+  )
+
+  it('does not expose the obstacle study through release progression', () => {
+    build.channel = 'release'
+    render(() => (
+      <AdventureScreen
+        runner
+        runnerObstacles="crystal-study"
         onExit={() => undefined}
       />
     ))

@@ -1,80 +1,13 @@
 // Continuous runner movement — ordered support events and curved swept body contacts.
 
+import { runnerBodyHitsBlocker } from './blocker-collision.ts'
 import type { RunnerLateralSegment } from './continuous-lateral.ts'
 import { advanceRunnerLateral, runnerLateralPosition, runnerQuadraticRoots, } from './continuous-lateral.ts'
-import type { CompiledRunnerBlocker, CompiledRunnerCourse, } from './contracts.ts'
+import type { CompiledRunnerCourse } from './contracts.ts'
 import type { RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts.ts'
 import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 const EPSILON = 1e-9
-
-interface MotionPiece {
-  duration: number
-  x: number
-  vx: number
-  ax: number
-  z: number
-  vz: number
-  y: number
-  vy: number
-  ay: number
-}
-
-function bodyHitsBlocker(
-  course: CompiledRunnerCourse,
-  blocker: CompiledRunnerBlocker,
-  piece: MotionPiece,
-): boolean {
-  const radius = course.movement.bodyRadius
-  if (
-    piece.z > blocker.maxCourseDistanceMeters + radius + EPSILON ||
-    piece.z + piece.vz * piece.duration <
-      blocker.minCourseDistanceMeters - radius - EPSILON
-  )
-    return false
-  const axes = [
-    [
-      piece.x,
-      piece.vx,
-      piece.ax,
-      blocker.minLateralX - course.movement.bodyRadius,
-      blocker.maxLateralX + course.movement.bodyRadius,
-    ],
-    [
-      piece.z,
-      piece.vz,
-      0,
-      blocker.minCourseDistanceMeters - course.movement.bodyRadius,
-      blocker.maxCourseDistanceMeters + course.movement.bodyRadius,
-    ],
-    [
-      piece.y,
-      piece.vy,
-      piece.ay,
-      blocker.minY - course.movement.bodyHeight,
-      blocker.maxY,
-    ],
-  ] as const
-  const boundaries = [0, piece.duration]
-  for (const [position, velocity, acceleration, min, max] of axes)
-    for (const edge of [min, max])
-      boundaries.push(
-        ...runnerQuadraticRoots(
-          acceleration / 2,
-          velocity,
-          position - edge,
-        ).filter((t) => t > 0 && t < piece.duration),
-      )
-  boundaries.sort((a, b) => a - b)
-  const within = (t: number) =>
-    axes.every(([position, velocity, acceleration, min, max]) => {
-      const value = position + velocity * t + (acceleration * t * t) / 2
-      return value >= min - EPSILON && value <= max + EPSILON
-    })
-  return boundaries.some(
-    (t, i) => within(t) || (i > 0 && within((t + boundaries[i - 1]!) / 2)),
-  )
-}
 
 function supportBoundaries(
   course: CompiledRunnerCourse,
@@ -209,7 +142,7 @@ export function stepContinuousRunnerMovement(
         collided ||= course.obstacles.some(
           (obstacle) =>
             obstacle.kind === 'blocker' &&
-            bodyHitsBlocker(course, obstacle, piece),
+            runnerBodyHitsBlocker(course, obstacle, piece),
         )
         state.feetY +=
           state.verticalVelocityMetersPerSecond * dt - (gravity * dt * dt) / 2

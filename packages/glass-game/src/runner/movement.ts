@@ -2,8 +2,10 @@
 // Song runner movement — fixed-step lanes, jump support, and swept collisions.
 // ============================================================
 
+import { runnerBodyHitsBlocker } from './blocker-collision'
+import { runnerQuadraticRoots } from './continuous-lateral'
 import { stepContinuousRunnerMovement } from './continuous-movement'
-import type { CompiledRunnerBlocker, CompiledRunnerCourse, RunnerInput, RunnerLane, } from './contracts'
+import type { CompiledRunnerCourse, RunnerInput, RunnerLane } from './contracts'
 import type { LaneTransition, RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts'
 import { runnerBeatToDistance, runnerSecondsToBeat } from './tempo'
 import { runnerTrackBounds } from './track-bounds'
@@ -15,11 +17,6 @@ export type {
 
 const EPSILON = 1e-9
 
-interface Interval {
-  start: number
-  end: number
-}
-
 function courseDistanceAt(
   course: CompiledRunnerCourse,
   courseSeconds: number,
@@ -28,61 +25,6 @@ function courseDistanceAt(
     runnerSecondsToBeat(course.tempoSegments, courseSeconds),
     course.metersPerBeat,
   )
-}
-
-function axisIntersection(
-  start: number,
-  end: number,
-  minimum: number,
-  maximum: number,
-): Interval | null {
-  const delta = end - start
-  if (Math.abs(delta) <= EPSILON)
-    return start >= minimum - EPSILON && start <= maximum + EPSILON
-      ? { start: 0, end: 1 }
-      : null
-  const first = (minimum - start) / delta
-  const second = (maximum - start) / delta
-  return {
-    start: Math.max(0, Math.min(first, second)),
-    end: Math.min(1, Math.max(first, second)),
-  }
-}
-
-function sweptBlockerCollision(
-  blocker: CompiledRunnerBlocker,
-  course: CompiledRunnerCourse,
-  startDistance: number,
-  endDistance: number,
-  startX: number,
-  endX: number,
-  startFeetY: number,
-  endFeetY: number,
-): boolean {
-  const intervals = [
-    axisIntersection(
-      startDistance,
-      endDistance,
-      blocker.minCourseDistanceMeters - course.movement.bodyRadius,
-      blocker.maxCourseDistanceMeters + course.movement.bodyRadius,
-    ),
-    axisIntersection(
-      startX,
-      endX,
-      blocker.minLateralX - course.movement.bodyRadius,
-      blocker.maxLateralX + course.movement.bodyRadius,
-    ),
-    axisIntersection(
-      startFeetY,
-      endFeetY,
-      blocker.minY - course.movement.bodyHeight,
-      blocker.maxY,
-    ),
-  ]
-  if (intervals.some((interval) => interval === null)) return false
-  const entry = Math.max(...intervals.map((interval) => interval!.start))
-  const exit = Math.min(...intervals.map((interval) => interval!.end))
-  return entry <= exit + EPSILON
 }
 
 /** A circular foot remains supported while any part still touches solid floor. */
@@ -203,6 +145,7 @@ export function stepRunnerMovement(
     )
   const startX = state.lateralX
   const startFeetY = state.feetY
+  const transition = state.laneTransition
 
   if (state.laneTransition !== null) {
     state.lateralX = lateralXAt(state.laneTransition, endCourseSeconds)
@@ -236,6 +179,10 @@ export function stepRunnerMovement(
     state.coyoteRemainingSeconds = 0
   }
 
+  const motionVelocity = state.verticalVelocityMetersPerSecond
+  const motionGravity = state.grounded
+    ? 0
+    : course.movement.gravityMetersPerSecondSquared
   if (!state.grounded) {
     const velocity = state.verticalVelocityMetersPerSecond
     state.feetY +=
@@ -268,20 +215,57 @@ export function stepRunnerMovement(
     state.jumpBufferRemainingSeconds - deltaSeconds,
   )
 
-  const collided = course.obstacles.some(
-    (obstacle) =>
-      obstacle.kind === 'blocker' &&
-      sweptBlockerCollision(
-        obstacle,
-        course,
-        startDistance,
-        endDistance,
-        startX,
-        state.lateralX,
-        startFeetY,
-        state.feetY,
-      ),
-  )
+  const landing =
+    state.grounded && motionGravity > 0
+      ? runnerQuadraticRoots(
+          -motionGravity / 2,
+          motionVelocity,
+          startFeetY - course.groundFeetY,
+        ).find(
+          (t) =>
+            t > EPSILON &&
+            t <= deltaSeconds + EPSILON &&
+            motionVelocity - motionGravity * t <= 0,
+        )
+      : undefined
+  const boundaries = [0, deltaSeconds]
+  if (landing !== undefined && landing < deltaSeconds) boundaries.push(landing)
+  if (transition !== null) {
+    const end = transition.endCourseSeconds - startCourseSeconds
+    if (end > 0 && end < deltaSeconds) boundaries.push(end)
+  }
+  boundaries.sort((a, b) => a - b)
+  const xAt = (t: number) =>
+    transition === null
+      ? startX
+      : lateralXAt(transition, startCourseSeconds + t)
+  const speed = (endDistance - startDistance) / deltaSeconds
+  let collided = false
+  for (let index = 1; index < boundaries.length; index++) {
+    const start = boundaries[index - 1]!
+    const end = boundaries[index]!
+    const onFloor = landing !== undefined && start >= landing - EPSILON
+    const piece = {
+      duration: end - start,
+      x: xAt(start),
+      vx: (xAt(end) - xAt(start)) / (end - start),
+      ax: 0,
+      z: startDistance + speed * start,
+      vz: speed,
+      y: onFloor
+        ? course.groundFeetY
+        : startFeetY +
+          motionVelocity * start -
+          (motionGravity * start ** 2) / 2,
+      vy: onFloor ? 0 : motionVelocity - motionGravity * start,
+      ay: onFloor ? 0 : -motionGravity,
+    }
+    collided ||= course.obstacles.some(
+      (obstacle) =>
+        obstacle.kind === 'blocker' &&
+        runnerBodyHitsBlocker(course, obstacle, piece),
+    )
+  }
   return {
     collided,
     fell: state.feetY < course.fallBelowFeetY - EPSILON,
