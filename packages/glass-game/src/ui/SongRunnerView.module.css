@@ -235,6 +235,8 @@
 
 .voicePrompt {
   display: flex;
+  /* Keep the complete note while the status badges wrap beside it. */
+  flex-shrink: 0;
   min-width: 0;
   align-items: baseline;
   gap: 7px;
