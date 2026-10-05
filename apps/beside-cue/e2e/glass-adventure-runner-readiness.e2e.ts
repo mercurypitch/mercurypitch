@@ -192,3 +192,129 @@ for (const viewport of [
     await page.evaluate(() => window.runnerVoiceFixture.dispose())
   })
 }
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 844, height: 390 },
+  { width: 844, height: 310 },
+  { width: 1440, height: 900 },
+]) {
+  test(`starting note and actions share the central focus at ${viewport.width} by ${viewport.height} @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await useRunnerControlsRenderer(page)
+    await installRunnerVoice(page, false, { omitRaster: false })
+    await page.goto('/glass-game/?layout=singing-current')
+    await page.getByRole('slider', { name: 'Comfortable note' }).focus()
+    await page.keyboard.press('ArrowRight')
+    await page.evaluate(() => window.runnerVoiceFixture.silent())
+    await page.getByRole('button', { name: 'Start course' }).tap()
+    await expect(page.getByTestId('song-runner')).toHaveAttribute(
+      'data-phase',
+      'readiness',
+    )
+    const notation = page.getByLabel('Current melody')
+    const noteBox = (await notation.boundingBox())!
+    const actionBox = (await page
+      .getByRole('button', { name: 'Change note', exact: true })
+      .boundingBox())!
+    await testInfo.attach('readiness-focus-layout', {
+      body: JSON.stringify({ viewport, noteBox, actionBox }),
+      contentType: 'application/json',
+    })
+    await page.screenshot({ path: testInfo.outputPath('readiness-focus.png') })
+    expect((noteBox.y + noteBox.height / 2) / viewport.height).toBeGreaterThan(
+      0.3,
+    )
+    expect((noteBox.y + noteBox.height / 2) / viewport.height).toBeLessThan(
+      0.65,
+    )
+    expect((actionBox.y + actionBox.height / 2) / viewport.height).toBeLessThan(
+      0.75,
+    )
+    await expect(notation).toContainText('Sing to start')
+    await expect(notation.locator('strong[aria-label]')).toHaveText('A#3')
+    await expect(
+      page.getByRole('progressbar', { name: 'Ready note' }),
+    ).toHaveCount(1)
+    await page.evaluate(() => window.runnerVoiceFixture.dispose())
+  })
+
+  test(`starting hold percentage matches the visible fill at ${viewport.width} by ${viewport.height} @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize(viewport)
+    await useRunnerControlsRenderer(page)
+    await installRunnerVoice(page, false, { omitRaster: false })
+    await page.goto('/glass-game/?layout=singing-current')
+    await page.evaluate(() => window.runnerVoiceFixture.silent())
+    await page.getByRole('button', { name: 'Start course' }).tap()
+    await expect(page.getByTestId('song-runner')).toHaveAttribute(
+      'data-phase',
+      'readiness',
+    )
+    const samples = await page.evaluate(
+      () =>
+        new Promise<{ value: number; displayed: number; visible: number }[]>(
+          (resolve, reject) => {
+            const recorded: {
+              value: number
+              displayed: number
+              visible: number
+            }[] = []
+            const deadline = setTimeout(
+              () => reject(new Error('Starting note did not finish its hold.')),
+              5_000,
+            )
+            const sample = () => {
+              if (
+                document
+                  .querySelector('[data-testid="song-runner"]')!
+                  .getAttribute('data-phase') !== 'readiness'
+              ) {
+                clearTimeout(deadline)
+                resolve(recorded)
+                return
+              }
+              const meter = document.querySelector<HTMLElement>(
+                '[aria-label="Current melody"] [role="progressbar"]',
+              )!
+              const fill = meter.firstElementChild!
+              const value = Number(meter.getAttribute('aria-valuenow'))
+              if (value > 0)
+                recorded.push({
+                  value,
+                  displayed: Number(
+                    meter
+                      .parentElement!.querySelector('strong')!
+                      .textContent!.replace('%', ''),
+                  ),
+                  visible:
+                    (fill.getBoundingClientRect().width /
+                      meter.getBoundingClientRect().width) *
+                    100,
+                })
+              requestAnimationFrame(sample)
+            }
+            requestAnimationFrame(sample)
+            window.runnerVoiceFixture.tone(57)
+          },
+        ),
+    )
+    await testInfo.attach('readiness-meter-samples', {
+      body: JSON.stringify(samples),
+      contentType: 'application/json',
+    })
+    expect(samples.length).toBeGreaterThanOrEqual(8)
+    expect(Math.max(...samples.map((sample) => sample.value))).toBeGreaterThan(
+      90,
+    )
+    for (const sample of samples) {
+      expect(sample.displayed).toBe(sample.value)
+      expect(Math.abs(sample.visible - sample.value)).toBeLessThan(0.51)
+    }
+    await page.evaluate(() => window.runnerVoiceFixture.dispose())
+  })
+}

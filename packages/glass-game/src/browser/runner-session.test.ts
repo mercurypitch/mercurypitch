@@ -27,6 +27,32 @@ const resumePacingVariants: readonly {
 ]
 
 describe('runner session readiness and clock', () => {
+  it('requires 700 ms of consecutive accepted capture before the start count-in', async () => {
+    const h = runnerSessionHarness()
+    h.session.setPresentationReady(true)
+    await h.session.start()
+    const firstCapture = h.clock() + 0.01
+    for (let i = 0; i <= 7; i++) h.emit(firstCapture + i * 0.05)
+
+    expect(h.session.state().phase).toBe('readiness')
+    expect(h.session.state().readiness?.fillProgress).toBeCloseTo(0.5, 10)
+    expect(h.audio[0]!.schedule).not.toHaveBeenCalled()
+
+    for (let i = 8; i <= 13; i++) h.emit(firstCapture + i * 0.05)
+    h.emit(firstCapture + 0.699)
+    expect(h.session.state().phase).toBe('readiness')
+    expect(h.session.state().readiness?.fillProgress).toBeCloseTo(
+      0.699 / 0.7,
+      10,
+    )
+    expect(h.audio[0]!.schedule).not.toHaveBeenCalled()
+
+    h.emit(firstCapture + 0.701)
+    expect(h.session.state().phase).toBe('count-in')
+    expect(h.audio[0]!.schedule).toHaveBeenCalledOnce()
+    h.session.dispose()
+  })
+
   it('keeps delayed continuous capture alive across faster presentation frames', async () => {
     const h = runnerSessionHarness(SINGING_CURRENT)
     h.session.setPresentationReady(true)

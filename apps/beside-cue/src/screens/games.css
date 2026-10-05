@@ -284,6 +284,23 @@
   inset: 0;
 }
 
+/* Creator pages share one viewport-sized scroll owner in the native host.
+   Their standalone roots can otherwise grow outside this fixed stage, or
+   create a second fixed scroller that competes with it on touch devices. */
+.games-stage--preview {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+
+.games-stage--preview > main {
+  position: relative;
+  inset: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
 .games-leave {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));

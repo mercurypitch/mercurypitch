@@ -77,6 +77,8 @@ export function createAdventureNarration(
       )
     },
     breakCompleted(outcome) {
+      // A result supersedes an introduction that automatic capture interrupted.
+      invalidateWelcomeAttempt()
       const line =
         outcome === 'celebration' ? reactions.next() : MERC_PATH_OPEN_LINE
       play(line.cue)
@@ -84,7 +86,9 @@ export function createAdventureNarration(
     },
     silenceForVoice() {
       if (disposed) return Promise.resolve()
-      invalidateWelcomeAttempt()
+      // Capture can begin before the greeting finishes loading. Retry only on a
+      // later gesture after cancellation; never queue speech behind the mic.
+      invalidateWelcomeAttempt(welcomeConsumed)
       voiceHeld = true
       return audio?.silenceForVoice() ?? Promise.resolve()
     },

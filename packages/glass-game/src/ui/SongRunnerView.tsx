@@ -39,7 +39,7 @@ interface SongRunnerViewProps {
 function phaseAnnouncement(phase: RunnerSessionPhase): string | null {
   switch (phase) {
     case 'readiness':
-      return 'Hold the note shown to begin.'
+      return 'Sing the note shown and hold it until the bar fills.'
     case 'count-in':
       return 'Get ready. Count-in started.'
     case 'running':
@@ -173,13 +173,13 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         recentResult() === null),
   )
   const notationPhaseLabel = createMemo(() => {
-    if (state().phase === 'readiness') return 'Match to start'
+    if (state().phase === 'readiness') return 'Sing to start'
     if (state().phase === 'count-in') return 'Get ready'
     return voiceCue()?.label ?? 'Your note'
   })
   const notationInstruction = createMemo(() => {
     if (state().phase === 'readiness')
-      return `Hold ${runnerMidiName(state().readiness?.targetMidi ?? props.comfortableMidi).text}`
+      return `Sing ${runnerMidiName(state().readiness?.targetMidi ?? props.comfortableMidi).text} to start`
     if (state().phase === 'count-in')
       return runnerMidiName(props.comfortableMidi).text
     return voiceCue()?.instruction ?? 'Your note'
@@ -460,19 +460,59 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       </header>
 
       <Show when={showNotation()}>
-        <RunnerNotation
-          notes={notationNotes()}
-          activeNoteIndex={activeTarget()?.noteIndex ?? 0}
-          phaseLabel={notationPhaseLabel()}
-          displayLabel={notationDisplayLabel()}
-          instruction={notationInstruction()}
-          target={pitchTarget()}
-          showPitchReadout={showPitchReadout()}
-          microphoneStatus={runnerMicrophoneStatus(state().microphone)}
-          scoreStatus={notationScoreStatus()}
-          compact={compactNotation()}
-          shortHold={compiledTarget()?.completionPolicy === 'charge'}
-        />
+        <div
+          classList={{ [styles.readinessPanel]: phase() === 'readiness' }}
+          role={phase() === 'readiness' ? 'region' : undefined}
+          aria-label={phase() === 'readiness' ? 'Start note' : undefined}
+        >
+          <RunnerNotation
+            notes={notationNotes()}
+            activeNoteIndex={activeTarget()?.noteIndex ?? 0}
+            phaseLabel={notationPhaseLabel()}
+            displayLabel={notationDisplayLabel()}
+            instruction={notationInstruction()}
+            target={pitchTarget()}
+            showPitchReadout={showPitchReadout()}
+            microphoneStatus={runnerMicrophoneStatus(state().microphone)}
+            scoreStatus={notationScoreStatus()}
+            compact={compactNotation()}
+            shortHold={compiledTarget()?.completionPolicy === 'charge'}
+            meterLabel={phase() === 'readiness' ? 'Hold' : undefined}
+            meterName={phase() === 'readiness' ? 'Ready note' : undefined}
+          />
+          <Show when={phase() === 'readiness'}>
+            <p>Hold this note until the bar fills.</p>
+            <p
+              class={styles.readinessInput}
+              data-testid="runner-readiness-input"
+              data-receiving={String(
+                state().readiness?.receivingInput ?? false,
+              )}
+            >
+              {state().readiness?.receivingInput === true
+                ? 'Microphone responding'
+                : 'Waiting for microphone input'}
+            </p>
+            <div class={styles.inlineActions}>
+              <button
+                type="button"
+                class={styles.secondaryButton}
+                onClick={pauseForSetup}
+              >
+                Change note
+              </button>
+              <Show when={props.microphoneInput !== undefined}>
+                <button
+                  type="button"
+                  class={styles.secondaryButton}
+                  onClick={pauseForSetup}
+                >
+                  Change microphone
+                </button>
+              </Show>
+            </div>
+          </Show>
+        </div>
       </Show>
 
       <Show when={movementHint()}>
@@ -532,53 +572,6 @@ export function SongRunnerView(props: SongRunnerViewProps) {
               ? 'The course starts after your note is ready.'
               : 'Match this note when you start.'}
           </p>
-        </section>
-      </Show>
-
-      <Show when={state().phase === 'readiness'}>
-        <section class={styles.readinessPanel}>
-          <p>Match the target to start.</p>
-          <p
-            class={styles.readinessInput}
-            data-testid="runner-readiness-input"
-            data-receiving={String(state().readiness?.receivingInput ?? false)}
-          >
-            {state().readiness?.receivingInput === true
-              ? 'Microphone responding'
-              : 'Waiting for microphone input'}
-          </p>
-          <div
-            class={styles.readinessTrack}
-            role="progressbar"
-            aria-label="Ready note"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow={clampedPercent(state().readiness?.fillProgress ?? 0)}
-          >
-            <span
-              style={{
-                width: `${clampedPercent(state().readiness?.fillProgress ?? 0)}%`,
-              }}
-            />
-          </div>
-          <div class={styles.inlineActions}>
-            <button
-              type="button"
-              class={styles.secondaryButton}
-              onClick={pauseForSetup}
-            >
-              Change note
-            </button>
-            <Show when={props.microphoneInput !== undefined}>
-              <button
-                type="button"
-                class={styles.secondaryButton}
-                onClick={pauseForSetup}
-              >
-                Change microphone
-              </button>
-            </Show>
-          </div>
         </section>
       </Show>
 

@@ -24,6 +24,8 @@ interface RunnerNotationProps {
   scoreStatus: string
   compact: boolean
   shortHold: boolean
+  meterLabel?: string
+  meterName?: string
 }
 
 export function RunnerNotation(props: RunnerNotationProps) {
@@ -240,11 +242,11 @@ export function RunnerNotation(props: RunnerNotationProps) {
       </svg>
       <Show when={props.compact}>
         <div class={styles.chargeMeter}>
-          <span>Charge</span>
+          <span>{props.meterLabel ?? 'Charge'}</span>
           <div
             class={styles.chargeTrack}
             role="progressbar"
-            aria-label="Note charge"
+            aria-label={props.meterName ?? 'Note charge'}
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow={chargePercent()}

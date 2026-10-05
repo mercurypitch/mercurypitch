@@ -192,9 +192,20 @@ export function GamesScreen(props: GamesScreenProps) {
     <Show
       when={playing() === null}
       fallback={
-        <div class="games-stage">
+        <div
+          class="games-stage"
+          classList={{
+            'games-stage--preview':
+              playing() === 'creator-gallery' ||
+              playing() === 'echo-curator' ||
+              playing() === 'songbook',
+          }}
+        >
           <Show when={playing() === 'adventure'}>
             <AdventureScreen campaign onExit={() => setPlaying(null)} />
+          </Show>
+          <Show when={playing() === 'singing-current'}>
+            <AdventureScreen runner onExit={() => setPlaying(null)} />
           </Show>
           <Show when={playing() === 'promenade'}>
             <AdventureScreen
@@ -257,6 +268,7 @@ export function GamesScreen(props: GamesScreenProps) {
             when={
               playing() !== 'cabinet3d' &&
               playing() !== 'adventure' &&
+              playing() !== 'singing-current' &&
               playing() !== 'promenade' &&
               playing() !== 'thawing-song' &&
               playing() !== 'echo-curator' &&
@@ -327,7 +339,12 @@ export function GamesScreen(props: GamesScreenProps) {
           </svg>
         </button>
 
-        <Show when={hasDevelopmentGalleryAccess(BUILD.channel)}>
+        <Show
+          when={hasDevelopmentGalleryAccess(
+            BUILD.channel,
+            window.location.search,
+          )}
+        >
           <button
             class="game-card"
             type="button"

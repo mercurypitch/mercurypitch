@@ -108,6 +108,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   resetSharedAudioContext()
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
   vi.useRealTimers()
 })
@@ -407,11 +408,79 @@ describe('Merc narration', () => {
     narration.dispose()
   })
 
+  it('reports a bounded decode deadline without playing late bytes', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    const late = deferred<AudioBuffer>()
+    context.decodeAudioData.mockReturnValueOnce(late.promise)
+    const narration = createBrowserMercNarration(options)
+    const starting = narration.play('tutorial-note')
+    await flush()
+
+    await vi.advanceTimersByTimeAsync(1800)
+    await expect(starting).resolves.toBe(false)
+    expect(warning).toHaveBeenCalledExactlyOnceWith('[Glassworks audio]', {
+      channel: 'merc-narration',
+      errorName: 'Error',
+      errorMessage: 'Merc cue tutorial-note: decode timed out.',
+    })
+    late.resolve(buffer())
+    await flush()
+    expect(context.sources).toHaveLength(0)
+    narration.dispose()
+    warning.mockRestore()
+  })
+
+  it('reports repeated transport failures once without exposing their URLs', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    fetcher.mockRejectedValue(
+      new Error('Cannot fetch https://private.invalid/take?token=secret'),
+    )
+    const narration = createBrowserMercNarration(options)
+
+    await expect(narration.play('required-break')).resolves.toBe(false)
+    await expect(narration.play('required-break')).resolves.toBe(false)
+    expect(warning).toHaveBeenCalledExactlyOnceWith('[Glassworks audio]', {
+      channel: 'merc-narration',
+      errorName: 'Error',
+      errorMessage: 'Merc cue required-break: loading failed.',
+    })
+    expect(context.sources).toHaveLength(0)
+    expect(sharedAudioContextOwners()).toHaveLength(0)
+    narration.dispose()
+    warning.mockRestore()
+  })
+
+  it('keeps capture cancellation quiet even while decoding', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
+    const late = deferred<AudioBuffer>()
+    context.decodeAudioData.mockReturnValueOnce(late.promise)
+    const narration = createBrowserMercNarration(options)
+    const starting = narration.play('tutorial-note')
+    await flush()
+    await narration.silenceForVoice()
+    await expect(starting).resolves.toBe(false)
+    await vi.advanceTimersByTimeAsync(1800)
+    late.resolve(buffer())
+    await flush()
+    expect(warning).not.toHaveBeenCalled()
+    expect(context.sources).toHaveLength(0)
+    narration.dispose()
+    warning.mockRestore()
+  })
+
   it('turns transport and decode failures into a false result', async () => {
     const warning = vi
       .spyOn(console, 'warn')
       .mockImplementation(() => undefined)
-    context.decodeAudioData.mockRejectedValue(new Error('bad audio'))
+    context.decodeAudioData.mockRejectedValue(
+      new Error('bad audio at https://private.invalid/take'),
+    )
     const narration = createBrowserMercNarration(options)
 
     await expect(narration.play('required-break')).resolves.toBe(false)
@@ -419,7 +488,7 @@ describe('Merc narration', () => {
     expect(warning).toHaveBeenCalledWith('[Glassworks audio]', {
       channel: 'merc-narration',
       errorName: 'Error',
-      errorMessage: 'bad audio',
+      errorMessage: 'Merc cue required-break: decode failed.',
     })
     expect(context.sources).toHaveLength(0)
     expect(sharedAudioContextOwners()).toHaveLength(0)
@@ -428,6 +497,9 @@ describe('Merc narration', () => {
   })
 
   it('turns synchronous audio setup failure into a false result', async () => {
+    const warning = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => undefined)
     context.createGain = () => {
       throw new Error('audio graph unavailable')
     }
@@ -437,6 +509,12 @@ describe('Merc narration', () => {
 
     expect(fetcher).not.toHaveBeenCalled()
     expect(sharedAudioContextOwners()).toHaveLength(0)
+    expect(warning).toHaveBeenCalledExactlyOnceWith('[Glassworks audio]', {
+      channel: 'merc-narration',
+      errorName: 'Error',
+      errorMessage: 'Merc cue required-break: audio-output failed.',
+    })
     narration.dispose()
+    warning.mockRestore()
   })
 })

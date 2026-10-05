@@ -16,6 +16,13 @@ const PREFERENCE_KEY = 'merc-narration:v1'
 const FLOOR = 0.0001
 const RELEASE_MS = 120
 const START_TIMEOUT_MS = 1800
+type NarrationStartStage =
+  | 'asset-url'
+  | 'audio-output'
+  | 'loading'
+  | 'decode'
+  | 'release'
+  | 'playback'
 const ASSETS: Record<MercNarrationCue, string> = {
   'tutorial-note': 'merc-voice-welcome',
   'required-break': 'merc-voice-path-open',
@@ -185,6 +192,7 @@ export function createBrowserMercNarration(
   let preferences = readPreferences(options)
   let disposed = false
   let generation = 0
+  const reportedFailures = new Set<string>()
   const attempts = new Set<{
     token: number
     abort: AbortController
@@ -197,6 +205,21 @@ export function createBrowserMercNarration(
         output: ReturnType<typeof createNarrationOutput>
       }
     | undefined
+
+  function reportStartFailure(
+    cue: MercNarrationCue,
+    stage: NarrationStartStage,
+    reason: 'failed' | 'timed out' | 'unavailable',
+  ): void {
+    const key = `${cue}:${stage}:${reason}`
+    if (reportedFailures.has(key)) return
+    reportedFailures.add(key)
+    // Fixed cue/stage/reason only: platform errors can contain private URLs.
+    reportAudioAssetFailure(
+      'merc-narration',
+      new Error(`Merc cue ${cue}: ${stage} ${reason}.`),
+    )
+  }
 
   function retireAll(): Promise<void> {
     generation++
@@ -215,6 +238,7 @@ export function createBrowserMercNarration(
     try {
       url = options.assetUrl(ASSETS[cue])
     } catch {
+      reportStartFailure(cue, 'asset-url', 'failed')
       return Promise.resolve(false)
     }
 
@@ -226,6 +250,7 @@ export function createBrowserMercNarration(
       output = createNarrationOutput(() => abort.abort())
     } catch {
       abort.abort()
+      reportStartFailure(cue, 'audio-output', 'failed')
       return Promise.resolve(false)
     }
     const attempt = { token, abort, output }
@@ -236,8 +261,13 @@ export function createBrowserMercNarration(
       if (current === attempt) current = undefined
     })
     // Start transport during the same gesture as the context unlock.
+    let stage: NarrationStartStage = 'loading'
     const asset = fetchAssetBytes(url, { signal: abort.signal })
-    const timeout = setTimeout(() => abort.abort(), START_TIMEOUT_MS)
+    const timeout = setTimeout(() => {
+      if (abort.signal.aborted || token !== generation || disposed) return
+      reportStartFailure(cue, stage, 'timed out')
+      abort.abort()
+    }, START_TIMEOUT_MS)
     const cancelled = new Promise<false>((resolve) => {
       abort.signal.addEventListener('abort', () => resolve(false), {
         once: true,
@@ -246,18 +276,26 @@ export function createBrowserMercNarration(
     const work = async (): Promise<boolean> => {
       try {
         const [available, bytes] = await Promise.all([output.unlocked, asset])
-        if (!available || abort.signal.aborted) return false
         if (abort.signal.aborted || token !== generation || disposed)
           return false
+        if (!available) {
+          reportStartFailure(cue, 'audio-output', 'unavailable')
+          return false
+        }
+        stage = 'decode'
         const decoded = await output.context?.decodeAudioData(bytes)
         if (
-          !decoded ||
           abort.signal.aborted ||
           token !== generation ||
           disposed ||
           !preferences.enabled
         )
           return false
+        if (!decoded) {
+          reportStartFailure(cue, stage, 'unavailable')
+          return false
+        }
+        stage = 'release'
         await previous
         if (
           abort.signal.aborted ||
@@ -266,10 +304,13 @@ export function createBrowserMercNarration(
           !preferences.enabled
         )
           return false
-        return output.play(decoded)
-      } catch (error) {
+        stage = 'playback'
+        const playing = output.play(decoded)
+        if (!playing) reportStartFailure(cue, stage, 'unavailable')
+        return playing
+      } catch {
         if (!abort.signal.aborted && !disposed)
-          reportAudioAssetFailure('merc-narration', error)
+          reportStartFailure(cue, stage, 'failed')
         return false
       }
     }
@@ -285,6 +326,8 @@ export function createBrowserMercNarration(
       },
       () => {
         clearTimeout(timeout)
+        if (!abort.signal.aborted && !disposed)
+          reportStartFailure(cue, stage, 'failed')
         abort.abort()
         void output.release()
         if (current === attempt) current = undefined

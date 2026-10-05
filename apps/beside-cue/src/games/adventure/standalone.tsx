@@ -7,6 +7,11 @@ import { BUILD } from '@/build-info'
 import { AdventureScreen } from './AdventureScreen'
 import { hasDevelopmentGalleryAccess } from './development-access'
 
+if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
+  const { setupGameDiagnostics } = await import('../../dev/game-diagnostics')
+  setupGameDiagnostics()
+}
+
 const root = document.getElementById('root')
 if (!root) throw new Error('The museum mount is missing.')
 const mountElement = root

@@ -8,6 +8,8 @@ import { createSongRunnerGame } from '../runner/game'
 
 const state = vi.hoisted(() => ({
   render: vi.fn(),
+  pixelRatio: 1,
+  setPixelRatio: vi.fn(),
   dispose: vi.fn(),
   loseContext: vi.fn(),
   canvasRemove: vi.fn(),
@@ -59,8 +61,11 @@ vi.mock('three', async (original) => ({
       needsUpdate: false,
     }
     info = { render: { calls: 1, triangles: 2 } }
-    setPixelRatio = vi.fn()
-    getPixelRatio = () => 1
+    setPixelRatio = (value: number) => {
+      state.pixelRatio = value
+      state.setPixelRatio(value)
+    }
+    getPixelRatio = () => state.pixelRatio
     setSize = vi.fn()
     getContext = () => ({})
     render = state.render
@@ -181,6 +186,7 @@ function fixture(dressedOpening = false) {
 }
 beforeEach(() => {
   vi.clearAllMocks()
+  state.pixelRatio = 1
   state.listeners.clear()
   state.decoded = undefined
   vi.stubGlobal('window', {
@@ -480,5 +486,58 @@ describe('runner renderer ownership', () => {
     expect(museum.geometryDispose).toHaveBeenCalledOnce()
     expect(museum.materialDispose).toHaveBeenCalledOnce()
     expect(state.dispose).toHaveBeenCalledOnce()
+  })
+})
+
+describe('runner mobile frame-pressure relief', () => {
+  it('reduces pixels and shadow cadence after sustained running pressure only', async () => {
+    vi.stubGlobal('window', {
+      devicePixelRatio: 3,
+      matchMedia: () => ({ matches: true }),
+    })
+    const { renderer, snapshot } = fixture()
+    await renderer.ready
+    const running = { ...snapshot, status: 'running' as const }
+    for (let i = 0; i < 30; i++) renderer.render(snapshot, 0.05)
+    expect(state.pixelRatio).toBe(1.25)
+    for (let i = 0; i < 23; i++) renderer.render(running, 0.05)
+    expect(state.pixelRatio).toBe(1.25)
+    renderer.render(running, 0.05)
+    expect(state.pixelRatio).toBe(1)
+    expect(renderer.metrics()).toMatchObject({
+      adaptiveQualityActive: true,
+      actualPixelRatio: 1,
+      actualShadowFrameInterval: 4,
+    })
+    const writes = state.setPixelRatio.mock.calls.length
+    for (let i = 0; i < 30; i++) renderer.render(running, 1 / 60)
+    expect(state.setPixelRatio.mock.calls).toHaveLength(writes)
+    renderer.dispose()
+  })
+  it('does not lower desktop quality or respond to an isolated mobile hitch', async () => {
+    const desktop = fixture()
+    await desktop.renderer.ready
+    for (let i = 0; i < 30; i++)
+      desktop.renderer.render({ ...desktop.snapshot, status: 'running' }, 0.05)
+    expect(desktop.renderer.metrics()).toMatchObject({
+      adaptiveQualityActive: false,
+      actualShadowFrameInterval: 1,
+    })
+    desktop.renderer.dispose()
+    vi.stubGlobal('window', {
+      devicePixelRatio: 3,
+      matchMedia: () => ({ matches: true }),
+    })
+    const mobile = fixture()
+    await mobile.renderer.ready
+    mobile.renderer.render({ ...mobile.snapshot, status: 'running' }, 0.2)
+    for (let i = 0; i < 30; i++)
+      mobile.renderer.render({ ...mobile.snapshot, status: 'running' }, 1 / 60)
+    expect(state.pixelRatio).toBe(1.25)
+    expect(mobile.renderer.metrics()).toMatchObject({
+      adaptiveQualityActive: false,
+      actualShadowFrameInterval: 2,
+    })
+    mobile.renderer.dispose()
   })
 })

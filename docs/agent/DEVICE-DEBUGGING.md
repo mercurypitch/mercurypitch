@@ -204,3 +204,25 @@ To try a release build on a phone, install it from Play's internal testing
 track. Sideloading the release APK means uninstalling the debug build first
 (they are signed with different keys), and that deletes what the app keeps on
 the phone.
+
+## Beside Cue game test builds
+
+Beside Cue now reuses `src/components/PortableConsole.tsx` and its capture library.
+The native games profile enables it for iOS/Android testing; release tags force it
+out, and the Vite build checks the emitted bundle with
+`assert-no-portable-console.mjs --store-binary` whenever capture is disabled.
+The stable `glass-playtest.ts` LAN server enables it too. Its literal import gates
+in the app and standalone museum entry preserve dead-code elimination.
+
+The small bottom-corner handle opens the same filter, Copy, Clear, Move and
+Minimise controls. Native test captures retain the bounded log on this device
+across WebView restarts; browser previews keep each tab's session log. Clear
+removes the retained capture. No report is uploaded automatically. Reports include
+Beside Cue's baked build stamp and graphics context events. Renderer failures
+report bounded scene/stage information, and narration failures report a fixed
+cue/stage/reason without recording microphone input.
+
+A terminated iOS process cannot execute a final JavaScript callback. Reopen the
+app and copy the retained log; the last recorded error can help diagnosis, but
+absence of an error does not rule out an OS memory termination. App Store crash
+and device memory logs remain separate evidence.

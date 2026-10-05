@@ -6,6 +6,8 @@ import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/mu
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
 import { verifyFirstFrame } from '../render/first-frame'
+import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from '../render/render-performance-governor'
+import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from '../render/render-quality'
 import { canRenderViewport } from '../render/viewport'
 import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, journeyCameraView, projectJourneyStage, } from './camera'
 import { createJourneyPointerTracker, journeyWheelZoomDelta, } from './interaction'
@@ -25,6 +27,9 @@ export interface MuseumJourneySceneMetrics {
   waterTriangles: number
   waterDrawCalls: number
   secondaryRenderPasses: number
+  adaptiveQualityActive: boolean
+  actualPixelRatio: number
+  actualShadowFrameInterval: number
 }
 
 export interface MuseumJourneyScene {
@@ -177,10 +182,22 @@ function buildMuseumJourneyScene(
   renderer.transmissionResolutionScale = 0.5
   renderer.info.autoReset = false
   renderer.shadowMap.enabled = true
-  const pixelRatio = Math.min(
-    window.devicePixelRatio || 1,
-    window.matchMedia('(pointer: coarse)').matches ? 1.5 : 1.8,
+  const quality = resolveGlassRenderQuality('auto', {
+    cssWidth: container.clientWidth,
+    cssHeight: container.clientHeight,
+    coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+    mobileHint: /Android|iPhone|iPad|iPod/u.test(
+      globalThis.navigator?.userAgent ?? '',
+    ),
+  })
+  const pixelRatio = effectiveGlassPixelRatio(window.devicePixelRatio, quality)
+  const shadowCadence = createShadowUpdateCadence(quality.shadowFrameInterval)
+  const performanceGovernor = createRenderPerformanceGovernor(
+    'auto',
+    quality.profile,
   )
+  onConstructionFailure(() => performanceGovernor.dispose())
+  renderer.shadowMap.autoUpdate = false
   renderer.setPixelRatio(pixelRatio)
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none;'
@@ -285,6 +302,7 @@ function buildMuseumJourneyScene(
   water.setReducedMotion(reducedMotion)
   scene.add(water.root)
   let publishedMetrics = false
+  let shadowUpdated = false
 
   function publishCameraState(): void {
     renderer.domElement.dataset.journeyCameraZoom = inspectionZoom.toFixed(3)
@@ -308,7 +326,13 @@ function buildMuseumJourneyScene(
       waterTriangles: waterMetrics.triangles,
       waterDrawCalls: waterMetrics.drawCalls,
       // renderer.info totals this shadow pass with the visible-scene draws.
-      secondaryRenderPasses: 1 + waterMetrics.secondaryRenderPasses,
+      secondaryRenderPasses:
+        (shadowUpdated ? 1 : 0) + waterMetrics.secondaryRenderPasses,
+      adaptiveQualityActive: performanceGovernor.metrics().adapted,
+      actualPixelRatio: renderer.getPixelRatio(),
+      actualShadowFrameInterval: performanceGovernor.metrics().adapted
+        ? ADAPTIVE_SHADOW_FRAME_INTERVAL
+        : quality.shadowFrameInterval,
     }
   }
 
@@ -341,7 +365,7 @@ function buildMuseumJourneyScene(
     if (disposed) return
     const width = container.clientWidth
     const height = container.clientHeight
-    drawable = canRenderViewport(width, height, pixelRatio)
+    drawable = canRenderViewport(width, height, renderer.getPixelRatio())
     if (!drawable) return
     renderer.setSize(width, height, false)
     sky.resize(width, height)
@@ -356,6 +380,13 @@ function buildMuseumJourneyScene(
 
   function renderFrame(visibleSeconds: number, dt: number): void {
     if (disposed || contextLost || !drawable) return
+    if (performanceGovernor.observe(dt, foreground)) {
+      renderer.setPixelRatio(
+        Math.min(renderer.getPixelRatio(), ADAPTIVE_PIXEL_RATIO),
+      )
+      shadowCadence.setInterval(ADAPTIVE_SHADOW_FRAME_INTERVAL)
+      publishedMetrics = false
+    }
     if (reducedMotion) {
       target.copy(desiredTarget)
       cameraDistance = desiredDistance
@@ -379,6 +410,8 @@ function buildMuseumJourneyScene(
     // With auto-reset disabled this single reset includes Three's shadow pass
     // in the same totals as the visible scene draw.
     renderer.info.reset()
+    shadowUpdated = shadowCadence.next()
+    renderer.shadowMap.needsUpdate = shadowUpdated
     try {
       renderer.render(scene, camera)
       if (models !== undefined && !firstFrameVerified) {
@@ -620,6 +653,7 @@ function buildMuseumJourneyScene(
   ]).then(() => {
     if (contextLost)
       throw new Error('The floating museum lost its graphics context.')
+    if (!disposed) performanceGovernor.activate()
   })
 
   return {
@@ -674,6 +708,7 @@ function buildMuseumJourneyScene(
       options.onProjectStageLabels?.([])
       abort.abort()
       loop.dispose()
+      performanceGovernor.dispose()
       observer.disconnect()
       gestures.reset()
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)

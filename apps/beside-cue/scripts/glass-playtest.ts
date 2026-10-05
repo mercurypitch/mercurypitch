@@ -14,6 +14,7 @@ const port = Number(values.port)
 if (!Number.isInteger(port) || port < 1024 || port > 65535)
   throw new Error('Choose a port between 1024 and 65535.')
 process.env.VITE_BESIDE_CUE_GAMES = '1'
+process.env.VITE_PORTABLE_CONSOLE ??= 'true'
 const server = await createServer({
   root: fileURLToPath(new URL('..', import.meta.url)),
   // A no-HMR playtest must not share optimized dependencies with Playwright or

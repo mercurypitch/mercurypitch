@@ -185,6 +185,7 @@ These are the rules that break things when ignored.
 | [lyricsfile.ts](../../src/lib/lyricsfile.ts) | 450 | lyricsfile 1.0 — serialising a mapping to the interchange format Enhanced LRC is what the app has always exported, and it is lossy in way... |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
+| [portable-console.ts](../../src/lib/portable-console.ts) | 450 | Portable console — the browser console, on the device that has the bug Reaching Safari's inspector means a cable, a Mac, and a page that... |
 | [transcription-alignment-utils.ts](../../src/lib/transcription-alignment-utils.ts) | 450 | Shared transcription + alignment utilities. |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |

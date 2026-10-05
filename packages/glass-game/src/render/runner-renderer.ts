@@ -14,6 +14,7 @@ import { verifyFirstFrame } from './first-frame'
 import { createMaterialFinishBank } from './material-finishes'
 import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
+import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from './render-performance-governor'
 import type { GlassAssetQualityProfile } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
@@ -46,6 +47,9 @@ export interface SongRunnerRenderer {
     sceneryChunks: number
     sceneryBatches: number
     sceneryTriangles: number
+    adaptiveQualityActive: boolean
+    actualPixelRatio: number
+    actualShadowFrameInterval: number
   }
   dispose(): void
 }
@@ -89,6 +93,10 @@ export function createSongRunnerRenderer(
   renderer.shadowMap.type = PCFShadowMap
   renderer.shadowMap.autoUpdate = false
   const shadowCadence = createShadowUpdateCadence(quality.shadowFrameInterval)
+  const performanceGovernor = createRenderPerformanceGovernor(
+    'auto',
+    quality.profile,
+  )
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none'
   renderer.domElement.setAttribute(
@@ -216,6 +224,7 @@ export function createSongRunnerRenderer(
   function dispose() {
     if (disposed) return
     disposed = true
+    performanceGovernor.dispose()
     abort.abort()
     observer.disconnect()
     renderer.domElement.removeEventListener('webglcontextlost', lost)
@@ -388,6 +397,7 @@ export function createSongRunnerRenderer(
       loaded = true
       if (!render(options.initialSnapshot, 0))
         throw new Error('Runner initial frame could not be rendered.')
+      performanceGovernor.activate()
     } catch (error) {
       if (disposed) return
       dispose()
@@ -408,6 +418,19 @@ export function createSongRunnerRenderer(
       )
     )
       return false
+    if (
+      performanceGovernor.observe(
+        dt,
+        snapshot.status === 'running' &&
+          (typeof document === 'undefined' ||
+            document.visibilityState === 'visible'),
+      )
+    ) {
+      renderer.setPixelRatio(
+        Math.min(renderer.getPixelRatio(), ADAPTIVE_PIXEL_RATIO),
+      )
+      shadowCadence.setInterval(ADAPTIVE_SHADOW_FRAME_INTERVAL)
+    }
     world!.update(snapshot, dt)
     targets!.update(snapshot, dt)
     scenery!.update(snapshot, dt)
@@ -467,6 +490,11 @@ export function createSongRunnerRenderer(
     render,
     resize,
     metrics: () => ({
+      adaptiveQualityActive: performanceGovernor.metrics().adapted,
+      actualPixelRatio: renderer.getPixelRatio(),
+      actualShadowFrameInterval: performanceGovernor.metrics().adapted
+        ? ADAPTIVE_SHADOW_FRAME_INTERVAL
+        : quality.shadowFrameInterval,
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
       residentChunks: world?.metrics().residentChunks ?? 0,

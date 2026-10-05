@@ -291,3 +291,59 @@ describe('handing it over', () => {
     expect(line).toContain('boom')
   })
 })
+
+describe('native test build capture', () => {
+  it('restores a previous WebView log and labels the copied report for its host', () => {
+    localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify([
+        { at: 12, level: 'error', text: 'graphics context lost' },
+      ]),
+    )
+    localStorage.setItem(PERSIST_ORIGIN_KEY, String(Date.now() - 1000))
+    installPortableConsole({ appName: 'Beside Cue', persistence: 'device' })
+    expect(portableConsoleEntries()[0].text).toBe('graphics context lost')
+    console.error('framebuffer failed')
+    expect(localStorage.getItem(PERSIST_KEY)).toContain('framebuffer failed')
+    console.log('new WebView')
+    window.dispatchEvent(new Event('pagehide'))
+    expect(localStorage.getItem(PERSIST_KEY)).toContain('new WebView')
+    expect(sessionStorage.getItem(PERSIST_KEY)).toBeNull()
+    expect(formatPortableConsole()).toContain('Beside Cue portable console')
+    clearPortableConsole()
+    expect(localStorage.getItem(PERSIST_KEY)).toBeNull()
+  })
+  it('does not import device logs into an ordinary web session', () => {
+    localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify([{ at: 0, level: 'error', text: 'native only' }]),
+    )
+    installPortableConsole()
+    expect(portableConsoleEntries()).toHaveLength(0)
+  })
+  it('bounds and validates restored logs too', () => {
+    localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify([
+        { text: 'invalid' },
+        ...Array.from({ length: 1005 }, (_, at) => ({
+          at,
+          level: 'log',
+          text: 'x'.repeat(3000),
+        })),
+      ]),
+    )
+    installPortableConsole({ persistence: 'device' })
+    expect(portableConsoleEntries()).toHaveLength(1000)
+    expect(portableConsoleEntries()[0].at).toBe(5)
+    expect(portableConsoleEntries()[0].text).toHaveLength(2000)
+  })
+  it('starts compact unless an explicit visibility choice was supplied', () => {
+    initPortableConsoleVisibility('', true)
+    expect(portableConsoleVisible()).toBe(false)
+    initPortableConsoleVisibility('?console=1', true)
+    expect(portableConsoleVisible()).toBe(true)
+    initPortableConsoleVisibility('?console=0', true)
+    expect(portableConsoleVisible()).toBe(false)
+  })
+})

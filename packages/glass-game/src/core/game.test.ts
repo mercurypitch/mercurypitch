@@ -647,3 +647,64 @@ describe('Glassworks simulation', () => {
     expect(game.snapshot().complete).toBe(true)
   })
 })
+
+describe('movement under uneven rendered frame cadence', () => {
+  const level: LevelDefinition = {
+    ...AIRBORNE_EXIT_LEVEL,
+    id: 'frame-cadence-floor',
+    platforms: [
+      {
+        ...AIRBORNE_EXIT_LEVEL.platforms[0],
+        minX: -20,
+        maxX: 20,
+        minZ: -20,
+        maxZ: 20,
+      },
+    ],
+    exit: {
+      ...AIRBORNE_EXIT_LEVEL.exit,
+      minX: 18,
+      maxX: 19,
+      minZ: 18,
+      maxZ: 19,
+    },
+  }
+  const walk = { ...idle, moveX: 1 }
+
+  function simulate(framePattern: readonly number[], totalSeconds = 2) {
+    const game = createGlassGame(level)
+    let elapsed = 0
+    let frame = 0
+    while (elapsed < totalSeconds - 1e-9) {
+      const dt = Math.min(
+        framePattern[frame++ % framePattern.length],
+        totalSeconds - elapsed,
+      )
+      game.step(walk, dt)
+      elapsed += dt
+    }
+    return game.snapshot()
+  }
+  it.each([
+    ['30 fps', [1 / 30]],
+    ['20 fps', [1 / 20]],
+    ['alternating 60 and 20 fps', [1 / 60, 1 / 20]],
+    ['100 ms ordinary hitch', [1 / 60, 1 / 60, 0.1]],
+  ])('keeps travelled distance and velocity consistent at %s', (_, cadence) => {
+    const reference = simulate([1 / 120])
+    const actual = simulate(cadence)
+    expect(actual.player.position.x).toBeCloseTo(reference.player.position.x, 8)
+    expect(actual.player.velocity.x).toBeCloseTo(reference.player.velocity.x, 8)
+    expect(actual.elapsedSeconds).toBeCloseTo(reference.elapsedSeconds, 8)
+    expect(actual.player.grounded).toBe(true)
+  })
+  it('still bounds work after a suspended half-second frame', () => {
+    const game = createGlassGame(level)
+    game.step(walk, 0.5)
+    const reference = simulate([1 / 120], 0.1)
+    expect(game.snapshot().player.position.x).toBeCloseTo(
+      reference.player.position.x,
+      8,
+    )
+  })
+})

@@ -959,6 +959,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** preserve source masters, freeze and hash the actual uploaded RGBA reference, then compare replacement GPU readback with color conversion disabled and the renderer's flipY setting. Treat canvas comparison as diagnostic and require zero changed GPU channels; desktop proof does not establish native-device acceptance.
 **See:** `apps/beside-cue/public/games/adventure-v2/manifest.json`, `packages/glass-game/src/browser/assets.ts`, `apps/beside-cue/scripts/game-assets.ts`.
 
+### Budget enough fixed physics steps for ordinary mobile frames
+
+**Symptom:** Merc looked uneven and travelled less distance on mobile, while his animation kept advancing.
+**Cause:** Five 1/120 s steps capped simulation at 41.7 ms per rendered frame; the loop discarded the remaining accumulator. At 20 fps a two-second walk covered 1.84 m instead of 2.22 m.
+**Rule:** Keep fixed collision steps but budget 100 ms of ordinary catch-up. Test equal elapsed movement at 120/30/20 fps and mixed hitches; retain a bounded suspension limit. A quality governor addresses GPU cost separately.
+**See:** `packages/glass-game/src/core/movement.ts`, `packages/glass-game/src/core/game.test.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
