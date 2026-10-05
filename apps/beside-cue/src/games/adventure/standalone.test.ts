@@ -9,6 +9,7 @@ const mounted = vi.hoisted(() => ({
   runners: [] as boolean[],
   steering: [] as ('continuous' | undefined)[],
   cameras: [] as ('close' | 'angled' | undefined)[],
+  obstacles: [] as ('crystal-study' | undefined)[],
   runnerPaces: [] as ('current' | 'learning' | 'responsive' | undefined)[],
 }))
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
@@ -23,6 +24,7 @@ vi.mock('./AdventureScreen', () => ({
     runner?: boolean
     runnerSteering?: 'continuous'
     runnerCamera?: 'close' | 'angled'
+    runnerObstacles?: 'crystal-study'
     runnerPace?: 'current' | 'learning' | 'responsive'
   }) => {
     mounted.levels.push(untrack(() => props.level))
@@ -30,6 +32,7 @@ vi.mock('./AdventureScreen', () => ({
     mounted.runnerPaces.push(untrack(() => props.runnerPace))
     mounted.steering.push(untrack(() => props.runnerSteering))
     mounted.cameras.push(untrack(() => props.runnerCamera))
+    mounted.obstacles.push(untrack(() => props.runnerObstacles))
     return null
   },
 }))
@@ -40,6 +43,7 @@ beforeEach(() => {
   mounted.runners.length = 0
   mounted.steering.length = 0
   mounted.cameras.length = 0
+  mounted.obstacles.length = 0
   mounted.runnerPaces.length = 0
   build.channel = 'dev'
   document.body.innerHTML = '<div id="root"></div>'
@@ -69,6 +73,25 @@ async function mountAt(development: boolean, layout: string, pace?: string) {
 }
 
 describe('standalone development route', () => {
+  it.each(['dev', 'ci', 'release'] as const)(
+    'gates crystal study in %s builds',
+    async (channel) => {
+      build.channel = channel
+      vi.stubEnv('DEV', channel === 'dev')
+      window.history.replaceState(
+        {},
+        '',
+        '/glass-game/?layout=singing-current&obstacles=crystal-study',
+      )
+      await import('./standalone')
+      await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
+        timeout: 5000,
+      })
+      expect(mounted.obstacles).toEqual([
+        channel === 'release' ? undefined : 'crystal-study',
+      ])
+    },
+  )
   it.each([
     ['dev', 'singing-current', 'continuous', 'close', 'continuous', 'close'],
     ['dev', 'singing-current', 'continuous', 'angled', 'continuous', 'angled'],

@@ -180,6 +180,11 @@ async function mount(): Promise<void> {
         level={level}
         runner={runner}
         runnerPace={runner ? selectedRunnerPace(query) : undefined}
+        runnerObstacles={
+          runner && query.get('obstacles') === 'crystal-study'
+            ? 'crystal-study'
+            : undefined
+        }
         runnerSteering={
           runner && query.get('steering') === 'continuous'
             ? 'continuous'

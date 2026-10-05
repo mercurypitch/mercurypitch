@@ -14,6 +14,10 @@ import { SongRunnerView } from './SongRunnerView'
 
 export { SINGING_CURRENT_TRIALS }
 export { SINGING_CURRENT_CONTINUOUS_TRIAL }
+export {
+  SINGING_CURRENT_CRYSTAL_STUDY,
+  SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY,
+} from '../runner/crystal-obstacle-study'
 export type SingingCurrentTrialPace = keyof typeof SINGING_CURRENT_TRIALS
 
 export interface SongRunnerScreenProps {

@@ -4,7 +4,7 @@ import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
-import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
+import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY, SINGING_CURRENT_CRYSTAL_STUDY, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
@@ -22,8 +22,33 @@ interface AdventureScreenProps {
   runnerPace?: SingingCurrentTrialPace
   runnerSteering?: 'continuous'
   runnerCamera?: 'close' | 'angled'
+  runnerObstacles?: 'crystal-study'
 }
 export function AdventureScreen(props: AdventureScreenProps) {
+  function runnerCourse() {
+    const continuous = props.runnerSteering === 'continuous'
+    const course =
+      props.runnerObstacles === 'crystal-study'
+        ? continuous
+          ? SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
+          : SINGING_CURRENT_CRYSTAL_STUDY
+        : continuous
+          ? SINGING_CURRENT_CONTINUOUS_TRIAL
+          : props.runnerPace === undefined
+            ? undefined
+            : SINGING_CURRENT_TRIALS[props.runnerPace]
+    if (!course || !continuous || !props.runnerCamera) return course
+    return {
+      ...course,
+      presentation: {
+        ...course.presentation,
+        cameraProfile:
+          props.runnerCamera === 'angled'
+            ? ('steering-angled' as const)
+            : ('steering-close' as const),
+      },
+    }
+  }
   const assetProfile = nativeGameAssetProfile(
     import.meta.env.VITE_BESIDE_CUE_NATIVE_PLATFORM,
     getBesideCuePlatform(),
@@ -72,24 +97,7 @@ export function AdventureScreen(props: AdventureScreenProps) {
       <SongRunnerScreen
         host={host}
         allowCameraTuning={props.runnerSteering === 'continuous'}
-        course={
-          props.runnerSteering === 'continuous'
-            ? props.runnerCamera === 'close' || props.runnerCamera === 'angled'
-              ? {
-                  ...SINGING_CURRENT_CONTINUOUS_TRIAL,
-                  presentation: {
-                    ...SINGING_CURRENT_CONTINUOUS_TRIAL.presentation,
-                    cameraProfile:
-                      props.runnerCamera === 'angled'
-                        ? 'steering-angled'
-                        : 'steering-close',
-                  },
-                }
-              : SINGING_CURRENT_CONTINUOUS_TRIAL
-            : props.runnerPace === undefined
-              ? undefined
-              : SINGING_CURRENT_TRIALS[props.runnerPace]
-        }
+        course={runnerCourse()}
         assetProfile={assetProfile}
       />
     </Show>
