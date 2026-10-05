@@ -2,6 +2,14 @@
 
 import type { Mesh } from 'three'
 import { SRGBColorSpace, Texture } from 'three'
+import type { ResizeAssetImage } from '../render/asset-texture-profile'
+import { applyOwnedAssetTextureProfile, releaseAssetImage, } from '../render/asset-texture-profile'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
+
+export interface JourneyPortraitTextureOptions {
+  assetProfile?: GlassAssetQualityProfile
+  resizeImage?: ResizeAssetImage
+}
 
 function abortError(): DOMException {
   return new DOMException('Journey portrait request cancelled.', 'AbortError')
@@ -10,6 +18,7 @@ function abortError(): DOMException {
 export async function loadJourneyPortraitTexture(
   url: string,
   signal: AbortSignal,
+  options: JourneyPortraitTextureOptions = {},
 ): Promise<Texture> {
   const response = await fetch(url, { signal })
   if (!response.ok) throw new Error('The museum portrait could not be loaded.')
@@ -17,24 +26,39 @@ export async function loadJourneyPortraitTexture(
     imageOrientation: 'flipY',
     premultiplyAlpha: 'none',
   })
-  if (signal.aborted) {
-    bitmap.close()
-    throw abortError()
-  }
   const texture = new Texture(bitmap)
-  texture.name = `journey-portrait:${url}`
-  texture.colorSpace = SRGBColorSpace
-  // ImageBitmap uploads ignore Texture.flipY. The bitmap is flipped above so
-  // the explicit texture state remains correct for Three's bitmap path.
-  texture.flipY = false
-  texture.needsUpdate = true
-  return texture
+  try {
+    texture.name = `journey-portrait:${url}`
+    texture.colorSpace = SRGBColorSpace
+    // ImageBitmap uploads ignore Texture.flipY. The bitmap is flipped above so
+    // the explicit texture state remains correct for Three's bitmap path.
+    texture.flipY = false
+    texture.needsUpdate = true
+    await applyOwnedAssetTextureProfile(
+      texture,
+      'map',
+      options.assetProfile ?? 'full',
+      options.resizeImage,
+      signal,
+    )
+    if (signal.aborted) throw abortError()
+    return texture
+  } catch (error) {
+    disposeJourneyPortraitTexture(texture)
+    throw error
+  }
 }
 
+const disposedTextures = new WeakSet<Texture>()
 export function disposeJourneyPortraitTexture(texture: Texture): void {
-  texture.dispose()
-  const image = texture.image as { close?: () => void } | undefined
-  image?.close?.()
+  if (disposedTextures.has(texture)) return
+  disposedTextures.add(texture)
+  try {
+    texture.dispose()
+  } finally {
+    const image = texture.source.data as TexImageSource | null | undefined
+    if (image !== undefined && image !== null) releaseAssetImage(image)
+  }
 }
 
 export function fitJourneyPortraitTexture(

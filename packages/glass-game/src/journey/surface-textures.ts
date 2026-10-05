@@ -1,10 +1,21 @@
 // Journey surface textures — load abortable PBR maps with explicit sampling and ownership.
 
 import { Texture } from 'three'
+import type { AssetTextureSlot, ResizeAssetImage, } from '../render/asset-texture-profile'
+import { applyOwnedAssetTextureProfile, releaseAssetImage, } from '../render/asset-texture-profile'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 import type { TextureRecipe } from '../render/texture-recipe'
 import { configureTexture } from '../render/texture-recipe'
 
 type JourneyTextureRecipe = Omit<TextureRecipe, 'asset'>
+
+export interface JourneySurfaceTextureOptions {
+  assetProfile?: GlassAssetQualityProfile
+  resizeImage?: ResizeAssetImage
+  slot?: AssetTextureSlot
+}
+
+type JourneyMarbleTextureOptions = Omit<JourneySurfaceTextureOptions, 'slot'>
 
 export interface JourneyMarbleTextureUrls {
   basecolor: string
@@ -48,6 +59,7 @@ export async function loadJourneySurfaceTexture(
   url: string,
   signal: AbortSignal,
   recipe: JourneyTextureRecipe,
+  options: JourneySurfaceTextureOptions = {},
 ): Promise<Texture> {
   const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Journey surface unavailable: ${url}`)
@@ -55,44 +67,70 @@ export async function loadJourneySurfaceTexture(
     imageOrientation: 'flipY',
     premultiplyAlpha: 'none',
   })
-  if (signal.aborted) {
-    bitmap.close()
-    throw abortError()
+  const texture = new Texture(bitmap)
+  try {
+    configureTexture(texture, {
+      asset: url,
+      ...recipe,
+      // ImageBitmap uploads ignore Texture.flipY, so decode supplies the flip.
+      flipY: false,
+    })
+    texture.name = `journey-surface:${url}`
+    await applyOwnedAssetTextureProfile(
+      texture,
+      options.slot ?? 'map',
+      options.assetProfile ?? 'full',
+      options.resizeImage,
+      signal,
+    )
+    if (signal.aborted) throw abortError()
+    return texture
+  } catch (error) {
+    disposeJourneySurfaceTexture(texture)
+    throw error
   }
-  const texture = configureTexture(new Texture(bitmap), {
-    asset: url,
-    ...recipe,
-    // ImageBitmap uploads ignore Texture.flipY, so decode supplies the flip.
-    flipY: false,
-  })
-  texture.name = `journey-surface:${url}`
-  return texture
 }
 
+const disposedTextures = new WeakSet<Texture>()
 export function disposeJourneySurfaceTexture(texture: Texture): void {
-  texture.dispose()
-  const image = texture.image as { close?: () => void } | undefined
-  image?.close?.()
+  if (disposedTextures.has(texture)) return
+  disposedTextures.add(texture)
+  try {
+    texture.dispose()
+  } finally {
+    const image = texture.source.data as TexImageSource | null | undefined
+    if (image !== undefined && image !== null) releaseAssetImage(image)
+  }
 }
 
 export async function loadJourneyMarbleTextures(
   urls: JourneyMarbleTextureUrls,
   signal: AbortSignal,
   loadTexture: typeof loadJourneySurfaceTexture = loadJourneySurfaceTexture,
+  options: JourneyMarbleTextureOptions = {},
 ): Promise<JourneyMarbleTextures> {
   const loaded = await Promise.allSettled([
-    loadTexture(urls.basecolor, signal, MARBLE_RECIPES.map),
-    loadTexture(urls.normal, signal, MARBLE_RECIPES.normalMap),
-    loadTexture(urls.roughness, signal, MARBLE_RECIPES.roughnessMap),
+    loadTexture(urls.basecolor, signal, MARBLE_RECIPES.map, {
+      ...options,
+      slot: 'map',
+    }),
+    loadTexture(urls.normal, signal, MARBLE_RECIPES.normalMap, {
+      ...options,
+      slot: 'normalMap',
+    }),
+    loadTexture(urls.roughness, signal, MARBLE_RECIPES.roughnessMap, {
+      ...options,
+      slot: 'roughnessMap',
+    }),
   ])
   const rejected = loaded.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )
-  if (rejected !== undefined) {
+  if (rejected !== undefined || signal.aborted) {
     for (const result of loaded)
       if (result.status === 'fulfilled')
         disposeJourneySurfaceTexture(result.value)
-    throw rejected.reason
+    throw rejected?.reason ?? abortError()
   }
   const [map, normalMap, roughnessMap] = loaded.map(
     (result) => (result as PromiseFulfilledResult<Texture>).value,

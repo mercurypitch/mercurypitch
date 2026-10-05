@@ -489,6 +489,7 @@ jobs:
             island-paths,
             living-crystal,
             loading,
+            map-memory,
             message-stack,
             mic-recovery,
             mobile-flow,

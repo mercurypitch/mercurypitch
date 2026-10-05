@@ -3,6 +3,7 @@
 import type { BufferGeometry, Material, Mesh, Object3D, Texture } from 'three'
 import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Vector2, } from 'three'
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 import type { JourneyAuthoredUnit } from './architecture'
 import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
 import { createJourneyBridgePath } from './bridge-path'
@@ -373,6 +374,8 @@ export async function loadJourneyMapModels(
   signal: AbortSignal,
   options: {
     loadGltf?: typeof loadJourneyGltf
+    assetProfile?: GlassAssetQualityProfile
+    maximumConcurrentBundleLoads?: 1 | 2
     sculptureUrl?: string
     architectureUrl?: string
     mysteryPortraitUrl?: string
@@ -382,22 +385,54 @@ export async function loadJourneyMapModels(
   } = {},
 ): Promise<JourneyMapModels> {
   const loadGltf = options.loadGltf ?? loadJourneyGltf
-  const mapRequest = loadGltf(mapUrl, signal)
-  const mercRequest = loadGltf(mercUrl, signal)
+  const assetProfile = options.assetProfile ?? 'full'
+  const maximumConcurrent =
+    options.maximumConcurrentBundleLoads ?? (assetProfile === 'mobile' ? 1 : 2)
+  const queuedLoads: (() => Promise<void>)[] = []
+  let activeLoads = 0
+  const startQueuedLoads = (): void => {
+    while (activeLoads < maximumConcurrent && queuedLoads.length > 0) {
+      activeLoads++
+      void queuedLoads.shift()!()
+    }
+  }
+  // Each slot owns fetch, decode and resizing until the profiled document is ready.
+  const requestGltf = (url: string): Promise<JourneyGltfDocument> =>
+    new Promise((resolve, reject) => {
+      queuedLoads.push(async () => {
+        try {
+          if (signal.aborted)
+            throw new DOMException(
+              'Journey asset load cancelled.',
+              'AbortError',
+            )
+          resolve(await loadGltf(url, signal, { assetProfile }))
+        } catch (error) {
+          reject(error)
+        } finally {
+          activeLoads--
+          startQueuedLoads()
+        }
+      })
+      startQueuedLoads()
+    })
+  const mapRequest = requestGltf(mapUrl)
+  const mercRequest = requestGltf(mercUrl)
   const sculptureRequest =
     options.sculptureUrl === undefined
       ? Promise.resolve(undefined)
-      : loadGltf(options.sculptureUrl, signal)
+      : requestGltf(options.sculptureUrl)
   const architectureRequest =
     options.architectureUrl === undefined
       ? Promise.resolve(undefined)
-      : loadGltf(options.architectureUrl, signal)
+      : requestGltf(options.architectureUrl)
   const portraitRequest =
     options.mysteryPortraitUrl === undefined
       ? Promise.resolve(undefined)
       : (options.loadTexture ?? loadJourneyPortraitTexture)(
           options.mysteryPortraitUrl,
           signal,
+          { assetProfile },
         ).then((texture) => ({
           texture,
           dispose: () => disposeJourneyPortraitTexture(texture),
@@ -408,6 +443,8 @@ export async function loadJourneyMapModels(
       : (options.loadMarbleTextures ?? loadJourneyMarbleTextures)(
           options.marbleTextureUrls,
           signal,
+          undefined,
+          { assetProfile },
         )
   const loaded = await Promise.allSettled([
     mapRequest,

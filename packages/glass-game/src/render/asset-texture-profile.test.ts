@@ -2,7 +2,7 @@
 
 import { Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, Texture, } from 'three'
 import { expect, it, vi } from 'vitest'
-import { applyAssetTextureProfile, collectAssetTextureImages, releaseAssetTextureImages, } from './asset-texture-profile'
+import { applyAssetTextureProfile, applyOwnedAssetTextureProfile, collectAssetTextureImages, estimateAssetTextureBytes, releaseAssetTextureImages, } from './asset-texture-profile'
 
 function image(width: number, height = width) {
   return { width, height, close: vi.fn() } as unknown as TexImageSource & {
@@ -169,3 +169,105 @@ it('stops between resizes and closes a replacement completed after abort', async
   expect(secondImage.close).not.toHaveBeenCalled()
   expect(replacement.close).toHaveBeenCalledOnce()
 })
+
+it('bounds the museum glass transmission mask without changing its material or geometry', async () => {
+  const source = image(2048)
+  const transmission = new Texture(source)
+  const material = new MeshPhysicalMaterial({
+    transmission: 1,
+    transmissionMap: transmission,
+  })
+  const geometry = new PlaneGeometry()
+  const mesh = new Mesh(geometry, material)
+  const resize = vi.fn(async (_source, target) =>
+    image(target.width, target.height),
+  )
+
+  await applyAssetTextureProfile(mesh, 'mobile', resize)
+
+  expect(resize).toHaveBeenCalledWith(source, { width: 512, height: 512 })
+  expect(source.close).toHaveBeenCalledOnce()
+  expect(mesh.geometry).toBe(geometry)
+  expect(mesh.material).toBe(material)
+  expect(material.transmission).toBe(1)
+  expect(material.transmissionMap).toBe(transmission)
+})
+
+it('estimates unique image storage with mip levels rather than compressed file size', () => {
+  const source = image(1024)
+  const color = new Texture(source)
+  const roughness = new Texture(source)
+  const material = new MeshStandardMaterial({
+    map: color,
+    roughnessMap: roughness,
+  })
+  const root = new Group().add(new Mesh(new PlaneGeometry(), material))
+  // Ten smaller square mips plus the 1024-square base, counted once for shared images.
+  expect(estimateAssetTextureBytes(root)).toBe(5_592_404)
+  color.generateMipmaps = false
+  roughness.generateMipmaps = false
+  expect(estimateAssetTextureBytes(root)).toBe(4_194_304)
+})
+
+it('applies the same caps to a standalone owned texture while retaining sampler state', async () => {
+  const source = image(1024)
+  const texture = new Texture(source)
+  texture.colorSpace = SRGBColorSpace
+  texture.flipY = false
+  texture.repeat.set(2, 3)
+  const resize = vi.fn(async (_source, target) =>
+    image(target.width, target.height),
+  )
+
+  await expect(
+    applyOwnedAssetTextureProfile(texture, 'roughnessMap', 'mobile', resize),
+  ).resolves.toEqual({ resizedSources: 1, releasedSources: 1 })
+
+  expect(resize).toHaveBeenCalledWith(source, { width: 512, height: 512 })
+  expect(source.close).toHaveBeenCalledOnce()
+  expect(texture.image).toMatchObject({ width: 512, height: 512 })
+  expect(texture.colorSpace).toBe(SRGBColorSpace)
+  expect(texture.flipY).toBe(false)
+  expect(texture.repeat.toArray()).toEqual([2, 3])
+  await expect(
+    applyOwnedAssetTextureProfile(texture, 'roughnessMap', 'mobile', resize),
+  ).resolves.toEqual({ resizedSources: 0, releasedSources: 0 })
+  expect(resize).toHaveBeenCalledOnce()
+
+  const fullSource = image(2048)
+  const full = new Texture(fullSource)
+  await expect(
+    applyOwnedAssetTextureProfile(full, 'map', 'full', resize),
+  ).resolves.toEqual({ resizedSources: 0, releasedSources: 0 })
+  expect(full.image).toBe(fullSource)
+  expect(fullSource.close).not.toHaveBeenCalled()
+})
+
+it.each(['abort', 'invalid'] as const)(
+  'retires a standalone replacement on %s without relinquishing the original',
+  async (failure) => {
+    const source = image(2048)
+    const texture = new Texture(source)
+    const attempt = new AbortController()
+    const replacement = image(failure === 'invalid' ? 2048 : 1024)
+    const resize = vi.fn(async () => {
+      if (failure === 'abort') attempt.abort()
+      return replacement
+    })
+
+    const pending = applyOwnedAssetTextureProfile(
+      texture,
+      'map',
+      'mobile',
+      resize,
+      attempt.signal,
+    )
+    if (failure === 'abort')
+      await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    else await expect(pending).rejects.toThrow('returned invalid dimensions')
+
+    expect(texture.image).toBe(source)
+    expect(source.close).not.toHaveBeenCalled()
+    expect(replacement.close).toHaveBeenCalledOnce()
+  },
+)

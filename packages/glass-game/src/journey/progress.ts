@@ -3,6 +3,7 @@
 import type { Material, Mesh, Object3D, Texture } from 'three'
 import { DoubleSide, MeshBasicMaterial } from 'three'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
+import type { GlassAssetQualityProfile } from '../render/render-quality'
 import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
 
 export interface MuseumJourneyPortraitProgress {
@@ -36,7 +37,8 @@ export interface JourneyProgressSnapshot {
 }
 
 export interface JourneyProgressDisplayOptions {
-  loadTexture?: (url: string, signal: AbortSignal) => Promise<Texture>
+  assetProfile?: GlassAssetQualityProfile
+  loadTexture?: typeof loadJourneyPortraitTexture
   onChange?: (snapshot: JourneyProgressSnapshot) => void
 }
 
@@ -156,7 +158,9 @@ export function createJourneyProgressDisplay(
     const controller = new AbortController()
     const token = ++requestToken
     state.request = { url, controller, token }
-    void loadTexture(url, controller.signal).then(
+    void loadTexture(url, controller.signal, {
+      assetProfile: options.assetProfile ?? 'full',
+    }).then(
       (texture) => {
         if (
           disposed ||

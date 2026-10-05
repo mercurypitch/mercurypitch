@@ -4,11 +4,29 @@ type GraphicsCanvasScene =
   | 'gallery'
   | 'singing-current'
   | 'loading-merc'
+export interface GraphicsCanvasSnapshot {
+  selectedStageId?: string
+  assetProfile?: 'full' | 'mobile'
+  drawCalls?: number
+  triangles?: number
+  textures?: number
+  geometries?: number
+  /** Caller-supplied texture estimate, not measured driver allocation. */
+  estimatedTextureBytes?: number
+}
 interface GraphicsCanvasDiagnostic {
   scene: GraphicsCanvasScene
   instance: number
   lifecycle: 'active' | 'disposed'
+  snapshot?: Readonly<GraphicsCanvasSnapshot>
 }
+const SNAPSHOT_COUNTS = [
+  'drawCalls',
+  'triangles',
+  'textures',
+  'geometries',
+  'estimatedTextureBytes',
+] as const
 const canvases = new WeakMap<HTMLCanvasElement, GraphicsCanvasDiagnostic>()
 let nextInstance = 0
 
@@ -18,6 +36,26 @@ export function registerGraphicsCanvas(
   scene: GraphicsCanvasScene,
 ): void {
   canvases.set(canvas, { scene, instance: ++nextInstance, lifecycle: 'active' })
+}
+
+/** Retain only the latest bounded primitives; never hold a scene or texture. */
+export function updateGraphicsCanvasSnapshot(
+  canvas: HTMLCanvasElement,
+  snapshot: GraphicsCanvasSnapshot,
+): void {
+  const diagnostic = canvases.get(canvas)
+  if (diagnostic === undefined || diagnostic.lifecycle === 'disposed') return
+  const safe: GraphicsCanvasSnapshot = {}
+  if (typeof snapshot.selectedStageId === 'string')
+    safe.selectedStageId = snapshot.selectedStageId.slice(0, 100)
+  if (snapshot.assetProfile === 'full' || snapshot.assetProfile === 'mobile')
+    safe.assetProfile = snapshot.assetProfile
+  for (const key of SNAPSHOT_COUNTS) {
+    const value = snapshot[key]
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0)
+      safe[key] = value
+  }
+  diagnostic.snapshot = Object.freeze(safe)
 }
 
 /** Call before deliberate forceContextLoss; its event may arrive asynchronously. */
@@ -30,7 +68,13 @@ export function getGraphicsCanvasDiagnostic(
   canvas: HTMLCanvasElement,
 ): Readonly<GraphicsCanvasDiagnostic> | undefined {
   const diagnostic = canvases.get(canvas)
-  return diagnostic === undefined ? undefined : { ...diagnostic }
+  if (diagnostic === undefined) return undefined
+  return {
+    ...diagnostic,
+    ...(diagnostic.snapshot === undefined
+      ? {}
+      : { snapshot: Object.freeze({ ...diagnostic.snapshot }) }),
+  }
 }
 
 export function reportGraphicsFailure(
