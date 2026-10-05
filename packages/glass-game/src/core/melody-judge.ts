@@ -58,7 +58,11 @@ interface AlignmentCandidate {
   errorCents: number
 }
 
-type Interruption = { kind: 'mismatch'; startedCaptureSeconds: number } | null
+type Interruption = {
+  kind: 'mismatch'
+  startedCaptureSeconds: number
+  lastVoicedCaptureSeconds: number
+} | null
 
 const EPSILON = 1e-9
 
@@ -590,13 +594,20 @@ export function createMelodyJudge(
         clearAcquisition()
       return
     }
-    if (
-      phase === 'following' &&
-      lastGoodCapture !== null &&
-      frame.captureSeconds - lastGoodCapture >
-        policy.dropoutGraceSeconds + EPSILON
-    )
-      resetCurrentPhrase()
+    if (phase === 'following' && lastGoodCapture !== null) {
+      // A wrong note is still voiced. Its brief unvoiced transition must not
+      // count the entire correction interval as silence or renew that interval.
+      const lastVoicedCapture =
+        interruption?.lastVoicedCaptureSeconds ?? lastGoodCapture
+      if (
+        frame.captureSeconds - lastVoicedCapture >
+          policy.dropoutGraceSeconds + EPSILON ||
+        (interruption !== null &&
+          frame.captureSeconds - interruption.startedCaptureSeconds >
+            policy.mismatchGraceSeconds + EPSILON)
+      )
+        resetCurrentPhrase()
+    }
   }
 
   const follow = (
@@ -607,6 +618,16 @@ export function createMelodyJudge(
       return acquire(frame)
     }
     if (interruption?.kind === 'mismatch') {
+      if (
+        frame.captureSeconds - interruption.startedCaptureSeconds >
+          policy.mismatchGraceSeconds + EPSILON ||
+        frame.captureSeconds - interruption.lastVoicedCaptureSeconds >
+          policy.dropoutGraceSeconds + EPSILON
+      ) {
+        resetCurrentPhrase()
+        return acquire(frame)
+      }
+      interruption.lastVoicedCaptureSeconds = frame.captureSeconds
       const elapsedSinceGood = frame.captureSeconds - lastGoodCapture
       if (elapsedSinceGood <= policy.maximumSampleGapSeconds + EPSILON) {
         const recovered = uniqueCandidateTimes([
@@ -638,13 +659,6 @@ export function createMelodyJudge(
       }
       anchorEvidence.clearContinuity()
       feedbackAgainst(frame.midi, targetAt(Math.max(...candidates)))
-      if (
-        frame.captureSeconds - interruption.startedCaptureSeconds >
-        policy.mismatchGraceSeconds + EPSILON
-      ) {
-        resetCurrentPhrase()
-        return acquire(frame)
-      }
       return []
     }
     const elapsed = frame.captureSeconds - lastGoodCapture
@@ -661,6 +675,7 @@ export function createMelodyJudge(
       interruption = {
         kind: 'mismatch',
         startedCaptureSeconds: frame.captureSeconds,
+        lastVoicedCaptureSeconds: frame.captureSeconds,
       }
       anchorEvidence.clearContinuity()
       feedbackAgainst(frame.midi, targetAt(Math.max(...candidates)))

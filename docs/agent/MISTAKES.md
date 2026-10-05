@@ -367,6 +367,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** while the song plays, play the carrier again (it starts nothing; WebKit counts it as a start) on each report, as the page turns, and once a second. Never play a paused carrier to get it in front: that takes the sound from another app. A paused song's carrier pauses behind a clock that still runs, so its bar can still be refused.
 **See:** `packages/mobile-runtime/src/carrier-in-front.ts`, `docs/plans/mobile-native/ios-audio-handoff.md` (Build 543).
 
+### Measure dropout gaps from voiced evidence during a wrong-note correction
+
+**Symptom:** returning from a tolerated wrong note reset a melody when the detector briefly reported no pitch.
+**Cause:** the dropout clock used the last correct note, so the preceding voiced correction counted as silence.
+**Rule:** track the last voiced capture during correction and enforce both the original mismatch deadline and the independent dropout limit; alternating wrong and unvoiced frames must not renew grace.
+**See:** `packages/glass-game/src/core/melody-judge.ts` and `melody-judge.test.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
