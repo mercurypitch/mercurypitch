@@ -391,7 +391,15 @@ export interface LevelGuidanceDefinition {
   completionNext?: string
 }
 
+/** Camera-relative linear visibility; Cloudway owns the colour and radial shader. */
+export interface LevelFogDefinition {
+  kind: 'linear'
+  nearMeters: number
+  farMeters: number
+}
+
 export interface LevelPresentationDefinition {
+  fog?: LevelFogDefinition
   theme?: 'museum' | 'cloudway'
   worldBounds: Bounds3
   lightBounds: Bounds3

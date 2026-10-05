@@ -152,6 +152,29 @@ describe('Cloudway platform view selector', () => {
     expect(guarded.includes(outsideRightEdge)).toBe(true)
   })
 
+  it('retains newly visible decks and their otherwise hidden shadow casters with an authored far distance', () => {
+    const camera = cameraLookingAt(new Vector3(), new Vector3(0, 0, 10))
+    const defaults = createCloudwayPlatformViewSelector({
+      shadowDirection: { x: 0, y: -1, z: 0 },
+      shadowReceiverMinimumY: -1,
+    })
+    const authored = createCloudwayPlatformViewSelector({
+      maxDistance: 26,
+      shadowDirection: { x: 0, y: -1, z: 0 },
+      shadowReceiverMinimumY: -1,
+    })
+    const deck = bounds(-1, -1, 22, 1, 0, 24)
+    // High above the frustum, this caster reaches the newly visible deck.
+    const caster = bounds(-1, 30, 22, 1, 31, 24)
+    defaults.update(camera, [deck])
+    authored.update(camera, [deck])
+    expect(defaults.includes(deck)).toBe(false)
+    expect(defaults.includes(caster)).toBe(false)
+    expect(authored.includes(deck)).toBe(true)
+    expect(authored.includes(caster)).toBe(true)
+    expect(authored.includes(bounds(-1, -1, 34, 1, 0, 35))).toBe(false)
+  })
+
   it('falls back to retaining platforms until a usable camera is available', () => {
     const selector = createCloudwayPlatformViewSelector({
       shadowDirection: { x: 0, y: -1, z: 0 },

@@ -9,7 +9,8 @@ import { createCloudwayCrackleAdapter } from './cloudway-crackle-adapter'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_CRACKLE_MATERIAL_KINDS, CLOUDWAY_LAB_PEARL_PRESENTATION_FIT, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_RIGID_MATERIAL_ROLES, CLOUDWAY_LAB_ROOT_NAMES, CLOUDWAY_LAB_SCROLL_MATERIAL_BINDINGS, } from './cloudway-laboratory-catalog'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
-import { createCloudwayPlatformViewSelector } from './cloudway-platform-culling'
+import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
+import { resolveCloudwayFog } from './cloudway-scene'
 import type { CloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import { createCloudwayScrollAdapter } from './cloudway-scroll-adapter'
 import type { CrystalInteriorEffect } from './crystal-interior'
@@ -256,6 +257,8 @@ export function createCloudwayLaboratoryPlatformRenderer(
       ? globalThis.matchMedia('(prefers-reduced-motion: reduce)')
       : undefined
   const viewSelector = createCloudwayPlatformViewSelector({
+    maxDistance:
+      resolveCloudwayFog(level).farMeters + CLOUDWAY_PLATFORM_FOG_CULL_MARGIN,
     shadowDirection: { x: 0, y: -1, z: 0 },
     shadowReceiverMinimumY: 0,
   })

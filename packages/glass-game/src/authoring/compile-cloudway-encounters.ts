@@ -102,7 +102,7 @@ export function compileEncounter(
   raw: unknown,
   catalog: CloudwayCourseProfileCatalog,
   path: string,
-  schemaVersion: 2 | 3 = 2,
+  schemaVersion: 2 | 3 | 4 = 2,
 ): CompiledEncounter {
   const source = record(raw, path)
   exactKeys(

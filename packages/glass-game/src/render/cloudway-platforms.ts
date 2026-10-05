@@ -5,7 +5,8 @@ import { Box3, Color, DynamicDrawUsage, Euler, Group, InstancedMesh, MathUtils, 
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, } from '../contracts'
 import type { CloudwayPlatformRenderId } from './cloudway-catalog'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, isCloudwayPlatformRenderId, } from './cloudway-catalog'
-import { collectShadowReceiverBounds, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
+import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, collectShadowReceiverBounds, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
+import { resolveCloudwayFog } from './cloudway-scene'
 import { disposeObject } from './dispose'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
@@ -225,6 +226,8 @@ export function createCloudwayPlatformRenderer(
   const fallbackReceiverMinimumY =
     level.presentation?.worldBounds.minY ?? Number.NEGATIVE_INFINITY
   const viewSelector = createCloudwayPlatformViewSelector({
+    maxDistance:
+      resolveCloudwayFog(level).farMeters + CLOUDWAY_PLATFORM_FOG_CULL_MARGIN,
     shadowDirection,
     shadowReceiverMinimumY: fallbackReceiverMinimumY,
   })

@@ -1273,3 +1273,21 @@ it('temporarily reveals prefix-owned legacy vessels for reflections and restores
   ).toHaveLength(GLASSWORKS.breakables.length)
   renderer.dispose()
 })
+
+it('uses the compiled Cloudway visibility in the actual scene fog', async () => {
+  const level = {
+    ...CLOUDWAY_THAWING_SONG,
+    presentation: {
+      ...CLOUDWAY_THAWING_SONG.presentation!,
+      fog: { kind: 'linear' as const, nearMeters: 12, farMeters: 24 },
+    },
+  }
+  const renderer = createGlassRenderer(browserFixture(), level, (id) => id)
+  await renderer.ready
+  renderer.render(createGlassGame(level).snapshot(), 0.016)
+  const scene = state.render.mock.calls.find(
+    (args) => args[0]?.isScene === true,
+  )?.[0] as Scene
+  expect(scene.fog).toMatchObject({ near: 12, far: 24 })
+  renderer.dispose()
+})
