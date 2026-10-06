@@ -1,0 +1,534 @@
+{
+  "schema": "mercurypitch.cloudway-course",
+  "schemaVersion": 4,
+  "courses": [
+    {
+      "id": "cloudway-prismatic-causeway",
+      "title": "The Celestial Promenade",
+      "authored": {
+        "levelId": "cloudway-prismatic-causeway",
+        "layoutId": "celestial-promenade-v2",
+        "contentRevision": 2
+      },
+      "movement": {
+        "walkSpeed": 1.65,
+        "runSpeed": 2.6,
+        "runDelaySeconds": 0.65,
+        "runRampSeconds": 0.85
+      },
+      "guidance": {
+        "subtitle": "A soaring cardinal journey across frost, crystal and cloud",
+        "openingNotice": "Awaken the home tone, then cross the floating causeway.",
+        "completionTitle": "The celestial arch awakens in harmony.",
+        "completionNext": "Return to the museum or explore the next horizon."
+      },
+      "spawn": {
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "facingYaw": 3.141592653589793,
+        "checkpointId": "prisma-save-arrival"
+      },
+      "platforms": [
+        {
+          "id": "prisma-arr-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 0 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-arr-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 0.72 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-arr-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 1.44 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-arr-4",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 2.16 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-arr-5",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 2.88 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-hex-1",
+          "profileId": "rose-hex-crumble",
+          "center": { "x": 0, "y": 0, "z": 4.709 },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 1.5,
+            "releaseSeconds": 0.4,
+            "resetSeconds": 2.2
+          }
+        },
+        {
+          "id": "prisma-frost-lily",
+          "profileId": "frost-lily",
+          "center": { "x": 0, "y": 0, "z": 7.278 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-hex-2",
+          "profileId": "rose-hex-crumble",
+          "center": { "x": 0, "y": 0, "z": 9.847 },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "crackle",
+            "warningSeconds": 1.5,
+            "releaseSeconds": 0.4,
+            "resetSeconds": 2.2
+          }
+        },
+        {
+          "id": "prisma-court2-entry-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 11.676 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-court2-entry-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 12.396 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-court2-entry-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 13.116 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-court2-entry-4",
+          "profileId": "pearl-rest",
+          "center": { "x": 0, "y": 0, "z": 13.836 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-court2-east-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 1.96, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 2.68, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 3.40, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-4",
+          "profileId": "pearl-rest",
+          "center": { "x": 4.12, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-5",
+          "profileId": "pearl-rest",
+          "center": { "x": 4.84, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-6",
+          "profileId": "pearl-rest",
+          "center": { "x": 5.56, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-7",
+          "profileId": "pearl-rest",
+          "center": { "x": 6.28, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court2-east-8",
+          "profileId": "pearl-rest",
+          "center": { "x": 7.00, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-court-scroll",
+          "profileId": "gilt-scroll",
+          "center": { "x": 8.462982, "y": 0, "z": 13.50 },
+          "quarterTurns": 0,
+          "behavior": {
+            "kind": "scroll",
+            "minLengthRatio": 0.3,
+            "extendedSeconds": 4.5,
+            "retractedSeconds": 2.5,
+            "transitionSeconds": 1.2,
+            "initialState": "extended"
+          }
+        },
+        {
+          "id": "prisma-launch-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 9.925964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-launch-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 10.645964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-launch-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 11.365964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-step-glide",
+          "profileId": "aurora-glide",
+          "center": { "x": 12.975964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1,
+          "behavior": {
+            "kind": "glide",
+            "translation": { "x": 2.40, "y": 0, "z": 0 },
+            "travelSeconds": 3.2,
+            "dwellSeconds": 1.2
+          }
+        },
+        {
+          "id": "prisma-catch-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 16.985964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-catch-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 17.705964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-catch-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.425964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-catch-4",
+          "profileId": "pearl-rest",
+          "center": { "x": 19.145964, "y": 0, "z": 13.50 },
+          "quarterTurns": 1
+        },
+        {
+          "id": "prisma-pav-1",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 11.54 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-2",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 10.82 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-3",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 10.10 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-4",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 9.38 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-5",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 8.66 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-6",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 7.94 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-7",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 7.22 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-8",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 6.50 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-9",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 5.78 },
+          "quarterTurns": 0
+        },
+        {
+          "id": "prisma-pav-10",
+          "profileId": "pearl-rest",
+          "center": { "x": 18.426, "y": 0, "z": 5.06 },
+          "quarterTurns": 0
+        }
+      ],
+      "gaps": [],
+      "checkpoints": [
+        {
+          "id": "prisma-save-arrival",
+          "position": { "x": 0, "y": 0, "z": 0 },
+          "radius": 0.4,
+          "facingYaw": 3.141592653589793
+        },
+        {
+          "id": "prisma-save-court",
+          "position": { "x": 1.96, "y": 0, "z": 13.50 },
+          "radius": 0.4,
+          "facingYaw": -1.5707963267948966,
+          "requiresCompleted": ["prisma-note-home"]
+        },
+        {
+          "id": "prisma-save-launch",
+          "position": { "x": 10.646, "y": 0, "z": 13.50 },
+          "radius": 0.4,
+          "facingYaw": -1.5707963267948966,
+          "requiresCompleted": ["prisma-gate-rise"]
+        },
+        {
+          "id": "prisma-save-pavilion",
+          "position": { "x": 18.426, "y": 0, "z": 10.82 },
+          "radius": 0.4,
+          "facingYaw": 0,
+          "requiresCompleted": ["prisma-gate-rise"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "prisma-note-home",
+          "label": "The Opal Resonator",
+          "variant": "resonance-rosebud-v1",
+          "position": { "x": 0, "y": 0, "z": 1.44 },
+          "anchor": { "x": 0, "y": 0, "z": 0.72 },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "prismatic-arc-v1",
+            "reference": "anchor-tone",
+            "anchorId": "first-arc-home"
+          }
+        },
+        {
+          "id": "prisma-gate-rise",
+          "label": "The Roseveil Gate",
+          "variant": "frosted-scroll-wall",
+          "position": { "x": 4.84, "y": 0, "z": 13.50 },
+          "anchor": { "x": 2.68, "y": 0, "z": 13.50 },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "prismatic-arc-v1",
+            "reference": "anchor-tone",
+            "anchorId": "first-arc-rise"
+          },
+          "requiresCompleted": ["prisma-note-home"],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": -1.5707963267948966
+          }
+        },
+        {
+          "id": "prisma-gate-return",
+          "label": "The Threshold of Song",
+          "variant": "frosted-scroll-wall",
+          "position": { "x": 18.426, "y": 0, "z": 7.94 },
+          "anchor": { "x": 18.426, "y": 0, "z": 10.10 },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-anchor",
+            "lessonId": "prismatic-arc-v1",
+            "reference": "anchor-tone",
+            "anchorId": "first-arc-return"
+          },
+          "requiresCompleted": ["prisma-gate-rise"],
+          "presentation": {
+            "kind": "barrier",
+            "profileId": "frosted-scroll-wall",
+            "facingYaw": 0
+          }
+        },
+        {
+          "id": "prisma-portrait-finale",
+          "label": "The Awakening Muse",
+          "variant": "portrait-awakened-muse",
+          "position": { "x": 18.426, "y": 0, "z": 5.78 },
+          "anchor": { "x": 18.426, "y": 0, "z": 6.50 },
+          "optional": false,
+          "challenge": {
+            "profileId": "melody-contour",
+            "lessonId": "prismatic-arc-v1",
+            "reference": "whole-melody"
+          },
+          "requiresCompleted": ["prisma-gate-return"]
+        }
+      ],
+      "melodyLesson": {
+        "profileId": "first-arc-v1",
+        "id": "prismatic-arc-v1",
+        "revision": 1,
+        "defaultPace": 1.25,
+        "comfortableOffsetSemitones": 2,
+        "stations": [
+          { "encounterId": "prisma-note-home", "anchorId": "first-arc-home" },
+          { "encounterId": "prisma-gate-rise", "anchorId": "first-arc-rise" },
+          { "encounterId": "prisma-gate-return", "anchorId": "first-arc-return" }
+        ],
+        "finaleEncounterId": "prisma-portrait-finale"
+      },
+      "camera": {
+        "initialSectionId": "arrival-section",
+        "landingDwellSeconds": 0.75,
+        "sections": [
+          {
+            "id": "arrival-section",
+            "platformIds": [
+              "prisma-arr-1",
+              "prisma-arr-2",
+              "prisma-arr-3",
+              "prisma-arr-4",
+              "prisma-arr-5"
+            ],
+            "lookFromPlatformId": "prisma-arr-1",
+            "lookToPlatformId": "prisma-arr-5"
+          },
+          {
+            "id": "causeway-section",
+            "platformIds": [
+              "prisma-hex-1",
+              "prisma-frost-lily",
+              "prisma-hex-2",
+              "prisma-court2-entry-1",
+              "prisma-court2-entry-2",
+              "prisma-court2-entry-3",
+              "prisma-court2-entry-4"
+            ],
+            "lookFromPlatformId": "prisma-hex-1",
+            "lookToPlatformId": "prisma-court2-entry-4"
+          },
+          {
+            "id": "sanctuary-rise-section",
+            "platformIds": [
+              "prisma-court2-east-1",
+              "prisma-court2-east-2",
+              "prisma-court2-east-3",
+              "prisma-court2-east-4",
+              "prisma-court2-east-5",
+              "prisma-court2-east-6",
+              "prisma-court2-east-7",
+              "prisma-court2-east-8"
+            ],
+            "lookFromPlatformId": "prisma-court2-east-1",
+            "lookToPlatformId": "prisma-court2-east-8"
+          },
+          {
+            "id": "scroll-bridge-section",
+            "platformIds": [
+              "prisma-court-scroll",
+              "prisma-launch-1",
+              "prisma-launch-2",
+              "prisma-launch-3"
+            ],
+            "lookFromPlatformId": "prisma-court-scroll",
+            "lookToPlatformId": "prisma-launch-3"
+          },
+          {
+            "id": "aurora-ferry-section",
+            "platformIds": [
+              "prisma-step-glide",
+              "prisma-catch-1",
+              "prisma-catch-2",
+              "prisma-catch-3",
+              "prisma-catch-4"
+            ],
+            "lookFromPlatformId": "prisma-launch-2",
+            "lookToPlatformId": "prisma-catch-3"
+          },
+          {
+            "id": "pavilion-finale-section",
+            "platformIds": [
+              "prisma-pav-1",
+              "prisma-pav-2",
+              "prisma-pav-3",
+              "prisma-pav-4",
+              "prisma-pav-5",
+              "prisma-pav-6",
+              "prisma-pav-7",
+              "prisma-pav-8",
+              "prisma-pav-9",
+              "prisma-pav-10"
+            ],
+            "lookFromPlatformId": "prisma-pav-1",
+            "lookToPlatformId": "prisma-pav-10"
+          }
+        ]
+      },
+      "exit": {
+        "minX": 17.8,
+        "maxX": 19.0,
+        "minZ": 4.85,
+        "maxZ": 5.25,
+        "top": 0,
+        "requiresCompleted": ["prisma-portrait-finale"]
+      },
+      "fallBelow": -4.0,
+      "presentation": {
+        "worldBounds": {
+          "minX": -5,
+          "maxX": 23,
+          "minY": -5,
+          "maxY": 8,
+          "minZ": -3,
+          "maxZ": 18
+        },
+        "lightBounds": {
+          "minX": -3,
+          "maxX": 21,
+          "minY": -1,
+          "maxY": 6,
+          "minZ": -1,
+          "maxZ": 16
+        },
+        "audioSceneId": "garden",
+        "fog": {
+          "kind": "linear",
+          "nearMeters": 8,
+          "farMeters": 24
+        },
+        "crystalInteriors": [
+          {
+            "platformId": "prisma-court-scroll",
+            "preset": "aurora-heart",
+            "seed": 20261006
+          }
+        ]
+      }
+    }
+  ]
+}
