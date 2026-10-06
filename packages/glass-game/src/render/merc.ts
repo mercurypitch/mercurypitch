@@ -11,6 +11,7 @@ import { MOVEMENT } from '../core/movement'
 import { stepAngularResponse } from './angular-response'
 import { loadMercModel } from './merc-model'
 import { createMercPresentationPose } from './merc-presentation-pose'
+import { createSkinnedPosePublisher } from './skinned-pose'
 
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
 const MAXIMUM_TURN_ACCELERATION = 72
@@ -71,6 +72,7 @@ export async function loadAdventureMerc(
   const initialFacingYaw = options.initialFacingYaw ?? 0
   if (Number.isFinite(initialFacingYaw)) root.rotation.y = initialFacingYaw
   root.add(body)
+  const publishPose = createSkinnedPosePublisher(root)
   const mixer = new AnimationMixer(body)
   const presentationPose = createMercPresentationPose(body)
   const clips = new Map(asset.animations.map((clip) => [clip.name, clip]))
@@ -174,6 +176,7 @@ export async function loadAdventureMerc(
         if (settled) break
       }
       root.rotation.y = facingResponse.angle
+      publishPose()
     },
     dispose() {
       if (disposed) return
