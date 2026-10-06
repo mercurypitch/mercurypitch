@@ -90,16 +90,14 @@ for (const viewport of [
       await expect(speed).toHaveValue('0.5')
       const speedBox = await speed.boundingBox()
       if (!speedBox) throw new Error('Missing shatter tuning range')
-      await page.mouse.click(
-        speedBox.x + speedBox.width * 0.2,
-        speedBox.y + speedBox.height / 2,
-      )
+      await speed.click({
+        position: { x: speedBox.width * 0.2, y: speedBox.height / 2 },
+      })
+      await expect(speed).not.toHaveValue('0.5')
       const savedSpeed = await speed.inputValue()
       expect(Number(savedSpeed)).toBeLessThan(0.9)
-      await tuning.getByRole('button', { name: 'High', exact: true }).click()
-      await expect(
-        tuning.getByRole('button', { name: 'High', exact: true }),
-      ).toHaveAttribute('aria-pressed', 'true')
+      // Check the pointer edit before a graphics-quality redraw can occupy the
+      // software renderer used by CI.
       await expect
         .poll(() =>
           page.evaluate(() =>
@@ -109,6 +107,13 @@ for (const viewport of [
           ),
         )
         .toBe(savedSpeed)
+      await tuning.getByRole('button', { name: 'High', exact: true }).click()
+      await expect(
+        tuning.getByRole('button', { name: 'High', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      await page.screenshot({
+        path: info.outputPath('crystal-current-development-tune.png'),
+      })
       await expect
         .poll(() =>
           page.evaluate(() =>
@@ -118,9 +123,6 @@ for (const viewport of [
           ),
         )
         .toBe('high')
-      await page.screenshot({
-        path: info.outputPath('crystal-current-development-tune.png'),
-      })
       await tuning.getByRole('button', { name: 'Close sound settings' }).click()
       await expect(ready).toBeVisible()
       await press(
@@ -154,6 +156,9 @@ for (const viewport of [
       await expect(
         page.getByRole('dialog', { name: 'Ready when you are', exact: true }),
       ).toBeVisible()
+      await expect(
+        ready.getByRole('button', { name: 'Start course' }),
+      ).toBeEnabled({ timeout: 60_000 })
       await press(ready.getByRole('button', { name: 'Sound / tune' }))
       await expect(tuning).toBeVisible()
       await expect(speed).toHaveValue(savedSpeed)

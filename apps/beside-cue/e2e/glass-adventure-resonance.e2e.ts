@@ -1,5 +1,12 @@
 // Resonance trial browser gate — real PCM earns a Rosebud break and saved progress survives a fresh renderer.
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+
+import {
+  MAXIMUM_SHATTER_FRAME_SECONDS,
+  SHATTER_PLAYBACK_SPEED,
+  shatterLifecycleSeconds,
+} from '../../../packages/glass-game/src/core/shatter-presentation'
 
 interface ResonanceVoiceSource {
   context: AudioContext
@@ -57,7 +64,8 @@ async function prepareTrial(page: Page): Promise<void> {
       navigator.mediaDevices,
     )
     navigator.mediaDevices.getUserMedia = async (constraints) => {
-      if (!constraints?.audio) return original(constraints)
+      const audio = constraints?.audio
+      if (audio === undefined || audio === false) return original(constraints)
       const context = new AudioContext()
       await context.resume()
       const oscillator = context.createOscillator()
@@ -109,6 +117,58 @@ async function beginSinging(page: Page): Promise<void> {
     'data-voice-mode',
     'singing',
     { timeout: 10_000 },
+  )
+}
+
+async function waitForRenderedRelease(page: Page) {
+  // SwiftShader may submit fewer than ten frames per wall-clock second. The
+  // cinematic deliberately caps each frame's advance, so observe that clock
+  // without mutating the game or skipping its default half-speed fracture.
+  return page.getByTestId('glass-adventure').evaluate(
+    (adventure, { maximumFrameSeconds, budgetSeconds }) =>
+      new Promise<{
+        wallSeconds: number
+        renderedSeconds: number
+        frames: number
+      }>((resolve, reject) => {
+        const started = performance.now()
+        let previous = started
+        let renderedSeconds = 0
+        let frames = 0
+        const sample = (now: number) => {
+          renderedSeconds += Math.min(
+            Math.max(0, (now - previous) / 1000),
+            maximumFrameSeconds,
+          )
+          previous = now
+          frames++
+          const mode = adventure.getAttribute('data-challenge-camera-mode')
+          if (mode === 'exploration') {
+            resolve({
+              wallSeconds: (now - started) / 1000,
+              renderedSeconds,
+              frames,
+            })
+            return
+          }
+          if (renderedSeconds > budgetSeconds) {
+            reject(
+              new Error(
+                `Camera stayed ${mode} after ${renderedSeconds.toFixed(2)} rendered seconds.`,
+              ),
+            )
+            return
+          }
+          requestAnimationFrame(sample)
+        }
+        requestAnimationFrame(sample)
+      }),
+    {
+      maximumFrameSeconds: MAXIMUM_SHATTER_FRAME_SECONDS,
+      // A full fracture plus the 0.72s camera restore and sampled UI metrics.
+      budgetSeconds:
+        shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) + 1,
+    },
   )
 }
 
@@ -200,11 +260,22 @@ test('Rosebud draws, cancels partial resonance, then breaks through real singing
   await page.screenshot({
     path: testInfo.outputPath('rosebud-earned-release.png'),
   })
+  const release = await waitForRenderedRelease(page)
+  await testInfo.attach('rosebud-release-clock.json', {
+    body: JSON.stringify(release),
+    contentType: 'application/json',
+  })
   await expect(adventure).toHaveAttribute(
     'data-challenge-camera-mode',
     'exploration',
-    { timeout: 10_000 },
   )
+  expect(
+    await page.evaluate(() =>
+      window.resonanceVoice.sources.every(
+        (source) => source.track.readyState === 'ended',
+      ),
+    ),
+  ).toBe(true)
   const saved = await page.evaluate(
     () =>
       JSON.parse(

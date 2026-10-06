@@ -142,6 +142,10 @@ test('required texture failure retries without resetting progress; context loss 
     ),
   )
   let fail = true
+  let releaseFailure!: () => void
+  const heldFailure = new Promise<void>((resolve) => {
+    releaseFailure = resolve
+  })
   let releaseRetry!: () => void
   const heldRetry = new Promise<void>((resolve) => {
     releaseRetry = resolve
@@ -151,6 +155,7 @@ test('required texture failure retries without resetting progress; context loss 
     async (route) => {
       if (fail) {
         fail = false
+        await heldFailure
         await route.abort('failed')
       } else {
         await heldRetry
@@ -159,11 +164,32 @@ test('required texture failure retries without resetting progress; context loss 
     },
   )
   try {
-    await page.goto('/glass-game/')
+    await page.goto('/glass-game/', { waitUntil: 'domcontentloaded' })
     const cover = page.getByTestId('glass-loading-screen')
+    await expect(cover.getByTestId('glass-loading-merc')).toHaveAttribute(
+      'data-ready',
+      'true',
+      { timeout: 30_000 },
+    )
+    // Capture the live attempt before failing it: error recovery owns only art.
+    const previousCanvas = await cover.locator('canvas').elementHandle()
+    expect(previousCanvas).not.toBeNull()
+    releaseFailure()
     await expect(cover).toHaveAttribute('data-phase', 'error', {
       timeout: 30_000,
     })
+    await expect(cover.locator('canvas')).toHaveCount(0)
+    await expect(cover.locator('img')).toBeVisible()
+    expect(
+      await previousCanvas!.evaluate((element) => element.isConnected),
+    ).toBe(false)
+    await expect
+      .poll(() =>
+        previousCanvas!.evaluate((element: HTMLCanvasElement) =>
+          element.getContext('webgl2')?.isContextLost(),
+        ),
+      )
+      .toBe(true)
     await expect(
       cover.getByRole('button', { name: 'Retry', exact: true }),
     ).toBeFocused()
@@ -174,7 +200,6 @@ test('required texture failure retries without resetting progress; context loss 
       name: 'Gallery preparation',
     })
     const failedUnits = await progress.getAttribute('aria-valuenow')
-    const previousCanvas = await cover.locator('canvas').elementHandle()
     await page.waitForTimeout(250)
     await expect(progress).toHaveAttribute('aria-valuenow', failedUnits!)
     expect(pageErrors).toEqual([])
@@ -209,13 +234,17 @@ test('required texture failure retries without resetting progress; context loss 
         extension.loseContext()
       })
     await expect(cover).toHaveAttribute('data-phase', 'error')
+    await expect(cover.locator('canvas')).toHaveCount(0)
+    await expect(cover.locator('img')).toBeVisible()
     await cover.getByRole('button', { name: 'Retry', exact: true }).tap()
     await ready(page)
     await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
       'data-completed',
       '1',
     )
+    expect(pageErrors).toEqual([])
   } finally {
+    releaseFailure()
     releaseRetry()
   }
 })
