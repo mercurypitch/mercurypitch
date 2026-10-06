@@ -1,14 +1,7 @@
 // Certified modular chunk library for procedural Cloudway courses.
 // All dimensions and clearances are calibrated against certified catalog profiles.
 
-import type {
-  ChunkCameraSection,
-  ChunkCheckpoint,
-  ChunkEncounter,
-  ChunkGap,
-  ChunkPlatform,
-  ProceduralChunk,
-} from './contracts.ts'
+import type { ChunkCameraSection, ChunkCheckpoint, ChunkEncounter, ChunkGap, ChunkPlatform, ProceduralChunk, } from './contracts.ts'
 
 export interface ChunkLibraryOptions {
   readonly seed: number
@@ -17,13 +10,31 @@ export interface ChunkLibraryOptions {
 }
 
 /** Chunk 1: Arrival Court — safe marble plaza with opening home tone */
-export function createArrivalChunk(noteAnchorId = 'first-arc-home'): ProceduralChunk {
+export function createArrivalChunk(
+  noteAnchorId = 'first-arc-home',
+): ProceduralChunk {
   const platforms: ChunkPlatform[] = [
     { localId: 'arr-1', profileId: 'pearl-rest', center: { x: 0, y: 0, z: 0 } },
-    { localId: 'arr-2', profileId: 'pearl-rest', center: { x: 0, y: 0, z: 0.72 } },
-    { localId: 'arr-3', profileId: 'pearl-rest', center: { x: 0, y: 0, z: 1.44 } },
-    { localId: 'arr-4', profileId: 'pearl-rest', center: { x: 0, y: 0, z: 2.16 } },
-    { localId: 'arr-5', profileId: 'pearl-rest', center: { x: 0, y: 0, z: 2.88 } },
+    {
+      localId: 'arr-2',
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.72 },
+    },
+    {
+      localId: 'arr-3',
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 1.44 },
+    },
+    {
+      localId: 'arr-4',
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 2.16 },
+    },
+    {
+      localId: 'arr-5',
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 2.88 },
+    },
   ]
 
   const encounters: ChunkEncounter[] = [
@@ -39,7 +50,12 @@ export function createArrivalChunk(noteAnchorId = 'first-arc-home'): ProceduralC
   ]
 
   const checkpoints: ChunkCheckpoint[] = [
-    { localId: 'save-arrival', position: { x: 0, y: 0, z: 0 }, facingYaw: Math.PI, radius: 2.5 },
+    {
+      localId: 'save-arrival',
+      position: { x: 0, y: 0, z: 0 },
+      facingYaw: Math.PI,
+      radius: 2.5,
+    },
   ]
 
   const cameraSection: ChunkCameraSection = {
@@ -82,9 +98,21 @@ export function createFrostGlissadeChunk(idSuffix: string): ProceduralChunk {
   // Gap 2: 0.60m -> Tile 3 bounds: 5.90 to 8.10 -> center z = 7.00
   // Exit edge: 8.10
   const platforms: ChunkPlatform[] = [
-    { localId: `frost-1-${idSuffix}`, profileId: 'frost-lily', center: { x: 0, y: 0, z: 1.4 } },
-    { localId: `frost-2-${idSuffix}`, profileId: 'frost-lily', center: { x: 0, y: 0, z: 4.2 } },
-    { localId: `frost-3-${idSuffix}`, profileId: 'frost-lily', center: { x: 0, y: 0, z: 7.0 } },
+    {
+      localId: `frost-1-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: 0, y: 0, z: 1.4 },
+    },
+    {
+      localId: `frost-2-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: 0, y: 0, z: 4.2 },
+    },
+    {
+      localId: `frost-3-${idSuffix}`,
+      profileId: 'frost-lily',
+      center: { x: 0, y: 0, z: 7.0 },
+    },
   ]
 
   const gaps: ChunkGap[] = [
@@ -106,7 +134,11 @@ export function createFrostGlissadeChunk(idSuffix: string): ProceduralChunk {
 
   const cameraSection: ChunkCameraSection = {
     localId: `cam-frost-${idSuffix}`,
-    platformLocalIds: [`frost-1-${idSuffix}`, `frost-2-${idSuffix}`, `frost-3-${idSuffix}`],
+    platformLocalIds: [
+      `frost-1-${idSuffix}`,
+      `frost-2-${idSuffix}`,
+      `frost-3-${idSuffix}`,
+    ],
     lookFromPlatformLocalId: `frost-1-${idSuffix}`,
     lookToPlatformLocalId: `frost-3-${idSuffix}`,
   }
@@ -135,16 +167,20 @@ export function createFrostGlissadeChunk(idSuffix: string): ProceduralChunk {
 }
 
 /** Chunk 3: Hex Crumble Cascade — timed cracking hexagon tiles */
-export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): ProceduralChunk {
-  // Hex platforms (1.64m diameter, bounds half-depth 0.82)
-  // Step 1: center z = 1.12 (bounds 0.30 to 1.94)
-  // Gap: 0.60m -> Step 2 bounds 2.54 to 4.18 -> center z = 3.36
-  // Gap: 0.60m -> Step 3 bounds 4.78 to 6.42 -> center z = 5.60
+export function createHexCascadeChunk(
+  idSuffix: string,
+  warningSeconds = 1.5,
+): ProceduralChunk {
+  // Hex platforms (1.969m width, 1.738m depth, half-depth 0.869m)
+  // Step 1: center z = 1.25 (bounds: 0.381 to 2.119)
+  // Gap 1: 0.662m -> Step 2 center z = 3.65 (bounds: 2.781 to 4.519)
+  // Gap 2: 0.662m -> Step 3 center z = 6.05 (bounds: 5.181 to 6.919)
+  // Exit edge: 7.30 (gap from Step 3: 0.381m)
   const platforms: ChunkPlatform[] = [
     {
       localId: `hex-1-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 0, y: 0, z: 1.12 },
+      center: { x: 0, y: 0, z: 1.25 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -155,7 +191,7 @@ export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): P
     {
       localId: `hex-2-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 0, y: 0, z: 3.36 },
+      center: { x: 0, y: 0, z: 3.65 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -166,7 +202,7 @@ export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): P
     {
       localId: `hex-3-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: 0, y: 0, z: 5.6 },
+      center: { x: 0, y: 0, z: 6.05 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -195,7 +231,11 @@ export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): P
 
   const cameraSection: ChunkCameraSection = {
     localId: `cam-hex-${idSuffix}`,
-    platformLocalIds: [`hex-1-${idSuffix}`, `hex-2-${idSuffix}`, `hex-3-${idSuffix}`],
+    platformLocalIds: [
+      `hex-1-${idSuffix}`,
+      `hex-2-${idSuffix}`,
+      `hex-3-${idSuffix}`,
+    ],
     lookFromPlatformLocalId: `hex-1-${idSuffix}`,
     lookToPlatformLocalId: `hex-3-${idSuffix}`,
   }
@@ -205,16 +245,16 @@ export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): P
     kind: 'hex-cascade',
     entrySocket: {
       id: 'entry',
-      position: { x: 0, y: 0, z: 0.3 },
+      position: { x: 0, y: 0, z: 0.0 },
       facing: 'north',
-      width: 1.64,
+      width: 1.97,
       clearanceMargin: 0.6,
     },
     exitSocket: {
       id: 'exit',
-      position: { x: 0, y: 0, z: 6.42 },
+      position: { x: 0, y: 0, z: 7.3 },
       facing: 'north',
-      width: 1.64,
+      width: 1.97,
       clearanceMargin: 0.6,
     },
     platforms,
@@ -226,7 +266,10 @@ export function createHexCascadeChunk(idSuffix: string, warningSeconds = 1.5): P
 /** Chunk 4: Scroll Bridge with Living Crystal Interior */
 export function createScrollBridgeChunk(
   idSuffix: string,
-  crystalPreset: 'aurora-heart' | 'resonance-veins' | 'frost-roots' = 'aurora-heart',
+  crystalPreset:
+    | 'aurora-heart'
+    | 'resonance-veins'
+    | 'frost-roots' = 'aurora-heart',
 ): ProceduralChunk {
   // Gilt-scroll (2.206m x 2.206m, half-depth 1.103)
   // Center z = 1.403 (bounds: 0.30 to 2.506)
@@ -287,7 +330,11 @@ export function createAuroraGlideChunk(idSuffix: string): ProceduralChunk {
   // Departure to raft min: 1.27 - 0.72 = 0.55m
   // Raft max to arrival dock: 5.62 - 5.07 = 0.55m
   const platforms: ChunkPlatform[] = [
-    { localId: `glide-depart-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 0.36 } },
+    {
+      localId: `glide-depart-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
     {
       localId: `glide-raft-${idSuffix}`,
       profileId: 'aurora-glide',
@@ -299,7 +346,11 @@ export function createAuroraGlideChunk(idSuffix: string): ProceduralChunk {
         dwellSeconds: 1.2,
       },
     },
-    { localId: `glide-arrive-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 5.98 } },
+    {
+      localId: `glide-arrive-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 5.98 },
+    },
   ]
 
   const gaps: ChunkGap[] = [
@@ -314,7 +365,11 @@ export function createAuroraGlideChunk(idSuffix: string): ProceduralChunk {
 
   const cameraSection: ChunkCameraSection = {
     localId: `cam-glide-${idSuffix}`,
-    platformLocalIds: [`glide-depart-${idSuffix}`, `glide-raft-${idSuffix}`, `glide-arrive-${idSuffix}`],
+    platformLocalIds: [
+      `glide-depart-${idSuffix}`,
+      `glide-raft-${idSuffix}`,
+      `glide-arrive-${idSuffix}`,
+    ],
     lookFromPlatformLocalId: `glide-depart-${idSuffix}`,
     lookToPlatformLocalId: `glide-arrive-${idSuffix}`,
   }
@@ -350,12 +405,36 @@ export function createVocalSanctuaryChunk(
 ): ProceduralChunk {
   // Courtyard of 6 pearl-rest slabs: bounds z = 0.0 to 4.32
   const platforms: ChunkPlatform[] = [
-    { localId: `sanc-1-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 0.36 } },
-    { localId: `sanc-2-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 1.08 } },
-    { localId: `sanc-3-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 1.8 } },
-    { localId: `sanc-4-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 2.52 } },
-    { localId: `sanc-5-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 3.24 } },
-    { localId: `sanc-6-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 3.96 } },
+    {
+      localId: `sanc-1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `sanc-2-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 1.08 },
+    },
+    {
+      localId: `sanc-3-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 1.8 },
+    },
+    {
+      localId: `sanc-4-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 2.52 },
+    },
+    {
+      localId: `sanc-5-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 3.24 },
+    },
+    {
+      localId: `sanc-6-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 3.96 },
+    },
   ]
 
   // Barrier placed at z = 3.96, singing anchor placed at z = 1.80 (2.16m forward distance)
@@ -376,10 +455,16 @@ export function createVocalSanctuaryChunk(
   ]
 
   const checkpoints: ChunkCheckpoint[] = [
-    { localId: `save-sanc-${idSuffix}`, position: { x: 0, y: 0, z: 1.8 }, facingYaw: Math.PI, radius: 2.2 },
+    {
+      localId: `save-sanc-${idSuffix}`,
+      position: { x: 0, y: 0, z: 1.8 },
+      facingYaw: Math.PI,
+      radius: 2.2,
+    },
   ]
 
-  const exitFacing = turn === 'east' ? 'east' : turn === 'west' ? 'west' : 'north'
+  const exitFacing =
+    turn === 'east' ? 'east' : turn === 'west' ? 'west' : 'north'
   const exitPos =
     turn === 'east'
       ? { x: 1.6, y: 0, z: 3.96 }
@@ -421,14 +506,46 @@ export function createVocalSanctuaryChunk(
 export function createFinalePavilionChunk(idSuffix: string): ProceduralChunk {
   // Wide pavilion of 8 pearl-rest slabs: z = 0.0 to 5.76
   const platforms: ChunkPlatform[] = [
-    { localId: `pav-1-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 0.36 } },
-    { localId: `pav-2-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 1.08 } },
-    { localId: `pav-3-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 1.8 } },
-    { localId: `pav-4-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 2.52 } },
-    { localId: `pav-5-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 3.24 } },
-    { localId: `pav-6-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 3.96 } },
-    { localId: `pav-7-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 4.68 } },
-    { localId: `pav-8-${idSuffix}`, profileId: 'pearl-rest', center: { x: 0, y: 0, z: 5.4 } },
+    {
+      localId: `pav-1-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 0.36 },
+    },
+    {
+      localId: `pav-2-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 1.08 },
+    },
+    {
+      localId: `pav-3-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 1.8 },
+    },
+    {
+      localId: `pav-4-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 2.52 },
+    },
+    {
+      localId: `pav-5-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 3.24 },
+    },
+    {
+      localId: `pav-6-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 3.96 },
+    },
+    {
+      localId: `pav-7-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 4.68 },
+    },
+    {
+      localId: `pav-8-${idSuffix}`,
+      profileId: 'pearl-rest',
+      center: { x: 0, y: 0, z: 5.4 },
+    },
   ]
 
   const encounters: ChunkEncounter[] = [
@@ -443,7 +560,12 @@ export function createFinalePavilionChunk(idSuffix: string): ProceduralChunk {
   ]
 
   const checkpoints: ChunkCheckpoint[] = [
-    { localId: `save-finale-${idSuffix}`, position: { x: 0, y: 0, z: 1.8 }, facingYaw: Math.PI, radius: 2.5 },
+    {
+      localId: `save-finale-${idSuffix}`,
+      position: { x: 0, y: 0, z: 1.8 },
+      facingYaw: Math.PI,
+      radius: 2.5,
+    },
   ]
 
   return {
@@ -498,7 +620,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s1-${idSuffix}`,
       profileId: style === 'frost' ? 'frost-lily' : 'rose-hex-crumble',
-      center: { x: -0.7, y: 0, z: 2.09 },
+      center: { x: -0.7, y: 0, z: 2.2 },
       behavior:
         style !== 'frost'
           ? {
@@ -512,7 +634,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s2-${idSuffix}`,
       profileId: style === 'hex' ? 'rose-hex-crumble' : 'frost-lily',
-      center: { x: 0.7, y: 0, z: 4.28 },
+      center: { x: 0.7, y: 0, z: 4.8 },
       behavior:
         style === 'hex'
           ? {
@@ -526,7 +648,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s3-${idSuffix}`,
       profileId: style === 'frost' ? 'frost-lily' : 'rose-hex-crumble',
-      center: { x: -0.7, y: 0, z: 6.47 },
+      center: { x: -0.7, y: 0, z: 7.4 },
       behavior:
         style !== 'frost'
           ? {
@@ -540,7 +662,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-s4-${idSuffix}`,
       profileId: style === 'hex' ? 'rose-hex-crumble' : 'frost-lily',
-      center: { x: 0.7, y: 0, z: 8.66 },
+      center: { x: 0.7, y: 0, z: 10.0 },
       behavior:
         style === 'hex'
           ? {
@@ -554,7 +676,7 @@ export function createSlalomZigzagChunk(
     {
       localId: `slalom-arr-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: 0, y: 0, z: 10.39 },
+      center: { x: 0, y: 0, z: 11.84 },
     },
   ]
 
@@ -577,7 +699,7 @@ export function createSlalomZigzagChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: 0, y: 0, z: 10.75 },
+      position: { x: 0, y: 0, z: 12.2 },
       facing: 'north',
       width: 3.2,
       clearanceMargin: 0.6,
@@ -606,12 +728,12 @@ export function createArcedViaductChunk(
     {
       localId: `arc-p2-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: Number((sign * 0.65).toFixed(3)), y: 0, z: 1.9 },
+      center: { x: Number((sign * 0.85).toFixed(3)), y: 0, z: 2.17 },
     },
     {
       localId: `arc-p3-${idSuffix}`,
       profileId: 'rose-hex-crumble',
-      center: { x: Number((sign * 1.9).toFixed(3)), y: 0, z: 3.1 },
+      center: { x: Number((sign * 2.45).toFixed(3)), y: 0, z: 4.49 },
       behavior: {
         kind: 'crackle',
         warningSeconds,
@@ -622,12 +744,13 @@ export function createArcedViaductChunk(
     {
       localId: `arc-p4-${idSuffix}`,
       profileId: 'frost-lily',
-      center: { x: Number((sign * 3.35).toFixed(3)), y: 0, z: 3.75 },
+      center: { x: Number((sign * 4.885).toFixed(3)), y: 0, z: 4.49 },
+      quarterTurns: landingTurns,
     },
     {
       localId: `arc-p5-${idSuffix}`,
       profileId: 'pearl-rest',
-      center: { x: Number((sign * 4.65).toFixed(3)), y: 0, z: 3.75 },
+      center: { x: Number((sign * 6.7).toFixed(3)), y: 0, z: 4.49 },
       quarterTurns: landingTurns,
     },
   ]
@@ -651,7 +774,7 @@ export function createArcedViaductChunk(
     },
     exitSocket: {
       id: 'exit',
-      position: { x: Number((sign * 5.01).toFixed(3)), y: 0, z: 3.75 },
+      position: { x: Number((sign * 7.06).toFixed(3)), y: 0, z: 4.49 },
       facing: turn,
       width: 3.2,
       clearanceMargin: 0.6,
@@ -881,4 +1004,3 @@ export function createDiagonalGlideChunk(
     cameraSection,
   }
 }
-
