@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createServer } from 'vite'
+import { glassPlaytestDownloads } from './glass-playtest-downloads.ts'
 import { glassPlaytestFileRoots } from './glass-playtest-files.ts'
 
 const { values } = parseArgs({
@@ -19,6 +20,7 @@ process.env.VITE_PORTABLE_CONSOLE ??= 'true'
 const appRoot = fileURLToPath(new URL('..', import.meta.url))
 const server = await createServer({
   root: appRoot,
+  plugins: [glassPlaytestDownloads()],
   // A no-HMR playtest must not share optimized dependencies with Playwright or
   // the ordinary Vite server. Their config hashes differ; rewriting this cache
   // underneath a running preview can load duplicate Solid runtimes and mount
