@@ -4,6 +4,7 @@ import { CLOUDWAY_FOG_DEFAULTS, CLOUDWAY_FOG_LIMITS, } from '../content/cloudway
 import { crystalInteriorStudySource } from '../content/crystal-interior-study.ts'
 import promenade from '../content/data/cloudway-crystal-promenade.course.json' with { type: 'json' }
 import thawing from '../content/data/cloudway-thawing-song.course.json' with { type: 'json' }
+import prismaticCauseway from '../content/data/cloudway-prismatic-causeway.course.json' with { type: 'json' }
 import { glassMelody } from '../content/melodies.ts'
 import { THAWING_SONG_ALCOVE_PROFILES } from '../content/thawing-song-alcove-profiles.ts'
 import { THAWING_SONG_ALCOVE_DOCUMENT } from '../content/thawing-song-alcove-source.ts'
@@ -53,6 +54,11 @@ export function cloudwayStudioCatalog() {
     ),
     examples: [
       { id: 'thawing-song', title: 'The Thawing Song', document: thawing },
+      {
+        id: 'prismatic-causeway',
+        title: 'The Prismatic Causeway',
+        document: prismaticCauseway,
+      },
       {
         id: 'crystal-promenade',
         title: 'Crystal Promenade',
