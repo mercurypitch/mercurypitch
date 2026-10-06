@@ -15,10 +15,11 @@ interface LoadingMercProps {
 
 export function LoadingMerc(props: LoadingMercProps) {
   // A disposed WebGL context must never be reused by a retry. Key the complete
-  // canvas lifetime to the real attempt, and skip the pre-mount generation.
+  // canvas lifetime to the real attempt. Recovery uses artwork: a graphics
+  // failure must not immediately start another optional WebGL context.
   return (
     <Show
-      when={props.generation || undefined}
+      when={props.phase !== 'error' ? props.generation || undefined : undefined}
       keyed
       fallback={
         <img

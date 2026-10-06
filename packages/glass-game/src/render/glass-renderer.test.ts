@@ -70,16 +70,26 @@ const state = vi.hoisted(() => {
     updatePlanarReflection: vi.fn((..._args: unknown[]) => false),
   }
 })
+
+function rendererCanvas() {
+  return {
+    style: {},
+    setAttribute: vi.fn(),
+    remove: state.canvasRemove,
+    addEventListener: (name: string, listener: EventListener) =>
+      state.listeners.set(name, listener),
+    removeEventListener: (name: string) => state.listeners.delete(name),
+  }
+}
+
 vi.mock('three', async (original) => ({
   ...(await original<typeof ThreeTypes>()),
   WebGLRenderer: class {
-    domElement = {
-      style: {},
-      setAttribute: vi.fn(),
-      remove: state.canvasRemove,
-      addEventListener: (name: string, listener: EventListener) =>
-        state.listeners.set(name, listener),
-      removeEventListener: (name: string) => state.listeners.delete(name),
+    domElement: ReturnType<typeof rendererCanvas>
+    constructor(parameters: ThreeTypes.WebGLRendererParameters) {
+      this.domElement = parameters.canvas as unknown as ReturnType<
+        typeof rendererCanvas
+      >
     }
     shadowMap = {
       autoUpdate: true,
@@ -252,6 +262,10 @@ import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createGlassRenderer } from './glass-renderer'
 
 function browserFixture() {
+  vi.stubGlobal('document', {
+    createElement: rendererCanvas,
+    visibilityState: 'visible',
+  })
   vi.stubGlobal('window', { devicePixelRatio: 1 })
   vi.stubGlobal(
     'ResizeObserver',

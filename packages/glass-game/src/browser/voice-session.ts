@@ -4,6 +4,8 @@ import type { CapturedPitchFrame, F0Stream } from '@irchiinnuss/pitch-engine'
 import { createF0Stream, micManager } from '@irchiinnuss/pitch-engine'
 import type { PitchObservation } from '../contracts'
 import type { GlassVoiceInputSettings, GlassVoicePreparation, GlassVoiceSession, GlassVoiceTake, } from '../host'
+import type { VoiceStopReason } from './voice-diagnostics'
+import { createVoiceDiagnostics } from './voice-diagnostics'
 import { createBrowserVoiceTake } from './voice-take'
 
 let nextSession = 0
@@ -43,14 +45,26 @@ export function createBrowserVoice(
   let take: GlassVoiceTake | null = null
   let tracks: readonly MediaStreamTrack[] = []
   let settings: GlassVoiceInputSettings | null = null
+  let unsubscribeManager: (() => void) | undefined
+  const diagnostics =
+    import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+      ? createVoiceDiagnostics(() => ({
+          context: lease.peek(),
+          tracks,
+          stream,
+        }))
+      : undefined
   const stoppedListeners = new Set<() => void>()
   const releaseMic = (): void => {
     if (holding) micManager.release(id)
     holding = false
   }
-  const stop = (): void => {
+  const stop = (reason: VoiceStopReason = 'requested'): void => {
     if (stopped) return
+    diagnostics?.report('stopped', reason)
     stopped = true
+    unsubscribeManager?.()
+    unsubscribeManager = undefined
     take?.discard()
     take = null
     microphoneStream = null
@@ -68,10 +82,16 @@ export function createBrowserVoice(
     lease.release()
   }
 
-  function trackInterrupted(): void {
+  function trackInterrupted(event?: Event): void {
     if (stopped) return
     const listeners = [...stoppedListeners]
-    stop()
+    stop(
+      event?.type === 'mute'
+        ? 'track-mute'
+        : event?.type === 'ended'
+          ? 'track-ended'
+          : 'manager-released',
+    )
     for (const listener of listeners) listener()
   }
 
@@ -79,7 +99,7 @@ export function createBrowserVoice(
     const ctx = lease.peek()
     if (stopped || !stream || !ctx || ctx.state === 'running') return
     const listeners = [...stoppedListeners]
-    stop()
+    stop('audio-interrupted')
     for (const listener of listeners) listener()
   }
   const observation = (
@@ -108,9 +128,9 @@ export function createBrowserVoice(
         return Promise.reject(new Error('This microphone session has ended.'))
       if (starting !== null) return starting
       const ctx = lease.ensure()
+      diagnostics?.report('opening')
       if (!ctx) {
-        stopped = true
-        lease.release()
+        stop('start-failed')
         return Promise.reject(
           new Error('This browser cannot open audio. Try Safari or Chrome.'),
         )
@@ -137,6 +157,8 @@ export function createBrowserVoice(
             releaseMic()
             return
           }
+          tracks = acquired.getAudioTracks()
+          diagnostics?.report('acquired')
           options.microphoneOpened?.()
           const available = await unlocked
           if (stopped) {
@@ -191,8 +213,23 @@ export function createBrowserVoice(
           microphoneStream = acquired
           stream.startTask()
           ctx.addEventListener('statechange', changed)
+          // Manager-driven stops (device switch or cross-tab handoff) do not
+          // dispatch a track `ended` event. Retire this exact stream as soon
+          // as its owner drops it instead of leaving a dead listening graph.
+          const unsubscribe = micManager.subscribe((state) => {
+            if (
+              micManager.getStream() !== acquired ||
+              !state.consumers.includes(id)
+            )
+              trackInterrupted()
+          })
+          if (stopped) unsubscribe()
+          else {
+            unsubscribeManager = unsubscribe
+            diagnostics?.report('capturing')
+          }
         } catch (error) {
-          stop()
+          stop('start-failed')
           throw error
         }
       })()
@@ -218,7 +255,7 @@ export function createBrowserVoice(
         if (onStopped) stoppedListeners.delete(onStopped)
       }
     },
-    stop,
+    stop: () => stop(),
     startRecording() {
       if (stopped || microphoneStream === null || stream === null)
         throw new Error('Open the microphone before recording a musical take.')

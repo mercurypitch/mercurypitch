@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   audio: vi.fn(),
   recordTake: vi.fn(),
+  subscribeManager: vi.fn(),
+  getStream: vi.fn(),
 }))
 vi.mock('./voice-take', () => ({ createBrowserVoiceTake: mocks.recordTake }))
 vi.mock('@irchiinnuss/audio-io', () => ({
@@ -16,7 +18,12 @@ vi.mock('@irchiinnuss/audio-io', () => ({
 }))
 vi.mock('@irchiinnuss/pitch-engine', () => ({
   createF0Stream: mocks.create,
-  micManager: { acquire: mocks.acquire, release: mocks.release },
+  micManager: {
+    acquire: mocks.acquire,
+    release: mocks.release,
+    subscribe: mocks.subscribeManager,
+    getStream: mocks.getStream,
+  },
 }))
 
 function deferred<T>() {
@@ -77,6 +84,7 @@ beforeEach(() => {
     }),
   })
   mocks.acquire.mockResolvedValue(microphone())
+  mocks.subscribeManager.mockReturnValue(vi.fn())
   mocks.create.mockImplementation(() => ({
     startTask: vi.fn(),
     latestCaptured: () => captured,

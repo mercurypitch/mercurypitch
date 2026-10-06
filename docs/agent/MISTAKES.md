@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Watch microphone ownership as well as track events
+
+**Symptom:** a voice session kept reporting listening after the shared microphone manager closed its capture.
+**Cause:** `MediaStreamTrack.stop()` does not dispatch `ended`; manager-driven device changes and handoffs therefore bypassed the voice session's track listeners.
+**Rule:** subscribe to the manager for the exact acquired stream and consumer, release that subscription on stop, and notify interruption once when ownership disappears. Test the real manager's teardown with a track fake whose `stop()` emits no event; count resumed live capture separately from old-session disposal.
+**See:** `packages/glass-game/src/browser/voice-session.ts` and `voice-session-ownership.test.ts`.
+
 ### Keep retired shatter voices registered through their fade
 
 **Symptom:** navigating directly into another scored singing screen could leak a previous glass sound into its microphone window.
@@ -1890,3 +1897,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** renderer resize clears the drawing buffer while the Tune modal pauses the frame loop.
 **Rule:** after changing quality, render the current session snapshot with zero elapsed time under the existing loading/disposal guards and graphics failure handler. Do not reuse an old running snapshot or advance simulation time. Test this while the settings modal remains open.
 **See:** `packages/glass-game/src/ui/SongRunnerScreen.tsx`, `apps/beside-cue/e2e/glass-adventure-runner-sound.e2e.ts`.
+
+### Roll back canvas listeners when Three construction throws
+
+**Symptom:** after an active gallery lost its graphics context, an unknown 300-by-150 canvas restored and threw while reading `autoReset`.
+**Cause:** Three r185 registers canvas listeners before initializing its `info` object. Constructing on a lost context throws before assignment; its surviving restore listener then reads undefined state. The recovery panel also created a fresh optional Merc preview. This reproduces the secondary exception, not the driver's original reset.
+**Rule:** own constructor-time listener registrations, remove only those listeners on failure, and register diagnostic ownership before initialization. Keep recovery panels on artwork until an explicit retry; dispose a pending preview when error state arrives. Test an actual lost context, failed Three constructor and restore event, plus playing and paused recovery.
+**See:** `packages/glass-game/src/render/graphics-renderer.ts`, `packages/glass-game/src/ui/LoadingMerc.tsx`, `apps/beside-cue/e2e/glass-adventure-context-recovery.e2e.ts`.
