@@ -199,7 +199,10 @@ function createVesselPresentation(
   let resonance: ResonancePresentation | undefined
   let shardGroup: Group
   let installation: VesselInstallation | undefined
-  const playback = createShatterPlayback(options.shatterPlaybackSpeed)
+  const playback = createShatterPlayback(
+    options.shatterPlaybackSpeed,
+    reducedMotion,
+  )
   let disposed = false
   const crackMaterial = new LineBasicMaterial({
     color: 0xcaffee,

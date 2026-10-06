@@ -7,7 +7,11 @@ import { createGlassGame } from './game'
 import { resolveMelodyAttempt } from './melody-attempt'
 import { sampleMelodyAtTime } from './melody-contour'
 import { MOVEMENT } from './movement'
-import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from './shatter-presentation'
+
+const DEFAULT_SHATTER_SECONDS = shatterLifecycleSeconds(
+  SHATTER_PLAYBACK_SPEED.default,
+)
 
 const REST = { moveX: 0, moveZ: 0, jumpDown: false }
 const STATION_IDS = LEVEL.melodyLesson!.stations.map(
@@ -106,7 +110,7 @@ function traverse(dt: number) {
   }
 
   const settleShatter = (): void => {
-    for (let frame = 0; frame < (SHATTER_LIFECYCLE_SECONDS + 0.1) / dt; frame++)
+    for (let frame = 0; frame < (DEFAULT_SHATTER_SECONDS + 0.1) / dt; frame++)
       step()
   }
 

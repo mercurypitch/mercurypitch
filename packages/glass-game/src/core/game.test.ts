@@ -6,7 +6,7 @@ import type { GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../c
 import { createGlassGame } from './game'
 import { MOVEMENT } from './movement'
 import { exitRequirementsMet, getRequiredRouteBreakableIds } from './progress'
-import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from './shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from './shatter-presentation'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 const goblet = GLASSWORKS.breakables[0].id
@@ -197,7 +197,13 @@ describe('Glassworks simulation', () => {
     expect(sing(game)).toEqual([])
 
     const shatterPosition = game.snapshot().player.position
-    steps(game, Math.round(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) - 1)
+    steps(
+      game,
+      Math.round(
+        shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) /
+          MOVEMENT.fixedStep,
+      ) - 1,
+    )
     expect(game.snapshot().phase).toBe('shattering')
     expect(game.snapshot().breakables[0]?.phase).toBe('shattering')
     expect(game.snapshot().player.position).toEqual(shatterPosition)
@@ -245,6 +251,7 @@ describe('Glassworks simulation', () => {
 
   it('keeps a hitched shatter, camera hold and movement lock on one bounded clock', () => {
     const game = createGlassGame(GLASSWORKS)
+    game.setShatterPlaybackSpeed(1)
     walkToGoblet(game)
     expect(game.beginEncounter(goblet, 57)).toBe(true)
     sing(game)

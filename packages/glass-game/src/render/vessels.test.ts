@@ -57,7 +57,7 @@ describe('persistent glazed artwork', () => {
       portraitTexture: 'painting-archive-v5',
     })
 
-    const vessel = createVessel(target!, false)
+    const vessel = createVessel(target!, false, { shatterPlaybackSpeed: 1 })
     vessel.setPortrait(new Texture())
     const art = vessel.root.getObjectByName(
       `persistent-portrait-${target!.id}`,

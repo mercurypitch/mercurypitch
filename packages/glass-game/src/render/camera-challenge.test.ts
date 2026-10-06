@@ -7,8 +7,12 @@ import { GLASSWORKS } from '../content/glassworks'
 import type { GameSnapshot, GlassGame } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from '../core/shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { createAdventureCamera } from './camera'
+
+const DEFAULT_SHATTER_SECONDS = shatterLifecycleSeconds(
+  SHATTER_PLAYBACK_SPEED.default,
+)
 
 function challengeSubjects(snapshot: GameSnapshot) {
   const exhibit = GLASSWORKS.breakables[0]!
@@ -133,7 +137,7 @@ it('uses bounded presentation time for sparse challenge frames and freezes while
   ).toBeLessThan(1e-10)
 })
 
-it('holds through the real 2.3-second shatter lifecycle and freezes a paused transition', () => {
+it('holds through the default half-speed shatter lifecycle and freezes a paused transition', () => {
   const game = createGlassGame(GLASSWORKS)
   for (
     let frame = 0;
@@ -170,7 +174,7 @@ it('holds through the real 2.3-second shatter lifecycle and freezes a paused tra
     )
   expect(game.snapshot().phase).toBe('shattering')
   adventureCamera.setChallengeEncounter(null)
-  advanceShatter(game, SHATTER_LIFECYCLE_SECONDS - MOVEMENT.fixedStep / 2)
+  advanceShatter(game, DEFAULT_SHATTER_SECONDS - MOVEMENT.fixedStep / 2)
   adventureCamera.update(game.snapshot(), 0.05)
   expect(adventureCamera.getChallengeMetrics().mode).toBe('holding')
 
@@ -221,7 +225,7 @@ it('keeps first-person look input owned by the shatter framing', () => {
     adventureCamera.camera.quaternion.angleTo(heldQuaternion),
   ).toBeLessThan(1e-7)
 
-  advanceShatter(game, SHATTER_LIFECYCLE_SECONDS)
+  advanceShatter(game, DEFAULT_SHATTER_SECONDS + MOVEMENT.fixedStep)
   expect(game.snapshot().phase).toBe('idle')
   adventureCamera.update(game.snapshot(), 0.05)
   const releasedYaw = adventureCamera.yaw()

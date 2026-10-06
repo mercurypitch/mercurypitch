@@ -22,8 +22,24 @@ describe('development shatter preference', () => {
     pref.changeShatterPlaybackSpeed(0)
     expect(pref.shatterPlaybackSpeed()).toBe(0.4)
     pref.changeShatterPlaybackSpeed(NaN)
-    expect(pref.shatterPlaybackSpeed()).toBe(1)
+    expect(pref.shatterPlaybackSpeed()).toBe(0.5)
   })
+  it.each(['0.4', '0.5', '0.7', '1', '1.6'])(
+    'preserves a valid saved choice %sx without rewriting it',
+    (saved) => {
+      const writePreference = vi.fn()
+      const pref = createShatterPlaybackPreference(
+        {
+          developmentTuning: true,
+          readPreference: () => saved,
+          writePreference,
+        },
+        vi.fn(),
+      )
+      expect(pref.shatterPlaybackSpeed()).toBe(Number(saved))
+      expect(writePreference).not.toHaveBeenCalled()
+    },
+  )
   it('ignores saved development timing and change requests in a release host', () => {
     const readPreference = vi.fn(() => '0.4')
     const writePreference = vi.fn()
@@ -33,13 +49,13 @@ describe('development shatter preference', () => {
       apply,
     )
     pref.changeShatterPlaybackSpeed(0.6)
-    expect(pref.shatterPlaybackSpeed()).toBe(1)
+    expect(pref.shatterPlaybackSpeed()).toBe(0.5)
     expect(readPreference).not.toHaveBeenCalled()
     expect(writePreference).not.toHaveBeenCalled()
     expect(apply).not.toHaveBeenCalled()
   })
   it.each([null, '', 'oops', 'Infinity'])(
-    'uses normal speed for unusable saved value %s',
+    'uses half speed for unusable saved value %s',
     (saved) => {
       expect(
         createShatterPlaybackPreference(
@@ -50,7 +66,7 @@ describe('development shatter preference', () => {
           },
           vi.fn(),
         ).shatterPlaybackSpeed(),
-      ).toBe(1)
+      ).toBe(0.5)
     },
   )
 })

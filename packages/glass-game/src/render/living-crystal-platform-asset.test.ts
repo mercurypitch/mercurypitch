@@ -358,15 +358,26 @@ describe('shipped living-crystal platform', () => {
       expect.objectContaining({ response: 'charge', progress: 0.9 }),
     ])
 
-    renderer.update(state(1, 'shattering', 1, 2.2))
+    renderer.update(state(1, 'shattering', 1, 3.4))
     expect(renderer.snapshot().interiors).toEqual([
       expect.objectContaining({
         response: 'release',
-        progress: 0.5,
+        progress: expect.closeTo(0.5, 12),
       }),
     ])
     reducedMotion = true
-    renderer.update(state(1, 'complete', null, 2.3))
+    renderer.update(state(1, 'shattering', 4, 4.225))
+    expect(renderer.snapshot().interiors).toEqual([
+      expect.objectContaining({
+        response: 'release',
+        progress: expect.closeTo(0.5),
+      }),
+    ])
+    renderer.update(state(1, 'shattering', 4, 4.45))
+    expect(renderer.snapshot().interiors).toEqual([
+      expect.objectContaining({ response: 'release', progress: 1 }),
+    ])
+    renderer.update(state(1, 'complete', null, 4.5))
     expect(renderer.snapshot().interiors).toEqual([
       expect.objectContaining({
         response: 'rest',

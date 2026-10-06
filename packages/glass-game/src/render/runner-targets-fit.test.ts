@@ -8,6 +8,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { FROST_GOLD_ARCH_BUNDLE_IDS, FROST_GOLD_ARCH_NODES, } from '../content/frost-gold-arch-profile'
+import { shatterPresentationSpeed } from '../core/shatter-presentation'
 import { compileSongRunnerCourse } from '../runner/compile-course'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
 import { SINGING_CURRENT_CURRENT, SINGING_CURRENT_CURRENT_CATALOG, SINGING_CURRENT_CURRENT_SOURCE, SINGING_CURRENT_LEARNING, } from '../runner/first-course'
@@ -281,9 +282,12 @@ describe.each(['desktop', 'mobile'] as const)(
                 expectFitsLane(direction, course, target)
               }
 
+              // Sample the peak in presentation time, including the slower
+              // default; reduced motion retains its real-time feedback.
               const age =
                 RUNNER_TARGET_FEEDBACK_PRESENTATION.timing
-                  .completionPopSeconds / 2
+                  .completionPopSeconds /
+                (2 * shatterPresentationSpeed(undefined, reducedMotion))
               targets.update(
                 {
                   ...present(course, target, NEUTRAL, peakTime + age),
