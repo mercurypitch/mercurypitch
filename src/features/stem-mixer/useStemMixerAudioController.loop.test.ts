@@ -18,6 +18,7 @@ import { createAudioHarness, SONG_SECONDS, } from '@/tests/helpers/stem-mixer-au
 vi.mock('@/lib/audio-unlock', () => ({
   installAudioUnlock: () => () => undefined,
   unlockAudio: () => undefined,
+  unlockForPlayback: (ensure: () => AudioContext | null) => ensure(),
 }))
 
 let active: AudioHarness | null = null

@@ -19,6 +19,7 @@ const graph = vi.hoisted(() => ({ routes: [] as string[] }))
 vi.mock('@/lib/audio-unlock', () => ({
   installAudioUnlock: () => () => undefined,
   unlockAudio: () => undefined,
+  unlockForPlayback: (ensure: () => AudioContext | null) => ensure(),
 }))
 
 // The engine needs AudioWorklet; the routing does not. Every bus a source is

@@ -39,6 +39,7 @@ import { karaokeFocus, setKaraokeFocus } from '@/stores/ui-store'
 vi.mock('@/lib/audio-unlock', () => ({
   installAudioUnlock: () => () => undefined,
   unlockAudio: () => undefined,
+  unlockForPlayback: (ensure: () => AudioContext | null) => ensure(),
 }))
 
 beforeEach(() => {
