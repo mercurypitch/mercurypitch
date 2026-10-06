@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { BreakOutcome, GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { FOUNDATION_QUARTER_TURN_SOURCE, FOUNDATION_STRAIGHT_SOURCE, GLASS_FOUNDATION_QUARTER_TURN, GLASS_FOUNDATION_STRAIGHT, } from './foundation-routes'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
@@ -68,7 +68,13 @@ function sing(
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   expect(game.snapshot().phase).toBe('shattering')
-  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
+  steps(
+    game,
+    Math.ceil(
+      shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) /
+        MOVEMENT.fixedStep,
+    ) + 1,
+  )
   expect(game.snapshot().phase).toBe('idle')
 }
 

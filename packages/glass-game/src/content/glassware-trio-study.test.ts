@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { MovementInput } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { GLASSWARE_TRIO_STUDY } from './glassware-trio-study'
 import { LIVING_GLASS_HOLD } from './living-glass-trial'
 
@@ -66,10 +66,13 @@ describe('glassware trio terrace', () => {
       expect(game.snapshot().completedBreakableIds).toEqual(completed)
       for (
         let elapsed = 0;
-        elapsed <= SHATTER_LIFECYCLE_SECONDS + MOVEMENT.fixedStep;
+        elapsed <=
+        shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) +
+          MOVEMENT.fixedStep;
         elapsed += MOVEMENT.fixedStep
       )
         game.step(idle, MOVEMENT.fixedStep)
+      expect(game.snapshot().phase).toBe('idle')
     }
     walk(game, 'x', 1)
     walk(game, 'z', 4.7)

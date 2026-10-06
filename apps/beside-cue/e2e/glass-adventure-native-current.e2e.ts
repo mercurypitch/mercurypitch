@@ -87,7 +87,7 @@ for (const viewport of [
         exact: true,
       })
       await speed.scrollIntoViewIfNeeded()
-      await expect(speed).toHaveValue('1')
+      await expect(speed).toHaveValue('0.5')
       const speedBox = await speed.boundingBox()
       if (!speedBox) throw new Error('Missing shatter tuning range')
       await page.mouse.click(

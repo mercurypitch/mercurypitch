@@ -6,7 +6,7 @@ import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, } from
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { getRequiredRouteBreakableIds } from '../core/progress'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
 import { GLASSWORKS } from './glassworks'
 import { GLASSWORKS_JOURNEY, GLASSWORKS_JOURNEY_ROUTE, GLASSWORKS_JOURNEY_SOURCE, } from './glassworks-journey'
@@ -126,7 +126,13 @@ function sing(
     )
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
-  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
+  steps(
+    game,
+    Math.ceil(
+      shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) /
+        MOVEMENT.fixedStep,
+    ) + 1,
+  )
   expect(game.snapshot().phase).toBe('idle')
 }
 

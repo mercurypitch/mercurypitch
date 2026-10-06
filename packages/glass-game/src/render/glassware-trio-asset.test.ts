@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { GLASS_GAME_ASSET_FILES } from '../browser/assets'
 import { GLASSWARE_TRIO_PROFILES, GLASSWARE_TRIO_SOURCE_HEIGHT, } from '../content/glassware-trio-profile'
 import { GLASSWARE_TRIO_STUDY } from '../content/glassware-trio-study'
+import { SHATTER_PLAYBACK_SPEED, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { prepareExhibitAsset } from './exhibit-asset'
@@ -207,7 +208,10 @@ for (const [variant, profile] of Object.entries(GLASSWARE_TRIO_PROFILES)) {
         })
         first.update(
           { id: definition.id, phase: 'shattering', charge: 1, brokenAt: 1 },
-          1.1,
+          1 +
+            (SHATTER_PRESENTATION_TIMING.normal.anticipationSeconds +
+              SHATTER_PRESENTATION_TIMING.normal.visibleFlightSeconds * 0.1) /
+              SHATTER_PLAYBACK_SPEED.default,
         )
         expect(first.resonanceSnapshot()).toMatchObject({ phase: 'releasing' })
         expect(neighbour.resonanceSnapshot()).toMatchObject({ phase: 'idle' })

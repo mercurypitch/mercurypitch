@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, SolidPropDefinition, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_SOURCE, GLASS_ENCLOSED_CHAMBER, } from './enclosed-chamber'
 import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_ROOM, ENCLOSED_ENTRY_ROOM, } from './enclosed-museum-kit'
 import { MUSEUM_SCREEN_DEPTH, MUSEUM_SEAM_OVERLAP, MUSEUM_WALL_TOP, MUSEUM_WINDOW_APERTURE_HALF_WIDTH, MUSEUM_WINDOW_LINTEL_BOTTOM, MUSEUM_WINDOW_SILL_TOP, } from './enclosed-wall-kit'
@@ -92,7 +92,13 @@ function sing(
     )
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
-  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
+  steps(
+    game,
+    Math.ceil(
+      shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) /
+        MOVEMENT.fixedStep,
+    ) + 1,
+  )
   expect(game.snapshot().phase).toBe('idle')
 }
 

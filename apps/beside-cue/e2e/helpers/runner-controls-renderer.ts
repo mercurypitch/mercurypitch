@@ -44,7 +44,7 @@ const createControlsRenderer: typeof createSongRunnerRenderer = (
   marker.dataset.testid = 'runner-controls-presentation'
   container.append(marker)
   let quality: GlassRenderQualityPreference = options.renderQuality ?? 'auto'
-  marker.dataset.shatterSpeed = String(options.shatterPlaybackSpeed ?? 1)
+  marker.dataset.shatterSpeed = String(options.shatterPlaybackSpeed ?? 0.5)
   let disposed = false
   let lastStatus: string | undefined
   return {
