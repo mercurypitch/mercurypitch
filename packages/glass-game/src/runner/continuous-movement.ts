@@ -3,7 +3,7 @@
 import type { RunnerLateralSegment } from './continuous-lateral.ts'
 import { advanceRunnerLateral, runnerLateralPosition, runnerQuadraticRoots, } from './continuous-lateral.ts'
 import type { CompiledRunnerBlocker, CompiledRunnerCourse, } from './contracts.ts'
-import type { RunnerMovementState, RunnerMovementStepResult, } from './movement.ts'
+import type { RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts.ts'
 import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 const EPSILON = 1e-9

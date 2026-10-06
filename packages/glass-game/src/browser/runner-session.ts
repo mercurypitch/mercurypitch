@@ -3,9 +3,10 @@ import type { PitchObservation } from '../contracts'
 import type { GlassVoicePreparation, GlassVoiceSession } from '../host'
 import type { CompiledRunnerCourse, RunnerEvent, RunnerInput, } from '../runner/contracts'
 import { createSongRunnerGame } from '../runner/game'
-import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerPauseReason, RunnerSessionFrame, RunnerSessionState, SongRunnerHost, SongRunnerSession, } from '../runner/session-contracts'
+import type { RunnerAudioSchedule, RunnerAudioTransport, RunnerPauseReason, RunnerSessionState, SongRunnerHost, SongRunnerSession, } from '../runner/session-contracts'
 import { clampRunnerAudioPreferences } from '../runner/session-contracts'
 import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
+import { createRunnerFramePublisher } from './runner-frame-publisher'
 import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-host'
 import { createRunnerReadinessTracker } from './runner-readiness'
 
@@ -80,9 +81,7 @@ export function createBrowserRunnerSession(
   let lastVoiceReceipt = -Infinity
   let lastMixSequence = -1,
     lastMixCapture = -Infinity
-  let publishing = false
-  const frames: RunnerSessionFrame[] = []
-  const listeners = new Set<(frame: RunnerSessionFrame) => void>()
+  const publisher = createRunnerFramePublisher()
 
   function publish(
     patch: Partial<RunnerSessionState> = {},
@@ -90,24 +89,7 @@ export function createBrowserRunnerSession(
     presentation = false,
   ): void {
     state = Object.freeze({ ...state, ...patch, game: game.snapshot() })
-    frames.push(Object.freeze({ state, events, presentation }))
-    if (publishing) return
-    publishing = true
-    try {
-      while (frames.length) {
-        const next = frames.shift()!
-        for (const listener of [...listeners]) {
-          if (!listeners.has(listener)) continue
-          try {
-            listener(next)
-          } catch {
-            /* Presentation cannot interrupt clock or resource cleanup. */
-          }
-        }
-      }
-    } finally {
-      publishing = false
-    }
+    publisher.publish({ state, events, presentation })
   }
 
   function persist(): void {
@@ -717,11 +699,7 @@ export function createBrowserRunnerSession(
     state: () => state,
     subscribe(listener) {
       if (disposed) return () => undefined
-      listeners.add(listener)
-      listener({ state, events: [] })
-      return () => {
-        listeners.delete(listener)
-      }
+      return publisher.subscribe(listener, { state, events: [] })
     },
     start: () => begin(state.phase === 'error' ? intent : 'fresh'),
     resume: () => begin('resume'),
@@ -794,7 +772,7 @@ export function createBrowserRunnerSession(
         countIn: null,
         referencePlayback: REFERENCE_IDLE,
       })
-      listeners.clear()
+      publisher.clearListeners()
     },
   }
   if (host.takeOverMicrophone) session.takeOverMicrophone = takeOverMicrophone
