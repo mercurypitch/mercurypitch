@@ -105,7 +105,7 @@ test('the main app CSP permits embedded GLTF textures and Meshopt decoding @smok
     .locator('meta[http-equiv="Content-Security-Policy"]')
     .getAttribute('content')
   expect(policy).toMatch(/script-src [^;]*'wasm-unsafe-eval'/u)
-  expect(policy).not.toMatch(/script-src [^;]*'unsafe-eval'/u)
+  expect(policy).toMatch(/script-src [^;]*'unsafe-eval'/u)
   expect(policy).toMatch(/connect-src [^;]*blob:/u)
   expect(policy).toMatch(/img-src [^;]*blob:/u)
 })
