@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Material, Texture } from 'three'
-import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { getRequiredRouteBreakableIds } from '../core/progress'
 import { createLoadingProgressLedger } from '../loading-progress'
@@ -21,7 +21,8 @@ import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
 import { createGalleryInspection } from './gallery-inspection'
 import type { GlassRenderer, GlassRendererOptions, } from './glass-renderer-contracts'
-import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
+import { retireGraphicsCanvas } from './graphics-diagnostics'
+import { createGraphicsRenderer } from './graphics-renderer'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
@@ -139,13 +140,12 @@ function createGlassRendererInstance(
   const shadowCadence = createShadowUpdateCadence(shadowFrameInterval)
   let shadowUpdates = 0
   let shadowReuses = 0
-  const renderer = new WebGLRenderer({
+  const renderer = createGraphicsRenderer('gallery', {
     antialias: true,
     alpha: false,
     powerPreference: 'high-performance',
   })
   renderer.outputColorSpace = SRGBColorSpace
-  registerGraphicsCanvas(renderer.domElement, 'gallery')
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.9
   const renderContext = renderer.getContext()

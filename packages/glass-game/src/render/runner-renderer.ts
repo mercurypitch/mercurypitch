@@ -1,6 +1,6 @@
 // Singing Current renderer — one stable third-person view of a bounded, audio-clock-driven world.
 import type { Object3D, Texture } from 'three'
-import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, } from 'three'
 import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '../content/material-finishes'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import { parseShatterPlaybackSpeed } from '../core/shatter-presentation'
@@ -14,7 +14,8 @@ import { disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
 import type { GlassRenderer } from './glass-renderer-contracts'
-import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
+import { retireGraphicsCanvas } from './graphics-diagnostics'
+import { createGraphicsRenderer } from './graphics-renderer'
 import { createMaterialFinishBank } from './material-finishes'
 import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
@@ -96,13 +97,12 @@ export function createSongRunnerRenderer(
   }
   let quality = resolveGlassRenderQuality(qualityPreference, qualityEnvironment)
   const loadedAssetProfile = options.assetProfile ?? quality.assetProfile
-  const renderer = new WebGLRenderer({
+  const renderer = createGraphicsRenderer('singing-current', {
     antialias: true,
     alpha: false,
     powerPreference: 'high-performance',
   })
   renderer.outputColorSpace = SRGBColorSpace
-  registerGraphicsCanvas(renderer.domElement, 'singing-current')
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = RUNNER_LOOK.exposure
   scene.environmentIntensity = RUNNER_LOOK.environmentIntensity

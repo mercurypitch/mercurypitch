@@ -1,13 +1,14 @@
 // Floating museum scene — one fallible WebGL map, frame clock and selection surface.
 
 import type { Object3D } from 'three'
-import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereLight, Mesh, MeshStandardMaterial, PerspectiveCamera, Raycaster, RingGeometry, Scene, SRGBColorSpace, Vector2, Vector3, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereLight, Mesh, MeshStandardMaterial, PerspectiveCamera, Raycaster, RingGeometry, Scene, SRGBColorSpace, Vector2, Vector3, } from 'three'
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import { estimateAssetTextureBytes } from '../render/asset-texture-profile'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
 import { verifyFirstFrame } from '../render/first-frame'
-import { getGraphicsCanvasDiagnostic, registerGraphicsCanvas, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from '../render/graphics-diagnostics'
+import { getGraphicsCanvasDiagnostic, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from '../render/graphics-diagnostics'
+import { createGraphicsRenderer } from '../render/graphics-renderer'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from '../render/render-performance-governor'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from '../render/render-quality'
 import { canRenderViewport } from '../render/viewport'
@@ -170,12 +171,11 @@ function buildMuseumJourneyScene(
   const mysteryPortraitUrl = assetUrl('floating-museum-mystery-portrait-v5')
   const cloudscapeUrl = assetUrl('floating-museum-cloudscape-v3')
   const environmentUrl = assetUrl('museum-environment-v2')
-  const renderer = new WebGLRenderer({
+  const renderer = createGraphicsRenderer('museum-map', {
     antialias: true,
     alpha: false,
     powerPreference: 'high-performance',
   })
-  registerGraphicsCanvas(renderer.domElement, 'museum-map')
   onConstructionFailure(() => renderer.domElement.remove())
   onConstructionFailure(() => renderer.forceContextLoss())
   onConstructionFailure(() => renderer.dispose())

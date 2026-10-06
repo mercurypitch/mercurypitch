@@ -1,5 +1,5 @@
 // Graphics diagnostics — bounded failure context for the device console, without save data or audio.
-type GraphicsCanvasScene =
+export type GraphicsCanvasScene =
   | 'museum-map'
   | 'gallery'
   | 'singing-current'

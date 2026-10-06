@@ -2,11 +2,12 @@
 // Loading Merc — an isolated, optional 3D preview with a finite lifecycle.
 // ============================================================
 
-import type { AnimationAction, AnimationClip, Object3D, SkinnedMesh, WebGLRenderTarget, } from 'three'
-import { ACESFilmicToneMapping, AnimationMixer, Box3, CircleGeometry, DirectionalLight, Group, HemisphereLight, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, PerspectiveCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import type { AnimationAction, AnimationClip, Object3D, SkinnedMesh, WebGLRenderer, WebGLRenderTarget, } from 'three'
+import { ACESFilmicToneMapping, AnimationMixer, Box3, CircleGeometry, DirectionalLight, Group, HemisphereLight, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, PerspectiveCamera, PMREMGenerator, Scene, SRGBColorSpace, Vector3, } from 'three'
 import { disposeObject } from './dispose'
 import { verifyFirstFrame } from './first-frame'
-import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
+import { retireGraphicsCanvas } from './graphics-diagnostics'
+import { createGraphicsRenderer } from './graphics-renderer'
 import { createReflectionTexture } from './materials'
 import type { MercModelAsset } from './merc-model'
 import { loadMercModel } from './merc-model'
@@ -417,13 +418,12 @@ export function createLoadingMerc(
   }
 
   try {
-    renderer = new WebGLRenderer({
+    renderer = createGraphicsRenderer('loading-merc', {
       canvas,
       alpha: true,
       antialias: true,
       powerPreference: 'low-power',
     })
-    registerGraphicsCanvas(canvas, 'loading-merc')
     renderer.outputColorSpace = SRGBColorSpace
     renderer.toneMapping = ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.02

@@ -30,33 +30,43 @@ const state = vi.hoisted(() => ({
     | undefined,
 }))
 
+function rendererCanvas() {
+  return {
+    style: { cssText: '' },
+    dataset: {} as Record<string, string>,
+    setAttribute: vi.fn(),
+    addEventListener: vi.fn(
+      (type: string, listener: EventListenerOrEventListenerObject) =>
+        state.canvasListeners.set(type, listener),
+    ),
+    removeEventListener: vi.fn(
+      (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (state.canvasListeners.get(type) === listener)
+          state.canvasListeners.delete(type)
+      },
+    ),
+    setPointerCapture: vi.fn(),
+    releasePointerCapture: vi.fn(),
+    hasPointerCapture: vi.fn(() => false),
+    getBoundingClientRect: vi.fn(() => ({
+      left: 0,
+      top: 0,
+      width: 1024,
+      height: 768,
+    })),
+    remove: state.canvasRemove,
+  }
+}
+
 vi.mock('three', async (original) => ({
   ...(await original<typeof ThreeTypes>()),
   WebGLRenderer: class {
-    domElement = {
-      style: { cssText: '' },
-      dataset: {} as Record<string, string>,
-      setAttribute: vi.fn(),
-      addEventListener: vi.fn(
-        (type: string, listener: EventListenerOrEventListenerObject) =>
-          state.canvasListeners.set(type, listener),
-      ),
-      removeEventListener: vi.fn(
-        (type: string, listener: EventListenerOrEventListenerObject) => {
-          if (state.canvasListeners.get(type) === listener)
-            state.canvasListeners.delete(type)
-        },
-      ),
-      setPointerCapture: vi.fn(),
-      releasePointerCapture: vi.fn(),
-      hasPointerCapture: vi.fn(() => false),
-      getBoundingClientRect: vi.fn(() => ({
-        left: 0,
-        top: 0,
-        width: 1024,
-        height: 768,
-      })),
-      remove: state.canvasRemove,
+    domElement: ReturnType<typeof rendererCanvas>
+    constructor(parameters: ThreeTypes.WebGLRendererParameters) {
+      this.domElement = parameters.canvas as unknown as ReturnType<
+        typeof rendererCanvas
+      >
+      state.canvas = this.domElement as unknown as HTMLCanvasElement
     }
     info = {
       autoReset: true,
@@ -84,9 +94,6 @@ vi.mock('three', async (original) => ({
     })
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
-    constructor() {
-      state.canvas = this.domElement as unknown as HTMLCanvasElement
-    }
   },
 }))
 
@@ -196,6 +203,10 @@ beforeEach(() => {
 })
 
 function stubBrowser(): void {
+  vi.stubGlobal('document', {
+    createElement: rendererCanvas,
+    visibilityState: 'visible',
+  })
   vi.stubGlobal('window', {
     devicePixelRatio: 1,
     matchMedia: () => ({ matches: false }),

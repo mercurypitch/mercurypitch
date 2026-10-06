@@ -9,6 +9,7 @@ import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
 import { createRunnerFramePublisher } from './runner-frame-publisher'
 import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-host'
 import { createRunnerReadinessTracker } from './runner-readiness'
+import { createRunnerLifecycleDiagnostics } from './voice-diagnostics'
 
 const READINESS_SECONDS = 0.7
 const REFERENCE_IDLE = Object.freeze({ phase: 'idle', error: null } as const)
@@ -82,6 +83,10 @@ export function createBrowserRunnerSession(
   let lastMixSequence = -1,
     lastMixCapture = -Infinity
   const publisher = createRunnerFramePublisher()
+  const diagnose =
+    import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+      ? createRunnerLifecycleDiagnostics()
+      : undefined
 
   function publish(
     patch: Partial<RunnerSessionState> = {},
@@ -89,6 +94,7 @@ export function createBrowserRunnerSession(
     presentation = false,
   ): void {
     state = Object.freeze({ ...state, ...patch, game: game.snapshot() })
+    diagnose?.(state)
     publisher.publish({ state, events, presentation })
   }
 

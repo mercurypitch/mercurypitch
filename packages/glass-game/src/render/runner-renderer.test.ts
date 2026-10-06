@@ -46,19 +46,29 @@ const state = vi.hoisted(() => ({
   decoded: undefined as ((image: TexImageSource) => void) | undefined,
   observer: undefined as (() => void) | undefined,
 }))
+
+function rendererCanvas() {
+  return {
+    style: {},
+    setAttribute: vi.fn(),
+    remove: state.canvasRemove,
+    addEventListener: (name: string, fn: (event: Event) => void) =>
+      state.listeners.set(name, fn),
+    removeEventListener: (name: string) => state.listeners.delete(name),
+  }
+}
+
 vi.mock('three', async (original) => ({
   ...(await original<typeof Three>()),
   TextureLoader: class {
     loadAsync = state.texture
   },
   WebGLRenderer: class {
-    domElement = {
-      style: {},
-      setAttribute: vi.fn(),
-      remove: state.canvasRemove,
-      addEventListener: (name: string, fn: (event: Event) => void) =>
-        state.listeners.set(name, fn),
-      removeEventListener: (name: string) => state.listeners.delete(name),
+    domElement: ReturnType<typeof rendererCanvas>
+    constructor(parameters: Three.WebGLRendererParameters) {
+      this.domElement = parameters.canvas as unknown as ReturnType<
+        typeof rendererCanvas
+      >
     }
     shadowMap = {
       enabled: false,
@@ -208,6 +218,10 @@ beforeEach(() => {
   state.pixelRatio = 1
   state.listeners.clear()
   state.decoded = undefined
+  vi.stubGlobal('document', {
+    createElement: rendererCanvas,
+    visibilityState: 'visible',
+  })
   vi.stubGlobal('window', {
     devicePixelRatio: 1,
     matchMedia: () => ({ matches: false }),
