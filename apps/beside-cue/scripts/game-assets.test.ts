@@ -23,6 +23,11 @@ const RUNNER_SCENERY_GAME_ASSETS = [
   'games/adventure-v3/observatory-canopy.glb',
 ] as const
 
+const CRYSTAL_CURRENT_GAME_ASSETS = [
+  'games/runner-obstacles-v1/glacial-bulwark.glb',
+  'games/runner-obstacles-v1/rose-wave-hurdle.glb',
+] as const
+
 const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
   (asset) =>
     (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
@@ -72,6 +77,7 @@ beforeEach(() => {
   for (const asset of [
     ...R3_NATIVE_GAME_ASSETS,
     ...RUNNER_SCENERY_GAME_ASSETS,
+    ...CRYSTAL_CURRENT_GAME_ASSETS,
     ...CURRENT_DELIVERY_GAME_ASSETS,
     ...UNKNOWN_GAME_ASSETS,
   ])
@@ -86,6 +92,14 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
 describe('direct Vite game asset packaging', () => {
+  it('retains both Crystal Current obstacle models in native builds', async () => {
+    await compile(true, 'output', undefined, true)
+    for (const asset of CRYSTAL_CURRENT_GAME_ASSETS) {
+      expect(GLASS_GAME_REQUIRED_FILES).toContain(asset.slice('games/'.length))
+      expect(contents(`output/${asset}`)).toBe(`${asset} source`)
+    }
+  })
+
   it('retains the in-app runner scenery in a native Vite build', async () => {
     await compile(true, 'output', undefined, true)
     for (const asset of RUNNER_SCENERY_GAME_ASSETS) {

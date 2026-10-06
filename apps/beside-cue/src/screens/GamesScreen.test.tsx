@@ -108,6 +108,9 @@ vi.mock('@/games/adventure/AdventureScreen', () => ({
   AdventureScreen: (props: {
     campaign?: boolean
     runner?: boolean
+    runnerSteering?: string
+    runnerCamera?: string
+    runnerObstacles?: string
     level?: { id: string }
     onExit(): void
   }) => (
@@ -116,6 +119,9 @@ vi.mock('@/games/adventure/AdventureScreen', () => ({
       data-level={props.level?.id}
       data-campaign={String(props.campaign === true)}
       data-runner={String(props.runner === true)}
+      data-steering={props.runnerSteering}
+      data-camera={props.runnerCamera}
+      data-obstacles={props.runnerObstacles}
       onClick={() => props.onExit()}
     >
       Leave adventure
@@ -174,8 +180,33 @@ describe('owner-build adventure entries', () => {
       const host = screen.getByTestId('adventure-host')
       expect(host).toHaveAttribute('data-runner', 'true')
       expect(host).toHaveAttribute('data-campaign', 'false')
+      expect(host).not.toHaveAttribute('data-steering')
+      expect(host).not.toHaveAttribute('data-obstacles')
       expect(screen.queryByTestId('legacy-journey')).toBeNull()
       fireEvent.click(host)
+      expect(
+        screen.getByRole('button', { name: /The Singing Current/u }),
+      ).toBeEnabled()
+    },
+  )
+
+  it.each(['dev', 'ci'])(
+    'opens the complete Crystal Current study from the %s list without a URL override',
+    (channel) => {
+      build.channel = channel
+      render(() => <GamesScreen onBack={() => {}} />)
+      fireEvent.click(screen.getByRole('button', { name: /Crystal Current/u }))
+      const host = screen.getByTestId('adventure-host')
+      expect(host).toHaveAttribute('data-runner', 'true')
+      expect(host).toHaveAttribute('data-steering', 'continuous')
+      expect(host).toHaveAttribute('data-camera', 'angled')
+      expect(host).toHaveAttribute('data-obstacles', 'crystal-study')
+      expect(host).toHaveAttribute('data-campaign', 'false')
+      expect(screen.queryByTestId('legacy-journey')).toBeNull()
+      fireEvent.click(host)
+      expect(
+        screen.getByRole('button', { name: /Crystal Current/u }),
+      ).toBeEnabled()
       expect(
         screen.getByRole('button', { name: /The Singing Current/u }),
       ).toBeEnabled()
@@ -191,6 +222,9 @@ describe('owner-build adventure entries', () => {
     render(() => <GamesScreen onBack={() => {}} />)
     expect(
       screen.queryByRole('button', { name: /The Singing Current/u }),
+    ).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: /Crystal Current/u }),
     ).toBeNull()
     expect(
       screen.queryByRole('button', { name: /Little discoveries/u }),
