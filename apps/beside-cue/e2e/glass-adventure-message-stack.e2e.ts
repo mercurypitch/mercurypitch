@@ -16,6 +16,20 @@ test.setTimeout(180_000)
 const VIEWPORTS = [
   { label: 'phone', width: 390, height: 844, touch: true, safeAreaBottom: 0 },
   {
+    label: 'phone-landscape',
+    width: 844,
+    height: 390,
+    touch: true,
+    safeAreaBottom: 21,
+  },
+  {
+    label: 'phone-landscape-short',
+    width: 740,
+    height: 320,
+    touch: true,
+    safeAreaBottom: 21,
+  },
+  {
     label: 'phone-safe-area-34',
     width: 390,
     height: 844,
@@ -136,6 +150,12 @@ async function messageLayout(page: Page) {
           'button[aria-label="Jump"]',
         ),
       },
+      ...['Recenter camera', 'How to play', 'Camera tuning'].map((label) => ({
+        name: label,
+        element: document.querySelector<HTMLElement>(
+          `button[aria-label="${label}"]`,
+        ),
+      })),
       {
         name: 'encounter-offer',
         element: encounterOffer,
@@ -180,6 +200,13 @@ async function messageLayout(page: Page) {
       overlappingControls: controls
         .filter((control) => overlaps(stackBox, control.box))
         .map((control) => control.name),
+      controlOverlaps: controls.flatMap((control, index) =>
+        controls
+          .slice(index + 1)
+          .filter((other) => overlaps(control.box, other.box))
+          .map((other) => `${control.name}/${other.name}`),
+      ),
+      stackTop: stackBox.top,
       stackBottomClearance: window.innerHeight - stackBox.bottom,
     }
   })
@@ -205,9 +232,9 @@ test('stacks two current messages and clears them for the voice challenge @smoke
       await cdp.send('Emulation.setSafeAreaInsetsOverride', {
         insets: {
           top: 0,
-          right: 0,
+          right: viewport.label.includes('landscape') ? 59 : 0,
           bottom: viewport.safeAreaBottom,
-          left: 0,
+          left: viewport.label.includes('landscape') ? 59 : 0,
         },
       })
       await openVisit(page)
@@ -233,6 +260,7 @@ test('stacks two current messages and clears them for the voice challenge @smoke
         display: 'grid',
         insideViewport: true,
         overlappingControls: [],
+        controlOverlaps: [],
         rowOverlap: false,
       })
       expect(nearbyLayout.encounterOffer).not.toBeNull()
@@ -245,7 +273,7 @@ test('stacks two current messages and clears them for the voice challenge @smoke
           offer: encounterOfferLayout.bottomClearance,
           stack: nearbyLayout.stackBottomClearance,
         }
-      if (viewport.safeAreaBottom > 0) {
+      if (viewport.label === 'phone-safe-area-34') {
         expect(phoneClearance).not.toBeNull()
         expect(
           encounterOfferLayout.bottomClearance - phoneClearance!.offer,
@@ -259,6 +287,16 @@ test('stacks two current messages and clears them for the voice challenge @smoke
       await expect(
         page.getByRole('region', { name: 'Voice challenge' }),
       ).toBeVisible()
+      if (viewport.label.includes('landscape')) {
+        const challenge = page.getByRole('region', { name: 'Voice challenge' })
+        const box = await challenge.boundingBox()
+        expect(box!.height).toBeLessThanOrEqual(150)
+        expect(box!.y).toBeGreaterThan(viewport.height * 0.5)
+        for (const button of await challenge.getByRole('button').all()) {
+          const bounds = await button.boundingBox()
+          expect(bounds!.height).toBeGreaterThanOrEqual(44)
+        }
+      }
       await expect(page.getByTestId('glass-message-stack')).toHaveCount(0)
 
       await page.reload({ waitUntil: 'domcontentloaded' })
@@ -273,13 +311,22 @@ test('stacks two current messages and clears them for the voice challenge @smoke
       await expect(page.getByTestId('glass-progress-guidance')).toBeVisible()
       const stack = page.getByTestId('glass-message-stack')
       await expect(stack).toHaveAttribute('data-message-count', '2')
-      expect(await messageLayout(page)).toMatchObject({
+      const walkingLayout = await messageLayout(page)
+      expect(walkingLayout).toMatchObject({
         count: 2,
         display: 'grid',
         insideViewport: true,
         overlappingControls: [],
+        controlOverlaps: [],
         rowOverlap: false,
       })
+
+      if (viewport.label.includes('landscape')) {
+        // Keep the scene centre available for Merc, rather than lifting the
+        // portrait-sized message clearance into the middle of a short screen.
+        expect(walkingLayout.stackTop).toBeGreaterThan(viewport.height * 0.66)
+        expect(walkingLayout.stackBottomClearance).toBeLessThanOrEqual(42)
+      }
 
       if (proofDirectory !== undefined)
         await page.screenshot({

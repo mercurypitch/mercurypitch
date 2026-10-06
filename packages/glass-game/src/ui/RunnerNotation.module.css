@@ -93,6 +93,7 @@
   height: 3px;
   border-block: 1px solid #bda56b;
   background: #eee1bb;
+  transform: translateY(-50%);
 }
 .token {
   position: relative;
@@ -121,6 +122,7 @@
   left: -3px;
   width: 8px;
   border-top: 2px solid #507b6b;
+  transform: translateY(-50%);
 }
 .voiceMarker {
   position: absolute;
@@ -323,7 +325,7 @@
   font-size: 11px;
 }
 .previewNotes::before {
-  top: 16px;
+  top: 17px;
 }
 .previewNotes .token {
   min-width: 34px;
