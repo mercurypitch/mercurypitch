@@ -12,6 +12,7 @@ import { createExhibitGeometryPool } from './exhibit-geometry-pool'
 import { createKitInstance } from './kit-instance'
 import type { MaterialFinishBank } from './material-finishes'
 import { finishRunnerWallMaterial } from './material-finishes'
+import { drawRunnerNotationText } from './runner-notation-ink'
 import { createRunnerNoteCards } from './runner-note-cards'
 import { createRunnerTargetFeedback } from './runner-target-feedback'
 import { RUNNER_TARGET_FEEDBACK_PRESENTATION, runnerTargetFeedbackForPane, } from './runner-target-feedback-config'
@@ -143,13 +144,12 @@ function createScoreCard(
         activeNoteIndex: active?.noteIndex,
       })
       context.clearRect(0, 0, 512, 256)
+      // A local ink halo keeps notes readable without painting over the glass.
+      context.shadowColor = '#173d41'
+      context.shadowBlur = 4
       if (target.completionPolicy === 'charge' && notes.length === 1) {
         const note = notes[0]!
         const label = runnerMidiName(note.endMidi).text
-        context.fillStyle = 'rgba(17,61,65,0.70)'
-        context.beginPath()
-        context.roundRect(100, 10, 312, 232, 28)
-        context.fill()
         context.lineWidth = 5
         context.strokeStyle = 'rgba(234,194,105,0.6)'
         context.beginPath()
@@ -169,26 +169,20 @@ function createScoreCard(
         context.fillStyle = '#fff3cf'
         context.font = '600 52px serif'
         context.textAlign = 'center'
-        context.fillText(label, 256, 122)
+        drawRunnerNotationText(context, label, 256, 122)
         context.font = '600 22px sans-serif'
-        context.fillText('Short hold', 256, 206)
+        drawRunnerNotationText(context, 'Short hold', 256, 206)
         texture.needsUpdate = true
         return
       }
-      context.fillStyle = 'rgba(17,61,65,0.68)'
-      context.beginPath()
-      context.roundRect(2, 2, 508, 252, 22)
-      context.fill()
-      context.lineWidth = 2
-      context.strokeStyle = 'rgba(234,194,105,0.85)'
-      context.stroke()
       context.font = 'italic 600 24px serif'
       context.textAlign = 'left'
       context.fillStyle = '#eac269'
-      context.fillText('G', 14, layout.staff.lineYs[3])
+      drawRunnerNotationText(context, 'G', 14, layout.staff.lineYs[3])
       if (layout.staff.octaveLabel !== null) {
         context.font = '12px sans-serif'
-        context.fillText(
+        drawRunnerNotationText(
+          context,
           layout.staff.octaveLabel,
           10,
           layout.staff.lineYs[4] + 22,
@@ -263,12 +257,12 @@ function createScoreCard(
         if (note.pitch.accidental) {
           context.fillStyle = '#fff3cf'
           context.font = '16px serif'
-          context.fillText('#', note.x - 17.5, note.endY + 5)
+          drawRunnerNotationText(context, '#', note.x - 17.5, note.endY + 5)
         }
         context.fillStyle = '#fff3cf'
         context.font = '600 18px sans-serif'
         context.textAlign = 'center'
-        context.fillText(note.label, note.x, layout.labelY)
+        drawRunnerNotationText(context, note.label, note.x, layout.labelY)
       }
       texture.needsUpdate = true
     },

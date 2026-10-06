@@ -23,6 +23,9 @@ describe('split-window ordered note cards', () => {
         fill: vi.fn(),
         stroke: vi.fn(),
         fillText: vi.fn(),
+        strokeText: vi.fn(),
+        save: vi.fn(),
+        restore: vi.fn(),
         arc: vi.fn(),
         font: '',
         fillStyle: '',
@@ -97,6 +100,15 @@ describe('split-window ordered note cards', () => {
     }
     const before = JSON.stringify(snapshot)
     cards.update(target, snapshot, 60, 0)
+    for (const context of contexts) {
+      expect(context.fill).not.toHaveBeenCalled()
+      expect(context.roundRect).not.toHaveBeenCalled()
+      expect(context).toMatchObject({ shadowColor: '#173d41', shadowBlur: 4 })
+      expect(context.strokeText.mock.calls).toEqual(context.fillText.mock.calls)
+      expect(context.strokeText.mock.invocationCallOrder[0]).toBeLessThan(
+        context.fillText.mock.invocationCallOrder[0]!,
+      )
+    }
     expect(contexts[0]!.fillText).toHaveBeenCalledWith('C4', 128, 180)
     expect(contexts[1]!.fillText).toHaveBeenCalledWith('D4', 128, 180)
     expect(contexts.every((context) => context.font.includes('104px'))).toBe(
