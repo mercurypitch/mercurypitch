@@ -5,6 +5,7 @@ import { BoxGeometry, Matrix4 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { LIVING_GLASS_TRIAL } from '../content/living-glass-trial'
 import type { BreakableSnapshot } from '../contracts'
+import { SHATTER_PLAYBACK_SPEED, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { createVessel } from './vessels'
 
 const target = LIVING_GLASS_TRIAL.breakables[0]!
@@ -25,8 +26,13 @@ describe('culled vessel lifecycle', () => {
     ) as Mesh
     vessel.update(state('charging', null, 0.7), 1)
     const before = vessel.resonanceSnapshot()
+    const halfReleaseTime =
+      1 +
+      (SHATTER_PRESENTATION_TIMING.normal.anticipationSeconds +
+        SHATTER_PRESENTATION_TIMING.normal.visibleFlightSeconds / 2) /
+        SHATTER_PLAYBACK_SPEED.default
 
-    vessel.update(state('shattering', 1), 2.2, false)
+    vessel.update(state('shattering', 1), halfReleaseTime, false)
     expect(vessel.resonanceSnapshot()).toEqual(before)
     expect(intact.visible).toBe(true)
 
@@ -43,7 +49,7 @@ describe('culled vessel lifecycle', () => {
     expect(release).toHaveBeenCalledOnce()
     expect(vessel.root.getObjectByName(intact.name)).toBe(intact)
 
-    vessel.update(state('shattering', 1), 2.2)
+    vessel.update(state('shattering', 1), halfReleaseTime)
     expect(intact.visible).toBe(false)
     expect(vessel.resonanceSnapshot()).toMatchObject({
       phase: 'releasing',

@@ -5,7 +5,7 @@ import { composeLevel } from '../authoring/compose-level'
 import type { Bounds3, BreakOutcome, ChallengeDefinition, GameEvent, GlassGame, MovementInput, PitchStepDefinition, PitchTargetId, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_HALF } from './enclosed-museum-kit'
 import { GLASSWORKS } from './glassworks'
 import { TWIN_GALLERIES, TWIN_GALLERIES_PAIR_HOLD, TWIN_GALLERIES_ROUTE, TWIN_GALLERIES_SOURCE, } from './twin-galleries'
@@ -154,7 +154,13 @@ function sing(
     sequence += frameCount
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
-  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
+  steps(
+    game,
+    Math.ceil(
+      shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) /
+        MOVEMENT.fixedStep,
+    ) + 1,
+  )
   expect(game.snapshot().phase).toBe('idle')
 }
 

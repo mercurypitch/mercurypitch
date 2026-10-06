@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { GameEvent, MovementInput } from '../contracts'
 import { createGlassGame, isWithinBreakableInteractionCircle, } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { LIVING_CRYSTAL_PLATFORM_RENDER_ID } from './living-crystal-profile'
 import { LIVING_GLASS_CHECKPOINT_ID, LIVING_GLASS_HOLD, LIVING_GLASS_LEVEL_ID, LIVING_GLASS_ROSEBUD_ANCHOR, LIVING_GLASS_ROSEBUD_ID, LIVING_GLASS_ROSEBUD_POSITION, LIVING_GLASS_TRIAL, } from './living-glass-trial'
 import { RESONANCE_ROSEBUD_VARIANT_ID } from './resonance-rosebud-profile'
@@ -195,10 +195,13 @@ describe('living glass trial', () => {
     feedHold(earned, 0, LIVING_GLASS_HOLD.requiredSeconds + 0.05)
     for (
       let elapsed = 0;
-      elapsed <= SHATTER_LIFECYCLE_SECONDS + MOVEMENT.fixedStep;
+      elapsed <=
+      shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) +
+        MOVEMENT.fixedStep;
       elapsed += MOVEMENT.fixedStep
     )
       earned.step(IDLE, MOVEMENT.fixedStep)
+    expect(earned.snapshot().phase).toBe('idle')
     const exitEvents = enterExit(earned)
     expect(exitEvents).toContainEqual({ type: 'complete' })
     expect(earned.snapshot().complete).toBe(true)

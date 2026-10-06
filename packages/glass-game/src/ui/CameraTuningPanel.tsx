@@ -1,6 +1,7 @@
 // Camera tuning panel — compact development controls that work with mouse or touch.
 
 import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { SHATTER_PLAYBACK_SPEED } from '../core/shatter-presentation'
 import { CAMERA_FOLLOW_SMOOTHNESS } from '../render/camera'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PRESETS, DEFAULT_CAMERA_COMFORT, LOOK_SENSITIVITY, normalizeCameraComfort, } from './camera-comfort'
@@ -188,7 +189,9 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
               onClick={() => {
                 props.onChange({ ...DEFAULT_CAMERA_COMFORT })
                 props.onRenderQualityChange('auto')
-                props.onShatterPlaybackSpeedChange(1)
+                props.onShatterPlaybackSpeedChange(
+                  SHATTER_PLAYBACK_SPEED.default,
+                )
               }}
             >
               Reset defaults

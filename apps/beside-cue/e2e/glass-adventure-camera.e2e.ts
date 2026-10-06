@@ -307,7 +307,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
       followSmoothnessSeconds: 0.2,
     },
     renderQuality: 'auto',
-    shatterPlaybackSpeed: 1,
+    shatterPlaybackSpeed: 0.5,
   })
   await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
@@ -772,5 +772,5 @@ test('development shatter speed survives real pointer tuning and a reload @smoke
   await page.getByRole('button', { name: 'Camera tuning' }).click()
   await expect(speed).toHaveValue(value)
   await panel.getByRole('button', { name: 'Reset defaults' }).click()
-  await expect(speed).toHaveValue('1')
+  await expect(speed).toHaveValue('0.5')
 })

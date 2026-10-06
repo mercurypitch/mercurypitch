@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import type { GlassGame, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR } from '../render/cloudway-scene'
 import type { CloudwayLayoutAudition } from './cloudway-layouts'
 import { CLOUDWAY_CURRENT_LAYOUT_ID, CLOUDWAY_CURRENT_TRIAL, CLOUDWAY_LAYOUT_AUDITIONS, CLOUDWAY_LAYOUT_SAVE_IDS, selectCloudwayLayout, } from './cloudway-layouts'
@@ -150,7 +151,12 @@ function driver(level: LevelDefinition, dt: number): Driver {
       if (game.snapshot().phase === 'shattering') break
     }
     expect(game.snapshot().completedBreakableIds).toContain(encounterId)
-    for (let frame = 0; frame < 2.5 / dt; frame++) step()
+    // Preserve the driver's short settling period after the input lock ends.
+    const releaseFrames = Math.ceil(
+      (shatterLifecycleSeconds(SHATTER_PLAYBACK_SPEED.default) + 0.2) / dt,
+    )
+    for (let frame = 0; frame < releaseFrames; frame++) step()
+    expect(game.snapshot().phase).toBe('idle')
   }
 
   return {
