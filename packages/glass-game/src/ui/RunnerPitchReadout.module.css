@@ -1,6 +1,7 @@
 .readout {
   display: grid;
-  grid-template-columns: auto minmax(38px, 1fr);
+  /* Reserve note and coaching widths so only the pitch marker moves. */
+  grid-template-columns: 76px minmax(38px, 1fr);
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -29,7 +30,7 @@
 }
 .coach {
   display: grid;
-  grid-template-columns: minmax(28px, 1fr) auto;
+  grid-template-columns: minmax(28px, 1fr) 82px;
   align-items: center;
   gap: 8px;
   min-width: 0;
