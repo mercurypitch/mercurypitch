@@ -527,4 +527,53 @@ describe('convex platform contact', () => {
     expect(result.position.x).toBeGreaterThan(0.82)
     expect(result.position.z).toBeGreaterThan(0.5)
   })
+
+  it('walks across overlapping coplanar platforms without falling through or lateral ejection', () => {
+    const first: PlatformDefinition = {
+      id: 'first',
+      minX: -1,
+      maxX: 1,
+      minZ: 0,
+      maxZ: 2.1,
+      top: 0,
+      thickness: 0.3,
+      kind: 'deck',
+      material: 'stone',
+    }
+    const second: PlatformDefinition = {
+      id: 'second',
+      minX: -1,
+      maxX: 1,
+      minZ: 2.0,
+      maxZ: 4.0,
+      top: 0,
+      thickness: 0.3,
+      kind: 'deck',
+      material: 'stone',
+    }
+
+    // Step from inside first platform into the overlapping seam
+    const step1 = FLAT_COURSE_COLLIDER.move(
+      { x: 0, y: 0, z: 1.95 },
+      { x: 0, y: -0.01, z: 0.1 },
+      [first, second],
+      MOVEMENT,
+    )
+    expect(step1.support).not.toBeNull()
+    expect(step1.position.y).toBe(0)
+    expect(step1.position.z).toBeCloseTo(2.05, 5)
+    expect(step1.blockedZ).toBe(false)
+
+    // Step from seam into second platform
+    const step2 = FLAT_COURSE_COLLIDER.move(
+      step1.position,
+      { x: 0, y: -0.01, z: 0.1 },
+      [first, second],
+      MOVEMENT,
+    )
+    expect(step2.support).not.toBeNull()
+    expect(step2.position.y).toBe(0)
+    expect(step2.position.z).toBeCloseTo(2.15, 5)
+    expect(step2.blockedZ).toBe(false)
+  })
 })

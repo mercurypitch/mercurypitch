@@ -255,21 +255,26 @@ function sharesHorizontalEdge(
   first: PlatformDefinition,
   second: PlatformDefinition,
 ): boolean {
-  const touchesX =
-    Math.abs(first.maxX - second.minX) <= EPSILON ||
-    Math.abs(second.maxX - first.minX) <= EPSILON
-  const touchesZ =
-    Math.abs(first.maxZ - second.minZ) <= EPSILON ||
-    Math.abs(second.maxZ - first.minZ) <= EPSILON
-  return (
-    (touchesX &&
-      orderedOverlap(first.minZ, first.maxZ, second.minZ, second.maxZ)) ||
-    (touchesZ &&
-      orderedOverlap(first.minX, first.maxX, second.minX, second.maxX))
+  const connectsX =
+    first.maxX >= second.minX - 0.02 && second.maxX >= first.minX - 0.02
+  const connectsZ =
+    first.maxZ >= second.minZ - 0.02 && second.maxZ >= first.minZ - 0.02
+  const overlapsX = orderedOverlap(
+    first.minX,
+    first.maxX,
+    second.minX,
+    second.maxX,
   )
+  const overlapsZ = orderedOverlap(
+    first.minZ,
+    first.maxZ,
+    second.minZ,
+    second.maxZ,
+  )
+  return (connectsX && overlapsZ) || (connectsZ && overlapsX)
 }
 
-/** Allows a shallow visible crown at a physically connected floor seam. */
+/** Allows a shallow visible crown or flat seam at a physically connected floor seam. */
 function isConnectedWalkableStep(
   position: Vec3,
   shape: BodyShape,
@@ -278,7 +283,7 @@ function isConnectedWalkableStep(
 ): boolean {
   if (target.kind === 'prop') return false
   const rise = target.top - position.y
-  if (rise <= EPSILON || rise > MAXIMUM_CONNECTED_STEP_HEIGHT + EPSILON)
+  if (rise < -0.02 || rise > MAXIMUM_CONNECTED_STEP_HEIGHT + EPSILON)
     return false
   const source = findSupport(position, shape, solids)
   return (
@@ -571,12 +576,22 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
     // This also handles a prop taper widening during descent.
     for (const p of platforms) {
       if (isConnectedWalkableStep(position, shape, p, platforms)) continue
+      if (
+        result.support !== null &&
+        p.kind !== 'prop' &&
+        Math.abs(p.top - result.support.top) <= 0.02 &&
+        (p.id === result.support.id ||
+          (result.support.kind !== 'prop' &&
+            sharesHorizontalEdge(result.support as PlatformDefinition, p)))
+      )
+        continue
       const beforeX = next.x,
         beforeZ = next.z
       recoverSideOverlap(next, position, shape, p, intentionalGaps)
       if ((next.x - beforeX) * displacement.x < -EPSILON) result.blockedX = true
       if ((next.z - beforeZ) * displacement.z < -EPSILON) result.blockedZ = true
     }
+
     if (result.support && !supportsFeet(next, result.support))
       result.support = null
     return result

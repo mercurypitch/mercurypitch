@@ -23,7 +23,9 @@ describe('generateProceduralCourse', () => {
     const run2 = generateProceduralCourse({ seed: 'daily-2026-10-06' })
 
     expect(run1.rawDocument).toEqual(run2.rawDocument)
-    expect(run1.compiledLevel.platforms.length).toBe(run2.compiledLevel.platforms.length)
+    expect(run1.compiledLevel.platforms.length).toBe(
+      run2.compiledLevel.platforms.length,
+    )
   })
 
   it('generates distinct layouts for distinct seeds', () => {
@@ -72,7 +74,7 @@ describe('generateProceduralCourse', () => {
       const minSpan = Math.min(spanX, spanZ)
       const maxSpan = Math.max(spanX, spanZ)
       expect(minSpan).toBeCloseTo(0.36, 1)
-      expect(maxSpan).toBeCloseTo(1.60, 1)
+      expect(maxSpan).toBeCloseTo(1.6, 1)
 
       // The exit must not overlap or precede the finale portrait
       const portrait = result.compiledLevel.breakables.find((b) =>
@@ -92,7 +94,9 @@ describe('generateProceduralCourse', () => {
     const results = seeds.map((seed) => generateProceduralCourse({ seed }))
 
     const titles = new Set(results.map((r) => r.title))
-    const platformCounts = new Set(results.map((r) => r.compiledLevel.platforms.length))
+    const platformCounts = new Set(
+      results.map((r) => r.compiledLevel.platforms.length),
+    )
     const exitX = new Set(results.map((r) => r.compiledLevel.exit.maxX))
 
     // Multiple distinct titles, platform counts, and spatial bounds
@@ -103,7 +107,18 @@ describe('generateProceduralCourse', () => {
 
   it('guarantees rich lateral variety, diagonal placements, and multiple turns across seeds', () => {
     // Test across a diverse seed suite
-    const testSeeds = [10, 42, 100, 255, 777, 'serpent', 'crystal', 'abyss', 'aurora', 'meander']
+    const testSeeds = [
+      10,
+      42,
+      100,
+      255,
+      777,
+      'serpent',
+      'crystal',
+      'abyss',
+      'aurora',
+      'meander',
+    ]
     for (const seed of testSeeds) {
       const result = generateProceduralCourse({ seed })
       const level = result.compiledLevel
@@ -112,7 +127,9 @@ describe('generateProceduralCourse', () => {
       expect(level.platforms.length).toBeGreaterThanOrEqual(35)
 
       // 2. Ensure platforms have pronounced lateral variety (|x| > 0.5m)
-      const maxAbsX = Math.max(...level.platforms.map((p) => Math.abs(p.minX + p.maxX) / 2))
+      const maxAbsX = Math.max(
+        ...level.platforms.map((p) => Math.abs(p.minX + p.maxX) / 2),
+      )
       expect(maxAbsX).toBeGreaterThanOrEqual(1.0)
 
       // 3. Ensure multi-mechanic presence (frost, crackle/hex, deck)
@@ -121,11 +138,54 @@ describe('generateProceduralCourse', () => {
       expect(hasFrost || hasHex).toBe(true)
 
       // 4. Ensure non-trivial bounding box (both width and depth span over 10m)
-      const spanX = Math.max(...level.platforms.map((p) => p.maxX)) - Math.min(...level.platforms.map((p) => p.minX))
-      const spanZ = Math.max(...level.platforms.map((p) => p.maxZ)) - Math.min(...level.platforms.map((p) => p.minZ))
+      const spanX =
+        Math.max(...level.platforms.map((p) => p.maxX)) -
+        Math.min(...level.platforms.map((p) => p.minX))
+      const spanZ =
+        Math.max(...level.platforms.map((p) => p.maxZ)) -
+        Math.min(...level.platforms.map((p) => p.minZ))
       expect(spanX).toBeGreaterThanOrEqual(8.0)
       expect(spanZ).toBeGreaterThanOrEqual(15.0)
     }
   })
-})
 
+  it('guarantees zero physical 2D platform overlaps across procedural seeds', () => {
+    const testSeeds = [
+      'fork',
+      'serpent',
+      'crystal',
+      'abyss',
+      'aurora',
+      'meander',
+      1,
+      2,
+      42,
+      100,
+      777,
+    ]
+    for (const seed of testSeeds) {
+      const result = generateProceduralCourse({ seed })
+      const level = result.compiledLevel
+      const overlappingPairs: string[] = []
+      for (let i = 0; i < level.platforms.length; i++) {
+        for (let j = i + 1; j < level.platforms.length; j++) {
+          const p1 = level.platforms[i]
+          const p2 = level.platforms[j]
+          const xOverlap =
+            Math.min(p1.maxX, p2.maxX) - Math.max(p1.minX, p2.minX)
+          const zOverlap =
+            Math.min(p1.maxZ, p2.maxZ) - Math.max(p1.minZ, p2.minZ)
+          if (xOverlap > 0.01 && zOverlap > 0.01) {
+            overlappingPairs.push(
+              `seed=${seed}: ${p1.id} overlaps with ${p2.id}: x=[${p1.minX.toFixed(3)}, ${p1.maxX.toFixed(3)}] vs [${p2.minX.toFixed(3)}, ${p2.maxX.toFixed(3)}], z=[${p1.minZ.toFixed(3)}, ${p1.maxZ.toFixed(3)}] vs [${p2.minZ.toFixed(3)}, ${p2.maxZ.toFixed(3)}] (dx=${xOverlap.toFixed(3)}, dz=${zOverlap.toFixed(3)})`,
+            )
+          }
+        }
+      }
+      expect(
+        overlappingPairs,
+        `Found overlapping platforms in seed=${seed}`,
+      ).toEqual([])
+    }
+  })
+})
