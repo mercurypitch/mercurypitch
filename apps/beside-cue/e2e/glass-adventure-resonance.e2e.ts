@@ -2,11 +2,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
-import {
-  MAXIMUM_SHATTER_FRAME_SECONDS,
-  SHATTER_PLAYBACK_SPEED,
-  shatterLifecycleSeconds,
-} from '../../../packages/glass-game/src/core/shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../../../packages/glass-game/src/core/shatter-presentation'
 
 interface ResonanceVoiceSource {
   context: AudioContext
