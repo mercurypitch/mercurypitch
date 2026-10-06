@@ -10,6 +10,7 @@ import { GameAppearanceControls, GameIcon, GameSettingsDialog, GameSurface, Game
 import type { IslandTrialView } from './IslandTrials'
 import { IslandTrials } from './IslandTrials'
 import styles from './MuseumJourney.module.css'
+import { MuseumJourneySoundControls } from './MuseumJourneySoundControls'
 import { SongRunnerJourneyCard } from './SongRunnerJourneyCard'
 
 export interface MuseumJourneyChapterView {
@@ -393,67 +394,6 @@ export function MuseumJourney(props: {
     resumeMusicAfterSettings = false
   }
 
-  function soundControls() {
-    return (
-      <Show when={audioPreferences()}>
-        {(preferences) => (
-          <div class={styles.soundControls}>
-            <label class={styles.soundToggle}>
-              <input
-                type="checkbox"
-                checked={preferences().muted}
-                onChange={(event) =>
-                  changeSound({ muted: event.currentTarget.checked })
-                }
-              />
-              Mute museum sound
-            </label>
-            <label>
-              <span>
-                Music{' '}
-                <output>{Math.round(preferences().musicVolume * 100)}%</output>
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                aria-label="Museum music volume"
-                value={Math.round(preferences().musicVolume * 100)}
-                onInput={(event) =>
-                  changeSound({
-                    musicVolume: Number(event.currentTarget.value) / 100,
-                  })
-                }
-              />
-            </label>
-            <label>
-              <span>
-                Ambience{' '}
-                <output>
-                  {Math.round(preferences().ambienceVolume * 100)}%
-                </output>
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                aria-label="Museum ambience volume"
-                value={Math.round(preferences().ambienceVolume * 100)}
-                onInput={(event) =>
-                  changeSound({
-                    ambienceVolume: Number(event.currentTarget.value) / 100,
-                  })
-                }
-              />
-            </label>
-          </div>
-        )}
-      </Show>
-    )
-  }
-
   function resetView(): void {
     scene?.resetView()
   }
@@ -789,7 +729,18 @@ export function MuseumJourney(props: {
         exitLabel="Leave Glassworks"
         sections={[
           ...(props.createMusic
-            ? [{ id: 'sound', label: 'Sound', content: soundControls }]
+            ? [
+                {
+                  id: 'sound',
+                  label: 'Sound',
+                  content: () => (
+                    <MuseumJourneySoundControls
+                      preferences={audioPreferences()}
+                      onChange={changeSound}
+                    />
+                  ),
+                },
+              ]
             : []),
           {
             id: 'appearance',
