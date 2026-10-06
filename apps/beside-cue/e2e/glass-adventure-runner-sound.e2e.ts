@@ -120,6 +120,10 @@ for (const viewport of [
     await headerTrigger.click()
     await expect(sound).toBeVisible()
     await expect(runner).toHaveAttribute('data-phase', 'paused')
+    await sound.getByRole('button', { name: 'High', exact: true }).click()
+    await expect(
+      page.getByTestId('runner-controls-presentation'),
+    ).toHaveAttribute('data-render-quality', 'high')
     await expect(sound).not.toContainText("backing music couldn't load")
     await page.keyboard.press('Escape')
     await expect(sound).not.toBeVisible()

@@ -10,6 +10,8 @@ export const MERCURY_GLASS_STORAGE_PREFIX =
 export function createMercuryGlassHost(onExit: () => void): GlassGameHost {
   return createBrowserGlassHost({
     storagePrefix: MERCURY_GLASS_STORAGE_PREFIX,
+    developmentTuning:
+      import.meta.env.DEV || import.meta.env.MODE === 'development',
     assetUrl: (id) => glassGameAssetUrl(id, '/glass-game-assets/'),
     onExit,
   })

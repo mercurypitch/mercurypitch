@@ -1,0 +1,74 @@
+.group {
+  min-width: 0;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgb(57 125 117 / 32%);
+  border-radius: 14px;
+  color: #173f49;
+  background: #f0f4e9;
+}
+.group legend {
+  padding: 0 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.caption {
+  margin: 6px 0;
+  color: #58746d;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+.choices button,
+.reset {
+  min-height: 44px;
+  padding: 7px 8px;
+  border: 1px solid #90b4ac;
+  border-radius: 12px;
+  background: #f9faf1;
+  color: #173f49;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.choices button[aria-pressed='true'] {
+  background: #397d75;
+  border-color: #397d75;
+  color: #fffced;
+}
+.speed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+}
+.speed > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.speed output {
+  font-variant-numeric: tabular-nums;
+}
+.speed input {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  accent-color: #397d75;
+  touch-action: pan-y;
+}
+.group :focus-visible {
+  outline: 2px solid #397d75;
+  outline-offset: 3px;
+}
+.reset {
+  width: 100%;
+  margin-top: 8px;
+}

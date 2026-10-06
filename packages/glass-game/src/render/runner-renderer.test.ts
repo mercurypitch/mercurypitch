@@ -39,6 +39,8 @@ const state = vi.hoisted(() => ({
   mercRoot: undefined as Group | undefined,
   worldUpdate: vi.fn(),
   targetUpdate: vi.fn(),
+  targetCreate: vi.fn(),
+  targetSpeed: vi.fn(),
   precompile: vi.fn(),
   verifyFirstFrame: vi.fn(),
   decoded: undefined as ((image: TexImageSource) => void) | undefined,
@@ -112,12 +114,16 @@ vi.mock('./runner-world', () => ({
   }),
 }))
 vi.mock('./runner-targets', () => ({
-  createRunnerTargets: () => ({
-    root: new Group(),
-    update: state.targetUpdate,
-    dispose: state.targetDispose,
-    metrics: () => ({ targets: 1 }),
-  }),
+  createRunnerTargets: (...args: unknown[]) => {
+    state.targetCreate(...args)
+    return {
+      root: new Group(),
+      update: state.targetUpdate,
+      setShatterPlaybackSpeed: state.targetSpeed,
+      dispose: state.targetDispose,
+      metrics: () => ({ targets: 1 }),
+    }
+  },
 }))
 
 import { createSongRunnerRenderer } from './runner-renderer'
@@ -531,6 +537,53 @@ describe('runner renderer ownership', () => {
 
     expect(state.targetUpdate).toHaveBeenCalledExactlyOnceWith(snapshot, 0.075)
     expect(state.sceneryUpdate).toHaveBeenCalledExactlyOnceWith(snapshot, 0.075)
+  })
+
+  it('applies pending shatter speed before loading and forwards later changes', async () => {
+    const { renderer } = fixture()
+    renderer.setShatterPlaybackSpeed(0.5)
+    await renderer.ready
+    expect(state.targetCreate.mock.lastCall?.[6]).toBe(0.5)
+    renderer.setShatterPlaybackSpeed(1.3)
+    expect(state.targetSpeed).toHaveBeenLastCalledWith(1.3)
+    renderer.dispose()
+  })
+
+  it('changes display quality without reloading the startup asset tier or slowing simulation', async () => {
+    vi.stubGlobal('window', {
+      devicePixelRatio: 3,
+      matchMedia: () => ({ matches: true }),
+    })
+    const { renderer, snapshot } = fixture()
+    await renderer.ready
+    const loads = state.model.mock.calls.length
+    expect(renderer.getRenderQuality()).toMatchObject({
+      preference: 'auto',
+      profile: 'balanced',
+      assetProfile: 'mobile',
+      pixelRatio: 1.25,
+      shadowFrameInterval: 2,
+    })
+    renderer.setRenderQuality('high')
+    expect(renderer.getRenderQuality()).toMatchObject({
+      preference: 'high',
+      profile: 'high',
+      assetProfile: 'mobile',
+      pixelRatio: 1.5,
+      shadowFrameInterval: 1,
+    })
+    const running = { ...snapshot, status: 'running' as const }
+    for (let i = 0; i < 30; i++) renderer.render(running, 0.05)
+    expect(renderer.metrics().adaptiveQualityActive).toBe(false)
+    expect(state.worldUpdate).toHaveBeenLastCalledWith(running, 0.05)
+    expect(state.model).toHaveBeenCalledTimes(loads)
+    renderer.setRenderQuality('auto')
+    expect(renderer.getRenderQuality()).toMatchObject({
+      profile: 'balanced',
+      pixelRatio: 1.25,
+      shadowFrameInterval: 2,
+    })
+    renderer.dispose()
   })
 
   it('retires the renderer when the loading warmup draw fails', async () => {

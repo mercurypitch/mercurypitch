@@ -8,6 +8,7 @@ import type { AdventureCameraMode, ChallengeCameraMetrics } from './camera'
 import type { GlassAssetQualityProfile, GlassRenderQualityPreference, GlassRenderQualityProfile, GlassShadowFrameInterval, } from './render-quality'
 
 export interface GlassRendererOptions {
+  shatterPlaybackSpeed?: number
   reducedMotion?: boolean
   followSmoothnessSeconds?: number
   cameraMode?: AdventureCameraMode
@@ -57,6 +58,7 @@ export interface GlassRenderer {
   /** Stable camera-relative movement basis for the current held input. */
   getMovementYaw(): number
   setFollowSmoothness(seconds: number): void
+  setShatterPlaybackSpeed(speed: number): void
   setRenderQuality(preference: GlassRenderQualityPreference): void
   getRenderQuality(): {
     preference: GlassRenderQualityPreference

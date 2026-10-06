@@ -4,12 +4,15 @@ import { createBrowserRunnerHost, resolveRunnerComfortableMidi, runnerComfortabl
 import { createBrowserRunnerSession } from '../browser/runner-session'
 import type { GlassGameHost, GlassMicrophoneInput } from '../host'
 import { reportGraphicsFailure, reportGraphicsLoad, } from '../render/graphics-diagnostics'
-import type { GlassAssetQualityProfile } from '../render/render-quality'
+import type { GlassAssetQualityProfile, GlassRenderQualityProfile, } from '../render/render-quality'
+import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
 import type { CompiledRunnerCourse } from '../runner/contracts'
 import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
+import { hasDevelopmentTuning } from './development-tuning'
 import type { RunnerCameraChoice } from './RunnerSoundTune'
+import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { SongRunnerView } from './SongRunnerView'
 
 export { SINGING_CURRENT_TRIALS }
@@ -83,7 +86,8 @@ function RunnerVisit(props: {
   onChangeNote: (midi: number) => void
 }) {
   // The keyed visit owns this exact course, note and host until it unmounts.
-  const host = untrack(() => createBrowserRunnerHost(props.host))
+  const gameHost = untrack(() => props.host)
+  const host = createBrowserRunnerHost(gameHost)
   const session = untrack(() =>
     createBrowserRunnerSession({
       course: props.course,
@@ -103,6 +107,17 @@ function RunnerVisit(props: {
   const [error, setError] = createSignal<string>()
   let container: HTMLElement | undefined,
     renderer: SongRunnerRenderer | undefined
+  const { shatterPlaybackSpeed, changeShatterPlaybackSpeed } =
+    createShatterPlaybackPreference(gameHost, (speed) =>
+      renderer?.setShatterPlaybackSpeed(speed),
+    )
+  const [renderQualityPreference, setRenderQualityPreference] = createSignal(
+    parseGlassRenderQualityPreference(
+      gameHost.readPreference(GLASS_RENDER_QUALITY_PREFERENCE),
+    ),
+  )
+  const [renderQualityProfile, setRenderQualityProfile] =
+    createSignal<GlassRenderQualityProfile>('high')
   let disposed = false,
     generation = 0,
     previousSeconds: number | undefined
@@ -184,6 +199,8 @@ function RunnerVisit(props: {
         host.assetUrl,
         {
           assetProfile: props.assetProfile,
+          shatterPlaybackSpeed: shatterPlaybackSpeed(),
+          renderQuality: renderQualityPreference(),
           reducedMotion,
           initialSnapshot: session.state().game,
           onContextLost: () => {
@@ -197,6 +214,7 @@ function RunnerVisit(props: {
         },
       )
       renderer = next
+      setRenderQualityProfile(next.getRenderQuality().profile)
       await next.ready
       if (disposed || current !== generation) {
         next.dispose()
@@ -238,6 +256,43 @@ function RunnerVisit(props: {
   })
   return (
     <SongRunnerView
+      developmentControls={
+        hasDevelopmentTuning(gameHost)
+          ? {
+              renderQualityPreference: renderQualityPreference(),
+              renderQualityProfile: renderQualityProfile(),
+              shatterPlaybackSpeed: shatterPlaybackSpeed(),
+              onShatterPlaybackSpeedChange: changeShatterPlaybackSpeed,
+              onRenderQualityChange: (preference) => {
+                if (disposed) return
+                setRenderQualityPreference(preference)
+                gameHost.writePreference(
+                  GLASS_RENDER_QUALITY_PREFERENCE,
+                  preference,
+                )
+                if (!renderer) return
+                try {
+                  renderer.setRenderQuality(preference)
+                  setRenderQualityProfile(renderer.getRenderQuality().profile)
+                  // A resize clears the canvas while this modal owns the paused
+                  // frame loop. Redraw its current snapshot without advancing time.
+                  if (
+                    !loading() &&
+                    error() === undefined &&
+                    !renderer.render(session.state().game, 0)
+                  )
+                    throw new Error('No usable frame for graphics change')
+                } catch (cause) {
+                  failed(
+                    'The view is unavailable. Retry to return to your checkpoint.',
+                    'frame',
+                    cause,
+                  )
+                }
+              },
+            }
+          : undefined
+      }
       cameraControls={
         props.allowCameraTuning === true
           ? {

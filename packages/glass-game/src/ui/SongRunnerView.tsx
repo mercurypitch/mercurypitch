@@ -9,6 +9,7 @@ import { runnerMovementCue } from '../runner/movement-cues'
 import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
 import type { RunnerSessionFrame, RunnerSessionPhase, SongRunnerSession, } from '../runner/session-contracts'
+import type { DevelopmentRenderControls } from './DevelopmentRenderTuning'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createRunnerContinuousInput } from './runner-continuous-input'
 import { runnerDisplayNotationNotes, runnerEventAnnouncement, runnerMicrophoneStatus, runnerMovementCueCopy, runnerPauseMessage, runnerRecoveryCopy, runnerTargetResultNotice, runnerVoiceCue, } from './runner-hud'
@@ -23,6 +24,7 @@ import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
 
 interface SongRunnerViewProps {
+  developmentControls?: DevelopmentRenderControls
   cameraControls?: RunnerCameraControls
   course: CompiledRunnerCourse
   session: SongRunnerSession
@@ -424,6 +426,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <span class={styles.combo}>{game().combo} in a row</span>
         </Show>
         <RunnerSoundTune
+          developmentControls={props.developmentControls}
           cameraControls={props.cameraControls}
           openRequest={soundRequest()}
           canChangeNote={state().phase !== 'finished'}

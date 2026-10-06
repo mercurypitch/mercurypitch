@@ -307,6 +307,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
       followSmoothnessSeconds: 0.2,
     },
     renderQuality: 'auto',
+    shatterPlaybackSpeed: 1,
   })
   await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
@@ -728,4 +729,48 @@ test('tap entry owns mouse and touch through the full shatter before restoring @
   await expect(movementControls).toBeVisible()
   expect(await dragMuseumWithMouse(page, 80)).toBeGreaterThan(0.1)
   expect(await dragMuseumWithTouch(page, context, -80)).toBeGreaterThan(0.1)
+})
+
+test('development shatter speed survives real pointer tuning and a reload @smoke', async ({
+  page,
+}) => {
+  await openComfortMuseum(page)
+  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  const speed = panel.getByRole('slider', {
+    name: 'Shatter speed',
+    exact: true,
+  })
+  await expect(speed).toBeVisible()
+  await speed.scrollIntoViewIfNeeded()
+  const box = await speed.boundingBox()
+  if (!box) throw new Error('Missing shatter speed slider')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, {
+    steps: 8,
+  })
+  await page.mouse.up()
+  const value = await speed.inputValue()
+  expect(Number(value)).toBeLessThan(0.85)
+  expect(Number(value)).toBeGreaterThanOrEqual(0.4)
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem(
+          'beside-cue:glass-adventure:shatter-playback-speed:v1',
+        ),
+      ),
+    )
+    .toBe(value)
+  await page.reload()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 40_000 },
+  )
+  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await expect(speed).toHaveValue(value)
+  await panel.getByRole('button', { name: 'Reset defaults' }).click()
+  await expect(speed).toHaveValue('1')
 })

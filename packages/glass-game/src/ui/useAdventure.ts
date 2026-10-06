@@ -29,6 +29,7 @@ import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
 import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
 import { ASSET_LOAD_ERROR, createRendererFailureController, GRAPHICS_LOAD_ERROR, GRAPHICS_SUPPORT_ERROR, } from './renderer-failure'
+import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
 
@@ -56,6 +57,12 @@ export function useAdventure(
   const initialSnapshot = game.snapshot()
   const input = createAdventureInput()
   let renderer: GlassRenderer | null = null
+  const { shatterPlaybackSpeed, changeShatterPlaybackSpeed } =
+    createShatterPlaybackPreference(host, (speed) => {
+      game.setShatterPlaybackSpeed(speed)
+      renderer?.setShatterPlaybackSpeed(speed)
+    })
+  game.setShatterPlaybackSpeed(shatterPlaybackSpeed())
   const { cameraComfort, changeCameraComfort } = createCameraComfortPreference(
     host,
     () => renderer,
@@ -549,6 +556,7 @@ export function useAdventure(
       attempt = createGlassRenderer(mount(), level, host.assetUrl, {
         reducedMotion,
         followSmoothnessSeconds: cameraComfort().followSmoothnessSeconds,
+        shatterPlaybackSpeed: shatterPlaybackSpeed(),
         cameraMode: cameraMode(),
         renderQuality: renderQualityPreference(),
         assetProfile,
@@ -862,6 +870,8 @@ export function useAdventure(
     changeNarration,
     cameraComfort,
     changeCameraComfort,
+    shatterPlaybackSpeed,
+    changeShatterPlaybackSpeed,
     cameraMode,
     changeCameraMode,
     renderQualityPreference,

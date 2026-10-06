@@ -214,6 +214,35 @@ describe('Glassworks simulation', () => {
     expect(restored.snapshot().enabledPlatformIds).toContain('arch-bridge')
   })
 
+  it.each([0.4, 1, 1.6])(
+    'keeps the cinematic through the final shard at %sx without changing earned progress',
+    (speed) => {
+      const game = createGlassGame(GLASSWORKS)
+      game.setShatterPlaybackSpeed(speed)
+      walkToGoblet(game)
+      expect(game.beginEncounter(goblet, 57)).toBe(true)
+      expect(sing(game)).toEqual([
+        { type: 'break', id: goblet, outcome: 'path-opened' },
+      ])
+      const parked = game.snapshot().player.position
+      const completed = game.saveProgress().completedBreakableIds
+      const frames = Math.ceil(
+        SHATTER_LIFECYCLE_SECONDS / speed / MOVEMENT.fixedStep,
+      )
+      // The slider applies to a future break, never shortening this cinematic.
+      game.setShatterPlaybackSpeed(speed === 1.6 ? 0.4 : 1.6)
+      steps(game, frames - 1, { ...idle, moveX: 1 })
+      expect(game.snapshot().phase).toBe('shattering')
+      expect(game.snapshot().breakables[0]?.shatterPlaybackSpeed).toBe(speed)
+      expect(game.snapshot().player.position).toEqual(parked)
+      expect(game.saveProgress().completedBreakableIds).toEqual(completed)
+      game.step(idle, MOVEMENT.fixedStep)
+      expect(game.snapshot().phase).toBe('idle')
+      game.step({ ...idle, moveX: 1 }, MOVEMENT.fixedStep)
+      expect(game.snapshot().player.position.x).toBeGreaterThan(parked.x)
+    },
+  )
+
   it('keeps a hitched shatter, camera hold and movement lock on one bounded clock', () => {
     const game = createGlassGame(GLASSWORKS)
     walkToGoblet(game)

@@ -13,6 +13,7 @@ import { createShatterBufferCache } from './shatter-buffer-cache'
 import { createBrowserVoice, prepareBrowserVoiceGesture } from './voice-session'
 
 export interface BrowserHostOptions {
+  developmentTuning?: boolean
   assetUrl(id: string): string
   storagePrefix: string
   /** Reuse a product's existing input preference when opening Glassworks directly. */
@@ -46,6 +47,7 @@ export function createBrowserGlassHost(
   }
   return {
     assetUrl: options.assetUrl,
+    developmentTuning: options.developmentTuning,
     prepareVoiceGesture: prepareBrowserVoiceGesture,
     createVoice: () => createBrowserVoice(microphone.forStart()),
     microphoneInput: microphone.input,

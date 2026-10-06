@@ -242,6 +242,38 @@ describe('shipped living-crystal platform', () => {
     disposeObject(source)
   })
 
+  it('keeps the linked pearl release aligned with a slowed exhibit fracture', async () => {
+    const source = await load()
+    const scene = new Group()
+    const renderer = createLivingCrystalPlatformRenderer(
+      LIVING_GLASS_TRIAL,
+      scene,
+      fallbacks(LIVING_GLASS_TRIAL),
+      { reducedMotion: () => false },
+    )
+    try {
+      renderer.install(source, LIVING_CRYSTAL_PLATFORM_BUNDLE_ID)
+      renderer.update({
+        ...snapshot(['living-crystal/main'], 3),
+        breakables: [
+          {
+            id: LIVING_GLASS_ROSEBUD_ID,
+            charge: 1,
+            phase: 'shattering',
+            brokenAt: 0,
+            shatterPlaybackSpeed: 0.4,
+          },
+        ],
+      })
+      expect(renderer.snapshot().interiors).toEqual([
+        expect.objectContaining({ response: 'release', progress: 0.5 }),
+      ])
+    } finally {
+      renderer.dispose()
+      disposeObject(source)
+    }
+  })
+
   it('replaces only the inner sculpture and follows the authored exhibit lifecycle', async () => {
     const source = await load()
     const scene = new Group()

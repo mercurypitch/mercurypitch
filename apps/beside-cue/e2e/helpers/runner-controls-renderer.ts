@@ -1,6 +1,7 @@
 // Runner controls presentation — isolate the long real-audio course from software-GPU scheduling.
 
 import type { Locator, Page, TestInfo } from '@playwright/test'
+import type { GlassRenderQualityPreference } from '../../../../packages/glass-game/src/render/render-quality'
 import type { createSongRunnerRenderer } from '../../../../packages/glass-game/src/render/runner-renderer'
 
 interface RunnerPitchFeedbackProbeSample {
@@ -32,10 +33,18 @@ declare global {
 }
 
 /** No clock, input, audio, physics, score or progress authority lives in this fixture. */
-const createControlsRenderer: typeof createSongRunnerRenderer = (container) => {
+const createControlsRenderer: typeof createSongRunnerRenderer = (
+  container,
+  _course,
+  _midi,
+  _assetUrl,
+  options = {},
+) => {
   const marker = document.createElement('div')
   marker.dataset.testid = 'runner-controls-presentation'
   container.append(marker)
+  let quality: GlassRenderQualityPreference = options.renderQuality ?? 'auto'
+  marker.dataset.shatterSpeed = String(options.shatterPlaybackSpeed ?? 1)
   let disposed = false
   let lastStatus: string | undefined
   return {
@@ -43,6 +52,7 @@ const createControlsRenderer: typeof createSongRunnerRenderer = (container) => {
     render(snapshot) {
       if (disposed) return false
       lastStatus = snapshot.status
+      marker.dataset.renderQuality = quality
       const activeTarget = snapshot.activeTarget
       const pitchFeedback = activeTarget?.pitchFeedback
       marker.dataset.courseSeconds = String(snapshot.courseSeconds)
@@ -72,6 +82,19 @@ const createControlsRenderer: typeof createSongRunnerRenderer = (container) => {
       marker.dataset.cameraProfile = profile
       return true
     },
+    setShatterPlaybackSpeed(speed) {
+      marker.dataset.shatterSpeed = String(speed)
+    },
+    setRenderQuality(preference) {
+      quality = preference
+    },
+    getRenderQuality: () => ({
+      preference: quality,
+      profile: quality === 'balanced' ? 'balanced' : 'high',
+      assetProfile: 'full',
+      pixelRatio: 1,
+      shadowFrameInterval: 1,
+    }),
     resize() {},
     metrics: () => ({
       drawCalls: 0,

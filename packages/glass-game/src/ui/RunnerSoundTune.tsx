@@ -3,6 +3,8 @@ import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, 
 import type { GlassMicrophoneInput } from '../host'
 import { runnerMidiName } from '../runner/notation'
 import type { RunnerAudioPreferences, RunnerBackingAvailability, RunnerReferencePlayback, } from '../runner/session-contracts'
+import type { DevelopmentRenderControls } from './DevelopmentRenderTuning'
+import { DevelopmentRenderTuning } from './DevelopmentRenderTuning'
 import { trapDialogKeys } from './dialog-focus'
 import type { MicrophoneIssue } from './mic-error'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
@@ -105,6 +107,7 @@ const CAMERA_VIEWS = [
 ] as const
 
 interface RunnerSoundTuneProps {
+  developmentControls?: DevelopmentRenderControls
   cameraControls?: RunnerCameraControls
   openRequest: number
   canChangeNote: boolean
@@ -325,6 +328,9 @@ export function RunnerSoundTune(props: RunnerSoundTuneProps) {
             </button>
           </Show>
         </div>
+        <Show when={props.developmentControls}>
+          {(controls) => <DevelopmentRenderTuning {...controls()} />}
+        </Show>
         <p class={styles.description}>Your mix is saved for the next run.</p>
       </dialog>
     </div>

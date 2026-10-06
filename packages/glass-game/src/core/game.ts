@@ -16,7 +16,7 @@ import { createPlatformRuntime } from './platform-runtime'
 import { findCheckpoint, getRequiredRouteBreakableIds, readProgress, requirementsMet, } from './progress'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
-import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_LIFECYCLE_SECONDS, } from './shatter-presentation'
+import { MAXIMUM_SHATTER_FRAME_SECONDS, parseShatterPlaybackSpeed, shatterLifecycleSeconds, } from './shatter-presentation'
 import { getActiveCourseSolids } from './solid-activation'
 
 const EXIT_GUIDANCE_RADIUS = 1.35
@@ -107,11 +107,12 @@ export function createGlassGame(
   )
   let active: ActiveEncounter | null = null
   let shattering: { id: string; until: number } | null = null
+  let shatterPlaybackSpeed = parseShatterPlaybackSpeed(undefined)
   let paused = false
   let complete = progress.finished === true
   let elapsedSeconds = 0
   let accumulator = 0
-  const brokenAt = new Map<string, number>()
+  const breakPresentations = new Map<string, { at: number; speed: number }>()
   const exitPortal = deriveExitPortalGeometry(level.exit)
   const requiredRouteIds = getRequiredRouteBreakableIds(level)
 
@@ -415,7 +416,8 @@ export function createGlassGame(
                 : active?.target.id === target.id
                   ? phase()
                   : 'idle',
-          brokenAt: brokenAt.get(target.id) ?? null,
+          brokenAt: breakPresentations.get(target.id)?.at ?? null,
+          shatterPlaybackSpeed: breakPresentations.get(target.id)?.speed,
         })),
         activeSolidIds,
         enabledPlatformIds: activeBaseSolids()
@@ -555,16 +557,22 @@ export function createGlassGame(
         id,
         qualityResult,
       )
-      brokenAt.set(id, elapsedSeconds)
+      breakPresentations.set(id, {
+        at: elapsedSeconds,
+        speed: shatterPlaybackSpeed,
+      })
       active = null
       shattering = {
         id,
-        until: elapsedSeconds + SHATTER_LIFECYCLE_SECONDS,
+        until: elapsedSeconds + shatterLifecycleSeconds(shatterPlaybackSpeed),
       }
       events.push({ type: 'break', id, outcome })
       return events
     },
     cancelEncounter: cancel,
+    setShatterPlaybackSpeed(speed) {
+      shatterPlaybackSpeed = parseShatterPlaybackSpeed(speed)
+    },
     setPaused(value) {
       if (paused === value) return
       paused = value
