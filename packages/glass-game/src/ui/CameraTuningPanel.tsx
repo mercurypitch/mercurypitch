@@ -8,10 +8,14 @@ import { CAMERA_COMFORT_PRESETS, DEFAULT_CAMERA_COMFORT, LOOK_SENSITIVITY, norma
 import styles from './CameraTuningPanel.module.css'
 import type { DevelopmentRenderControls } from './DevelopmentRenderTuning'
 import { DevelopmentRenderTuning } from './DevelopmentRenderTuning'
+import { GameSurface } from './GameUI'
 
 interface CameraTuningPanelProps extends DevelopmentRenderControls {
   settings: CameraComfortSettings
   onChange(settings: CameraComfortSettings): void
+  open?: boolean
+  hideTrigger?: boolean
+  onClose?(): void
 }
 
 type CopyState = 'idle' | 'copied' | 'failed'
@@ -34,7 +38,12 @@ function fallbackCopy(text: string): boolean {
 }
 
 export function CameraTuningPanel(props: CameraTuningPanelProps) {
-  const [open, setOpen] = createSignal(false)
+  const [localOpen, setOpen] = createSignal(false)
+  const open = () => props.open ?? localOpen()
+  const close = (): void => {
+    setOpen(false)
+    props.onClose?.()
+  }
   const [copyState, setCopyState] = createSignal<CopyState>('idle')
   let copyTimer: ReturnType<typeof setTimeout> | undefined
   onCleanup(() => clearTimeout(copyTimer))
@@ -77,16 +86,18 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
 
   return (
     <div class={styles.tools} data-testid="camera-tuning-tools">
-      <button
-        class={styles.trigger}
-        type="button"
-        aria-label="Camera tuning"
-        aria-expanded={open()}
-        aria-controls="glass-camera-tuning"
-        onClick={() => setOpen((value) => !value)}
-      >
-        Tune
-      </button>
+      <Show when={props.hideTrigger !== true}>
+        <button
+          class={styles.trigger}
+          type="button"
+          aria-label="Camera tuning"
+          aria-expanded={open()}
+          aria-controls="glass-camera-tuning"
+          onClick={() => setOpen((value) => !value)}
+        >
+          Tune
+        </button>
+      </Show>
       <Show when={open()}>
         <section
           id="glass-camera-tuning"
@@ -97,113 +108,115 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
             if (event.key !== 'Escape') return
             event.preventDefault()
             event.stopPropagation()
-            setOpen(false)
+            close()
           }}
         >
-          <header class={styles.header}>
-            <div>
-              <strong>Camera comfort</strong>
-              <span>Development tuning</span>
+          <GameSurface class={styles.surface}>
+            <header class={styles.header}>
+              <div>
+                <strong>Camera comfort</strong>
+                <span>Development tuning</span>
+              </div>
+              <button
+                class={styles.close}
+                type="button"
+                aria-label="Close camera tuning"
+                onClick={close}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </header>
+            <div class={styles.presets} aria-label="Camera presets">
+              <For each={CAMERA_COMFORT_PRESETS}>
+                {(preset) => (
+                  <button
+                    type="button"
+                    aria-pressed={selectedPreset(preset.settings)}
+                    onClick={() => props.onChange({ ...preset.settings })}
+                  >
+                    {preset.label}
+                  </button>
+                )}
+              </For>
             </div>
-            <button
-              class={styles.close}
-              type="button"
-              aria-label="Close camera tuning"
-              onClick={() => setOpen(false)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18" />
-              </svg>
-            </button>
-          </header>
-          <div class={styles.presets} aria-label="Camera presets">
-            <For each={CAMERA_COMFORT_PRESETS}>
-              {(preset) => (
-                <button
-                  type="button"
-                  aria-pressed={selectedPreset(preset.settings)}
-                  onClick={() => props.onChange({ ...preset.settings })}
-                >
-                  {preset.label}
-                </button>
-              )}
-            </For>
-          </div>
-          <DevelopmentRenderTuning
-            renderQualityPreference={props.renderQualityPreference}
-            renderQualityProfile={props.renderQualityProfile}
-            onRenderQualityChange={props.onRenderQualityChange}
-            shatterPlaybackSpeed={props.shatterPlaybackSpeed}
-            onShatterPlaybackSpeedChange={props.onShatterPlaybackSpeedChange}
-          />
-          <label class={styles.row} for="glass-look-sensitivity">
-            <span>
-              Look sensitivity
-              <output for="glass-look-sensitivity">
-                {props.settings.lookSensitivity.toFixed(2)}x
-              </output>
-            </span>
-            <input
-              id="glass-look-sensitivity"
-              type="range"
-              min={LOOK_SENSITIVITY.minimum}
-              max={LOOK_SENSITIVITY.maximum}
-              step="0.05"
-              value={props.settings.lookSensitivity}
-              onInput={(event) =>
-                change({
-                  lookSensitivity: event.currentTarget.valueAsNumber,
-                })
-              }
+            <DevelopmentRenderTuning
+              renderQualityPreference={props.renderQualityPreference}
+              renderQualityProfile={props.renderQualityProfile}
+              onRenderQualityChange={props.onRenderQualityChange}
+              shatterPlaybackSpeed={props.shatterPlaybackSpeed}
+              onShatterPlaybackSpeedChange={props.onShatterPlaybackSpeedChange}
             />
-            <small>Mouse and touch orbit gain.</small>
-          </label>
-          <label class={styles.row} for="glass-follow-smoothness">
-            <span>
-              Follow smoothness
-              <output for="glass-follow-smoothness">
-                {props.settings.followSmoothnessSeconds.toFixed(2)}s
-              </output>
-            </span>
-            <input
-              id="glass-follow-smoothness"
-              type="range"
-              min={CAMERA_FOLLOW_SMOOTHNESS.minimum}
-              max={CAMERA_FOLLOW_SMOOTHNESS.maximum}
-              step="0.01"
-              value={props.settings.followSmoothnessSeconds}
-              onInput={(event) =>
-                change({
-                  followSmoothnessSeconds: event.currentTarget.valueAsNumber,
-                })
-              }
-            />
-            <small>Time to reach the automatic chase turn rate.</small>
-          </label>
-          <p class={styles.note}>
-            Keyboard steering stays digital; this changes the view response.
-          </p>
-          <footer class={styles.actions}>
-            <button
-              type="button"
-              onClick={() => {
-                props.onChange({ ...DEFAULT_CAMERA_COMFORT })
-                props.onRenderQualityChange('auto')
-                props.onShatterPlaybackSpeedChange(
-                  SHATTER_PLAYBACK_SPEED.default,
-                )
-              }}
-            >
-              Reset defaults
-            </button>
-            <button type="button" onClick={copy}>
-              {copyState() === 'copied'
-                ? 'Copied'
-                : copyState() === 'failed'
-                  ? 'Copy failed'
-                  : 'Copy preset'}
-            </button>
-          </footer>
+            <label class={styles.row} for="glass-look-sensitivity">
+              <span>
+                Look sensitivity
+                <output for="glass-look-sensitivity">
+                  {props.settings.lookSensitivity.toFixed(2)}x
+                </output>
+              </span>
+              <input
+                id="glass-look-sensitivity"
+                type="range"
+                min={LOOK_SENSITIVITY.minimum}
+                max={LOOK_SENSITIVITY.maximum}
+                step="0.05"
+                value={props.settings.lookSensitivity}
+                onInput={(event) =>
+                  change({
+                    lookSensitivity: event.currentTarget.valueAsNumber,
+                  })
+                }
+              />
+              <small>Mouse and touch orbit gain.</small>
+            </label>
+            <label class={styles.row} for="glass-follow-smoothness">
+              <span>
+                Follow smoothness
+                <output for="glass-follow-smoothness">
+                  {props.settings.followSmoothnessSeconds.toFixed(2)}s
+                </output>
+              </span>
+              <input
+                id="glass-follow-smoothness"
+                type="range"
+                min={CAMERA_FOLLOW_SMOOTHNESS.minimum}
+                max={CAMERA_FOLLOW_SMOOTHNESS.maximum}
+                step="0.01"
+                value={props.settings.followSmoothnessSeconds}
+                onInput={(event) =>
+                  change({
+                    followSmoothnessSeconds: event.currentTarget.valueAsNumber,
+                  })
+                }
+              />
+              <small>Time to reach the automatic chase turn rate.</small>
+            </label>
+            <p class={styles.note}>
+              Keyboard steering stays digital; this changes the view response.
+            </p>
+            <footer class={styles.actions}>
+              <button
+                type="button"
+                onClick={() => {
+                  props.onChange({ ...DEFAULT_CAMERA_COMFORT })
+                  props.onRenderQualityChange('auto')
+                  props.onShatterPlaybackSpeedChange(
+                    SHATTER_PLAYBACK_SPEED.default,
+                  )
+                }}
+              >
+                Reset defaults
+              </button>
+              <button type="button" onClick={copy}>
+                {copyState() === 'copied'
+                  ? 'Copied'
+                  : copyState() === 'failed'
+                    ? 'Copy failed'
+                    : 'Copy preset'}
+              </button>
+            </footer>
+          </GameSurface>
         </section>
       </Show>
     </div>

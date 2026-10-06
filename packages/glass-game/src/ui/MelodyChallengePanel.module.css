@@ -1,150 +1,230 @@
-/* Compact melody challenge controls leave the side camera visible on phone and tablet. */
-
-.melodyPanel {
+/* Melody keeps a readable contour and optional setup controls inside shared game material. */
+section.melodyPanel {
+  width: min(
+    540px,
+    calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))
+  );
+}
+.melodyPanel .surface {
   display: grid;
-  gap: 9px;
-  padding-bottom: 16px;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 8px;
+  padding: clamp(10px, calc(var(--game-padding, 24px) - 10px), 22px);
+  max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
+  touch-action: pan-y;
 }
-
-.guidance h2 {
-  margin: 2px 0 3px;
-  font-size: 21px;
-  line-height: 1.16;
+.melodyPanel .heading {
+  grid-column: 1 / -1;
+  grid-row: 1;
 }
-
-.guidance p {
-  margin: 0;
-  color: #50685c;
-  font-size: 13px;
-  line-height: 1.35;
+.melodyPanel .cornerControls {
+  grid-column: 2;
+  grid-row: 1;
 }
-
 .anchorMeter {
+  grid-column: 1 / -1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
 }
-
-.setupSummary {
+.ribbon {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.actions {
+  grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 24px;
-  color: #50685c;
-  font-size: 13px;
+  align-items: center;
+  gap: 8px;
 }
-
-.setupSummary strong {
-  color: #23483f;
+.melodyPanel .actionButton,
+.melodyPanel .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--game-line);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 28% 0%, #ffffffb3, transparent 55%),
+    var(--game-button-bg);
+  box-shadow:
+    inset 0 0 0 1px #ffffff8c,
+    inset 0 -3px 4px #16495026,
+    0 2px 3px #092f3d30;
+  color: var(--game-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.melodyPanel .actions svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.melodyPanel .primary {
+  border-color: #61959c;
+  background:
+    radial-gradient(ellipse 65% 40% at 30% 0%, #bcf1e780, transparent 80%),
+    linear-gradient(#2b777e, #1b626d);
+  color: #fffef2;
   font-weight: 650;
 }
-
+.melodyPanel .actionButton[aria-label='Change key'] {
+  position: relative;
+  isolation: isolate;
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+}
+.melodyPanel .actionButton[aria-label='Change key']::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: calc(50% - 12px);
+  width: 24px;
+  height: 24px;
+  z-index: -1;
+  border: 1px solid #93bfc0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 25% 10%, #fff, transparent 55%),
+    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
+  box-shadow:
+    inset 0 0 0 1px #ffffffe6,
+    inset 0 -2px 3px #4d94952b,
+    0 2px 3px #092f3d24;
+}
+:global([data-game-theme='dark']) .melodyPanel .actionButton {
+  border-color: #d3b977;
+  background:
+    radial-gradient(ellipse at 32% 0%, #7abcb166, transparent 55%),
+    linear-gradient(145deg, #15514e, #032b2c 70%, #07403d);
+  box-shadow:
+    inset 0 1px 1px #e1eec64d,
+    inset 0 -3px 4px #001f2966,
+    0 2px 3px #001c2766;
+}
+:global([data-game-theme='dark']) .melodyPanel .primary {
+  border-color: #d3b977;
+  background:
+    radial-gradient(ellipse at 28% 0%, #fff, transparent 55%),
+    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
+  color: #153b43;
+  box-shadow:
+    inset 0 0 0 1px #fff6cf,
+    inset 0 0 0 3px #95c9c666,
+    0 2px 3px #001c2766;
+}
+:global([data-game-theme='dark'])
+  .melodyPanel
+  .actionButton[aria-label='Change key'] {
+  border-color: transparent;
+  background: linear-gradient(#d4b774, #d4b774) right 10px bottom 8px /
+    calc(100% - 44px) 1px no-repeat;
+  box-shadow: none;
+}
+:global([data-game-theme='dark'])
+  .melodyPanel
+  .actionButton[aria-label='Change key']::before {
+  display: none;
+}
+.actionButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.setupDetails {
+  grid-column: 1 / -1;
+  color: var(--game-muted);
+  font-size: 12px;
+}
+.setupDetails summary {
+  min-height: 44px;
+  padding: 12px 4px;
+  cursor: pointer;
+}
+.setupDetails summary span {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
 .paceChoices {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   border: 0;
 }
-
 .paceChoices legend {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+  margin-bottom: 4px;
 }
-
 .paceChoices label {
   position: relative;
   display: grid;
   min-height: 44px;
   place-items: center;
-  border: 1px solid #9bad9b;
+  border: 1px solid var(--game-line);
   border-radius: 12px;
-  background: #fff8;
-  color: #365b51;
+  background: var(--game-button-bg);
+  color: var(--game-ink);
   font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
 }
-
 .paceChoices input {
   position: absolute;
   width: 1px;
   height: 1px;
   opacity: 0;
 }
-
-.paceChoices label:has(input:focus-visible) {
-  outline: 3px solid #af8638;
-  outline-offset: 2px;
-}
-
 .paceChoices:disabled label {
   opacity: 0.58;
+  cursor: default;
 }
-
-.selectedPace {
-  border-color: #396d5a !important;
-  background: #dce8d8 !important;
-  box-shadow: inset 0 0 0 1px #396d5a;
+.paceChoices .selectedPace {
+  border-color: var(--game-gold);
+  box-shadow: inset 0 0 0 1px var(--game-gold);
 }
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.actions > button {
-  min-height: 44px;
+.instructions {
+  grid-column: 1 / -1;
   margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--game-gold);
+  color: var(--game-muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
-
-@media (max-width: 430px) {
-  .melodyPanel {
-    width: calc(100% - 20px);
-    gap: 7px;
-    padding: 12px 14px 10px;
-    border-radius: 20px;
-  }
-
-  .guidance h2 {
-    font-size: 18px;
-  }
-
-  .guidance p {
-    font-size: 12px;
-  }
-
-  .setupSummary {
-    gap: 16px;
-  }
-
-  .paceChoices label {
-    min-height: 44px;
-    font-size: 12px;
-  }
-
-  .actions {
-    gap: 6px;
-  }
-
-  .actions > button {
-    padding-inline: 10px;
-    font-size: 12px !important;
-  }
+.actionButton:focus-visible,
+.primary:focus-visible,
+.setupDetails summary:focus-visible,
+.paceChoices label:has(input:focus-visible) {
+  outline: 3px solid var(--game-gold);
+  outline-offset: 3px;
 }
-
-@media (max-height: 650px) {
-  .melodyPanel {
-    gap: 5px;
+@media (max-height: 500px) and (orientation: landscape) {
+  section.melodyPanel {
+    width: min(
+      720px,
+      calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))
+    );
   }
-
-  .guidance p,
-  .setupSummary {
-    display: none;
+  .melodyPanel .surface {
+    padding: clamp(8px, calc(var(--game-padding, 24px) - 14px), 18px) 16px;
+    gap: 4px 12px;
+    max-height: calc(100dvh - 100px - env(safe-area-inset-bottom));
+  }
+  .melodyPanel .heading {
+    padding-right: 104px;
+  }
+  .anchorMeter {
+    grid-row: 2;
   }
 }

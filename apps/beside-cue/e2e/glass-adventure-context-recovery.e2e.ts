@@ -124,7 +124,8 @@ for (const { location, paused } of [
     })
     if (location !== 'rooms')
       await page.getByRole('button', { name: 'Skip tutorial' }).click()
-    if (paused) await page.getByRole('button', { name: 'Pause game' }).click()
+    if (paused)
+      await page.getByRole('button', { name: 'Open settings' }).click()
     await expect(page.getByTestId('glass-loading-merc')).toHaveCount(0)
     const retired = await page
       .locator('canvas[aria-label="Floating glass museum"]')

@@ -359,7 +359,65 @@ test('first station configures one saved key, rejects the wrong pitch and restor
     exact: true,
   })
   await expect(panel).toBeVisible()
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 740, height: 320 },
+  ]) {
+    await page.setViewportSize(viewport)
+    const geometry = await panel.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      const target = element
+        .querySelector('button[aria-label="Hear example"]')!
+        .getBoundingClientRect()
+      const help = element
+        .querySelector('button[aria-label="Show singing instructions"]')!
+        .getBoundingClientRect()
+      const close = element
+        .querySelector('button[aria-label="Cancel"]')!
+        .getBoundingClientRect()
+      return {
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
+        centerOffset: Math.abs(
+          (target.left + target.right - box.left - box.right) / 2,
+        ),
+        cornerGap: close.left - help.right,
+        overflows: element.scrollWidth > element.clientWidth,
+        controls: [...element.querySelectorAll('button')].map((button) => ({
+          width: button.getBoundingClientRect().width,
+          height: button.getBoundingClientRect().height,
+        })),
+      }
+    })
+    expect(geometry.left).toBeGreaterThanOrEqual(0)
+    expect(geometry.right).toBeLessThanOrEqual(viewport.width)
+    expect(geometry.top).toBeGreaterThanOrEqual(0)
+    expect(geometry.bottom).toBeLessThanOrEqual(viewport.height)
+    expect(geometry.centerOffset).toBeLessThanOrEqual(0.5)
+    expect(geometry.cornerGap).toBeGreaterThanOrEqual(8)
+    expect(geometry.overflows).toBe(false)
+    for (const control of geometry.controls) {
+      expect(control.width).toBeGreaterThanOrEqual(44)
+      expect(control.height).toBeGreaterThanOrEqual(44)
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(
+        `thawing-target-${viewport.width}x${viewport.height}.png`,
+      ),
+    })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  const hear = panel.getByRole('button', { name: 'Hear example', exact: true })
+  await hear.tap()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
+  await expect(hear).toBeDisabled()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'setup', {
+    timeout: 12_000,
+  })
   expect(await page.evaluate(() => window.thawingInput.streams.length)).toBe(0)
+  await panel.locator('summary').filter({ hasText: 'Key and pace' }).tap()
   await expect(
     panel.getByRole('radio', { name: 'Spacious', exact: true }),
   ).toBeChecked()

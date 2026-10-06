@@ -1,4 +1,4 @@
-// Runner camera choices preserve the live visit while switching the presentation in Tune.
+// Runner camera choices preserve the live visit while switching the presentation in Settings.
 import { expect, test } from '@playwright/test'
 import { installRunnerVoice } from './helpers/runner-voice-fixture'
 import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
@@ -30,10 +30,11 @@ for (const viewport of [
     })
     await page
       .locator('header')
-      .getByRole('button', { name: 'Sound / tune' })
+      .getByRole('button', { name: 'Open settings' })
       .click()
-    const tune = page.getByRole('dialog', { name: 'Sound / tune' })
+    const tune = page.getByRole('dialog', { name: 'Settings' })
     await expect(tune).toBeVisible()
+    await tune.getByRole('tab', { name: 'Play', exact: true }).click()
     await expect(runner).toHaveAttribute('data-phase', 'paused')
     const seconds = await runner.getAttribute('data-course-seconds')
     const marker = page.getByTestId('runner-controls-presentation')
@@ -56,7 +57,6 @@ for (const viewport of [
     }
     await page.keyboard.press('Escape')
     await expect(tune).not.toBeVisible()
-    await page.getByRole('button', { name: 'Resume', exact: true }).click()
     await expect(runner).toHaveAttribute('data-phase', 'running')
     await expect
       .poll(async () =>

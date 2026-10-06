@@ -249,7 +249,7 @@ test('moves a live app-tab microphone lease into Glassworks @smoke', async ({
     await page.setViewportSize({ width, height: 844 })
     const alertBox = await alert.boundingBox()
     const tuneBox = await page
-      .getByRole('button', { name: 'Camera tuning' })
+      .getByRole('button', { name: 'Open settings' })
       .boundingBox()
     if (alertBox === null || tuneBox === null)
       throw new Error(
@@ -351,9 +351,7 @@ test('a startup failure offers a named input and remembers the recovered route @
   await expect(picker).toBeVisible()
   await picker.focus()
   await picker.press('Escape')
-  await expect(
-    page.getByRole('dialog', { name: 'Take a little breath.' }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toHaveCount(0)
   await expect(alert.getByRole('button', { name: 'Try again' })).toBeVisible()
   for (const [width, height] of [
     [320, 568],
@@ -375,7 +373,7 @@ test('a startup failure offers a named input and remembers the recovered route @
     ).toBeLessThanOrEqual(width)
     const a = await alert.boundingBox()
     const b = await page
-      .getByRole('button', { name: 'Camera tuning' })
+      .getByRole('button', { name: 'Open settings' })
       .boundingBox()
     if (!a || !b)
       throw new Error('Recovery and camera controls must be visible')

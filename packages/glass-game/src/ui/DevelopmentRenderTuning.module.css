@@ -2,10 +2,10 @@
   min-width: 0;
   margin: 12px 0;
   padding: 12px;
-  border: 1px solid rgb(57 125 117 / 32%);
+  border: 1px solid var(--game-line, rgb(57 125 117 / 32%));
   border-radius: 14px;
-  color: #173f49;
-  background: #f0f4e9;
+  color: var(--game-ink, #173f49);
+  background: var(--game-button-bg, #f0f4e9);
 }
 .group legend {
   padding: 0 5px;
@@ -14,7 +14,7 @@
 }
 .caption {
   margin: 6px 0;
-  color: #58746d;
+  color: var(--game-muted, #58746d);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -28,17 +28,17 @@
 .reset {
   min-height: 44px;
   padding: 7px 8px;
-  border: 1px solid #90b4ac;
+  border: 1px solid var(--game-line, #90b4ac);
   border-radius: 12px;
-  background: #f9faf1;
-  color: #173f49;
+  background: var(--game-button-bg, #f9faf1);
+  color: var(--game-ink, #173f49);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
 }
 .choices button[aria-pressed='true'] {
   background: #397d75;
-  border-color: #397d75;
+  border-color: var(--game-accent, #397d75);
   color: #fffced;
 }
 .speed {
@@ -61,11 +61,11 @@
   width: 100%;
   min-height: 44px;
   margin: 0;
-  accent-color: #397d75;
+  accent-color: var(--game-accent, #397d75);
   touch-action: pan-y;
 }
 .group :focus-visible {
-  outline: 2px solid #397d75;
+  outline: 2px solid var(--game-accent, #397d75);
   outline-offset: 3px;
 }
 .reset {

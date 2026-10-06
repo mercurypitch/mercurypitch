@@ -133,7 +133,7 @@ test('Merc packaged voice plays at native status zero, quiets before capture, an
     0,
   )
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('button', { name: 'Pause game' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   const merc = page.getByRole('checkbox', { name: 'Merc voice', exact: true })
   await expect(merc).toBeChecked()
   await merc.uncheck()
@@ -145,7 +145,7 @@ test('Merc packaged voice plays at native status zero, quiets before capture, an
       ),
     ),
   ).toEqual({ enabled: false })
-  await page.getByRole('button', { name: 'Back to the museum' }).click()
+  await page.getByRole('button', { name: 'Resume' }).click()
   await page
     .getByLabel('Glass museum; drag to look around')
     .click({ position: { x: 310, y: 140 } })

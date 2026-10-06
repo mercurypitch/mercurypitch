@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "date": "2026-10-06",
+  "source": "ChatGPT built-in image generation; master archive glass-adventure/ui-layout-audition-v1/material-kit-v1 in Proton creative assets",
+  "totalBytes": 2632,
+  "maximumAllDecodedRGBABytes": 316800,
+  "runtimeImages": [
+    {
+      "file": "c3-enamel.webp",
+      "bytes": 2632,
+      "sha256": "88480217acc60f8c7348328a7ed42e2201b430a15d22e29e990290b8bf447003",
+      "dimensions": [720, 110],
+      "decodedRGBABytes": 316800,
+      "master": "c3-panel.png",
+      "masterSHA256": "51e5f23097fbe7458a876443c4e66e29e2094c2f6f83352ac2b8360ded4a89cf",
+      "packaging": {
+        "crop": [480, 225, 1180, 180],
+        "resizeWidth": 720,
+        "webpQuality": 88
+      },
+      "usage": "static enamel reflection field; clean centre crop only, no lettering or perimeter; CSS opacity, live DOM content"
+    }
+  ],
+  "rejected": "b1-clean-alpha-rejected-v3.png retained in archive only; extraction left neon color fringe",
+  "constraints": "No image masters or 3D files in source. No additional canvas/refraction/animated blur. Fixed corner and perimeter geometry plus static reference-derived detail; CSS backing and live SVG icons.",
+  "superseded": "Five baseline raster rim/tile derivatives are preserved with their original receipt in material-kit-v1/runtime-derivatives-baseline-2026-10-06; responsive SVG frame geometry replaces them after the reference-fidelity audit."
+}

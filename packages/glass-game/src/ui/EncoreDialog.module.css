@@ -10,22 +10,49 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  overflow: auto;
-  background: rgb(14 37 34 / 86%);
-  color: #23433d;
+  overflow: hidden;
+  background: #e1e9e1;
+  color: var(--game-ink);
   font-family: inherit;
 }
 .dialog {
   width: min(1120px, 100%);
   max-height: calc(100dvh - 40px);
-  overflow: auto;
-  padding: 24px;
-  border: 1px solid #d3b271;
-  border-radius: 22px;
-  background: #f7f0df;
-  box-shadow: 0 30px 80px rgb(0 0 0 / 35%);
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: var(--game-radius);
+  background: none;
+}
+.dialog .surface {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  max-height: inherit;
+  padding: clamp(16px, var(--game-padding, 24px), 32px);
+}
+:global([data-game-theme='dark']) .scrim {
+  background: #102f30;
+}
+.headerControls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+.headerControls button {
+  width: 44px;
+  height: 44px;
+}
+.instructions {
+  grid-row: 2;
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--game-gold);
+  color: var(--game-muted);
+  font-size: 13px;
+  line-height: 1.45;
 }
 .header {
+  grid-row: 1;
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -33,7 +60,7 @@
   margin-bottom: 22px;
 }
 .header span {
-  color: #83632a;
+  color: var(--game-muted);
   font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.1em;
@@ -41,25 +68,37 @@
 }
 .header h2 {
   margin: 5px 0 0;
-  font-family: Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(26px, 4vw, 40px);
   font-weight: 400;
 }
-.header button,
 .mercExample button,
 .stop,
 .recordingActive button {
   min-height: 44px;
   padding: 8px 14px;
-  border: 1px solid #a8956b;
-  border-radius: 10px;
-  background: #fff9eb;
-  color: #23433d;
+  border: 1px solid var(--game-line);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 28% 0%, #ffffffb3, transparent 55%),
+    var(--game-button-bg);
+  box-shadow:
+    inset 0 0 0 1px #ffffff8c,
+    inset 0 -3px 4px #16495026,
+    0 2px 3px #092f3d30;
+  color: var(--game-ink);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
 .body {
+  grid-row: 3;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
   display: grid;
   grid-template-columns: minmax(190px, 0.6fr) minmax(0, 1.4fr);
   gap: 28px;
@@ -86,15 +125,26 @@
   display: block;
   margin: 14px auto 0;
   max-width: 24ch;
-  color: #6d786a;
+  color: var(--game-muted);
   line-height: 1.5;
 }
 .mercExample {
   margin-top: 16px;
 }
 .mercExample button {
-  background: #e3eddb;
-  border-color: #859b7d;
+  border-color: var(--game-gold);
+}
+:global([data-game-theme='dark']) .mercExample button,
+:global([data-game-theme='dark']) .stop,
+:global([data-game-theme='dark']) .recordingActive button {
+  border-color: #d3b977;
+  background:
+    radial-gradient(ellipse at 32% 0%, #7abcb166, transparent 55%),
+    linear-gradient(145deg, #15514e, #032b2c 70%, #07403d);
+  box-shadow:
+    inset 0 1px 1px #e1eec64d,
+    inset 0 -3px 4px #001f2966,
+    0 2px 3px #001c2766;
 }
 .mercExample small {
   font-size: 12px;
@@ -141,6 +191,9 @@
 .practiceColumn {
   min-width: 0;
 }
+.practiceColumn [data-game-frame] {
+  opacity: 0.18;
+}
 .shape {
   display: flex;
   align-items: center;
@@ -154,10 +207,10 @@
   min-width: 0;
   min-height: 44px;
   padding: 7px 10px;
-  border: 1px solid #c7b78e;
+  border: 1px solid var(--game-line);
   border-radius: 8px;
-  color: #294a42;
-  background: #fff9eb;
+  color: var(--game-ink);
+  background: var(--game-button-bg);
   font: inherit;
 }
 .recording {
@@ -181,7 +234,7 @@
 .recording p,
 .status {
   margin: 5px 0 0;
-  color: #5c6b5e;
+  color: var(--game-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -191,7 +244,7 @@
   align-items: center;
   gap: 8px;
   margin-top: 10px;
-  color: #824632;
+  color: var(--game-ink);
   font-size: 13px;
 }
 .recordingActive > span {
@@ -214,7 +267,7 @@
 .scrim button:focus-visible,
 .scrim select:focus-visible,
 .scrim input:focus-visible {
-  outline: 3px solid #b2813b;
+  outline: 3px solid var(--game-gold);
   outline-offset: 3px;
 }
 @keyframes bloom {
@@ -240,6 +293,9 @@
   }
   .dialog {
     max-height: calc(100dvh - 16px);
+    padding: 0;
+  }
+  .dialog .surface {
     padding: 16px;
   }
   .body {
@@ -294,7 +350,7 @@
   }
 }
 @media (max-width: 380px) {
-  .dialog {
+  .dialog .surface {
     padding: 12px;
   }
   .header {

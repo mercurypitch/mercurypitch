@@ -68,7 +68,7 @@ test('continuous steering follows a captured mouse and brakes on release @smoke'
       Number(await runner.getAttribute('data-lateral-velocity')),
     )
     .toBe(0)
-  await page.getByRole('button', { name: 'Pause course' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   await expect(steering).toHaveCount(0)
   await expect(runner).toHaveAttribute('data-lateral-velocity', '0.000')
   await page.evaluate(() => window.runnerVoiceFixture.dispose())
@@ -135,7 +135,7 @@ test('paused and resumed continuous controls require a fresh keyboard press @smo
   const steering = page.getByRole('slider', { name: 'Steer Merc' })
   await page.keyboard.down('KeyD')
   await expect(steering).toHaveAttribute('aria-valuenow', '100')
-  await page.getByRole('button', { name: 'Pause course' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   await expect(runner).toHaveAttribute('data-phase', 'paused')
   await expect(steering).toHaveCount(0)
   await expect(runner).toHaveAttribute('data-lateral-velocity', '0.000')

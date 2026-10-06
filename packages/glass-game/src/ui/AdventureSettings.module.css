@@ -1,0 +1,43 @@
+.pausedDialog {
+  color: var(--game-ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  font:
+    500 16px/1.4 'Gabarito Variable',
+    system-ui,
+    sans-serif;
+  text-align: center;
+}
+.pausedDialog::backdrop {
+  background: #0b263766;
+}
+.pausedDialog h2 {
+  font:
+    500 28px/1.2 Georgia,
+    serif;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.actions button {
+  min-height: 44px;
+  padding: 10px 18px;
+  color: var(--game-ink);
+  background: var(--game-button-bg);
+  border: 1px solid var(--game-line);
+  border-radius: 24px;
+  font: inherit;
+  touch-action: manipulation;
+}
+.actions button:focus-visible {
+  outline: 3px solid var(--game-accent);
+  outline-offset: 3px;
+}

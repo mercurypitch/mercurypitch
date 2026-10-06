@@ -1,108 +1,54 @@
 .control {
   display: flex;
+  flex: 0 0 44px;
   min-width: 44px;
 }
 
-.trigger,
-.close,
-.action {
+.trigger {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 0;
-  font: inherit;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-.trigger,
-.close {
+.triggerSurface {
   display: grid;
-  flex: 0 0 44px;
   width: 44px;
   height: 44px;
   padding: 10px;
+  box-sizing: border-box;
   place-items: center;
-  border-radius: 13px;
-  background: transparent;
-  color: #244d51;
 }
 
-.trigger:hover,
-.trigger[aria-expanded='true'],
-.muted,
-.close:hover {
-  background: rgb(90 176 171 / 18%);
-}
-
-.trigger svg,
-.close svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2;
-}
-
-.panel {
-  position: fixed;
-  inset: 0;
-  width: min(420px, calc(100vw - 24px));
-  max-height: calc(
-    100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-  );
-  margin: auto;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 18px 20px;
-  border: 1px solid rgb(255 255 255 / 72%);
-  border-radius: 22px;
-  background: #fffdf7;
-  box-shadow: 0 20px 80px rgb(9 38 42 / 36%);
-  color: #17383d;
-  font: inherit;
-}
-
-.panel::backdrop {
-  background: rgb(9 38 42 / 54%);
-  backdrop-filter: blur(3px);
-}
-
-.titlebar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.titlebar h2 {
-  margin: 0;
-  color: #244d51;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 27px;
+.section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: inherit;
 }
 
 .description,
-.availability {
-  margin: 12px 0;
+.availability,
+.help p {
+  margin: 0;
   font-size: 14px;
   line-height: 1.5;
 }
 
-.description {
-  color: #41666a;
-}
-
 .availability {
   padding: 10px 12px;
-  border-radius: 12px;
-  background: #fff1d8;
-  color: #684b21;
+  border: 1px solid currentColor;
+  border-radius: 10px;
 }
 
 .volume {
   display: grid;
   gap: 4px;
-  margin-top: 18px;
   font-size: 14px;
   font-weight: 700;
 }
@@ -114,7 +60,8 @@
 }
 
 .volume output {
-  color: #41666a;
+  min-width: 4.5em;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
@@ -123,25 +70,37 @@
   min-width: 0;
   height: 44px;
   margin: 0;
-  accent-color: #28716f;
+  accent-color: currentColor;
   cursor: pointer;
   touch-action: pan-y;
 }
 
 .action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 44px;
   padding: 9px 14px;
-  border: 1px solid #a4bfbc;
+  border: 1px solid currentColor;
   border-radius: 12px;
-  background: #edf7f3;
-  color: #244d51;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   font-size: 14px;
   font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .action:hover,
 .action[aria-pressed='true'] {
-  background: #d1ebe2;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.action:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .tune {
@@ -150,9 +109,6 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid #d1dfd7;
   font-size: 14px;
 }
 
@@ -162,45 +118,45 @@
 }
 
 .trigger:focus-visible,
-.close:focus-visible,
 .action:focus-visible,
-.volume input:focus-visible {
-  outline: 3px solid #28716f;
+.volume input:focus-visible,
+.help summary:focus-visible {
+  outline: 3px solid currentColor;
   outline-offset: 3px;
 }
 
-.cameraViews {
-  margin: 16px 0 0;
+.choices {
+  margin: 0;
   padding: 0;
   border: 0;
+  min-width: 0;
 }
-.cameraViews legend {
+
+.choices legend {
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 8px;
 }
-.cameraViews > div {
+
+.choices > div {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
 }
-.cameraChoice {
+
+.choices .action {
   flex: 1;
+}
+
+.help summary {
   min-height: 44px;
-  border: 1px solid #a4bfbc;
-  border-radius: 12px;
-  background: #edf7f3;
-  color: #244d51;
-  font: inherit;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  touch-action: manipulation;
+  font-weight: 700;
 }
-.cameraChoice[aria-pressed='true'] {
-  background: #244d51;
-  border-color: #244d51;
-  color: #fffdf7;
-}
-.cameraChoice:focus-visible {
-  outline: 3px solid #28716f;
-  outline-offset: 3px;
+
+.help p + p {
+  margin-top: 8px;
 }

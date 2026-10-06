@@ -226,7 +226,7 @@ test('native pinch zoom and cancellation cannot select, while a completed tap ca
 
   const reset = lobby.getByRole('button', { name: 'Reset museum view' })
   const headerActions = [
-    lobby.getByRole('button', { name: 'Mute museum sound' }),
+    lobby.getByRole('button', { name: 'Open museum settings' }),
     lobby.getByRole('button', { name: 'Leave Glassworks' }),
   ]
   const [resetBounds, ...headerBounds] = await Promise.all([

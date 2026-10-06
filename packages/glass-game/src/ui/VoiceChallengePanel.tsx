@@ -1,7 +1,7 @@
 // Voice challenge presentation — shared guidance for held notes, pairs and gentle waves.
 import { createSignal, createUniqueId, For, Show } from 'solid-js'
 import type { PitchTargetId } from '../contracts'
-import styles from './GlassAdventure.module.css'
+import { GameIcon, GameSurface } from './GameUI'
 import type { VoiceChallengeMode } from './voice-challenge'
 import lessonStyles from './VoiceChallengePanel.module.css'
 
@@ -30,9 +30,11 @@ export function VoiceChallengePanel(props: {
   onRefind(): void
 }) {
   const instructionsId = createUniqueId()
+  const replayDescriptionId = createUniqueId()
   const [instructionsOpen, setInstructionsOpen] = createSignal(false)
   let instructionsButton!: HTMLButtonElement
-  const percent = () => Math.round(props.charge * 100)
+  const percent = () => Math.round(Math.max(0, Math.min(1, props.charge)) * 100)
+  const canReplay = () => props.target !== null && props.mode === 'singing'
   const stepLabels = () =>
     props.wave === true
       ? [
@@ -60,109 +62,76 @@ export function VoiceChallengePanel(props: {
   }
   return (
     <section
-      class={`${styles.encounter} ${lessonStyles.panel}`}
+      class={lessonStyles.panel}
       aria-label="Voice challenge"
       data-challenge-panel
       data-voice-mode={props.mode}
       data-step-index={props.stepIndex}
       onKeyDown={handlePanelKeyDown}
     >
-      <div class={`${styles.encounterHeading} ${lessonStyles.heading}`}>
-        <span>{props.label}</span>
-        <button type="button" onClick={() => props.onCancel()}>
-          Cancel
-        </button>
-      </div>
-      <div class={lessonStyles.goal}>
-        <h2 aria-live="polite">{props.message}</h2>
-        <button
-          ref={instructionsButton}
-          class={lessonStyles.instructionsButton}
-          type="button"
-          aria-label={
-            instructionsOpen()
-              ? 'Hide singing instructions'
-              : 'Show singing instructions'
-          }
-          aria-controls={instructionsId}
-          aria-expanded={instructionsOpen()}
-          onClick={() => setInstructionsOpen((open) => !open)}
-        >
-          <span aria-hidden="true">{instructionsOpen() ? '×' : '?'}</span>
-        </button>
-      </div>
-      <Show when={stepLabels().length > 1}>
-        <ol
-          class={lessonStyles.sequence}
-          aria-label={props.wave === true ? 'Lesson steps' : 'Note order'}
-        >
-          <For each={stepLabels()}>
-            {(step, index) => (
-              <li
-                classList={{
-                  [lessonStyles.current]:
-                    props.mode === 'singing' && index() === props.stepIndex,
-                  [lessonStyles.done]:
-                    props.mode === 'singing' && index() < props.stepIndex,
-                }}
-                aria-current={
-                  props.mode === 'singing' && index() === props.stepIndex
-                    ? 'step'
-                    : undefined
-                }
-              >
-                <span>{index() + 1}</span>
-                {step}
-              </li>
-            )}
-          </For>
-        </ol>
-      </Show>
-      <p
-        id={instructionsId}
-        class={lessonStyles.instructions}
-        hidden={!instructionsOpen()}
-      >
-        {props.hint}
-      </p>
-      <div class={`${styles.voiceMeter} ${lessonStyles.meter}`}>
-        <div
-          class={styles.noteDisc}
-          style={{ '--charge': `${percent()}%` }}
-          role="img"
-          aria-label={
-            props.target === null
-              ? 'Find your comfortable note'
-              : `Target note: ${noteName(props.target)}`
-          }
-        >
-          <span aria-hidden="true">
-            <Show
-              when={props.target !== null}
-              fallback={
-                <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                  <circle cx="16" cy="16" r="10" />
-                  <circle cx="16" cy="16" r="4" />
-                  <path d="M16 2v6m0 16v6M2 16h6m16 0h6" />
-                </svg>
+      <GameSurface class={lessonStyles.surface}>
+        <div class={lessonStyles.heading}>
+          <span>{props.label}</span>
+          <h2 aria-live="polite">{props.message}</h2>
+        </div>
+        <div class={lessonStyles.cornerControls}>
+          <button
+            ref={instructionsButton}
+            class={lessonStyles.iconButton}
+            type="button"
+            aria-label={
+              instructionsOpen()
+                ? 'Hide singing instructions'
+                : 'Show singing instructions'
+            }
+            aria-controls={instructionsId}
+            aria-expanded={instructionsOpen()}
+            onClick={() => setInstructionsOpen((open) => !open)}
+          >
+            <GameIcon name="help" />
+          </button>
+          <button
+            class={lessonStyles.iconButton}
+            type="button"
+            aria-label="Cancel"
+            title="Close singing challenge"
+            onClick={() => props.onCancel()}
+          >
+            <GameIcon name="close" />
+          </button>
+        </div>
+        <div class={lessonStyles.targetColumn}>
+          <button
+            class={lessonStyles.target}
+            type="button"
+            aria-label="Hear example"
+            aria-describedby={replayDescriptionId}
+            disabled={!canReplay()}
+            onClick={() => props.onReplay()}
+          >
+            <span
+              class={lessonStyles.targetNote}
+              role="img"
+              aria-label={
+                props.target === null
+                  ? 'Find your comfortable note'
+                  : `Target note: ${noteName(props.target)}`
               }
             >
-              {noteName(props.target!)}
-            </Show>
-          </span>
-        </div>
-        <div class={styles.voiceReadout}>
-          <span>
-            {props.mode === 'finding'
-              ? 'Finding your note…'
-              : props.mode === 'reference'
-                ? 'Your turn in a moment…'
-                : props.pitch === null
-                  ? 'Sing or hum gently.'
-                  : `${noteName(props.pitch)} · ${percent()}%`}
-          </span>
+              <Show
+                when={props.target !== null}
+                fallback={<GameIcon name="tuning" />}
+              >
+                {noteName(props.target!)}
+              </Show>
+            </span>
+            <span class={lessonStyles.hear}>
+              <GameIcon name="speaker" />
+              Hear
+            </span>
+          </button>
           <div
-            class={styles.chargeTrack}
+            class={lessonStyles.chargeTrack}
             role="progressbar"
             aria-label="Glass resonance"
             aria-valuemin={0}
@@ -172,25 +141,70 @@ export function VoiceChallengePanel(props: {
             <span style={{ width: `${percent()}%` }} />
           </div>
         </div>
-      </div>
-      <div class={`${styles.encounterActions} ${lessonStyles.actions}`}>
-        <Show when={props.mode === 'singing'}>
-          <button
-            class={styles.textButton}
-            type="button"
-            onClick={() => props.onReplay()}
-          >
-            Hear example
-          </button>
-        </Show>
         <button
-          class={styles.textButton}
+          class={lessonStyles.changeButton}
           type="button"
+          aria-label={props.pair ? 'Change notes' : 'Change note'}
           onClick={() => props.onRefind()}
         >
-          {props.pair ? 'Change notes' : 'Change note'}
+          <GameIcon name="tuning" />
+          Change
         </button>
-      </div>
+        <div class={lessonStyles.readout}>
+          <span>
+            {props.mode === 'finding'
+              ? 'Finding your note…'
+              : props.mode === 'reference'
+                ? 'Your turn in a moment…'
+                : props.pitch === null
+                  ? 'Sing or hum gently.'
+                  : `You: ${noteName(props.pitch)}`}
+          </span>
+          <span
+            class={lessonStyles.percent}
+            aria-label={`${percent()} percent resonance`}
+          >
+            {percent()}%
+          </span>
+        </div>
+        <Show when={stepLabels().length > 1}>
+          <ol
+            class={lessonStyles.sequence}
+            aria-label={props.wave === true ? 'Lesson steps' : 'Note order'}
+          >
+            <For each={stepLabels()}>
+              {(step, index) => (
+                <li
+                  classList={{
+                    [lessonStyles.current]:
+                      props.mode === 'singing' && index() === props.stepIndex,
+                    [lessonStyles.done]:
+                      props.mode === 'singing' && index() < props.stepIndex,
+                  }}
+                  aria-current={
+                    props.mode === 'singing' && index() === props.stepIndex
+                      ? 'step'
+                      : undefined
+                  }
+                >
+                  <span>{index() + 1}</span>
+                  {step}
+                </li>
+              )}
+            </For>
+          </ol>
+        </Show>
+        <p
+          id={instructionsId}
+          class={lessonStyles.instructions}
+          hidden={!instructionsOpen()}
+        >
+          {props.hint}
+        </p>
+        <span id={replayDescriptionId} class={lessonStyles.srOnly}>
+          Hear the target again and restart this attempt.
+        </span>
+      </GameSurface>
     </section>
   )
 }

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { GLASS_GAME_ASSET_FILES } from '@irchiinnuss/glass-game/assets'
 import { omitRasterOutput, openMuseum, value, verifyLookFirstMovementReacquisition, verifyMovementFirstThreeContacts, } from './helpers/glass-adventure-controls'
 import { verifyNativeControlDefaults } from './helpers/glass-adventure-touch-defaults'
+import { openCameraPreview, openGameSettings, } from './helpers/glass-ui-settings'
 
 const MERC_MODEL_PATH = `/games/${GLASS_GAME_ASSET_FILES.merc}`
 
@@ -52,7 +53,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.mouse.down()
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('dialog', { name: 'Take a little breath.' }),
+    page.getByRole('dialog', { name: 'Settings', exact: true }),
   ).toBeVisible()
   await page.mouse.move(520, 200)
   await page.keyboard.press('Escape')
@@ -103,12 +104,21 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.clock.runFor(200)
   expect(await value(page, 'player-x')).toBeCloseTo(stopped[0], 4)
   expect(await value(page, 'player-z')).toBeCloseTo(stopped[1], 4)
+  await openGameSettings(page, 'Play')
   await page.getByRole('button', { name: 'How to play' }).focus()
   await page.keyboard.press('Space')
   await expect(
     page.getByRole('dialog', { name: 'A little room to wander.' }),
   ).toBeVisible()
   await page.keyboard.press('Escape')
+  const returnedSettings = page.getByRole('dialog', {
+    name: 'Settings',
+    exact: true,
+  })
+  await expect(returnedSettings).toBeVisible()
+  await returnedSettings
+    .getByRole('button', { name: 'Resume', exact: true })
+    .click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
@@ -268,21 +278,22 @@ test('camera mode validates, guards the V shortcut and persists the pause settin
   await page.keyboard.press('Control+KeyV')
   await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
 
-  await page.getByRole('button', { name: 'Pause game' }).focus()
+  await page.getByRole('button', { name: 'Open settings' }).focus()
   await page.keyboard.press('KeyV')
   await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
 
   await viewport.focus()
   await page.keyboard.press('Escape')
-  const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+  const pause = page.getByRole('dialog', { name: 'Settings', exact: true })
   await pause.getByRole('slider').first().focus()
   await page.keyboard.press('KeyV')
   await expect(adventure).toHaveAttribute('data-camera-mode', 'third-person')
+  await pause.getByRole('tab', { name: 'Display', exact: true }).click()
   await pause.getByRole('radio', { name: 'First person' }).check()
   await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
   await page.keyboard.press('KeyV')
   await expect(adventure).toHaveAttribute('data-camera-mode', 'first-person')
-  await pause.getByRole('button', { name: 'Back to the museum' }).click()
+  await pause.getByRole('button', { name: 'Resume', exact: true }).click()
 
   await page.clock.resume()
   await page.reload()
@@ -305,27 +316,39 @@ test.describe('phone', () => {
     await verifyNativeControlDefaults(page, browserName)
   })
 
-  test('Tune clears Help and movement controls cannot be selected @smoke', async ({
+  test('Museum, Recenter and Settings stay separate and movement controls cannot be selected @smoke', async ({
     page,
     context,
   }, testInfo) => {
     await page.setViewportSize({ width: 320, height: 740 })
     await openMuseum(page, true)
-    const help = page.getByRole('button', { name: 'How to play' })
-    const tune = page.getByRole('button', {
-      name: 'Camera tuning',
-      exact: true,
-    })
+    const chrome = [
+      page.getByRole('button', { name: 'Leave museum', exact: true }),
+      page.getByRole('button', { name: 'Recenter camera', exact: true }),
+      page.getByRole('button', { name: 'Open settings', exact: true }),
+    ]
     for (const width of [320, 390, 768, 1180]) {
       await page.setViewportSize({ width, height: 740 })
-      const helpBox = await help.boundingBox()
-      const tuneBox = await tune.boundingBox()
-      expect(helpBox).not.toBeNull()
-      expect(tuneBox).not.toBeNull()
-      expect(
-        tuneBox!.y - (helpBox!.y + helpBox!.height),
-      ).toBeGreaterThanOrEqual(8)
-      expect(tuneBox!.x + tuneBox!.width).toBeLessThanOrEqual(width)
+      const boxes = await Promise.all(
+        chrome.map((control) => control.boundingBox()),
+      )
+      for (const box of boxes) {
+        expect(box).not.toBeNull()
+        expect(box!.x).toBeGreaterThanOrEqual(0)
+        expect(box!.x + box!.width).toBeLessThanOrEqual(width)
+        expect(box!.height).toBeGreaterThanOrEqual(44)
+      }
+      for (let a = 0; a < boxes.length; a++)
+        for (let b = a + 1; b < boxes.length; b++) {
+          const first = boxes[a]!,
+            second = boxes[b]!
+          expect(
+            first.x + first.width <= second.x ||
+              second.x + second.width <= first.x ||
+              first.y + first.height <= second.y ||
+              second.y + second.height <= first.y,
+          ).toBe(true)
+        }
     }
     await page.setViewportSize({ width: 320, height: 740 })
     await page.clock.runFor(32)
@@ -333,12 +356,16 @@ test.describe('phone', () => {
     // Geometry, computed styles, real rendering and input remain mandatory.
     if (process.env.GLASS_CONTROLS_PROOF === '1')
       await page.screenshot({ path: testInfo.outputPath('phone-controls.png') })
-    await help.tap()
+    await openGameSettings(page, 'Play')
+    await page.getByRole('button', { name: 'How to play', exact: true }).tap()
     await expect(
       page.getByRole('dialog', { name: 'A little room to wander.' }),
     ).toBeVisible()
     await page.keyboard.press('Escape')
-    await tune.tap()
+    const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
+    await expect(settings).toBeVisible()
+    await settings.getByRole('button', { name: 'Resume', exact: true }).tap()
+    await openCameraPreview(page)
     await expect(
       page.getByRole('dialog', { name: 'Camera comfort tuning' }),
     ).toBeVisible()
@@ -525,7 +552,7 @@ test.describe('phone', () => {
     })
   })
 
-  test('narrow pause settings scroll by native touch to the camera choice and resume @smoke', async ({
+  test('narrow settings body scrolls by native touch while Resume stays visible @smoke', async ({
     page,
     context,
   }) => {
@@ -533,31 +560,35 @@ test.describe('phone', () => {
     await openMuseum(page)
     await page.keyboard.press('Escape')
     const adventure = page.getByTestId('glass-adventure')
-    const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+    const pause = page.getByRole('dialog', { name: 'Settings', exact: true })
+    await pause.getByRole('tab', { name: 'Display', exact: true }).tap()
     const firstPerson = pause.getByRole('radio', { name: 'First person' })
-    const resume = pause.getByRole('button', { name: 'Back to the museum' })
+    const resume = pause.getByRole('button', { name: 'Resume', exact: true })
     await expect(pause).toBeVisible()
-    await expect(resume).not.toBeInViewport()
+    await expect(resume).toBeInViewport()
     const bounds = await pause.boundingBox()
     expect(bounds).not.toBeNull()
     expect(bounds!.y).toBeGreaterThanOrEqual(0)
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(568)
-    // The bounded panel owns scrolling. Start on its padding, clear of the
-    // range inputs and the backdrop, so this is a real native pan gesture.
+    // The shared middle section scrolls independently of the fixed footer.
+    const body = pause
+      .getByRole('tabpanel', { name: 'Display', exact: true })
+      .locator('..')
+    const bodyBounds = (await body.boundingBox())!
     const start = {
       id: 61,
-      x: bounds!.x + 8,
-      y: bounds!.y + bounds!.height - 48,
+      x: bodyBounds.x + 1,
+      y: bodyBounds.y + bodyBounds.height - 8,
     }
-    const endY = bounds!.y + 48
+    const endY = bodyBounds.y + 8
     expect(
-      await pause.evaluate(
-        (dialog, point) =>
-          document.elementFromPoint(point.x, point.y) === dialog,
+      await body.evaluate(
+        (element, point) =>
+          document.elementFromPoint(point.x, point.y) === element,
         start,
       ),
     ).toBe(true)
-    const beforeScroll = await pause.evaluate((dialog) => dialog.scrollTop)
+    const beforeScroll = await body.evaluate((element) => element.scrollTop)
 
     const cdp = await context.newCDPSession(page)
     await cdp.send('Input.dispatchTouchEvent', {
@@ -575,7 +606,7 @@ test.describe('phone', () => {
     })
 
     await expect
-      .poll(() => pause.evaluate((dialog) => dialog.scrollTop))
+      .poll(() => body.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(beforeScroll)
     await expect(firstPerson).toBeInViewport()
     await expect(resume).toBeInViewport()

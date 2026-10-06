@@ -544,3 +544,156 @@ test('keeps a reopened microphone lease over the old dialog fade @smoke', async 
     mode: await practice.getAttribute('data-mode'),
   })
 })
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`encore shared chrome keeps the full ribbon and independent controls (${theme}) @smoke`, async ({
+    page,
+  }, testInfo) => {
+    await installCompletedVisit(page)
+    await page.addInitScript(
+      (theme) =>
+        localStorage.setItem(
+          'beside-cue:glass-adventure:glass-ui-appearance:v1',
+          JSON.stringify({ theme, reducedTransparency: false }),
+        ),
+      theme,
+    )
+    const dialog = await openEncore(page)
+    await expect(page.locator('[data-game-theme]')).toHaveAttribute(
+      'data-game-theme',
+      theme,
+    )
+    const practice = dialog.locator('section[data-mode]')
+    const help = dialog.getByRole('button', { name: /encore instructions/ })
+    const close = dialog.getByRole('button', {
+      name: 'Back to completion card',
+      exact: true,
+    })
+    const consent = dialog.getByRole('checkbox', {
+      name: 'Keep a recording of my next melody',
+    })
+    for (const viewport of [
+      { width: 320, height: 640 },
+      { width: 393, height: 852 },
+      { width: 852, height: 393 },
+      { width: 740, height: 320 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await dialog.evaluate((element) => {
+        element.scrollTop = 0
+      })
+      const layout = await dialog.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        return {
+          left: box.left,
+          right: box.right,
+          top: box.top,
+          bottom: box.bottom,
+          overflows: element.scrollWidth > element.clientWidth,
+          buttons: [...element.querySelectorAll('button')].map((button) => ({
+            label: button.getAttribute('aria-label') ?? button.textContent,
+            height: button.getBoundingClientRect().height,
+            width: button.getBoundingClientRect().width,
+          })),
+        }
+      })
+      expect(layout.left).toBeGreaterThanOrEqual(0)
+      expect(layout.right).toBeLessThanOrEqual(viewport.width)
+      expect(layout.top).toBeGreaterThanOrEqual(0)
+      expect(layout.bottom).toBeLessThanOrEqual(viewport.height)
+      expect(layout.overflows).toBe(false)
+      for (const button of layout.buttons) {
+        expect(button.height, button.label ?? '').toBeGreaterThanOrEqual(44)
+        expect(button.width, button.label ?? '').toBeGreaterThanOrEqual(44)
+      }
+      const helpBox = (await help.boundingBox())!,
+        closeBox = (await close.boundingBox())!
+      expect(closeBox.x - helpBox.x - helpBox.width).toBeGreaterThanOrEqual(8)
+      await help.tap()
+      await expect(help).toHaveAttribute('aria-expanded', 'true')
+      await page.keyboard.press('Escape')
+      await expect(help).toHaveAttribute('aria-expanded', 'false')
+      await expect(help).toBeFocused()
+      await expect(dialog).toBeVisible()
+      const melodyHelp = practice.getByRole('button', {
+        name: /melody instructions/,
+      })
+      await melodyHelp.tap()
+      await expect(melodyHelp).toHaveAttribute('aria-expanded', 'true')
+      await page.keyboard.press('Escape')
+      await expect(melodyHelp).toBeFocused()
+      await expect(practice).toHaveAttribute('data-mode', 'idle')
+      const ribbon = practice.getByRole('img', { name: /Melody ribbon/ })
+      await ribbon.scrollIntoViewIfNeeded()
+      const ribbonBox = (await ribbon.boundingBox())!
+      for (const control of [help, close]) {
+        const bounds = (await control.boundingBox())!
+        expect(bounds.y).toBeGreaterThanOrEqual(0)
+        expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height)
+        expect(
+          await control.evaluate((element) => {
+            const bounds = element.getBoundingClientRect()
+            return element.contains(
+              document.elementFromPoint(
+                bounds.x + bounds.width / 2,
+                bounds.y + bounds.height / 2,
+              ),
+            )
+          }),
+        ).toBe(true)
+      }
+      const surface = (await dialog
+        .locator(':scope > [data-game-surface]')
+        .boundingBox())!
+      expect(surface.y).toBeGreaterThanOrEqual(0)
+      expect(surface.y + surface.height).toBeLessThanOrEqual(viewport.height)
+      expect(ribbonBox.width).toBeGreaterThan(200)
+      expect(ribbonBox.height).toBeGreaterThan(60)
+      expect(ribbonBox.width / ribbonBox.height).toBeCloseTo(720 / 220, 1)
+      const visibleRibbon = await ribbon.evaluate((element) => {
+        let top = 0
+        let bottom = window.innerHeight
+        for (
+          let parent = element.parentElement;
+          parent;
+          parent = parent.parentElement
+        ) {
+          if (
+            ['auto', 'scroll', 'hidden', 'clip'].includes(
+              getComputedStyle(parent).overflowY,
+            )
+          ) {
+            const bounds = parent.getBoundingClientRect()
+            top = Math.max(top, bounds.top)
+            bottom = Math.min(bottom, bounds.bottom)
+          }
+        }
+        return { top, bottom }
+      })
+      expect(ribbonBox.y).toBeGreaterThanOrEqual(visibleRibbon.top - 0.5)
+      expect(ribbonBox.y + ribbonBox.height).toBeLessThanOrEqual(
+        visibleRibbon.bottom + 0.5,
+      )
+      await page.screenshot({
+        path: testInfo.outputPath(
+          `encore-${theme}-${viewport.width}x${viewport.height}.png`,
+        ),
+      })
+    }
+    await expect(dialog.getByLabel('Pace')).toBeEnabled()
+    await expect(dialog.getByLabel('Starting height')).toBeEnabled()
+    await expect(consent).not.toBeChecked()
+    expect(
+      await page.evaluate(() => window.encoreIntegration.streams.length),
+    ).toBe(0)
+    expect(
+      await page.evaluate(() => window.encoreIntegration.audioEvents),
+    ).toEqual([])
+    const closeTarget = (await close.boundingBox())!
+    await page.mouse.click(
+      closeTarget.x + closeTarget.width / 2,
+      closeTarget.y + closeTarget.height / 2,
+    )
+    await expect(dialog).toBeHidden()
+  })
+}

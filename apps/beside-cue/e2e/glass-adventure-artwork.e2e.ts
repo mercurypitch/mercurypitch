@@ -164,7 +164,7 @@ test('artwork offer shares the top header row above guidance and leaves controls
       viewport.width / 2,
       0,
     )
-    const pauseBounds = await bounds(page, 'button[aria-label="Pause game"]')
+    const pauseBounds = await bounds(page, 'button[aria-label="Open settings"]')
     const leaveBounds = await bounds(page, 'button[aria-label="Leave museum"]')
     const collectionBounds = await bounds(
       page,
@@ -337,7 +337,5 @@ test('phone and tablet touch inspection fits, and backgrounding does not resume 
   await expect(
     page.getByRole('dialog', { name: 'The garden between notes' }),
   ).toHaveCount(0)
-  await expect(
-    page.getByRole('dialog', { name: 'Take a little breath.' }),
-  ).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible()
 })
