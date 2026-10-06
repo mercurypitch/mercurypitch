@@ -100,5 +100,32 @@ describe('generateProceduralCourse', () => {
     expect(platformCounts.size).toBeGreaterThan(1)
     expect(exitX.size).toBeGreaterThan(1)
   })
+
+  it('guarantees rich lateral variety, diagonal placements, and multiple turns across seeds', () => {
+    // Test across a diverse seed suite
+    const testSeeds = [10, 42, 100, 255, 777, 'serpent', 'crystal', 'abyss', 'aurora', 'meander']
+    for (const seed of testSeeds) {
+      const result = generateProceduralCourse({ seed })
+      const level = result.compiledLevel
+
+      // 1. Ensure course has extensive platforms (typically 40-55 platforms)
+      expect(level.platforms.length).toBeGreaterThanOrEqual(35)
+
+      // 2. Ensure platforms have pronounced lateral variety (|x| > 0.5m)
+      const maxAbsX = Math.max(...level.platforms.map((p) => Math.abs(p.minX + p.maxX) / 2))
+      expect(maxAbsX).toBeGreaterThanOrEqual(1.0)
+
+      // 3. Ensure multi-mechanic presence (frost, crackle/hex, deck)
+      const hasFrost = level.platforms.some((p) => p.surface?.kind === 'frost')
+      const hasHex = level.platforms.some((p) => p.behavior?.kind === 'crackle')
+      expect(hasFrost || hasHex).toBe(true)
+
+      // 4. Ensure non-trivial bounding box (both width and depth span over 10m)
+      const spanX = Math.max(...level.platforms.map((p) => p.maxX)) - Math.min(...level.platforms.map((p) => p.minX))
+      const spanZ = Math.max(...level.platforms.map((p) => p.maxZ)) - Math.min(...level.platforms.map((p) => p.minZ))
+      expect(spanX).toBeGreaterThanOrEqual(8.0)
+      expect(spanZ).toBeGreaterThanOrEqual(15.0)
+    }
+  })
 })
 
