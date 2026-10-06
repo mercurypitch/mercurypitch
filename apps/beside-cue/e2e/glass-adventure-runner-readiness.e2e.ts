@@ -315,3 +315,63 @@ for (const viewport of [
     await page.evaluate(() => window.runnerVoiceFixture.dispose())
   })
 }
+
+for (const viewport of [
+  { width: 320, height: 740 },
+  { width: 1024, height: 768 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`stable pitch rail ${viewport.width}`, () => {
+    test.use({ viewport, hasTouch: viewport.width < 1200 })
+
+    test('note names and coaching text do not move the pitch rail @smoke', async ({
+      page,
+    }, testInfo) => {
+      await useRunnerControlsRenderer(page)
+      await installRunnerVoice(page, false, { omitRaster: false })
+      await page.goto('/glass-game/?layout=singing-current')
+      await page.evaluate(() => window.runnerVoiceFixture.tone(60))
+      await page.getByRole('button', { name: 'Start course' }).click()
+      const readout = page.getByLabel('Your voice and target')
+      const rail = readout.locator('div[aria-hidden="true"]')
+      try {
+        await expect(readout.locator('[data-pitch-observed]')).toHaveText('C4')
+        const initial = await rail.boundingBox()
+        expect(initial).not.toBeNull()
+        for (const [midi, label] of [
+          [61, 'C#4'],
+          [54, 'F#3'],
+          [null, null],
+        ] as const) {
+          await page.evaluate((value) => {
+            if (value === null) window.runnerVoiceFixture.silent()
+            else window.runnerVoiceFixture.tone(value)
+          }, midi)
+          if (label === null)
+            await expect(readout.locator('[data-pitch-observed]')).toHaveCount(
+              0,
+            )
+          else
+            await expect(readout.locator('[data-pitch-observed]')).toHaveText(
+              label,
+            )
+          const current = await rail.boundingBox()
+          expect(current).not.toBeNull()
+          expect(Math.abs(current!.x - initial!.x)).toBeLessThan(0.5)
+          expect(Math.abs(current!.width - initial!.width)).toBeLessThan(0.5)
+          expect(Math.abs(current!.y - initial!.y)).toBeLessThan(0.5)
+          expect(
+            await readout.evaluate(
+              (element) => element.scrollWidth <= element.clientWidth,
+            ),
+          ).toBe(true)
+        }
+        await page.screenshot({
+          path: testInfo.outputPath('stable-pitch-rail.png'),
+        })
+      } finally {
+        await page.evaluate(() => window.runnerVoiceFixture.dispose())
+      }
+    })
+  })
+}

@@ -37,13 +37,13 @@ const obstacleProfiles = {
     'runner-crystal-bulwark-v1',
     'runner-crystal-bulwark-v1',
     0.425,
-    1.15,
+    1.05,
   ),
   'runner-crystal-bulwark-wide-v1': blockerProfile(
     'runner-crystal-bulwark-wide-v1',
     'runner-crystal-bulwark-v1',
     0.45,
-    1.25,
+    1.12,
   ),
   'runner-rose-hurdle-v1': {
     ...blockerProfile(
