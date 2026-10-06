@@ -97,6 +97,15 @@
   margin: 2px 0 0;
   font-size: 13px;
 }
+/* Reserve room for the Museum plaque and the centered artwork offer. */
+.topbarArtwork .identity {
+  max-width: calc(50vw - 248px);
+}
+.topbarArtwork .identity h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .collection {
   margin-left: auto;
   flex-shrink: 0;
@@ -733,6 +742,9 @@
     left: max(14px, env(safe-area-inset-left));
     right: max(14px, env(safe-area-inset-right));
     gap: 10px;
+  }
+  .topbarArtwork {
+    gap: 6px;
   }
   .identity h1 {
     font-size: 23px;

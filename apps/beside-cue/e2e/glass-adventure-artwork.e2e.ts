@@ -139,6 +139,8 @@ test('artwork offer shares the top header row above guidance and leaves controls
 
   for (const viewport of [
     { width: 320, height: 640, touch: true },
+    { width: 390, height: 844, touch: true },
+    { width: 740, height: 320, touch: true },
     { width: 768, height: 1024, touch: true },
     { width: 901, height: 600, touch: true },
     { width: 1024, height: 768, touch: true },
@@ -158,7 +160,10 @@ test('artwork offer shares the top header row above guidance and leaves controls
         bottom: rect.bottom,
       }
     })
-    const helpBounds = await bounds(page, 'button[aria-label="How to play"]')
+    const recenterBounds = await bounds(
+      page,
+      'button[aria-label="Recenter camera"]',
+    )
 
     expect((offerBounds.left + offerBounds.right) / 2).toBeCloseTo(
       viewport.width / 2,
@@ -178,7 +183,18 @@ test('artwork offer shares the top header row above guidance and leaves controls
     expect(gapBetween(offerBounds, pauseBounds)).toBeGreaterThanOrEqual(8)
     expect(gapBetween(offerBounds, leaveBounds)).toBeGreaterThanOrEqual(8)
     expect(gapBetween(offerBounds, collectionBounds)).toBeGreaterThanOrEqual(4)
-    expect(gapBetween(offerBounds, helpBounds)).toBeGreaterThanOrEqual(12)
+    expect(gapBetween(offerBounds, recenterBounds)).toBeGreaterThanOrEqual(12)
+    expect(gapBetween(collectionBounds, pauseBounds)).toBeGreaterThanOrEqual(4)
+    for (const action of [leaveBounds, pauseBounds]) {
+      expect(action.right - action.left).toBeGreaterThanOrEqual(48)
+      expect(action.bottom - action.top).toBeGreaterThanOrEqual(48)
+    }
+    expect(recenterBounds.right - recenterBounds.left).toBeGreaterThanOrEqual(
+      44,
+    )
+    expect(recenterBounds.bottom - recenterBounds.top).toBeGreaterThanOrEqual(
+      44,
+    )
     if (viewport.width > 900) {
       await expect(title).toBeVisible()
       const identityBounds = await title.evaluate((element) => {
@@ -193,6 +209,16 @@ test('artwork offer shares the top header row above guidance and leaves controls
       expect(gapBetween(offerBounds, identityBounds)).toBeGreaterThanOrEqual(8)
     } else await expect(title).toBeHidden()
 
+    const settingsButton = page.getByRole('button', {
+      name: 'Open settings',
+      exact: true,
+    })
+    if (viewport.touch) await settingsButton.tap()
+    else await settingsButton.click()
+    const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
+    const play = settings.getByRole('tab', { name: 'Play', exact: true })
+    if (viewport.touch) await play.tap()
+    else await play.click()
     if (viewport.touch) await help.tap()
     else await help.click()
     const tutorial = page.getByRole('dialog').filter({
@@ -203,6 +229,11 @@ test('artwork offer shares the top header row above guidance and leaves controls
       await tutorial.getByRole('button', { name: 'Skip tutorial' }).tap()
     else await tutorial.getByRole('button', { name: 'Skip tutorial' }).click()
     await expect(tutorial).toHaveCount(0)
+    await expect(settings).toBeVisible()
+    const resume = settings.getByRole('button', { name: 'Resume', exact: true })
+    if (viewport.touch) await resume.tap()
+    else await resume.click()
+    await expect(settings).not.toBeVisible()
   }
 })
 

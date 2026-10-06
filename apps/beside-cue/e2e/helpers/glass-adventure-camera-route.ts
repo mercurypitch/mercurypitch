@@ -681,9 +681,9 @@ export async function verifyHeldArrowLifecycleCleanup(
 
   await page.keyboard.down('ArrowLeft')
   await page.waitForTimeout(200)
-  await page.getByRole('button', { name: 'Pause game' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   await expect(
-    page.getByRole('dialog', { name: 'Take a little breath.' }),
+    page.getByRole('dialog', { name: 'Settings', exact: true }),
   ).toBeVisible()
   const modalReleasedYaw = await numericAdventureAttribute(page, 'camera-yaw')
   await page.waitForTimeout(250)
