@@ -1,5 +1,5 @@
 // Song runner musical ribbon — one phase, filling note medallions and an inline live pitch guide.
-import { createMemo, createUniqueId, For, Show } from 'solid-js'
+import { createMemo, createUniqueId, Index, Show } from 'solid-js'
 import type { RunnerTargetSnapshot } from '../runner/contracts'
 import type { RunnerNotationNote } from '../runner/notation'
 import { runnerRibbon } from './runner-ribbon'
@@ -60,6 +60,7 @@ export function RunnerNotation(props: RunnerNotationProps) {
         <RunnerRibbonNotes
           notes={ribbon().visible}
           progressName={props.meterName}
+          pitchTarget={props.showPitchReadout ? props.target : null}
         />
         <div
           class={styles.position}
@@ -88,15 +89,15 @@ export function RunnerNotation(props: RunnerNotationProps) {
         {props.instruction}. {props.microphoneStatus}. {props.scoreStatus}.
       </span>
       <ol class={styles.srOnly} aria-label="Complete melody">
-        <For each={ribbon().all}>
+        <Index each={ribbon().all}>
           {(note) => (
             <li>
-              {note.pitch}
-              {note.duration !== null ? `, hold ${note.duration}` : ''}
-              {note.state === 'filled' ? ', complete' : ''}
+              {note().pitch}
+              {note().duration !== null ? `, hold ${note().duration}` : ''}
+              {note().state === 'filled' ? ', complete' : ''}
             </li>
           )}
-        </For>
+        </Index>
       </ol>
     </section>
   )

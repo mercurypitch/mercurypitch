@@ -24,7 +24,7 @@ describe('runner pitch readout', () => {
       state: 'neutral',
       targetLabel: 'F#3',
       observedLabel: null,
-      markerPercent: null,
+      markerTopPercent: null,
       correction: null,
       cue: 'Listening',
     })
@@ -56,15 +56,15 @@ describe('runner pitch readout', () => {
     })
     expect(result.state).toBe('accepted')
     expect(result.cue).toBe('Matched')
-    expect(result.markerPercent).toBeGreaterThan(50)
+    expect(result.markerTopPercent).toBe(50)
   })
 
   it.each([
-    [-300, 'higher', 'Sing higher', 'A3', 5],
-    [300, 'lower', 'Sing lower', 'D#4', 95],
+    [-300, 'higher', 'Sing higher', 'A3', 95],
+    [300, 'lower', 'Sing lower', 'D#4', 5],
   ] as const)(
     'shows correction text and clamps %s cents on the visual rail',
-    (errorCents, correction, cue, observedLabel, markerPercent) => {
+    (errorCents, correction, cue, observedLabel, markerTopPercent) => {
       expect(
         readout({
           state: 'wrong',
@@ -73,7 +73,7 @@ describe('runner pitch readout', () => {
           errorCents,
           correction,
         }),
-      ).toMatchObject({ cue, correction, observedLabel, markerPercent })
+      ).toMatchObject({ cue, correction, observedLabel, markerTopPercent })
     },
   )
 
@@ -87,8 +87,8 @@ describe('runner pitch readout', () => {
           comparedTargetMidi: 60,
           errorCents,
           correction: errorCents < 0 ? 'higher' : 'lower',
-        }).markerPercent,
-      ).toBe(errorCents < 0 ? 5 : 95)
+        }).markerTopPercent,
+      ).toBe(errorCents < 0 ? 95 : 5)
     },
   )
 })

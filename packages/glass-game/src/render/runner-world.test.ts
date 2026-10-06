@@ -1,6 +1,7 @@
 // Runner world resource tests — real reviewed geometry remains instanced and bounded across chunks.
 import { readFileSync } from 'node:fs'
-import { Box3, InstancedMesh, Matrix4, Texture } from 'three'
+import type { Mesh } from 'three'
+import { Box3, DoubleSide, FrontSide, InstancedMesh, Matrix4, Texture, } from 'three'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { expect, it, vi } from 'vitest'
@@ -55,6 +56,12 @@ it('instances reviewed crystal at the gameplay floor, reclaims retired chunks an
   })
   expect(shells).toHaveLength(1)
   const shell = shells[0]!
+  // This closed support is viewed from outside. Retaining the imported
+  // DoubleSide adds a back-face transmission pass over the interior roots.
+  expect(shell.material).toMatchObject({ side: FrontSide })
+  expect(
+    (scene.getObjectByName('LivingCrystalPlatformV2_Shell') as Mesh).material,
+  ).toMatchObject({ side: DoubleSide })
   const matrix = new Matrix4()
   shell.getMatrixAt(0, matrix)
   shell.geometry.computeBoundingBox()

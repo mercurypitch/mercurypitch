@@ -1,4 +1,4 @@
-// Runner pitch readout — a compact actual-versus-target rail with text and direction cues.
+// Runner pitch readout — fixed-width voice and direction text for the active note marker.
 import { createMemo, Show } from 'solid-js'
 import type { RunnerTargetSnapshot } from '../runner/contracts'
 import { runnerPitchReadout } from './runner-pitch-readout'
@@ -28,15 +28,6 @@ export function RunnerPitchReadout(props: RunnerPitchReadoutProps) {
         </Show>
       </div>
       <div class={styles.coach}>
-        <div class={styles.rail} aria-hidden="true">
-          <span class={styles.target} />
-          <Show when={readout().markerPercent !== null}>
-            <span
-              class={styles.marker}
-              style={{ left: `${readout().markerPercent}%` }}
-            />
-          </Show>
-        </div>
         <span class={styles.cue}>
           <Show when={readout().correction}>
             {(correction) => (

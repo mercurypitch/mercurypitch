@@ -42,9 +42,10 @@ async function openRunningCourse(
   } = {},
 ): Promise<Locator> {
   await installRunnerVoice(page, options.followCourse ?? false, {
-    course: options.course ?? SINGING_CURRENT,
+    course: options.course ?? SINGING_CURRENT_TRIALS.responsive,
   })
-  const paceQuery = options.pace === undefined ? '' : `&pace=${options.pace}`
+  // Lane-control cases keep their explicit comparison course as the shared default evolves.
+  const paceQuery = `&pace=${options.pace ?? 'responsive'}`
   const response = await page.goto(
     `/glass-game/?layout=singing-current${paceQuery}`,
   )
@@ -250,6 +251,14 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   await expect(feedback.locator('[data-pitch-target]')).toHaveText('A3')
   await expect(feedback.locator('[data-pitch-observed]')).toHaveText('C4')
   await expect(feedback).toContainText('Sing lower')
+  const voiceMarker = page.locator('[data-active="true"] [data-voice-marker]')
+  await expect(voiceMarker).toBeVisible()
+  await expect(voiceMarker).toHaveAttribute('data-pitch-state', 'wrong')
+  expect(
+    await voiceMarker.evaluate((element) =>
+      parseFloat((element as HTMLElement).style.top),
+    ),
+  ).toBeLessThan(50)
   expect(Number(await presentation.getAttribute('data-fill'))).toBe(0)
   await expect(feedback).toHaveAttribute('aria-live', 'off')
 
@@ -257,6 +266,8 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   await expect(feedback).toHaveAttribute('data-pitch-state', 'accepted')
   await expect(feedback.locator('[data-pitch-observed]')).toHaveText('A3')
   await expect(feedback).toContainText('Matched')
+  await expect(voiceMarker).toHaveAttribute('data-pitch-state', 'accepted')
+  await expect(voiceMarker).toHaveCSS('top', '23px')
   await expect
     .poll(async () => Number(await presentation.getAttribute('data-fill')))
     .toBeGreaterThan(0)
@@ -266,6 +277,7 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   await expect(feedback.locator('[data-pitch-observed]')).toHaveCount(0)
   await expect(feedback).toContainText('Waiting')
   await expect(feedback).toContainText('Listening')
+  await expect(voiceMarker).toHaveCount(0)
   await page.getByRole('button', { name: 'Pause course' }).click()
   await expect(runner).toHaveAttribute('data-phase', 'paused')
   await page.evaluate(() => window.runnerVoiceFixture.followTarget())
@@ -302,6 +314,30 @@ for (const viewport of [
     await expect(feedback).toHaveAttribute('data-pitch-state', 'wrong', {
       timeout: 15_000,
     })
+    const medallion = await page.getByRole('progressbar').elementHandle()
+    expect(medallion).not.toBeNull()
+    const beforeLabel = await feedback.evaluate((element) =>
+      element.getBoundingClientRect().toJSON(),
+    )
+    const beforeMedallion = await medallion!.evaluate((element) =>
+      element.getBoundingClientRect().toJSON(),
+    )
+    await page.evaluate(() => window.runnerVoiceFixture.tone(61))
+    await expect(feedback.locator('[data-pitch-observed]')).toHaveText('C#4')
+    expect(
+      await feedback.evaluate((element) =>
+        element.getBoundingClientRect().toJSON(),
+      ),
+    ).toEqual(beforeLabel)
+    // Pitch frames update the current slot without rebuilding its medallion.
+    expect(await medallion!.evaluate((element) => element.isConnected)).toBe(
+      true,
+    )
+    expect(
+      await medallion!.evaluate((element) =>
+        element.getBoundingClientRect().toJSON(),
+      ),
+    ).toEqual(beforeMedallion)
     const boxes = await page.evaluate(() => {
       const box = (selector: string) =>
         document.querySelector(selector)!.getBoundingClientRect().toJSON()

@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   poolClose: vi.fn(),
   leaseRelease: vi.fn(),
   drawText: vi.fn(),
+  outlineText: vi.fn(),
 }))
 
 vi.mock('./exhibit-geometry-pool', async () => {
@@ -116,6 +117,7 @@ function context() {
     roundRect: vi.fn(),
     fill: vi.fn(),
     fillText: state.drawText,
+    strokeText: state.outlineText,
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     stroke: vi.fn(),
@@ -292,6 +294,11 @@ describe('runner targets live feedback', () => {
     targets.update(snapshot, 0)
     expect(state.drawText).toHaveBeenCalledWith('C4', 256, 122)
     expect(state.drawText).toHaveBeenCalledWith('Short hold', 256, 206)
+    expect(state.outlineText).toHaveBeenCalledWith('C4', 256, 122)
+    expect(state.outlineText).toHaveBeenCalledWith('Short hold', 256, 206)
+    expect(state.outlineText.mock.invocationCallOrder[0]).toBeLessThan(
+      state.drawText.mock.invocationCallOrder[0]!,
+    )
     targets.dispose()
   })
 

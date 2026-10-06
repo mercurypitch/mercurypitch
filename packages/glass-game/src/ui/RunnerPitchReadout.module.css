@@ -1,7 +1,8 @@
 .readout {
   display: grid;
   /* Reserve note and coaching widths so only the pitch marker moves. */
-  grid-template-columns: 76px minmax(38px, 1fr);
+  grid-template-columns: 76px 82px;
+  justify-content: center;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -29,37 +30,7 @@
   font-size: 11px;
 }
 .coach {
-  display: grid;
-  grid-template-columns: minmax(28px, 1fr) 82px;
-  align-items: center;
-  gap: 8px;
   min-width: 0;
-}
-.rail {
-  position: relative;
-  height: 9px;
-  margin: 0 3px;
-  border-bottom: 1px solid #a6bca9;
-}
-.target {
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 2px;
-  height: 10px;
-  background: #456b60;
-  transform: translateX(-50%);
-}
-.marker {
-  position: absolute;
-  bottom: -4px;
-  width: 8px;
-  height: 8px;
-  border: 1px solid #f5f4e8;
-  border-radius: 50%;
-  background: #26786b;
-  box-shadow: 0 0 0 1px #26786b;
-  transform: translateX(-50%);
 }
 .cue {
   display: flex;
@@ -81,11 +52,6 @@
 }
 .down {
   transform: rotate(180deg);
-}
-.readout[data-pitch-state='wrong'] .marker {
-  border-radius: 1px;
-  background: #ad4a59;
-  box-shadow: 0 0 0 1px #ad4a59;
 }
 .readout[data-pitch-state='wrong'] .cue {
   color: #913e4e;

@@ -102,6 +102,50 @@
   flex: 0 1 auto;
   min-width: 44px;
 }
+
+/* Reserve the pitch rail on every token, including silence and note changes. */
+.notes:not(.previewNotes) .token {
+  padding-left: 12px;
+}
+.voiceTrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 46px;
+  border-left: 1px solid #99b6a8;
+}
+.voiceCenter {
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 8px;
+  border-top: 2px solid #507b6b;
+}
+.voiceMarker {
+  position: absolute;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fffbed;
+  border-radius: 50%;
+  background: #26786b;
+  box-shadow: 0 0 0 1px #26786b;
+  transform: translate(-50%, -50%);
+  transition: top 90ms ease-out;
+}
+.voiceMarker[data-pitch-state='wrong'] {
+  border-radius: 1px;
+  background: #ad4a59;
+  box-shadow: 0 0 0 1px #ad4a59;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .voiceMarker {
+    transition: none;
+  }
+}
+
 .medallion {
   position: relative;
   display: flex;

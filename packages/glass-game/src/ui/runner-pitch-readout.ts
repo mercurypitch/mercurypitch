@@ -27,14 +27,17 @@ export function runnerPitchReadout(
           : feedback.correction === 'higher'
             ? 'Sing higher'
             : 'Sing lower',
-    markerPercent:
+    markerTopPercent:
       feedback.errorCents === null
         ? null
         : Math.max(
             5,
             Math.min(
               95,
-              50 + (feedback.errorCents / RUNNER_PITCH_RAIL_SPAN_CENTS) * 90,
+              feedback.state === 'accepted'
+                ? 50
+                : 50 -
+                    (feedback.errorCents / RUNNER_PITCH_RAIL_SPAN_CENTS) * 90,
             ),
           ),
   }

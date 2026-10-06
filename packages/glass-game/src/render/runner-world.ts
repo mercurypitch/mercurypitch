@@ -1,6 +1,6 @@
 // Runner scenery — bounded chunk instances use certified floor cuts and reviewed Living Crystal geometry.
 import type { BufferGeometry, Material, Object3D, Texture } from 'three'
-import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, Quaternion, TorusGeometry, Vector3, } from 'three'
+import { BoxGeometry, CylinderGeometry, FrontSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, Quaternion, TorusGeometry, Vector3, } from 'three'
 import { LIVING_CRYSTAL_PLATFORM_NODES } from '../content/living-crystal-profile'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
@@ -138,6 +138,9 @@ export function createRunnerWorld(
         index === 2 ? roots.material : (mesh.material as Material).clone(),
     }
   })
+  // The closed floor shell is viewed from outside, as in the museum. Avoid
+  // refracting its back faces over the roots in a second transmission pass.
+  crystalParts[0]!.material.side = FrontSide
   if (finishes) {
     finishes.apply(
       crystalParts[0]!.material as MeshPhysicalMaterial,

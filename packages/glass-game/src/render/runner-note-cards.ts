@@ -4,6 +4,7 @@ import { CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColor
 import type { RunnerNoteCardAnchor } from '../content/runner-glass-presentation'
 import type { CompiledRunnerTarget, RunnerSnapshot } from '../runner/contracts'
 import { runnerMidiName } from '../runner/notation'
+import { drawRunnerNotationText } from './runner-notation-ink'
 
 export function createRunnerNoteCards(
   anchors: readonly RunnerNoteCardAnchor[],
@@ -63,21 +64,21 @@ export function createRunnerNoteCards(
         card.previous = key
         const c = card.context
         c.clearRect(0, 0, 256, 256)
-        c.fillStyle = 'rgba(17,61,65,0.88)'
-        c.beginPath()
-        c.roundRect(3, 3, 250, 250, 24)
-        c.fill()
-        c.lineWidth = current ? 5 : 3
-        c.strokeStyle =
-          progress >= 1 ? '#70e8b1' : current ? '#ead08e' : '#b8cfc5'
-        c.stroke()
+        // Only the glyphs and charge ring carry a halo; the aperture stays clear.
+        c.shadowColor = '#173d41'
+        c.shadowBlur = 4
         c.textAlign = 'center'
         c.fillStyle = '#fff3cf'
         c.font = '600 24px sans-serif'
-        c.fillText(`${note.index + 1} / ${target.notes.length}`, 128, 39)
+        drawRunnerNotationText(
+          c,
+          `${note.index + 1} / ${target.notes.length}`,
+          128,
+          39,
+        )
         c.beginPath()
         c.arc(128, 148, 84, 0, Math.PI * 2)
-        c.strokeStyle = 'rgba(234,208,142,0.5)'
+        c.strokeStyle = current ? '#ead08e' : 'rgba(234,208,142,0.65)'
         c.lineWidth = 5
         c.stroke()
         if (progress > 0) {
@@ -95,7 +96,7 @@ export function createRunnerNoteCards(
         }
         c.fillStyle = '#fff3cf'
         c.font = `600 ${label.length > 2 ? 78 : 104}px serif`
-        c.fillText(label, 128, 180)
+        drawRunnerNotationText(c, label, 128, 180)
         card.texture.needsUpdate = true
       }
     },
