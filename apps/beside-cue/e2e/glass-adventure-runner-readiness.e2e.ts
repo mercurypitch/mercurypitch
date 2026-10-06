@@ -106,7 +106,17 @@ test('a fall with no broken walls resumes and a changed starting note stays usab
   })
   await page.evaluate(() => window.runnerVoiceFixture.tone(65))
   // Avoid the first blocker but deliberately miss the gap, with no glass hits.
-  await page.getByRole('button', { name: 'Right lane' }).tap()
+  await expect(runner).toHaveAttribute('data-movement-mode', 'continuous')
+  await page.keyboard.down('KeyD')
+  await expect
+    .poll(async () => Number(await runner.getAttribute('data-lateral-x')))
+    .toBeGreaterThan(1.2)
+  await page.keyboard.up('KeyD')
+  await expect
+    .poll(async () =>
+      Number(await runner.getAttribute('data-lateral-velocity')),
+    )
+    .toBe(0)
   await expect(runner).toHaveAttribute('data-phase', 'recovering', {
     timeout: 25_000,
   })
@@ -333,7 +343,9 @@ for (const viewport of [
       await page.evaluate(() => window.runnerVoiceFixture.tone(60))
       await page.getByRole('button', { name: 'Start course' }).click()
       const readout = page.getByLabel('Your voice and target')
-      const rail = readout.locator('div[aria-hidden="true"]')
+      const rail = page
+        .getByLabel('Notes and holds')
+        .locator('[data-voice-track]')
       try {
         await expect(readout.locator('[data-pitch-observed]')).toHaveText('C4')
         const initial = await rail.boundingBox()

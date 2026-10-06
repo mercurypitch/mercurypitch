@@ -32,9 +32,9 @@ describe('development rendering controls', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Reset graphics and glass' }),
     )
-    expect(apply).toHaveBeenLastCalledWith(1)
+    expect(apply).toHaveBeenLastCalledWith(0.5)
     expect(quality).toHaveBeenLastCalledWith('auto')
-    expect(slider).toHaveValue('1')
+    expect(slider).toHaveValue('0.5')
   })
   it('opens the rendering controls through the gallery Tune button and resets its full preset', () => {
     const camera = vi.fn(),
@@ -61,7 +61,7 @@ describe('development rendering controls', () => {
       lookSensitivity: 1,
       followSmoothnessSeconds: 0.32,
     })
-    expect(speed).toHaveBeenCalledWith(1)
+    expect(speed).toHaveBeenCalledWith(0.5)
     expect(quality).toHaveBeenCalledWith('auto')
   })
 })
