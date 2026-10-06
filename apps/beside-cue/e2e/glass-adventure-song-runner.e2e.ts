@@ -278,7 +278,7 @@ test('live singing shows wrong, accepted and silent PCM without stale feedback a
   await expect(feedback).toContainText('Waiting')
   await expect(feedback).toContainText('Listening')
   await expect(voiceMarker).toHaveCount(0)
-  await page.getByRole('button', { name: 'Pause course' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   await expect(runner).toHaveAttribute('data-phase', 'paused')
   await page.evaluate(() => window.runnerVoiceFixture.followTarget())
   await page.getByRole('button', { name: 'Resume', exact: true }).click()
@@ -369,13 +369,15 @@ test('pause traps focus and resumed controls are rearmed @smoke', async ({
   page,
 }) => {
   const runner = await openRunningCourse(page)
-  await page.getByRole('button', { name: 'Pause course' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
   await expect(runner).toHaveAttribute('data-phase', 'paused')
   await expect(runner).toHaveAttribute('data-microphone', 'closed')
-  const dialog = page.getByRole('dialog', { name: 'Course paused' })
+  const dialog = page.getByRole('dialog', { name: 'Settings' })
   await expect(dialog).toBeVisible()
   const resume = dialog.getByRole('button', { name: 'Resume' })
-  await expect(resume).toBeFocused()
+  await expect(
+    dialog.getByRole('button', { name: 'Close settings' }),
+  ).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   expect(
     await dialog.evaluate((element) =>

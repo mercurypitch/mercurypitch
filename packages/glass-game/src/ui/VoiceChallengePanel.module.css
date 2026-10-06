@@ -1,173 +1,447 @@
-/* Numbered note steps make the order readable without relying on colour. */
-.goal {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+/* Shared singing chrome keeps the note centered independently of its corner controls. */
+.panel {
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+  transform: translateX(-50%);
+  width: min(
+    460px,
+    calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))
+  );
+  color: var(--game-ink);
 }
-.goal h2 {
-  flex: 1;
-  min-width: 0;
-}
-.instructionsButton {
+
+.panel .surface {
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
+  gap: 8px 12px;
+  padding: clamp(10px, calc(var(--game-padding, 24px) - 10px), 22px);
+  max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable both-edges;
+  touch-action: pan-y;
+}
+
+.heading {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding-right: 104px;
+  align-self: start;
+}
+
+.heading > span {
+  display: block;
+  color: var(--game-muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.heading h2 {
+  margin: 4px 0 0;
+  color: var(--game-ink);
+  font-size: 20px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.cornerControls {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  display: flex;
+  justify-self: end;
+  align-self: start;
+  gap: 8px;
+}
+
+.iconButton,
+.changeButton {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #93bfc0;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 25% 10%, #fff 0, #ffffffb3 15%, transparent 46%),
+    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
+  box-shadow:
+    inset 0 0 0 1px #ffffffe6,
+    inset 0 0 0 2px #d7c49380,
+    inset 0 -3px 4px #4d94952b,
+    0 2px 3px #092f3d30;
+  color: var(--game-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.iconButton {
   width: 44px;
   height: 44px;
   flex: 0 0 44px;
-  margin-top: -3px;
-  padding: 0;
-  border: 0;
+}
+
+.iconButton svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.iconButton svg[data-game-icon='help'] circle {
+  display: none;
+}
+
+.iconButton svg[data-game-icon='help'] path,
+.iconButton svg[data-game-icon='close'] path {
+  transform: scale(1.35);
+  transform-origin: 12px 12px;
+}
+
+.panel .changeButton svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.panel .changeButton {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: end;
+  align-self: center;
+  font-size: 12px;
+  padding-inline: 7px;
+  position: relative;
+  isolation: isolate;
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+}
+
+.changeButton::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: calc(50% - 12px);
+  width: 24px;
+  height: 24px;
+  z-index: -1;
+  border: 1px solid #93bfc0;
   border-radius: 50%;
-  background: transparent;
-  color: #315c53;
+  background:
+    radial-gradient(ellipse at 25% 10%, #fff, transparent 55%),
+    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
+  box-shadow:
+    inset 0 0 0 1px #ffffffe6,
+    inset 0 -2px 3px #4d94952b,
+    0 2px 3px #092f3d24;
+}
+
+.targetColumn {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+}
+
+.panel .target {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  width: clamp(72px, var(--game-target, 80px), 96px);
+  height: clamp(72px, var(--game-target, 80px), 96px);
+  padding: 8px;
+  border: 1px solid #77b5b9;
+  border-radius: 50%;
+  color: #153b43;
+  background:
+    radial-gradient(ellipse at 27% 12%, #fff 0, #ffffffeb 9%, transparent 31%),
+    radial-gradient(ellipse at 82% 40%, #fffdf4c7, transparent 42%),
+    radial-gradient(ellipse at 55% 95%, #a8d2d180, transparent 48%),
+    conic-gradient(
+      from -24deg at 42% 58%,
+      #eef7ef 0deg 62deg,
+      #d3e8e9 65deg 118deg,
+      #f9f7ec 121deg 173deg,
+      #e9e4e3 177deg 229deg,
+      #c9e2df 233deg 283deg,
+      #f5f8ef 288deg 360deg
+    );
+  box-shadow:
+    inset 0 0 0 1px #fffdf0,
+    inset 0 0 0 2px #c4a768,
+    inset 0 0 0 3px #fffcec,
+    inset 0 0 0 5px #c0e2df,
+    inset 0 5px 7px #ffffffa6,
+    inset 0 -7px 8px #518e922e,
+    0 2px 2px #fff8,
+    0 4px 7px #052f3540;
   font: inherit;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1;
   cursor: pointer;
 }
-.instructionsButton > span {
+
+.target:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.targetNote {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #789088;
-  border-radius: 50%;
-  background: #e7ecdf;
+  height: 32px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  font-weight: 400;
+  text-shadow: 0 1px #fff9;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
 }
-.instructionsButton:hover > span,
-.instructionsButton[aria-expanded='true'] > span {
-  border-color: #416e64;
-  background: #dce6d8;
-}
-.instructionsButton:focus-visible > span {
-  outline: 3px solid #af8638;
-  outline-offset: 2px;
-}
-.sequence {
-  display: flex;
-  gap: 8px;
-  padding: 0;
-  margin: 0 0 12px;
-  list-style: none;
-}
-.sequence li {
+
+.hear {
   display: flex;
   align-items: center;
-  gap: 7px;
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ced7c4;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #50685c;
-}
-.sequence li > span {
-  display: grid;
-  place-items: center;
-  width: 21px;
-  height: 21px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #e9edde;
-  color: #385848;
+  gap: 3px;
   font-size: 11px;
+  line-height: 16px;
 }
-.sequence li.current {
-  background: #e7edda;
-  border-color: #56775b;
-  color: #23483f;
-  font-weight: 600;
+
+.panel .hear svg {
+  width: 14px;
+  height: 14px;
 }
-.sequence li.done > span {
-  background: #345e4d;
-  color: #fff9e8;
+
+.chargeTrack {
+  width: 144px;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0;
+  border: 1px solid #edf9f2;
+  background: linear-gradient(#708f9266, #d9eae080);
+  box-shadow:
+    inset 0 1px 1px #244e5866,
+    0 1px 2px #214d5347;
 }
+
+.chargeTrack > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(#c5fffa, #4cbabd 45%, #258c98);
+  box-shadow: inset 0 1px #e2fff9;
+  transition: width 70ms linear;
+}
+
+.readout {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 20px;
+  color: var(--game-muted);
+  font-size: 12px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.percent {
+  min-width: 4ch;
+  text-align: right;
+  color: var(--game-ink);
+}
+
+.sequence {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sequence li {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--game-line);
+  border-radius: 10px;
+  color: var(--game-muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.sequence li span {
+  font-variant-numeric: tabular-nums;
+}
+.sequence .current {
+  border-color: var(--game-gold);
+  color: var(--game-ink);
+  background: var(--game-button-bg);
+}
+.sequence .done {
+  color: var(--game-accent);
+}
+
 .instructions {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--game-gold);
+  color: var(--game-muted);
   font-size: 13px;
-  line-height: 1.45;
-  margin: 0 0 14px;
-  padding: 9px 11px;
-  border-left: 2px solid #739186;
-  border-radius: 0 9px 9px 0;
-  background: #e7ebdc;
-  color: #52665b;
+  line-height: 1.4;
 }
-@media (max-width: 360px) {
-  .goal {
-    gap: 4px;
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.iconButton:focus-visible,
+.changeButton:focus-visible,
+.target:focus-visible {
+  outline: 3px solid var(--game-gold);
+  outline-offset: 3px;
+}
+
+:global([data-game-theme='dark']) .iconButton {
+  border-color: #d3b977;
+  background:
+    radial-gradient(ellipse at 32% 0%, #7abcb18c, transparent 55%),
+    linear-gradient(145deg, #15514e, #032b2c 70%, #07403d);
+  box-shadow:
+    inset 0 0 0 1px #f4dc9a80,
+    inset 0 2px 2px #c9f9e833,
+    inset 0 -3px 4px #001f2966,
+    0 2px 3px #001c2799;
+}
+
+:global([data-game-theme='dark']) .panel .changeButton {
+  background: linear-gradient(#d4b774, #d4b774) right 7px bottom 8px /
+    calc(100% - 35px) 1px no-repeat;
+}
+
+:global([data-game-theme='dark']) .changeButton::before {
+  display: none;
+}
+
+:global([data-game-theme='dark']) .panel .target {
+  border-color: #dbc38a;
+  box-shadow:
+    inset 0 0 0 1px #fff9d3,
+    inset 0 0 0 2px #b0924d,
+    inset 0 0 0 3px #e9ffe9,
+    inset 0 0 0 5px #9ecfce,
+    inset 0 5px 7px #ffffffa6,
+    inset 0 -7px 8px #518e922e,
+    0 2px 3px #002a32b3;
+}
+
+:global([data-game-theme='dark']) .chargeTrack {
+  border-color: #e0c887;
+  background: #03282b;
+  box-shadow:
+    inset 0 1px 1px #001a20,
+    0 1px 2px #001f2780;
+}
+
+:global([data-game-theme='dark']) .chargeTrack > span {
+  background: linear-gradient(#bdfffb, #2de7e6 45%, #07b9c6);
+}
+
+@media (max-width: 350px) {
+  .panel .changeButton {
+    padding-inline: 4px;
   }
-  .instructionsButton > span {
-    width: 34px;
-    height: 34px;
+  .changeButton::before {
+    left: 2px;
   }
-  .sequence {
-    margin-bottom: 8px;
-  }
-  .sequence li {
-    padding: 6px;
-    font-size: 12px;
-  }
-  .instructions {
-    margin-bottom: 8px;
-    padding: 7px 9px;
+  :global([data-game-theme='dark']) .panel .changeButton {
+    background-position: right 4px bottom 8px;
+    background-size: calc(100% - 34px) 1px;
   }
 }
-@media (orientation: landscape) and (max-height: 500px) {
+
+@media (max-height: 500px) and (orientation: landscape) {
   .panel {
     width: min(
       720px,
       calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))
     );
     bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 4px 18px;
-    padding: 8px 16px;
-    border-radius: 18px;
-    max-height: calc(100% - 100px - env(safe-area-inset-bottom));
-    overflow-y: auto;
-    touch-action: pan-y;
   }
+
+  .panel .surface {
+    grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
+    gap: 4px 18px;
+    padding: clamp(8px, calc(var(--game-padding, 24px) - 14px), 18px) 16px;
+    max-height: calc(100dvh - 100px - env(safe-area-inset-bottom));
+  }
+
   .heading {
     grid-column: 1;
     grid-row: 1;
+    padding-right: 0;
   }
-  .heading button {
-    min-height: 44px;
+  .heading h2 {
+    font-size: 20px;
   }
-  .goal {
-    grid-column: 1;
-    grid-row: 2;
-    align-items: center;
-  }
-  .goal h2 {
-    margin: 0;
-    font-size: 18px;
-    line-height: 1.2;
-  }
-  .instructionsButton {
-    margin-top: 0;
-  }
-  .meter {
-    grid-column: 2;
+  .cornerControls {
+    grid-column: 3;
     grid-row: 1;
   }
-  .actions {
-    grid-column: 2;
+  .targetColumn {
+    grid-row: 1;
+    min-height: 96px;
+  }
+  .panel .target {
+    width: clamp(72px, var(--game-target, 80px), 88px);
+    height: clamp(72px, var(--game-target, 80px), 88px);
+  }
+  .panel .changeButton {
+    grid-row: 1;
+    align-self: end;
+  }
+  .chargeTrack {
+    width: 176px;
+    height: 8px;
+  }
+  .readout {
     grid-row: 2;
   }
-  .panel .actions button {
-    margin-top: 0;
-  }
   .sequence {
-    grid-column: 1 / -1;
     grid-row: 3;
-    margin: 4px 0 0;
   }
   .instructions {
-    grid-column: 1 / -1;
     grid-row: 4;
-    margin: 4px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chargeTrack > span {
+    transition: none;
   }
 }

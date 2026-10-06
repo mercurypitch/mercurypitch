@@ -1,3 +1,4 @@
+import { openCameraPreview } from './helpers/glass-ui-settings'
 // Render quality browser proof — stable mobile policy, persistence and exact recurring WebGL work.
 
 import { writeFileSync } from 'node:fs'
@@ -426,7 +427,7 @@ test('auto selects a stable compact-touch profile and explicit choices persist',
     ),
   ).toBeCloseTo(1.25, 2)
 
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   const quality = panel.getByRole('group', { name: 'Graphics quality' })
   await expectQualitySelectorWithinViewport(page)
@@ -458,7 +459,7 @@ test('auto selects a stable compact-touch profile and explicit choices persist',
     { width: 1280, height: 800 },
   ]) {
     await page.setViewportSize(viewport)
-    await page.getByRole('button', { name: 'Camera tuning' }).click()
+    await openCameraPreview(page)
     await expectQualitySelectorWithinViewport(page)
     await page
       .getByRole('dialog', { name: 'Camera comfort tuning' })
@@ -596,7 +597,7 @@ test('records matched High and Balanced real-render frames', async ({
   expect(high.profile).toBe('high')
   expect(high.passes.shadow).toBeDefined()
 
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await expectQualitySelectorWithinViewport(page)
   await page.screenshot({

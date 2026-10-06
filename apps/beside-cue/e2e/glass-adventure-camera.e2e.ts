@@ -1,6 +1,7 @@
 // Challenge camera browser smoke — live panel-safe framing, input lock and return.
 
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { openCameraPreview } from './helpers/glass-ui-settings'
 import { cameraAngleDelta as angleDelta, measureDeliveredMercTurn, numericAdventureAttribute as numericAttribute, traverseJourneyPassageAndCorner, verifyBlockedJourneyCameraReacquisition, verifyHeldArrowLifecycleCleanup, verifyHeldJourneyTouchContinuity, } from './helpers/glass-adventure-camera-route'
 
 interface CameraMetrics {
@@ -263,15 +264,14 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await openComfortMuseum(page)
-  const tune = page.getByRole('button', { name: 'Camera tuning' })
-  await tune.click()
+  await openCameraPreview(page)
   let panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
   const gentleOrbit = await dragMuseumWithMouse(page, 80)
 
   await page.getByRole('button', { name: 'Recenter camera' }).click()
-  await tune.click()
+  await openCameraPreview(page)
   panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await panel.getByRole('button', { name: 'Responsive', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
@@ -292,7 +292,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
     'data-follow-smoothness',
     '0.2',
   )
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await expect(
     panel.getByRole('button', { name: 'Responsive', exact: true }),
@@ -336,7 +336,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
   ).toBeLessThan(firstError)
   await page.keyboard.up('KeyA')
 
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await panel.getByRole('button', { name: 'Reset defaults' }).click()
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
@@ -424,8 +424,7 @@ test('phone tuner fits and a held thumb turns Merc without autocircling the came
 }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await openComfortMuseum(page)
-  const tune = page.getByRole('button', { name: 'Camera tuning' })
-  await tune.click()
+  await openCameraPreview(page)
   let panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   const panelBounds = await panel.boundingBox()
   expect(panelBounds).not.toBeNull()
@@ -438,7 +437,7 @@ test('phone tuner fits and a held thumb turns Merc without autocircling the came
   const gentleOrbit = await dragMuseumWithTouch(page, context, 80)
 
   await page.getByRole('button', { name: 'Recenter camera' }).click()
-  await tune.click()
+  await openCameraPreview(page)
   panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await panel.getByRole('button', { name: 'Responsive', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
@@ -735,7 +734,7 @@ test('development shatter speed survives real pointer tuning and a reload @smoke
   page,
 }) => {
   await openComfortMuseum(page)
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   const speed = panel.getByRole('slider', {
     name: 'Shatter speed',
@@ -769,7 +768,7 @@ test('development shatter speed survives real pointer tuning and a reload @smoke
     'true',
     { timeout: 40_000 },
   )
-  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  await openCameraPreview(page)
   await expect(speed).toHaveValue(value)
   await panel.getByRole('button', { name: 'Reset defaults' }).click()
   await expect(speed).toHaveValue('0.5')

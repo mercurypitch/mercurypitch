@@ -173,7 +173,11 @@ for (const viewport of [
           await page.evaluate(() => window.runnerVoiceFixture.silent())
           await start.click()
           await expect(runner).toHaveAttribute('data-phase', 'readiness')
-          await page.getByRole('button', { name: 'Pause course' }).click()
+          await page.getByRole('button', { name: 'Open settings' }).click()
+          await page.getByRole('tab', { name: 'Play', exact: true }).click()
+          await page
+            .getByRole('button', { name: 'Change note', exact: true })
+            .click()
           await expect(runner).toHaveAttribute('data-phase', 'paused')
         }
       }

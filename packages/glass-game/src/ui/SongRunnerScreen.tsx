@@ -12,6 +12,7 @@ import type { CompiledRunnerCourse } from '../runner/contracts'
 import { CURRENT_SINGING_COURSE, readEarlierSingingRecord, } from '../runner/current-course'
 import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
 import { hasDevelopmentTuning } from './development-tuning'
+import { GameUIProvider } from './GameUI'
 import type { RunnerCameraChoice } from './RunnerSoundTune'
 import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { SongRunnerView } from './SongRunnerView'
@@ -31,6 +32,7 @@ export interface SongRunnerScreenProps {
   readonly course?: CompiledRunnerCourse
   readonly assetProfile?: GlassAssetQualityProfile
   readonly onExit?: () => void
+  readonly exitLabel?: string
 }
 
 export function SongRunnerScreen(props: SongRunnerScreenProps) {
@@ -54,37 +56,40 @@ export function SongRunnerScreen(props: SongRunnerScreenProps) {
   })
   const [choice, setChoice] = createSignal(initial)
   return (
-    <Show when={choice()} keyed>
-      {(selected) => (
-        <RunnerVisit
-          host={props.host}
-          course={selected.course}
-          comfortableMidi={selected.midi}
-          allowCameraTuning={
-            props.allowCameraTuning ??
-            selected.course.movement.kind === 'continuous'
-          }
-          earlierRecord={selected.earlierRecord}
-          assetProfile={props.assetProfile}
-          onExit={() => {
-            if (props.onExit) props.onExit()
-            else props.host.onExit()
-          }}
-          onChangeNote={(midi) => {
-            const range = runnerComfortableMidiRange(selected.course)
-            if (
-              !Number.isInteger(midi) ||
-              midi < range.minimumMidi ||
-              midi > range.maximumMidi ||
-              midi === selected.midi
-            )
-              return
-            selected.host.writePreference('comfortable-note', String(midi))
-            setChoice({ ...selected, midi })
-          }}
-        />
-      )}
-    </Show>
+    <GameUIProvider host={props.host}>
+      <Show when={choice()} keyed>
+        {(selected) => (
+          <RunnerVisit
+            host={props.host}
+            exitLabel={props.exitLabel}
+            course={selected.course}
+            comfortableMidi={selected.midi}
+            allowCameraTuning={
+              props.allowCameraTuning ??
+              selected.course.movement.kind === 'continuous'
+            }
+            earlierRecord={selected.earlierRecord}
+            assetProfile={props.assetProfile}
+            onExit={() => {
+              if (props.onExit) props.onExit()
+              else props.host.onExit()
+            }}
+            onChangeNote={(midi) => {
+              const range = runnerComfortableMidiRange(selected.course)
+              if (
+                !Number.isInteger(midi) ||
+                midi < range.minimumMidi ||
+                midi > range.maximumMidi ||
+                midi === selected.midi
+              )
+                return
+              selected.host.writePreference('comfortable-note', String(midi))
+              setChoice({ ...selected, midi })
+            }}
+          />
+        )}
+      </Show>
+    </GameUIProvider>
   )
 }
 
@@ -96,6 +101,7 @@ function RunnerVisit(props: {
   comfortableMidi: number
   assetProfile?: GlassAssetQualityProfile
   onExit: () => void
+  exitLabel?: string
   onChangeNote: (midi: number) => void
 }) {
   // The keyed visit owns this exact course, note and host until it unmounts.
@@ -255,7 +261,12 @@ function RunnerVisit(props: {
           list: () => input.list(),
           selected: () => input.selected(),
           select: (id) => {
-            session.pause('manual')
+            const current = session.state()
+            if (
+              current.microphone !== 'closed' ||
+              current.referencePlayback.phase !== 'idle'
+            )
+              session.pause('manual')
             return input.select(id)
           },
         }
@@ -343,6 +354,7 @@ function RunnerVisit(props: {
       }}
       microphoneInput={microphoneInput}
       onExit={props.onExit}
+      exitLabel={props.exitLabel}
       presentationLoading={loading()}
       presentationError={error()}
       onRetryPresentation={() => void load()}

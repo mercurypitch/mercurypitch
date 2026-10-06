@@ -286,7 +286,8 @@ test('@smoke museum circles engage at visible contact, rearm on exit and preserv
   ).toBe(1)
   await cancelVoice(page)
 
-  await page.getByRole('button', { name: 'Pause game' }).click()
+  await page.getByRole('button', { name: 'Open settings' }).click()
+  await page.getByRole('tab', { name: 'Play', exact: true }).click()
   await page.setViewportSize({ width: 390, height: 844 })
   const automatic = page.getByRole('checkbox', {
     name: 'Automatic singing',
@@ -313,7 +314,7 @@ test('@smoke museum circles engage at visible contact, rearm on exit and preserv
       `${STORAGE_PREFIX}automatic-singing`,
     ),
   ).toBe('off')
-  await page.getByRole('button', { name: 'Back to the museum' }).click()
+  await page.getByRole('button', { name: 'Resume' }).click()
 
   await page.clock.resume()
   await page.reload()

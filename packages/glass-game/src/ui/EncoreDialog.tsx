@@ -1,5 +1,5 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
-import { createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { MercEncoreAvailability, MercEncoreVariant, } from '../content/encore-examples'
 import { MERC_ENCORE_PHRASES, mercEncoreAvailability, mercEncoreJudgePolicy, } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
@@ -14,12 +14,14 @@ import type { EncoreAudioLease } from './encore-audio-lease'
 import type { EncoreAudioLeaseOwner } from './encore-audio-lease'
 import { createEncorePlaybackClaims, retireEncoreAudioLease, } from './encore-audio-lease'
 import styles from './EncoreDialog.module.css'
+import { GameIcon, GameSurface } from './GameUI'
 import type { MelodyPracticeSnapshot } from './melody-practice'
 import { MelodyPractice } from './MelodyPractice'
 import { loadMercMelodyExample } from './merc-melody-reference'
 import type { MusicalMemoryState } from './musical-memory'
 import { createMusicalMemory } from './musical-memory'
 import { MusicalMemoryCard } from './MusicalMemoryCard'
+import chrome from './VoiceChallengePanel.module.css'
 
 function guideFallbackCopy(
   availability: Extract<MercEncoreAvailability, { kind: 'guide' }>,
@@ -50,6 +52,9 @@ export function EncoreDialog(props: {
   returnLabel?: string
   melodyTier?: MelodyDifficultyTier
 }) {
+  const instructionsId = createUniqueId()
+  const [instructionsOpen, setInstructionsOpen] = createSignal(false)
+  let instructionsButton!: HTMLButtonElement
   const host = untrack(() => props.host)
   const encore = untrack(() => props.encore)
   const levelId = untrack(() => props.levelId)
@@ -377,162 +382,195 @@ export function EncoreDialog(props: {
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.stopPropagation()
-            props.onClose()
+            if (instructionsOpen()) {
+              setInstructionsOpen(false)
+              instructionsButton.focus({ preventScroll: true })
+            } else props.onClose()
           } else trapDialogKeys(event)
         }}
       >
-        <header class={styles.header}>
-          <div>
-            <span>Coda Echo · optional</span>
-            <h2 id="encore-title">Leave a little light.</h2>
-          </div>
-          <button
-            type="button"
-            onClick={() => props.onClose()}
-            aria-label={props.returnLabel ?? 'Back to completion card'}
-          >
-            Back
-          </button>
-        </header>
-        <div class={styles.body}>
-          <aside class={styles.portrait} data-celebrating={celebrating()}>
-            <img
-              src={host.assetUrl(encore.portraitAssetId)}
-              alt="Your collected gallery portrait"
-            />
-            <div class={styles.halo} aria-hidden="true">
-              <For each={[0, 1, 2, 3, 4, 5, 6, 7]}>
-                {(index) => <i style={{ '--ray': `${index * 45}deg` }} />}
-              </For>
+        <GameSurface class={styles.surface}>
+          <header class={styles.header}>
+            <div>
+              <span>Coda Echo · optional</span>
+              <h2 id="encore-title">Leave a little light.</h2>
             </div>
-            <p>
-              {MERC_ENCORE_PHRASES[selected()]?.words !== undefined
-                ? `“${MERC_ENCORE_PHRASES[selected()]?.words}”`
-                : 'Hum the shape, or give it your own words.'}
-            </p>
-            <Show when={sealed()}>
-              <div class={styles.seal} role="status">
-                <svg viewBox="0 0 32 32" aria-hidden="true">
-                  <path d="m16 2 4 9 10 5-10 5-4 9-4-9-10-5 10-5Z" />
-                </svg>
-                {encore.sealTitle}
-              </div>
-            </Show>
-            <small>Your lesson, stars and portrait are already yours.</small>
-            <Show when={playback}>
-              <div class={styles.mercExample}>
-                <Show
-                  when={voiceAvailability()}
-                  fallback={
-                    <small>{guideFallbackCopy(guideAvailability()!)}</small>
-                  }
-                >
-                  {(availability) => {
-                    const state = () =>
-                      examples()[availability().variant.assetId]
-                    return (
-                      <>
-                        <button
-                          type="button"
-                          disabled={
-                            practiceActive() || state()?.loading === true
-                          }
-                          onClick={() => hearMerc(availability().variant)}
-                        >
-                          {state()?.failed === true
-                            ? 'Retry Merc’s example'
-                            : state()?.loading === true
-                              ? 'Loading Merc’s example…'
-                              : 'Hear Merc'}
-                        </button>
-                        <small>
-                          {state()?.failed === true
-                            ? 'Merc’s take could not load. Hear melody still plays the exact instrumental guide.'
-                            : 'Merc sings this exact shape in your selected key and pace.'}
-                        </small>
-                      </>
-                    )
-                  }}
-                </Show>
-              </div>
-            </Show>
-          </aside>
-          <div class={styles.practiceColumn}>
-            <label class={styles.shape}>
-              <span>Melody shape</span>
-              <select
-                value={selected()}
-                disabled={practiceActive()}
-                onChange={(event) => {
-                  void stopListening()
-                  memory.setConsent(false)
-                  setPracticeSnapshot(null)
-                  setSelected(event.currentTarget.value as GlassMelodyId)
-                }}
-              >
-                <For each={GLASS_MELODIES}>
-                  {(melody) => (
-                    <option value={melody.id}>
-                      {melody.title} ·{' '}
-                      {melody.phrases.reduce(
-                        (count, phrase) => count + phrase.anchors.length,
-                        0,
-                      )}{' '}
-                      notes
-                    </option>
-                  )}
-                </For>
-              </select>
-            </label>
-            <Show when={selected()} keyed>
-              {(id) => (
-                <MelodyPractice
-                  host={host}
-                  melody={glassMelody(id)}
-                  createReference={(contour) =>
-                    host.createMelodyReference!(contour)
-                  }
-                  beforeCapture={beforeCapture}
-                  onReleaseVoice={releaseCapture}
-                  canPlay={foreground}
-                  onComplete={completed}
-                  onChange={practiceChanged}
-                  recording={memory.recording}
-                  judgePolicy={judgePolicy}
-                  showConfigurationControls
-                />
-              )}
-            </Show>
-            {recordControls()}
-            <Show when={state().message}>
-              <p class={styles.status} role="status">
-                {state().message}
-              </p>
-            </Show>
-            <Show when={state().candidate}>
-              {(take) => takeControls(take(), true)}
-            </Show>
-            <Show
-              when={state().saved !== state().candidate ? state().saved : null}
-            >
-              {(take) => takeControls(take(), false)}
-            </Show>
-            <Show when={playing()}>
+            <div class={styles.headerControls}>
               <button
+                ref={instructionsButton}
+                class={chrome.iconButton}
                 type="button"
-                class={styles.stop}
-                onClick={() => void stopListening()}
+                aria-label={
+                  instructionsOpen()
+                    ? 'Hide encore instructions'
+                    : 'Show encore instructions'
+                }
+                aria-expanded={instructionsOpen()}
+                aria-controls={instructionsId}
+                onClick={() => setInstructionsOpen((open) => !open)}
               >
-                Stop listening
+                <GameIcon name="help" />
               </button>
-            </Show>
-            <Show when={status()}>
-              <p class={styles.status} role="alert">
-                {status()}
+              <button
+                class={chrome.iconButton}
+                type="button"
+                onClick={() => props.onClose()}
+                aria-label={props.returnLabel ?? 'Back to completion card'}
+              >
+                <GameIcon name="close" />
+              </button>
+            </div>
+          </header>
+          <p
+            id={instructionsId}
+            class={styles.instructions}
+            hidden={!instructionsOpen()}
+          >
+            Choose a shape, then listen or sing. Your lesson, stars and portrait
+            are already yours. Keep a recording only if you want to save a take.
+          </p>
+          <div class={styles.body}>
+            <aside class={styles.portrait} data-celebrating={celebrating()}>
+              <img
+                src={host.assetUrl(encore.portraitAssetId)}
+                alt="Your collected gallery portrait"
+              />
+              <div class={styles.halo} aria-hidden="true">
+                <For each={[0, 1, 2, 3, 4, 5, 6, 7]}>
+                  {(index) => <i style={{ '--ray': `${index * 45}deg` }} />}
+                </For>
+              </div>
+              <p>
+                {MERC_ENCORE_PHRASES[selected()]?.words !== undefined
+                  ? `“${MERC_ENCORE_PHRASES[selected()]?.words}”`
+                  : 'Hum the shape, or give it your own words.'}
               </p>
-            </Show>
+              <Show when={sealed()}>
+                <div class={styles.seal} role="status">
+                  <svg viewBox="0 0 32 32" aria-hidden="true">
+                    <path d="m16 2 4 9 10 5-10 5-4 9-4-9-10-5 10-5Z" />
+                  </svg>
+                  {encore.sealTitle}
+                </div>
+              </Show>
+              <small>Your lesson, stars and portrait are already yours.</small>
+              <Show when={playback}>
+                <div class={styles.mercExample}>
+                  <Show
+                    when={voiceAvailability()}
+                    fallback={
+                      <small>{guideFallbackCopy(guideAvailability()!)}</small>
+                    }
+                  >
+                    {(availability) => {
+                      const state = () =>
+                        examples()[availability().variant.assetId]
+                      return (
+                        <>
+                          <button
+                            type="button"
+                            disabled={
+                              practiceActive() || state()?.loading === true
+                            }
+                            onClick={() => hearMerc(availability().variant)}
+                          >
+                            {state()?.failed === true
+                              ? 'Retry Merc’s example'
+                              : state()?.loading === true
+                                ? 'Loading Merc’s example…'
+                                : 'Hear Merc'}
+                          </button>
+                          <small>
+                            {state()?.failed === true
+                              ? 'Merc’s take could not load. Hear melody still plays the exact instrumental guide.'
+                              : 'Merc sings this exact shape in your selected key and pace.'}
+                          </small>
+                        </>
+                      )
+                    }}
+                  </Show>
+                </div>
+              </Show>
+            </aside>
+            <div class={styles.practiceColumn}>
+              <label class={styles.shape}>
+                <span>Melody shape</span>
+                <select
+                  value={selected()}
+                  disabled={practiceActive()}
+                  onChange={(event) => {
+                    void stopListening()
+                    memory.setConsent(false)
+                    setPracticeSnapshot(null)
+                    setSelected(event.currentTarget.value as GlassMelodyId)
+                  }}
+                >
+                  <For each={GLASS_MELODIES}>
+                    {(melody) => (
+                      <option value={melody.id}>
+                        {melody.title} ·{' '}
+                        {melody.phrases.reduce(
+                          (count, phrase) => count + phrase.anchors.length,
+                          0,
+                        )}{' '}
+                        notes
+                      </option>
+                    )}
+                  </For>
+                </select>
+              </label>
+              <Show when={selected()} keyed>
+                {(id) => (
+                  <MelodyPractice
+                    host={host}
+                    melody={glassMelody(id)}
+                    createReference={(contour) =>
+                      host.createMelodyReference!(contour)
+                    }
+                    beforeCapture={beforeCapture}
+                    onReleaseVoice={releaseCapture}
+                    canPlay={foreground}
+                    onComplete={completed}
+                    onChange={practiceChanged}
+                    recording={memory.recording}
+                    judgePolicy={judgePolicy}
+                    showConfigurationControls
+                  />
+                )}
+              </Show>
+              {recordControls()}
+              <Show when={state().message}>
+                <p class={styles.status} role="status">
+                  {state().message}
+                </p>
+              </Show>
+              <Show when={state().candidate}>
+                {(take) => takeControls(take(), true)}
+              </Show>
+              <Show
+                when={
+                  state().saved !== state().candidate ? state().saved : null
+                }
+              >
+                {(take) => takeControls(take(), false)}
+              </Show>
+              <Show when={playing()}>
+                <button
+                  type="button"
+                  class={styles.stop}
+                  onClick={() => void stopListening()}
+                >
+                  Stop listening
+                </button>
+              </Show>
+              <Show when={status()}>
+                <p class={styles.status} role="alert">
+                  {status()}
+                </p>
+              </Show>
+            </div>
           </div>
-        </div>
+        </GameSurface>
       </section>
     </div>
   )

@@ -76,12 +76,13 @@ for (const viewport of [
       await page.screenshot({
         path: info.outputPath('crystal-current-ready.png'),
       })
-      await press(ready.getByRole('button', { name: 'Sound / tune' }))
+      await press(ready.getByRole('button', { name: 'Settings' }))
       const tuning = page.getByRole('dialog', {
-        name: 'Sound / tune',
+        name: 'Settings',
         exact: true,
       })
       await expect(tuning).toBeVisible()
+      await tuning.getByRole('tab', { name: 'Advanced' }).click()
       const speed = tuning.getByRole('slider', {
         name: 'Shatter speed',
         exact: true,
@@ -107,6 +108,7 @@ for (const viewport of [
           ),
         )
         .toBe(savedSpeed)
+      await tuning.getByRole('tab', { name: 'Display' }).click()
       await tuning.getByRole('button', { name: 'High', exact: true }).click()
       await expect(
         tuning.getByRole('button', { name: 'High', exact: true }),
@@ -123,7 +125,7 @@ for (const viewport of [
           ),
         )
         .toBe('high')
-      await tuning.getByRole('button', { name: 'Close sound settings' }).click()
+      await tuning.getByRole('button', { name: 'Close settings' }).click()
       await expect(ready).toBeVisible()
       await press(
         ready.getByRole('button', { name: 'Leave course', exact: true }),
@@ -159,13 +161,15 @@ for (const viewport of [
       await expect(
         ready.getByRole('button', { name: 'Start course' }),
       ).toBeEnabled({ timeout: 60_000 })
-      await press(ready.getByRole('button', { name: 'Sound / tune' }))
+      await press(ready.getByRole('button', { name: 'Settings' }))
       await expect(tuning).toBeVisible()
+      await tuning.getByRole('tab', { name: 'Advanced' }).click()
       await expect(speed).toHaveValue(savedSpeed)
+      await tuning.getByRole('tab', { name: 'Display' }).click()
       await expect(
         tuning.getByRole('button', { name: 'High', exact: true }),
       ).toHaveAttribute('aria-pressed', 'true')
-      await tuning.getByRole('button', { name: 'Close sound settings' }).click()
+      await tuning.getByRole('button', { name: 'Close settings' }).click()
       await press(
         ready.getByRole('button', { name: 'Leave course', exact: true }),
       )

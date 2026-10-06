@@ -150,7 +150,7 @@ async function messageLayout(page: Page) {
           'button[aria-label="Jump"]',
         ),
       },
-      ...['Recenter camera', 'How to play', 'Camera tuning'].map((label) => ({
+      ...['Recenter camera', 'Leave museum', 'Open settings'].map((label) => ({
         name: label,
         element: document.querySelector<HTMLElement>(
           `button[aria-label="${label}"]`,
@@ -291,7 +291,11 @@ test('stacks two current messages and clears them for the voice challenge @smoke
         const challenge = page.getByRole('region', { name: 'Voice challenge' })
         const box = await challenge.boundingBox()
         expect(box!.height).toBeLessThanOrEqual(150)
-        expect(box!.y).toBeGreaterThan(viewport.height * 0.5)
+        // Reserve the actual 150px instrument plus its safe-area bottom inset;
+        // the challenge camera frames Merc/target above these measured bounds.
+        expect(box!.y).toBeGreaterThanOrEqual(
+          viewport.height - 150 - Math.max(20, viewport.safeAreaBottom + 12),
+        )
         for (const button of await challenge.getByRole('button').all()) {
           const bounds = await button.boundingBox()
           expect(bounds!.height).toBeGreaterThanOrEqual(44)
@@ -347,13 +351,15 @@ test('hides contextual messages behind pause, tutorial and artwork dialogs @smok
   const stack = page.getByTestId('glass-message-stack')
   await expect(stack).toBeVisible()
 
-  await page.getByRole('button', { name: 'Pause game' }).click()
-  const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+  await page.getByRole('button', { name: 'Open settings' }).click()
+  const pause = page.getByRole('dialog', { name: 'Settings' })
   await expect(pause).toBeVisible()
   await expect(stack).toHaveCount(0)
-  await pause.getByRole('button', { name: 'Back to the museum' }).click()
+  await pause.getByRole('button', { name: 'Resume' }).click()
   await expect(stack).toBeVisible()
 
+  await page.getByRole('button', { name: 'Open settings' }).click()
+  await page.getByRole('tab', { name: 'Play', exact: true }).click()
   await page.getByRole('button', { name: 'How to play' }).click()
   const tutorial = page.getByRole('dialog').filter({
     has: page.getByRole('button', { name: 'Skip tutorial' }),
@@ -361,6 +367,8 @@ test('hides contextual messages behind pause, tutorial and artwork dialogs @smok
   await expect(tutorial).toBeVisible()
   await expect(stack).toHaveCount(0)
   await tutorial.getByRole('button', { name: 'Skip tutorial' }).click()
+  await expect(pause).toBeVisible()
+  await pause.getByRole('button', { name: 'Resume', exact: true }).click()
   await expect(stack).toBeVisible()
 
   await page.getByRole('button', { name: 'View nearby artwork' }).click()

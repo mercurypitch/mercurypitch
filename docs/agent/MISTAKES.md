@@ -1598,6 +1598,13 @@ If local and CI counts differ, compare the exact tested merge revision with the 
 **Rule:** await the published knob position before advancing the unchanged clock window. Do not loosen the displacement assertion or add a blind delay to hide delivery latency.
 **See:** `apps/beside-cue/e2e/helpers/glass-adventure-controls.ts`.
 
+### Isolate concurrent browser proofs from source reloads and output cleanup
+
+**Symptom:** a singing proof timed out during unrelated edits, and its trace disappeared while another browser suite ran.
+**Cause:** shared Vite HMR replaced modules mid-attempt; parallel Playwright invocations cleaned the same output directory.
+**Rule:** freeze runtime edits during evidence capture or use a private server with HMR and watching disabled. Give each concurrent invocation a distinct output directory, and preserve final rendered proof separately from fast geometry runs.
+**See:** `apps/beside-cue/playwright.config.ts`, `apps/beside-cue/e2e/glass-adventure-voice.e2e.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

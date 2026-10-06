@@ -1,6 +1,7 @@
 // Native browser touch defaults stay local to movement controls; modal selection events and inputs remain usable.
 import { expect, type Page } from '@playwright/test'
 import { openMuseum } from './glass-adventure-controls'
+import { openCameraPreview } from './glass-ui-settings'
 
 export async function verifyNativeControlDefaults(
   page: Page,
@@ -48,7 +49,7 @@ export async function verifyNativeControlDefaults(
       ),
     ).toBe(false)
   }
-  await page.getByRole('button', { name: 'Camera tuning', exact: true }).tap()
+  await openCameraPreview(page)
   const dialog = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   await expect(dialog).toBeVisible()
   const input = dialog.getByLabel('Look sensitivity')

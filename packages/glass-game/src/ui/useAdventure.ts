@@ -117,6 +117,8 @@ export function useAdventure(
     () => alive,
   )
   const [paused, setPaused] = createSignal(false)
+  const [pauseInterrupted, setPauseInterrupted] = createSignal(false)
+  let foreground = true
   const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
   const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
   const [tutorial, setTutorial] = createSignal(!hasSeenTutorial(host, level))
@@ -410,6 +412,8 @@ export function useAdventure(
   }
 
   function resume(): void {
+    if (!foreground || !ready()) return
+    setPauseInterrupted(false)
     setInspection(null)
     input.clear()
     setPaused(false)
@@ -535,6 +539,7 @@ export function useAdventure(
     },
     pauseSoundscape: soundscape.pause,
     cancelInteraction: () => {
+      if (paused()) setPauseInterrupted(true)
       disarmAutomaticVoice()
       cancel()
     },
@@ -802,8 +807,15 @@ export function useAdventure(
     // Permission prompts can blur a still-visible window. Release contacts so
     // movement cannot stick, while the host's foreground gate owns real exits.
     window.addEventListener('blur', releaseInput)
-    const unsubscribe = host.subscribeForeground((foreground) => {
-      if (!foreground) pause()
+    const unsubscribe = host.subscribeForeground((nextForeground) => {
+      if (foreground === nextForeground) return
+      foreground = nextForeground
+      if (!foreground) {
+        // A settings visit that was already paused cannot acquire a fresh
+        // resume gesture merely by closing after an interruption.
+        if (untrack(paused)) setPauseInterrupted(true)
+        pause()
+      }
     })
     onCleanup(() => {
       unsubscribe()
@@ -847,6 +859,7 @@ export function useAdventure(
     notice: transientMessages.notice,
     narrationCaption: transientMessages.narrationCaption,
     paused,
+    pauseInterrupted,
     inspection,
     nearbyArtwork,
     closeInspection,

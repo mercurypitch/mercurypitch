@@ -63,9 +63,9 @@ test('a slow asset keeps an opaque phone cover and cannot collect movement or ca
     await expect(
       cover.getByRole('button', { name: 'Leave museum' }),
     ).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Pause game' })).toHaveCount(
-      0,
-    )
+    await expect(
+      page.getByRole('button', { name: 'Open settings' }),
+    ).toHaveCount(0)
     await expect(
       page.getByLabel('Glass museum; drag to look around'),
     ).toHaveAttribute('aria-hidden', 'true')
@@ -193,9 +193,9 @@ test('required texture failure retries without resetting progress; context loss 
     await expect(
       cover.getByRole('button', { name: 'Retry', exact: true }),
     ).toBeFocused()
-    await expect(page.getByRole('button', { name: 'Pause game' })).toHaveCount(
-      0,
-    )
+    await expect(
+      page.getByRole('button', { name: 'Open settings' }),
+    ).toHaveCount(0)
     const progress = cover.getByRole('progressbar', {
       name: 'Gallery preparation',
     })

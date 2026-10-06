@@ -1,11 +1,11 @@
-// Runner sound and tune panel — saved backing/example levels with native modal focus and access to existing note setup.
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
+// Runner settings — existing mix, camera and setup controls within the shared game dialog.
+import { createEffect, createMemo, createSignal, For, Show, untrack, } from 'solid-js'
+import { SHATTER_PLAYBACK_SPEED } from '../core/shatter-presentation'
 import type { GlassMicrophoneInput } from '../host'
 import { runnerMidiName } from '../runner/notation'
 import type { RunnerAudioPreferences, RunnerBackingAvailability, RunnerReferencePlayback, } from '../runner/session-contracts'
 import type { DevelopmentRenderControls } from './DevelopmentRenderTuning'
-import { DevelopmentRenderTuning } from './DevelopmentRenderTuning'
-import { trapDialogKeys } from './dialog-focus'
+import { GameAppearanceControls, GameIcon, GameMaterialControls, GameSettingsDialog, GameSurface, } from './GameUI'
 import type { MicrophoneIssue } from './mic-error'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 import styles from './RunnerSoundTune.module.css'
@@ -109,230 +109,278 @@ const CAMERA_VIEWS = [
 interface RunnerSoundTuneProps {
   developmentControls?: DevelopmentRenderControls
   cameraControls?: RunnerCameraControls
-  openRequest: number
+  microphoneInput?: GlassMicrophoneInput
+  microphoneIssue?: MicrophoneIssue
+  open: boolean
   canChangeNote: boolean
-  restoreFocus(): boolean
+  continuous: boolean
+  exitLabel: string
   preferences: RunnerAudioPreferences
   backing: RunnerBackingAvailability | null
   comfortableMidi: number
   onPreferencesChange(patch: Partial<RunnerAudioPreferences>): void
   onOpen(): void
+  onClose(): void
+  onClosed(): void
+  onExit(): void
   onSetup(): void
 }
 
 const percentage = (volume: number): number => Math.round(volume * 100)
 
 export function RunnerSoundTune(props: RunnerSoundTuneProps) {
-  const [open, setOpen] = createSignal(false)
-  let dialog!: HTMLDialogElement
-  let trigger!: HTMLButtonElement
-  let setupAfterClose = false
-  let lastRequest = 0
-
-  createEffect(() => {
-    const request = props.openRequest
-    if (request > lastRequest) {
-      lastRequest = request
-      setOpen(true)
-    }
-  })
-
-  createEffect(() => {
-    if (open() && !dialog.open) dialog.showModal()
-    else if (!open() && dialog.open) dialog.close()
-  })
-  onCleanup(() => {
-    if (dialog.open) dialog.close()
-  })
-
-  function closed(): void {
-    if (dialog.open || !trigger.isConnected) return
-    setOpen(false)
-    if (setupAfterClose) {
-      setupAfterClose = false
-      props.onSetup()
-    } else if (!props.restoreFocus()) trigger.focus({ preventScroll: true })
-  }
-
+  const sound = () => (
+    <div class={styles.section}>
+      <p class={styles.description}>
+        Music steps out while you sing. Note examples and the count-in have
+        their own level.
+      </p>
+      <For
+        each={
+          [
+            { key: 'musicVolume', label: 'Music', name: 'Music volume' },
+            {
+              key: 'guideVolume',
+              label: 'Note examples',
+              name: 'Note example volume',
+            },
+            {
+              key: 'effectsVolume',
+              label: 'Glass breaks',
+              name: 'Glass break volume',
+            },
+          ] as const
+        }
+      >
+        {(mix) => (
+          <label class={styles.volume}>
+            <span>
+              {mix.label}
+              <output>{percentage(props.preferences[mix.key])}%</output>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={percentage(props.preferences[mix.key])}
+              aria-label={mix.name}
+              aria-valuetext={`${percentage(props.preferences[mix.key])} percent${mix.key === 'musicVolume' && props.preferences.musicMuted ? ', muted' : ''}`}
+              onInput={(event) =>
+                props.onPreferencesChange({
+                  [mix.key]: Number(event.currentTarget.value) / 100,
+                })
+              }
+            />
+          </label>
+        )}
+      </For>
+      <button
+        type="button"
+        class={styles.action}
+        aria-pressed={props.preferences.musicMuted}
+        onClick={() =>
+          props.onPreferencesChange({
+            musicMuted: !props.preferences.musicMuted,
+          })
+        }
+      >
+        {props.preferences.musicMuted ? 'Turn music on' : 'Mute music'}
+      </button>
+      <Show when={props.backing !== null && !props.backing.music}>
+        <p class={styles.availability} role="status">
+          The backing music couldn't load. Note examples and the count-in still
+          work.
+        </p>
+      </Show>
+      <Show when={props.backing?.music === true && !props.backing.ambience}>
+        <p class={styles.availability} role="status">
+          Music is ready. The extra ambience couldn't load.
+        </p>
+      </Show>
+      <Show when={props.microphoneIssue}>
+        {(issue) => (
+          <p class={styles.availability} role="status">
+            {issue().message}
+          </p>
+        )}
+      </Show>
+      <MicrophoneInputRecovery
+        microphoneInput={props.microphoneInput}
+        issue={props.microphoneIssue}
+      />
+      <p class={styles.description}>Your mix is saved for the next run.</p>
+    </div>
+  )
+  const play = () => (
+    <div class={styles.section}>
+      <Show when={props.cameraControls}>
+        {(controls) => (
+          <fieldset class={styles.choices}>
+            <legend>Camera view</legend>
+            <div>
+              <For each={CAMERA_VIEWS}>
+                {(view) => (
+                  <button
+                    type="button"
+                    class={styles.action}
+                    disabled={controls().disabled}
+                    aria-pressed={controls().profile === view.profile}
+                    onClick={() => controls().onChange(view.profile)}
+                  >
+                    {view.label}
+                  </button>
+                )}
+              </For>
+            </div>
+          </fieldset>
+        )}
+      </Show>
+      <div class={styles.tune}>
+        <span>
+          Comfortable note{' '}
+          <strong>{runnerMidiName(props.comfortableMidi).text}</strong>
+        </span>
+        <Show when={props.canChangeNote}>
+          <button type="button" class={styles.action} onClick={props.onSetup}>
+            <GameIcon name="tuning" />
+            Change note
+          </button>
+        </Show>
+      </div>
+      <details class={styles.help}>
+        <summary>How to play</summary>
+        <p>
+          Match the note to begin. Sing through each glass wall, then steer and
+          jump through the course.
+        </p>
+        <p>
+          {props.continuous
+            ? 'Hold left or right to steer. Use the arrow keys or A and D on a keyboard. Press Space to jump.'
+            : 'Tap left or right to change lanes. Use the arrow keys or A and D on a keyboard. Press Space to jump.'}
+        </p>
+      </details>
+    </div>
+  )
+  const display = () => (
+    <div class={styles.section}>
+      <GameAppearanceControls />
+      <Show when={props.developmentControls}>
+        {(controls) => (
+          <fieldset class={styles.choices}>
+            <legend>Graphics quality</legend>
+            <p class={styles.description}>
+              Current output: {controls().renderQualityProfile}
+            </p>
+            <div>
+              <For
+                each={
+                  [
+                    { id: 'auto', label: 'Auto' },
+                    { id: 'high', label: 'High' },
+                    { id: 'balanced', label: 'Balanced' },
+                  ] as const
+                }
+              >
+                {(quality) => (
+                  <button
+                    type="button"
+                    class={styles.action}
+                    aria-pressed={
+                      controls().renderQualityPreference === quality.id
+                    }
+                    onClick={() => controls().onRenderQualityChange(quality.id)}
+                  >
+                    {quality.label}
+                  </button>
+                )}
+              </For>
+            </div>
+            <p class={styles.description}>
+              Balanced reduces detail. High keeps it sharp. Auto chooses for
+              this device. Texture detail updates the next time you open the
+              game.
+            </p>
+          </fieldset>
+        )}
+      </Show>
+    </div>
+  )
+  const advanced = () => (
+    <Show when={props.developmentControls}>
+      {(controls) => (
+        <div class={styles.section}>
+          <label class={styles.volume}>
+            <span>
+              Shatter speed{' '}
+              <output>{controls().shatterPlaybackSpeed.toFixed(2)}×</output>
+            </span>
+            <input
+              type="range"
+              aria-label="Shatter speed"
+              aria-valuetext={`${controls().shatterPlaybackSpeed.toFixed(2)} times normal speed`}
+              min={SHATTER_PLAYBACK_SPEED.minimum}
+              max={SHATTER_PLAYBACK_SPEED.maximum}
+              step="0.05"
+              value={controls().shatterPlaybackSpeed}
+              onInput={(event) =>
+                controls().onShatterPlaybackSpeedChange(
+                  event.currentTarget.valueAsNumber,
+                )
+              }
+            />
+          </label>
+          <p class={styles.description}>
+            Lower is slower. Applies to the next break. Singing, movement and
+            sound keep their timing.
+          </p>
+          <button
+            type="button"
+            class={styles.action}
+            onClick={() => {
+              controls().onRenderQualityChange('auto')
+              controls().onShatterPlaybackSpeedChange(
+                SHATTER_PLAYBACK_SPEED.default,
+              )
+            }}
+          >
+            Reset graphics and glass
+          </button>
+          <GameMaterialControls />
+        </div>
+      )}
+    </Show>
+  )
   return (
     <div class={styles.control}>
       <button
-        ref={trigger}
         type="button"
         class={styles.trigger}
-        classList={{ [styles.muted]: props.preferences.musicMuted }}
-        aria-label="Sound / tune"
+        aria-label="Open settings"
         aria-haspopup="dialog"
-        aria-expanded={open()}
-        title="Sound / tune"
-        onClick={() => {
-          props.onOpen()
-          setOpen(true)
-        }}
+        aria-expanded={props.open}
+        title="Settings"
+        onClick={() => props.onOpen()}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M10 14v6" />
-        </svg>
+        <GameSurface kind="tile" class={styles.triggerSurface}>
+          <GameIcon name="settings" />
+        </GameSurface>
       </button>
-      <dialog
-        ref={dialog}
-        class={styles.panel}
-        aria-labelledby="runner-sound-title"
-        aria-describedby="runner-sound-description"
-        onCancel={(event) => {
-          event.preventDefault()
-          setOpen(false)
-        }}
-        onClose={closed}
-        onKeyDown={(event) => {
-          event.stopPropagation()
-          trapDialogKeys(event)
-        }}
-      >
-        <div class={styles.titlebar}>
-          <h2 id="runner-sound-title">Sound / tune</h2>
-          <button
-            type="button"
-            class={styles.close}
-            aria-label="Close sound settings"
-            onClick={() => setOpen(false)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </div>
-        <p id="runner-sound-description" class={styles.description}>
-          Music steps out while you sing. Note examples and the count-in have
-          their own level.
-        </p>
-        <Show when={props.cameraControls}>
-          {(controls) => (
-            <fieldset class={styles.cameraViews}>
-              <legend>Camera view</legend>
-              <div>
-                <For each={CAMERA_VIEWS}>
-                  {(view) => (
-                    <button
-                      type="button"
-                      class={styles.cameraChoice}
-                      disabled={controls().disabled}
-                      aria-pressed={controls().profile === view.profile}
-                      onClick={() => controls().onChange(view.profile)}
-                    >
-                      {view.label}
-                    </button>
-                  )}
-                </For>
-              </div>
-            </fieldset>
-          )}
-        </Show>
-        <label class={styles.volume}>
-          <span>
-            Music <output>{percentage(props.preferences.musicVolume)}%</output>
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={percentage(props.preferences.musicVolume)}
-            aria-label="Music volume"
-            aria-valuetext={`${percentage(props.preferences.musicVolume)} percent${props.preferences.musicMuted ? ', muted' : ''}`}
-            onInput={(event) =>
-              props.onPreferencesChange({
-                musicVolume: Number(event.currentTarget.value) / 100,
-              })
-            }
-          />
-        </label>
-        <label class={styles.volume}>
-          <span>
-            Note examples{' '}
-            <output>{percentage(props.preferences.guideVolume)}%</output>
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={percentage(props.preferences.guideVolume)}
-            aria-label="Note example volume"
-            aria-valuetext={`${percentage(props.preferences.guideVolume)} percent`}
-            onInput={(event) =>
-              props.onPreferencesChange({
-                guideVolume: Number(event.currentTarget.value) / 100,
-              })
-            }
-          />
-        </label>
-        <label class={styles.volume}>
-          <span>
-            Glass breaks{' '}
-            <output>{percentage(props.preferences.effectsVolume)}%</output>
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={percentage(props.preferences.effectsVolume)}
-            aria-label="Glass break volume"
-            aria-valuetext={`${percentage(props.preferences.effectsVolume)} percent`}
-            onInput={(event) =>
-              props.onPreferencesChange({
-                effectsVolume: Number(event.currentTarget.value) / 100,
-              })
-            }
-          />
-        </label>
-        <button
-          type="button"
-          class={styles.action}
-          aria-pressed={props.preferences.musicMuted}
-          onClick={() =>
-            props.onPreferencesChange({
-              musicMuted: !props.preferences.musicMuted,
-            })
-          }
-        >
-          {props.preferences.musicMuted ? 'Turn music on' : 'Mute music'}
-        </button>
-        <Show when={props.backing !== null && !props.backing.music}>
-          <p class={styles.availability} role="status">
-            The backing music couldn't load. Note examples and the count-in
-            still work.
-          </p>
-        </Show>
-        <Show when={props.backing?.music === true && !props.backing.ambience}>
-          <p class={styles.availability} role="status">
-            Music is ready. The extra ambience couldn't load.
-          </p>
-        </Show>
-        <div class={styles.tune}>
-          <span>
-            Comfortable note{' '}
-            <strong>{runnerMidiName(props.comfortableMidi).text}</strong>
-          </span>
-          <Show when={props.canChangeNote}>
-            <button
-              type="button"
-              class={styles.action}
-              onClick={() => {
-                setupAfterClose = true
-                setOpen(false)
-              }}
-            >
-              Change note
-            </button>
-          </Show>
-        </div>
-        <Show when={props.developmentControls}>
-          {(controls) => <DevelopmentRenderTuning {...controls()} />}
-        </Show>
-        <p class={styles.description}>Your mix is saved for the next run.</p>
-      </dialog>
+      <GameSettingsDialog
+        open={props.open}
+        onClose={props.onClose}
+        onClosed={props.onClosed}
+        onExit={props.onExit}
+        exitLabel={props.exitLabel}
+        sections={[
+          { id: 'sound', label: 'Sound', content: sound },
+          { id: 'play', label: 'Play', content: play },
+          { id: 'display', label: 'Display', content: display },
+          ...(props.developmentControls
+            ? [{ id: 'advanced', label: 'Advanced', content: advanced }]
+            : []),
+        ]}
+      />
     </div>
   )
 }

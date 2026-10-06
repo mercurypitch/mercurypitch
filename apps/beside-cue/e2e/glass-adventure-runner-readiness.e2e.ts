@@ -139,7 +139,9 @@ test('a fall with no broken walls resumes and a changed starting note stays usab
     2,
   )
 
-  await page.getByRole('button', { name: 'Pause course' }).tap()
+  await page.getByRole('button', { name: 'Open settings' }).tap()
+  await page.getByRole('tab', { name: 'Play', exact: true }).tap()
+  await page.getByRole('button', { name: 'Change note', exact: true }).tap()
   await page.getByRole('slider', { name: 'Comfortable note' }).focus()
   await page.keyboard.press('ArrowRight')
   await page.keyboard.press('Tab')

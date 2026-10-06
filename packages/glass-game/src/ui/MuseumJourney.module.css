@@ -1,6 +1,6 @@
 /* Floating Museum lobby — a live celestial map with camera-following gallery plaques. */
 .lobby {
-  --jade: #224943;
+  --jade: var(--game-ink, #224943);
   --deep-jade: #173d38;
   --gold: #bd8e43;
   --bright-gold: #dfbd72;
@@ -120,21 +120,27 @@
 }
 
 .roundAction {
+  position: relative;
   display: grid;
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
   place-items: center;
   padding: 0;
-  border: 1px solid #a78048;
-  border-radius: 50%;
-  color: var(--deep-jade);
-  background: #fff8e8e8;
-  box-shadow:
-    inset 0 0 0 2px #fff9,
-    0 8px 24px #163e3730;
-  backdrop-filter: blur(8px);
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  background: transparent;
   cursor: pointer;
+}
+
+.actionSurface {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  pointer-events: none;
 }
 
 .roundAction svg {
@@ -153,7 +159,7 @@
   top: max(88px, calc(env(safe-area-inset-top) + 64px));
   right: max(28px, env(safe-area-inset-right));
   display: flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   gap: 7px;
   padding: 0 14px 0 11px;
@@ -193,54 +199,32 @@
   top: 0;
   left: 0;
   display: grid;
-  min-width: 150px;
-  max-width: 220px;
-  min-height: 46px;
+  width: 44px;
+  height: 44px;
   place-items: center;
-  padding: 7px 22px 5px;
-  border: 1px solid #a97d3c;
-  border-radius: 7px 7px 15px 15px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   opacity: 0;
-  color: #513c28;
-  background:
-    linear-gradient(135deg, transparent 8px, #fff9e8f2 0) top left,
-    linear-gradient(-135deg, transparent 8px, #fff9e8f2 0) top right,
-    linear-gradient(45deg, transparent 10px, #f3e7d2f2 0) bottom left,
-    linear-gradient(-45deg, transparent 10px, #f3e7d2f2 0) bottom right;
-  background-repeat: no-repeat;
-  background-size: 51% 51%;
-  box-shadow:
-    inset 0 0 0 2px #fff9,
-    0 9px 22px #173f3833;
+  color: var(--deep-jade);
+  background: transparent;
   font: inherit;
-  font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
-  font-size: 16px;
-  line-height: 1.05;
   text-align: center;
-  text-wrap: balance;
   pointer-events: none;
   cursor: pointer;
   will-change: transform;
 }
 
-.stageCartouche::before,
-.stageCartouche::after {
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  transform: translateY(-50%) rotate(45deg);
-  border: 1px solid #bd9659;
-  background: #f8edda;
-  content: '';
-}
-
 .stageCartouche::before {
-  left: -5px;
-}
-
-.stageCartouche::after {
-  right: -5px;
+  position: absolute;
+  top: -12px;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  height: 20px;
+  background: #fff8e8;
+  box-shadow: 1px 0 #224943a6;
+  content: '';
+  pointer-events: none;
 }
 
 .stageCartouche[data-projected='true'] {
@@ -248,28 +232,46 @@
   pointer-events: auto;
 }
 
-.stageCartouche > span {
-  white-space: nowrap;
+.markerNumber {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #bfa267;
+  border-radius: 50%;
+  background: #f5f2e5;
+  box-shadow: 0 2px 8px #173f3833;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 
-.stageCartouche > span::after {
-  display: block;
-  width: 22px;
-  height: 7px;
-  margin: 3px auto 0;
-  border-top: 1px solid #9e7438;
-  border-bottom: 1px solid #9e7438;
-  content: '';
-  opacity: 0.75;
-}
-
-.stageCartoucheSelected {
-  border-color: #8d6027;
-  color: #2b5149;
+.stageCartoucheSelected .markerNumber {
+  color: #fff8e8;
+  background: var(--deep-jade);
   box-shadow:
-    inset 0 0 0 2px #e0bd73,
-    0 0 0 2px #fff5d6b8,
-    0 11px 30px #173f3845;
+    0 0 0 2px #fff8e8,
+    0 0 0 3px #bfa267;
+}
+
+.stagePlaque {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  display: none;
+  min-width: 150px;
+  max-width: 230px;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: normal;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.stageCartoucheSelected .stagePlaque {
+  display: block;
 }
 
 .mapNotice {
@@ -303,6 +305,7 @@
 }
 
 .mapNotice button {
+  min-height: 44px;
   margin-top: 4px;
   padding: 9px 14px;
   border: 1px solid #dbc483;
@@ -343,23 +346,22 @@
 }
 
 .stageRail {
+  position: relative;
+  isolation: isolate;
   display: flex;
   min-width: 0;
   align-items: center;
   justify-self: start;
   gap: 4px;
-  padding: 4px;
-  border: 1px solid #9d7b4e;
-  border-radius: 24px;
-  background: #e9e4d8d1;
-  box-shadow: 0 8px 20px #173f3826;
-  backdrop-filter: blur(9px);
+  padding: 5px;
+  border-radius: 14px;
   pointer-events: auto;
   touch-action: pan-y;
 }
 
 .selectedCard {
   position: relative;
+  isolation: isolate;
   display: grid;
   min-width: 0;
   height: 216px;
@@ -369,42 +371,21 @@
   grid-template-columns: minmax(138px, 0.72fr) minmax(0, 1.32fr);
   gap: 15px;
   padding: 12px;
-  border: 1px solid #9d7137;
-  border-radius: 18px 4px 18px 4px;
-  color: var(--jade);
-  background:
-    radial-gradient(circle at 98% 2%, #edcaba68 0, transparent 32%),
-    linear-gradient(145deg, #fff9ebf5 0%, #f2e5cef5 100%);
-  box-shadow:
-    inset 0 0 0 3px #fff9,
-    0 20px 56px #153d3647;
-  backdrop-filter: blur(13px);
+  color: var(--game-ink);
   pointer-events: auto;
   touch-action: pan-y;
 }
 
-.selectedCard::before,
-.selectedCard::after {
+.cardMaterial {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  border-color: #bd8e43;
-  content: '';
+  inset: 0;
+  z-index: -1;
   pointer-events: none;
 }
 
-.selectedCard::before {
-  top: 5px;
-  left: 5px;
-  border-top: 2px solid;
-  border-left: 2px solid;
-}
-
-.selectedCard::after {
-  right: 5px;
-  bottom: 5px;
-  border-right: 2px solid;
-  border-bottom: 2px solid;
+.cardSurface {
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .selectedArtwork {
@@ -458,7 +439,7 @@
   display: flex;
   min-height: 14px;
   justify-content: flex-end;
-  color: #66766c;
+  color: var(--game-muted);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -467,7 +448,7 @@
 
 .lesson {
   margin: 2px 0 3px;
-  color: #966b2d;
+  color: var(--game-muted);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -476,7 +457,7 @@
 
 .selectedCard h2 {
   margin: 0;
-  color: #203f3a;
+  color: var(--game-ink);
   font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   font-size: clamp(28px, 2.7vw, 39px);
   font-weight: 400;
@@ -488,7 +469,7 @@
   display: -webkit-box;
   overflow: hidden;
   margin: 8px 0 7px;
-  color: #5b6c62;
+  color: var(--game-muted);
   -webkit-box-orient: vertical;
   font-family: 'Iowan Old Style', Georgia, serif;
   font-size: 12px;
@@ -526,7 +507,7 @@
 
 .ungraded {
   overflow: hidden;
-  color: #766f61;
+  color: var(--game-muted);
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -538,7 +519,7 @@
   align-items: center;
   gap: 7px;
   overflow: hidden;
-  color: #76572a;
+  color: var(--game-muted);
   font-family: Georgia, serif;
   font-size: 10px;
   text-overflow: ellipsis;
@@ -566,7 +547,7 @@
 
 .enterSelected {
   display: flex;
-  min-height: 43px;
+  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -575,7 +556,7 @@
   border: 1px solid #bd9659;
   border-radius: 5px 21px 21px 5px;
   color: #fff8e8;
-  background: var(--jade);
+  background: #195d65;
   box-shadow:
     inset 0 0 0 1px #39655d,
     0 8px 19px #21443b29;
@@ -606,14 +587,14 @@
 .stageChip {
   display: flex;
   min-width: 0;
-  min-height: 34px;
+  min-height: 44px;
   align-items: center;
   gap: 5px;
   padding: 4px 8px 4px 4px;
   border: 1px solid #9fae9f;
   border-radius: 18px;
-  color: #536c62;
-  background: #fff9e8e8;
+  color: var(--game-ink);
+  background: var(--game-button-bg);
   font: inherit;
   cursor: pointer;
 }
@@ -642,7 +623,7 @@
 .stageChipSelected {
   border-color: #9b7131;
   color: var(--jade);
-  background: #fff6dd;
+  background: var(--game-button-bg);
   box-shadow: inset 0 0 0 1px #d1b369;
 }
 
@@ -810,7 +791,7 @@
   gap: 3px;
   padding: 6px 0 6px 8px;
   border: 0;
-  color: var(--jade);
+  color: #224943;
   background: transparent;
   font: inherit;
   font-size: 12px;
@@ -850,28 +831,6 @@
 
   .chapters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (height < 700px) and (width >= 700px) {
-  .mapSection {
-    min-height: 560px;
-  }
-
-  .mapDock {
-    bottom: 18px;
-  }
-
-  .selectedCard {
-    height: 186px;
-  }
-
-  .selectedArtwork {
-    height: 160px;
-  }
-
-  .description {
-    -webkit-line-clamp: 1;
   }
 }
 
@@ -916,8 +875,8 @@
   }
 
   .roundAction {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   .roundAction svg {
@@ -926,7 +885,7 @@
   }
 
   .viewReset {
-    top: max(52px, calc(env(safe-area-inset-top) + 42px));
+    top: max(60px, calc(env(safe-area-inset-top) + 52px));
     right: max(10px, env(safe-area-inset-right));
     min-height: 44px;
     padding: 0 11px 0 9px;
@@ -960,18 +919,14 @@
     box-sizing: border-box;
     margin-bottom: 5px;
     padding: 4px;
-    border: 1px solid #9d7b4e;
-    border-radius: 18px 18px 6px 6px;
-    background: #e9e4d8de;
-    box-shadow: 0 8px 20px #173f3830;
-    backdrop-filter: blur(9px);
+    border-radius: 14px;
     pointer-events: auto;
     touch-action: pan-y;
   }
 
   .stageChip {
     display: grid;
-    min-height: 32px;
+    min-height: 44px;
     grid-template-columns: 20px minmax(0, 1fr);
     gap: 3px;
     padding: 3px;
@@ -993,7 +948,7 @@
   }
 
   .selectedCard {
-    height: 134px;
+    height: 146px;
     max-height: none;
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 8px;
@@ -1002,7 +957,7 @@
   }
 
   .selectedArtwork {
-    height: 118px;
+    height: 130px;
     border-radius: 9px 9px 3px 3px;
   }
 
@@ -1065,7 +1020,7 @@
   }
 
   .enterSelected {
-    min-height: 34px;
+    min-height: 44px;
     padding: 0 8px 0 10px;
     border-radius: 4px 18px 18px 4px;
     font-size: 10px;
@@ -1163,4 +1118,169 @@
   .chapterArt img {
     transition: none;
   }
+}
+
+/* Keep the map at the actual short viewport, with controls below its anchors. */
+@media (orientation: landscape) and (height < 700px) {
+  .mapSection {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .mapHeader {
+    gap: 12px;
+    padding: max(8px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right)) 0
+      max(12px, env(safe-area-inset-left));
+  }
+
+  .brand > h1 {
+    font-size: 32px;
+  }
+  .brand > p {
+    display: none;
+  }
+  .sunMark {
+    width: 34px;
+    height: 34px;
+  }
+  .headerActions {
+    gap: 6px;
+  }
+  .stageLabels {
+    display: none;
+  }
+
+  .viewReset {
+    top: max(60px, calc(env(safe-area-inset-top) + 52px));
+    right: max(12px, env(safe-area-inset-right));
+  }
+
+  .mapDock {
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: max(8px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: minmax(196px, 1fr) minmax(300px, 420px);
+    gap: 12px;
+  }
+
+  .stageRail {
+    display: grid;
+    grid-template-columns: repeat(4, 44px);
+    gap: 2px;
+    margin: 0;
+    padding: 5px;
+  }
+
+  .stageChip {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+  }
+  .stageChip > span:first-child {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .stageChip > span:last-child {
+    display: none;
+  }
+
+  .selectedCard {
+    height: 138px;
+    max-height: none;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 8px;
+    padding: 7px;
+  }
+
+  .selectedArtwork {
+    height: 122px;
+  }
+  .selectedArtwork > span {
+    font-size: 7px;
+    padding: 4px;
+    right: 4px;
+    left: 4px;
+  }
+  .selectedTopline {
+    min-height: 10px;
+    font-size: 8px;
+  }
+  .selectedContent {
+    padding: 9px 4px 0 0;
+  }
+  .lesson {
+    margin: 1px 0 3px;
+    font-size: 8px;
+  }
+  .selectedCard h2 {
+    font-size: 25px;
+    line-height: 1;
+  }
+  .description {
+    display: none;
+  }
+  .keepsakes {
+    min-height: 12px;
+    margin: 3px 0;
+  }
+  .keepsakes:has(.portraitKeepsake) {
+    min-height: 22px;
+  }
+  .portraitKeepsake {
+    font-size: 8px;
+  }
+  .portraitKeepsake img {
+    width: 18px;
+    height: 22px;
+  }
+  .enterSelected {
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+}
+
+@media (width < 380px) {
+  .sunMark {
+    display: none;
+  }
+  .brand > h1 {
+    font-size: 28px;
+  }
+}
+
+.soundControls {
+  display: grid;
+  gap: 18px;
+}
+
+.soundControls label {
+  display: grid;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.soundControls label > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.soundControls input[type='range'] {
+  width: 100%;
+  min-height: 44px;
+}
+.soundControls .soundToggle {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.soundControls input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
 }

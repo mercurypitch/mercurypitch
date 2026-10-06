@@ -6,11 +6,13 @@ import { compileMelody, sampleMelodyAtPhase } from '../core/melody-contour'
 import type { MelodyJudgePolicy } from '../core/melody-judge'
 import type { MelodyReferencePlayer } from '../core/melody-reference'
 import type { GlassGameHost } from '../host'
+import { GameIcon, GameSurface } from './GameUI'
 import type { MelodyPracticeController, MelodyPracticeRecordingAdapter, MelodyPracticeSnapshot, } from './melody-practice'
 import { createMelodyPractice } from './melody-practice'
 import styles from './MelodyPractice.module.css'
 import { MelodyRibbon } from './MelodyRibbon'
 import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
+import chrome from './VoiceChallengePanel.module.css'
 
 export interface MelodyPracticeChoice {
   value: number
@@ -97,6 +99,9 @@ function active(mode: MelodyPracticeSnapshot['mode']): boolean {
 export function MelodyPractice(props: MelodyPracticeProps) {
   const titleId = createUniqueId()
   const descriptionId = createUniqueId()
+  const instructionsId = createUniqueId()
+  const [instructionsOpen, setInstructionsOpen] = createSignal(false)
+  let instructionsButton!: HTMLButtonElement
   const [snapshot, setSnapshot] = createSignal(emptySnapshot(props))
   const [configurationError, setConfigurationError] = createSignal('')
   let controller: MelodyPracticeController | undefined
@@ -184,157 +189,198 @@ export function MelodyPractice(props: MelodyPracticeProps) {
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       data-mode={snapshot().mode}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !instructionsOpen()) return
+        event.preventDefault()
+        event.stopPropagation()
+        setInstructionsOpen(false)
+        instructionsButton.focus({ preventScroll: true })
+      }}
     >
-      <header class={styles.heading}>
-        <div>
-          <h2 id={titleId}>{props.melody.title}</h2>
+      <GameSurface class={styles.surface}>
+        <header class={styles.heading}>
+          <div>
+            <h2 id={titleId}>{props.melody.title}</h2>
+          </div>
+          <div class={styles.cornerControls}>
+            <button
+              ref={instructionsButton}
+              class={chrome.iconButton}
+              type="button"
+              aria-label={
+                instructionsOpen()
+                  ? 'Hide melody instructions'
+                  : 'Show melody instructions'
+              }
+              aria-expanded={instructionsOpen()}
+              aria-controls={instructionsId}
+              onClick={() => setInstructionsOpen((open) => !open)}
+            >
+              <GameIcon name="help" />
+            </button>
+            <Show when={active(snapshot().mode)}>
+              <button
+                class={chrome.iconButton}
+                type="button"
+                onClick={cancel}
+                aria-label="Cancel"
+              >
+                <GameIcon name="close" />
+              </button>
+            </Show>
+          </div>
+        </header>
+        <div
+          id={instructionsId}
+          class={styles.instructions}
+          hidden={!instructionsOpen()}
+        >
           <p>{props.melody.description}</p>
-        </div>
-        <Show when={active(snapshot().mode)}>
-          <button class={styles.cancel} type="button" onClick={cancel}>
-            Cancel
-          </button>
-        </Show>
-      </header>
-
-      <MelodyRibbon
-        contour={snapshot().contour ?? previewContour()}
-        judge={snapshot().mode === 'singing' ? snapshot().judge : null}
-        pitch={snapshot().mode === 'singing' ? snapshot().pitch : null}
-        timelineSeconds={timelineSeconds()}
-        complete={snapshot().mode === 'complete'}
-      />
-
-      <div class={styles.guidance} aria-live="polite" aria-atomic="true">
-        <h3>{snapshot().message}</h3>
-        <p id={descriptionId}>{snapshot().hint}</p>
-        <Show
-          when={
-            snapshot().judge !== null &&
-            snapshot().judge!.phraseCount > 1 &&
-            snapshot().mode === 'singing'
-          }
-        >
-          <span class={styles.phraseStatus}>
-            Phrase {snapshot().judge!.phraseIndex + 1} of{' '}
-            {snapshot().judge!.phraseCount}
-          </span>
-        </Show>
-      </div>
-
-      <Show when={retryableMicrophoneIssue()}>
-        {(issue) => (
-          <MicrophoneInputRecovery
-            microphoneInput={props.host.microphoneInput}
-            issue={issue()}
-          />
-        )}
-      </Show>
-
-      <Show when={props.showConfigurationControls === true}>
-        <div class={styles.configuration} aria-label="Melody settings">
-          <label>
-            <span>Pace</span>
-            <select
-              value={snapshot().pace}
-              disabled={active(snapshot().mode)}
-              onChange={(event) =>
-                applyConfiguration({ pace: Number(event.currentTarget.value) })
-              }
-            >
-              <For each={paceChoices()}>
-                {(choice) => (
-                  <option value={choice.value}>{choice.label}</option>
-                )}
-              </For>
-            </select>
-          </label>
-          <label>
-            <span>Starting height</span>
-            <select
-              value={snapshot().transposeSemitones}
-              disabled={active(snapshot().mode)}
-              onChange={(event) =>
-                applyConfiguration({
-                  transposeSemitones: Number(event.currentTarget.value),
-                })
-              }
-            >
-              <For each={transpositionChoices()}>
-                {(choice) => (
-                  <option value={choice.value}>{choice.label}</option>
-                )}
-              </For>
-            </select>
-          </label>
-          <Show when={configurationError()}>
-            <p class={styles.configurationError} role="alert">
-              {configurationError()}
-            </p>
-          </Show>
-        </div>
-      </Show>
-
-      <div class={styles.actions}>
-        <Show when={snapshot().mode === 'singing'}>
-          <button
-            class={styles.secondaryAction}
-            type="button"
-            onClick={() => void controller?.replay()}
-          >
-            Hear melody again
-          </button>
-        </Show>
-        <Show when={mayHear()}>
-          <button
-            class={styles.secondaryAction}
-            type="button"
-            disabled={snapshot().microphoneRecoveryPending}
-            onClick={() => void controller?.hear()}
-          >
-            Hear melody
-          </button>
-        </Show>
-        <Show when={mayStart()}>
-          <button
-            class={styles.primaryAction}
-            type="button"
-            disabled={snapshot().microphoneRecoveryPending}
-            aria-busy={snapshot().microphoneRecoveryPending}
-            onClick={startOrRecover}
-          >
-            {snapshot().microphoneRecoveryPending
-              ? 'Moving microphone…'
-              : microphoneAction() === 'take-over'
-                ? 'Use it here'
-                : snapshot().mode === 'error'
-                  ? 'Try again'
-                  : snapshot().rootMidi === null
-                    ? 'Find my note and sing'
-                    : snapshot().mode === 'complete'
-                      ? 'Sing again'
-                      : 'Sing the melody'}
-          </button>
-        </Show>
-      </div>
-
-      <div class={styles.utilityRow}>
-        <button
-          type="button"
-          disabled={active(snapshot().mode)}
-          onClick={() => controller?.refind()}
-        >
-          Change my note
-        </button>
-        <details>
-          <summary>How this works</summary>
           <p>
             Listen to the shape, then hum or sing it gently. Follow the ribbon
             forward. You may breathe between phrases, and you never need to sing
             loudly or hold one long breath.
           </p>
-        </details>
-      </div>
+        </div>
+
+        <MelodyRibbon
+          contour={snapshot().contour ?? previewContour()}
+          judge={snapshot().mode === 'singing' ? snapshot().judge : null}
+          pitch={snapshot().mode === 'singing' ? snapshot().pitch : null}
+          timelineSeconds={timelineSeconds()}
+          complete={snapshot().mode === 'complete'}
+        />
+
+        <div class={styles.guidance} aria-live="polite" aria-atomic="true">
+          <h3>{snapshot().message}</h3>
+          <p id={descriptionId}>{snapshot().hint}</p>
+          <Show
+            when={
+              snapshot().judge !== null &&
+              snapshot().judge!.phraseCount > 1 &&
+              snapshot().mode === 'singing'
+            }
+          >
+            <span class={styles.phraseStatus}>
+              Phrase {snapshot().judge!.phraseIndex + 1} of{' '}
+              {snapshot().judge!.phraseCount}
+            </span>
+          </Show>
+        </div>
+
+        <Show when={retryableMicrophoneIssue()}>
+          {(issue) => (
+            <MicrophoneInputRecovery
+              microphoneInput={props.host.microphoneInput}
+              issue={issue()}
+            />
+          )}
+        </Show>
+
+        <Show when={props.showConfigurationControls === true}>
+          <div class={styles.configuration} aria-label="Melody settings">
+            <label>
+              <span>Pace</span>
+              <select
+                value={snapshot().pace}
+                disabled={active(snapshot().mode)}
+                onChange={(event) =>
+                  applyConfiguration({
+                    pace: Number(event.currentTarget.value),
+                  })
+                }
+              >
+                <For each={paceChoices()}>
+                  {(choice) => (
+                    <option value={choice.value}>{choice.label}</option>
+                  )}
+                </For>
+              </select>
+            </label>
+            <label>
+              <span>Starting height</span>
+              <select
+                value={snapshot().transposeSemitones}
+                disabled={active(snapshot().mode)}
+                onChange={(event) =>
+                  applyConfiguration({
+                    transposeSemitones: Number(event.currentTarget.value),
+                  })
+                }
+              >
+                <For each={transpositionChoices()}>
+                  {(choice) => (
+                    <option value={choice.value}>{choice.label}</option>
+                  )}
+                </For>
+              </select>
+            </label>
+            <Show when={configurationError()}>
+              <p class={styles.configurationError} role="alert">
+                {configurationError()}
+              </p>
+            </Show>
+          </div>
+        </Show>
+
+        <div class={styles.actions}>
+          <Show when={snapshot().mode === 'singing'}>
+            <button
+              class={styles.secondaryAction}
+              type="button"
+              onClick={() => void controller?.replay()}
+            >
+              <GameIcon name="speaker" />
+              Hear melody again
+            </button>
+          </Show>
+          <Show when={mayHear()}>
+            <button
+              class={styles.secondaryAction}
+              type="button"
+              disabled={snapshot().microphoneRecoveryPending}
+              onClick={() => void controller?.hear()}
+            >
+              <GameIcon name="speaker" />
+              Hear melody
+            </button>
+          </Show>
+          <Show when={mayStart()}>
+            <button
+              class={styles.primaryAction}
+              type="button"
+              disabled={snapshot().microphoneRecoveryPending}
+              aria-busy={snapshot().microphoneRecoveryPending}
+              onClick={startOrRecover}
+            >
+              <GameIcon name="play" />
+              {snapshot().microphoneRecoveryPending
+                ? 'Moving microphone…'
+                : microphoneAction() === 'take-over'
+                  ? 'Use it here'
+                  : snapshot().mode === 'error'
+                    ? 'Try again'
+                    : snapshot().rootMidi === null
+                      ? 'Find my note and sing'
+                      : snapshot().mode === 'complete'
+                        ? 'Sing again'
+                        : 'Sing the melody'}
+            </button>
+          </Show>
+        </div>
+
+        <div class={styles.utilityRow}>
+          <button
+            type="button"
+            disabled={active(snapshot().mode)}
+            aria-label="Change my note"
+            onClick={() => controller?.refind()}
+          >
+            <GameIcon name="tuning" />
+            Change
+          </button>
+        </div>
+      </GameSurface>
     </section>
   )
 }

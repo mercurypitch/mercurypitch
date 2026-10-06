@@ -38,6 +38,7 @@ interface SongRunnerViewProps {
   }
   onComfortableMidiChange(midi: number): void
   onExit(): void
+  exitLabel?: string
   presentationLoading?: boolean
   presentationError?: string
   onRetryPresentation?(): void
@@ -90,7 +91,10 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     events: [],
   })
   const [announcement, setAnnouncement] = createSignal('')
-  const [soundRequest, setSoundRequest] = createSignal(0)
+  const [settingsOpen, setSettingsOpen] = createSignal(false)
+  let resumeAfterSettings = false
+  let focusSetupAfterSettings = false
+  let focusPlayAfterSettings = false
   const [lastRecoveryReason, setLastRecoveryReason] = createSignal<
     Extract<RunnerEvent, { type: 'recovery-required' }>['reason'] | ''
   >('')
@@ -103,7 +107,6 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   let sceneContainer!: HTMLDivElement
   let runnerElement!: HTMLElement
   let dialogElement: HTMLElement | undefined
-  let soundReturnTarget: HTMLButtonElement | undefined
 
   const state = createMemo(() => frame().state)
   const phase = createMemo(() => state().phase)
@@ -261,6 +264,14 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     setLastTargetResult(null)
     setFrame({ state: session.state(), events: [] })
     const unsubscribe = session.subscribe((nextFrame) => {
+      // An interruption wins for the whole settings visit, even if another
+      // paused control later publishes a manual pause.
+      if (
+        untrack(settingsOpen) &&
+        (nextFrame.state.phase !== 'paused' ||
+          nextFrame.state.pauseReason !== 'manual')
+      )
+        resumeAfterSettings = false
       setFrame(nextFrame)
       const previousResult = untrack(lastTargetResult)
       if (
@@ -305,12 +316,14 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   createEffect(() => {
     const nextPhase = phase()
     presentationReady()
+    if (settingsOpen()) return
     if (
       !['idle', 'paused', 'recovering', 'error', 'finished'].includes(nextPhase)
     )
       return
     queueMicrotask(() => {
-      if (dialogElement !== undefined) focusDialog(dialogElement)
+      if (!untrack(settingsOpen) && dialogElement?.isConnected === true)
+        focusDialog(dialogElement)
     })
   })
 
@@ -335,40 +348,64 @@ export function SongRunnerView(props: SongRunnerViewProps) {
     void props.session.hearReference()
   }
   const pauseForSetup = (): void => props.session.pause('manual')
-  const openSound = (returnTarget?: HTMLButtonElement): void => {
-    soundReturnTarget = returnTarget
+  const openSettings = (): void => {
+    if (settingsOpen()) return
     input.clear()
-    if (
-      ['preparing', 'readiness', 'count-in', 'running'].includes(state().phase)
-    )
+    const current = props.session.state()
+    resumeAfterSettings = [
+      'preparing',
+      'readiness',
+      'count-in',
+      'running',
+    ].includes(current.phase)
+    setSettingsOpen(true)
+    if (resumeAfterSettings || current.referencePlayback.phase !== 'idle')
       props.session.pause('manual')
-    setSoundRequest((request) => request + 1)
   }
-  const SoundEntry = () => (
-    <button
-      type="button"
-      class={styles.secondaryButton}
-      onClick={(event) => openSound(event.currentTarget)}
-    >
-      Sound / tune
+  const closeSettings = (): void => {
+    const current = props.session.state()
+    const shouldResume =
+      resumeAfterSettings &&
+      presentationReady() &&
+      current.phase === 'paused' &&
+      current.pauseReason === 'manual'
+    resumeAfterSettings = false
+    focusPlayAfterSettings = shouldResume
+    setSettingsOpen(false)
+    // Stay inside the explicit X/Resume/Escape gesture for audio unlock.
+    if (shouldResume) void props.session.resume()
+  }
+  const SettingsEntry = () => (
+    <button type="button" class={styles.secondaryButton} onClick={openSettings}>
+      Settings
     </button>
   )
   const focusNoteSetup = (): void => {
-    props.session.pause('manual')
-    queueMicrotask(() =>
-      queueMicrotask(() => {
-        runnerElement
-          .querySelector<HTMLInputElement>(
-            'input[aria-label="Comfortable note"]',
-          )
-          ?.focus({ preventScroll: true })
-      }),
-    )
+    resumeAfterSettings = false
+    focusSetupAfterSettings = true
+    setSettingsOpen(false)
+  }
+  const settingsClosed = (): void => {
+    if (focusSetupAfterSettings) {
+      focusSetupAfterSettings = false
+      runnerElement
+        .querySelector<HTMLInputElement>('input[aria-label="Comfortable note"]')
+        ?.focus({ preventScroll: true })
+    } else if (focusPlayAfterSettings) {
+      focusPlayAfterSettings = false
+      if (
+        ['preparing', 'readiness', 'count-in', 'running'].includes(
+          props.session.state().phase,
+        )
+      )
+        runnerElement.focus({ preventScroll: true })
+    }
   }
 
   return (
     <main
       ref={runnerElement}
+      tabIndex={-1}
       class={styles.runner}
       data-testid="song-runner"
       data-course-id={props.course.id}
@@ -431,42 +468,24 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         <RunnerSoundTune
           developmentControls={props.developmentControls}
           cameraControls={props.cameraControls}
-          openRequest={soundRequest()}
-          canChangeNote={state().phase !== 'finished'}
-          restoreFocus={() => {
-            if (soundReturnTarget?.isConnected === true) {
-              soundReturnTarget.focus({ preventScroll: true })
-              return true
-            }
-            if (dialogElement?.isConnected === true) {
-              focusDialog(dialogElement)
-              return true
-            }
-            return false
-          }}
+          open={settingsOpen()}
+          continuous={props.course.movement.kind === 'continuous'}
+          canChangeNote={closedSetup()}
+          exitLabel={props.exitLabel ?? 'Games'}
+          microphoneInput={props.microphoneInput}
+          microphoneIssue={state().error?.microphoneIssue}
           preferences={state().audioPreferences}
           backing={state().backing}
           comfortableMidi={props.comfortableMidi}
           onPreferencesChange={(patch) =>
             props.session.setAudioPreferences(patch)
           }
-          onOpen={() => openSound()}
+          onOpen={openSettings}
+          onClose={closeSettings}
+          onClosed={settingsClosed}
+          onExit={props.onExit}
           onSetup={focusNoteSetup}
         />
-        <Show
-          when={['readiness', 'count-in', 'running'].includes(state().phase)}
-        >
-          <button
-            type="button"
-            class={styles.iconButton}
-            aria-label="Pause course"
-            onClick={() => props.session.pause('manual')}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 6v12m8-12v12" />
-            </svg>
-          </button>
-        </Show>
       </header>
 
       <Show when={showNotation()}>
@@ -611,7 +630,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </section>
       </Show>
 
-      <Show when={state().phase === 'recovering'}>
+      <Show when={!settingsOpen() && state().phase === 'recovering'}>
         <section
           ref={(element) => (dialogElement = element)}
           class={styles.dialog}
@@ -624,7 +643,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <h1 id="runner-recovery-title">{recovery().title}</h1>
           <p>{recovery().detail}</p>
           <div class={styles.primaryActions}>
-            <SoundEntry />
+            <SettingsEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -645,7 +664,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </section>
       </Show>
 
-      <Show when={state().phase === 'idle'}>
+      <Show when={!settingsOpen() && state().phase === 'idle'}>
         <section
           ref={(element) => (dialogElement = element)}
           class={styles.dialog}
@@ -700,7 +719,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             )}
           </Show>
           <div class={styles.primaryActions}>
-            <SoundEntry />
+            <SettingsEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -732,7 +751,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </section>
       </Show>
 
-      <Show when={state().phase === 'paused'}>
+      <Show when={!settingsOpen() && state().phase === 'paused'}>
         <section
           ref={(element) => (dialogElement = element)}
           class={styles.dialog}
@@ -767,7 +786,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             )}
           </Show>
           <div class={styles.primaryActions}>
-            <SoundEntry />
+            <SettingsEntry />
             <button
               type="button"
               class={styles.primaryButton}
@@ -811,7 +830,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </section>
       </Show>
 
-      <Show when={state().phase === 'error'}>
+      <Show when={!settingsOpen() && state().phase === 'error'}>
         <section
           ref={(element) => (dialogElement = element)}
           class={styles.dialog}
@@ -824,7 +843,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
           <h1 id="runner-error-title">Check your setup</h1>
           <p>{state().error?.message ?? 'The course could not start.'}</p>
           <div class={styles.primaryActions}>
-            <SoundEntry />
+            <SettingsEntry />
             <Show
               when={
                 state().error?.microphoneIssue?.action === 'take-over' &&
@@ -873,7 +892,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         </section>
       </Show>
 
-      <Show when={state().phase === 'finished'}>
+      <Show when={!settingsOpen() && state().phase === 'finished'}>
         <section
           ref={(element) => (dialogElement = element)}
           class={`${styles.dialog} ${styles.finishDialog}`}
@@ -893,7 +912,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             assetUrl={props.assetUrl}
           />
           <div class={styles.primaryActions}>
-            <SoundEntry />
+            <SettingsEntry />
             <button
               type="button"
               class={styles.primaryButton}

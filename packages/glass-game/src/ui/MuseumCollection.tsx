@@ -8,6 +8,7 @@ import type { GlassGameHost } from '../host'
 import { ArtworkInspection } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import type { EncoreAudioLeaseOwner } from './encore-audio-lease'
+import { GameUIProvider } from './GameUI'
 import styles from './MuseumCollection.module.css'
 
 const EncoreDialog = lazy(async () => ({
@@ -237,15 +238,17 @@ export function MuseumCollection(props: {
       </div>
       <Show when={encoreEntry()} keyed>
         {(entry) => (
-          <EncoreDialog
-            host={props.host!}
-            levelId={entry.levelId}
-            encore={entry.encore!}
-            audioLeases={props.audioLeases!}
-            melodyTier={entry.stars === 0 ? 1 : entry.stars}
-            onClose={closeEncore}
-            returnLabel="Back to collection"
-          />
+          <GameUIProvider host={props.host!}>
+            <EncoreDialog
+              host={props.host!}
+              levelId={entry.levelId}
+              encore={entry.encore!}
+              audioLeases={props.audioLeases!}
+              melodyTier={entry.stars === 0 ? 1 : entry.stars}
+              onClose={closeEncore}
+              returnLabel="Back to collection"
+            />
+          </GameUIProvider>
         )}
       </Show>
       <Show when={inspecting()} keyed>
