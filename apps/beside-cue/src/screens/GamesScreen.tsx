@@ -207,6 +207,15 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'singing-current'}>
             <AdventureScreen runner onExit={() => setPlaying(null)} />
           </Show>
+          <Show when={playing() === 'crystal-current'}>
+            <AdventureScreen
+              runner
+              runnerSteering="continuous"
+              runnerCamera="angled"
+              runnerObstacles="crystal-study"
+              onExit={() => setPlaying(null)}
+            />
+          </Show>
           <Show when={playing() === 'promenade'}>
             <AdventureScreen
               level={CLOUDWAY_CRYSTAL_PROMENADE_STUDY}
@@ -269,6 +278,7 @@ export function GamesScreen(props: GamesScreenProps) {
               playing() !== 'cabinet3d' &&
               playing() !== 'adventure' &&
               playing() !== 'singing-current' &&
+              playing() !== 'crystal-current' &&
               playing() !== 'promenade' &&
               playing() !== 'thawing-song' &&
               playing() !== 'echo-curator' &&

@@ -31,12 +31,15 @@ const RUNNER_READY_GAME_ASSETS = [
   'museum-garden-v2',
   'museum-arcade-v3',
   'museum-canopy-v3',
+  'runner-crystal-bulwark-v1',
+  'runner-rose-hurdle-v1',
   ...RUNNER_MATERIAL_FINISH_TEXTURE_IDS,
   ...Object.values(SINGING_CURRENT_WALL_PROFILES).map(({ bundle }) => bundle),
 ].map((id) => `games/${glassGameAssetPath(id)}`)
 const CURRENT_DELIVERY_GAME_ASSETS = GLASS_GAME_REQUIRED_FILES.filter(
   (asset) =>
     (asset.startsWith('singing-current-walls-v1/') && asset.endsWith('.glb')) ||
+    (asset.startsWith('runner-obstacles-v1/') && asset.endsWith('.glb')) ||
     (asset.startsWith('shatter-sounds-v1/') && asset.endsWith('.mp3')) ||
     (asset.startsWith('adventure-v2/textures/') &&
       asset.endsWith('-normal.webp')),
@@ -165,7 +168,7 @@ describe('explicit native games profile', () => {
     expect(native.has(`games/${glassGameAssetPath('merc')}`)).toBe(true)
     expect(
       CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.glb')),
-    ).toHaveLength(10)
+    ).toHaveLength(12)
     expect(
       CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.mp3')),
     ).toHaveLength(14)
