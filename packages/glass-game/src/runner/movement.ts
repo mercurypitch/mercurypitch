@@ -8,7 +8,10 @@ import type { LaneTransition, RunnerMovementState, RunnerMovementStepResult, } f
 import { runnerBeatToDistance, runnerSecondsToBeat } from './tempo'
 import { runnerTrackBounds } from './track-bounds'
 
-export type { RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts'
+export type {
+  RunnerMovementState,
+  RunnerMovementStepResult,
+} from './movement-contracts'
 
 const EPSILON = 1e-9
 
