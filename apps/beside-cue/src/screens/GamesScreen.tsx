@@ -30,34 +30,15 @@ import { ShelfStage } from '@/games/glass3d/render/ShelfStage'
 import { Stage3D } from '@/games/glass3d/render/Stage3D'
 import { isWarmEnabled, whenIdleAfterPaint } from '@/games/glass3d/runtime/warm'
 import { centreOf, clearVoiceCentre, presetAt, readMeasuredRange, VOICE_PRESETS, voiceCentre, writeVoiceCentre, } from '@/games/glass3d/voice-range'
-import type { CreatorPreviewPick } from './CreatorPreviewCards'
 import { CreatorPreviewCards } from './CreatorPreviewCards'
+import type { LevelControl, PlayPick } from './game-selection'
 import { RangeFinder } from './RangeFinder'
+import { RunnerPreviewStage } from './RunnerPreviewStage'
 import { TapTuner } from './TapTuner'
 
 interface GamesScreenProps {
   onBack: () => void
 }
-
-type LevelControl = 'flow' | 'platformer' | 'rhythm' | 'listen'
-
-type PlayPick =
-  | CreatorPreviewPick
-  | 'adventure'
-  | 'promenade'
-  | 'thawing-song'
-  | 'journey'
-  | 'trials'
-  | 'cabinet3d'
-  | 'hallway3d'
-  /** The Standing Wave: one path through every chamber. */
-  | 'chambers'
-  /** The Sorting Line: the voice shapes Merc, and the room is inert. */
-  | 'line'
-  /** The Top Shelf: the gap between two notes is how high Merc leaps. */
-  | 'shelf'
-  | { level: LevelDef; control: LevelControl }
-  | null
 
 /** The range setting: songs sit lower / centered / higher around the
  * hummed note. Persisted per device. The presets write ±rangeBiasSemis;
@@ -204,18 +185,10 @@ export function GamesScreen(props: GamesScreenProps) {
           <Show when={playing() === 'adventure'}>
             <AdventureScreen campaign onExit={() => setPlaying(null)} />
           </Show>
-          <Show when={playing() === 'singing-current'}>
-            <AdventureScreen runner onExit={() => setPlaying(null)} />
-          </Show>
-          <Show when={playing() === 'crystal-current'}>
-            <AdventureScreen
-              runner
-              runnerSteering="continuous"
-              runnerCamera="angled"
-              runnerObstacles="crystal-study"
-              onExit={() => setPlaying(null)}
-            />
-          </Show>
+          <RunnerPreviewStage
+            selected={playing()}
+            onExit={() => setPlaying(null)}
+          />
           <Show when={playing() === 'promenade'}>
             <AdventureScreen
               level={CLOUDWAY_CRYSTAL_PROMENADE_STUDY}
