@@ -88,6 +88,7 @@ const MAXIMUM_DISTANCE = 10
 const DISTANCE_STEP = 0.18
 const THREE_QUARTER_BIASES = [0.3, 0.95, 1.25] as const
 const PLANAR_THREE_QUARTER_BIASES = [0.48, 0.62, 0.76] as const
+const FALLBACK_DIRECTION_COUNT = 16
 const ENTRY_SECONDS = 0.82
 const RESTORE_SECONDS = 0.72
 const MAXIMUM_PRESENTATION_CATCH_UP_SECONDS = 0.25
@@ -289,13 +290,37 @@ export function planChallengeCameraShot(
   const firstDistance = Math.min(initialDistance, MAXIMUM_DISTANCE)
   let best: (ChallengeCameraShot & { score: number }) | undefined
 
-  for (const candidate of candidateDirections(
+  const directions = candidateDirections(
     mercCentre,
     targetCentre,
     focus,
     options.currentPosition,
     targetFacing,
-  )) {
+  )
+  const preferredDirectionCount = directions.length
+  // A narrow room may only have enough retreat behind Merc, along its open
+  // entrance. Keep a complete existing shot; search around both subjects only
+  // when its walls prevent a fit. Flat exhibits must retain their real front.
+  if (targetFacing === undefined || targetFacing.lengthSq() === 0)
+    directions.push(
+      ...Array.from({ length: FALLBACK_DIRECTION_COUNT }, (_, index) => {
+        const yaw = (index / FALLBACK_DIRECTION_COUNT) * Math.PI * 2
+        const direction = new Vector3(Math.sin(yaw), 0, Math.cos(yaw))
+        const side =
+          direction.z * (targetCentre.x - mercCentre.x) -
+          direction.x * (targetCentre.z - mercCentre.z)
+        return { side: (side >= 0 ? 1 : -1) as -1 | 1, direction }
+      }),
+    )
+
+  for (const [index, candidate] of directions.entries()) {
+    if (
+      index === preferredDirectionCount &&
+      best !== undefined &&
+      !best.occluded &&
+      frameOverflow(best.combinedFrame, safeBottomNdc) <= 0.001
+    )
+      break
     let previousActualDistance = -1
     for (
       let requestedDistance = firstDistance;

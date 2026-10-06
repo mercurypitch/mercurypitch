@@ -3,15 +3,114 @@
 import { Box3, Vector3 } from 'three'
 import { expect, it } from 'vitest'
 import { CLOUDWAY_THAWING_SONG } from '../content/cloudway-thawing-song'
+import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASSWORKS } from '../content/glassworks'
 import type { GameSnapshot, GlassGame } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from '../core/shatter-presentation'
 import { createAdventureCamera } from './camera'
+import { createEnclosureFraming } from './enclosure-framing'
 
 const DEFAULT_SHATTER_SECONDS = shatterLifecycleSeconds(
   SHATTER_PLAYBACK_SPEED.default,
+)
+
+it.each([
+  { orientation: 'portrait', aspect: 390 / 844, safeBottomFraction: 0.314 },
+  { orientation: 'landscape', aspect: 844 / 390, safeBottomFraction: 0.61 },
+])(
+  'fits the First Light decanter from oblique approaches in $orientation',
+  ({ aspect, safeBottomFraction }) => {
+    const level = GLASS_ENCLOSED_CHAMBER
+    const exhibit = level.breakables.find((item) =>
+      item.id.endsWith('/passage-decanter'),
+    )!
+    const initial = createGlassGame(level, {
+      version: 1,
+      levelId: level.id,
+      checkpointId: `${level.id}/reveal/checkpoint/entry`,
+      completedBreakableIds: [`${level.id}/chamber/encounter/threshold-goblet`],
+    }).snapshot()
+    for (const offsetX of [-0.35, 0, 0.35]) {
+      const player = new Vector3(
+        exhibit.anchor.x + offsetX,
+        0,
+        exhibit.anchor.z - 0.2,
+      )
+      const snapshot: GameSnapshot = {
+        ...initial,
+        player: {
+          ...initial.player,
+          position: player,
+          facingYaw: Math.PI + offsetX,
+        },
+      }
+      const camera = createAdventureCamera(level)
+      const enclosure = createEnclosureFraming(level)
+      if (enclosure === null)
+        throw new Error('First Light requires its authored camera enclosure.')
+      camera.camera.aspect = aspect
+      camera.camera.updateProjectionMatrix()
+      camera.update(snapshot, 0.05)
+      camera.orbit(offsetX, 0)
+      camera.update(snapshot, 0.05)
+      camera.setChallengeEncounter(exhibit.id)
+      camera.setChallengeSafeBottomFraction(safeBottomFraction)
+      camera.setChallengeSubjects({
+        encounterId: exhibit.id,
+        merc: new Box3(
+          player.clone().add(new Vector3(-0.27, 0.015, -0.19)),
+          player.clone().add(new Vector3(0.27, 0.565, 0.19)),
+        ),
+        target: new Box3(
+          new Vector3(
+            exhibit.position.x - 0.25,
+            0.24,
+            exhibit.position.z - 0.25,
+          ),
+          new Vector3(
+            exhibit.position.x + 0.25,
+            0.875,
+            exhibit.position.z + 0.25,
+          ),
+        ),
+      })
+      for (let frame = 0; frame < 60; frame++) {
+        camera.update(snapshot, 0.05)
+        expect(
+          enclosure.cameraPositionSafe(
+            player.clone().add(new Vector3(0, 0.42, 0)),
+            camera.camera.position,
+            snapshot.activeSolidIds ?? snapshot.enabledPlatformIds,
+          ),
+          `approach ${offsetX}, transition frame ${frame}`,
+        ).toBe(true)
+      }
+      const metrics = camera.getChallengeMetrics()
+      expect(metrics, `approach ${offsetX}`).toMatchObject({
+        mode: 'holding',
+        settled: true,
+        occluded: false,
+      })
+      expect(
+        metrics.combinedFrame!.minX,
+        `approach ${offsetX}`,
+      ).toBeGreaterThanOrEqual(-0.881)
+      expect(
+        metrics.combinedFrame!.maxX,
+        `approach ${offsetX}`,
+      ).toBeLessThanOrEqual(0.881)
+      expect(
+        metrics.combinedFrame!.minY,
+        `approach ${offsetX}`,
+      ).toBeGreaterThanOrEqual(metrics.safeBottomNdc! - 0.001)
+      expect(
+        metrics.combinedFrame!.maxY,
+        `approach ${offsetX}`,
+      ).toBeLessThanOrEqual(0.861)
+    }
+  },
 )
 
 function challengeSubjects(snapshot: GameSnapshot) {

@@ -328,6 +328,7 @@ for (const viewport of [
 
 for (const viewport of [
   { width: 320, height: 740 },
+  { width: 740, height: 360 },
   { width: 1024, height: 768 },
   { width: 1440, height: 900 },
 ]) {
@@ -350,6 +351,47 @@ for (const viewport of [
         await expect(readout.locator('[data-pitch-observed]')).toHaveText('C4')
         const initial = await rail.boundingBox()
         expect(initial).not.toBeNull()
+        const centers = await rail.evaluate((element) => {
+          const center = (node: Element) => {
+            const bounds = node.getBoundingClientRect()
+            return bounds.y + bounds.height / 2
+          }
+          const notes = element.parentElement!.parentElement!
+          const ribbon = getComputedStyle(notes, '::before')
+          const ribbonHeight =
+            parseFloat(ribbon.height) +
+            (ribbon.boxSizing === 'border-box'
+              ? 0
+              : parseFloat(ribbon.borderTopWidth) +
+                parseFloat(ribbon.borderBottomWidth))
+          const translation = new DOMMatrixReadOnly(
+            ribbon.transform === 'none' ? undefined : ribbon.transform,
+          )
+          return {
+            rail: center(element),
+            tick: center(element.firstElementChild!),
+            medallion: center(
+              element.parentElement!.querySelector('[role="progressbar"]')!,
+            ),
+            ribbon:
+              notes.getBoundingClientRect().y +
+              parseFloat(ribbon.top) +
+              ribbonHeight / 2 +
+              translation.m42,
+          }
+        })
+        await testInfo.attach('painted-pitch-centers.json', {
+          body: JSON.stringify(centers),
+          contentType: 'application/json',
+        })
+        await page.screenshot({
+          path: testInfo.outputPath('pitch-ribbon-centers.png'),
+        })
+        // Compare the painted stroke centers, not their top edges or only
+        // the circle's bounds: a thick connector must cross the middle tick.
+        expect(Math.abs(centers.tick - centers.ribbon)).toBeLessThan(0.25)
+        expect(Math.abs(centers.ribbon - centers.rail)).toBeLessThan(0.25)
+        expect(Math.abs(centers.medallion - centers.rail)).toBeLessThan(0.25)
         for (const [midi, label] of [
           [61, 'C#4'],
           [54, 'F#3'],

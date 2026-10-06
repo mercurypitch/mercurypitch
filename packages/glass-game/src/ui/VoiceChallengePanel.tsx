@@ -60,14 +60,14 @@ export function VoiceChallengePanel(props: {
   }
   return (
     <section
-      class={styles.encounter}
+      class={`${styles.encounter} ${lessonStyles.panel}`}
       aria-label="Voice challenge"
       data-challenge-panel
       data-voice-mode={props.mode}
       data-step-index={props.stepIndex}
       onKeyDown={handlePanelKeyDown}
     >
-      <div class={styles.encounterHeading}>
+      <div class={`${styles.encounterHeading} ${lessonStyles.heading}`}>
         <span>{props.label}</span>
         <button type="button" onClick={() => props.onCancel()}>
           Cancel
@@ -125,7 +125,7 @@ export function VoiceChallengePanel(props: {
       >
         {props.hint}
       </p>
-      <div class={styles.voiceMeter}>
+      <div class={`${styles.voiceMeter} ${lessonStyles.meter}`}>
         <div
           class={styles.noteDisc}
           style={{ '--charge': `${percent()}%` }}
@@ -173,7 +173,7 @@ export function VoiceChallengePanel(props: {
           </div>
         </div>
       </div>
-      <div class={styles.encounterActions}>
+      <div class={`${styles.encounterActions} ${lessonStyles.actions}`}>
         <Show when={props.mode === 'singing'}>
           <button
             class={styles.textButton}
