@@ -3,6 +3,7 @@ import type { Object3D, Texture } from 'three'
 import { ACESFilmicToneMapping, Color, DirectionalLight, Fog, HemisphereLight, PCFShadowMap, PerspectiveCamera, RepeatWrapping, Scene, SRGBColorSpace, TextureLoader, WebGLRenderer, } from 'three'
 import { RUNNER_MATERIAL_FINISH_TEXTURE_IDS } from '../content/material-finishes'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
+import { parseShatterPlaybackSpeed } from '../core/shatter-presentation'
 import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { resolveAssetProfileBundle } from './asset-profile-bundles'
 import { loadProfiledAssetScene } from './asset-scene-loader'
@@ -12,12 +13,13 @@ import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
 import { verifyFirstFrame } from './first-frame'
+import type { GlassRenderer } from './glass-renderer-contracts'
 import { registerGraphicsCanvas, retireGraphicsCanvas, } from './graphics-diagnostics'
 import { createMaterialFinishBank } from './material-finishes'
 import { loadAdventureMerc } from './merc'
 import { precompileRendererPrograms } from './program-precompile'
 import { ADAPTIVE_PIXEL_RATIO, ADAPTIVE_SHADOW_FRAME_INTERVAL, createRenderPerformanceGovernor, } from './render-performance-governor'
-import type { GlassAssetQualityProfile } from './render-quality'
+import type { GlassAssetQualityProfile, GlassRenderQualityPreference, } from './render-quality'
 import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { withResidentRenderablesVisible } from './render-warmup'
 import { captureRunnerImageLight, RUNNER_LOOK } from './runner-look'
@@ -35,12 +37,17 @@ export interface SongRunnerRendererOptions {
   readonly initialSnapshot: RunnerSnapshot
   readonly assetProfile?: GlassAssetQualityProfile
   readonly reducedMotion?: boolean
+  readonly shatterPlaybackSpeed?: number
+  readonly renderQuality?: GlassRenderQualityPreference
   readonly onContextLost: () => void
 }
 export interface SongRunnerRenderer {
   readonly ready: Promise<void>
   render(snapshot: RunnerSnapshot, deltaSeconds: number): boolean
   resize(): void
+  setShatterPlaybackSpeed(speed: number): void
+  setRenderQuality(preference: GlassRenderQualityPreference): void
+  getRenderQuality: GlassRenderer['getRenderQuality']
   setCameraProfile(
     profile: CompiledRunnerCourse['presentation']['cameraProfile'],
   ): boolean
@@ -77,12 +84,18 @@ export function createSongRunnerRenderer(
   )
   scene.fog = fog
   const camera = new PerspectiveCamera(55, 1, 0.08, 75)
-  const quality = resolveGlassRenderQuality('auto', {
+  let shatterPlaybackSpeed = parseShatterPlaybackSpeed(
+    options.shatterPlaybackSpeed,
+  )
+  let qualityPreference = options.renderQuality ?? 'auto'
+  const qualityEnvironment = {
     cssWidth: container.clientWidth,
     cssHeight: container.clientHeight,
     coarsePointer: window.matchMedia('(pointer: coarse)').matches,
     mobileHint: options.assetProfile === 'mobile',
-  })
+  }
+  let quality = resolveGlassRenderQuality(qualityPreference, qualityEnvironment)
+  const loadedAssetProfile = options.assetProfile ?? quality.assetProfile
   const renderer = new WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -102,7 +115,7 @@ export function createSongRunnerRenderer(
   renderer.shadowMap.autoUpdate = false
   const shadowCadence = createShadowUpdateCadence(quality.shadowFrameInterval)
   const performanceGovernor = createRenderPerformanceGovernor(
-    'auto',
+    qualityPreference,
     quality.profile,
   )
   renderer.domElement.style.cssText =
@@ -198,6 +211,19 @@ export function createSongRunnerRenderer(
     refreshCameraPose()
     if (sky) fitSkyBackdrop(sky, width, height)
     shadowCadence.invalidate()
+  }
+
+  function applyPresentationQuality() {
+    const adapted = performanceGovernor.metrics().adapted
+    const baseRatio = effectiveGlassPixelRatio(window.devicePixelRatio, quality)
+    renderer.setPixelRatio(
+      adapted ? Math.min(baseRatio, ADAPTIVE_PIXEL_RATIO) : baseRatio,
+    )
+    renderer.transmissionResolutionScale = quality.transmissionResolutionScale
+    shadowCadence.setInterval(
+      adapted ? ADAPTIVE_SHADOW_FRAME_INTERVAL : quality.shadowFrameInterval,
+    )
+    resize()
   }
 
   function refreshCameraPose() {
@@ -303,7 +329,7 @@ export function createSongRunnerRenderer(
   async function model(id: string) {
     const value = await loadProfiledAssetScene(assetUrl(id), {
       signal: abort.signal,
-      assetProfile: options.assetProfile ?? quality.assetProfile,
+      assetProfile: loadedAssetProfile,
       onDecodedImage: (image) => {
         if (disposed) releaseAssetImage(image)
         else images.add(image)
@@ -361,7 +387,7 @@ export function createSongRunnerRenderer(
         const recipe = getBreakableRenderRecipe(variant)
         const bundle = resolveAssetProfileBundle(
           recipe.bundle!,
-          options.assetProfile ?? quality.assetProfile,
+          loadedAssetProfile,
         )
         // Only installed course families are decoded, one at a time. Editor-only
         // alternatives never enter a play visit's memory or preparation work.
@@ -395,6 +421,7 @@ export function createSongRunnerRenderer(
         comfortableMidi,
         options.reducedMotion === true,
         finishes,
+        shatterPlaybackSpeed,
       )
       const dressedOpening =
         cameraProfile === 'responsive-close' ||
@@ -478,10 +505,7 @@ export function createSongRunnerRenderer(
             document.visibilityState === 'visible'),
       )
     ) {
-      renderer.setPixelRatio(
-        Math.min(renderer.getPixelRatio(), ADAPTIVE_PIXEL_RATIO),
-      )
-      shadowCadence.setInterval(ADAPTIVE_SHADOW_FRAME_INTERVAL)
+      applyPresentationQuality()
     }
     world!.update(snapshot, dt)
     targets!.update(snapshot, dt)
@@ -543,6 +567,26 @@ export function createSongRunnerRenderer(
     render,
     resize,
     setCameraProfile,
+    setShatterPlaybackSpeed(speed) {
+      shatterPlaybackSpeed = parseShatterPlaybackSpeed(speed)
+      targets?.setShatterPlaybackSpeed(shatterPlaybackSpeed)
+    },
+    setRenderQuality(preference) {
+      if (disposed || contextLost) return
+      qualityPreference = preference
+      quality = resolveGlassRenderQuality(preference, qualityEnvironment)
+      performanceGovernor.configure(preference, quality.profile)
+      applyPresentationQuality()
+    },
+    getRenderQuality: () => ({
+      preference: qualityPreference,
+      profile: quality.profile,
+      assetProfile: loadedAssetProfile,
+      pixelRatio: renderer.getPixelRatio(),
+      shadowFrameInterval: performanceGovernor.metrics().adapted
+        ? ADAPTIVE_SHADOW_FRAME_INTERVAL
+        : quality.shadowFrameInterval,
+    }),
     metrics: () => ({
       adaptiveQualityActive: performanceGovernor.metrics().adapted,
       actualPixelRatio: renderer.getPixelRatio(),

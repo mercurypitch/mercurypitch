@@ -76,6 +76,53 @@ for (const viewport of [
       await page.screenshot({
         path: info.outputPath('crystal-current-ready.png'),
       })
+      await press(ready.getByRole('button', { name: 'Sound / tune' }))
+      const tuning = page.getByRole('dialog', {
+        name: 'Sound / tune',
+        exact: true,
+      })
+      await expect(tuning).toBeVisible()
+      const speed = tuning.getByRole('slider', {
+        name: 'Shatter speed',
+        exact: true,
+      })
+      await speed.scrollIntoViewIfNeeded()
+      await expect(speed).toHaveValue('1')
+      const speedBox = await speed.boundingBox()
+      if (!speedBox) throw new Error('Missing shatter tuning range')
+      await page.mouse.click(
+        speedBox.x + speedBox.width * 0.2,
+        speedBox.y + speedBox.height / 2,
+      )
+      const savedSpeed = await speed.inputValue()
+      expect(Number(savedSpeed)).toBeLessThan(0.9)
+      await tuning.getByRole('button', { name: 'High', exact: true }).click()
+      await expect(
+        tuning.getByRole('button', { name: 'High', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            localStorage.getItem(
+              'beside-cue:glass-adventure:shatter-playback-speed:v1',
+            ),
+          ),
+        )
+        .toBe(savedSpeed)
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            localStorage.getItem(
+              'beside-cue:glass-adventure:render-quality:v1',
+            ),
+          ),
+        )
+        .toBe('high')
+      await page.screenshot({
+        path: info.outputPath('crystal-current-development-tune.png'),
+      })
+      await tuning.getByRole('button', { name: 'Close sound settings' }).click()
+      await expect(ready).toBeVisible()
       await press(
         ready.getByRole('button', { name: 'Leave course', exact: true }),
       )
@@ -99,6 +146,13 @@ for (const viewport of [
       await expect(
         page.getByRole('dialog', { name: 'Ready when you are', exact: true }),
       ).toBeVisible()
+      await press(ready.getByRole('button', { name: 'Sound / tune' }))
+      await expect(tuning).toBeVisible()
+      await expect(speed).toHaveValue(savedSpeed)
+      await expect(
+        tuning.getByRole('button', { name: 'High', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true')
+      await tuning.getByRole('button', { name: 'Close sound settings' }).click()
       await press(
         ready.getByRole('button', { name: 'Leave course', exact: true }),
       )

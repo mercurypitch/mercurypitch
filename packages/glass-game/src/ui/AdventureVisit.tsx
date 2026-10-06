@@ -11,6 +11,7 @@ import { AdventureVoicePanel } from './AdventureVoicePanel'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import type { CompletionDifficultyAction } from './CompletionResults'
 import { CompletionResults } from './CompletionResults'
+import { hasDevelopmentTuning } from './development-tuning'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import styles from './GlassAdventure.module.css'
@@ -367,13 +368,17 @@ export function AdventureVisit(props: AdventureVisitProps) {
           >
             ?
           </button>
-          <Show when={import.meta.env.DEV}>
+          <Show when={hasDevelopmentTuning(props.host)}>
             <CameraTuningPanel
               settings={adventure.cameraComfort()}
               onChange={adventure.changeCameraComfort}
               renderQualityPreference={adventure.renderQualityPreference()}
               renderQualityProfile={adventure.renderQualityProfile()}
               onRenderQualityChange={adventure.changeRenderQuality}
+              shatterPlaybackSpeed={adventure.shatterPlaybackSpeed()}
+              onShatterPlaybackSpeedChange={
+                adventure.changeShatterPlaybackSpeed
+              }
             />
           </Show>
         </div>

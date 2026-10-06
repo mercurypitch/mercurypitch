@@ -6,7 +6,7 @@ import type { BufferGeometry, Material, Texture, Vector3 } from 'three'
 import { Box3, DoubleSide, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, } from 'three'
 import { DEFAULT_EXHIBIT_MOUNT_HEIGHT } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
-import { MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
+import { createShatterPlayback, MAXIMUM_SHATTER_FRAME_SECONDS, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import type { PreparedExhibitAssetLease } from './exhibit-geometry-pool'
@@ -26,6 +26,7 @@ import { createVesselGeometry } from './vessel-fallback-geometry'
 export { createVesselGeometry } from './vessel-fallback-geometry'
 
 export interface VesselPresentationOptions {
+  readonly shatterPlaybackSpeed?: number
   /** Encounter tuning layers over the certified recipe defaults. */
   readonly resonancePresentation?: ResonancePresentationConfig
   /** Purely visual replacement for the recipe's default inner reward. */
@@ -198,6 +199,7 @@ function createVesselPresentation(
   let resonance: ResonancePresentation | undefined
   let shardGroup: Group
   let installation: VesselInstallation | undefined
+  const playback = createShatterPlayback(options.shatterPlaybackSpeed)
   let disposed = false
   const crackMaterial = new LineBasicMaterial({
     color: 0xcaffee,
@@ -520,6 +522,8 @@ function createVesselPresentation(
   return {
     root,
     materialLibrary,
+    setShatterPlaybackSpeed: playback.setSpeed,
+    shatterAge: playback.age,
     addPersistent(object: Group) {
       root.add(object)
     },
@@ -583,6 +587,7 @@ function createVesselPresentation(
     ) {
       if (disposed) return
       latest = state
+      const age = playback.age(state.brokenAt, now, state.shatterPlaybackSpeed)
       resetPending ||= previousNow !== undefined && now < previousNow
       const deltaSeconds =
         previousNow === undefined
@@ -598,8 +603,6 @@ function createVesselPresentation(
         resetPending = false
       }
       const restored = state.phase === 'complete' && state.brokenAt === null
-      const age =
-        state.brokenAt === null ? -1 : Math.max(0, now - state.brokenAt)
       const timing = reducedMotion
         ? SHATTER_PRESENTATION_TIMING.reducedMotion
         : SHATTER_PRESENTATION_TIMING.normal
@@ -663,7 +666,7 @@ function createVesselPresentation(
         flight < SHATTER_PRESENTATION_TIMING.normal.visibleFlightSeconds
       burst?.update(flight, fade, microVisible)
       resonance?.update({
-        deltaSeconds,
+        deltaSeconds: deltaSeconds * (age < 0 ? 1 : playback.speed()),
         phase: restored
           ? 'restored'
           : shattered

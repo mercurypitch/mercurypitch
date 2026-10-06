@@ -4,7 +4,7 @@ import type { BufferGeometry, Object3D, PerspectiveCamera } from 'three'
 import { Box3, BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, } from 'three'
 import { LIVING_CRYSTAL_PLATFORM_BUNDLE_ID, LIVING_CRYSTAL_PLATFORM_NODES, LIVING_CRYSTAL_PLATFORM_SUPPORT, LIVING_CRYSTAL_VARIANTS, } from '../content/living-crystal-profile'
 import type { BreakableSnapshot, GameSnapshot, LevelDefinition, } from '../contracts'
-import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
+import { parseShatterPlaybackSpeed, SHATTER_PRESENTATION_TIMING, } from '../core/shatter-presentation'
 import { CLOUDWAY_PLATFORM_FOG_CULL_MARGIN, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
 import { resolveCloudwayFog } from './cloudway-scene'
 import { removeKitGeometry } from './kit-instance'
@@ -76,7 +76,9 @@ function pearlCurrentResponse(
   const timing = reducedMotion
     ? SHATTER_PRESENTATION_TIMING.reducedMotion
     : SHATTER_PRESENTATION_TIMING.normal
-  const age = Math.max(0, elapsedSeconds - state.brokenAt)
+  const age =
+    Math.max(0, elapsedSeconds - state.brokenAt) *
+    parseShatterPlaybackSpeed(state.shatterPlaybackSpeed)
   if (age < timing.anticipationSeconds)
     return { response: 'charge' as const, progress: 1, strength: 1 }
   const flight = age - timing.anticipationSeconds
@@ -280,13 +282,20 @@ export function createLivingCrystalPlatformRenderer(
       item.resetPending = false
     }
     const responseExhibitId = item.interior.responseExhibitId
+    const exhibit = snapshot.breakables.find(
+      (state) => state.id === responseExhibitId,
+    )
     const response = pearlCurrentResponse(
-      snapshot.breakables.find((state) => state.id === responseExhibitId),
+      exhibit,
       snapshot.elapsedSeconds,
       motionDisabled,
     )
     item.interior.animation.update({
-      deltaSeconds,
+      deltaSeconds:
+        deltaSeconds *
+        (response.response === 'release' && response.progress < 1
+          ? parseShatterPlaybackSpeed(exhibit?.shatterPlaybackSpeed)
+          : 1),
       paused: snapshot.paused,
       ...response,
     })

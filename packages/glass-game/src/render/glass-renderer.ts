@@ -268,6 +268,7 @@ function createGlassRendererInstance(
       const resonancePresentation = resonancePresentations.get(target.id)
       const vessel = createVessel(target, options.reducedMotion ?? false, {
         resonancePresentation,
+        shatterPlaybackSpeed: options.shatterPlaybackSpeed,
       })
       scene.add(vessel.root)
       return [target.id, vessel]
@@ -480,6 +481,9 @@ function createGlassRendererInstance(
     getMercYaw: () => merc?.root.rotation.y ?? null,
     getMovementYaw: camera.movementYaw,
     setFollowSmoothness: camera.setFollowSmoothness,
+    setShatterPlaybackSpeed(speed) {
+      vessels.forEach((vessel) => vessel.setShatterPlaybackSpeed(speed))
+    },
     setRenderQuality(preference) {
       const next = resolveGlassRenderQuality(preference, qualityEnvironment)
       renderQualityPreference = preference

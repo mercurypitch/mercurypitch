@@ -113,6 +113,8 @@ export interface GlassMercNarration {
 }
 
 export interface GlassGameHost {
+  /** Enables feel controls in compiled development hosts, independent of progression. */
+  readonly developmentTuning?: boolean
   assetUrl(id: string): string
   /**
    * Prepare Web Audio synchronously inside a gameplay gesture. This must not

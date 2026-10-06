@@ -624,6 +624,8 @@ export interface BreakableSnapshot {
   phase: EncounterPhase
   /** Simulation presentation time; null for never broken or restored progress. */
   brokenAt: number | null
+  /** Presentation speed captured with this break; omitted for restored progress. */
+  shatterPlaybackSpeed?: number
 }
 
 export interface GameSnapshot {
@@ -771,6 +773,8 @@ export interface GlassGame {
   beginEncounter(id: string, targets: number | PitchTargets): boolean
   feedPitch(frame: PitchObservation, nowMs: number): GameEvent[]
   cancelEncounter(): void
+  /** Visual playback and cinematic hold only; changes apply to the next break. */
+  setShatterPlaybackSpeed(speed: number): void
   setPaused(paused: boolean): void
   saveProgress(): SavedProgress
 }

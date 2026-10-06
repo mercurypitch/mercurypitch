@@ -5,6 +5,7 @@ import { render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BuildInfo } from '@/build-info'
 
+const hostOptions = vi.hoisted(() => vi.fn())
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
 const runnerTrials = vi.hoisted(() => ({
   current: { id: 'the-singing-current-trial-current-v1' },
@@ -12,7 +13,10 @@ const runnerTrials = vi.hoisted(() => ({
 }))
 vi.mock('@/build-info', () => ({ BUILD: build }))
 vi.mock('@irchiinnuss/glass-game/browser', () => ({
-  createBrowserGlassHost: () => ({}),
+  createBrowserGlassHost: (options: unknown) => {
+    hostOptions(options)
+    return {}
+  },
 }))
 vi.mock('@irchiinnuss/glass-game/campaign', () => ({
   GlassCampaign: (props: { developmentUnlock: boolean }) => (
@@ -58,9 +62,26 @@ import { AdventureScreen } from './AdventureScreen'
 
 describe('Glassworks build access', () => {
   beforeEach(() => {
+    hostOptions.mockClear()
     build.channel = 'dev'
     window.history.replaceState({}, '', '/')
   })
+
+  it.each(['dev', 'ci', 'release'] as const)(
+    'keeps tuning independent of progression on %s',
+    (channel) => {
+      build.channel = channel
+      window.history.replaceState({}, '', '/glass-game/?progression=earned')
+      render(() => <AdventureScreen campaign onExit={() => undefined} />)
+      expect(hostOptions).toHaveBeenCalledWith(
+        expect.objectContaining({ developmentTuning: channel !== 'release' }),
+      )
+      expect(screen.getByTestId('campaign')).toHaveAttribute(
+        'data-unlocked',
+        'false',
+      )
+    },
+  )
 
   it.each(['dev', 'ci'] as const)(
     'unlocks the %s museum without spoofing saves',

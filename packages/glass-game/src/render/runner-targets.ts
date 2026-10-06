@@ -3,6 +3,7 @@ import type { Matrix4, Object3D } from 'three'
 import { Box3, CanvasTexture, Group, Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, } from 'three'
 import type { RunnerGlassPresentation } from '../content/runner-glass-presentation'
 import type { BreakableSnapshot } from '../contracts'
+import { parseShatterPlaybackSpeed, SHATTER_LIFECYCLE_SECONDS, } from '../core/shatter-presentation'
 import type { CompiledRunnerCourse, CompiledRunnerTarget, RunnerPitchFeedback, RunnerSnapshot, } from '../runner/contracts'
 import { layoutRunnerNotation, runnerMidiName } from '../runner/notation'
 import { runnerSecondsToBeat } from '../runner/tempo'
@@ -292,7 +293,11 @@ export function createRunnerTargets(
   comfortableMidi: number,
   reducedMotion: boolean,
   finishes?: MaterialFinishBank,
+  initialShatterPlaybackSpeed?: number,
 ) {
+  let shatterPlaybackSpeed = parseShatterPlaybackSpeed(
+    initialShatterPlaybackSpeed,
+  )
   const root = new Group()
   root.name = 'runner-musical-glass'
   const pools = new Map<string, ReturnType<typeof createExhibitGeometryPool>>()
@@ -347,7 +352,7 @@ export function createRunnerTargets(
           throw error
         }
       },
-      { castShardShadows: false },
+      { castShardShadows: false, shatterPlaybackSpeed },
     )
     let card: ReturnType<typeof createScoreCard> | undefined
     let feedback: ReturnType<typeof createRunnerTargetFeedback> | undefined
@@ -435,6 +440,12 @@ export function createRunnerTargets(
   }
   return {
     root,
+    setShatterPlaybackSpeed(speed: number) {
+      shatterPlaybackSpeed = parseShatterPlaybackSpeed(speed)
+      items.forEach((item) =>
+        item.vessel.setShatterPlaybackSpeed(shatterPlaybackSpeed),
+      )
+    },
     update(snapshot: RunnerSnapshot, deltaSeconds: number) {
       if (disposed) return
       const epochChanged =
@@ -503,10 +514,14 @@ export function createRunnerTargets(
           course.groundFeetY,
           -contactBeat * course.metersPerBeat + snapshot.courseDistanceMeters,
         )
+        const shatterAge = item.vessel.shatterAge(
+          state.brokenAt,
+          snapshot.courseSeconds,
+        )
         item.vessel.root.visible =
           result?.outcome !== 'miss' &&
           snapshot.courseSeconds >= target.visibleFromCourseSeconds &&
-          (!hit || snapshot.courseSeconds - result.resolvedAtCourseSeconds < 2)
+          (!hit || shatterAge < SHATTER_LIFECYCLE_SECONDS)
         // Authored full frames include rails and mullions. Retire those before
         // Merc's body reaches the passable musical target; earned shards keep
         // their own short lifecycle. Legacy fixtures retain their old display.
@@ -534,7 +549,9 @@ export function createRunnerTargets(
           resultAgeSeconds:
             result === undefined
               ? null
-              : snapshot.courseSeconds - result.resolvedAtCourseSeconds,
+              : hit
+                ? shatterAge
+                : snapshot.courseSeconds - result.resolvedAtCourseSeconds,
           deltaSeconds,
           visible: item.vessel.root.visible,
         })

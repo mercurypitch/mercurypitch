@@ -39,12 +39,15 @@ vi.mock('./kit-instance', async () => {
 })
 vi.mock('./vessels', async () => {
   const { Box3, Group, Vector3 } = await import('three')
+  const { createShatterPlayback } = await import('../core/shatter-presentation')
   return {
     createAuthoredVessel: (
       _target: unknown,
       _reducedMotion: boolean,
       acquire: (library: unknown) => unknown,
+      options: { shatterPlaybackSpeed?: number },
     ) => {
+      const playback = createShatterPlayback(options.shatterPlaybackSpeed)
       acquire({})
       const root = new Group()
       const intactLocalBounds = new Box3(
@@ -54,6 +57,8 @@ vi.mock('./vessels', async () => {
       return {
         root,
         materialLibrary: {},
+        setShatterPlaybackSpeed: playback.setSpeed,
+        shatterAge: playback.age,
         addPersistent(object: Group) {
           root.add(object)
         },
@@ -316,6 +321,54 @@ describe('runner targets live feedback', () => {
 
     targets.update(withFeedback(initial, NEUTRAL, 0.7), 1 / 60)
     expect(texture.version).toBeGreaterThan(firstVersion)
+    targets.dispose()
+  })
+
+  it('keeps a slow wall and hit feedback visible for the entire scaled release', () => {
+    const course = runnerCourseFixture()
+    const initial = createSongRunnerGame(course, {
+      comfortableMidi: 60,
+    }).snapshot()
+    const targets = createRunnerTargets(
+      course,
+      new Group(),
+      'test-bundle',
+      60,
+      false,
+      undefined,
+      0.4,
+    )
+    const hit = {
+      targetId: course.targets[0]!.id,
+      outcome: 'hit' as const,
+      grade: 3 as const,
+      resolvedAtCourseSeconds: 0,
+      reliableSeconds: 1,
+      meanAbsoluteCents: 0,
+    }
+    const showAt = (courseSeconds: number) =>
+      targets.update(
+        {
+          ...initial,
+          courseSeconds,
+          activeTarget: null,
+          resolvedTargets: [hit],
+        },
+        1 / 60,
+      )
+    showAt(0)
+    targets.setShatterPlaybackSpeed(1.6)
+    showAt(3)
+    expect(state.vesselUpdate.mock.calls.at(-1)![2]).toBe(true)
+    expect(state.feedbackUpdate.mock.calls.at(-1)![0]).toMatchObject({
+      outcome: 'hit',
+      visible: true,
+    })
+    expect(
+      state.feedbackUpdate.mock.calls.at(-1)![0].resultAgeSeconds,
+    ).toBeCloseTo(1.2)
+    showAt(5.76)
+    expect(state.vesselUpdate.mock.calls.at(-1)![2]).toBe(false)
     targets.dispose()
   })
 

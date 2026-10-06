@@ -1,10 +1,24 @@
 // Glassworks web-host tests — pin its URL and persistence namespace boundaries.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMercuryGlassHost, MERCURY_GLASS_STORAGE_PREFIX } from './host'
 
 describe('MercuryPitch Glassworks host', () => {
   beforeEach(() => localStorage.clear())
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([
+    ['development', false, true],
+    ['production', false, false],
+    ['development', true, true],
+  ] as const)(
+    'exposes tuning in %s with dev server %s: %s',
+    (mode, dev, expected) => {
+      vi.stubEnv('MODE', mode)
+      vi.stubEnv('DEV', dev)
+      expect(createMercuryGlassHost(vi.fn()).developmentTuning).toBe(expected)
+    },
+  )
 
   it('resolves museum assets beneath the standalone allowlisted route', () => {
     const host = createMercuryGlassHost(vi.fn())

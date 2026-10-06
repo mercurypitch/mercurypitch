@@ -55,6 +55,7 @@ export function AdventureScreen(props: AdventureScreenProps) {
   )
   const host = createBrowserGlassHost({
     storagePrefix: 'beside-cue:glass-adventure',
+    developmentTuning: BUILD.channel === 'dev' || BUILD.channel === 'ci',
     microphonePreferenceKey: 'beside-cue:input-device',
     assetUrl: (id) => glassGameAssetUrl(id, props.assetBase ?? 'games/'),
     subscribeForeground: subscribeAppForeground,
