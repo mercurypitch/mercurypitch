@@ -4,7 +4,7 @@ import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
-import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY, SINGING_CURRENT_CRYSTAL_STUDY, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
+import { CURRENT_SINGING_COURSE, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY, SINGING_CURRENT_CRYSTAL_STUDY, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
 import { BUILD } from '@/build-info'
@@ -35,9 +35,10 @@ export function AdventureScreen(props: AdventureScreenProps) {
         : continuous
           ? SINGING_CURRENT_CONTINUOUS_TRIAL
           : props.runnerPace === undefined
-            ? undefined
+            ? CURRENT_SINGING_COURSE
             : SINGING_CURRENT_TRIALS[props.runnerPace]
-    if (!course || !continuous || !props.runnerCamera) return course
+    if (course.movement.kind !== 'continuous' || !props.runnerCamera)
+      return course
     return {
       ...course,
       presentation: {
@@ -97,7 +98,7 @@ export function AdventureScreen(props: AdventureScreenProps) {
     >
       <SongRunnerScreen
         host={host}
-        allowCameraTuning={props.runnerSteering === 'continuous'}
+        allowCameraTuning={runnerCourse().movement.kind === 'continuous'}
         course={runnerCourse()}
         assetProfile={assetProfile}
       />

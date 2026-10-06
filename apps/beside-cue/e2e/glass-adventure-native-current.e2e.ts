@@ -9,7 +9,7 @@ for (const viewport of [
   test.describe(viewport.name, () => {
     test.use({ viewport, hasTouch: viewport.touch })
 
-    test('opens the latest art from the real Games list and retains the original runner @smoke', async ({
+    test('opens the same latest course from both real Games entries @smoke', async ({
       page,
     }, info) => {
       test.setTimeout(90_000)
@@ -141,7 +141,15 @@ for (const viewport of [
       await activate(/The Singing Current/u)
       await expect(page.getByTestId('song-runner')).toHaveAttribute(
         'data-movement-mode',
-        'lanes',
+        'continuous',
+      )
+      await expect(page.getByTestId('song-runner')).toHaveAttribute(
+        'data-camera-profile',
+        'steering-angled',
+      )
+      await expect(page.getByTestId('song-runner')).toHaveAttribute(
+        'data-course-id',
+        'the-singing-current-trial-crystal-continuous-v1',
       )
       await expect(
         page.getByRole('dialog', { name: 'Ready when you are', exact: true }),
@@ -158,7 +166,6 @@ for (const viewport of [
       )
       expect(await savedCourses()).toEqual([
         'beside-cue:glass-adventure:runner-progress:v1:the-singing-current-trial-crystal-continuous-v1',
-        'beside-cue:glass-adventure:runner-progress:v1:the-singing-current-v1',
       ])
     })
   })

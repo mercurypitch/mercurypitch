@@ -4,7 +4,7 @@
 
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { GlassMicrophoneInput } from '../host'
-import type { CompiledRunnerCourse, RunnerEvent } from '../runner/contracts'
+import type { CompiledRunnerCourse, RunnerEvent, SavedRunnerProgress, } from '../runner/contracts'
 import { runnerMovementCue } from '../runner/movement-cues'
 import type { RunnerNotationNote } from '../runner/notation'
 import { runnerMidiName, runnerNotationNotes } from '../runner/notation'
@@ -24,6 +24,7 @@ import { RunnerUpcomingCue } from './RunnerUpcomingCue'
 import styles from './SongRunnerView.module.css'
 
 interface SongRunnerViewProps {
+  earlierRecord?: SavedRunnerProgress
   developmentControls?: DevelopmentRenderControls
   cameraControls?: RunnerCameraControls
   course: CompiledRunnerCourse
@@ -370,6 +371,8 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       ref={runnerElement}
       class={styles.runner}
       data-testid="song-runner"
+      data-course-id={props.course.id}
+      data-course-revision={props.course.revision}
       data-phase={state().phase}
       data-microphone={state().microphone}
       data-course-seconds={game().courseSeconds.toFixed(3)}
@@ -657,6 +660,23 @@ export function SongRunnerView(props: SongRunnerViewProps) {
             Set a comfortable note, then sing and steer through the glassway.
             Pitch is checked live. No recording is saved.
           </p>
+          <Show when={props.earlierRecord}>
+            {(record) => (
+              <details>
+                <summary>Earlier course record kept</summary>
+                <p>
+                  {record().bestTargetQualities.reduce(
+                    (total, quality) => total + quality.grade,
+                    0,
+                  )}{' '}
+                  singing stars earned.
+                  {record().completed ? ' Course completed.' : ''} Your rewards
+                  and matching singing scores carry over. This route starts at
+                  the beginning.
+                </p>
+              </details>
+            )}
+          </Show>
           <Show when={props.presentationLoading === true}>
             <div class={styles.presentationStatus} role="status">
               <span class={styles.spinner} aria-hidden="true" />

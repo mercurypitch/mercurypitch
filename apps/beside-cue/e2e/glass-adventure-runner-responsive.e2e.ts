@@ -109,7 +109,7 @@ test('visible prompts support a corrected note, reacted jumps and course complet
 }) => {
   await useRunnerControlsRenderer(page)
   await installRunnerVoice(page)
-  await page.goto('/glass-game/?layout=singing-current')
+  await page.goto('/glass-game/?layout=singing-current&pace=responsive')
   const runner = page.getByTestId('song-runner')
   const start = page.getByRole('button', { name: 'Start course' })
   await expect(start).toBeEnabled({ timeout: 60_000 })
