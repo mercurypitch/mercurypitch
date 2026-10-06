@@ -62,7 +62,10 @@ async function mountAdventure() {
     return nextFrame
   })
   vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id))
-  const prepare = vi.fn(() => ({ ready: Promise.resolve(true), release: vi.fn() }))
+  const prepare = vi.fn(() => ({
+    ready: Promise.resolve(true),
+    release: vi.fn(),
+  }))
   const createVoice = vi.fn()
   const host: GlassGameHost = {
     assetUrl: (id) => id,
