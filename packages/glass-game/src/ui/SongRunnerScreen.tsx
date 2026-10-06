@@ -9,12 +9,14 @@ import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } f
 import type { SongRunnerRenderer } from '../render/runner-renderer'
 import { createSongRunnerRenderer } from '../render/runner-renderer'
 import type { CompiledRunnerCourse } from '../runner/contracts'
+import { CURRENT_SINGING_COURSE, readEarlierSingingRecord, } from '../runner/current-course'
 import { SINGING_CURRENT, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_TRIALS, } from '../runner/first-course'
 import { hasDevelopmentTuning } from './development-tuning'
 import type { RunnerCameraChoice } from './RunnerSoundTune'
 import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { SongRunnerView } from './SongRunnerView'
 
+export { CURRENT_SINGING_COURSE }
 export { SINGING_CURRENT_TRIALS }
 export { SINGING_CURRENT_CONTINUOUS_TRIAL }
 export {
@@ -33,11 +35,17 @@ export interface SongRunnerScreenProps {
 
 export function SongRunnerScreen(props: SongRunnerScreenProps) {
   const initial = untrack(() => {
-    const course = props.course ?? SINGING_CURRENT
+    const course = props.course ?? CURRENT_SINGING_COURSE
     const host = createBrowserRunnerHost(props.host)
     return {
       course,
       host,
+      earlierRecord:
+        course.id === CURRENT_SINGING_COURSE.id
+          ? readEarlierSingingRecord(
+              host.loadRunnerProgress(SINGING_CURRENT.id),
+            )
+          : undefined,
       midi: resolveRunnerComfortableMidi(
         course,
         host.readPreference('comfortable-note'),
@@ -52,7 +60,11 @@ export function SongRunnerScreen(props: SongRunnerScreenProps) {
           host={props.host}
           course={selected.course}
           comfortableMidi={selected.midi}
-          allowCameraTuning={props.allowCameraTuning}
+          allowCameraTuning={
+            props.allowCameraTuning ??
+            selected.course.movement.kind === 'continuous'
+          }
+          earlierRecord={selected.earlierRecord}
           assetProfile={props.assetProfile}
           onExit={() => {
             if (props.onExit) props.onExit()
@@ -78,6 +90,7 @@ export function SongRunnerScreen(props: SongRunnerScreenProps) {
 
 function RunnerVisit(props: {
   allowCameraTuning?: boolean
+  earlierRecord?: ReturnType<typeof readEarlierSingingRecord>
   host: GlassGameHost
   course: CompiledRunnerCourse
   comfortableMidi: number
@@ -256,6 +269,7 @@ function RunnerVisit(props: {
   })
   return (
     <SongRunnerView
+      earlierRecord={props.earlierRecord}
       developmentControls={
         hasDevelopmentTuning(gameHost)
           ? {

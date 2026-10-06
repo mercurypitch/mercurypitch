@@ -8,8 +8,14 @@ import type { BuildInfo } from '@/build-info'
 const hostOptions = vi.hoisted(() => vi.fn())
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
 const runnerTrials = vi.hoisted(() => ({
-  current: { id: 'the-singing-current-trial-current-v1' },
-  learning: { id: 'the-singing-current-trial-learning-v1' },
+  current: {
+    id: 'the-singing-current-trial-current-v1',
+    movement: { kind: 'lanes' },
+  },
+  learning: {
+    id: 'the-singing-current-trial-learning-v1',
+    movement: { kind: 'lanes' },
+  },
 }))
 vi.mock('@/build-info', () => ({ BUILD: build }))
 vi.mock('@irchiinnuss/glass-game/browser', () => ({
@@ -33,16 +39,24 @@ vi.mock('@irchiinnuss/glass-game/solid', () => ({
 }))
 vi.mock('@irchiinnuss/glass-game/runner', () => ({
   SINGING_CURRENT_TRIALS: runnerTrials,
+  CURRENT_SINGING_COURSE: {
+    id: 'the-singing-current-trial-crystal-continuous-v1',
+    movement: { kind: 'continuous' },
+    presentation: { cameraProfile: 'steering-angled' },
+  },
   SINGING_CURRENT_CRYSTAL_STUDY: {
     id: 'the-singing-current-trial-crystal-lanes-v1',
+    movement: { kind: 'lanes' },
     presentation: { cameraProfile: 'responsive-close' },
   },
   SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY: {
     id: 'the-singing-current-trial-crystal-continuous-v1',
+    movement: { kind: 'continuous' },
     presentation: { cameraProfile: 'responsive-close' },
   },
   SINGING_CURRENT_CONTINUOUS_TRIAL: {
     id: 'the-singing-current-trial-continuous-v1',
+    movement: { kind: 'continuous' },
     presentation: { cameraProfile: 'responsive-close' },
   },
   SongRunnerScreen: (props: {
@@ -123,11 +137,19 @@ describe('Glassworks build access', () => {
     },
   )
 
-  it('keeps the canonical course when no trial pace is selected', () => {
+  it('opens the shared crystal course with angled steering when no trial is selected', () => {
     render(() => <AdventureScreen runner onExit={() => undefined} />)
     expect(screen.getByTestId('runner')).toHaveAttribute(
       'data-course',
-      'canonical',
+      'the-singing-current-trial-crystal-continuous-v1',
+    )
+    expect(screen.getByTestId('runner')).toHaveAttribute(
+      'data-camera',
+      'steering-angled',
+    )
+    expect(screen.getByTestId('runner')).toHaveAttribute(
+      'data-camera-tuning',
+      'true',
     )
   })
 

@@ -2,6 +2,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GlassGameHost } from '../host'
 import type { SavedRunnerProgress } from '../runner/contracts'
+import { SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY } from '../runner/crystal-obstacle-study'
+import { SINGING_CURRENT } from '../runner/first-course'
+import { createRunnerTargetQuality, readSavedRunnerProgress, } from '../runner/progress'
 import { clampRunnerAudioPreferences, RUNNER_AUDIO_DEFAULTS, } from '../runner/session-contracts'
 import { runnerCourseFixture } from './__fixtures__/runner-course'
 import { createBrowserRunnerHost, readRunnerAudioPreferences, resolveRunnerComfortableMidi, RUNNER_AUDIO_PREFERENCE, runnerComfortableMidiRange, } from './runner-host'
@@ -107,6 +110,56 @@ describe('runner host', () => {
     }
     runner.saveRunnerProgress(progress)
     expect(runner.loadRunnerProgress('test')).toEqual(progress)
+    expect(host.saveProgress).not.toHaveBeenCalled()
+  })
+  it('carries compatible earlier credit into Crystal Current without overwriting either record', () => {
+    const { host, values } = gallery()
+    const course = SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
+    const target = SINGING_CURRENT.targets[0]!
+    const quality = createRunnerTargetQuality(
+      SINGING_CURRENT,
+      target.id,
+      3,
+      target.notes.reduce(
+        (total, note) => total + note.minimumReliableSeconds,
+        0,
+      ),
+      10,
+    )
+    const legacy = {
+      ...readSavedRunnerProgress(SINGING_CURRENT, null),
+      completed: true,
+      bestTargetQualities: [quality],
+      collectedRewardIds: [
+        SINGING_CURRENT.rewards.pickups[0]!.id,
+        SINGING_CURRENT.rewards.finishRewardIds[0]!,
+      ],
+    }
+    const current = {
+      ...readSavedRunnerProgress(course, null),
+      collectedRewardIds: [course.rewards.pickups[1]!.id],
+    }
+    const legacyKey = `runner-progress:v1:${SINGING_CURRENT.id}`
+    values.set(legacyKey, JSON.stringify(legacy))
+    values.set(`runner-progress:v1:${course.id}`, JSON.stringify(current))
+    const runner = createBrowserRunnerHost(host)
+    const merged = runner.loadRunnerProgress(course.id) as SavedRunnerProgress
+    expect(merged.completed).toBe(true)
+    expect(merged.bestTargetQualities).toEqual([
+      { ...quality, courseRevision: course.revision },
+    ])
+    expect(merged.collectedRewardIds).toEqual(
+      [
+        course.rewards.pickups[0]!.id,
+        course.rewards.pickups[1]!.id,
+        course.rewards.finishRewardIds[0]!,
+      ].sort(),
+    )
+    runner.saveRunnerProgress(merged)
+    expect(createBrowserRunnerHost(host).loadRunnerProgress(course.id)).toEqual(
+      merged,
+    )
+    expect(values.get(legacyKey)).toBe(JSON.stringify(legacy))
     expect(host.saveProgress).not.toHaveBeenCalled()
   })
   it('uses memory when storage is blocked, and treats corrupt stored JSON as no progress', () => {

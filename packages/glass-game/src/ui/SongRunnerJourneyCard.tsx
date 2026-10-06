@@ -18,8 +18,8 @@ export function SongRunnerJourneyCard(props: {
           <span class={styles.island}>A moving melody</span>
           <h3>The Singing Current</h3>
           <p>
-            Follow three paths through the clouds. Jump between phrases, then
-            sing the glass open.
+            Steer around blue crystal, leap the rose hurdle and sing the glass
+            open.
           </p>
           <button
             type="button"

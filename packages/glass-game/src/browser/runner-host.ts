@@ -1,6 +1,8 @@
 // Runner browser host — gallery services, separate typed progress and legal comfortable-note preferences.
 import type { GlassGameHost } from '../host'
 import type { CompiledRunnerCourse } from '../runner/contracts'
+import { CURRENT_SINGING_COURSE, mergeCurrentSingingProgress, } from '../runner/current-course'
+import { SINGING_CURRENT } from '../runner/first-course'
 import type { RunnerAudioPreferences, SongRunnerHost, } from '../runner/session-contracts'
 import { clampRunnerAudioPreferences } from '../runner/session-contracts'
 import { createRunnerBackingCache } from './runner-music'
@@ -130,6 +132,16 @@ export function createBrowserRunnerHost(
     }
     volatile.add(key)
   }
+
+  function readProgress(courseId: string): unknown {
+    try {
+      return JSON.parse(
+        read(`runner-progress:v1:${courseId}`) ?? 'null',
+      ) as unknown
+    } catch {
+      return null
+    }
+  }
   return {
     assetUrl: (id) => galleryHost.assetUrl(id),
     prepareVoiceGesture: () => galleryHost.prepareVoiceGesture(),
@@ -144,13 +156,10 @@ export function createBrowserRunnerHost(
       galleryHost.subscribeForeground(listener),
     onExit: () => galleryHost.onExit(),
     loadRunnerProgress(courseId) {
-      try {
-        return JSON.parse(
-          read(`runner-progress:v1:${courseId}`) ?? 'null',
-        ) as unknown
-      } catch {
-        return null
-      }
+      const current = readProgress(courseId)
+      return courseId === CURRENT_SINGING_COURSE.id
+        ? mergeCurrentSingingProgress(current, readProgress(SINGING_CURRENT.id))
+        : current
     },
     saveRunnerProgress(progress) {
       write(`runner-progress:v1:${progress.courseId}`, JSON.stringify(progress))
