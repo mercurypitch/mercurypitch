@@ -2,39 +2,15 @@
 // Song runner movement — fixed-step lanes, jump support, and swept collisions.
 // ============================================================
 
-import type { RunnerLateralSegment } from './continuous-lateral'
 import { stepContinuousRunnerMovement } from './continuous-movement'
 import type { CompiledRunnerBlocker, CompiledRunnerCourse, RunnerInput, RunnerLane, } from './contracts'
+import type { LaneTransition, RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts'
 import { runnerBeatToDistance, runnerSecondsToBeat } from './tempo'
 import { runnerTrackBounds } from './track-bounds'
 
+export type { RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts'
+
 const EPSILON = 1e-9
-
-interface LaneTransition {
-  fromX: number
-  toX: number
-  startCourseSeconds: number
-  endCourseSeconds: number
-}
-
-export interface RunnerMovementState {
-  targetLane: RunnerLane
-  lateralX: number
-  lateralVelocityMetersPerSecond: number
-  steeringAxis: number
-  feetY: number
-  verticalVelocityMetersPerSecond: number
-  grounded: boolean
-  coyoteRemainingSeconds: number
-  jumpBufferRemainingSeconds: number
-  laneTransition: LaneTransition | null
-}
-
-export interface RunnerMovementStepResult {
-  readonly lateralSegments?: readonly RunnerLateralSegment[]
-  readonly collided: boolean
-  readonly fell: boolean
-}
 
 interface Interval {
   start: number
