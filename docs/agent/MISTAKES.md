@@ -1876,3 +1876,17 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** Three r185 projects skinned meshes before incrementing its render-frame ID, then caches shadow casters under the incremented ID. The next frame can reuse that prior bone palette when shadows are skipped. The shipped Merc reproduced stale animation and world translation on 12 of 24 Balanced frames in real WebGL; High's every-frame shadows concealed the defect.
 **Rule:** after Merc's mixer and root transform settle, update his world matrices and publish each shared skeleton once. Retain mobile texture/pixel limits and cached shadows. Test actual actor palettes against current bones through the real Three object cache at 1/2/4-frame shadow cadences; faster GPU timing alone cannot catch a stale-pose defect.
 **See:** `packages/glass-game/src/render/skinned-pose.ts`, `packages/glass-game/src/render/merc-shadow-cadence.test.ts`.
+
+### Use an explicit host capability for compiled development controls
+
+**Symptom:** Tune appeared on the local development server but disappeared from the deployed development website or native CI build.
+**Cause:** optimized builds have `import.meta.env.DEV === false`, even when the build mode or delivery channel is development.
+**Rule:** let each host explicitly enable development controls from its build mode/channel; release hosts explicitly disable them. Keep progression testing independent. Verify the actual host entry in an optimized development build, not only a shared UI fixture or Vite dev server.
+**See:** `src/features/glass-adventure/host.ts`, `apps/beside-cue/src/games/adventure/AdventureScreen.tsx`, `packages/glass-game/src/ui/development-tuning.ts`.
+
+### Redraw the current paused snapshot after changing graphics quality
+
+**Symptom:** changing runner graphics in Sound / tune cleared the scene until the player resumed.
+**Cause:** renderer resize clears the drawing buffer while the Tune modal pauses the frame loop.
+**Rule:** after changing quality, render the current session snapshot with zero elapsed time under the existing loading/disposal guards and graphics failure handler. Do not reuse an old running snapshot or advance simulation time. Test this while the settings modal remains open.
+**See:** `packages/glass-game/src/ui/SongRunnerScreen.tsx`, `apps/beside-cue/e2e/glass-adventure-runner-sound.e2e.ts`.
