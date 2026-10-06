@@ -50,6 +50,7 @@ vi.mock('@/lib/use-viewport', async (importOriginal) => {
 vi.mock('@/lib/audio-unlock', () => ({
   installAudioUnlock: () => () => undefined,
   unlockAudio: () => undefined,
+  unlockForPlayback: (ensure: () => AudioContext | null) => ensure(),
 }))
 
 import { StemMixer } from '@/components/StemMixer'
