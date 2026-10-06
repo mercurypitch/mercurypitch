@@ -3,6 +3,7 @@
 import type { Material, Mesh } from 'three'
 import { AnimationMixer, Box3, Group, MeshPhysicalMaterial, Vector3, } from 'three'
 import type { MuseumJourneyStage } from '../content/museum-journey'
+import { createSkinnedPosePublisher } from '../render/skinned-pose'
 import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
 import type { JourneyGltfDocument } from './resources'
 
@@ -44,6 +45,7 @@ export function createJourneyMerc(
   const root = new Group()
   root.name = 'journey-merc'
   root.add(body)
+  const publishPose = createSkinnedPosePublisher(root)
   const target = new Vector3().fromArray(
     journeyMarkerPoint(first, JOURNEY_MEDALLION_CLEARANCE_Y),
   )
@@ -73,6 +75,7 @@ export function createJourneyMerc(
         if (root.position.distanceToSquared(target) < 1e-10)
           root.position.copy(target)
       }
+      publishPose()
     },
     dispose() {
       if (disposed) return

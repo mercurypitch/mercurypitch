@@ -1869,3 +1869,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the test required one shadow pass on every frame, although mobile and adaptive profiles intentionally reuse shadows between updates.
 **Rule:** require exactly one pass for an every-frame cadence; permit only zero or one for the configured skipped-frame cadences. Keep water draw/triangle budgets and ordinary scene assertions intact. Do not force redundant shadow rendering or lengthen test timeouts to satisfy a stale snapshot assumption.
 **See:** `packages/glass-game/src/journey/scene.ts`, `apps/beside-cue/e2e/glass-adventure-journey.e2e.ts`.
+
+### Publish Merc's bone palette independently of shadow refreshes
+
+**Symptom:** Merc's movement stuttered on Auto/Balanced but became smooth on High on a capable tablet.
+**Cause:** Three r185 projects skinned meshes before incrementing its render-frame ID, then caches shadow casters under the incremented ID. The next frame can reuse that prior bone palette when shadows are skipped. The shipped Merc reproduced stale animation and world translation on 12 of 24 Balanced frames in real WebGL; High's every-frame shadows concealed the defect.
+**Rule:** after Merc's mixer and root transform settle, update his world matrices and publish each shared skeleton once. Retain mobile texture/pixel limits and cached shadows. Test actual actor palettes against current bones through the real Three object cache at 1/2/4-frame shadow cadences; faster GPU timing alone cannot catch a stale-pose defect.
+**See:** `packages/glass-game/src/render/skinned-pose.ts`, `packages/glass-game/src/render/merc-shadow-cadence.test.ts`.
