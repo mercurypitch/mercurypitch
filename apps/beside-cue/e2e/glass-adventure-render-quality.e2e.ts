@@ -431,7 +431,7 @@ test('auto selects a stable compact-touch profile and explicit choices persist',
   const quality = panel.getByRole('group', { name: 'Graphics quality' })
   await expectQualitySelectorWithinViewport(page)
   await expect(panel).toContainText(
-    'Texture detail updates the next time you open a gallery.',
+    'Texture detail updates the next time you open the game.',
   )
   await tap(
     page,

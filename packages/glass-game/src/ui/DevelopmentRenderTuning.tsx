@@ -42,7 +42,7 @@ export function DevelopmentRenderTuning(props: DevelopmentRenderControls) {
       </div>
       <p class={styles.caption}>
         Balanced reduces detail. High keeps it sharp. Auto chooses for this
-        device.
+        device. Texture detail updates the next time you open the game.
       </p>
       <label class={styles.speed}>
         <span>
