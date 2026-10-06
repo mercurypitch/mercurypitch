@@ -29,7 +29,7 @@ export const SHATTER_LIFECYCLE_SECONDS =
 export const SHATTER_PLAYBACK_SPEED = {
   minimum: 0.4,
   maximum: 1.6,
-  default: 1,
+  default: 0.5,
 } as const
 
 export function parseShatterPlaybackSpeed(
@@ -44,19 +44,30 @@ export function parseShatterPlaybackSpeed(
     : SHATTER_PLAYBACK_SPEED.default
 }
 
+/** Reduced motion keeps its brief effect on real time, independent of the normal-motion preference. */
+export function shatterPresentationSpeed(
+  raw: number | string | null | undefined,
+  reducedMotion: boolean,
+): number {
+  return reducedMotion ? 1 : parseShatterPlaybackSpeed(raw)
+}
+
 export function shatterLifecycleSeconds(speed: number): number {
   return SHATTER_LIFECYCLE_SECONDS / parseShatterPlaybackSpeed(speed)
 }
 
 /** Latch at the break so a settings change never jumps a live fracture forward. */
-export function createShatterPlayback(initialSpeed?: number) {
-  let nextSpeed = parseShatterPlaybackSpeed(initialSpeed)
+export function createShatterPlayback(
+  initialSpeed?: number,
+  reducedMotion = false,
+) {
+  let nextSpeed = shatterPresentationSpeed(initialSpeed, reducedMotion)
   let activeSpeed = nextSpeed
   let previousBreak: number | null = null
   let previousNow = -Infinity
   return {
     setSpeed(speed: number): void {
-      nextSpeed = parseShatterPlaybackSpeed(speed)
+      nextSpeed = shatterPresentationSpeed(speed, reducedMotion)
     },
     speed: () => activeSpeed,
     age(brokenAt: number | null, now: number, speedAtBreak?: number): number {
@@ -64,7 +75,7 @@ export function createShatterPlayback(initialSpeed?: number) {
         activeSpeed =
           speedAtBreak === undefined
             ? nextSpeed
-            : parseShatterPlaybackSpeed(speedAtBreak)
+            : shatterPresentationSpeed(speedAtBreak, reducedMotion)
       previousBreak = brokenAt
       previousNow = now
       return brokenAt === null ? -1 : Math.max(0, now - brokenAt) * activeSpeed

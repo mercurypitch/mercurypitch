@@ -4,20 +4,36 @@ import { expect, it } from 'vitest'
 import { createShatterPlayback, parseShatterPlaybackSpeed, shatterLifecycleSeconds, } from './shatter-presentation'
 
 it.each([
-  [undefined, 1],
-  [null, 1],
-  ['', 1],
-  ['  ', 1],
-  ['garbage', 1],
-  [NaN, 1],
-  [Infinity, 1],
-  [-Infinity, 1],
+  [undefined, 0.5],
+  [null, 0.5],
+  ['', 0.5],
+  ['  ', 0.5],
+  ['garbage', 0.5],
+  [NaN, 0.5],
+  [Infinity, 0.5],
+  [-Infinity, 0.5],
   ['0.7', 0.7],
   [0.4, 0.4],
   [0, 0.4],
   [9, 1.6],
 ])('normalizes stored shatter speed %s to %s', (raw, expected) => {
   expect(parseShatterPlaybackSpeed(raw)).toBe(expected)
+})
+
+it('defaults to half speed and aligns the complete normal-motion lifecycle', () => {
+  const playback = createShatterPlayback()
+  expect(playback.age(10, 11)).toBe(0.5)
+  expect(
+    shatterLifecycleSeconds(parseShatterPlaybackSpeed(undefined)),
+  ).toBeCloseTo(4.6)
+})
+
+it('keeps reduced motion on real time despite the default, saved and changed normal-motion speeds', () => {
+  const playback = createShatterPlayback(undefined, true)
+  expect(playback.age(10, 10.45)).toBeCloseTo(0.45)
+  playback.setSpeed(0.4)
+  expect(playback.age(20, 20.45, 0.4)).toBeCloseTo(0.45)
+  expect(playback.speed()).toBe(1)
 })
 
 it('latches a new speed on the next break and resets on replay', () => {

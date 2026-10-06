@@ -46,7 +46,7 @@ describe('vessel shatter presentation', () => {
 
   it('keeps authored macro pieces and layers anticipation, stagger and micro debris around them', () => {
     const subject = { ...target('goblet'), id: 'authored-crown' }
-    const vessel = createVessel(subject, false)
+    const vessel = createVessel(subject, false, { shatterPlaybackSpeed: 1 })
     const geometry = new BoxGeometry(0.6, 0.8, 0.4)
     geometry.translate(0, 0.4, 0)
     const pieces = [
@@ -145,6 +145,7 @@ describe('vessel shatter presentation', () => {
     reward.name = 'test-resonance-reward'
     const disposeReward = vi.fn()
     const vessel = createVessel(subject, false, {
+      shatterPlaybackSpeed: 1,
       resonanceRewardFactory: () => ({
         object: reward,
         dispose: disposeReward,
@@ -302,6 +303,7 @@ describe('vessel shatter presentation', () => {
     const disposeReward = vi.fn()
     let rewardCalls = 0
     const vessel = createVessel(subject, false, {
+      shatterPlaybackSpeed: 1,
       resonanceRewardFactory: () => {
         rewardCalls++
         if (rewardCalls > 1) throw new Error('replacement reward failed')

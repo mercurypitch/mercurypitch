@@ -7,7 +7,11 @@ import { FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes } from './collision'
 import { createGlassGame } from './game'
 import { createMovement, MOVEMENT, stepMovement } from './movement'
 import { createPlatformRuntime, platformBoundsAtRuntime, platformRuntimeDefinitionError, } from './platform-runtime'
-import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
+import { SHATTER_PLAYBACK_SPEED, shatterLifecycleSeconds, } from './shatter-presentation'
+
+const DEFAULT_SHATTER_SECONDS = shatterLifecycleSeconds(
+  SHATTER_PLAYBACK_SPEED.default,
+)
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 
@@ -992,7 +996,7 @@ describe('authored platform runtime', () => {
     const beforeShatter = stateFor(shatterGame, 'raft')!.offset.x
     fixedSteps(
       shatterGame,
-      Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep),
+      Math.round(DEFAULT_SHATTER_SECONDS / MOVEMENT.fixedStep),
     )
     expect(shatterGame.snapshot().phase).toBe('idle')
     expect(stateFor(shatterGame, 'raft')!.offset.x).toBe(beforeShatter)

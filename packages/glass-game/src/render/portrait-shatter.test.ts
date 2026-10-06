@@ -142,7 +142,9 @@ describe('picture-bearing portrait fracture', () => {
   })
 
   it('shows the intact image through cracks, hides it only during shard flight, then restores it in the frame', () => {
-    const vessel = createVessel(portraitTarget, false)
+    const vessel = createVessel(portraitTarget, false, {
+      shatterPlaybackSpeed: 1,
+    })
     const frame = new ThreeGroup()
     frame.name = 'retained-portrait-frame'
     vessel.addPersistent(frame)
