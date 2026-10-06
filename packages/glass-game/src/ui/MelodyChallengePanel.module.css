@@ -209,6 +209,11 @@ section.melodyPanel {
   outline: 3px solid var(--game-gold);
   outline-offset: 3px;
 }
+@media (max-width: 350px) {
+  .melodyPanel .surface {
+    padding-inline: 10px;
+  }
+}
 @media (max-height: 500px) and (orientation: landscape) {
   section.melodyPanel {
     width: min(
