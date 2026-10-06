@@ -98,6 +98,11 @@ export interface ProceduralChunk {
     | 'aurora-glide'
     | 'vocal-sanctuary'
     | 'finale'
+    | 'slalom-zigzag'
+    | 'viaduct-arc'
+    | 'viaduct-s-curve'
+    | 'split-fork'
+    | 'diagonal-glide'
   readonly entrySocket: ChunkSocket
   readonly exitSocket: ChunkSocket
   readonly platforms: readonly ChunkPlatform[]

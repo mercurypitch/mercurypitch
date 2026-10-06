@@ -4,12 +4,17 @@ import { CLOUDWAY_STUDIO_PROFILES } from '../cloudway-studio.ts'
 import { compileCloudwayCourseDocument } from '../compile-cloudway-course.ts'
 import type { LevelDefinition } from '../../contracts.ts'
 import {
+  createArcedViaductChunk,
   createArrivalChunk,
   createAuroraGlideChunk,
+  createDiagonalGlideChunk,
   createFinalePavilionChunk,
   createFrostGlissadeChunk,
   createHexCascadeChunk,
   createScrollBridgeChunk,
+  createSlalomZigzagChunk,
+  createSplitForkChunk,
+  createViaductSCurveChunk,
   createVocalSanctuaryChunk,
 } from './chunk-library.ts'
 import { stitchChunks } from './chunk-stitcher.ts'
@@ -32,10 +37,14 @@ export function generateProceduralCourse(
   const titleTemplates = [
     `The Resonant Causeway ${options.seed}`,
     `The Celestial Glissade ${options.seed}`,
-    `The Prismatic Ascent ${options.seed}`,
+    `The Prismatic Viaduct ${options.seed}`,
     `The Frostbound Echoes ${options.seed}`,
     `The Aureate Expanse ${options.seed}`,
     `The Starlight Ribbon ${options.seed}`,
+    `The Serpentine Colonnade ${options.seed}`,
+    `The Arced Meridian ${options.seed}`,
+    `The Bifurcated Cloudway ${options.seed}`,
+    `The Labyrinthine Terrace ${options.seed}`,
   ]
   const title = options.title ?? prng.pick(titleTemplates)
   const lessonProfileId = options.melodyLessonId ?? 'first-arc-v1'
@@ -64,75 +73,102 @@ export function generateProceduralCourse(
         ? prng.range(1.8, 2.2)
         : prng.range(1.3, 1.6)
 
-  // Topological archetypes:
-  // 'east-hook': Sanctuary 1 turns East, Sanctuary 2 turns East (relative right -> headings: N -> E -> S)
-  // 'west-hook': Sanctuary 1 turns West, Sanctuary 2 turns West (relative left -> headings: N -> W -> S)
-  // 's-curve': Sanctuary 1 turns East, Sanctuary 2 turns West (relative right then left -> headings: N -> E -> N)
-  // 'straight': Sanctuary 1 turns None, Sanctuary 2 turns None (headings: N -> N -> N)
-  const topologies = ['east-hook', 'west-hook', 's-curve', 'straight'] as const
+  // Rich multi-turn topologies featuring curved viaduct arcs, diagonal slaloms, split forks, and ferries:
+  const topologies = [
+    'serpentine-weave',
+    'grand-s-arc',
+    'horseshoe-traverse',
+    'colonnade-chicane',
+    'labyrinth-ascent',
+    'aurora-meander',
+  ] as const
   const topology = prng.pick(topologies)
 
-  const turn1: 'none' | 'east' | 'west' =
-    topology === 'straight' ? 'none' : topology === 'west-hook' ? 'west' : 'east'
+  let chunks: ProceduralChunk[]
 
-  const turn2: 'none' | 'east' | 'west' =
-    topology === 'straight'
-      ? 'none'
-      : topology === 's-curve'
-        ? 'west'
-        : topology === 'west-hook'
-          ? 'west'
-          : 'east'
-
-  // Act 2 (Shō / Agility Introduction)
-  const act2Choices = ['frost', 'hex', 'scroll'] as const
-  const act2Type = prng.pick(act2Choices)
-  const act2Chunk =
-    act2Type === 'frost'
-      ? createFrostGlissadeChunk('c2')
-      : act2Type === 'hex'
-        ? createHexCascadeChunk('c2', Number((hexWarningTime + 0.3).toFixed(2)))
-        : createScrollBridgeChunk('c2', crystalPreset)
-
-  // Act 4 (Ten / Tension Escalation)
-  const act4Variants = [0, 1, 2] as const
-  const act4Variant = prng.pick(act4Variants)
-  const act4Chunks: ProceduralChunk[] =
-    act4Variant === 0
-      ? [
-          createHexCascadeChunk('c4', Number(hexWarningTime.toFixed(2))),
-          createScrollBridgeChunk('c5', crystalPreset),
-        ]
-      : act4Variant === 1
-        ? [
-            createScrollBridgeChunk('c4', crystalPreset),
-            createHexCascadeChunk('c5', Number(hexWarningTime.toFixed(2))),
-          ]
-        : [
-            createFrostGlissadeChunk('c4'),
-            createHexCascadeChunk('c5', Number(hexWarningTime.toFixed(2))),
-          ]
-
-  // Act 5 (Ten / Chasm Climax with Kinematic Ferry Raft)
-  const act5Chunk = createAuroraGlideChunk('c6')
-
-  // Chunk sequence implementing Kishōtenketsu macro progression:
-  // Act 1 (Ki / Arrival): Arrival Court with Opening Home Tone
-  // Act 2 (Shō / Agility): Introductory agility
-  // Act 3 (Shō / Gate 1): First Sanctuary with Vocal Gate
-  // Act 4 (Ten / Tension): Multi-mechanic challenge
-  // Act 5 (Ten / Chasm): Chasm traverse
-  // Act 6 (Ketsu / Return Gate): Second Sanctuary with Vocal Gate
-  // Act 7 (Ketsu / Finale): Awakened Muse Whole-Phrase Pavilion + Exit Portal
-  const chunks: ProceduralChunk[] = [
-    createArrivalChunk('first-arc-home'),
-    act2Chunk,
-    createVocalSanctuaryChunk('gate1', 'first-arc-rise', turn1),
-    ...act4Chunks,
-    act5Chunk,
-    createVocalSanctuaryChunk('gate2', 'first-arc-return', turn2),
-    createFinalePavilionChunk('c_fin'),
-  ]
+  switch (topology) {
+    case 'serpentine-weave': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createArcedViaductChunk('c2a', 'east'),
+        createSlalomZigzagChunk('c2b', 'hybrid', Number(hexWarningTime.toFixed(2))),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'none'),
+        createArcedViaductChunk('c4a', 'west'),
+        createSplitForkChunk('c4b'),
+        createDiagonalGlideChunk('c5', 'left-to-right'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'east'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+    case 'grand-s-arc': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createViaductSCurveChunk('c2a'),
+        createHexCascadeChunk('c2b', Number(hexWarningTime.toFixed(2))),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'west'),
+        createSlalomZigzagChunk('c4a', 'frost'),
+        createArcedViaductChunk('c4b', 'east'),
+        createDiagonalGlideChunk('c5', 'right-to-left'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'east'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+    case 'horseshoe-traverse': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createSlalomZigzagChunk('c2', 'hybrid', Number(hexWarningTime.toFixed(2))),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'east'),
+        createArcedViaductChunk('c4a', 'east'),
+        createSplitForkChunk('c4b'),
+        createAuroraGlideChunk('c5'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'west'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+    case 'colonnade-chicane': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createSplitForkChunk('c2'),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'east'),
+        createScrollBridgeChunk('c4a', crystalPreset),
+        createArcedViaductChunk('c4b', 'west'),
+        createSlalomZigzagChunk('c5', 'frost'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'none'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+    case 'labyrinth-ascent': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createArcedViaductChunk('c2a', 'west'),
+        createScrollBridgeChunk('c2b', crystalPreset),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'east'),
+        createViaductSCurveChunk('c4a'),
+        createHexCascadeChunk('c4b', Number(hexWarningTime.toFixed(2))),
+        createDiagonalGlideChunk('c5', 'left-to-right'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'none'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+    case 'aurora-meander': {
+      chunks = [
+        createArrivalChunk('first-arc-home'),
+        createFrostGlissadeChunk('c2'),
+        createVocalSanctuaryChunk('gate1', 'first-arc-rise', 'none'),
+        createSplitForkChunk('c4a'),
+        createSlalomZigzagChunk('c4b', 'hybrid', Number(hexWarningTime.toFixed(2))),
+        createDiagonalGlideChunk('c5', 'right-to-left'),
+        createVocalSanctuaryChunk('gate2', 'first-arc-return', 'west'),
+        createFinalePavilionChunk('c_fin'),
+      ]
+      break
+    }
+  }
 
   const assembled = stitchChunks(chunks)
 
