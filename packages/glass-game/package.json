@@ -17,6 +17,7 @@
     "./echo-curator": "./src/echo-curator.ts",
     "./promenade": "./src/content/cloudway-laboratory.ts",
     "./thawing-song": "./src/content/cloudway-thawing-song.ts",
+    "./prismatic-causeway": "./src/content/cloudway-prismatic-causeway.ts",
     "./creator-levels": "./src/creator-levels.ts",
     "./songbook": "./src/songbook.ts",
     "./songbook-content": "./src/content/merc-songbook.ts",
@@ -25,7 +26,8 @@
     "./shatter-sounds": "./src/content/shatter-sounds.ts",
     "./fracture-audio": "./src/browser/fracture-audio.ts",
     "./current-wall-profiles": "./src/content/singing-current-wall-profiles.ts",
-    "./material-finishes": "./src/content/material-finishes.ts"
+    "./material-finishes": "./src/content/material-finishes.ts",
+    "./solver": "./src/solver/index.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

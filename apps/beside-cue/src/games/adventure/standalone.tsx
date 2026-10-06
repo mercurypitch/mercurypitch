@@ -43,7 +43,9 @@ async function selectedDevelopmentLevel() {
     layout !== 'quarter-turn-art' &&
     layout !== 'cloudway-crescent' &&
     layout !== 'cloudway-ribbon' &&
-    layout !== 'cloudway-terrace'
+    layout !== 'cloudway-terrace' &&
+    layout !== 'prismatic-causeway' &&
+    layout !== 'procedural'
   )
     return undefined
   const {
@@ -54,6 +56,9 @@ async function selectedDevelopmentLevel() {
     CLOUDWAY_GLASS_RIBBON,
     CLOUDWAY_CURRENT_TRIAL,
     CLOUDWAY_THAWING_SONG,
+    CLOUDWAY_PRISMATIC_CAUSEWAY,
+    CLOUDWAY_PROCEDURAL,
+    createProceduralCourse,
     crystalInteriorStudy,
     livingCrystalStudy,
     LIVING_GLASS_TRIAL,
@@ -75,6 +80,13 @@ async function selectedDevelopmentLevel() {
   if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
   if (layout === 'cloudway-current') return CLOUDWAY_CURRENT_TRIAL
   if (layout === 'thawing-song') return CLOUDWAY_THAWING_SONG
+  if (layout === 'prismatic-causeway') return CLOUDWAY_PRISMATIC_CAUSEWAY
+  if (layout === 'procedural') {
+    const seed = new URLSearchParams(window.location.search).get('seed')
+    return typeof seed === 'string' && seed.length > 0
+      ? createProceduralCourse(seed).compiledLevel
+      : CLOUDWAY_PROCEDURAL
+  }
   if (layout === 'crystal-interiors') {
     const preset = new URLSearchParams(window.location.search).get('interior')
     return crystalInteriorStudy(

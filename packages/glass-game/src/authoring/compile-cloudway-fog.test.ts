@@ -12,6 +12,8 @@ const fog = { kind: 'linear', nearMeters: 12, farMeters: 24 } as const
 describe('Cloudway visibility authoring', () => {
   it('keeps every existing schema 2/3 course and its omitted-field default intact', () => {
     for (const { document } of cloudwayStudioCatalog().examples) {
+      const version = (document as { schemaVersion?: number }).schemaVersion
+      if (typeof version === 'number' && version >= 4) continue
       const before = structuredClone(document)
       for (const level of compileStudioDocument(document)) {
         expect(level.presentation).not.toHaveProperty('fog')
