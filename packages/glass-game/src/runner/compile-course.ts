@@ -2,8 +2,9 @@
 // Song runner compiler — assemble strict source into finite runtime courses.
 // ============================================================
 
+import { compileRunnerCheckpoints } from './compile-course-checkpoints.ts'
 import { runnerChunkId } from './compile-course-helpers.ts'
-import { compileRunnerCheckpoints, compileRunnerObstacles, validateRunnerReachability, } from './compile-course-obstacles.ts'
+import { compileRunnerObstacles, validateRunnerReachability, } from './compile-course-obstacles.ts'
 import { compileRunnerTargets, validateRunnerMovement, validateRunnerVoice, } from './compile-course-targets.ts'
 import type { CompiledRunnerChunk, CompiledRunnerCourse, CompiledRunnerObstacle, CompiledRunnerTarget, } from './contracts.ts'
 import { RUNNER_MAXIMUM_COURSE_SECONDS } from './resource-limits.ts'

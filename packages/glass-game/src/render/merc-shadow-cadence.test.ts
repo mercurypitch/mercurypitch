@@ -68,6 +68,7 @@ function renderSkin(root: Object3D, interval: 1 | 2 | 4) {
       })
       expect(Array.from(actual)).toEqual(Array.from(expected))
     }
+    return meshes.length
   }
 }
 
@@ -86,7 +87,7 @@ it.each([1, 2, 4] as const)(
         snapshot.elapsedSeconds += 1 / 60
         snapshot.player.position.z -= 1.15 / 60
         merc.update(snapshot, 1 / 60, false)
-        render()
+        expect(render()).toBeGreaterThan(0)
       }
     } finally {
       merc.dispose()
@@ -107,7 +108,7 @@ it.each([1, 2, 4] as const)(
     try {
       for (let frame = 0; frame < 12; frame++) {
         merc.update(1 / 60, false)
-        render()
+        expect(render()).toBeGreaterThan(0)
       }
     } finally {
       merc.dispose()
