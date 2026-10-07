@@ -28,6 +28,7 @@ import { createAdventureLoadingLifecycle } from './loading-lifecycle'
 import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
 import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
+import { createReferenceNotePreference } from './reference-note-preference'
 import { ASSET_LOAD_ERROR, createRendererFailureController, GRAPHICS_LOAD_ERROR, GRAPHICS_SUPPORT_ERROR, } from './renderer-failure'
 import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { createAdventureSoundscape } from './soundscape'
@@ -62,6 +63,8 @@ export function useAdventure(
       game.setShatterPlaybackSpeed(speed)
       renderer?.setShatterPlaybackSpeed(speed)
     })
+  const { referenceNoteHoldSeconds, changeReferenceNoteHold } =
+    createReferenceNotePreference(host)
   game.setShatterPlaybackSpeed(shatterPlaybackSpeed())
   const { cameraComfort, changeCameraComfort } = createCameraComfortPreference(
     host,
@@ -885,6 +888,8 @@ export function useAdventure(
     changeCameraComfort,
     shatterPlaybackSpeed,
     changeShatterPlaybackSpeed,
+    referenceNoteHoldSeconds,
+    changeReferenceNoteHold,
     cameraMode,
     changeCameraMode,
     renderQualityPreference,

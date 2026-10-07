@@ -444,7 +444,7 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         data-testid="song-runner-scene"
       />
 
-      <header class={styles.topbar}>
+      <header class={styles.topbar} data-game-hud>
         <button
           type="button"
           class={styles.iconButton}

@@ -312,6 +312,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
         >
           <div
             class={styles.topbar}
+            data-game-hud
             classList={{ [styles.topbarArtwork]: showArtworkOffer() }}
             inert={adventure.inspection() !== null}
           >
@@ -346,6 +347,7 @@ export function AdventureVisit(props: AdventureVisitProps) {
           <div class={styles.utility} inert={adventure.inspection() !== null}>
             <button
               type="button"
+              data-game-hud-layer
               onClick={adventure.recenter}
               aria-label="Recenter camera"
               disabled={adventure.cameraInputLocked()}
@@ -357,6 +359,11 @@ export function AdventureVisit(props: AdventureVisitProps) {
             </button>
             <Show when={cameraPreviewOpen()}>
               <CameraTuningPanel
+                referenceControls={{
+                  referenceNoteHoldSeconds:
+                    adventure.referenceNoteHoldSeconds(),
+                  onReferenceNoteHoldChange: adventure.changeReferenceNoteHold,
+                }}
                 hideTrigger
                 open={cameraPreviewOpen()}
                 onClose={() => setCameraPreviewOpen(false)}

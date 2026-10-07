@@ -1,7 +1,7 @@
 // Voice challenge presentation — shared guidance for held notes, pairs and gentle waves.
 import { createSignal, createUniqueId, For, Show } from 'solid-js'
 import type { PitchTargetId } from '../contracts'
-import { GameIcon, GameSurface } from './GameUI'
+import { GameControlMaterial, GameIcon, GameSurface } from './GameUI'
 import type { VoiceChallengeMode } from './voice-challenge'
 import lessonStyles from './VoiceChallengePanel.module.css'
 
@@ -66,10 +66,13 @@ export function VoiceChallengePanel(props: {
       aria-label="Voice challenge"
       data-challenge-panel
       data-voice-mode={props.mode}
+      data-voice-layout={
+        !props.pair && props.wave !== true ? 'single' : 'sequence'
+      }
       data-step-index={props.stepIndex}
       onKeyDown={handlePanelKeyDown}
     >
-      <GameSurface class={lessonStyles.surface}>
+      <GameSurface class={lessonStyles.surface} shape="console">
         <div class={lessonStyles.heading}>
           <span>{props.label}</span>
           <h2 aria-live="polite">{props.message}</h2>
@@ -109,6 +112,7 @@ export function VoiceChallengePanel(props: {
             disabled={!canReplay()}
             onClick={() => props.onReplay()}
           >
+            <GameControlMaterial kind="lens" />
             <span
               class={lessonStyles.targetNote}
               role="img"

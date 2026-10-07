@@ -2,15 +2,19 @@
 
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { SHATTER_PLAYBACK_SPEED } from '../core/shatter-presentation'
+import { REFERENCE_NOTE_HOLD } from '../reference-note'
 import { CAMERA_FOLLOW_SMOOTHNESS } from '../render/camera'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PRESETS, DEFAULT_CAMERA_COMFORT, LOOK_SENSITIVITY, normalizeCameraComfort, } from './camera-comfort'
 import styles from './CameraTuningPanel.module.css'
+import type { DevelopmentReferenceControls } from './DevelopmentReferenceTuning'
+import { DevelopmentReferenceTuning } from './DevelopmentReferenceTuning'
 import type { DevelopmentRenderControls } from './DevelopmentRenderTuning'
 import { DevelopmentRenderTuning } from './DevelopmentRenderTuning'
 import { GameSurface } from './GameUI'
 
 interface CameraTuningPanelProps extends DevelopmentRenderControls {
+  referenceControls?: DevelopmentReferenceControls
   settings: CameraComfortSettings
   onChange(settings: CameraComfortSettings): void
   open?: boolean
@@ -63,6 +67,8 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
         cameraComfort: normalizeCameraComfort(props.settings),
         renderQuality: props.renderQualityPreference,
         shatterPlaybackSpeed: props.shatterPlaybackSpeed,
+        referenceNoteHoldSeconds:
+          props.referenceControls?.referenceNoteHoldSeconds,
       },
       null,
       2,
@@ -141,6 +147,16 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
                 )}
               </For>
             </div>
+            <Show when={props.referenceControls}>
+              {(controls) => (
+                <DevelopmentReferenceTuning
+                  referenceNoteHoldSeconds={controls().referenceNoteHoldSeconds}
+                  onReferenceNoteHoldChange={(seconds) =>
+                    controls().onReferenceNoteHoldChange(seconds)
+                  }
+                />
+              )}
+            </Show>
             <DevelopmentRenderTuning
               renderQualityPreference={props.renderQualityPreference}
               renderQualityProfile={props.renderQualityProfile}
@@ -199,6 +215,9 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
               <button
                 type="button"
                 onClick={() => {
+                  props.referenceControls?.onReferenceNoteHoldChange(
+                    REFERENCE_NOTE_HOLD.default,
+                  )
                   props.onChange({ ...DEFAULT_CAMERA_COMFORT })
                   props.onRenderQualityChange('auto')
                   props.onShatterPlaybackSpeedChange(

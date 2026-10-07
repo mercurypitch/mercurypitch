@@ -165,28 +165,11 @@
   border: 1px solid #77b5b9;
   border-radius: 50%;
   color: #153b43;
-  background:
-    radial-gradient(ellipse at 27% 12%, #fff 0, #ffffffeb 9%, transparent 31%),
-    radial-gradient(ellipse at 82% 40%, #fffdf4c7, transparent 42%),
-    radial-gradient(ellipse at 55% 95%, #a8d2d180, transparent 48%),
-    conic-gradient(
-      from -24deg at 42% 58%,
-      #eef7ef 0deg 62deg,
-      #d3e8e9 65deg 118deg,
-      #f9f7ec 121deg 173deg,
-      #e9e4e3 177deg 229deg,
-      #c9e2df 233deg 283deg,
-      #f5f8ef 288deg 360deg
-    );
-  box-shadow:
-    inset 0 0 0 1px #fffdf0,
-    inset 0 0 0 2px #c4a768,
-    inset 0 0 0 3px #fffcec,
-    inset 0 0 0 5px #c0e2df,
-    inset 0 5px 7px #ffffffa6,
-    inset 0 -7px 8px #518e922e,
-    0 2px 2px #fff8,
-    0 4px 7px #052f3540;
+  position: relative;
+  isolation: isolate;
+  background: none;
+  border-color: transparent;
+  box-shadow: 0 4px 7px #052f3540;
   font: inherit;
   cursor: pointer;
 }
@@ -397,7 +380,7 @@
   .panel .surface {
     grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
     gap: 4px 18px;
-    padding: clamp(8px, calc(var(--game-padding, 24px) - 14px), 18px) 16px;
+    padding: clamp(14px, calc(var(--game-padding, 24px) - 10px), 22px) 24px;
     max-height: calc(100dvh - 100px - env(safe-area-inset-bottom));
   }
 
@@ -436,6 +419,99 @@
     grid-row: 3;
   }
   .instructions {
+    grid-row: 4;
+  }
+}
+
+/* Reserve the lens above the frame inside the panel measured by the camera. */
+.panel[data-voice-layout='single'] {
+  padding-top: 16px;
+}
+
+.panel[data-voice-layout='single'] .surface {
+  padding: 14px;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+
+.panel[data-voice-layout='single'] .heading {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 0;
+  margin-bottom: 52px;
+}
+
+.panel[data-voice-layout='single'] .cornerControls {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.panel[data-voice-layout='single'] .targetColumn {
+  grid-row: 1;
+  align-self: start;
+  align-content: start;
+  min-height: 0;
+  margin-top: -30px;
+}
+
+.panel[data-voice-layout='single'] .changeButton {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  align-self: end;
+}
+
+.panel[data-voice-layout='single'] .readout {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  justify-self: center;
+  width: max-content;
+}
+
+.panel[data-voice-layout='single'] .instructions {
+  grid-row: 2;
+  max-height: min(100px, calc(100dvh - 260px));
+  overflow-y: auto;
+}
+
+@media (min-width: 600px) {
+  .panel[data-voice-layout='single'] {
+    width: min(
+      960px,
+      calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))
+    );
+  }
+  .panel[data-voice-layout='single'] .surface {
+    gap: 4px 18px;
+    padding-inline: 24px;
+  }
+  .panel[data-voice-layout='single'] .chargeTrack {
+    width: 176px;
+    height: 8px;
+  }
+}
+
+/* Keep the 44px corner pair clear of the lens on the narrowest phones. */
+@media (max-width: 359px) {
+  .panel[data-voice-layout='single'] .heading {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-right: 104px;
+    margin-bottom: 0;
+  }
+  .panel[data-voice-layout='single'] .cornerControls {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+  .panel[data-voice-layout='single'] .changeButton {
+    align-self: start;
+  }
+  .panel[data-voice-layout='single'] .readout {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .panel[data-voice-layout='single'] .instructions {
     grid-row: 4;
   }
 }

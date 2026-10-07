@@ -48,6 +48,20 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Measure sustained reference gain, not just source duration
+
+**Symptom:** tapping Hear produced a short pip even though the source and reference wait lasted much longer.
+**Cause:** the scalar envelope began decaying 35 ms after onset; its nominal 650 ms duration controlled decay rather than holding the note.
+**Rule:** schedule an explicit hold between exponential attack and soft release, snapshot tuning before asynchronous unlock, and retain the audio-clock quiet barrier before scoring. Verify real output RMS during the hold, plus saved development tuning through an actual pointer and reload.
+**See:** `packages/glass-game/src/browser/glass-sound.ts` and `apps/beside-cue/e2e/glass-adventure-reference.e2e.ts`.
+
+### Inspect translucent frame patches in their actual host
+
+**Symptom:** generated glass frames shrank to icon size or showed faint horizontal seams, especially at fractional phone heights.
+**Cause:** a gallery-wide SVG rule overrode nested viewport dimensions; independently antialiased fractional patch cuts then exposed the backdrop. Rounding only inset lengths left the final cut fractional.
+**Rule:** scope frame sizing above generic icon rules, set nested viewport dimensions explicitly, and round each destination cut while adjusting its source cut to preserve corner proportions and contiguous artwork. Inspect actual GPU captures at DPR 1 and 2; DOM bounds alone cannot prove clean translucent joins.
+**See:** `packages/glass-game/src/ui/GameMaterialFrame.tsx` and the retained frame checks in `apps/beside-cue/e2e/helpers/glass-ui-settings.ts`.
+
 ### Watch microphone ownership as well as track events
 
 **Symptom:** a voice session kept reporting listening after the shared microphone manager closed its capture.

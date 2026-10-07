@@ -4,6 +4,8 @@ import { createSignal, onCleanup } from 'solid-js'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { GlassGameHost } from '../../../../../packages/glass-game/src/host'
 import { GAME_APPEARANCE_KEY, GAME_MATERIAL_KEY, } from '../../../../../packages/glass-game/src/ui/game-appearance'
+import { GAME_MATERIAL_ART } from '../../../../../packages/glass-game/src/ui/game-material-art'
+import { GameMaterialFrame } from '../../../../../packages/glass-game/src/ui/GameMaterialFrame'
 import { GameAppearanceControls, GameMaterialControls, GameSettingsDialog, GameSurface, GameUIProvider, } from '../../../../../packages/glass-game/src/ui/GameUI'
 
 beforeEach(() => {
@@ -25,6 +27,74 @@ afterEach(() => {
   vi.restoreAllMocks()
   document.documentElement.removeAttribute('data-theme')
 })
+
+it.each([
+  { width: 708, height: 124 },
+  { width: 369, height: 147.59375 },
+])(
+  'joins the $width×$height console patches on whole pixels without stretching its painted corners or losing source coverage',
+  ({ width, height }) => {
+    const view = render(() => (
+      <GameMaterialFrame
+        width={width}
+        height={height}
+        corner={24}
+        kind="panel"
+        shape="console"
+        theme="dark"
+      />
+    ))
+    const patches = [...view.container.querySelectorAll('svg > svg')].map(
+      (patch) => ({
+        x: Number(patch.getAttribute('x')),
+        y: Number(patch.getAttribute('y')),
+        width: Number(patch.getAttribute('width')),
+        height: Number(patch.getAttribute('height')),
+        source: patch.getAttribute('viewBox')!.split(' ').map(Number),
+      }),
+    )
+    expect(patches).toHaveLength(9)
+    for (const patch of patches) {
+      for (const edge of [patch.x, patch.x + patch.width])
+        if (edge > 0 && edge < width) expect(edge).toBe(Math.round(edge))
+      for (const edge of [patch.y, patch.y + patch.height])
+        if (edge > 0 && edge < height) expect(edge).toBe(Math.round(edge))
+    }
+    for (const index of [0, 2, 6, 8]) {
+      const patch = patches[index]!
+      expect(patch.width / patch.source[2]!).toBeCloseTo(
+        patch.height / patch.source[3]!,
+        8,
+      )
+    }
+    for (let row = 0; row < 3; row++) {
+      const line = patches.slice(row * 3, row * 3 + 3)
+      expect(line[0]!.source[0]! + line[0]!.source[2]!).toBeCloseTo(
+        line[1]!.source[0]!,
+        8,
+      )
+      expect(line[1]!.source[0]! + line[1]!.source[2]!).toBeCloseTo(
+        line[2]!.source[0]!,
+        8,
+      )
+      expect(
+        line.reduce((sum, patch) => sum + patch.source[2]!, 0),
+      ).toBeCloseTo(GAME_MATERIAL_ART['c3-console-master'].bounds.width, 8)
+    }
+    const column = [patches[0]!, patches[3]!, patches[6]!]
+    expect(column[0]!.source[1]! + column[0]!.source[3]!).toBeCloseTo(
+      column[1]!.source[1]!,
+      8,
+    )
+    expect(column[1]!.source[1]! + column[1]!.source[3]!).toBeCloseTo(
+      column[2]!.source[1]!,
+      8,
+    )
+    expect(
+      column.reduce((sum, patch) => sum + patch.source[3]!, 0),
+    ).toBeCloseTo(GAME_MATERIAL_ART['c3-console-master'].bounds.height, 8)
+  },
+)
 
 function mount() {
   const store = new Map<string, string>()
@@ -278,11 +348,31 @@ it.each(['Crystal', 'Celadon'])(
     fireEvent.click(screen.getByRole('tab', { name: 'Advanced' }))
     const frame = view.container.querySelector('[data-game-frame]')!
     const outline = frame.querySelector('clipPath path')!
-    const before = outline.getAttribute('d')
+    const sourceOutline = outline.getAttribute('d')
+    const cornerPatch = (): SVGSVGElement =>
+      frame.querySelector(':scope > svg')!
+    const before = {
+      width: Number(cornerPatch().getAttribute('width')),
+      height: Number(cornerPatch().getAttribute('height')),
+      viewBox: cornerPatch().getAttribute('viewBox'),
+    }
     fireEvent.input(screen.getByRole('slider', { name: 'Corner size' }), {
       target: { value: '32' },
     })
-    expect(outline.getAttribute('d')).not.toBe(before)
+    expect(outline.getAttribute('d')).toBe(sourceOutline)
+    expect(Number(cornerPatch().getAttribute('width'))).toBeGreaterThan(
+      before.width,
+    )
+    expect(Number(cornerPatch().getAttribute('height'))).toBeGreaterThan(
+      before.height,
+    )
+    const source = cornerPatch().getAttribute('viewBox')!.split(' ').map(Number)
+    expect(source.slice(0, 2)).toEqual(
+      before.viewBox!.split(' ').slice(0, 2).map(Number),
+    )
+    expect(
+      Number(cornerPatch().getAttribute('width')) / source[2]!,
+    ).toBeCloseTo(Number(cornerPatch().getAttribute('height')) / source[3]!, 8)
     fireEvent.input(screen.getByRole('slider', { name: 'Glass backing' }), {
       target: { value: '.72' },
     })

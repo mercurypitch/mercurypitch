@@ -2,6 +2,7 @@
 import { micManager } from '@irchiinnuss/pitch-engine'
 import { exhibitShatterProfile } from '../content/shatter-sounds'
 import type { GlassGameHost } from '../host'
+import { parseReferenceNoteHold, REFERENCE_NOTE_HOLD, REFERENCE_NOTE_HOLD_PREFERENCE, } from '../reference-note'
 import { createBrowserGlassSound } from './glass-sound'
 import { createBrowserMelodyReference } from './melody-reference'
 import { createBrowserMemoryPlayback } from './memory-playback'
@@ -36,7 +37,13 @@ export function createBrowserGlassHost(
       return null
     }
   }
+  const tuningEnabled = options.developmentTuning ?? import.meta.env.DEV
+  let referenceNoteHoldSeconds = tuningEnabled
+    ? parseReferenceNoteHold(read(REFERENCE_NOTE_HOLD_PREFERENCE))
+    : REFERENCE_NOTE_HOLD.default
   const write = (key: string, value: string): void => {
+    if (tuningEnabled && key === REFERENCE_NOTE_HOLD_PREFERENCE)
+      referenceNoteHoldSeconds = parseReferenceNoteHold(value)
     try {
       localStorage.setItem(`${options.storagePrefix}:${key}`, value)
     } catch {
@@ -57,6 +64,7 @@ export function createBrowserGlassHost(
       createBrowserGlassSound({
         assetUrl: options.assetUrl,
         cache: shatterCache,
+        referenceNoteHoldSeconds: () => referenceNoteHoldSeconds,
         profile: exhibitShatterProfile(target),
         identity: target?.id,
         volume: () => {
