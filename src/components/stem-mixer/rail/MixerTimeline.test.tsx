@@ -48,6 +48,16 @@ describe('MixerTimeline', () => {
     expect(screen.getByTestId('mixer-time-total')).toHaveTextContent('0:30')
   })
 
+  it('steps the song position finer than the marks, so a browser does not round the knob to a tenth', () => {
+    // A range input rounds its value to its step: a song 0.45 s in read back
+    // as 0.5 s at the tenth the marks move by. jsdom does not round, so the
+    // step is what this can hold; stem-mixer-controls.spec.ts reads the value
+    // a real browser keeps.
+    const { slider } = mount({ elapsed: 0.45, duration: 1 })
+
+    expect(Number(slider.getAttribute('step'))).toBeLessThanOrEqual(0.01)
+  })
+
   it('steps five seconds per arrow and seeks once the key comes up', () => {
     const { slider, onSeek } = mount()
 
