@@ -21,8 +21,8 @@ export const DEFAULT_GAME_MATERIAL: Readonly<GameMaterialValues> = {
   gloss: 0.65,
   rim: 0.85,
   gold: 0.65,
-  corner: 24,
-  padding: 24,
+  corner: 20,
+  padding: 20,
   target: 80,
 }
 export const GAME_MATERIAL_RANGES = {

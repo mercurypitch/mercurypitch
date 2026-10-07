@@ -69,4 +69,17 @@ describe('game appearance preferences', () => {
       DEFAULT_GAME_MATERIAL,
     )
   })
+  it('preserves saved material tuning when the default frame becomes smaller', () => {
+    const saved = {
+      opacity: 0.94,
+      gloss: 0.4,
+      rim: 0.5,
+      gold: 0.6,
+      corner: 32,
+      padding: 16,
+      target: 96,
+    }
+    expect(readGameMaterial(JSON.stringify(saved))).toEqual(saved)
+    expect(readGameMaterial(null)).toMatchObject({ corner: 20, padding: 20 })
+  })
 })

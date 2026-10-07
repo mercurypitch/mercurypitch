@@ -150,6 +150,7 @@ export function VoiceChallengePanel(props: {
             class={lessonStyles.changeButton}
             type="button"
             aria-label={props.pair ? 'Change notes' : 'Change note'}
+            disabled={props.mode !== 'singing'}
             onClick={() => props.onRefind()}
           >
             <GameIcon name="tuning" />

@@ -45,7 +45,7 @@
   position: relative;
   isolation: isolate;
   color: var(--game-ink);
-  padding: var(--game-padding, 24px);
+  padding: max(20px, var(--game-padding, 20px));
   background: none;
   border: 0;
   font-family: 'Gabarito Variable', system-ui, sans-serif;
@@ -270,9 +270,10 @@
 }
 .settingsSurface {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   max-height: inherit;
-  padding: var(--game-padding, 24px);
+  padding: max(20px, var(--game-padding, 20px));
   --game-opacity: var(--game-settings-opacity, 0.88);
   --game-face-strength: 0.76;
 }
@@ -500,7 +501,7 @@
 }
 @media (max-width: 420px) {
   .settingsSurface {
-    padding: 18px;
+    padding: clamp(20px, var(--game-padding, 20px), 24px);
   }
   .settingsHeader h2 {
     font-size: 26px;
@@ -515,7 +516,9 @@
     gap: 8px;
   }
   .settingsFooter button {
-    padding-inline: 14px;
+    padding-inline: 10px;
+    min-width: 0;
+    font-size: 14px;
   }
 }
 @media (orientation: landscape) and (max-height: 500px) {

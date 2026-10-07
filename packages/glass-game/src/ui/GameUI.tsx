@@ -136,8 +136,9 @@ export function GameSurface(props: {
           shape={props.shape}
           theme={appearance?.theme() === 'dark' ? 'dark' : 'light'}
           corner={Math.min(
-            appearance?.material().corner ?? 24,
+            appearance?.material().corner ?? 20,
             props.cornerLimit ?? Infinity,
+            frameKind() === 'panel' && size().width < 600 ? 20 : Infinity,
           )}
         />
       </Show>

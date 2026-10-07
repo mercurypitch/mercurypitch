@@ -9,7 +9,7 @@ section.melodyPanel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 96px;
   gap: 8px;
-  padding: clamp(10px, calc(var(--game-padding, 24px) - 10px), 22px);
+  padding: clamp(20px, var(--game-padding, 20px), 24px);
   max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
   overflow-y: auto;
   scrollbar-width: thin;
@@ -222,7 +222,7 @@ section.melodyPanel {
     );
   }
   .melodyPanel .surface {
-    padding: clamp(8px, calc(var(--game-padding, 24px) - 14px), 18px) 16px;
+    padding: clamp(10px, calc(var(--game-padding, 20px) - 10px), 18px) 20px;
     gap: 4px 12px;
     max-height: calc(100dvh - 100px - env(safe-area-inset-bottom));
   }

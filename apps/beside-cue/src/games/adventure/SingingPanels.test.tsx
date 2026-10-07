@@ -83,12 +83,13 @@ describe('held-note singing panel', () => {
     expect(props.onCancel).toHaveBeenCalledTimes(1)
   })
   it.each(['permission', 'finding', 'reference', 'off'] as const)(
-    'keeps the target visible but disables replay during %s',
+    'keeps the target visible but disables replay and note changes during %s',
     (mode) => {
       render(() => <VoiceChallengePanel {...voiceProps()} mode={mode} />)
       expect(
         screen.getByRole('button', { name: 'Hear example' }),
       ).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Change note' })).toBeDisabled()
       expect(
         screen.getByRole('img', { name: 'Target note: C♯4' }),
       ).toBeVisible()

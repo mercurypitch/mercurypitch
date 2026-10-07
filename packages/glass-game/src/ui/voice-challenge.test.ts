@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { ChallengeDefinition, GameEvent, LevelDefinition, PitchObservation, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import type { GlassSound, GlassVoiceSession } from '../host'
+import { createAdventureVoiceChallenge } from './adventure-voice-challenge'
 import type { MicrophoneIssue } from './mic-error'
 import { createVoiceChallenge } from './voice-challenge'
 
@@ -184,6 +185,7 @@ function harness(
   initialPreferences: Record<string, string> = {},
   suppliedVoices: FakeVoice[] = [new FakeVoice()],
   suppliedSounds: FakeSound[] = [new FakeSound()],
+  routed = false,
 ) {
   const level = levelWith(challenge)
   const game = createGlassGame(level)
@@ -198,10 +200,23 @@ function harness(
   let clock = 1000
   let voiceIndex = 0
   let soundIndex = 0
-  const controller = createVoiceChallenge({
+  let releases = 0
+  const createController = routed
+    ? createAdventureVoiceChallenge
+    : createVoiceChallenge
+  const controller = createController({
     host: {
+      assetUrl: (id) => id,
+      prepareVoiceGesture: () => ({
+        ready: Promise.resolve(true),
+        release: () => undefined,
+      }),
       createVoice: () => suppliedVoices[voiceIndex++]!,
       createSound: () => suppliedSounds[soundIndex++]!,
+      loadProgress: () => null,
+      saveProgress: () => undefined,
+      subscribeForeground: () => () => undefined,
+      onExit: () => undefined,
       readPreference: (key) => preferences.get(key) ?? null,
       writePreference: (key, value) => preferences.set(key, value),
     },
@@ -216,7 +231,9 @@ function harness(
       microphoneIssues.push(microphone)
     },
     onPauseAudio: () => undefined,
-    onReleaseVoice: () => undefined,
+    onReleaseVoice: () => {
+      releases++
+    },
     now: () => clock,
   })
   return {
@@ -228,6 +245,7 @@ function harness(
     microphoneIssues,
     voices: suppliedVoices,
     sounds: suppliedSounds,
+    releases: () => releases,
     setCanPlay(value: boolean) {
       canPlay = value
     },
@@ -300,6 +318,164 @@ function beginnerWaveCents(seconds: number): number {
 }
 
 describe('voice challenge controller', () => {
+  it.each([false, true])(
+    'finds a new note within the engaged challenge and keeps its microphone (routed: %s)',
+    async (routed) => {
+      const voice = new FakeVoice()
+      const sound = new FakeSound()
+      const fixture = harness(
+        COMFORTABLE,
+        { 'comfortable-note': '57' },
+        [voice],
+        [sound],
+        routed,
+      )
+      await fixture.controller.start('vessel')
+      fixture.emit(voice, observation(0, 57, 1025))
+      fixture.emit(voice, observation(1, 57, 1050))
+      expect(fixture.game.snapshot().activeEncounter?.charge).toBeGreaterThan(0)
+
+      fixture.setClock(1100)
+      fixture.controller.refind()
+      expect(fixture.controller.snapshot()).toMatchObject({
+        mode: 'finding',
+        encounterId: 'vessel',
+        findingTarget: 'comfortable',
+        message: 'Hum an easy note.',
+        target: null,
+        pitch: null,
+        stepIndex: 0,
+        stepCharge: 0,
+      })
+      expect(fixture.game.snapshot().paused).toBe(true)
+      expect(fixture.game.snapshot().activeEncounter).toBeNull()
+      expect(voice.activeSubscriptions).toBe(1)
+      expect(voice.stopCount).toBe(0)
+      expect(fixture.releases()).toBe(0)
+
+      // A delayed old note must not choose the new note after Change is tapped.
+      for (let sequence = 2; sequence <= 20; sequence++)
+        fixture.emit(voice, observation(sequence, 57, 1075), 1100)
+      expect(fixture.controller.snapshot().mode).toBe('finding')
+      for (let sequence = 21; sequence <= 39; sequence++)
+        fixture.emit(
+          voice,
+          observation(sequence, 62, 1125 + (sequence - 21) * 25),
+        )
+      await flush()
+      expect(fixture.controller.snapshot()).toMatchObject({
+        mode: 'singing',
+        encounterId: 'vessel',
+        target: 62,
+      })
+      expect(fixture.preferences.get('comfortable-note')).toBe('62')
+      expect(sound.references).toEqual([57, 62])
+      expect(voice.subscriptions).toBe(1)
+      expect(fixture.game.snapshot().paused).toBe(false)
+      expect(fixture.game.snapshot().activeEncounter?.charge).toBe(0)
+      expect(fixture.events).toEqual([])
+
+      // Router ownership must remain live for replay and eventual completion.
+      await fixture.controller.replay()
+      expect(sound.references).toEqual([57, 62, 62])
+      for (let sequence = 40; sequence <= 44; sequence++)
+        fixture.emit(
+          voice,
+          observation(sequence, 62, 1600 + (sequence - 40) * 25),
+        )
+      expect(fixture.events).toContainEqual({
+        type: 'break',
+        id: 'vessel',
+        outcome: 'exit-opened',
+      })
+      fixture.controller.completeBreak()
+      expect(sound.shatterCount).toBe(1)
+      expect(voice.stopCount).toBe(1)
+      expect(fixture.releases()).toBe(1)
+      fixture.controller.dispose()
+    },
+  )
+
+  it.each([PAIR, WAVE])(
+    'restarts calibration and sequence progress for $kind without releasing capture',
+    async (challenge) => {
+      const fixture = harness(challenge, {
+        'comfortable-note': '57',
+        'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 60 }),
+      })
+      await fixture.controller.start('vessel')
+      for (let sequence = 0; sequence <= 4; sequence++)
+        fixture.emit(
+          fixture.voices[0],
+          observation(sequence, 57, 1025 + sequence * 25),
+        )
+      expect(fixture.controller.snapshot().stepIndex).toBe(1)
+      fixture.controller.refind()
+      expect(fixture.controller.snapshot()).toMatchObject({
+        mode: 'finding',
+        encounterId: 'vessel',
+        findingTarget:
+          challenge.kind === 'ordered-pair' ? 'low' : 'comfortable',
+        stepIndex: 0,
+        stepCharge: 0,
+      })
+      for (let sequence = 5; sequence <= 23; sequence++)
+        fixture.emit(
+          fixture.voices[0],
+          observation(sequence, 59, 1150 + (sequence - 5) * 25),
+        )
+      await flush()
+      if (challenge.kind === 'ordered-pair') {
+        expect(fixture.controller.snapshot().findingTarget).toBe('high')
+        for (let sequence = 24; sequence <= 43; sequence++)
+          fixture.emit(
+            fixture.voices[0],
+            observation(sequence, 63, 1625 + (sequence - 24) * 25),
+          )
+        await flush()
+        expect(fixture.sounds[0].references).toEqual([57, 60, 59, 63])
+      } else {
+        expect(fixture.sounds[0].references).toEqual([57, 59])
+        expect(fixture.sounds[0].patterns).toEqual([
+          'gentle-wave',
+          'gentle-wave',
+        ])
+      }
+      expect(fixture.controller.snapshot()).toMatchObject({
+        mode: 'singing',
+        target: 59,
+        stepIndex: 0,
+        stepCharge: 0,
+      })
+      expect(fixture.voices[0].stopCount).toBe(0)
+      expect(fixture.game.saveProgress().completedBreakableIds).toEqual([])
+      fixture.controller.dispose()
+    },
+  )
+
+  it('keeps the lower calibrated note when changing a higher-note hold and still cancels normally', async () => {
+    const fixture = harness(HIGH_HOLD, {
+      'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 60 }),
+    })
+    await fixture.controller.start('vessel')
+    fixture.controller.refind()
+    expect(fixture.controller.snapshot()).toMatchObject({
+      mode: 'finding',
+      findingTarget: 'high',
+      targets: { low: 57 },
+    })
+    expect(JSON.parse(fixture.preferences.get('comfortable-pair')!)).toEqual({
+      version: 1,
+      low: 57,
+    })
+    fixture.controller.cancel()
+    expect(fixture.controller.snapshot().mode).toBe('off')
+    expect(fixture.voices[0].activeSubscriptions).toBe(0)
+    expect(fixture.voices[0].stopCount).toBe(1)
+    expect(fixture.game.snapshot().paused).toBe(false)
+    fixture.controller.dispose()
+  })
+
   it('waits for cached break preparation before accepting microphone evidence and retires cancelled work', async () => {
     const gate = deferred()
     class PreparingSound extends FakeSound {
