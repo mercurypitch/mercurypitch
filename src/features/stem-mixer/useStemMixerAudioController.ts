@@ -315,12 +315,14 @@ export interface StemMixerAudioController {
   handlePause: () => void
   /**
    * The shared clock is about to stop: a playing song pauses with its fade.
-   * Returns the milliseconds the fade needs before the clock may stop.
+   * Returns the milliseconds the fade needs before the clock may stop, the
+   * key shifter's tail included.
    */
   prepareToSuspend: () => number
   /**
    * The milliseconds left of the fade the last stop started (a pause, or
-   * the sources let go): the graph and the clock wait that long.
+   * the sources let go), the key shifter's tail included: the graph and the
+   * clock wait that long.
    */
   releaseLeft: () => number
   handleStop: () => void
@@ -400,7 +402,10 @@ export const ENTERING_BACKGROUND_MS = 1500
 export const LEAVE_WAIT_MS = 700
 /** Slack after the fade before a source may stop (tail below -40 dB). */
 export const STEM_STOP_SLACK_SECS = 0.03
-/** A fade out and its slack, by the wall clock: what a stopping clock waits. */
+/**
+ * A fade out and its slack, by the wall clock: what a stopping clock waits,
+ * before the key shifter's own latency is added (disconnectSources).
+ */
 const RELEASE_MS = Math.round(FADE_OUT_MS + STEM_STOP_SLACK_SECS * 1000)
 
 /**
@@ -1688,7 +1693,13 @@ export const useStemMixerAudioController = (
       const now = ctx.currentTime
       const fadeOutSecs = FADE_OUT_MS / 1000
       const stopTime = now + fadeOutSecs + STEM_STOP_SLACK_SECS
-      if (playing()) releaseUntil = Date.now() + RELEASE_MS
+      if (playing()) {
+        // The fade is on the stem gains, upstream of the key shifter, which
+        // plays on for its own latency after they shut: waiting for the stems
+        // alone stops the clock with the shifter's output still at level.
+        const shifterTailMs = Math.ceil(keyControl.latencySec() * 1000)
+        releaseUntil = Date.now() + RELEASE_MS + shifterTailMs
+      }
       for (const nodes of nodesToDisconnect) {
         if (nodes.gainNode) {
           closeStemGain(nodes.gainNode.gain, now, fadeOutSecs)
