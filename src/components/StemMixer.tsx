@@ -2404,15 +2404,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
+  //
+  // The stage is handed this only while calling it would start an analysis. A
+  // streamed vocal cannot be analysed on this device (phones stream), and once
+  // the analysis has its notes there is nothing left to ask for: a song with no
+  // word segments has no notes to draw, and a tap would do nothing.
+  const canFindZenNotes = (): boolean =>
+    !vocalIsStreamed() &&
+    pitchAnalysis.offlineSegmentedNotes().length === 0 &&
+    pitchAnalysis.offlineMergedNotes().length === 0
   const ensureZenNotes = () => {
     // Nobody asked for this one — the glyph toggle did — so it stays quiet
     // rather than toasting a limitation at a singer who was reaching for a
     // switch. The glyphs simply have nothing to draw.
-    if (vocalIsStreamed()) return
-    const hasNotes =
-      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
-      pitchAnalysis.offlineMergedNotes().length > 0
-    if (!hasNotes && !pitchAnalysis.isAnalyzing()) {
+    if (canFindZenNotes() && !pitchAnalysis.isAnalyzing()) {
       void pitchAnalysis.runAnalysis()
     }
   }
@@ -2568,7 +2573,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onSongPickerRefine={() => void handleSongPickerRefine()}
             onSongPick={(m) => void handleSongPick(m)}
             alignedWords={displayAlignedWords}
-            onEnsureNotes={ensureZenNotes}
+            onEnsureNotes={canFindZenNotes() ? ensureZenNotes : undefined}
             notesAnalyzing={pitchAnalysis.isAnalyzing}
             notesProgress={pitchAnalysis.progress}
             micActive={mic.micActive}
