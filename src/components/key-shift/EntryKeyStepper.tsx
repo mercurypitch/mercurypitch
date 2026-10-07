@@ -27,6 +27,8 @@ export const EntryKeyStepper: Component<EntryKeyStepperProps> = (props) => {
   return (
     <div
       class={styles.entryKey}
+      role="group"
+      aria-label="This entry's key"
       title="This singer's key for every song of this entry, in semitones"
     >
       <span class={styles.label}>Key</span>

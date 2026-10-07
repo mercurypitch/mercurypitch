@@ -1,5 +1,5 @@
 // A playlist entry's key: unset by default, stepped in semitones, clearable.
-import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { fireEvent, render, screen, within } from '@solidjs/testing-library'
 import { describe, expect, it, vi } from 'vitest'
 import { EntryKeyStepper } from './EntryKeyStepper'
 
@@ -16,6 +16,18 @@ describe('EntryKeyStepper', () => {
     fireEvent.click(screen.getByRole('button', { name: /raise/i }))
     fireEvent.click(screen.getByRole('button', { name: /lower/i }))
     expect(onChange.mock.calls).toEqual([[1], [-1]])
+  })
+
+  it('names its buttons as one group, so a screen reader hears whose key they change', () => {
+    render(() => <EntryKeyStepper value={undefined} onChange={vi.fn()} />)
+
+    const group = screen.getByRole('group', { name: "This entry's key" })
+
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(["Lower this entry's key", "Raise this entry's key"])
   })
 
   it('shows a set key with its sign and steps from it', () => {
