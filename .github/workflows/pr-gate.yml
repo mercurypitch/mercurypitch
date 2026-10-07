@@ -492,6 +492,7 @@ jobs:
             living-crystal,
             loading,
             map-memory,
+            material-hosts,
             message-stack,
             mic-recovery,
             mobile-flow,
@@ -525,8 +526,8 @@ jobs:
           --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
           --exclude=""
       - uses: ./.github/actions/setup
-      - name: Install Chromium for Glass Adventure browser tests
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install browser for Glass Adventure paths
+        run: pnpm exec playwright install --with-deps ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}
 
       # Each file loads and compiles the authored museum through SwiftShader.
       # File-level jobs keep a slow GPU process from delaying unrelated paths
@@ -535,7 +536,8 @@ jobs:
         timeout-minutes: 17
         env:
           PLAYWRIGHT_HTML_OPEN: never
-        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=chromium-adventure apps/beside-cue/e2e/glass-adventure-${{ matrix.spec }}.e2e.ts --reporter=line,html
+          BESIDE_CUE_WEBKIT: ${{ matrix.spec == 'material-hosts' && '1' || '0' }}
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium-adventure' }} apps/beside-cue/e2e/glass-adventure-${{ matrix.spec }}.e2e.ts --reporter=line,html
 
       - name: Upload Glass Adventure browser failure reports
         if: failure()

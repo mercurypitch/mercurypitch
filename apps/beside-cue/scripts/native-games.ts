@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync, } from 'n
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { NATIVE_EXCLUDED_GAME_ASSETS, pruneNativeGameAssets, } from './game-assets.ts'
+import { portableConsoleEnabled } from './portable-console-policy.ts'
 
 export type NativePlatform = 'android' | 'ios'
 export interface NativeGamesOptions {
@@ -82,16 +83,23 @@ export function parseOptions(args: string[]): NativeGamesOptions {
   return options
 }
 
-/** Add only the microphone purpose string to a copy of the canonical plist. */
-export function gamesInfoPlist(canonical: string): string {
+/** Add games permissions and opt-in test diagnostics to a copy of the store plist. */
+export function gamesInfoPlist(canonical: string, diagnostics = false): string {
   if (canonical.includes('NSMicrophoneUsageDescription'))
     throw new Error(
       'Canonical store plist unexpectedly contains microphone access',
     )
+  if (canonical.includes('BesideCueGameDiagnosticsEnabled'))
+    throw new Error(
+      'Canonical store plist unexpectedly enables game diagnostics',
+    )
+  const diagnosticFlag = diagnostics
+    ? '\t<key>BesideCueGameDiagnosticsEnabled</key>\n\t<true/>\n'
+    : ''
   const rootEnd = canonical.lastIndexOf('</dict>')
   if (rootEnd < 0 || !/^\s*<\/plist>\s*$/u.test(canonical.slice(rootEnd + 7)))
     throw new Error('Expected an XML plist with a root dictionary')
-  return `${canonical.slice(0, rootEnd)}\t<key>NSMicrophoneUsageDescription</key>\n\t<string>Use your voice to play the optional mini-games. Audio is processed on this device.</string>\n${canonical.slice(rootEnd)}`
+  return `${canonical.slice(0, rootEnd)}${diagnosticFlag}\t<key>NSMicrophoneUsageDescription</key>\n\t<string>Use your voice to play the optional mini-games. Audio is processed on this device.</string>\n${canonical.slice(rootEnd)}`
 }
 
 /** Reject incomplete/store/LFS-pointer output before Capacitor can overwrite native assets. */
@@ -137,7 +145,14 @@ export function stageGamesProfile(
       resolve(appDirectory, 'ios/App/App/Info.plist'),
       'utf8',
     )
-    const plist = gamesInfoPlist(source)
+    const plist = gamesInfoPlist(
+      source,
+      portableConsoleEnabled({
+        ...process.env,
+        VITE_BESIDE_CUE_GAMES: '1',
+        VITE_BESIDE_CUE_NATIVE_PLATFORM: platform,
+      }),
+    )
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, plist)
   }

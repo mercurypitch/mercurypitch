@@ -95,6 +95,8 @@ export function GameSurface(props: {
   class?: string
   kind?: 'panel' | 'plaque' | 'tile'
   shape?: 'console' | 'settings'
+  /** Compact hosts cap corner facets to keep their content inside the painted outline. */
+  cornerLimit?: number
 }) {
   const appearance = useContext(AppearanceContext)
   let surface!: HTMLDivElement
@@ -133,7 +135,10 @@ export function GameSurface(props: {
           kind={frameKind()}
           shape={props.shape}
           theme={appearance?.theme() === 'dark' ? 'dark' : 'light'}
-          corner={appearance?.material().corner ?? 24}
+          corner={Math.min(
+            appearance?.material().corner ?? 24,
+            props.cornerLimit ?? Infinity,
+          )}
         />
       </Show>
       {props.children}

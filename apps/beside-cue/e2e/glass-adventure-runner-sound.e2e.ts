@@ -75,6 +75,13 @@ for (const viewport of [
       await page.getByRole('button', { name: 'Pause course' }).count(),
     ).toBe(0)
     const setup = page.getByRole('dialog', { name: 'Ready when you are' })
+    const setupBox = (await setup.boundingBox())!
+    const headerBox = (await page
+      .locator('header[data-game-hud]')
+      .boundingBox())!
+    expect(setupBox.y).toBeGreaterThanOrEqual(
+      headerBox.y + headerBox.height + 4,
+    )
     const entry = setup.getByRole('button', { name: 'Settings', exact: true })
     await expect(start).toBeFocused()
     for (

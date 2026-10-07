@@ -8,7 +8,7 @@
 // installed twice onto itself.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { clearPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, setPortableConsoleVisible, } from './portable-console'
+import { clearPortableConsole, flushPortableConsole, formatPortableConsole, formatPortableConsoleEntry, initPortableConsoleVisibility, installPortableConsole, onPortableConsole, portableConsoleEntries, portableConsoleVisible, recordPortableConsole, resetPortableConsoleForTests, setPortableConsoleVisible, } from './portable-console'
 
 // The keys a PREVIOUS document wrote. Spelled out on purpose: this is the
 // contract across a navigation, and a rename that silently drops the log is
@@ -124,6 +124,22 @@ describe('capturing', () => {
 })
 
 describe('crossing a page load', () => {
+  it('flushes a native boot or graphics warning before its batching timer', () => {
+    vi.useFakeTimers()
+    try {
+      installPortableConsole({ persistence: 'device' })
+      console.warn('active WebGL context lost')
+      expect(localStorage.getItem(PERSIST_KEY)).toBeNull()
+      flushPortableConsole()
+      expect(localStorage.getItem(PERSIST_KEY)).toContain(
+        'active WebGL context lost',
+      )
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('writes the capture down before the document goes away', () => {
     installPortableConsole()
     console.log('the last thing before Karaoke Night')
