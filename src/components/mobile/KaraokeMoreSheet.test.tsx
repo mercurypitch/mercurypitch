@@ -11,8 +11,11 @@
 // Text size and the notes over the lyrics came in from the header after
 // (owner, 2 October 2026), grouped the way the room's options group them:
 // Lyrics (text size, the notes), then Playing (autoplay, speed, the loop).
-// The notes row is there only for a song that has its notes, as in the
-// room: absent, never dead.
+// The notes row is there for a song that has its notes, and for a song whose
+// notes the stage can find (owner, 7 October 2026: the header's toggle used
+// to run that analysis, and moving it here must not lose it). With neither it
+// is absent, never dead. The sheet only shows what the stage says: whether
+// the switch reads on is the stage's rule, and is tested there.
 //
 // The binding below places points with the mixer's own rule
 // (placeLoopPoint), at a playhead the test moves, the way StemMixer wires
@@ -34,10 +37,19 @@ const SIZES = [
 ] as const
 
 function mountSheet(
-  opts: { autoplay?: boolean; noLoop?: boolean; hasNotes?: boolean } = {},
+  opts: {
+    autoplay?: boolean
+    noLoop?: boolean
+    hasNotes?: boolean
+    canFindNotes?: boolean
+  } = {},
 ) {
   const [size, setSize] = createSignal<string>('current')
   const [hasNotes, setHasNotes] = createSignal(opts.hasNotes === true)
+  const [canFindNotes, setCanFindNotes] = createSignal(
+    opts.canFindNotes === true,
+  )
+  const [findingNotes, setFindingNotes] = createSignal(false)
   const [notesOn, setNotesOn] = createSignal(false)
   const lyrics: KaraokeMoreLyrics = {
     sizes: SIZES.map((choice) => ({
@@ -47,6 +59,8 @@ function mountSheet(
     })),
     notes: {
       has: hasNotes,
+      canFind: canFindNotes,
+      finding: findingNotes,
       on: notesOn,
       toggle: () => setNotesOn((on) => !on),
     },
@@ -107,12 +121,25 @@ function mountSheet(
     autoplayOn,
     size,
     setHasNotes,
+    setCanFindNotes,
+    setFindingNotes,
     notesOn,
+    setNotesOn,
   }
 }
 
 const button = (name: string | RegExp) => screen.getByRole('button', { name })
 const loopSwitch = () => screen.getByRole('switch', { name: 'Loop A to B' })
+const NOTES_ROW = 'Show notes over the lyrics'
+const HAS_NOTES = 'This song has its notes'
+const FINDING = 'Finding the notes'
+const FINDS_FIRST = "Finds this song's notes first"
+const notesSwitch = () => screen.getByRole('switch', { name: NOTES_ROW })
+/** Which of the notes row's three lines of small print are on screen. */
+const notesSubLabels = () =>
+  [HAS_NOTES, FINDING, FINDS_FIRST].filter(
+    (line) => screen.queryByText(line) !== null,
+  )
 const status = () => screen.getByTestId('karaoke-more-loop-status').textContent
 
 describe('the speed', () => {
@@ -342,7 +369,7 @@ describe('the lyrics', () => {
     ])
   })
 
-  it('has a notes row only once the song has its notes, and turns them on', () => {
+  it('has a notes row for a song that has its notes, and turns them on', () => {
     const { setHasNotes, notesOn } = mountSheet()
     const switches = () =>
       screen.queryAllByRole('switch').map((s) => s.getAttribute('aria-label'))
@@ -350,15 +377,68 @@ describe('the lyrics', () => {
 
     setHasNotes(true)
     const withNotes = switches()
-    fireEvent.click(
-      screen.getByRole('switch', { name: 'Show notes over the lyrics' }),
-    )
+    fireEvent.click(notesSwitch())
 
     expect([without, withNotes, notesOn()]).toEqual([
       ['Loop A to B'],
       ['Show notes over the lyrics', 'Loop A to B'],
       true,
     ])
+  })
+
+  it('offers a song with no notes the finding of them where the stage can find them, and says so', () => {
+    const { setCanFindNotes, notesOn } = mountSheet()
+    const without = screen.queryByRole('switch', { name: NOTES_ROW })
+
+    setCanFindNotes(true)
+    const before = notesOn()
+    fireEvent.click(notesSwitch())
+
+    expect([without, notesSubLabels(), before, notesOn()]).toEqual([
+      null,
+      [FINDS_FIRST],
+      false,
+      true,
+    ])
+  })
+
+  it('says it is finding the notes while the analysis runs, and the song has its notes once it does', () => {
+    const { setFindingNotes, setHasNotes } = mountSheet({ canFindNotes: true })
+    const idle = notesSubLabels()
+
+    setFindingNotes(true)
+    const finding = notesSubLabels()
+    // The notes land a moment before the analysis reports it is done: with
+    // them the row says the song has them, not that it is still looking.
+    setHasNotes(true)
+    const landed = notesSubLabels()
+    setFindingNotes(false)
+
+    expect([idle, finding, landed, notesSubLabels()]).toEqual([
+      [FINDS_FIRST],
+      [FINDING],
+      [HAS_NOTES],
+      [HAS_NOTES],
+    ])
+  })
+
+  it('keeps the row for a song that has its notes where the stage cannot find any', () => {
+    mountSheet({ hasNotes: true })
+
+    expect(screen.queryByRole('switch', { name: NOTES_ROW })).not.toBeNull()
+    expect(notesSubLabels()).toEqual([HAS_NOTES])
+  })
+
+  it('shows the switch on only when the stage says it is on', () => {
+    const { setNotesOn } = mountSheet({ canFindNotes: true })
+    const checked = () => notesSwitch().getAttribute('aria-checked')
+    const before = checked()
+
+    setNotesOn(true)
+    const on = checked()
+    setNotesOn(false)
+
+    expect([before, on, checked()]).toEqual(['false', 'true', 'false'])
   })
 })
 

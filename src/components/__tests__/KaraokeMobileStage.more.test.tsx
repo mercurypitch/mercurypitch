@@ -6,8 +6,10 @@
 // 48 px of it. Text size and the notes over the lyrics moved into More (owner,
 // 2 October 2026), grouped the way the room's options group them, so the
 // header keeps Back, the song, the stage picture, More and the song list.
-// The notes row is there only for a song that has its notes, as in the
-// room: absent, never dead.
+// The notes row is there for a song that has its notes and for a song whose
+// notes the stage can find (the host gives it onEnsureNotes): the header's
+// toggle ran that analysis, and moving the toggle here kept it (owner, 7
+// October 2026). With neither it is absent, never dead.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
@@ -163,7 +165,7 @@ describe('the lyrics options, in More', () => {
     ).toBe('true')
   })
 
-  it('offer the notes only once the song has them, and draw them over the words', () => {
+  it('offer the notes to a stage that cannot find them only once the song has them, and draw them over the words', () => {
     const [aligned, setAligned] = createSignal<AlignedWord[]>([])
     render(() => KaraokeMobileStage(makeProps({ alignedWords: aligned })))
     const sheet = openMore()
@@ -188,5 +190,156 @@ describe('the lyrics options, in More', () => {
       ['Show notes over the lyrics', 'Play the next song automatically'],
       ['D4', 'E4', 'F#4'],
     ])
+  })
+})
+
+describe('the notes row, where the stage can find the notes', () => {
+  const NOTES_ROW = 'Show notes over the lyrics'
+  const FINDS_FIRST = "Finds this song's notes first"
+  const FINDING = 'Finding the notes'
+  const HAS_NOTES = 'This song has its notes'
+
+  /** A host that runs the analysis when asked: finding from the call on. */
+  function mountFinder(over: Partial<KaraokeMobileStageProps> = {}) {
+    const [aligned, setAligned] = createSignal<AlignedWord[]>([])
+    const [finding, setFinding] = createSignal(false)
+    const onEnsureNotes = vi.fn(() => setFinding(true))
+    render(() =>
+      KaraokeMobileStage(
+        makeProps({
+          alignedWords: aligned,
+          onEnsureNotes,
+          notesAnalyzing: finding,
+          notesProgress: () => 40,
+          ...over,
+        }),
+      ),
+    )
+    const sheet = openMore()
+    return {
+      onEnsureNotes,
+      setAligned,
+      setFinding,
+      notes: () => within(sheet).getByRole('switch', { name: NOTES_ROW }),
+      subLabels: () =>
+        [HAS_NOTES, FINDING, FINDS_FIRST].filter(
+          (line) => within(sheet).queryByText(line) !== null,
+        ),
+    }
+  }
+  const glyphs = () =>
+    [...document.querySelectorAll(`.${styles.noteGlyph}`)].map(
+      (glyph) => glyph.textContent,
+    )
+  const readingStatus = () =>
+    screen.queryByText(/Reading the vocal to find the notes/) !== null
+
+  it('offers a song with no notes the finding of them, and asks the host once when they are turned on', () => {
+    const { notes, subLabels, onEnsureNotes } = mountFinder()
+    const before = [
+      notes().getAttribute('aria-checked'),
+      subLabels(),
+      onEnsureNotes.mock.calls.length,
+    ]
+
+    fireEvent.click(notes())
+
+    expect(before).toEqual(['false', [FINDS_FIRST], 0])
+    expect(onEnsureNotes).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads on and says it is finding while the analysis runs, then draws the notes as they land', () => {
+    const { notes, subLabels, setAligned, setFinding } = mountFinder()
+
+    fireEvent.click(notes())
+    const finding = [
+      notes().getAttribute('aria-checked'),
+      subLabels(),
+      readingStatus(),
+      glyphs(),
+    ]
+    setAligned(NOTES)
+    setFinding(false)
+
+    expect(finding).toEqual(['true', [FINDING], true, []])
+    expect([
+      notes().getAttribute('aria-checked'),
+      subLabels(),
+      readingStatus(),
+      glyphs(),
+    ]).toEqual(['true', [HAS_NOTES], false, ['D4', 'E4', 'F#4']])
+  })
+
+  it('does not ask the host for notes the song already has', () => {
+    const { notes, subLabels, onEnsureNotes, setAligned } = mountFinder()
+    setAligned(NOTES)
+    const before = subLabels()
+
+    fireEvent.click(notes())
+
+    expect(before).toEqual([HAS_NOTES])
+    expect(onEnsureNotes).not.toHaveBeenCalled()
+    expect([notes().getAttribute('aria-checked'), glyphs()]).toEqual([
+      'true',
+      ['D4', 'E4', 'F#4'],
+    ])
+  })
+
+  it('reads off again when the analysis ends with no notes, and a tap asks again', () => {
+    const { notes, subLabels, onEnsureNotes, setFinding } = mountFinder()
+    fireEvent.click(notes())
+
+    // The analysis failed: nothing finding, and nothing found.
+    setFinding(false)
+    const failed = [notes().getAttribute('aria-checked'), subLabels()]
+    fireEvent.click(notes())
+
+    expect(failed).toEqual(['false', [FINDS_FIRST]])
+    expect(onEnsureNotes).toHaveBeenCalledTimes(2)
+    expect(notes().getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('reads off for a saved "on" with no notes, finds nothing by itself, and a tap asks', () => {
+    localStorage.setItem('sm-zen-note-glyphs', 'true')
+    const { notes, subLabels, onEnsureNotes } = mountFinder()
+    const opened = [notes().getAttribute('aria-checked'), subLabels()]
+    const askedOnOpening = onEnsureNotes.mock.calls.length
+
+    fireEvent.click(notes())
+
+    expect([opened, askedOnOpening]).toEqual([['false', [FINDS_FIRST]], 0])
+    expect(onEnsureNotes).toHaveBeenCalledTimes(1)
+    expect(notes().getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('turns the notes off with a tap while they show, and asks for nothing', () => {
+    const { notes, onEnsureNotes, setAligned } = mountFinder()
+    setAligned(NOTES)
+    fireEvent.click(notes())
+    const shown = glyphs()
+
+    fireEvent.click(notes())
+
+    expect(shown).toEqual(['D4', 'E4', 'F#4'])
+    expect([notes().getAttribute('aria-checked'), glyphs()]).toEqual([
+      'false',
+      [],
+    ])
+    expect(onEnsureNotes).not.toHaveBeenCalled()
+  })
+
+  it('turns the notes off with a tap while they are being found, and the status goes with it', () => {
+    const { notes, onEnsureNotes } = mountFinder()
+    fireEvent.click(notes())
+    const finding = readingStatus()
+
+    fireEvent.click(notes())
+
+    expect([
+      finding,
+      readingStatus(),
+      notes().getAttribute('aria-checked'),
+    ]).toEqual([true, false, 'false'])
+    expect(onEnsureNotes).toHaveBeenCalledTimes(1)
   })
 })

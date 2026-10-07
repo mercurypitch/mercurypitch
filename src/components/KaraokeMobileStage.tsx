@@ -181,9 +181,10 @@ export interface KaraokeMobileStageProps {
   /** Hide the embedded picker when the page shell owns stage settings. */
   showStageSettings?: boolean
 
-  // Sing-this-note glyphs (chord-chart labels over the words). When the host
-  // provides the alignment, the header shows the notes toggle; enabling it
-  // with no notes yet asks the host to run the (denoised) pitch analysis.
+  // Sing-this-note glyphs (chord-chart labels over the words). More offers the
+  // notes switch for a song that has its notes and, given `onEnsureNotes`, for
+  // one that has none yet: turning it on then asks the host to run the
+  // (denoised) pitch analysis, which `notesAnalyzing` reports.
   alignedWords?: () => AlignedWord[]
   onEnsureNotes?: () => void
   notesAnalyzing?: () => boolean
@@ -574,7 +575,9 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // ── Sing-this-note glyphs ─────────────────────────────────────
   // Chord-chart labels over the words: the note the singer should hit,
   // from the denoised pitch alignment. Turned on in More, which offers them
-  // only once the song has its notes (absent, never dead, as in the room).
+  // for a song that has its notes and, where the host can run the analysis,
+  // for one that has none yet: turning them on then finds them, and they fade
+  // in when the analysis lands.
   const [noteGlyphsOn, setNoteGlyphsOn] =
     hosting === undefined
       ? createPersistedSignal('sm-zen-note-glyphs', false)
@@ -583,6 +586,17 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     buildWordNoteIndex(props.alignedWords?.() ?? []),
   )
   const hasNoteData = (): boolean => hasWordNotes(wordNoteIndex())
+  const findingNotes = (): boolean => props.notesAnalyzing?.() === true
+  // The switch reads on only while notes are on screen or on their way. A
+  // saved "on" for a song with none is not an on switch that draws nothing:
+  // it reads off, and a tap on an off switch is what asks for the notes.
+  const notesShown = (): boolean =>
+    noteGlyphsOn() && (hasNoteData() || findingNotes())
+  const toggleNoteGlyphs = (): void => {
+    const next = !notesShown()
+    setNoteGlyphsOn(next)
+    if (next && !hasNoteData()) props.onEnsureNotes?.()
+  }
 
   // More's lyrics options: the presets by the names the room gives them.
   const moreLyrics: KaraokeMoreLyrics = {
@@ -593,8 +607,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     })),
     notes: {
       has: hasNoteData,
-      on: noteGlyphsOn,
-      toggle: () => setNoteGlyphsOn(!noteGlyphsOn()),
+      canFind: () => props.onEnsureNotes !== undefined,
+      finding: findingNotes,
+      on: notesShown,
+      toggle: toggleNoteGlyphs,
     },
   }
   // The line the singer reads ahead to — the first lyric line after the
