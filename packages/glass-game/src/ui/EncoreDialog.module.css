@@ -368,6 +368,11 @@
     width: 100%;
   }
 }
+@media (max-height: 500px) and (orientation: landscape) {
+  .header {
+    margin-bottom: 8px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .portrait[data-celebrating='true'] .halo i,
   .portrait[data-celebrating='true'] img {
