@@ -11,6 +11,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import { roundedMinutesSeconds } from '@/lib/format-time'
 import { midiToNoteName } from '@/lib/frequency-to-note'
 import type { LivePitchSample } from '@/lib/live-pitch-analysis'
 import type { MergedNote } from '@/lib/midi-generator'
@@ -18,10 +19,10 @@ import type { NoteResult } from '@/types'
 import styles from './AnalysisDashboard.module.css'
 import { buildTraceModel } from './trace-model'
 
-function formatSpan(seconds: number): string {
+export function formatSpan(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds <= 0) return '—'
-  if (seconds < 60) return `${Math.round(seconds)}s`
-  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
+  const { minutes, seconds: rest } = roundedMinutesSeconds(seconds)
+  return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`
 }
 
 export interface TakeTraceProps {
