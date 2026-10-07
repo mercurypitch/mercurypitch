@@ -4,7 +4,7 @@
 // a second.
 
 import { describe, expect, it } from 'vitest'
-import { formatClock } from '@/lib/format-time'
+import { formatClock, roundedMinutesSeconds } from '@/lib/format-time'
 
 describe('formatClock', () => {
   it('formats the common case', () => {
@@ -32,5 +32,43 @@ describe('formatClock', () => {
     expect(formatClock(Number.NaN)).toBe('0:00')
     expect(formatClock(-5)).toBe('0:00')
     expect(formatClock(Number.POSITIVE_INFINITY)).toBe('0:00')
+  })
+})
+
+describe('roundedMinutesSeconds', () => {
+  // Rounding only the seconds left over once the minutes were split off
+  // read 179.5 as 2 minutes and 60 seconds, which every caller printed as
+  // "2:60".
+  it.each([
+    { at: 179.5, minutes: 3, seconds: 0 },
+    { at: 119.6, minutes: 2, seconds: 0 },
+    { at: 59.6, minutes: 1, seconds: 0 },
+  ])('carries $at s up into minute $minutes', ({ at, minutes, seconds }) => {
+    expect(roundedMinutesSeconds(at)).toEqual({ minutes, seconds })
+  })
+
+  it.each([
+    { at: 59.4, minutes: 0, seconds: 59 },
+    { at: 179.4, minutes: 2, seconds: 59 },
+  ])('keeps $at s within its minute', ({ at, minutes, seconds }) => {
+    expect(roundedMinutesSeconds(at)).toEqual({ minutes, seconds })
+  })
+
+  it('counts minutes past the hour instead of growing an hours field', () => {
+    // A length reads m:ss. The h:mm:ss form belongs to formatClock.
+    expect(roundedMinutesSeconds(3725)).toEqual({ minutes: 62, seconds: 5 })
+  })
+
+  it('never reads 60 seconds at any tenth of a second up to two hours', () => {
+    const wrong: number[] = []
+    for (let tenths = 0; tenths <= 72_000; tenths++) {
+      const at = tenths / 10
+      const { minutes, seconds } = roundedMinutesSeconds(at)
+      if (seconds > 59 || minutes * 60 + seconds !== Math.round(at)) {
+        wrong.push(at)
+      }
+    }
+
+    expect(wrong).toEqual([])
   })
 })
