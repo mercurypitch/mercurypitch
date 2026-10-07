@@ -278,7 +278,7 @@ export function createStemMixerVoiceCommands(
     // loop, and the clamp below would put both points on 0:00.
     if (duration <= 0) return voiceFailure('Nothing loaded')
     if (from >= duration) {
-      return voiceFailure(`The song ends at ${formatTime(duration)}`)
+      return voiceFailure(`The song ends at ${formatSeekTarget(duration)}`)
     }
     // The range the singer said, cut to the song. Cut, it can be shorter than
     // the gap, or none at all: the clock plays no such loop, so none is turned
