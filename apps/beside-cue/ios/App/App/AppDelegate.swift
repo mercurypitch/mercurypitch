@@ -8,6 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        GameDiagnostics.record("native-launch")
         // Before the web layer exists, because WKWebView inherits
         // whatever session it finds. See packages/ios-audio-session for why an
         // app with no category at all is an app with no sound.
@@ -17,6 +18,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // before WebKit writes the first byte into it.
         LocalDataBackupPolicy.apply()
         return true
+    }
+
+    func applicationDidReceiveMemoryWarning(_ application: UIApplication) {
+        // A warning is evidence of pressure, not the cause of a later termination.
+        GameDiagnostics.record("memory-warning")
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

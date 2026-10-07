@@ -18,6 +18,10 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		B5C0E1A9000000000000A002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B5C0E1A9000000000000A001 /* PrivacyInfo.xcprivacy */; };
+		B850D1A60000000000000201 /* GameDiagnosticStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B850D1A60000000000000101 /* GameDiagnosticStore.swift */; };
+		B850D1A60000000000000202 /* GameDiagnosticNavigationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B850D1A60000000000000102 /* GameDiagnosticNavigationDelegate.swift */; };
+		B850D1A60000000000000203 /* GameDiagnosticsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B850D1A60000000000000103 /* GameDiagnosticsPlugin.swift */; };
+		B850D1A60000000000000204 /* GameBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B850D1A60000000000000104 /* GameBridgeViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +37,10 @@
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		B5C0E1A9000000000000A001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B850D1A60000000000000101 /* GameDiagnosticStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDiagnosticStore.swift; sourceTree = "<group>"; };
+		B850D1A60000000000000102 /* GameDiagnosticNavigationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDiagnosticNavigationDelegate.swift; sourceTree = "<group>"; };
+		B850D1A60000000000000103 /* GameDiagnosticsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameDiagnosticsPlugin.swift; sourceTree = "<group>"; };
+		B850D1A60000000000000104 /* GameBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBridgeViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +79,10 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
+				B850D1A60000000000000104 /* GameBridgeViewController.swift */,
+				B850D1A60000000000000103 /* GameDiagnosticsPlugin.swift */,
+				B850D1A60000000000000102 /* GameDiagnosticNavigationDelegate.swift */,
+				B850D1A60000000000000101 /* GameDiagnosticStore.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -190,6 +202,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
+				B850D1A60000000000000204 /* GameBridgeViewController.swift in Sources */,
+				B850D1A60000000000000203 /* GameDiagnosticsPlugin.swift in Sources */,
+				B850D1A60000000000000202 /* GameDiagnosticNavigationDelegate.swift in Sources */,
+				B850D1A60000000000000201 /* GameDiagnosticStore.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -10,7 +10,7 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rm
 import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NATIVE_DESKTOP_ONLY_GAME_ASSETS, NATIVE_EXCLUDED_GAME_ASSETS, NATIVE_RETIRED_GAME_ASSETS, NATIVE_SOURCE_NORMAL_GAME_ASSETS, } from './game-assets.ts'
 import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
@@ -77,6 +77,7 @@ function runIosGuard(directory: string, plist: string) {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   for (const directory of temporary.splice(0))
     rmSync(directory, { recursive: true, force: true })
 })
@@ -259,12 +260,16 @@ describe('explicit native games profile', () => {
     const directory = fixture()
     const canonical = readFileSync(resolve('ios/App/App/Info.plist'), 'utf8')
     put(directory, 'ios/App/App/Info.plist', canonical)
+    vi.stubEnv('GITHUB_REF', 'refs/heads/feat/native-diagnostics')
     stageGamesProfile(directory, 'ios', true)
     const generated = readFileSync(
       resolve(directory, 'ios/App/build/games/Info.plist'),
       'utf8',
     )
     expect(generated).toContain('<key>NSMicrophoneUsageDescription</key>')
+    expect(generated).toContain(
+      '<key>BesideCueGameDiagnosticsEnabled</key>\n\t<true/>',
+    )
     expect(generated).toMatch(
       /<key>NSMicrophoneUsageDescription<\/key>\s*<string>[^<]+<\/string>\s*<\/dict>\s*<\/plist>/u,
     )
@@ -276,6 +281,25 @@ describe('explicit native games profile', () => {
     expect(() => gamesInfoPlist('<plist><array></array></plist>')).toThrow(
       'root dictionary',
     )
+  })
+
+  it('keeps native diagnostics absent in store inputs and release-tag games profiles', () => {
+    const directory = fixture()
+    const canonical = readFileSync(resolve('ios/App/App/Info.plist'), 'utf8')
+    expect(canonical).not.toContain('BesideCueGameDiagnosticsEnabled')
+    expect(gamesInfoPlist(canonical)).not.toContain(
+      'BesideCueGameDiagnosticsEnabled',
+    )
+    put(directory, 'ios/App/App/Info.plist', canonical)
+    vi.stubEnv('GITHUB_REF', 'refs/tags/beside-cue-v1.0.0')
+    vi.stubEnv('VITE_PORTABLE_CONSOLE', 'true')
+    stageGamesProfile(directory, 'ios', true)
+    expect(
+      readFileSync(
+        resolve(directory, 'ios/App/build/games/Info.plist'),
+        'utf8',
+      ),
+    ).not.toContain('BesideCueGameDiagnosticsEnabled')
   })
 
   it('rejects store/incomplete output before stamping anything or generating a plist', () => {

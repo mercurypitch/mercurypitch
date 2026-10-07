@@ -1,4 +1,5 @@
 .root {
+  color-scheme: light;
   display: contents;
   --game-ink: #153b43;
   --game-muted: #385d64;
@@ -16,6 +17,7 @@
   --game-facet-deep: #377c89;
 }
 .root[data-game-theme='dark'] {
+  color-scheme: dark;
   --game-ink: #fff9e9;
   --game-muted: #c9e2db;
   --game-accent: #97e6de;

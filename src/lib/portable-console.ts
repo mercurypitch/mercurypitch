@@ -174,6 +174,11 @@ function persistNow(): void {
   }
 }
 
+/** Preserve a rare lifecycle boundary without waiting for the routine log batch. */
+export function flushPortableConsole(): void {
+  if (uninstall !== null) persistNow()
+}
+
 function schedulePersist(): void {
   if (persistTimer !== null) return
   persistTimer = setTimeout(() => {

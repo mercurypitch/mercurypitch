@@ -1,18 +1,40 @@
 // Device graphics reports distinguish intentional renderer teardown from a live scene failure.
 import { registerGraphicsCanvas, retireGraphicsCanvas, updateGraphicsCanvasSnapshot, } from '@irchiinnuss/glass-game/graphics-diagnostics'
 import { afterEach, expect, it, vi } from 'vitest'
+import { flushPortableConsole } from '../../../../src/lib/portable-console'
 import { setupGameDiagnostics } from './game-diagnostics'
 
 vi.mock('../../../../src/components/PortableConsole', () => ({
   setupPortableConsole: vi.fn(),
 }))
+vi.mock('../../../../src/lib/portable-console', () => ({
+  flushPortableConsole: vi.fn(),
+}))
 vi.mock('@capacitor/core', () => ({
   Capacitor: { isNativePlatform: () => true, getPlatform: () => 'ios' },
+  registerPlugin: () => ({
+    read: () =>
+      Promise.resolve({
+        launchId: 'native',
+        version: '0.1.0',
+        build: '851',
+        events: [
+          {
+            id: 'termination-1',
+            at: 1,
+            launchId: 'native',
+            version: '0.1.0',
+            build: '851',
+            kind: 'web-content-terminated',
+          },
+        ],
+      }),
+  }),
 }))
 
 afterEach(() => vi.restoreAllMocks())
 
-it('labels delayed loader teardown without hiding loss or restoration on the active museum', () => {
+it('labels delayed loader teardown without hiding loss or restoration on the active museum', async () => {
   const info = vi.spyOn(console, 'info').mockImplementation(() => {})
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
@@ -21,6 +43,9 @@ it('labels delayed loader teardown without hiding loss or restoration on the act
   document.body.append(loading, museum)
   try {
     setupGameDiagnostics()
+    const bootId = info.mock.lastCall?.[2]?.bootId
+    expect(bootId).toEqual(expect.any(String))
+    expect(flushPortableConsole).toHaveBeenCalledTimes(1)
     registerGraphicsCanvas(loading, 'loading-merc')
     registerGraphicsCanvas(museum, 'museum-map')
     updateGraphicsCanvasSnapshot(loading, {
@@ -43,6 +68,7 @@ it('labels delayed loader teardown without hiding loss or restoration on the act
     retireGraphicsCanvas(loading)
     updateGraphicsCanvasSnapshot(loading, { textures: 0 })
     loading.dispatchEvent(new Event('webglcontextlost'))
+    expect(flushPortableConsole).toHaveBeenCalledTimes(1)
     expect(warn).not.toHaveBeenCalled()
     expect(info).toHaveBeenLastCalledWith(
       '[Glassworks graphics lifecycle]',
@@ -57,6 +83,7 @@ it('labels delayed loader teardown without hiding loss or restoration on the act
       }),
     )
     museum.dispatchEvent(new Event('webglcontextlost'))
+    expect(flushPortableConsole).toHaveBeenCalledTimes(2)
     expect(warn).toHaveBeenLastCalledWith(
       '[Glassworks graphics lifecycle]',
       expect.objectContaining({
@@ -113,6 +140,20 @@ it('labels delayed loader teardown without hiding loss or restoration on the act
       }),
     )
     expect(getContext).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(info).toHaveBeenCalledWith(
+      '[Beside Cue native boot]',
+      expect.objectContaining({ bootId, launchId: 'native', build: '851' }),
+    )
+    expect(info).toHaveBeenLastCalledWith(
+      '[Beside Cue native lifecycle]',
+      expect.objectContaining({
+        bootId,
+        id: 'termination-1',
+        cause: 'unknown',
+      }),
+    )
+    expect(flushPortableConsole).toHaveBeenCalledTimes(5)
   } finally {
     loading.remove()
     museum.remove()

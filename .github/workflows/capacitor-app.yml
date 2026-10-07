@@ -1231,6 +1231,10 @@ jobs:
         if: env.USE_NATIVE_TEST_PROFILE != 'true'
         run: pnpm --filter "$PKG" exec cap sync ios
 
+      - name: Verify Beside Cue native diagnostic forwarding
+        if: inputs.app-slug == 'beside-cue'
+        run: bash "$APP_DIR/ios/App/scripts/test-game-diagnostics.sh"
+
       # Always runs, with or without signing. This is the check that the app and
       # its SwiftPM dependencies actually compile for iOS; the signed archive
       # below only adds distribution on top of it.

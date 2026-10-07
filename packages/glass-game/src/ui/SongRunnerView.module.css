@@ -663,11 +663,15 @@
   }
 
   .dialog {
+    top: max(64px, calc(env(safe-area-inset-top) + 62px));
     left: auto;
     right: max(14px, env(safe-area-inset-right));
     width: min(44vw, 500px);
-    max-height: calc(100dvh - 84px);
-    transform: translateY(-50%);
+    max-height: calc(
+      100dvh - max(64px, calc(env(safe-area-inset-top) + 62px)) -
+        max(12px, env(safe-area-inset-bottom))
+    );
+    transform: none;
   }
 
   .readinessPanel {

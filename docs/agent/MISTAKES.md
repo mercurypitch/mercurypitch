@@ -69,6 +69,13 @@ entries have probably become guards; prune rather than append.
 **Rule:** scope frame sizing above generic icon rules, set nested viewport dimensions explicitly, and round each destination cut while adjusting its source cut to preserve corner proportions and contiguous artwork. Inspect actual GPU captures at DPR 1 and 2; DOM bounds alone cannot prove clean translucent joins.
 **See:** `packages/glass-game/src/ui/GameMaterialFrame.tsx` and the retained frame checks in `apps/beside-cue/e2e/helpers/glass-ui-settings.ts`.
 
+### Test painted control bounds in WebKit as well as Chromium
+
+**Symptom:** museum buttons measured 44 by 44 pixels in both engines, but their glass backgrounds became 20 by 41 pixel slivers on iOS.
+**Cause:** WebKit shrink-wrapped an absolute grid child despite `inset: 0`; nested SVG icon selectors also reached the decorative artwork.
+**Rule:** explicitly size the painted child to its touch owner, scope icons using `data-game-icon`, and verify both theme states in the Safari engine. For faceted cards, test content against the clipped artwork outline, not only rectangular DOM bounds.
+**See:** `MuseumJourney.module.css` and `apps/beside-cue/e2e/glass-adventure-material-hosts.e2e.ts`.
+
 ### Watch microphone ownership as well as track events
 
 **Symptom:** a voice session kept reporting listening after the shared microphone manager closed its capture.

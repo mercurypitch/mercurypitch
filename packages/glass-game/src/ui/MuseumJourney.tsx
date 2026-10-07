@@ -566,7 +566,9 @@ export function MuseumJourney(props: {
               {(chapter) => (
                 <article class={styles.selectedCard} aria-live="polite">
                   <div class={styles.cardMaterial} aria-hidden="true">
-                    <GameSurface class={styles.cardSurface}>{null}</GameSurface>
+                    <GameSurface class={styles.cardSurface} cornerLimit={12}>
+                      {null}
+                    </GameSurface>
                   </div>
                   <div class={styles.selectedArtwork}>
                     <img src={chapter.imageUrl} alt="" />
