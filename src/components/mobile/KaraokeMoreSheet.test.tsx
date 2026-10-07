@@ -100,6 +100,8 @@ function mountSheet(
     speed,
     start,
     end,
+    setStart,
+    setEnd,
     loopOn,
     setPlayhead,
     autoplayOn,
@@ -201,6 +203,19 @@ describe('the A/B loop', () => {
       'The loop end (B) has to be at least 0.1 s after its start (A).',
     )
     expect(loopSwitch().hasAttribute('disabled')).toBe(true)
+  })
+
+  it('keeps the loop switch off for a span too short to play, however it got there', () => {
+    // The sheet's own B goes 0.1 s or more past A; a voice command or a
+    // dragged marker can leave less.
+    const { setStart, setEnd } = mountSheet()
+    setStart(5)
+
+    setEnd(5.05)
+    expect(loopSwitch().hasAttribute('disabled')).toBe(true)
+
+    setEnd(5.2)
+    expect(loopSwitch().hasAttribute('disabled')).toBe(false)
   })
 
   it('drops the refusal once a point is placed', () => {

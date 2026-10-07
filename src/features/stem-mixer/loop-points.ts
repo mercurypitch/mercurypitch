@@ -13,12 +13,17 @@
 // B set with no A loops from the start of the song, so A is set to 0:00 with
 // it: the loop on screen is the loop that plays. The canvas marker drag keeps
 // the same gap (useStemMixerCanvasController).
+//
+// Which A and B make a loop is one rule, `hasPlayableLoop`, kept with the gap
+// in lib/loop-gap.ts, where the components that draw the switches can reach
+// it: the Loop button, the L key, the phone's loop switch, the voice commands
+// and the playback clock all ask it, so none of them turns on a loop another
+// would not play.
 
-/** The least time between A and B, in seconds. */
-export const LOOP_MIN_GAP = 0.1
+import { hasPlayableLoop, LOOP_GAP_SLACK, LOOP_MIN_GAP } from '@/lib/loop-gap'
 
-// Floating-point slack, so a point exactly the gap away reads as exactly it.
-const SLACK = 1e-9
+// Defined with the rule; callers in this feature import it from here.
+export { LOOP_MIN_GAP }
 
 export interface LoopPoints {
   start: number | null
@@ -36,7 +41,10 @@ export function placeLoopPoint(
 ): LoopPointPlacement {
   const at = Math.max(0, time)
   if (which === 'A') {
-    if (points.end !== null && points.end - at <= LOOP_MIN_GAP + SLACK) {
+    if (
+      points.end !== null &&
+      points.end - at <= LOOP_MIN_GAP + LOOP_GAP_SLACK
+    ) {
       return {
         placed: false,
         reason:
@@ -46,7 +54,7 @@ export function placeLoopPoint(
     return { placed: true, points: { start: at, end: points.end } }
   }
   const start = points.start ?? 0
-  if (at - start <= LOOP_MIN_GAP + SLACK) {
+  if (at - start <= LOOP_MIN_GAP + LOOP_GAP_SLACK) {
     return {
       placed: false,
       reason: 'The loop end (B) has to be at least 0.1 s after its start (A).',
@@ -68,5 +76,5 @@ export function loopSpan(
   if (!enabled) return null
   const start = points.start ?? 0
   const end = points.end ?? duration
-  return end - start >= LOOP_MIN_GAP - SLACK ? { start, end } : null
+  return hasPlayableLoop(start, end) ? { start, end } : null
 }
