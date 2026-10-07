@@ -279,10 +279,25 @@ export function createStemMixerVoiceCommands(
       return voiceFailure('Say loop from A to B seconds')
     }
     if (to <= from) return voiceFailure('Loop end must be after its start')
-    deps.loop.setStart(clampSeconds(from))
-    deps.loop.setEnd(clampSeconds(to))
+    const duration = deps.duration()
+    // The same answer as the other times: with no length there is no song to
+    // loop, and the clamp below would put both points on 0:00.
+    if (duration <= 0) return voiceFailure('Nothing loaded')
+    if (from >= duration) {
+      return voiceFailure(`The song ends at ${formatTime(duration)}`)
+    }
+    // The range the singer said, cut to the song. Cut, it can be shorter than
+    // the gap, or none at all: the clock plays no such loop, so none is turned
+    // on, and a refusal changes nothing.
+    const start = clampSeconds(from)
+    const end = clampSeconds(to)
+    if (!hasPlayableLoop(start, end)) {
+      return voiceFailure('Loop end must be at least 0.1 s after its start')
+    }
+    deps.loop.setStart(start)
+    deps.loop.setEnd(end)
     deps.loop.setEnabled(true)
-    deps.seekToTime(clampSeconds(from))
+    deps.seekToTime(start)
     if (!deps.playing()) deps.play()
     return `Loop ${String(from)}s to ${String(to)}s`
   }

@@ -11,6 +11,8 @@ interface Fixture {
   seekedTo: () => number | null
   track: (label: string) => StemMixerVoiceTrack
   setPlaying: (v: boolean) => void
+  /** The song's length in seconds; 0 is a song that has not loaded yet. */
+  setDuration: (seconds: number) => void
   setPlaylistActive: (v: boolean) => void
   setKey: (semitones: number) => void
   setFindResult: (result: FindMyKeyResult) => void
@@ -20,6 +22,7 @@ interface Fixture {
 function makeFixture(): Fixture {
   const calls: string[] = []
   let playing = false
+  let duration = 200
   let playlistActive = false
   let seekedTo: number | null = null
   let speed = 1
@@ -45,7 +48,7 @@ function makeFixture(): Fixture {
   const deps: StemMixerVoiceDeps = {
     playing: () => playing,
     elapsed: () => 30,
-    duration: () => 200,
+    duration: () => duration,
     play: () => {
       calls.push('play')
       playing = true
@@ -142,6 +145,9 @@ function makeFixture(): Fixture {
     track: find,
     setPlaying: (v) => {
       playing = v
+    },
+    setDuration: (seconds) => {
+      duration = seconds
     },
     setPlaylistActive: (v) => {
       playlistActive = v
@@ -244,6 +250,79 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'loop from 60 to 20')).toBe(
       'Loop end must be after its start',
     )
+  })
+
+  it('refuses a range that starts at or past the end of the song, says where it ends, and changes nothing', () => {
+    const fixture = makeFixture()
+    // A loop already playing: a refused range must not take it away.
+    fixture.deps.loop.setStart(20)
+    fixture.deps.loop.setEnd(60)
+    fixture.deps.loop.setEnabled(true)
+
+    // The song is 200 s. Both ends clamp to its end, a loop of no length.
+    expect(fire(fixture, 'loop from 200 to 300')).toBe('The song ends at 3:20')
+    expect(fire(fixture, 'loop from 250 to 300')).toBe('The song ends at 3:20')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([20, 60, true])
+    expect(fixture.seekedTo()).toBeNull()
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('refuses a span the clock would not play, whether the song cut it short or the range was that short', () => {
+    const fixture = makeFixture()
+    fixture.deps.loop.setStart(20)
+    fixture.deps.loop.setEnd(60)
+    fixture.deps.loop.setEnabled(true)
+
+    // From 199.95 the song leaves 0.05 s: past the end the range clamps to
+    // 200, a span shorter than the loop gap.
+    expect(fire(fixture, 'loop from 199.95 to 300')).toBe(
+      'Loop end must be at least 0.1 s after its start',
+    )
+    // And a range the singer said that short, well inside the song.
+    expect(fire(fixture, 'loop from 20 to 20.05')).toBe(
+      'Loop end must be at least 0.1 s after its start',
+    )
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([20, 60, true])
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('still loops a range that runs past the end, from where it starts to the end of the song', () => {
+    const fixture = makeFixture()
+
+    expect(fire(fixture, 'loop from 150 to 300')).toBe('Loop 150s to 300s')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([150, 200, true])
+    expect(fixture.seekedTo()).toBe(150)
+    expect(fixture.calls).toContain('play')
+  })
+
+  it('says nothing is loaded for a loop range before the song has a length, as the other time commands do', () => {
+    const fixture = makeFixture()
+    fixture.setDuration(0)
+
+    expect(fire(fixture, 'loop from 20 to 60')).toBe('Nothing loaded')
+    expect(fire(fixture, 'go to one minute')).toBe('Nothing loaded')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([null, null, false])
+    expect(fixture.calls).toEqual([])
   })
 
   it('sets loop points at the playhead and toggles', () => {
