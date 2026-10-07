@@ -1,5 +1,6 @@
 // Adventure voice regression — real PCM, YIN capture, lifecycle and saved success.
 import { expect, test, type Page } from '@playwright/test'
+import { registerChangeNoteTest } from './helpers/glass-voice-change-note'
 import { expectCompactVoiceState, expectVoiceActionsFit, expectVoiceGoalFits, expectVoicePanelFits, registerSingingLayoutTests, } from './helpers/glass-voice-layout'
 
 interface VoiceSource {
@@ -693,6 +694,8 @@ async function cameraYaw(page: Page): Promise<number> {
 test.afterEach(async ({ page }) => {
   await page.evaluate(() => window.glassVoiceFixture?.dispose())
 })
+
+registerChangeNoteTest({ openMuseum, setVoice, expectMicrophoneOff })
 
 test('silence cannot earn progress; a fresh comfortable hold breaks and survives reload', async ({
   page,

@@ -221,7 +221,6 @@ export function createAdventureVoiceChallenge(
     refind: () => {
       if (active === 'pitch') {
         pitch.refind()
-        active = null
       } else if (active === 'melody') melody?.changeKey()
     },
     cancel,

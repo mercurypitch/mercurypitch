@@ -21,7 +21,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
   gap: 8px 12px;
-  padding: clamp(10px, calc(var(--game-padding, 24px) - 10px), 22px);
+  padding: clamp(20px, var(--game-padding, 20px), 24px);
   max-height: calc(100dvh - 108px - env(safe-area-inset-bottom));
   overflow-y: auto;
   scrollbar-width: thin;
@@ -73,16 +73,9 @@
   justify-content: center;
   gap: 5px;
   padding: 8px;
-  border: 1px solid #93bfc0;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background:
-    radial-gradient(ellipse at 25% 10%, #fff 0, #ffffffb3 15%, transparent 46%),
-    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
-  box-shadow:
-    inset 0 0 0 1px #ffffffe6,
-    inset 0 0 0 2px #d7c49380,
-    inset 0 -3px 4px #4d94952b,
-    0 2px 3px #092f3d30;
+  background: transparent;
   color: var(--game-ink);
   font: inherit;
   cursor: pointer;
@@ -130,23 +123,14 @@
   box-shadow: none;
 }
 
-.changeButton::before {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: calc(50% - 12px);
-  width: 24px;
-  height: 24px;
-  z-index: -1;
-  border: 1px solid #93bfc0;
-  border-radius: 50%;
-  background:
-    radial-gradient(ellipse at 25% 10%, #fff, transparent 55%),
-    conic-gradient(from 25deg, #e5f3ed, #c9e6e6, #f8f7e8, #d6eeec, #e5f3ed);
-  box-shadow:
-    inset 0 0 0 1px #ffffffe6,
-    inset 0 -2px 3px #4d94952b,
-    0 2px 3px #092f3d24;
+.iconButton:hover,
+.changeButton:hover {
+  background: var(--game-button-bg);
+}
+
+.changeButton:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .targetColumn {
@@ -316,27 +300,6 @@
   outline-offset: 3px;
 }
 
-:global([data-game-theme='dark']) .iconButton {
-  border-color: #d3b977;
-  background:
-    radial-gradient(ellipse at 32% 0%, #7abcb18c, transparent 55%),
-    linear-gradient(145deg, #15514e, #032b2c 70%, #07403d);
-  box-shadow:
-    inset 0 0 0 1px #f4dc9a80,
-    inset 0 2px 2px #c9f9e833,
-    inset 0 -3px 4px #001f2966,
-    0 2px 3px #001c2799;
-}
-
-:global([data-game-theme='dark']) .panel .changeButton {
-  background: linear-gradient(#d4b774, #d4b774) right 7px bottom 8px /
-    calc(100% - 35px) 1px no-repeat;
-}
-
-:global([data-game-theme='dark']) .changeButton::before {
-  display: none;
-}
-
 :global([data-game-theme='dark']) .panel .target {
   border-color: #dbc38a;
   box-shadow:
@@ -365,13 +328,6 @@
   .panel .changeButton {
     padding-inline: 4px;
   }
-  .changeButton::before {
-    left: 2px;
-  }
-  :global([data-game-theme='dark']) .panel .changeButton {
-    background-position: right 4px bottom 8px;
-    background-size: calc(100% - 34px) 1px;
-  }
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
@@ -386,7 +342,7 @@
   .panel .content {
     grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
     gap: 4px 18px;
-    padding: clamp(14px, calc(var(--game-padding, 24px) - 10px), 22px) 24px;
+    padding: clamp(14px, calc(var(--game-padding, 20px) - 6px), 22px) 24px;
     max-height: calc(100dvh - 100px - env(safe-area-inset-bottom));
   }
 
@@ -435,7 +391,7 @@
 }
 
 .panel[data-voice-layout='single'] .content {
-  padding: 14px;
+  padding: 20px;
   overflow: visible;
   scrollbar-gutter: auto;
 }
@@ -444,7 +400,7 @@
   grid-column: 1;
   grid-row: 1;
   padding-right: 0;
-  margin-bottom: 52px;
+  margin-bottom: 44px;
 }
 
 .panel[data-voice-layout='single'] .cornerControls {
@@ -457,7 +413,7 @@
   align-self: start;
   align-content: start;
   min-height: 0;
-  margin-top: -30px;
+  margin-top: -36px;
 }
 
 .panel[data-voice-layout='single'] .changeButton {
@@ -490,7 +446,10 @@
   }
   .panel[data-voice-layout='single'] .content {
     gap: 4px 18px;
-    padding-inline: 24px;
+    padding: 14px 24px;
+  }
+  .panel[data-voice-layout='single'] .targetColumn {
+    margin-top: -30px;
   }
   .panel[data-voice-layout='single'] .chargeTrack {
     width: 176px;
@@ -498,8 +457,18 @@
   }
 }
 
+@media (max-width: 599px) {
+  .panel[data-voice-layout='single'] .heading h2 {
+    font-size: 18px;
+  }
+}
+
 /* Keep the 44px corner pair clear of the lens on the narrowest phones. */
 @media (max-width: 359px) {
+  .panel .target {
+    width: clamp(72px, var(--game-target, 80px), 88px);
+    height: clamp(72px, var(--game-target, 80px), 88px);
+  }
   .panel[data-voice-layout='single'] .heading {
     grid-column: 1 / -1;
     grid-row: 2;

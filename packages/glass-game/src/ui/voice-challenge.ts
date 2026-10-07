@@ -369,10 +369,13 @@ export function createVoiceChallenge(
     const copy = findingCopy(target)
     emit({
       mode: 'finding',
+      pitch: null,
       findingTarget: target,
       target: targets[target] ?? null,
       message: copy.message,
       hint: copy.hint,
+      stepIndex: 0,
+      stepCharge: 0,
     })
   }
 
@@ -688,7 +691,14 @@ export function createVoiceChallenge(
   }
 
   const refind = (): void => {
-    if (current !== null && current.challenge.kind !== 'ordered-pair') {
+    if (
+      disposed ||
+      state.mode !== 'singing' ||
+      current === null ||
+      voice === null
+    )
+      return
+    if (current.challenge.kind !== 'ordered-pair') {
       const role = current.challenge.step.target
       if (role === 'comfortable') {
         comfortable = null
@@ -700,11 +710,17 @@ export function createVoiceChallenge(
         pair = { version: CALIBRATION_VERSION, low: pair.low }
         writePair()
       }
-    } else if (current !== null) {
+    } else {
       pair = null
       options.host.writePreference(PAIR_PREFERENCE, '')
     }
-    cancel()
+    const run = ++generation
+    samples = []
+    evidenceCapturedAfterMs = now()
+    options.game.cancelEncounter()
+    options.game.setPaused(true)
+    prepareTargets(current.challenge)
+    void advanceCalibration(run)
   }
 
   const completeBreak = (): void => {

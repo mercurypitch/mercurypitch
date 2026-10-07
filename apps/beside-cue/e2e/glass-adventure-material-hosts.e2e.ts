@@ -38,6 +38,22 @@ for (const viewport of [
     for (const theme of ['Crystal', 'Celadon']) {
       await settings.tap()
       const dialog = page.getByRole('dialog', { name: 'Settings', exact: true })
+      if (viewport.width < 600) {
+        const inset = await dialog.evaluate((element) => {
+          const surface = element
+            .querySelector('[data-game-surface]')!
+            .getBoundingClientRect()
+          const header = element
+            .querySelector('header')!
+            .getBoundingClientRect()
+          return Math.min(
+            header.left - surface.left,
+            header.top - surface.top,
+            surface.right - header.right,
+          )
+        })
+        expect(inset).toBeGreaterThanOrEqual(20)
+      }
       await dialog.getByRole('tab', { name: 'Appearance', exact: true }).tap()
       await dialog.getByRole('button', { name: theme, exact: true }).tap()
       await dialog
@@ -71,6 +87,15 @@ for (const viewport of [
       const card = page.locator('article').filter({
         has: page.getByRole('button', { name: /^Open selected gallery:/ }),
       })
+      if (viewport.width < 600) {
+        const rail = page.getByRole('navigation', {
+          name: 'Select a museum island',
+        })
+        expect((await rail.boundingBox())!.height).toBeLessThanOrEqual(48)
+        expect((await card.boundingBox())!.height).toBeLessThanOrEqual(136)
+        for (const chip of await rail.getByRole('button').all())
+          expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+      }
       await expect
         .poll(() =>
           card.evaluate((element) => {
@@ -158,6 +183,62 @@ test('runner native microphone selector follows both material themes @smoke', as
     await microphone.scrollIntoViewIfNeeded()
     await page.screenshot({
       path: testInfo.outputPath(`native-selector-${theme}.png`),
+    })
+  }
+})
+
+test('compact museum cards keep every gallery title and entry inside the frame @smoke', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/glass-game/?campaign=1')
+  await expect(page.locator('[data-map-state]')).toHaveAttribute(
+    'data-map-state',
+    'ready',
+    { timeout: 60_000 },
+  )
+  for (const width of [320, 360, 390]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (const choice of await page
+      .getByRole('navigation', { name: 'Select a museum island' })
+      .getByRole('button')
+      .all()) {
+      await choice.tap()
+      await expect(choice).toHaveAttribute('aria-pressed', 'true')
+      const label = choice.locator('span').last()
+      expect(
+        await label.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true)
+      const enter = page.getByRole('button', {
+        name: /^Open selected gallery:/,
+      })
+      const geometry = await enter.evaluate((button) => {
+        const card = button.closest('article')!.getBoundingClientRect()
+        const content = button.parentElement!.getBoundingClientRect()
+        const title = button
+          .parentElement!.querySelector('h2')!
+          .getBoundingClientRect()
+        const action = button.getBoundingClientRect()
+        return {
+          title: title.toJSON(),
+          action: action.toJSON(),
+          content: content.toJSON(),
+          card: card.toJSON(),
+        }
+      })
+      expect(geometry.action.height).toBeGreaterThanOrEqual(44)
+      expect(geometry.action.bottom).toBeLessThanOrEqual(
+        geometry.content.bottom,
+      )
+      expect(geometry.title.bottom).toBeLessThanOrEqual(geometry.action.top)
+      expect(geometry.title.right).toBeLessThanOrEqual(geometry.content.right)
+      expect(geometry.action.bottom).toBeLessThanOrEqual(
+        geometry.card.bottom - 12,
+      )
+    }
+    await page.screenshot({
+      path: testInfo.outputPath(`long-gallery-${width}.png`),
     })
   }
 })

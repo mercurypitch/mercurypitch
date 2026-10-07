@@ -914,11 +914,12 @@
 
   .stageRail {
     display: grid;
+    width: 100%;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 3px;
+    gap: 2px;
     box-sizing: border-box;
-    margin-bottom: 5px;
-    padding: 4px;
+    margin-bottom: 6px;
+    padding: 2px;
     border-radius: 14px;
     pointer-events: auto;
     touch-action: pan-y;
@@ -927,28 +928,39 @@
   .stageChip {
     display: grid;
     min-height: 44px;
-    grid-template-columns: 20px minmax(0, 1fr);
-    gap: 3px;
-    padding: 3px;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 2px;
+    padding: 2px;
     border-radius: 16px 6px 6px 16px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .stageChipSelected {
+    background: var(--game-button-bg);
+    box-shadow: inset 0 -2px var(--game-gold);
   }
 
   .stageChip > span:first-child {
-    width: 20px;
-    height: 20px;
-    font-size: 7px;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    color: var(--game-muted);
+    background: transparent;
   }
 
   .stageChip > span:last-child {
     display: block;
-    font-size: 7px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.02em;
     text-align: left;
   }
 
   .selectedCard {
-    height: 146px;
+    height: auto;
+    min-height: 134px;
     max-height: none;
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 8px;
@@ -958,6 +970,11 @@
 
   .selectedArtwork {
     border-radius: 9px 9px 3px 3px;
+  }
+
+  .selectedArtwork img {
+    position: absolute;
+    inset: 0;
   }
 
   .selectedArtwork > span {
@@ -970,6 +987,7 @@
 
   .selectedContent {
     padding: 1px 2px 0 0;
+    overflow: visible;
   }
 
   .selectedTopline {
@@ -1172,6 +1190,7 @@
     display: grid;
     width: 44px;
     height: 44px;
+    grid-template-columns: 1fr;
     padding: 0;
     place-items: center;
   }

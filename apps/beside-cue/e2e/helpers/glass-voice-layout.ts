@@ -240,7 +240,9 @@ export function registerSingingLayoutTests({
         expect(targetBox.y).toBeGreaterThanOrEqual(
           (await panel.boundingBox())!.y,
         )
-        expect(layout.height).toBeLessThanOrEqual(203)
+        expect(layout.height).toBeLessThanOrEqual(
+          viewport.width < 360 ? 195 : 170,
+        )
         const changeBox = (await panel
           .getByRole('button', { name: 'Change note', exact: true })
           .boundingBox())!
@@ -339,15 +341,12 @@ export function registerSingingLayoutTests({
       await panel
         .getByRole('button', { name: 'Change note', exact: true })
         .click()
-      await expect(panel).toBeHidden()
-      await expectMicrophoneOff(page)
+      await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
       expect(
         await page.evaluate(() =>
           localStorage.getItem('beside-cue:glass-adventure:comfortable-note'),
         ),
       ).toBe('')
-      await page.getByRole('button', { name: 'Sing to the glass' }).click()
-      await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
       await expect(replay).toBeDisabled()
       await expectVoicePanelFits(page)
       await close.click()
