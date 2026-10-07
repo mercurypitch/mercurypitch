@@ -23,7 +23,7 @@ import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } 
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { transposeNotes } from '@/lib/key-shift/key-shift'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamKeyShiftAvailable, jamLineIsMine, jamPeerId, jamPitchHistory, jamRoomKeyShift, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamKeyShiftAvailable, setJamSongMediaDurationSec, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamKeyShiftAvailable, jamLineIsMine, jamPeerId, jamPitchHistory, jamRoomKeyShift, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, resetJamKeyShiftAvailable, setJamError, setJamExercisePaused, setJamGuideVolume, setJamKeyShiftAvailable, setJamSongMediaDurationSec, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { showNotification } from '@/stores/notifications-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamPeerLanes } from './JamPeerLanes'
@@ -122,7 +122,11 @@ export const JamSongStage: Component = () => {
    * to it: the backing track and the guide vocal both connect through the
    * key graph, which goes straight through at the original key. See
    * jam-key-shift.ts.
+   *
+   * This stage's engine is the one the store's flag is about: a failure on
+   * the last stage must not keep the key off here (see the store).
    */
+  resetJamKeyShiftAvailable()
   const keyShift = createJamKeyShift({
     // Phones and televisions take the lighter engine setting.
     preset: deviceClass() === 'desktop' ? 'default' : 'cheaper',

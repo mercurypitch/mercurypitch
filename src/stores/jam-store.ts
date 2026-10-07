@@ -693,13 +693,25 @@ function scheduleKeyBroadcast(songId: string): void {
 /** The room's key, in semitones from the song's own. */
 export const jamRoomKeyShift = (): number => jamSong()?.keyShift ?? 0
 
+/** What this device can do before anything has failed on it. */
+const canShiftKey = (): boolean => typeof AudioWorkletNode !== 'undefined'
+
 /**
  * Whether THIS device can shift its audio. Not room state: a peer whose
  * engine cannot run plays the original key, and its key control says why.
+ * The song stage lowers it when its engine fails.
  */
-export const [jamKeyShiftAvailable, setJamKeyShiftAvailable] = createSignal(
-  typeof AudioWorkletNode !== 'undefined',
-)
+export const [jamKeyShiftAvailable, setJamKeyShiftAvailable] =
+  createSignal(canShiftKey())
+
+/**
+ * A song stage starts from what the device can do. Each stage makes an
+ * engine of its own, so a failure on the last one, a busy phone missing the
+ * start deadline say, is not a verdict on this one.
+ */
+export function resetJamKeyShiftAvailable(): void {
+  setJamKeyShiftAvailable(canShiftKey())
+}
 
 /**
  * Move the room's key.
