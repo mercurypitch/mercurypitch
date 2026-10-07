@@ -8,7 +8,8 @@
   --game-button-bg: #e5f3ef;
   --game-body: 221 244 239;
   --game-title-font: Georgia, 'Times New Roman', serif;
-  --game-face-strength: 0.62;
+  --game-face-strength: 0.35;
+  --game-paint-strength: 0.56;
   --game-facet-bright: #fcfff4;
   --game-facet-mid: #99d2d2;
   --game-facet-soft: #f4fff9;
@@ -22,6 +23,7 @@
   --game-button-bg: #17494e;
   --game-body: 7 42 43;
   --game-face-strength: 1;
+  --game-paint-strength: 1;
   --game-facet-bright: #d5f4e8;
   --game-facet-mid: #397980;
   --game-facet-soft: #94c8c1;
@@ -46,7 +48,7 @@
   border: 0;
   font-family: 'Gabarito Variable', system-ui, sans-serif;
 }
-.surface > .materialFrame {
+.root .materialFrame {
   fill: none;
   stroke: none;
   stroke-width: 0;
@@ -60,49 +62,45 @@
   z-index: -1;
   filter: drop-shadow(0 4px 6px #082f3938);
 }
+.root .materialFrame svg {
+  fill: none;
+  stroke: none;
+  stroke-width: 0;
+}
+/* The artwork supplies the facets, inlay and reflections. These controls vary
+   their strength; they never replace the art with a repeating CSS texture. */
 .materialBacking {
   fill: rgb(
     var(--game-body) /
       calc(var(--game-opacity, 0.88) * var(--game-face-strength))
   );
 }
-.root[data-game-theme='dark'] .materialBacking {
-  fill: rgb(var(--game-body) / min(1, calc(var(--game-opacity, 0.88) + 0.07)));
+.materialArtwork {
+  opacity: calc(
+    var(--game-opacity, 0.88) * var(--game-paint-strength) *
+      (0.66 + var(--game-gloss, 0.65) * 0.34)
+  );
 }
-.root[data-game-transparency='reduced'] .materialBacking {
-  fill: rgb(var(--game-body));
-}
-.materialWash {
-  opacity: var(--game-gloss, 0.65);
-}
-.root[data-game-theme='dark'] .materialWash {
-  opacity: calc(var(--game-gloss, 0.65) * 0.22);
-}
-.crystalBevel {
+.materialArtworkRim {
   opacity: var(--game-rim, 0.85);
+  filter: saturate(calc(0.6 + var(--game-gold-strength, 0.65) * 0.6));
 }
-.materialGold {
-  opacity: calc(0.45 + var(--game-gold-strength, 0.65) * 0.55);
+.root[data-game-transparency='reduced'] .materialArtwork {
+  opacity: 1;
 }
-.enamelReflection {
-  opacity: calc(var(--game-gloss, 0.65) * 0.54);
+.controlMaterial {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
 }
-.root[data-game-theme='dark'] .crystalBevel {
-  opacity: calc(var(--game-rim, 0.85) * 0.74);
+.controlMaterial .materialFrame {
+  width: 100%;
+  height: 100%;
 }
-.enamelGlint {
-  opacity: var(--game-gloss, 0.65);
-}
-.enamelContours {
-  fill: none;
-  opacity: calc(var(--game-rim, 0.85) * 0.72);
-}
-.enamelSpecular {
-  fill: none;
-  stroke: #e2fff1;
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  opacity: calc(var(--game-gloss, 0.65) * 0.7);
+.controlMaterial .materialArtwork,
+.controlMaterial .materialArtworkRim {
+  opacity: 1;
 }
 .surface[data-game-surface='plaque'] {
   padding: 10px 18px;
@@ -211,42 +209,16 @@
   border-radius: 24px;
 }
 .root .primary {
+  position: relative;
+  isolation: isolate;
   margin-left: auto;
-  background:
-    linear-gradient(
-      173deg,
-      #cef2e969,
-      transparent 24%,
-      transparent 70%,
-      #082f3638
-    ),
-    #195d65;
-  box-shadow:
-    inset 0 0 0 1px #0b4859,
-    inset 0 2px 1px #e3fff67d,
-    0 2px 3px #092f3d24;
   color: #fff9e9;
-  border-color: #91ced0;
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 .root[data-game-theme='dark'] .primary {
   color: #153b43;
-  background:
-    radial-gradient(ellipse at 24% 8%, #fff 0 5%, transparent 44%),
-    conic-gradient(
-      from 24deg,
-      #fff9e7,
-      #dce7df 14%,
-      #faf9ec 28%,
-      #d6dfd4 42%,
-      #fffcef 59%,
-      #e0eae3 79%,
-      #fff9e7
-    );
-  border-color: var(--game-gold);
-  box-shadow:
-    inset 0 0 0 2px #fffcef,
-    inset 0 0 0 3px #aad0c3,
-    0 2px 4px #001b2280;
 }
 .iconButton:focus-visible,
 .primary:focus-visible,
@@ -283,6 +255,16 @@
 }
 .settingsDialog::backdrop {
   background: #0b263766;
+}
+/* Keep the scene visible through clear glass without a second layer of HUD text.
+   Runner settings lives inside its header, so preserve the modal and its owner. */
+.root:has(.settingsDialog[open])
+  [data-game-hud]
+  > :not(.settingsDialog):not(:has(.settingsDialog)) {
+  visibility: hidden;
+}
+.root:has(.settingsDialog[open]) [data-game-hud-layer] {
+  opacity: 0;
 }
 .settingsSurface {
   display: grid;
@@ -555,6 +537,32 @@
   }
   .settingsFooter {
     padding-top: 8px;
+  }
+}
+@media (orientation: landscape) and (min-width: 600px) and (max-height: 500px) {
+  .settingsSurface {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .settingsHeader,
+  .tabs {
+    grid-area: 1 / 1;
+  }
+  .settingsHeader {
+    padding-bottom: 0;
+  }
+  .tabs {
+    /* Keep the title and 44px close target clear while sharing their row. */
+    margin-inline: 112px 60px;
+    min-width: 0;
+    align-self: center;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .settingsBody {
+    grid-area: 2 / 1;
+  }
+  .settingsFooter {
+    grid-area: 3 / 1;
   }
 }
 @media (prefers-reduced-motion: no-preference) {

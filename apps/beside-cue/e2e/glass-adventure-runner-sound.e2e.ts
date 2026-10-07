@@ -1,5 +1,6 @@
 // Runner settings acceptance — real controls, independent saved mix and explicit resume gestures.
 import { expect, test } from '@playwright/test'
+import { expectGameHudVisibility, expectGameMaterialFramesFit, } from './helpers/glass-ui-settings'
 import { installRunnerVoice } from './helpers/runner-voice-fixture'
 import { useRunnerControlsRenderer } from './helpers/runner-controls-renderer'
 
@@ -62,6 +63,7 @@ for (const viewport of [
     expect(chrome.icon).toEqual({ width: 24, height: 24 })
     expect(chrome.inside).toBe(true)
     const triggerSurface = headerTrigger.locator('[data-game-surface]')
+    await expectGameMaterialFramesFit(headerTrigger)
     const triggerFrame = triggerSurface.locator(':scope > [data-game-frame]')
     await expect(triggerFrame).toBeVisible()
     await expect(triggerFrame).toHaveAttribute('data-game-frame', 'tile')
@@ -82,9 +84,11 @@ for (const viewport of [
     )
       await page.keyboard.press('Tab')
     await expect(entry).toBeFocused()
+    await expectGameHudVisibility(page, true)
     await page.keyboard.press('Enter')
     const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
     await expect(settings).toBeVisible()
+    await expectGameHudVisibility(page, false)
     const layout = await settings.evaluate((el) => {
       const bounds = el.getBoundingClientRect()
       return {
@@ -97,6 +101,7 @@ for (const viewport of [
     })
     expect(layout.inside).toBe(true)
     const settingsSurface = settings.locator(':scope > [data-game-surface]')
+    await expectGameMaterialFramesFit(settings)
     const settingsFrame = settingsSurface.locator(':scope > [data-game-frame]')
     await expect(settingsFrame).toBeVisible()
     await expect(settingsFrame).toHaveAttribute('data-frame-finish', 'facet')
@@ -137,6 +142,7 @@ for (const viewport of [
     }
     await page.keyboard.press('Escape')
     await expect(settings).not.toBeVisible()
+    await expectGameHudVisibility(page, true)
     await expect(start).toBeFocused()
     expect(await page.evaluate(() => window.runnerVoiceFixture.requests)).toBe(
       0,
@@ -150,6 +156,7 @@ for (const viewport of [
     })
     await headerTrigger.click()
     await expect(settings).toBeVisible()
+    await expectGameHudVisibility(page, false)
     await expect(runner).toHaveAttribute('data-phase', 'paused')
     await expect(runner).toHaveAttribute('data-microphone', 'closed')
     await expect(
@@ -169,6 +176,7 @@ for (const viewport of [
       'dark',
     )
     await expect(settingsFrame).toHaveAttribute('data-frame-finish', 'enamel')
+    await expectGameMaterialFramesFit(settings)
     expect(await settingsFrame.boundingBox()).toEqual(
       await settingsSurface.boundingBox(),
     )
@@ -182,6 +190,7 @@ for (const viewport of [
     })
     await page.keyboard.press('Escape')
     await expect(settings).not.toBeVisible()
+    await expectGameHudVisibility(page, true)
     await expect(runner).toHaveAttribute('data-phase', 'running', {
       timeout: 15_000,
     })
@@ -192,6 +201,7 @@ for (const viewport of [
       .getByRole('button', { name: 'Change note', exact: true })
       .click()
     await expect(settings).not.toBeVisible()
+    await expectGameHudVisibility(page, true)
     await expect(
       page.getByRole('slider', { name: 'Comfortable note' }),
     ).toBeFocused()

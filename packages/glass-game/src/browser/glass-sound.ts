@@ -3,12 +3,15 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { GlassShatterProfile } from '../content/shatter-sounds'
 import { DEFAULT_SHATTER_PROFILE } from '../content/shatter-sounds'
 import type { GlassSound } from '../host'
+import { parseReferenceNoteHold } from '../reference-note'
 import type { ShatterBufferCache } from './shatter-buffer-cache'
 import { createShatterBufferCache, prepareShatterBuffers, silenceShatterCache, } from './shatter-buffer-cache'
 import { createShatterPlayer } from './shatter-player'
 
 const FLOOR = 0.0001
 const RELEASE_MS = 240
+const REFERENCE_ATTACK_SECONDS = 0.09
+const REFERENCE_QUIET_TAIL_SECONDS = 0.55
 interface SoundGraph {
   source: AudioScheduledSourceNode
   nodes: AudioNode[]
@@ -21,6 +24,7 @@ export function createBrowserGlassSound(
     profile?: GlassShatterProfile
     identity?: string
     volume?: () => number
+    referenceNoteHoldSeconds?: () => number
   } = {},
 ): GlassSound {
   let disposed = false
@@ -128,7 +132,7 @@ export function createBrowserGlassSound(
   function tone(
     frequency: number,
     at: number,
-    duration: number,
+    holdSeconds: number,
     gain: number,
   ): void {
     if (!context || !bus || disposed) return
@@ -136,12 +140,16 @@ export function createBrowserGlassSound(
     const envelope = context.createGain()
     oscillator.frequency.value = frequency
     envelope.gain.setValueAtTime(FLOOR, at)
-    envelope.gain.exponentialRampToValueAtTime(gain, at + 0.018)
-    envelope.gain.setTargetAtTime(0, at + 0.035, duration / 5)
+    envelope.gain.exponentialRampToValueAtTime(
+      gain,
+      at + REFERENCE_ATTACK_SECONDS,
+    )
+    const releaseAt = at + REFERENCE_ATTACK_SECONDS + holdSeconds
+    envelope.gain.setTargetAtTime(0, releaseAt, 0.036)
     oscillator.connect(envelope).connect(bus)
     own(oscillator, [envelope])
     oscillator.start(at)
-    oscillator.stop(at + duration + 0.095)
+    oscillator.stop(releaseAt + RELEASE_MS / 1000)
   }
 
   function waitForReference(until: number): Promise<void> {
@@ -212,6 +220,10 @@ export function createBrowserGlassSound(
         midi > 127
       )
         throw new Error('The reference is unavailable. Tap Start to try again.')
+      // Snapshot before unlocking: tuning during a pending gesture affects the next example.
+      const holdSeconds = parseReferenceNoteHold(
+        options.referenceNoteHoldSeconds?.(),
+      )
       const available = await unlockReference()
       if (!available || disposed || context.state !== 'running')
         throw new Error('Audio could not start. Tap Start to try again.')
@@ -245,9 +257,14 @@ export function createBrowserGlassSound(
         await waitForReference(at + duration + 0.55)
         return
       }
-      tone(440 * 2 ** ((midi - 69) / 12), at, 0.65, 0.13)
+      tone(440 * 2 ** ((midi - 69) / 12), at, holdSeconds, 0.13)
       // The quiet gap follows audio time; a frozen reference cannot later score itself.
-      await waitForReference(at + 1.15)
+      await waitForReference(
+        at +
+          REFERENCE_ATTACK_SECONDS +
+          holdSeconds +
+          REFERENCE_QUIET_TAIL_SECONDS,
+      )
     },
     async prepareShatter() {
       const quiet = silenceShatterCache(cache)

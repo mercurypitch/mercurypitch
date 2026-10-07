@@ -2,7 +2,13 @@
 
 import { micManager } from '@irchiinnuss/pitch-engine'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { REFERENCE_NOTE_HOLD_PREFERENCE } from '../reference-note'
 import { createBrowserGlassHost } from './browser-host'
+import { createBrowserGlassSound } from './glass-sound'
+
+vi.mock('./glass-sound', () => ({
+  createBrowserGlassSound: vi.fn(() => ({ dispose: vi.fn() })),
+}))
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -64,5 +70,50 @@ describe('browser host foreground subscription', () => {
     await host.releaseUnusedMicrophoneTakeover?.()
     expect(takeOver).toHaveBeenCalledOnce()
     expect(release).toHaveBeenCalledOnce()
+  })
+})
+
+describe('browser host reference tuning', () => {
+  it.each([true, false])(
+    'applies tuning only when the host enables it (%s)',
+    (developmentTuning) => {
+      vi.stubGlobal('localStorage', { getItem: () => '1.4', setItem: vi.fn() })
+      const host = createBrowserGlassHost({
+        assetUrl: (id) => id,
+        storagePrefix: 'reference-test',
+        onExit: vi.fn(),
+        developmentTuning,
+      })
+      host.createSound()
+      const options = vi.mocked(createBrowserGlassSound).mock.calls.at(-1)![0]!
+      expect(options.referenceNoteHoldSeconds?.()).toBe(
+        developmentTuning ? 1.4 : 1.25,
+      )
+      host.writePreference(REFERENCE_NOTE_HOLD_PREFERENCE, '8')
+      expect(options.referenceNoteHoldSeconds?.()).toBe(
+        developmentTuning ? 1.5 : 1.25,
+      )
+    },
+  )
+  it('keeps current-visit tuning when persistent storage is unavailable', () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('blocked')
+      },
+      setItem: () => {
+        throw new Error('blocked')
+      },
+    })
+    const host = createBrowserGlassHost({
+      assetUrl: (id) => id,
+      storagePrefix: 'reference-test',
+      onExit: vi.fn(),
+      developmentTuning: true,
+    })
+    host.createSound()
+    const options = vi.mocked(createBrowserGlassSound).mock.calls.at(-1)![0]!
+    expect(options.referenceNoteHoldSeconds?.()).toBe(1.25)
+    host.writePreference(REFERENCE_NOTE_HOLD_PREFERENCE, '1.1')
+    expect(options.referenceNoteHoldSeconds?.()).toBe(1.1)
   })
 })

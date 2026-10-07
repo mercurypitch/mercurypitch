@@ -515,6 +515,7 @@ jobs:
             thawing-living-art,
             glassware-trio,
             voice,
+            reference,
           ]
     steps:
       - uses: actions/checkout@v7

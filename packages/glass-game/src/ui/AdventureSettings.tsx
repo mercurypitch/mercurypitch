@@ -3,6 +3,7 @@ import { createEffect, createSignal, onCleanup, Show, untrack } from 'solid-js'
 import type { GlassGameHost } from '../host'
 import settingsStyles from './AdventureSettings.module.css'
 import { hasDevelopmentTuning } from './development-tuning'
+import { DevelopmentReferenceTuning } from './DevelopmentReferenceTuning'
 import { DevelopmentRenderTuning } from './DevelopmentRenderTuning'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { GameAppearanceControls, GameMaterialControls, GameSettingsDialog, GameSurface, } from './GameUI'
@@ -212,6 +213,10 @@ export function AdventureSettings(props: {
   )
   const advanced = () => (
     <>
+      <DevelopmentReferenceTuning
+        referenceNoteHoldSeconds={adventure.referenceNoteHoldSeconds()}
+        onReferenceNoteHoldChange={adventure.changeReferenceNoteHold}
+      />
       <DevelopmentRenderTuning
         renderQualityPreference={adventure.renderQualityPreference()}
         renderQualityProfile={adventure.renderQualityProfile()}

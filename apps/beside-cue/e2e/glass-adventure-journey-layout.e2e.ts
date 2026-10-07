@@ -1,5 +1,6 @@
 // Museum map layout — viewport-sized landscapes and legible projected selection.
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expectGameHudVisibility, expectGameMaterialFramesFit, } from './helpers/glass-ui-settings'
 
 test.use({
   viewport: { width: 320, height: 640 },
@@ -143,6 +144,22 @@ test('tablet and desktop label only the selected marker without covering other a
     'data-selected-stage',
     'twin-galleries-isle',
   )
+  const retainedCanvas = await lobby.locator('canvas').elementHandle()
+  expect(
+    await lobby.locator('[data-game-hud-layer]').count(),
+  ).toBeGreaterThanOrEqual(2)
+  await lobby.getByRole('button', { name: 'Open museum settings' }).tap()
+  await expectGameHudVisibility(page, false)
+  const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
+  await settings.getByRole('button', { name: 'Resume', exact: true }).tap()
+  await expect(settings).toBeHidden()
+  await expectGameHudVisibility(page, true)
+  expect(await retainedCanvas!.evaluate((element) => element.isConnected)).toBe(
+    true,
+  )
+  await expect(lobby.locator('[data-journey-title]:visible')).toHaveText(
+    'Twin Galleries',
+  )
   await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
 })
 
@@ -155,7 +172,9 @@ test('map settings retain independent sound and appearance without remounting th
     element.setAttribute('data-layout-identity', 'original'),
   )
   const settings = lobby.getByRole('button', { name: 'Open museum settings' })
+  await expectGameHudVisibility(page, true)
   await settings.tap()
+  await expectGameHudVisibility(page, false)
   const dialog = page.getByRole('dialog', { name: 'Settings', exact: true })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('checkbox', { name: 'Mute museum sound' }).check()
@@ -171,6 +190,7 @@ test('map settings retain independent sound and appearance without remounting th
   ).toHaveAttribute('data-game-theme', 'dark')
   await page.keyboard.press('Escape')
   await expect(dialog).not.toBeVisible()
+  await expectGameHudVisibility(page, true)
   await expect(settings).toBeFocused()
   await expect(canvas).toHaveAttribute('data-layout-identity', 'original')
   await settings.click()
@@ -201,12 +221,15 @@ test('short landscape map settings keep their frame and footer inside the dialog
   await page.setViewportSize({ width: 740, height: 320 })
   const lobby = await openMap(page)
   const settings = lobby.getByRole('button', { name: 'Open museum settings' })
+  await expectGameHudVisibility(page, true)
   await settings.tap()
+  await expectGameHudVisibility(page, false)
   const dialog = page.getByRole('dialog', { name: 'Settings', exact: true })
   for (const theme of ['Crystal', 'Celadon']) {
     await dialog.getByRole('tab', { name: 'Appearance', exact: true }).click()
     await dialog.getByRole('button', { name: theme, exact: true }).click()
     await dialog.getByRole('tab', { name: 'Sound', exact: true }).click()
+    await expectGameMaterialFramesFit(dialog)
     const surface = dialog.locator('[data-game-surface]').first()
     const frame = surface.locator(':scope > [data-game-frame]')
     await expect(frame).toBeVisible()
@@ -247,5 +270,6 @@ test('short landscape map settings keep their frame and footer inside the dialog
   }
   await dialog.getByRole('button', { name: 'Resume', exact: true }).tap()
   await expect(dialog).not.toBeVisible()
+  await expectGameHudVisibility(page, true)
   await expect(settings).toBeFocused()
 })

@@ -143,6 +143,36 @@ describe('museum audio release', () => {
     expect(sharedAudioContextOwners()).toHaveLength(0)
   })
 
+  it('holds a scalar reference for 1.25 seconds before its soft release and quiet gap', async () => {
+    const sound = createBrowserGlassSound()
+    let done = false
+    const played = sound.reference(57).then(() => {
+      done = true
+    })
+    await flush()
+    const envelope = context.gains[1].gain
+    expect(envelope.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
+    expect(envelope.exponentialRampToValueAtTime).toHaveBeenCalledWith(
+      0.13,
+      0.09,
+    )
+    expect(envelope.setTargetAtTime).toHaveBeenCalledExactlyOnceWith(
+      0,
+      1.34,
+      0.036,
+    )
+    expect(context.sources[0].stop).toHaveBeenCalledWith(1.58)
+    context.currentTime = 1.88
+    await vi.advanceTimersByTimeAsync(25)
+    expect(done).toBe(false)
+    context.currentTime = 1.9
+    await vi.advanceTimersByTimeAsync(25)
+    await played
+    expect(done).toBe(true)
+    sound.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
+
   it('waits for the played reference and quiet gap on audio time', async () => {
     const sound = createBrowserGlassSound()
     let done = false
@@ -153,13 +183,43 @@ describe('museum audio release', () => {
     expect(context.sources).toHaveLength(1)
     await vi.advanceTimersByTimeAsync(1500)
     expect(done).toBe(false)
-    context.currentTime = 1.15
+    context.currentTime = 1.9
     await vi.advanceTimersByTimeAsync(25)
     await played
     expect(done).toBe(true)
     sound.dispose()
     await vi.advanceTimersByTimeAsync(240)
     expect(sharedAudioContextOwners()).toHaveLength(0)
+  })
+
+  it('snapshots the bounded hold before unlock and uses changes only for the next example', async () => {
+    let seconds = 1
+    const sound = createBrowserGlassSound({
+      referenceNoteHoldSeconds: () => seconds,
+    })
+    const first = sound.reference(57)
+    seconds = 1.5
+    await flush()
+    expect(context.gains[1].gain.setTargetAtTime).toHaveBeenCalledWith(
+      0,
+      1.09,
+      0.036,
+    )
+    context.currentTime = 2
+    await vi.advanceTimersByTimeAsync(25)
+    await first
+    const second = sound.reference(60)
+    await flush()
+    expect(context.gains[2].gain.setTargetAtTime).toHaveBeenCalledWith(
+      0,
+      3.59,
+      0.036,
+    )
+    context.currentTime = 4.15
+    await vi.advanceTimersByTimeAsync(25)
+    await second
+    sound.dispose()
+    await vi.advanceTimersByTimeAsync(240)
   })
 
   it('cancels a pending unlock without allowing its late success to start sound', async () => {

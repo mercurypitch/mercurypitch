@@ -413,7 +413,7 @@ export function MuseumJourney(props: {
           >
             <div class={styles.mapCanvas} ref={mapContainer} />
 
-            <header class={styles.mapHeader}>
+            <header class={styles.mapHeader} data-game-hud>
               <div class={styles.brand}>
                 <svg class={styles.sunMark} viewBox="0 0 80 80" aria-hidden>
                   <circle cx="40" cy="40" r="14" />
@@ -465,6 +465,7 @@ export function MuseumJourney(props: {
               <button
                 type="button"
                 class={styles.viewReset}
+                data-game-hud-layer
                 aria-label="Reset museum view"
                 onClick={resetView}
               >
@@ -475,7 +476,11 @@ export function MuseumJourney(props: {
               </button>
             </Show>
 
-            <nav class={styles.stageLabels} aria-label="Museum gallery labels">
+            <nav
+              class={styles.stageLabels}
+              data-game-hud-layer
+              aria-label="Museum gallery labels"
+            >
               <For each={props.chapters}>
                 {(chapter, index) => (
                   <button
@@ -530,7 +535,7 @@ export function MuseumJourney(props: {
             </Show>
           </div>
 
-          <div class={styles.mapDock}>
+          <div class={styles.mapDock} data-game-hud-layer>
             <nav class={styles.stageRail} aria-label="Select a museum island">
               <div class={styles.cardMaterial} aria-hidden="true">
                 <GameSurface kind="plaque" class={styles.cardSurface}>

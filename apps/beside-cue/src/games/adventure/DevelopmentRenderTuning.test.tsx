@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import { CameraTuningPanel } from '../../../../../packages/glass-game/src/ui/CameraTuningPanel'
+import { DevelopmentReferenceTuning } from '../../../../../packages/glass-game/src/ui/DevelopmentReferenceTuning'
 import { DevelopmentRenderTuning } from '../../../../../packages/glass-game/src/ui/DevelopmentRenderTuning'
 
 describe('development rendering controls', () => {
@@ -39,9 +40,14 @@ describe('development rendering controls', () => {
   it('opens the rendering controls through the gallery Tune button and resets its full preset', () => {
     const camera = vi.fn(),
       speed = vi.fn(),
-      quality = vi.fn()
+      quality = vi.fn(),
+      reference = vi.fn()
     render(() => (
       <CameraTuningPanel
+        referenceControls={{
+          referenceNoteHoldSeconds: 1.4,
+          onReferenceNoteHoldChange: reference,
+        }}
         settings={{ lookSensitivity: 0.8, followSmoothnessSeconds: 0.42 }}
         onChange={camera}
         renderQualityPreference="high"
@@ -61,7 +67,26 @@ describe('development rendering controls', () => {
       lookSensitivity: 1,
       followSmoothnessSeconds: 0.32,
     })
+    expect(reference).toHaveBeenCalledWith(1.25)
     expect(speed).toHaveBeenCalledWith(0.5)
     expect(quality).toHaveBeenCalledWith('auto')
   })
+})
+
+it('updates the accessible sustained reference duration and resets it independently', () => {
+  const [seconds, setSeconds] = createSignal(1.4)
+  render(() => (
+    <DevelopmentReferenceTuning
+      referenceNoteHoldSeconds={seconds()}
+      onReferenceNoteHoldChange={setSeconds}
+    />
+  ))
+  const slider = screen.getByRole('slider', { name: 'Reference note hold' })
+  expect(slider).toHaveValue('1.4')
+  expect(slider).toHaveAttribute('min', '1')
+  expect(slider).toHaveAttribute('max', '1.5')
+  fireEvent.input(slider, { target: { value: '1.1' } })
+  expect(slider).toHaveAttribute('aria-valuetext', '1.10 seconds')
+  fireEvent.click(screen.getByRole('button', { name: 'Reset note hold' }))
+  expect(slider).toHaveValue('1.25')
 })

@@ -1,5 +1,6 @@
 // Singing layout regression helpers preserve target geometry, touch controls and real replay.
 import { expect, test, type Page } from '@playwright/test'
+import { expectGameHudVisibility, expectGameMaterialFramesFit, openGameSettings, } from './glass-ui-settings'
 
 interface SingingLayoutFixtures {
   openMuseum(page: Page): Promise<void>
@@ -26,6 +27,7 @@ export async function expectVoicePanelFits(page: Page): Promise<void> {
   expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth)
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
   const panel = page.getByLabel('Voice challenge')
+  await expectGameMaterialFramesFit(panel)
   const target = panel.getByRole('img')
   await expect(target).toBeVisible()
   const targetLayout = await target.evaluate((element) => {
@@ -178,6 +180,7 @@ export function registerSingingLayoutTests({
           'true',
         )
         await expectVoicePanelFits(page)
+        await expectVoiceGoalFits(page, 'Hold it gently.')
         await expectVoiceActionsFit(page, [
           'Hear example',
           'Change note',
@@ -215,10 +218,23 @@ export function registerSingingLayoutTests({
         expect(layout.scrolls).toBe(false)
         if (viewport.height < 500)
           expect(layout.height).toBeLessThanOrEqual(152)
+        const surfaceBox = (await panel
+          .locator('[data-game-surface]')
+          .boundingBox())!
         const targetBox = (await replay.boundingBox())!
+        // The accepted singing boards place the lens through the upper rim,
+        // with its full hit target still inside the camera's measured panel.
+        expect(surfaceBox.y - targetBox.y).toBeGreaterThanOrEqual(12)
+        expect(targetBox.y).toBeGreaterThanOrEqual(
+          (await panel.boundingBox())!.y,
+        )
+        expect(layout.height).toBeLessThanOrEqual(203)
         const changeBox = (await panel
           .getByRole('button', { name: 'Change note', exact: true })
           .boundingBox())!
+        expect(changeBox.x + changeBox.width).toBeLessThanOrEqual(
+          targetBox.x - 8,
+        )
         expect(
           Math.max(
             changeBox.x - targetBox.x - targetBox.width,
@@ -276,6 +292,14 @@ export function registerSingingLayoutTests({
         await expect(
           panel.locator(`#${await help.getAttribute('aria-controls')}`),
         ).toBeVisible()
+        await expectVoicePanelFits(page)
+        const instructionsBox = (await panel
+          .locator(`#${await help.getAttribute('aria-controls')}`)
+          .boundingBox())!
+        const expandedBox = (await panel.boundingBox())!
+        expect(instructionsBox.y + instructionsBox.height).toBeLessThanOrEqual(
+          expandedBox.y + expandedBox.height,
+        )
         expect(
           await page.evaluate(() => window.glassVoiceFixture.referenceStarts),
         ).toBe(references)
@@ -285,7 +309,8 @@ export function registerSingingLayoutTests({
         // share this replay path and independently verify its geometry and help.
         if (viewport.width === 740) {
           const box = (await replay.boundingBox())!
-          await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+          // Hit the exposed cap above the frame, not only its enclosed center.
+          await page.mouse.click(box.x + box.width / 2, box.y + 4)
           await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
           await expect(replay).toBeDisabled()
           await expect
@@ -315,6 +340,53 @@ export function registerSingingLayoutTests({
       await expectVoicePanelFits(page)
       await close.click()
       await expect(panel).toBeHidden()
+      await expectMicrophoneOff(page)
+      await page.setViewportSize({ width: 740, height: 320 })
+      await openGameSettings(page, 'Sound')
+      const settings = page.getByRole('dialog', {
+        name: 'Settings',
+        exact: true,
+      })
+      await expectGameHudVisibility(page, false)
+      const mute = settings.getByRole('checkbox', {
+        name: 'Mute music and ambience',
+      })
+      const firstControl = await mute.evaluate((element) => {
+        const label = element.closest('label')!
+        const rect = label.getBoundingClientRect()
+        const body = element.closest('[role="tabpanel"]')!.parentElement!
+        const viewport = body.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+        )
+        return {
+          rect: rect.toJSON(),
+          viewport: viewport.toJSON(),
+          scrollTop: body.scrollTop,
+          hit: hit === label || label.contains(hit),
+        }
+      })
+      expect(firstControl.scrollTop).toBe(0)
+      expect(firstControl.rect.height).toBeGreaterThanOrEqual(44)
+      expect(firstControl.rect.top).toBeGreaterThanOrEqual(
+        firstControl.viewport.top,
+      )
+      expect(firstControl.rect.bottom).toBeLessThanOrEqual(
+        firstControl.viewport.bottom,
+      )
+      expect(firstControl.hit).toBe(true)
+      const checked = await mute.isChecked()
+      await page.mouse.click(
+        firstControl.rect.x + firstControl.rect.width / 2,
+        firstControl.rect.y + firstControl.rect.height / 2,
+      )
+      await expect(mute).toBeChecked({ checked: !checked })
+      await settings
+        .getByRole('button', { name: 'Resume', exact: true })
+        .click()
+      await expect(settings).toBeHidden()
+      await expectGameHudVisibility(page, true)
       await expectMicrophoneOff(page)
     })
   }
