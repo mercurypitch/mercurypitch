@@ -9,9 +9,16 @@
 // compensated here: the shifter runs at key − 12·log2(speed), so speed changes
 // only the tempo. Pitch Studio edits the song's own notes, so it hears the
 // original key — at any speed.
+//
+// Lifetime. The graph is how every stem reaches the master, key 0 included, so
+// it must outlive the mixer's own cleanup: a song left while it plays fades its
+// stems out first, and taking the graph down with the component cut them off at
+// once. Nothing here disposes it on its own account; `dispose()` is the audio
+// controller's to call, once the fade has played (detachGraph) or the context
+// has closed.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createSignal, onCleanup, untrack } from 'solid-js'
+import { createEffect, createSignal, untrack } from 'solid-js'
 import { clampKeyShift, shifterSemitones } from '@/lib/key-shift/key-shift'
 import type { KeyShiftBus, KeyShiftGraph, KeyShiftState, } from '@/lib/key-shift/key-shift-graph'
 import { createKeyShiftGraph } from '@/lib/key-shift/key-shift-graph'
@@ -48,6 +55,7 @@ export interface StemKeyControl {
   available: Accessor<boolean>
   /** The key the listener hears: 0 in Pitch Studio or without the engine. */
   appliedKey: Accessor<number>
+  /** Lets the graph go. Safe to call twice; the owner calls it, see above. */
   dispose(): void
 }
 
@@ -87,7 +95,6 @@ export function createStemKeyControl(deps: StemKeyControlDeps): StemKeyControl {
     setGraph(null)
     attachedTo = null
   }
-  onCleanup(dispose)
 
   return {
     attach(ctx, destination) {
