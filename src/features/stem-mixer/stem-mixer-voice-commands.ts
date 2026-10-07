@@ -523,11 +523,14 @@ export function createStemMixerVoiceCommands(
       run: () => {
         const at = deps.elapsed()
         deps.loop.setStart(at)
-        // An A on or just before B leaves no loop to play: B goes.
+        // An A on or just before B leaves no loop to play: B goes. The reply
+        // says so, since a voice command otherwise answers only with what it
+        // set.
         const end = deps.loop.end()
         if (end !== null && end - at <= LOOP_MIN_GAP) {
           deps.loop.setEnd(null)
           deps.loop.setEnabled(false)
+          return 'Loop A set. B cleared'
         }
         return 'Loop A set'
       },

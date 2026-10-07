@@ -372,11 +372,28 @@ describe('stem mixer voice commands — loop and speed', () => {
     fixture.deps.loop.setEnd(30.05)
     fixture.deps.loop.setEnabled(true)
 
-    expect(fire(fixture, 'set a')).toBe('Loop A set')
+    expect(fire(fixture, 'set a')).toBe('Loop A set. B cleared')
 
     expect(fixture.deps.loop.start()).toBe(30)
     expect(fixture.deps.loop.end()).toBeNull()
     expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('says B is cleared when A is set exactly on it, or after it', () => {
+    // The playhead is at 30 s: B on it, and B back at 12 s.
+    for (const end of [30, 12]) {
+      const fixture = makeFixture()
+      fixture.deps.loop.setEnd(end)
+      fixture.deps.loop.setEnabled(true)
+
+      expect(fire(fixture, 'set a')).toBe('Loop A set. B cleared')
+
+      expect([
+        fixture.deps.loop.start(),
+        fixture.deps.loop.end(),
+        fixture.deps.loop.enabled(),
+      ]).toEqual([30, null, false])
+    }
   })
 
   it('keeps B when A is set clear of it', () => {
