@@ -324,62 +324,131 @@ it('resizes the decorative frame without remounting its navigation owner and dis
 })
 
 it.each(['Crystal', 'Celadon'])(
-  'keeps %s material opacity and corner preferences live on its existing frame',
+  'keeps %s material preferences live while capping compact corners and restoring saved corners on resize',
   (theme) => {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      width: 365,
-      height: 300,
-      x: 0,
-      y: 0,
-      top: 0,
-      right: 365,
-      bottom: 300,
-      left: 0,
-      toJSON: () => ({}),
-    })
-    const view = mount()
-    fireEvent.click(screen.getByRole('tab', { name: 'Display' }))
-    fireEvent.click(screen.getByRole('button', { name: theme }))
-    fireEvent.click(screen.getByLabelText('Reduced transparency'))
-    const root = view.container.querySelector<HTMLElement>('[data-game-theme]')!
-    expect(root.style.getPropertyValue('--game-opacity')).toBe('1')
-    expect(root.style.getPropertyValue('--game-settings-opacity')).toBe('1')
-    fireEvent.click(screen.getByLabelText('Reduced transparency'))
-    fireEvent.click(screen.getByRole('tab', { name: 'Advanced' }))
-    const frame = view.container.querySelector('[data-game-frame]')!
-    const outline = frame.querySelector('clipPath path')!
-    const sourceOutline = outline.getAttribute('d')
-    const cornerPatch = (): SVGSVGElement =>
-      frame.querySelector(':scope > svg')!
-    const before = {
-      width: Number(cornerPatch().getAttribute('width')),
-      height: Number(cornerPatch().getAttribute('height')),
-      viewBox: cornerPatch().getAttribute('viewBox'),
+    let width = 365
+    let height = 300
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () => ({
+        width,
+        height,
+        x: 0,
+        y: 0,
+        top: 0,
+        right: width,
+        bottom: height,
+        left: 0,
+        toJSON: () => ({}),
+      }),
+    )
+    const observers = new Set<() => void>()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private readonly callback: () => void) {
+          observers.add(callback)
+        }
+        observe(): void {}
+        disconnect(): void {
+          observers.delete(this.callback)
+        }
+      },
+    )
+    try {
+      const view = mount()
+      fireEvent.click(screen.getByRole('tab', { name: 'Display' }))
+      fireEvent.click(screen.getByRole('button', { name: theme }))
+      fireEvent.click(screen.getByLabelText('Reduced transparency'))
+      const root =
+        view.container.querySelector<HTMLElement>('[data-game-theme]')!
+      expect(root.style.getPropertyValue('--game-opacity')).toBe('1')
+      expect(root.style.getPropertyValue('--game-settings-opacity')).toBe('1')
+      fireEvent.click(screen.getByLabelText('Reduced transparency'))
+      fireEvent.click(screen.getByRole('tab', { name: 'Advanced' }))
+      const frame = view.container.querySelector('[data-game-frame]')!
+      const outline = frame.querySelector('clipPath path')!
+      const sourceOutline = outline.getAttribute('d')
+      const cornerPatch = (): SVGSVGElement =>
+        frame.querySelector(':scope > svg')!
+      const before = {
+        width: Number(cornerPatch().getAttribute('width')),
+        height: Number(cornerPatch().getAttribute('height')),
+        viewBox: cornerPatch().getAttribute('viewBox'),
+      }
+      fireEvent.input(screen.getByRole('slider', { name: 'Corner size' }), {
+        target: { value: '32' },
+      })
+      expect(Number(cornerPatch().getAttribute('width'))).toBe(before.width)
+      expect(Number(cornerPatch().getAttribute('height'))).toBe(before.height)
+      expect(
+        JSON.parse(view.writePreference.mock.calls.at(-1)![1]).corner,
+      ).toBe(32)
+      fireEvent.input(screen.getByRole('slider', { name: 'Corner size' }), {
+        target: { value: '16' },
+      })
+      expect(Number(cornerPatch().getAttribute('width'))).toBeLessThan(
+        before.width,
+      )
+      expect(Number(cornerPatch().getAttribute('height'))).toBeLessThan(
+        before.height,
+      )
+      fireEvent.input(screen.getByRole('slider', { name: 'Corner size' }), {
+        target: { value: '32' },
+      })
+      expect(Number(cornerPatch().getAttribute('width'))).toBe(before.width)
+      expect(Number(cornerPatch().getAttribute('height'))).toBe(before.height)
+      // Keep the artwork's aspect ratio so only the responsive corner cap changes.
+      width = 730
+      height = 600
+      for (const resized of observers) resized()
+      expect(frame).toHaveAttribute('viewBox', '0 0 730 600')
+      expect(screen.getByRole('slider', { name: 'Corner size' })).toHaveValue(
+        '32',
+      )
+      expect(
+        JSON.parse(view.writePreference.mock.calls.at(-1)![1]).corner,
+      ).toBe(32)
+      expect(outline.getAttribute('d')).toBe(sourceOutline)
+      expect(Number(cornerPatch().getAttribute('width'))).toBeGreaterThan(
+        before.width,
+      )
+      expect(Number(cornerPatch().getAttribute('height'))).toBeGreaterThan(
+        before.height,
+      )
+      const source = cornerPatch()
+        .getAttribute('viewBox')!
+        .split(' ')
+        .map(Number)
+      expect(source.slice(0, 2)).toEqual(
+        before.viewBox!.split(' ').slice(0, 2).map(Number),
+      )
+      expect(
+        Number(cornerPatch().getAttribute('width')) / source[2]!,
+      ).toBeCloseTo(
+        Number(cornerPatch().getAttribute('height')) / source[3]!,
+        8,
+      )
+      width = 365
+      height = 300
+      for (const resized of observers) resized()
+      expect(frame).toHaveAttribute('viewBox', '0 0 365 300')
+      expect(Number(cornerPatch().getAttribute('width'))).toBe(before.width)
+      expect(Number(cornerPatch().getAttribute('height'))).toBe(before.height)
+      expect(screen.getByRole('slider', { name: 'Corner size' })).toHaveValue(
+        '32',
+      )
+      fireEvent.input(screen.getByRole('slider', { name: 'Glass backing' }), {
+        target: { value: '.72' },
+      })
+      expect(root.style.getPropertyValue('--game-opacity')).toBe('0.72')
+      expect(root.style.getPropertyValue('--game-settings-opacity')).toBe(
+        '0.72',
+      )
+      expect(view.container.querySelector('[data-game-frame]')).toBe(frame)
+      expect(view.mounted).toHaveBeenCalledOnce()
+      expect(view.retired).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
     }
-    fireEvent.input(screen.getByRole('slider', { name: 'Corner size' }), {
-      target: { value: '32' },
-    })
-    expect(outline.getAttribute('d')).toBe(sourceOutline)
-    expect(Number(cornerPatch().getAttribute('width'))).toBeGreaterThan(
-      before.width,
-    )
-    expect(Number(cornerPatch().getAttribute('height'))).toBeGreaterThan(
-      before.height,
-    )
-    const source = cornerPatch().getAttribute('viewBox')!.split(' ').map(Number)
-    expect(source.slice(0, 2)).toEqual(
-      before.viewBox!.split(' ').slice(0, 2).map(Number),
-    )
-    expect(
-      Number(cornerPatch().getAttribute('width')) / source[2]!,
-    ).toBeCloseTo(Number(cornerPatch().getAttribute('height')) / source[3]!, 8)
-    fireEvent.input(screen.getByRole('slider', { name: 'Glass backing' }), {
-      target: { value: '.72' },
-    })
-    expect(root.style.getPropertyValue('--game-opacity')).toBe('0.72')
-    expect(root.style.getPropertyValue('--game-settings-opacity')).toBe('0.72')
-    expect(view.container.querySelector('[data-game-frame]')).toBe(frame)
-    expect(view.mounted).toHaveBeenCalledOnce()
-    expect(view.retired).not.toHaveBeenCalled()
   },
 )
