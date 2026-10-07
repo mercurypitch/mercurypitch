@@ -61,3 +61,22 @@ describe('the key control in a compact host', () => {
     expect(lengthPx(frame, 'height')).toBeGreaterThanOrEqual(46)
   })
 })
+
+describe("a playlist entry's key stepper", () => {
+  const css = sheet('EntryKeyStepper.module.css')
+  const coarse = css.slice(css.indexOf('@media (pointer: coarse)'))
+
+  it('reads its text at 12 px or more', () => {
+    expect(
+      lengthPx(rule(css, '.entryKey'), 'font-size'),
+    ).toBeGreaterThanOrEqual(12)
+  })
+
+  it('gives its steps and its clear button 44 px to press on a coarse pointer', () => {
+    for (const selector of ['.step', '.clear']) {
+      const target = rule(coarse, selector)
+      expect(lengthPx(target, 'width')).toBeGreaterThanOrEqual(44)
+      expect(lengthPx(target, 'height')).toBeGreaterThanOrEqual(44)
+    }
+  })
+})

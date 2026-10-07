@@ -4,7 +4,8 @@
   align-items: center;
   gap: 0.4rem;
   margin-top: 0.3rem;
-  font-size: 0.72rem;
+  /* 12 px, the floor for text. */
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
@@ -59,4 +60,14 @@
 .clear:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* A finger needs 44 px: the 22 px steps are for a mouse. Last in the file,
+   so it outranks .clear's own size above. */
+@media (pointer: coarse) {
+  .step,
+  .clear {
+    width: 44px;
+    height: 44px;
+  }
 }
