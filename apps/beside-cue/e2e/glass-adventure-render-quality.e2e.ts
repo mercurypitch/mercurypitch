@@ -271,6 +271,7 @@ async function openMuseum(page: Page): Promise<void> {
 async function expectQualitySelectorWithinViewport(page: Page): Promise<void> {
   const panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
   const quality = panel.getByRole('group', { name: 'Graphics quality' })
+  await quality.scrollIntoViewIfNeeded()
   const bounds = await quality.boundingBox()
   const viewport = page.viewportSize()
   expect(bounds).not.toBeNull()
@@ -290,6 +291,19 @@ async function tap(
   context: BrowserContext,
   locator: Locator,
 ): Promise<void> {
+  await locator.scrollIntoViewIfNeeded()
+  await expect
+    .poll(() =>
+      locator.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          bounds.x + bounds.width / 2,
+          bounds.y + bounds.height / 2,
+        )
+        return hit !== null && element.contains(hit)
+      }),
+    )
+    .toBe(true)
   const bounds = await locator.boundingBox()
   if (bounds === null) throw new Error('Touch target is not visible.')
   const point = {

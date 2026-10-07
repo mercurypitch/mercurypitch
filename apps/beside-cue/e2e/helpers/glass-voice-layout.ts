@@ -28,6 +28,18 @@ export async function expectVoicePanelFits(page: Page): Promise<void> {
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
   const panel = page.getByLabel('Voice challenge')
   await expectGameMaterialFramesFit(panel)
+  // The material stays outside scrolling content, including classic gutters.
+  // Its fixed-width artwork must not create horizontal scrolling in either box.
+  const scrollWidths = await panel.evaluate((element) =>
+    [...element.querySelectorAll<HTMLElement>('[data-game-surface], div, p')]
+      .filter((child) => /auto|scroll/.test(getComputedStyle(child).overflowY))
+      .map((child) => ({
+        client: child.clientWidth,
+        scroll: child.scrollWidth,
+      })),
+  )
+  for (const width of scrollWidths)
+    expect(width.scroll).toBeLessThanOrEqual(width.client + 1)
   const target = panel.getByRole('img')
   await expect(target).toBeVisible()
   const targetLayout = await target.evaluate((element) => {

@@ -308,6 +308,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
     },
     renderQuality: 'auto',
     shatterPlaybackSpeed: 0.5,
+    referenceNoteHoldSeconds: 1.25,
   })
   await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()

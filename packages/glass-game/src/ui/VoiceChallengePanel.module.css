@@ -11,7 +11,13 @@
   color: var(--game-ink);
 }
 
+/* The painted frame must stay outside the scrollport: classic scrollbar gutters
+   reduce absolute percentage widths and would squeeze its source artwork. */
 .panel .surface {
+  padding: 0;
+}
+
+.panel .content {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
   gap: 8px 12px;
@@ -377,7 +383,7 @@
     bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px));
   }
 
-  .panel .surface {
+  .panel .content {
     grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
     gap: 4px 18px;
     padding: clamp(14px, calc(var(--game-padding, 24px) - 10px), 22px) 24px;
@@ -428,7 +434,7 @@
   padding-top: 16px;
 }
 
-.panel[data-voice-layout='single'] .surface {
+.panel[data-voice-layout='single'] .content {
   padding: 14px;
   overflow: visible;
   scrollbar-gutter: auto;
@@ -482,7 +488,7 @@
       calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))
     );
   }
-  .panel[data-voice-layout='single'] .surface {
+  .panel[data-voice-layout='single'] .content {
     gap: 4px 18px;
     padding-inline: 24px;
   }
