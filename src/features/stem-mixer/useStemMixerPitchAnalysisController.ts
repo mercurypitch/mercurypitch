@@ -33,6 +33,9 @@ export type PitchAnalysisOutcome =
   | { ok: true }
   | { ok: false; message: string; shown: boolean }
 
+/** What a finished analysis says to the singer who asked for it. */
+const ANALYSIS_COMPLETE = 'Pitch analysis complete'
+
 export interface StemMixerPitchAnalysisRunOptions {
   /**
    * Show nothing, success or failure: the caller reports the outcome as
@@ -449,7 +452,7 @@ export const useStemMixerPitchAnalysisController = (
       )
 
       setPitchSourceMode('offline')
-      if (!quiet) deps.showNotification('Pitch analysis complete', 'success')
+      if (!quiet) deps.showNotification(ANALYSIS_COMPLETE, 'success')
 
       // Persist to IndexedDB (cleaned result + history; contour not yet
       // persisted, so the slider is re-enabled only after a fresh run).
@@ -475,16 +478,48 @@ export const useStemMixerPitchAnalysisController = (
 
   // Two at once would race to write the same notes: the second request
   // waits for the first instead.
-  let running: Promise<PitchAnalysisOutcome> | null = null
+  //
+  // A quiet run says nothing, because its caller reports the outcome in its
+  // own message (Find my key). If Pitch Studio's Analyze joins it, the singer
+  // asked for the analysis in their own right and is owed the answer: it is
+  // said once, when the run settles, and every caller is told so (`shown`),
+  // so Find my key does not say a failure again.
+  let running: {
+    result: Promise<PitchAnalysisOutcome>
+    claim: () => void
+  } | null = null
+
+  const say = (outcome: PitchAnalysisOutcome): PitchAnalysisOutcome => {
+    if (outcome.ok) {
+      deps.showNotification(ANALYSIS_COMPLETE, 'success')
+      return outcome
+    }
+    if (outcome.shown) return outcome
+    deps.showNotification(outcome.message, 'error')
+    return { ...outcome, shown: true }
+  }
+
   const runAnalysis = (
     options: StemMixerPitchAnalysisRunOptions = {},
   ): Promise<PitchAnalysisOutcome> => {
-    if (running !== null) return running
-    const run = analyse(options.quiet === true).finally(() => {
-      running = null
-    })
-    running = run
-    return run
+    const quiet = options.quiet === true
+    if (running !== null) {
+      if (!quiet) running.claim()
+      return running.result
+    }
+    let claimed = false
+    const result = analyse(quiet)
+      .then((outcome) => (quiet && claimed ? say(outcome) : outcome))
+      .finally(() => {
+        running = null
+      })
+    running = {
+      result,
+      claim: () => {
+        claimed = true
+      },
+    }
+    return result
   }
 
   const loadCachedAnalysis = async (): Promise<boolean> => {

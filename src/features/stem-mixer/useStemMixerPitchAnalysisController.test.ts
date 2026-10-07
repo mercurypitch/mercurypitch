@@ -117,3 +117,72 @@ describe('runAnalysis', () => {
     expect(showNotification).not.toHaveBeenCalled()
   })
 })
+
+describe('runAnalysis, asked for in two ways at once', () => {
+  // Find my key analyses quietly and reports in its own message. A singer who
+  // presses Pitch Studio's Analyze while that runs has asked for the
+  // analysis in their own right, and was told nothing at all.
+  function slowAnalysis() {
+    let finish!: (analysis: VocalAnalysis) => void
+    let fail!: (error: Error) => void
+    fakes.analyze.mockReturnValue(
+      new Promise((resolve, reject) => {
+        finish = resolve
+        fail = reject
+      }),
+    )
+    return { finish: () => finish(ANALYSED), fail }
+  }
+
+  it('says it went well to an Analyze that joined a quiet run', async () => {
+    const slow = slowAnalysis()
+    const { controller, showNotification } = mount()
+
+    const findMyKey = controller.runAnalysis({ quiet: true })
+    const analyze = controller.runAnalysis()
+    slow.finish()
+
+    expect(await analyze).toEqual({ ok: true })
+    expect(await findMyKey).toEqual({ ok: true })
+    expect(showNotification.mock.calls).toEqual([
+      ['Pitch analysis complete', 'success'],
+    ])
+  })
+
+  it('says why it failed once, and tells Find my key it was said', async () => {
+    const slow = slowAnalysis()
+    const { controller, showNotification } = mount()
+
+    const findMyKey = controller.runAnalysis({ quiet: true })
+    const pressed = controller.runAnalysis()
+    const pressedAgain = controller.runAnalysis()
+    slow.fail(new Error('The vocal could not be read'))
+
+    const said = {
+      ok: false,
+      message: 'The vocal could not be read',
+      shown: true,
+    }
+    expect(await pressed).toEqual(said)
+    expect(await pressedAgain).toEqual(said)
+    expect(await findMyKey).toEqual(said)
+    expect(showNotification.mock.calls).toEqual([
+      ['The vocal could not be read', 'error'],
+    ])
+  })
+
+  it('adds nothing to a run Pitch Studio started, whoever joins it', async () => {
+    const slow = slowAnalysis()
+    const { controller, showNotification } = mount()
+
+    const analyze = controller.runAnalysis()
+    const findMyKey = controller.runAnalysis({ quiet: true })
+    const pressedAgain = controller.runAnalysis()
+    slow.finish()
+
+    await Promise.all([analyze, findMyKey, pressedAgain])
+    expect(showNotification.mock.calls).toEqual([
+      ['Pitch analysis complete', 'success'],
+    ])
+  })
+})
