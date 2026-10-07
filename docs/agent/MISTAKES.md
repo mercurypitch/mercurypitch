@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Observe the new reset, not a cumulative retry label
+
+**Symptom:** a melody browser check read nonzero progress immediately after a wrong note, although the judge reset correctly later.
+**Cause:** “Try again” remains available after an earlier retry; its presence cannot identify a new reset event.
+**Rule:** start from positive progress, observe the injected wrong pitch, then wait for zero progress within the existing deadline. Keep a genuine earlier retry in the browser regression so stale labels cannot satisfy the probe.
+**See:** `apps/beside-cue/e2e/glass-adventure-thawing-song.e2e.ts`.
+
 ### Measure sustained reference gain, not just source duration
 
 **Symptom:** tapping Hear produced a short pip even though the source and reference wait lasted much longer.

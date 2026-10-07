@@ -317,6 +317,10 @@ async function observeTierOneGraceSequence(
       scheduledSeconds: mismatchRecoveryAudioAt - mismatchStartedAudioAt,
       samplesDuringInterruption: mismatchObserved.length,
     }
+    if (progressValue() <= 0)
+      throw new Error(
+        'Wrong-note reset must start with positive melody progress.',
+      )
     window.thawingInput.tone(64)
     await waitFor(
       () => (guide.textContent ?? '').includes('You E4 · Target'),
@@ -324,10 +328,11 @@ async function observeTierOneGraceSequence(
     )
     await waitFor(
       () =>
+        progressValue() === 0 &&
         [...root.querySelectorAll('button')].some(
           (button) => button.textContent?.trim() === 'Try again',
         ),
-      'continuous wrong pitch to request a retry',
+      'continuous wrong pitch to reset progress and request a retry',
     )
     return {
       dropout,
@@ -517,6 +522,26 @@ test('the complete sung curve shatters the portrait and opens the exit without m
   const pitchGuide = panel.locator(
     'output[aria-label="Live pitch compared with target"]',
   )
+  // Retry remains available after a previous failure, even as singing resumes.
+  // Keep that state so the grace probe must observe a fresh progress reset.
+  const melodyProgress = panel.getByRole('progressbar', {
+    name: 'Melody progress',
+    exact: true,
+  })
+  await page.evaluate(
+    (midi) => window.thawingInput.tone(midi),
+    resolved.melody.anchors[0]!.midi,
+  )
+  await expect
+    .poll(async () =>
+      Number(await melodyProgress.getAttribute('aria-valuenow')),
+    )
+    .toBeGreaterThan(0)
+  await page.evaluate(() => window.thawingInput.tone(64))
+  await expect(melodyProgress).toHaveAttribute('aria-valuenow', '0')
+  await expect(
+    panel.getByRole('button', { name: 'Try again', exact: true }),
+  ).toBeVisible()
   const grace = await observeTierOneGraceSequence(panel, resolved.melody)
   expect(grace.dropout.scheduledSeconds).toBeCloseTo(0.65, 5)
   expect(grace.dropout.interruptionGuideText).toContain('Listening · Target')
