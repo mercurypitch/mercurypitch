@@ -2467,6 +2467,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         /* */
       })
     }
+    // Closing takes the nodes with it, but not the key graph's timers.
+    audio.detachGraph()
   })
 
   const handleKeepKaraokeVoiceTake = (): void => {

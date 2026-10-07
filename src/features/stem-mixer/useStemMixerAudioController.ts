@@ -380,6 +380,7 @@ export interface StemMixerAudioController {
    * closing it: the way out for a mixer on a lent context. The next
    * `ensureAudioCtx` builds a fresh graph on whatever the lease lends.
    * A fade still running is cut off with the nodes: wait `releaseLeft()`.
+   * The key graph is let go here and nowhere else, so the fade plays through it.
    */
   detachGraph: () => void
 }

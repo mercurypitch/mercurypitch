@@ -274,6 +274,30 @@ describe('stem key control', () => {
 
     expect(t.graph().dispose).toHaveBeenCalledTimes(1)
   })
+
+  it('leaves the graph standing when its owner goes, for the audio controller to let go', () => {
+    // Every stem reaches the master through the graph, so one taken down with
+    // the mixer's own cleanup cuts off the fade a song left while it plays has
+    // just started. The controller disposes it once the fade has played.
+    const t = start()
+    t.attach()
+
+    t.dispose()
+
+    expect(t.graph().dispose).not.toHaveBeenCalled()
+    t.control.dispose()
+    expect(t.graph().dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets go of the graph once, however often it is asked', () => {
+    const t = start()
+    t.attach()
+
+    t.control.dispose()
+    t.control.dispose()
+
+    expect(t.graph().dispose).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('busForTrack', () => {
