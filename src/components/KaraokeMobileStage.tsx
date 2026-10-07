@@ -182,9 +182,9 @@ export interface KaraokeMobileStageProps {
   showStageSettings?: boolean
 
   // Sing-this-note glyphs (chord-chart labels over the words). More offers the
-  // notes switch for a song that has its notes and, given `onEnsureNotes`, for
-  // one that has none yet: turning it on then asks the host to run the
-  // (denoised) pitch analysis, which `notesAnalyzing` reports.
+  // notes switch for a song that has its notes and, while the host gives
+  // `onEnsureNotes` (only when a tap can start the pitch analysis, which
+  // `notesAnalyzing` reports), for one that has none yet.
   alignedWords?: () => AlignedWord[]
   onEnsureNotes?: () => void
   notesAnalyzing?: () => boolean
