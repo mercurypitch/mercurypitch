@@ -7,7 +7,8 @@
   gap: 0.3rem;
   margin: 0 0.3rem;
   font-family: monospace;
-  font-size: 0.65rem;
+  /* 12 px, the floor for text. */
+  font-size: 0.75rem;
   color: var(--fg-secondary, #8b949e);
 }
 
@@ -144,4 +145,24 @@ button.value:hover:not(:disabled),
 .keyShift[data-size='touch'] .find svg {
   width: 1.1rem;
   height: 1.1rem;
+}
+
+/* A finger needs 44 px wherever the control is hosted. The compact stepper's
+   28 px controls are for a mouse, and a Jam host moves the room's key from a
+   phone or a tablet as well. The 'touch' size above sets its own. */
+@media (pointer: coarse) {
+  .keyShift[data-size='compact'] .stepper,
+  .keyShift[data-size='compact'] .find {
+    height: 46px;
+  }
+
+  .keyShift[data-size='compact'] .step {
+    width: 44px;
+    height: 44px;
+  }
+
+  .keyShift[data-size='compact'] .value {
+    min-width: 44px;
+    height: 44px;
+  }
 }
