@@ -29,6 +29,7 @@ import { Headphones, Loop, Mic, Pause, Play, SkipBack, Square, } from '@/compone
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
 import { OverflowMenu } from '@/components/OverflowMenu'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import { KeyChip } from './KeyChip'
 import styles from './MixerCapsule.module.css'
 import { SpeedChip } from './SpeedChip'
@@ -72,15 +73,6 @@ export interface MixerCapsuleProps {
   leading?: JSX.Element
   /** Drawn after More, with a divider before it. */
   trailing?: JSX.Element
-}
-
-/** Whether A and B make a loop the toggle can turn on. */
-export function hasPlayableLoop(
-  start: number | null,
-  end: number | null,
-): boolean {
-  // B without A loops from 0:00 (loop-points.ts sets A to 0 when it can).
-  return end !== null && end > (start ?? 0)
 }
 
 type MicState = 'off' | 'on' | 'error'

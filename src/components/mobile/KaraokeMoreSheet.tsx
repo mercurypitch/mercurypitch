@@ -19,13 +19,14 @@
 // and B at least 0.1 s after A: the binding places them (StemMixer, with
 // placeLoopPoint) and hands back why a point was refused, which shows here,
 // in the sheet the singer is looking at, not in a toast over it. The loop
-// switch stays off until A and B make a loop (hasPlayableLoop, the rule L
-// and the voice commands follow), and stays reachable while it is on.
+// switch stays off until A and B make a loop (hasPlayableLoop, the rule L,
+// the voice commands and the clock follow), and stays reachable while it is
+// on.
 
 import type { Component, JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { OptionSection, OptionsSheet } from '@/components/mobile/OptionsSheet'
-import { hasPlayableLoop } from '@/components/stem-mixer/rail/MixerCapsule'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 import styles from './KaraokeMoreSheet.module.css'
 

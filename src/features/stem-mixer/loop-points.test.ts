@@ -1,5 +1,6 @@
 // Where the mixer's A and B may go, and which spans the playback clock loops.
 import { describe, expect, it } from 'vitest'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import type { LoopPoints } from './loop-points'
 import { LOOP_MIN_GAP, loopSpan, placeLoopPoint } from './loop-points'
 
@@ -91,5 +92,27 @@ describe('loopSpan', () => {
       start: 20,
       end: 30,
     })
+  })
+})
+
+describe('hasPlayableLoop beside loopSpan', () => {
+  it('says yes exactly when the playback clock would loop the same A and B', () => {
+    const spans: [number, number][] = [
+      [0, 0],
+      [5, 5],
+      [10, 5],
+      [5, 5.05],
+      [5, 5.1],
+      [0.7, 0.7 + LOOP_MIN_GAP],
+      [5, 5.1000001],
+      [2, 30],
+    ]
+
+    for (const [start, end] of spans) {
+      expect(
+        hasPlayableLoop(start, end),
+        `${String(start)} to ${String(end)}`,
+      ).toBe(loopSpan(true, { start, end }, 30) !== null)
+    }
   })
 })

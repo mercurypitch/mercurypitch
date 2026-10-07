@@ -6,7 +6,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
-import { hasPlayableLoop, MixerCapsule } from './MixerCapsule'
+import { MixerCapsule } from './MixerCapsule'
 
 afterEach(cleanup)
 
@@ -72,7 +72,14 @@ function mount(extra: { moreItems?: OverflowMenuItem[] } = {}) {
       moreItems={extra.moreItems}
     />
   ))
-  return { calls, setLoopStart, setLoopEnabled, setMicError, setMicActive }
+  return {
+    calls,
+    setLoopStart,
+    setLoopEnd,
+    setLoopEnabled,
+    setMicError,
+    setMicActive,
+  }
 }
 
 const button = (name: string | RegExp) => screen.getByRole('button', { name })
@@ -134,6 +141,17 @@ describe('MixerCapsule', () => {
     fireEvent.click(loopToggle())
     expect(calls.toggleLoop).toHaveBeenCalledTimes(1)
     expect(loopToggle()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('holds the loop toggle for a span too short to play, as the clock would', () => {
+    const { setLoopStart, setLoopEnd } = mount()
+    setLoopStart(5)
+
+    setLoopEnd(5.05)
+    expect(loopToggle()).toBeDisabled()
+
+    setLoopEnd(5.2)
+    expect(loopToggle()).toBeEnabled()
   })
 
   it('keeps a loop that is on reachable, so it can be turned off', () => {
@@ -208,15 +226,5 @@ describe('MixerCapsule', () => {
     expect(rows).toEqual(['Clear loop', 'Lyrics'])
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Lyrics' }))
     expect(onSelect).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('hasPlayableLoop', () => {
-  it('needs B after A; B alone loops from the start', () => {
-    expect(hasPlayableLoop(null, null)).toBe(false)
-    expect(hasPlayableLoop(5, null)).toBe(false)
-    expect(hasPlayableLoop(5, 9)).toBe(true)
-    expect(hasPlayableLoop(null, 9)).toBe(true)
-    expect(hasPlayableLoop(9, 9)).toBe(false)
   })
 })

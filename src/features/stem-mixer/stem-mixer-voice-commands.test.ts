@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
+import { LOOP_MIN_GAP } from './loop-points'
 import type { StemMixerVoiceDeps, StemMixerVoiceTrack, } from './stem-mixer-voice-commands'
 import { createStemMixerVoiceCommands } from './stem-mixer-voice-commands'
 import type { FindMyKeyResult } from './useStemMixerKeyController'
@@ -267,6 +268,50 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fixture.deps.loop.enabled()).toBe(true)
     expect(fire(fixture, 'toggle loop')).toBe('Loop off')
     expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('turns the loop on for the shortest loop a marker leaves, and not for a span too short to play', () => {
+    const fixture = makeFixture()
+    // 0.7 s and 0.7 s + the gap are a hair under the gap apart in floating
+    // point, and a loop the clock plays.
+    fixture.deps.loop.setStart(0.7)
+    fixture.deps.loop.setEnd(0.7 + LOOP_MIN_GAP)
+
+    expect(fire(fixture, 'loop on')).toBe('Loop on')
+    expect(fire(fixture, 'toggle loop')).toBe('Loop off')
+    expect(fire(fixture, 'toggle loop')).toBe('Loop on')
+
+    fixture.deps.loop.setEnabled(false)
+    fixture.deps.loop.setEnd(0.75)
+    expect(fire(fixture, 'loop on')).toBe('Set A and B first')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('takes B away when A is set on it or just before it, where the buttons refuse the point', () => {
+    const fixture = makeFixture()
+    // The playhead is at 30 s.
+    fixture.deps.loop.setEnd(30.05)
+    fixture.deps.loop.setEnabled(true)
+
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+
+    expect(fixture.deps.loop.start()).toBe(30)
+    expect(fixture.deps.loop.end()).toBeNull()
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('keeps B when A is set clear of it', () => {
+    const fixture = makeFixture()
+    fixture.deps.loop.setEnd(45)
+    fixture.deps.loop.setEnabled(true)
+
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([30, 45, true])
   })
 
   it('steps and sets the mixer speed with the multiplier rule', () => {

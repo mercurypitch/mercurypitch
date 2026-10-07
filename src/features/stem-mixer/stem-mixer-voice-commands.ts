@@ -16,6 +16,7 @@ import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASE
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
 import { formatKeyShift, KEY_SHIFT_MAX, KEY_SHIFT_MIN, } from '@/lib/key-shift/key-shift'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import { LOOP_MIN_GAP, placeLoopPoint } from './loop-points'
 import type { FindMyKeyResult } from './useStemMixerKeyController'
 
@@ -288,10 +289,8 @@ export function createStemMixerVoiceCommands(
 
   /** A and B make a loop: the Loop button's rule, and L's. A alone would
    *  loop from A to the song's end. */
-  const loopIsReady = (): boolean => {
-    const end = deps.loop.end()
-    return end !== null && end - (deps.loop.start() ?? 0) >= LOOP_MIN_GAP
-  }
+  const loopIsReady = (): boolean =>
+    hasPlayableLoop(deps.loop.start(), deps.loop.end())
 
   // ── The set ────────────────────────────────────────────────
 
