@@ -44,6 +44,12 @@ export const TIMELINE_ARROW_STEP = 5
 /** A loop mark's step, in seconds. */
 const MARK_STEP = 0.1
 /**
+ * How finely the seek input holds a position, in seconds. A range input rounds
+ * its value to its step, so the mark's tenth would read a song 0.45 s in back
+ * as 0.5 s. The arrow keys step by TIMELINE_ARROW_STEP whatever this is.
+ */
+const SEEK_STEP = 0.01
+/**
  * Kept between A and B on top of the loop rule's minimum. The rule refuses
  * a gap of exactly the minimum, so a mark dragged hard against the other one
  * stops just clear of it instead of being refused.
@@ -131,7 +137,7 @@ export const MixerTimeline: Component<MixerTimelineProps> = (props) => {
           fromAxis={(seconds) => seconds}
           active={() => props.loopEnabled}
           disabled={() => props.disabled === true || end() <= 0}
-          axisStep={() => MARK_STEP}
+          axisStep={() => SEEK_STEP}
           markStep={() => MARK_STEP}
           minimumMarkGap={() => props.minimumLoopGap + MARK_CLEARANCE}
           formatAxisValue={(seconds) =>
