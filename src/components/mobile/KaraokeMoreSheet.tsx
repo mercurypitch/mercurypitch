@@ -8,8 +8,12 @@
 // per stage), opened from the header's More, and grouped the way the
 // Karaoke room's options are:
 //
-//   Lyrics   text size; the notes over the lyrics, only for a song that has
-//            them (absent, never dead, as in the room).
+//   Lyrics   text size; the notes over the lyrics, for a song that has them
+//            and for one the stage can find them for (owner, 7 October 2026:
+//            the header's toggle ran that analysis, and moving it here must
+//            not lose it). With neither there is no row, never a dead
+//            switch. The room's options keep their own rule, which offers
+//            the notes only once the song has them.
 //   Playing  the next song by itself; speed; the A/B loop.
 //
 // Autoplay, text size and the notes moved in here from the header, which
@@ -38,8 +42,20 @@ export interface KaraokeMoreLyrics {
     chosen: () => boolean
     choose: () => void
   }>
-  /** The notes over the lyrics: a row only while the song has them. */
-  notes: { has: () => boolean; on: () => boolean; toggle: () => void }
+  /**
+   * The notes over the lyrics. The row is there while the song has them
+   * (`has`) or the stage can find them (`canFind`: it runs the analysis when
+   * the switch goes on), and `finding` is that analysis running. `on` is the
+   * stage's word for the switch, which it keeps off until notes are on screen
+   * or on their way, so a saved "on" for a song with none reads off here.
+   */
+  notes: {
+    has: () => boolean
+    canFind: () => boolean
+    finding: () => boolean
+    on: () => boolean
+    toggle: () => void
+  }
 }
 
 /** Speed and the loop. StemMixer builds it from its audio. */
@@ -106,6 +122,14 @@ const Row: Component<{ label: string; sub?: string; children: JSX.Element }> = (
     {props.children}
   </div>
 )
+
+/** What the notes row says under its name: what the song has, or what the
+ *  switch will do. */
+function notesSubLabel(notes: KaraokeMoreLyrics['notes']): string {
+  if (notes.has()) return 'This song has its notes'
+  if (notes.finding()) return 'Finding the notes'
+  return "Finds this song's notes first"
+}
 
 /** Speed, then the A/B loop: the capsule's controls, in a sheet. */
 const SpeedAndLoop: Component<{ binding: KaraokeMoreBinding }> = (props) => {
@@ -263,8 +287,11 @@ export const KaraokeMoreSheet: Component<KaraokeMoreSheetProps> = (props) => (
             </For>
           </span>
         </Row>
-        <Show when={props.lyrics.notes.has()}>
-          <Row label="Show notes over the lyrics" sub="This song has its notes">
+        <Show when={props.lyrics.notes.has() || props.lyrics.notes.canFind()}>
+          <Row
+            label="Show notes over the lyrics"
+            sub={notesSubLabel(props.lyrics.notes)}
+          >
             <Switch
               on={props.lyrics.notes.on()}
               label="Show notes over the lyrics"
