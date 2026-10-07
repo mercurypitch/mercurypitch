@@ -31,6 +31,8 @@ interface Processor {
 type ProcessorConstructor = new (options: AudioWorkletNodeOptions) => Processor
 
 let registered: { name: string; processor: ProcessorConstructor } | null = null
+/** Everything the scope was asked to register, in order. */
+const registrations: { name: string; processor: ProcessorConstructor }[] = []
 let clock = 0
 let messageId = 0
 
@@ -127,7 +129,9 @@ describe('pitch-shift worklet', () => {
     vi.stubGlobal(
       'registerProcessor',
       (name: string, processor: ProcessorConstructor) => {
-        registered = { name, processor }
+        registrations.push({ name, processor })
+        // The library registers first; the later calls are other worklets.
+        registered ??= { name, processor }
       },
     )
 
@@ -145,6 +149,47 @@ describe('pitch-shift worklet', () => {
 
   it('registers the processor under the name the wrapper creates', () => {
     expect(registered?.name).toBe(PITCH_SHIFT_PROCESSOR)
+  })
+
+  describe('another worklet registered in the same scope afterwards', () => {
+    // The scope belongs to the AudioContext, and the native app lends one
+    // context to every room: the guitar room's recorder registers here after
+    // the key engine does. With the shim left in place it was subclassed too,
+    // and handed two channels of silence whenever its input was empty.
+    class Recorder {
+      readonly seen: Float32Array[][][] = []
+      process(inputs: Float32Array[][]): boolean {
+        this.seen.push(inputs)
+        return true
+      }
+    }
+    const registerInScope = (name: string, processor: unknown): void => {
+      ;(
+        globalThis as unknown as {
+          registerProcessor: (name: string, processor: unknown) => void
+        }
+      ).registerProcessor(name, processor)
+    }
+
+    it('reaches the scope exactly as it was given', () => {
+      registerInScope('guitar-recorder', Recorder)
+
+      const last = registrations.at(-1)
+      expect(last?.name).toBe('guitar-recorder')
+      expect(last?.processor).toBe(Recorder)
+    })
+
+    it('is handed an empty input as empty, not as silence', () => {
+      registerInScope('guitar-recorder', Recorder)
+      const Registered = registrations.at(-1)!.processor
+      const recorder = new Registered(
+        PITCH_SHIFT_NODE_OPTIONS,
+      ) as unknown as Recorder
+
+      recorder.process([[]])
+
+      expect(recorder.seen).toEqual([[[]]])
+    })
   })
 
   it('moves a 220 Hz tone up an octave at +12 semitones', async () => {

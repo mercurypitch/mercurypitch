@@ -4,6 +4,10 @@
 //
 // Imported by pitch-shift.worklet.ts ahead of the library, so the library's
 // own registerProcessor() call registers the subclass below in its place.
+// That is the only registration it touches, and it puts registerProcessor
+// back as soon as it has made it: the scope belongs to the AudioContext, and
+// the native app lends one context to every room, so whatever worklet is
+// added next (the guitar room's recorder and input) is none of its business.
 //
 // The Signalsmith processor either shifts a live input or plays back buffers
 // posted to it, and tells the two apart by whether its input has channels.
@@ -29,6 +33,8 @@ interface WorkletScope {
 }
 
 const RENDER_QUANTUM = 128
+/** What the library registers under (PITCH_SHIFT_PROCESSOR, pitch-shift-node.ts). */
+const SIGNALSMITH_PROCESSOR = 'signalsmith-stretch'
 
 const scope = globalThis as unknown as WorkletScope
 const register = scope.registerProcessor
@@ -43,6 +49,10 @@ function silentInput(blockSize: number): Float32Array[][] {
 }
 
 function registerLiveInput(name: string, Base: ProcessorClass): void {
+  if (name !== SIGNALSMITH_PROCESSOR) {
+    register(name, Base)
+    return
+  }
   class LiveInputProcessor extends Base {
     override process(
       inputs: Float32Array[][],
@@ -56,7 +66,11 @@ function registerLiveInput(name: string, Base: ProcessorClass): void {
       return super.process(input, outputs, parameters)
     }
   }
-  register(name, LiveInputProcessor)
+  try {
+    register(name, LiveInputProcessor)
+  } finally {
+    scope.registerProcessor = register
+  }
 }
 
 // A scope that will not let the name be replaced keeps the library's own
