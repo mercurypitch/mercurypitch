@@ -196,7 +196,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [jam-store.ts](../../src/stores/jam-store.ts) | 3.2k | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 3.3k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 2.3k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
@@ -364,7 +364,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/App.tsx](../../src/App.tsx) | 4.8k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 4.1k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.5k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.2k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.3k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
