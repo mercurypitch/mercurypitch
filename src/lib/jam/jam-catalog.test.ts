@@ -195,6 +195,22 @@ describe('jam song catalogue loading boundaries', () => {
     expect(entry?.detail).toBe('Josh Woodward')
   })
 
+  // A length half a second short of a minute used to round its seconds up
+  // to 60 and keep the minute it was in: 179.5 read "2:60".
+  it.each([
+    [179.5, 'Josh Woodward · 3:00'],
+    [119.6, 'Josh Woodward · 2:00'],
+    [59.6, 'Josh Woodward · 1:00'],
+    [59.4, 'Josh Woodward · 0:59'],
+  ])('lists a %s s example as "%s"', (durationSec, detail) => {
+    const entry = jamExampleRowEntries(
+      [example({ durationSec })],
+      async () => null,
+    )[0]
+
+    expect(entry?.detail).toBe(detail)
+  })
+
   it('lists a separated session without reading its stems until chosen', async () => {
     const row = {
       session: {

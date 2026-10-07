@@ -16,6 +16,7 @@ import type { Accessor } from 'solid-js'
 import type { KeyboardShortcutHandlers } from '@/features/keyboard/useKeyboardShortcuts'
 import { tryDismissModal } from '@/features/keyboard/useKeyboardShortcuts'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_COMPOSE, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
+import { roundedMinutesSeconds } from '@/lib/format-time'
 import * as transportStore from '@/stores/transport-store'
 import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, COUNT_IN_OFF_PHRASES, COUNT_IN_ON_PHRASES, COUNT_IN_SET_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, STOP_PHRASES, } from './shared-phrases'
 import type { VoiceCommand, VoiceCommandResult } from './types'
@@ -234,8 +235,7 @@ export function createTransportVoiceCommands(
     const total = t.total()
     if (total <= 0) return voiceFailure('Nothing loaded')
     t.seekTo(Math.min(Math.max(secondsToBeats(seconds), 0), total))
-    const minutes = Math.floor(seconds / 60)
-    const rest = Math.round(seconds % 60)
+    const { minutes, seconds: rest } = roundedMinutesSeconds(seconds)
     const shown =
       minutes > 0
         ? `${String(minutes)}:${String(rest).padStart(2, '0')}`

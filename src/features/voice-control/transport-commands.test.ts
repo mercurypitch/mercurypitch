@@ -214,6 +214,19 @@ describe('transport voice commands — singing tab', () => {
     expect(fixture.seekedTo()).toBe(160)
   })
 
+  // The reply rounds the whole time before it splits off the minutes.
+  // Rounding afterwards answered "go to 119.6 seconds" with "Go to 1:60".
+  it.each([
+    ['go to 179.5 seconds', 'Go to 3:00'],
+    ['go to 119.6 seconds', 'Go to 2:00'],
+    ['go to 59.6 seconds', 'Go to 1:00'],
+    ['go to 59.4 seconds', 'Go to 59s'],
+  ])('answers "%s" with "%s"', (said, reply) => {
+    const fixture = makeFixture(TAB_SINGING)
+
+    expect(fire(fixture, said)).toBe(reply)
+  })
+
   it('reports absolute seeks with nothing loaded as failures', () => {
     const fixture = makeFixture(TAB_SINGING)
     fixture.deps.transport = () => ({

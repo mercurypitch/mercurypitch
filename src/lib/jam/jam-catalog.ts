@@ -22,6 +22,7 @@ import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, } from '@/features/exercises/types'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import type { PathWeek } from '@/features/path/path-content'
+import { roundedMinutesSeconds } from '@/lib/format-time'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
 import type { JamSessionRow } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
@@ -364,7 +365,8 @@ export function jamAscentEntries(
 /** "m:ss", or nothing for a length nobody wrote down. */
 function clockLabel(durationSec: number): string | null {
   if (!(durationSec > 0)) return null
-  return `${Math.floor(durationSec / 60)}:${String(Math.round(durationSec % 60)).padStart(2, '0')}`
+  const { minutes, seconds } = roundedMinutesSeconds(durationSec)
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 /**
