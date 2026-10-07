@@ -104,12 +104,13 @@ export function createStemMixerVoiceCommands(
   const clampSeconds = (seconds: number): number =>
     Math.min(Math.max(seconds, 0), Math.max(0, deps.duration()))
 
+  // Rounded whole before it is split: 179.5 reads 3:00, not 2:60.
   const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const rest = Math.round(seconds % 60)
-    return minutes > 0
-      ? `${String(minutes)}:${String(rest).padStart(2, '0')}`
-      : `${String(rest)}s`
+    const total = Math.round(seconds)
+    const rest = String(total % 60)
+    return total >= 60
+      ? `${String(Math.floor(total / 60))}:${rest.padStart(2, '0')}`
+      : `${rest}s`
   }
 
   const seekRelative = (deltaSeconds: number): string => {

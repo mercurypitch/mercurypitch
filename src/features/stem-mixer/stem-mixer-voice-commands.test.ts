@@ -192,6 +192,15 @@ describe('stem mixer voice commands — transport', () => {
     expect(fixture.seekedTo()).toBe(100)
   })
 
+  it.each([
+    ['119.6', '2:00'],
+    ['59.4', '59s'],
+    ['59.6', '1:00'],
+  ])('reads "go to %s seconds" back as %s', (spoken, read) => {
+    const fixture = makeFixture()
+    expect(fire(fixture, `go to ${spoken} seconds`)).toBe(`Go to ${read}`)
+  })
+
   it('restarts from the top and resumes playback', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'from the top')).toBe('From the top')
@@ -270,6 +279,21 @@ describe('stem mixer voice commands — loop and speed', () => {
     ]).toEqual([20, 60, true])
     expect(fixture.seekedTo()).toBeNull()
     expect(fixture.calls).toEqual([])
+  })
+
+  // The reply reads the song's length to the nearest second: half a second
+  // under three minutes is three minutes, not "2:60", and under a minute it
+  // reads in seconds up to the one that rounds to a minute, not "60s".
+  it.each([
+    [179.5, '3:00'],
+    [59.4, '59s'],
+    [59.6, '1:00'],
+  ])('says a %s s song ends at %s', (seconds, spoken) => {
+    const fixture = makeFixture()
+    fixture.setDuration(seconds)
+    expect(fire(fixture, 'loop from 200 to 300')).toBe(
+      `The song ends at ${spoken}`,
+    )
   })
 
   it('refuses a span the clock would not play, whether the song cut it short or the range was that short', () => {
