@@ -238,7 +238,7 @@ describe('signInWithGoogle', () => {
 
     await signInWithGoogle()
 
-    expect(mocks.loginWithGoogle).toHaveBeenCalledWith('google-jwt')
+    expect(mocks.loginWithGoogle.mock.calls[0][0]).toBe('google-jwt')
   })
 
   it('still reads a flat answer, in case a platform does not nest it', async () => {
@@ -246,7 +246,7 @@ describe('signInWithGoogle', () => {
 
     await signInWithGoogle()
 
-    expect(mocks.loginWithGoogle).toHaveBeenCalledWith('google-jwt')
+    expect(mocks.loginWithGoogle.mock.calls[0][0]).toBe('google-jwt')
   })
 
   it('lets the next press try again after a failed plugin load', async () => {
@@ -266,6 +266,30 @@ describe('signInWithGoogle', () => {
     })
     // A cached rejected promise would make every later press fail forever.
     await expect(signInWithGoogle()).resolves.toMatchObject({ userId: 'u-1' })
+  })
+})
+
+// A sign-up's context rides to the worker untouched, for the new account's
+// first mail. The sheets are the same whether or not it creates one.
+describe('a sign-up context', () => {
+  const SIGNUP = {
+    voiceprintHint: { twin: 'Nina Simone', lowMidi: 50, highMidi: 74 },
+  }
+
+  it('goes to the worker with the Apple identity', async () => {
+    bridgeReturning({ result: { idToken: 'apple-jwt' } })
+
+    await signInWithApple(SIGNUP)
+
+    expect(mocks.loginWithApple.mock.calls[0][1]).toEqual(SIGNUP)
+  })
+
+  it('goes to the worker with the Google identity', async () => {
+    bridgeReturning({ result: { idToken: 'google-jwt' } })
+
+    await signInWithGoogle(SIGNUP)
+
+    expect(mocks.loginWithGoogle).toHaveBeenCalledWith('google-jwt', SIGNUP)
   })
 })
 

@@ -5,7 +5,8 @@
 // are mocked.
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import type * as Voiceprints from '@/db/services/voiceprint-service'
 import type * as NativeSignIn from '@/features/account/native-sign-in'
 import { resetGoogleSignInPending } from '@/lib/google-sign-in'
 
@@ -83,6 +84,20 @@ vi.mock('@/features/account/sign-in-methods', () => ({
   webGoogleSignInOffered: () => platformMocks.webGoogleSignInOffered(),
 }))
 
+// Adoption is watched, and the rest of the module stays real: it is the
+// side effect an account-creating outcome owes (REQ-VPR-014), and nothing
+// else in the service is under test here.
+const voiceprintMocks = vi.hoisted(() => ({
+  adoptDeviceVoiceprints: vi.fn(async () => 0),
+}))
+
+vi.mock('@/db/services/voiceprint-service', async () => ({
+  ...(await vi.importActual<typeof Voiceprints>(
+    '@/db/services/voiceprint-service',
+  )),
+  adoptDeviceVoiceprints: () => voiceprintMocks.adoptDeviceVoiceprints(),
+}))
+
 vi.mock('@/features/account/native-sign-in', async () => {
   const actual = await vi.importActual<typeof NativeSignIn>(
     '@/features/account/native-sign-in',
@@ -91,8 +106,8 @@ vi.mock('@/features/account/native-sign-in', async () => {
     // The real error class: the modal branches on `instanceof`, and a stub
     // would let a cancelled sheet print an error the real one never would.
     NativeSignInError: actual.NativeSignInError,
-    signInWithApple: () => nativeMocks.signInWithApple(),
-    signInWithGoogle: () => nativeMocks.signInWithGoogle(),
+    signInWithApple: (...a: unknown[]) => nativeMocks.signInWithApple(...a),
+    signInWithGoogle: (...a: unknown[]) => nativeMocks.signInWithGoogle(...a),
   }
 })
 
@@ -110,6 +125,32 @@ vi.mock('../account/PhoneSignIn', () => ({
 
 import { closeAuthModal, openAuthModal } from '@/stores/ui-store'
 import { AuthModal } from '../account/AuthModal'
+
+/** What a sign-up sends for the take `seedAdoptableTake` leaves behind. */
+const ADELE_HINT = { twin: 'Adele', lowMidi: 57, highMidi: 77, accuracy: 70 }
+
+/** A take made signed out on this device, which a sign-up here adopts. */
+function seedAdoptableTake(): void {
+  localStorage.setItem(
+    'mercurypitch.voiceprints.v1',
+    JSON.stringify([
+      {
+        id: 'onboarding-take',
+        summary: {
+          lowMidi: 57,
+          highMidi: 77,
+          semitones: 20,
+          accuracy: 70,
+          steadiness: null,
+        },
+        twin: 'Adele',
+        source: 'onboarding',
+        takenAt: '2026-10-08T09:00:00.000Z',
+      },
+    ]),
+  )
+  onTestFinished(() => localStorage.removeItem('mercurypitch.voiceprints.v1'))
+}
 
 beforeEach(() => {
   resetGoogleSignInPending()
@@ -459,6 +500,9 @@ describe('Continue with Google', () => {
         'http://api.test/api/auth/google/start',
       ),
     )
+    // A sign-up through the redirect is adopted where it lands
+    // (adoptAfterGoogleSignup, from App.tsx), never from here as well.
+    expect(voiceprintMocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
   })
 
   it('shows the failure inline rather than navigating to nothing', async () => {
@@ -563,6 +607,101 @@ describe('native sign-in', () => {
     await waitFor(() =>
       expect(screen.getByText('The token was rejected.')).toBeTruthy(),
     )
+  })
+
+  // One sheet both registers and signs in, so the worker's `isNew` is the
+  // only proof an account was made here (REQ-VPR-014).
+  const SHEETS = [
+    {
+      name: 'Apple',
+      provider: 'apple',
+      button: 'auth-apple-native',
+      sheet: nativeMocks.signInWithApple,
+    },
+    {
+      name: 'Google',
+      provider: 'google',
+      button: 'auth-google-native',
+      sheet: nativeMocks.signInWithGoogle,
+    },
+  ]
+
+  it.each(SHEETS)(
+    'brings the takes on this device along when the $name sheet creates the account',
+    async ({ provider, button, sheet }) => {
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-new',
+        isNew: true,
+        user: { authProvider: provider },
+      })
+      render(() => <AuthModal />)
+      openAuthModal('login')
+
+      fireEvent.click(await screen.findByTestId(button))
+
+      await waitFor(() =>
+        expect(voiceprintMocks.adoptDeviceVoiceprints).toHaveBeenCalledTimes(1),
+      )
+    },
+  )
+
+  it.each(SHEETS)(
+    'leaves the takes to the Settings notice when the $name sheet signs in to an existing account',
+    async ({ provider, button, sheet }) => {
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-1',
+        isNew: false,
+        user: { authProvider: provider },
+      })
+      render(() => <AuthModal />)
+      openAuthModal('login')
+
+      fireEvent.click(await screen.findByTestId(button))
+
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('auth-modal-overlay'),
+        ).not.toBeInTheDocument(),
+      )
+      expect(voiceprintMocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(SHEETS)(
+    'tells the $name sheet which twin this sign-up would adopt, for the first mail',
+    async ({ provider, button, sheet }) => {
+      seedAdoptableTake()
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-1',
+        isNew: false,
+        user: { authProvider: provider },
+      })
+      render(() => <AuthModal />)
+      openAuthModal('login')
+
+      fireEvent.click(await screen.findByTestId(button))
+
+      await waitFor(() =>
+        expect(sheet).toHaveBeenCalledWith({ voiceprintHint: ADELE_HINT }),
+      )
+    },
+  )
+
+  it('adopts nothing while the account still owes a second factor', async () => {
+    nativeMocks.signInWithApple.mockResolvedValue({
+      twofaRequired: true,
+      ceremony: 'twofa-ceremony',
+    })
+    render(() => <AuthModal />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-apple-native'))
+
+    expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
+    expect(voiceprintMocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
   })
 })
 
@@ -753,9 +892,73 @@ describe('signing in with a mailed code', () => {
       expect(codeMocks.verifyLoginCode).toHaveBeenCalledWith(
         'code-ceremony',
         '123456',
+        // No take on this device, so nothing for a first mail to name.
+        { signup: { voiceprintHint: undefined } },
       ),
     )
     await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+  })
+
+  /** Ask for a code, type it back, and wait for the dialog to sign in. */
+  async function spendMailedCode(outcome: unknown): Promise<void> {
+    codeMocks.requestLoginCode.mockResolvedValue('code-ceremony')
+    codeMocks.verifyLoginCode.mockResolvedValue(outcome)
+    const onAuthenticated = vi.fn()
+    render(() => <AuthModal onAuthenticated={onAuthenticated} />)
+    openAuthModal('login')
+
+    fireEvent.click(await screen.findByTestId('auth-email-code-link'))
+    fireEvent.input(screen.getByTestId('auth-email'), {
+      target: { value: 'maff@example.com' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    fireEvent.input(await screen.findByTestId('auth-email-code-input'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-email-code-submit'))
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+  }
+
+  it('brings the takes on this device along when the code creates the account', async () => {
+    // A sign-up code: typing it back is what creates the account
+    // (finishSignUpCode), and the worker says so with `isNew`.
+    await spendMailedCode({
+      token: 'jwt',
+      userId: 'u-new',
+      isNew: true,
+      user: { authProvider: 'password' },
+    })
+
+    expect(voiceprintMocks.adoptDeviceVoiceprints).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the takes to the Settings notice when the code signs in to an existing account', async () => {
+    await spendMailedCode({
+      token: 'jwt',
+      userId: 'u-1',
+      isNew: false,
+      user: { authProvider: 'password' },
+    })
+
+    expect(voiceprintMocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
+  })
+
+  it('tells the code which twin this sign-up would adopt, for the first mail', async () => {
+    seedAdoptableTake()
+
+    await spendMailedCode({
+      token: 'jwt',
+      userId: 'u-1',
+      isNew: false,
+      user: { authProvider: 'password' },
+    })
+
+    expect(codeMocks.verifyLoginCode).toHaveBeenCalledWith(
+      'code-ceremony',
+      '123456',
+      { signup: { voiceprintHint: ADELE_HINT } },
+    )
   })
 
   it('hands a code sign-in that still owes a second factor to the 2FA pane', async () => {
@@ -781,6 +984,7 @@ describe('signing in with a mailed code', () => {
 
     expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
     expect(onAuthenticated).not.toHaveBeenCalled()
+    expect(voiceprintMocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
 
     // And the SECOND ceremony is the one spent — not the mailed code's.
     fireEvent.input(screen.getByTestId('auth-twofa-code'), {

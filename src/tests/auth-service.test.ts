@@ -759,6 +759,46 @@ describe('login and register', () => {
     })
   })
 
+  it("carries a native sign-up's hint for the first mail, and nothing when there is none", async () => {
+    // One sheet both registers and signs in, so the hint goes up every time
+    // and the worker reads it only when the account is created.
+    const hint = { twin: 'David Bowie', lowMidi: 48, highMidi: 72 }
+    const session = {
+      token: makeToken(3600),
+      userId: 'new-account',
+      isNew: true,
+      user: { authProvider: 'apple' },
+    }
+    const bodyOf = (fetchMock: ReturnType<typeof vi.fn>) => {
+      const [, init] = fetchMock.mock.calls[0] as unknown as [
+        string,
+        RequestInit,
+      ]
+      return JSON.parse(init.body as string) as Record<string, unknown>
+    }
+
+    const google = mockFetchOnce(200, session)
+    await loginWithGoogle('google-id-token', { voiceprintHint: hint })
+    expect(bodyOf(google)).toMatchObject({
+      idToken: 'google-id-token',
+      voiceprintHint: hint,
+    })
+
+    const apple = mockFetchOnce(200, session)
+    await loginWithApple(
+      { identityToken: 'apple-jwt', nonce: 'n-1' },
+      { voiceprintHint: hint },
+    )
+    expect(bodyOf(apple)).toMatchObject({
+      identityToken: 'apple-jwt',
+      voiceprintHint: hint,
+    })
+
+    const plain = mockFetchOnce(200, session)
+    await loginWithApple({ identityToken: 'apple-jwt', nonce: 'n-1' })
+    expect('voiceprintHint' in bodyOf(plain)).toBe(false)
+  })
+
   it('hands a Google second factor back as a challenge, not as an error', async () => {
     // This route CAN be challenged, so it must not go through `postAuth`,
     // which turns a challenge into a synthetic 409. Native Google sign-in is

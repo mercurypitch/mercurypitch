@@ -36,8 +36,8 @@ vi.mock('./sign-in-methods', () => ({
 
 vi.mock('./native-sign-in', () => ({
   NativeSignInError: mocks.NativeSignInError,
-  signInWithApple: () => mocks.signInWithApple(),
-  signInWithGoogle: () => mocks.signInWithGoogle(),
+  signInWithApple: (...a: unknown[]) => mocks.signInWithApple(...a),
+  signInWithGoogle: (...a: unknown[]) => mocks.signInWithGoogle(...a),
 }))
 
 vi.mock('@/db/services/auth-service', () => ({
@@ -121,5 +121,19 @@ describe('an Apple press that gets through anyway', () => {
       expect(output.value).toContain('not offered on this platform')
     })
     expect(mocks.signInWithApple).not.toHaveBeenCalled()
+  })
+})
+
+describe('a sign-in from this screen', () => {
+  it('tells the worker nothing for a first mail, because it adopts nothing', async () => {
+    // The hint goes up only where creating the account brings the device's
+    // takes along (spec REQ-VPR-022). This screen reports the outcome and
+    // stops, so an account made here gets a mail without a twin.
+    render(() => <NativeSignInPanel />)
+
+    fireEvent.click(screen.getByTestId('native-signin-google'))
+
+    await waitFor(() => expect(mocks.signInWithGoogle).toHaveBeenCalled())
+    expect(mocks.signInWithGoogle).toHaveBeenCalledWith()
   })
 })

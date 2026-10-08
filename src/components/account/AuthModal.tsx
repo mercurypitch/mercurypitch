@@ -17,6 +17,7 @@ import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } fr
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
+import type { SignInOutcome } from '@/db/services/auth-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
@@ -362,6 +363,23 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   }
 
   /**
+   * Where a native sheet's or a mailed code's answer goes. A second factor
+   * still owed means the code pane. A session closes the dialog, and when the
+   * worker says it CREATED the account (`isNew`), this device's unclaimed takes
+   * join it: one button both registers and signs in, and making the account is
+   * the consent, exactly as registering is (spec REQ-VPR-014).
+   */
+  function landSignIn(outcome: SignInOutcome): void {
+    if (isTwofaChallenge(outcome)) {
+      setCeremony(outcome.ceremony)
+      switchPane('twofa')
+      return
+    }
+    if (outcome.isNew) void adoptDeviceVoiceprints()
+    signedIn()
+  }
+
+  /**
    * Sign in through the platform's own sheet, inside an app shell.
    *
    * Nothing navigates: the ceremony happens over this document and the
@@ -375,17 +393,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     setError('')
     setBusy(true)
     try {
+      // Adopted below when the sheet creates the account, so the first mail
+      // may name the twin.
+      const signup = { voiceprintHint: buildVoiceprintHint() }
       const outcome =
         provider === 'apple'
-          ? await signInWithApple()
-          : await signInWithGoogle()
+          ? await signInWithApple(signup)
+          : await signInWithGoogle(signup)
       if (request !== requestGeneration) return
-      if (isTwofaChallenge(outcome)) {
-        setCeremony(outcome.ceremony)
-        switchPane('twofa')
-        return
-      }
-      signedIn()
+      landSignIn(outcome)
     } catch (err) {
       if (request !== requestGeneration) return
       if (err instanceof NativeSignInError) {
@@ -485,16 +501,16 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
           setSentTo(credentials.email)
           switchPane('email-code-sent')
         } else if (current === 'email-code-sent') {
-          const outcome = await verifyLoginCode(codeCeremony(), mailedCode())
+          const outcome = await verifyLoginCode(codeCeremony(), mailedCode(), {
+            // Adopted below should the code create the account.
+            signup: { voiceprintHint: buildVoiceprintHint() },
+          })
           if (request !== requestGeneration) return
-          if (isTwofaChallenge(outcome)) {
-            // The inbox was proved and bought nothing: this account owes a
-            // second factor as well.
-            setCeremony(outcome.ceremony)
-            switchPane('twofa')
-            return
-          }
-          signedIn()
+          // The inbox is proved, and an account with a second factor owes that
+          // as well. A sign-up code creates the account as it is typed back,
+          // but this pane asks for sign-in codes, so `isNew` is false here
+          // today; the native sheet is what asks for sign-up codes.
+          landSignIn(outcome)
         } else if (current === 'forgot') {
           await requestPasswordReset(credentials.email, token)
           if (request !== requestGeneration) return

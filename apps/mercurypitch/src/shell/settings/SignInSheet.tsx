@@ -22,7 +22,7 @@ import { GoogleMark } from '@/components/account/GoogleMark'
 import { Sheet } from '@/components/mobile/Sheet'
 import Turnstile from '@/components/shared/Turnstile'
 import type { AuthResponse } from '@/db/services/auth-service'
-import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
+import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { thisDeviceLower } from '@/lib/device-noun'
 import { PRIVACY_URL, TERMS_URL } from '@/lib/legal-links'
@@ -340,6 +340,9 @@ function SecondFactorPane(props: { flow: SignInFlow }): JSX.Element {
 
 export function SignInSheet(props: SignInSheetProps) {
   const flow = createSignInFlow({
+    // An account made here adopts the takes this describes (below), so its
+    // first mail may name the twin (spec REQ-VPR-022).
+    signup: () => ({ voiceprintHint: buildVoiceprintHint() }),
     onSignedIn: (auth) => {
       closeSignIn()
       showNotification('Signed in', 'info')

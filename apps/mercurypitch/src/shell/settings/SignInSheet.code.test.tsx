@@ -19,6 +19,7 @@ const stand = vi.hoisted(() => ({
   request: vi.fn(),
   verify: vi.fn(),
   adopt: vi.fn(async () => 0),
+  hint: vi.fn((): unknown => undefined),
 }))
 
 vi.mock('@/db/services/auth-email-code-service', () => ({
@@ -27,6 +28,7 @@ vi.mock('@/db/services/auth-email-code-service', () => ({
 }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: stand.adopt,
+  buildVoiceprintHint: stand.hint,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: vi.fn() }))
 vi.mock('@/features/account/sign-in-methods', () => ({
@@ -81,6 +83,7 @@ beforeEach(() => {
   stand.request.mockReset()
   stand.verify.mockReset()
   stand.adopt.mockClear()
+  stand.hint.mockReset()
   stand.request.mockResolvedValue('ceremony-1')
   resetSignIn()
   view = renderShell(() => <SignInSheet />)
@@ -134,12 +137,30 @@ describe('a code by email', () => {
     q('signin-code-submit')?.click()
     await settle()
 
-    expect(stand.verify).toHaveBeenCalledWith('ceremony-1', '123456', {
-      proveDevice: true,
-    })
+    expect(stand.verify).toHaveBeenCalledWith(
+      'ceremony-1',
+      '123456',
+      expect.objectContaining({ proveDevice: true }),
+    )
     expect(signInOpen()).toBe(false)
     // The code made the account (isNew), so the phone's takes join it.
     expect(stand.adopt).toHaveBeenCalledTimes(1)
+  })
+
+  it('names the twin an account made by the code takes, for its first mail', async () => {
+    const hint = { twin: 'Nina Simone', lowMidi: 50, highMidi: 74 }
+    stand.hint.mockReturnValue(hint)
+    stand.verify.mockResolvedValue(SESSION)
+    await codeSentTo('new@example.test')
+    type('signin-code-input', '123456')
+
+    q('signin-code-submit')?.click()
+    await settle()
+
+    expect(stand.verify).toHaveBeenCalledWith('ceremony-1', '123456', {
+      proveDevice: true,
+      signup: { voiceprintHint: hint },
+    })
   })
 
   it('says a wrong code is wrong and keeps the digits', async () => {
@@ -173,9 +194,11 @@ describe('a code by email', () => {
     expect(stand.request).toHaveBeenLastCalledWith('new@example.test', '', {
       signUp: true,
     })
-    expect(stand.verify).toHaveBeenCalledWith('ceremony-2', '222222', {
-      proveDevice: true,
-    })
+    expect(stand.verify).toHaveBeenCalledWith(
+      'ceremony-2',
+      '222222',
+      expect.objectContaining({ proveDevice: true }),
+    )
   })
 
   it('says nothing about a missing code after the first send', async () => {

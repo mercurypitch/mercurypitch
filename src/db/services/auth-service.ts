@@ -637,11 +637,15 @@ export function adoptSession(auth: AuthResponse): void {
  * it because its redirect carries the challenge separately; there is no
  * redirect inside a WebView to carry one.
  */
-export async function loginWithGoogle(idToken: string): Promise<SignInOutcome> {
+export async function loginWithGoogle(
+  idToken: string,
+  signup?: SignupContext,
+): Promise<SignInOutcome> {
   return postSignIn('google', {
     idToken,
     deviceId: getUserId(),
     deviceSecret: getDeviceSecret(),
+    ...signup,
   })
 }
 
@@ -667,16 +671,15 @@ export interface AppleSignInInput {
 }
 
 /**
- * Exchange an Apple identity token for a session.
- *
- * The native counterpart of loginWithGoogle, with one difference that is not
- * cosmetic: this returns the OUTCOME rather than an AuthResponse, so an
- * account holding a second factor gets its challenge pane instead of a thrown
- * error. Google's web path goes through a redirect that carries the challenge
- * separately; there is no redirect here to carry it.
+ * Exchange an Apple identity token for a session. Like loginWithGoogle, it
+ * returns the OUTCOME, so an account holding a second factor gets its
+ * challenge pane instead of a thrown error, and it carries a sign-up's
+ * context (`signup`) for the new account's first mail: the worker reads it
+ * only when this sign-in creates the account.
  */
 export async function loginWithApple(
   input: AppleSignInInput,
+  signup?: SignupContext,
 ): Promise<SignInOutcome> {
   return postSignIn('apple', {
     identityToken: input.identityToken,
@@ -687,6 +690,7 @@ export async function loginWithApple(
     // Signing in with a deviceId absorbs this browser's anonymous progress
     // for good, so the worker needs proof the device is ours.
     deviceSecret: getDeviceSecret(),
+    ...signup,
   })
 }
 

@@ -149,10 +149,34 @@ so both of those remain prompt-gated exactly as before; it is true only for
 a brand-new account and for the in-place upgrade of this device's anonymous
 row, which are the two ways Google creates one.
 
+**When** the sign-in that resolves is a native sheet (Sign in with Apple,
+or Google through the platform) or a mailed code typed back, the `isNew` on
+the session answer stands in the same way (amended 2026-10-08). Each of
+these both registers and signs in. The worker sets `isNew` where it creates
+the account: `resolveFederatedUser` for the two sheets, on the same terms as
+the Google redirect above, and `finishSignUpCode` for a sign-up code, which
+always creates one. The account dialog (`AuthModal`), the returning sign-in
+strip (`ReturningSignIn`) and the phone's sign-in sheet
+(`apps/mercurypitch/src/shell/settings/SignInSheet.tsx`, which has adopted
+this way since 2026-09-27) adopt on it. Only the phone's sheet asks for
+sign-up codes today; the dialog's code pane asks for sign-in codes, so its
+`isNew` stays false until it asks for the other kind. A second factor still
+owed adopts nothing, because an account that has one already existed. The
+Google redirect is adopted once, where it lands (`adoptAfterGoogleSignup`,
+which the main app's page runs), never also by the surface that started it.
+
 **Not** covered: Karaoke Night's standalone account UI. It is a separate
 Vite entry that never imports the IndexedDB layer, and adoption would pull
 that layer into an ad landing page's bundle. A Google sign-up there still
-leaves takes for the Settings notice.
+leaves takes for the Settings notice. Nor is the developer console's native
+sign-in screen (`NativeSignInPanel`), which reports what a sheet answered and
+does nothing else with it.
+
+**Not yet** covered: a Google sign-up from the account dialog on Guitar Night
+or Drum Night. Those pages do not run `adoptAfterGoogleSignup` (Drum Night
+does not take the redirect's session at all yet), so the takes wait for the
+Settings notice. Registering with a password in the same dialog adopts as
+everywhere else.
 
 Records tagged with this **device's own id** are treated as unclaimed: an
 anonymous identity's id IS the device id (the worker keys
@@ -171,22 +195,26 @@ account signing in on the same device is asked independently.
 ### REQ-VPR-022 — The first mail may name the adopted twin (2026-10-08)
 
 **When** an account is created through a sign-up that adopts this device's
-unclaimed takes (REQ-VPR-014: password registration and the Google
-redirect), the sign-up request shall carry a hint describing the newest
-such take that has a twin and a measured range: the twin's catalogue name,
-the low and high MIDI notes, and the accuracy and steadiness scores where
-present (`buildVoiceprintHint`). The worker uses it only to choose and fill
-the new account's welcome or confirm mail. It checks the hint against the
-legend catalogue and fixed bounds (`workers/db-worker/src/signup-hint.ts`)
-and stores it nowhere; a hint that fails the checks means a mail without a
-twin, never a failed sign-up.
+unclaimed takes (REQ-VPR-014: password registration, the Google redirect from
+the main app's page, the native Apple and Google sheets, and the mailed
+sign-up code), the sign-up request shall carry a hint describing the newest
+such take that has a twin and a measured range: the twin's catalogue name, the
+low and high MIDI notes, and the accuracy and steadiness scores where present
+(`buildVoiceprintHint`). Only registering always creates an account. The
+others both register and sign in, so their requests carry the hint every time,
+and the worker reads it only when the request creates the account. The worker
+uses it only to choose and fill the new account's welcome or confirm mail. It
+checks the hint against the legend catalogue and fixed bounds
+(`workers/db-worker/src/signup-hint.ts`) and stores it nowhere; a hint that
+fails the checks means a mail without a twin, never a failed sign-up.
 
-Sign-ups that do not adopt send no hint, so the mail never claims a
-voiceprint the account does not get: Karaoke Night (see REQ-VPR-014), and
-for now the native sheet and the mailed sign-up code, which do not adopt
-yet. A confirm link sent again later reads the account's own newest twin
-instead of a hint. The numbers are the derived values adoption uploads
-seconds later (REQ-VPR-002): no audio, no pitch frames.
+Sign-ups that do not adopt send no hint, so the mail never claims a voiceprint
+the account does not get: Karaoke Night, the developer console's native
+sign-in screen, and a Google sign-up from Guitar Night or Drum Night, whose
+dialogs are not marked `adoptsGoogleSignup` (see REQ-VPR-014). A confirm link
+sent again later reads the account's own newest twin instead of a hint. The
+numbers are the derived values adoption uploads seconds later (REQ-VPR-002):
+no audio, no pitch frames.
 
 ## 5. Sharing and the settings card
 

@@ -24,7 +24,9 @@ import { Key, X } from '@/components/icons'
 import { signInWithPasskey } from '@/db/services/auth-passkey-service'
 import type { MeResponse, SignInOutcome } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, isTwofaChallenge, parkNativeTwofaChallenge, restoreAuth, } from '@/db/services/auth-service'
+import type { SignupContext } from '@/db/services/signup-context'
 import { authVersion } from '@/db/services/user-service'
+import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -85,9 +87,24 @@ export const ReturningSignIn: Component = () => {
   const visible = (): boolean => eligible() && resolved() && !signedIn()
 
   /**
+   * What a sign-in from here tells the worker for a new account's first mail.
+   * Every way in below can create one, and each that does adopts the takes the
+   * hint describes: the sheets in landNativeSignIn, the Google redirect where
+   * it lands (adoptAfterGoogleSignup).
+   */
+  const signup = (): SignupContext => ({
+    voiceprintHint: buildVoiceprintHint(),
+  })
+
+  /**
    * What a native sheet answered. A second factor still owed is not a sign-in:
    * nothing is signed in until the code is in, and this strip has no field for
    * one, so the modal opens on its code pane with the ceremony parked for it.
+   *
+   * The remembered way in can still make an account: a different Apple ID, or
+   * one deleted since. Making it is the consent, so this device's unclaimed
+   * takes join it as they do from the modal; a returning sign-in leaves them to
+   * the Settings notice (spec REQ-VPR-014).
    */
   function landNativeSignIn(outcome: SignInOutcome): void {
     if (isTwofaChallenge(outcome)) {
@@ -95,6 +112,7 @@ export const ReturningSignIn: Component = () => {
       openAuthModal('login')
       return
     }
+    if (outcome.isNew) void adoptDeviceVoiceprints()
     showNotification('Signed in', 'info')
   }
 
@@ -114,15 +132,15 @@ export const ReturningSignIn: Component = () => {
           // Inside a shell the redirect has nowhere to come back to, and
           // Google refuses an embedded WebView anyway. Same button, the
           // platform's own sheet behind it.
-          landNativeSignIn(await signInWithGoogle())
+          landNativeSignIn(await signInWithGoogle(signup()))
         } else {
-          const failure = await startGoogleSignIn()
+          const failure = await startGoogleSignIn({ signup: signup() })
           if (failure !== null) setError(failure)
         }
       } else if (current === 'apple') {
         // The iPhone's own sheet. Only reached where that sheet exists (see
         // methodBlocked), so there is no web fallback to choose here.
-        landNativeSignIn(await signInWithApple())
+        landNativeSignIn(await signInWithApple(signup()))
       } else {
         // Password and mailed code both need a form, and the modal already is
         // that form — including the pane that asks for a code.
