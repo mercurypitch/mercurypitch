@@ -2,6 +2,7 @@
 
 import { runnerReachableContinuousCorridor } from './continuous-certificates'
 import type { CompiledRunnerActionWindow, CompiledRunnerCourse, CompiledRunnerGap, CompiledRunnerObstacle, RunnerSnapshot, } from './contracts'
+import { runnerSlideCue } from './slide-cues'
 import { runnerBeatToSeconds } from './tempo'
 
 const EPSILON = 1e-9
@@ -13,7 +14,15 @@ export interface RunnerUsefulJumpWindow {
 
 export interface RunnerMovementCue {
   readonly obstacleId: string
-  readonly stage: 'gap-ahead' | 'jump' | 'landing' | 'change-lane'
+  readonly stage:
+    | 'gap-ahead'
+    | 'jump'
+    | 'landing'
+    | 'change-lane'
+    | 'slide-align'
+    | 'slide'
+    | 'sliding'
+    | 'release-slide'
   readonly direction?: 'left' | 'right'
 }
 
@@ -210,9 +219,12 @@ export function runnerMovementCue(
     .map((obstacle) => ({
       obstacle,
       cue:
-        obstacle.kind === 'gap' || obstacle.traversal?.kind === 'jump-over'
-          ? jumpCue(course, obstacle, snapshot)
-          : blockerCue(course, obstacle, snapshot),
+        obstacle.kind === 'blocker' &&
+        obstacle.traversal?.kind === 'slide-under'
+          ? runnerSlideCue(course, obstacle, snapshot)
+          : obstacle.kind === 'gap' || obstacle.traversal?.kind === 'jump-over'
+            ? jumpCue(course, obstacle, snapshot)
+            : blockerCue(course, obstacle, snapshot),
     }))
     .filter(
       (

@@ -263,7 +263,8 @@ export function compileSongRunnerCourse(
 
   return {
     schema: 'mercurypitch.song-runner.compiled',
-    version: movement.kind === 'continuous' ? 2 : 1,
+    version:
+      movement.slide !== undefined ? 3 : movement.kind === 'continuous' ? 2 : 1,
     id: course.id,
     revision: course.revision,
     title: course.title,

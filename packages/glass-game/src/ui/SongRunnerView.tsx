@@ -111,14 +111,19 @@ export function SongRunnerView(props: SongRunnerViewProps) {
   const state = createMemo(() => frame().state)
   const phase = createMemo(() => state().phase)
   const game = createMemo(() => state().game)
+  const slideInput = untrack(() => props.course.movement.slide !== undefined)
+    ? (held: boolean) => untrack(() => props.session.slide(held))
+    : undefined
   const steering = untrack(() => props.course.movement.kind === 'continuous')
     ? createRunnerContinuousInput(
         () => props.session.input('jump'),
         (axis) => props.session.steer(axis),
+        slideInput,
       )
     : undefined
   const input =
-    steering ?? createRunnerInputEdges((action) => props.session.input(action))
+    steering ??
+    createRunnerInputEdges((action) => props.session.input(action), slideInput)
   const progress = createMemo(() =>
     clampedPercent(game().courseBeat / props.course.lengthBeats),
   )
@@ -436,6 +441,8 @@ export function SongRunnerView(props: SongRunnerViewProps) {
       }
       data-player-feet-y={game().player.feetY.toFixed(3)}
       data-player-grounded={String(game().player.grounded)}
+      data-slide-phase={game().player.slide?.phase ?? 'unavailable'}
+      data-body-height={game().player.slide?.bodyHeightMeters.toFixed(3)}
     >
       <div
         ref={sceneContainer}
@@ -601,6 +608,8 @@ export function SongRunnerView(props: SongRunnerViewProps) {
         <RunnerControls
           input={input}
           steering={steering}
+          slideEnabled={props.course.movement.slide !== undefined}
+          sliding={(game().player.slide?.progress ?? 0) > 0}
           disabled={state().phase !== 'running'}
         />
       </Show>

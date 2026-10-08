@@ -1,6 +1,6 @@
 // Crystal obstacle export tests — real GLBs must align, instance and retire without donor disposal.
 import { readFileSync } from 'node:fs'
-import type { Mesh, Object3D } from 'three'
+import type { Mesh, MeshPhysicalMaterial, Object3D } from 'three'
 import { Box3, Matrix4, Vector3 } from 'three'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -8,14 +8,25 @@ import { expect, it, vi } from 'vitest'
 import { GLASS_GAME_ASSET_FILES, GLASS_GAME_REQUIRED_FILES, } from '../browser/assets'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import { SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY } from '../runner/crystal-obstacle-study'
+import { SLIDE_CONTINUOUS_STUDY } from '../runner/slide-study'
 import { disposeObject } from './dispose'
 import { createRunnerObstacleArt } from './runner-obstacles'
 
-const course = SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
+const course = {
+  ...SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY,
+  obstacles: [
+    ...SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY.obstacles,
+    SLIDE_CONTINUOUS_STUDY.course.obstacles[0]!,
+  ],
+}
 
 async function sources() {
   const result = new Map<string, Object3D>()
-  for (const bundle of ['runner-crystal-bulwark-v1', 'runner-rose-hurdle-v1']) {
+  for (const bundle of [
+    'runner-crystal-bulwark-v1',
+    'runner-rose-hurdle-v1',
+    'runner-celadon-arch-v1',
+  ]) {
     const file = GLASS_GAME_ASSET_FILES[bundle]!
     expect(GLASS_GAME_REQUIRED_FILES).toContain(file)
     const bytes = readFileSync(
@@ -52,7 +63,7 @@ it('fits each exported optical shell and trim to the visible course envelope', a
     const meshes = chunks.filter((mesh) =>
       profile.parts.some((name) => mesh.name === `runner-obstacle-${name}`),
     )
-    expect(meshes).toHaveLength(2)
+    expect(meshes).toHaveLength(profile.parts.length)
     const bounds = new Box3()
     for (const mesh of meshes) {
       const matrix = new Matrix4()
@@ -103,6 +114,41 @@ it('batches repeated profiles and releases only owned geometry/materials once', 
   expect(ownedDisposed).toHaveBeenCalledOnce()
   expect(donorDisposed).not.toHaveBeenCalled()
   expect(art.chunk(obstacle.chunkId)).toEqual([])
+  donors.forEach((donor) => disposeObject(donor))
+})
+
+it('lightens the blue optical volume without changing donor tint, hardware or rose glass', async () => {
+  const donors = await sources()
+  const art = createRunnerObstacleArt(course, donors)
+  for (const obstacle of course.obstacles) {
+    if (obstacle.kind !== 'blocker') continue
+    const profile = runnerObstacleArt(obstacle.profileId)!
+    const meshes = art.chunk(obstacle.chunkId)
+    for (const mesh of meshes) {
+      const name = mesh.name.replace('runner-obstacle-', '')
+      if (!profile.parts.some((part) => part === name)) continue
+      const source = (donors.get(profile.bundle)!.getObjectByName(name) as Mesh)
+        .material as MeshPhysicalMaterial
+      const material = mesh.material as MeshPhysicalMaterial
+      if (name === 'B01_Crystal') {
+        expect(source.thickness).toBeCloseTo(0.72)
+        expect(material.thickness).toBe(0.18)
+        expect(material.transmission).toBe(source.transmission)
+        expect(material.transparent).toBe(false)
+        expect(material.depthWrite).toBe(true)
+      } else expect(material.thickness).toBe(source.thickness)
+      expect(material.color.equals(source.color)).toBe(true)
+      expect(material.attenuationColor.equals(source.attenuationColor)).toBe(
+        true,
+      )
+      expect(material.attenuationDistance).toBe(source.attenuationDistance)
+      expect(material.roughness).toBe(source.roughness)
+      expect(material.ior).toBe(source.ior)
+      expect(material.side).toBe(source.side)
+    }
+    meshes.forEach((mesh) => mesh.dispose())
+  }
+  art.dispose()
   donors.forEach((donor) => disposeObject(donor))
 })
 

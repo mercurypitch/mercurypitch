@@ -7,6 +7,7 @@ import { runnerQuadraticRoots } from './continuous-lateral'
 import { stepContinuousRunnerMovement } from './continuous-movement'
 import type { CompiledRunnerCourse, RunnerInput, RunnerLane } from './contracts'
 import type { LaneTransition, RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts'
+import { advanceRunnerSlide } from './slide'
 import { runnerBeatToDistance, runnerSecondsToBeat } from './tempo'
 import { runnerTrackBounds } from './track-bounds'
 
@@ -69,6 +70,9 @@ export function createRunnerMovementState(
     lateralX: course.laneCenters[lane],
     lateralVelocityMetersPerSecond: 0,
     steeringAxis: 0,
+    slideHeld: false,
+    slideProgress: 0,
+    slidePhase: 'standing',
     feetY,
     verticalVelocityMetersPerSecond: 0,
     grounded: true,
@@ -98,12 +102,21 @@ export function applyRunnerMovementInput(
   action: RunnerInput['action'],
   atCourseSeconds: number,
   axis = 0,
+  slideHeld = false,
 ): void {
+  if (action === 'slide') {
+    if (course.movement.slide !== undefined && (!slideHeld || state.grounded)) {
+      state.slideHeld = slideHeld
+      if (slideHeld) state.jumpBufferRemainingSeconds = 0
+    }
+    return
+  }
   if (action === 'steer') {
     if (course.movement.kind === 'continuous') state.steeringAxis = axis
     return
   }
   if (action === 'jump') {
+    if (state.slideHeld || state.slideProgress > 0) return
     state.jumpBufferRemainingSeconds = course.movement.jumpBufferSeconds
     return
   }
@@ -260,10 +273,11 @@ export function stepRunnerMovement(
       vy: onFloor ? 0 : motionVelocity - motionGravity * start,
       ay: onFloor ? 0 : -motionGravity,
     }
+    const bodyHeight = advanceRunnerSlide(course, state, piece)
     collided ||= course.obstacles.some(
       (obstacle) =>
         obstacle.kind === 'blocker' &&
-        runnerBodyHitsBlocker(course, obstacle, piece),
+        runnerBodyHitsBlocker(course, obstacle, piece, bodyHeight),
     )
   }
   return {

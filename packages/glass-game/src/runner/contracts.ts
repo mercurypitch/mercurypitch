@@ -23,6 +23,20 @@ export interface CompiledRunnerTempoSegment {
   readonly bpm: number
 }
 
+/** Explicit capability; old movement profiles retain their standing-body behavior. */
+export interface RunnerSlideProfile {
+  readonly version: 1
+  readonly bodyHeightMeters: number
+  readonly enterSeconds: number
+  readonly exitSeconds: number
+}
+
+export interface RunnerSlideSnapshot {
+  readonly phase: 'standing' | 'lowering' | 'sliding' | 'rising'
+  readonly progress: number
+  readonly bodyHeightMeters: number
+}
+
 interface RunnerMovementProfileBase {
   readonly id: string
   readonly revision: number
@@ -31,6 +45,7 @@ interface RunnerMovementProfileBase {
   readonly laneChangeSeconds: number
   readonly bodyRadius: number
   readonly bodyHeight: number
+  readonly slide?: RunnerSlideProfile
   readonly jumpVelocityMetersPerSecond: number
   readonly gravityMetersPerSecondSquared: number
   readonly maxJumpRiseMeters: number
@@ -143,7 +158,8 @@ export interface CompiledRunnerTarget {
 }
 
 export interface CompiledRunnerActionWindow {
-  readonly kind: 'lane-transition' | 'continuous-steer' | 'jump'
+  readonly kind: 'lane-transition' | 'continuous-steer' | 'jump' | 'slide'
+  readonly slideCorridor?: RunnerLateralCorridor
   readonly continuous?: RunnerContinuousCertificate
   readonly launchOpenCourseSeconds: number
   readonly launchCloseCourseSeconds: number
@@ -187,7 +203,7 @@ export interface CompiledRunnerBlocker {
   readonly authoredLaneMask: readonly RunnerLane[]
   readonly collisionProfile?: RunnerBlockerCollisionProfile
   readonly traversal?: {
-    readonly kind: 'jump-over'
+    readonly kind: 'jump-over' | 'slide-under'
     readonly landingStartCourseDistanceMeters: number
     readonly landingEndCourseDistanceMeters: number
   }
@@ -245,7 +261,7 @@ export interface CompiledRunnerRewardDefinition {
 
 export interface CompiledRunnerCourse {
   readonly schema: 'mercurypitch.song-runner.compiled'
-  readonly version: 1 | 2
+  readonly version: 1 | 2 | 3
   readonly id: string
   readonly revision: number
   readonly title: string
@@ -290,6 +306,7 @@ export type RunnerInput = RunnerInputStamp &
   (
     | { readonly action: 'lane-left' | 'lane-right' | 'jump' }
     | { readonly action: 'steer'; readonly axis: number }
+    | { readonly action: 'slide'; readonly held: boolean }
   )
 
 export interface RunnerVoiceEvidence {
@@ -382,6 +399,7 @@ export interface RunnerSnapshot {
   readonly activeChunkId: string
   readonly residentChunkIds: readonly string[]
   readonly player: {
+    readonly slide?: RunnerSlideSnapshot
     readonly targetLane: RunnerLane
     readonly lateralX: number
     readonly lateralVelocityMetersPerSecond: number

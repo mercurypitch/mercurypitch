@@ -1,7 +1,7 @@
 // Runner movement contracts — shared mutable physics state without coupling the lane and continuous solvers.
 
 import type { RunnerLateralSegment } from './continuous-lateral'
-import type { RunnerLane } from './contracts'
+import type { RunnerLane, RunnerSlideSnapshot } from './contracts'
 
 export interface LaneTransition {
   fromX: number
@@ -15,6 +15,9 @@ export interface RunnerMovementState {
   lateralX: number
   lateralVelocityMetersPerSecond: number
   steeringAxis: number
+  slideHeld: boolean
+  slideProgress: number
+  slidePhase: RunnerSlideSnapshot['phase']
   feetY: number
   verticalVelocityMetersPerSecond: number
   grounded: boolean

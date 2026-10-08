@@ -4,6 +4,7 @@ import { glassGameAssetUrl } from '@irchiinnuss/glass-game/assets'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import type { SingingCurrentTrialPace } from '@irchiinnuss/glass-game/runner'
+import { SLIDE_CONTINUOUS_STUDY, SLIDE_LANES_STUDY, } from '@irchiinnuss/glass-game/runner'
 import { CURRENT_SINGING_COURSE, SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY, SINGING_CURRENT_CRYSTAL_STUDY, SINGING_CURRENT_TRIALS, SongRunnerScreen, } from '@irchiinnuss/glass-game/runner'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { Show } from 'solid-js'
@@ -22,21 +23,25 @@ interface AdventureScreenProps {
   runnerPace?: SingingCurrentTrialPace
   runnerSteering?: 'continuous'
   runnerCamera?: 'close' | 'angled'
-  runnerObstacles?: 'crystal-study'
+  runnerObstacles?: 'crystal-study' | 'slide-study'
 }
 export function AdventureScreen(props: AdventureScreenProps) {
   function runnerCourse() {
     const continuous = props.runnerSteering === 'continuous'
     const course =
-      props.runnerObstacles === 'crystal-study'
+      props.runnerObstacles === 'slide-study'
         ? continuous
-          ? SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
-          : SINGING_CURRENT_CRYSTAL_STUDY
-        : continuous
-          ? SINGING_CURRENT_CONTINUOUS_TRIAL
-          : props.runnerPace === undefined
-            ? CURRENT_SINGING_COURSE
-            : SINGING_CURRENT_TRIALS[props.runnerPace]
+          ? SLIDE_CONTINUOUS_STUDY.course
+          : SLIDE_LANES_STUDY.course
+        : props.runnerObstacles === 'crystal-study'
+          ? continuous
+            ? SINGING_CURRENT_CRYSTAL_CONTINUOUS_STUDY
+            : SINGING_CURRENT_CRYSTAL_STUDY
+          : continuous
+            ? SINGING_CURRENT_CONTINUOUS_TRIAL
+            : props.runnerPace === undefined
+              ? CURRENT_SINGING_COURSE
+              : SINGING_CURRENT_TRIALS[props.runnerPace]
     if (course.movement.kind !== 'continuous' || !props.runnerCamera)
       return course
     return {

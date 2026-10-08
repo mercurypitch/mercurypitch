@@ -10,6 +10,7 @@ import { createRunnerJudge } from './judge'
 import type { RunnerMovementState } from './movement'
 import { applyRunnerMovementInput, createRunnerMovementState, runnerCourseDistanceAt, runnerHasGroundSupport, runnerSweepIntersectsCircle, stepRunnerMovement, } from './movement'
 import { collectRunnerRewards, completeRunnerProgress, createRunnerTargetQuality, mergeRunnerTargetQuality, readSavedRunnerProgress, } from './progress'
+import { runnerSlideSnapshot } from './slide'
 import { runnerForwardSpeedAtSeconds, runnerSecondsToBeat } from './tempo'
 
 const EPSILON = 1e-9
@@ -34,7 +35,12 @@ function validateFactory(
     (course.movement.kind !== undefined &&
       course.movement.kind !== 'lanes' &&
       course.movement.kind !== 'continuous') ||
-    course.version !== (course.movement.kind === 'continuous' ? 2 : 1) ||
+    course.version !==
+      (course.movement.slide !== undefined
+        ? 3
+        : course.movement.kind === 'continuous'
+          ? 2
+          : 1) ||
     course.checkpoints.length === 0 ||
     course.checkpoints[0]!.courseSeconds !== 0 ||
     course.chunks.length === 0
@@ -247,6 +253,7 @@ export function createSongRunnerGame(
   ): void => {
     if (status === 'recovering') return
     status = 'recovering'
+    movement.slideHeld = false
     movement.steeringAxis = 0
     movement.lateralVelocityMetersPerSecond = 0
     recoveryCheckpointId = lastCheckpointId
@@ -346,6 +353,7 @@ export function createSongRunnerGame(
         queued.input.action,
         queued.quantizedCourseSeconds,
         queued.input.action === 'steer' ? queued.input.axis : 0,
+        queued.input.action === 'slide' && queued.input.held,
       )
     }
   }
@@ -419,7 +427,11 @@ export function createSongRunnerGame(
       (nextInput.action !== 'lane-left' &&
         nextInput.action !== 'lane-right' &&
         nextInput.action !== 'jump' &&
-        nextInput.action !== 'steer') ||
+        nextInput.action !== 'steer' &&
+        nextInput.action !== 'slide') ||
+      (nextInput.action === 'slide' &&
+        (course.movement.slide === undefined ||
+          typeof nextInput.held !== 'boolean')) ||
       (nextInput.action === 'steer' &&
         (course.movement.kind !== 'continuous' ||
           !Number.isFinite(nextInput.axis) ||
@@ -577,6 +589,9 @@ export function createSongRunnerGame(
       activeChunkId: course.chunks[chunkIndex]!.id,
       residentChunkIds,
       player: {
+        ...(course.movement.slide === undefined
+          ? {}
+          : { slide: runnerSlideSnapshot(course, movement) }),
         targetLane: movement.targetLane,
         lateralX: movement.lateralX,
         lateralVelocityMetersPerSecond: movement.lateralVelocityMetersPerSecond,
@@ -624,6 +639,7 @@ export function createSongRunnerGame(
     pause() {
       if (status === 'running') {
         status = 'paused'
+        movement.slideHeld = false
         movement.steeringAxis = 0
         movement.lateralVelocityMetersPerSecond = 0
         queuedInputs = []

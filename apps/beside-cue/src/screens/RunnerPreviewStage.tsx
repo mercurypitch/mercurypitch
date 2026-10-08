@@ -24,6 +24,15 @@ export function RunnerPreviewStage(props: RunnerPreviewStageProps) {
           onExit={props.onExit}
         />
       </Match>
+      <Match when={props.selected === 'slide-current'}>
+        <AdventureScreen
+          runner
+          runnerSteering="continuous"
+          runnerCamera="angled"
+          runnerObstacles="slide-study"
+          onExit={props.onExit}
+        />
+      </Match>
     </Switch>
   )
 }

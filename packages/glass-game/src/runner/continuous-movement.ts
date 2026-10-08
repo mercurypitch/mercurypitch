@@ -5,6 +5,7 @@ import type { RunnerLateralSegment } from './continuous-lateral.ts'
 import { advanceRunnerLateral, runnerLateralPosition, runnerQuadraticRoots, } from './continuous-lateral.ts'
 import type { CompiledRunnerCourse } from './contracts.ts'
 import type { RunnerMovementState, RunnerMovementStepResult, } from './movement-contracts.ts'
+import { advanceRunnerSlide } from './slide'
 import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 const EPSILON = 1e-9
@@ -139,10 +140,11 @@ export function stepContinuousRunnerMovement(
           vy: state.verticalVelocityMetersPerSecond,
           ay: -gravity,
         }
+        const bodyHeight = advanceRunnerSlide(course, state, piece)
         collided ||= course.obstacles.some(
           (obstacle) =>
             obstacle.kind === 'blocker' &&
-            runnerBodyHitsBlocker(course, obstacle, piece),
+            runnerBodyHitsBlocker(course, obstacle, piece, bodyHeight),
         )
         state.feetY +=
           state.verticalVelocityMetersPerSecond * dt - (gravity * dt * dt) / 2

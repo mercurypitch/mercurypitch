@@ -7,6 +7,7 @@ import { For } from 'solid-js'
 export type CreatorPreviewPick =
   | 'singing-current'
   | 'crystal-current'
+  | 'slide-current'
   | 'creator-gallery'
   | 'echo-curator'
   | 'songbook'
@@ -32,6 +33,12 @@ const CREATOR_PREVIEWS: readonly {
     name: 'Crystal Current',
     blurb:
       'Our newest runner art. Steer freely around blue crystal, leap the rose hurdle and sing through glass.',
+  },
+  {
+    id: 'slide-current',
+    name: 'The Low Arch',
+    blurb:
+      'Hold Slide to pass beneath celadon glass. Then steer around blue crystal and jump the rose hurdle.',
   },
   {
     id: 'songbook',

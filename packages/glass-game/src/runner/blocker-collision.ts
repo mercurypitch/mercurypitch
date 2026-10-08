@@ -189,11 +189,11 @@ function polygonPlanes(
 }
 
 function profilesFor(
-  course: CompiledRunnerCourse,
+  course: Pick<CompiledRunnerCourse, 'movement'>,
   blocker: CompiledRunnerBlocker,
+  height: number,
 ): readonly ExpandedProfile[] {
   const radius = course.movement.bodyRadius
-  const height = course.movement.bodyHeight
   const cached = expandedProfiles.get(blocker)
   if (cached?.radius === radius && cached.height === height)
     return cached.profiles
@@ -259,9 +259,10 @@ function intersectsConstraints(
 }
 
 export function runnerBodyHitsBlocker(
-  course: CompiledRunnerCourse,
+  course: Pick<CompiledRunnerCourse, 'movement'>,
   blocker: CompiledRunnerBlocker,
   piece: RunnerBlockerMotionPiece,
+  bodyHeight = course.movement.bodyHeight,
 ): boolean {
   const radius = course.movement.bodyRadius
   if (
@@ -290,11 +291,11 @@ export function runnerBodyHitsBlocker(
         piece.y,
         piece.vy,
         piece.ay,
-        blocker.minY - course.movement.bodyHeight,
+        blocker.minY - bodyHeight,
         blocker.maxY,
       ),
     ])
-  return profilesFor(course, blocker).some((profile) =>
+  return profilesFor(course, blocker, bodyHeight).some((profile) =>
     intersectsConstraints(piece, [
       ...axisConstraints(
         piece.x,

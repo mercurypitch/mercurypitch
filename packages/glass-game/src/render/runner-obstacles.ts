@@ -1,6 +1,6 @@
 // Crystal obstacle instances — shared donor geometry stays bounded to resident course chunks.
 import type { BufferGeometry, Material, Object3D } from 'three'
-import { Box3, InstancedMesh, Matrix4, Mesh, Vector3 } from 'three'
+import { Box3, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, Vector3, } from 'three'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import type { CompiledRunnerCourse } from '../runner/contracts'
 
@@ -43,6 +43,11 @@ export function createRunnerObstacleArt(
         const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld)
         geometry.computeBoundingBox()
         const material = mesh.material.clone()
+        // The close runner view needs a shorter optical path than the donor's
+        // dense blue volume. Keep its tint and frame, with less absorption and
+        // refraction displacement through the same transmission pass.
+        if (name === 'B01_Crystal' && material instanceof MeshPhysicalMaterial)
+          material.thickness = 0.18
         next.push({ name, geometry, material })
         bounds.union(geometry.boundingBox!)
       }

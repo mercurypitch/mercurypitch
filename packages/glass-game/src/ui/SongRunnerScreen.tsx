@@ -18,6 +18,10 @@ import { createShatterPlaybackPreference } from './shatter-playback-preference'
 import { SongRunnerView } from './SongRunnerView'
 
 export { CURRENT_SINGING_COURSE }
+export {
+  SLIDE_LANES_STUDY,
+  SLIDE_CONTINUOUS_STUDY,
+} from '../runner/slide-study'
 export { SINGING_CURRENT_TRIALS }
 export { SINGING_CURRENT_CONTINUOUS_TRIAL }
 export {

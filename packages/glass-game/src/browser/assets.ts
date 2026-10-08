@@ -109,6 +109,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'crystal-interiors-v2/living-crystal-platform-v2.glb',
   'runner-crystal-bulwark-v1': 'runner-obstacles-v1/glacial-bulwark.glb',
   'runner-rose-hurdle-v1': 'runner-obstacles-v1/rose-wave-hurdle.glb',
+  'runner-celadon-arch-v1': 'runner-obstacles-v1/celadon-low-arch.glb',
   'resonance-rosebud-v1': 'resonance/assets/resonance-rosebud-v1.glb',
   'g01-sunlit-diadem': 'glassware-trio-v1/g01-sunlit-diadem.glb',
   'g14-tidal-wave-carafe': 'glassware-trio-v1/g14-tidal-wave-carafe.glb',

@@ -33,12 +33,14 @@ function steeringTargetIsInteractive(target: EventTarget | null): boolean {
 export function createRunnerContinuousInput(
   jump: () => boolean,
   steer: (axis: number) => boolean,
+  slide?: (held: boolean) => boolean,
 ): RunnerContinuousInput {
-  const jumpEdges = createRunnerInputEdges(
+  const actionEdges = createRunnerInputEdges(
     (action) => action === 'jump' && jump(),
+    slide,
   )
   const heldCodes = new Set<string>()
-  const jumpPointers = new Set<number>()
+  const actionPointers = new Set<number>()
   const listeners = new Set<(state: RunnerSteeringState) => void>()
   let enabled = false
   let pointer: {
@@ -82,8 +84,8 @@ export function createRunnerContinuousInput(
   function clear(): void {
     heldCodes.clear()
     pointer = null
-    jumpEdges.clear()
-    jumpPointers.clear()
+    actionEdges.clear()
+    actionPointers.clear()
     publish()
   }
 
@@ -92,14 +94,17 @@ export function createRunnerContinuousInput(
       if (enabled === next) return
       if (!next) clear()
       enabled = next
-      jumpEdges.setEnabled(next)
+      actionEdges.setEnabled(next)
     },
     activate(action) {
-      return action === 'jump' && jumpEdges.activate(action)
+      return (
+        (action === 'jump' || action === 'slide') &&
+        actionEdges.activate(action)
+      )
     },
     key(event: RunnerKeyboardEdgeEvent, down) {
       if (!LEFT_CODES.has(event.code) && !RIGHT_CODES.has(event.code))
-        return jumpEdges.key(event, down)
+        return actionEdges.key(event, down)
       if (!down) {
         const wasHeld = heldCodes.delete(event.code)
         if (wasHeld) {
@@ -127,21 +132,21 @@ export function createRunnerContinuousInput(
     pointerDown(action, pointerId) {
       if (
         !enabled ||
-        action !== 'jump' ||
+        (action !== 'jump' && action !== 'slide') ||
         pointer?.id === pointerId ||
-        jumpPointers.has(pointerId)
+        actionPointers.has(pointerId)
       )
         return false
-      jumpPointers.add(pointerId)
-      if (!jumpEdges.pointerDown(action, pointerId)) {
-        jumpPointers.delete(pointerId)
+      actionPointers.add(pointerId)
+      if (!actionEdges.pointerDown(action, pointerId)) {
+        actionPointers.delete(pointerId)
         return false
       }
-      return enabled && jumpPointers.has(pointerId)
+      return enabled && actionPointers.has(pointerId)
     },
     pointerEnd(action, pointerId) {
-      const ended = jumpEdges.pointerEnd(action, pointerId)
-      if (ended) jumpPointers.delete(pointerId)
+      const ended = actionEdges.pointerEnd(action, pointerId)
+      if (ended) actionPointers.delete(pointerId)
       return ended
     },
     clear,
@@ -157,7 +162,7 @@ export function createRunnerContinuousInput(
       if (
         !enabled ||
         pointer !== null ||
-        jumpPointers.has(pointerId) ||
+        actionPointers.has(pointerId) ||
         !Number.isFinite(clientX) ||
         !Number.isFinite(travelPx) ||
         travelPx <= 0
