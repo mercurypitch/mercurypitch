@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   restoreAuth: vi.fn(async () => undefined),
   fetchMe: vi.fn(),
   signInWithPasskey: vi.fn(),
-  startGoogleSignIn: vi.fn(async () => null),
+  startGoogleSignIn: vi.fn(async (_options?: unknown) => null),
   lastSignInMethod: vi.fn(() => 'passkey' as string),
   isFirstRun: vi.fn(() => false),
   openAuthModal: vi.fn(),
@@ -28,6 +28,8 @@ const mocks = vi.hoisted(() => ({
   returningPromptDismissed: vi.fn(() => false),
   dismissReturningPrompt: vi.fn(),
   passkeysSupported: vi.fn(() => true),
+  adoptDeviceVoiceprints: vi.fn(async () => 0),
+  buildVoiceprintHint: vi.fn((): unknown => undefined),
 }))
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
@@ -62,8 +64,8 @@ vi.mock('@/features/account/native-sign-in', async () => ({
   ...(await vi.importActual<typeof NativeSignIn>(
     '@/features/account/native-sign-in',
   )),
-  signInWithApple: () => mocks.signInWithApple(),
-  signInWithGoogle: () => mocks.signInWithGoogle(),
+  signInWithApple: (...a: unknown[]) => mocks.signInWithApple(...a),
+  signInWithGoogle: (...a: unknown[]) => mocks.signInWithGoogle(...a),
 }))
 
 vi.mock('@/db/services/auth-passkey-service', () => ({
@@ -71,7 +73,7 @@ vi.mock('@/db/services/auth-passkey-service', () => ({
 }))
 
 vi.mock('@/lib/google-sign-in', () => ({
-  startGoogleSignIn: () => mocks.startGoogleSignIn(),
+  startGoogleSignIn: (options?: unknown) => mocks.startGoogleSignIn(options),
   googleSignInPending: () => false,
   googleSignInUnavailableReason: null,
 }))
@@ -98,6 +100,11 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: (...a: unknown[]) => mocks.showNotification(...a),
 }))
 
+vi.mock('@/db/services/voiceprint-service', () => ({
+  adoptDeviceVoiceprints: () => mocks.adoptDeviceVoiceprints(),
+  buildVoiceprintHint: () => mocks.buildVoiceprintHint(),
+}))
+
 vi.mock('@/lib/webauthn', () => ({
   describeWebAuthnError: (err: unknown) =>
     err instanceof Error ? err.message : '',
@@ -108,6 +115,9 @@ vi.mock('@/lib/webauthn', () => ({
 
 import { ReturningSignIn } from '@/components/account/ReturningSignIn'
 import { takeNativeTwofaChallenge } from '@/db/services/auth-service'
+
+/** What a sign-up from this device would tell its first mail. */
+const HINT = { twin: 'Nina Simone', lowMidi: 50, highMidi: 74 }
 
 /** A signed-out probe: an anonymous device identity, not a real account. */
 const SIGNED_OUT = { user: { authProvider: 'anonymous' }, profile: null }
@@ -286,6 +296,23 @@ describe('when it offers a way back in', () => {
     expect(action.textContent).toBe('Continue with Google')
     fireEvent.click(action)
     await waitFor(() => expect(mocks.startGoogleSignIn).toHaveBeenCalled())
+    // A sign-up through the redirect is adopted where it lands
+    // (adoptAfterGoogleSignup, from App.tsx), never from here as well.
+    expect(mocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
+  })
+
+  it('tells the Google redirect which twin a sign-up would adopt, for the first mail', async () => {
+    mocks.lastSignInMethod.mockReturnValue('google')
+    mocks.buildVoiceprintHint.mockReturnValue(HINT)
+    render(() => <ReturningSignIn />)
+
+    fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+    await waitFor(() =>
+      expect(mocks.startGoogleSignIn).toHaveBeenCalledWith({
+        signup: { voiceprintHint: HINT },
+      }),
+    )
   })
 
   it('opens the Apple sheet on the iPhone that signed in with it', async () => {
@@ -379,6 +406,7 @@ describe('when the account still owes a second factor', () => {
     )
     expect(mocks.showNotification).not.toHaveBeenCalled()
     expect(takeNativeTwofaChallenge()).toBe('ceremony-token')
+    expect(mocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
   })
 
   it('hands a Google challenge to the code pane', async () => {
@@ -394,5 +422,98 @@ describe('when the account still owes a second factor', () => {
     )
     expect(mocks.showNotification).not.toHaveBeenCalled()
     expect(takeNativeTwofaChallenge()).toBe('ceremony-token')
+    expect(mocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
   })
+})
+
+// The remembered way in can still make an account: a different Apple ID, or
+// one deleted since. One sheet both registers and signs in, so the worker's
+// `isNew` is the only proof an account was made here (REQ-VPR-014).
+describe('when the sheet creates the account', () => {
+  const SHEETS = [
+    {
+      name: 'Apple',
+      method: 'apple',
+      offer: mocks.appleSignInOffered,
+      sheet: mocks.signInWithApple,
+    },
+    {
+      name: 'Google',
+      method: 'google',
+      offer: mocks.nativeGoogleSignInOffered,
+      sheet: mocks.signInWithGoogle,
+    },
+  ]
+
+  it.each(SHEETS)(
+    'brings the takes on this device along when the $name sheet creates the account',
+    async ({ method, offer, sheet }) => {
+      mocks.lastSignInMethod.mockReturnValue(method)
+      offer.mockReturnValue(true)
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-new',
+        isNew: true,
+        user: { authProvider: method },
+      })
+      render(() => <ReturningSignIn />)
+
+      fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+      await waitFor(() =>
+        expect(mocks.showNotification).toHaveBeenCalledWith(
+          'Signed in',
+          'info',
+        ),
+      )
+      expect(mocks.adoptDeviceVoiceprints).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it.each(SHEETS)(
+    'leaves the takes to the Settings notice when the $name sheet signs in to an existing account',
+    async ({ method, offer, sheet }) => {
+      mocks.lastSignInMethod.mockReturnValue(method)
+      offer.mockReturnValue(true)
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-1',
+        isNew: false,
+        user: { authProvider: method },
+      })
+      render(() => <ReturningSignIn />)
+
+      fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+      await waitFor(() =>
+        expect(mocks.showNotification).toHaveBeenCalledWith(
+          'Signed in',
+          'info',
+        ),
+      )
+      expect(mocks.adoptDeviceVoiceprints).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(SHEETS)(
+    'tells the $name sheet which twin this sign-up would adopt, for the first mail',
+    async ({ method, offer, sheet }) => {
+      mocks.lastSignInMethod.mockReturnValue(method)
+      offer.mockReturnValue(true)
+      mocks.buildVoiceprintHint.mockReturnValue(HINT)
+      sheet.mockResolvedValue({
+        token: 'jwt',
+        userId: 'u-1',
+        isNew: false,
+        user: { authProvider: method },
+      })
+      render(() => <ReturningSignIn />)
+
+      fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+      await waitFor(() =>
+        expect(sheet).toHaveBeenCalledWith({ voiceprintHint: HINT }),
+      )
+    },
+  )
 })

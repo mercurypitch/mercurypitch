@@ -82,4 +82,16 @@ describe('spending a code', () => {
       deviceSecret: getDeviceSecret(),
     })
   })
+
+  it("carries a sign-up's hint for the first mail, when given one", async () => {
+    answer(SESSION)
+    const hint = { twin: 'Nina Simone', lowMidi: 50, highMidi: 74 }
+
+    await verifyLoginCode('c-1', '123456', {
+      proveDevice: true,
+      signup: { voiceprintHint: hint },
+    })
+
+    expect(sent[0]).toMatchObject({ voiceprintHint: hint })
+  })
 })

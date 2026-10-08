@@ -27,6 +27,7 @@ const stand = vi.hoisted(() => ({
   password: vi.fn(),
   twofa: vi.fn(),
   adopt: vi.fn(async () => 0),
+  hint: vi.fn((): unknown => undefined),
   fillDue: vi.fn(),
   appleOffered: true,
   googleOffered: true,
@@ -55,6 +56,7 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => ({
 vi.mock('@/db/services/auth-mfa-service', () => ({ verifyTwofa: stand.twofa }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: stand.adopt,
+  buildVoiceprintHint: stand.hint,
 }))
 vi.mock('./account-fill', () => ({ markAccountFillDue: stand.fillDue }))
 vi.mock('./account-state', async (importOriginal) => ({
@@ -68,6 +70,9 @@ const SESSION = {
   isNew: false,
   user: {},
 }
+
+/** What an account made on this phone would tell its first mail. */
+const HINT = { twin: 'Nina Simone', lowMidi: 50, highMidi: 74 }
 
 let view: RenderedShell | null = null
 const signedIn = vi.fn()
@@ -101,6 +106,7 @@ beforeEach(() => {
   stand.password.mockReset()
   stand.twofa.mockReset()
   stand.adopt.mockClear()
+  stand.hint.mockReset()
   stand.fillDue.mockClear()
   stand.appleOffered = true
   stand.googleOffered = true
@@ -197,6 +203,28 @@ describe("this phone's takes", () => {
 
     expect(signInOpen()).toBe(false)
     expect(stand.adopt).not.toHaveBeenCalled()
+  })
+
+  it('are named to the Apple sheet, for the first mail of an account made here', async () => {
+    stand.hint.mockReturnValue(HINT)
+    stand.apple.mockResolvedValue(SESSION)
+    openSignIn()
+
+    q('signin-apple')?.click()
+    await settle()
+
+    expect(stand.apple).toHaveBeenCalledWith({ voiceprintHint: HINT })
+  })
+
+  it('are named to the Google sheet, for the first mail of an account made here', async () => {
+    stand.hint.mockReturnValue(HINT)
+    stand.google.mockResolvedValue(SESSION)
+    openSignIn()
+
+    q('signin-google')?.click()
+    await settle()
+
+    expect(stand.google).toHaveBeenCalledWith({ voiceprintHint: HINT })
   })
 
   it("leave the account's history to be announced on Account (REQ-NAM-043)", async () => {

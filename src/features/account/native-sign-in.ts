@@ -35,6 +35,7 @@
 
 import type { SignInOutcome } from '@/db/services/auth-service'
 import { loginWithApple, loginWithGoogle } from '@/db/services/auth-service'
+import type { SignupContext } from '@/db/services/signup-context'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 
 /**
@@ -222,8 +223,13 @@ function asServerFailure(error: unknown): NativeSignInError {
  * The plugin answers later sign-ins with its own copy (the name it cached for
  * this Apple user, the email decoded from the token), so they go up then too,
  * and the worker lets a name fill only a default handle.
+ *
+ * `signup` is passed through untouched, for the new account's first mail
+ * should this sheet create one (SignupContext).
  */
-export async function signInWithApple(): Promise<SignInOutcome> {
+export async function signInWithApple(
+  signup?: SignupContext,
+): Promise<SignInOutcome> {
   const plugin = await requireBridge()
   const nonce = randomNonce()
   let answer: unknown
@@ -248,23 +254,26 @@ export async function signInWithApple(): Promise<SignInOutcome> {
   const email = readString(profile, 'email')
 
   try {
-    return await loginWithApple({
-      identityToken,
-      authorizationCode: readString(payload, 'authorizationCode'),
-      nonce,
-      user:
-        givenName === undefined &&
-        familyName === undefined &&
-        email === undefined
-          ? undefined
-          : {
-              name:
-                givenName === undefined && familyName === undefined
-                  ? undefined
-                  : { firstName: givenName, lastName: familyName },
-              email,
-            },
-    })
+    return await loginWithApple(
+      {
+        identityToken,
+        authorizationCode: readString(payload, 'authorizationCode'),
+        nonce,
+        user:
+          givenName === undefined &&
+          familyName === undefined &&
+          email === undefined
+            ? undefined
+            : {
+                name:
+                  givenName === undefined && familyName === undefined
+                    ? undefined
+                    : { firstName: givenName, lastName: familyName },
+                email,
+              },
+      },
+      signup,
+    )
   } catch (error) {
     throw asServerFailure(error)
   }
@@ -285,8 +294,12 @@ export async function signInWithApple(): Promise<SignInOutcome> {
  * `asServerFailure` maps an unrecognised numeric status to `network`. A
  * singer with 2FA on was told the phone was offline, every time, with
  * nowhere to type a code.
+ *
+ * `signup` is passed through untouched, as on the Apple path.
  */
-export async function signInWithGoogle(): Promise<SignInOutcome> {
+export async function signInWithGoogle(
+  signup?: SignupContext,
+): Promise<SignInOutcome> {
   const plugin = await requireBridge()
   const nonce = randomNonce()
   let answer: unknown
@@ -308,7 +321,7 @@ export async function signInWithGoogle(): Promise<SignInOutcome> {
   }
 
   try {
-    return await loginWithGoogle(idToken)
+    return await loginWithGoogle(idToken, signup)
   } catch (error) {
     throw asServerFailure(error)
   }

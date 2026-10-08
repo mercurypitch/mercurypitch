@@ -2748,6 +2748,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
               tone="guitar-night"
               onAuthenticated={handleAuthenticated}
               prepareGoogleRedirect={prepareGoogleRedirect}
+              adoptsGoogleSignup
             />
           </Suspense>
         </ChunkErrorBoundary>

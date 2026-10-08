@@ -26,6 +26,7 @@ import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-cod
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import type { AuthResponse, SignInOutcome } from '@/db/services/auth-service'
 import { isTwofaChallenge, loginWithPassword, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
+import type { SignupContext } from '@/db/services/signup-context'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { thisDeviceLower } from '@/lib/device-noun'
 
@@ -92,6 +93,11 @@ export interface SignInFlow {
 export interface SignInFlowOptions {
   /** A session landed. `isNew` on it says whether an account was created. */
   onSignedIn: (auth: AuthResponse) => void
+  /**
+   * What the ways that can create an account (Apple, Google, the code) tell
+   * the worker for its first mail. Read as each of those requests starts.
+   */
+  signup?: () => SignupContext
 }
 
 /** What a thrown request error means to the singer. */
@@ -173,13 +179,14 @@ export function createSignInFlow(options: SignInFlowOptions): SignInFlow {
   }
 
   async function continueWith(provider: SignInProvider): Promise<void> {
+    const signup = options.signup?.()
     await attempt(async () => {
       const request = generation
       try {
         const outcome =
           provider === 'apple'
-            ? await signInWithApple()
-            : await signInWithGoogle()
+            ? await signInWithApple(signup)
+            : await signInWithGoogle(signup)
         if (request === generation) land(outcome)
       } catch (error) {
         if (!(error instanceof NativeSignInError)) throw error
@@ -256,11 +263,13 @@ export function createSignInFlow(options: SignInFlowOptions): SignInFlow {
   async function submitCode(): Promise<void> {
     const ceremony = codeCeremony
     const code = mailedCode()
+    const signup = options.signup?.()
     await attempt(async () => {
       const request = generation
       // A wrong code is said so and the digits stay, for a retype.
       const outcome = await verifyLoginCode(ceremony, code, {
         proveDevice: true,
+        signup,
       })
       if (request === generation) land(outcome)
     })

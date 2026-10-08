@@ -1143,6 +1143,28 @@ that the two sets are disjoint.
 **See:** `src/lib/jam/jam-session-songs.ts` (`ownSongRows`),
 `src/features/karaoke-night/seed-examples.ts`
 
+### A page that offers Google sign-in must take the redirect and run the after-sign-up step
+
+**Symptom:** a Google sign-up from Guitar Night or Drum Night left the
+device's voiceprint takes behind, though the spec says creating an account
+adopts them (REQ-VPR-014). From Drum Night the sign-in was lost outright:
+the room came back signed out.
+**Cause:** Google sign-in is a full-page redirect, and the worker sends it
+back to the page that started it, with the session in the fragment. Each
+standalone room is its own Vite entry, so the main app's
+`consumeGoogleRedirect()` (`src/index.tsx`) and its after-sign-up effect
+(`adoptAfterGoogleSignup` in `App.tsx`) never run there. Guitar Night took
+the session but skipped the step; Drum Night's entry did neither. Mounting
+the shared `AuthModal` brought the button along, and nothing else.
+**Rule:** an entry whose page can start a Google sign-in takes the redirect
+before it renders, then runs what the main app runs after one. For a
+standalone room, `src/lib/room-google-return.ts` is that step,
+loaded lazily so first paint stays light. Mark the room's `AuthModal`
+`adoptsGoogleSignup` only once it adopts, because that prop is what lets the
+redirect carry the welcome's voiceprint hint (REQ-VPR-022).
+**See:** `src/features/drum-night/main.tsx`,
+`src/features/guitar-night/main.tsx`, `docs/specs/voiceprints.ears.md`
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents
@@ -1632,6 +1654,21 @@ If local and CI counts differ, compare the exact tested merge revision with the 
 **Cause:** shared Vite HMR replaced modules mid-attempt; parallel Playwright invocations cleaned the same output directory.
 **Rule:** freeze runtime edits during evidence capture or use a private server with HMR and watching disabled. Give each concurrent invocation a distinct output directory, and preserve final rendered proof separately from fast geometry runs.
 **See:** `apps/beside-cue/playwright.config.ts`, `apps/beside-cue/e2e/glass-adventure-voice.e2e.ts`.
+
+### Count module loads with a per-test `vi.doMock`, never a hoisted `vi.mock`
+
+**Symptom:** a test asserting that an ordinary visit "loads no auth" still
+passed after the code was changed to import the auth layer on every visit.
+**Cause:** `vi.resetModules()` clears the module registry, not the mock
+registry. A hoisted `vi.mock` factory runs once per file and its result is
+reused after every reset, so a load counter inside it counts the first test's
+import and nothing after.
+**Rule:** to prove a module did or did not load, register the counting
+factory with `vi.doMock` in `beforeEach`, after `vi.resetModules()`, and
+re-import the code under test dynamically. Then break the code on purpose
+and watch the test fail before trusting it.
+**See:** `src/lib/room-google-return.test.ts`,
+`src/features/drum-night/main.test.tsx`
 
 ## Process
 

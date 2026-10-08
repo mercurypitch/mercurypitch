@@ -17,6 +17,7 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { rememberSignInMethod } from '@/lib/last-sign-in'
 import type { AuthResponse, SignInOutcome } from './auth-service'
 import { adoptSession, isTwofaChallenge } from './auth-service'
+import type { SignupContext } from './signup-context'
 import { getDeviceSecret, getUserId } from './user-service'
 
 function requireBaseUrl(): string {
@@ -93,6 +94,11 @@ export async function verifyLoginCode(
      * or Google does. A sign-in code ignores it.
      */
     proveDevice?: boolean
+    /**
+     * For the new account's first mail, should this code create one. The
+     * worker reads it only then (finishSignUpCode).
+     */
+    signup?: SignupContext
   } = {},
 ): Promise<SignInOutcome> {
   const res = await postJson('/api/auth/email-code/verify', {
@@ -101,6 +107,7 @@ export async function verifyLoginCode(
     ...(options.proveDevice === true
       ? { deviceId: getUserId(), deviceSecret: getDeviceSecret() }
       : {}),
+    ...options.signup,
   })
   if (!res.ok) {
     throw new Error(await messageOf(res, 'That code is not valid'))

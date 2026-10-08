@@ -9,6 +9,7 @@ import '@/styles/performance-mode.css'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { armDeveloperConsole } from '@/lib/developer-console'
 import { initDeviceTier } from '@/lib/device-tier'
+import { landRoomGoogleReturn } from '@/lib/room-google-return'
 import { DrumNightApp } from './DrumNightApp'
 
 initDeviceTier()
@@ -44,7 +45,15 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
 // build.
 armDeveloperConsole()
 
+// A Google sign-in started from this room's dialog comes back to THIS page
+// with the session in the fragment (#gauth=…). Nothing here took it until
+// 2026-10-08, so the sign-in was silently lost. The room now stores it before
+// rendering, as Guitar Night and Karaoke Night do, and a return that created
+// the account adopts this device's takes (REQ-VPR-014). The auth layer loads
+// only when there is a fragment to take: an ordinary visit renders at once.
 const root = document.getElementById('root')
 if (root) {
-  render(() => <DrumNightApp />, root)
+  void landRoomGoogleReturn().then(() => {
+    render(() => <DrumNightApp />, root)
+  })
 }
