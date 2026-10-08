@@ -168,6 +168,26 @@ because an in-place upgrade means those takes are already the account's.
 until an unclaimed record newer than the declined set appears; a different
 account signing in on the same device is asked independently.
 
+### REQ-VPR-022 — The first mail may name the adopted twin (2026-10-08)
+
+**When** an account is created through a sign-up that adopts this device's
+unclaimed takes (REQ-VPR-014: password registration and the Google
+redirect), the sign-up request shall carry a hint describing the newest
+such take that has a twin and a measured range: the twin's catalogue name,
+the low and high MIDI notes, and the accuracy and steadiness scores where
+present (`buildVoiceprintHint`). The worker uses it only to choose and fill
+the new account's welcome or confirm mail. It checks the hint against the
+legend catalogue and fixed bounds (`workers/db-worker/src/signup-hint.ts`)
+and stores it nowhere; a hint that fails the checks means a mail without a
+twin, never a failed sign-up.
+
+Sign-ups that do not adopt send no hint, so the mail never claims a
+voiceprint the account does not get: Karaoke Night (see REQ-VPR-014), and
+for now the native sheet and the mailed sign-up code, which do not adopt
+yet. A confirm link sent again later reads the account's own newest twin
+instead of a hint. The numbers are the derived values adoption uploads
+seconds later (REQ-VPR-002): no audio, no pitch frames.
+
 ## 5. Sharing and the settings card
 
 ### REQ-VPR-012 — The flip is the export

@@ -27,7 +27,9 @@ import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
-import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
+import { sendLoginCode, sendPasswordReset } from './email'
+import type { MailOrigins } from './email-welcome'
+import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 import { sendSignUpCode } from './email-sign-up-code'
 import { shouldTouchLastActive } from './last-active'
 import type { LoginCodeClaim } from './login-codes'
@@ -39,6 +41,8 @@ import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { captchaFailureBody, verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
+import type { PackedVoiceprintHint, SignupSource, SignupVoiceprint, } from './signup-hint'
+import { packVoiceprintHint, parseSignupSource, parseVoiceprintHint, readAccountVoiceprint, unpackVoiceprintHint, } from './signup-hint'
 
 export interface Env {
   /**
@@ -51,6 +55,12 @@ export interface Env {
    *  app origin (e.g. a PR preview on workers.dev). Set per environment in
    *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
   APP_FALLBACK_ORIGIN?: string
+  /**
+   * '1' serves GET /api/email-preview: every welcome and confirm mail
+   * rendered with sample data, for checking in a browser. Set on the dev
+   * worker and in a local .dev.vars only; anywhere else the route is a 404.
+   */
+  EMAIL_PREVIEW?: string
   DB: D1Database
   /** Permanent short guided-exercise playback assets. Unlike UVR staging,
    * this bucket must not have an automatic expiry lifecycle. */
@@ -1153,6 +1163,14 @@ interface AuthBody {
    * question, and consent is not somewhere to guess a default.
    */
   newsletterOptIn?: boolean
+  /**
+   * The newest voiceprint this sign-up will adopt, so the first mail can name
+   * the singer's twin. Validated by parseVoiceprintHint, used for that one
+   * mail and stored nowhere (register, email-code/verify, google, google/start).
+   */
+  voiceprintHint?: unknown
+  /** Where the sign-up started. Only 'karaoke' counts; see parseSignupSource. */
+  signupSource?: unknown
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -1243,20 +1261,79 @@ async function recordAppleSub(
     .run()
 }
 
+/**
+ * What a new account's first mail may say, gathered where the sign-up
+ * arrived: the app it came from, and what the sign-up's hint claimed (see
+ * signup-hint.ts). Exported for apple-routes.ts.
+ */
+export interface SignupMail {
+  /** The app the sign-up came from. The mail's links go back there. */
+  appOrigin: string
+  voiceprint: SignupVoiceprint | null
+  signupSource: SignupSource | null
+}
+
+/** The first mail's context, from a sign-up request and its body. */
+export function signupMail(
+  request: Request,
+  env: Env,
+  body: { voiceprintHint?: unknown; signupSource?: unknown },
+): SignupMail {
+  return {
+    appOrigin: requestAppOrigin(request, env),
+    voiceprint: parseVoiceprintHint(body.voiceprintHint),
+    signupSource: parseSignupSource(body.signupSource),
+  }
+}
+
+/**
+ * The app a request came from when it is one of ours, otherwise this
+ * environment's own: a dev sign-up's mail links back to dev, and an origin off
+ * the allowlist never ends up in a mailed link.
+ */
+function requestAppOrigin(request: Request, env: Env): string {
+  const origin = request.headers.get('Origin') ?? ''
+  return isAllowedReturnTo(origin, env)
+    ? new URL(origin).origin
+    : fallbackAppOrigin(env)
+}
+
+/**
+ * Links follow the app; pictures need a host the reader's mail app can reach.
+ * A sign-up made on localhost gets this environment's deployed pictures.
+ */
+function mailOrigins(appOrigin: string, env: Env): MailOrigins {
+  const { hostname, protocol } = new URL(appOrigin)
+  const local =
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]'
+  return {
+    appOrigin,
+    assetOrigin:
+      protocol === 'https:' && !local ? appOrigin : fallbackAppOrigin(env),
+  }
+}
+
 // Fire the account welcome email — best-effort, never blocks or fails signup.
 // Skipped in PR previews, when Resend is unconfigured or when the account has
 // no email (anonymous).
 async function sendWelcomeEmail(
   env: Env,
   to: string | null | undefined,
-  displayName: string | null | undefined,
+  mail: SignupMail,
 ): Promise<void> {
   if (!authEmailDeliveryEnabled(env) || !env.RESEND_API_KEY || !to) return
   try {
-    await sendSignupWelcome(
+    await sendWelcomeMail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       to,
-      { displayName },
+      {
+        ...mailOrigins(mail.appOrigin, env),
+        voiceprint: mail.voiceprint,
+        signupSource: mail.signupSource,
+      },
     )
   } catch (err) {
     console.error(`[auth] welcome email failed (non-fatal): ${String(err)}`)
@@ -1314,22 +1391,23 @@ async function sendVerificationEmail(
   env: Env,
   userId: string,
   email: string,
-  displayName: string | null | undefined,
+  mail: SignupMail,
 ): Promise<void> {
   if (!authEmailDeliveryEnabled(env) || !env.RESEND_API_KEY) return
   try {
     const token = await createEmailVerification(env.DB, userId, email)
-    const requestOrigin = request.headers.get('Origin') ?? ''
-    const returnTo = isAllowedReturnTo(requestOrigin, env)
-      ? requestOrigin
-      : fallbackAppOrigin(env)
     const verifyUrl =
       `${new URL(request.url).origin}/api/auth/verify-email` +
-      `?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(returnTo)}`
-    await sendEmailVerification(
+      `?token=${encodeURIComponent(token)}&returnTo=${encodeURIComponent(mail.appOrigin)}`
+    await sendConfirmMail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       email,
-      { displayName, verifyUrl },
+      {
+        ...mailOrigins(mail.appOrigin, env),
+        verifyUrl,
+        voiceprint: mail.voiceprint,
+        ttlHours: VERIFY_TOKEN_TTL_MS / (60 * 60 * 1000),
+      },
     )
   } catch (err) {
     console.error(
@@ -1636,7 +1714,13 @@ async function upgradeAnonymousToPassword(
     await setNewsletterConsent(env.DB, anon.id, true, 'signup')
   }
   const row = (await findUserById(env.DB, anon.id)) as UserRow
-  await sendVerificationEmail(request, env, anon.id, email, chosenName)
+  await sendVerificationEmail(
+    request,
+    env,
+    anon.id,
+    email,
+    signupMail(request, env, body),
+  )
   // Upgrading an anonymous device to a password account creates a real
   // account: report isNew so the client's signup funnel event fires.
   return issueSession(env, row, respond, true, sessionOrigin(request))
@@ -1694,7 +1778,13 @@ async function handleRegister(
     await setNewsletterConsent(env.DB, id, true, 'signup')
   }
   const row = (await findUserById(env.DB, id)) as UserRow
-  await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
+  await sendVerificationEmail(
+    request,
+    env,
+    id,
+    email,
+    signupMail(request, env, body),
+  )
   return issueSession(env, row, respond, true, sessionOrigin(request))
 }
 
@@ -2043,7 +2133,7 @@ async function finishSignUpCode(
     clearRateLimit(env.DB, `email:${email}`, 'email-code-address'),
     clearRateLimit(env.DB, `email:${email}`, 'email-code-sign-up'),
   ])
-  await sendWelcomeEmail(env, email, null)
+  await sendWelcomeEmail(env, email, signupMail(request, env, body))
 
   const challenge = await twofaChallenge(env, userId, 'emailcode')
   if (challenge !== null) return respond(challenge)
@@ -2270,6 +2360,8 @@ export async function resolveFederatedUser(
   identity: FederatedIdentity,
   deviceId: string | undefined,
   env: Env,
+  /** For the welcome, sent only when this creates an account. */
+  mail: SignupMail,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   const provider = identity.provider
   // 1. Returning user of THIS provider: findLinkedAccount says what that
@@ -2360,7 +2452,7 @@ export async function resolveFederatedUser(
       // a board, or in the profile) stays. The password upgrade writes outright
       // because there the singer types the name on our own sign-up form.
       await replaceDefaultHandle(env.DB, anon.id, identity.name)
-      await sendWelcomeEmail(env, storedEmail, identity.name)
+      await sendWelcomeEmail(env, storedEmail, mail)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
         // First-time federated sign-in over an anonymous device is account
@@ -2386,7 +2478,7 @@ export async function resolveFederatedUser(
     identity.name || defaultDisplayName(id),
     identity.picture ?? undefined,
   )
-  await sendWelcomeEmail(env, storedEmail, identity.name)
+  await sendWelcomeEmail(env, storedEmail, mail)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
 
@@ -2395,6 +2487,7 @@ async function resolveGoogleUser(
   claims: GoogleClaims,
   deviceId: string | undefined,
   env: Env,
+  mail: SignupMail,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   return resolveFederatedUser(
     {
@@ -2408,6 +2501,7 @@ async function resolveGoogleUser(
     },
     deviceId,
     env,
+    mail,
   )
 }
 
@@ -2429,7 +2523,12 @@ async function handleGoogle(
     return respond({ error: 'Invalid Google token' }, { status: 401 })
   }
   const deviceId = await claimedDevice(env, body.deviceId, body.deviceSecret)
-  const { row, isNew } = await resolveGoogleUser(claims, deviceId, env)
+  const { row, isNew } = await resolveGoogleUser(
+    claims,
+    deviceId,
+    env,
+    signupMail(request, env, body),
+  )
   // A Google identity is one factor, exactly like a password.
   const challenge = await twofaChallenge(env, row.id, 'google')
   if (challenge !== null) return respond(challenge)
@@ -2471,12 +2570,12 @@ const DEFAULT_APP_ORIGINS = [
  *  emailed links would hand tokens to whoever controls that origin, so
  *  anything off the allowlist falls back HERE - and on the dev worker that
  *  is the dev domain, never production. */
-function fallbackAppOrigin(env: Env): string {
+export function fallbackAppOrigin(env: Env): string {
   const configured = (env.APP_FALLBACK_ORIGIN ?? '').trim()
   return configured !== '' ? configured : 'https://mercurypitch.com'
 }
 
-function isAllowedReturnTo(returnTo: string, env: Env): boolean {
+export function isAllowedReturnTo(returnTo: string, env: Env): boolean {
   let origin: string
   try {
     origin = new URL(returnTo).origin
@@ -2507,6 +2606,14 @@ interface OAuthState {
    * with, which is a thing to support rather than a mistake to correct.
    */
   uid?: string
+  /**
+   * A sign-in pass's voiceprint hint, packed (see packVoiceprintHint). It
+   * rides here because the callback is Google's redirect, which carries no
+   * body; the signature keeps it from being edited on the way.
+   */
+  vp?: PackedVoiceprintHint
+  /** A sign-in pass's sign-up source, when it was Karaoke Night. */
+  src?: SignupSource
 }
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
@@ -2586,8 +2693,18 @@ async function handleGoogleStart(
   // absorbing somebody else's.
   const deviceId = await claimedDevice(env, claimed, posted?.deviceSecret)
 
+  // Only the POST can carry a hint; validated now so only a hint that would
+  // be believed takes up room in the URL.
+  const voiceprint = parseVoiceprintHint(posted?.voiceprintHint)
+  const src = parseSignupSource(posted?.signupSource)
   const state = await signState(
-    { deviceId, returnTo, ts: Date.now() },
+    {
+      deviceId,
+      returnTo,
+      ts: Date.now(),
+      ...(voiceprint === null ? {} : { vp: packVoiceprintHint(voiceprint) }),
+      ...(src === null ? {} : { src }),
+    },
     env.JWT_SECRET as string,
   )
   const consentUrl = googleAuthUrl(env, url, state, false)
@@ -2768,7 +2885,12 @@ async function handleGoogleCallback(
     // The state is HMAC-signed by this worker, and handleGoogleStart puts a
     // deviceId in it only after claimedDevice cleared that id — so this one is
     // already proved and cannot have been forged in transit.
-    resolved = await resolveGoogleUser(claims, state.deviceId, env)
+    resolved = await resolveGoogleUser(claims, state.deviceId, env, {
+      // Checked by isAllowedReturnTo above, like every redirect from here.
+      appOrigin: new URL(state.returnTo).origin,
+      voiceprint: unpackVoiceprintHint(state.vp),
+      signupSource: parseSignupSource(state.src),
+    })
     const challenge = await twofaChallenge(env, resolved.row.id, 'google')
     if (challenge !== null) {
       // No session yet: the browser gets the ceremony token and the client
@@ -3409,18 +3531,16 @@ async function handleResendVerification(
   // own the account, so there is no address-existence oracle to protect.
   const addressRl = await checkRateLimit(env.DB, row.email, 'resend-email')
   if (!addressRl.allowed) return tooMany(respond, addressRl)
-  const profile = await env.DB.prepare(
-    'SELECT displayName FROM userProfiles WHERE id = ?',
+  // Sent after sign-up, so the account is the source: its own newest twin,
+  // not a hint. Where the sign-up started no longer matters here.
+  const voiceprint = await readAccountVoiceprint(env.DB, row.id).catch(
+    () => null,
   )
-    .bind(row.id)
-    .first<{ displayName: string | null }>()
-  await sendVerificationEmail(
-    request,
-    env,
-    row.id,
-    row.email,
-    profile?.displayName,
-  )
+  await sendVerificationEmail(request, env, row.id, row.email, {
+    appOrigin: requestAppOrigin(request, env),
+    voiceprint,
+    signupSource: null,
+  })
   return respond({ ok: true })
 }
 

@@ -63,6 +63,10 @@ GOOGLE_CLIENT_SECRET=
 # Defaults already cover mercurypitch.com, dev.mercurypitch.com and localhost:3000.
 #APP_ORIGINS=
 
+# Optional: 1 serves GET /api/email-preview, the sign-up mails rendered with
+# sample data. Add ?app=http://localhost:3000 to load their pictures from vite.
+#EMAIL_PREVIEW=1
+
 # Shared secret authorizing service-to-service billing calls (the main
 # worker's UVR job refunds via X-Service-Key). Set the SAME value in the
 # main worker's env (.dev.vars / `wrangler secret put BILLING_SERVICE_KEY`).

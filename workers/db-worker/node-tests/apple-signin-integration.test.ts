@@ -36,6 +36,8 @@ let env: Env
 let signing: CryptoKeyPair
 let publicJwk: JsonWebKey
 let appleCalls: { url: string; body: URLSearchParams }[]
+/** Mail sent through Resend, for the tests that configure it. */
+let mailed: { to: string; subject: string; html: string }[]
 
 function b64url(bytes: ArrayBuffer | Uint8Array): string {
   return Buffer.from(
@@ -97,10 +99,25 @@ function notificationToken(event: Record<string, unknown>): Promise<string> {
 /** Apple's three endpoints, and nothing else on the network. */
 function stubApple(): void {
   appleCalls = []
+  mailed = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | Request, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.url
+      // Reached only where a test sets RESEND_API_KEY.
+      if (url === 'https://api.resend.com/emails') {
+        const mail = JSON.parse(String(init?.body)) as {
+          to: string[]
+          subject: string
+          html: string
+        }
+        mailed.push({
+          to: mail.to[0] as string,
+          subject: mail.subject,
+          html: mail.html,
+        })
+        return Response.json({ id: `re_${mailed.length}` })
+      }
       const body = new URLSearchParams((init?.body as string) ?? '')
       appleCalls.push({ url, body })
       if (url === 'https://appleid.apple.com/auth/keys') {
@@ -1248,5 +1265,55 @@ describe('POST /api/auth/refresh', () => {
 
   it('refuses a caller with no token', async () => {
     expect((await post('/api/auth/refresh', {})).status).toBe(401)
+  })
+})
+
+describe('the welcome mail after an Apple sign-up', () => {
+  const DEV = 'https://dev.mercurypitch.com'
+
+  beforeEach(() =>
+    freshDatabase({
+      ALLOWED_ORIGINS: `capacitor://localhost,${DEV}`,
+      APP_FALLBACK_ORIGIN: DEV,
+      RESEND_API_KEY: 'test-resend-key',
+    }),
+  )
+
+  it("names the twin the phone sent and links to this environment's app", async () => {
+    const response = await post(
+      '/api/auth/apple',
+      {
+        identityToken: await identityToken(),
+        voiceprintHint: {
+          twin: 'Frank Sinatra',
+          lowMidi: 40,
+          highMidi: 67,
+          accuracy: 80,
+          steadiness: 85,
+        },
+      },
+      { Origin: 'capacitor://localhost' },
+    )
+
+    expect(response.status).toBe(200)
+    expect(mailed).toHaveLength(1)
+    expect(mailed[0]?.to).toBe('apple-singer@example.com')
+    expect(mailed[0]?.subject).toBe('You share a range with Frank Sinatra')
+    // The phone's origin is no web address, so links and pictures go to the
+    // environment's own app.
+    expect(mailed[0]?.html).toContain(`href="${DEV}/#/voice-constellation"`)
+    expect(mailed[0]?.html).toContain(
+      `src="${DEV}/email/hero-04-constellation-v1.jpg"`,
+    )
+  })
+
+  it('sends nothing to a singer coming back', async () => {
+    await signInWithApple()
+    expect(mailed).toHaveLength(1)
+    mailed = []
+
+    await signInWithApple()
+
+    expect(mailed).toEqual([])
   })
 })

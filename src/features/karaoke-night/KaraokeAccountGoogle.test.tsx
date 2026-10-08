@@ -86,6 +86,10 @@ describe('Continue with Google', () => {
     )
     // Asked for, not assembled: the device secret rides in the POST body.
     expect(mocks.googleSignInUrl).toHaveBeenCalledTimes(1)
+    // The welcome mail should know the account started on Karaoke Night.
+    expect(mocks.googleSignInUrl).toHaveBeenCalledWith({
+      signupSource: 'karaoke',
+    })
   })
 
   it('says so rather than navigating to nothing when the ask fails', async () => {

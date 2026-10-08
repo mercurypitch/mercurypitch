@@ -21,6 +21,7 @@ import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
 import { APPLE_NOTIFICATIONS_PATH, handleAppleRoute } from './apple-routes'
+import { handleEmailPreview } from './email-preview'
 import { handleNewsletterRoute } from './newsletter'
 import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
@@ -2357,6 +2358,12 @@ async function handleRequest(
     () => isAdmin(request, env),
   )
   if (noticeResponse) return noticeResponse
+
+  // Sample renders of the sign-up mails, on the dev worker only. Ahead of
+  // handleAuth for the same reason as the routes around it: email-preview
+  // imports auth.ts, never the reverse.
+  const previewResponse = handleEmailPreview(request, env, url.pathname)
+  if (previewResponse) return previewResponse
 
   // Ahead of handleAuth so the import runs one way: twofa-routes imports
   // auth.ts for getAuth and the session issuer, and auth.ts never imports it.

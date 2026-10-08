@@ -20,6 +20,7 @@
 
 import { createSignal } from 'solid-js'
 import { googleSignInUrl } from '@/db/services/auth-service'
+import type { SignupContext } from '@/db/services/signup-context'
 import { IS_PR_PREVIEW } from '@/lib/defaults'
 
 /** Shown when the consent URL could not be fetched. */
@@ -66,6 +67,8 @@ export interface GoogleSignInOptions {
    * removes it if fetching the URL or navigating to it fails.
    */
   prepareRedirect?: () => (() => void) | undefined
+  /** For the welcome mail, should this sign-in create the account. */
+  signup?: SignupContext
 }
 
 // The one production path where the page does NOT unload after a
@@ -103,7 +106,7 @@ export async function startGoogleSignIn(
   let rollbackRedirect: (() => void) | undefined
   try {
     rollbackRedirect = options.prepareRedirect?.() ?? undefined
-    const url = await googleSignInUrl()
+    const url = await googleSignInUrl(options.signup)
     window.location.assign(url)
     return null
   } catch {

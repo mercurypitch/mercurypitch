@@ -30,6 +30,7 @@ vi.mock('@/db/services/auth-service', () => ({
 vi.mock('@/db/services/auth-mfa-service', () => ({ verifyTwofa: vi.fn() }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: vi.fn(async () => 0),
+  buildVoiceprintHint: vi.fn(() => undefined),
 }))
 
 import { AuthModal } from '@/components/account/AuthModal'
@@ -92,13 +93,10 @@ describe('the product-updates box on the register form', () => {
     const screen = render(() => <AuthModal />)
     fillAndSubmit(screen, true)
     await vi.waitFor(() => expect(registerWithPassword).toHaveBeenCalled())
-    expect(registerWithPassword).toHaveBeenCalledWith(
-      EMAIL,
-      PASSWORD,
-      '',
-      '',
-      true,
-    )
+    expect(registerWithPassword).toHaveBeenCalledWith(EMAIL, PASSWORD, '', '', {
+      newsletterOptIn: true,
+      voiceprintHint: undefined,
+    })
   })
 
   it('sends a no when it was left alone', async () => {
@@ -106,13 +104,10 @@ describe('the product-updates box on the register form', () => {
     const screen = render(() => <AuthModal />)
     fillAndSubmit(screen, false)
     await vi.waitFor(() => expect(registerWithPassword).toHaveBeenCalled())
-    expect(registerWithPassword).toHaveBeenCalledWith(
-      EMAIL,
-      PASSWORD,
-      '',
-      '',
-      false,
-    )
+    expect(registerWithPassword).toHaveBeenCalledWith(EMAIL, PASSWORD, '', '', {
+      newsletterOptIn: false,
+      voiceprintHint: undefined,
+    })
   })
 
   it('forgets a tick when the form is reopened', () => {

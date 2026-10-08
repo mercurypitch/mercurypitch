@@ -183,11 +183,64 @@ describe('AuthModal', () => {
         '',
         // The product-updates box, left alone. Pinned here as well as in
         // newsletter-consent-ui.test.tsx: an account created by somebody who
-        // did not tick it must never arrive asking for mail.
-        false,
+        // did not tick it must never arrive asking for mail. No voiceprint on
+        // this device, so nothing for the confirm mail to name.
+        { newsletterOptIn: false, voiceprintHint: undefined },
       ),
     )
     await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))
+  })
+
+  it('tells the confirm mail about the twin this sign-up adopts', async () => {
+    // A take made signed out: registering adopts it, so the mail may name it.
+    localStorage.setItem(
+      'mercurypitch.voiceprints.v1',
+      JSON.stringify([
+        {
+          id: 'onboarding-take',
+          summary: {
+            lowMidi: 57,
+            highMidi: 77,
+            semitones: 20,
+            accuracy: 70,
+            steadiness: null,
+          },
+          twin: 'Adele',
+          source: 'onboarding',
+          takenAt: '2026-10-08T09:00:00.000Z',
+        },
+      ]),
+    )
+    mocks.registerWithPassword.mockResolvedValue({})
+    render(() => <AuthModal />)
+
+    openAuthModal('register')
+    fireEvent.input(await screen.findByTestId('auth-email'), {
+      target: { value: 'adele-fan@example.com' },
+    })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+
+    await waitFor(() =>
+      expect(mocks.registerWithPassword).toHaveBeenCalledWith(
+        'adele-fan@example.com',
+        'secret123',
+        '',
+        '',
+        {
+          newsletterOptIn: false,
+          voiceprintHint: {
+            twin: 'Adele',
+            lowMidi: 57,
+            highMidi: 77,
+            accuracy: 70,
+          },
+        },
+      ),
+    )
+    localStorage.removeItem('mercurypitch.voiceprints.v1')
   })
 
   it('uses the requested tone without changing the shared dialog contract', async () => {

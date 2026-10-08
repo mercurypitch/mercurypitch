@@ -8,10 +8,18 @@ import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import type { SignupContext } from '@/db/services/signup-context'
 import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
 import { showNotification } from '@/stores/notifications-store'
+
+/**
+ * Every sign-up here started on Karaoke Night, which gives the welcome mail
+ * its karaoke picture. No voiceprint hint: this page never adopts the
+ * device's takes, so the mail must not claim one was saved.
+ */
+const KARAOKE_SIGNUP: SignupContext = { signupSource: 'karaoke' }
 
 export function KaraokeAccount() {
   onMount(() => {
@@ -37,7 +45,7 @@ export function KaraokeAccount() {
   /** Shows the failure in this surface's own error line. Starting the
    *  redirect is shared — see lib/google-sign-in. */
   async function onGoogleSignIn(): Promise<void> {
-    const failure = await startGoogleSignIn()
+    const failure = await startGoogleSignIn({ signup: KARAOKE_SIGNUP })
     if (failure !== null) setError(failure)
   }
 
@@ -70,7 +78,13 @@ export function KaraokeAccount() {
     try {
       const token = turnstileToken()
       if (mode() === 'register') {
-        await registerWithPassword(email().trim(), password(), undefined, token)
+        await registerWithPassword(
+          email().trim(),
+          password(),
+          undefined,
+          token,
+          KARAOKE_SIGNUP,
+        )
       } else {
         await loginWithPassword(email().trim(), password(), token)
       }

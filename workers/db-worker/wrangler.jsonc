@@ -157,6 +157,9 @@
         // Emailed links (reset/verify) from non-first-party origins (PR
         // previews) land on the dev app, never production.
         "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
+        // GET /api/email-preview renders every sign-up mail with sample data
+        // (email-preview.ts). Dev only: prod omits it, so there it is a 404.
+        "EMAIL_PREVIEW": "1",
         "PASSKEY_RP_ID": "dev.mercurypitch.com",
         // The store environment whose RevenueCat events grant songs here.
         // Dev-target builds (TestFlight, license testers) buy in SANDBOX;

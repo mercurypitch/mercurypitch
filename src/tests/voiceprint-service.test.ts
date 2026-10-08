@@ -76,7 +76,7 @@ vi.mock('@/db', () => ({
   },
 }))
 
-import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, loadLocalVoiceprints, loadProgressVoiceprints, MADE_ANONYMOUSLY, recordMadeBy, saveVoiceprint, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
+import { adoptDeviceVoiceprints, adoptionNoticeDue, buildVoiceprintHint, declineAdoption, listAdoptableVoiceprints, listVoiceprints, loadLocalVoiceprints, loadProgressVoiceprints, MADE_ANONYMOUSLY, recordMadeBy, saveVoiceprint, syncLocalVoiceprints, } from '@/db/services/voiceprint-service'
 
 const summary = {
   lowMidi: 48,
@@ -501,5 +501,86 @@ describe('takes made under an anonymous identity', () => {
     signIn('device-local-id') // in-place upgrade: account id === device id
 
     expect(listAdoptableVoiceprints()).toEqual([])
+  })
+})
+
+describe('the hint a sign-up sends for its first mail', () => {
+  const take = (
+    id: string,
+    takenAt: string,
+    extra: Record<string, unknown> = {},
+  ): Record<string, unknown> => ({
+    id,
+    summary,
+    twin: 'David Bowie',
+    source: 'mirror',
+    takenAt,
+    ...extra,
+  })
+
+  function seed(records: Record<string, unknown>[]): void {
+    localStorage.setItem('mercurypitch.voiceprints.v1', JSON.stringify(records))
+  }
+
+  it('describes the newest take the new account will adopt', () => {
+    seed([
+      take('older', '2026-08-01T10:00:00.000Z', { twin: 'Adele' }),
+      take('newest', '2026-08-02T10:00:00.000Z'),
+    ])
+    expect(buildVoiceprintHint()).toEqual({
+      twin: 'David Bowie',
+      lowMidi: 48,
+      highMidi: 72,
+      accuracy: 80,
+      steadiness: 85,
+    })
+  })
+
+  it("counts a take made under this device's anonymous identity", () => {
+    signInAnonymously()
+    seed([
+      take('stranded', '2026-08-01T10:00:00.000Z', {
+        madeBy: 'device-local-id',
+      }),
+    ])
+    expect(buildVoiceprintHint()?.twin).toBe('David Bowie')
+  })
+
+  it('never describes a take another account made on this device', () => {
+    seed([
+      take('theirs', '2026-08-03T10:00:00.000Z', {
+        madeBy: 'someone-else',
+        twin: 'Adele',
+      }),
+      take('mine', '2026-08-01T10:00:00.000Z'),
+    ])
+    expect(buildVoiceprintHint()?.twin).toBe('David Bowie')
+  })
+
+  it('passes over takes with no twin or no range, and leaves out missing scores', () => {
+    seed([
+      take('no-twin', '2026-08-03T10:00:00.000Z', { twin: null }),
+      take('no-range', '2026-08-02T10:00:00.000Z', {
+        summary: { ...summary, lowMidi: null },
+      }),
+      take('kept', '2026-08-01T10:00:00.000Z', {
+        summary: { ...summary, accuracy: null, steadiness: null },
+      }),
+    ])
+    expect(buildVoiceprintHint()).toEqual({
+      twin: 'David Bowie',
+      lowMidi: 48,
+      highMidi: 72,
+    })
+  })
+
+  it('sends nothing while a real account is held, because nothing is adopted', () => {
+    seed([take('mine', '2026-08-01T10:00:00.000Z')])
+    signIn('an-account')
+    expect(buildVoiceprintHint()).toBeUndefined()
+  })
+
+  it('sends nothing from a device with no takes', () => {
+    expect(buildVoiceprintHint()).toBeUndefined()
   })
 })
