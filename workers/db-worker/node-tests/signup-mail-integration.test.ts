@@ -14,7 +14,7 @@
 // Run against real SQLite with the real migrations, driving the worker through
 // its own HTTP surface. Only Resend and Google are stubbed.
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VOICE_LEGENDS } from '../../../src/lib/mirror/legend-catalog'
@@ -341,18 +341,33 @@ describe('the confirm link sent again', () => {
 })
 
 describe('the pictures a mail points at', () => {
+  const paths = [
+    ...Object.values(MAIL_ART).map((art) => art.path),
+    WORDMARK_PATH,
+    ...VOICE_LEGENDS.map((legend) => legendPortraitPath(legend.id)),
+  ]
+  // No new mail uses these, but mails already sent still point at them.
+  const sentOnly = ['/email/wordmark-v1@2x.png']
+  const publicFile = (path: string) =>
+    new URL(`../../../public${path}`, import.meta.url)
+
   it('all exist in public/email, each under 200 KB', () => {
-    const paths = [
-      ...Object.values(MAIL_ART).map((art) => art.path),
-      WORDMARK_PATH,
-      ...VOICE_LEGENDS.map((legend) => legendPortraitPath(legend.id)),
-    ]
     for (const path of paths) {
-      const bytes = readFileSync(
-        new URL(`../../../public${path}`, import.meta.url),
-      )
+      const bytes = readFileSync(publicFile(path))
       expect(bytes.length, path).toBeGreaterThan(0)
       expect(bytes.length, path).toBeLessThan(200 * 1024)
     }
+  })
+
+  // Cloudflare answers a name holding anything a URL would percent-encode,
+  // like the @ in wordmark-v1@2x.png, with a 307 to the encoded name first.
+  it('load without a redirect: no name needs percent-encoding', () => {
+    for (const path of paths)
+      expect(path.split('/').map(encodeURIComponent).join('/')).toBe(path)
+  })
+
+  it('stay in public/email after new mail stops using them', () => {
+    for (const path of sentOnly)
+      expect(existsSync(publicFile(path)), path).toBe(true)
   })
 })

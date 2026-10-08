@@ -5,7 +5,9 @@
 // Mail clients set the rules: tables and inline styles only, no SVG, live
 // text never inside an image, and pictures as JPEG or PNG under /email/ on
 // the app's own origin. Each picture is versioned in its name because a sent
-// mail can never be updated: a changed picture gets a new name.
+// mail can never be updated: a changed picture gets a new name. Names keep to
+// letters, digits and hyphens: Cloudflare answers anything a URL would
+// percent-encode, like an @, with a redirect before the picture.
 
 import { ABOUT_URL, escapeHtml, footerHtml, REPO_URL } from './email'
 
@@ -56,7 +58,11 @@ export const MAIL_ART = {
   },
 } as const satisfies Record<string, MailArt>
 
-export const WORDMARK_PATH = '/email/wordmark-v1@2x.png'
+/**
+ * Mails sent before this name point at /email/wordmark-v1@2x.png, the same
+ * bytes reached through Cloudflare's redirect. That file stays for them.
+ */
+export const WORDMARK_PATH = '/email/wordmark-v1-2x.png'
 
 // ── look ─────────────────────────────────────────────────────────────
 
