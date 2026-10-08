@@ -1165,6 +1165,22 @@ redirect carry the welcome's voiceprint hint (REQ-VPR-022).
 **See:** `src/features/drum-night/main.tsx`,
 `src/features/guitar-night/main.tsx`, `docs/specs/voiceprints.ears.md`
 
+### A standalone room that raises a toast must mount the toast region
+
+**Symptom:** a failed Google sign-in in Drum Night said nothing, nor did the
+sign-in dialog's "Signed in" or voice control's "Microphone access for voice
+control was denied".
+**Cause:** `showNotification` only writes to a store; `<Notifications />` is
+what draws it. The main app, Guitar Night and Karaoke Night mount it. Drum
+Night did not, so every toast raised inside it, by its own account chip or by
+shared code such as AuthModal and voice control, went nowhere.
+**Rule:** a standalone entry that can raise a toast (its own code, or a shared
+component it mounts) mounts `<Notifications />`, lazily if first paint
+matters. In its tests, reset the store between cases (`resetNotifications`),
+or one test's toast turns up as a second alert in the next.
+**See:** `src/features/drum-night/DrumNightApp.tsx`,
+`src/features/drum-night/DrumNightApp.test.tsx`
+
 ## Tooling and environment
 
 ### Ignore new generated entry documents

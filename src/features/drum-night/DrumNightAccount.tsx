@@ -9,6 +9,7 @@
 
 import { createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { UserRound } from '@/components/icons'
+import type { GoogleRedirectResult } from '@/db/services/auth-service'
 import { accountHeld, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { account, credits, refreshAccount, signOutStandalone, } from '@/lib/standalone-account'
 import { showNotification } from '@/stores/notifications-store'
@@ -16,6 +17,8 @@ import styles from './DrumNightApp.module.css'
 
 interface DrumNightAccountProps {
   onSignIn: () => void
+  /** What a Google sign-in that just landed on this page said, once. */
+  onGoogleRedirectResult?: (result: GoogleRedirectResult) => void
 }
 
 export function DrumNightAccount(props: DrumNightAccountProps) {
@@ -30,8 +33,14 @@ export function DrumNightAccount(props: DrumNightAccountProps) {
 
   onMount(() => {
     const googleResult = takeGoogleRedirectResult()
-    if (googleResult !== null && !googleResult.ok) {
-      showNotification(`Google sign-in failed: ${googleResult.error}`, 'error')
+    if (googleResult !== null) {
+      props.onGoogleRedirectResult?.(googleResult)
+      if (!googleResult.ok) {
+        showNotification(
+          `Google sign-in failed: ${googleResult.error}`,
+          'error',
+        )
+      }
     }
     void refreshAccount()
     // Any click outside closes the menu: it overlaps the stage, and a menu
