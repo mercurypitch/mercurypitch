@@ -43,6 +43,11 @@ test('passes a dist that carries none of them', () => {
 const CARRIED = [
   ['the portable console', 'const k="MercuryPitch portable console";'],
   [
+    'runner recovery diagnostics',
+    'console.warn("[Glassworks runner recovery]",{});',
+  ],
+  ['runner touch diagnostics', 'console.warn("[Glassworks runner input]",{});'],
+  [
     'the Developer screen',
     'const t=x("<div class=mp-dev data-testid=shell-developer>");',
   ],

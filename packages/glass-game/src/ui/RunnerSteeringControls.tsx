@@ -1,6 +1,6 @@
 // Runner steering controls — a captured thumb pad and independent jump leave the centre of the track visible.
 
-import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import type { RunnerContinuousInput } from './runner-continuous-input'
 import { RUNNER_STEERING_TRAVEL_PX } from './runner-continuous-input'
 import { RunnerSlideControl } from './RunnerSlideControl'
@@ -21,12 +21,48 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
   })
   let pad!: HTMLDivElement
   let capturedId: number | null = null
+  let capturedType: string | null = null
+  let recoveryReports = 0
 
   function releaseCapture(): void {
     const id = capturedId
     capturedId = null
+    capturedType = null
     if (id !== null && pad.hasPointerCapture(id)) pad.releasePointerCapture(id)
   }
+
+  function recoverTouchOwner(
+    event: 'primary-touch-replaced-owner' | 'touch-sequence-ended',
+  ): void {
+    if (capturedId === null || capturedType !== 'touch') return
+    if (
+      import.meta.env.VITE_PORTABLE_CONSOLE === 'true' &&
+      recoveryReports < 4
+    ) {
+      recoveryReports++
+      console.warn('[Glassworks runner input]', {
+        event,
+        steeringAxis: props.input.steeringState().axis,
+      })
+    }
+    props.input.steeringEnd(capturedId)
+    releaseCapture()
+  }
+
+  onMount(() => {
+    const endTouchSequence = (event: TouchEvent) => {
+      // Touch Events can still finish a sequence whose Pointer Event terminal
+      // was lost. A remaining finger, keyboard or mouse keeps its own intent.
+      if (event.isTrusted && event.touches.length === 0)
+        recoverTouchOwner('touch-sequence-ended')
+    }
+    window.addEventListener('touchend', endTouchSequence, { passive: true })
+    window.addEventListener('touchcancel', endTouchSequence, { passive: true })
+    onCleanup(() => {
+      window.removeEventListener('touchend', endTouchSequence)
+      window.removeEventListener('touchcancel', endTouchSequence)
+    })
+  })
 
   createEffect(() => {
     const unsubscribe = props.input.subscribeSteering((next) => {
@@ -75,6 +111,18 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
         onContextMenu={(event) => event.preventDefault()}
         onPointerDown={(event) => {
           if (props.disabled || event.button !== 0) return
+          // A new primary touch starts a fresh touch sequence. If a terminal
+          // was lost, let it replace that old touch, including a reused ID.
+          // Concurrent fingers and other pointer types retain their owners.
+          if (
+            event.isTrusted &&
+            event.isPrimary &&
+            event.pointerType === 'touch' &&
+            capturedType === 'touch' &&
+            capturedId !== null
+          ) {
+            recoverTouchOwner('primary-touch-replaced-owner')
+          }
           const travelPx = Math.min(
             RUNNER_STEERING_TRAVEL_PX,
             event.currentTarget.clientWidth / 4,
@@ -86,6 +134,7 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
           event.preventDefault()
           event.currentTarget.focus({ preventScroll: true })
           capturedId = event.pointerId
+          capturedType = event.pointerType
           event.currentTarget.setPointerCapture(event.pointerId)
         }}
         onPointerMove={(event) =>

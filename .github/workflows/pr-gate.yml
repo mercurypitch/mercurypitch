@@ -511,6 +511,7 @@ jobs:
             runner-responsive,
             runner-sound,
             runner-steering,
+            runner-steering-recovery,
             song-runner,
             songbook,
             solids,
