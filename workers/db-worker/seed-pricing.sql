@@ -15,8 +15,8 @@ INSERT OR IGNORE INTO pricingPlans
   (id, createdAt, updatedAt, kind, label, description, unit, amount, currency, credits, stripePriceId, badge, sortOrder, active)
 VALUES
   ('tier-ondevice', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'tier', 'On-device', 'Runs in your browser. Free forever.', 'song', 0, 'eur', NULL, NULL, 'Free', 0, 1),
-  ('tier-runpod-cpu', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'tier', 'Server (CPU)', 'Faster than on-device, lower credit cost.', 'song', NULL, 'eur', NULL, NULL, NULL, 1, 1),
-  ('tier-runpod-gpu', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'tier', 'Server (GPU)', 'Fastest separation. Uses more credits.', 'song', NULL, 'eur', NULL, NULL, 'Default', 2, 1);
+  ('tier-runpod-cpu', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'tier', 'Cloud CPU', 'Faster than on-device, lower credit cost.', 'song', NULL, 'eur', NULL, NULL, NULL, 1, 1),
+  ('tier-runpod-gpu', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'tier', 'Cloud GPU', 'Fastest separation. Uses more credits.', 'song', NULL, 'eur', NULL, NULL, 'Default', 2, 1);
 
 -- Credit packs (placeholders — set credits + amount + stripePriceId later).
 INSERT OR IGNORE INTO pricingPlans

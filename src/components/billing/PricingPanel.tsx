@@ -116,9 +116,9 @@ export const PricingPanel: Component = () => {
   const hasBadge = (b: string | null): boolean => b != null && b !== ''
 
   // The tier cards double as the processing-default picker: clicking
-  // On-device or Server (GPU) selects where separation runs (persisted —
+  // On-device or Cloud GPU selects where separation runs (persisted —
   // the Karaoke page mode toggle uses the same signal and stays in sync).
-  // Server (CPU) has no endpoint yet, so its card is not selectable.
+  // Cloud CPU has no endpoint yet, so its card is not selectable.
   const tierMode = (id: string): UvrProcessingMode | null =>
     id === 'tier-ondevice'
       ? 'local'

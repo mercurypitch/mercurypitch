@@ -54,7 +54,7 @@ const PRICING: Pricing = {
     {
       id: 'tier-runpod-cpu',
       kind: 'tier',
-      label: 'Server (CPU)',
+      label: 'Cloud CPU',
       description: 'Cheaper',
       unit: 'song',
       amount: null, // no money price and…
@@ -66,7 +66,7 @@ const PRICING: Pricing = {
     {
       id: 'tier-runpod-gpu',
       kind: 'tier',
-      label: 'Server (GPU)',
+      label: 'Cloud GPU',
       description: 'Fastest',
       unit: 'song',
       amount: null, // priced in credits, not money
@@ -137,7 +137,7 @@ describe('PricingPanel', () => {
     vi.mocked(fetchBillingMe).mockResolvedValue(null)
     render(() => <PricingPanel />)
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     expect(screen.queryByTestId('credit-balance')).not.toBeInTheDocument()
   })
@@ -160,7 +160,7 @@ describe('PricingPanel', () => {
     render(() => <PricingPanel />)
 
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     // Single server quality → the card shows the tier's 1-credit per-song
     // cost, never "Soon".
@@ -191,7 +191,7 @@ describe('PricingPanel', () => {
     vi.mocked(fetchPricing).mockResolvedValue(PRICING)
     render(() => <PricingPanel />)
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
 
     // Default mode is on-device: its card is selected.
@@ -219,7 +219,7 @@ describe('PricingPanel', () => {
     render(() => <PricingPanel />)
 
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     // Unset prices render as "Soon" (CPU tier, pack price, pack button).
     expect(screen.getAllByText('Soon').length).toBeGreaterThan(0)
