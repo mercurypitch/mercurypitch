@@ -9,23 +9,16 @@ import { microphoneIssue, microphoneTakeoverTimedOut } from '../ui/mic-error'
 import { createRunnerFramePublisher } from './runner-frame-publisher'
 import { readRunnerAudioPreferences, RUNNER_AUDIO_PREFERENCE, } from './runner-host'
 import { createRunnerReadinessTracker } from './runner-readiness'
+import type { RunnerAdvanceSource } from './runner-recovery-diagnostics'
+import { createRunnerRecoveryDiagnostics } from './runner-recovery-diagnostics'
+import type { RunnerSessionRuntime } from './runner-session-runtime'
+import { browserRunnerRuntime } from './runner-session-runtime'
 import { createRunnerLifecycleDiagnostics } from './voice-diagnostics'
+
+export type { RunnerSessionRuntime } from './runner-session-runtime'
 
 const READINESS_SECONDS = 0.7
 const REFERENCE_IDLE = Object.freeze({ phase: 'idle', error: null } as const)
-let nextEpoch = 0
-
-/** Only scheduling is injected; tests still exercise the real core and timestamp routing. */
-export interface RunnerSessionRuntime {
-  requestFrame(callback: () => void): number
-  cancelFrame(id: number): void
-  epoch(): string
-}
-const browserRuntime: RunnerSessionRuntime = {
-  requestFrame: (callback) => requestAnimationFrame(callback),
-  cancelFrame: (id) => cancelAnimationFrame(id),
-  epoch: () => `runner:${++nextEpoch}`,
-}
 
 export function createBrowserRunnerSession(
   options: {
@@ -33,7 +26,7 @@ export function createBrowserRunnerSession(
     readonly comfortableMidi: number
     readonly host: SongRunnerHost
   },
-  runtime: RunnerSessionRuntime = browserRuntime,
+  runtime: RunnerSessionRuntime = browserRunnerRuntime,
 ): SongRunnerSession {
   const { course, comfortableMidi, host } = options
   const game = createSongRunnerGame(course, {
@@ -86,6 +79,10 @@ export function createBrowserRunnerSession(
   const diagnose =
     import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
       ? createRunnerLifecycleDiagnostics()
+      : undefined
+  const recoveryDiagnostics =
+    import.meta.env.VITE_PORTABLE_CONSOLE === 'true'
+      ? createRunnerRecoveryDiagnostics(course.movement.maxCatchUpSeconds)
       : undefined
 
   function publish(
@@ -223,16 +220,21 @@ export function createBrowserRunnerSession(
     )
   }
 
-  function advance(now: number, presentation = false): void {
+  function advance(now: number, source: RunnerAdvanceSource): void {
     if (epoch === null || state.phase !== 'running') return
     const requested = Math.min(
       course.lengthCourseSeconds,
       Math.max(schedule!.courseStartSeconds, courseTime(now)),
     )
+    recoveryDiagnostics?.advance(
+      source,
+      requested,
+      requested - lastRequestedCourseSeconds,
+    )
     game.advanceTo(epoch, requested)
     // The fixed-step snapshot can trail this request by almost one step.
     lastRequestedCourseSeconds = requested
-    handleEvents(presentation)
+    handleEvents(source === 'frame')
   }
 
   function maybeCountIn(): void {
@@ -296,12 +298,13 @@ export function createBrowserRunnerSession(
         }
         epoch = token
         lastRequestedCourseSeconds = result.startCourseSeconds
+        recoveryDiagnostics?.reset()
         inputSequence = 0
         lastVoiceReceipt = -Infinity
         lastMixSequence = -1
         lastMixCapture = -Infinity
         publish({ phase: 'running', countIn: null })
-        advance(now, true)
+        advance(now, 'frame')
       } else {
         const beats = Math.max(
           0,
@@ -323,7 +326,7 @@ export function createBrowserRunnerSession(
       }
     } else if (state.phase === 'running') {
       if (now - lastVoiceReceipt > 0.12) audio.setVoiceActive(false)
-      advance(now, true)
+      advance(now, 'frame')
     }
     ensureFrame()
   }
@@ -354,7 +357,7 @@ export function createBrowserRunnerSession(
     }
     if (state.phase !== 'running' || epoch === null || !schedule) return
     if (excessiveGap(now)) {
-      advance(now)
+      advance(now, 'capture')
       return
     }
     const received = courseTime(now)
@@ -394,7 +397,7 @@ export function createBrowserRunnerSession(
       if (voiced) lastVoiceReceipt = now
     }
     // Delivery order matters: evidence at the settlement boundary arrives first.
-    advance(now)
+    advance(now, 'capture')
   }
 
   function prepareAudio(
@@ -689,7 +692,7 @@ export function createBrowserRunnerSession(
     if (disposed || state.phase !== 'running' || epoch === null || now == null)
       return false
     if (excessiveGap(now)) {
-      advance(now)
+      advance(now, 'input')
       return false
     }
     if (
@@ -704,7 +707,9 @@ export function createBrowserRunnerSession(
       atCourseSeconds: courseTime(now),
       ...command,
     })
-    advance(now)
+    if (accepted && command.action === 'steer')
+      recoveryDiagnostics?.steer(command.axis)
+    advance(now, 'input')
     return accepted
   }
 

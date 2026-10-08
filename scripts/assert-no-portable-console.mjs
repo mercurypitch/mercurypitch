@@ -64,6 +64,8 @@ const FINGERPRINTS = [
   'MercuryPitch portable console',
   'mp:portableConsole:log',
   'Portable console',
+  '[Glassworks runner recovery]',
+  '[Glassworks runner input]',
   'mp:dev-karaoke-force-no-stream',
   'mp:dev-karaoke-decode-past-guard',
   'mp:dev-karaoke-last-song-path',
