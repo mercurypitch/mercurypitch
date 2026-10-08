@@ -254,15 +254,18 @@ export function rangeBarWidths(
   lowMidi: number,
   highMidi: number,
 ): [number, number, number] {
-  const span = TRACK_HIGH - TRACK_LOW
-  const clamp = (midi: number): number =>
-    Math.min(TRACK_HIGH, Math.max(TRACK_LOW, midi))
-  const before = Math.round(((clamp(lowMidi) - TRACK_LOW) / span) * 100)
-  const sung = Math.max(
-    1,
-    Math.round(((clamp(highMidi) - clamp(lowMidi)) / span) * 100),
-  )
-  return [before, sung, Math.max(0, 100 - before - sung)]
+  // Round the two edges and take the widths between them. Rounding each
+  // width on its own can add up to 101 (F#3 to C6 came out 38 + 63).
+  const edge = (midi: number): number =>
+    Math.round(
+      ((Math.min(TRACK_HIGH, Math.max(TRACK_LOW, midi)) - TRACK_LOW) /
+        (TRACK_HIGH - TRACK_LOW)) *
+        100,
+    )
+  // The sung cell keeps at least 1%, even for a range off either end.
+  const start = Math.min(edge(lowMidi), 99)
+  const end = Math.min(100, Math.max(edge(highMidi), start + 1))
+  return [start, end - start, 100 - end]
 }
 
 function rangeBar(lowMidi: number, highMidi: number): string {

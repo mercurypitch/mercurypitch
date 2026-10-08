@@ -193,25 +193,28 @@ describe('the voiceprint panel', () => {
   })
 
   it('draws the range on a C2 to C6 track', () => {
-    expect(rangeBarWidths(40, 67)).toEqual([8, 56, 36])
+    expect(rangeBarWidths(40, 67)).toEqual([8, 57, 35])
     expect(welcome(SINATRA).html).toMatch(
-      /<td width="8%"[\s\S]*?<td width="56%"[\s\S]*?<td width="36%"/,
+      /<td width="8%"[\s\S]*?<td width="57%"[\s\S]*?<td width="35%"/,
     )
   })
 
-  it('keeps the range bar whole at the edges of the track', () => {
-    for (const [low, high] of [
-      [24, 96],
-      [36, 84],
-      [30, 40],
-      [80, 90],
-      [60, 61],
-    ]) {
-      const widths = rangeBarWidths(low, high)
-      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(100)
-      expect(widths[1]).toBeGreaterThanOrEqual(1)
-      expect(Math.min(...widths)).toBeGreaterThanOrEqual(0)
+  it('fills exactly the whole track for every range a hint can carry', () => {
+    // Every range parseVoiceprintHint accepts: 24 to 96, at most 48 apart.
+    const broken: string[] = []
+    for (let low = 24; low < 96; low++) {
+      for (let high = low + 1; high <= Math.min(96, low + 48); high++) {
+        const [before, sung, after] = rangeBarWidths(low, high)
+        if (
+          before + sung + after !== 100 ||
+          sung < 1 ||
+          Math.min(before, after) < 0
+        ) {
+          broken.push(`${low}-${high}: ${before}/${sung}/${after}`)
+        }
+      }
     }
+    expect(broken).toEqual([])
   })
 
   it('shows only the scores the take has', () => {
