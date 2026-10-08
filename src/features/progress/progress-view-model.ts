@@ -179,6 +179,7 @@ function formatDuration(durationMs: number): string {
 function momentKindLabel(moment: ProgressOneMoment): string {
   if (moment.kind === 'personal-best') return 'Comparable best'
   if (moment.kind === 'voiceprint-growth') return 'Voiceprint'
+  if (moment.kind === 'voiceprint-reading') return 'Voiceprint'
   if (moment.kind === 'latest-attempt') return 'Latest practice'
   if (moment.kind === 'milestone') return 'Milestone'
   if (moment.kind === 'league') return 'League'
@@ -273,6 +274,12 @@ function momentTitle(model: ProgressModel, moment: ProgressOneMoment): string {
   if (moment.kind === 'voiceprint-growth') {
     return 'Your voiceprint has a new reading.'
   }
+  if (moment.kind === 'voiceprint-reading') {
+    const twin = moment.voiceprintGrowth?.latest?.twin
+    return twin === null || twin === undefined
+      ? 'Your voiceprint is saved.'
+      : `You share a range with ${twin}.`
+  }
   if (moment.kind === 'consistency') {
     const streak = model.streak.current
     return streak === null
@@ -358,7 +365,10 @@ function momentEvidence(
             value: points(scorePoint.improvement),
           },
     )
-  } else if (moment.kind === 'voiceprint-growth') {
+  } else if (
+    moment.kind === 'voiceprint-growth' ||
+    moment.kind === 'voiceprint-reading'
+  ) {
     const latest = moment.voiceprintGrowth?.latest
     const summary = latest?.summary
     add(
@@ -472,6 +482,9 @@ function momentReason(moment: ProgressOneMoment): string {
   if (moment.kind === 'latest-attempt') {
     return 'No stronger recent candidate outranked the latest completed attempt.'
   }
+  if (moment.kind === 'voiceprint-reading') {
+    return 'Your saved voiceprint is the only reading so far, and no practice is recorded yet.'
+  }
   return 'Complete a scored practice to begin the record.'
 }
 
@@ -487,6 +500,10 @@ function momentAction(
       label: 'Explore constellation',
       href: '#/voice-constellation',
     }
+  }
+  if (moment.kind === 'voiceprint-reading') {
+    // Exercises, not Singing: an exercise always banks a progress record.
+    return { id, label: 'Start an exercise', href: '#/exercises' }
   }
   if (moment.kind === 'league') {
     return { id, label: 'Open Leaderboard', href: '#/leaderboard' }
@@ -522,7 +539,9 @@ export function progressMomentToView(
         ? 'Based on your saved practice dates.'
         : moment.kind === 'empty'
           ? 'No scored reading yet.'
-          : 'Based on the practice details available here.',
+          : moment.kind === 'voiceprint-reading'
+            ? 'Based on your saved voiceprint.'
+            : 'Based on the practice details available here.',
     primaryAction: momentAction(model, moment),
     shareable: moment.kind !== 'empty',
   }

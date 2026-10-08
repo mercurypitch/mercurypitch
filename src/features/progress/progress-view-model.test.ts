@@ -249,6 +249,84 @@ describe('progress page view model', () => {
     ).toBe(true)
   })
 
+  it('sends a lone voiceprint reading to a first exercise', () => {
+    const readingOnly = (
+      voiceprints: VoiceprintRecord[],
+      comparable: boolean,
+    ) =>
+      buildProgressModel(
+        {
+          records: [],
+          voiceprints,
+          voiceprintHistory: {
+            complete: true,
+            totalAvailable: voiceprints.length,
+            comparable,
+          },
+          badgeDefinitions: [],
+          userBadges: [],
+          achievementDefinitions: [],
+          userAchievements: [],
+          challengeDefinitions: [],
+          activityRows: [],
+          recentActivity: [],
+          league: null,
+        },
+        { now: NOW },
+      )
+    const measured = {
+      lowMidi: 48,
+      highMidi: 69,
+      semitones: 21,
+      accuracy: 88,
+      steadiness: 77,
+    }
+
+    const reading = buildProgressPageSnapshot(
+      readingOnly(
+        [
+          voiceprint(
+            'reading',
+            '2026-08-10T10:00:00.000Z',
+            measured,
+            'Frank Sinatra',
+          ),
+        ],
+        false,
+      ),
+      { accountHeld: false },
+    )
+    expect(reading.moment).toMatchObject({
+      kindLabel: 'Voiceprint',
+      title: 'You share a range with Frank Sinatra.',
+      primaryAction: { label: 'Start an exercise', href: '#/exercises' },
+      shareable: true,
+    })
+    expect(reading.moment.evidence.map((fact) => fact.id)).toEqual([
+      'range',
+      'accuracy',
+      'steadiness',
+    ])
+
+    const growth = buildProgressPageSnapshot(
+      readingOnly(
+        [
+          voiceprint('old', '2026-08-01T10:00:00.000Z', measured),
+          voiceprint('new', '2026-08-10T10:00:00.000Z', {
+            ...measured,
+            semitones: 24,
+          }),
+        ],
+        true,
+      ),
+      { accountHeld: true },
+    )
+    expect(growth.moment.primaryAction).toMatchObject({
+      label: 'Explore constellation',
+      href: '#/voice-constellation',
+    })
+  })
+
   it('adds real account acts to Practice Paths without treating them as 13-week scores', () => {
     const snapshot = buildProgressPageSnapshot(fixture(), {
       accountHeld: false,

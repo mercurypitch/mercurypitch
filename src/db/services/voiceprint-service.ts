@@ -208,6 +208,21 @@ async function pushToCloud(
 // ── Read ─────────────────────────────────────────────────────────
 
 /**
+ * The device takes a viewer may see (REQ-VPR-007). Without a real account
+ * (signed out, or holding only a lazy anonymous identity) that is every take
+ * on the device, whoever made it: device data. A real account sees only the
+ * takes it made; the rest wait for the adoption notice (decision D2).
+ */
+function visibleDeviceTakes(
+  local: readonly VoiceprintRecord[],
+  accountOwnerId: string | null,
+): VoiceprintRecord[] {
+  return accountOwnerId === null
+    ? [...local]
+    : local.filter((record) => recordMadeBy(record) === accountOwnerId)
+}
+
+/**
  * Every voiceprint we know about, newest first. Signed out: whatever is
  * on this device, whoever made it — device data. Signed in: the account
  * history (uncapped) merged with the device takes **made by this
@@ -217,10 +232,10 @@ async function pushToCloud(
  */
 export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
   const local = loadLocalVoiceprints()
-  if (!cloudAvailable()) return sortNewestFirst(local)
-
   const ownerId = getUserId()
-  const mine = local.filter((r) => recordMadeBy(r) === ownerId)
+  const onDevice = visibleDeviceTakes(local, realAccountHeld() ? ownerId : null)
+  if (!cloudAvailable()) return sortNewestFirst(onDevice)
+
   try {
     const db = await getDb()
     if (getUserId() !== ownerId) return []
@@ -236,9 +251,9 @@ export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
     }))
     // Merge rather than replace: a take made moments ago may not have
     // reached the server yet, and it should still show.
-    return sortNewestFirst(dedupeByTakenAt([...remote, ...mine]))
+    return sortNewestFirst(dedupeByTakenAt([...remote, ...onDevice]))
   } catch {
-    return getUserId() === ownerId ? sortNewestFirst(mine) : []
+    return getUserId() === ownerId ? sortNewestFirst(onDevice) : []
   }
 }
 
@@ -251,28 +266,31 @@ export interface ProgressVoiceprintRecords {
   comparable: boolean
 }
 
-/** Bounded account history with explicit completeness for Progress. */
+/**
+ * The takes listVoiceprints shows, bounded, with explicit completeness for
+ * Progress. Without a real account they are device data that may span
+ * several people, so they are never compared as one singer's growth.
+ */
 export async function loadProgressVoiceprints(
   options: { pageSize?: number; maxRecords?: number } = {},
 ): Promise<ProgressVoiceprintRecords> {
   const ownerId = getUserId()
+  const accountOwnerId = realAccountHeld() ? ownerId : null
+  const comparable = accountOwnerId !== null
   const local = loadLocalVoiceprints()
+  const onDevice = visibleDeviceTakes(local, accountOwnerId)
   if (!cloudAvailable()) {
-    const progressOwnerId = realAccountHeld() ? ownerId : MADE_ANONYMOUSLY
-    const records = sortNewestFirst(
-      local.filter((record) => recordMadeBy(record) === progressOwnerId),
-    )
+    const records = sortNewestFirst(onDevice)
     const localHistoryIsComplete = local.length < LOCAL_CAP
     return {
       records,
       available: true,
       complete: localHistoryIsComplete,
       totalAvailable: localHistoryIsComplete ? records.length : null,
-      comparable: progressOwnerId !== MADE_ANONYMOUSLY,
+      comparable,
     }
   }
 
-  const mine = local.filter((record) => recordMadeBy(record) === ownerId)
   const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
   const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
   try {
@@ -319,7 +337,7 @@ export async function loadProgressVoiceprints(
       initialTotal === finalTotal &&
       initialTotal <= maxRecords &&
       remote.length === initialTotal
-    const records = sortNewestFirst(dedupeByTakenAt([...remote, ...mine]))
+    const records = sortNewestFirst(dedupeByTakenAt([...remote, ...onDevice]))
     const totalAvailable =
       finalTotal >= remote.length
         ? complete
@@ -331,17 +349,17 @@ export async function loadProgressVoiceprints(
       available: true,
       complete,
       totalAvailable,
-      comparable: true,
+      comparable,
     }
   } catch {
     return {
-      records: sortNewestFirst(mine),
+      records: sortNewestFirst(onDevice),
       // Local account-tagged takes remain useful evidence, but a failed
       // audited cloud read cannot prove that this is the account's history.
       available: false,
       complete: false,
       totalAvailable: null,
-      comparable: true,
+      comparable,
     }
   }
 }

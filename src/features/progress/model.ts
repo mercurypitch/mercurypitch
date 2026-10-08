@@ -10,6 +10,7 @@ import { countActivity } from '@/db/services/user-activity-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import type { StoredChallengeTrace } from '@/features/challenges/challenge-trace'
 import { activityByDay, localDayKey, } from '@/features/practice-intelligence/practice-activity'
+import { midiToNoteNameOctave } from '@/lib/note-utils'
 
 export const PROGRESS_HISTORY_WEEKS = 13
 /** Safety ceiling for the paginated Progress history read. */
@@ -278,12 +279,13 @@ export type ProgressOneMomentKind =
   | 'challenge'
   | 'return'
   | 'latest-attempt'
+  | 'voiceprint-reading'
   | 'empty'
 
 export interface ProgressOneMoment {
   kind: ProgressOneMomentKind
   /** 1 is the strongest story. Empty state has no ranked candidate. */
-  priority: 1 | 2 | 3 | 4 | 5 | 6 | 7 | null
+  priority: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null
   headline: string
   detail: string
   occurredAt: string | null
@@ -325,7 +327,7 @@ export interface ProgressModel {
 }
 
 interface Candidate extends ProgressOneMoment {
-  priority: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  priority: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
   stableKey: string
 }
 
@@ -990,7 +992,36 @@ function buildMomentCandidates(input: {
     })
   }
 
+  // A voiceprint and nothing practiced yet: the reading is the whole record
+  // so far. Any run replaces it, and two readings that moved tell growth.
+  const reading = input.voiceprintGrowth.latest
+  if (
+    reading !== null &&
+    input.newest.length === 0 &&
+    !candidates.some((candidate) => candidate.kind === 'voiceprint-growth')
+  ) {
+    candidates.push({
+      kind: 'voiceprint-reading',
+      priority: 8,
+      stableKey: reading.id,
+      headline:
+        reading.twin === null
+          ? 'Your voiceprint is saved'
+          : `You share a range with ${reading.twin}`,
+      detail: readingDetail(reading),
+      occurredAt: reading.takenAt,
+      voiceprintGrowth: input.voiceprintGrowth,
+    })
+  }
+
   return candidates
+}
+
+function readingDetail(reading: VoiceprintRecord): string {
+  const { lowMidi, highMidi } = reading.summary
+  return lowMidi == null || highMidi == null
+    ? ''
+    : `Range ${midiToNoteNameOctave(lowMidi)}–${midiToNoteNameOctave(highMidi)}`
 }
 
 function buildCoverage(input: {

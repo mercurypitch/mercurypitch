@@ -180,6 +180,42 @@ describe('buildProgressShareMoment', () => {
     expect(shared.period).toBe('Jun 1, 2026 – Aug 11, 2026')
   })
 
+  it('shares a lone reading with what was measured, not a change', () => {
+    const progress = buildProgressModel(
+      input({
+        voiceprints: [
+          {
+            id: 'reading',
+            takenAt: '2026-08-10T10:00:00.000Z',
+            source: 'mirror',
+            twin: 'Frank Sinatra',
+            summary: {
+              lowMidi: 48,
+              highMidi: 69,
+              semitones: 21,
+              accuracy: 88,
+              steadiness: 77,
+            },
+          },
+        ],
+        voiceprintHistory: {
+          complete: true,
+          totalAvailable: 1,
+          comparable: false,
+        },
+      }),
+      { now: NOW },
+    )
+
+    const shared = buildProgressShareMoment(progress.oneMoment, progress)
+    expect(shared.facts).toEqual([
+      { value: 'C3–A4', label: 'measured range' },
+      { value: '88%', label: 'accuracy' },
+      { value: '77%', label: 'steadiness' },
+    ])
+    expect(shared.period).toBe('Aug 10, 2026')
+  })
+
   it('maps only valid voiced challenge samples to MIDI and leaves bounding to the renderer', () => {
     const samples: StoredChallengeTrace['samples'] = Array.from(
       { length: 1_000 },

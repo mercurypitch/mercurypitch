@@ -213,7 +213,7 @@ describe('listing', () => {
     await expect(reading).resolves.toEqual([])
   })
 
-  it('keeps anonymous device takes useful without treating them as one singer', async () => {
+  it('signed out, Progress reads every device take but never as one singer', async () => {
     await saveVoiceprint({
       summary,
       twin: null,
@@ -230,10 +230,71 @@ describe('listing', () => {
     signOut()
 
     const progress = await loadProgressVoiceprints()
-    expect(progress.records).toHaveLength(1)
-    expect(recordMadeBy(progress.records[0])).toBe(MADE_ANONYMOUSLY)
+    expect(progress.records.map((record) => record.takenAt)).toEqual([
+      '2026-08-01T11:00:00Z',
+      '2026-08-01T10:00:00Z',
+    ])
+    // Two people may have made these, so nothing is charted as growth.
     expect(progress.comparable).toBe(false)
     expect(progress.available).toBe(true)
+  })
+
+  it('keeps takes made under an account on Progress after signing out', async () => {
+    signIn('user-a')
+    await saveVoiceprint({
+      summary,
+      twin: 'Frank Sinatra',
+      source: 'mirror',
+      takenAt: '2026-08-01T10:00:00Z',
+    })
+    await saveVoiceprint({
+      summary,
+      twin: 'Frank Sinatra',
+      source: 'mirror',
+      takenAt: '2026-08-02T10:00:00Z',
+    })
+    signOut()
+
+    const progress = await loadProgressVoiceprints()
+    const listed = await listVoiceprints()
+    expect(progress.records).toHaveLength(2)
+    // Progress and Settings show the same takes.
+    expect(progress.records.map((record) => record.id)).toEqual(
+      listed.map((record) => record.id),
+    )
+  })
+
+  it("keeps an in-place-upgraded account's takes after signing out", async () => {
+    // Upgrading in place keeps the device id as the account id.
+    signIn('device-local-id')
+    await saveVoiceprint({ summary, twin: null, source: 'mirror' })
+    signOut()
+
+    expect((await loadProgressVoiceprints()).records).toHaveLength(1)
+  })
+
+  it('shows device takes to an anonymous identity, in the list and on Progress', async () => {
+    // Made with no token at all: never uploaded, tagged anonymous.
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'onboarding',
+      takenAt: '2026-08-01T10:00:00Z',
+    })
+    signInAnonymously()
+    await saveVoiceprint({
+      summary,
+      twin: null,
+      source: 'mirror',
+      takenAt: '2026-08-02T10:00:00Z',
+    })
+
+    const expected = ['2026-08-02T10:00:00Z', '2026-08-01T10:00:00Z']
+    const listed = await listVoiceprints()
+    const progress = await loadProgressVoiceprints()
+    expect(listed.map((record) => record.takenAt)).toEqual(expected)
+    expect(progress.records.map((record) => record.takenAt)).toEqual(expected)
+    expect(progress.comparable).toBe(false)
   })
 
   it('uses only the signed-in account history for longitudinal progress', async () => {
