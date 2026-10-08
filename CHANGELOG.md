@@ -23,9 +23,13 @@ costs.
   new balance and the price you paid.
 - **The cloud tiers are now Cloud GPU and Cloud CPU.** Prices read "from 1
   credit / song", because long songs and full-band splits cost more.
+- **Sign up in Guitar Night or Drum Night and your voiceprint comes along.**
+  Takes you recorded first join your new account, as in the main app.
 
 ### Fixed
 
+- **Signing in with Google from Drum Night works.** You no longer come back
+  to the room signed out.
 - **Progress shows your voiceprint when you are signed out.** With no
   practice yet, it leads with your reading and offers a first exercise.
 - **The karaoke room opens without a flicker.** It arrives dimmed and shows

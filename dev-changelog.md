@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.16] - 2026-10-09
 
-90 commits since `v0.9.15` (67 on `main`'s first-parent line): PRs #921 to
-#931, #933, #936, #950, #951 and #953, plus direct commits for Glassworks.
+92 commits since `v0.9.15` (68 on `main`'s first-parent line): PRs #921 to
+#931, #933, #936, #950, #951, #953 and #954, plus direct commits for
+Glassworks.
 The release is for the mail: new sign-up mails and a rebuilt purchase mail,
 with Settings › Credits as the one place that states prices. Most of the rest
 is the native app, already on TestFlight from `mp-v0.8.8` through
@@ -58,6 +59,30 @@ says "You share a range with {twin}"; without one it is the plain welcome.
   128 px reserve, and the promo pill plus Install and voice overflowed it onto
   the wordmark. It now sits in the row with -6 px block margins, keeping the
   50 px band; the wordmark ellipsizes only when every pill shows.
+
+### Web and native: every sign-up that creates an account adopts (#954)
+
+Creating an account adopts the device's unclaimed voiceprint takes
+(REQ-VPR-014), and the welcome mail's hint goes wherever adoption follows
+(REQ-VPR-022). Until now only password registration and the main app's
+Google redirect adopted.
+
+- Native sheets and the mailed sign-up code adopt when the worker answers
+  `isNew`; a second factor still owed adopts nothing. `loginWithGoogle`,
+  `loginWithApple`, `verifyLoginCode`, `signInWithApple`, `signInWithGoogle`
+  and the phone's `createSignInFlow` take an optional `SignupContext`. The
+  phone's `SignInSheet` already adopted and now sends the hint too; phones get
+  it with the next native tag.
+- Guitar Night and Drum Night are separate Vite entries, so a Google sign-in
+  from their dialog lands on the room's page. Drum Night's entry never called
+  `consumeGoogleRedirect`, so it dropped the `#gauth=` session and came back
+  signed out. It now stores the session before rendering and loads
+  `auth-service` only when the address carries a Google fragment. Both rooms
+  adopt right after, through `src/lib/room-google-return.ts`, and pass
+  `adoptsGoogleSignup` so their redirect carries the hint.
+- No worker change: `isNew` was already right on all three routes. Karaoke
+  Night's standalone account UI and the console's `NativeSignInPanel` still
+  send no hint, by design.
 
 ### Web: Progress for a signed-out singer (#950)
 
