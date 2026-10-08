@@ -22,7 +22,7 @@
 
 import type { Env } from './auth'
 import { appleClientIds, appleSigninSecrets, exchangeAppleAuthorizationCode, parseAppleServerEvent, revokeAndForgetAppleGrant, storeAppleRefreshToken, verifyAppleIdentityToken, verifyAppleJwt, } from './apple-auth'
-import { checkRateLimit, claimedDevice, issueSessionFor, resolveFederatedUser, sessionOrigin, twofaChallenge, } from './auth'
+import { checkRateLimit, claimedDevice, issueSessionFor, resolveFederatedUser, sessionOrigin, signupMail, twofaChallenge, } from './auth'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
@@ -155,6 +155,7 @@ async function handleAppleSignIn(
     },
     deviceId,
     env,
+    signupMail(request, env, body),
   )
 
   // The authorization code is single-use and dies with the request, so the

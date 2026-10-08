@@ -219,7 +219,7 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
           <tr>
             <td style="padding:24px 16px 8px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; text-align:center;">
               <p style="margin:0 0 12px; font-size:14px; color:${C.muted};">
-                Learn to sing, together. Open source, built with its community.
+                Learn to sing and play. Practice has never been more fun.
               </p>
               <p style="margin:0 0 14px; font-size:13px;">
                 <a href="${ABOUT_URL}" style="color:${C.blue}; text-decoration:none;">About</a>
@@ -233,7 +233,7 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
                 <a href="${ABOUT_URL}/contact/" style="color:${C.blue}; text-decoration:none;">Contact</a>
               </p>
               <p style="margin:0 0 4px; font-size:12px; color:${C.muted};">
-                &copy; 2026 MercuryPitch &middot; AGPL-3.0 &middot; <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">Just practice.</span>
+                &copy; 2026 Mercury Pitch &middot; AGPL-3.0
               </p>
               <p style="margin:0; font-size:12px; color:${C.muted};">
                 You&#39;re receiving this because you purchased credits on
@@ -268,7 +268,7 @@ export function renderPurchaseThankYou(v: PurchaseThankYouVars): RenderedEmail {
     ``,
     `Stripe has emailed your official receipt separately. Questions? Reply to this email or visit ${ABOUT_URL}/contact/.`,
     ``,
-    `— MercuryPitch · Learn to sing, together.`,
+    `Mercury Pitch · Learn to sing and play. Practice has never been more fun.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because you purchased credits on mercurypitch.com.`,
   ].join('\n')
@@ -283,7 +283,7 @@ export function footerHtml(reason: string): string {
   return `<tr>
             <td style="padding:24px 16px 8px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; text-align:center;">
               <p style="margin:0 0 12px; font-size:14px; color:${C.muted};">
-                Learn to sing, together. Open source, built with its community.
+                Learn to sing and play. Practice has never been more fun.
               </p>
               <p style="margin:0 0 14px; font-size:13px;">
                 <a href="${ABOUT_URL}" style="color:${C.blue}; text-decoration:none;">About</a>
@@ -297,7 +297,7 @@ export function footerHtml(reason: string): string {
                 <a href="${ABOUT_URL}/contact/" style="color:${C.blue}; text-decoration:none;">Contact</a>
               </p>
               <p style="margin:0 0 4px; font-size:12px; color:${C.muted};">
-                &copy; 2026 MercuryPitch &middot; AGPL-3.0 &middot; <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">Just practice.</span>
+                &copy; 2026 Mercury Pitch &middot; AGPL-3.0
               </p>
               <p style="margin:0; font-size:12px; color:${C.muted};">
                 ${reason}
@@ -305,247 +305,6 @@ export function footerHtml(reason: string): string {
               </p>
             </td>
           </tr>`
-}
-
-// ── Account sign-up welcome ──────────────────────────────────────────
-export interface SignupWelcomeVars {
-  /** Registrant display name; falls back to a neutral greeting when absent. */
-  displayName?: string | null
-}
-
-/** Pure renderer for the "welcome, your account is set" email. Image-light
- *  (no hero) — better inboxing and it renders anywhere. */
-export function renderSignupWelcome(v: SignupWelcomeVars): RenderedEmail {
-  const name = v.displayName?.trim()
-  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
-  const subject = 'Welcome to MercuryPitch'
-  const preheader = 'Your account is set — a few good places to start.'
-
-  const feature = (
-    accent: string,
-    title: string,
-    blurb: string,
-    href: string,
-    cta: string,
-  ): string => `
-                <tr>
-                  <td style="padding:0 0 14px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.panel}; border:1px solid ${C.border}; border-left:3px solid ${accent}; border-radius:10px;">
-                      <tr>
-                        <td style="padding:16px 18px;">
-                          <div style="font-size:16px; font-weight:700; color:${C.text};">${title}</div>
-                          <div style="font-size:14px; line-height:1.55; color:${C.muted}; padding:6px 0 10px;">${blurb}</div>
-                          <a href="${href}" style="font-size:14px; font-weight:600; color:${C.blue}; text-decoration:none;">${cta} &rarr;</a>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>`
-
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
-<title>${escapeHtml(subject)}</title>
-</head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
-  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
-    ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
-  </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
-    <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
-
-          <tr>
-            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
-                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
-              </a>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
-
-              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
-                Welcome to MercuryPitch
-              </h1>
-              <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:${C.text};">${greeting}</p>
-              <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:${C.muted};">
-                Your account is all set. MercuryPitch helps you
-                <strong style="color:${C.text};">see your voice</strong> and learn to sing — in your
-                browser, with nothing uploaded. A few good places to start:
-              </p>
-
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                ${feature(C.blue, 'Voice Mirror', 'A 60-second snapshot of your range, pitch accuracy and steadiness.', `${APP_URL}/mirror`, 'Try the Mirror')}
-                ${feature(C.green, 'Practice with real-time feedback', 'Sing along and watch your pitch land on the notes, live.', `${APP_URL}/#/singing`, 'Start singing')}
-                ${feature(C.purple, 'Karaoke &amp; stems', 'Separate any song into vocals and backing, then sing over it.', `${APP_URL}/#/karaoke`, 'Open Karaoke')}
-              </table>
-
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0 4px;">
-                <tr>
-                  <td align="center" bgcolor="${C.blue}" style="border-radius:10px;">
-                    <a href="${APP_URL}" style="display:inline-block; padding:13px 26px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#04121f; text-decoration:none; border-radius:10px;">
-                      Open MercuryPitch
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:18px 0 0; font-size:13px; line-height:1.6; color:${C.muted};">
-                Questions or feedback? Just reply — we read every message.
-              </p>
-            </td>
-          </tr>
-
-          ${footerHtml('You&#39;re receiving this because you created an account on')}
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
-
-  const text = [
-    `Welcome to MercuryPitch`,
-    ``,
-    name ? `Hi ${name},` : `Hi there,`,
-    ``,
-    `Your account is all set. MercuryPitch helps you see your voice and learn to sing — in your browser, nothing uploaded. A few good places to start:`,
-    ``,
-    `- Voice Mirror — a 60-second snapshot of your range, pitch accuracy and steadiness: ${APP_URL}/mirror`,
-    `- Practice with real-time feedback — sing along and watch your pitch land on the notes: ${APP_URL}/#/singing`,
-    `- Karaoke & stems — separate any song into vocals + backing and sing over it: ${APP_URL}/#/karaoke`,
-    ``,
-    `Open MercuryPitch: ${APP_URL}`,
-    ``,
-    `Questions or feedback? Just reply — we read every message.`,
-    ``,
-    `— MercuryPitch · Learn to sing, together.`,
-    `${ABOUT_URL} · ${REPO_URL}`,
-    `You're receiving this because you created an account on mercurypitch.com.`,
-  ].join('\n')
-
-  return { subject, html, text }
-}
-
-// ── Email verification (confirm-your-address) ────────────────────────
-// Password signups get this INSTEAD of the plain welcome — it carries the
-// welcome so a new account never receives two emails at once.
-export interface EmailVerifyVars {
-  /** Registrant display name; falls back to a neutral greeting when absent. */
-  displayName?: string | null
-  /** Absolute confirm link (GET /api/auth/verify-email?token=…&returnTo=…). */
-  verifyUrl: string
-}
-
-/** Pure renderer for the "confirm your email" message. Image-light like the
- *  welcome — better inboxing, renders anywhere. */
-export function renderEmailVerification(v: EmailVerifyVars): RenderedEmail {
-  const name = v.displayName?.trim()
-  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
-  const subject = 'Confirm your email — welcome to MercuryPitch'
-  const preheader = 'One click and your account is fully set.'
-  const url = escapeHtml(v.verifyUrl)
-
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
-<title>${escapeHtml(subject)}</title>
-</head>
-<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
-  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
-    ${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
-  </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
-    <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
-
-          <tr>
-            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
-                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
-              </a>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
-
-              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
-                Confirm your email
-              </h1>
-              <p style="margin:0 0 16px; font-size:16px; line-height:1.6; color:${C.text};">${greeting}</p>
-              <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:${C.muted};">
-                Welcome to MercuryPitch! One quick click confirms this address is
-                really yours, so your account and anything on it stay safely
-                reachable.
-              </p>
-
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px;">
-                <tr>
-                  <td align="center" bgcolor="${C.blue}" style="border-radius:10px;">
-                    <a href="${url}"
-                      style="display:inline-block; padding:13px 26px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#04121f; text-decoration:none; border-radius:10px;">
-                      Confirm email
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:18px 0 0; font-size:13px; line-height:1.7; color:${C.muted};">
-                The link expires in 24 hours. If the button doesn&#39;t open, paste
-                this into your browser:<br>
-                <a href="${url}" style="color:${C.blue}; text-decoration:none; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;">${url}</a>
-              </p>
-
-              <div style="border-top:1px solid ${C.border}; margin:24px 0 0; padding-top:16px;">
-                <p style="margin:0; font-size:13px; line-height:1.6; color:${C.muted};">
-                  Didn&#39;t create a MercuryPitch account? You can safely ignore
-                  this email.
-                </p>
-              </div>
-            </td>
-          </tr>
-
-          ${footerHtml('You&#39;re receiving this because this address was used to create an account on')}
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
-
-  const text = [
-    `Confirm your email`,
-    ``,
-    name ? `Hi ${name},` : `Hi there,`,
-    ``,
-    `Welcome to MercuryPitch! One quick click confirms this address is really yours, so your account and anything on it stay safely reachable.`,
-    ``,
-    `Confirm your email: ${v.verifyUrl}`,
-    ``,
-    `The link expires in 24 hours.`,
-    `Didn't create a MercuryPitch account? You can safely ignore this email.`,
-    ``,
-    `— MercuryPitch · Learn to sing, together.`,
-    `${ABOUT_URL} · ${REPO_URL}`,
-    `You're receiving this because this address was used to create an account on mercurypitch.com.`,
-  ].join('\n')
-
-  return { subject, html, text }
 }
 
 // ── Password reset (choose a new password) ───────────────────────────
@@ -654,7 +413,7 @@ export function renderPasswordReset(v: PasswordResetVars): RenderedEmail {
     ``,
     `Didn't request a reset? You can safely ignore this email — your password won't change.`,
     ``,
-    `— MercuryPitch · Learn to sing, together.`,
+    `Mercury Pitch · Learn to sing and play. Practice has never been more fun.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because a password reset was requested for your account on mercurypitch.com.`,
   ].join('\n')
@@ -775,7 +534,7 @@ export function renderLoginCode(v: LoginCodeVars): RenderedEmail {
     ``,
     `Didn't try to sign in? Ignore this email — the code is useless without it, and nothing about your account has changed. Nobody from MercuryPitch will ever ask you for it.`,
     ``,
-    `— MercuryPitch · Learn to sing, together.`,
+    `Mercury Pitch · Learn to sing and play. Practice has never been more fun.`,
     `${ABOUT_URL} · ${REPO_URL}`,
     `You're receiving this because a sign-in code was requested for your account on mercurypitch.com.`,
   ].join('\n')
@@ -1286,28 +1045,6 @@ export async function sendBillingAlert(
       .replace(/</g, '&lt;')}</pre>`,
   })
   if (ok) console.log(`[email] billing alert sent to ${to}`)
-  return ok
-}
-
-/** Send the account sign-up welcome email. Best-effort; see resendSend. */
-export async function sendSignupWelcome(
-  cfg: ResendConfig,
-  to: string,
-  vars: SignupWelcomeVars,
-): Promise<boolean> {
-  const ok = await resendSend(cfg, to, renderSignupWelcome(vars))
-  if (ok) console.log(`[email] signup welcome sent to ${to}`)
-  return ok
-}
-
-/** Send the confirm-your-email message. Best-effort; see resendSend. */
-export async function sendEmailVerification(
-  cfg: ResendConfig,
-  to: string,
-  vars: EmailVerifyVars,
-): Promise<boolean> {
-  const ok = await resendSend(cfg, to, renderEmailVerification(vars))
-  if (ok) console.log(`[email] verification sent to ${to}`)
   return ok
 }
 
