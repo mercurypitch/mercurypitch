@@ -288,6 +288,36 @@ describe('parseHash', () => {
 
   it('unknown settings section falls through to unknown', () => {
     expect(parseHash('#/settings/nonsense')).toEqual({ type: 'unknown' })
+    expect(parseHash('#/settings/nonsense?open=costs')).toEqual({
+      type: 'unknown',
+    })
+  })
+
+  // Karaoke Night's "what a song costs" is a full page load into the app, so
+  // the wish to see the guide open has to ride in the hash itself.
+  it('parses ?open=costs on Credits as a request for the cost guide', () => {
+    expect(parseHash('#/settings/credits?open=costs')).toEqual({
+      type: 'settings-section',
+      section: 'credits',
+      open: 'costs',
+    })
+  })
+
+  it('lands on the bare section for any other query', () => {
+    // The guide lives on Credits only.
+    expect(parseHash('#/settings/account?open=costs')).toEqual({
+      type: 'settings-section',
+      section: 'account',
+    })
+    expect(parseHash('#/settings/credits?open=everything')).toEqual({
+      type: 'settings-section',
+      section: 'credits',
+    })
+    // A link that picked up a tracking parameter still opens its section.
+    expect(parseHash('#/settings/credits?utm_source=mail')).toEqual({
+      type: 'settings-section',
+      section: 'credits',
+    })
   })
 
   it('plain #/settings still parses as the tab', () => {
@@ -513,6 +543,13 @@ describe('buildHash', () => {
     expect(buildHash({ type: 'settings-section', section: 'singing' })).toBe(
       '/settings/practice',
     )
+    expect(
+      buildHash({
+        type: 'settings-section',
+        section: 'credits',
+        open: 'costs',
+      }),
+    ).toBe('/settings/credits?open=costs')
   })
 
   it('builds billing-return hashes', () => {
@@ -554,6 +591,8 @@ describe('parseHash ↔ buildHash round-trip', () => {
     '#/s/abc123XYZ0',
     '#/reset-password',
     '#/reset-password?token=tok_abc-123',
+    '#/settings/credits',
+    '#/settings/credits?open=costs',
   ]
 
   for (const hash of routes) {

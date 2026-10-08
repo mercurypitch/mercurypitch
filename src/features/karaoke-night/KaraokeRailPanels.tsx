@@ -454,9 +454,11 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
                 {credits()} cr
               </span>{' '}
               left ·{' '}
+              {/* ?open=costs: the app opens the cost guide and scrolls to
+                  it, instead of landing at the top of Credits. */}
               <a
                 class="kn-credits-link"
-                href="/#/settings/credits"
+                href="/#/settings/credits?open=costs"
                 data-testid="kn-credit-costs-link"
               >
                 what a song costs

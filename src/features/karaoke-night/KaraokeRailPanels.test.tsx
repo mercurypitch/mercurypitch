@@ -18,6 +18,7 @@ import { fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-li
 import { createSignal, Suspense } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LaunchOffer } from '@/db/services/billing-service'
+import { parseHash } from '@/lib/hash-router'
 import type * as StandaloneAccount from '@/lib/standalone-account'
 import type * as SyncUi from '@/stores/sync-ui-store'
 import type { SyncSessionSummary } from '@/stores/sync-ui-store'
@@ -219,7 +220,15 @@ describe('the studio-quality card', () => {
     const { container } = render(() => <KaraokeRailPanels {...railProps} />)
 
     const link = container.querySelector('[data-testid="kn-credit-costs-link"]')
-    expect(link?.getAttribute('href')).toBe('/#/settings/credits')
+    const href = link?.getAttribute('href') ?? ''
+    expect(href).toBe('/#/settings/credits?open=costs')
+    // A full page load into the main app: its router must read the link as
+    // Credits with the cost guide open, not as the bare section.
+    expect(parseHash(href.slice(href.indexOf('#')))).toEqual({
+      type: 'settings-section',
+      section: 'credits',
+      open: 'costs',
+    })
     expect(container.textContent).toContain('5 cr left · what a song costs')
     // A song's price depends on its length and parts; the rail names none.
     expect(container.textContent).not.toMatch(/1\/song|per song/)

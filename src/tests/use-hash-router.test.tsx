@@ -8,7 +8,7 @@ import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_VOI
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type * as NativeBuild from '@/lib/native-build'
 import type { AdminSection } from '@/stores/ui-store'
-import { adminContentSection, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
+import { adminContentSection, creditCostGuideRequested, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setCreditCostGuideRequested, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
 
 // The build flag, per case: the route table is shared, and one route must be
 // inert under the native build.
@@ -121,6 +121,7 @@ function mountRouter(options: {
 describe('the Settings section route', () => {
   afterEach(() => {
     build.native = false
+    setCreditCostGuideRequested(false)
   })
 
   it('opens the Settings tab on the web, leaving the address on it', async () => {
@@ -159,6 +160,53 @@ describe('the Settings section route', () => {
     expect(window.location.hash).toBe('#/progress')
     expect(router.requestActiveTabChange).not.toHaveBeenCalled()
     expect(router.setActiveUvrSessionId).not.toHaveBeenCalled()
+  })
+
+  // Karaoke Night's "what a song costs" lands here by a full page load.
+  it('asks for the credit-cost guide, then drops the ask from the address', async () => {
+    history.replaceState(null, '', '#/settings/credits?open=costs')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      activeTab: TAB_PROGRESS,
+    })
+
+    await waitFor(() =>
+      expect(router.openSettingsSection).toHaveBeenCalledWith('credits'),
+    )
+    expect(creditCostGuideRequested()).toBe(true)
+    // One-shot: a reload, or Back to this entry, is a plain visit.
+    expect(window.location.hash).toBe('#/settings/credits')
+  })
+
+  it('leaves the guide folded on a plain visit to Credits', async () => {
+    history.replaceState(null, '', '#/settings/credits')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      activeTab: TAB_PROGRESS,
+    })
+
+    await waitFor(() =>
+      expect(router.openSettingsSection).toHaveBeenCalledWith('credits'),
+    )
+    expect(creditCostGuideRequested()).toBe(false)
+  })
+
+  it('asks for no guide under the native build, which has none', async () => {
+    build.native = true
+    history.replaceState(null, '', '#/settings/credits?open=costs')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      activeTab: TAB_PROGRESS,
+    })
+
+    await waitFor(() =>
+      expect(router.openSettingsSection).toHaveBeenCalledWith('credits'),
+    )
+    expect(creditCostGuideRequested()).toBe(false)
+    expect(window.location.hash).toBe('#/progress')
   })
 })
 

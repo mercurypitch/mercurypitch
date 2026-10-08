@@ -44,6 +44,8 @@ export function releaseLine(version: string): string | null {
  * cost a release its announcement — `settings-section`, which is simply what
  * the hash says when the app restores somebody who was last in Settings.
  * An allowlist of 'tab' and 'unknown' silently excluded all of those.
+ * (A Settings link that asks for something open on arrival is the
+ * exception: see routeSuppressesAnnouncement.)
  */
 export const DEEP_LINK_ROUTE_TYPES: readonly string[] = [
   'jam-room',
@@ -62,9 +64,20 @@ export const DEEP_LINK_ROUTE_TYPES: readonly string[] = [
   'admin',
 ]
 
-/** True when arriving on this route should hold the announcement back. */
-export function routeSuppressesAnnouncement(routeType: string): boolean {
-  return DEEP_LINK_ROUTE_TYPES.includes(routeType)
+/**
+ * True when arriving on this route should hold the announcement back.
+ *
+ * A Settings section announces, being what a restored visitor's hash says,
+ * unless the link asked for something open on arrival: Karaoke Night's
+ * "what a song costs" (#/settings/credits?open=costs). That visitor was sent
+ * for the guide, the same as anyone on the routes above.
+ */
+export function routeSuppressesAnnouncement(route: {
+  type: string
+  open?: string
+}): boolean {
+  if (route.type === 'settings-section') return route.open !== undefined
+  return DEEP_LINK_ROUTE_TYPES.includes(route.type)
 }
 
 export interface AnnounceInput {

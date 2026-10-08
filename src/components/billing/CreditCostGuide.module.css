@@ -5,6 +5,9 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+  /* A link that opens the guide scrolls it to the top of the page: leave the
+     chip some air under the header rather than flush against it. */
+  scroll-margin-top: 12px;
 }
 
 .chip {

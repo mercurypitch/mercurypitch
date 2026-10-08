@@ -35,7 +35,7 @@ import type { Pricing } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
 import { askForPacks, packsAsked, packsShown } from '@/lib/launch-offer'
 import { setUvrProcessingMode } from '@/stores/app-store'
-import { authModalMode, closeAuthModal } from '@/stores/ui-store'
+import { authModalMode, closeAuthModal, creditCostGuideRequested, setCreditCostGuideRequested, } from '@/stores/ui-store'
 
 const PRICING: Pricing = {
   currency: 'eur',
@@ -116,6 +116,7 @@ afterEach(() => {
   // would decide the next test's Buy label for it.
   held = true
   closeAuthModal()
+  setCreditCostGuideRequested(false)
 })
 
 describe('PricingPanel', () => {
@@ -400,5 +401,31 @@ describe('PricingPanel', () => {
         screen.getByText('Credit packs are coming soon.'),
       ).toBeInTheDocument(),
     )
+  })
+
+  // Karaoke Night's "what a song costs" asks for the cost guide open. The
+  // ask is made before pricing loads; the guide answers it once it renders.
+  it('opens the cost guide once pricing arrives, when a link asked for it', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    setCreditCostGuideRequested(true)
+    render(() => <PricingPanel />)
+
+    const chip = await screen.findByTestId('credit-cost-chip')
+    expect(chip.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByTestId('credit-cost-guide')).toBeInTheDocument()
+    expect(creditCostGuideRequested()).toBe(false)
+  })
+
+  it('drops an ask the guide never got to when Credits closes', async () => {
+    vi.mocked(fetchPricing).mockRejectedValue(new Error('offline'))
+    setCreditCostGuideRequested(true)
+    const { unmount } = render(() => <PricingPanel />)
+    await screen.findByText('Credit options are unavailable right now.')
+    expect(creditCostGuideRequested()).toBe(true)
+
+    unmount()
+
+    // A later, plain visit must find the guide folded.
+    expect(creditCostGuideRequested()).toBe(false)
   })
 })

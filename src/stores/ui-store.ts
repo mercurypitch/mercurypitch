@@ -88,6 +88,18 @@ export const [settingsAnchor, setSettingsAnchor] = createSignal<string | null>(
 )
 
 /**
+ * A link asked for the credit-cost guide to arrive open and in view:
+ * Karaoke Night's "what a song costs", #/settings/credits?open=costs.
+ *
+ * Not a `settingsAnchor`: the guide renders only once pricing has loaded,
+ * and an anchor is given up one frame after it is set. The guide takes this
+ * when it renders, and PricingPanel drops one the guide never got to, so a
+ * plain visit to Settings › Credits still finds the guide folded.
+ */
+export const [creditCostGuideRequested, setCreditCostGuideRequested] =
+  createSignal(false)
+
+/**
  * Jump to Settings with a specific sub-tab open, optionally at a control.
  *
  * Under the native build there is no Settings tab to switch to: Settings is
