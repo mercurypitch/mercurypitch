@@ -7,6 +7,7 @@
 
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
+import { CreditCostGuide } from '@/components/billing/CreditCostGuide'
 import { DonatePanel } from '@/components/billing/DonatePanel'
 import { PromoCodeCard } from '@/components/billing/PromoCodeCard'
 import { accountHeld } from '@/db/services/auth-service'
@@ -115,9 +116,9 @@ export const PricingPanel: Component = () => {
   const hasBadge = (b: string | null): boolean => b != null && b !== ''
 
   // The tier cards double as the processing-default picker: clicking
-  // On-device or Server (GPU) selects where separation runs (persisted —
+  // On-device or Cloud GPU selects where separation runs (persisted —
   // the Karaoke page mode toggle uses the same signal and stays in sync).
-  // Server (CPU) has no endpoint yet, so its card is not selectable.
+  // Cloud CPU has no endpoint yet, so its card is not selectable.
   const tierMode = (id: string): UvrProcessingMode | null =>
     id === 'tier-ondevice'
       ? 'local'
@@ -237,6 +238,13 @@ export const PricingPanel: Component = () => {
                         class={styles.price}
                         classList={{ [styles.soon]: isTierSoon(tier) }}
                       >
+                        {/* A credit price is the least a song costs; the
+                            guide below says what adds to it. */}
+                        <Show
+                          when={tier.amount == null && tier.credits != null}
+                        >
+                          <span class={styles.unit}>from </span>
+                        </Show>
                         {formatTierPrice(tier)}
                         <Show
                           when={
@@ -252,6 +260,7 @@ export const PricingPanel: Component = () => {
                   )}
                 </For>
               </div>
+              <CreditCostGuide pricing={p()} />
             </Show>
 
             <Show when={p().packs.length > 0}>

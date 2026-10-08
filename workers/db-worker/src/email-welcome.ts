@@ -8,25 +8,14 @@
 // that never confirmed. The design and its copy were approved by the owner
 // on 8 Oct 2026; the plan is in <user-dotfiles>/mercurypitch/welcome-mail/.
 //
-// Mail clients set the rules: tables and inline styles only, no SVG, live
-// text never inside an image, and pictures as JPEG or PNG under /email/ on
-// the app's own origin. Each picture is versioned in its name because a sent
-// mail can never be updated: a changed picture gets a new name.
+// The layout they share with the purchase mail is in email-layout.ts.
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { ABOUT_URL, escapeHtml, footerHtml, REPO_URL, resendSend, } from './email'
+import { escapeHtml, resendSend } from './email'
+import type { HeroLink, Lines, MailArt, MailOrigins } from './email-layout'
+import { arrowLink, button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, MONO, SANS, signOffRow, url, W, } from './email-layout'
 import type { SignupSource, SignupVoiceprint } from './signup-hint'
 import { noteName } from './signup-hint'
-
-/**
- * Where a mail's links and pictures point. Links follow the app the sign-up
- * came from, so a dev sign-up lands on dev. Pictures always come from a
- * public host: a mail opened on a phone cannot load anything from localhost.
- */
-export interface MailOrigins {
-  appOrigin: string
-  assetOrigin: string
-}
 
 export interface WelcomeEmailVars extends MailOrigins {
   voiceprint: SignupVoiceprint | null
@@ -48,38 +37,6 @@ export interface FreshLinkEmailVars extends ConfirmEmailVars {
 
 // ── pictures ─────────────────────────────────────────────────────────
 
-interface MailArt {
-  path: string
-  height: number
-  alt: string
-}
-
-/** Every picture a mail can show, by role. Shown 600 wide, stored at 2x. */
-export const MAIL_ART = {
-  firstNote: {
-    path: '/email/hero-01-first-note-v1.jpg',
-    height: 400,
-    alt: 'Merc, a glowing droplet, sings on a round brass stage under an amber spotlight while a ribbon of light rises through three rings.',
-  },
-  constellation: {
-    path: '/email/hero-04-constellation-v1.jpg',
-    height: 400,
-    alt: 'Merc, a glowing droplet, stands on a rooftop ledge looking up at two linked constellations, with city lights below.',
-  },
-  karaokeNight: {
-    path: '/email/hero-06-karaoke-night-v1.jpg',
-    height: 400,
-    alt: 'Merc, a glowing droplet, sings into a vintage microphone on a small stage under an amber spotlight.',
-  },
-  letter: {
-    path: '/email/banner-07-letter-v1.jpg',
-    height: 260,
-    alt: 'Merc, a glowing droplet, peeks out of an open black envelope, holding up an amber key of light.',
-  },
-} as const satisfies Record<string, MailArt>
-
-export const WORDMARK_PATH = '/email/wordmark-v1@2x.png'
-
 /** The 192 px portrait made for mail from the legend's catalogue picture. */
 export function legendPortraitPath(legendId: string): string {
   return `/email/legends/${legendId}-v1.jpg`
@@ -92,57 +49,11 @@ function welcomeArt(vars: WelcomeEmailVars): MailArt {
   return MAIL_ART.firstNote
 }
 
-// ── look ─────────────────────────────────────────────────────────────
-
-const W = {
-  page: '#010409',
-  card: '#0d1117',
-  panel: '#0b1520',
-  panelLine: '#1c2a3b',
-  line: '#30363d',
-  text: '#e6edf3',
-  soft: '#c3ccd6',
-  muted: '#8b949e',
-  blue: '#58a6ff',
-  teal: '#2dd4bf',
-  violet: '#bc8cff',
-  amber: '#f2b45c',
-  ink: '#04121f',
-  track: '#1c2433',
-  mystery: '#101b2a',
-  mysteryLine: '#3b4a5f',
-} as const
-
-const SANS = "'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
-// Outfit loads where a client honours the <link> in the head (Apple Mail);
-// everywhere else the headline falls back to the sans stack.
-const DISPLAY = "Outfit,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
-const MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace'
-
 /** The range bar's track: C2 to C6, wide enough for nearly every voice. */
 const TRACK_LOW = 36
 const TRACK_HIGH = 84
 
-// ── building blocks ──────────────────────────────────────────────────
-
-const url = (origin: string, path: string): string =>
-  escapeHtml(`${origin}${path}`)
-
-function button(label: string, href: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 4px;"><tr><td bgcolor="${W.teal}" style="background:${W.teal};border-radius:12px;"><a href="${href}" style="display:inline-block;padding:15px 28px;font:700 16px/1.2 ${SANS};color:${W.ink};text-decoration:none;border-radius:12px;">${label}</a></td></tr></table>`
-}
-
-function arrowLink(label: string, href: string): string {
-  return `<a href="${href}" style="display:inline-block;margin-top:12px;font:600 15px/1.4 ${SANS};color:${W.blue};text-decoration:none;">${label} &rarr;</a>`
-}
-
-function inlineLink(label: string, href: string): string {
-  return `<a href="${href}" style="color:${W.blue};text-decoration:none;font-weight:600;">${label}</a>`
-}
-
-function eyebrow(text: string, color: string = W.teal): string {
-  return `<div style="font:700 12px/1.4 ${SANS};letter-spacing:1.6px;text-transform:uppercase;color:${color};margin:0 0 10px;">${escapeHtml(text)}</div>`
-}
+// ── helpers ──────────────────────────────────────────────────────────
 
 /** "24 hours", "7 days". */
 function lifetime(hours: number): string {
@@ -158,12 +69,6 @@ function signupDate(iso: string): string | null {
     day: 'numeric',
     timeZone: 'UTC',
   }).format(date)
-}
-
-interface Lines {
-  eyebrow: string
-  headline: string
-  body: string
 }
 
 interface Room {
@@ -224,25 +129,6 @@ const ALSO_WAITING: ReadonlyArray<[string, string]> = [
 ]
 
 // ── sections ─────────────────────────────────────────────────────────
-
-function heroRow(
-  art: MailArt,
-  origins: MailOrigins,
-  linkHome: boolean,
-): string {
-  const img = `<img src="${url(origins.assetOrigin, art.path)}" width="600" height="${art.height}" alt="${escapeHtml(art.alt)}" style="display:block;width:100%;height:auto;border:0;border-radius:17px 17px 0 0;">`
-  // A welcome's picture opens Home. A confirm mail's stays unlinked, so
-  // confirming is always a deliberate tap on the button: someone who got a
-  // mistyped address must not confirm a stranger's account by scrolling.
-  const hero = linkHome
-    ? `<a href="${url(origins.appOrigin, '/#/home')}" aria-label="Open Mercury Pitch" style="display:block;text-decoration:none;">${img}</a>`
-    : img
-  return `<tr><td style="padding:0;font-size:0;line-height:0;">${hero}</td></tr>`
-}
-
-function introRow(lines: Lines, after = ''): string {
-  return `<tr><td style="padding:30px 36px 4px;">${eyebrow(lines.eyebrow)}<h1 style="margin:0;font:700 31px/1.12 ${DISPLAY};letter-spacing:-0.4px;color:${W.text};">${escapeHtml(lines.headline)}</h1><p style="margin:14px 0 0;font:17px/1.6 ${SANS};color:${W.soft};">${escapeHtml(lines.body)}</p>${after}</td></tr>`
-}
 
 function confirmBlock(verifyUrl: string, ttlHours: number): string {
   const href = escapeHtml(verifyUrl)
@@ -350,44 +236,6 @@ function roomsRow(appOrigin: string): string {
   return `<tr><td style="padding:22px 18px 4px;"><div style="font:700 12px/1.4 ${SANS};letter-spacing:1.6px;text-transform:uppercase;color:${W.muted};padding:0 6px 12px;">Start anywhere</div><div style="font-size:0;">${tiles}</div><div style="font:14px/1.55 ${SANS};color:${W.muted};padding:4px 6px 0;">Also waiting for you: ${challenges} and the night practice rooms for ${piano}, ${guitar} and ${drums}.</div></td></tr>`
 }
 
-function signOffRow(ignoreLine: string | null): string {
-  const ignore =
-    ignoreLine === null
-      ? ''
-      : `<div style="border-top:1px solid ${W.line};margin-top:20px;padding-top:16px;font:13px/1.6 ${SANS};color:${W.muted};">${escapeHtml(ignoreLine)}</div>`
-  return `<tr><td style="padding:22px 36px 30px;"><p style="margin:0;font:15px/1.6 ${SANS};color:${W.soft};">Have a question? Reply to this email. Merc reads every one.</p>${ignore}</td></tr>`
-}
-
-function documentHtml(
-  subject: string,
-  preheader: string,
-  origins: MailOrigins,
-  rows: string[],
-  reason: string,
-): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="x-apple-disable-message-reformatting">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
-<title>${escapeHtml(subject)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet">
-</head>
-<body style="margin:0; padding:0; background:${W.page}; -webkit-text-size-adjust:100%;">
-<div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${W.page}; font-size:1px; line-height:1px;">${escapeHtml(preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${W.page}" style="background:${W.page};"><tr><td align="center" style="padding:22px 12px 30px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
-<tr><td style="padding:2px 4px 16px;"><a href="${escapeHtml(origins.appOrigin)}" style="text-decoration:none;"><img src="${url(origins.assetOrigin, WORDMARK_PATH)}" width="204" height="40" alt="MercuryPitch" style="display:block;border:0;width:204px;height:40px;"></a></td></tr>
-<tr><td style="background:${W.card};border:1px solid ${W.line};border-radius:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr>
-${footerHtml(reason)}
-</table></td></tr></table>
-</body>
-</html>`
-}
-
 // ── plain text ───────────────────────────────────────────────────────
 //
 // The text part says what the HTML says, link by link, for clients that
@@ -441,14 +289,6 @@ function roomsText(appOrigin: string): string[] {
   ]
 }
 
-function footerText(reason: string): string[] {
-  return [
-    'Mercury Pitch · Learn to sing and play. Practice has never been more fun.',
-    `${ABOUT_URL} · ${REPO_URL}`,
-    `${reason} mercurypitch.com.`,
-  ]
-}
-
 function linkText(verifyUrl: string, ttlHours: number): string[] {
   return [
     `Confirm my email: ${verifyUrl}`,
@@ -457,6 +297,10 @@ function linkText(verifyUrl: string, ttlHours: number): string[] {
 }
 
 const SIGN_OFF = 'Have a question? Reply to this email. Merc reads every one.'
+// A welcome's picture opens Home. A confirm mail's stays unlinked, so
+// confirming is always a deliberate tap on the button: someone who got a
+// mistyped address must not confirm a stranger's account by scrolling.
+const HOME_LINK: HeroLink = { path: '/#/home', label: 'Open Mercury Pitch' }
 const WELCOME_REASON = "You're receiving this because you created an account on"
 const CONFIRM_REASON =
   "You're receiving this because this address was used to create an account on"
@@ -494,11 +338,11 @@ export function renderWelcomeEmail(vars: WelcomeEmailVars): RenderedEmail {
     preheader,
     vars,
     [
-      heroRow(welcomeArt(vars), vars, true),
+      heroRow(welcomeArt(vars), vars, HOME_LINK),
       introRow(lines),
       voiceprintPanel(voiceprint, vars, true),
       roomsRow(vars.appOrigin),
-      signOffRow(null),
+      signOffRow(SIGN_OFF, null),
     ],
     WELCOME_REASON.replace("'", '&#39;'),
   )
@@ -540,11 +384,11 @@ export function renderConfirmEmail(vars: ConfirmEmailVars): RenderedEmail {
     preheader,
     vars,
     [
-      heroRow(MAIL_ART.letter, vars, false),
+      heroRow(MAIL_ART.letter, vars, null),
       introRow(lines, confirmBlock(vars.verifyUrl, vars.ttlHours)),
       voiceprintPanel(voiceprint, vars, false),
       roomsRow(vars.appOrigin),
-      signOffRow(ignore),
+      signOffRow(SIGN_OFF, ignore),
     ],
     CONFIRM_REASON.replace("'", '&#39;'),
   )
@@ -602,10 +446,10 @@ export function renderFreshLinkEmail(vars: FreshLinkEmailVars): RenderedEmail {
     preheader,
     vars,
     [
-      heroRow(MAIL_ART.letter, vars, false),
+      heroRow(MAIL_ART.letter, vars, null),
       introRow(lines, confirmBlock(vars.verifyUrl, vars.ttlHours)),
       voiceprint === null ? '' : voiceprintPanel(voiceprint, vars, false),
-      signOffRow(ignore),
+      signOffRow(SIGN_OFF, ignore),
     ],
     CONFIRM_REASON.replace("'", '&#39;'),
   )

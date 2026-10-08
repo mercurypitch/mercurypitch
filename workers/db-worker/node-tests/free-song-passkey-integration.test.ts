@@ -197,7 +197,7 @@ function priceTheGpu(): void {
     .prepare(
       `INSERT OR REPLACE INTO pricingPlans
          (id, createdAt, updatedAt, kind, label, description, unit, amount, currency, credits, stripePriceId, badge, sortOrder, active)
-       VALUES ('tier-runpod-gpu', ?, ?, 'tier', 'Server (GPU)', '', 'song', NULL, 'eur', 1, NULL, NULL, 2, 1)`,
+       VALUES ('tier-runpod-gpu', ?, ?, 'tier', 'Cloud GPU', '', 'song', NULL, 'eur', 1, NULL, NULL, 2, 1)`,
     )
     .run(now, now)
 }

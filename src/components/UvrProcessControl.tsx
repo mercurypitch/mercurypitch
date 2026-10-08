@@ -265,7 +265,7 @@ export const UvrProcessControl: Component<ProcessControlProps> = (props) => {
                   )}
                 </span>
                 {props.processingMode === 'server'
-                  ? 'Studio GPU'
+                  ? 'Cloud GPU'
                   : props.provider === 'webgpu'
                     ? 'GPU (WebGPU)'
                     : 'CPU (WASM)'}

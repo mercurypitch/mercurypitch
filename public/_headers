@@ -18,7 +18,7 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Pictures in sent mail (workers/db-worker/src/email-welcome.ts). A mail can
+# Pictures in sent mail (MAIL_ART in workers/db-worker/src/email-layout.ts). A mail can
 # never be changed once it sits in an inbox, so every file here carries a
 # version in its name (-v1) and a new picture gets a new name, never new bytes
 # under an old one. That makes them as safe to cache forever as /assets/.

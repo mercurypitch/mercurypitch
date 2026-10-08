@@ -107,7 +107,7 @@ export function VoiceControlHud(props: VoiceControlHudProps) {
    * The engine menu does not pin it open. The menu is absolutely positioned
    * and overlays whatever is beneath it, whereas expanding the docked pill
    * hands the header row over — the title steps aside and the account
-   * cluster moves into the flow (see AppHeader.css) — so a tap on the cog
+   * cluster takes the width (see AppHeader.css) — so a tap on the cog
    * re-laid out the whole header for a menu that needed none of it. The
    * status line the expanded pill would have shown is in the menu instead.
    */

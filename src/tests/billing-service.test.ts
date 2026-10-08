@@ -27,7 +27,7 @@ describe('withModelCredits', () => {
   const gpuTier = (credits: number | null): PricingPlan => ({
     id: 'tier-runpod-gpu',
     kind: 'tier',
-    label: 'Server (GPU)',
+    label: 'Cloud GPU',
     description: null,
     unit: 'song',
     amount: null,

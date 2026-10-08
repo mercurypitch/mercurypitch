@@ -1,0 +1,178 @@
+/* CreditCostGuide — the "How credits are spent" chip in Settings › Credits */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-secondary));
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+/* Open reads as pressed, not only as a turned chevron. */
+.chip[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+/* Hover only where a pointer hovers, and never in the open look: on a phone
+   :hover sticks to the last thing tapped, so a chip tapped closed would
+   still read as open. */
+@media (hover: hover) {
+  .chip:hover {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  }
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chip svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.infoMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1.25px solid currentColor;
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+/* On touch the pill keeps its size and its tap area reaches the app's 44 px
+   minimum: 32 px of pill plus 6 px above and below. The inset counts from
+   inside the 1 px border, hence 7. */
+@media (pointer: coarse) {
+  .chip {
+    position: relative;
+    min-height: 32px;
+  }
+
+  .chip::before {
+    content: '';
+    position: absolute;
+    inset: -7px 0;
+  }
+}
+
+.chevron {
+  display: inline-flex;
+  transition: transform 0.18s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .chevron {
+    transition: none;
+  }
+}
+
+/* The same inset as the cards above, so their words line up. */
+.panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+/* A caption, not a third heading: the tab's headings are the uppercase ones. */
+.lead {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row + .row {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.rowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rowLabel {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Values, not links: the accent is what this tab's links wear. */
+.price {
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rowDesc,
+.example,
+.note {
+  text-wrap: pretty;
+}
+
+.rowDesc {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.example,
+.note {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.example {
+  margin: 4px 0 0;
+}
+
+.note {
+  margin: 12px 0 0;
+}

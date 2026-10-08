@@ -54,7 +54,7 @@ const PRICING: Pricing = {
     {
       id: 'tier-runpod-cpu',
       kind: 'tier',
-      label: 'Server (CPU)',
+      label: 'Cloud CPU',
       description: 'Cheaper',
       unit: 'song',
       amount: null, // no money price and…
@@ -66,7 +66,7 @@ const PRICING: Pricing = {
     {
       id: 'tier-runpod-gpu',
       kind: 'tier',
-      label: 'Server (GPU)',
+      label: 'Cloud GPU',
       description: 'Fastest',
       unit: 'song',
       amount: null, // priced in credits, not money
@@ -137,7 +137,7 @@ describe('PricingPanel', () => {
     vi.mocked(fetchBillingMe).mockResolvedValue(null)
     render(() => <PricingPanel />)
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     expect(screen.queryByTestId('credit-balance')).not.toBeInTheDocument()
   })
@@ -160,12 +160,12 @@ describe('PricingPanel', () => {
     render(() => <PricingPanel />)
 
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     // Single server quality → the card shows the tier's 1-credit per-song
     // cost, never "Soon".
     const gpuCard = screen.getByTestId('pricing-tier-tier-runpod-gpu')
-    expect(gpuCard.textContent).toContain('1 credit')
+    expect(gpuCard.textContent).toContain('from 1 credit / song')
     expect(gpuCard.textContent).not.toContain('Soon')
     // CPU tier has neither money price nor credit cost → still "Soon",
     // rendered as a disabled (not selectable) card.
@@ -176,11 +176,22 @@ describe('PricingPanel', () => {
     expect(cpuCard.disabled).toBe(true)
   })
 
+  it('explains what a song costs under the processing cards', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+    render(() => <PricingPanel />)
+
+    fireEvent.click(await screen.findByTestId('credit-cost-chip'))
+    const guide = screen.getByTestId('credit-cost-guide')
+    expect(guide.textContent?.replace(/\s+/g, ' ')).toContain('2 stems1 credit')
+    // This fixture prices no band split, so the guide claims no full band.
+    expect(guide.textContent).not.toContain('Full band')
+  })
+
   it('clicking a tier card moves the processing selection', async () => {
     vi.mocked(fetchPricing).mockResolvedValue(PRICING)
     render(() => <PricingPanel />)
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
 
     // Default mode is on-device: its card is selected.
@@ -208,7 +219,7 @@ describe('PricingPanel', () => {
     render(() => <PricingPanel />)
 
     await waitFor(() =>
-      expect(screen.getByText('Server (GPU)')).toBeInTheDocument(),
+      expect(screen.getByText('Cloud GPU')).toBeInTheDocument(),
     )
     // Unset prices render as "Soon" (CPU tier, pack price, pack button).
     expect(screen.getAllByText('Soon').length).toBeGreaterThan(0)

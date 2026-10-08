@@ -978,11 +978,12 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     // until the new one lands.
     const balance = billingMe.latest?.creditBalance
     const cost = songCost()
-    const suffix = cost !== undefined ? ` · ${cost} per song` : ''
+    // "from": the full band and long songs cost more (Settings › Credits).
+    const suffix = cost !== undefined ? ` · from ${cost} per song` : ''
     return balance !== undefined
       ? `${balance} credit${balance === 1 ? '' : 's'}${suffix}`
       : cost !== undefined
-        ? `${cost} credit${cost === 1 ? '' : 's'} / song`
+        ? `from ${cost} credit${cost === 1 ? '' : 's'} / song`
         : 'Credits'
   }
 
@@ -2101,7 +2102,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
             role="radio"
             aria-checked={uvrProcessingMode() === 'server'}
             class={`mode-toggle-btn${uvrProcessingMode() === 'server' ? ' active' : ''}`}
-            title={`Processing: Server GPU — studio quality (BS-RoFormer)${songCost() !== undefined ? `, ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
+            title={`Processing: Cloud GPU, studio quality (BS-RoFormer)${songCost() !== undefined ? `, from ${songCost()} credit${songCost() === 1 ? '' : 's'} per song` : ''}`}
             onClick={() => {
               if (requireServerAuth()) setUvrProcessingMode('server')
             }}

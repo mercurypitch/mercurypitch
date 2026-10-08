@@ -544,8 +544,8 @@ export const SettingsPanel: Component = () => {
             <h3 class={styles.settingsSectionTitle}>Credits</h3>
             <div class={styles.settingsDivider} />
             <p class={styles.settingsDesc}>
-              Credits pay only for faster server-side vocal separation.
-              Everything that runs on your device is free, forever.
+              Credits pay only for separating songs on the Cloud GPU. Everything
+              that runs on your device is free, forever.
             </p>
             {/* The processing-default picker (tier cards + quality chips)
                 lives inside PricingPanel — the Karaoke page toggles use the
@@ -559,7 +559,7 @@ export const SettingsPanel: Component = () => {
                   data-testid="credits-not-for-sale"
                 >
                   Credits are not sold in this app. Everything that runs on your
-                  device stays free, and the server option spends credits your
+                  device stays free, and the Cloud GPU spends credits your
                   account already holds.
                 </p>
               }
@@ -1256,8 +1256,8 @@ export const SettingsPanel: Component = () => {
 
             <p class={styles.settingsDesc}>
               How a song is turned into karaoke stems. On-device separation is
-              free and private but needs a capable machine; studio separation
-              runs on a GPU and costs one credit per song.
+              free and private but needs a capable machine. Cloud GPU separation
+              uses credits; the Credits tab shows what each song costs.
             </p>
 
             <div class={styles.settingsRow}>
@@ -1273,7 +1273,7 @@ export const SettingsPanel: Component = () => {
                 data-testid="karaoke-processing-mode"
               >
                 <option value="local">On this device (free)</option>
-                <option value="server">Studio GPU (1 credit per song)</option>
+                <option value="server">Cloud GPU (uses credits)</option>
               </SafeSelect>
               <small>
                 On-device separation is unavailable on low-power hardware such

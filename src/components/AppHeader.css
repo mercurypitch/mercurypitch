@@ -107,36 +107,48 @@ header h1 {
   header {
     position: relative;
     gap: 8px;
-    /* reserve the top-right corner for the pinned account/heart. Wider
-       since the account button became a 44px touch target, and wider again
-       for the voice pill, which docks here on a phone rather than floating
-       over the bottom-left of the page.
+    /* One row, with the account/heart group IN it. It used to be pinned
+       over the row's right end behind a fixed 128px reserve, but the group
+       is as wide as what it holds: a promo pill, the Install glyph and the
+       voice pill each widen it, and past the reserve it slid over
+       "MercuryPitch". In the row, the row knows its width and the left side
+       gives way instead (see .header-left below).
        Carries the safe-area insets for the same reason the base rule does:
        this shorthand overrides it, so leaving them out re-opens the bug. */
-    padding: calc(8px + var(--safe-top, 0px))
-      max(128px, calc(116px + var(--safe-right, 0px))) 8px
-      max(12px, var(--safe-left, 0px));
-    row-gap: 4px;
+    flex-wrap: nowrap;
+    padding: calc(8px + var(--safe-top, 0px)) max(10px, var(--safe-right, 0px))
+      8px max(12px, var(--safe-left, 0px));
+  }
+
+  /* When the row is full, the wordmark ellipsizes rather than run under
+     the account group: the last resort, with a promo, Install and the voice
+     pill all in the group on a phone under about 400px.
+     Ties app.css's `header .header-left` and wins by loading later. */
+  header .header-left {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .logo-btn {
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   .logo-btn .app-title {
+    display: block;
+    overflow: hidden;
     font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  /* Pin the compact account + heart to the top-right instead of letting
-     it wrap to its own empty band below the title. */
+  /* The compact account + heart, at the row's right end. Their 44px targets
+     are taller than the row's 34px line, so the -6px block margins let them
+     overhang into the header's padding instead of growing the 50px band. In
+     the row, the header's safe-area padding keeps them below the iOS status
+     bar, where a bare offset from the top had put them out of reach. */
   .header-support {
-    position: absolute;
-    /* 4 + the account button's 44px target = 48, inside the 50px band.
-       It is absolutely positioned, so an overhang would land on the
-       content below rather than growing the header.
-       Absolute positioning also means the header's own safe-area padding
-       does not move it: offset from the top of the header's border box, a
-       bare 4px put the account button and the support heart squarely inside
-       the iOS status bar — visible through it, but not tappable. */
-    top: calc(4px + var(--safe-top, 0px));
-    right: max(10px, var(--safe-right, 0px));
-    margin: 0;
+    margin: -6px 0 -6px auto;
     gap: 6px;
   }
 
@@ -156,18 +168,12 @@ header h1 {
      the title or for a sentence, not both — expanded, the pill grew right
      across "MercuryPitch" and the two read as one smeared line.
      So the row is lent out rather than shared: the title, the tagline and
-     the loaded-song pill step aside, the corner reserve that was holding
-     space for the account glyph is released, and the support group comes
-     out of its absolute corner to sit in the flow and take the width. The
-     menu button stays — it is the way out of wherever you are, and it is
-     one glyph.
+     the loaded-song pill step aside, and the support group takes the width.
+     The menu button stays — it is the way out of wherever you are, and it
+     is one glyph.
      App.tsx sets `data-voice` only on a narrow viewport and only while
      there is something to read; a few seconds of quiet collapses the pill
      and every rule here stops applying at once. */
-  header[data-voice='talking'] {
-    padding-right: max(12px, var(--safe-right, 0px));
-  }
-
   header[data-voice='talking'] .logo-btn,
   header[data-voice='talking'] .subtitle,
   header[data-voice='talking'] .header-melody-context {
@@ -175,9 +181,17 @@ header h1 {
   }
 
   header[data-voice='talking'] .header-support {
-    position: static;
     flex: 1;
     min-width: 0;
     margin-left: 8px;
+  }
+
+  /* A short landscape phone, where app.css pares the header's padding to
+     2px: the -6px overhang would put the top of the 44px targets above the
+     screen's edge, so the row grows to hold them instead (38px to 44px). */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .header-support {
+      margin-block: -2px;
+    }
   }
 }
