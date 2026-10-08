@@ -704,8 +704,8 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     // "top up here" is only true where there is a top-up to reach; a build
     // that cannot take payment shows the same tab without the packs.
     description: CAN_TAKE_PAYMENT
-      ? 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song), check your balance and top up here.'
-      : 'Credits pay only for faster server-side vocal separation — everything that runs on your device is free. Pick where songs get processed (on-device or the server GPU at 1 credit per song) and check your balance here.',
+      ? 'Credits pay for separating songs on the Cloud GPU. Everything that runs on your device is free. Pick where songs get separated, see what each one costs, check your balance and top up here.'
+      : 'Credits pay for separating songs on the Cloud GPU. Everything that runs on your device is free. Pick where songs get separated, see what each one costs and check your balance here.',
     placement: 'bottom',
     section: 'settings-general',
     requiredTab: TAB_SETTINGS,

@@ -7,6 +7,7 @@
 
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
+import { CreditCostGuide } from '@/components/billing/CreditCostGuide'
 import { DonatePanel } from '@/components/billing/DonatePanel'
 import { PromoCodeCard } from '@/components/billing/PromoCodeCard'
 import { accountHeld } from '@/db/services/auth-service'
@@ -237,6 +238,13 @@ export const PricingPanel: Component = () => {
                         class={styles.price}
                         classList={{ [styles.soon]: isTierSoon(tier) }}
                       >
+                        {/* A credit price is the least a song costs; the
+                            guide below says what adds to it. */}
+                        <Show
+                          when={tier.amount == null && tier.credits != null}
+                        >
+                          <span class={styles.unit}>from </span>
+                        </Show>
                         {formatTierPrice(tier)}
                         <Show
                           when={
@@ -252,6 +260,7 @@ export const PricingPanel: Component = () => {
                   )}
                 </For>
               </div>
+              <CreditCostGuide pricing={p()} />
             </Show>
 
             <Show when={p().packs.length > 0}>

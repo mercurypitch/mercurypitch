@@ -222,6 +222,18 @@ body {
   color: #f8a0a0;
 }
 
+/* Settings › Credits holds the prices, so the card links there instead of
+   stating one. Same warm accent as the pill beside it. */
+.kn-credits-link {
+  color: #ffd9a0;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 214, 160, 0.45);
+  text-underline-offset: 2px;
+}
+.kn-credits-link:hover {
+  text-decoration-color: currentColor;
+}
+
 .kn-account-menu-wrap {
   position: relative;
   min-width: 0;

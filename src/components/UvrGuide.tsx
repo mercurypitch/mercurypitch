@@ -142,11 +142,11 @@ export const UvrGuide: Component<UvrGuideProps> = (props) => {
                 <Headphones />
               </div>
               <div class={styles.modeInfo}>
-                <strong>Studio GPU</strong>
+                <strong>Cloud GPU</strong>
                 <span>
-                  One credit per song. Faster, cleaner, and the only option on
-                  hardware that cannot run the model locally. Requires an
-                  account.
+                  Uses credits; Settings › Credits shows what a song costs.
+                  Faster, cleaner, and the only option on hardware that cannot
+                  run the model locally. Requires an account.
                 </span>
               </div>
             </div>

@@ -215,7 +215,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
                 {promo().credits} free credits
               </span>
               <span class={styles.claimSub}>
-                One credit per song on the standard cloud models
+                For separating songs on the Cloud GPU
               </span>
             </div>
 

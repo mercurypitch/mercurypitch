@@ -434,17 +434,24 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
           }
         >
           <p class="kn-card-sub">
-            Studio-quality separation — the cleanest vocal lift.
+            Studio-quality separation, the cleanest vocal lift.
             <Show when={credits() !== null}>
               {' '}
               <span
                 class="kn-credits-pill"
                 classList={{ 'kn-credits-pill--low': (credits() ?? 0) < 1 }}
-                title={`${credits()} credits left · 1 credit per song`}
+                title={`${credits()} credits left`}
               >
                 {credits()} cr
               </span>{' '}
-              left · 1/song.
+              left ·{' '}
+              <a
+                class="kn-credits-link"
+                href="/#/settings/credits"
+                data-testid="kn-credit-costs-link"
+              >
+                what a song costs
+              </a>
             </Show>
           </p>
         </Show>

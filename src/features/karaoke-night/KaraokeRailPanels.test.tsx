@@ -17,6 +17,7 @@
 import { fireEvent, render, waitFor } from '@solidjs/testing-library'
 import { createSignal, Suspense } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as StandaloneAccount from '@/lib/standalone-account'
 import type * as SyncUi from '@/stores/sync-ui-store'
 import type { SyncSessionSummary } from '@/stores/sync-ui-store'
 import { setSyncSummary } from '@/stores/sync-ui-store'
@@ -24,6 +25,9 @@ import { setSyncSummary } from '@/stores/sync-ui-store'
 /** Hoisted so the vi.mock factories can close over it. */
 const store = vi.hoisted(() => ({
   readSessions: () => [] as unknown[],
+  mode: 'local' as 'local' | 'server',
+  signedIn: false,
+  credits: null as number | null,
 }))
 
 const listStemTypes = vi.hoisted(() => vi.fn())
@@ -59,7 +63,7 @@ vi.mock('@/stores/uvr-store', () => ({
   startUvrSession: vi.fn(),
   // The rail reads the SHARED preference reactively rather than copying it
   // once at mount, so the mock is the accessor, not the getter it replaced.
-  uvrProcessingMode: () => 'local',
+  uvrProcessingMode: () => store.mode,
 }))
 vi.mock('./demo-song', () => ({ isDemoSessionId: () => false }))
 vi.mock('./funnel', () => ({ trackKaraoke: vi.fn() }))
@@ -79,10 +83,11 @@ vi.mock('@/stores/sync-ui-store', async (importOriginal) => {
   const actual = await importOriginal<typeof SyncUi>()
   return { ...actual, openSyncModal: syncUi.openSyncModal }
 })
-vi.mock('./karaoke-account', () => ({
-  credits: () => [],
+vi.mock('@/lib/standalone-account', async (importOriginal) => ({
+  ...(await importOriginal<typeof StandaloneAccount>()),
+  credits: () => store.credits,
   refreshCredits: vi.fn(),
-  signedIn: () => false,
+  signedIn: () => store.signedIn,
 }))
 
 const { KaraokeRailPanels } = await import('./KaraokeRailPanels')
@@ -113,6 +118,9 @@ beforeEach(() => {
 
 afterEach(() => {
   store.readSessions = () => []
+  store.mode = 'local'
+  store.signedIn = false
+  store.credits = null
   // Module-level and shared with every other suite in the run.
   setSyncSummary(null)
 })
@@ -196,6 +204,21 @@ describe('the library survives a song change', () => {
     expect(
       container.querySelectorAll('.kn-library-song').length,
     ).toBeGreaterThanOrEqual(before)
+  })
+})
+
+describe('the studio-quality card', () => {
+  it('sends the singer to Settings for what a song costs', () => {
+    store.mode = 'server'
+    store.signedIn = true
+    store.credits = 5
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    const link = container.querySelector('[data-testid="kn-credit-costs-link"]')
+    expect(link?.getAttribute('href')).toBe('/#/settings/credits')
+    expect(container.textContent).toContain('5 cr left · what a song costs')
+    // A song's price depends on its length and parts; the rail names none.
+    expect(container.textContent).not.toMatch(/1\/song|per song/)
   })
 })
 
