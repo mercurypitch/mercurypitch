@@ -696,6 +696,47 @@ describe('login and register', () => {
     })
   })
 
+  it("carries a sign-up's hint for the first mail, and nothing when there is none", async () => {
+    const hint = {
+      twin: 'David Bowie',
+      lowMidi: 48,
+      highMidi: 72,
+      accuracy: 80,
+    }
+    const fetchMock = mockFetchOnce(200, {
+      token: makeToken(3600),
+      userId: 'new-account',
+      isNew: true,
+      user: { authProvider: 'password' },
+    })
+    await registerWithPassword('a@b.com', 'secret123', 'Maff', undefined, {
+      newsletterOptIn: true,
+      voiceprintHint: hint,
+      signupSource: 'karaoke',
+    })
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      newsletterOptIn: true,
+      voiceprintHint: hint,
+      signupSource: 'karaoke',
+    })
+
+    const plain = mockFetchOnce(200, {
+      token: makeToken(3600),
+      userId: 'other-account',
+      isNew: true,
+      user: { authProvider: 'password' },
+    })
+    await registerWithPassword('c@d.com', 'secret123')
+    const [, plainInit] = plain.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ]
+    const body = JSON.parse(plainInit.body as string) as Record<string, unknown>
+    expect('voiceprintHint' in body).toBe(false)
+    expect('signupSource' in body).toBe(false)
+  })
+
   it('passes the device id along on Google login', async () => {
     const deviceId = getUserId()
     const fetchMock = mockFetchOnce(200, {

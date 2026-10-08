@@ -21,6 +21,7 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { forgetSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 import type { GrantFlushCredentials } from './grant-flush'
+import type { RegisterExtras, SignupContext } from './signup-context'
 import { authVersion, getAuthHeaders, getAuthToken, getDeviceSecret, getUserId, resetUserId, setAuthToken, } from './user-service'
 
 // Bumped on every auth transition (token issued, redirect consumed, logout)
@@ -584,12 +585,7 @@ export async function registerWithPassword(
   password: string,
   displayName?: string,
   cfTurnstileToken?: string,
-  /**
-   * Ticked the product-updates box on the form. It rides the register request
-   * rather than following it, so there is no window where the account exists
-   * and the answer does not — and nothing to retry if the second call fails.
-   */
-  newsletterOptIn?: boolean,
+  extras: RegisterExtras = {},
 ): Promise<AuthResponse> {
   return postAuth('register', {
     email,
@@ -597,7 +593,7 @@ export async function registerWithPassword(
     displayName,
     deviceId: getUserId(),
     cfTurnstileToken,
-    newsletterOptIn,
+    ...extras,
     // Registering with a deviceId takes that anonymous account over
     // permanently, so the server needs proof it is ours.
     deviceSecret: getDeviceSecret(),
@@ -791,7 +787,7 @@ const RETURN_HASH_KEY = 'mp:gauthReturnHash'
 
 /** URL that starts the Google sign-in redirect for this device. Also
  *  stashes the current hash route so the user returns to the same page. */
-export async function googleSignInUrl(): Promise<string> {
+export async function googleSignInUrl(signup?: SignupContext): Promise<string> {
   localStorage.setItem(RETURN_HASH_KEY, window.location.hash)
   const returnTo =
     window.location.origin + window.location.pathname + window.location.search
@@ -807,6 +803,7 @@ export async function googleSignInUrl(): Promise<string> {
       deviceId: getUserId(),
       deviceSecret: getDeviceSecret(),
       returnTo,
+      ...signup,
     }),
   })
   if (!res.ok) throw new Error(`google/start failed: ${res.status}`)

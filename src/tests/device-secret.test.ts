@@ -178,6 +178,21 @@ describe('googleSignInUrl', () => {
     })
   })
 
+  it("carries a sign-up's hint, which the worker signs into the state", async () => {
+    const fetchMock = stubStart(200, {
+      url: 'https://accounts.google.com/o/oauth2/v2/auth?state=signed',
+    })
+    const voiceprintHint = { twin: 'David Bowie', lowMidi: 48, highMidi: 72 }
+
+    await googleSignInUrl({ voiceprintHint, signupSource: 'karaoke' })
+
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      voiceprintHint,
+      signupSource: 'karaoke',
+    })
+  })
+
   it('throws rather than navigating somewhere useless', async () => {
     // The caller shows an error. Returning a half-built URL would send the
     // singer to Google and back with nothing to show for it.

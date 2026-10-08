@@ -104,6 +104,9 @@ describe('Karaoke Night sign-in with the CAPTCHA unconfigured', () => {
         'Sup3rSecret!x',
         undefined,
         '',
+        // The welcome mail's Karaoke Night picture, and no voiceprint: this
+        // page never adopts the device's takes.
+        { signupSource: 'karaoke' },
       ),
     )
   })

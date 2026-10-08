@@ -21,6 +21,7 @@
 import { getDb } from '@/db'
 import type { Voiceprint, VoiceprintSource } from '@/db/entities'
 import { hasUpgradedAccount, hasValidToken, takeGoogleAccountCreated, } from '@/db/services/auth-service'
+import type { VoiceprintHint } from '@/db/services/signup-context'
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { MirrorSummary } from '@/lib/mirror/metrics'
@@ -479,6 +480,40 @@ export function listAdoptableVoiceprints(): VoiceprintRecord[] {
       return device !== '' && madeBy === device && madeBy !== me
     }),
   )
+}
+
+/**
+ * The hint a sign-up sends so the new account's first mail can name its twin
+ * (VoiceprintHint in signup-context.ts): the newest take that creating the
+ * account will adopt, which listAdoptableVoiceprints describes, with a twin
+ * and a measured range. Undefined when a real account is already held,
+ * because then nothing is adopted, or when no such take exists. Signed out,
+ * this device's own anonymous identity is the one the sign-up upgrades.
+ */
+export function buildVoiceprintHint(): VoiceprintHint | undefined {
+  if (realAccountHeld()) return undefined
+  const device = getDeviceId()
+  const take = sortNewestFirst(loadLocalVoiceprints()).find((record) => {
+    const madeBy = recordMadeBy(record)
+    const adoptable =
+      madeBy === MADE_ANONYMOUSLY || (device !== '' && madeBy === device)
+    return (
+      adoptable &&
+      record.twin !== null &&
+      record.summary.lowMidi !== null &&
+      record.summary.highMidi !== null
+    )
+  })
+  if (take === undefined || take.twin === null) return undefined
+  const { lowMidi, highMidi, accuracy, steadiness } = take.summary
+  if (lowMidi === null || highMidi === null) return undefined
+  return {
+    twin: take.twin,
+    lowMidi,
+    highMidi,
+    ...(accuracy === null ? {} : { accuracy }),
+    ...(steadiness === null ? {} : { steadiness }),
+  }
 }
 
 function readDeclines(): Record<string, string> {

@@ -27,6 +27,7 @@ vi.mock('@/db/services/auth-service', () => ({
 vi.mock('@/db/services/auth-mfa-service', () => ({ verifyTwofa: vi.fn() }))
 vi.mock('@/db/services/voiceprint-service', () => ({
   adoptDeviceVoiceprints: vi.fn(async () => 0),
+  buildVoiceprintHint: vi.fn(() => undefined),
 }))
 
 import { AuthModal } from '@/components/account/AuthModal'

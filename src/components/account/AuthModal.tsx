@@ -18,7 +18,7 @@ import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-cod
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
-import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
+import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { appleSignInOffered, nativeGoogleSignInOffered, webGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { isTvDevice } from '@/lib/device-tier'
@@ -344,6 +344,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     armOnboardingResume()
     const failure = await startGoogleSignIn({
       prepareRedirect: props.prepareGoogleRedirect,
+      // Account creation through this redirect adopts the device's takes
+      // (adoptAfterGoogleSignup), so the welcome may name the newest twin.
+      signup: { voiceprintHint: buildVoiceprintHint() },
     })
     if (failure !== null) setError(failure)
   }
@@ -427,7 +430,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
             credentials.password,
             name,
             token,
-            wantsUpdates(),
+            {
+              newsletterOptIn: wantsUpdates(),
+              // Adopted just below, so the confirm mail may name the twin.
+              voiceprintHint: buildVoiceprintHint(),
+            },
           )
           if (request !== requestGeneration) return
           // Creating the account IS the consent the voiceprint adoption
