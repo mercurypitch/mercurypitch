@@ -70,7 +70,8 @@ export async function useRunnerThreeNoteLayout(
                 for (const listener of listeners) listener({state, events: [], presentation: true});
               },
               input: () => false,
-              steer: () => false
+              steer: () => false,
+              slide: () => false
             };
           }
         `,

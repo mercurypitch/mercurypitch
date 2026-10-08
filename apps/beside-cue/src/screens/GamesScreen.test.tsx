@@ -213,6 +213,25 @@ describe('owner-build adventure entries', () => {
     },
   )
 
+  it.each(['dev', 'ci'])(
+    'opens and returns from The Low Arch in the %s build without a second game host',
+    (channel) => {
+      build.channel = channel
+      render(() => <GamesScreen onBack={() => {}} />)
+      fireEvent.click(screen.getByRole('button', { name: /The Low Arch/u }))
+      const host = screen.getByTestId('adventure-host')
+      expect(host).toHaveAttribute('data-steering', 'continuous')
+      expect(host).toHaveAttribute('data-camera', 'angled')
+      expect(host).toHaveAttribute('data-obstacles', 'slide-study')
+      expect(host).toHaveAttribute('data-campaign', 'false')
+      expect(screen.queryByTestId('legacy-journey')).toBeNull()
+      fireEvent.click(host)
+      expect(
+        screen.getByRole('button', { name: /The Low Arch/u }),
+      ).toBeEnabled()
+    },
+  )
+
   it.each([
     ['release', '/'],
     ['dev', '/?progression=earned'],
@@ -226,6 +245,7 @@ describe('owner-build adventure entries', () => {
     expect(
       screen.queryByRole('button', { name: /Crystal Current/u }),
     ).toBeNull()
+    expect(screen.queryByRole('button', { name: /The Low Arch/u })).toBeNull()
     expect(
       screen.queryByRole('button', { name: /Little discoveries/u }),
     ).toBeNull()

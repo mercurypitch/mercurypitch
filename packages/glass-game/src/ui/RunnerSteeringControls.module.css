@@ -39,6 +39,31 @@
   cursor: ew-resize;
 }
 
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.controls[data-slide-enabled='true'] {
+  gap: 12px;
+}
+
+.controls[data-slide-enabled='true'] .steering {
+  min-width: 104px;
+}
+
+.controls[data-slide-enabled='true'] .jump {
+  flex-basis: 68px;
+  width: 68px;
+}
+
+.slide[aria-pressed='true'] {
+  background: #c7ece3;
+  border-color: #3a7775;
+  box-shadow: inset 0 0 0 2px #6aa29b;
+}
+
 .steering:focus-visible,
 .jump:focus-visible {
   outline: 3px solid #bd923c;

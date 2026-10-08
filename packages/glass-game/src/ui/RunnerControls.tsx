@@ -1,10 +1,11 @@
 // ============================================================
-// Song runner controls — three native buttons preserve independent contacts.
+// Song runner controls — native buttons preserve independent movement contacts.
 // ============================================================
 
 import { For, Show } from 'solid-js'
 import type { RunnerContinuousInput } from './runner-continuous-input'
-import type { RunnerControlAction, RunnerInputEdges } from './runner-input'
+import type { RunnerEdgeAction, RunnerInputEdges } from './runner-input'
+import { RunnerSlideControl } from './RunnerSlideControl'
 import { RunnerSteeringControls } from './RunnerSteeringControls'
 import styles from './SongRunnerView.module.css'
 
@@ -12,10 +13,12 @@ interface RunnerControlsProps {
   input: RunnerInputEdges
   disabled: boolean
   steering?: RunnerContinuousInput
+  slideEnabled?: boolean
+  sliding?: boolean
 }
 
 const CONTROLS: readonly {
-  action: RunnerControlAction
+  action: RunnerEdgeAction
   label: string
   keyshortcuts: string
 }[] = [
@@ -26,7 +29,7 @@ const CONTROLS: readonly {
 
 function releasePointer(
   props: RunnerControlsProps,
-  action: RunnerControlAction,
+  action: RunnerEdgeAction,
   event: PointerEvent & { currentTarget: HTMLButtonElement },
 ): void {
   props.input.pointerEnd(action, event.pointerId)
@@ -37,57 +40,85 @@ export function RunnerControls(props: RunnerControlsProps) {
     <Show
       when={props.steering}
       fallback={
-        <nav class={styles.controls} aria-label="Course controls">
+        <nav
+          class={styles.controls}
+          data-slide-enabled={props.slideEnabled === true}
+          aria-label="Course controls"
+        >
           <For each={CONTROLS}>
             {(control) => (
-              <button
-                type="button"
-                class={styles.controlButton}
-                classList={{ [styles.jumpControl]: control.action === 'jump' }}
-                disabled={props.disabled}
-                aria-label={control.label}
-                aria-keyshortcuts={control.keyshortcuts}
-                data-action={control.action}
-                onContextMenu={(event) => event.preventDefault()}
-                onPointerDown={(event) => {
-                  if (!props.input.pointerDown(control.action, event.pointerId))
-                    return
-                  if (event.pointerType !== 'mouse') event.preventDefault()
-                  event.currentTarget.setPointerCapture(event.pointerId)
-                }}
-                onPointerUp={(event) =>
-                  releasePointer(props, control.action, event)
-                }
-                onPointerCancel={(event) =>
-                  releasePointer(props, control.action, event)
-                }
-                onLostPointerCapture={(event) =>
-                  releasePointer(props, control.action, event)
-                }
-                onClick={(event) => {
-                  if (event.detail === 0) props.input.activate(control.action)
-                }}
-              >
-                <svg viewBox="0 0 32 32" aria-hidden="true">
-                  {control.action === 'lane-left' ? (
-                    <path d="M25 16H7m8-8-8 8 8 8" />
-                  ) : control.action === 'lane-right' ? (
-                    <path d="M7 16h18m-8-8 8 8-8 8" />
-                  ) : (
-                    <path d="M16 25V7m-7 8 7-8 7 8M7 27h18" />
-                  )}
-                </svg>
-                <span>
-                  {control.action === 'jump' ? 'Jump' : control.label}
-                </span>
-              </button>
+              <>
+                <Show
+                  when={
+                    props.slideEnabled === true &&
+                    control.action === 'lane-right'
+                  }
+                >
+                  <RunnerSlideControl
+                    input={props.input}
+                    disabled={props.disabled}
+                    sliding={props.sliding}
+                    class={`${styles.controlButton} ${styles.slideControl}`}
+                  />
+                </Show>
+                <button
+                  type="button"
+                  class={styles.controlButton}
+                  classList={{
+                    [styles.jumpControl]: control.action === 'jump',
+                  }}
+                  disabled={props.disabled}
+                  aria-label={control.label}
+                  aria-keyshortcuts={control.keyshortcuts}
+                  data-action={control.action}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onPointerDown={(event) => {
+                    if (
+                      !props.input.pointerDown(control.action, event.pointerId)
+                    )
+                      return
+                    if (event.pointerType !== 'mouse') event.preventDefault()
+                    event.currentTarget.setPointerCapture(event.pointerId)
+                  }}
+                  onPointerUp={(event) =>
+                    releasePointer(props, control.action, event)
+                  }
+                  onPointerCancel={(event) =>
+                    releasePointer(props, control.action, event)
+                  }
+                  onLostPointerCapture={(event) =>
+                    releasePointer(props, control.action, event)
+                  }
+                  onClick={(event) => {
+                    if (event.detail === 0) props.input.activate(control.action)
+                  }}
+                >
+                  <svg viewBox="0 0 32 32" aria-hidden="true">
+                    {control.action === 'lane-left' ? (
+                      <path d="M25 16H7m8-8-8 8 8 8" />
+                    ) : control.action === 'lane-right' ? (
+                      <path d="M7 16h18m-8-8 8 8-8 8" />
+                    ) : (
+                      <path d="M16 25V7m-7 8 7-8 7 8M7 27h18" />
+                    )}
+                  </svg>
+                  <span>
+                    {control.action === 'jump' ? 'Jump' : control.label}
+                  </span>
+                </button>
+              </>
             )}
           </For>
         </nav>
       }
     >
       {(steering) => (
-        <RunnerSteeringControls input={steering()} disabled={props.disabled} />
+        <RunnerSteeringControls
+          input={steering()}
+          disabled={props.disabled}
+          slideEnabled={props.slideEnabled}
+          sliding={props.sliding}
+        />
       )}
     </Show>
   )

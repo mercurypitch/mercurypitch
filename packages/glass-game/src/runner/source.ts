@@ -134,10 +134,15 @@ export interface RunnerBlockerCatalogProfile {
   readonly assetProfileIds: readonly string[]
   readonly collisionProfile?: RunnerBlockerCollisionProfile
   /** Omitted profiles keep the existing lane/steering avoidance certificate. */
-  readonly traversal?: {
-    readonly kind: 'jump-over'
-    readonly landingRunwayMeters: number
-  }
+  readonly traversal?:
+    | { readonly kind: 'jump-over'; readonly landingRunwayMeters: number }
+    | {
+        readonly kind: 'slide-under'
+        readonly clearanceHeightMeters: number
+        readonly clearanceMinXFraction: number
+        readonly clearanceMaxXFraction: number
+        readonly exitRunwayMeters: number
+      }
 }
 
 export interface RunnerGapCatalogProfile {

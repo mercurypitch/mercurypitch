@@ -1,5 +1,10 @@
 // Crystal obstacle art — versioned donors share the course's explicit collision envelopes.
 export const RUNNER_OBSTACLE_ART = {
+  'runner-celadon-arch-v1': {
+    bundle: 'runner-celadon-arch-v1',
+    root: 'S01_SlideStudy',
+    parts: ['S01_Crystal', 'S01_Gold', 'S01_Pearl'],
+  },
   'runner-crystal-bulwark-v1': {
     bundle: 'runner-crystal-bulwark-v1',
     root: 'B01_Blocker',

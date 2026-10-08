@@ -505,6 +505,8 @@ jobs:
             runner-readiness,
             runner-obstacles,
             runner-camera,
+            runner-slide,
+            icon-alignment,
             runner-reference,
             runner-responsive,
             runner-sound,

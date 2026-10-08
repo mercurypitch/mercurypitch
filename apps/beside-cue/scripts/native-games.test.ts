@@ -33,6 +33,7 @@ const RUNNER_READY_GAME_ASSETS = [
   'museum-canopy-v3',
   'runner-crystal-bulwark-v1',
   'runner-rose-hurdle-v1',
+  'runner-celadon-arch-v1',
   ...RUNNER_MATERIAL_FINISH_TEXTURE_IDS,
   ...Object.values(SINGING_CURRENT_WALL_PROFILES).map(({ bundle }) => bundle),
 ].map((id) => `games/${glassGameAssetPath(id)}`)
@@ -169,7 +170,7 @@ describe('explicit native games profile', () => {
     expect(native.has(`games/${glassGameAssetPath('merc')}`)).toBe(true)
     expect(
       CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.glb')),
-    ).toHaveLength(12)
+    ).toHaveLength(13)
     expect(
       CURRENT_DELIVERY_GAME_ASSETS.filter((asset) => asset.endsWith('.mp3')),
     ).toHaveLength(14)

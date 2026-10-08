@@ -254,7 +254,7 @@ describe('bounded jump-over hurdle', () => {
       ).toThrow('certified jump window')
       expect(
         compileWith((_source, profile) => {
-          profile.traversal!.landingRunwayMeters = 0.2
+          profile.traversal = { kind: 'jump-over', landingRunwayMeters: 0.2 }
         }),
       ).toThrow('authored landing runway')
       expect(

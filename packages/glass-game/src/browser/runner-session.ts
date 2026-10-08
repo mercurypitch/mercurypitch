@@ -681,8 +681,9 @@ export function createBrowserRunnerSession(
 
   function submitInput(
     command:
-      | { action: Exclude<RunnerInput['action'], 'steer'> }
-      | { action: 'steer'; axis: number },
+      | { action: Exclude<RunnerInput['action'], 'steer' | 'slide'> }
+      | { action: 'steer'; axis: number }
+      | { action: 'slide'; held: boolean },
   ): boolean {
     const now = audio?.currentAudioSeconds()
     if (disposed || state.phase !== 'running' || epoch === null || now == null)
@@ -691,6 +692,12 @@ export function createBrowserRunnerSession(
       advance(now)
       return false
     }
+    if (
+      command.action === 'slide' &&
+      command.held &&
+      !game.snapshot().player.grounded
+    )
+      return false
     const accepted = game.input({
       epoch,
       sequence: ++inputSequence,
@@ -724,6 +731,7 @@ export function createBrowserRunnerSession(
     pause,
     hearReference,
     input: (action) => submitInput({ action }),
+    slide: (held) => submitInput({ action: 'slide', held }),
     steer(axis) {
       if (!Number.isFinite(axis) || axis < -1 || axis > 1) return false
       return submitInput({ action: 'steer', axis })

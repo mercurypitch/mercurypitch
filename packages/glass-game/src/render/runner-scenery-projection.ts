@@ -1,7 +1,7 @@
 // Runner scenery projection — certifies fog-safe streamed handoffs against every supported camera framing.
 
 import { Box3, Frustum, Matrix4, PerspectiveCamera } from 'three'
-import type { CompiledRunnerCourse } from '../runner/contracts'
+import type { CompiledRunnerChunk, CompiledRunnerCourse, } from '../runner/contracts'
 import { runnerCameraFollowTarget, runnerCameraPose, } from './runner-world-layout'
 
 export const RUNNER_SCENERY_FOG_FAR = 37
@@ -321,7 +321,12 @@ function lastGridDistance(
 }
 
 export function createRunnerSceneryHandoffs(
-  course: CompiledRunnerCourse,
+  course: {
+    readonly chunks: readonly Pick<
+      CompiledRunnerChunk,
+      'minCourseDistanceMeters' | 'maxCourseDistanceMeters'
+    >[]
+  },
   chunks: readonly RunnerSceneryProjectionChunk[],
   visibility: RunnerSceneryVisibilityContext,
 ): readonly RunnerSceneryHandoff[] {

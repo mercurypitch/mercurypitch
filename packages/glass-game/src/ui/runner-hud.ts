@@ -94,6 +94,20 @@ export function runnerMovementCueCopy(cue: RunnerMovementCue): {
   readonly instruction: string
 } {
   switch (cue.stage) {
+    case 'slide-align':
+      return {
+        label: `Move ${cue.direction ?? 'to centre'}`,
+        instruction: 'Line up with the arch opening',
+      }
+    case 'slide':
+      return {
+        label: 'Slide under',
+        instruction: 'Hold Slide or press Down',
+      }
+    case 'sliding':
+      return { label: 'Stay low', instruction: 'Keep holding through the arch' }
+    case 'release-slide':
+      return { label: 'Clear', instruction: 'Release Slide to stand' }
     case 'gap-ahead':
       return { label: 'Gap ahead', instruction: 'Watch the edge' }
     case 'jump':

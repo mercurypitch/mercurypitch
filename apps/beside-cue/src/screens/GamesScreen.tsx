@@ -252,6 +252,7 @@ export function GamesScreen(props: GamesScreenProps) {
               playing() !== 'adventure' &&
               playing() !== 'singing-current' &&
               playing() !== 'crystal-current' &&
+              playing() !== 'slide-current' &&
               playing() !== 'promenade' &&
               playing() !== 'thawing-song' &&
               playing() !== 'echo-curator' &&

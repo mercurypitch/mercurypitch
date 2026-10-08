@@ -10,7 +10,7 @@ type Harness = ReturnType<typeof runnerSessionHarness>
 interface ScheduledAction {
   readonly id: string
   readonly at: number
-  readonly action: Exclude<RunnerInput['action'], 'steer'>
+  readonly action: Exclude<RunnerInput['action'], 'steer' | 'slide'>
 }
 
 const EPSILON = 1e-8

@@ -1,13 +1,16 @@
 // Runner steering controls — a captured thumb pad and independent jump leave the centre of the track visible.
 
-import { createEffect, createSignal, onCleanup } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
 import type { RunnerContinuousInput } from './runner-continuous-input'
 import { RUNNER_STEERING_TRAVEL_PX } from './runner-continuous-input'
+import { RunnerSlideControl } from './RunnerSlideControl'
 import styles from './RunnerSteeringControls.module.css'
 
 interface RunnerSteeringControlsProps {
   input: RunnerContinuousInput
   disabled: boolean
+  slideEnabled?: boolean
+  sliding?: boolean
 }
 
 export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
@@ -47,7 +50,11 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
   }
 
   return (
-    <nav class={styles.controls} aria-label="Course controls">
+    <nav
+      class={styles.controls}
+      data-slide-enabled={props.slideEnabled === true}
+      aria-label="Course controls"
+    >
       <div
         ref={pad}
         class={styles.steering}
@@ -107,40 +114,52 @@ export function RunnerSteeringControls(props: RunnerSteeringControlsProps) {
         <span class={styles.label}>Steer</span>
         <span class={styles.hint}>Hold and slide</span>
       </div>
-      <button
-        type="button"
-        class={styles.jump}
-        disabled={props.disabled}
-        aria-label="Jump"
-        aria-keyshortcuts="Space ArrowUp W"
-        data-action="jump"
-        onContextMenu={(event) => event.preventDefault()}
-        onPointerDown={(event) => {
-          if (
-            event.button !== 0 ||
-            !props.input.pointerDown('jump', event.pointerId)
-          )
-            return
-          event.preventDefault()
-          event.currentTarget.setPointerCapture(event.pointerId)
-        }}
-        onPointerUp={(event) => props.input.pointerEnd('jump', event.pointerId)}
-        onPointerCancel={(event) =>
-          props.input.pointerEnd('jump', event.pointerId)
-        }
-        onLostPointerCapture={(event) => {
-          if (event.target === event.currentTarget)
+      <div class={styles.actions}>
+        <Show when={props.slideEnabled}>
+          <RunnerSlideControl
+            input={props.input}
+            disabled={props.disabled}
+            sliding={props.sliding}
+            class={`${styles.jump} ${styles.slide}`}
+          />
+        </Show>
+        <button
+          type="button"
+          class={styles.jump}
+          disabled={props.disabled}
+          aria-label="Jump"
+          aria-keyshortcuts="Space ArrowUp W"
+          data-action="jump"
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerDown={(event) => {
+            if (
+              event.button !== 0 ||
+              !props.input.pointerDown('jump', event.pointerId)
+            )
+              return
+            event.preventDefault()
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }}
+          onPointerUp={(event) =>
             props.input.pointerEnd('jump', event.pointerId)
-        }}
-        onClick={(event) => {
-          if (event.detail === 0) props.input.activate('jump')
-        }}
-      >
-        <svg viewBox="0 0 32 32" aria-hidden="true">
-          <path d="M16 25V7m-7 8 7-8 7 8M7 27h18" />
-        </svg>
-        <span>Jump</span>
-      </button>
+          }
+          onPointerCancel={(event) =>
+            props.input.pointerEnd('jump', event.pointerId)
+          }
+          onLostPointerCapture={(event) => {
+            if (event.target === event.currentTarget)
+              props.input.pointerEnd('jump', event.pointerId)
+          }}
+          onClick={(event) => {
+            if (event.detail === 0) props.input.activate('jump')
+          }}
+        >
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 25V7m-7 8 7-8 7 8M7 27h18" />
+          </svg>
+          <span>Jump</span>
+        </button>
+      </div>
     </nav>
   )
 }

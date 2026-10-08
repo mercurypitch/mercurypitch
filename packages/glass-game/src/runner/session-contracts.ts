@@ -114,7 +114,9 @@ export interface SongRunnerSession {
   hearReference(): Promise<void>
   takeOverMicrophone?(): Promise<void>
   pause(reason?: RunnerPauseReason): void
-  input(action: Exclude<RunnerInput['action'], 'steer'>): boolean
+  input(action: Exclude<RunnerInput['action'], 'steer' | 'slide'>): boolean
+  /** Held stance shares the input clock; release waits for physical headroom. */
+  slide(held: boolean): boolean
   /** Continuous study only; axis changes share the audio clock and current epoch. */
   steer(axis: number): boolean
   setMusicMuted(muted: boolean): void

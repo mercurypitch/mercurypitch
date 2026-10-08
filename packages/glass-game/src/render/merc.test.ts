@@ -502,3 +502,50 @@ it('uses the presentation clock to face an exhibit while simulation is paused', 
     actor.dispose()
   }
 })
+
+it('fits the actual sliding mascot inside its low physical height and restores the authored pose', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValueOnce(gltf)
+  const actor = await loadAdventureMerc('local-slide-merc.glb')
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  snapshot.player.position.y = 0
+  snapshot.player.velocity.x = 0
+  snapshot.player.velocity.y = 0
+  snapshot.player.velocity.z = 0
+  snapshot.player.grounded = true
+  actor.root.scale.setScalar(0.9 / 0.55)
+  try {
+    actor.update(snapshot, 0, false)
+    const standing = new Box3().setFromObject(actor.root, true)
+    for (const progress of [0.1, 0.5, 1]) {
+      const bodyHeight = 0.9 - 0.6 * progress
+      actor.update(snapshot, 0, false, {
+        slide: { progress, heightRatio: bodyHeight / 0.9 },
+      })
+      const bounds = new Box3().setFromObject(actor.root, true)
+      expect(bounds.max.y).toBeLessThanOrEqual(bodyHeight)
+      expect(bounds.min.y).toBeGreaterThanOrEqual(-0.03)
+      const repeated = bounds.clone()
+      actor.update(snapshot, 0, false, {
+        slide: { progress, heightRatio: bodyHeight / 0.9 },
+      })
+      expect(new Box3().setFromObject(actor.root, true).equals(repeated)).toBe(
+        true,
+      )
+    }
+    actor.update(snapshot, 0, false)
+    expect(new Box3().setFromObject(actor.root, true).equals(standing)).toBe(
+      true,
+    )
+    for (let frame = 0; frame < 120; frame++) {
+      actor.update(snapshot, 1 / 60, false, {
+        slide: { progress: 1, heightRatio: 0.3 / 0.9 },
+      })
+      const animated = new Box3().setFromObject(actor.root, true)
+      expect(animated.max.y).toBeLessThanOrEqual(0.3)
+      expect(animated.min.y).toBeGreaterThanOrEqual(-0.03)
+    }
+  } finally {
+    actor.dispose()
+  }
+})

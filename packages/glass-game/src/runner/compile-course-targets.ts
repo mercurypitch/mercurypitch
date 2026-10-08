@@ -88,6 +88,22 @@ export function validateRunnerMovement(
       `${path}.movementProfileId`,
       'body must fit inside the continuous track.',
     )
+  if (
+    movement.slide !== undefined &&
+    (movement.slide.version !== 1 ||
+      [
+        movement.slide.bodyHeightMeters,
+        movement.slide.enterSeconds,
+        movement.slide.exitSeconds,
+      ].some((value) => !Number.isFinite(value) || value <= 0) ||
+      movement.slide.bodyHeightMeters >= movement.bodyHeight ||
+      movement.slide.enterSeconds < movement.fixedStepSeconds ||
+      movement.slide.exitSeconds < movement.fixedStepSeconds)
+  )
+    runnerSourceFail(
+      `${path}.movementProfileId`,
+      'references malformed slide capability.',
+    )
   const derivedRise =
     movement.jumpVelocityMetersPerSecond ** 2 /
     (2 * movement.gravityMetersPerSecondSquared)

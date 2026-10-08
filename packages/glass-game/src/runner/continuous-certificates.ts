@@ -122,7 +122,7 @@ export function validateContinuousRunnerReachability(
           `has no certified continuous route through obstacle ${index} "${obstacle.id}".`,
         )
       available =
-        action.kind === 'jump'
+        action.kind === 'jump' || action.kind === 'slide'
           ? action.landingCloseCourseSeconds
           : runnerBeatToSeconds(
               tempo,

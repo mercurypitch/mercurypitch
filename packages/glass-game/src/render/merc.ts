@@ -11,6 +11,7 @@ import { MOVEMENT } from '../core/movement'
 import { stepAngularResponse } from './angular-response'
 import { loadMercModel } from './merc-model'
 import { createMercPresentationPose } from './merc-presentation-pose'
+import { createMercSlidePose } from './merc-slide-pose'
 import { createSkinnedPosePublisher } from './skinned-pose'
 
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
@@ -33,6 +34,8 @@ export interface AdventureMercSnapshot {
 export interface AdventureMercPresentation {
   /** Audio-clock narration envelope, distinct from the player's microphone. */
   narrationLevel?: number
+  /** Driven by physical stance, never inferred from an animation or button. */
+  slide?: { readonly progress: number; readonly heightRatio: number }
   /** Render-only root yaw toward the active exhibit. */
   facingYaw?: number | null
   /** Presentation clock, independent of a voice-paused simulation. */
@@ -75,6 +78,7 @@ export async function loadAdventureMerc(
   const publishPose = createSkinnedPosePublisher(root)
   const mixer = new AnimationMixer(body)
   const presentationPose = createMercPresentationPose(body)
+  const slidePose = createMercSlidePose(body)
   const clips = new Map(asset.animations.map((clip) => [clip.name, clip]))
   let current: AnimationAction | undefined
   let clipName = ''
@@ -109,6 +113,7 @@ export async function loadAdventureMerc(
       presentation: AdventureMercPresentation = {},
     ) {
       if (disposed) return
+      slidePose.restore()
       presentationPose.restoreMixerPose()
       const player = snapshot.player
       let count = 0
@@ -124,16 +129,22 @@ export async function loadAdventureMerc(
       const moving = horizontalSpeed > 0.08
       // The authored fall clip topples into a puddle. Normal airborne travel
       // keeps the upright pose; physics and stretch carry the jump.
+      const slideProgress = Math.max(
+        0,
+        Math.min(1, presentation.slide?.progress ?? 0),
+      )
       const name =
-        snapshot.elapsedSeconds < celebrateUntil
-          ? 'celebrate'
-          : !player.grounded
-            ? 'listen'
-            : active
-              ? 'sing'
-              : moving
-                ? 'move'
-                : 'listen'
+        slideProgress > 0
+          ? 'listen'
+          : snapshot.elapsedSeconds < celebrateUntil
+            ? 'celebrate'
+            : !player.grounded
+              ? 'listen'
+              : active
+                ? 'sing'
+                : moving
+                  ? 'move'
+                  : 'listen'
       play(
         name,
         reducedMotion && !moving && !active,
@@ -147,16 +158,25 @@ export async function loadAdventureMerc(
         name === 'listen' && player.grounded,
         reducedMotion,
       )
+      slidePose.apply(slideProgress)
       if (player.grounded && !wasGrounded) squash = 0.18
       wasGrounded = player.grounded
       squash *= Math.exp(-13 * animationDt)
       const stretch = reducedMotion ? 1 : player.grounded ? 1 - squash : 1.07
+      const slideStretch =
+        slideProgress > 0
+          ? Math.min(
+              stretch,
+              (presentation.slide?.heightRatio ?? 1) *
+                (1 - Math.min(0.15, slideProgress * 0.3)),
+            )
+          : stretch
       body.scale.set(
         scale / Math.sqrt(stretch),
-        scale * stretch,
+        scale * slideStretch,
         scale / Math.sqrt(stretch),
       )
-      body.position.y = -visualGroundY * scale * stretch + 0.015
+      body.position.y = -visualGroundY * scale * slideStretch + 0.015
       root.position.copy(player.position)
       const desiredYaw = presentation.facingYaw ?? player.facingYaw + Math.PI
       const requestedTurnDt = presentation.turnDeltaSeconds ?? dt
@@ -181,6 +201,7 @@ export async function loadAdventureMerc(
     dispose() {
       if (disposed) return
       disposed = true
+      slidePose.restore()
       presentationPose.restoreMixerPose()
       mixer.stopAllAction()
       mixer.uncacheRoot(body)

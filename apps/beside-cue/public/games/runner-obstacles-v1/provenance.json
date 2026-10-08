@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "B01",
+      "file": "glacial-bulwark.glb",
+      "sourceSha256": "8449c0c0b3453570d18c4369124b17c72790aef055822d2fff4c894e05bca09f",
+      "sourceBytes": 734172,
+      "sha256": "2eea24e84c1514bacac35f07597c88ddb9d4aa98aa0375057e5430e2defdedd3",
+      "bytes": 459008,
+      "method": "EXT_meshopt_compression; no quantization, simplification or attribute changes; triangle cyclic rotations preserve winding",
+      "materialsUnchanged": true
+    },
+    {
+      "id": "J01",
+      "file": "rose-wave-hurdle.glb",
+      "sourceSha256": "337e8dd1498a9f1d74b5fd8afb2fa7495b1743b50d874db17984d44c5d37dc7c",
+      "sourceBytes": 734188,
+      "sha256": "fce222ca89be273f7db1eaab4041c4c66853d828adab51237e5d08f9c470a729",
+      "bytes": 466088,
+      "method": "EXT_meshopt_compression; no quantization, simplification or attribute changes; triangle cyclic rotations preserve winding",
+      "materialsUnchanged": true
+    },
+    {
+      "id": "S01",
+      "file": "celadon-low-arch.glb",
+      "sourceSha256": "eb5b81b6dc96ef7e9295f122e7a7d66df97317f80e3b4a77310c67b3a11838e4",
+      "sourceBytes": 1075940,
+      "sha256": "3ca549e9801c3e13db1c5acda3b2cc23bb242f0f2e31be91c321788e154483fd",
+      "bytes": 725240,
+      "method": "EXT_meshopt_compression; no quantization, simplification or attribute changes; triangle cyclic rotations preserve winding",
+      "materialsUnchanged": true
+    }
+  ],
+  "geometryVerification": [
+    {
+      "id": "S01",
+      "count": 180156,
+      "maxAttributeDifference": 0,
+      "triangles": 58552,
+      "cyclicTriangleRotations": 1410,
+      "nodesSame": true
+    },
+    {
+      "id": "B01",
+      "count": 122322,
+      "maxAttributeDifference": 0,
+      "triangles": 40306,
+      "cyclicTriangleRotations": 37188,
+      "nodesSame": true
+    },
+    {
+      "id": "J01",
+      "count": 122322,
+      "maxAttributeDifference": 0,
+      "triangles": 40306,
+      "cyclicTriangleRotations": 37187,
+      "nodesSame": true
+    }
+  ]
+}

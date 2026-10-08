@@ -4,6 +4,7 @@ import { Box3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import type { CompiledRunnerCourse } from '../runner/contracts'
 import { SINGING_CURRENT_CONTINUOUS_TRIAL, SINGING_CURRENT_CURRENT, SINGING_CURRENT_LEARNING, SINGING_CURRENT_RESPONSIVE, } from '../runner/first-course'
+import { SLIDE_CONTINUOUS_STUDY, SLIDE_LANES_STUDY, } from '../runner/slide-study'
 import { createRunnerSceneryLayout, RUNNER_SCENERY_VALIDATED_ASPECTS, runnerSceneryHandoffVisibility, runnerSceneryPlacementBounds, } from './runner-scenery-layout'
 import { runnerTrackBounds } from './runner-world-layout'
 
@@ -197,7 +198,11 @@ describe('runner scenery layout', () => {
   })
 
   it('retires outgoing art before incoming art leaves full fog at every validated aspect', () => {
-    for (const course of courses) {
+    for (const course of [
+      ...courses,
+      SLIDE_LANES_STUDY.course,
+      SLIDE_CONTINUOUS_STUDY.course,
+    ]) {
       const layout = createRunnerSceneryLayout(course)
       const failures: string[] = []
       for (const handoff of layout.handoffs) {
@@ -261,4 +266,74 @@ describe('runner scenery layout', () => {
       expect(layout.select(Number.NaN)).toBe(layout.windows[0])
     }
   })
+})
+
+it('builds bounded scenery for both short slide studies without changing gameplay chunks', () => {
+  for (const { course } of [SLIDE_LANES_STUDY, SLIDE_CONTINUOUS_STUDY]) {
+    const original = JSON.stringify(course.chunks)
+    const layout = createRunnerSceneryLayout(course)
+    expect(layout.chunks).toHaveLength(3)
+    expect(layout.windows).toHaveLength(2)
+    expect(layout.handoffs).toHaveLength(1)
+    expect(course.chunks).toHaveLength(7)
+    expect(JSON.stringify(course.chunks)).toBe(original)
+    const track = runnerTrackBounds(course)
+    for (const chunk of layout.chunks) {
+      const start = chunk.index * 16 * course.metersPerBeat
+      const end =
+        (chunk.index === 2 ? course.lengthBeats : (chunk.index + 1) * 16) *
+        course.metersPerBeat
+      for (const placement of chunk.placements)
+        for (const bounds of runnerSceneryPlacementBounds(placement)) {
+          expect(
+            bounds.max.x <= track.left - 0.1 ||
+              bounds.min.x >= track.right + 0.1,
+          ).toBe(true)
+          expect(-bounds.max.z).toBeGreaterThanOrEqual(start)
+          expect(-bounds.min.z).toBeLessThanOrEqual(end)
+        }
+    }
+    for (const window of layout.windows) {
+      expect(window.chunkIds).toHaveLength(2)
+      expect(window.metrics.triangles).toBeLessThanOrEqual(209_506)
+      expect(window.metrics.drawBatches).toBeLessThanOrEqual(11)
+    }
+    expect(layout.select(course.lengthMeters).key).toBe('1:2')
+    expect(layout.select(0).key).toBe('0:1')
+  }
+})
+
+it('rejects malformed geometry instead of silently changing scenery limits', () => {
+  const course = SLIDE_LANES_STUDY.course
+  expect(() =>
+    createRunnerSceneryLayout({ ...course, chunks: course.chunks.slice(1) }),
+  ).toThrow('complete contiguous')
+  expect(() =>
+    createRunnerSceneryLayout({
+      ...course,
+      chunks: course.chunks.map((chunk, index) =>
+        index === 1 ? { ...chunk, startBeat: chunk.startBeat + 1 } : chunk,
+      ),
+    }),
+  ).toThrow('complete contiguous')
+  expect(() =>
+    createRunnerSceneryLayout({
+      ...course,
+      chunks: course.chunks.map((chunk, index) =>
+        index === 1
+          ? {
+              ...chunk,
+              minCourseDistanceMeters: chunk.minCourseDistanceMeters + 1,
+            }
+          : chunk,
+      ),
+    }),
+  ).toThrow('complete contiguous')
+  expect(() =>
+    createRunnerSceneryLayout({
+      ...course,
+      lengthBeats: 16,
+      chunks: course.chunks.slice(0, 2),
+    }),
+  ).toThrow('two complete 16-beat')
 })

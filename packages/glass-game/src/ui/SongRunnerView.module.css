@@ -210,6 +210,22 @@
   transform: translateX(-50%);
 }
 
+.controls[data-slide-enabled='true'] {
+  width: min(372px, calc(100% - 28px));
+  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.controls[data-slide-enabled='true'] .controlButton {
+  padding-inline: 6px;
+}
+
+.slideControl[aria-pressed='true'] {
+  background: #c7ece3;
+  border-color: #3a7775;
+  box-shadow: inset 0 0 0 2px #6aa29b;
+}
+
 .controlButton {
   display: grid;
   min-height: 72px;

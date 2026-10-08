@@ -552,6 +552,20 @@ export function createSongRunnerRenderer(
       },
       dt,
       options.reducedMotion === true,
+      {
+        slide:
+          snapshot.player.slide === undefined
+            ? undefined
+            : {
+                progress: snapshot.player.slide.progress,
+                heightRatio:
+                  snapshot.player.slide.bodyHeightMeters /
+                  runnerMercVisualHeightMeters(
+                    course.laneCenters,
+                    cameraProfile,
+                  ),
+              },
+      },
     )
     if (sky) installBackdropFog(scene, sky)
     renderer.shadowMap.needsUpdate = shadowCadence.next()

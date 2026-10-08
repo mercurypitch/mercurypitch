@@ -2,7 +2,7 @@
 
 import type { RunnerBlockerCollisionProfile } from './contracts.ts'
 
-// B01 GLB SHA-256: 8449c0c0b3453570d18c4369124b17c72790aef055822d2fff4c894e05bca09f
+// B01 geometry source SHA-256 (lossless runtime packing in runner-obstacles-v1/provenance.json): 8449c0c0b3453570d18c4369124b17c72790aef055822d2fff4c894e05bca09f
 export const CRYSTAL_BULWARK_COLLISION = {
   kind: 'convex-yz',
   vertices: [
@@ -73,7 +73,7 @@ export const CRYSTAL_BULWARK_COLLISION = {
   ],
 } as const satisfies RunnerBlockerCollisionProfile
 
-// J01 GLB SHA-256: 337e8dd1498a9f1d74b5fd8afb2fa7495b1743b50d874db17984d44c5d37dc7c
+// J01 geometry source SHA-256 (lossless runtime packing in runner-obstacles-v1/provenance.json): 337e8dd1498a9f1d74b5fd8afb2fa7495b1743b50d874db17984d44c5d37dc7c
 export const ROSE_HURDLE_COLLISION = {
   kind: 'convex-yz-bands',
   bands: [

@@ -78,6 +78,13 @@ Owner decision 2026-09-28: Glassworks belongs to Beside Cue for now. mercurypitc
 - GA-44: While a moving course waits for its starting note, the game shall show the comfortable target, the fresh observed note and a direction cue, and distinguish missing detector input from captured silence. Valid capture duration shall accumulate independently of permitted delivery delay; stale, duplicate, future or missing evidence shall not earn duration.
 - GA-45: When the player resumes a moving course after falling, including before breaking any glass, the game shall immediately present the safe checkpoint while acquiring audio. Movement and scoring shall stay paused until fresh starting-note evidence and count-in succeed. Retry shall retain earned discoveries and shall not reuse an audio epoch.
 
+## Optional slide-under courses
+
+- GA-46: When a course declares the versioned slide capability, held Slide, Down or S input shall lower Merc's physical collision body and visible pose together. Courses without that capability shall retain their existing movement and omit the Slide control.
+- GA-47: Releasing Slide beneath an obstacle shall keep Merc low until the full standing body can safely rise. Sliding shall exclude jumping; airborne slide activation shall be rejected without retaining hidden held intent. Pause, background, recovery and disposal shall clear held slide input.
+- GA-48: The course compiler shall reject a slide opening that cannot pass the lowered body, fails to block the standing body, lacks sufficient supported approach or exit runway, or overlaps an incompatible obstacle. Collision shall preserve the visible arch's solid feet and overhead shape.
+- GA-49: The development-only Low Arch lesson shall introduce sliding with the existing arch art and preserve the identities and saves of accepted runner courses. Both steering modes shall support independent steering, slide and jump contacts within their physical movement constraints.
+
 ## Evidence
 
 Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest. GA-35 to GA-37: `scripts/assert-glassworks-listing.mjs` on every web build, `tools/glassworks-listing.test.ts`, `src/tests/home-destinations.test.tsx` and `src/e2e/glass-game.spec.ts`.

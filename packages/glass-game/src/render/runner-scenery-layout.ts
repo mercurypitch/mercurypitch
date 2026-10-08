@@ -1,7 +1,7 @@
 // Runner scenery layout — reference-led architecture, gardens and water in fog-safe streamed windows.
 
 import { Box3, Matrix4, Quaternion, Vector3 } from 'three'
-import type { CompiledRunnerCourse } from '../runner/contracts'
+import type { CompiledRunnerChunk, CompiledRunnerCourse, } from '../runner/contracts'
 import type { RunnerSceneryHandoff, RunnerSceneryProjectionChunk, RunnerSceneryVisibilityContext, } from './runner-scenery-projection'
 import { createRunnerSceneryHandoffs, createRunnerSceneryVisibilityContext, runnerSceneryHandoffVisibilityAt, } from './runner-scenery-projection'
 import { runnerTrackBounds } from './runner-world-layout'
@@ -406,11 +406,11 @@ function addArchitecture(
   course: CompiledRunnerCourse,
   chunkIndex: number,
   motif: RunnerSceneryMotif,
+  startBeat: number,
 ): void {
-  const chunk = course.chunks[chunkIndex]!
   const side = motif.side
   const distance =
-    (chunk.startBeat + motif.architectureBeatOffset) * course.metersPerBeat
+    (startBeat + motif.architectureBeatOffset) * course.metersPerBeat
   const baseScale = Math.max(1, motif.architectureScale)
   const centerX = terraceCenterX(course, side, baseScale)
   if (motif.architecture === 'canopy') {
@@ -493,34 +493,96 @@ function windowMetrics(
 }
 
 function validateCourseShape(course: CompiledRunnerCourse): void {
+  const chunkBeats = course.chunks[0]?.endBeat
   if (
-    course.chunks.length !== COURSE_MOTIFS.length ||
+    course.chunks.length < 2 ||
+    course.chunks.length > COURSE_MOTIFS.length * (16 / (chunkBeats ?? 16)) ||
+    (chunkBeats !== 8 && chunkBeats !== 16) ||
     !Number.isFinite(course.metersPerBeat) ||
     course.metersPerBeat <= 0 ||
+    course.chunks.at(-1)?.endBeat !== course.lengthBeats ||
     course.chunks.some(
       (chunk, index) =>
         chunk.index !== index ||
-        Math.abs(chunk.startBeat - index * 16) > 1e-9 ||
-        Math.abs(chunk.endBeat - (index + 1) * 16) > 1e-9,
+        Math.abs(chunk.startBeat - index * chunkBeats) > 1e-9 ||
+        Math.abs(chunk.endBeat - (index + 1) * chunkBeats) > 1e-9 ||
+        Math.abs(
+          chunk.minCourseDistanceMeters -
+            chunk.startBeat * course.metersPerBeat,
+        ) > 1e-9 ||
+        Math.abs(
+          chunk.maxCourseDistanceMeters - chunk.endBeat * course.metersPerBeat,
+        ) > 1e-9,
     )
   )
     throw new Error(
-      'Runner scenery requires the ten-chunk Singing Current geometry.',
+      'Runner scenery requires complete contiguous 8- or 16-beat chunks within ten scenery chapters.',
     )
 }
 
-/** Builds the geometry-stable Singing Current dressing for every pace preset. */
+type SceneryChapter = Pick<
+  CompiledRunnerChunk,
+  | 'id'
+  | 'index'
+  | 'startBeat'
+  | 'endBeat'
+  | 'minCourseDistanceMeters'
+  | 'maxCourseDistanceMeters'
+>
+
+/** Gameplay may stream in smaller chunks; scenery keeps its proven physical spacing. */
+function sceneryChapters(
+  course: CompiledRunnerCourse,
+): readonly SceneryChapter[] {
+  if (course.chunks[0]!.endBeat === 16) return course.chunks
+  const chapters: SceneryChapter[] = []
+  for (let index = 0; index < course.chunks.length; ) {
+    // A final half-chapter is too close for the unchanged fog handoff proof.
+    // Keep that tail in the preceding scenery chapter instead of adding art
+    // that would appear while visible, or increasing the resident budget.
+    const span = course.chunks.length - index === 3 ? 3 : 2
+    const first = course.chunks[index]!
+    const last =
+      course.chunks[Math.min(index + span - 1, course.chunks.length - 1)]!
+    chapters.push({
+      id: `${first.id}:scenery`,
+      index: chapters.length,
+      startBeat: first.startBeat,
+      endBeat: last.endBeat,
+      minCourseDistanceMeters: first.minCourseDistanceMeters,
+      maxCourseDistanceMeters: last.maxCourseDistanceMeters,
+    })
+    index += span
+  }
+  if (
+    chapters.length < 2 ||
+    chapters.some((chapter) => chapter.endBeat - chapter.startBeat < 16)
+  )
+    throw new Error(
+      'Runner scenery requires at least two complete 16-beat scenery chapters.',
+    )
+  return chapters
+}
+
+/** Builds bounded, fog-safe dressing for Singing Current and shorter studies. */
 export function createRunnerSceneryLayout(
   course: CompiledRunnerCourse,
 ): RunnerSceneryLayout {
   validateCourseShape(course)
+  const chapters = sceneryChapters(course)
   const authored: RunnerSceneryPlacement[][] = Array.from(
-    { length: course.chunks.length },
+    { length: chapters.length },
     () => [],
   )
-  course.chunks.forEach((chunk, chunkIndex) => {
+  chapters.forEach((chunk, chunkIndex) => {
     const motif = COURSE_MOTIFS[chunkIndex]!
-    addArchitecture(authored[chunkIndex]!, course, chunkIndex, motif)
+    addArchitecture(
+      authored[chunkIndex]!,
+      course,
+      chunkIndex,
+      motif,
+      chunk.startBeat,
+    )
     addPoolTerrace(
       authored[chunkIndex]!,
       course,
@@ -533,7 +595,7 @@ export function createRunnerSceneryLayout(
   })
 
   const chunks = Object.freeze(
-    course.chunks.map((chunk, index) =>
+    chapters.map((chunk, index) =>
       Object.freeze({
         id: chunk.id,
         index,
@@ -572,7 +634,7 @@ export function createRunnerSceneryLayout(
     lateralRange,
   )
   const handoffs = createRunnerSceneryHandoffs(
-    course,
+    { chunks: chapters },
     projectionChunks,
     visibility,
   )

@@ -2,10 +2,11 @@
 // Song runner safety compiler — obstacle envelopes, routes, and checkpoints.
 // ============================================================
 
-import { runnerValidBlockerCollisionProfile } from './blocker-collision.ts'
-import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerCompilerApproximatelyEqual, runnerIntervalsOverlap, } from './compile-course-helpers.ts'
+import { RUNNER_COMPILER_EPSILON, runnerChunkId, runnerIntervalsOverlap, } from './compile-course-helpers.ts'
 import type { RunnerProtectedWindow } from './compile-course-targets.ts'
 import { runnerHurdleJumpWindow } from './compile-hurdle.ts'
+import { validateObstacleProfile } from './compile-obstacle-profile'
+import { runnerSlideAction } from './compile-slide'
 import { runnerContinuousBlockerCertificate, validateContinuousRunnerReachability, } from './continuous-certificates.ts'
 import type { CompiledRunnerActionWindow, CompiledRunnerCourse, CompiledRunnerObstacle, RunnerLane, } from './contracts.ts'
 import { runnerFixedStepActionEnd, runnerFixedStepAtOrAfter, } from './fixed-step.ts'
@@ -13,97 +14,6 @@ import type { RunnerObstacleCatalogProfile, SongRunnerCourseCatalog, SongRunnerC
 import { runnerSourceFail, runnerSourceUniqueIds } from './source.ts'
 import { runnerBeatToDistance, runnerBeatToSeconds, runnerSecondsToBeat, } from './tempo.ts'
 import { runnerBodyLateralBounds } from './track-bounds.ts'
-
-function validateObstacleProfile(
-  profile: RunnerObstacleCatalogProfile,
-  id: string,
-  path: string,
-): void {
-  if (profile.id !== id)
-    runnerSourceFail(path, 'does not match the catalog profile identity.')
-  if (
-    !Number.isFinite(profile.telegraphLeadBeats) ||
-    profile.telegraphLeadBeats <= 0 ||
-    profile.assetProfileIds.some((assetId) => assetId.length === 0)
-  )
-    runnerSourceFail(path, 'references a malformed obstacle profile.')
-  if (profile.kind === 'blocker') {
-    const positive = [
-      profile.longitudinalHalfLengthMeters,
-      profile.laneHalfWidthMeters,
-      profile.visibleLongitudinalHalfLengthMeters,
-      profile.visibleLaneHalfWidthMeters,
-    ]
-    if (
-      positive.some((value) => !Number.isFinite(value) || value <= 0) ||
-      !Number.isFinite(profile.minYOffsetMeters) ||
-      !Number.isFinite(profile.maxYOffsetMeters) ||
-      profile.minYOffsetMeters >= profile.maxYOffsetMeters ||
-      !runnerCompilerApproximatelyEqual(
-        profile.longitudinalHalfLengthMeters,
-        profile.visibleLongitudinalHalfLengthMeters,
-      ) ||
-      !runnerCompilerApproximatelyEqual(
-        profile.laneHalfWidthMeters,
-        profile.visibleLaneHalfWidthMeters,
-      ) ||
-      !runnerCompilerApproximatelyEqual(
-        profile.minYOffsetMeters,
-        profile.visibleMinYOffsetMeters,
-      ) ||
-      !runnerCompilerApproximatelyEqual(
-        profile.maxYOffsetMeters,
-        profile.visibleMaxYOffsetMeters,
-      )
-    )
-      runnerSourceFail(
-        path,
-        'must have matching ordered visible and collision bounds.',
-      )
-    if (
-      profile.traversal !== undefined &&
-      (profile.traversal.kind !== 'jump-over' ||
-        !Number.isFinite(profile.traversal.landingRunwayMeters) ||
-        profile.traversal.landingRunwayMeters <= 0 ||
-        profile.minYOffsetMeters !== 0)
-    )
-      runnerSourceFail(
-        path,
-        'references a malformed jump-over traversal profile.',
-      )
-    if (
-      profile.collisionProfile !== undefined &&
-      !runnerValidBlockerCollisionProfile(profile.collisionProfile)
-    )
-      runnerSourceFail(
-        path,
-        'requires a convex Y/Z collision profile with 3 to 16 vertices, at most 8 contiguous X bands and matching normalized bounds.',
-      )
-    return
-  }
-  if (
-    !Number.isFinite(profile.lengthMeters) ||
-    profile.lengthMeters <= 0 ||
-    !Number.isFinite(profile.laneHalfWidthMeters) ||
-    profile.laneHalfWidthMeters <= 0 ||
-    !Number.isFinite(profile.visibleLengthMeters) ||
-    !Number.isFinite(profile.visibleLaneHalfWidthMeters) ||
-    !Number.isFinite(profile.landingRunwayMeters) ||
-    profile.landingRunwayMeters <= 0 ||
-    !runnerCompilerApproximatelyEqual(
-      profile.lengthMeters,
-      profile.visibleLengthMeters,
-    ) ||
-    !runnerCompilerApproximatelyEqual(
-      profile.laneHalfWidthMeters,
-      profile.visibleLaneHalfWidthMeters,
-    )
-  )
-    runnerSourceFail(
-      path,
-      'must have matching positive visible and collision spans.',
-    )
-}
 
 function mergeSpans(
   spans: readonly { minLateralX: number; maxLateralX: number }[],
@@ -347,6 +257,36 @@ export function compileRunnerObstacles(
           landingStartCourseDistanceMeters: maxCourseDistanceMeters,
           landingEndCourseDistanceMeters: jump.landingEndCourseDistanceMeters,
         }
+      } else if (profile.traversal?.kind === 'slide-under') {
+        const slide = runnerSlideAction(
+          course,
+          profile,
+          movement,
+          {
+            kind: 'blocker',
+            id: obstacle.id,
+            chunkId: runnerChunkId(
+              course.id,
+              course.track.chunkBeats,
+              obstacle.atBeat,
+            ),
+            profileId: obstacle.profileId,
+            telegraphFromCourseSeconds,
+            minCourseDistanceMeters,
+            maxCourseDistanceMeters,
+            minLateralX,
+            maxLateralX,
+            minY: course.track.groundFeetY + profile.minYOffsetMeters,
+            maxY: course.track.groundFeetY + profile.maxYOffsetMeters,
+            authoredLaneMask: obstacle.laneMask,
+            collisionProfile: profile.collisionProfile,
+            certifiedActions: [],
+          },
+          secondsAtDistance,
+          obstaclePath,
+        )
+        certifiedActions = [slide.action]
+        traversal = slide.traversal
       } else {
         const collisionEntrySeconds = secondsAtDistance(
           minCourseDistanceMeters - movement.bodyRadius,
@@ -557,13 +497,18 @@ export function compileRunnerObstacles(
       ) - movement.bodyRadius
     const takeoffEnd =
       runnerBeatToDistance(
-        runnerSecondsToBeat(tempoSegments, action.launchCloseCourseSeconds),
+        runnerSecondsToBeat(
+          tempoSegments,
+          obstacle.traversal.kind === 'slide-under'
+            ? action.landingCloseCourseSeconds
+            : action.launchCloseCourseSeconds,
+        ),
         course.track.metersPerBeat,
       ) + movement.bodyRadius
     for (const other of obstacles) {
       if (other === obstacle) continue
       if (
-        other.kind === 'gap' &&
+        (other.kind === 'gap' || obstacle.traversal.kind === 'slide-under') &&
         runnerIntervalsOverlap(
           takeoffStart,
           takeoffEnd,
@@ -573,7 +518,7 @@ export function compileRunnerObstacles(
       )
         runnerSourceFail(
           `${path}.obstacles[${index}]`,
-          `hurdle takeoff intersects gap "${other.id}".`,
+          `${obstacle.traversal.kind} approach intersects ${other.kind} "${other.id}".`,
         )
       if (
         runnerIntervalsOverlap(
@@ -585,7 +530,7 @@ export function compileRunnerObstacles(
       )
         runnerSourceFail(
           `${path}.obstacles[${index}]`,
-          `hurdle landing runway intersects obstacle "${other.id}".`,
+          `${obstacle.traversal.kind === 'jump-over' ? 'hurdle landing' : 'slide exit'} runway intersects obstacle "${other.id}".`,
         )
     }
   }
@@ -614,7 +559,7 @@ export function compileRunnerObstacles(
       if (earlier.traversal !== undefined || current.traversal !== undefined)
         runnerSourceFail(
           `${path}.obstacles[${index}]`,
-          `jump-over body collision envelope overlaps obstacle "${earlier.id}".`,
+          `traversal body collision envelope overlaps obstacle "${earlier.id}".`,
         )
       if (
         !earlier.certifiedActions[0]!.reachableLanes.some((lane) =>
@@ -669,7 +614,17 @@ export function validateRunnerReachability(
       if (collisionExitDistance < checkpointDistance - RUNNER_COMPILER_EPSILON)
         continue
       const action = obstacle.certifiedActions[0]!
-      if (action.kind !== 'jump') {
+      if (action.kind === 'slide') {
+        // Its full-domain approach bound includes the worst lane transition,
+        // lowering and input quantization; a checkpoint cannot start later.
+        if (
+          Math.max(availableFromSeconds, action.launchOpenCourseSeconds) >
+          action.launchCloseCourseSeconds + RUNNER_COMPILER_EPSILON
+        )
+          reachable.clear()
+        else reachable = new Set(action.reachableLanes)
+        availableFromSeconds = action.landingCloseCourseSeconds
+      } else if (action.kind !== 'jump') {
         const collisionEntrySeconds = secondsAtDistance(
           obstacle.minCourseDistanceMeters - movement.bodyRadius,
         )

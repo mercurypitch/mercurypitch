@@ -9,7 +9,7 @@ const mounted = vi.hoisted(() => ({
   runners: [] as boolean[],
   steering: [] as ('continuous' | undefined)[],
   cameras: [] as ('close' | 'angled' | undefined)[],
-  obstacles: [] as ('crystal-study' | undefined)[],
+  obstacles: [] as ('crystal-study' | 'slide-study' | undefined)[],
   runnerPaces: [] as ('current' | 'learning' | 'responsive' | undefined)[],
 }))
 const build = vi.hoisted(() => ({ channel: 'dev' as BuildInfo['channel'] }))
@@ -24,7 +24,7 @@ vi.mock('./AdventureScreen', () => ({
     runner?: boolean
     runnerSteering?: 'continuous'
     runnerCamera?: 'close' | 'angled'
-    runnerObstacles?: 'crystal-study'
+    runnerObstacles?: 'crystal-study' | 'slide-study'
     runnerPace?: 'current' | 'learning' | 'responsive'
   }) => {
     mounted.levels.push(untrack(() => props.level))
@@ -73,25 +73,28 @@ async function mountAt(development: boolean, layout: string, pace?: string) {
 }
 
 describe('standalone development route', () => {
-  it.each(['dev', 'ci', 'release'] as const)(
-    'gates crystal study in %s builds',
-    async (channel) => {
-      build.channel = channel
-      vi.stubEnv('DEV', channel === 'dev')
-      window.history.replaceState(
-        {},
-        '',
-        '/glass-game/?layout=singing-current&obstacles=crystal-study',
-      )
-      await import('./standalone')
-      await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
-        timeout: 5000,
-      })
-      expect(mounted.obstacles).toEqual([
-        channel === 'release' ? undefined : 'crystal-study',
-      ])
-    },
-  )
+  it.each(
+    ['dev', 'ci', 'release'].flatMap((channel) =>
+      ['crystal-study', 'slide-study'].map(
+        (study) => [channel, study] as const,
+      ),
+    ),
+  )('gates %s / %s studies', async (channel, study) => {
+    build.channel = channel as BuildInfo['channel']
+    vi.stubEnv('DEV', channel === 'dev')
+    window.history.replaceState(
+      {},
+      '',
+      `/glass-game/?layout=singing-current&obstacles=${study}`,
+    )
+    await import('./standalone')
+    await vi.waitFor(() => expect(mounted.levels).toHaveLength(1), {
+      timeout: 5000,
+    })
+    expect(mounted.obstacles).toEqual([
+      channel === 'release' ? undefined : study,
+    ])
+  })
   it.each([
     ['dev', 'singing-current', 'continuous', 'close', 'continuous', 'close'],
     ['dev', 'singing-current', 'continuous', 'angled', 'continuous', 'angled'],
