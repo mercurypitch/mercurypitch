@@ -54,6 +54,7 @@ describe('the mail preview route', () => {
       'confirm-twin',
       'fresh-link',
       'fresh-link-twin',
+      'purchase',
     ]) {
       expect(html).toContain(`?mail=${id}&amp;app=`)
     }

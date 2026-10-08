@@ -442,6 +442,7 @@
   "workers/db-worker/src/billing.test.ts",
   "workers/db-worker/src/demo-song.test.ts",
   "workers/db-worker/src/email-preview.test.ts",
+  "workers/db-worker/src/email-purchase.test.ts",
   "workers/db-worker/src/email-welcome.test.ts",
   "workers/db-worker/src/funnel-acquisition.test.ts",
   "workers/db-worker/src/funnel-events.test.ts",

@@ -16,7 +16,8 @@
 import type { Env } from './auth'
 import { fallbackAppOrigin, isAllowedReturnTo } from './auth'
 import { escapeHtml } from './email'
-import type { MailOrigins } from './email-welcome'
+import type { MailOrigins } from './email-layout'
+import { renderPurchaseEmail } from './email-purchase'
 import { renderConfirmEmail, renderFreshLinkEmail, renderWelcomeEmail, } from './email-welcome'
 import type { RenderedEmail } from './email'
 import type { SignupVoiceprint } from './signup-hint'
@@ -111,6 +112,21 @@ const VARIANTS: readonly Variant[] = [
         voiceprint: SAMPLE_VOICEPRINT,
         ttlHours: 7 * 24,
         signedUpAt: SAMPLE_SIGNED_UP_AT,
+      }),
+  },
+  {
+    id: 'purchase',
+    label: 'Credit pack bought',
+    // Pack names and prices live in D1; these are only a sample.
+    render: (o) =>
+      renderPurchaseEmail({
+        ...o,
+        packLabel: 'Starter',
+        credits: 20,
+        balance: 23,
+        amountMinor: 500,
+        currency: 'eur',
+        orderDateIso: '2026-10-08T12:00:00.000Z',
       }),
   },
 ]

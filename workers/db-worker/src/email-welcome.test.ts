@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { RenderedEmail } from './email'
-import type { MailOrigins } from './email-welcome'
-import { legendPortraitPath, MAIL_ART, rangeBarWidths, renderConfirmEmail, renderFreshLinkEmail, renderWelcomeEmail, WORDMARK_PATH, } from './email-welcome'
+import type { MailOrigins } from './email-layout'
+import { MAIL_ART, WORDMARK_PATH } from './email-layout'
+import { legendPortraitPath, rangeBarWidths, renderConfirmEmail, renderFreshLinkEmail, renderWelcomeEmail, } from './email-welcome'
 import type { SignupVoiceprint } from './signup-hint'
 import { parseVoiceprintHint } from './signup-hint'
 

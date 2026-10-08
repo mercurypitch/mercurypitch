@@ -14,7 +14,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
-import { handleBilling } from './billing'
+import { handleBilling, paidPrice } from './billing'
 
 const JWT_SECRET = 'test-jwt-secret'
 const WEBHOOK_SECRET = 'whsec_test_secret'
@@ -721,6 +721,32 @@ describe('billing endpoints', () => {
           respond,
         ),
       ).rejects.toThrow(/pricingPlans/)
+    })
+  })
+})
+
+describe('the price the purchase mail states', () => {
+  const plan = { amountMinor: 500, currency: 'eur' }
+
+  it('is what the session charged, discount and currency included', () => {
+    expect(paidPrice({ amount_total: 400, currency: 'usd' }, plan)).toEqual({
+      amountMinor: 400,
+      currency: 'usd',
+    })
+  })
+
+  it("falls back to the plan's list price when the session has no total", () => {
+    expect(paidPrice({}, plan)).toEqual({ amountMinor: 500, currency: 'eur' })
+    expect(paidPrice({ amount_total: 0, currency: 'eur' }, plan)).toEqual({
+      amountMinor: 0,
+      currency: 'eur',
+    })
+  })
+
+  it('keeps a usable currency when neither side names one', () => {
+    expect(paidPrice({ amount_total: 300 }, null)).toEqual({
+      amountMinor: 300,
+      currency: 'eur',
     })
   })
 })

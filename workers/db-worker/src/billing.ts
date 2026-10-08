@@ -37,8 +37,9 @@
 // billing-core.ts so they're unit-testable without the worker runtime.
 
 import type { Env } from './auth'
-import { checkRateLimit, getAuth } from './auth'
-import { sendBillingAlert, sendPurchaseThankYou } from './email'
+import { checkRateLimit, fallbackAppOrigin, getAuth } from './auth'
+import { sendBillingAlert } from './email'
+import { sendPurchaseMail } from './email-purchase'
 import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
@@ -536,6 +537,27 @@ async function grantSupporterEntitlement(
   }
 }
 
+/** What the purchase mail says was paid: the session's own total and
+ *  currency, which already carry any Stripe discount, else the plan's list
+ *  price. */
+export function paidPrice(
+  session: Record<string, unknown>,
+  plan: { amountMinor: number | null; currency: string | null } | null,
+): { amountMinor: number; currency: string } {
+  const total =
+    typeof session.amount_total === 'number' ? session.amount_total : null
+  const currency =
+    typeof session.currency === 'string' && session.currency !== ''
+      ? session.currency
+      : null
+  return total !== null
+    ? { amountMinor: total, currency: currency ?? plan?.currency ?? 'eur' }
+    : {
+        amountMinor: plan?.amountMinor ?? 0,
+        currency: plan?.currency ?? 'eur',
+      }
+}
+
 /** Grant credits for a completed checkout, idempotent on the event id. */
 async function grantCheckoutCredits(
   env: Env,
@@ -578,36 +600,38 @@ async function grantCheckoutCredits(
     try {
       const info = await env.DB.prepare(
         `SELECT u.email       AS email,
-                p.displayName AS name,
                 pp.label      AS planLabel,
                 pp.amount     AS amountMinor,
                 pp.currency   AS currency,
                 (SELECT COALESCE(SUM(delta), 0) FROM creditLedger WHERE userId = ?) AS balance
            FROM users u
-           LEFT JOIN userProfiles p  ON p.id  = u.id
            LEFT JOIN pricingPlans pp ON pp.id = ?
           WHERE u.id = ?`,
       )
         .bind(userId, planId, userId)
         .first<{
           email: string | null
-          name: string | null
           planLabel: string | null
           amountMinor: number | null
           currency: string | null
           balance: number
         }>()
       if (info?.email) {
-        await sendPurchaseThankYou(
+        // A webhook has no page behind it: links and pictures go to this
+        // environment's own app.
+        const app = fallbackAppOrigin(env)
+        const paid = paidPrice(session, info)
+        await sendPurchaseMail(
           { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
           info.email,
           {
-            displayName: info.name,
+            appOrigin: app,
+            assetOrigin: app,
             packLabel: info.planLabel ?? 'credit',
             credits,
             balance: info.balance,
-            amountMinor: info.amountMinor ?? 0,
-            currency: info.currency ?? 'eur',
+            amountMinor: paid.amountMinor,
+            currency: paid.currency,
             orderDateIso: now,
           },
         )
