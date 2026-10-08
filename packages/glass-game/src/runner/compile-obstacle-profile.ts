@@ -1,9 +1,9 @@
 // Runner obstacle profiles — validate bounded, matching visible geometry and traversal capabilities.
 
-import { runnerValidBlockerCollisionProfile } from './blocker-collision'
-import { runnerCompilerApproximatelyEqual } from './compile-course-helpers'
-import type { RunnerObstacleCatalogProfile } from './source'
-import { runnerSourceFail } from './source'
+import { runnerValidBlockerCollisionProfile } from './blocker-collision.ts'
+import { runnerCompilerApproximatelyEqual } from './compile-course-helpers.ts'
+import type { RunnerObstacleCatalogProfile } from './source.ts'
+import { runnerSourceFail } from './source.ts'
 
 export function validateObstacleProfile(
   profile: RunnerObstacleCatalogProfile,

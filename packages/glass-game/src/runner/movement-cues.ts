@@ -168,26 +168,29 @@ function blockerCue(
   if (course.movement.kind === 'continuous') {
     if (snapshot.courseSeconds < obstacle.telegraphFromCourseSeconds - EPSILON)
       return null
-    const corridor = runnerReachableContinuousCorridor(
-      course,
-      obstacle,
-      snapshot.player.lateralX,
-      snapshot.player.lateralVelocityMetersPerSecond,
-      snapshot.courseSeconds,
-    )
-    if (corridor === null) return null
     const x = snapshot.player.lateralX
     const velocity = snapshot.player.lateralVelocityMetersPerSecond
     const stoppingDistance =
       velocity ** 2 / (2 * course.movement.lateralBrakingMetersPerSecondSquared)
     const stopX = x + Math.sign(velocity) * stoppingDistance
     if (
-      x >= corridor.minLateralX &&
-      x <= corridor.maxLateralX &&
-      stopX >= corridor.minLateralX &&
-      stopX <= corridor.maxLateralX
+      obstacle.certifiedActions[0]?.continuous?.safeCorridors.some(
+        (corridor) =>
+          x >= corridor.minLateralX &&
+          x <= corridor.maxLateralX &&
+          stopX >= corridor.minLateralX &&
+          stopX <= corridor.maxLateralX,
+      ) === true
     )
       return null
+    const corridor = runnerReachableContinuousCorridor(
+      course,
+      obstacle,
+      x,
+      velocity,
+      snapshot.courseSeconds,
+    )
+    if (corridor === null) return null
     return {
       obstacleId: obstacle.id,
       stage: 'change-lane',
