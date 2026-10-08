@@ -5,6 +5,33 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.16] - 2026-10-09
+
+New welcome and credit mails, and Settings › Credits now shows what a song
+costs.
+
+### Added
+
+- **See what a song costs.** In Settings › Credits, tap **How credits are
+  spent** for the price of a split, how long songs count, and what stays free.
+
+### Changed
+
+- **A new welcome mail.** It suggests where to start, and if you recorded
+  your voice before signing up, it names a singer whose range you share.
+- **Buying credits sends a clearer mail.** It lists the credits added, your
+  new balance and the price you paid.
+- **The cloud tiers are now Cloud GPU and Cloud CPU.** Prices read "from 1
+  credit / song", because long songs and full-band splits cost more.
+
+### Fixed
+
+- **Progress shows your voiceprint when you are signed out.** With no
+  practice yet, it leads with your reading and offers a first exercise.
+- **The karaoke room opens without a flicker.** It arrives dimmed and shows
+  the stage once, ready.
+- **On a phone, the header's buttons no longer run into the app's name.**
+
 ## [0.9.15] - 2026-10-03
 
 The code LAUNCH gives five free cloud credits through January 1, and karaoke

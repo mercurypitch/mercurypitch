@@ -9,6 +9,97 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.16] - 2026-10-09
+
+90 commits since `v0.9.15` (67 on `main`'s first-parent line): PRs #921 to
+#931, #933, #936, #950, #951 and #953, plus direct commits for Glassworks.
+The release is for the mail: new sign-up mails and a rebuilt purchase mail,
+with Settings › Credits as the one place that states prices. Most of the rest
+is the native app, already on TestFlight from `mp-v0.8.8` through
+`mp-v0.8.16`, and Glassworks, which production still leaves unlisted.
+
+### Web and API: sign-up mails that can name a twin (#951)
+
+The welcome, confirm and fresh-link mails share one layout
+(`workers/db-worker/src/email-layout.ts`): a picture on top with no words on
+it, the wordmark, and the Mercury Pitch footer. Welcome mails pick their
+picture by context (welcome, a twin, Karaoke Night). The confirm and
+fresh-link picture is never a link, so confirming is always a tap on the
+button. A code sign-up, Google and Apple send the welcome mail; a password
+sign-up sends the confirm mail.
+
+The server cannot see a voiceprint at sign-up (adoption runs after the account
+exists), so the client sends a validated hint with the sign-up, only from the
+page that adopts the takes, plus `signupSource: 'karaoke'` from Karaoke Night.
+Google web sign-ups carry both in the signed OAuth state. With a twin the mail
+says "You share a range with {twin}"; without one it is the plain welcome.
+`GET /api/email-preview` renders every variant on the dev worker only
+(`EMAIL_PREVIEW=1`).
+
+### Web and API: the purchase mail and what a song costs (#953)
+
+- The credit-pack mail is rebuilt on the same layout. It states what the
+  Stripe session charged (`amount_total` and `currency`, so a discount and the
+  currency are right), with the plan's list price only as a fallback. It names
+  no per-song cost and links Settings › Credits instead, because a sent mail
+  cannot be corrected.
+- Settings › Credits gains a **How credits are spent** chip
+  (`CreditCostGuide`). Every number comes from the live `uvrModelCredits` and
+  billing-core's length rule: 12 minutes included, each started 6-minute block
+  counts again, and the full band is `roformer` plus `demucs-6s`. A test holds
+  its worked example to `uvrJobCost`. The guide is web-only: the native app
+  never mounts Settings.
+- "1 credit per song" is gone. Tier cards, the upload panel and the Karaoke
+  Night rail say "from N credit(s)" and point to the guide.
+- Migration 0055 renames the tiers to Cloud GPU and Cloud CPU (`UPDATE` by id,
+  no schema change). It ran on dev at the merge and runs on prod with this
+  tag.
+- Phone header: the account group sat absolutely positioned behind a fixed
+  128 px reserve, and the promo pill plus Install and voice overflowed it onto
+  the wordmark. It now sits in the row with -6 px block margins, keeping the
+  50 px band; the wordmark ellipsizes only when every pill shows.
+
+### Web: Progress for a signed-out singer (#950)
+
+Signed out, Progress counted only takes tagged `anonymous`, so a device whose
+voiceprints Settings listed showed the empty page. One rule,
+`visibleDeviceTakes`, now serves Settings and Progress. With a voiceprint and
+no practice, Progress leads with a new `voiceprint-reading` moment and offers
+a first exercise.
+
+### Web: the karaoke room arrives once (#921)
+
+The room draws its veil and holds the stage at opacity 0, inert, until it
+loads (600 ms grace, an error at once), then fades it in over 220 ms.
+
+### Native app (already on TestFlight)
+
+- iOS lock screen: Now Playing through WebKit (#924), after the app-process
+  attempt (#922) was reverted (#923); media controls and seeking (#929,
+  #930); the repeat counter restarts (#933).
+- The Karaoke lyrics window: a picture-in-picture window drawn from lyrics
+  worked out ahead (#925), with fixes for the trip to the background and back
+  (#928). #936 keeps it up and drops CallKit; it is on `main` but in no native
+  tag yet.
+- Audio handoff with other apps and YouTube (#926, #931, #933).
+- Android: R8 shrinks the Play build (#927, APK 98.7 to 72.7 MB), and the
+  download ceiling is 150 MB.
+
+### Glassworks (unlisted on production)
+
+Direct commits from 3 to 8 October in `packages/glass-game`: Singing Current
+finishes, runner steering, camera, blockers and a physical slide lesson,
+shatter playback at half speed by default, live pitch anchored to the notes,
+crystal materials, phone panels, Encore ribbons in short landscape, and failed
+graphics or microphone sessions retired safely. The public glass challenge
+imports only Glassworks' shatter audio and asset table; the table gained
+runner entries and nothing else.
+
+### Tooling
+
+The playtest page serves Android downloads as installable APKs, and the Jam
+room browser fixture serves seekable audio.
+
 ## [0.9.15] - 2026-10-03
 
 157 commits since `v0.9.14` (82 on `main`'s first-parent line): PRs
