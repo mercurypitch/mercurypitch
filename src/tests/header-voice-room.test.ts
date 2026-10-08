@@ -45,20 +45,10 @@ describe('the phone header lends its row to the voice transcript', () => {
     expect(talking).not.toMatch(/\.header-left\s*\{\s*display:\s*none/)
   })
 
-  it('gives the width to the support group rather than the corner', () => {
-    // Absolutely positioned in a reserved corner is exactly what stops the
-    // pill from growing; talking, it comes back into the flow and flexes.
-    expect(talking).toMatch(
-      /\.header-support\s*\{[^}]*position:\s*static[^}]*\}/,
-    )
+  it('gives the width to the support group', () => {
+    // The group already sits in the row; talking, it flexes into the width
+    // the title and the tagline gave up.
     expect(talking).toMatch(/\.header-support\s*\{[^}]*flex:\s*1[^}]*\}/)
     expect(talking).toMatch(/\.header-support\s*\{[^}]*min-width:\s*0[^}]*\}/)
-  })
-
-  it('releases the corner reserve the row no longer needs', () => {
-    // The reserve holds ~128px for what is pinned in the corner. With the
-    // support group back in the flow it is dead space at the right of the
-    // transcript.
-    expect(talking).toMatch(/padding-right:\s*max\(12px/)
   })
 })

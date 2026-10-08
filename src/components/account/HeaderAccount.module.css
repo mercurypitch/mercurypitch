@@ -78,10 +78,12 @@
    profile could sign the singer out mid-practice. */
 @media (max-width: 768px) {
   .signInPill span,
+  .promoPill span,
   .name {
     display: none;
   }
   .signInPill,
+  .promoPill,
   .nameBtn {
     justify-content: center;
     min-width: 44px;

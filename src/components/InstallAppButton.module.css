@@ -63,9 +63,8 @@
   margin-top: 0.1rem;
 }
 
-/* The mobile header already reserves its right edge for the account chip and
-   the support badge (see AppHeader.css). Drop the word and keep the glyph, the
-   same trade SupportBadge makes with the version number. */
+/* The mobile header row is tight (see AppHeader.css): drop the word and keep
+   the glyph, the same trade SupportBadge makes with the version number. */
 @media (max-width: 768px) {
   .header .label {
     display: none;

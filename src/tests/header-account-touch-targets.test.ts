@@ -25,40 +25,53 @@ describe('the phone header keeps one big account target', () => {
     expect(mobileBlock).toMatch(/min-height:\s*44px/)
   })
 
+  it('shows the promo as its glyph, with the same 44px target', () => {
+    // With its word, the promo pill made the group about 30px wider than the
+    // phone row had room for.
+    expect(mobileBlock).toMatch(/\.promoPill span[^{]*\{\s*display:\s*none/)
+    expect(mobileBlock).toMatch(/\.promoPill,[^{]*\{[^}]*min-width:\s*44px/)
+  })
+
   it('takes sign-out off the phone header entirely', () => {
     expect(mobileBlock).toMatch(/\.logoutBtn\s*\{[^}]*display:\s*none/)
   })
 
-  it('reserves the header corner the bigger target needs', () => {
+  it('gives the bigger target a place in the row, not a corner over it', () => {
     const header = readFileSync('src/components/AppHeader.css', 'utf8')
     const mobile = header.slice(header.lastIndexOf('@media (max-width: 768px)'))
-    // 44px of button from a 4px inset fits the 50px band exactly, and the
-    // right reserve is what keeps the row's own content out from under the
-    // corner. Both are matched loosely enough to survive the safe-area
-    // offsets added around them, and tightly enough that shrinking either
-    // one fails. The reserve is a number rather than a pattern because it
-    // has to cover whatever is pinned there — three controls once the voice
-    // pill docked into the corner beside the account glyph, which is why it
-    // is no longer 96.
-    expect(mobile).toMatch(/top:\s*calc\(4px/)
+    // Pinned over the row behind a fixed 128px reserve, the group slid
+    // across "MercuryPitch" whenever it held more than the reserve allowed
+    // for: a promo pill, the Install glyph. In the row it takes its real
+    // width, and the wordmark is what gives way.
+    const support =
+      /\n {2}\.header-support\s*\{([^}]*)\}/.exec(mobile)?.[1] ?? ''
+    expect(support, 'no phone rule for the account group').not.toBe('')
+    expect(support).not.toMatch(/position:\s*absolute/)
+    // 44px of button in the 34px line: the -6px block margins let it
+    // overhang into the header's 8px padding instead of growing the 50px
+    // band.
+    expect(support).toMatch(/margin:\s*-6px 0 -6px auto/)
     expect(mobile).toMatch(/padding:\s*calc\(8px/)
-    const reserve = /max\((\d+)px,\s*calc\((\d+)px/.exec(mobile)
-    expect(reserve, 'no right reserve on the phone header').not.toBe(null)
-    expect(
-      Number(reserve?.[1]),
-      'the corner reserve is too narrow for what is pinned in it',
-    ).toBeGreaterThanOrEqual(128)
+    expect(mobile).toMatch(/flex-wrap:\s*nowrap/)
+    expect(mobile).toMatch(/header \.header-left\s*\{[^}]*min-width:\s*0/)
+    expect(mobile).toMatch(
+      /\.logo-btn \.app-title\s*\{[^}]*text-overflow:\s*ellipsis/,
+    )
+    expect(mobile, 'a fixed corner reserve is back').not.toMatch(
+      /max\(\d+px,\s*calc\(\d+px\s*\+\s*var\(--safe-right/,
+    )
   })
 
   it('keeps the corner clear of the iOS status bar', () => {
-    // The pills are absolutely positioned, so the header's own safe-area
-    // padding does not move them: without their own inset they render inside
-    // the status bar, visible through it and impossible to tap. This is the
-    // regression that shipped once already — the inset lived on a `padding-top`
-    // in mobile-polish.css and AppHeader.css's `padding` shorthand reset it.
+    // In the row, the group moves with the header's own safe-area padding.
+    // Absolutely positioned it ignored that padding and rendered inside the
+    // status bar, visible through it and impossible to tap. The inset itself
+    // has been lost once already: it lived on a `padding-top` in
+    // mobile-polish.css, and AppHeader.css's `padding` shorthand reset it.
+    // src/e2e/header-safe-area.spec.ts measures the result.
     const header = readFileSync('src/components/AppHeader.css', 'utf8')
     const mobile = header.slice(header.lastIndexOf('@media (max-width: 768px)'))
-    expect(mobile).toMatch(/top:\s*calc\(4px\s*\+\s*var\(--safe-top/)
     expect(mobile).toMatch(/padding:\s*calc\(8px\s*\+\s*var\(--safe-top/)
+    expect(mobile).not.toMatch(/\.header-support\s*\{[^}]*position:\s*absolute/)
   })
 })
