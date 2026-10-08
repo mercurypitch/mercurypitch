@@ -7,6 +7,7 @@ import type { CompiledRunnerCourse, RunnerSnapshot } from '../runner/contracts'
 import { createLivingCrystalInteriorAnimation } from './living-crystal-interior'
 import { validateLivingCrystalPlatformDonor } from './living-crystal-platform-contract'
 import type { MaterialFinishBank } from './material-finishes'
+import { useRunnerClearTransmission } from './runner-clear-transmission'
 import { createRunnerObstacleArt } from './runner-obstacles'
 import { RUNNER_GAP_APRON_THICKNESS_METERS, RUNNER_GAP_LIP_RADIUS_METERS, runnerFloorCells, runnerGapArtSpans, runnerLaneDividerXs, runnerTrackBounds, } from './runner-world-layout'
 
@@ -148,6 +149,7 @@ export function createRunnerWorld(
       false,
     )
   }
+  useRunnerClearTransmission(crystalParts[0]!.material)
   const installed = new Map<
     string,
     {

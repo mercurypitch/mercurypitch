@@ -1939,3 +1939,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** Three r185 registers canvas listeners before initializing its `info` object. Constructing on a lost context throws before assignment; its surviving restore listener then reads undefined state. The recovery panel also created a fresh optional Merc preview. This reproduces the secondary exception, not the driver's original reset.
 **Rule:** own constructor-time listener registrations, remove only those listeners on failure, and register diagnostic ownership before initialization. Keep recovery panels on artwork until an explicit retry; dispose a pending preview when error state arrives. Test an actual lost context, failed Three constructor and restore event, plus playing and paused recovery.
 **See:** `packages/glass-game/src/render/graphics-renderer.ts`, `packages/glass-game/src/ui/LoadingMerc.tsx`, `apps/beside-cue/e2e/glass-adventure-context-recovery.e2e.ts`.
+
+### Advance target outcomes with the clock in rendering probes
+
+**Symptom:** a controlled runner approach became a full-screen yellow blur near a glass obstacle.
+**Cause:** the probe advanced distance while retaining the initial unresolved target list. An expired singing pane crossed the camera; the real session would already have settled and retired it.
+**Rule:** preserve target lifecycle and resident scenery when comparing matched camera positions. Confirm optical candidates during real gameplay with the actual clock and inputs; keep synthetic fixture artifacts separate from product defects.
+**See:** `packages/glass-game/src/render/runner-renderer.ts`, `apps/beside-cue/e2e/helpers/runner-voice-fixture.ts`.

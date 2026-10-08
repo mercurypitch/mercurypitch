@@ -1,10 +1,10 @@
 // Runner slide certificates — prove a real low corridor, enough approach time and a clear exit runway.
 
-import { runnerBodyHitsBlocker } from './blocker-collision'
-import type { CompiledRunnerActionWindow, CompiledRunnerBlocker, CompiledRunnerCourse, RunnerLane, RunnerLateralCorridor, } from './contracts'
-import type { RunnerBlockerCatalogProfile, SongRunnerCourseSource, } from './source'
-import { runnerSourceFail } from './source'
-import { runnerBodyLateralBounds } from './track-bounds'
+import { runnerBodyHitsBlocker } from './blocker-collision.ts'
+import type { CompiledRunnerActionWindow, CompiledRunnerBlocker, CompiledRunnerCourse, RunnerLane, RunnerLateralCorridor, } from './contracts.ts'
+import type { RunnerBlockerCatalogProfile, SongRunnerCourseSource, } from './source.ts'
+import { runnerSourceFail } from './source.ts'
+import { runnerBodyLateralBounds } from './track-bounds.ts'
 
 const CLEARANCE = 0.02
 

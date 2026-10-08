@@ -3,6 +3,7 @@ import type { BufferGeometry, Material, Object3D } from 'three'
 import { Box3, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, Vector3, } from 'three'
 import { runnerObstacleArt } from '../content/runner-obstacle-profiles'
 import type { CompiledRunnerCourse } from '../runner/contracts'
+import { useRunnerClearTransmission } from './runner-clear-transmission'
 
 interface ObstaclePart {
   readonly name: string
@@ -48,6 +49,7 @@ export function createRunnerObstacleArt(
         // refraction displacement through the same transmission pass.
         if (name === 'B01_Crystal' && material instanceof MeshPhysicalMaterial)
           material.thickness = 0.18
+        useRunnerClearTransmission(material)
         next.push({ name, geometry, material })
         bounds.union(geometry.boundingBox!)
       }
