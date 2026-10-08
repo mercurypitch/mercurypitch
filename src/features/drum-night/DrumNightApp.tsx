@@ -5163,7 +5163,11 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
 
       <Show when={authRequested()}>
         <Suspense>
-          <AuthModal tone="drum-night" onAuthenticated={handleAuthenticated} />
+          <AuthModal
+            tone="drum-night"
+            onAuthenticated={handleAuthenticated}
+            adoptsGoogleSignup
+          />
         </Suspense>
       </Show>
 

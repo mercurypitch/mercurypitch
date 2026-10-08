@@ -9,6 +9,7 @@ import { consumeGoogleRedirect, restoreAuth } from '@/db/services/auth-service'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { armDeveloperConsole } from '@/lib/developer-console'
 import { initDeviceTier } from '@/lib/device-tier'
+import { adoptAfterRoomGoogleSignup } from '@/lib/room-google-return'
 import { GuitarNightApp } from './GuitarNightApp'
 
 // Publish the device tier on <html> before the first paint: a television
@@ -49,6 +50,11 @@ armDeveloperConsole()
 // Consume Google first: the worker returns the session in #gauth, and
 // restoreAuth cannot restore a token that has not been stored yet.
 consumeGoogleRedirect()
+
+// A Google sign-up started from this room lands HERE, not on the main app's
+// page whose auth effect adopts a new account's takes, so the room runs that
+// step itself (REQ-VPR-014). The voiceprint layer loads only for a sign-up.
+void adoptAfterRoomGoogleSignup()
 
 // Pick up a session signed in elsewhere so the account chip and its credit
 // balance are real. Restore only — never provision: entering a rehearsal room

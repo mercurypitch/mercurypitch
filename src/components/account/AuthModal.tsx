@@ -66,9 +66,10 @@ export interface AuthModalProps {
   prepareGoogleRedirect?: () => (() => void) | undefined
   /**
    * This page adopts the device's takes when Google sends a new account
-   * back (App, through adoptAfterGoogleSignup). Only then does the redirect
-   * carry the voiceprint hint: a sign-up that adopts nothing sends none
-   * (REQ-VPR-022), or its welcome would say a voiceprint was saved.
+   * back: App through adoptAfterGoogleSignup, Guitar Night and Drum Night
+   * through adoptAfterRoomGoogleSignup in their entries. Only then does the
+   * redirect carry the voiceprint hint: a sign-up that adopts nothing sends
+   * none (REQ-VPR-022), or its welcome would say a voiceprint was saved.
    */
   adoptsGoogleSignup?: boolean
 }
@@ -352,8 +353,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     armOnboardingResume()
     const failure = await startGoogleSignIn({
       prepareRedirect: props.prepareGoogleRedirect,
-      // Guitar and Drum Night adopt nothing after the redirect, so only a
-      // host that does may let the welcome name the newest twin.
+      // Only a host that adopts the takes after the redirect may let the
+      // welcome name the newest twin. One that adopts nothing leaves the
+      // prop off, and its sign-ups send no hint.
       signup:
         props.adoptsGoogleSignup === true
           ? { voiceprintHint: buildVoiceprintHint() }

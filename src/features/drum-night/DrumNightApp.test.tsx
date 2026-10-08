@@ -4,7 +4,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal, untrack } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from 'vitest'
 
 // The room mounts its whole lazy graph per case — the slowest are ~1.6s here.
 // That is the surface under test, not avoidable setup, so it gets room to run
@@ -14,6 +14,7 @@ vi.setConfig({ testTimeout: 20000 })
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
+import type * as GoogleSignIn from '@/lib/google-sign-in'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
@@ -49,6 +50,17 @@ const viewportMocks = vi.hoisted(() => ({ narrow: false }))
 vi.mock('@/lib/use-viewport', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   isNarrow: () => viewportMocks.narrow,
+}))
+
+// Starting Google navigates the page away, so the start itself is the seam:
+// what the room's dialog asks for is recorded, and everything before it is
+// real.
+const googleSignIn = vi.hoisted(() => ({
+  start: vi.fn(async (_options: unknown) => null),
+}))
+vi.mock('@/lib/google-sign-in', async (importOriginal) => ({
+  ...(await importOriginal<typeof GoogleSignIn>()),
+  startGoogleSignIn: (options: unknown) => googleSignIn.start(options),
 }))
 
 vi.mock('./play-along/drum-stem-play-along', async (importOriginal) => {
@@ -3398,6 +3410,54 @@ describe('DrumNightApp', () => {
 
     fireEvent.click(within(overlay).getByRole('button', { name: /close/i }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  // The room adopts this device's takes when a Google sign-up lands back on
+  // it (main.tsx), so its dialog lets the redirect carry the voiceprint hint
+  // for the new account's welcome (REQ-VPR-022).
+  it("lets a Google sign-up from the room carry this device's voiceprint for the welcome", async () => {
+    localStorage.setItem(
+      'mercurypitch.voiceprints.v1',
+      JSON.stringify([
+        {
+          id: 'mirror-take',
+          summary: {
+            lowMidi: 57,
+            highMidi: 77,
+            semitones: 20,
+            accuracy: 70,
+            steadiness: null,
+          },
+          twin: 'Adele',
+          source: 'onboarding',
+          takenAt: '2026-10-08T09:00:00.000Z',
+        },
+      ]),
+    )
+    onTestFinished(() => localStorage.removeItem('mercurypitch.voiceprints.v1'))
+    googleSignIn.start.mockClear()
+    renderRoom()
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Sign in to MercuryPitch' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(await within(dialog).findByTestId('auth-google'))
+
+    await waitFor(() =>
+      expect(googleSignIn.start).toHaveBeenCalledWith(
+        expect.objectContaining({
+          signup: {
+            voiceprintHint: {
+              twin: 'Adele',
+              lowMidi: 57,
+              highMidi: 77,
+              accuracy: 70,
+            },
+          },
+        }),
+      ),
+    )
   })
 
   it('keeps a newer authored file when an older separation finishes late', async () => {

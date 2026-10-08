@@ -162,8 +162,9 @@ this way since 2026-09-27) adopt on it. Only the phone's sheet asks for
 sign-up codes today; the dialog's code pane asks for sign-in codes, so its
 `isNew` stays false until it asks for the other kind. A second factor still
 owed adopts nothing, because an account that has one already existed. The
-Google redirect is adopted once, where it lands (`adoptAfterGoogleSignup`,
-which the main app's page runs), never also by the surface that started it.
+Google redirect is adopted once, where it lands, never also by the surface
+that started it: the main app's page runs `adoptAfterGoogleSignup`, and
+Guitar Night and Drum Night run `adoptAfterRoomGoogleSignup` (below).
 
 **Not** covered: Karaoke Night's standalone account UI. It is a separate
 Vite entry that never imports the IndexedDB layer, and adoption would pull
@@ -172,11 +173,19 @@ leaves takes for the Settings notice. Nor is the developer console's native
 sign-in screen (`NativeSignInPanel`), which reports what a sheet answered and
 does nothing else with it.
 
-**Not yet** covered: a Google sign-up from the account dialog on Guitar Night
-or Drum Night. Those pages do not run `adoptAfterGoogleSignup` (Drum Night
-does not take the redirect's session at all yet), so the takes wait for the
-Settings notice. Registering with a password in the same dialog adopts as
-everywhere else.
+**When** a Google sign-in started from the account dialog on Guitar Night or
+Drum Night lands back on that page, the room adopts on `gauth_new=1` exactly
+as the main app does (amended 2026-10-08). Both rooms are documents of their
+own, so the worker sends the redirect back to the room's page and the main
+app's auth effect never runs. Until this amendment the takes stayed behind for
+the Settings notice, and Drum Night never stored the session the return
+carried, so the room stayed signed out after a Google sign-in. Each entry now
+takes the step itself (`src/lib/room-google-return.ts`). Guitar Night already
+stored the session before rendering and adopts right after it. Drum Night
+stores it before rendering too, loading the auth layer only when the address
+carries a Google fragment, so an ordinary visit's first paint is unchanged. In
+both rooms the voiceprint layer loads only for a sign-up, and a returning
+sign-in adopts nothing.
 
 Records tagged with this **device's own id** are treated as unclaimed: an
 anonymous identity's id IS the device id (the worker keys
@@ -196,25 +205,27 @@ account signing in on the same device is asked independently.
 
 **When** an account is created through a sign-up that adopts this device's
 unclaimed takes (REQ-VPR-014: password registration, the Google redirect from
-the main app's page, the native Apple and Google sheets, and the mailed
-sign-up code), the sign-up request shall carry a hint describing the newest
-such take that has a twin and a measured range: the twin's catalogue name, the
-low and high MIDI notes, and the accuracy and steadiness scores where present
-(`buildVoiceprintHint`). Only registering always creates an account. The
-others both register and sign in, so their requests carry the hint every time,
-and the worker reads it only when the request creates the account. The worker
-uses it only to choose and fill the new account's welcome or confirm mail. It
-checks the hint against the legend catalogue and fixed bounds
-(`workers/db-worker/src/signup-hint.ts`) and stores it nowhere; a hint that
-fails the checks means a mail without a twin, never a failed sign-up.
+the main app, Guitar Night or Drum Night, the native Apple and Google sheets,
+and the mailed sign-up code), the sign-up request shall carry a hint
+describing the newest such take that has a twin and a measured range: the
+twin's catalogue name, the low and high MIDI notes, and the accuracy and
+steadiness scores where present (`buildVoiceprintHint`). Only registering
+always creates an account. The others both register and sign in, so their
+requests carry the hint every time, and the worker reads it only when the
+request creates the account. The worker uses it only to choose and fill the
+new account's welcome or confirm mail. It checks the hint against the legend
+catalogue and fixed bounds (`workers/db-worker/src/signup-hint.ts`) and stores
+it nowhere; a hint that fails the checks means a mail without a twin, never a
+failed sign-up.
 
 Sign-ups that do not adopt send no hint, so the mail never claims a voiceprint
-the account does not get: Karaoke Night, the developer console's native
-sign-in screen, and a Google sign-up from Guitar Night or Drum Night, whose
-dialogs are not marked `adoptsGoogleSignup` (see REQ-VPR-014). A confirm link
-sent again later reads the account's own newest twin instead of a hint. The
-numbers are the derived values adoption uploads seconds later (REQ-VPR-002):
-no audio, no pitch frames.
+the account does not get: Karaoke Night and the developer console's native
+sign-in screen. The shared account dialog sends it with a Google redirect only
+from a host marked `adoptsGoogleSignup`, which is every host that mounts the
+dialog today: the main app, Guitar Night and Drum Night. A confirm link sent
+again later reads the account's own newest twin instead of a hint. The numbers
+are the derived values adoption uploads seconds later (REQ-VPR-002): no audio,
+no pitch frames.
 
 ## 5. Sharing and the settings card
 
