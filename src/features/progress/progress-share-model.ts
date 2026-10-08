@@ -3,6 +3,7 @@
 // Progress model and the canvas renderer's compact semantic payload.
 // ============================================================
 
+import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { ProgressHistoryItem, ProgressModel, ProgressOneMoment, ProgressScorePoint, ProgressVoiceprintGrowth, } from './model'
 import type { ProgressPitchTrace, ProgressShareFact, ProgressShareMoment, } from './share-card'
 
@@ -197,6 +198,26 @@ function voiceprintFacts(
   return keepFacts(facts)
 }
 
+function readingFacts(
+  moment: ProgressOneMoment,
+  model: ProgressModel,
+): ProgressShareFact[] {
+  const summary = (moment.voiceprintGrowth ?? model.voiceprintGrowth).latest
+    ?.summary
+  const low = summary?.lowMidi
+  const high = summary?.highMidi
+  return keepFacts([
+    finite(low) && finite(high)
+      ? fact(
+          `${midiToNoteNameOctave(low)}–${midiToNoteNameOctave(high)}`,
+          'measured range',
+        )
+      : null,
+    fact(percentage(summary?.accuracy), 'accuracy'),
+    fact(percentage(summary?.steadiness), 'steadiness'),
+  ])
+}
+
 function consistencyFacts(model: ProgressModel): ProgressShareFact[] {
   const current = model.streak.current
   const longest = model.streak.longest
@@ -244,6 +265,8 @@ function factsFor(
       return personalBestFacts(moment, model)
     case 'voiceprint-growth':
       return voiceprintFacts(moment, model)
+    case 'voiceprint-reading':
+      return readingFacts(moment, model)
     case 'consistency':
       return consistencyFacts(model)
     case 'challenge':

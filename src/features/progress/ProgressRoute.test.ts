@@ -64,6 +64,44 @@ describe('ProgressRoute identity and state helpers', () => {
     ).toBe(false)
   })
 
+  it('is not empty when the only evidence is one uncomparable voiceprint', () => {
+    const model = buildProgressModel(
+      {
+        records: [],
+        voiceprints: [
+          {
+            id: 'reading',
+            takenAt: '2026-08-10T10:00:00.000Z',
+            source: 'mirror',
+            twin: null,
+            summary: {
+              lowMidi: 48,
+              highMidi: 69,
+              semitones: 21,
+              accuracy: 88,
+              steadiness: 77,
+            },
+          },
+        ],
+        voiceprintHistory: {
+          complete: true,
+          totalAvailable: 1,
+          comparable: false,
+        },
+        badgeDefinitions: [],
+        userBadges: [],
+        achievementDefinitions: [],
+        userAchievements: [],
+        challengeDefinitions: [],
+        activityRows: [],
+        recentActivity: [],
+        league: null,
+      },
+      { now: new Date('2026-08-11T12:00:00.000Z') },
+    )
+    expect(isProgressEmpty(model)).toBe(false)
+  })
+
   it('does not mistake absent legacy measurements for a load failure', () => {
     const model = emptyModel()
     expect(model.coverage.find((item) => item.id === 'duration')?.status).toBe(

@@ -534,6 +534,77 @@ describe('One Moment priority', () => {
     )
   })
 
+  it('features a lone voiceprint reading while nothing is practiced yet', () => {
+    const withTwin = buildProgressModel(
+      input({
+        voiceprints: [
+          {
+            ...voiceprint('reading', '2026-08-10T10:00:00.000Z'),
+            twin: 'Frank Sinatra',
+          },
+        ],
+        voiceprintHistory: {
+          complete: true,
+          totalAvailable: 1,
+          comparable: false,
+        },
+      }),
+      { now: NOW },
+    )
+    const noTwin = buildProgressModel(
+      input({
+        voiceprints: [voiceprint('reading', '2026-08-10T10:00:00.000Z')],
+      }),
+      { now: NOW },
+    )
+
+    expect(withTwin.oneMoment).toMatchObject({
+      kind: 'voiceprint-reading',
+      priority: 8,
+      headline: 'You share a range with Frank Sinatra',
+      detail: 'Range C3–C5',
+      occurredAt: '2026-08-10T10:00:00.000Z',
+    })
+    expect(withTwin.eligibleMoments.map((moment) => moment.kind)).toEqual([
+      'voiceprint-reading',
+    ])
+    expect(noTwin.oneMoment).toMatchObject({
+      kind: 'voiceprint-reading',
+      headline: 'Your voiceprint is saved',
+    })
+  })
+
+  it('drops the reading once there is practice to show', () => {
+    const model = buildProgressModel(
+      input({
+        records: [record('run', '2026-08-10T10:00:00.000Z', 80)],
+        voiceprints: [voiceprint('reading', '2026-08-10T09:00:00.000Z')],
+      }),
+      { now: NOW },
+    )
+
+    expect(model.eligibleMoments.map((moment) => moment.kind)).not.toContain(
+      'voiceprint-reading',
+    )
+    expect(model.oneMoment.kind).toBe('latest-attempt')
+  })
+
+  it('tells growth instead of a reading when two comparable voiceprints moved', () => {
+    const model = buildProgressModel(
+      input({
+        voiceprints: [
+          voiceprint('old', '2026-08-01T10:00:00.000Z'),
+          voiceprint('new', '2026-08-10T10:00:00.000Z', { semitones: 27 }),
+        ],
+      }),
+      { now: NOW },
+    )
+
+    expect(model.eligibleMoments.map((moment) => moment.kind)).toEqual([
+      'voiceprint-growth',
+    ])
+  })
+
   it('puts a comparable best ahead of voiceprint growth', () => {
     const model = buildProgressModel(
       input({

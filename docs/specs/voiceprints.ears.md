@@ -69,6 +69,15 @@ with the device records **made by this account**, de-duplicated by `takenAt`
 (a just-made take shows before its upload lands). Records made anonymously
 or under another account stay off the signed-in list.
 
+Signed out means no real account: a lazily provisioned anonymous identity
+sees every device record too. Progress reads the same records
+(`loadProgressVoiceprints`), and without a real account it never compares
+them as one singer's growth, since several people may have made them. With
+a voiceprint and no practice yet, Progress shows the reading and offers a
+first exercise. Amended 2026-10-08: Progress had counted only anonymous
+takes, so a signed-out device full of account-made takes showed an empty
+Progress page while Settings listed every one.
+
 ### REQ-VPR-008 — Cross-boundary identity
 
 **Ubiquitous:** `takenAt` is the identity of a take across the device/cloud
@@ -247,3 +256,6 @@ state and measured range data inside the app.
     retry reads history again (REQ-VPR-018/019).
 11. Direct `#/voice-constellation` load → close lands on an app tab; keyboard
     focus stays trapped while open and returns after close (REQ-VPR-020).
+12. Sign in, capture twice, sign out → Settings and Progress show both takes;
+    with no practice, Progress leads with the reading and "Start an exercise"
+    opens Exercises (REQ-VPR-007).
