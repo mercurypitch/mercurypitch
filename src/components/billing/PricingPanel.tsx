@@ -182,8 +182,9 @@ export const PricingPanel: Component = () => {
       </Show>
 
       {/* The withdrawal function: up top, where the purchase mail sends a
-          buyer, and only while a pack can still be cancelled. */}
-      <PurchaseWithdrawals mode={withdrawalMode()} />
+          buyer, whatever WITHDRAWAL_MODE says now (a pack keeps the terms
+          it was sold under), and only while there is something to show. */}
+      <PurchaseWithdrawals />
 
       <PromoCodeCard />
       <LaunchOfferProgress offer={me()?.offer} states={['counting']} />

@@ -587,14 +587,20 @@ export async function redeemPromoCode(
 
 // ── The 14-day withdrawal (workers/db-worker/src/withdrawal.ts) ──────
 
-/** A pack bought in the last 14 days that still holds unused paid credits. */
+/** What cancelling a pack refunds: the unused paid credits' share of the
+ *  price, or the whole price for a pack with no consent on record. */
+export type RefundBasis = 'unused' | 'full'
+
+/** A pack that can still be cancelled, under the terms its checkout
+ *  recorded. */
 export interface CancellablePack {
   /** Names the purchase in a withdrawal statement. */
   purchaseId: string
   packLabel: string
   purchasedAt: string
-  /** The last day to cancel: YYYY-MM-DD. */
+  /** The last day to cancel, as the buyer is told it: YYYY-MM-DD. */
   deadline: string
+  basis: RefundBasis
   paidCredits: number
   unusedCredits: number
   /** The pack's unused bonus credits, which leave with it. */
@@ -613,7 +619,9 @@ export interface WithdrawalStatement {
   email: string
   unusedCredits: number
   bonusCredits: number
-  refundMinor: number
+  basis: RefundBasis
+  /** Null when the price paid is not on record: the owner refunds by hand. */
+  refundMinor: number | null
   currency: string
   refundStatus: 'pending' | 'refunded' | 'failed' | 'manual' | 'none'
 }

@@ -29,6 +29,7 @@ const PLUS: CancellablePack = {
   packLabel: 'Plus',
   purchasedAt: '2026-10-20T10:00:00.000Z',
   deadline: '2026-11-03',
+  basis: 'unused',
   paidCredits: 140,
   unusedCredits: 126,
   bonusCredits: 30,
@@ -40,6 +41,7 @@ const STARTER: CancellablePack = {
   packLabel: 'Starter',
   purchasedAt: '2026-10-21T10:00:00.000Z',
   deadline: '2026-11-04',
+  basis: 'unused',
   paidCredits: 30,
   unusedCredits: 30,
   bonusCredits: 0,
@@ -57,6 +59,7 @@ function statement(
     email: 'sam@example.test',
     unusedCredits: 126,
     bonusCredits: 30,
+    basis: 'unused',
     refundMinor: 1800,
     currency: 'eur',
     refundStatus: 'refunded',
@@ -83,7 +86,7 @@ beforeEach(() => {
 describe('PurchaseWithdrawals', () => {
   it('lists each pack that can still be cancelled, with the link the law names', async () => {
     mocks.fetchWithdrawals.mockResolvedValue(answer())
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     const rows = await screen.findAllByTestId('cancellable-pack')
     expect(rows).toHaveLength(2)
@@ -97,7 +100,7 @@ describe('PurchaseWithdrawals', () => {
 
   it('opens the form on the chosen purchase, with the account email to edit', async () => {
     mocks.fetchWithdrawals.mockResolvedValue(answer())
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     fireEvent.click(
       (await screen.findAllByTestId('withdraw-link'))[1] as HTMLElement,
@@ -119,7 +122,7 @@ describe('PurchaseWithdrawals', () => {
 
   it('says the bonus leaves with the pack', async () => {
     mocks.fetchWithdrawals.mockResolvedValue(answer())
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     fireEvent.click(
       (await screen.findAllByTestId('withdraw-link'))[0] as HTMLElement,
@@ -136,7 +139,7 @@ describe('PurchaseWithdrawals', () => {
       duplicate: false,
       statement: statement({ email: 'receipts@example.test' }),
     })
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
     fireEvent.click(
       (await screen.findAllByTestId('withdraw-link'))[0] as HTMLElement,
     )
@@ -173,7 +176,7 @@ describe('PurchaseWithdrawals', () => {
     mocks.submitWithdrawal.mockRejectedValue(
       new Error('The 14 days to cancel this purchase have ended.'),
     )
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
     fireEvent.click(
       (await screen.findAllByTestId('withdraw-link'))[0] as HTMLElement,
     )
@@ -196,7 +199,7 @@ describe('PurchaseWithdrawals', () => {
         statements: [statement({ refundStatus: 'manual' })],
       }),
     )
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     const list = await screen.findByRole('list', {
       name: 'Cancelled purchases',
@@ -208,19 +211,92 @@ describe('PurchaseWithdrawals', () => {
 
   it('shows nothing while there is nothing to cancel', async () => {
     mocks.fetchWithdrawals.mockResolvedValue(answer({ packs: [] }))
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     await waitFor(() => expect(mocks.fetchWithdrawals).toHaveBeenCalled())
     expect(screen.queryByTestId('withdrawals')).toBeNull()
   })
 
-  it('never asks under waiver, or without an account', async () => {
-    render(() => <PurchaseWithdrawals mode="waiver" />)
+  it('never asks without an account', async () => {
     mocks.held = false
-    render(() => <PurchaseWithdrawals mode="refund_unused" />)
+    render(() => <PurchaseWithdrawals />)
 
     await Promise.resolve()
     expect(mocks.fetchWithdrawals).not.toHaveBeenCalled()
     expect(screen.queryByTestId('withdrawals')).toBeNull()
+  })
+
+  describe('a pack with no consent on record', () => {
+    // Bought before checkout asked for the box: cancellable with every
+    // credit used, for the whole price.
+    const OLD: CancellablePack = {
+      ...STARTER,
+      purchaseId: 'purchase-old',
+      basis: 'full',
+      unusedCredits: 0,
+      refund: { amountMinor: 500, currency: 'eur' },
+    }
+
+    it('offers the whole price back, used credits and all', async () => {
+      mocks.fetchWithdrawals.mockResolvedValue(answer({ packs: [OLD] }))
+      render(() => <PurchaseWithdrawals />)
+
+      const [row] = await screen.findAllByTestId('cancellable-pack')
+      expect(row?.textContent).toContain('0 of 30 credits unused.')
+      expect(row?.textContent).toContain('Refund €5.00, the whole price, until')
+      expect(screen.getByTestId('withdrawals').textContent).toContain(
+        'You can cancel a pack within 14 days of buying it.',
+      )
+      expect(screen.getByTestId('withdrawals').textContent).not.toContain(
+        "haven't used",
+      )
+
+      fireEvent.click(screen.getByTestId('withdraw-link'))
+      expect(screen.getByTestId('withdrawal-form').textContent).toContain(
+        "We'll refund €5.00, the whole price, to the card or account you paid with.",
+      )
+    })
+
+    it('says the whole price when its price is not on record', async () => {
+      mocks.fetchWithdrawals.mockResolvedValue(
+        answer({ packs: [{ ...OLD, unusedCredits: 10, refund: null }] }),
+      )
+      render(() => <PurchaseWithdrawals />)
+
+      fireEvent.click(await screen.findByTestId('withdraw-link'))
+
+      expect(screen.getByTestId('withdrawal-form').textContent).toContain(
+        "We'll take the 10 unused credits off your balance and refund the whole price to the card or account you paid with.",
+      )
+    })
+  })
+
+  it('says what a refund by hand will be when the price is not on record', async () => {
+    mocks.fetchWithdrawals.mockResolvedValue(
+      answer({
+        packs: [],
+        statements: [
+          statement({ refundStatus: 'manual', refundMinor: null }),
+          statement({
+            id: 'statement-2',
+            refundStatus: 'manual',
+            refundMinor: null,
+            basis: 'full',
+          }),
+        ],
+      }),
+    )
+    render(() => <PurchaseWithdrawals />)
+
+    const list = await screen.findByRole('list', {
+      name: 'Cancelled purchases',
+    })
+    expect(list.textContent).toContain(
+      "We'll refund what you paid for those credits within 14 days.",
+    )
+    expect(list.textContent).toContain(
+      "We'll refund what you paid within 14 days.",
+    )
+    expect(list.textContent).not.toContain('€0.00')
   })
 })

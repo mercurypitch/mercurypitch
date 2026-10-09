@@ -3,13 +3,14 @@
 // ============================================================
 //
 // The withdrawal function EU law asks of an online seller (CRD Art. 11a):
-// each credit pack bought in the last 14 days that still holds unused paid
-// credits, with a link to cancel it; the form names the buyer, the purchase
-// and where the confirmation goes; "Confirm withdrawal" sends the statement
+// each credit pack that can still be cancelled, with a link to cancel it;
+// the form names the buyer, the purchase and where the confirmation goes;
+// "Confirm withdrawal" sends the statement
 // (workers/db-worker/src/withdrawal.ts), and the panel says it arrived,
-// whatever the refund then does. It shows only under WITHDRAWAL_MODE
-// refund_unused and only while there is something to show, at the top of
-// the Credits tab, where the purchase mail sends the buyer.
+// whatever the refund then does. A pack keeps the terms its own checkout
+// recorded, so the panel asks whatever WITHDRAWAL_MODE says now, and shows
+// only while there is something to show, at the top of the Credits tab,
+// where the purchase mail sends the buyer.
 //
 // The labels are the ones the law and the lawyer's draft use, from
 // withdrawal-wording.ts.
@@ -20,14 +21,8 @@ import { accountHeld } from '@/db/services/auth-service'
 import type { CancellablePack, WithdrawalStatement, } from '@/db/services/billing-service'
 import { fetchWithdrawals, formatPrice, submitWithdrawal, } from '@/db/services/billing-service'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
-import type { WithdrawalMode } from '../../../workers/db-worker/src/withdrawal-wording'
 import { CONFIRM_WITHDRAWAL_LABEL, WITHDRAW_LINK_LABEL, WITHDRAWAL_RECEIVED, } from '../../../workers/db-worker/src/withdrawal-wording'
 import styles from './PurchaseWithdrawals.module.css'
-
-export interface PurchaseWithdrawalsProps {
-  /** The model the packs are sold under, from GET /api/billing/pricing. */
-  mode: WithdrawalMode
-}
 
 /** "3 November 2026", for an ISO time or a YYYY-MM-DD day. */
 function longDate(value: string): string {
@@ -43,43 +38,63 @@ function longDate(value: string): string {
 const plural = (n: number, one: string, many: string): string =>
   `${n} ${n === 1 ? one : many}`
 
+/** What cancelling the pack refunds. A pack with no consent on record
+ *  refunds the whole price. */
 function refundOf(pack: CancellablePack): string {
-  return pack.refund === null
-    ? 'the price of those credits'
-    : formatPrice(pack.refund.amountMinor, pack.refund.currency)
+  const money =
+    pack.refund === null
+      ? null
+      : formatPrice(pack.refund.amountMinor, pack.refund.currency)
+  if (pack.basis === 'full') {
+    return money === null ? 'the whole price' : `${money}, the whole price`
+  }
+  return money ?? 'the price of those credits'
+}
+
+/** What leaves the balance with the pack, or null when nothing is left. */
+function creditsTaken(pack: CancellablePack): string | null {
+  const bonus = plural(pack.bonusCredits, 'bonus credit', 'bonus credits')
+  if (pack.unusedCredits === 0) {
+    return pack.bonusCredits > 0 ? `the ${bonus} that came with it` : null
+  }
+  const credits = plural(pack.unusedCredits, 'unused credit', 'unused credits')
+  return pack.bonusCredits > 0
+    ? `the ${credits} and the ${bonus} that came with it`
+    : `the ${credits}`
 }
 
 /** What confirming does, said before the button. */
 function consequence(pack: CancellablePack): string {
-  const credits = plural(pack.unusedCredits, 'unused credit', 'unused credits')
-  const bonus =
-    pack.bonusCredits > 0
-      ? ` and the ${plural(pack.bonusCredits, 'bonus credit', 'bonus credits')} that came with it`
-      : ''
-  return `We'll take the ${credits}${bonus} off your balance and refund ${refundOf(pack)} to the card or account you paid with.`
+  const taken = creditsTaken(pack)
+  const take = taken === null ? '' : `take ${taken} off your balance and `
+  // "refund €5.00, the whole price, to the card": the aside takes both
+  // commas.
+  const aside = pack.basis === 'full' && pack.refund !== null ? ',' : ''
+  return `We'll ${take}refund ${refundOf(pack)}${aside} to the card or account you paid with.`
 }
 
 /** Where the refund of a statement stands. */
 function refundState(statement: WithdrawalStatement): string {
-  const money = formatPrice(statement.refundMinor, statement.currency)
+  const money =
+    statement.refundMinor === null
+      ? null
+      : formatPrice(statement.refundMinor, statement.currency)
   switch (statement.refundStatus) {
     case 'refunded':
-      return `${money} refunded to the card or account you paid with.`
+      return `${money ?? 'Your refund'} refunded to the card or account you paid with.`
     case 'none':
       return 'There was nothing left to refund.'
     default:
-      return `We'll refund ${money} within 14 days.`
+      if (money !== null) return `We'll refund ${money} within 14 days.`
+      return statement.basis === 'full'
+        ? "We'll refund what you paid within 14 days."
+        : "We'll refund what you paid for those credits within 14 days."
   }
 }
 
-export const PurchaseWithdrawals: Component<PurchaseWithdrawalsProps> = (
-  props,
-) => {
+export const PurchaseWithdrawals: Component = () => {
   const [data, { refetch }] = createResource(
-    () =>
-      props.mode === 'refund_unused' && accountHeld()
-        ? balanceVersion() + 1
-        : false,
+    () => (accountHeld() ? balanceVersion() + 1 : false),
     () => fetchWithdrawals(),
   )
   const loaded = () =>
@@ -162,8 +177,13 @@ export const PurchaseWithdrawals: Component<PurchaseWithdrawalsProps> = (
 
         <Show when={packs().length > 0}>
           <p class={styles.text}>
-            You can cancel a pack within 14 days of buying it and get back the
-            price of the credits you haven't used.
+            <Show
+              when={packs().every((pack) => pack.basis === 'unused')}
+              fallback="You can cancel a pack within 14 days of buying it."
+            >
+              You can cancel a pack within 14 days of buying it and get back the
+              price of the credits you haven't used.
+            </Show>
           </p>
           <ul class={styles.list}>
             <For each={packs()}>
