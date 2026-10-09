@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { featuredPromoView, promoRefusal, validatePromoWrite, } from './promo-rules'
+import { featuredPromoView, isInstant, promoRefusal, validatePromoWrite, } from './promo-rules'
 
 const OPEN = {
   code: 'LAUNCH',
@@ -134,5 +134,23 @@ describe('validatePromoWrite', () => {
     ['a code with a space', { code: 'NEW YEAR' }, /code/],
   ])('refuses %s', (_label, body, field) => {
     expect(validatePromoWrite(body)).toMatch(field)
+  })
+})
+
+describe('isInstant', () => {
+  it('accepts the one shape the table holds', () => {
+    expect(isInstant('2027-01-01T23:59:59.000Z')).toBe(true)
+  })
+
+  it.each([
+    ['a month that does not exist', '2026-13-01T00:00:00.000Z'],
+    ['an hour that does not exist', '2026-10-01T25:00:00.000Z'],
+    ['a day that does not exist', '2027-02-30T00:00:00.000Z'],
+    ['no milliseconds', '2027-01-01T23:59:59Z'],
+    ['a date only', '2027-01-01'],
+    ['not a string', 20270101],
+  ])('says no, without throwing, to %s', (_label, value) => {
+    expect(() => isInstant(value)).not.toThrow()
+    expect(isInstant(value)).toBe(false)
   })
 })

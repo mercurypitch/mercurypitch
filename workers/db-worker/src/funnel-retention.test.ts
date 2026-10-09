@@ -80,7 +80,7 @@ describe('retentionCutoffs', () => {
       clickIdBefore: '2026-07-13T06:17:00.000Z',
       funnelBefore: '2025-09-11T06:17:00.000Z',
       rateLimitBefore: NOW - 2 * DAY,
-      promoClosedBefore: NOW - 30 * DAY,
+      promoClosedBefore: '2026-09-11T06:17:00.000Z',
     })
   })
 

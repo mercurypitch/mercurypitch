@@ -312,6 +312,84 @@ describe('promo email records 30 days after the code closes', () => {
     expect(promoEmailsOf('promo-garbled')).toBe(1)
   })
 
+  it('lets no malformed end date stop the closed codes being swept', async () => {
+    // Each is malformed, and each must read as "not closed". The first
+    // made the old candidate lookup throw, which stopped every code.
+    const malformed = [
+      '2026-13-01T00:00:00.000Z',
+      '2025-13-01T00:00:00.000Z',
+      '2025-02-30T00:00:00.000Z',
+      '2025-09-01',
+      '2025-09-01T00:00:00Z',
+      '2025-09-01 00:00:00.000Z',
+    ]
+    malformed.forEach((expiresAt, i) => {
+      promoCode(`promo-malformed-${i}`, expiresAt)
+      promoEmail(`promo-malformed-${i}`, `malformed-hash-${i}`)
+    })
+    promoCode('promo-closed', iso(NOW - 60 * DAY))
+    promoEmail('promo-closed', 'closed-hash')
+
+    const result = await sweepFunnelRetention(db, DEFAULTS, NOW)
+
+    expect(result.failed).toEqual([])
+    expect(promoEmailsOf('promo-closed')).toBe(0)
+    malformed.forEach((_expiresAt, i) => {
+      expect(promoEmailsOf(`promo-malformed-${i}`)).toBe(1)
+    })
+  })
+
+  it('reads the end date in the same statement that deletes', async () => {
+    // An admin reopens the code (moves expiresAt forward) just before the
+    // delete runs. Its records, and a claim made since, must stay.
+    promoCode('promo-reopened', iso(NOW - 60 * DAY))
+    promoEmail('promo-reopened', 'before-reopen')
+    let reopened = false
+    const racing = new Proxy(db, {
+      get(target, property, receiver) {
+        if (property !== 'prepare')
+          return Reflect.get(target, property, receiver)
+        return (sql: string) => {
+          if (!reopened && /DELETE FROM promoEmailClaims/.test(sql)) {
+            reopened = true
+            sqlite
+              .prepare(
+                "UPDATE promoCodes SET expiresAt = ? WHERE id = 'promo-reopened'",
+              )
+              .run('2027-06-30T23:59:59.000Z')
+            promoEmail('promo-reopened', 'after-reopen')
+          }
+          return target.prepare(sql)
+        }
+      },
+    })
+
+    await sweepFunnelRetention(racing, DEFAULTS, NOW)
+
+    expect(reopened).toBe(true)
+    expect(promoEmailsOf('promo-reopened')).toBe(2)
+  })
+
+  it('deletes the records of a code that no longer exists', async () => {
+    // The admin DELETE removes a code and leaves its records, which no
+    // expiry can reach and nothing can claim against again.
+    promoCode('promo-kept', null)
+    promoEmail('promo-kept', 'kept-hash')
+    for (let i = 0; i < 4; i += 1) promoEmail('promo-deleted', `orphan-${i}`)
+
+    const result = await sweepFunnelRetention(db, DEFAULTS, NOW, {
+      batchRows: 3,
+      maxBatches: 1,
+    })
+
+    expect(promoEmailsOf('promo-deleted')).toBe(1)
+    expect(result.promoEmailsDeleted).toBe(3)
+    expect(result.drained).toBe(false)
+    await sweepFunnelRetention(db, DEFAULTS, NOW)
+    expect(promoEmailsOf('promo-deleted')).toBe(0)
+    expect(promoEmailsOf('promo-kept')).toBe(1)
+  })
+
   it('caps the deletes like every other rule', async () => {
     promoCode('promo-closed', iso(NOW - 60 * DAY))
     for (let i = 0; i < 7; i += 1) promoEmail('promo-closed', `hash-${i}`)

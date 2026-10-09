@@ -25,10 +25,12 @@
 // Dates: mirrorEvents and funnelAcquisition hold createdAt as ISO text from
 // toISOString(), which sorts as it reads, so the cutoff is compared as ISO
 // text too. auth_ratelimit.windowStart is epoch milliseconds.
-// promoCodes.expiresAt is checked here rather than compared as text: only
-// the one shape the admin API writes (promo-rules.ts isInstant) counts, so a
-// seeded or hand-edited row in another reads as "not closed", never as
-// "closed long ago".
+// promoCodes.expiresAt is ISO text too, but only the one shape the admin
+// API writes counts as an end date (promo-rules.ts isInstant): the delete
+// checks it with a GLOB and a strftime round trip, in the same statement,
+// so a malformed or reopened code is never read as "closed long ago". A
+// promo code deleted outright leaves its records with nothing to expire
+// them by; they go on the next tick, as nothing can claim it again.
 //
 // Bounded: each rule deletes (or updates) at most batchRows rows per
 // statement and runs at most maxBatches statements per tick, oldest first.
@@ -41,7 +43,6 @@
 import { DEFAULT_CLICK_ID_DAYS, DEFAULT_FUNNEL_MONTHS, DEFAULT_PROMO_EMAIL_DAYS, DEFAULT_RATE_LIMIT_DAYS, MAX_PERIOD_DAYS, MAX_PERIOD_MONTHS, daysBefore, monthsBefore, parsePeriod, } from '../../../src/lib/retention-periods'
 import { LONGEST_RATE_LIMIT_WINDOW_MS } from './auth'
 import type { Env } from './auth'
-import { isInstant } from './promo-rules'
 
 export type RetentionEnv = Pick<
   Env,
@@ -112,9 +113,9 @@ export interface RetentionCutoffs {
   funnelBefore: string
   /** Rate-limit rows whose window started before this (epoch ms) go. */
   rateLimitBefore: number
-  /** A promo code that closed before this (epoch ms) loses its email
+  /** A promo code whose expiresAt is before this (ISO) loses its email
    *  records. */
-  promoClosedBefore: number
+  promoClosedBefore: string
 }
 
 /**
@@ -140,26 +141,10 @@ export function retentionCutoffs(
       daysBefore(nowMs, config.rateLimitDays),
       nowMs - LONGEST_RATE_LIMIT_WINDOW_MS,
     ),
-    promoClosedBefore: daysBefore(nowMs, config.promoEmailDays),
+    promoClosedBefore: new Date(
+      daysBefore(nowMs, config.promoEmailDays),
+    ).toISOString(),
   }
-}
-
-/** The promo codes whose expiresAt parses and is before `closedBefore`. */
-async function closedPromoCodes(
-  db: D1Database,
-  closedBefore: number,
-): Promise<string[]> {
-  const { results } = await db
-    .prepare('SELECT id, expiresAt FROM promoCodes WHERE expiresAt IS NOT NULL')
-    .all<{ id: string; expiresAt: string }>()
-  return results
-    .filter((row) => {
-      // Only the one shape the admin API writes; Date.parse alone reads
-      // "some time in 2025" as a date.
-      if (!isInstant(row.expiresAt)) return false
-      return Date.parse(row.expiresAt) < closedBefore
-    })
-    .map((row) => row.id)
 }
 
 export interface SweepLimits {
@@ -181,6 +166,7 @@ export interface SweepResult {
   mirrorEventsDeleted: number
   acquisitionsDeleted: number
   rateLimitsDeleted: number
+  /** Closed codes' records and those of codes that no longer exist. */
   promoEmailsDeleted: number
   /** True when no rule hit its cap, so nothing past a cutoff is left. */
   drained: boolean
@@ -194,12 +180,26 @@ type RuleName =
   | 'mirrorEvents'
   | 'rateLimits'
   | 'promoEmails'
+  | 'promoOrphans'
 
-/** Every statement takes the cutoff as ?1 and the batch size as ?2, and
- *  picks its rows oldest first through the date index. The promo rule's ?1
- *  is the JSON array of closed codes instead, and its rows come through the
- *  table's key, which leads with promoCodeId. */
-const RULES: ReadonlyArray<{ name: RuleName; sql: string }> = [
+/** The exact shape of an admin-written instant, 2027-01-01T23:59:59.000Z,
+ *  as a GLOB ('.' is literal there). The strftime round trip beside it
+ *  refuses a date that does not exist, such as month 13 or 30 February. */
+const INSTANT_GLOB =
+  "'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'"
+
+interface Rule {
+  name: RuleName
+  sql: string
+  /** The statement's bindings, the batch size always last. */
+  bind: (cutoffs: RetentionCutoffs, batchRows: number) => Array<string | number>
+}
+
+/** Every date rule takes its cutoff as ?1 and the batch size as ?2, and
+ *  picks its rows oldest first through the date index. Each picks its rows
+ *  inside the statement that changes them, so nothing read earlier in the
+ *  tick can go stale before the write. */
+const RULES: ReadonlyArray<Rule> = [
   // Deletes first, so the update below does not clear click ids on rows
   // that are about to go anyway.
   {
@@ -207,6 +207,7 @@ const RULES: ReadonlyArray<{ name: RuleName; sql: string }> = [
     sql: `DELETE FROM funnelAcquisition WHERE rowid IN (
             SELECT rowid FROM funnelAcquisition
              WHERE createdAt < ?1 ORDER BY createdAt LIMIT ?2)`,
+    bind: (c, n) => [c.funnelBefore, n],
   },
   {
     name: 'clickIds',
@@ -214,25 +215,45 @@ const RULES: ReadonlyArray<{ name: RuleName; sql: string }> = [
             SELECT rowid FROM funnelAcquisition
              WHERE createdAt < ?1 AND gclid IS NOT NULL
              ORDER BY createdAt LIMIT ?2)`,
+    bind: (c, n) => [c.clickIdBefore, n],
   },
   {
     name: 'mirrorEvents',
     sql: `DELETE FROM mirrorEvents WHERE rowid IN (
             SELECT rowid FROM mirrorEvents
              WHERE createdAt < ?1 ORDER BY createdAt LIMIT ?2)`,
+    bind: (c, n) => [c.funnelBefore, n],
   },
   {
     name: 'rateLimits',
     sql: `DELETE FROM auth_ratelimit WHERE rowid IN (
             SELECT rowid FROM auth_ratelimit
              WHERE windowStart < ?1 ORDER BY windowStart LIMIT ?2)`,
+    bind: (c, n) => [c.rateLimitBefore, n],
   },
+  // The records of a code that closed (a well-formed expiresAt) before the
+  // cutoff. A code with no expiresAt, or a malformed one, never closes.
   {
     name: 'promoEmails',
     sql: `DELETE FROM promoEmailClaims WHERE rowid IN (
-            SELECT rowid FROM promoEmailClaims
-             WHERE promoCodeId IN (SELECT value FROM json_each(?1))
+            SELECT c.rowid FROM promoEmailClaims c
+              JOIN promoCodes p ON p.id = c.promoCodeId
+             WHERE p.expiresAt GLOB ${INSTANT_GLOB}
+               AND strftime('%Y-%m-%dT%H:%M:%fZ', p.expiresAt) = p.expiresAt
+               AND p.expiresAt < ?1
              LIMIT ?2)`,
+    bind: (c, n) => [c.promoClosedBefore, n],
+  },
+  // The records of a code that no longer exists (the admin DELETE). Nothing
+  // can claim it again, and no expiry will ever reach them.
+  {
+    name: 'promoOrphans',
+    sql: `DELETE FROM promoEmailClaims WHERE rowid IN (
+            SELECT c.rowid FROM promoEmailClaims c
+             WHERE NOT EXISTS (
+               SELECT 1 FROM promoCodes p WHERE p.id = c.promoCodeId)
+             LIMIT ?1)`,
+    bind: (_c, n) => [n],
   },
 ]
 
@@ -247,37 +268,25 @@ export async function sweepFunnelRetention(
   limits: SweepLimits = DEFAULT_SWEEP_LIMITS,
 ): Promise<SweepResult> {
   const cutoffs = retentionCutoffs(config, nowMs)
-  const cutoffOf: Record<RuleName, () => Promise<string | number | null>> = {
-    acquisitions: async () => cutoffs.funnelBefore,
-    clickIds: async () => cutoffs.clickIdBefore,
-    mirrorEvents: async () => cutoffs.funnelBefore,
-    rateLimits: async () => cutoffs.rateLimitBefore,
-    // null skips the rule: no code is closed, so nothing can go.
-    promoEmails: async () => {
-      const closed = await closedPromoCodes(db, cutoffs.promoClosedBefore)
-      return closed.length === 0 ? null : JSON.stringify(closed)
-    },
-  }
   const changed: Record<RuleName, number> = {
     acquisitions: 0,
     clickIds: 0,
     mirrorEvents: 0,
     rateLimits: 0,
     promoEmails: 0,
+    promoOrphans: 0,
   }
   const failed: string[] = []
   let drained = true
 
   for (const rule of RULES) {
     try {
-      const cutoff = await cutoffOf[rule.name]()
-      if (cutoff === null) continue
       let batches = 0
       let lastBatch = 0
       do {
         const result = await db
           .prepare(rule.sql)
-          .bind(cutoff, limits.batchRows)
+          .bind(...rule.bind(cutoffs, limits.batchRows))
           .run()
         lastBatch = result.meta.changes
         changed[rule.name] += lastBatch
@@ -296,7 +305,7 @@ export async function sweepFunnelRetention(
     mirrorEventsDeleted: changed.mirrorEvents,
     acquisitionsDeleted: changed.acquisitions,
     rateLimitsDeleted: changed.rateLimits,
-    promoEmailsDeleted: changed.promoEmails,
+    promoEmailsDeleted: changed.promoEmails + changed.promoOrphans,
     drained,
     failed,
   }
