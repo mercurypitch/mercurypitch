@@ -66,10 +66,10 @@ export const ROOMS: readonly Room[] = [
   {
     id: 'exercises',
     title: 'Exercises',
-    // The count is real and pinned by a test — EXERCISE_HELP in
-    // src/features/exercises/exercise-help.ts is keyed by every
-    // ExerciseType, so adding a drill without updating this line fails.
-    // It said "fourteen" through four additions before that.
+    // The count is real and pinned by a test against the library's own
+    // cards (LIBRARY_EXERCISE_COUNT in ExerciseMenu.tsx), so adding a drill
+    // without updating this line fails. It said "fourteen" through four
+    // additions before that.
     line: 'A library of eighteen short drills for range, agility, intervals and control.',
     target: { kind: 'tab', tab: TAB_EXERCISES },
     tourTab: TAB_EXERCISES,

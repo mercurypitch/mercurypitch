@@ -6,7 +6,7 @@ import piStyles from '@/features/practice-intelligence/components/PracticeIntell
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -34,6 +34,7 @@ export type ExerciseDifficulty = 'easy' | 'medium' | 'hard'
 const EXERCISE_DIFFICULTY: Record<ExerciseType, ExerciseDifficulty> = {
   [EXERCISE_WARMUP]: 'easy',
   [EXERCISE_LONG_NOTE]: 'easy',
+  [EXERCISE_LONG_NOTE_LANTERN]: 'easy',
   [EXERCISE_PITCH_HOLD]: 'easy',
   [EXERCISE_SIREN]: 'easy',
   [EXERCISE_SLIDE]: 'medium',
@@ -230,6 +231,9 @@ const CARDS: ExerciseCardDef[] = [
     available: true,
   },
 ]
+
+/** How many drills the library offers: what the onboarding map card counts. */
+export const LIBRARY_EXERCISE_COUNT = CARDS.length
 
 function gradeLabel(score: number): JSX.Element {
   if (score >= 90)
