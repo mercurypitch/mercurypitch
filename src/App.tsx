@@ -2481,7 +2481,9 @@ const AppShell: Component<AppProps> = (props) => {
   )
 
   // Offer a page's spotlight tour the first time it's visited.
-  usePageTourOffer(activeTab)
+  // Not over First Light: the welcome screen is a first visit's whole
+  // screen, and the toast spent Home's offer underneath it.
+  usePageTourOffer(activeTab, () => showWelcome() || flowOpen())
 
   // Live mic insights → inline "can't hear you" / "too quiet" hints (Singing).
   const micInsights = useMicInsights({

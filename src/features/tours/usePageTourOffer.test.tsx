@@ -42,14 +42,18 @@ describe('usePageTourOffer', () => {
 
   // Effects created inside createRoot run when the root settles, so every
   // assertion waits for the root to return.
-  function mount(initial: ActiveTab) {
+  function mount(initial: ActiveTab, initiallyPaused = false) {
     const [tab, setTab] = createSignal<ActiveTab>(initial)
+    const [paused, setPaused] = createSignal(initiallyPaused)
     const dispose = createRoot((d) => {
-      usePageTourOffer(tab)
+      usePageTourOffer(tab, paused)
       return d
     })
-    return { setTab, dispose }
+    return { setTab, setPaused, dispose }
   }
+
+  // The offer that follows a lifted pause waits one microtask.
+  const settle = () => Promise.resolve()
 
   it('offers a tab once, and marks it offered only when the toast is shown', () => {
     const { dispose } = mount('home' as ActiveTab)
@@ -89,6 +93,61 @@ describe('usePageTourOffer', () => {
       'page-tour-offer',
     )
     expect(store.showActionNotification).toHaveBeenCalledTimes(2)
+    dispose()
+  })
+
+  // A first visit got "New to Home?" on top of First Light's welcome screen.
+  it('offers nothing and spends nothing while paused', async () => {
+    const { setTab, dispose } = mount('home' as ActiveTab, true)
+    setTab('ear-lab' as ActiveTab)
+    await settle()
+    expect(store.showActionNotification).not.toHaveBeenCalled()
+    expect(localStorage.getItem('pitchperfect_page_tour_offered_home')).toBe(
+      null,
+    )
+    expect(localStorage.getItem('pitchperfect_page_tour_offered_ear-lab')).toBe(
+      null,
+    )
+    dispose()
+  })
+
+  it('offers the tab on screen once the pause lifts', async () => {
+    const { setPaused, dispose } = mount('home' as ActiveTab, true)
+    setPaused(false)
+    await settle()
+    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
+    expect(store.showActionNotification.mock.calls[0][0]).toBe(
+      'New to Home? Take a quick tour.',
+    )
+    expect(localStorage.getItem('pitchperfect_page_tour_offered_home')).toBe(
+      'true',
+    )
+    dispose()
+  })
+
+  // First Light's Map: switch tab, close the flow, start that room's tour,
+  // all in one handler.
+  it('stays out of a tour that starts as the pause lifts', async () => {
+    const { setTab, setPaused, dispose } = mount('home' as ActiveTab, true)
+    setTab('ear-lab' as ActiveTab)
+    setPaused(false)
+    store.setWalkthrough(true)
+    await settle()
+    expect(store.showActionNotification).not.toHaveBeenCalled()
+    expect(localStorage.getItem('pitchperfect_page_tour_offered_ear-lab')).toBe(
+      null,
+    )
+    dispose()
+  })
+
+  it('retires a shown offer when the pause returns', () => {
+    const { setPaused, dispose } = mount('home' as ActiveTab)
+    expect(store.showActionNotification).toHaveBeenCalledTimes(1)
+    store.removeNotificationsByChannel.mockClear()
+    setPaused(true)
+    expect(store.removeNotificationsByChannel).toHaveBeenCalledWith(
+      'page-tour-offer',
+    )
     dispose()
   })
 })
