@@ -1811,8 +1811,8 @@ function TrustInfo() {
         </svg>
       </button>
       <div class="mirror-info-pop" role="note" data-open={open()}>
-        Private by design: your audio never leaves this device — analysis runs
-        right here in your browser, and the recording stays with you.
+        Private by design: your audio never leaves this device. The analysis
+        runs here in your browser, and the recording stays with you.
       </div>
     </div>
   )
@@ -2264,7 +2264,7 @@ const Results: Component<{
       />
       <ShareStatusNote status={props.shareStatus} />
       <p class="mirror-foot">
-        Saved on this device only — come back any time to see your delta.
+        Saved on this device. Come back any time to see your delta.
       </p>
     </section>
   )
