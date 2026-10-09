@@ -7,28 +7,38 @@
 //   - Only paid credits are refundable. Free credits (the LAUNCH code,
 //     gifts) and the launch offer's bonus never are.
 //   - The ledger has one balance, so which credits a buyer has used is
-//     counted, not recorded. They count as spent in this order: free credits
-//     not tied to a purchase, oldest first; then paid credits, the oldest
-//     pack first; then the bonus credits that came with a pack
-//     (launch-finisher.ts), last. Spending itself does not change; the order
-//     only decides what is left.
+//     counted, not recorded, in the order things happened (10 Oct): each
+//     spend takes from the credits there were at that moment, free credits
+//     not tied to a purchase first; then paid credits, the oldest pack
+//     first; then the bonus credits that came with a pack
+//     (launch-finisher.ts), last. Credits that land later never pay for an
+//     earlier spend, so free credits granted after a pack ran out never
+//     bring its cancellation back: the checkbox says that once the buyer
+//     has used them all, they can no longer cancel. A failed separation's
+//     refund gives its credits back where they came from. Spending itself
+//     does not change; the order only decides what is left.
 //   - Refund = amount paid x unused paid credits of the pack / paid credits
 //     of the pack, rounded down to the cent.
 //   - Withdrawing removes the pack's unused bonus credits too; used ones
 //     stay used.
 //
 // The Karaoke subscription's songs and review access's are the app's.
-// subscriptionSongs() (songs-allowance.ts) already decides how much of the
-// balance is theirs; the rest is the web's own credits, which this file
-// splits by the order above. Money that went back for a pack (a refund or a
-// dispute, stripe-payments.ts) or a withdrawal takes from that pack's own
-// credits before anything is counted as spent, and leaves the pack settled:
-// it cannot be withdrawn again here.
+// webCreditsAfterEach() (songs-allowance.ts) already decides how much of
+// the balance is theirs after each row; the rest is the web's own credits,
+// which this file splits by the order above. Money that went back for a
+// pack (a refund or a dispute, stripe-payments.ts) takes from that pack's
+// own credits first, when it went back. A partial refund leaves the rest of
+// the pack cancellable: the credits it took are gone, so the unused share
+// is what is left to refund. A dispute, a refund that took back every
+// credit the payment granted, or a withdrawal settles the pack: it cannot
+// be withdrawn again here.
 //
 // A buyer who never ticked the checkbox at checkout (every pack bought
 // before it shipped) never asked for the credits straight away, so the
 // right stays whole (CRD Art. 14(4)(b)): the function stays open for the 14
-// days even with every credit used, and refunds the whole price.
+// days even with every credit used, and refunds the whole price. So does a
+// buyer whose purchase mail, the confirmation of the box, has not gone
+// (checkout-consent.ts, consentTerms).
 //
 // The 14 days count from the day the credits landed, by the calendar in
 // Croatia, where the seller is: a pack bought on 9 October has 23 October as
@@ -41,7 +51,7 @@
 // Croatia is never shut out before their own midnight. The mails and the
 // Terms still say 14 days.
 
-import { REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, subscriptionSongs, } from './songs-allowance'
+import { APP_SEPARATION, REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, WEB_SEPARATION, webCreditsAfterEach, } from './songs-allowance'
 import { PACK_PURCHASE, PURCHASE_DISPUTE, PURCHASE_REFUND, WITHDRAWAL_BONUS, WITHDRAWAL_PAID, } from './stripe-payments'
 import type { PurchaseTerms } from './withdrawal-wording'
 import { WITHDRAWAL_DAYS } from './withdrawal-wording'
@@ -77,8 +87,13 @@ export interface PackUse {
   /** Bonus credits that came with it, and of those the ones still unused. */
   bonus: number
   bonusUnused: number
-  /** Money already went back for it (a refund or a dispute), or it was
-   *  withdrawn: settled, and not withdrawable here. */
+  /** Credits that refunds and disputes of its payment took back: what
+   *  they took off this pack and anything else on the balance
+   *  (stripe-payments.ts). */
+  takenBack: number
+  /** Money went back for all of it (a dispute, or refunds that took back
+   *  every credit the payment granted), or it was withdrawn: settled, and
+   *  not withdrawable here. */
   settled: boolean
 }
 
@@ -102,21 +117,40 @@ const APP_SONGS: ReadonlySet<string | null> = new Set([
   REVIEW_ACCESS,
 ])
 
-/** A pack being counted: its two pools and what has come off them. */
+/** A pack being counted: its two pools, as they stand so far. */
 interface Pools {
   use: PackUse
-  /** Paid and bonus credits still held, before anything counts as spent. */
+  /** Paid and bonus credits still held. */
   paidLeft: number
   bonusLeft: number
+}
+
+/** Where a spend took credits from: free credits, bonus credits with no
+ *  pack in this ledger, or one of a pack's two pools. */
+type Source = 'free' | 'orphan' | { pack: Pools; part: 'paid' | 'bonus' }
+
+/** The web's own credits, split by where they came from, as the ledger is
+ *  read a row at a time. */
+interface Walk {
+  packs: Pools[]
+  byPayment: Map<string, Pools>
+  byId: Map<string, Pools>
+  /** Free credits not tied to a purchase, still held. */
+  free: number
+  /** Bonus credits whose pack is not in this ledger, still held. */
+  orphanBonus: number
+  /** Per separation job, what its spend took from where, for its refund
+   *  to give back. */
+  spentBy: Map<string, Array<[Source, number]>>
 }
 
 function eventOf(key: string | null): string | null {
   return key?.startsWith('evt:') === true ? key.slice('evt:'.length) : null
 }
 
-function newPack(row: LedgerEntry): Pools {
+function addPack(walk: Walk, row: LedgerEntry): void {
   const paid = Number(row.delta)
-  return {
+  const pack: Pools = {
     use: {
       purchaseId: row.id,
       purchasedAt: row.createdAt,
@@ -127,11 +161,26 @@ function newPack(row: LedgerEntry): Pools {
       paidUnused: 0,
       bonus: 0,
       bonusUnused: 0,
+      takenBack: 0,
       settled: false,
     },
     paidLeft: paid,
     bonusLeft: 0,
   }
+  walk.packs.push(pack)
+  walk.byId.set(row.id, pack)
+  if (row.paymentIntentId !== null)
+    walk.byPayment.set(row.paymentIntentId, pack)
+}
+
+function addBonus(walk: Walk, row: LedgerEntry, credits: number): void {
+  const pack = walk.byPayment.get(row.paymentIntentId ?? '')
+  if (pack === undefined) {
+    walk.orphanBonus += credits
+    return
+  }
+  pack.use.bonus += credits
+  pack.bonusLeft += credits
 }
 
 /** The pack a withdrawal row names, by its key. */
@@ -142,10 +191,21 @@ function withdrawnPack(row: LedgerEntry): string | null {
   return key.startsWith(prefix) ? key.slice(prefix.length) : null
 }
 
-/** A refund's or a dispute's take, split across the pack's two pools in
- *  proportion to them, as the take itself was (stripe-payments.ts). */
-function takeBack(pack: Pools, credits: number): void {
+/** A withdrawal's own row: what it took off the pack it names. */
+function withdraw(walk: Walk, row: LedgerEntry, delta: number): void {
+  const pack = walk.byId.get(withdrawnPack(row) ?? '')
+  if (pack === undefined) return
+  if (row.reason === WITHDRAWAL_PAID) {
+    pack.paidLeft = Math.max(0, pack.paidLeft + delta)
+  } else {
+    pack.bonusLeft = Math.max(0, pack.bonusLeft + delta)
+  }
   pack.use.settled = true
+}
+
+/** A refund's or a dispute's take, split across the pack's two pools in
+ *  proportion to what they hold, as the take itself was (stripe-payments.ts). */
+function takeBack(pack: Pools, credits: number): void {
   const held = pack.paidLeft + pack.bonusLeft
   if (held <= 0 || credits <= 0) return
   const take = Math.min(credits, held)
@@ -160,103 +220,144 @@ function takeBack(pack: Pools, credits: number): void {
   pack.bonusLeft -= fromBonus
 }
 
-/** Sort the ledger into packs, their bonuses, what came off them, and the
- *  free credits; everything else is spending, which the balance counts. */
-function sortLedger(rows: readonly LedgerEntry[]): {
-  packs: Pools[]
-  orphanBonus: number
-  free: number
-} {
-  const packs: Pools[] = []
-  const byPayment = new Map<string, Pools>()
-  const byId = new Map<string, Pools>()
-  const takes = new Map<string, number>()
-  let orphanBonus = 0
-  let free = 0
-  for (const row of rows) {
-    const delta = Number(row.delta)
-    if (row.reason === PACK_PURCHASE && delta > 0) {
-      const pack = newPack(row)
-      packs.push(pack)
-      byId.set(row.id, pack)
-      if (row.paymentIntentId !== null) byPayment.set(row.paymentIntentId, pack)
-    } else if (row.reason === PACK_BONUS && delta > 0) {
-      const pack = byPayment.get(row.paymentIntentId ?? '')
-      if (pack === undefined) {
-        orphanBonus += delta
-      } else {
-        pack.use.bonus += delta
-        pack.bonusLeft += delta
-      }
-    } else if (
-      row.reason === WITHDRAWAL_PAID ||
-      row.reason === WITHDRAWAL_BONUS
-    ) {
-      const pack = byId.get(withdrawnPack(row) ?? '')
-      if (pack !== undefined) {
-        if (row.reason === WITHDRAWAL_PAID) pack.paidLeft += delta
-        else pack.bonusLeft += delta
-        pack.use.settled = true
-      }
-    } else if (
-      row.reason === PURCHASE_REFUND ||
-      row.reason === PURCHASE_DISPUTE
-    ) {
-      const payment = row.jobRef ?? ''
-      takes.set(payment, (takes.get(payment) ?? 0) - delta)
-    } else if (
-      delta > 0 &&
-      row.reason !== SEPARATION_REFUND &&
-      !APP_SONGS.has(row.reason)
-    ) {
-      free += delta
-    }
+/** Money that went back for the pack its payment bought: the take comes
+ *  off that pack first. A dispute settles the pack, and so do refunds once
+ *  they have taken back every credit the payment granted. */
+function moneyBack(walk: Walk, row: LedgerEntry, credits: number): void {
+  const pack = walk.byPayment.get(row.jobRef ?? '')
+  if (pack === undefined) return
+  takeBack(pack, credits)
+  pack.use.takenBack += credits
+  const all = pack.use.paid + pack.use.bonus
+  if (row.reason === PURCHASE_DISPUTE || pack.use.takenBack >= all) {
+    pack.use.settled = true
   }
-  for (const [payment, credits] of takes) {
-    const pack = byPayment.get(payment)
-    if (pack !== undefined) takeBack(pack, credits)
-  }
-  return { packs, orphanBonus, free }
 }
 
-/** The web's own credits left: the balance less the app's songs in it. */
-function webCreditsLeft(rows: readonly LedgerEntry[]): number {
-  const balance = rows.reduce((sum, row) => sum + Number(row.delta), 0)
-  const songs = subscriptionSongs(rows)
-  return Math.max(
-    0,
-    balance - Math.max(0, songs.held) - Math.max(0, songs.review),
+/** What a row adds to, or takes off, a pack or the free credits by its
+ *  kind. Spending is left to settle(). */
+function readPackRow(walk: Walk, row: LedgerEntry): void {
+  const delta = Number(row.delta)
+  if (row.reason === PACK_PURCHASE && delta > 0) {
+    addPack(walk, row)
+  } else if (row.reason === PACK_BONUS && delta > 0) {
+    addBonus(walk, row, delta)
+  } else if (
+    row.reason === WITHDRAWAL_PAID ||
+    row.reason === WITHDRAWAL_BONUS
+  ) {
+    withdraw(walk, row, delta)
+  } else if (
+    row.reason === PURCHASE_REFUND ||
+    row.reason === PURCHASE_DISPUTE
+  ) {
+    moneyBack(walk, row, -delta)
+  } else if (
+    delta > 0 &&
+    row.reason !== SEPARATION_REFUND &&
+    !APP_SONGS.has(row.reason)
+  ) {
+    walk.free += delta
+  }
+}
+
+function heldOf(walk: Walk): number {
+  return walk.packs.reduce(
+    (sum, pack) => sum + pack.paidLeft + pack.bonusLeft,
+    walk.free + walk.orphanBonus,
   )
+}
+
+/** Take `credits` in the rule's order: free credits, then each pack's paid
+ *  credits, the oldest first, then their bonus, then bonus with no pack.
+ *  Says what came from where. */
+function spend(walk: Walk, credits: number): Array<[Source, number]> {
+  const taken: Array<[Source, number]> = []
+  let owed = credits
+  const take = (source: Source, available: number): number => {
+    const amount = Math.min(owed, available)
+    if (amount <= 0) return 0
+    taken.push([source, amount])
+    owed -= amount
+    return amount
+  }
+  walk.free -= take('free', walk.free)
+  for (const pack of walk.packs) {
+    pack.paidLeft -= take({ pack, part: 'paid' }, pack.paidLeft)
+  }
+  for (const pack of walk.packs) {
+    pack.bonusLeft -= take({ pack, part: 'bonus' }, pack.bonusLeft)
+  }
+  walk.orphanBonus -= take('orphan', walk.orphanBonus)
+  return taken
+}
+
+function addTo(walk: Walk, source: Source, credits: number): void {
+  if (source === 'free') walk.free += credits
+  else if (source === 'orphan') walk.orphanBonus += credits
+  else if (source.part === 'paid') source.pack.paidLeft += credits
+  else source.pack.bonusLeft += credits
+}
+
+/** A failed separation's refund gives its credits back where its spend
+ *  took them; anything more is the buyer's, as free credits. */
+function giveBack(walk: Walk, job: string, credits: number): void {
+  let left = credits
+  for (const [source, spent] of walk.spentBy.get(job) ?? []) {
+    const back = Math.min(spent, left)
+    addTo(walk, source, back)
+    left -= back
+  }
+  walk.spentBy.delete(job)
+  walk.free += left
+}
+
+function isSeparation(row: LedgerEntry): boolean {
+  return row.reason === WEB_SEPARATION || row.reason === APP_SEPARATION
+}
+
+/** Bring the pools to `web`, the web's credits after the row: what they
+ *  lost was spent, by the rule's order, from what there was then; what
+ *  they gained is a failed separation's refund, else free credits. */
+function settle(walk: Walk, row: LedgerEntry, web: number): void {
+  const gap = heldOf(walk) - web
+  if (gap > 0) {
+    const taken = spend(walk, gap)
+    if (isSeparation(row) && row.jobRef !== null) {
+      walk.spentBy.set(row.jobRef, taken)
+    }
+  } else if (gap < 0) {
+    const gained = -gap
+    if (row.reason === SEPARATION_REFUND)
+      giveBack(walk, row.jobRef ?? '', gained)
+    else walk.free += gained
+  }
 }
 
 /**
  * Every pack in the ledger with what is left of it, oldest first. `rows`
- * must be the account's whole ledger in the order it was written.
+ * must be the account's whole ledger in the order it was written: it is
+ * read in that order, each spend counted against what there was then.
  */
 export function packUses(rows: readonly LedgerEntry[]): PackUse[] {
-  const { packs, orphanBonus, free } = sortLedger(rows)
-  for (const pack of packs) {
-    pack.paidLeft = Math.max(0, pack.paidLeft)
-    pack.bonusLeft = Math.max(0, pack.bonusLeft)
+  const walk: Walk = {
+    packs: [],
+    byPayment: new Map(),
+    byId: new Map(),
+    free: 0,
+    orphanBonus: 0,
+    spentBy: new Map(),
   }
-  const held =
-    free +
-    orphanBonus +
-    packs.reduce((sum, pack) => sum + pack.paidLeft + pack.bonusLeft, 0)
-  // What has been spent, counted against the credits in the rule's order.
-  let spent = Math.min(held, Math.max(0, held - webCreditsLeft(rows)))
-  spent -= Math.min(spent, free)
-  for (const pack of packs) {
-    const used = Math.min(spent, pack.paidLeft)
-    pack.use.paidUnused = pack.paidLeft - used
-    spent -= used
-  }
-  for (const pack of packs) {
-    const used = Math.min(spent, pack.bonusLeft)
-    pack.use.bonusUnused = pack.bonusLeft - used
-    spent -= used
-  }
-  return packs.map((pack) => pack.use)
+  const web = webCreditsAfterEach(rows)
+  rows.forEach((row, index) => {
+    readPackRow(walk, row)
+    settle(walk, row, web[index] ?? 0)
+  })
+  return walk.packs.map((pack) => ({
+    ...pack.use,
+    paidUnused: Math.max(0, pack.paidLeft),
+    bonusUnused: Math.max(0, pack.bonusLeft),
+  }))
 }
 
 // ── The 14 days ──────────────────────────────────────────────────────
@@ -381,14 +482,31 @@ export function refundBasis(terms: PurchaseTerms): RefundBasis {
   return terms === 'no_consent' ? 'full' : 'unused'
 }
 
-/** The refund a withdrawal owes, in minor units, by its basis. */
+/** What refundFor reads of a pack. */
+export type RefundFacts = Pick<
+  PackUse,
+  'paid' | 'paidUnused' | 'bonus' | 'takenBack'
+>
+
+/**
+ * The refund a withdrawal owes, in minor units, by its basis. The whole
+ * price is what an earlier partial refund left of it: the share of the
+ * payment's credits it did not take back, rounded down to the cent. A
+ * refund that took less than it was due (the credits were spent) leaves
+ * more than Stripe holds, and Stripe refuses it for the owner to refund by
+ * hand.
+ */
 export function refundFor(
   basis: RefundBasis,
   amountMinor: number,
-  pack: Pick<PackUse, 'paid' | 'paidUnused'>,
+  pack: RefundFacts,
 ): number {
-  if (basis === 'full') return amountMinor > 0 ? Math.floor(amountMinor) : 0
-  return refundMinor(amountMinor, pack)
+  if (basis === 'unused') return refundMinor(amountMinor, pack)
+  if (!(amountMinor > 0)) return 0
+  const granted = pack.paid + pack.bonus
+  if (!(pack.takenBack > 0) || !(granted > 0)) return Math.floor(amountMinor)
+  const left = Math.max(0, granted - pack.takenBack)
+  return Math.floor((amountMinor * left) / granted)
 }
 
 /**

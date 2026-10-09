@@ -370,6 +370,27 @@ export function subscriptionSongs(
   return { held: walk.held, periods: walk.periods, review: walk.review }
 }
 
+/** The web's own credits after each row, walking the ledger the same way:
+ *  the balance so far less the subscription's songs and review access's,
+ *  never below zero. withdrawal-rules.ts counts a pack's unused credits
+ *  from it, a row at a time. */
+export function webCreditsAfterEach(rows: readonly LedgerRow[]): number[] {
+  const walk: SongsWalk = {
+    held: 0,
+    balance: 0,
+    periods: [],
+    review: 0,
+    takenBy: new Map(),
+  }
+  return rows.map((row) => {
+    readRow(walk, row)
+    return Math.max(
+      0,
+      walk.balance - Math.max(0, walk.held) - Math.max(0, walk.review),
+    )
+  })
+}
+
 /** What a reversed refund owes: the songs its refund took from the period,
  *  less any already given back. */
 export interface RefundReversal {

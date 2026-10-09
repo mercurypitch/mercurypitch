@@ -81,6 +81,12 @@ function ledger() {
         reason: 'purchase-refund',
         jobRef: paymentIntent,
       }),
+    disputed: (credits: number, paymentIntent: string) =>
+      add({
+        delta: -credits,
+        reason: 'purchase-dispute',
+        jobRef: paymentIntent,
+      }),
     withdrawn: (purchase: LedgerEntry, paid: number, bonus: number) => {
       add({
         delta: -paid,
@@ -175,14 +181,38 @@ describe('the order credits count as spent', () => {
     expect(refundMinor(PRICE, use)).toBe(2000)
   })
 
-  it('counts a free credit granted after the pack before the pack too', () => {
+  it('never counts a free credit granted after a spend toward that spend', () => {
     const book = ledger()
     const pack = book.pack(140, 'pi_a')
     book.spend(7, 'job-1')
     book.promo(5)
 
-    // 7 used: the 5 free credits first, then 2 of the pack's.
-    expect(useOf(book.rows, pack).paidUnused).toBe(138)
+    // The 7 came off the pack: the 5 free credits were not there yet.
+    expect(useOf(book.rows, pack).paidUnused).toBe(133)
+  })
+
+  it('never brings back a pack used up before free credits landed', () => {
+    const book = ledger()
+    const pack = book.pack(30, 'pi_a')
+    book.spend(30, 'job-1')
+    book.promo(30)
+
+    const use = useOf(book.rows, pack)
+
+    expect(use.paidUnused).toBe(0)
+    expect(
+      canWithdraw('refund_unused', use, at(use.purchasedAt) + 1000, 3),
+    ).toBe(false)
+  })
+
+  it('spends what there was at each moment: free credits that land between two spends pay for the second', () => {
+    const book = ledger()
+    const pack = book.pack(140, 'pi_a')
+    book.spend(10, 'job-1')
+    book.promo(20)
+    book.spend(15, 'job-2')
+
+    expect(useOf(book.rows, pack).paidUnused).toBe(130)
   })
 
   it('spends the pack before its bonus: 20 of 140 + 30 used leaves the bonus whole', () => {
@@ -254,15 +284,40 @@ describe('the order credits count as spent', () => {
 })
 
 describe('a pack already settled', () => {
-  it('is settled once money went back for it, and cannot be withdrawn', () => {
+  it('stays open after a partial refund, with the share the refund left', () => {
     const book = ledger()
     const pack = book.pack(140, 'pi_a')
     book.refunded(70, 'pi_a')
 
     const use = useOf(book.rows, pack)
 
+    expect(use).toMatchObject({ settled: false, paidUnused: 70, takenBack: 70 })
+    expect(canWithdraw('refund_unused', use, STARTED, 3)).toBe(true)
+    expect(refundFor('unused', PRICE, use)).toBe(1000)
+  })
+
+  it('is settled once a refund took back every credit the payment granted', () => {
+    const book = ledger()
+    const pack = book.pack(140, 'pi_a')
+    book.bonus(30, 'pi_a')
+    book.refunded(170, 'pi_a')
+
+    const use = useOf(book.rows, pack)
+
     expect(use.settled).toBe(true)
-    expect(canWithdraw('refund_unused', use, STARTED, 3)).toBe(false)
+    expect(canWithdraw('no_consent', use, STARTED, 3)).toBe(false)
+  })
+
+  it('is settled by a dispute, whatever it could take back', () => {
+    const book = ledger()
+    const pack = book.pack(140, 'pi_a')
+    book.spend(100, 'job-1')
+    book.disputed(40, 'pi_a')
+
+    const use = useOf(book.rows, pack)
+
+    expect(use.settled).toBe(true)
+    expect(canWithdraw('no_consent', use, STARTED, 3)).toBe(false)
   })
 
   it('keeps a withdrawn pack withdrawn, and counts what it used for the next pack', () => {
@@ -450,8 +505,19 @@ describe('what a pack with no consent on record refunds', () => {
   it('refunds the whole price, credits used or not', () => {
     expect(refundBasis('no_consent')).toBe('full')
     expect(refundBasis('refund_unused')).toBe('unused')
-    expect(refundFor('full', 500, { paid: 30, paidUnused: 0 })).toBe(500)
-    expect(refundFor('unused', 500, { paid: 30, paidUnused: 0 })).toBe(0)
-    expect(refundFor('unused', 500, { paid: 30, paidUnused: 15 })).toBe(250)
+    const pack = { paid: 30, bonus: 0, takenBack: 0 }
+    expect(refundFor('full', 500, { ...pack, paidUnused: 0 })).toBe(500)
+    expect(refundFor('unused', 500, { ...pack, paidUnused: 0 })).toBe(0)
+    expect(refundFor('unused', 500, { ...pack, paidUnused: 15 })).toBe(250)
+  })
+
+  it('refunds what an earlier partial refund left of the price', () => {
+    const book = ledger()
+    const pack = book.pack(140, 'pi_a')
+    book.spend(100, 'job-1')
+    // A 10% refund took 14 credits back.
+    book.refunded(14, 'pi_a')
+
+    expect(refundFor('full', PRICE, useOf(book.rows, pack))).toBe(1800)
   })
 })
