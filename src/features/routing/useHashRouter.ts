@@ -22,7 +22,7 @@ import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { setSyncCodeToJoin } from '@/stores/sync-store'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
-import { setDeviceLinkCode } from '@/stores/ui-store'
+import { setCreditCostGuideRequested, setDeviceLinkCode, } from '@/stores/ui-store'
 
 export interface UseHashRouterDeps {
   // Route handlers (hash → state)
@@ -284,6 +284,14 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
         replaceHash({ type: 'tab', tab: deps.activeTab() })
       } else {
         deps.setActiveUvrSessionId(null)
+        if (route.open === 'costs') {
+          // Karaoke Night's "what a song costs": the guide opens itself and
+          // scrolls into view once pricing has loaded.
+          setCreditCostGuideRequested(true)
+          // One-shot, like the billing return below: the entry keeps the
+          // bare section, so a reload or a Back to it is a plain visit.
+          replaceHash({ type: 'settings-section', section: route.section })
+        }
       }
     } else if (route.type === 'admin') {
       deps.dismissWelcome()

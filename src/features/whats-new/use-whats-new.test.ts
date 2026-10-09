@@ -25,6 +25,15 @@ describe("What's New on the web", () => {
     expect(window.location.hash).toBe('#/whats-new')
   })
 
+  it('holds back for a visitor sent for the credit-cost guide', () => {
+    localStorage.setItem(WHATS_NEW_SEEN_KEY, '0.0')
+    window.location.hash = '#/settings/credits?open=costs'
+    createWhatsNewController().announceIfNew(true)
+    expect(window.location.hash).toBe('#/settings/credits?open=costs')
+    // Kept for their next visit, rather than marked as told.
+    expect(localStorage.getItem(WHATS_NEW_SEEN_KEY)).toBe('0.0')
+  })
+
   it('records the line for a first-ever visitor without announcing it', () => {
     createWhatsNewController().announceIfNew(false)
     expect(localStorage.getItem(WHATS_NEW_SEEN_KEY)).toBe(

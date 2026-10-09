@@ -66,8 +66,10 @@ export type HashRoute =
       outcome: 'success' | 'cancel'
       kind?: 'credits' | 'donation'
     }
-  /** A specific Settings sub-tab, e.g. #/settings/credits. */
-  | { type: 'settings-section'; section: SettingsSection }
+  /** A specific Settings sub-tab, e.g. #/settings/credits. `open: 'costs'`
+   *  (#/settings/credits?open=costs) also asks for the credit-cost guide to
+   *  be open and in view on arrival: Karaoke Night's "what a song costs". */
+  | { type: 'settings-section'; section: SettingsSection; open?: 'costs' }
   | { type: 'admin'; section: AdminSection }
   /** The password-reset form: emailed link landing (#/reset-password?token=…)
    *  or the bare request-a-link form (#/reset-password). */
@@ -309,12 +311,19 @@ export function parseHash(rawHash: string): HashRoute {
   }
 
   // Match: /settings/<section> — deep link to a Settings sub-tab. The
-  // URL slug "practice" maps to the internal section value 'singing'.
-  const settingsMatch = hash.match(/^\/settings\/([a-z-]+)$/)
+  // URL slug "practice" maps to the internal section value 'singing'. A
+  // query is allowed: `?open=costs` on Credits asks for the credit-cost
+  // guide (Karaoke Night links there with a full page load, so the ask
+  // cannot travel any other way). Any other query lands on the bare section
+  // rather than nowhere.
+  const settingsMatch = hash.match(/^\/settings\/([a-z-]+)(?:\?(.*))?$/)
   if (settingsMatch) {
     const section = SETTINGS_SLUG_TO_SECTION[settingsMatch[1]]
     if (section !== undefined) {
-      return { type: 'settings-section', section }
+      const open = new URLSearchParams(settingsMatch[2] ?? '').get('open')
+      return section === 'credits' && open === 'costs'
+        ? { type: 'settings-section', section, open }
+        : { type: 'settings-section', section }
     }
   }
 
@@ -403,8 +412,10 @@ export function buildHash(route: HashRoute): string {
       // donation goes back to the credits tab, same as a cancelled purchase.
       if (route.outcome === 'cancel') return '/pricing'
       return route.kind === 'donation' ? '/donate/thanks' : '/billing/success'
-    case 'settings-section':
-      return `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
+    case 'settings-section': {
+      const path = `/settings/${SETTINGS_SECTION_TO_SLUG[route.section]}`
+      return route.open === undefined ? path : `${path}?open=${route.open}`
+    }
     case 'admin':
       return `/admin/${route.section}`
     case 'reset-password':

@@ -4,12 +4,14 @@
 //
 // Sits under the processing cards in Settings › Credits. Closed, it is one
 // small chip; open, it lists what a song costs, from the live pricing
-// (credit-cost-model.ts).
+// (credit-cost-model.ts). A link can ask for it open: Karaoke Night's
+// "what a song costs" (#/settings/credits?open=costs).
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, createUniqueId, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, createUniqueId, Show, } from 'solid-js'
 import { ChevronDown, Info } from '@/components/icons'
 import type { Pricing } from '@/db/services/billing-service'
+import { creditCostGuideRequested, setCreditCostGuideRequested, } from '@/stores/ui-store'
 import { creditCosts, creditCount } from './credit-cost-model'
 import styles from './CreditCostGuide.module.css'
 
@@ -17,11 +19,32 @@ export const CreditCostGuide: Component<{ pricing: Pricing }> = (props) => {
   const [open, setOpen] = createSignal(false)
   const panelId = createUniqueId()
   const costs = createMemo(() => creditCosts(props.pricing))
+  let guideRef: HTMLDivElement | undefined
+
+  // The link promised what a song costs, and on a phone the guide sits below
+  // the first screen: open it and bring it into view. Taking the request
+  // clears it, so a plain visit to Credits finds the chip folded.
+  createEffect(() => {
+    if (!creditCostGuideRequested()) return
+    setCreditCostGuideRequested(false)
+    setOpen(true)
+    // A frame later, once the open panel is laid out, and after the scroll
+    // the Settings tab strip queued on arrival, which would otherwise cut
+    // this one short.
+    requestAnimationFrame(() => {
+      const reduce =
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+      guideRef?.scrollIntoView({
+        block: 'start',
+        behavior: reduce ? 'auto' : 'smooth',
+      })
+    })
+  })
 
   return (
     <Show when={costs()}>
       {(c) => (
-        <div class={styles.guide}>
+        <div class={styles.guide} ref={guideRef}>
           <button
             type="button"
             class={styles.chip}

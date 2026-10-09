@@ -6,7 +6,7 @@
 // faster server-side processing (see docs/plans/premium.md).
 
 import type { Component } from 'solid-js'
-import { createEffect, createResource, For, onMount, Show } from 'solid-js'
+import { createEffect, createResource, For, onCleanup, onMount, Show, } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { CreditCostGuide } from '@/components/billing/CreditCostGuide'
 import { DonatePanel } from '@/components/billing/DonatePanel'
@@ -24,7 +24,7 @@ import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
-import { openAuthModal } from '@/stores/ui-store'
+import { openAuthModal, setCreditCostGuideRequested } from '@/stores/ui-store'
 import styles from './PricingPanel.module.css'
 
 // Distinct, subtle per-card accent hues, cycled by card position. Drive the
@@ -52,6 +52,10 @@ export const PricingPanel: Component = () => {
   // Product funnel: purchase interest — the panel only renders when the
   // user opens Settings → Credits (or the deep link).
   onMount(() => trackEvent('pricing_view'))
+  // A link that asked for the cost guide is answered by the guide, which
+  // renders only once pricing has loaded. If it never did, the ask ends with
+  // this visit rather than opening the guide on some later, plain one.
+  onCleanup(() => setCreditCostGuideRequested(false))
   const [pricing] = createResource(() => fetchPricing())
   // Credit balance for the signed-in user (null when logged out / no cloud).
   // Keyed on balanceVersion (+1 so the initial 0 still fetches): bumping it

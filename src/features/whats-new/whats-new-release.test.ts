@@ -99,8 +99,16 @@ describe('routeSuppressesAnnouncement', () => {
       'uvr-session-mixer',
       'learn-chapter',
     ]) {
-      expect(routeSuppressesAnnouncement(route), route).toBe(true)
+      expect(routeSuppressesAnnouncement({ type: route }), route).toBe(true)
     }
+  })
+
+  // Karaoke Night's "what a song costs" lands on Settings > Credits with the
+  // cost guide open. That visitor was sent for the guide, not restored.
+  it('holds back on a Settings link that asks for something open', () => {
+    expect(
+      routeSuppressesAnnouncement({ type: 'settings-section', open: 'costs' }),
+    ).toBe(true)
   })
 
   // The regression this list exists for: an allowlist of 'tab' and 'unknown'
@@ -117,7 +125,7 @@ describe('routeSuppressesAnnouncement', () => {
       'whats-new',
       'guide',
     ]) {
-      expect(routeSuppressesAnnouncement(route), route).toBe(false)
+      expect(routeSuppressesAnnouncement({ type: route }), route).toBe(false)
     }
   })
 })

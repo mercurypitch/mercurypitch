@@ -98,7 +98,7 @@ export function createWhatsNewController(
     // The list of what counts lives next door — and is a denylist, because
     // the first cut allowlisted 'tab' and 'unknown' and so also refused
     // anyone the app restored into Settings or the Karaoke upload view.
-    if (routeSuppressesAnnouncement(parseHash(window.location.hash).type)) {
+    if (routeSuppressesAnnouncement(parseHash(window.location.hash))) {
       return
     }
 
