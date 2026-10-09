@@ -111,6 +111,15 @@ jobs:
       - name: Typecheck worker
         run: pnpm typecheck:db
 
+      # The purchase and withdrawal mails name the seller from the TRADER_*
+      # vars, and an empty one goes out to buyers as "[TRADER_NAME]". A
+      # release stops here, before the database or the worker is touched,
+      # when the prod block of wrangler.jsonc lacks a name or an address.
+      # The VAT ID may stay empty. Dev deploys are never held by it.
+      - name: Check the seller details for production
+        if: env.DEPLOY_ENV == 'prod'
+        run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
+
       # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is
       # public, and workflow artifacts on a public repo are downloadable by
       # any logged-in GitHub user — an exported database (emails, password
