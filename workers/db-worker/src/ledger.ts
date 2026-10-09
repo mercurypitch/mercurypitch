@@ -38,6 +38,15 @@ export class LedgerBusy extends Error {
   override name = 'LedgerBusy'
 }
 
+/** Ledger.version, from the rows as read: what LEDGER_VERSION computes. */
+function versionOf(
+  rows: ReadonlyArray<{ seq: number; delta: number }>,
+): string {
+  const balance = rows.reduce((sum, row) => sum + Number(row.delta), 0)
+  const last = rows.length === 0 ? 0 : rows[rows.length - 1].seq
+  return `${rows.length}:${last}:${balance}`
+}
+
 export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   const { results } = await env.DB.prepare(
     `SELECT rowid AS seq, createdAt, delta, reason, jobRef, idempotencyKey
@@ -45,9 +54,29 @@ export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   )
     .bind(userId)
     .all<LedgerRow & { seq: number }>()
-  const balance = results.reduce((sum, row) => sum + Number(row.delta), 0)
-  const last = results.length === 0 ? 0 : results[results.length - 1].seq
-  return { rows: results, version: `${results.length}:${last}:${balance}` }
+  return { rows: results, version: versionOf(results) }
+}
+
+/** A row with what names it: its own id, and the Stripe payment behind it. */
+export type NamedLedgerRow = LedgerRow & {
+  id: string
+  createdAt: string
+  paymentIntentId: string | null
+}
+
+/** readLedger, with each row's id and PaymentIntent too: what a withdrawal
+ *  counts a pack by (withdrawal.ts). Same version. */
+export async function readNamedLedger(
+  env: Env,
+  userId: string,
+): Promise<{ rows: NamedLedgerRow[]; version: string }> {
+  const { results } = await env.DB.prepare(
+    `SELECT rowid AS seq, id, createdAt, delta, reason, jobRef, idempotencyKey, paymentIntentId
+       FROM creditLedger WHERE userId = ? ORDER BY rowid`,
+  )
+    .bind(userId)
+    .all<NamedLedgerRow & { seq: number }>()
+  return { rows: results, version: versionOf(results) }
 }
 
 /** Write the row `key` names, as `rowFor` computes it from the ledger as

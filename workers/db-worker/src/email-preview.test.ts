@@ -55,9 +55,31 @@ describe('the mail preview route', () => {
       'fresh-link',
       'fresh-link-twin',
       'purchase',
+      'purchase-waiver',
+      'purchase-offer',
+      'withdrawal',
+      'withdrawal-by-hand',
     ]) {
       expect(html).toContain(`?mail=${id}&amp;app=`)
     }
+  })
+
+  it("shows this environment's seller in the credit mails, or what is unset", async () => {
+    const set =
+      (await get('?mail=purchase&part=text', {
+        TRADER_NAME: 'Sample Trader',
+        TRADER_ADDRESS: '1 Sample Street, 00000 Sampletown',
+        TRADER_EMAIL: 'sales@example.test',
+        TRADER_VAT_ID: 'XX000000000',
+      })?.text()) ?? ''
+    expect(set).toContain(
+      'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test. VAT ID XX000000000.',
+    )
+    const unset = (await get('?mail=withdrawal&part=text')?.text()) ?? ''
+    expect(unset).toContain("Subject: We've received your cancellation")
+    expect(unset).toContain(
+      'Sold by [TRADER_NAME], [TRADER_ADDRESS]. Email [TRADER_EMAIL]. VAT ID [TRADER_VAT_ID].',
+    )
   })
 
   it('renders a mail with the sample twin, links and pictures on this environment', async () => {

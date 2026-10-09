@@ -1616,6 +1616,8 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
       'newsletterSends',
       'accountNoticeSends',
       'confirmReminderSends',
+      'checkoutConsents',
+      'withdrawals',
     ]
     expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
       [],

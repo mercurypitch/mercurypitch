@@ -205,6 +205,20 @@
         "RETENTION_FUNNEL_MONTHS": "13",
         "RETENTION_RATE_LIMIT_DAYS": "2",
         "RETENTION_PROMO_EMAIL_DAYS": "30",
+        // The 14-day withdrawal for credit packs (withdrawal-wording.ts):
+        // refund_unused refunds the price of a pack's unused credits from
+        // Settings › Credits; waiver asks the buyer at checkout to give the
+        // right up, and there is nothing to cancel. Unset or unknown is
+        // refund_unused.
+        "WITHDRAWAL_MODE": "refund_unused",
+        // Who sells the credits: the seller line in the purchase and
+        // withdrawal mails (checkout-consent.ts). Empty shows "[TRADER_NAME]"
+        // and the like, and the log names what is missing. Fill in all four
+        // before a buyer can see them.
+        "TRADER_NAME": "",
+        "TRADER_ADDRESS": "",
+        "TRADER_EMAIL": "",
+        "TRADER_VAT_ID": "",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -333,6 +347,12 @@
         "RETENTION_FUNNEL_MONTHS": "13",
         "RETENTION_RATE_LIMIT_DAYS": "2",
         "RETENTION_PROMO_EMAIL_DAYS": "30",
+        // The withdrawal and the seller: see the dev block.
+        "WITHDRAWAL_MODE": "refund_unused",
+        "TRADER_NAME": "",
+        "TRADER_ADDRESS": "",
+        "TRADER_EMAIL": "",
+        "TRADER_VAT_ID": "",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

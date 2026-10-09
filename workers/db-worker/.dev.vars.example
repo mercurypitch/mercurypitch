@@ -78,3 +78,15 @@ GOOGLE_CLIENT_SECRET=
 # var. Unset, the route answers 501 and grants nothing.
 #   pnpm exec wrangler secret put REVIEW_ACCESS_CODE_SHA256 --env dev
 #REVIEW_ACCESS_CODE_SHA256=
+
+# The 14-day withdrawal for credit packs (withdrawal-wording.ts): refund_unused
+# (the default) or waiver. wrangler.jsonc sets it per environment.
+#WITHDRAWAL_MODE=refund_unused
+
+# Who sells the credits, printed in the purchase and withdrawal mails
+# (checkout-consent.ts). Public details, so wrangler.jsonc "vars" holds the
+# real ones per environment; unset, the mails show [TRADER_NAME] and the like.
+#TRADER_NAME=
+#TRADER_ADDRESS=
+#TRADER_EMAIL=
+#TRADER_VAT_ID=

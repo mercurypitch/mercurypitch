@@ -213,6 +213,20 @@ export interface Env {
   /** Days a promo code's promoEmailClaims rows are kept after the code's
    *  expiresAt. A code with no expiresAt never closes. Default 30. */
   RETENTION_PROMO_EMAIL_DAYS?: string
+  /** How a credit pack's 14-day right to cancel works (withdrawal-wording.ts):
+   *  `refund_unused` (the default, and what anything unrecognised means) or
+   *  `waiver`. Decides the checkbox on Stripe Checkout, the purchase mail's
+   *  panel, the footnote under the packs and whether Settings › Credits
+   *  offers the withdrawal function. */
+  WITHDRAWAL_MODE?: string
+  /** Who sells the credits, printed in the purchase mail and the
+   *  withdrawal acknowledgement (CRD Art. 6(1)(b), (c)): the trading name,
+   *  the full geographic address with the country, a contact email and the
+   *  VAT ID. Unset, each shows as its own name in brackets. */
+  TRADER_NAME?: string
+  TRADER_ADDRESS?: string
+  TRADER_EMAIL?: string
+  TRADER_VAT_ID?: string
   /** The Authorization header RevenueCat sends with every webhook, as set in
    *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
    *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
@@ -889,6 +903,9 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'billing-checkout': { max: 10, windowMs: 300_000 },
   // Promo code redemptions: bound guessing loops per account.
   'promo-redeem': { max: 10, windowMs: 300_000 },
+  // Withdrawal statements (withdrawal.ts): each one may ask Stripe for a
+  // refund. A buyer sends one per pack; ten in five minutes is a loop.
+  'billing-withdrawal': { max: 10, windowMs: 300_000 },
   // Play review access (review-access.ts). A reviewer types one code once;
   // an anonymous identity is free to mint, so the address has a cap of its
   // own as well as the account.
@@ -3927,6 +3944,11 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'promoRedemptions', column: 'userId' },
   // That the account earned the launch offer's reward (launch-finisher.ts).
   { table: 'offerUnlocks', column: 'userId' },
+  // The withdrawal consent of each pack and the withdrawal statements
+  // (migration 0060). Like the ledger they go with the account: Stripe keeps
+  // the Checkout Session, with its consent, and the refunds.
+  { table: 'checkoutConsents', column: 'userId' },
+  { table: 'withdrawals', column: 'userId' },
   // Which newsletter issues went to this account. No address is stored, but
   // a list of what somebody was sent is still a record of them, and an
   // erased account must not leave one. Same reasoning as promoRedemptions:

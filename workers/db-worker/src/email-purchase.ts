@@ -3,14 +3,24 @@
 // ============================================================
 //
 // Sent by the Stripe webhook once a credit pack's credits land (billing.ts,
-// grantCheckoutCredits), and never for a redelivered event. Supporter
-// donations and the app-store Karaoke subscription send no mail of ours.
-// It shares the sign-up mails' layout (email-layout.ts).
+// grantCheckoutCredits, through checkout-consent.ts), and never for a
+// redelivered event. Supporter donations and the app-store Karaoke
+// subscription send no mail of ours. It shares the sign-up mails' layout
+// (email-layout.ts).
+//
+// It is also the legal confirmation of the consent the buyer gave at
+// checkout (CRD Art. 8(7)): the "Your right to cancel" panel says what the
+// checkbox asked for, under the withdrawal model the session was opened
+// with, and who sold the credits. Its sentences live in
+// withdrawal-wording.ts, with the checkbox's.
 
 import type { RenderedEmail, ResendConfig } from './email'
 import { escapeHtml, formatDate, formatMoney, resendSend } from './email'
 import type { HeroLink, Lines, MailOrigins } from './email-layout'
 import { button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, SANS, signOffRow, url, W, } from './email-layout'
+import { withdrawalDeadline } from './withdrawal-rules'
+import type { TraderDetails, WithdrawalMode } from './withdrawal-wording'
+import { CANCEL_PATH_LABEL, RIGHT_TO_CANCEL_TITLE, rightToCancelLines, TERMS_LINE, traderLine, WITHDRAWAL_TERMS_URL, } from './withdrawal-wording'
 
 export interface PurchaseEmailVars extends MailOrigins {
   /** Pack label from pricingPlans, e.g. "Starter". */
@@ -26,8 +36,13 @@ export interface PurchaseEmailVars extends MailOrigins {
   amountMinor: number
   /** ISO currency, e.g. "eur". */
   currency: string
-  /** When the credits landed (the ledger row's createdAt). */
+  /** When the credits landed (the ledger row's createdAt). The 14 days to
+   *  cancel count from it (withdrawal-rules.ts). */
   orderDateIso: string
+  /** The withdrawal model the checkout was opened with. */
+  withdrawalMode: WithdrawalMode
+  /** Who sold the credits: the TRADER_* vars (checkout-consent.ts). */
+  trader: TraderDetails
 }
 
 /** Karaoke Night, where a credit gets spent. */
@@ -70,8 +85,45 @@ function creditsPanel(vars: PurchaseEmailVars): string {
   return `<tr><td style="padding:22px 24px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:16px;"><tr><td style="padding:20px 22px;">${eyebrow('Added to your account', W.violet)}<div style="font:700 34px/1.1 ${DISPLAY};color:${W.teal};">+${added}</div>${bonusHtml}<div style="margin-top:8px;font:15px/1.5 ${SANS};color:${W.text};">New balance: <strong>${balance}</strong></div><div style="margin-top:14px;padding-top:12px;border-top:1px solid ${W.panelLine};font:13px/1.5 ${SANS};color:${W.muted};">${paid}</div></td></tr></table></td></tr>`
 }
 
+/** The right to cancel, in the mode's words, with its last day. */
+function cancelLines(vars: PurchaseEmailVars): string[] {
+  const deadline = withdrawalDeadline(vars.orderDateIso)
+  return rightToCancelLines(vars.withdrawalMode, {
+    deadline: formatDate(`${deadline}T12:00:00.000Z`),
+    credits: vars.credits,
+  })
+}
+
+function cancelPanel(vars: PurchaseEmailVars): string {
+  const settings = inlineLink(
+    'Settings &rsaquo; Credits',
+    url(vars.appOrigin, CREDITS_PATH),
+  )
+  const body = cancelLines(vars)
+    .map(
+      (line, i) =>
+        `<p style="margin:${i === 0 ? 0 : 10}px 0 0;font:14px/1.6 ${SANS};color:${W.text};">${escapeHtml(line).replace(CANCEL_PATH_LABEL, settings)}</p>`,
+    )
+    .join('')
+  const seller = `<p style="margin:14px 0 0;padding-top:12px;border-top:1px solid ${W.panelLine};font:12px/1.6 ${SANS};color:${W.muted};">${escapeHtml(traderLine(vars.trader))} ${escapeHtml(TERMS_LINE)} ${inlineLink('about.mercurypitch.com/terms', escapeHtml(WITHDRAWAL_TERMS_URL))}</p>`
+  return `<tr><td style="padding:14px 24px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:16px;"><tr><td style="padding:18px 22px;">${eyebrow(RIGHT_TO_CANCEL_TITLE, W.violet)}${body}${seller}</td></tr></table></td></tr>`
+}
+
 function creditRow(appOrigin: string): string {
   return `<tr><td style="padding:8px 36px 4px;">${button('Try it in Karaoke Night', url(appOrigin, KARAOKE_PATH))}<p style="margin:14px 0 0;font:14px/1.6 ${SANS};color:${W.muted};">See your balance and what each song costs in ${inlineLink('Settings &rsaquo; Credits', url(appOrigin, CREDITS_PATH))}.</p></td></tr>`
+}
+
+/** The panel as the plain-text part says it. */
+function cancelText(vars: PurchaseEmailVars): string[] {
+  const settings = `Settings > Credits (${vars.appOrigin}${CREDITS_PATH})`
+  return [
+    RIGHT_TO_CANCEL_TITLE,
+    ...cancelLines(vars).map((line) =>
+      line.replace(CANCEL_PATH_LABEL, settings),
+    ),
+    traderLine(vars.trader),
+    `${TERMS_LINE} ${WITHDRAWAL_TERMS_URL}`,
+  ]
 }
 
 export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
@@ -92,6 +144,7 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
       heroRow(MAIL_ART.credits, vars, KARAOKE_LINK),
       introRow(lines),
       creditsPanel(vars),
+      cancelPanel(vars),
       creditRow(vars.appOrigin),
       signOffRow(SIGN_OFF, RECEIPT_NOTE),
     ],
@@ -108,6 +161,8 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
     `New balance: ${count(vars.balance, 'credit', 'credits')}`,
     `${formatMoney(vars.amountMinor, vars.currency)} · ${formatDate(vars.orderDateIso)}`,
     '',
+    ...cancelText(vars),
+    '',
     `Try it in Karaoke Night: ${vars.appOrigin}${KARAOKE_PATH}`,
     `See your balance and what each song costs in Settings > Credits: ${vars.appOrigin}${CREDITS_PATH}`,
     '',
@@ -119,7 +174,8 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
   return { subject, html, text }
 }
 
-/** Send the purchase mail. Best-effort; see resendSend. */
+/** Send the purchase mail. Best-effort; see resendSend. The caller records
+ *  whether it went (checkout-consent.ts). */
 export async function sendPurchaseMail(
   cfg: ResendConfig,
   to: string,

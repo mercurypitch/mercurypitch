@@ -137,6 +137,9 @@ function checkout(
         payment_intent: options.paymentIntent ?? 'pi_starter',
         amount_total: 500,
         currency: 'eur',
+        // The withdrawal checkbox every pack's checkout asks for
+        // (checkout-consent.ts).
+        consent: { terms_of_service: 'accepted' },
         metadata: {
           userId,
           planId: 'pack-starter',

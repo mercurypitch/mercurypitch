@@ -19,6 +19,10 @@
 //                                     a few songs, once (review-access.ts)
 //   POST /api/billing/revenuecat — RevenueCat; secret header, idempotent: the
 //                                   Karaoke subscription's songs (revenuecat.ts)
+//   GET  /api/billing/withdrawals — auth; the packs that can still be cancelled
+//   POST /api/billing/withdrawals — auth; { purchaseId, name, email } → the
+//                                    14-day withdrawal statement, its refund
+//                                    and acknowledgement (withdrawal.ts)
 //
 // Design (see docs/plans/premium.md):
 //  • Prices live in the DB (pricingPlans), never in the repo. `amount` NULL
@@ -37,9 +41,9 @@
 // billing-core.ts so they're unit-testable without the worker runtime.
 
 import type { Env } from './auth'
-import { checkRateLimit, fallbackAppOrigin, getAuth } from './auth'
+import { checkRateLimit, getAuth } from './auth'
+import { confirmPurchase, consentCheckoutParams, withdrawalMode, } from './checkout-consent'
 import { sendBillingAlert } from './email'
-import { sendPurchaseMail } from './email-purchase'
 import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
@@ -50,13 +54,14 @@ import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from '
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
+import { isStripeConfigured, stripeGet, stripeRequest } from './stripe-api'
 import { CHECKOUT_PAID_EVENTS, clawBackPayment, isCheckoutPaidEvent, isMoneyBackEvent, paymentIntentOf, } from './stripe-payments'
+import { handleWithdrawals } from './withdrawal'
+import { WITHDRAWAL_DAYS } from './withdrawal-wording'
 import type { PricingRow } from './billing-core'
 import { UVR_TIER_PLAN_IDS, bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from './billing-core'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
-
-const STRIPE_API = 'https://api.stripe.com/v1'
 
 const ALLOWED_ORIGINS = [
   'https://mercurypitch.com',
@@ -65,43 +70,9 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ]
 
-function isStripeConfigured(env: Env): boolean {
-  return env.STRIPE_SECRET_KEY != null && env.STRIPE_SECRET_KEY !== ''
-}
-
 function appOrigin(request: Request): string {
   const origin = request.headers.get('Origin') ?? ''
   return ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
-}
-
-// ── Stripe REST (form-encoded; no SDK) ───────────────────────────────
-
-async function stripeRequest(
-  env: Env,
-  path: string,
-  params: Record<string, string>,
-): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-  const res = await fetch(`${STRIPE_API}${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.STRIPE_SECRET_KEY as string}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams(params),
-  })
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-  return { ok: res.ok, status: res.status, data }
-}
-
-async function stripeGet(
-  env: Env,
-  pathWithQuery: string,
-): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-  const res = await fetch(`${STRIPE_API}${pathWithQuery}`, {
-    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY as string}` },
-  })
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-  return { ok: res.ok, status: res.status, data }
 }
 
 interface UserBillingRow {
@@ -149,6 +120,9 @@ async function handlePricing(env: Env, respond: Respond): Promise<Response> {
       ...pricing,
       uvrModelCredits: uvrModelCredits(gpuBase),
       stripeConfigured: isStripeConfigured(env),
+      // The withdrawal model the packs are sold under: the footnote under
+      // them and Settings › Credits follow it (withdrawal-wording.ts).
+      withdrawal: { mode: withdrawalMode(env), days: WITHDRAWAL_DAYS },
     },
     // Public + cacheable: pricing changes are infrequent.
     { headers: { 'Cache-Control': 'public, max-age=60' } },
@@ -337,6 +311,16 @@ async function handleCheckout(
     params,
     await finisherCheckoutParams(env, auth.userId, plan.kind),
   )
+  // A pack's withdrawal checkbox, and our line before the offer's above the
+  // pay button (checkout-consent.ts).
+  Object.assign(
+    params,
+    consentCheckoutParams(
+      env,
+      plan.kind,
+      params['custom_text[submit][message]'],
+    ),
+  )
   const session = await stripeRequest(env, '/checkout/sessions', params)
   if (!session.ok || typeof session.data.url !== 'string') {
     console.error(
@@ -422,6 +406,7 @@ async function grantForCheckout(
   env: Env,
   eventId: string,
   session: Record<string, unknown>,
+  eventCreated?: number,
 ): Promise<GrantOutcome> {
   const metadata =
     (session.metadata as Record<string, unknown> | undefined) ?? {}
@@ -444,7 +429,7 @@ async function grantForCheckout(
   }
   return donation
     ? grantSupporterEntitlement(env, eventId, session)
-    : grantCheckoutCredits(env, eventId, session)
+    : grantCheckoutCredits(env, eventId, session, eventCreated)
 }
 
 /** Grant a time-boxed `supporter` entitlement for a completed donation.
@@ -574,32 +559,12 @@ async function grantSupporterEntitlement(
   }
 }
 
-/** What the purchase mail says was paid: the session's own total and
- *  currency, which already carry any Stripe discount, else the plan's list
- *  price. */
-export function paidPrice(
-  session: Record<string, unknown>,
-  plan: { amountMinor: number | null; currency: string | null } | null,
-): { amountMinor: number; currency: string } {
-  const total =
-    typeof session.amount_total === 'number' ? session.amount_total : null
-  const currency =
-    typeof session.currency === 'string' && session.currency !== ''
-      ? session.currency
-      : null
-  return total !== null
-    ? { amountMinor: total, currency: currency ?? plan?.currency ?? 'eur' }
-    : {
-        amountMinor: plan?.amountMinor ?? 0,
-        currency: plan?.currency ?? 'eur',
-      }
-}
-
 /** Grant credits for a completed checkout, idempotent on the event id. */
 async function grantCheckoutCredits(
   env: Env,
   eventId: string,
   session: Record<string, unknown>,
+  eventCreated?: number,
 ): Promise<GrantOutcome> {
   const metadata =
     (session.metadata as Record<string, unknown> | undefined) ?? {}
@@ -643,59 +608,21 @@ async function grantCheckoutCredits(
   // the pack a duplicate and this writes the bonus (launch-finisher.ts).
   const bonus = await grantFinisherBonus(env, session, userId)
 
-  // Purchase "thank you" email — best-effort. Only on a real (non-duplicate)
-  // grant, only when Resend is configured, and NEVER allowed to throw: the
-  // paid credits already landed and must not be undone by an email failure.
-  if (res.meta.changes > 0 && env.RESEND_API_KEY) {
-    try {
-      const info = await env.DB.prepare(
-        `SELECT u.email       AS email,
-                pp.label      AS planLabel,
-                pp.amount     AS amountMinor,
-                pp.currency   AS currency,
-                (SELECT COALESCE(SUM(delta), 0) FROM creditLedger WHERE userId = ?) AS balance
-           FROM users u
-           LEFT JOIN pricingPlans pp ON pp.id = ?
-          WHERE u.id = ?`,
-      )
-        .bind(userId, planId, userId)
-        .first<{
-          email: string | null
-          planLabel: string | null
-          amountMinor: number | null
-          currency: string | null
-          balance: number
-        }>()
-      if (info?.email) {
-        // A webhook has no page behind it: links and pictures go to this
-        // environment's own app.
-        const app = fallbackAppOrigin(env)
-        const paid = paidPrice(session, info)
-        await sendPurchaseMail(
-          { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
-          info.email,
-          {
-            appOrigin: app,
-            assetOrigin: app,
-            packLabel: info.planLabel ?? 'credit',
-            credits,
-            bonusCredits: bonus,
-            balance: info.balance,
-            amountMinor: paid.amountMinor,
-            currency: paid.currency,
-            orderDateIso: now,
-          },
-        )
-      } else {
-        console.log(
-          `[billing] checkout ${eventId}: no email on file — thank-you skipped`,
-        )
-      }
-    } catch (err) {
-      console.error(
-        `[billing] thank-you email failed (non-fatal): ${String(err)}`,
-      )
-    }
+  // The withdrawal consent the session carried, and the purchase mail that
+  // confirms it, each recorded (checkout-consent.ts). Only on a real grant:
+  // a redelivery was mailed already. It never throws, so it can never undo
+  // the credits that just landed.
+  if (res.meta.changes > 0) {
+    await confirmPurchase(env, {
+      eventId,
+      eventCreated,
+      session,
+      userId,
+      planId,
+      credits,
+      bonus,
+      grantedAt: now,
+    })
   }
   return {
     granted: (res.meta.changes > 0 ? credits : 0) + bonus,
@@ -1126,11 +1053,7 @@ async function handleWebhook(
   )
   if (!valid) return respond({ error: 'Invalid signature' }, { status: 400 })
 
-  let event: {
-    id?: string
-    type?: string
-    data?: { object?: Record<string, unknown> }
-  }
+  let event: StripeEventListItem
   try {
     event = JSON.parse(payload)
   } catch {
@@ -1156,6 +1079,7 @@ async function handleWebhook(
       env,
       event.id,
       event.data?.object ?? {},
+      createdOf(event),
     )
     // Only the claim winner may mark the event processed. A duplicate here
     // means another delivery (or the sweep) holds the claim RIGHT NOW - if
@@ -1189,7 +1113,15 @@ const RECONCILE_MAX_PAGES = 10
 interface StripeEventListItem {
   id?: string
   type?: string
+  /** When Stripe created the event, in seconds. */
+  created?: unknown
   data?: { object?: Record<string, unknown> }
+}
+
+function createdOf(event: StripeEventListItem): number | undefined {
+  return typeof event.created === 'number' && Number.isFinite(event.created)
+    ? event.created
+    : undefined
 }
 
 /** Sweep Stripe's recent checkout events (CHECKOUT_PAID_EVENTS) and grant any
@@ -1241,6 +1173,7 @@ export async function reconcileBilling(env: Env): Promise<void> {
           env,
           ev.id,
           ev.data?.object ?? {},
+          createdOf(ev),
         )
         // A duplicate = the webhook (or a parallel sweep) holds the claim;
         // recording it here would strand the grant if that winner fails.
@@ -1354,6 +1287,10 @@ export async function handleBilling(
   }
   if (route === 'refund' && method === 'POST') {
     return handleRefund(request, env, respond)
+  }
+  if (route === 'withdrawals') {
+    const answer = await handleWithdrawals(request, env, respond)
+    if (answer !== null) return answer
   }
   return respond({ error: 'Not found' }, { status: 404 })
 }
