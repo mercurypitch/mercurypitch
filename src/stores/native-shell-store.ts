@@ -164,6 +164,13 @@ export interface NativeShellApi {
    */
   openKaraokeStudio?: () => void
   /**
+   * Push the Long note exercise over the room (premium exercises, decision
+   * L2): the Sing room's options open it. Optional, like `openKaraokeStudio`:
+   * a build without the premium exercises registers none, and the room draws
+   * no row for it.
+   */
+  openLongNote?: () => void
+  /**
    * The Karaoke subscription, bought and restored through the store (plan
    * S8 §6.7). The purchase port it wraps lives in the app, which the room
    * cannot import. Until the store products and RevenueCat's keys exist
@@ -468,6 +475,23 @@ export const roomInPictureInPicture = pictureInPicture
 
 export function setRoomInPictureInPicture(on: boolean): void {
   setPictureInPicture(on)
+}
+
+// ── A held note keeps the rail out of reach ──────────────────
+//
+// An exercise pushed over a tab (Long note) has no run for the shell to
+// drive, so `registerRunControls` is the wrong tool: it would take the slot
+// from the room underneath and hand it back to nobody when it left. A held
+// note still wants the rail out of the way, so a stray thumb cannot change
+// tab mid-breath. The shell folds this into `railVisible`.
+
+const [exerciseFocus, setExerciseFocusSignal] = createSignal(false)
+
+/** True while an exercise is holding the singer's attention (a held note). */
+export const exerciseHoldsFocus = exerciseFocus
+
+export function setExerciseFocus(on: boolean): void {
+  setExerciseFocusSignal(on)
 }
 
 // ── Where "Skip to main content" goes ────────────────────────

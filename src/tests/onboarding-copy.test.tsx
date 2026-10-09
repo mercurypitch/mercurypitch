@@ -6,7 +6,7 @@
 
 import { cleanup, fireEvent, render, waitFor } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EXERCISE_HELP } from '@/features/exercises/exercise-help'
+import { LIBRARY_EXERCISE_COUNT } from '@/features/exercises/ExerciseMenu'
 import { BeatFirstLight } from '@/features/onboarding/beats/BeatFirstLight'
 import { BeatFork } from '@/features/onboarding/beats/BeatFork'
 import { BeatMap } from '@/features/onboarding/beats/BeatMap'
@@ -217,10 +217,10 @@ describe('the Map cards', () => {
 
   // FVC-8
   it('counts the drills honestly on the Exercises card', () => {
-    // EXERCISE_HELP is Record<ExerciseType, …>, so TypeScript keeps it
-    // exhaustive — it is the real count, and this card said "fourteen"
-    // through four additions.
-    const drills = Object.keys(EXERCISE_HELP).length
+    // The library's own cards, not EXERCISE_HELP: that covers every
+    // exercise type, including the phone app's Long note, which the library
+    // does not list. This card said "fourteen" through four additions.
+    const drills = LIBRARY_EXERCISE_COUNT
     const word = NUMBER_WORDS[drills - 10]
     expect(word, `add ${drills} to NUMBER_WORDS`).toBeDefined()
 

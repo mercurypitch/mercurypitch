@@ -19,11 +19,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
-import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import type { NativeShellApi } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
-import { dispatchSingRoom, singRoomContext } from './sing-room-store'
+import { dispatchSingRoom, resetSingRoom, singRoomContext, } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
 import { SingRoomStage } from './SingRoomStage'
 
@@ -519,5 +520,58 @@ describe('arriving through an alley door', () => {
     mountRoom()
     await Promise.resolve()
     expect(singRoomContext().active).toBe(true)
+  })
+})
+
+describe('the Long note row in the options', () => {
+  // `leave` parks a live run as paused; these cases start from no run.
+  beforeEach(() => {
+    resetSingRoom()
+  })
+
+  /** The shell's gear: throws when the room registered no options control,
+   *  so the "absent" case cannot pass on a room that never opened them. */
+  const openRoomOptions = (): void => {
+    const open = nativeRunControls()?.openOptions
+    if (open === undefined) throw new Error('no options control registered')
+    open()
+  }
+
+  it('is absent where the phone app offers no Long note', async () => {
+    mountRoom()
+    openRoomOptions()
+    await Promise.resolve()
+    expect(screen.queryByTestId('sing-options-long-note')).toBeNull()
+  })
+
+  it('opens Long note when the phone app offers it', async () => {
+    const openLongNote = vi.fn()
+    const unregister = registerShellApi({
+      openLongNote,
+    } as unknown as NativeShellApi)
+    try {
+      mountRoom()
+      openRoomOptions()
+      await Promise.resolve()
+      fireEvent.click(screen.getByTestId('sing-options-long-note'))
+      expect(openLongNote).toHaveBeenCalledTimes(1)
+    } finally {
+      unregister()
+    }
+  })
+
+  it('stays away while a run is going', async () => {
+    const unregister = registerShellApi({
+      openLongNote: vi.fn(),
+    } as unknown as NativeShellApi)
+    try {
+      const room = mountRoom()
+      startMelodyRun(room)
+      openRoomOptions()
+      await Promise.resolve()
+      expect(screen.queryByTestId('sing-options-long-note')).toBeNull()
+    } finally {
+      unregister()
+    }
   })
 })

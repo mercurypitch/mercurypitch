@@ -10,8 +10,8 @@
   "tests.e2eHardWaits": 500,
   "tests.e2eSpecsWithoutAssertion": 0,
   "tests.alwaysTrueAssertions": 43,
-  "complexity.functionsOverCognitive15": 437,
-  "complexity.cognitiveOver50": 45,
+  "complexity.functionsOverCognitive15": 436,
+  "complexity.cognitiveOver50": 44,
   "cycles.errors": 1,
   "cycles.circular": 38
 }
