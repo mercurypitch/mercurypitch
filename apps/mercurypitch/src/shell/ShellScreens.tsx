@@ -40,6 +40,12 @@ export interface ShellScreensProps {
    * carries no chunk for it.
    */
   developer?: Component
+  /**
+   * The Long note exercise, on a build with the premium exercises. Passed in
+   * for the same reason as `developer`: NativeShell owns the lazy import
+   * behind `PREMIUM_EXERCISES`, so a store build carries no chunk for it.
+   */
+  longNote?: Component
 }
 
 const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
@@ -55,6 +61,7 @@ const TITLES: Record<Exclude<PushedScreenId, 'this-phone'>, string> = {
   about: 'About',
   karaoke: 'Karaoke',
   'karaoke-studio': 'Karaoke studio',
+  'long-note': 'Long note',
   developer: 'Developer',
 }
 
@@ -92,6 +99,10 @@ export function ShellScreens(props: ShellScreensProps): JSX.Element {
         return <KaraokeSettingsScreen />
       case 'karaoke-studio':
         return <KaraokeStudioScreen />
+      case 'long-note': {
+        const LongNote = props.longNote
+        return LongNote === undefined ? null : <LongNote />
+      }
       case 'developer': {
         const Developer = props.developer
         return Developer === undefined ? null : <Developer />

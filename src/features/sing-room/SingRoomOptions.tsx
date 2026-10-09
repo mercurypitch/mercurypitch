@@ -46,6 +46,12 @@ interface SingRoomOptionsProps {
   onPerNoteBurnChange: (value: boolean) => void
   onSessionSkip: () => void
   onSessionEnd: () => void
+  /**
+   * Push the Long note exercise (premium exercises, decision L2). Absent on
+   * a build without them, and while a run is going: the exercise needs the
+   * microphone to itself.
+   */
+  onOpenLongNote?: () => void
 }
 
 const Toggle: Component<{
@@ -247,6 +253,26 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
         />
       </OptionRow>
     </OptionSection>
+
+    <Show when={props.onOpenLongNote}>
+      {(open) => (
+        <OptionSection label="Exercises">
+          <OptionRow label="Long note">
+            <button
+              type="button"
+              class={styles.stepBtn}
+              data-testid="sing-options-long-note"
+              onClick={() => {
+                props.close()
+                open()()
+              }}
+            >
+              Open
+            </button>
+          </OptionRow>
+        </OptionSection>
+      )}
+    </Show>
 
     <OptionSection label="More">
       <OptionRow label="All settings">

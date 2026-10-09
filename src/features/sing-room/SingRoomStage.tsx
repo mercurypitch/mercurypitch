@@ -463,6 +463,18 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   }
 
   /**
+   * Long note, pushed over the room from its options (premium exercises,
+   * L2). The options only offer it with no run going, and the exercise needs
+   * the microphone to itself, so the room hands the mic back first. Unlike a
+   * park there is no leave: Back returns to this room as it was.
+   */
+  const openLongNote = (): void => {
+    if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
+    if (props.micActive()) props.stopMic()
+    nativeShellApi()?.openLongNote?.()
+  }
+
+  /**
    * Back, once the shell's own layers have declined it.
    *
    * The room's overlays in the order they are stacked. The end card is last
@@ -1026,6 +1038,13 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onPerNoteBurnChange={setSingPerNoteBurn}
         onSessionSkip={props.onSessionSkip}
         onSessionEnd={props.onSessionEnd}
+        onOpenLongNote={
+          nativeShellApi()?.openLongNote === undefined ||
+          runIsLive(ctx()) ||
+          runIsPaused(ctx())
+            ? undefined
+            : openLongNote
+        }
       />
 
       {/* The picker modals: the room hosts them, as the mobile stage did —

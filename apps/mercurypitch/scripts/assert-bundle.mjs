@@ -196,6 +196,10 @@ const KARAOKE_STAGE_2 = [
   ['Remove imported songs', 'Settings and Storage for imported songs'],
   ['Songs this month', 'the songs left, in the room and in Settings'],
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
+  // The premium exercises ride the same subscription and the same switch
+  // (PREMIUM_EXERCISES, src/lib/native-build.ts): in every build that
+  // imports songs, and not in the store build until the V1 flip.
+  ['long-note-room', 'the premium Long note exercise'],
 ]
 
 /**

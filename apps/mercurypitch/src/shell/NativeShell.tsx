@@ -25,6 +25,7 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show,
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { TAB_HOME } from '@/features/tabs/constants'
+import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { practiceScope } from '@/stores/settings-store'
@@ -71,6 +72,19 @@ const DeveloperScreen: Component = DEVELOPER_AVAILABLE
   ? lazy(async () =>
       import('./DeveloperScreen').then((module) => ({
         default: module.DeveloperScreen,
+      })),
+    )
+  : () => null
+
+/**
+ * The Long note exercise, on a build with the premium exercises and no other
+ * (`PREMIUM_EXERCISES`, src/lib/native-build.ts). The same ternary as the
+ * developer screen, for the same reason: the store build keeps no chunk.
+ */
+const LongNoteScreen: Component = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('./LongNoteScreen').then((module) => ({
+        default: module.LongNoteScreen,
       })),
     )
   : () => null
@@ -139,6 +153,15 @@ export const NativeShell: Component = () => {
         openKaraokeStudio: () => {
           pushScreen('karaoke-studio')
         },
+        // The Sing room's options open Long note (decision L2). Absent on a
+        // build without the premium exercises, so the row is never drawn.
+        ...(PREMIUM_EXERCISES
+          ? {
+              openLongNote: () => {
+                pushScreen('long-note')
+              },
+            }
+          : {}),
       }),
     )
 
@@ -327,6 +350,7 @@ export const NativeShell: Component = () => {
               web SettingsPanel is not in this bundle at all. */}
           <ShellScreens
             developer={DEVELOPER_AVAILABLE ? DeveloperScreen : undefined}
+            longNote={PREMIUM_EXERCISES ? LongNoteScreen : undefined}
           />
 
           {/* Inside the root, not beside it: the sheet copies the custom
