@@ -11,6 +11,7 @@ import solidPlugin from 'vite-plugin-solid'
 import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
+import { fontAliasesPlugin } from './tools/font-aliases'
 import { writeEntryPages } from './tools/generate-entry-pages'
 import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 import { GLASSWORKS_LISTED_ENV, glassworksListingPlugin, isGlassworksListed, unlistedEntrySlugs, } from './tools/glassworks-listing'
@@ -251,6 +252,7 @@ export default defineConfig(({ command, mode }) => {
       // so TV browsers (Chrome 79-83) render accents instead of dropping the
       // declaration and showing grey. See tools/css-legacy-fallbacks.ts.
       legacyCssFallbacksPlugin(),
+      fontAliasesPlugin(),
       // The phone's console, on this machine's disk. Off unless MP_DEV_LOGS=1
       // asks for it — on by default it would write a file on every ordinary
       // `pnpm dev`, and the shim reads every console call in the app, so that
@@ -664,6 +666,18 @@ export default defineConfig(({ command, mode }) => {
               // core, which IS statically reachable (jam-store).
               if (/@mediabunny[+/]aac-encoder/.test(id)) return 'vendor-aac'
               if (id.includes('mediabunny')) return 'vendor-media'
+              // The self-hosted brand fonts belong to index.html alone, the one
+              // page that ever linked them (src/lib/self-hosted-fonts.ts).
+              // Inside 'vendor' their @font-face rules would ride the shared
+              // vendor stylesheet onto every entry page that links it.
+              // Gabarito (Glass) stays where it was.
+              if (
+                /@fontsource-variable[\\/](?:inter|outfit|plus-jakarta-sans)[\\/]/.test(
+                  id,
+                )
+              ) {
+                return 'vendor-fonts'
+              }
               // IndexedDB is the only third-party runtime the standalone song
               // readers need. Isolate it from the generic app vendor payload.
               if (id.includes('/dexie/')) return 'vendor-db'

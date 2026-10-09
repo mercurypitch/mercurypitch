@@ -1,7 +1,8 @@
 // ============================================================
 // ConsentBanner — slim, non-intrusive cookie opt-in for the Google
-// Ads tag. Shown only to EEA / UK / CH visitors (see lib/consent.ts);
-// everyone else is granted by default and never sees it.
+// Ads tag. Shown when the device clock is in the EEA / UK / CH, or names
+// no place (see lib/consent.ts). Elsewhere Google's IP-based region
+// defaults decide, and Settings → Cookie preferences opens it for anyone.
 //
 // Mounts as its own tiny Solid root (setupConsent) so neither the
 // main app nor the standalone Voice Mirror entry has to thread it

@@ -81,8 +81,8 @@ describe('the native font aliases', () => {
   })
 
   it('run in the native build, and only there', () => {
-    // The web's config never names it: Google Fonts registers the plain
-    // names there, and the web must render as it did.
+    // The web's config never names it: its Lightning CSS build gets the
+    // same alias from tools/font-aliases.ts instead.
     expect(viteConfig).toMatch(/plugins:\s*\[\s*nativeFontAliases\(\)\s*\]/u)
     const web = readFileSync(
       new URL('../../../vite.config.ts', import.meta.url),

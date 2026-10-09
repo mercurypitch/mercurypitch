@@ -9,9 +9,15 @@
 //
 // The real, IP-based enforcement is done by Google via the `region`
 // list on the Consent Mode default — the timezone check here only
-// decides whether to SHOW the banner. There is no third-party consent
-// SDK: this is a screenful of code and loads no extra script, which
-// fits an app whose promise is "your audio never leaves your device".
+// decides whether to SHOW the banner. So nothing here may grant on a
+// visitor's behalf: a `consent update` overrides the region default,
+// and a visitor in Germany whose phone says America/New_York would be
+// granted without being asked. Only Accept grants. Ad click ids are
+// redacted from the first hit wherever ad storage is denied.
+//
+// There is no third-party consent SDK: this is a screenful of code and
+// loads no extra script, which fits an app whose promise is "your audio
+// never leaves your device".
 //
 // The Google tag is only loaded when an Ads or GA4 id is set for the
 // build (prod only) — dev, test and tour builds stay inert.
@@ -27,7 +33,11 @@ interface StoredConsent {
   status: ConsentStatus
   /** epoch ms of the decision */
   at: number
-  /** true when set silently (non-EEA default), false when the user chose */
+  /**
+   * Always false now: only a visitor's own choice is stored. True on records
+   * from before October 2026, when a non-European time zone was granted
+   * silently; those are ignored and removed (see initConsent).
+   */
   implicit: boolean
 }
 
@@ -72,6 +82,15 @@ const RESTRICTED_COUNTRIES = [
   // UK + Switzerland
   'GB',
   'CH',
+  // EU territory with its own ISO code, so an IP there never reads as FI
+  // or FR: Åland, and the French outermost regions.
+  'AX',
+  'GF',
+  'GP',
+  'MF',
+  'MQ',
+  'RE',
+  'YT',
 ]
 
 // European timezones that are NOT in scope (used only to avoid showing the
@@ -88,6 +107,44 @@ const NON_EEA_EUROPE_TZ = new Set([
   'Europe/Astrakhan',
   'Europe/Istanbul',
   'Europe/Minsk',
+])
+
+// EEA time zones outside Europe/*: Iceland, Cyprus, the Canaries, Ceuta,
+// Madeira, the Azores and the French outermost regions. Each of these once
+// fell through to a silent grant.
+const EEA_TZ_OUTSIDE_EUROPE = new Set([
+  'Atlantic/Reykjavik',
+  'Asia/Nicosia',
+  'Asia/Famagusta',
+  'Atlantic/Canary',
+  'Africa/Ceuta',
+  'Atlantic/Madeira',
+  'Atlantic/Azores',
+  'America/Cayenne',
+  'America/Guadeloupe',
+  'America/Marigot',
+  'America/Martinique',
+  'Indian/Reunion',
+  'Indian/Mayotte',
+])
+
+// A clock that says nothing about where it is: UTC, as privacy-hardened
+// browsers and many Linux desktops report it. Treated like an unknown zone.
+const PLACELESS_TZ = new Set([
+  'UTC',
+  'Etc/UTC',
+  'Etc/UCT',
+  'UCT',
+  'GMT',
+  'Etc/GMT',
+  'Etc/GMT0',
+  'Etc/GMT+0',
+  'Etc/GMT-0',
+  'Etc/Greenwich',
+  'Etc/Universal',
+  'Etc/Zulu',
+  'Universal',
+  'Zulu',
 ])
 
 /**
@@ -189,9 +246,13 @@ function readStored(): StoredConsent | null {
   }
 }
 
-function persist(next: ConsentStatus, implicit: boolean): void {
+function persist(next: ConsentStatus): void {
   try {
-    const record: StoredConsent = { status: next, at: Date.now(), implicit }
+    const record: StoredConsent = {
+      status: next,
+      at: Date.now(),
+      implicit: false,
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(record))
   } catch {
     // Storage unavailable (private mode, blocked cookies) — the decision is
@@ -199,11 +260,21 @@ function persist(next: ConsentStatus, implicit: boolean): void {
   }
 }
 
+function forgetStored(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Nothing to remove when storage is unavailable.
+  }
+}
+
 // ── region detection (banner display only) ────────────────────
 
 /** Pure: is this IANA timezone inside the EEA / UK / CH banner scope? */
 export function isRestrictedTimezone(tz: string): boolean {
-  if (tz === '') return true // unknown → be cautious and ask
+  // Unknown, or a clock that names no place → be cautious and ask.
+  if (tz === '' || PLACELESS_TZ.has(tz)) return true
+  if (EEA_TZ_OUTSIDE_EUROPE.has(tz)) return true
   return tz.startsWith('Europe/') && !NON_EEA_EUROPE_TZ.has(tz)
 }
 
@@ -253,24 +324,27 @@ export function initConsent(): void {
     region: RESTRICTED_COUNTRIES,
     wait_for_update: 500,
   })
+  // Redact ad click identifiers wherever ad storage is denied, from the very
+  // first hit. It only acts while ad_storage is denied, so a granted visitor
+  // is unaffected; applyConsent keeps it in step with a later choice.
+  pushGtag('set', 'ads_data_redaction', true)
   // Keep the gclid in the URL when cookies are unavailable, so conversions
   // still attribute under denial.
   pushGtag('set', 'url_passthrough', true)
   pushGtag('js', new Date())
 
-  // 2) Apply any prior decision immediately; otherwise decide by region.
+  // 2) Apply the visitor's own prior decision immediately. Otherwise leave the
+  //    region defaults above in charge: they follow the IP, not the clock.
   const stored = readStored()
-  if (stored !== null) {
+  if (stored !== null && !stored.implicit) {
     setStatus(stored.status)
     applyConsent(stored.status)
-  } else if (isRestrictedTimezone(currentTimezone())) {
-    // EEA/UK/CH first visit: stay denied (the default) and ask.
-    setBannerOpen(true)
   } else {
-    // Elsewhere: granted by default, no banner.
-    persist('granted', true)
-    setStatus('granted')
-    applyConsent('granted')
+    // A silent grant from an earlier version is not a choice: drop it.
+    if (stored !== null) forgetStored()
+    // EEA/UK/CH by the clock: ask. Elsewhere: no banner and no update, so a
+    // visitor inside the region list stays denied whatever the clock says.
+    if (isRestrictedTimezone(currentTimezone())) setBannerOpen(true)
   }
 
   // 3) Load the tag (async, non-blocking).
@@ -300,7 +374,7 @@ function loadTag(): void {
 }
 
 export function acceptConsent(): void {
-  persist('granted', false)
+  persist('granted')
   setStatus('granted')
   applyConsent('granted')
   setBannerOpen(false)
@@ -308,7 +382,7 @@ export function acceptConsent(): void {
 }
 
 export function declineConsent(): void {
-  persist('denied', false)
+  persist('denied')
   setStatus('denied')
   applyConsent('denied')
   setBannerOpen(false)
