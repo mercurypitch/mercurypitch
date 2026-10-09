@@ -2,7 +2,7 @@
 // ConsentBanner — slim, non-intrusive cookie opt-in for the Google
 // Ads tag. Shown when the device clock is in the EEA / UK / CH, or names
 // no place (see lib/consent.ts). Elsewhere Google's IP-based region
-// defaults decide, and Settings → Cookie preferences opens it for anyone.
+// defaults decide, and Settings › About › Cookie settings opens it for anyone.
 //
 // Mounts as its own tiny Solid root (setupConsent) so neither the
 // main app nor the standalone Voice Mirror entry has to thread it
@@ -14,7 +14,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { render } from 'solid-js/web'
-import { acceptConsent, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, } from '@/lib/consent'
+import { acceptConsent, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, markConsentBannerMounted, } from '@/lib/consent'
 import { PRIVACY_URL } from '@/lib/legal-links'
 import styles from './ConsentBanner.module.css'
 
@@ -96,4 +96,5 @@ export function setupConsent(): void {
   host.id = HOST_ID
   document.body.appendChild(host)
   render(() => <ConsentBanner />, host)
+  markConsentBannerMounted()
 }

@@ -170,6 +170,20 @@ const [status, setStatus] = createSignal<ConsentStatus | null>(null)
 
 /** True while the consent banner should be shown. */
 export const isConsentBannerOpen = bannerOpen
+
+// Whether this page mounted the banner (setupConsent). hasAnyTag() is true for
+// the whole production build, including rooms that never mount it, so it
+// cannot say alone whether "Cookie settings" has anything to reopen.
+const [bannerMounted, setBannerMounted] = createSignal(false)
+
+/** True once this page has a consent banner that Cookie settings can reopen. */
+export const canReopenConsent = bannerMounted
+
+/** Called by setupConsent once the banner is in the DOM. */
+export function markConsentBannerMounted(): void {
+  setBannerMounted(true)
+}
+
 /** Current consent decision, or null before one is made. */
 export const consentStatus = status
 

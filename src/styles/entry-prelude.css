@@ -144,6 +144,16 @@ body {
 .entry-prelude a {
   color: #7dd3c8;
 }
+/* Privacy, Terms and Imprint close every entry document. Set smaller than the
+   room links, but each one is still a full 44 px touch target. */
+.entry-prelude__legal {
+  font-size: 0.8125rem;
+}
+.entry-prelude__legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .entry-prelude__faq {
   width: min(36rem, 100%);
 }

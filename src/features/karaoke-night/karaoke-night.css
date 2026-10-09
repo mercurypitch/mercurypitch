@@ -488,6 +488,20 @@ body {
   color: #ffffff;
 }
 
+/* The sign-up line (LegalLinks' SignUpLegalLine) in this room's palette. */
+.kn-modal .kn-signup-legal {
+  margin: 0;
+  color: rgba(232, 220, 250, 0.72);
+}
+
+.kn-modal .kn-signup-legal a {
+  color: #b79ae0;
+}
+
+.kn-modal .kn-signup-legal a:hover {
+  color: #e8dcfa;
+}
+
 .kn-glass {
   display: inline-flex;
   align-items: center;

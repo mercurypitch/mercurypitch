@@ -690,6 +690,11 @@ input:checked + .settingsSlider:before {
   color: var(--on-accent, var(--bg-primary));
 }
 
+/* The legal row (LegalLinks) under the pills: text weight, not a pill. */
+.aboutLegal {
+  margin-top: 6px;
+}
+
 /* A directory's own badge image (PeerPush). Sized by the width it ships at,
    with the height written down so the row does not jump when it loads, and
    held back a shade until it is hovered — it is an acknowledgement, not a

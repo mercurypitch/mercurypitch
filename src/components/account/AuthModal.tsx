@@ -12,6 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Key, Smartphone, X, } from '@/components/icons'
+import { SignUpLegalLine } from '@/components/LegalLinks'
 import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
@@ -1023,6 +1024,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                           ? 'Email me a code'
                           : 'Sign in'}
                 </button>
+                <Show when={pane() === 'register'}>
+                  <SignUpLegalLine />
+                </Show>
               </form>
 
               <p class={styles.switchRow}>

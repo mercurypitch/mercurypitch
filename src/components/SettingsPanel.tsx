@@ -11,6 +11,7 @@ import { ConsoleLog } from '@/components/ConsoleLog'
 import { setupDeveloperConsole } from '@/components/FloatingConsole'
 import { FileText, Sparkles } from '@/components/icons'
 import { canOfferInstall, InstallAppButton, } from '@/components/InstallAppButton'
+import { LegalLinks } from '@/components/LegalLinks'
 import { BusyButton, BusyLink } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { SyncSettings } from '@/components/SyncSettings'
@@ -25,12 +26,11 @@ import { MicLatencyWizard } from '@/features/mic-feedback/MicLatencyWizard'
 import { pathFreeRoam, setPathFreeRoam } from '@/features/path/path-progress'
 import type { PracticeScope, UiMode } from '@/features/tabs/constants'
 import { activeVoiceCommands } from '@/features/voice-control/voice-command-registry'
-import { hasAnyTag, openConsentSettings } from '@/lib/consent'
 import { GITHUB_URL } from '@/lib/contact-links'
 import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
-import { DELETE_ACCOUNT_URL, PRIVACY_URL, TERMS_URL, WEBSITE_URL, } from '@/lib/legal-links'
+import { DELETE_ACCOUNT_URL, WEBSITE_URL } from '@/lib/legal-links'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
@@ -2400,39 +2400,8 @@ export const SettingsPanel: Component = () => {
                   </svg>
                   View on GitHub
                 </a>
-                <a
-                  href={TERMS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class={styles.aboutLink}
-                  data-testid="about-terms-link"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path
-                      fill="currentColor"
-                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
-                    />
-                  </svg>
-                  Terms of Use
-                </a>
-                <a
-                  href={PRIVACY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class={styles.aboutLink}
-                  data-testid="about-privacy-link"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16">
-                    <path
-                      fill="currentColor"
-                      d="M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"
-                    />
-                  </svg>
-                  Privacy Notice
-                </a>
-                {/* Beside the privacy notice because it answers the question
-                    that notice raises: how to have all of it erased, even
-                    without the app. */}
+                {/* It answers the question the privacy notice raises: how to
+                    have all of it erased, even without the app. */}
                 <a
                   href={DELETE_ACCOUNT_URL}
                   target="_blank"
@@ -2448,24 +2417,8 @@ export const SettingsPanel: Component = () => {
                   </svg>
                   Account deletion
                 </a>
-                <Show when={hasAnyTag()}>
-                  <button
-                    type="button"
-                    class={styles.aboutLink}
-                    style="background: transparent; cursor: pointer; font: inherit;"
-                    data-testid="about-cookie-prefs"
-                    onClick={() => openConsentSettings()}
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                      <path
-                        fill="currentColor"
-                        d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 4 4 0 0 1-4-4 2 2 0 0 1-2-2zm-3 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-1 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"
-                      />
-                    </svg>
-                    Cookie settings
-                  </button>
-                </Show>
               </div>
+              <LegalLinks class={styles.aboutLegal} />
               {/* PeerPush lists MercuryPitch, and the listing links back here.
                   Their own badge image, at the width their snippet asks for,
                   on its own line: dropped into the row above it would be four

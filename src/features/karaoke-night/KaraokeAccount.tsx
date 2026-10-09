@@ -6,6 +6,7 @@ import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
+import { SignUpLegalLine } from '@/components/LegalLinks'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import type { SignupContext } from '@/db/services/signup-context'
@@ -289,6 +290,9 @@ export function KaraokeAccount() {
                     ? 'Create account'
                     : 'Sign in'}
               </button>
+              <Show when={mode() === 'register'}>
+                <SignUpLegalLine class="kn-signup-legal" />
+              </Show>
             </form>
             <button
               class="kn-modal-google"
