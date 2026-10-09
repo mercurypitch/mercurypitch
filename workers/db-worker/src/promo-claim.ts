@@ -48,14 +48,45 @@ export type ClaimOutcome = 'claimed' | 'taken' | 'email-taken' | 'full'
 /** What an email record is a record of. */
 export type EmailRecordKind = 'claim' | 'offer-bonus'
 
-/** The code a promo record of `email` holds, or null while there is no key. */
+/**
+ * The inbox an address delivers to, as far as a promo record can tell.
+ *
+ * Gmail ignores dots and everything after a "+" in the name, and
+ * googlemail.com is the same service. Most other providers deliver
+ * `name+tag@` to `name@` too. Keyed on the address as typed, you+1@gmail.com,
+ * you+2@gmail.com and y.o.u@gmail.com each confirmed, and each claimed the
+ * gift: one inbox could drain a code's redemptions.
+ *
+ * Dots only fold at Gmail; elsewhere first.last@ and firstlast@ can be two
+ * people. Only promo records use this. The free song's records keep the
+ * plain form, so the rows production already holds still match.
+ */
+export function promoMailbox(email: string): string {
+  const address = email.trim().toLowerCase()
+  const at = address.lastIndexOf('@')
+  if (at <= 0 || at === address.length - 1) return address
+  let name = address.slice(0, at)
+  let domain = address.slice(at + 1)
+  const plus = name.indexOf('+')
+  if (plus > 0) name = name.slice(0, plus)
+  if (domain === 'googlemail.com') domain = 'gmail.com'
+  if (domain === 'gmail.com') name = name.replace(/\./g, '')
+  return name === '' ? address : `${name}@${domain}`
+}
+
+/** The code a promo record of `email` holds, or null while there is no key.
+ *  Every alias of one inbox gets the same code (promoMailbox). */
 export function promoEmailCode(
   env: Pick<Env, 'FREE_SONG_EMAIL_SECRET'>,
   promoCodeId: string,
   kind: EmailRecordKind,
   email: string,
 ): Promise<string | null> {
-  return emailRecordCode(env, `promo:${promoCodeId}:${kind}`, email)
+  return emailRecordCode(
+    env,
+    `promo:${promoCodeId}:${kind}`,
+    promoMailbox(email),
+  )
 }
 
 /** Whether a record with this code exists. */

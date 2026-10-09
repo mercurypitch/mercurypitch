@@ -479,6 +479,52 @@ describe('an address that had it on a deleted account', () => {
   })
 })
 
+describe('aliases of one inbox', () => {
+  it('claims once across plus tags, Gmail dots and googlemail.com', async () => {
+    const first = await register('you+1@gmail.com')
+    await openConfirmLink(first, 'you+1@gmail.com')
+    const second = await register('you+2@gmail.com')
+    await openConfirmLink(second, 'you+2@gmail.com')
+    const third = await register('y.o.u@googlemail.com')
+    await openConfirmLink(third, 'y.o.u@googlemail.com')
+
+    expect(claimsOf(first.userId)).toEqual({ slots: 1, credits: 5 })
+    expect(claimsOf(second.userId)).toEqual({ slots: 0, credits: 0 })
+    expect(claimsOf(third.userId)).toEqual({ slots: 0, credits: 0 })
+    expect(redemptionCount()).toBe(1)
+    const typed = await call('/api/billing/promo/redeem', {
+      token: second.token,
+      body: { code: 'LAUNCH_TEST' },
+    })
+    expect(typed.status).toBe(400)
+    expect(((await typed.json()) as { error: string }).error).toBe(
+      'This email address has already claimed this promo code.',
+    )
+  })
+
+  it('folds a plus tag at another provider', async () => {
+    const tagged = await register('singer+promo@example.com')
+    await openConfirmLink(tagged, 'singer+promo@example.com')
+    const plain = await register('singer@example.com')
+    await openConfirmLink(plain, 'singer@example.com')
+
+    expect(claimsOf(tagged.userId)).toEqual({ slots: 1, credits: 5 })
+    expect(claimsOf(plain.userId)).toEqual({ slots: 0, credits: 0 })
+    expect(redemptionCount()).toBe(1)
+  })
+
+  it('keeps dotted names at another provider apart', async () => {
+    const dotted = await register('first.last@example.com')
+    await openConfirmLink(dotted, 'first.last@example.com')
+    const joined = await register('firstlast@example.com')
+    await openConfirmLink(joined, 'firstlast@example.com')
+
+    expect(claimsOf(dotted.userId)).toEqual({ slots: 1, credits: 5 })
+    expect(claimsOf(joined.userId)).toEqual({ slots: 1, credits: 5 })
+    expect(redemptionCount()).toBe(2)
+  })
+})
+
 describe('a claim that fails', () => {
   it('never fails the confirmation it rides on', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
