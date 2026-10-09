@@ -12,7 +12,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
-import { Gift } from '@/components/icons'
+import { GiftIcon } from '@/components/billing/GiftIcon'
 import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
@@ -150,7 +150,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 {(gift) => (
                   <span class={styles.roomGift}>
                     <span class={styles.roomGiftIcon} aria-hidden="true">
-                      <Gift size={12} />
+                      <GiftIcon size={12} />
                     </span>
                     {gift().credits} free credits
                   </span>

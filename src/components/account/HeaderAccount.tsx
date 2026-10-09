@@ -8,8 +8,8 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
+import { GiftIcon } from '@/components/billing/GiftIcon'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Gift } from '@/components/icons'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
@@ -149,7 +149,7 @@ export const HeaderAccount: Component = () => {
                 title={`Claim ${promo().credits} free cloud separation credits`}
                 data-testid="header-promo-pill"
               >
-                <Gift size={13} />
+                <GiftIcon size={13} />
                 <span>Promo</span>
               </a>
             )}
