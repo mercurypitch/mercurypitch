@@ -28,6 +28,12 @@ export const EXERCISE_STACCATO = 'staccato-precision' as const
 export const EXERCISE_ROUTINE_RUNNER = 'routine-runner' as const
 export const EXERCISE_SIGHT_SINGING = 'sight-singing' as const
 export const EXERCISE_WARMUP = 'warmup' as const
+/**
+ * The premium Long note (a lantern fills while the note holds). Its own id,
+ * not `long-note`: its score is steadiness alone, a different ruler from the
+ * web drill's, so their bests must never be compared.
+ */
+export const EXERCISE_LONG_NOTE_LANTERN = 'long-note-lantern' as const
 
 export type ExerciseType =
   | typeof EXERCISE_VIBRATO
@@ -48,6 +54,7 @@ export type ExerciseType =
   | typeof EXERCISE_ROUTINE_RUNNER
   | typeof EXERCISE_SIGHT_SINGING
   | typeof EXERCISE_WARMUP
+  | typeof EXERCISE_LONG_NOTE_LANTERN
 
 // ── Config ──────────────────────────────────────────────────────
 

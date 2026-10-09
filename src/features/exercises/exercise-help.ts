@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -32,6 +32,15 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'A "long note" simply means singing one pitch and holding it without wavering. Pick a comfortable note, take a relaxed breath, and sustain it.',
       'Try to keep the sound even — same loudness, same pitch — like a held organ note. It is normal for the pitch to drift at first.',
       'You are scored on how steady you stay (less wobble is better), how little you drift away from the note, and how long you hold it.',
+    ],
+  },
+  [EXERCISE_LONG_NOTE_LANTERN]: {
+    summary:
+      'Hold one comfortable note while a glass lantern fills with light, with Merc riding it up.',
+    body: [
+      'You start on the note you held last time, or one from your saved range. With neither, sing any note that sits easy and Merc takes it as yours. Tap the note to hear it again, and nudge it up or down before you start.',
+      'The lantern fills for every second you stay on the note. Drift off and the light waits for you: it never drains, so find the note again and carry on.',
+      'The big number is how long you held it. Steadiness, out of 100, is how little the pitch wobbled; a vibrato does not count against you.',
     ],
   },
   [EXERCISE_VIBRATO]: {

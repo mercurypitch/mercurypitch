@@ -1,0 +1,57 @@
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.halo {
+  opacity: 0;
+  transition: opacity 900ms ease-out;
+}
+
+.haloOn {
+  opacity: 1;
+}
+
+.wave {
+  animation: lantern-wave 3.2s linear infinite;
+}
+
+@keyframes lantern-wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(50px);
+  }
+}
+
+.sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lantern-sparkle 2.4s ease-in-out infinite;
+}
+
+@keyframes lantern-sparkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave,
+  .sparkle {
+    animation: none;
+  }
+
+  .halo {
+    transition: none;
+  }
+}
