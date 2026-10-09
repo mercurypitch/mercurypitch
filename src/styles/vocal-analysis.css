@@ -4342,19 +4342,25 @@
      half. Let them share the width instead. */
   .community-share-tab .community-tabs {
     display: flex;
+    flex-wrap: wrap;
     width: 100%;
   }
 
+  /* The label is the one part that may not give. An ellipsis here cut
+     "Melodies" to "Mel..." at 320-390px (27-50px of the 57 it needs). The
+     count moves under the label when a line cannot hold both, and a tab
+     never gets narrower than its label (min-width stays auto): at 200%
+     text the last tab moves to a second row instead of overlapping. */
   .community-share-tab .community-tab {
     flex: 1 1 0;
-    min-width: 0;
+    flex-wrap: wrap;
     justify-content: center;
-    padding: 8px 6px;
+    gap: 2px 6px;
+    padding: 8px 4px;
   }
 
   .community-share-tab .community-tab .tab-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    flex-shrink: 0;
     white-space: nowrap;
   }
 
@@ -4397,6 +4403,20 @@
   .community-share-tab .sort-select select {
     min-width: 0;
     max-width: 100%;
+  }
+}
+
+/* A third of a phone is 92-115px. The icon and its gap took 20px of that,
+   and the words already say which list is which, so a phone shows the
+   words and the count. A narrower count chip keeps both on one line at
+   320px; a wider app font wraps the count under the label instead. */
+@media (max-width: 480px) {
+  .community-share-tab .community-tab .community-tab-icon {
+    display: none;
+  }
+
+  .community-share-tab .community-tab .community-tab-count {
+    padding: 1px 5px;
   }
 }
 

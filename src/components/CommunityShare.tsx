@@ -772,10 +772,14 @@ export const CommunityShare: Component = () => {
                 class={`community-tab ${activeTab() === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <span class={tabStyles.tabIcon}>{tab.icon()}</span>
+                <span class={`${tabStyles.tabIcon} community-tab-icon`}>
+                  {tab.icon()}
+                </span>
                 <span class="tab-name">{tab.name}</span>
                 {tab.count > 0 && (
-                  <span class={modalStyles.tabCount}>{tab.count}</span>
+                  <span class={`${modalStyles.tabCount} community-tab-count`}>
+                    {tab.count}
+                  </span>
                 )}
               </button>
             )}

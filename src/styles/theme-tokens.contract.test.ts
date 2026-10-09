@@ -372,6 +372,46 @@ describe('theme token contract', () => {
     },
   )
 
+  it.each(THEME_PRESETS)(
+    '%s keeps the MIDI stem label readable on its tint over every app surface',
+    (theme) => {
+      const tokens = tokensFor(theme)
+
+      for (const tint of ['--stem-midi-surface', '--stem-midi-surface-hover']) {
+        for (const surfaceToken of SURFACE_TOKENS) {
+          const surface = hexToken(tokens, surfaceToken)
+          expect(
+            contrast(
+              hexToken(tokens, '--stem-midi-fg'),
+              semanticBackground(tokens, tint, surface),
+            ),
+            `${theme} --stem-midi-fg on ${tint} over ${surfaceToken}`,
+          ).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+    },
+  )
+
+  // Keyboard focus rings (the global `:focus-visible` and the settings
+  // selects) are a solid --accent outline, so the accent itself is the
+  // indicator that has to stand out from whatever surface it is drawn on.
+  it.each(THEME_PRESETS)(
+    '%s draws the accent focus ring at 3:1 or more against every app surface',
+    (theme) => {
+      const tokens = tokensFor(theme)
+
+      for (const surfaceToken of SURFACE_TOKENS) {
+        expect(
+          contrast(
+            hexToken(tokens, '--accent'),
+            hexToken(tokens, surfaceToken),
+          ),
+          `${theme} --accent on ${surfaceToken}`,
+        ).toBeGreaterThanOrEqual(3)
+      }
+    },
+  )
+
   it('keeps browser chrome colours aligned with every primary surface', () => {
     expect(Object.keys(THEME_CHROME_COLORS)).toEqual([...THEME_PRESETS])
 

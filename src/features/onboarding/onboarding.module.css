@@ -331,6 +331,7 @@
 }
 
 .primary {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -356,6 +357,17 @@
 .primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+}
+
+/* The lift carries the hit box up with it. A pointer resting in the bottom
+   pixel then loses hover, the button drops, hover returns, and the button
+   shakes for as long as the pointer stays put (it does after the previous
+   beat's button is clicked in the same spot). While lifted, the button
+   keeps the pixel it rose from. */
+.primary:hover::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 -1px;
 }
 
 .primary:focus-visible {
