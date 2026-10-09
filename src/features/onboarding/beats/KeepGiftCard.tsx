@@ -39,7 +39,7 @@ export const KeepGiftCard: Component<{ gift: FeaturedPromo }> = (props) => {
         <span class={keep.giftCoins}>
           {/* Five, whatever the code grants: the art says "credits", the
               copy says how many. Each coin's place in the desktop arc is
-              its position in this row (launch-gift.module.css). */}
+              its position in this row (keep.module.css). */}
           <For each={[0, 1, 2, 3, 4]}>
             {() => <CreditCoin class={keep.giftCoin} size={48} />}
           </For>
@@ -79,5 +79,3 @@ export const KeepGiftCard: Component<{ gift: FeaturedPromo }> = (props) => {
     </div>
   )
 }
-
-export default KeepGiftCard

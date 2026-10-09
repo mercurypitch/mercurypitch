@@ -124,5 +124,3 @@ export const LaunchOfferRewardSheet: Component<LaunchOfferRewardSheetProps> = (
     </Show>
   )
 }
-
-export default LaunchOfferRewardSheet

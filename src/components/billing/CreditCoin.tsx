@@ -30,5 +30,3 @@ export const CreditCoin: Component<CreditCoinProps> = (props) => (
     data-coin={props.spent === true ? 'spent' : 'credit'}
   />
 )
-
-export default CreditCoin

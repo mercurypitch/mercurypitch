@@ -160,5 +160,3 @@ export const KeepRange: Component<{ range: RangeResult }> = (props) => {
     </div>
   )
 }
-
-export default KeepRange

@@ -145,5 +145,3 @@ export const LaunchOfferProgress: Component<LaunchOfferProgressProps> = (
     </Show>
   )
 }
-
-export default LaunchOfferProgress
