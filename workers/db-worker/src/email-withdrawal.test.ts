@@ -116,6 +116,49 @@ describe('the withdrawal acknowledgement', () => {
     )
   })
 
+  it('promises the refund by hand without an amount when the price is not on record', () => {
+    const { text } = mail({
+      amountMinor: null,
+      refundMinor: null,
+      refundState: 'manual',
+    })
+
+    expect(text).toContain(
+      "We'll refund what you paid for the unused credits to the card or account you paid with within 14 days.",
+    )
+    expect(text).toContain(
+      'Purchase: Starter pack, 20 credits, bought 8 October 2026\n',
+    )
+    expect(text).not.toContain('€0.00')
+  })
+
+  it('promises the whole price for a purchase with no consent on record', () => {
+    expect(
+      mail({
+        amountMinor: null,
+        refundMinor: null,
+        basis: 'full',
+        refundState: 'manual',
+      }).text,
+    ).toContain(
+      "We'll refund what you paid to the card or account you paid with within 14 days.",
+    )
+    expect(
+      mail({ basis: 'full', refundMinor: 500, refundState: 'pending' }).text,
+    ).toContain(
+      "We'll refund €5.00 to the card or account you paid with within 14 days.",
+    )
+  })
+
+  it('says the balance stays when nothing was left to take', () => {
+    expect(mail({ unusedCredits: 0, bonusCredits: 0 }).text).toContain(
+      "You'd used every credit from this purchase, so your balance stays as it is.",
+    )
+    expect(mail({ unusedCredits: 0, bonusCredits: 30 }).text).toContain(
+      'The 30 bonus credits that came with this purchase have left your balance.',
+    )
+  })
+
   it('names the seller', () => {
     const seller =
       'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test. VAT ID XX000000000.'

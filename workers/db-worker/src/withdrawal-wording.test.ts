@@ -11,6 +11,10 @@ const everySentence = (): string[] => [
     PACK_FOOTNOTE[mode],
     ...rightToCancelLines(mode, { deadline: '23 October 2026', credits: 20 }),
   ]),
+  ...rightToCancelLines('no_consent', {
+    deadline: '23 October 2026',
+    credits: 20,
+  }),
   CHECKOUT_SUBMIT_LINE,
   WITHDRAW_LINK_LABEL,
   CONFIRM_WITHDRAWAL_LABEL,
@@ -106,6 +110,32 @@ describe('the right to cancel in the purchase mail', () => {
     ).toBe(
       'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test. VAT ID XX000000000.',
     )
+  })
+
+  it('leaves the VAT sentence out for a seller with no VAT ID', () => {
+    expect(
+      traderLine({
+        name: 'Sample Trader',
+        address: '1 Sample Street, 00000 Sampletown',
+        email: 'sales@example.test',
+        vatId: '',
+      }),
+    ).toBe(
+      'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test.',
+    )
+  })
+
+  it('claims no consent for a purchase with none on record', () => {
+    const lines = rightToCancelLines('no_consent', {
+      deadline: '23 October 2026',
+      credits: 140,
+    })
+
+    expect(lines).toEqual([
+      'You can cancel this purchase until 23 October 2026 and get back what you paid.',
+      'To cancel, open Settings › Credits and choose Withdraw from contract here, or reply to this email.',
+    ])
+    expect(lines.join(' ')).not.toContain('straight away')
   })
 })
 

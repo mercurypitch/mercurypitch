@@ -10,18 +10,30 @@
 // wording is the owner's of 9 Oct 2026, from section 5 of the withdrawal
 // research, pending the lawyer (points 2 and 4).
 //
-// WITHDRAWAL_MODE picks the model. The worker reads it here, and the app
-// gets it from GET /api/billing/pricing, so both follow one setting:
+// WITHDRAWAL_MODE picks the model new checkouts are sold under. The worker
+// reads it here, and the app gets it from GET /api/billing/pricing, so both
+// follow one setting:
 //   - refund_unused (model B, the default): a buyer can cancel a pack within
 //     14 days and gets back the price of the pack's credits they haven't
 //     used (withdrawal-rules.ts).
 //   - waiver (model A): at checkout the buyer asks for the credits now and
 //     accepts that the right to cancel ends once they are added. There is
-//     no withdrawal function.
+//     no withdrawal function for that pack.
+// A pack keeps the model its own checkout recorded (PurchaseTerms), and one
+// with no ticked box on record keeps the whole right: no_consent.
 //
 // No imports, so the app's bundle can take it without the worker.
 
 export type WithdrawalMode = 'refund_unused' | 'waiver'
+
+/**
+ * What one purchase's buyer agreed to, as its checkout recorded it
+ * (checkout-consent.ts): the mode the ticked checkbox was worded in, or
+ * no_consent when no ticked box is on record, which is every pack bought
+ * before the box shipped. WITHDRAWAL_MODE only words new checkouts; a
+ * purchase keeps the terms it was sold under.
+ */
+export type PurchaseTerms = WithdrawalMode | 'no_consent'
 
 export const DEFAULT_WITHDRAWAL_MODE: WithdrawalMode = 'refund_unused'
 
@@ -107,24 +119,34 @@ export interface RightToCancelFacts {
   credits: number
 }
 
+const HOW_TO_CANCEL = `To cancel, open ${CANCEL_PATH_LABEL} and choose ${WITHDRAW_LINK_LABEL}, or reply to this email.`
+
 /**
- * The panel's sentences. Under refund_unused the last one names where to
- * cancel; the mail turns CANCEL_PATH_LABEL in it into a link.
+ * The panel's sentences, under the terms the purchase was sold on. Where
+ * the buyer can cancel, the last one names where; the mail turns
+ * CANCEL_PATH_LABEL in it into a link. With no consent on record it claims
+ * none: the buyer never asked for the credits straight away.
  */
 export function rightToCancelLines(
-  mode: WithdrawalMode,
+  terms: PurchaseTerms,
   facts: RightToCancelFacts,
 ): string[] {
-  if (mode === 'waiver') {
+  if (terms === 'waiver') {
     return [
       "You asked us to add these credits straight away and confirmed that you lose your right to cancel once they're added.",
+    ]
+  }
+  if (terms === 'no_consent') {
+    return [
+      `You can cancel this purchase until ${facts.deadline} and get back what you paid.`,
+      HOW_TO_CANCEL,
     ]
   }
   const all =
     facts.credits === 1 ? 'it' : `all ${facts.credits.toLocaleString('en-GB')}`
   return [
     `You asked us to add these credits straight away. You can still cancel this purchase until ${facts.deadline} and get back the price of the credits you haven't used. Credits you've used aren't refunded, and once you've used ${all}, you can no longer cancel.`,
-    `To cancel, open ${CANCEL_PATH_LABEL} and choose ${WITHDRAW_LINK_LABEL}, or reply to this email.`,
+    HOW_TO_CANCEL,
   ]
 }
 
@@ -132,12 +154,15 @@ export interface TraderDetails {
   name: string
   address: string
   email: string
+  /** Empty for a seller with none: a sole trader outside the VAT system. */
   vatId: string
 }
 
-/** Who sold the credits (CRD Art. 6(1)(b) and (c), confirmed in Art. 8(7)). */
+/** Who sold the credits (CRD Art. 6(1)(b) and (c), confirmed in Art. 8(7)).
+ *  The VAT sentence only when there is a VAT ID. */
 export function traderLine(trader: TraderDetails): string {
-  return `Sold by ${trader.name}, ${trader.address}. Email ${trader.email}. VAT ID ${trader.vatId}.`
+  const vat = trader.vatId === '' ? '' : ` VAT ID ${trader.vatId}.`
+  return `Sold by ${trader.name}, ${trader.address}. Email ${trader.email}.${vat}`
 }
 
 /** The pointer to the full terms, with the cancellation form. */

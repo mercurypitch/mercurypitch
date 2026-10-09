@@ -34,7 +34,9 @@
 // charge.refunded counts those rows as taken already (takenFrom), and the
 // share it refunds never adds up to more credits than they removed, so it
 // takes nothing more. A refund made by hand for a withdrawal Stripe refused
-// does the same. Each one sends the billing alert
+// does the same. A withdrawal that refunds the whole price (a purchase with
+// no consent on record) settles the payment outright: what the buyer used
+// stays theirs (CRD Art. 14(4)(b)). Each one sends the billing alert
 // (BILLING_ALERT_EMAIL), and so does a payment with nothing on record to take:
 // a donation, or a purchase from before PaymentIntent ids were stored
 // (migration 0058).
@@ -208,6 +210,11 @@ export async function clawBackPayment(
   }
 
   const share = refundedShare(type, object)
+  const settledWhole = await env.DB.prepare(
+    "SELECT 1 AS hit FROM withdrawals WHERE paymentIntentId = ? AND refundBasis = 'full'",
+  )
+    .bind(paymentIntent)
+    .first()
   let owed = 0
   const delta = await writeOnLedger(
     env,
@@ -218,7 +225,10 @@ export async function clawBackPayment(
       const back = creditsToTake({
         granted: Number(grant.granted),
         share,
-        taken: takenFrom(ledger, paymentIntent),
+        taken:
+          settledWhole === null
+            ? takenFrom(ledger, paymentIntent)
+            : Number(grant.granted),
         balance: balanceOf(ledger),
       })
       owed = back.owed

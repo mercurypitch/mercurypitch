@@ -161,7 +161,7 @@ const VARIANTS: readonly Variant[] = [
         amountMinor: 500,
         currency: 'eur',
         orderDateIso: '2026-10-08T12:00:00.000Z',
-        withdrawalMode: 'refund_unused',
+        terms: 'refund_unused',
       }),
   },
   {
@@ -176,7 +176,7 @@ const VARIANTS: readonly Variant[] = [
         amountMinor: 500,
         currency: 'eur',
         orderDateIso: '2026-10-08T12:00:00.000Z',
-        withdrawalMode: 'waiver',
+        terms: 'waiver',
       }),
   },
   {
@@ -192,7 +192,7 @@ const VARIANTS: readonly Variant[] = [
         amountMinor: 500,
         currency: 'eur',
         orderDateIso: '2026-10-28T12:00:00.000Z',
-        withdrawalMode: 'refund_unused',
+        terms: 'refund_unused',
       }),
   },
   {

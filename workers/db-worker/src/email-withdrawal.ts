@@ -13,6 +13,7 @@ import type { RenderedEmail, ResendConfig } from './email'
 import { escapeHtml, formatDate, formatMoney, resendPost } from './email'
 import type { Lines, MailOrigins } from './email-layout'
 import { documentHtml, eyebrow, footerText, introRow, SANS, signOffRow, W, } from './email-layout'
+import type { RefundBasis } from './withdrawal-rules'
 import type { TraderDetails } from './withdrawal-wording'
 import { traderLine, WITHDRAWAL_RECEIVED } from './withdrawal-wording'
 
@@ -32,15 +33,19 @@ export interface WithdrawalEmailVars extends MailOrigins {
   packLabel: string
   paidCredits: number
   purchasedAtIso: string
-  /** What the pack cost, in minor units. */
-  amountMinor: number
+  /** What the pack cost, in minor units; null when the price paid is not on
+   *  record and the owner refunds by hand. */
+  amountMinor: number | null
   currency: string
   /** When the statement reached us. */
   submittedAtIso: string
   /** Paid credits and bonus credits the withdrawal took off the balance. */
   unusedCredits: number
   bonusCredits: number
-  refundMinor: number
+  /** The refund, in minor units; null when the price is not on record. */
+  refundMinor: number | null
+  /** 'full' for a purchase with no consent on record: the whole price. */
+  basis?: RefundBasis
   refundState: WithdrawalRefundState
   trader: TraderDetails
 }
@@ -65,7 +70,11 @@ export function submittedAt(iso: string): string {
 
 /** The statement as it reached us, line by line: label and value. */
 function statementRows(vars: WithdrawalEmailVars): Array<[string, string]> {
-  const pack = `${vars.packLabel} pack, ${count(vars.paidCredits, 'credit', 'credits')}, bought ${formatDate(vars.purchasedAtIso)} for ${formatMoney(vars.amountMinor, vars.currency)}`
+  const price =
+    vars.amountMinor === null
+      ? ''
+      : ` for ${formatMoney(vars.amountMinor, vars.currency)}`
+  const pack = `${vars.packLabel} pack, ${count(vars.paidCredits, 'credit', 'credits')}, bought ${formatDate(vars.purchasedAtIso)}${price}`
   return [
     ['Statement', 'I withdraw from my contract for this purchase.'],
     ['Purchase', pack],
@@ -75,21 +84,38 @@ function statementRows(vars: WithdrawalEmailVars): Array<[string, string]> {
   ]
 }
 
+/** What the refund will be, said before it is made. */
+function refundToCome(vars: WithdrawalEmailVars): string {
+  if (vars.refundMinor !== null)
+    return formatMoney(vars.refundMinor, vars.currency)
+  return vars.basis === 'full'
+    ? 'what you paid'
+    : 'what you paid for the unused credits'
+}
+
+function refundSentence(vars: WithdrawalEmailVars): string {
+  if (vars.refundState === 'none') return 'There was nothing left to refund.'
+  if (vars.refundState === 'refunded' && vars.refundMinor !== null) {
+    return `We've refunded ${formatMoney(vars.refundMinor, vars.currency)} to the card or account you paid with. Banks usually show it within 5 to 10 business days.`
+  }
+  return `We'll refund ${refundToCome(vars)} to the card or account you paid with within 14 days.`
+}
+
+function creditsSentence(vars: WithdrawalEmailVars): string {
+  const bonus = count(vars.bonusCredits, 'bonus credit', 'bonus credits')
+  if (vars.unusedCredits === 0) {
+    return vars.bonusCredits === 0
+      ? "You'd used every credit from this purchase, so your balance stays as it is."
+      : `The ${bonus} that came with this purchase ${vars.bonusCredits === 1 ? 'has' : 'have'} left your balance.`
+  }
+  const credits = `The ${count(vars.unusedCredits, 'unused credit', 'unused credits')} from this purchase ${vars.unusedCredits === 1 ? 'has' : 'have'} left your balance`
+  if (vars.bonusCredits === 0) return `${credits}.`
+  return `${credits}, and so ${vars.bonusCredits === 1 ? 'has the bonus credit' : `have the ${bonus}`} that came with it.`
+}
+
 /** What happens to the money and the credits. */
 export function nextSteps(vars: WithdrawalEmailVars): string[] {
-  const money = formatMoney(vars.refundMinor, vars.currency)
-  const refund =
-    vars.refundState === 'none'
-      ? 'There was nothing left to refund.'
-      : vars.refundState === 'refunded'
-        ? `We've refunded ${money} to the card or account you paid with. Banks usually show it within 5 to 10 business days.`
-        : `We'll refund ${money} to the card or account you paid with within 14 days.`
-  const credits = `The ${count(vars.unusedCredits, 'unused credit', 'unused credits')} from this purchase ${vars.unusedCredits === 1 ? 'has' : 'have'} left your balance`
-  const bonus =
-    vars.bonusCredits > 0
-      ? `, and so ${vars.bonusCredits === 1 ? 'has the bonus credit' : `have the ${count(vars.bonusCredits, 'bonus credit', 'bonus credits')}`} that came with it.`
-      : '.'
-  return [refund, `${credits}${bonus}`]
+  return [refundSentence(vars), creditsSentence(vars)]
 }
 
 function statementPanel(vars: WithdrawalEmailVars): string {

@@ -77,9 +77,11 @@ describe('the mail preview route', () => {
     )
     const unset = (await get('?mail=withdrawal&part=text')?.text()) ?? ''
     expect(unset).toContain("Subject: We've received your cancellation")
+    // A VAT ID is optional: a sole trader outside the VAT system has none.
     expect(unset).toContain(
-      'Sold by [TRADER_NAME], [TRADER_ADDRESS]. Email [TRADER_EMAIL]. VAT ID [TRADER_VAT_ID].',
+      'Sold by [TRADER_NAME], [TRADER_ADDRESS]. Email [TRADER_EMAIL].\n',
     )
+    expect(unset).not.toContain('VAT ID')
   })
 
   it('renders a mail with the sample twin, links and pictures on this environment', async () => {

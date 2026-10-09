@@ -2,88 +2,65 @@
 // withdrawal — "Withdraw from contract here" for a credit pack (CRD Art. 11a)
 // ============================================================
 //
-//   GET  /api/billing/withdrawals — auth; the packs bought in the last 14
-//        days that still hold unused paid credits, what each would refund,
-//        the statements already made, and the account's email to prefill.
+//   GET  /api/billing/withdrawals — auth; the packs that can still be
+//        cancelled, what each would refund, the statements already made,
+//        and the account's email to prefill.
 //   POST /api/billing/withdrawals — auth; { purchaseId, name, email }: the
 //        withdrawal statement for one pack.
 //
-// Only under WITHDRAWAL_MODE refund_unused. In waiver mode the list is empty
-// and a statement is refused.
+// A pack keeps the terms its own checkout recorded (checkout-consent.ts,
+// purchaseTerms), whatever WITHDRAWAL_MODE says now: one sold under the
+// waiver has no withdrawal function; one sold under refund_unused can be
+// cancelled while it holds unused paid credits, for the unused share of the
+// price; one with no ticked box on record (every pack bought before the box
+// shipped) can be cancelled with every credit used, for the whole price
+// (withdrawal-rules.ts). A statement already made is always finished.
 //
 // One statement per pack (withdrawals.purchaseId is UNIQUE): sending it again
 // answers with the first, and finishes what the first left undone. It is
-// written in one batch with the ledger rows that take away the pack's unused
-// paid credits and its unused bonus (withdrawal-rules.ts), and the batch
-// holds only if the ledger is still the one the rule counted (ledger.ts,
-// LEDGER_VERSION): a spend in between makes it count again.
+// written in one batch with the ledger rows that take away what is left of
+// the pack's paid credits and its bonus, and the batch holds only if the
+// ledger is still the one the rule counted (ledger.ts, LEDGER_VERSION): a
+// spend in between makes it count again.
 //
-// Then the refund: a partial Stripe refund of the unused credits' share of
-// the price, keyed on the statement so Stripe makes it once. The statement
-// stands whatever Stripe says, because one made inside the 14 days counts
-// (Art. 11a(5)). A refund Stripe refuses, or one with no PaymentIntent on
-// record (a pack bought before migration 0058), is recorded and the owner is
-// alerted to refund it by hand; it is never asked for again, so a hand
-// refund and a retry cannot both go out. Last, the acknowledgement mail
-// (email-withdrawal.ts), with the statement and the time it reached us. The
-// owner is alerted whenever a request moves the refund or the mail.
+// The refund is worked out from the price paid: the checkout's own record,
+// else what the PaymentIntent received at Stripe, never the catalogue's.
+// When neither knows it, the statement stands and the owner refunds by
+// hand. The statement stands whatever Stripe says, because one made inside
+// the 14 days counts (Art. 11a(5)). The refund, its acknowledgement mail and
+// the owner's alert follow in withdrawal-finish.ts; what a request leaves
+// undone, the 6-hourly sweep finishes (sweepWithdrawals).
 //
 // The refund comes back as charge.refunded: stripe-payments.ts counts the
 // withdrawal's ledger rows as taken back already, so nothing goes twice.
 
 import type { AuthUser, Env } from './auth'
-import { checkRateLimit, fallbackAppOrigin, getAuth } from './auth'
-import { traderDetails, withdrawalMode } from './checkout-consent'
-import { formatMoney, sendBillingAlert } from './email'
-import type { WithdrawalRefundState } from './email-withdrawal'
-import { sendWithdrawalMail } from './email-withdrawal'
+import { checkRateLimit, getAuth } from './auth'
+import { purchaseTerms, sweepPurchaseMails, withdrawalGraceWeekdays, withdrawalMode, } from './checkout-consent'
 import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readNamedLedger, } from './ledger'
-import { isStripeConfigured, stripeGet, stripeRequest } from './stripe-api'
 import { WITHDRAWAL_BONUS, WITHDRAWAL_PAID } from './stripe-payments'
+import type { PriceSource, StatementRow } from './withdrawal-finish'
+import { finish, PRICE_NOT_ON_RECORD, priceKnown, sweepStatements, } from './withdrawal-finish'
+import type { Price } from './withdrawal-refund'
+import { paidAtStripe } from './withdrawal-refund'
 import type { PackUse } from './withdrawal-rules'
-import { canWithdraw, packUses, refundMinor, withdrawalBonusKey, withdrawalDeadline, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
+import { canWithdraw, deadlineToShow, packUses, refundBasis, refundFor, withdrawalBonusKey, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
+import type { PurchaseTerms } from './withdrawal-wording'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
 
-/** A statement as withdrawals stores it. */
-interface StatementRow {
-  id: string
-  userId: string
-  purchaseId: string
-  paymentIntentId: string | null
-  submittedAt: string
-  name: string
-  email: string
-  packLabel: string
-  purchasedAt: string
-  paidCredits: number
-  unusedCredits: number
-  bonusCredits: number
-  amountMinor: number
-  refundMinor: number
-  currency: string
-  refundStatus: WithdrawalRefundState
-  stripeRefundId: string | null
-  refundError: string | null
-  mailStatus: string | null
-}
-
-/** A pack's price and name, as the list and the statement need them. */
-interface PackFacts {
+/** A pack's name, the terms it was sold under, and its price as the
+ *  checkout recorded it (null when it did not: never the catalogue's). */
+interface PurchaseFacts {
   label: string
-  amountMinor: number | null
-  currency: string
+  terms: PurchaseTerms
+  price: Price | null
 }
 
-interface PlanRow {
-  id: string
-  label: string | null
-  amount: number | null
-  currency: string | null
-}
-
-interface ConsentPrice {
+interface ConsentRow {
   eventId: string
+  mode: string | null
+  termsOfService: string | null
   amountMinor: number
   currency: string
 }
@@ -94,32 +71,34 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ── Reading ──────────────────────────────────────────────────────────
 
-/** The price paid and the pack's name for each pack: the checkout's own
- *  record (checkout-consent.ts), else the plan's list price, for a pack
- *  bought before the record existed. */
-async function packFacts(
+/** What each of the account's packs was sold under, from its checkout's
+ *  consent row (checkout-consent.ts). */
+async function purchaseFacts(
   env: Env,
   userId: string,
-): Promise<(pack: PackUse) => PackFacts> {
-  const [{ results: plans }, { results: prices }] = await Promise.all([
+): Promise<(pack: PackUse) => PurchaseFacts> {
+  const [{ results: plans }, { results: consents }] = await Promise.all([
+    env.DB.prepare('SELECT id, label FROM pricingPlans').all<{
+      id: string
+      label: string | null
+    }>(),
     env.DB.prepare(
-      'SELECT id, label, amount, currency FROM pricingPlans',
-    ).all<PlanRow>(),
-    env.DB.prepare(
-      'SELECT eventId, amountMinor, currency FROM checkoutConsents WHERE userId = ?',
+      'SELECT eventId, mode, termsOfService, amountMinor, currency FROM checkoutConsents WHERE userId = ?',
     )
       .bind(userId)
-      .all<ConsentPrice>(),
+      .all<ConsentRow>(),
   ])
-  const plan = new Map(plans.map((row) => [row.id, row]))
-  const paid = new Map(prices.map((row) => [row.eventId, row]))
+  const labels = new Map(plans.map((row) => [row.id, row.label]))
+  const byEvent = new Map(consents.map((row) => [row.eventId, row]))
   return (pack) => {
-    const listed = plan.get(pack.planId ?? '')
-    const recorded = paid.get(pack.eventId ?? '')
+    const consent = byEvent.get(pack.eventId ?? '')
     return {
-      label: listed?.label ?? 'Credit',
-      amountMinor: recorded?.amountMinor ?? listed?.amount ?? null,
-      currency: recorded?.currency ?? listed?.currency ?? 'eur',
+      label: labels.get(pack.planId ?? '') ?? 'Credit',
+      terms: purchaseTerms(consent),
+      price:
+        consent === undefined
+          ? null
+          : { amountMinor: consent.amountMinor, currency: consent.currency },
     }
   }
 }
@@ -142,7 +121,8 @@ async function statementFor(
     .first<StatementRow>()
 }
 
-/** What the app shows of a statement. */
+/** What the app shows of a statement. The refund is null when the price
+ *  paid is not on record. */
 function statementView(row: StatementRow) {
   return {
     id: row.id,
@@ -152,27 +132,35 @@ function statementView(row: StatementRow) {
     email: row.email,
     unusedCredits: row.unusedCredits,
     bonusCredits: row.bonusCredits,
-    refundMinor: row.refundMinor,
+    basis: row.refundBasis ?? 'unused',
+    refundMinor: priceKnown(row) ? row.refundMinor : null,
     currency: row.currency,
     refundStatus: row.refundStatus,
   }
 }
 
-function packView(pack: PackUse, facts: PackFacts) {
+function packView(
+  pack: PackUse,
+  facts: PurchaseFacts,
+  nowMs: number,
+  graceWeekdays: number,
+) {
+  const basis = refundBasis(facts.terms)
   return {
     purchaseId: pack.purchaseId,
     packLabel: facts.label,
     purchasedAt: pack.purchasedAt,
-    deadline: withdrawalDeadline(pack.purchasedAt),
+    deadline: deadlineToShow(pack.purchasedAt, nowMs, graceWeekdays),
+    basis,
     paidCredits: pack.paid,
     unusedCredits: pack.paidUnused,
     bonusCredits: pack.bonusUnused,
     refund:
-      facts.amountMinor === null
+      facts.price === null
         ? null
         : {
-            amountMinor: refundMinor(facts.amountMinor, pack),
-            currency: facts.currency,
+            amountMinor: refundFor(basis, facts.price.amountMinor, pack),
+            currency: facts.price.currency,
           },
   }
 }
@@ -185,21 +173,25 @@ async function handleList(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const mode = withdrawalMode(env)
-  if (mode !== 'refund_unused' || auth.isTestAccount) {
+  if (auth.isTestAccount) {
     return respond({ mode, email: null, packs: [], statements: [] })
   }
   const [ledger, facts, statements, user] = await Promise.all([
     readNamedLedger(env, auth.userId),
-    packFacts(env, auth.userId),
+    purchaseFacts(env, auth.userId),
     statementsOf(env, auth.userId),
     env.DB.prepare('SELECT email FROM users WHERE id = ?')
       .bind(auth.userId)
       .first<{ email: string | null }>(),
   ])
   const now = Date.now()
-  const packs = packUses(ledger.rows)
-    .filter((pack) => canWithdraw(mode, pack, now))
-    .map((pack) => packView(pack, facts(pack)))
+  const grace = withdrawalGraceWeekdays(env)
+  const packs = packUses(ledger.rows).flatMap((pack) => {
+    const fact = facts(pack)
+    return canWithdraw(fact.terms, pack, now, grace)
+      ? [packView(pack, fact, now, grace)]
+      : []
+  })
   return respond({
     mode,
     email: user?.email ?? null,
@@ -233,28 +225,55 @@ function readBody(raw: unknown): StatementBody | string {
 }
 
 /** Why a pack cannot be withdrawn now, or null when it can. */
-function refusal(pack: PackUse, now: number): string | null {
-  if (!withdrawalOpen(pack.purchasedAt, now)) {
+function refusal(
+  pack: PackUse,
+  terms: PurchaseTerms,
+  nowMs: number,
+  graceWeekdays: number,
+): string | null {
+  if (terms === 'waiver') {
+    return 'You gave up the right to cancel this purchase at checkout.'
+  }
+  if (!withdrawalOpen(pack.purchasedAt, nowMs, graceWeekdays)) {
     return 'The 14 days to cancel this purchase have ended.'
   }
   if (pack.settled)
     return 'This purchase has been cancelled or refunded already.'
-  if (pack.paidUnused <= 0) {
+  if (terms === 'refund_unused' && pack.paidUnused <= 0) {
     return "You've used every credit from this purchase, so it can no longer be cancelled."
   }
   return null
 }
 
-/** The statement's row, before anything is written. */
+/** The price a statement refunds from: the checkout's record, else what
+ *  the PaymentIntent received at Stripe (asked once a request), else
+ *  none. */
+function pricing(env: Env) {
+  let atStripe: Promise<Price | null> | null = null
+  return async (
+    recorded: Price | null,
+    paymentIntentId: string | null,
+  ): Promise<{ price: Price | null; source: PriceSource }> => {
+    if (recorded !== null) return { price: recorded, source: 'checkout' }
+    atStripe ??= paidAtStripe(env, paymentIntentId)
+    const price = await atStripe
+    return { price, source: price === null ? 'none' : 'stripe' }
+  }
+}
+
+/** The statement's row, before anything is written. With no price on
+ *  record it goes to the owner to refund by hand. */
 function draftStatement(
   auth: AuthUser,
   body: StatementBody,
   pack: PackUse,
-  facts: PackFacts,
+  facts: PurchaseFacts,
+  priced: { price: Price | null; source: PriceSource },
   submittedAt: string,
   id: string,
 ): StatementRow {
-  const amountMinor = facts.amountMinor ?? 0
+  const basis = refundBasis(facts.terms)
+  const { price } = priced
   return {
     id,
     userId: auth.userId,
@@ -268,13 +287,17 @@ function draftStatement(
     paidCredits: pack.paid,
     unusedCredits: pack.paidUnused,
     bonusCredits: pack.bonusUnused,
-    amountMinor,
-    refundMinor: refundMinor(amountMinor, pack),
-    currency: facts.currency,
-    refundStatus: 'pending',
+    amountMinor: price?.amountMinor ?? 0,
+    refundMinor: price === null ? 0 : refundFor(basis, price.amountMinor, pack),
+    currency: price?.currency ?? 'eur',
+    refundStatus: price === null ? 'manual' : 'pending',
     stripeRefundId: null,
-    refundError: null,
+    refundError: price === null ? PRICE_NOT_ON_RECORD : null,
     mailStatus: null,
+    mailAt: null,
+    refundBasis: basis,
+    priceSource: priced.source,
+    stripeRefundStatus: null,
   }
 }
 
@@ -304,9 +327,11 @@ function takeRow(
 
 /**
  * Write the statement and its ledger rows, in one batch that holds only if
- * the ledger is still `version`. Returns the statement that stands for the
- * pack: this one, another that got there first, or null when the ledger
- * moved and the rule has to count again.
+ * the ledger is still `version`. The paid row is written even when nothing
+ * paid is left (a pack with no consent on record, used up): it is what
+ * marks the pack settled. Returns the statement that stands for the pack:
+ * this one, another that got there first, or null when the ledger moved
+ * and the rule has to count again.
  */
 async function writeStatement(
   env: Env,
@@ -316,8 +341,9 @@ async function writeStatement(
   const insert = env.DB.prepare(
     `INSERT OR IGNORE INTO withdrawals
        (id, userId, purchaseId, paymentIntentId, submittedAt, name, email, packLabel, purchasedAt,
-        paidCredits, unusedCredits, bonusCredits, amountMinor, refundMinor, currency, refundStatus)
-     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending'
+        paidCredits, unusedCredits, bonusCredits, amountMinor, refundMinor, currency, refundStatus,
+        refundError, refundBasis, priceSource)
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       WHERE ${LEDGER_VERSION} = ?`,
   ).bind(
     row.id,
@@ -335,6 +361,10 @@ async function writeStatement(
     row.amountMinor,
     row.refundMinor,
     row.currency,
+    row.refundStatus,
+    row.refundError,
+    row.refundBasis,
+    row.priceSource,
     row.userId,
     version,
   )
@@ -373,8 +403,11 @@ async function placeStatement(
   body: StatementBody,
 ): Promise<Placed> {
   const submittedAt = new Date().toISOString()
+  const now = Date.parse(submittedAt)
   const id = crypto.randomUUID()
-  const facts = await packFacts(env, auth.userId)
+  const grace = withdrawalGraceWeekdays(env)
+  const facts = await purchaseFacts(env, auth.userId)
+  const priceOf = pricing(env)
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readNamedLedger(env, auth.userId)
     const pack = packUses(ledger.rows).find(
@@ -383,10 +416,20 @@ async function placeStatement(
     if (pack === undefined) {
       return { kind: 'refused', status: 404, error: 'Purchase not found.' }
     }
-    const refused = refusal(pack, Date.parse(submittedAt))
+    const fact = facts(pack)
+    const refused = refusal(pack, fact.terms, now, grace)
     if (refused !== null)
       return { kind: 'refused', status: 409, error: refused }
-    const draft = draftStatement(auth, body, pack, facts(pack), submittedAt, id)
+    const priced = await priceOf(fact.price, pack.paymentIntentId)
+    const draft = draftStatement(
+      auth,
+      body,
+      pack,
+      fact,
+      priced,
+      submittedAt,
+      id,
+    )
     const stands = await writeStatement(env, draft, ledger.version)
     if (stands !== null) {
       return { kind: 'placed', row: stands, duplicate: stands.id !== id }
@@ -397,301 +440,6 @@ async function placeStatement(
   )
 }
 
-// ── After the statement: the refund, the mail, the alert ─────────────
-
-interface RefundOutcome {
-  status: WithdrawalRefundState
-  refundId: string | null
-  error: string | null
-}
-
-/** Another request for this statement is talking to Stripe right now. */
-const IN_FLIGHT: RefundOutcome = {
-  status: 'pending',
-  refundId: null,
-  error: null,
-}
-
-function stripeError(data: Record<string, unknown>, status: number): string {
-  const error = data.error as { message?: unknown } | undefined
-  return typeof error?.message === 'string'
-    ? error.message
-    : `Stripe answered ${status}`
-}
-
-/** A refund this statement already has at Stripe: for a retry more than a
- *  day later, once Stripe has forgotten the idempotency key. */
-async function refundOnRecord(
-  env: Env,
-  row: StatementRow,
-): Promise<string | null> {
-  const listed = await stripeGet(
-    env,
-    `/refunds?payment_intent=${encodeURIComponent(row.paymentIntentId ?? '')}&limit=100`,
-  )
-  const refunds = Array.isArray(listed.data.data)
-    ? (listed.data.data as Array<Record<string, unknown>>)
-    : []
-  const ours = refunds.find(
-    (refund) =>
-      (refund.metadata as Record<string, unknown> | undefined)?.withdrawalId ===
-      row.id,
-  )
-  return typeof ours?.id === 'string' ? ours.id : null
-}
-
-/** What Stripe's answer to the refund means for the statement. */
-function refundAnswer(res: {
-  ok: boolean
-  status: number
-  data: Record<string, unknown>
-}): RefundOutcome {
-  // 409: the same idempotency key is still being worked on.
-  if (res.status === 409) return IN_FLIGHT
-  const state = typeof res.data.status === 'string' ? res.data.status : ''
-  if (
-    res.ok &&
-    typeof res.data.id === 'string' &&
-    state !== 'failed' &&
-    state !== 'canceled'
-  ) {
-    return { status: 'refunded', refundId: res.data.id, error: null }
-  }
-  return {
-    status: 'failed',
-    refundId: null,
-    error: stripeError(res.data, res.status),
-  }
-}
-
-/** Ask Stripe to refund the statement's amount, once. Never throws. */
-async function refundAtStripe(
-  env: Env,
-  row: StatementRow,
-  retry: boolean,
-): Promise<RefundOutcome> {
-  if (row.refundMinor <= 0) {
-    return { status: 'none', refundId: null, error: null }
-  }
-  if (row.paymentIntentId === null) {
-    return {
-      status: 'manual',
-      refundId: null,
-      error: 'No PaymentIntent on record for this purchase',
-    }
-  }
-  if (!isStripeConfigured(env)) {
-    return {
-      status: 'manual',
-      refundId: null,
-      error: 'Stripe is not configured',
-    }
-  }
-  try {
-    const earlier = retry ? await refundOnRecord(env, row) : null
-    if (earlier !== null) {
-      return { status: 'refunded', refundId: earlier, error: null }
-    }
-    return refundAnswer(
-      await stripeRequest(
-        env,
-        '/refunds',
-        {
-          payment_intent: row.paymentIntentId,
-          amount: String(row.refundMinor),
-          reason: 'requested_by_customer',
-          'metadata[withdrawalId]': row.id,
-          'metadata[purchaseId]': row.purchaseId,
-          'metadata[userId]': row.userId,
-        },
-        `withdrawal-${row.id}`,
-      ),
-    )
-  } catch (err) {
-    return { status: 'failed', refundId: null, error: String(err) }
-  }
-}
-
-/** Keep what Stripe answered. Only a pending statement takes it, so a
- *  late answer never overwrites a refund already recorded. Returns false
- *  when another request recorded it first. */
-async function recordRefund(
-  env: Env,
-  row: StatementRow,
-  outcome: RefundOutcome,
-): Promise<boolean> {
-  const res = await env.DB.prepare(
-    `UPDATE withdrawals
-        SET refundStatus = ?, stripeRefundId = ?, refundError = ?, refundedAt = ?
-      WHERE id = ? AND refundStatus = 'pending'`,
-  )
-    .bind(
-      outcome.status,
-      outcome.refundId,
-      outcome.error,
-      outcome.status === 'refunded' ? new Date().toISOString() : null,
-      row.id,
-    )
-    .run()
-  return res.meta.changes > 0
-}
-
-/** A mail claimed this long ago and never marked sent or failed was cut off
- *  mid-send, and may be sent again. */
-const MAIL_CLAIM_MS = 10 * 60_000
-
-/** Take the acknowledgement for this request, so two requests never both
- *  send it: one not yet sent, one that failed, or a claim gone stale. */
-async function claimMail(env: Env, row: StatementRow): Promise<boolean> {
-  const now = Date.now()
-  const res = await env.DB.prepare(
-    `UPDATE withdrawals SET mailStatus = 'sending', mailAt = ?
-      WHERE id = ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
-             OR (mailStatus = 'sending' AND mailAt < ?))`,
-  )
-    .bind(
-      new Date(now).toISOString(),
-      row.id,
-      new Date(now - MAIL_CLAIM_MS).toISOString(),
-    )
-    .run()
-  return res.meta.changes > 0
-}
-
-/** Send the acknowledgement and record whether it went. Never throws. */
-async function acknowledge(env: Env, row: StatementRow): Promise<string> {
-  let status = 'not-configured'
-  if (env.RESEND_API_KEY) {
-    const app = fallbackAppOrigin(env)
-    const sent = await sendWithdrawalMail(
-      { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
-      {
-        appOrigin: app,
-        assetOrigin: app,
-        name: row.name,
-        email: row.email,
-        packLabel: row.packLabel,
-        paidCredits: row.paidCredits,
-        purchasedAtIso: row.purchasedAt,
-        amountMinor: row.amountMinor,
-        currency: row.currency,
-        submittedAtIso: row.submittedAt,
-        unusedCredits: row.unusedCredits,
-        bonusCredits: row.bonusCredits,
-        refundMinor: row.refundMinor,
-        refundState: row.refundStatus,
-        trader: traderDetails(env),
-      },
-      `withdrawal-${row.id}`,
-    ).catch(() => false)
-    status = sent ? 'sent' : 'failed'
-  }
-  await env.DB.prepare(
-    'UPDATE withdrawals SET mailStatus = ?, mailAt = ? WHERE id = ?',
-  )
-    .bind(status, new Date().toISOString(), row.id)
-    .run()
-    .catch((err: unknown) => {
-      console.error(
-        `[billing] withdrawal ${row.id}: mail record FAILED: ${String(err)}`,
-      )
-    })
-  return status
-}
-
-function alertSubject(row: StatementRow): string {
-  const money = formatMoney(row.refundMinor, row.currency)
-  switch (row.refundStatus) {
-    case 'refunded':
-      return `Withdrawal: refunded ${money}`
-    case 'none':
-      return 'Withdrawal: nothing to refund'
-    case 'pending':
-      return `Withdrawal: refund of ${money} still open`
-    case 'failed':
-      return `Withdrawal: refund FAILED, refund ${money} by hand`
-    default:
-      return `Withdrawal: refund ${money} by hand`
-  }
-}
-
-function alertLines(row: StatementRow, mail: string): string[] {
-  const byHand = row.refundStatus === 'failed' || row.refundStatus === 'manual'
-  return [
-    `Statement: ${row.id}, submitted ${row.submittedAt}`,
-    `Account: ${row.userId}`,
-    `Purchase: ${row.purchaseId} (${row.packLabel}, ${row.paidCredits} credits, bought ${row.purchasedAt})`,
-    `PaymentIntent: ${row.paymentIntentId ?? 'none on record'}`,
-    `Credits removed: ${row.unusedCredits} paid, ${row.bonusCredits} bonus`,
-    `Refund: ${formatMoney(row.refundMinor, row.currency)} of ${formatMoney(row.amountMinor, row.currency)}, ${row.refundStatus}`,
-    ...(row.stripeRefundId === null
-      ? []
-      : [`Stripe refund: ${row.stripeRefundId}`]),
-    ...(row.refundError === null ? [] : [`Why not: ${row.refundError}`]),
-    `Acknowledgement mail: ${mail}`,
-    ...(byHand
-      ? [
-          '',
-          'The statement stands: refund this amount in the Stripe dashboard',
-          'within 14 days of the statement. That refund takes no more',
-          'credits; the withdrawal took them already.',
-        ]
-      : []),
-  ]
-}
-
-/**
- * Everything after the statement is written, or whatever an earlier request
- * left undone: the refund while it is still pending, and the
- * acknowledgement until it is sent. A refund Stripe refused is never asked
- * for again: the owner refunds it by hand, and a second request could
- * refund it twice. Alerts the owner whenever this request moved either.
- * Never throws.
- */
-async function finish(
-  env: Env,
-  row: StatementRow,
-  retry: boolean,
-): Promise<StatementRow> {
-  let done = row
-  try {
-    let moved = false
-    if (row.refundStatus === 'pending') {
-      const outcome = await refundAtStripe(env, row, retry)
-      if (
-        outcome.status !== 'pending' &&
-        (await recordRefund(env, row, outcome))
-      ) {
-        moved = true
-        done = {
-          ...row,
-          refundStatus: outcome.status,
-          stripeRefundId: outcome.refundId,
-          refundError: outcome.error,
-        }
-      }
-    }
-    if (await claimMail(env, done)) {
-      done = { ...done, mailStatus: await acknowledge(env, done) }
-      moved = true
-    }
-    if (moved) {
-      await sendBillingAlert(
-        { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
-        env.BILLING_ALERT_EMAIL ?? '',
-        alertSubject(done),
-        alertLines(done, done.mailStatus ?? 'not sent yet'),
-      )
-    }
-  } catch (err) {
-    console.error(
-      `[billing] withdrawal ${row.id}: finishing failed: ${String(err)}`,
-    )
-  }
-  return done
-}
-
 async function handleStatement(
   request: Request,
   env: Env,
@@ -699,7 +447,7 @@ async function handleStatement(
 ): Promise<Response> {
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-  if (withdrawalMode(env) !== 'refund_unused' || auth.isTestAccount) {
+  if (auth.isTestAccount) {
     return respond(
       { error: 'Purchases cannot be cancelled here.' },
       { status: 403 },
@@ -754,7 +502,7 @@ async function handleStatement(
   }
   const row = await finish(env, placed.row, placed.duplicate)
   console.log(
-    `[billing] withdrawal ${row.id}: user=${row.userId} purchase=${row.purchaseId} -${row.unusedCredits} paid -${row.bonusCredits} bonus, refund ${row.refundMinor} ${row.refundStatus}`,
+    `[billing] withdrawal ${row.id}: user=${row.userId} purchase=${row.purchaseId} -${row.unusedCredits} paid -${row.bonusCredits} bonus, refund ${row.refundMinor} ${row.refundStatus} (${row.refundBasis ?? 'unused'}, price ${row.priceSource ?? 'checkout'})`,
   )
   return respond({
     received: true,
@@ -772,4 +520,25 @@ export async function handleWithdrawals(
   if (request.method === 'GET') return handleList(request, env, respond)
   if (request.method === 'POST') return handleStatement(request, env, respond)
   return null
+}
+
+/**
+ * The cron's part (index.ts, scheduled): purchase mails that did not go
+ * (checkout-consent.ts), then statements a request left unfinished
+ * (withdrawal-finish.ts). Each on its own, so one never starves the other.
+ */
+export async function sweepWithdrawals(
+  env: Env,
+  nowMs: number = Date.now(),
+): Promise<void> {
+  try {
+    await sweepPurchaseMails(env, nowMs)
+  } catch (err) {
+    console.error(`[cron] purchase mail sweep failed: ${String(err)}`)
+  }
+  try {
+    await sweepStatements(env, nowMs)
+  } catch (err) {
+    console.error(`[cron] withdrawal sweep failed: ${String(err)}`)
+  }
 }

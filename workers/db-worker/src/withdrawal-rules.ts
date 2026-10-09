@@ -25,15 +25,25 @@
 // credits before anything is counted as spent, and leaves the pack settled:
 // it cannot be withdrawn again here.
 //
+// A buyer who never ticked the checkbox at checkout (every pack bought
+// before it shipped) never asked for the credits straight away, so the
+// right stays whole (CRD Art. 14(4)(b)): the function stays open for the 14
+// days even with every credit used, and refunds the whole price.
+//
 // The 14 days count from the day the credits landed, by the calendar in
-// Croatia, where the seller is: a pack bought on 9 October can be cancelled
-// until the end of 23 October. The function stays open until that day has
-// ended everywhere (UTC-12), so a buyer west of Croatia is never shut out
-// before their own midnight.
+// Croatia, where the seller is: a pack bought on 9 October has 23 October as
+// its 14th day. A period whose last day is a Saturday, a Sunday or a public
+// holiday runs on to the end of the next working day (Regulation 1182/71,
+// Art. 3(4)), and holidays differ between countries, so the function stays
+// open a few weekdays more (WITHDRAWAL_GRACE_WEEKDAYS, 3 by default): enough
+// for 24 to 26 December, or Good Friday to Easter Monday. It closes once the
+// last of those days has ended everywhere (UTC-12), so a buyer west of
+// Croatia is never shut out before their own midnight. The mails and the
+// Terms still say 14 days.
 
 import { REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, subscriptionSongs, } from './songs-allowance'
 import { PACK_PURCHASE, PURCHASE_DISPUTE, PURCHASE_REFUND, WITHDRAWAL_BONUS, WITHDRAWAL_PAID, } from './stripe-payments'
-import type { WithdrawalMode } from './withdrawal-wording'
+import type { PurchaseTerms } from './withdrawal-wording'
 import { WITHDRAWAL_DAYS } from './withdrawal-wording'
 
 /** The launch offer's bonus rows (launch-finisher.ts, OFFER_BONUS). */
@@ -270,25 +280,86 @@ function sellerDate(ms: number): string {
 }
 
 const DAY_MS = 86_400_000
-/** From the start of a date in UTC to its end at UTC-12. */
+/** From the start of a date in UTC to its end at UTC-12, the last place on
+ *  Earth where it ends. */
 const DAY_ENDS_EVERYWHERE_MS = 36 * 3_600_000
+/** From the start of a date in UTC to its end at UTC+14, the first place on
+ *  Earth where it ends. */
+const DAY_ENDS_SOMEWHERE_MS = 10 * 3_600_000
 
-/** The last day a pack bought at `purchasedAtIso` can be cancelled:
- *  YYYY-MM-DD, the 14th day after the purchase in Croatia. */
-export function withdrawalDeadline(purchasedAtIso: string): string {
-  const bought = Date.parse(
-    `${sellerDate(Date.parse(purchasedAtIso))}T00:00:00.000Z`,
-  )
-  return new Date(bought + WITHDRAWAL_DAYS * DAY_MS).toISOString().slice(0, 10)
+/** Weekdays (Monday to Friday) the function stays open past the 14th day,
+ *  unless WITHDRAWAL_GRACE_WEEKDAYS says otherwise. */
+export const DEFAULT_GRACE_WEEKDAYS = 3
+
+function startOf(day: string): number {
+  return Date.parse(`${day}T00:00:00.000Z`)
 }
 
-/** Whether the pack can still be cancelled at `nowMs`: until its last day
- *  has ended everywhere. */
-export function withdrawalOpen(purchasedAtIso: string, nowMs: number): boolean {
-  const lastDay = Date.parse(
-    `${withdrawalDeadline(purchasedAtIso)}T00:00:00.000Z`,
-  )
-  return nowMs < lastDay + DAY_ENDS_EVERYWHERE_MS
+function dayAt(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+function isWeekend(ms: number): boolean {
+  const day = new Date(ms).getUTCDay()
+  return day === 0 || day === 6
+}
+
+/** The 14th day after a pack bought at `purchasedAtIso`, in Croatia:
+ *  YYYY-MM-DD. */
+export function withdrawalDeadline(purchasedAtIso: string): string {
+  const bought = startOf(sellerDate(Date.parse(purchasedAtIso)))
+  return dayAt(bought + WITHDRAWAL_DAYS * DAY_MS)
+}
+
+/** The 14th day as a buyer is told it: moved to the Monday when it falls
+ *  on a Saturday or a Sunday. */
+export function shownDeadline(purchasedAtIso: string): string {
+  let day = startOf(withdrawalDeadline(purchasedAtIso))
+  while (isWeekend(day)) day += DAY_MS
+  return dayAt(day)
+}
+
+/** The last day the function is open: the `graceWeekdays`-th weekday
+ *  (Monday to Friday) after the 14th day, or the 14th day itself with no
+ *  grace. */
+export function lastOpenDay(
+  purchasedAtIso: string,
+  graceWeekdays: number,
+): string {
+  let day = startOf(withdrawalDeadline(purchasedAtIso))
+  for (let left = Math.max(0, Math.floor(graceWeekdays)); left > 0; ) {
+    day += DAY_MS
+    if (!isWeekend(day)) left -= 1
+  }
+  return dayAt(day)
+}
+
+/** Whether the pack can still be cancelled at `nowMs`: until its last open
+ *  day has ended everywhere. */
+export function withdrawalOpen(
+  purchasedAtIso: string,
+  nowMs: number,
+  graceWeekdays: number,
+): boolean {
+  const last = lastOpenDay(purchasedAtIso, graceWeekdays)
+  return nowMs < startOf(last) + DAY_ENDS_EVERYWHERE_MS
+}
+
+/**
+ * The date to show a buyer as the last day to cancel: the 14th day, moved
+ * off a weekend, until that date has ended somewhere on Earth; from then on
+ * the last open day, so a buyer never reads a date already gone. Never one
+ * the function does not reach.
+ */
+export function deadlineToShow(
+  purchasedAtIso: string,
+  nowMs: number,
+  graceWeekdays: number,
+): string {
+  const last = lastOpenDay(purchasedAtIso, graceWeekdays)
+  const shown = shownDeadline(purchasedAtIso)
+  const first = shown < last ? shown : last
+  return nowMs < startOf(first) + DAY_ENDS_SOMEWHERE_MS ? first : last
 }
 
 /** The refund for the pack's unused paid credits, in minor units: the price
@@ -302,17 +373,37 @@ export function refundMinor(
   return Math.floor((amountMinor * unused) / pack.paid)
 }
 
-/** Whether the buyer can withdraw from this pack now. Never in waiver mode:
- *  there the buyer gave up the right at checkout. */
+/** What a withdrawal refunds: the unused paid credits' share of the price,
+ *  or the whole price for a purchase with no consent on record. */
+export type RefundBasis = 'unused' | 'full'
+
+export function refundBasis(terms: PurchaseTerms): RefundBasis {
+  return terms === 'no_consent' ? 'full' : 'unused'
+}
+
+/** The refund a withdrawal owes, in minor units, by its basis. */
+export function refundFor(
+  basis: RefundBasis,
+  amountMinor: number,
+  pack: Pick<PackUse, 'paid' | 'paidUnused'>,
+): number {
+  if (basis === 'full') return amountMinor > 0 ? Math.floor(amountMinor) : 0
+  return refundMinor(amountMinor, pack)
+}
+
+/**
+ * Whether the buyer can withdraw from this pack now, under the terms its
+ * own checkout recorded. Never under the waiver: there the buyer gave up the
+ * right at checkout. Under refund_unused only while the pack holds unused
+ * paid credits; with no consent on record, used or not.
+ */
 export function canWithdraw(
-  mode: WithdrawalMode,
+  terms: PurchaseTerms,
   pack: PackUse,
   nowMs: number,
+  graceWeekdays: number,
 ): boolean {
-  return (
-    mode === 'refund_unused' &&
-    !pack.settled &&
-    pack.paidUnused > 0 &&
-    withdrawalOpen(pack.purchasedAt, nowMs)
-  )
+  if (terms === 'waiver' || pack.settled) return false
+  if (!withdrawalOpen(pack.purchasedAt, nowMs, graceWeekdays)) return false
+  return terms === 'no_consent' || pack.paidUnused > 0
 }

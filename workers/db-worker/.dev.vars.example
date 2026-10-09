@@ -80,12 +80,15 @@ GOOGLE_CLIENT_SECRET=
 #REVIEW_ACCESS_CODE_SHA256=
 
 # The 14-day withdrawal for credit packs (withdrawal-wording.ts): refund_unused
-# (the default) or waiver. wrangler.jsonc sets it per environment.
+# (the default) or waiver, for new checkouts. wrangler.jsonc sets it per
+# environment, with the weekdays it stays open past a pack's 14th day.
 #WITHDRAWAL_MODE=refund_unused
+#WITHDRAWAL_GRACE_WEEKDAYS=3
 
 # Who sells the credits, printed in the purchase and withdrawal mails
 # (checkout-consent.ts). Public details, so wrangler.jsonc "vars" holds the
-# real ones per environment; unset, the mails show [TRADER_NAME] and the like.
+# real ones per environment; an unset name, address or email shows as
+# [TRADER_NAME] and the like. The VAT ID is optional.
 #TRADER_NAME=
 #TRADER_ADDRESS=
 #TRADER_EMAIL=

@@ -609,21 +609,20 @@ async function grantCheckoutCredits(
   const bonus = await grantFinisherBonus(env, session, userId)
 
   // The withdrawal consent the session carried, and the purchase mail that
-  // confirms it, each recorded (checkout-consent.ts). Only on a real grant:
-  // a redelivery was mailed already. It never throws, so it can never undo
-  // the credits that just landed.
-  if (res.meta.changes > 0) {
-    await confirmPurchase(env, {
-      eventId,
-      eventCreated,
-      session,
-      userId,
-      planId,
-      credits,
-      bonus,
-      grantedAt: now,
-    })
-  }
+  // confirms it, each recorded (checkout-consent.ts). On a redelivery too:
+  // the consent is kept once per session and the mail goes only while it has
+  // not, so a delivery cut off after the credits landed loses neither. It
+  // never throws, so it can never undo the credits that landed.
+  await confirmPurchase(env, {
+    eventId,
+    eventCreated,
+    session,
+    userId,
+    planId,
+    credits,
+    bonus,
+    grantedAt: now,
+  })
   return {
     granted: (res.meta.changes > 0 ? credits : 0) + bonus,
     userId,

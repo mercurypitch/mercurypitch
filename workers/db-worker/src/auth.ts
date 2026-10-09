@@ -215,14 +215,21 @@ export interface Env {
   RETENTION_PROMO_EMAIL_DAYS?: string
   /** How a credit pack's 14-day right to cancel works (withdrawal-wording.ts):
    *  `refund_unused` (the default, and what anything unrecognised means) or
-   *  `waiver`. Decides the checkbox on Stripe Checkout, the purchase mail's
-   *  panel, the footnote under the packs and whether Settings › Credits
-   *  offers the withdrawal function. */
+   *  `waiver`. Decides the checkbox on Stripe Checkout for new packs, and
+   *  the footnote under the packs. A pack already bought keeps the terms its
+   *  own checkout recorded (checkout-consent.ts, purchaseTerms). */
   WITHDRAWAL_MODE?: string
+  /** Weekdays (Monday to Friday) the withdrawal function stays open past a
+   *  pack's 14th day, for a last day that falls on a holiday
+   *  (withdrawal-rules.ts). A whole number from 0 to 20; default 3. */
+  WITHDRAWAL_GRACE_WEEKDAYS?: string
   /** Who sells the credits, printed in the purchase mail and the
    *  withdrawal acknowledgement (CRD Art. 6(1)(b), (c)): the trading name,
    *  the full geographic address with the country, a contact email and the
-   *  VAT ID. Unset, each shows as its own name in brackets. */
+   *  VAT ID. Unset, the first three show as their own name in brackets, and
+   *  a production deploy without a name or an address fails
+   *  (scripts/assert-prod-trader-details.mjs). The VAT ID is optional: a
+   *  sole trader outside the VAT system has none. */
   TRADER_NAME?: string
   TRADER_ADDRESS?: string
   TRADER_EMAIL?: string

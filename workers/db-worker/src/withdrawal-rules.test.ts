@@ -10,9 +10,11 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LedgerEntry, PackUse } from './withdrawal-rules'
-import { canWithdraw, packUses, refundMinor, withdrawalBonusKey, withdrawalDeadline, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
+import { canWithdraw, deadlineToShow, lastOpenDay, packUses, refundBasis, refundFor, refundMinor, shownDeadline, withdrawalBonusKey, withdrawalDeadline, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
 
 const STARTED = Date.parse('2026-10-09T10:00:00.000Z')
+const DAY = 86_400_000
+const at = (iso: string): number => Date.parse(iso)
 
 /** A ledger written one row a minute, as the worker would write it. */
 function ledger() {
@@ -147,7 +149,7 @@ describe('what a pack refunds', () => {
 
     expect(use.paidUnused).toBe(0)
     expect(refundMinor(PRICE, use)).toBe(0)
-    expect(canWithdraw('refund_unused', use, STARTED)).toBe(false)
+    expect(canWithdraw('refund_unused', use, STARTED, 3)).toBe(false)
   })
 })
 
@@ -260,7 +262,7 @@ describe('a pack already settled', () => {
     const use = useOf(book.rows, pack)
 
     expect(use.settled).toBe(true)
-    expect(canWithdraw('refund_unused', use, STARTED)).toBe(false)
+    expect(canWithdraw('refund_unused', use, STARTED, 3)).toBe(false)
   })
 
   it('keeps a withdrawn pack withdrawn, and counts what it used for the next pack', () => {
@@ -295,43 +297,161 @@ describe('the 14 days', () => {
     expect(withdrawalDeadline('2026-10-25T23:30:00.000Z')).toBe('2026-11-09')
   })
 
-  it('stays open until the last day has ended everywhere, and not a moment after', () => {
+  it('stays open three weekdays past the 14th day, until that day has ended everywhere', () => {
+    // Bought Friday 9 October: the 14th day is Friday 23 October, and the
+    // third weekday after it Wednesday 28 October, which ends at UTC-12 at
+    // noon UTC on the 29th.
     const bought = '2026-10-09T10:00:00.000Z'
 
-    // The end of 23 October at UTC-12 is noon on the 24th, UTC.
-    expect(withdrawalOpen(bought, Date.parse('2026-10-24T11:59:59.999Z'))).toBe(
-      true,
-    )
-    expect(withdrawalOpen(bought, Date.parse('2026-10-24T12:00:00.000Z'))).toBe(
+    expect(lastOpenDay(bought, 3)).toBe('2026-10-28')
+    expect(withdrawalOpen(bought, at('2026-10-29T11:59:59.999Z'), 3)).toBe(true)
+    expect(withdrawalOpen(bought, at('2026-10-29T12:00:00.000Z'), 3)).toBe(
       false,
     )
   })
 
-  it('lets a pack be withdrawn inside the window only', () => {
-    const book = ledger()
-    const use = useOf(book.rows, book.pack(140, 'pi_a'))
+  it('closes with the 14th day itself when there is no grace', () => {
+    const bought = '2026-10-09T10:00:00.000Z'
 
-    expect(
-      canWithdraw('refund_unused', use, Date.parse(use.purchasedAt) + 1000),
-    ).toBe(true)
-    expect(
-      canWithdraw(
-        'refund_unused',
-        use,
-        Date.parse(`${withdrawalDeadline(use.purchasedAt)}T12:00:00.000Z`) +
-          86_400_000,
-      ),
-    ).toBe(false)
+    expect(lastOpenDay(bought, 0)).toBe('2026-10-23')
+    expect(withdrawalOpen(bought, at('2026-10-24T11:59:59.999Z'), 0)).toBe(true)
+    expect(withdrawalOpen(bought, at('2026-10-24T12:00:00.000Z'), 0)).toBe(
+      false,
+    )
+  })
+
+  it('shows a Saturday 14th day as the Monday, and stays open to the Wednesday', () => {
+    // Bought Saturday 10 October 2026: the 14th day is Saturday 24 October.
+    const bought = '2026-10-10T09:00:00.000Z'
+
+    expect(withdrawalDeadline(bought)).toBe('2026-10-24')
+    expect(shownDeadline(bought)).toBe('2026-10-26')
+    expect(lastOpenDay(bought, 3)).toBe('2026-10-28')
+    expect(withdrawalOpen(bought, at('2026-10-29T11:59:59.999Z'), 3)).toBe(true)
+    expect(withdrawalOpen(bought, at('2026-10-29T12:00:00.000Z'), 3)).toBe(
+      false,
+    )
+  })
+
+  it('shows a Sunday 14th day as the Monday too', () => {
+    // Bought Sunday 11 October 2026: the 14th day is Sunday 25 October.
+    const bought = '2026-10-11T09:00:00.000Z'
+
+    expect(shownDeadline(bought)).toBe('2026-10-26')
+    expect(lastOpenDay(bought, 3)).toBe('2026-10-28')
+  })
+
+  it('carries a Wednesday 24 December over Christmas to Monday 29 December', () => {
+    // Bought Wednesday 10 December 2025: the 14th day is Wednesday 24
+    // December, and 25 and 26 December are holidays in most of the EU.
+    const bought = '2025-12-10T12:00:00.000Z'
+
+    expect(withdrawalDeadline(bought)).toBe('2025-12-24')
+    expect(shownDeadline(bought)).toBe('2025-12-24')
+    expect(lastOpenDay(bought, 3)).toBe('2025-12-29')
+    expect(withdrawalOpen(bought, at('2025-12-30T11:59:59.999Z'), 3)).toBe(true)
+    expect(withdrawalOpen(bought, at('2025-12-30T12:00:00.000Z'), 3)).toBe(
+      false,
+    )
+  })
+
+  it('carries Good Friday over Easter Monday to the Wednesday', () => {
+    // Bought Friday 12 March 2027: the 14th day is Good Friday, 26 March.
+    // Where Easter Monday is a holiday, the period runs to Tuesday 30 March.
+    const bought = '2027-03-12T12:00:00.000Z'
+
+    expect(withdrawalDeadline(bought)).toBe('2027-03-26')
+    expect(shownDeadline(bought)).toBe('2027-03-26')
+    expect(lastOpenDay(bought, 3)).toBe('2027-03-31')
+    expect(withdrawalOpen(bought, at('2027-04-01T11:59:59.999Z'), 3)).toBe(true)
+    expect(withdrawalOpen(bought, at('2027-04-01T12:00:00.000Z'), 3)).toBe(
+      false,
+    )
   })
 })
 
-describe('waiver mode', () => {
-  it('offers no withdrawal of a pack that refund_unused would refund', () => {
+describe('the date a buyer sees', () => {
+  it('is the 14th day until that day has ended somewhere, then the last open day', () => {
+    // Friday 23 October ends first at UTC+14: 10:00 UTC.
+    const bought = '2026-10-09T10:00:00.000Z'
+
+    expect(deadlineToShow(bought, at('2026-10-23T09:59:59.999Z'), 3)).toBe(
+      '2026-10-23',
+    )
+    expect(deadlineToShow(bought, at('2026-10-23T10:00:00.000Z'), 3)).toBe(
+      '2026-10-28',
+    )
+  })
+
+  it('is the Monday through a weekend 14th day, then the last open day', () => {
+    const bought = '2026-10-10T09:00:00.000Z'
+
+    expect(deadlineToShow(bought, at(bought), 3)).toBe('2026-10-26')
+    expect(deadlineToShow(bought, at('2026-10-25T12:00:00.000Z'), 3)).toBe(
+      '2026-10-26',
+    )
+    expect(deadlineToShow(bought, at('2026-10-26T10:00:00.000Z'), 3)).toBe(
+      '2026-10-28',
+    )
+  })
+
+  it('is never a Monday the function does not reach', () => {
+    // With no grace, a Saturday 14th day is the last day it is open.
+    const bought = '2026-10-10T09:00:00.000Z'
+
+    expect(deadlineToShow(bought, at(bought), 0)).toBe('2026-10-24')
+  })
+})
+
+describe('who can withdraw a pack', () => {
+  it('lets a pack be withdrawn inside the window only', () => {
     const book = ledger()
     const use = useOf(book.rows, book.pack(140, 'pi_a'))
-    const now = Date.parse(use.purchasedAt) + 1000
+    const closes = at(`${lastOpenDay(use.purchasedAt, 3)}T12:00:00.000Z`) + DAY
 
-    expect(canWithdraw('refund_unused', use, now)).toBe(true)
-    expect(canWithdraw('waiver', use, now)).toBe(false)
+    expect(
+      canWithdraw('refund_unused', use, at(use.purchasedAt) + 1000, 3),
+    ).toBe(true)
+    expect(canWithdraw('refund_unused', use, closes - 1, 3)).toBe(true)
+    expect(canWithdraw('refund_unused', use, closes, 3)).toBe(false)
+  })
+
+  it('offers no withdrawal of a pack bought under the waiver', () => {
+    const book = ledger()
+    const use = useOf(book.rows, book.pack(140, 'pi_a'))
+    const now = at(use.purchasedAt) + 1000
+
+    expect(canWithdraw('refund_unused', use, now, 3)).toBe(true)
+    expect(canWithdraw('waiver', use, now, 3)).toBe(false)
+  })
+
+  it('keeps a pack with no consent on record open with every credit used', () => {
+    const book = ledger()
+    const pack = book.pack(30, 'pi_a')
+    book.spend(30, 'job-1')
+    const use = useOf(book.rows, pack)
+    const now = at(use.purchasedAt) + 1000
+
+    expect(use.paidUnused).toBe(0)
+    expect(canWithdraw('refund_unused', use, now, 3)).toBe(false)
+    expect(canWithdraw('no_consent', use, now, 3)).toBe(true)
+  })
+
+  it('closes a pack with no consent on record with the window too', () => {
+    const book = ledger()
+    const use = useOf(book.rows, book.pack(30, 'pi_a'))
+    const closes = at(`${lastOpenDay(use.purchasedAt, 3)}T12:00:00.000Z`) + DAY
+
+    expect(canWithdraw('no_consent', use, closes, 3)).toBe(false)
+  })
+})
+
+describe('what a pack with no consent on record refunds', () => {
+  it('refunds the whole price, credits used or not', () => {
+    expect(refundBasis('no_consent')).toBe('full')
+    expect(refundBasis('refund_unused')).toBe('unused')
+    expect(refundFor('full', 500, { paid: 30, paidUnused: 0 })).toBe(500)
+    expect(refundFor('unused', 500, { paid: 30, paidUnused: 0 })).toBe(0)
+    expect(refundFor('unused', 500, { paid: 30, paidUnused: 15 })).toBe(250)
   })
 })

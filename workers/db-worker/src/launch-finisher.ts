@@ -26,7 +26,7 @@ import { FINISHER_CAMPAIGN, finisherConfig, finisherPromoId, finisherState, } fr
 import { promoEmailCode, promoEmailRecorded, recordPromoEmail, } from './promo-claim'
 import type { LedgerRow } from './songs-allowance'
 import { SEPARATION_REFUND, WEB_SEPARATION } from './songs-allowance'
-import { paymentIntentOf } from './stripe-payments'
+import { paymentIntentOf, PURCHASE_DISPUTE, PURCHASE_REFUND, WITHDRAWAL_PAID, } from './stripe-payments'
 
 /** The ledger reason of the bonus credits. */
 export const OFFER_BONUS = 'offer-bonus'
@@ -164,9 +164,15 @@ export async function finisherCheckoutParams(
 /**
  * Write the bonus a paid pack was bought with, beside the pack's own row.
  * Returns the credits this call added: 0 for a session without the offer,
- * and for an account that had its bonus already. Throws when D1 does, so
- * the webhook answers 500 and Stripe delivers the event again; the pack's
- * row is then a duplicate, and this writes the bonus.
+ * for an account that had its bonus already, and for a payment that went
+ * back before the bonus landed. Throws when D1 does, so the webhook answers
+ * 500 and Stripe delivers the event again; the pack's row is then a
+ * duplicate, and this writes the bonus.
+ *
+ * A delivery that lands late, after the buyer withdrew from the pack
+ * (withdrawal.ts) or the payment was refunded or disputed
+ * (stripe-payments.ts), writes nothing: the same statement checks for those
+ * rows, so a bonus can never outlive the money it came with.
  */
 export async function grantFinisherBonus(
   env: Env,
@@ -197,9 +203,13 @@ export async function grantFinisherBonus(
       ? null
       : await promoEmailCode(env, promoId, 'offer-bonus', user.email)
 
+  const paymentIntent = paymentIntentOf(session)
   const write = env.DB.prepare(
     `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?
+      WHERE NOT EXISTS (
+        SELECT 1 FROM creditLedger
+         WHERE userId = ? AND jobRef = ? AND reason IN (?, ?, ?))`,
   ).bind(
     crypto.randomUUID(),
     now,
@@ -208,7 +218,12 @@ export async function grantFinisherBonus(
     OFFER_BONUS,
     FINISHER_CAMPAIGN,
     key,
-    paymentIntentOf(session),
+    paymentIntent,
+    userId,
+    paymentIntent,
+    WITHDRAWAL_PAID,
+    PURCHASE_REFUND,
+    PURCHASE_DISPUTE,
   )
   const [written] = await env.DB.batch(
     emailHash === null
@@ -227,7 +242,9 @@ export async function grantFinisherBonus(
   const added = written.meta.changes > 0 ? bonus : 0
   console.log(
     `[offer] ${FINISHER_CAMPAIGN} bonus: +${added} user=${userId}` +
-      (added === 0 ? ' [had it already, skipped]' : ''),
+      (added === 0
+        ? ' [had it already, or the payment went back, skipped]'
+        : ''),
   )
   return added
 }

@@ -27,7 +27,7 @@ const STARTER: PurchaseEmailVars = {
   amountMinor: 500,
   currency: 'eur',
   orderDateIso: '2026-10-08T12:00:00.000Z',
-  withdrawalMode: 'refund_unused',
+  terms: 'refund_unused',
   trader: TRADER,
 }
 
@@ -203,7 +203,7 @@ describe('the right to cancel in the purchase mail', () => {
   })
 
   it('says the right to cancel ended when the checkout took the waiver', () => {
-    const { html, text } = purchase({ withdrawalMode: 'waiver' })
+    const { html, text } = purchase({ terms: 'waiver' })
     for (const copy of [visibleText(html), text]) {
       expect(copy).toContain(
         "You asked us to add these credits straight away and confirmed that you lose your right to cancel once they're added.",
@@ -212,6 +212,34 @@ describe('the right to cancel in the purchase mail', () => {
       expect(copy).not.toMatch(/until \d+ \w+ 2026/)
     }
     expect(visibleText(html)).toContain(SELLER)
+  })
+
+  it('moves a 14th day that falls on a Saturday to the Monday', () => {
+    // Bought Saturday 10 October 2026: the 14th day is Saturday 24 October.
+    const weekend = purchase({ orderDateIso: '2026-10-10T09:00:00.000Z' })
+    expect(weekend.text).toContain('until 26 October 2026')
+  })
+
+  it('claims no consent for a purchase with no ticked box on record', () => {
+    const { html, text } = purchase({ terms: 'no_consent' })
+    for (const copy of [visibleText(html), text]) {
+      expect(copy).toContain(
+        'You can cancel this purchase until 22 October 2026 and get back what you paid.',
+      )
+      expect(copy).not.toContain('straight away')
+      expect(copy).not.toContain("haven't used")
+    }
+    expect(visibleText(html)).toContain(
+      'To cancel, open Settings › Credits and choose Withdraw from contract here, or reply to this email.',
+    )
+  })
+
+  it('leaves the VAT sentence out for a seller with no VAT ID', () => {
+    const { text } = purchase({ trader: { ...TRADER, vatId: '' } })
+    expect(text).toContain(
+      'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test.\n',
+    )
+    expect(text).not.toContain('VAT ID')
   })
 
   it('says "it" for a pack of one credit', () => {

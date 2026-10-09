@@ -11,11 +11,22 @@
 // writes what Stripe reports of the box to checkoutConsents (migration
 // 0060), with the mode and wording version the session was opened with and
 // the price paid, then sends the purchase mail that confirms it (CRD
-// Art. 8(7)) and records whether that mail went. A paid pack without the
-// box (a session opened before this shipped), a mail that did not go, and a
-// record that could not be written each alert the owner
-// (BILLING_ALERT_EMAIL). None of it ever undoes the credits: they landed
-// first.
+// Art. 8(7)) and records whether that mail went. Every delivery of the
+// event does both, so a delivery cut off after the credits landed loses
+// neither: the row is written once per session, and the mail goes only
+// while it has not. The 6-hourly sweep (withdrawal.ts, sweepWithdrawals)
+// sends a mail that did not go again, for 3 days, then gives up and tells
+// the owner once.
+//
+// The row is also what the purchase keeps of its terms (purchaseTerms): a
+// pack's right to cancel follows the box its buyer ticked, whatever
+// WITHDRAWAL_MODE says later, and a pack with no ticked box on record keeps
+// the whole right (withdrawal-rules.ts).
+//
+// A paid pack without the box (a session opened before this shipped), a
+// mail that did not go, and a record that could not be written each alert
+// the owner (BILLING_ALERT_EMAIL). None of it ever undoes the credits: they
+// landed first.
 //
 // Stripe refuses to open a session that asks for the box until the account
 // has a Terms of service URL (Dashboard › Settings › Public details), in
@@ -26,10 +37,15 @@ import { fallbackAppOrigin } from './auth'
 import { sendBillingAlert } from './email'
 import { sendPurchaseMail } from './email-purchase'
 import { paymentIntentOf } from './stripe-payments'
-import type { TraderDetails, WithdrawalMode } from './withdrawal-wording'
+import { DEFAULT_GRACE_WEEKDAYS } from './withdrawal-rules'
+import type { PurchaseTerms, TraderDetails, WithdrawalMode, } from './withdrawal-wording'
 import { CHECKOUT_CHECKBOX, CHECKOUT_SUBMIT_LINE, isKnownWithdrawalMode, parseWithdrawalMode, WITHDRAWAL_TEXT_VERSION, } from './withdrawal-wording'
 
-/** The withdrawal model this environment sells under (WITHDRAWAL_MODE). */
+/** The launch offer's bonus rows (launch-finisher.ts, OFFER_BONUS). */
+const PACK_BONUS = 'offer-bonus'
+
+/** The withdrawal model this environment sells new packs under
+ *  (WITHDRAWAL_MODE). A purchase keeps its own (purchaseTerms). */
 export function withdrawalMode(env: Env): WithdrawalMode {
   if (!isKnownWithdrawalMode(env.WITHDRAWAL_MODE)) {
     console.warn(
@@ -39,34 +55,74 @@ export function withdrawalMode(env: Env): WithdrawalMode {
   return parseWithdrawalMode(env.WITHDRAWAL_MODE)
 }
 
+/** Weekdays the withdrawal function stays open past the 14th day
+ *  (WITHDRAWAL_GRACE_WEEKDAYS, withdrawal-rules.ts). Unset is the default;
+ *  anything but a whole number from 0 to 20 is the default too, logged. */
+export function withdrawalGraceWeekdays(env: Env): number {
+  const raw = (env.WITHDRAWAL_GRACE_WEEKDAYS ?? '').trim()
+  if (raw === '') return DEFAULT_GRACE_WEEKDAYS
+  const days = Number(raw)
+  if (Number.isInteger(days) && days >= 0 && days <= 20) return days
+  console.warn(
+    `[billing] WITHDRAWAL_GRACE_WEEKDAYS "${raw}" is not a whole number from 0 to 20: using ${DEFAULT_GRACE_WEEKDAYS}`,
+  )
+  return DEFAULT_GRACE_WEEKDAYS
+}
+
 /** Shown in place of a trader detail the owner has not set yet. */
-const TRADER_PLACEHOLDERS: Readonly<TraderDetails> = {
+const TRADER_PLACEHOLDERS = {
   name: '[TRADER_NAME]',
   address: '[TRADER_ADDRESS]',
   email: '[TRADER_EMAIL]',
-  vatId: '[TRADER_VAT_ID]',
-}
+} as const
 
-/** Who sells the credits, from the TRADER_* vars. An unset one shows as
- *  its own name in brackets, and the log says which. */
+/**
+ * Who sells the credits, from the TRADER_* vars. An unset name, address or
+ * email shows as its own name in brackets, and the log says which; a
+ * production deploy refuses to go out without a name and an address
+ * (scripts/assert-prod-trader-details.mjs). The VAT ID is optional: a sole
+ * trader outside the VAT system has none, and the mails leave it out.
+ */
 export function traderDetails(env: Env): TraderDetails {
-  const read = (value: string | undefined, key: keyof TraderDetails) => {
+  const unset: string[] = []
+  const read = (
+    value: string | undefined,
+    key: keyof typeof TRADER_PLACEHOLDERS,
+  ): string => {
     const set = (value ?? '').trim()
-    return set === '' ? TRADER_PLACEHOLDERS[key] : set
+    if (set !== '') return set
+    unset.push(TRADER_PLACEHOLDERS[key].slice(1, -1))
+    return TRADER_PLACEHOLDERS[key]
   }
   const trader: TraderDetails = {
     name: read(env.TRADER_NAME, 'name'),
     address: read(env.TRADER_ADDRESS, 'address'),
     email: read(env.TRADER_EMAIL, 'email'),
-    vatId: read(env.TRADER_VAT_ID, 'vatId'),
+    vatId: (env.TRADER_VAT_ID ?? '').trim(),
   }
-  const unset = Object.entries(trader)
-    .filter(([, value]) => value.startsWith('[TRADER_'))
-    .map(([, value]) => value.slice(1, -1))
   if (unset.length > 0) {
     console.warn(`[billing] trader details not set: ${unset.join(', ')}`)
   }
   return trader
+}
+
+/** What a purchase's buyer agreed to, from its consent row: the mode the
+ *  box they ticked was worded in. No row, or no ticked box on it, is
+ *  no_consent. */
+export function purchaseTerms(
+  consent:
+    | { mode: string | null; termsOfService: string | null }
+    | null
+    | undefined,
+): PurchaseTerms {
+  if (
+    consent == null ||
+    consent.termsOfService !== 'accepted' ||
+    consent.mode === null
+  ) {
+    return 'no_consent'
+  }
+  return parseWithdrawalMode(consent.mode)
 }
 
 /**
@@ -93,9 +149,9 @@ export function consentCheckoutParams(
   }
 }
 
-/** What the purchase mail says was paid: the session's own total and
- *  currency, which already carry any Stripe discount, else the plan's list
- *  price. */
+/** What was paid: the session's own total and currency, which already
+ *  carry any Stripe discount, else the plan's list price. A paid session in
+ *  payment mode always carries its total. */
 export function paidPrice(
   session: Record<string, unknown>,
   plan: { amountMinor: number | null; currency: string | null } | null,
@@ -125,7 +181,7 @@ export interface PackGrant {
   credits: number
   /** The launch offer's credits added beside the pack, or 0. */
   bonus: number
-  /** When the pack's ledger row was written. */
+  /** When this delivery of the event reached us. */
   grantedAt: string
 }
 
@@ -174,6 +230,10 @@ function alert(env: Env, subject: string, lines: string[]): Promise<boolean> {
   )
 }
 
+function iso(ms: number): string {
+  return new Date(ms).toISOString()
+}
+
 function grantFacts(grant: PackGrant, sessionId: string): string[] {
   return [
     `Stripe event: ${grant.eventId}`,
@@ -184,7 +244,21 @@ function grantFacts(grant: PackGrant, sessionId: string): string[] {
   ]
 }
 
-/** Write what the session says of the consent. Never throws. */
+async function planPrice(
+  env: Env,
+  planId: string | null,
+): Promise<{ amountMinor: number | null; currency: string | null } | null> {
+  if (planId === null) return null
+  return env.DB.prepare(
+    'SELECT amount AS amountMinor, currency FROM pricingPlans WHERE id = ?',
+  )
+    .bind(planId)
+    .first<{ amountMinor: number | null; currency: string | null }>()
+    .catch(() => null)
+}
+
+/** Write what the session says of the consent, once per session: a later
+ *  delivery of the event finds the row and leaves it. Never throws. */
 async function recordConsent(
   env: Env,
   grant: PackGrant,
@@ -199,8 +273,10 @@ async function recordConsent(
           : grant.eventCreated * 1000,
       ).toISOString()
     : null
+  // Unknown when the write fails: the owner hears of the box either way.
+  let fresh = true
   try {
-    await env.DB.prepare(
+    const res = await env.DB.prepare(
       `INSERT OR IGNORE INTO checkoutConsents
          (sessionId, userId, eventId, paymentIntentId, mode, textVersion, termsOfService, acceptedAt, amountMinor, currency, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -219,6 +295,7 @@ async function recordConsent(
         grant.grantedAt,
       )
       .run()
+    fresh = res.meta.changes > 0
   } catch (err) {
     console.error(
       `[billing] checkout ${grant.eventId}: consent record FAILED: ${String(err)}`,
@@ -228,10 +305,11 @@ async function recordConsent(
       `Error: ${String(err)}`,
       '',
       'The credits landed. The consent is still on the Checkout Session in',
-      'Stripe; the row in checkoutConsents is missing.',
+      'Stripe; the row in checkoutConsents is missing until Stripe delivers',
+      'the event again.',
     ])
   }
-  if (!consent.accepted) {
+  if (fresh && !consent.accepted) {
     console.error(
       `[billing] checkout ${grant.eventId}: paid pack WITHOUT the withdrawal consent (session ${sessionId})`,
     )
@@ -241,76 +319,138 @@ async function recordConsent(
       '',
       'This buyer never ticked the checkbox: a session opened before the',
       'checkbox shipped, or one created outside POST /api/billing/checkout.',
-      'Without that consent, a cancellation within 14 days may owe them the',
-      'whole price, used credits included (CRD Art. 14(4)(b)). Ask before',
-      'refusing one.',
+      'Without that consent they bear no cost for what they used (CRD',
+      'Art. 14(4)(b)), so Settings › Credits lets them cancel for 14 days',
+      'even with every credit used, and refunds the whole price.',
     ])
   }
 }
 
-interface MailInfo {
-  email: string | null
-  planLabel: string | null
-  amountMinor: number | null
-  currency: string | null
-  balance: number
-}
+// ── The purchase mail ────────────────────────────────────────────────
+
+/** A mail claimed this long ago and never marked sent or failed was cut
+ *  off mid-send, and may be sent again. Also how long the sweep leaves a
+ *  fresh purchase or statement to the request that made it. */
+export const UNFINISHED_AFTER_MS = 10 * 60_000
+/** The sweep stops sending a mail that keeps failing this long after its
+ *  purchase or statement, and tells the owner once. */
+export const GIVE_UP_AFTER_MS = 3 * 86_400_000
+/** Rows of each kind one sweep takes on. */
+export const SWEEP_BATCH = 10
+/** A mail the sweep stopped sending. */
+export const GAVE_UP = 'gave-up'
 
 type MailStatus = 'sent' | 'failed' | 'no-email' | 'not-configured'
 
-async function readMailInfo(
-  env: Env,
-  grant: PackGrant,
-): Promise<MailInfo | null> {
-  return env.DB.prepare(
-    `SELECT u.email       AS email,
-            pp.label      AS planLabel,
-            pp.amount     AS amountMinor,
-            pp.currency   AS currency,
-            (SELECT COALESCE(SUM(delta), 0) FROM creditLedger WHERE userId = ?) AS balance
-       FROM users u
-       LEFT JOIN pricingPlans pp ON pp.id = ?
-      WHERE u.id = ?`,
-  )
-    .bind(grant.userId, grant.planId, grant.userId)
-    .first<MailInfo>()
+/** A purchase's consent row, and what its mail says. */
+interface PurchaseMailRow {
+  sessionId: string
+  userId: string
+  eventId: string
+  paymentIntentId: string | null
+  mode: string | null
+  termsOfService: string | null
+  amountMinor: number
+  currency: string
+  createdAt: string
+  mailStatus: string | null
+  email: string | null
+  credits: number | null
+  planId: string | null
+  planLabel: string | null
+  purchasedAt: string | null
+  bonus: number
+  balance: number
 }
 
-/** Send the purchase mail; say what happened to it. Never throws. */
-async function sendConfirmation(
+async function readPurchaseMail(
   env: Env,
-  grant: PackGrant,
-  info: MailInfo | null,
-  mode: WithdrawalMode,
+  sessionId: string,
+): Promise<PurchaseMailRow | null> {
+  return env.DB.prepare(
+    `SELECT c.sessionId, c.userId, c.eventId, c.paymentIntentId, c.mode, c.termsOfService,
+            c.amountMinor, c.currency, c.createdAt, c.mailStatus,
+            u.email AS email,
+            p.delta AS credits, p.jobRef AS planId, p.createdAt AS purchasedAt,
+            pp.label AS planLabel,
+            (SELECT COALESCE(SUM(b.delta), 0) FROM creditLedger b
+              WHERE b.userId = c.userId AND b.reason = ?
+                AND b.paymentIntentId = c.paymentIntentId) AS bonus,
+            (SELECT COALESCE(SUM(l.delta), 0) FROM creditLedger l
+              WHERE l.userId = c.userId) AS balance
+       FROM checkoutConsents c
+       LEFT JOIN users u ON u.id = c.userId
+       LEFT JOIN creditLedger p ON p.idempotencyKey = 'evt:' || c.eventId
+       LEFT JOIN pricingPlans pp ON pp.id = p.jobRef
+      WHERE c.sessionId = ?`,
+  )
+    .bind(PACK_BONUS, sessionId)
+    .first<PurchaseMailRow>()
+}
+
+function purchaseFacts(row: PurchaseMailRow): string[] {
+  return [
+    `Stripe event: ${row.eventId}`,
+    `Checkout Session: ${row.sessionId}`,
+    `PaymentIntent: ${row.paymentIntentId ?? 'none'}`,
+    `Account: ${row.userId}`,
+    `Pack: ${row.planId ?? 'unknown'}, ${row.credits ?? 0} credit(s)`,
+  ]
+}
+
+/** Take the purchase mail for this request, so two never both send it:
+ *  one not yet sent, one that did not go, or a claim gone stale. */
+async function claimPurchaseMail(
+  env: Env,
+  sessionId: string,
+  nowMs: number,
+): Promise<boolean> {
+  const res = await env.DB.prepare(
+    `UPDATE checkoutConsents SET mailStatus = 'sending', mailAt = ?
+      WHERE sessionId = ?
+        AND (mailStatus IS NULL OR mailStatus IN ('failed', 'no-email', 'not-configured')
+             OR (mailStatus = 'sending' AND mailAt < ?))`,
+  )
+    .bind(iso(nowMs), sessionId, iso(nowMs - UNFINISHED_AFTER_MS))
+    .run()
+  return res.meta.changes > 0
+}
+
+/** Send the purchase mail for the row; say what happened to it. Never
+ *  throws. */
+async function deliverPurchaseMail(
+  env: Env,
+  row: PurchaseMailRow,
 ): Promise<MailStatus> {
   if (!env.RESEND_API_KEY) {
     console.log(
-      `[billing] checkout ${grant.eventId}: RESEND_API_KEY unset, purchase mail not sent`,
+      `[billing] checkout ${row.eventId}: RESEND_API_KEY unset, purchase mail not sent`,
     )
     return 'not-configured'
   }
-  if (info?.email == null || info.email === '') return 'no-email'
+  if (row.email == null || row.email === '') return 'no-email'
   try {
-    // A webhook has no page behind it: links and pictures go to this
-    // environment's own app.
+    // A webhook or a cron has no page behind it: links and pictures go to
+    // this environment's own app.
     const app = fallbackAppOrigin(env)
-    const paid = paidPrice(grant.session, info)
     const sent = await sendPurchaseMail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
-      info.email,
+      row.email,
       {
         appOrigin: app,
         assetOrigin: app,
-        packLabel: info.planLabel ?? 'credit',
-        credits: grant.credits,
-        bonusCredits: grant.bonus,
-        balance: info.balance,
-        amountMinor: paid.amountMinor,
-        currency: paid.currency,
-        orderDateIso: grant.grantedAt,
-        withdrawalMode: mode,
+        packLabel: row.planLabel ?? 'credit',
+        credits: row.credits ?? 0,
+        bonusCredits: row.bonus,
+        balance: row.balance,
+        amountMinor: row.amountMinor,
+        currency: row.currency,
+        orderDateIso: row.purchasedAt ?? row.createdAt,
+        terms: purchaseTerms(row),
+        graceWeekdays: withdrawalGraceWeekdays(env),
         trader: traderDetails(env),
       },
+      `purchase-${row.sessionId}`,
     )
     return sent ? 'sent' : 'failed'
   } catch (err) {
@@ -319,56 +459,144 @@ async function sendConfirmation(
   }
 }
 
-async function recordMail(
+async function recordPurchaseMail(
   env: Env,
-  grant: PackGrant,
+  row: PurchaseMailRow,
   status: MailStatus,
 ): Promise<void> {
-  const sessionId = sessionIdOf(grant)
+  await env.DB.prepare(
+    'UPDATE checkoutConsents SET mailStatus = ?, mailAt = ? WHERE sessionId = ?',
+  )
+    .bind(status, new Date().toISOString(), row.sessionId)
+    .run()
+    .catch((err: unknown) => {
+      console.error(
+        `[billing] checkout ${row.eventId}: mail record FAILED: ${String(err)}`,
+      )
+    })
+}
+
+async function alertMailNotSent(
+  env: Env,
+  row: PurchaseMailRow,
+  status: 'failed' | 'no-email',
+): Promise<void> {
+  console.error(
+    `[billing] checkout ${row.eventId}: purchase mail ${status}, the buyer has no confirmation`,
+  )
+  await alert(env, 'Purchase confirmation not sent', [
+    ...purchaseFacts(row),
+    `Mail: ${status === 'no-email' ? 'no email address on the account' : 'Resend did not take it'}`,
+    '',
+    'This mail is the legal confirmation of the purchase and of the',
+    'withdrawal consent.',
+    ...(status === 'failed'
+      ? [
+          'The sweep sends it again every 6 hours for 3 days, and tells you',
+          'once more if it gives up.',
+        ]
+      : ['Send the buyer a confirmation by hand.']),
+  ])
+}
+
+/** Send the purchase mail unless it went already, and record it. The
+ *  owner hears the first time it does not go, not at every retry. Never
+ *  throws. */
+async function confirmByMail(
+  env: Env,
+  sessionId: string,
+  nowMs: number,
+): Promise<void> {
   try {
-    await env.DB.prepare(
-      'UPDATE checkoutConsents SET mailStatus = ?, mailAt = ? WHERE sessionId = ?',
-    )
-      .bind(status, new Date().toISOString(), sessionId)
-      .run()
+    const row = await readPurchaseMail(env, sessionId)
+    if (row === null || row.mailStatus === 'sent' || row.mailStatus === GAVE_UP)
+      return
+    if (!(await claimPurchaseMail(env, sessionId, nowMs))) return
+    const status = await deliverPurchaseMail(env, row)
+    await recordPurchaseMail(env, row, status)
+    const firstTry = row.mailStatus === null || row.mailStatus === 'sending'
+    if (firstTry && (status === 'failed' || status === 'no-email')) {
+      await alertMailNotSent(env, row, status)
+    }
   } catch (err) {
     console.error(
-      `[billing] checkout ${grant.eventId}: mail record FAILED: ${String(err)}`,
+      `[billing] purchase mail for ${sessionId} FAILED: ${String(err)}`,
     )
   }
-  if (status === 'failed' || status === 'no-email') {
-    console.error(
-      `[billing] checkout ${grant.eventId}: purchase mail ${status}, the buyer has no confirmation`,
-    )
-    await alert(env, 'Purchase confirmation not sent', [
-      ...grantFacts(grant, sessionId),
-      `Mail: ${status === 'no-email' ? 'no email address on the account' : 'Resend did not take it'}`,
-      '',
-      'This mail is the legal confirmation of the purchase and of the',
-      'withdrawal consent. Send the buyer a confirmation by hand.',
-    ])
+}
+
+/** Stop sending a purchase mail that kept failing: once, with one alert. */
+async function giveUpPurchaseMail(
+  env: Env,
+  sessionId: string,
+  nowMs: number,
+): Promise<void> {
+  const res = await env.DB.prepare(
+    `UPDATE checkoutConsents SET mailStatus = ?, mailAt = ?
+      WHERE sessionId = ?
+        AND (mailStatus IS NULL OR mailStatus = 'failed'
+             OR (mailStatus = 'sending' AND mailAt < ?))`,
+  )
+    .bind(GAVE_UP, iso(nowMs), sessionId, iso(nowMs - UNFINISHED_AFTER_MS))
+    .run()
+  if (res.meta.changes === 0) return
+  const row = await readPurchaseMail(env, sessionId)
+  await alert(env, 'Purchase confirmation given up', [
+    ...(row === null ? [`Checkout Session: ${sessionId}`] : purchaseFacts(row)),
+    `Buyer: ${row?.email ?? 'no email address on the account'}`,
+    '',
+    'The purchase mail has not gone for 3 days, and the sweep has stopped',
+    'trying. It is the legal confirmation of the purchase and of the',
+    'withdrawal consent (CRD Art. 8(7)): send the buyer one by hand.',
+  ])
+}
+
+/**
+ * The purchase mails a request left unsent: each older than
+ * UNFINISHED_AFTER_MS that did not go, or whose send was cut off, goes
+ * again, until GIVE_UP_AFTER_MS after the purchase; then the owner hears
+ * once. At most SWEEP_BATCH a run (withdrawal.ts, sweepWithdrawals).
+ */
+export async function sweepPurchaseMails(
+  env: Env,
+  nowMs: number,
+): Promise<void> {
+  const before = iso(nowMs - UNFINISHED_AFTER_MS)
+  const { results } = await env.DB.prepare(
+    `SELECT sessionId, createdAt FROM checkoutConsents
+      WHERE createdAt < ?
+        AND (mailStatus IS NULL OR mailStatus = 'failed'
+             OR (mailStatus = 'sending' AND mailAt < ?))
+      ORDER BY createdAt LIMIT ?`,
+  )
+    .bind(before, before, SWEEP_BATCH)
+    .all<{ sessionId: string; createdAt: string }>()
+  for (const row of results) {
+    try {
+      if (Date.parse(row.createdAt) <= nowMs - GIVE_UP_AFTER_MS) {
+        await giveUpPurchaseMail(env, row.sessionId, nowMs)
+      } else {
+        await confirmByMail(env, row.sessionId, nowMs)
+      }
+    } catch (err) {
+      console.error(
+        `[cron] purchase mail ${row.sessionId}: sweep FAILED: ${String(err)}`,
+      )
+    }
   }
 }
 
 /**
- * After a pack's credits land: keep the consent, send the mail that
- * confirms it, and record that mail. Only for a real grant, never a
- * redelivery. Never throws.
+ * On every delivery of a pack's paid event: keep the consent, once per
+ * session, and send the mail that confirms it unless it went already.
+ * Never throws.
  */
 export async function confirmPurchase(
   env: Env,
   grant: PackGrant,
 ): Promise<void> {
   const consent = consentOf(grant.session)
-  let info: MailInfo | null = null
-  try {
-    info = await readMailInfo(env, grant)
-  } catch (err) {
-    console.error(
-      `[billing] checkout ${grant.eventId}: could not read the buyer: ${String(err)}`,
-    )
-  }
-  await recordConsent(env, grant, consent, paidPrice(grant.session, info))
-  const mode = consent.mode ?? withdrawalMode(env)
-  await recordMail(env, grant, await sendConfirmation(env, grant, info, mode))
+  const price = paidPrice(grant.session, await planPrice(env, grant.planId))
+  await recordConsent(env, grant, consent, price)
+  await confirmByMail(env, sessionIdOf(grant), Date.now())
 }
