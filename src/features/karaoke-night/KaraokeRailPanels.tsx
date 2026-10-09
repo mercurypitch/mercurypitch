@@ -23,6 +23,7 @@ import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive,
 import { isDemoSessionId } from './demo-song'
 import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
+import { KaraokeGiftLine } from './KaraokeGiftLine'
 import { groupLibrarySongs } from './library-grouping'
 
 export interface KaraokeSong {
@@ -426,11 +427,12 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         <Show
           when={effectiveMode() === 'server'}
           fallback={
-            <p class="kn-card-sub">
-              All data stays on your device. Higher-quality separation is
-              available as a paid option
-              {signedIn() ? '' : ' — sign in to use it'}.
-            </p>
+            <Show when={signedIn()} fallback={<KaraokeGiftLine />}>
+              <p class="kn-card-sub">
+                All data stays on your device. Higher-quality separation is
+                available as a paid option.
+              </p>
+            </Show>
           }
         >
           <p class="kn-card-sub">

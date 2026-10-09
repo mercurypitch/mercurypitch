@@ -12,7 +12,8 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createSignal, Match, onMount, Switch } from 'solid-js'
+import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
 import { shareOutcomeMessage } from '@/features/mirror/card-renderer'
@@ -24,12 +25,15 @@ import { summarize } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
 import { BeatFirstLight } from './beats/BeatFirstLight'
 import { BeatFork } from './beats/BeatFork'
 import { BeatKeep } from './beats/BeatKeep'
+import type { MapGift } from './beats/BeatMap'
 import { BeatMap } from './beats/BeatMap'
 import { BeatPrints } from './beats/BeatPrints'
 import { BeatSky } from './beats/BeatSky'
@@ -96,7 +100,63 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     void listVoiceprints()
       .then(recordSavedVoiceprints)
       .catch(() => recordSavedVoiceprints([]))
+
+    // The launch gift the Keep beat and the Map offer, when the server
+    // features one (promo-store). Shared with the header: one ask a page.
+    void loadFeaturedPromo()
   })
+
+  /** The launch gift beside the account ask: only for somebody with no
+   *  account to put it in yet. */
+  const gift = () => (accountHeld() ? null : offeredPromo())
+
+  // Keep shown with the gift card, counted once beside `onboarding_keep`.
+  let keepGiftCounted = false
+  createEffect(() => {
+    if (currentBeat() !== 'keep' || gift() === null || keepGiftCounted) return
+    keepGiftCounted = true
+    trackOnboarding('onboarding_keep_gift')
+  })
+
+  /**
+   * The gift on the Map (launch offer plan, section 4.1). A declined
+   * microphone hears no offer here; it meets the gift in Karaoke Night and
+   * Settings. Signed in, it is the one-tap claim for an account from before
+   * the gift was claimed on confirmation, and nothing once it has it.
+   */
+  const mapGift = (): MapGift | null => {
+    if (accountHeld()) {
+      const waiting = giftWaiting()
+      return waiting === null
+        ? null
+        : { kind: 'waiting', credits: waiting.credits }
+    }
+    const promo = offeredPromo()
+    if (promo === null || micDenied()) return null
+    return {
+      kind: voiceprint() !== null ? 'keep' : 'join',
+      credits: promo.credits,
+    }
+  }
+
+  const handleMapGift = () => {
+    const shown = mapGift()
+    if (shown === null) return
+    trackOnboarding('onboarding_map_gift_tap')
+    if (shown.kind === 'waiting') {
+      void claimGiftNow()
+      return
+    }
+    if (shown.kind === 'keep') {
+      rememberGiftOffered()
+      handleReopenAccount()
+      return
+    }
+    // The gift is Karaoke Night credits, so the welcome mail wears that
+    // room's picture.
+    rememberGiftOffered()
+    openAuthModal('register', { signupSource: 'karaoke' })
+  }
 
   // One funnel event per beat entered, including the first.
   createEffect(() => {
@@ -232,6 +292,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       return
     }
     trackOnboarding('onboarding_account_created')
+    if (gift() !== null) rememberGiftOffered()
     // The shared AuthModal on its register pane - no navigation hand-off.
     // The old '#/settings/account' hash-jump left the flow entirely, which
     // raced the teardown (a dead first click in testing), landed on a
@@ -271,6 +332,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     trackOnboarding('onboarding_skipped')
     leave()
   }
+
+  /** The beats that are mostly words: the sky recedes behind them, so its
+   *  lines do not run through the copy. */
+  const textHeavy = (): boolean =>
+    currentBeat() === 'map' || currentBeat() === 'keep'
 
   const handleDone = () => {
     trackOnboarding('onboarding_done')
@@ -315,14 +381,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       data-onboarding-flow
     >
       <div
-        class={`${styles.plate} ${currentBeat() === 'map' ? styles.plateRecede : ''}`}
+        class={`${styles.plate} ${textHeavy() ? styles.plateRecede : ''}`}
         aria-hidden="true"
       />
       {/* The arc is the same walk the hairline measures, drawn as a
           journey: one bead per beat, lit behind, accented under foot,
           hollow ahead. */}
       <StarField
-        recede={currentBeat() === 'map'}
+        recede={textHeavy()}
         beads={onboardingBeads().count}
         beadIndex={onboardingBeads().index}
       />
@@ -339,17 +405,45 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             }}
           />
         </div>
-        <Show when={currentBeat() !== 'map'}>
-          <button type="button" class={styles.skip} onClick={handleSkip}>
-            Skip
-          </button>
-        </Show>
+        {/* One way out, top right, and never two. The welcome's is a
+            close button: the beat itself carries one action. On Keep it
+            is "Not now", in words, at full contrast: declining is an
+            answer to the question on screen, not an escape from the flow. */}
+        <Switch>
+          <Match when={currentBeat() === 'sky'}>
+            <button
+              type="button"
+              class={styles.railClose}
+              aria-label="Skip the intro"
+              title="Skip the intro"
+              onClick={handleSkip}
+            >
+              <span aria-hidden="true">
+                <X />
+              </span>
+            </button>
+          </Match>
+          <Match when={currentBeat() === 'keep'}>
+            <button
+              type="button"
+              class={styles.railAction}
+              onClick={handleDismissAccount}
+            >
+              Not now
+            </button>
+          </Match>
+          <Match when={currentBeat() !== 'map'}>
+            <button type="button" class={styles.skip} onClick={handleSkip}>
+              Skip
+            </button>
+          </Match>
+        </Switch>
       </div>
 
       <div class={styles.frame}>
         <Switch>
           <Match when={currentBeat() === 'sky'}>
-            <BeatSky onContinue={() => advanceBeat()} onSkip={handleSkip} />
+            <BeatSky onContinue={() => advanceBeat()} />
           </Match>
           <Match when={currentBeat() === 'first-light'}>
             <BeatFirstLight
@@ -407,13 +501,16 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
                   ? handleReopenAccount
                   : undefined
               }
+              gift={mapGift()}
+              onGift={handleMapGift}
             />
           </Match>
           <Match when={currentBeat() === 'keep'}>
             <BeatKeep
               twin={twin()}
+              voiceprint={voiceprint()}
+              gift={gift()}
               onCreateAccount={handleCreateAccount}
-              onDismiss={handleDismissAccount}
             />
           </Match>
         </Switch>

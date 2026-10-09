@@ -2,153 +2,175 @@
 // Beat 7 — Keep
 // ============================================================
 //
-// The one ask, at the moment of most earned value: the twin is still
-// on screen and it belongs to them. So the offer is that specific
-// thing rather than a generic "save your progress" —
+// The one ask, at the moment of most earned value: the voiceprint is still
+// on screen and it belongs to them. So the offer is that specific thing
+// rather than a generic "save your progress":
 //
-//   "Freddie Mercury is your twin. Keep him."
+//   "Freddie Mercury is your twin."
 //
-// What makes it honest rather than a wall: the voiceprint is ALREADY
-// saved locally by the time this renders. Declining costs nothing that
-// second. What an account adds is that it survives the browser, the
-// device and the cache clear, and that it accumulates into a timeline.
+// What makes it honest rather than a wall: the voiceprint is ALREADY saved
+// in this browser by the time this renders. Declining costs nothing that
+// second. What an account adds is that it survives the browser, the device
+// and the cache clear.
 //
-// "Not now" is the same size as the primary and does not flinch.
+// One button (launch offer plan, section 4; owner decision D5). Declining is
+// "Not now" at the top right of the frame, in FirstLight's rail: one
+// dominant action with the decline elsewhere, never two buttons side by
+// side. While the server features a promo code the launch gift sits beside
+// the ask, as the right-hand column on a desktop and under the rows on a
+// phone; without one, a third row and a plain fact take its place.
 
 import type { Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { IconFire } from '@/components/exercise-icons'
-import { Sparkles, Split, Trophy, Voice } from '@/components/icons'
+import { DeviceSync, Trophy, WaveformBars } from '@/components/icons'
+import type { FeaturedPromo } from '@/db/services/billing-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
+import type { MirrorResult } from '@/lib/mirror/metrics'
+import keep from '../keep.module.css'
 import styles from '../onboarding.module.css'
+import { KeepGiftCard } from './KeepGiftCard'
+import { KeepRange } from './KeepRange'
 
-interface KeepPerk {
+interface KeepRow {
   icon: () => JSX.Element
-  title: string
-  body: string
+  tone: 'cyan' | 'blue' | 'violet'
+  text: string
 }
 
-/**
- * Five, not four: the old fourth bullet carried separation, credits and
- * supporter perks at once. Separation is the one worth its own line — it
- * is the only item here that is a different KIND of product, and since
- * the server split went to demucs-6s it also returns the backing track as
- * drums, bass, guitar and piano rather than one instrumental. Naming that
- * is the difference between "cloud separation" (a mechanism nobody asked
- * for) and a thing somebody would want.
- */
-const KEEP_PERKS: KeepPerk[] = [
+/** What an account keeps, in the singer's words rather than the mechanism's
+ *  ("sync", "cloud"). The leaderboard row stands in for the gift when there
+ *  is none: it is the one thing here nobody can have without an account. */
+const ROWS: KeepRow[] = [
   {
-    icon: () => <Voice />,
-    title: 'Your voice, on any device',
-    body: 'Practice history, voiceprints and range follow you.',
+    icon: () => <WaveformBars />,
+    tone: 'cyan',
+    text: 'Your voiceprint and range, saved',
   },
   {
-    icon: () => <IconFire size={18} />,
-    title: 'Progress that sticks',
-    body: 'Badges, challenges and your streak survive a cleared browser.',
-  },
-  {
-    icon: () => <Trophy />,
-    title: 'Leaderboard and weekly Legend',
-    body: 'You cannot place without an account.',
-  },
-  {
-    icon: () => <Split />,
-    title: 'Studio-quality song separation',
-    body: 'Run on our servers instead of your browser: a cleaner vocal, and the backing track split into drums, bass, guitar and piano.',
-  },
-  {
-    icon: () => <Sparkles />,
-    title: 'Credits and supporter perks',
-    body: 'Separation credits, and the extras supporters get.',
+    icon: () => <DeviceSync />,
+    tone: 'blue',
+    text: 'Your progress on every device',
   },
 ]
+
+const LEADERBOARD_ROW: KeepRow = {
+  icon: () => <Trophy />,
+  tone: 'violet',
+  text: 'Your place on the leaderboard',
+}
 
 export interface BeatKeepProps {
   /** The legend matched at beat 5, or null when none was. */
   twin: string | null
+  /** The voiceprint just measured: its range is the card at the top. */
+  voiceprint: MirrorResult | null
+  /** The launch gift on offer, or null when there is none. */
+  gift: FeaturedPromo | null
   onCreateAccount: () => void
-  onDismiss: () => void
 }
 
-export const BeatKeep: Component<BeatKeepProps> = (props) => (
-  <div class={styles.beat} data-beat="keep">
-    <Show when={props.twin !== null}>
-      {/* `mid`, not the master: this box is 130-180px, and the 928px
-          portrait into it is a 7.1x downscale — past the point the browser
-          keeps the high-quality path at 125%/200% zoom, so the face went to
-          mush on the one screen where somebody is deciding whether to keep
-          it. The thumb would upscale. See LegendTier. */}
-      <span class={styles.twinArtSmall} aria-hidden="true">
-        <LegendCaricature legend={props.twin ?? ''} tier="mid" />
-      </span>
-    </Show>
+export const BeatKeep: Component<BeatKeepProps> = (props) => {
+  const rows = () => (props.gift === null ? [...ROWS, LEADERBOARD_ROW] : ROWS)
 
-    <p class={styles.eyebrow}>Keep it</p>
-    <Show
-      when={props.twin !== null}
-      fallback={<h1 class={styles.headline}>Keep your voiceprint</h1>}
+  return (
+    <div
+      class={`${styles.beat} ${keep.keepBeat}`}
+      classList={{ [keep.keepWithGift]: props.gift !== null }}
+      data-beat="keep"
+      data-gift={props.gift === null ? 'none' : 'offered'}
     >
-      <h1 class={styles.headline}>
-        <span class={styles.lit}>{props.twin}</span> is your twin
-      </h1>
-    </Show>
+      <div class={keep.keepColumns}>
+        <div class={keep.keepMain}>
+          <Show
+            when={props.twin}
+            fallback={
+              <Show when={props.voiceprint?.range}>
+                {(range) => <KeepRange range={range()} />}
+              </Show>
+            }
+          >
+            {(twin) => (
+              // `mid`, not the master: this box is 130-180px, and the 928px
+              // portrait into it is a 7.1x downscale, past the point the
+              // browser keeps the high-quality path at 125%/200% zoom. The
+              // thumb would upscale. See LegendTier.
+              <span class={styles.twinArtSmall} aria-hidden="true">
+                <LegendCaricature legend={twin()} tier="mid" />
+              </span>
+            )}
+          </Show>
 
-    <p class={styles.sub}>
-      Your voiceprint lives in this browser right now. Clearing your history
-      loses it.
-    </p>
+          <p class={`${styles.eyebrow} ${keep.keepEyebrow}`}>Keep it</p>
+          <Show
+            when={props.twin}
+            fallback={
+              <h1 class={`${styles.headline} ${keep.keepHeadline}`}>
+                Keep your voiceprint
+              </h1>
+            }
+          >
+            {(twin) => (
+              <h1 class={`${styles.headline} ${keep.keepHeadline}`}>
+                <span class={styles.lit}>{twin()}</span> is your twin
+              </h1>
+            )}
+          </Show>
 
-    {/* The things an account actually buys, ordered by what someone
-        holding a fresh voiceprint would care about — see the account
-        value map in the owner's notes. Deliberately not led with "sync"
-        or "cloud": those name the mechanism, not the loss.
-
-        Each one is a label plus a line that says what it means, because
-        the old single-line bullets had to compress a whole feature into
-        six words and the separation one ended up as "Cloud karaoke
-        separation, credits and supporter perks" — three unrelated things,
-        every one of them named by mechanism. Owner testing called it
-        confusing, which it was. */}
-    <ul class={styles.keepList}>
-      <For each={KEEP_PERKS}>
-        {(perk) => (
-          <li class={styles.keepPerk}>
-            <span class={styles.keepPerkIcon} aria-hidden="true">
-              {perk.icon()}
+          {/* The phone keeps the first sentence: the second is what the
+              rows below already say. */}
+          <p class={keep.keepLine}>
+            It lives in this browser for now.
+            <span class={keep.wideOnly}>
+              {' '}
+              A free account keeps it on every device.
             </span>
-            <span class={styles.keepPerkText}>
-              <strong class={styles.keepPerkTitle}>{perk.title}</strong>
-              <span class={styles.keepPerkBody}>{perk.body}</span>
-            </span>
-          </li>
-        )}
-      </For>
-    </ul>
+          </p>
 
-    <div class={styles.actions}>
-      <button
-        type="button"
-        class={styles.primary}
-        onClick={() => props.onCreateAccount()}
-      >
-        Keep my voiceprint
-      </button>
-      <button
-        type="button"
-        class={styles.secondary}
-        onClick={() => props.onDismiss()}
-      >
-        Not now
-      </button>
+          <ul class={keep.keepRows}>
+            <For each={rows()}>
+              {(row) => (
+                <li class={keep.keepRow}>
+                  <span
+                    class={keep.keepRowIcon}
+                    data-tone={row.tone}
+                    aria-hidden="true"
+                  >
+                    {row.icon()}
+                  </span>
+                  {row.text}
+                </li>
+              )}
+            </For>
+          </ul>
+        </div>
+
+        <Show when={props.gift}>
+          {(gift) => <KeepGiftCard gift={gift()} />}
+        </Show>
+      </div>
+
+      <Show when={props.gift === null}>
+        <p class={keep.keepFact}>
+          Without an account, it stays in this browser only.
+        </p>
+      </Show>
+
+      <div class={keep.keepAction}>
+        <button
+          type="button"
+          class={`${styles.primary} ${styles.primaryLarge} ${keep.keepButton}`}
+          onClick={() => props.onCreateAccount()}
+        >
+          Create my free account
+        </button>
+        <Show when={props.gift !== null}>
+          <p class={keep.keepCaption}>
+            Credits arrive when your email is confirmed.
+          </p>
+        </Show>
+      </div>
     </div>
-
-    <p class={styles.keepFootnote}>
-      Free, takes a moment, and nothing you have already earned is locked behind
-      it — badges and progress keep working either way.
-    </p>
-  </div>
-)
+  )
+}
 
 export default BeatKeep

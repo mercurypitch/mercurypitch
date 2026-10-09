@@ -217,18 +217,22 @@ test.describe('First Light with a microphone', () => {
     await page.getByRole('button', { name: /^Continue$/ }).click()
 
     // Beat 7 offers the account when there is something to keep; it is
-    // dismissible, and "Not now" must still reach the Map.
+    // dismissible, and "Not now" (top right, in the rail) must still reach
+    // the Map.
     const keep = beat(page, 'keep')
     if (await keep.isVisible().catch(() => false)) {
       await expect(keep).toContainText(/keep/i)
-      // The five perk cards, not the old bullet list.
-      await expect(keep).toContainText(/drums, bass, guitar and piano/i)
+      // What an account keeps, in rows, with or without the launch gift
+      // (the dev API decides whether a code is featured).
+      await expect(keep).toContainText(/Your voiceprint and range, saved/)
       await page.getByRole('button', { name: /Not now/ }).click()
     }
 
     const map = beat(page, 'map')
     await expect(map).toBeVisible({ timeout: 15000 })
     // Declining the offer must leave a way back to it on the Map.
-    await expect(map).toContainText(/Save it to a free account/i)
+    await expect(map).toContainText(
+      /Save it (to a free account|and get \d+ free credits)/i,
+    )
   })
 })

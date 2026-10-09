@@ -159,6 +159,69 @@
   color: var(--ob-ink);
 }
 
+/* The welcome's way out: a close button, 44 px to the thumb, drawn small. */
+.railClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -12px -10px -12px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ob-ink-2);
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ob-ease),
+    background-color 0.2s var(--ob-ease);
+}
+
+.railClose svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.railClose:hover {
+  color: var(--ob-ink);
+  background: rgba(230, 237, 243, 0.06);
+}
+
+.railClose:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 0;
+  color: var(--ob-ink);
+}
+
+/* Keep's "Not now": the answer to the question on screen, so it reads at
+   full contrast and takes a whole thumb, where Skip is a hint. */
+.railAction {
+  flex: none;
+  min-height: 44px;
+  margin: -12px -8px -12px 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ob-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ob-ease);
+}
+
+.railAction:hover {
+  background: rgba(230, 237, 243, 0.08);
+}
+
+.railAction:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 0;
+}
+
 /* ── Stage: the symmetric middle ─────────────────────────────── */
 
 .frame {
@@ -361,6 +424,14 @@
 .primary:focus-visible {
   outline: 2px solid var(--ob-ink);
   outline-offset: 3px;
+}
+
+/* A beat's only action, carried at a size that says so. */
+.primaryLarge {
+  min-height: 54px;
+  padding: 15px 44px;
+  font-size: 1.06rem;
+  justify-content: center;
 }
 
 .secondary {
@@ -1046,9 +1117,34 @@
 }
 
 /* The card's own content sits above both layers. */
-.roomCard > *:not(.roomArt):not(.roomScrim) {
+.roomCard > *:not(.roomArt):not(.roomScrim):not(.roomGift) {
   position: relative;
   z-index: 2;
+}
+
+/* The launch gift, pinned to the Karaoke card's top right: solid amber,
+   the credits' colour, so it reads as a price tag of zero rather than one
+   more label. Pinned rather than in flow, so it never moves the title. */
+.roomGift {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fcbd49;
+  color: #1a1208;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(252, 189, 73, 0.25);
+}
+
+.roomGiftIcon {
+  display: inline-flex;
 }
 
 /* Pointer devices only: sticky :hover on touch is a known trap
@@ -1259,6 +1355,48 @@
   color: var(--ob-ink);
 }
 
+/* The gift's line under the Map's button: louder than .mapKeep, because
+   it is an offer rather than a way back, and led by a credit. */
+.mapGift {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 720px;
+  margin: 16px auto 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #c5d1df;
+  text-align: left;
+}
+
+.mapGiftCoin {
+  flex: none;
+}
+
+.mapGiftLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: #40bdf9;
+  text-decoration: underline;
+  text-decoration-color: #2890d8;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.mapGiftLink:hover,
+.mapGiftLink:focus-visible {
+  color: #7fd3ff;
+}
+
 /* ── Motion ──────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1272,7 +1410,9 @@
   .forkCard,
   .roomCard,
   .sideDoor,
-  .skip {
+  .skip,
+  .railClose,
+  .railAction {
     transition: none;
   }
 

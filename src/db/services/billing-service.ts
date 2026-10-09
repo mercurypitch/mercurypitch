@@ -58,11 +58,23 @@ export interface BillingMe {
     sourceLabel?: string | null
   }>
   redeemedPromos?: string[]
+  /** The promo codes this account claimed, with when. Absent on an older
+   *  db-worker, and set aside when it does not read as a list of claims. */
+  promoClaims?: PromoClaim[]
   stripeConfigured: boolean
   /** The Karaoke room's songs (plan S8 §8): what a subscription grants, and
    *  what is left of the balance it grants into. Absent on an older
    *  db-worker, and set aside when it does not read as one. */
   songs?: BillingSongs
+}
+
+/** A promo code the account claimed: typed, tapped, or claimed for it when
+ *  its email was confirmed (workers/db-worker/src/launch-offer.ts). */
+export interface PromoClaim {
+  code: string
+  credits: number
+  /** ISO timestamp of the claim. */
+  claimedAt: string
 }
 
 export interface BillingSongs {
@@ -102,6 +114,28 @@ function isBillingSongs(value: unknown): value is BillingSongs {
 function withReadableSongs(me: BillingMe): BillingMe {
   if (me.songs === undefined || isBillingSongs(me.songs)) return me
   const { songs: _unreadable, ...rest } = me
+  return rest
+}
+
+function isPromoClaim(value: unknown): value is PromoClaim {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<PromoClaim>
+  return (
+    typeof candidate.code === 'string' &&
+    typeof candidate.credits === 'number' &&
+    Number.isFinite(candidate.credits) &&
+    typeof candidate.claimedAt === 'string' &&
+    Number.isFinite(Date.parse(candidate.claimedAt))
+  )
+}
+
+/** Claims that do not read as claims are set aside the same way: the codes
+ *  in `redeemedPromos` still say what was claimed, only not when. */
+function withReadableClaims(me: BillingMe): BillingMe {
+  const claims: unknown = me.promoClaims
+  if (claims === undefined) return me
+  if (Array.isArray(claims) && claims.every(isPromoClaim)) return me
+  const { promoClaims: _unreadable, ...rest } = me
   return rest
 }
 
@@ -243,7 +277,9 @@ export async function fetchBillingMe(
     })
     if (!res.ok) return null
     const data = (await res.json()) as unknown
-    return isBillingMe(data) ? withReadableSongs(data) : null
+    return isBillingMe(data)
+      ? withReadableClaims(withReadableSongs(data))
+      : null
   } catch {
     // Backend unreachable — degrade to "no billing info" instead of throwing.
     return null

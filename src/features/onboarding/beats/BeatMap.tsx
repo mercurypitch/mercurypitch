@@ -10,7 +10,9 @@
 // why it takes its content as props and owns no flow state.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
+import { CreditCoin } from '@/components/billing/CreditCoin'
+import { Gift } from '@/components/icons'
 import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
@@ -19,6 +21,19 @@ import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
 import type { Room, RoomTarget, SideDoor } from '../rooms'
 import { ROOMS, SIDE_DOORS } from '../rooms'
+
+/**
+ * The launch gift on the Map, as the flow decides it (launch offer plan,
+ * section 4.1). `join`: no voiceprint and no account, so the Karaoke card
+ * wears the gift and a line offers it. `keep`: a voiceprint and no account,
+ * so the way back to the account offer carries the gift. `waiting`: signed
+ * in to an account from before the gift was claimed for everyone, which can
+ * claim it in one tap.
+ */
+export interface MapGift {
+  kind: 'join' | 'keep' | 'waiting'
+  credits: number
+}
 
 export interface BeatMapProps {
   /** Null on the short track or when the mic was denied. */
@@ -40,6 +55,10 @@ export interface BeatMapProps {
    * a card or a banner: the beat's job is still to send them into a room.
    */
   onKeep?: () => void
+  /** The launch gift, or null/absent when there is none to offer. */
+  gift?: MapGift | null
+  /** The gift line's link: sign up for it, or claim it. */
+  onGift?: () => void
 }
 
 export const BeatMap: Component<BeatMapProps> = (props) => {
@@ -54,6 +73,10 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
   })
 
   const isFirst = (room: Room): boolean => room.id === stop().room
+
+  /** The gift a visitor with nothing to keep is offered, or false. */
+  const joinGift = (): MapGift | false =>
+    props.gift?.kind === 'join' ? props.gift : false
 
   // Touch screens never fire the hover reveal, so scrolling a card into
   // view plays it instead: the art starts at the dimmed resting state and
@@ -122,6 +145,16 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
 
               <Show when={isFirst(room)}>
                 <span class={styles.roomFlag}>Your first stop</span>
+              </Show>
+              <Show when={room.id === 'karaoke' && joinGift()}>
+                {(gift) => (
+                  <span class={styles.roomGift}>
+                    <span class={styles.roomGiftIcon} aria-hidden="true">
+                      <Gift size={12} />
+                    </span>
+                    {gift().credits} free credits
+                  </span>
+                )}
               </Show>
               <span class={styles.roomPlate} aria-hidden="true" />
               <span class={styles.roomTitle}>
@@ -197,18 +230,71 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
         </button>
       </div>
 
-      <Show when={props.onKeep !== undefined}>
-        <p class={styles.mapKeep}>
-          Your voiceprint is saved in this browser only.{' '}
-          <button
-            type="button"
-            class={styles.mapKeepLink}
-            onClick={() => props.onKeep?.()}
-          >
-            Save it to a free account
-          </button>
-        </p>
-      </Show>
+      <Switch>
+        <Match when={props.gift?.kind === 'waiting' && props.gift}>
+          {(gift) => (
+            <p class={styles.mapGift}>
+              <CreditCoin size={30} class={styles.mapGiftCoin} />
+              <span>
+                Your launch gift is waiting: {gift().credits} Karaoke Night
+                credits.{' '}
+                <button
+                  type="button"
+                  class={styles.mapGiftLink}
+                  onClick={() => props.onGift?.()}
+                >
+                  Claim them
+                </button>
+              </span>
+            </p>
+          )}
+        </Match>
+        <Match when={joinGift()}>
+          {(gift) => (
+            <p class={styles.mapGift}>
+              <CreditCoin size={30} class={styles.mapGiftCoin} />
+              <span>
+                Launch gift: {gift().credits} free Karaoke Night credits with a
+                free account.{' '}
+                <button
+                  type="button"
+                  class={styles.mapGiftLink}
+                  onClick={() => props.onGift?.()}
+                >
+                  Get my {gift().credits} credits
+                </button>
+              </span>
+            </p>
+          )}
+        </Match>
+        <Match when={props.onKeep !== undefined}>
+          <p class={styles.mapKeep}>
+            Your voiceprint is saved in this browser only.{' '}
+            <Show
+              when={props.gift?.kind === 'keep' && props.gift}
+              fallback={
+                <button
+                  type="button"
+                  class={styles.mapKeepLink}
+                  onClick={() => props.onKeep?.()}
+                >
+                  Save it to a free account
+                </button>
+              }
+            >
+              {(gift) => (
+                <button
+                  type="button"
+                  class={styles.mapKeepLink}
+                  onClick={() => props.onGift?.()}
+                >
+                  Save it and get {gift().credits} free credits
+                </button>
+              )}
+            </Show>
+          </p>
+        </Match>
+      </Switch>
     </div>
   )
 }

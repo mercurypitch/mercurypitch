@@ -92,6 +92,10 @@ export const APP_FUNNEL_EVENTS = [
   'voice_link_copied',
   'voice_delete',
   'voice_storage_warning',
+  /** A promo claim landed for the account signed in here, and this browser
+   *  said so: one tapped in Settings, or the launch gift claimed when the
+   *  email was confirmed (src/stores/launch-gift-store.ts). Once a claim. */
+  'promo_claimed',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */
@@ -117,6 +121,9 @@ export const KARAOKE_FUNNEL_EVENTS = [
   'karaoke_first_score',
   'karaoke_scorecard_view',
   'karaoke_cta_studio',
+  /** Signed out, the rail's "Create my free account" beside the launch
+   *  gift line. */
+  'karaoke_gift_signup_tap',
 ] as const
 
 /** Break Glass With Your Voice (src/features/glass/funnel.ts). */
@@ -162,8 +169,16 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_map_room',
   'onboarding_skipped',
   'onboarding_done',
+  /** Counts taps on the Keep beat's button (and the Map's way back to it),
+   *  not accounts: the button opens the form, and `signup` counts what
+   *  comes of it. The name is kept for its history. */
   'onboarding_account_created',
   'onboarding_account_dismissed',
+  /** Keep rendered with the launch gift card, beside `onboarding_keep`. */
+  'onboarding_keep_gift',
+  /** The Map's gift link ("Get my 5 credits", or "Save it and get 5 free
+   *  credits" under a voiceprint). */
+  'onboarding_map_gift_tap',
 ] as const
 
 /**

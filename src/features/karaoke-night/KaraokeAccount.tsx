@@ -2,7 +2,7 @@
 // auth/billing services stay out of the first-paint chunk. Uses auth-service
 // directly (AccountSection is settings-shell styled — the services are the
 // reusable part).
-import { createSignal, onMount, Show } from 'solid-js'
+import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { PasswordRequirements } from '@/components/account/PasswordRequirements'
 import { VerifyEmailBanner } from '@/components/account/VerifyEmailBanner'
 import { Eye, EyeOff } from '@/components/icons'
@@ -12,7 +12,9 @@ import type { SignupContext } from '@/db/services/signup-context'
 import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
 import { isPasswordValid } from '@/lib/password-policy'
 import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
+import { signUpGiftMessage, syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
+import { answerSignUpAsk, signUpAsked } from './sign-up-ask'
 
 /**
  * Every sign-up here started on Karaoke Night, which gives the welcome mail
@@ -41,6 +43,31 @@ export function KaraokeAccount() {
   const [showPassword, setShowPassword] = createSignal(false)
   const [busy, setBusy] = createSignal(false)
   const [error, setError] = createSignal('')
+
+  // The rail's launch gift asks for the form on its sign-up pane.
+  createEffect(() => {
+    if (!signUpAsked()) return
+    answerSignUpAsk()
+    setMode('register')
+    setError('')
+    setModalOpen(true)
+  })
+
+  // What this account has claimed, so a launch gift claimed as it signed in
+  // (Google) or confirmed is said once, in a toast (launch-gift-store).
+  createEffect(() => {
+    const current = account()
+    void syncPromoClaims(
+      current === null
+        ? null
+        : {
+            upgraded: current.provider !== 'anonymous',
+            // Google's address is confirmed as the account is made. A
+            // password account's confirmation is the link's to say.
+            verified: current.provider !== 'password',
+          },
+    )
+  })
 
   /** Shows the failure in this surface's own error line. Starting the
    *  redirect is shared — see lib/google-sign-in. */
@@ -85,6 +112,9 @@ export function KaraokeAccount() {
           token,
           KARAOKE_SIGNUP,
         )
+        // With the launch gift on offer, say what the confirm link brings.
+        const gift = signUpGiftMessage()
+        if (gift !== null) showNotification(gift, 'info')
       } else {
         await loginWithPassword(email().trim(), password(), token)
       }

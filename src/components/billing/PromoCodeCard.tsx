@@ -17,6 +17,7 @@ import { createEffect, createResource, createSignal, onMount, Show, } from 'soli
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
+import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { theme } from '@/stores/theme-store'
@@ -63,6 +64,24 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
     return Array.isArray(promos) && promos.includes(code)
   }
 
+  /** "Claimed on 9 Oct", or "Claimed" from a worker that does not say when.
+   *  Most of these claims were made for the account when its email was
+   *  confirmed, so the date is the one thing that says it happened. */
+  const claimedLabel = (code: string): string => {
+    const claim = billingMe()?.promoClaims?.find((c) => c.code === code)
+    const at = claim === undefined ? Number.NaN : Date.parse(claim.claimedAt)
+    if (!Number.isFinite(at)) return 'Claimed'
+    const date = new Date(at)
+    const day = date.toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      ...(date.getFullYear() !== new Date().getFullYear()
+        ? { year: 'numeric' }
+        : undefined),
+    })
+    return `Claimed on ${day}`
+  }
+
   // Shared with the header pill; a no-op when the header already asked.
   onMount(() => {
     void loadFeaturedPromo()
@@ -83,6 +102,12 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
     setMessage(null)
     try {
       const res = await redeemPromoCode(clean)
+      // Said here already; the store keeps the header in step and counts it.
+      recordPromoClaim({
+        code: res.code,
+        credits: res.creditsGranted,
+        claimedAt: new Date().toISOString(),
+      })
       setMessage({
         text: `Promo code ${res.code} redeemed! +${res.creditsGranted} credits added.`,
         type: 'success',
@@ -221,7 +246,11 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
 
             <Show
               when={!hasRedeemed(promo().code)}
-              fallback={<span class={styles.claimedPill}>Claimed</span>}
+              fallback={
+                <span class={styles.claimedPill}>
+                  {claimedLabel(promo().code)}
+                </span>
+              }
             >
               <button
                 type="button"

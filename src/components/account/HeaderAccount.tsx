@@ -9,10 +9,12 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Gift } from '@/components/icons'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { giftClaimed, syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -40,30 +42,6 @@ function UserIcon() {
   )
 }
 
-// A wrapped present: lid, box, ribbon and bow. Marks the promo pill as a gift.
-function GiftIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="13"
-      height="13"
-      aria-hidden="true"
-      data-icon="gift"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <rect x="3" y="8" width="18" height="4" rx="1" />
-      <path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8" />
-      <path d="M12 8v13" />
-      <path d="M12 8C10.5 5 7 4 7 6.2 7 7.6 9.5 8 12 8z" />
-      <path d="M12 8c1.5-3 5-4 5-1.8 0 1.4-2.5 1.8-5 1.8z" />
-    </svg>
-  )
-}
-
 export const HeaderAccount: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const [me, setMe] = createSignal<MeResponse | null>(null)
@@ -86,7 +64,18 @@ export const HeaderAccount: Component = () => {
         // Restore only — rendering the header must never provision an
         // identity, or every page load would create an account again.
         await restoreAuth()
-        setMe(await fetchMe())
+        const account = await fetchMe()
+        setMe(account)
+        // What this account has claimed, for the pill below, and the toast
+        // when the launch gift has just landed (launch-gift-store).
+        void syncPromoClaims(
+          account === null
+            ? null
+            : {
+                upgraded: isRegisteredProvider(account.user.authProvider),
+                verified: account.user.emailVerified === true,
+              },
+        )
       } finally {
         setAuthResolved(true)
       }
@@ -140,7 +129,9 @@ export const HeaderAccount: Component = () => {
         }
       >
         <div class={styles.accountWrapper}>
-          <Show when={offeredPromo()}>
+          {/* Until the account has it: a pill that leads to "Claimed" is
+              a pill with nothing behind it. */}
+          <Show when={!giftClaimed() && offeredPromo()}>
             {(promo) => (
               <a
                 href="#/settings/credits"
@@ -148,7 +139,7 @@ export const HeaderAccount: Component = () => {
                 title={`Claim ${promo().credits} free cloud separation credits`}
                 data-testid="header-promo-pill"
               >
-                <GiftIcon />
+                <Gift size={13} />
                 <span>Promo</span>
               </a>
             )}

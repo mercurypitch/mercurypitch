@@ -26,8 +26,11 @@ const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
   openAuthModal: vi.fn(),
   loadFeaturedPromo: vi.fn(async () => {}),
+  syncPromoClaims: vi.fn(async () => {}),
   // Replaced by the promo-store mock below with a real signal's setter.
   setOffer: (_offer: Offer | null): void => {},
+  // Replaced by the launch-gift-store mock below, the same way.
+  setClaimed: (_claimed: boolean): void => {},
 }))
 vi.mock('@/db/services/auth-service', async (importOriginal) => ({
   // Real, because which providers count as an account is under test here.
@@ -44,6 +47,12 @@ vi.mock('@/stores/promo-store', async () => {
   mocks.setOffer = (next) => setOffer(() => next)
   return { offeredPromo: offer, loadFeaturedPromo: mocks.loadFeaturedPromo }
 })
+vi.mock('@/stores/launch-gift-store', async () => {
+  const { createSignal } = await import('solid-js')
+  const [claimed, setClaimed] = createSignal(false)
+  mocks.setClaimed = setClaimed
+  return { giftClaimed: claimed, syncPromoClaims: mocks.syncPromoClaims }
+})
 // Mocked so the component doesn't pull the full ui-store import chain
 // (which reads more of @/lib/defaults than the stub above provides).
 vi.mock('@/stores/ui-store', () => ({ openAuthModal: mocks.openAuthModal }))
@@ -53,6 +62,7 @@ import { HeaderAccount } from '../account/HeaderAccount'
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.setOffer(LAUNCH)
+  mocks.setClaimed(false)
 })
 
 describe('HeaderAccount', () => {
@@ -215,6 +225,48 @@ describe('HeaderAccount', () => {
       expect(screen.queryByTestId('header-promo-pill')).toBeNull()
     })
     expect(screen.getByTestId('header-signin')).toHaveTextContent('Sign in')
+  })
+
+  // Finding 2 of the launch offer plan: the pill went on leading accounts
+  // that had the credits already to a card that said "Claimed".
+  it('drops the promo pill once the account has claimed the code', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'password', email: 'a@b.com', emailVerified: true },
+      profile: { displayName: 'Maff' },
+    })
+    render(() => <HeaderAccount />)
+    expect(await screen.findByTestId('header-promo-pill')).toHaveAttribute(
+      'href',
+      '#/settings/credits',
+    )
+
+    mocks.setClaimed(true)
+    await waitFor(() => {
+      expect(screen.queryByTestId('header-promo-pill')).toBeNull()
+    })
+    expect(screen.getByText('Maff')).toBeInTheDocument()
+  })
+
+  it('reads the claims of whoever it finds signed in', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'google', email: 'a@b.com', emailVerified: true },
+      profile: { displayName: 'Maff' },
+    })
+    render(() => <HeaderAccount />)
+    await screen.findByText('Maff')
+
+    expect(mocks.syncPromoClaims).toHaveBeenCalledWith({
+      upgraded: true,
+      verified: true,
+    })
+  })
+
+  it('tells the claims reader when nobody is signed in', async () => {
+    mocks.fetchMe.mockResolvedValue(null)
+    render(() => <HeaderAccount />)
+    await screen.findByTestId('header-signin')
+
+    expect(mocks.syncPromoClaims).toHaveBeenCalledWith(null)
   })
 
   it('shows the pill when the offer arrives after the header has rendered', async () => {

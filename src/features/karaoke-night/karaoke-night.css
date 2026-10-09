@@ -222,6 +222,19 @@ body {
   color: #f8a0a0;
 }
 
+/* Signed out while the launch gift is on offer (KaraokeGiftLine): the
+   credits named in the same warm accent as the balance pill, and a button
+   a thumb can find. */
+.kn-gift-credits {
+  color: #ffd9a0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.kn-gift-btn {
+  min-height: 44px;
+}
+
 /* Settings › Credits holds the prices, so the card links there instead of
    stating one. Same warm accent as the pill beside it. */
 .kn-credits-link {

@@ -40,7 +40,7 @@ test.describe('First Light onboarding', () => {
       page.getByRole('button', { name: 'Sing one note' }),
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: /Skip .* take me in/ }),
+      page.getByRole('button', { name: 'Skip the intro' }),
     ).toBeVisible()
     // The terms line moved here with the door, and has to be on screen
     // before anything is measured.
@@ -123,7 +123,7 @@ test.describe('First Light onboarding', () => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
 
-    await page.getByRole('button', { name: /Skip .* take me in/ }).click()
+    await page.getByRole('button', { name: 'Skip the intro' }).click()
     await expect(page.locator('#app-tabs')).toBeVisible()
 
     await page.reload()
@@ -143,7 +143,7 @@ test.describe('First Light onboarding', () => {
     // `welcomeSeen`, so the extra gate is not needed at all.
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
-    await page.getByRole('button', { name: /Skip .* take me in/ }).click()
+    await page.getByRole('button', { name: 'Skip the intro' }).click()
     await expect(page.locator('#app-tabs')).toBeVisible()
     await expect(beat(page, 'sky')).toHaveCount(0)
 
@@ -158,7 +158,7 @@ test.describe('First Light onboarding', () => {
   test('the Map replay does not rewind the seen-flag', async ({ page }) => {
     await page.setViewportSize(DESKTOP)
     await page.goto('/')
-    await page.getByRole('button', { name: /Skip .* take me in/ }).click()
+    await page.getByRole('button', { name: 'Skip the intro' }).click()
     await expect(page.locator('#app-tabs')).toBeVisible()
 
     await page.goto('/#/map')

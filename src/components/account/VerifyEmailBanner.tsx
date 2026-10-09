@@ -19,6 +19,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { authStamp, fetchMe, hasValidToken, resendVerificationEmail, takeEmailVerifyResult, } from '@/db/services/auth-service'
+import { confirmedGiftMessage } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './VerifyEmailBanner.module.css'
 
@@ -112,7 +113,13 @@ export const VerifyEmailBanner: Component<VerifyEmailBannerProps> = (props) => {
     const result = takeEmailVerifyResult()
     if (result === null) return
     if (result.ok) {
-      showNotification('Email confirmed — your account is all set', 'info')
+      // Confirming claims the launch gift (launch-gift-store), and then the
+      // toast says so instead.
+      void confirmedGiftMessage().then((gift) => {
+        if (gift !== null) showNotification(gift, 'success')
+        else
+          showNotification('Email confirmed — your account is all set', 'info')
+      })
     } else if (result.error === 'expired') {
       showNotification(
         'That confirmation link has expired — use Resend to get a fresh one',
