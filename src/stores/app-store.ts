@@ -1332,7 +1332,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Transport & seek',
     description:
-      'Play / pause (or hit Space) and scrub the timeline. Restart, layout, and focus-view controls live here too. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
+      'Play / pause (or hit Space) and drag the timeline, or step it with the arrow keys. The speed and key chips live here too, and the skip-back button plays from the start. Hands on the guitar? "Mercury, from the top" does the same thing out loud.',
     targetSelector: '[data-tour="mixer.transport"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
@@ -1340,8 +1340,8 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'A–B loop',
     description:
-      'Set a loop start and end (or press the A and B keys) to drill a tricky phrase over and over; L toggles the loop, S jumps to its start.',
-    targetSelector: '.sm-loop-icon-a',
+      'Set a loop start and end (or press the A and B keys) to drill a tricky phrase over and over, then drag their marks on the timeline to fine-tune. L toggles the loop, S jumps to its start.',
+    targetSelector: '[data-tour="mixer.loop"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },
@@ -1349,7 +1349,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Playback speed',
     description:
       'Slow the whole mix down (to 0.5x) while you learn a part, then bring it back to full speed.',
-    targetSelector: '.sm-speed-select',
+    targetSelector: '[data-tour="mixer.speed"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },
@@ -1357,7 +1357,7 @@ export const STEM_MIXER_TOUR_STEPS: WalkthroughStep[] = [
     title: 'Sing along, get scored',
     description:
       'Enable the mic to compare your voice against the vocal line and monitor yourself over the track. After a scored run, replay the dry take and explicitly keep it in Hear Yourself; nothing is saved automatically.',
-    targetSelector: '.sm-mic-toggle-btn',
+    targetSelector: '[data-tour="mixer.mic"]',
     placement: 'top',
     requiredTab: TAB_KARAOKE,
   },

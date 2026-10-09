@@ -202,6 +202,31 @@ describe('a mixer lent the room audio context', () => {
     dispose()
   })
 
+  it('wires the key graph to the new master when the context is lent again', () => {
+    const lent = fakeContext('running')
+    const lease = {
+      ensure: vi.fn(() => lent.context as unknown as AudioContext),
+      unlock: vi.fn(async () => Promise.resolve(true)),
+    }
+    const { controller, dispose } = harness({
+      audioLease: lease,
+    } as Partial<StemMixerAudioDeps>)
+    const feeds = (from: FakeNode, to: FakeNode) =>
+      from.connect.mock.calls.some(([target]) => target === to)
+    controller.ensureAudioCtx()
+    controller.detachGraph()
+    const before = lent.nodes.length
+
+    controller.ensureAudioCtx()
+
+    // The master gain is the first node a fresh graph makes, and only the key
+    // graph's output feeds it. A key graph left on the old master feeds nothing.
+    const rebuilt = lent.nodes.slice(before)
+    const master = rebuilt[0]
+    expect(rebuilt.filter((made) => feeds(made, master))).toHaveLength(1)
+    dispose()
+  })
+
   it('without a lease it is the mixer it was: its own context', () => {
     const { controller, dispose } = harness({})
     controller.ensureAudioCtx()

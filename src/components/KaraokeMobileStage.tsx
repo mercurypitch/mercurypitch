@@ -20,11 +20,15 @@ import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
+import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
 import { GuideVocalMic } from '@/components/mobile/GuideVocalMic'
-import { AutoplayIcon, ChevronLeftIcon, MicIcon, MusicLevelIcon, NextIcon, NoteGlyphIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, TextSizeIcon, } from '@/components/mobile/icons'
+import { ChevronLeftIcon, EllipsisIcon, MicIcon, MusicLevelIcon, NextIcon, PauseIcon, PlayGlyphIcon, PlayIcon, PrevIcon, SongListIcon, } from '@/components/mobile/icons'
+import type { KaraokeMoreBinding, KaraokeMoreLyrics, } from '@/components/mobile/KaraokeMoreSheet'
+import { KaraokeMoreSheet } from '@/components/mobile/KaraokeMoreSheet'
 import { PillControl } from '@/components/mobile/PillControl'
 import { Scrubber } from '@/components/mobile/Scrubber'
 import { Sheet } from '@/components/mobile/Sheet'
@@ -35,18 +39,19 @@ import { DEMO_SESSION_ID } from '@/features/karaoke-night/demo-song'
 import type { WordSweepPoint } from '@/features/stem-mixer/types'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import type { ZenLyricsSize } from '@/features/stem-mixer/zen-navigation'
-import { cycleLyricsSize, orderedLibrarySessions, resolveBackIntent, stepLyricsSize, vocalDragUnmutes, ZEN_LYRICS_SCALE, } from '@/features/stem-mixer/zen-navigation'
+import { orderedLibrarySessions, resolveBackIntent, stepLyricsSize, vocalDragUnmutes, ZEN_LYRICS_SCALE, ZEN_LYRICS_SIZE_LABELS, ZEN_LYRICS_SIZES, } from '@/features/stem-mixer/zen-navigation'
 import { buildWordNoteIndex, hasWordNotes, noteForWord, } from '@/features/stem-mixer/zen-note-glyphs'
 import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
 import { yourDevice } from '@/lib/device-noun'
 import { formatBytes } from '@/lib/fetch-progress'
+import { formatKeyShift } from '@/lib/key-shift/key-shift'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isShortTouchLandscape } from '@/lib/use-viewport'
 import { currentIndex, getPlaylistsReactive, isPlaylistActive, nextSong, perSongScores, queue, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import styles from './KaraokeMobileStage.module.css'
@@ -176,9 +181,10 @@ export interface KaraokeMobileStageProps {
   /** Hide the embedded picker when the page shell owns stage settings. */
   showStageSettings?: boolean
 
-  // Sing-this-note glyphs (chord-chart labels over the words). When the host
-  // provides the alignment, the header shows the notes toggle; enabling it
-  // with no notes yet asks the host to run the (denoised) pitch analysis.
+  // Sing-this-note glyphs (chord-chart labels over the words). More offers the
+  // notes switch for a song that has its notes and, while the host gives
+  // `onEnsureNotes` (only when a tap can start the pitch analysis, which
+  // `notesAnalyzing` reports), for one that has none yet.
   alignedWords?: () => AlignedWord[]
   onEnsureNotes?: () => void
   notesAnalyzing?: () => boolean
@@ -207,6 +213,18 @@ export interface KaraokeMobileStageProps {
   }
   micPitch?: () => DetectedPitch | null
   ribbonNotes?: () => RibbonNote[]
+
+  /** The singer's key. The bar has no room for a stepper — the mic and the
+      music level fill the left slot — so the right slot carries one button
+      that opens a sheet with the stepper and "Find my key". Without it the
+      right slot stays empty spacing. */
+  keyControl?: KeyShiftBinding
+
+  /** Speed and the A/B loop, in the header's More (owner decision 1,
+      2 October 2026) with the lyrics' text size and notes and autoplay,
+      grouped as the room's options are. Absent, More holds the rest; a
+      hosted room has its own options and no More. */
+  more?: KaraokeMoreBinding
 
   /** Attach user-supplied lyrics when none were found (paste or file).
       Reuses the studio's lyrics controller, so they parse, sync, persist,
@@ -477,14 +495,24 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   // Mirrors the Scrubber's preview so the time readouts track the finger.
   const [scrub, setScrub] = createSignal<number | null>(null)
 
-  const remaining = (): number =>
-    Math.max(0, props.duration() - (scrub() ?? props.elapsed()))
-
   const displayTitle = (): string =>
     (props.songTitle ?? '').replace(/\.[^.]+$/, '').trim() || 'Your song'
 
   // ── In-stage song sheet ───────────────────────────────────────
   const [sheetOpen, setSheetOpen] = createSignal(false)
+  const [keySheetOpen, setKeySheetOpen] = createSignal(false)
+  const [moreOpen, setMoreOpen] = createSignal(false)
+  // Open, the key sheet holds "find my key"'s notices and says them itself:
+  // a phone's toasts sit where the sheet is. Let go as it shuts, and as the
+  // stage goes with it open (a phone turned to the desktop mixer).
+  createEffect(
+    on(keySheetOpen, (open, wasOpen) => {
+      if (open || wasOpen === true) props.keyControl?.holdNotices?.(open)
+    }),
+  )
+  onCleanup(() => {
+    if (keySheetOpen()) props.keyControl?.holdNotices?.(false)
+  })
 
   // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
   const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
@@ -531,19 +559,13 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
   const showPlaylistCard = () =>
     !isNarrow() && isPlaylistActive() && queue().length > 0
 
-  // ── Lyrics size presets (Smaller / Current / Bigger) ──────────
-  // Cycled from the header button; Ctrl/Cmd+wheel (trackpad pinch) over the
-  // lyrics steps through the same presets. Persisted per user.
+  // ── Lyrics size presets (Small / Medium / Large) ──────────────
+  // Picked in More; Ctrl/Cmd+wheel (trackpad pinch) over the lyrics steps
+  // through the same presets. Persisted per user, and shared with the room.
   const [lyricsSize, setLyricsSize] =
     hosting === undefined
       ? createPersistedSignal<ZenLyricsSize>('sm-zen-lyrics-size', 'current')
       : [hosting.lyricsSize, (_next: ZenLyricsSize): void => undefined]
-  const lyricsSizeTitle = (): string =>
-    ({
-      smaller: 'Lyrics size: Smaller — click for Current',
-      current: 'Lyrics size: Current — click for Bigger',
-      bigger: 'Lyrics size: Bigger — click for Smaller',
-    })[lyricsSize()]
   const handleLyricsZoomWheel = (e: WheelEvent): void => {
     if (!e.ctrlKey && !e.metaKey) return
     e.preventDefault()
@@ -552,8 +574,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
 
   // ── Sing-this-note glyphs ─────────────────────────────────────
   // Chord-chart labels over the words: the note the singer should hit,
-  // from the denoised pitch alignment. Enabling with no notes yet asks
-  // the host to run the analysis; glyphs fade in when it lands.
+  // from the denoised pitch alignment. Turned on in More, which offers them
+  // for a song that has its notes and, where the host can run the analysis,
+  // for one that has none yet: turning them on then finds them, and they fade
+  // in when the analysis lands.
   const [noteGlyphsOn, setNoteGlyphsOn] =
     hosting === undefined
       ? createPersistedSignal('sm-zen-note-glyphs', false)
@@ -562,10 +586,32 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
     buildWordNoteIndex(props.alignedWords?.() ?? []),
   )
   const hasNoteData = (): boolean => hasWordNotes(wordNoteIndex())
+  const findingNotes = (): boolean => props.notesAnalyzing?.() === true
+  // The switch reads on only while notes are on screen or on their way. A
+  // saved "on" for a song with none is not an on switch that draws nothing:
+  // it reads off, and a tap on an off switch is what asks for the notes.
+  const notesShown = (): boolean =>
+    noteGlyphsOn() && (hasNoteData() || findingNotes())
   const toggleNoteGlyphs = (): void => {
-    const next = !noteGlyphsOn()
+    const next = !notesShown()
     setNoteGlyphsOn(next)
     if (next && !hasNoteData()) props.onEnsureNotes?.()
+  }
+
+  // More's lyrics options: the presets by the names the room gives them.
+  const moreLyrics: KaraokeMoreLyrics = {
+    sizes: ZEN_LYRICS_SIZES.map((size) => ({
+      label: ZEN_LYRICS_SIZE_LABELS[size],
+      chosen: () => lyricsSize() === size,
+      choose: () => setLyricsSize(size),
+    })),
+    notes: {
+      has: hasNoteData,
+      canFind: () => props.onEnsureNotes !== undefined,
+      finding: findingNotes,
+      on: notesShown,
+      toggle: toggleNoteGlyphs,
+    },
   }
   // The line the singer reads ahead to — the first lyric line after the
   // current one (rests skipped). Before the first line it is the opener,
@@ -715,53 +761,24 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       <div class={styles.headerActions}>
         <Show when={props.showStageSettings !== false}>
           <PremiumBackgroundPicker
+            class={styles.headerPicker}
             controller={background}
             label="Stage"
             iconOnly
           />
         </Show>
-        <Show when={props.alignedWords}>
-          <button
-            class={styles.autoplayBtn}
-            classList={{ [styles.autoplayBtnOn]: noteGlyphsOn() }}
-            onClick={toggleNoteGlyphs}
-            aria-pressed={noteGlyphsOn()}
-            title={
-              noteGlyphsOn()
-                ? 'Hide the notes to sing'
-                : 'Show the note to sing over each word'
-            }
-            aria-label="Toggle the sing-this-note labels"
-          >
-            <NoteGlyphIcon />
-          </button>
-        </Show>
+        {/* Text size, the notes and autoplay are in More, with speed and
+            the loop: the header keeps room for the song's title. */}
         <button
           class={styles.autoplayBtn}
-          classList={{
-            [styles.autoplayBtnOn]: lyricsSize() !== 'current',
-          }}
-          onClick={() => setLyricsSize(cycleLyricsSize(lyricsSize()))}
-          title={lyricsSizeTitle()}
-          aria-label="Cycle the lyrics text size"
+          onClick={() => setMoreOpen(true)}
+          title="Lyrics and playing options"
+          aria-label="More"
+          aria-haspopup="dialog"
         >
-          <TextSizeIcon />
+          <EllipsisIcon />
         </button>
         <Show when={props.onPickSession}>
-          <button
-            class={styles.autoplayBtn}
-            classList={{ [styles.autoplayBtnOn]: props.autoplayEnabled() }}
-            onClick={() => props.onToggleAutoplay()}
-            aria-pressed={props.autoplayEnabled()}
-            title={
-              props.autoplayEnabled()
-                ? 'Autoplay is on — the next song plays automatically'
-                : 'Autoplay is off — turn on to keep playing song after song'
-            }
-            aria-label="Toggle autoplay"
-          >
-            <AutoplayIcon />
-          </button>
           <button
             class={styles.listBtn}
             onClick={() => setSheetOpen(true)}
@@ -1097,12 +1114,26 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           duration={props.duration()}
           onSeek={props.seekTo}
           onScrub={setScrub}
+          loop={
+            props.more && {
+              start: props.more.loopStart(),
+              end: props.more.loopEnd(),
+              on: props.more.loopOn(),
+            }
+          }
         />
         <div class={styles.times}>
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
-          <span>-{formatTime(remaining())}</span>
+          {/* The song's length, as the desktop rail and the Jam room show
+              it, not the time left. */}
+          <span>{formatTime(props.duration())}</span>
         </div>
-        <div class={styles.transport}>
+        <div
+          class={styles.transport}
+          classList={{
+            [styles.transportWithKey]: props.keyControl !== undefined,
+          }}
+        >
           {/* Left slot: what you put in and what you get back — your mic,
               and the backing level beside it. They are a pair on purpose:
               the level exists because turning the mic on is what makes the
@@ -1189,12 +1220,37 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               <NextIcon />
             </button>
           </div>
-          {/* Right slot: empty, and that is its job — it mirrors the left
-              one's width so the play button stays dead centre. */}
-          <div
-            class={`${styles.transportSide} ${styles.transportSpacer}`}
-            aria-hidden="true"
-          />
+          <Show
+            when={props.keyControl}
+            fallback={
+              // Right slot: empty, and that is its job — it mirrors the left
+              // one's width so the play button stays dead centre.
+              <div
+                class={`${styles.transportSide} ${styles.transportSpacer}`}
+                aria-hidden="true"
+              />
+            }
+          >
+            {(key) => (
+              <div class={`${styles.transportSide} ${styles.transportKeySlot}`}>
+                <button
+                  class={styles.keyBtn}
+                  // Lit for a key the song is played in; the value can be a
+                  // kept key that Pitch Studio or a missing engine holds back.
+                  classList={{ [styles.keyBtnOn]: key().heard() !== 0 }}
+                  data-testid="mobile-key-shift"
+                  onClick={() => setKeySheetOpen(true)}
+                  title="Change the key to suit your voice"
+                  aria-label={`Key ${formatKeyShift(key().value())}. Change the key`}
+                >
+                  <span class={styles.keyBtnCaption}>Key</span>
+                  <span class={styles.keyBtnValue}>
+                    {formatKeyShift(key().value())}
+                  </span>
+                </button>
+              </div>
+            )}
+          </Show>
         </div>
       </div>
 
@@ -1274,6 +1330,57 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             </Show>
           </div>
         </div>
+      </Show>
+
+      {/* ── Key sheet ──────────────────────────────────────── */}
+      <Show when={props.keyControl}>
+        {(key) => (
+          <Sheet
+            isOpen={keySheetOpen()}
+            close={() => setKeySheetOpen(false)}
+            ariaLabel="Key"
+          >
+            <p class={styles.sheetKicker}>Key</p>
+            <div class={styles.keySheetBody}>
+              <KeyShiftControl
+                value={key().value()}
+                onChange={key().onChange}
+                keyLabel={key().keyLabel()}
+                suggestion={key().suggestion()}
+                onFindKey={key().onFindKey}
+                disabledReason={key().disabledReason()}
+                size="touch"
+              />
+              <p
+                class={styles.keySheetStatus}
+                role="status"
+                data-tone={key().notice?.()?.tone}
+              >
+                {key().notice?.()?.message ?? ''}
+              </p>
+              <p class={styles.keySheetNote}>
+                {key().disabledReason() ??
+                  'Moves the song up or down to suit your voice. The speed stays the same.'}
+              </p>
+            </div>
+          </Sheet>
+        )}
+      </Show>
+
+      {/* ── More sheet: the lyrics, then playing ───────────── */}
+      {/* Hosted, the room's options sheet has these. */}
+      <Show when={hosting === undefined}>
+        <KaraokeMoreSheet
+          isOpen={moreOpen()}
+          close={() => setMoreOpen(false)}
+          lyrics={moreLyrics}
+          binding={props.more}
+          autoplay={
+            props.onPickSession
+              ? { on: props.autoplayEnabled, toggle: props.onToggleAutoplay }
+              : undefined
+          }
+        />
       </Show>
 
       {/* ── Song sheet ─────────────────────────────────────── */}
@@ -1378,8 +1485,10 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
         </div>
       }
     >
+      {/* On its side, the room's two columns: the song and the controls
+          on the left, the lyrics the full height on the right. */}
       <StageShell
-        class={`${styles.stage} mp-dark-stage`}
+        class={`${styles.stage} mp-dark-stage${isShortTouchLandscape() ? ` ${styles.sideways}` : ''}`}
         style={background.resolvedStyle()}
         testId="karaoke-mobile-stage"
       >

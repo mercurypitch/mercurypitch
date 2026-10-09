@@ -1,0 +1,246 @@
+/* KaraokeMoreSheet: the phone stage's options (lyrics, then playing), in the
+   karaoke stage's colours. Every control is at least 44 px each way: the
+   touch rule. */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px 8px;
+  color: #f4ecff;
+}
+
+/* ── Text size ─────────────────────────────────────────── */
+
+.segments {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.segment {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgba(183, 154, 224, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4ecff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segment[aria-pressed='true'] {
+  border-color: transparent;
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+}
+
+/* ── Speed and the loop, under Playing ─────────────────── */
+
+.speedAndLoop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupLabel {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(244, 236, 255, 0.7);
+}
+
+/* ── Speed ─────────────────────────────────────────────── */
+
+.speeds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+
+.speed {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid rgba(183, 154, 224, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4ecff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.speed[aria-checked='true'] {
+  border-color: transparent;
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+}
+
+/* ── Loop ──────────────────────────────────────────────── */
+
+.points {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.point {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'name time'
+    'button button';
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px;
+  border: 1px solid rgba(183, 154, 224, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pointName {
+  grid-area: name;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(201, 162, 255, 0.22);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pointTime {
+  grid-area: time;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(244, 236, 255, 0.8);
+}
+
+.pointButton {
+  grid-area: button;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refusal {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #ffb4a8;
+}
+
+.refusal:empty {
+  display: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.rowText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: 0.92rem;
+}
+
+.rowSub {
+  font-size: 0.75rem;
+  color: rgba(244, 236, 255, 0.6);
+}
+
+.clear {
+  align-self: flex-start;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(183, 154, 224, 0.3);
+  border-radius: 12px;
+  background: none;
+  color: #f4ecff;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.clear:disabled,
+.switch:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The switch: a 52x44 target around a 52x30 track. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.switch::before {
+  content: '';
+  position: absolute;
+  inset: 7px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 0.15s ease;
+}
+
+.switch i {
+  position: absolute;
+  top: 10px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(244, 236, 255, 0.75);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.switchOn::before {
+  background: rgba(201, 162, 255, 0.92);
+}
+
+.switchOn i {
+  background: #1c0f2e;
+  transform: translateX(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch::before,
+  .switch i {
+    transition: none;
+  }
+}

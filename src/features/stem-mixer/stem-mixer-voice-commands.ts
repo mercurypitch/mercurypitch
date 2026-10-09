@@ -12,9 +12,13 @@
 // (audio time), unlike the beat-based global transport.
 
 import type { Accessor } from 'solid-js'
-import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FIND_MY_KEY_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, KEY_DOWN_PHRASES, KEY_ORIGINAL_PHRASES, KEY_UP_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
+import { formatKeyShift, KEY_SHIFT_MAX, KEY_SHIFT_MIN, } from '@/lib/key-shift/key-shift'
+import { hasPlayableLoop } from '@/lib/loop-gap'
+import { LOOP_MIN_GAP, placeLoopPoint } from './loop-points'
+import type { FindMyKeyResult } from './useStemMixerKeyController'
 
 export interface StemMixerVoiceTrack {
   label: string
@@ -43,14 +47,14 @@ export interface StemMixerVoiceDeps {
   /** Playback rate, 1 = normal. */
   speed: Accessor<number>
   setSpeed: (multiplier: number) => void
-  /** The mixer's own A-B loop, in seconds. */
+  /** The mixer's own A-B loop, in seconds; a point is null until set. */
   loop: {
     enabled: Accessor<boolean>
     setEnabled: (on: boolean) => void
-    start: Accessor<number>
-    setStart: (seconds: number) => void
-    end: Accessor<number>
-    setEnd: (seconds: number) => void
+    start: Accessor<number | null>
+    setStart: (seconds: number | null) => void
+    end: Accessor<number | null>
+    setEnd: (seconds: number | null) => void
     clear: () => void
   }
   playlist: {
@@ -60,6 +64,13 @@ export interface StemMixerVoiceDeps {
     /** Jump to a random queue entry; false when there is nothing to jump to. */
     random: () => boolean
   }
+  /** The karaoke key in semitones; 0 is the song's own key. */
+  keyShift: Accessor<number>
+  setKeyShift: (semitones: number) => void
+  /** The same "Find my key" the key control's button runs. */
+  findMyKey: () => FindMyKeyResult
+  /** Why the key cannot change right now (Pitch Studio, no engine), if so. */
+  keyShiftDisabledReason?: Accessor<string | undefined>
   /** The "Songs" rail — the songs-and-playlists sidebar. */
   songsSidebar: {
     isOpen: Accessor<boolean>
@@ -76,6 +87,9 @@ const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 const formatSpeed = (multiplier: number): string =>
   `Speed ${String(multiplier)}x`
 
+const formatKey = (semitones: number): string =>
+  `Key ${formatKeyShift(semitones)}`
+
 export function createStemMixerVoiceCommands(
   deps: StemMixerVoiceDeps,
 ): VoiceCommand[] {
@@ -90,12 +104,13 @@ export function createStemMixerVoiceCommands(
   const clampSeconds = (seconds: number): number =>
     Math.min(Math.max(seconds, 0), Math.max(0, deps.duration()))
 
+  // Rounded whole before it is split: 179.5 reads 3:00, not 2:60.
   const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const rest = Math.round(seconds % 60)
-    return minutes > 0
-      ? `${String(minutes)}:${String(rest).padStart(2, '0')}`
-      : `${String(rest)}s`
+    const total = Math.round(seconds)
+    const rest = String(total % 60)
+    return total >= 60
+      ? `${String(Math.floor(total / 60))}:${rest.padStart(2, '0')}`
+      : `${rest}s`
   }
 
   const seekRelative = (deltaSeconds: number): string => {
@@ -212,6 +227,46 @@ export function createStemMixerVoiceCommands(
     )
   }
 
+  // ── Key (semitones, the singer's) ──────────────────────────
+
+  const keyBlocked = (): VoiceCommandResult | null => {
+    const reason = deps.keyShiftDisabledReason?.()
+    return reason === undefined ? null : voiceFailure(reason)
+  }
+
+  const stepKey = (direction: 1 | -1): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    const current = deps.keyShift()
+    if (direction > 0 && current >= KEY_SHIFT_MAX)
+      return voiceFailure(`Key already ${formatKeyShift(current)}, the highest`)
+    if (direction < 0 && current <= KEY_SHIFT_MIN)
+      return voiceFailure(`Key already ${formatKeyShift(current)}, the lowest`)
+    deps.setKeyShift(current + direction)
+    return formatKey(current + direction)
+  }
+
+  const originalKey = (): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    if (deps.keyShift() === 0)
+      return voiceFailure('Already in the original key')
+    deps.setKeyShift(0)
+    return 'Original key'
+  }
+
+  const findMyKey = (): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    const result = deps.findMyKey()
+    if (result === 'needs-range') return 'Pick your voice type'
+    if (result === 'reading-range') return 'Finding your key'
+    if (result === 'detecting') return 'Finding the melody first'
+    if (result === 'no-melody')
+      return voiceFailure('The melody cannot be found on this device')
+    return formatKey(deps.keyShift())
+  }
+
   const setLoopRange = (
     from: number | undefined,
     to: number | undefined,
@@ -225,13 +280,33 @@ export function createStemMixerVoiceCommands(
       return voiceFailure('Say loop from A to B seconds')
     }
     if (to <= from) return voiceFailure('Loop end must be after its start')
-    deps.loop.setStart(clampSeconds(from))
-    deps.loop.setEnd(clampSeconds(to))
+    const duration = deps.duration()
+    // The same answer as the other times: with no length there is no song to
+    // loop, and the clamp below would put both points on 0:00.
+    if (duration <= 0) return voiceFailure('Nothing loaded')
+    if (from >= duration) {
+      return voiceFailure(`The song ends at ${formatTime(duration)}`)
+    }
+    // The range the singer said, cut to the song. Cut, it can be shorter than
+    // the gap, or none at all: the clock plays no such loop, so none is turned
+    // on, and a refusal changes nothing.
+    const start = clampSeconds(from)
+    const end = clampSeconds(to)
+    if (!hasPlayableLoop(start, end)) {
+      return voiceFailure('Loop end must be at least 0.1 s after its start')
+    }
+    deps.loop.setStart(start)
+    deps.loop.setEnd(end)
     deps.loop.setEnabled(true)
-    deps.seekToTime(clampSeconds(from))
+    deps.seekToTime(start)
     if (!deps.playing()) deps.play()
     return `Loop ${String(from)}s to ${String(to)}s`
   }
+
+  /** A and B make a loop: the Loop button's rule, and L's. A alone would
+   *  loop from A to the song's end. */
+  const loopIsReady = (): boolean =>
+    hasPlayableLoop(deps.loop.start(), deps.loop.end())
 
   // ── The set ────────────────────────────────────────────────
 
@@ -449,9 +524,14 @@ export function createStemMixerVoiceCommands(
       run: () => {
         const at = deps.elapsed()
         deps.loop.setStart(at)
-        if (deps.loop.end() > 0 && deps.loop.end() <= at) {
-          deps.loop.setEnd(0)
+        // An A on or just before B leaves no loop to play: B goes. The reply
+        // says so, since a voice command otherwise answers only with what it
+        // set.
+        const end = deps.loop.end()
+        if (end !== null && end - at <= LOOP_MIN_GAP) {
+          deps.loop.setEnd(null)
           deps.loop.setEnabled(false)
+          return 'Loop A set. B cleared'
         }
         return 'Loop A set'
       },
@@ -461,11 +541,13 @@ export function createStemMixerVoiceCommands(
       label: 'Loop B set',
       phrases: LOOP_SET_B_PHRASES,
       run: () => {
-        const at = deps.elapsed()
-        if (at <= deps.loop.start()) {
-          return voiceFailure('Loop B must come after A')
-        }
-        deps.loop.setEnd(at)
+        const placed = placeLoopPoint('B', deps.elapsed(), {
+          start: deps.loop.start(),
+          end: deps.loop.end(),
+        })
+        if (!placed.placed) return voiceFailure('Loop B must come after A')
+        deps.loop.setStart(placed.points.start)
+        deps.loop.setEnd(placed.points.end)
         deps.loop.setEnabled(true)
         return 'Loop B set'
       },
@@ -476,6 +558,7 @@ export function createStemMixerVoiceCommands(
       phrases: LOOP_TOGGLE_PHRASES,
       run: () => {
         const next = !deps.loop.enabled()
+        if (next && !loopIsReady()) return voiceFailure('Set A and B first')
         deps.loop.setEnabled(next)
         return next ? 'Loop on' : 'Loop off'
       },
@@ -485,9 +568,7 @@ export function createStemMixerVoiceCommands(
       label: 'Loop on',
       phrases: LOOP_ON_PHRASES,
       run: () => {
-        if (deps.loop.end() <= deps.loop.start()) {
-          return voiceFailure('Set A and B first')
-        }
+        if (!loopIsReady()) return voiceFailure('Set A and B first')
         deps.loop.setEnabled(true)
         return 'Loop on'
       },
@@ -515,6 +596,30 @@ export function createStemMixerVoiceCommands(
       label: 'Loop range',
       phrases: LOOP_RANGE_PHRASES,
       run: (args) => setLoopRange(args.n, args.m),
+    },
+    {
+      id: 'karaoke.keyUp',
+      label: 'Key up',
+      phrases: KEY_UP_PHRASES,
+      run: () => stepKey(1),
+    },
+    {
+      id: 'karaoke.keyDown',
+      label: 'Key down',
+      phrases: KEY_DOWN_PHRASES,
+      run: () => stepKey(-1),
+    },
+    {
+      id: 'karaoke.keyOriginal',
+      label: 'Original key',
+      phrases: KEY_ORIGINAL_PHRASES,
+      run: originalKey,
+    },
+    {
+      id: 'karaoke.findMyKey',
+      label: 'Find my key',
+      phrases: FIND_MY_KEY_PHRASES,
+      run: findMyKey,
     },
     {
       id: 'karaoke.speedFaster',

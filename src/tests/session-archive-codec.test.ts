@@ -104,13 +104,33 @@ describe('session archive codec', () => {
               refId: 'song',
               singerName: 'Singer',
               vocalVolume: 0.75,
+              keyShift: -3,
             },
           ],
         },
       ],
     })
     expect(parsed.playlists[0].items[0].vocalVolume).toBe(0.75)
+    expect(parsed.playlists[0].items[0].keyShift).toBe(-3)
     expect(parsed.playlists[0]).not.toHaveProperty('createdAt')
+  })
+
+  it('rejects an entry key that is not a whole semitone inside ±6', () => {
+    for (const keyShift of [7, -7, 2.5, '2', Number.NaN]) {
+      expect(() =>
+        parseKaraokeArchiveManifest({
+          version: 1,
+          groups: [],
+          playlists: [
+            {
+              id: 'set',
+              name: 'Set',
+              items: [{ kind: 'session', refId: 'song', keyShift }],
+            },
+          ],
+        }),
+      ).toThrow(SessionArchiveError)
+    }
   })
 
   it('rejects malformed persisted analysis payloads', () => {

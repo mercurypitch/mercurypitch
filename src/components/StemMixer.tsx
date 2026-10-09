@@ -15,13 +15,14 @@ import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
-import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { setStemVolume, stemMixHasSolo, stemTrackIsAudible, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import { analysableBuffer } from '@/features/stem-mixer/stem-peak-envelope'
 import type { StemStream } from '@/features/stem-mixer/stem-stream-source'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
+import { createFindMyKeyNotices, songMelody, useStemMixerKeyController, useStemMixerKeyView, } from '@/features/stem-mixer/useStemMixerKeyController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useStemMixerMelodyAuditionController'
@@ -38,7 +39,9 @@ import { yourDevicePossessive } from '@/lib/device-noun'
 import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
+import { transposePitchReadings } from '@/lib/key-shift/key-shift'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import { hasPlayableLoop } from '@/lib/loop-gap'
 import { lyricGlance } from '@/lib/lyric-glance'
 import { lyricWindowScript } from '@/lib/lyric-window-script'
 import { extractTitle } from '@/lib/lyrics-service'
@@ -47,18 +50,20 @@ import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
+import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
 import { createPersistedSignal } from '@/lib/storage'
 import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isShortTouchLandscape } from '@/lib/use-viewport'
 import { useWhisperTranscription } from '@/lib/useWhisperTranscription'
 import type { StemSplitPart } from '@/lib/uvr-stem-split'
 import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
-import { showNotification } from '@/stores/notifications-store'
+import { karaokeKeyKeepDrums } from '@/stores/karaoke-settings-store'
+import { removeNotificationsByChannel, showNotification, } from '@/stores/notifications-store'
 import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
 import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
@@ -69,6 +74,12 @@ import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import type { KeyShiftBinding } from './key-shift/KeyShiftControl'
+import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
+import type { KaraokeMoreBinding } from './mobile/KaraokeMoreSheet'
+import type { LoopPoint } from './stem-mixer/LoopPointMenu'
+import { LoopPointMenu } from './stem-mixer/LoopPointMenu'
+import { MixerViewControls } from './stem-mixer/MixerViewControls'
 import type { StemMixerHosting } from './stem-mixer-hosting'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
@@ -177,6 +188,9 @@ interface StemTrack {
 }
 
 // ── Constants ──────────────────────────────────────────────────
+
+/** One refused-loop-point toast at a time, however often A or B is pressed. */
+const LOOP_POINT_CHANNEL = 'stem-mixer-loop-point'
 
 interface SmWindow {
   __smKeydown?: (e: KeyboardEvent) => void
@@ -473,19 +487,26 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const mic = useStemMixerMicController({
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
+    // The key shifter delays what the singer hears; judge them against it.
+    outputDelaySec: () => audio.keyShiftLatencySec(),
   })
   const scoreModalOpen = (): boolean => mic.showScore() && mic.score() !== null
 
   // Escape exits focus mode only when the score dialog is not the active
   // surface. The dialog owns Escape while open, closes itself, and restores
-  // focus to the control that launched it.
+  // focus to the control that launched it. The same goes for any dialog,
+  // menu or listbox: one press closes the top layer only. On window, so
+  // every document-level menu has had its turn and could claim the key with
+  // preventDefault.
   createEffect(() => {
     if (!karaokeFocus() || scoreModalOpen()) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !scoreModalOpen()) setKaraokeFocus(false)
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      if (scoreModalOpen() || isInsideOverlay(e.target)) return
+      setKaraokeFocus(false)
     }
-    document.addEventListener('keydown', handler)
-    onCleanup(() => document.removeEventListener('keydown', handler))
+    window.addEventListener('keydown', handler)
+    onCleanup(() => window.removeEventListener('keydown', handler))
   })
 
   let micGrantedReported = false
@@ -542,6 +563,35 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let setUserScrolledForAudio = (_v: boolean) => {}
   let lyricsMappingActiveForAudio = false
 
+  // ── Key controller ───────────────────────────────────────────
+  // The singer's key: this playlist entry's, else the song's own remembered
+  // one. The melody and the detection are Pitch Studio's, built further
+  // down: the melody is first read once the singer's range has been read,
+  // which is never before this component has finished setting up.
+  // Find my key's notices: toasts, or a line in the phone's key sheet while
+  // that is open, where a phone's toasts would sit over it.
+  const findKeyNotices = createFindMyKeyNotices({
+    show: showNotification,
+    remove: removeNotificationsByChannel,
+  })
+  const key = useStemMixerKeyController({
+    sessionId: () => props.sessionId,
+    queueEntry: () => {
+      const entry = playlist.isPlaylistActive() ? playlist.currentSong() : null
+      return entry?.sessionId === props.sessionId ? entry : null
+    },
+    playlistId: () =>
+      playlist.isPlaylistActive() ? playlist.activePlaylistId() : null,
+    melody: () => songMelody(pitchAnalysis.editableNotes(), midiNotes()),
+    // Quiet: find my key reports the outcome itself, as one message.
+    detectMelody: () =>
+      vocalIsStreamed() || analysableVocal() === null
+        ? null
+        : pitchAnalysis.runAnalysis({ quiet: true }),
+    notify: findKeyNotices.notify,
+    dismiss: findKeyNotices.dismiss,
+  })
+
   // ── Audio controller ─────────────────────────────────────────
   const audio = useStemMixerAudioController({
     vocal,
@@ -591,6 +641,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
     onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
     onMicFrame: karaokeVoiceCapture.pushMicFrame,
+    keyShift: key.keyShift,
+    keepDrums: karaokeKeyKeepDrums,
+    // A muted guide vocal leaves its shifter disconnected, and costs nothing.
+    vocalAudible: () => {
+      const vocalTrack = tracks().find((track) => track.label === 'Vocal')
+      return (
+        vocalTrack !== undefined && stemTrackIsAudible(vocalTrack, anySoloed())
+      )
+    },
+    // Pitch Studio edits the song's own notes, so it plays the song's key.
+    keyShiftSuspended: () => pitchAnalysis.editMode(),
     showNotification,
     // The room streams whatever the user agent says (K9), on the one
     // context it lends (REQ-NRM-033).
@@ -688,19 +749,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     deviceClass: deviceClass(),
   })
 
-  // Phone-width viewports get the zen Apple-Music-style stage instead of the
-  // desktop mixer — same controllers, different presentation. Width-based
-  // (isNarrow, not isMobile) so touch laptops and wide tablets keep the full
-  // mixer. Reactive, so a rotation or resize swaps the presentation without
-  // losing playback (the audio engine lives in setup, not in either JSX tree).
+  // Phones get the zen Apple-Music-style stage instead of the desktop
+  // mixer — same controllers, different presentation. Narrow, or short and
+  // touch on its side (not isMobile) so touch laptops and wide tablets keep
+  // the full mixer. Reactive, so a rotation or resize swaps the presentation
+  // without losing playback (the audio engine lives in setup, not in either
+  // JSX tree).
   // Applies to EVERY preset now (mobile-native Phase 4): the in-app Karaoke
   // tab gets the same zen stage on phones as the standalone karaoke-night
   // page — the studio mixer is a desktop surface (decision D4).
   // karaokeZen() is the desktop opt-in — a wide-screen user can choose the
   // same clean lyrics stage the phone gets automatically.
   // Hosted by the Karaoke room it is zen at every width: an 852-wide phone
-  // on its side is not narrow, and got the desktop mixer (K6).
-  const zenStage = () => hosted !== undefined || isNarrow() || karaokeZen()
+  // on its side is not narrow, and got the desktop mixer (K6). Off the room,
+  // a phone on its side gets the stage too (owner decision 2, 2 October
+  // 2026): short and touch, which keeps tablets and touch laptops on the
+  // mixer (isShortTouchLandscape).
+  const phoneStage = () => isNarrow() || isShortTouchLandscape()
+  const zenStage = () => hosted !== undefined || phoneStage() || karaokeZen()
 
   // ── "Why did the music get quiet?" ───────────────────────────
   // Opening a mic makes iOS switch the whole page to `playAndRecord` and
@@ -729,10 +795,24 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }),
   )
 
+  // The mixer tour points at the desktop mixer: on the phone stage it has
+  // nothing to show, and its toast sat over the scrubber. So it is offered
+  // the first time this mount shows the mixer, never on the stage, which
+  // also keeps the one-time offer for a screen that can take it. Not
+  // mid-playlist either, where the focus is singing, not learning the UI.
+  let tourOfferDone = false
+  createEffect(
+    on(zenStage, (zen) => {
+      if (zen || tourOfferDone) return
+      tourOfferDone = true
+      if (!untrack(playlist.isPlaylistActive)) props.onOfferTour?.('mount')
+    }),
+  )
+
   // The zen stage's Back: on a desktop-initiated zen it returns to the mixer
   // (keeping the song staged); otherwise it's the normal page-level back.
   const handleZenBack = (): void => {
-    if (karaokeZen() && !isNarrow()) {
+    if (karaokeZen() && !phoneStage()) {
       setKaraokeZen(false)
     } else {
       props.onBack?.()
@@ -976,15 +1056,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onCleanup(() => clearInterval(engagementTimer))
   })
 
-  const handleSeek = (e: MouseEvent) => {
-    if (!audio.duration()) return
-    const bar = e.currentTarget as HTMLDivElement
-    const rect = bar.getBoundingClientRect()
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    const target = ratio * audio.duration()
-    audio.seekTo(target)
-  }
-
   // A tapped lyric line's seek: the pitch window moves with the song.
   const seekToWithWindow = (t: number): void => {
     audio.seekTo(t)
@@ -1203,47 +1274,37 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         audio.setLoopEnabled(true)
       }
     } else {
-      audio.setLoopEnd(0)
+      audio.setLoopEnd(null)
       audio.setLoopEnabled(false)
     }
   }
 
-  // Set an A or B loop point at an explicit time, keeping A < B (swaps when a
-  // point lands on the wrong side — the "renumerate" behaviour). Shared by the
-  // transport A/B buttons (playhead time) and the waveform right-click menu
-  // (clicked time). Setting B enables the loop; setting A alone just marks the
-  // start (drawn immediately by the canvas overlay).
+  // Set an A or B loop point at an explicit time. Shared by the transport A/B
+  // buttons and the A/B keys (playhead time) and the waveform right-click
+  // menu (clicked time). A point on the wrong side of the other one, or
+  // within 0.1 s of it, is refused and the toast says why (loop-points.ts).
+  // Setting B enables the loop; setting A alone just marks the start (drawn
+  // immediately by the canvas overlay).
   const applyLoopPoint = (which: 'A' | 'B', time: number) => {
-    const t = Math.max(0, time)
-    if (which === 'A') {
-      const currentB = audio.loopEnd()
-      if (currentB > 0 && t > currentB) {
-        audio.setLoopEnd(t)
-        audio.setLoopStart(currentB)
-      } else {
-        audio.setLoopStart(t)
-      }
-    } else {
-      const currentA = audio.loopStart()
-      if (t < currentA) {
-        audio.setLoopStart(t)
-        audio.setLoopEnd(currentA)
-      } else {
-        audio.setLoopEnd(t)
-      }
-      audio.setLoopEnabled(true)
+    const reason = placeLoopPointAt(which, time)
+    if (reason !== null) {
+      showNotification(reason, 'warning', { channel: LOOP_POINT_CHANNEL })
     }
+  }
+  /** Place a point; why it was refused, or null once it is placed. */
+  const placeLoopPointAt = (which: 'A' | 'B', time: number): string | null => {
+    const result = audio.placeLoopPoint(which, time)
+    if (!result.placed) return result.reason
+    // A refusal still on screen no longer describes the loop.
+    removeNotificationsByChannel(LOOP_POINT_CHANNEL)
     canvas.queueCanvasRedraw()
+    return null
   }
 
   // Waveform/pitch-canvas right-click → a small loop menu at the clicked time
   // (mirrors the lyric-line right-click). The native context menu offered
   // nothing useful here.
-  const [loopMenu, setLoopMenu] = createSignal<{
-    x: number
-    y: number
-    time: number
-  } | null>(null)
+  const [loopMenu, setLoopMenu] = createSignal<LoopPoint | null>(null)
   const openLoopMenu = (e: MouseEvent) => {
     e.preventDefault()
     const targetCanvas = e.currentTarget as HTMLCanvasElement | null
@@ -1255,13 +1316,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         canvas.timelineTimeAtClientX(e.clientX, targetCanvas),
       ),
     )
-    setLoopMenu({ x: e.clientX, y: e.clientY, time })
+    setLoopMenu({ x: e.clientX, y: e.clientY, time, anchor: targetCanvas })
   }
   const clearLoopFromMenu = () => {
     audio.clearLoop()
     setLoopStartLyricIdx(null)
     setLoopEndLyricIdx(null)
     canvas.queueCanvasRedraw()
+  }
+
+  // The phone stage's More (KaraokeMoreSheet): the capsule's speed and loop.
+  // A refused point's reason goes back to the sheet, which shows it where
+  // the singer is looking; the toggle follows the L key's rule.
+  const phoneMore: KaraokeMoreBinding = {
+    speed: audio.speed,
+    onSpeed: audio.setSpeed,
+    loopStart: audio.loopStart,
+    loopEnd: audio.loopEnd,
+    loopOn: audio.loopEnabled,
+    onSetPoint: (which) => placeLoopPointAt(which, audio.elapsed()),
+    onToggleLoop: () => {
+      const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+      audio.setLoopEnabled((on) => !on && ready)
+      canvas.queueCanvasRedraw()
+    },
+    onClearLoop: clearLoopFromMenu,
   }
 
   // ── What the analysers are allowed to read ─────────────────────
@@ -1295,11 +1374,39 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     sessionId: props.sessionId,
     vocalBuffer: () => analysableVocal(),
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
+    // The realtime history is kept as heard, so this joins it in that key.
+    // Untracked: a key change must not re-send it over a running history.
     setPitchHistory: (h) => {
-      audio.setPitchHistory(h)
+      audio.setPitchHistory(
+        transposePitchReadings(h, untrack(audio.effectiveShift)),
+      )
     },
     showNotification,
   })
+
+  // ── What the singer sees follows what they hear ────────────────
+  const keyView = useStemMixerKeyView({
+    key,
+    heardShift: audio.effectiveShift,
+    engineAvailable: audio.keyShiftAvailable,
+    editMode: pitchAnalysis.editMode,
+    detectedKey: pitchAnalysis.detectedKey,
+    notify: findKeyNotices.notify,
+  })
+  const phoneKeyBinding: KeyShiftBinding = {
+    ...keyView.binding,
+    notice: findKeyNotices.notice,
+    holdNotices: findKeyNotices.hold,
+  }
+  const displayNotes = keyView.createShownNotes(pitchAnalysis.editableNotes)
+  const displayBaseNotes = keyView.createShownNotes(pitchAnalysis.baseNotes)
+  const displayMidiNotes = keyView.createShownNotes(midiNotes)
+  const displaySegmentedNotes = keyView.createShownNotes(
+    pitchAnalysis.offlineSegmentedNotes,
+  )
+  const displayOfflineHistory = keyView.createShownReadings(
+    pitchAnalysis.offlinePitchHistory,
+  )
 
   const closePitchTools = (): void => {
     pitchAnalysis.setPanelOpen(false)
@@ -1414,7 +1521,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       preferDenoised: useDenoised(),
       segmentedNotes,
       mergedNotes,
-      realtimePitchHistory: audio.getPitchHistory(),
+      // Kept as heard; the alignment works in the song's own key, and the
+      // glyphs are moved back for display.
+      realtimePitchHistory: transposePitchReadings(
+        audio.getPitchHistory(),
+        -untrack(audio.effectiveShift),
+      ),
     })
 
     if (merged.length === 0) {
@@ -1442,6 +1554,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     )
     return computeAlignment(merged, segments)
   })
+  const displayAlignedWords = keyView.createShownWords(
+    () => alignmentResult().alignedWords,
+  )
 
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
@@ -1452,18 +1567,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     vocal,
     getPitchHistory: () =>
       pitchAnalysis.pitchSourceMode() === 'offline'
-        ? pitchAnalysis.offlinePitchHistory()
+        ? displayOfflineHistory()
         : audio.getPitchHistory(),
     getMicPitchHistory: mic.getMicPitchHistory,
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
-    midiNotes,
+    midiNotes: displayMidiNotes,
     showNoteLabels,
     showLyricLabels,
     showMicLine,
     showUserNoteLabels,
     showScoreDiffBars,
-    alignedWords: () => alignmentResult().alignedWords,
+    alignedWords: displayAlignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
@@ -1484,8 +1599,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     },
     // Pitch edit mode
     editMode: pitchAnalysis.editMode,
-    editableNotes: pitchAnalysis.editableNotes,
-    baseNotes: pitchAnalysis.baseNotes,
+    editableNotes: displayNotes,
+    baseNotes: displayBaseNotes,
     pitchView: pitchAnalysis.pitchView,
     selectedNoteId: pitchAnalysis.selectedNoteId,
     onSelectNote: pitchAnalysis.setSelectedNoteId,
@@ -1587,7 +1702,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Melody audition synth ──────────────────────────────────────
   const melodyAudition = useStemMixerMelodyAuditionController({
     audio,
-    pitchAnalysis,
+    pitchAnalysis: { offlineSegmentedNotes: displaySegmentedNotes },
   })
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
@@ -1907,6 +2022,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         activeTab() === TAB_KARAOKE || isStandaloneKaraokeSurface(),
       speed: audio.speed,
       setSpeed: audio.setSpeed,
+      keyShift: key.keyShift,
+      setKeyShift: key.setKeyShift,
+      findMyKey: key.findMyKey,
+      keyShiftDisabledReason: keyView.binding.disabledReason,
       loop: {
         enabled: audio.loopEnabled,
         setEnabled: audio.setLoopEnabled,
@@ -2119,6 +2238,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           untimedCount: lyricsLines().length,
           duration: audio.duration(),
         }),
+      key: phoneKeyBinding,
     })
 
     // Load cached data from IndexedDB in parallel:
@@ -2143,26 +2263,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     canvas.initObserver()
     canvas.queueCanvasRedraw()
 
-    // Offer the mixer tour once — but not mid-playlist, where the focus is
-    // singing, not learning the UI.
-    if (!playlist.isPlaylistActive()) {
-      props.onOfferTour?.('mount')
-    }
+    // The import and score dialogs, and any dialog, menu or listbox holding
+    // the focus, keep their own keys. Without this the score dialog's
+    // keep-or-close decision had Space restart playback and the letter
+    // shortcuts change the mixer behind it.
+    const layerAboveOwnsKeys = (target: EventTarget | null): boolean =>
+      props.importOpen?.() === true ||
+      scoreModalOpen() ||
+      isInsideOverlay(target)
 
-    // Keyboard shortcuts
+    // Space plays and pauses from anywhere on the mixer, as in every room
+    // (space-playback.ts): a focused button does not take it, a select or a
+    // text field does.
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: () => {
+          if (audio.playing()) audio.handlePause()
+          else audio.handlePlay()
+        },
+        ownsSpace: () => !layerAboveOwnsKeys(document.activeElement),
+        enabled: () => !audio.loading() && audio.loadError() === '',
+      }),
+    )
+
+    // Letter shortcuts. Not while typing, and not in a modifier chord:
+    // Ctrl+S saves the page, it does not seek.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (props.importOpen?.() === true) return
-      // The score dialog owns keyboard input while it is open. Without this
-      // guard Space restarted playback and letter shortcuts mutated the mixer
-      // behind the singer's keep-or-close decision.
-      if (scoreModalOpen()) return
-
-      // Ignore when typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      )
-        return
+      if (layerAboveOwnsKeys(e.target) || isTypingTarget(e.target)) return
+      if (e.ctrlKey || e.metaKey || e.altKey) return
 
       if (lrcGenMode() && lrcGenInputMode() === 'tap') {
         if (e.key === 'w' || e.key === 'W') {
@@ -2177,16 +2305,6 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         }
       }
 
-      if (e.code === 'Space') {
-        e.preventDefault()
-        if (audio.loading() || audio.loadError()) return
-        if (audio.playing()) {
-          audio.handlePause()
-        } else {
-          audio.handlePlay()
-        }
-      }
-
       if (e.key === 'm' || e.key === 'M') {
         if (layout.workspaceLayout() === 'fixed-2col') {
           layout.setSidebarHidden((prev) => !prev)
@@ -2197,22 +2315,23 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       // L = toggle loop
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault()
-        audio.setLoopStart(audio.elapsed())
+        applyLoopPoint('A', audio.elapsed())
       }
       if (e.key === 'b' || e.key === 'B') {
         e.preventDefault()
-        audio.setLoopEnd(audio.elapsed())
-        audio.setLoopEnabled(true)
+        applyLoopPoint('B', audio.elapsed())
       }
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault()
-        if (audio.loopEnabled() && audio.loopStart() > 0) {
-          audio.seekTo(audio.loopStart())
+        const loopStart = audio.loopStart()
+        if (audio.loopEnabled() && loopStart !== null) {
+          audio.seekTo(loopStart)
         }
       }
       if (e.key === 'l' || e.key === 'L') {
         e.preventDefault()
-        audio.setLoopEnabled((prev) => !prev)
+        const ready = hasPlayableLoop(audio.loopStart(), audio.loopEnd())
+        audio.setLoopEnabled((on) => !on && ready)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -2285,15 +2404,20 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
 
   // Zen note glyphs asked for notes with no analysis present — run the
   // denoised pipeline once; the alignment (and the glyphs) follow reactively.
+  //
+  // The stage is handed this only while calling it would start an analysis. A
+  // streamed vocal cannot be analysed on this device (phones stream), and once
+  // the analysis has its notes there is nothing left to ask for: a song with no
+  // word segments has no notes to draw, and a tap would do nothing.
+  const canFindZenNotes = (): boolean =>
+    !vocalIsStreamed() &&
+    pitchAnalysis.offlineSegmentedNotes().length === 0 &&
+    pitchAnalysis.offlineMergedNotes().length === 0
   const ensureZenNotes = () => {
     // Nobody asked for this one — the glyph toggle did — so it stays quiet
     // rather than toasting a limitation at a singer who was reaching for a
     // switch. The glyphs simply have nothing to draw.
-    if (vocalIsStreamed()) return
-    const hasNotes =
-      pitchAnalysis.offlineSegmentedNotes().length > 0 ||
-      pitchAnalysis.offlineMergedNotes().length > 0
-    if (!hasNotes && !pitchAnalysis.isAnalyzing()) {
+    if (canFindZenNotes() && !pitchAnalysis.isAnalyzing()) {
       void pitchAnalysis.runAnalysis()
     }
   }
@@ -2348,6 +2472,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         /* */
       })
     }
+    // Closing takes the nodes with it, but not the key graph's timers.
+    audio.detachGraph()
   })
 
   const handleKeepKaraokeVoiceTake = (): void => {
@@ -2376,6 +2502,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       props.onPickSession?.(nextLibrarySessionId)
     }
   }
+
+  // "Find my key" opens it from either stage.
+  const voiceTypePicker = () => (
+    <VoiceTypePicker
+      open={key.voiceTypePickerOpen()}
+      onPick={keyView.pickVoiceType}
+      onCancel={key.closeVoiceTypePicker}
+    />
+  )
 
   // ── Render ───────────────────────────────────────────────────
   return (
@@ -2437,8 +2572,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onSongPickerQuery={setSongPickerQuery}
             onSongPickerRefine={() => void handleSongPickerRefine()}
             onSongPick={(m) => void handleSongPick(m)}
-            alignedWords={() => alignmentResult().alignedWords}
-            onEnsureNotes={ensureZenNotes}
+            alignedWords={displayAlignedWords}
+            onEnsureNotes={canFindZenNotes() ? ensureZenNotes : undefined}
             notesAnalyzing={pitchAnalysis.isAnalyzing}
             notesProgress={pitchAnalysis.progress}
             micActive={mic.micActive}
@@ -2451,7 +2586,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onMusicLevel={audio.setMusicLevel}
             musicLevelRange={audio.musicLevelRange}
             micPitch={mic.micPitch}
-            ribbonNotes={pitchAnalysis.editableNotes}
+            ribbonNotes={displayNotes}
+            // Hosted, the key is a row in the room's options instead.
+            keyControl={hosted ? undefined : phoneKeyBinding}
+            more={hosted ? undefined : phoneMore}
           />
           <StemMixerScoreModal
             showScore={mic.showScore}
@@ -2462,6 +2600,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onKeepVoiceTake={handleKeepKaraokeVoiceTake}
             onClose={handleScoreClose}
           />
+          {voiceTypePicker()}
         </>
       }
     >
@@ -2558,6 +2697,11 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
                   </div>
                 </Show>
               </div>
+            </div>
+            {/* The view settings sit on the title's line, so a header that
+                wraps keeps its actions on one row below them. */}
+            <div class="sm-header-view">
+              <MixerViewControls {...layout.viewControls} />
             </div>
             <div
               class="sm-header-actions"
@@ -2838,12 +2982,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onRestart={audio.handleRestart}
             onPlay={audio.handlePlay}
             onPause={audio.handlePause}
-            onSeek={handleSeek}
-            workspaceLayout={layout.workspaceLayout}
-            setWorkspaceLayout={layout.setWorkspaceLayout}
-            sidebarHidden={layout.sidebarHidden}
-            setSidebarHidden={layout.setSidebarHidden}
-            onQueueRedraw={() => canvas.queueCanvasRedraw()}
+            onSeek={(seconds) => audio.seekTo(seconds)}
+            view={layout.viewControls}
             micActive={mic.micActive}
             micError={mic.micError}
             onToggleMic={() => void mic.toggleMic()}
@@ -2854,6 +2994,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             formatTime={canvas.formatTime}
             speed={audio.speed}
             onSpeedChange={audio.setSpeed}
+            keyControl={keyView.binding}
             karaokeFocus={karaokeFocus}
             setKaraokeFocus={setKaraokeFocus}
             toolbarPosition={karaokeToolbarPosition}
@@ -2867,8 +3008,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             loopEnabled={audio.loopEnabled}
             loopStart={audio.loopStart}
             loopEnd={audio.loopEnd}
+            minimumLoopGap={audio.loopMinGap}
             onSetLoopA={() => applyLoopPoint('A', audio.elapsed())}
             onSetLoopB={() => applyLoopPoint('B', audio.elapsed())}
+            onMoveLoopPoint={(which, seconds) => applyLoopPoint(which, seconds)}
             onClearLoop={() => {
               audio.clearLoop()
               setLoopStartLyricIdx(null)
@@ -2882,7 +3025,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           />
 
           <Show
-            when={audio.loopEnabled() && audio.loopEnd() > 0 && mic.micActive()}
+            when={
+              audio.loopEnabled() && audio.loopEnd() !== null && mic.micActive()
+            }
           >
             <LoopMetricsBar
               comparisonData={mic.iterationComparisonData}
@@ -3199,59 +3344,16 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
           onConfirm={confirm.accept}
           onCancel={confirm.cancel}
         />
-        <Show when={loopMenu()}>
-          {(menu) => (
-            <>
-              <div
-                class="sm-loop-menu-backdrop"
-                onPointerDown={() => setLoopMenu(null)}
-                onContextMenu={(e) => {
-                  e.preventDefault()
-                  setLoopMenu(null)
-                }}
-              />
-              <div
-                class="sm-loop-menu"
-                style={{ left: `${menu().x}px`, top: `${menu().y}px` }}
-              >
-                <div class="sm-loop-menu-time">
-                  Loop point at {canvas.formatTime(menu().time)}
-                </div>
-                <button
-                  class="sm-loop-menu-item"
-                  onClick={() => {
-                    applyLoopPoint('A', menu().time)
-                    setLoopMenu(null)
-                  }}
-                >
-                  <span class="sm-loop-menu-dot sm-loop-menu-dot--a">A</span>
-                  Set loop start here
-                </button>
-                <button
-                  class="sm-loop-menu-item"
-                  onClick={() => {
-                    applyLoopPoint('B', menu().time)
-                    setLoopMenu(null)
-                  }}
-                >
-                  <span class="sm-loop-menu-dot sm-loop-menu-dot--b">B</span>
-                  Set loop end here
-                </button>
-                <Show when={audio.loopStart() > 0 || audio.loopEnd() > 0}>
-                  <button
-                    class="sm-loop-menu-item sm-loop-menu-item--clear"
-                    onClick={() => {
-                      clearLoopFromMenu()
-                      setLoopMenu(null)
-                    }}
-                  >
-                    Clear loop
-                  </button>
-                </Show>
-              </div>
-            </>
-          )}
-        </Show>
+        <LoopPointMenu
+          point={loopMenu()}
+          formatTime={canvas.formatTime}
+          hasLoop={audio.loopStart() !== null || audio.loopEnd() !== null}
+          onSetA={(time) => applyLoopPoint('A', time)}
+          onSetB={(time) => applyLoopPoint('B', time)}
+          onClear={clearLoopFromMenu}
+          onClose={() => setLoopMenu(null)}
+        />
+        {voiceTypePicker()}
       </div>
     </Show>
   )
@@ -3394,12 +3496,24 @@ export const StemMixerStyles: string = `
 /* Header */
 .sm-header {
   display: flex;
+  /* Wraps rather than overflows: a long song title beside the full set of
+     actions can outgrow any width, not only the tablet seam below. */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.55rem 0.75rem;
   padding: 0.875rem 1.25rem;
   background: var(--bg-primary, #0d1117);
   border-bottom: 1px solid var(--border, #30363d);
   flex-shrink: 0;
+}
+
+/* Layout and sidebar (MixerViewControls): pushed to the right, beside the
+   actions on a wide header and on the title's line when it wraps. */
+.sm-header-view {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 /* The app sidebar leaves the full mixer with a tablet-sized content column
@@ -6949,475 +7063,6 @@ export const StemMixerStyles: string = `
   min-height: 22rem;
 }
 
-/* Column toggle */
-.sm-col-toggle {
-  display: flex;
-  gap: 2px;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 0.3rem;
-  padding: 2px;
-  margin: 0 0.5rem;
-}
-.sm-col-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.25rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.2rem;
-  color: var(--fg-tertiary, #484f58);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.sm-col-btn:hover {
-  color: var(--fg-secondary, #8b949e);
-}
-.sm-col-active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-.sm-col-active:hover {
-  color: var(--on-accent, #0d1117);
-}
-
-/* Transport */
-.sm-transport {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: var(--bg-primary, #0d1117);
-  border-top: 1px solid var(--border, #30363d);
-  flex-shrink: 0;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-}
-
-.sm-transport-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-/* Docked Toolbar Styles */
-
-.sm-transport--docked-top {
-  order: -1;
-}
-
-.sm-transport--docked-bottom {
-  order: 999;
-}
-
-.sm-transport--docked-left {
-  order: -1;
-}
-
-.sm-transport--docked-right {
-  order: 999;
-}
-
-.sm-transport--vertical {
-  flex-direction: column;
-  padding: 1.25rem 0.5rem;
-  border-top: none;
-  border-right: 1px solid var(--border, #30363d);
-}
-
-.sm-transport--vertical.sm-transport--docked-right {
-  border-right: none;
-  border-left: 1px solid var(--border, #30363d);
-}
-
-.sm-transport--vertical .sm-transport-controls {
-  flex-direction: column;
-}
-
-/* Only rendered in focus mode, on the glass pill — quiet grip like the
-   practice ControlOverlay's: no block background, just a soft hover tint. */
-.sm-transport-drag-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: -0.375rem; /* Increase hit area without changing layout size */
-  cursor: grab;
-  color: var(--fg-muted, #8b949e);
-  background: transparent;
-  border-radius: 9px;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-  touch-action: none;
-  -webkit-touch-callout: none;
-}
-
-.sm-transport-drag-handle:hover {
-  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 10%, transparent);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-transport-drag-handle:active {
-  cursor: grabbing;
-}
-.sm-transport-drag-handle--open {
-  background: color-mix(in srgb, var(--accent, #58a6ff) 18%, transparent);
-  color: var(--accent, #58a6ff);
-}
-
-/* Click-to-dock compass — a gizmo of four direction arrows around a hub,
-   the current side highlighted. Faster than drag on desktop. */
-.sm-transport-dock {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.sm-dock-compass-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1001;
-}
-.sm-dock-compass {
-  position: absolute;
-  z-index: 1002;
-  display: grid;
-  grid-template-columns: repeat(3, 1.55rem);
-  grid-template-rows: repeat(3, 1.55rem);
-  place-items: center;
-  padding: 0.3rem;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.6rem;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
-  animation: sm-dock-compass-in 0.12s ease-out;
-}
-@keyframes sm-dock-compass-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-/* Position the popover away from whichever edge the bar is docked on, so it
-   opens toward the content, not off-screen. */
-.sm-dock-compass--bottom { bottom: calc(100% + 0.4rem); left: 0; }
-.sm-dock-compass--top { top: calc(100% + 0.4rem); left: 0; }
-.sm-dock-compass--left { left: calc(100% + 0.4rem); top: 0; }
-.sm-dock-compass--right { right: calc(100% + 0.4rem); top: 0; }
-.sm-dock-compass-btn {
-  grid-column: 2;
-  grid-row: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0.3rem;
-  color: var(--fg-secondary, #a8b3bf);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-.sm-dock-compass-btn--top { grid-row: 1; }
-.sm-dock-compass-btn--bottom { grid-row: 3; }
-.sm-dock-compass-btn--left { grid-column: 1; grid-row: 2; }
-.sm-dock-compass-btn--right { grid-column: 3; grid-row: 2; }
-.sm-dock-compass-btn:hover {
-  background: color-mix(in srgb, var(--accent, #58a6ff) 16%, transparent);
-  color: var(--fg-primary, #e6edf3);
-}
-.sm-dock-compass-btn--active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-}
-.sm-dock-compass-hub {
-  grid-column: 2;
-  grid-row: 2;
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 50%;
-  background: var(--border, #30363d);
-  pointer-events: none;
-}
-
-.sm-drag-overlay {
-  position: absolute;
-  background: var(--accent, #58a6ff);
-  opacity: 0.15;
-  pointer-events: none;
-  z-index: 1000;
-  transition: all 0.15s;
-}
-
-.sm-drag-overlay--top {
-  top: 0; left: 0; right: 0; height: 100px;
-}
-.sm-drag-overlay--bottom {
-  bottom: 0; left: 0; right: 0; height: 100px;
-}
-.sm-drag-overlay--left {
-  top: 0; bottom: 0; left: 0; width: 100px;
-}
-.sm-drag-overlay--right {
-  top: 0; bottom: 0; right: 0; width: 100px;
-}
-
-.sm-transport-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.sm-transport-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-/* Base loop icon styles */
-.sm-loop-icon circle {
-  fill: var(--bg-tertiary, #21262d);
-  stroke: var(--border, #30363d);
-  stroke-width: 1.5px;
-  transition: all 0.2s ease;
-}
-
-/* Hover effects */
-.sm-loop-icon-a:hover circle {
-  stroke: var(--accent, #58a6ff);
-  fill: rgba(88, 166, 255, 0.1);
-}
-.sm-loop-icon-a:hover text {
-  fill: var(--accent, #58a6ff);
-}
-.sm-icon-btn.sm-loop-icon-a text {
-  fill: var(--fg-secondary, #8b949e);
-  transition: all 0.2s ease;
-}
-
-.sm-loop-icon-b:hover circle {
-  stroke: #ff7b72;
-  fill: rgba(255, 123, 114, 0.1);
-}
-.sm-loop-icon-b:hover text {
-  fill: #ff7b72;
-}
-.sm-icon-btn.sm-loop-icon-b text {
-  fill: var(--fg-secondary, #8b949e);
-  transition: all 0.2s ease;
-}
-
-/* Active effects */
-.sm-loop-btn--a-set.sm-loop-icon-a text {
-  fill: #0d1117 !important;
-}
-.sm-loop-btn--a-set.sm-loop-icon-a circle {
-  fill: var(--accent, #58a6ff);
-  stroke: var(--accent, #58a6ff);
-}
-
-.sm-loop-btn--b-set.sm-loop-icon-b text {
-  fill: #0d1117 !important;
-}
-.sm-loop-btn--b-set.sm-loop-icon-b circle {
-  fill: #ff7b72;
-  stroke: #ff7b72;
-}
-
-.sm-icon-btn svg.sm-loop-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.sm-icon-btn svg {
-  width: 1.2rem;
-  height: 1.2rem;
-}
-
-.sm-transport-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-icon-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  color: var(--fg-secondary, #8b949e);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  transition: all 0.15s;
-}
-
-.sm-icon-btn:hover:not(:disabled) {
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-transport-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.sm-transport-play {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: var(--accent, #58a6ff);
-  border-color: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  border-radius: 50%;
-}
-
-.sm-transport-play:hover:not(:disabled) {
-  opacity: 0.85;
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-zoom-control {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin: 0 0.5rem;
-}
-
-.sm-zoom-btn {
-  width: 1.35rem;
-  height: 1.35rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border-primary, #30363d);
-  color: var(--fg-secondary, #8b949e);
-  border-radius: 0.25rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  line-height: 1;
-  padding: 0;
-}
-
-.sm-zoom-btn:hover {
-  background: var(--bg-secondary, #161b22);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-zoom-value {
-  font-size: 0.65rem;
-  color: var(--fg-tertiary, #484f58);
-  font-family: monospace;
-  min-width: 28px;
-  text-align: center;
-}
-
-.sm-speed-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.3rem;
-  color: var(--fg-secondary, #8b949e);
-  font-size: 0.65rem;
-  font-family: monospace;
-  padding: 0 0.4rem;
-  text-align: center;
-  text-align-last: center;
-  cursor: pointer;
-  margin: 0 0.3rem;
-  height: 1.75rem;
-}
-.sm-speed-select:hover {
-  border-color: var(--fg-tertiary, #484f58);
-}
-.sm-speed-select:focus {
-  outline: none;
-  border-color: var(--accent, #58a6ff);
-}
-
-.sm-progress-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.sm-time {
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #484f58);
-  font-family: monospace;
-  min-width: 32px;
-  flex-shrink: 0;
-}
-
-.sm-time:last-child {
-  text-align: right;
-}
-
-.sm-progress-bar {
-  flex: 1;
-  height: 0.35rem;
-  background: var(--bg-tertiary, #21262d);
-  border-radius: 0.2rem;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.sm-progress-bar:hover {
-  height: 0.5rem;
-}
-
-.sm-progress-fill {
-  height: 100%;
-  background: var(--accent, #58a6ff);
-  border-radius: 0.2rem;
-  transition: width 0.1s linear;
-}
-
-/* Loop range highlight on progress bar */
-.sm-progress-loop {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  background: rgba(88, 166, 255, 0.25);
-  border-left: 1px solid rgba(88, 166, 255, 0.5);
-  border-right: 1px solid rgba(88, 166, 255, 0.5);
-  pointer-events: none;
-}
-
-/* Loop A/B buttons */
-.sm-loop-btn--a-set {
-  color: var(--accent, #58a6ff) !important;
-}
-
-.sm-loop-btn--b-set {
-  color: #d2a8ff !important;
-}
-
-/* Loop toggle active state */
-.sm-loop-toggle--active {
-  color: var(--accent, #58a6ff) !important;
-}
-
 /* Loop metrics bar (appears above transport when loop is active) */
 .sm-loop-metrics {
   display: flex;
@@ -7439,126 +7084,14 @@ export const StemMixerStyles: string = `
   color: var(--accent, #58a6ff);
 }
 
-/* Mic toggle button */
-.sm-mic-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 0.5rem;
-}
-
-.sm-mic-toggle-btn svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-mic-toggle-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-mic-toggle-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sm-mic-toggle-btn--active {
-  background: var(--accent, #58a6ff);
-  border-color: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  animation: sm-mic-pulse 1.5s ease-in-out infinite;
-}
-
-.sm-mic-toggle-btn--active:hover:not(:disabled) {
-  opacity: 0.85;
-  color: var(--on-accent, #0d1117);
-}
-
-.sm-mic-toggle-btn--error {
-  background: var(--danger, #da3633);
-  border-color: var(--danger, #da3633);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-@keyframes sm-mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
-  50% { box-shadow: 0 0 0 4px rgba(88, 166, 255, 0); }
-}
-
-/* Score modal overlay */
-/* Waveform/pitch right-click loop menu */
-.sm-loop-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 199;
-}
-.sm-loop-menu {
-  position: fixed;
-  z-index: 200;
-  min-width: 190px;
-  padding: 0.3rem;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: sm-loop-menu-in 0.1s ease-out;
-}
+/* The lyrics version menu's entrance (.sm-lyrics-version-menu). It began as
+   the waveform loop menu's, which is LoopPointMenu now. */
 @keyframes sm-loop-menu-in {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
 }
-.sm-loop-menu-time {
-  padding: 0.35rem 0.55rem 0.45rem;
-  font-size: 0.7rem;
-  color: var(--fg-tertiary, #8b949e);
-  border-bottom: 1px solid var(--border, #30363d);
-  margin-bottom: 0.25rem;
-  font-variant-numeric: tabular-nums;
-}
-.sm-loop-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.45rem 0.55rem;
-  background: none;
-  border: none;
-  border-radius: 0.35rem;
-  color: var(--fg-primary, #e6edf3);
-  font-size: 0.82rem;
-  text-align: left;
-  cursor: pointer;
-}
-.sm-loop-menu-item:hover {
-  background: var(--bg-tertiary, #21262d);
-}
-.sm-loop-menu-item--clear {
-  color: var(--fg-secondary, #a8b3bf);
-}
-.sm-loop-menu-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--on-accent, #0d1117);
-  flex-shrink: 0;
-}
-.sm-loop-menu-dot--a { background: #58a6ff; }
-.sm-loop-menu-dot--b { background: #ff7b72; }
 
+/* Score modal overlay */
 .sm-mic-score-overlay {
   position: absolute;
   inset: 0;
@@ -7865,44 +7398,6 @@ export const StemMixerStyles: string = `
   opacity: 0;
 }
 
-/* Sidebar toggle button */
-.sm-sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  background: var(--bg-tertiary, #21262d);
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.4rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  transition: all 0.15s;
-  margin: 0 0.5rem;
-}
-
-.sm-sidebar-toggle svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
-.sm-sidebar-toggle:hover {
-  background: var(--bg-hover, #30363d);
-  color: var(--fg-primary, #c9d1d9);
-}
-
-.sm-sidebar-toggle--active {
-  background: var(--accent, #58a6ff);
-  color: var(--on-accent, #0d1117);
-  border-color: var(--accent, #58a6ff);
-}
-
-.sm-sidebar-toggle--active:hover {
-  background: var(--accent-hover, #79c0ff);
-  color: var(--on-accent, #0d1117);
-}
-
 /* ── Lyrics finder: LRCLIB search picker (glass) ──────────────────
    Shared by the studio panel and the zen stage. Accent tracks the ambient
    theme (blue in the studio); the zen stage sets --lyf-accent to its purple.
@@ -7945,7 +7440,8 @@ export const StemMixerStyles: string = `
   min-width: 0;
   height: 44px;
   padding: 0 0.9rem;
-  font-size: 0.95rem;
+  /* 16 px: iOS zooms the page into any field set smaller on focus. */
+  font-size: 1rem;
   font-family: inherit;
   color: var(--fg-primary, #e6edf3);
   background: var(--lyf-surface);

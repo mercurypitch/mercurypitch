@@ -37,6 +37,19 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return false
 }
 
+// A dialog, an open menu or a listbox handles its own keys: Escape closes it,
+// Space and Enter work its controls, letters may jump between its rows.
+const OVERLAY_SELECTOR =
+  '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'
+
+/**
+ * True when `target` sits in a dialog, menu or listbox. A page-wide shortcut
+ * leaves such a key alone: the layer on top answers it first.
+ */
+export function isInsideOverlay(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(OVERLAY_SELECTOR) !== null
+}
+
 export interface SpacePlaybackOptions {
   /** Toggle play/pause. Called once per discrete, unmodified Space press. */
   toggle: () => void

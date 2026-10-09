@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { matchVoiceCommand } from '@/features/voice-control/command-grammar'
+import { LOOP_MIN_GAP } from './loop-points'
 import type { StemMixerVoiceDeps, StemMixerVoiceTrack, } from './stem-mixer-voice-commands'
 import { createStemMixerVoiceCommands } from './stem-mixer-voice-commands'
+import type { FindMyKeyResult } from './useStemMixerKeyController'
 
 interface Fixture {
   deps: StemMixerVoiceDeps
@@ -9,19 +11,28 @@ interface Fixture {
   seekedTo: () => number | null
   track: (label: string) => StemMixerVoiceTrack
   setPlaying: (v: boolean) => void
+  /** The song's length in seconds; 0 is a song that has not loaded yet. */
+  setDuration: (seconds: number) => void
   setPlaylistActive: (v: boolean) => void
+  setKey: (semitones: number) => void
+  setFindResult: (result: FindMyKeyResult) => void
+  setKeyDisabled: (reason: string | undefined) => void
 }
 
 function makeFixture(): Fixture {
   const calls: string[] = []
   let playing = false
+  let duration = 200
   let playlistActive = false
   let seekedTo: number | null = null
   let speed = 1
   let loopEnabled = false
-  let loopStart = 0
-  let loopEnd = 0
+  let loopStart: number | null = null
+  let loopEnd: number | null = null
   let songsOpen = false
+  let keyShift = 0
+  let findResult: FindMyKeyResult = 'applied'
+  let keyDisabledReason: string | undefined
   const tracks: StemMixerVoiceTrack[] = [
     { label: 'Vocal', muted: false, soloed: false, volume: 0.8 },
     { label: 'Instrumental', muted: true, soloed: false, volume: 0.8 },
@@ -37,7 +48,7 @@ function makeFixture(): Fixture {
   const deps: StemMixerVoiceDeps = {
     playing: () => playing,
     elapsed: () => 30,
-    duration: () => 200,
+    duration: () => duration,
     play: () => {
       calls.push('play')
       playing = true
@@ -88,8 +99,8 @@ function makeFixture(): Fixture {
       clear: () => {
         calls.push('loop:clear')
         loopEnabled = false
-        loopStart = 0
-        loopEnd = 0
+        loopStart = null
+        loopEnd = null
       },
     },
     playlist: {
@@ -102,6 +113,18 @@ function makeFixture(): Fixture {
         return true
       },
     },
+    keyShift: () => keyShift,
+    setKeyShift: (semitones) => {
+      calls.push(`key:${String(semitones)}`)
+      keyShift = semitones
+    },
+    // The controller's own: a known range moves the key to the fit.
+    findMyKey: () => {
+      calls.push('findMyKey')
+      if (findResult === 'applied') keyShift = -3
+      return findResult
+    },
+    keyShiftDisabledReason: () => keyDisabledReason,
     songsSidebar: {
       isOpen: () => songsOpen,
       open: () => {
@@ -123,8 +146,20 @@ function makeFixture(): Fixture {
     setPlaying: (v) => {
       playing = v
     },
+    setDuration: (seconds) => {
+      duration = seconds
+    },
     setPlaylistActive: (v) => {
       playlistActive = v
+    },
+    setKey: (semitones) => {
+      keyShift = semitones
+    },
+    setFindResult: (result) => {
+      findResult = result
+    },
+    setKeyDisabled: (reason) => {
+      keyDisabledReason = reason
     },
   }
 }
@@ -155,6 +190,15 @@ describe('stem mixer voice commands — transport', () => {
     expect(fixture.seekedTo()).toBe(60)
     expect(fire(fixture, 'go to the middle')).toBe('Go to the middle')
     expect(fixture.seekedTo()).toBe(100)
+  })
+
+  it.each([
+    ['119.6', '2:00'],
+    ['59.4', '59s'],
+    ['59.6', '1:00'],
+  ])('reads "go to %s seconds" back as %s', (spoken, read) => {
+    const fixture = makeFixture()
+    expect(fire(fixture, `go to ${spoken} seconds`)).toBe(`Go to ${read}`)
   })
 
   it('restarts from the top and resumes playback', () => {
@@ -217,6 +261,94 @@ describe('stem mixer voice commands — loop and speed', () => {
     )
   })
 
+  it('refuses a range that starts at or past the end of the song, says where it ends, and changes nothing', () => {
+    const fixture = makeFixture()
+    // A loop already playing: a refused range must not take it away.
+    fixture.deps.loop.setStart(20)
+    fixture.deps.loop.setEnd(60)
+    fixture.deps.loop.setEnabled(true)
+
+    // The song is 200 s. Both ends clamp to its end, a loop of no length.
+    expect(fire(fixture, 'loop from 200 to 300')).toBe('The song ends at 3:20')
+    expect(fire(fixture, 'loop from 250 to 300')).toBe('The song ends at 3:20')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([20, 60, true])
+    expect(fixture.seekedTo()).toBeNull()
+    expect(fixture.calls).toEqual([])
+  })
+
+  // The reply reads the song's length to the nearest second: half a second
+  // under three minutes is three minutes, not "2:60", and under a minute it
+  // reads in seconds up to the one that rounds to a minute, not "60s".
+  it.each([
+    [179.5, '3:00'],
+    [59.4, '59s'],
+    [59.6, '1:00'],
+  ])('says a %s s song ends at %s', (seconds, spoken) => {
+    const fixture = makeFixture()
+    fixture.setDuration(seconds)
+    expect(fire(fixture, 'loop from 200 to 300')).toBe(
+      `The song ends at ${spoken}`,
+    )
+  })
+
+  it('refuses a span the clock would not play, whether the song cut it short or the range was that short', () => {
+    const fixture = makeFixture()
+    fixture.deps.loop.setStart(20)
+    fixture.deps.loop.setEnd(60)
+    fixture.deps.loop.setEnabled(true)
+
+    // From 199.95 the song leaves 0.05 s: past the end the range clamps to
+    // 200, a span shorter than the loop gap.
+    expect(fire(fixture, 'loop from 199.95 to 300')).toBe(
+      'Loop end must be at least 0.1 s after its start',
+    )
+    // And a range the singer said that short, well inside the song.
+    expect(fire(fixture, 'loop from 20 to 20.05')).toBe(
+      'Loop end must be at least 0.1 s after its start',
+    )
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([20, 60, true])
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('still loops a range that runs past the end, from where it starts to the end of the song', () => {
+    const fixture = makeFixture()
+
+    expect(fire(fixture, 'loop from 150 to 300')).toBe('Loop 150s to 300s')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([150, 200, true])
+    expect(fixture.seekedTo()).toBe(150)
+    expect(fixture.calls).toContain('play')
+  })
+
+  it('says nothing is loaded for a loop range before the song has a length, as the other time commands do', () => {
+    const fixture = makeFixture()
+    fixture.setDuration(0)
+
+    expect(fire(fixture, 'loop from 20 to 60')).toBe('Nothing loaded')
+    expect(fire(fixture, 'go to one minute')).toBe('Nothing loaded')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([null, null, false])
+    expect(fixture.calls).toEqual([])
+  })
+
   it('sets loop points at the playhead and toggles', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'set a')).toBe('Loop A set')
@@ -226,6 +358,82 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'clear loop')).toBe('Loop cleared')
   })
 
+  it('toggles the loop on only once A and B make one, and off always', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+    // A alone would loop from A to the song's end; the Loop button and L wait
+    // for B, and so does the spoken toggle.
+    expect(fire(fixture, 'toggle loop')).toBe('Set A and B first')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+
+    fixture.deps.loop.setEnd(45)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop on')
+    expect(fixture.deps.loop.enabled()).toBe(true)
+    expect(fire(fixture, 'toggle loop')).toBe('Loop off')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('turns the loop on for the shortest loop a marker leaves, and not for a span too short to play', () => {
+    const fixture = makeFixture()
+    // 0.7 s and 0.7 s + the gap are a hair under the gap apart in floating
+    // point, and a loop the clock plays.
+    fixture.deps.loop.setStart(0.7)
+    fixture.deps.loop.setEnd(0.7 + LOOP_MIN_GAP)
+
+    expect(fire(fixture, 'loop on')).toBe('Loop on')
+    expect(fire(fixture, 'toggle loop')).toBe('Loop off')
+    expect(fire(fixture, 'toggle loop')).toBe('Loop on')
+
+    fixture.deps.loop.setEnabled(false)
+    fixture.deps.loop.setEnd(0.75)
+    expect(fire(fixture, 'loop on')).toBe('Set A and B first')
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('takes B away when A is set on it or just before it, where the buttons refuse the point', () => {
+    const fixture = makeFixture()
+    // The playhead is at 30 s.
+    fixture.deps.loop.setEnd(30.05)
+    fixture.deps.loop.setEnabled(true)
+
+    expect(fire(fixture, 'set a')).toBe('Loop A set. B cleared')
+
+    expect(fixture.deps.loop.start()).toBe(30)
+    expect(fixture.deps.loop.end()).toBeNull()
+    expect(fixture.deps.loop.enabled()).toBe(false)
+  })
+
+  it('says B is cleared when A is set exactly on it, or after it', () => {
+    // The playhead is at 30 s: B on it, and B back at 12 s.
+    for (const end of [30, 12]) {
+      const fixture = makeFixture()
+      fixture.deps.loop.setEnd(end)
+      fixture.deps.loop.setEnabled(true)
+
+      expect(fire(fixture, 'set a')).toBe('Loop A set. B cleared')
+
+      expect([
+        fixture.deps.loop.start(),
+        fixture.deps.loop.end(),
+        fixture.deps.loop.enabled(),
+      ]).toEqual([30, null, false])
+    }
+  })
+
+  it('keeps B when A is set clear of it', () => {
+    const fixture = makeFixture()
+    fixture.deps.loop.setEnd(45)
+    fixture.deps.loop.setEnabled(true)
+
+    expect(fire(fixture, 'set a')).toBe('Loop A set')
+
+    expect([
+      fixture.deps.loop.start(),
+      fixture.deps.loop.end(),
+      fixture.deps.loop.enabled(),
+    ]).toEqual([30, 45, true])
+  })
+
   it('steps and sets the mixer speed with the multiplier rule', () => {
     const fixture = makeFixture()
     expect(fire(fixture, 'faster')).toBe('Speed 1.5x')
@@ -233,6 +441,70 @@ describe('stem mixer voice commands — loop and speed', () => {
     expect(fire(fixture, 'half speed')).toBe('Speed 0.5x')
     expect(fire(fixture, '10 x')).toBe('Speed 2x')
     expect(fire(fixture, 'speed 75 percent')).toBe('Speed 0.75x')
+  })
+})
+
+describe('stem mixer voice commands — key', () => {
+  it('steps the key a semitone at a time and stops at ±6, saying so', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'key up')).toBe('Key +1')
+    expect(fire(fixture, 'raise the key')).toBe('Key +2')
+    expect(fire(fixture, 'lower the key')).toBe('Key +1')
+    expect(fire(fixture, 'down a semitone')).toBe('Key 0')
+
+    fixture.setKey(6)
+    expect(fire(fixture, 'key up')).toBe('Key already +6, the highest')
+    expect(fixture.deps.keyShift()).toBe(6)
+    fixture.setKey(-6)
+    expect(fire(fixture, 'key down')).toBe('Key already \u22126, the lowest')
+    expect(fixture.deps.keyShift()).toBe(-6)
+    expect(fixture.calls).toEqual(['key:1', 'key:2', 'key:1', 'key:0'])
+  })
+
+  it('goes back to the original key', () => {
+    const fixture = makeFixture()
+    fixture.setKey(-2)
+
+    expect(fire(fixture, 'original key')).toBe('Original key')
+    expect(fixture.deps.keyShift()).toBe(0)
+    expect(fire(fixture, 'back to the original key')).toBe(
+      'Already in the original key',
+    )
+  })
+
+  it('finds my key, or says what it needs first', () => {
+    const fixture = makeFixture()
+    expect(fire(fixture, 'find my key')).toBe('Key \u22123')
+
+    fixture.setFindResult('needs-range')
+    expect(fire(fixture, 'find my key')).toBe('Pick your voice type')
+    fixture.setFindResult('detecting')
+    expect(fire(fixture, 'find my key')).toBe('Finding the melody first')
+    fixture.setFindResult('no-melody')
+    expect(fire(fixture, 'find my key')).toBe(
+      'The melody cannot be found on this device',
+    )
+    fixture.setFindResult('reading-range')
+    expect(fire(fixture, 'find my key')).toBe('Finding your key')
+  })
+
+  it('says why the key cannot change, and changes nothing', () => {
+    const fixture = makeFixture()
+    fixture.setKeyDisabled('Pitch Studio plays the original key')
+
+    expect(fire(fixture, 'key up')).toBe('Pitch Studio plays the original key')
+    expect(fire(fixture, 'find my key')).toBe(
+      'Pitch Studio plays the original key',
+    )
+    expect(fixture.deps.keyShift()).toBe(0)
+    expect(fixture.calls).toEqual([])
+  })
+
+  it('leaves "keys up" to the piano stem', () => {
+    const fixture = makeFixture()
+
+    expect(fire(fixture, 'keys up')).toBe('No piano stem in this mix')
+    expect(fixture.deps.keyShift()).toBe(0)
   })
 })
 

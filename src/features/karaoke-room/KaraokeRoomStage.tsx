@@ -744,6 +744,7 @@ export const KaraokeRoomStage: Component = () => {
         hasNotes={hasNotes}
         musicPercent={musicPercent}
         onResetMusicLevel={() => mixer()?.resetMusicLevel()}
+        keyControl={() => mixer()?.key ?? null}
         onAllSettings={() => nativeShellApi()?.pushSettings()}
         songsRow={() =>
           KARAOKE_IMPORT ? songsOptionRow(karaokeSongs()) : null

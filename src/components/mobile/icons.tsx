@@ -136,24 +136,6 @@ export const NextIcon: Component<IconProps> = (props) => (
   </svg>
 )
 
-/** Autoplay — an infinity loop (keep playing, song after song). */
-export const AutoplayIcon: Component<IconProps> = (props) => (
-  <svg
-    viewBox="0 0 24 24"
-    width={props.size ?? 18}
-    height={props.size ?? 18}
-    class={props.class}
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M7 9a3 3 0 0 0 0 6c1.7 0 2.8-1.4 5-3s3.3-3 5-3a3 3 0 0 1 0 6c-1.7 0-2.8-1.4-5-3S8.7 9 7 9z" />
-  </svg>
-)
-
 /** Microphone — classic capsule (toggle the singer's mic + pitch coach). */
 export const MicIcon: Component<IconProps> = (props) => (
   <svg
@@ -171,25 +153,6 @@ export const MicIcon: Component<IconProps> = (props) => (
     <rect x="9" y="3" width="6" height="11" rx="3" />
     <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0" />
     <path d="M12 18v3" />
-  </svg>
-)
-
-/** Note glyph — an eighth note (toggle the sing-this-note labels). */
-export const NoteGlyphIcon: Component<IconProps> = (props) => (
-  <svg
-    viewBox="0 0 24 24"
-    width={props.size ?? 18}
-    height={props.size ?? 18}
-    class={props.class}
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="8.5" cy="17.5" r="3" />
-    <path d="M11.5 17.5V5.5l7-1.8v4.1l-7 1.8" />
   </svg>
 )
 
@@ -212,25 +175,6 @@ export const MusicLevelIcon: Component<IconProps> = (props) => (
     <path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4z" />
     <path d="M16 9.4a3.6 3.6 0 010 5.2" />
     <path d="M18.6 6.6a7.2 7.2 0 010 10.8" />
-  </svg>
-)
-
-/** Text size — a small and a large "A" (cycle the lyrics size presets). */
-export const TextSizeIcon: Component<IconProps> = (props) => (
-  <svg
-    viewBox="0 0 24 24"
-    width={props.size ?? 18}
-    height={props.size ?? 18}
-    class={props.class}
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M3 17l3.2-8L9.4 17M4.2 14.2h4.4" />
-    <path d="M12 19L16 7l4 12M13.4 15h5.2" />
   </svg>
 )
 

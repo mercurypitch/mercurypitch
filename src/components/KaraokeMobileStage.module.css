@@ -39,8 +39,12 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px 6px;
+  /* 44 px buttons (the touch rule; they were 38) and gaps tightened to pay
+     for them. Back, the picture, More and the song list leave a 360 px
+     phone 144 px for the title (it had 38 beside six buttons): text size,
+     the notes and autoplay are in More. */
+  gap: 6px;
+  padding: 10px 10px 6px;
   flex-shrink: 0;
 }
 
@@ -48,8 +52,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -68,8 +72,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -90,10 +94,18 @@
    instead of crowding the buttons), which left the group stranded mid-header
    with a third of the column empty beside it. `margin-left: auto` is the half
    that does not depend on the title's width. */
+/* The stage picker's round trigger, 44 px here at every width: its own CSS
+   makes it 44 only up to 768 px, and a phone on its side is wider. */
+.headerPicker > button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   flex: none;
   margin-left: auto;
 }
@@ -102,8 +114,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: none;
   border-radius: 50%;
@@ -119,12 +131,6 @@
 
 .autoplayBtn:active {
   transform: scale(0.94);
-}
-
-/* On: filled with the stage's purple accent so the state reads at a glance. */
-.autoplayBtnOn {
-  background: rgba(201, 162, 255, 0.92);
-  color: #1c0f2e;
 }
 
 .titleWrap {
@@ -439,7 +445,7 @@
   align-items: center;
   gap: 0.6rem;
   margin: 0.1rem 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(244, 236, 255, 0.42);
@@ -636,8 +642,8 @@
   height: 44px;
 }
 
-/* Your mic — the same glass circle as the header toggles, transport-sized.
-   On: filled with the stage's purple accent, matching .autoplayBtnOn. */
+/* Your mic — the same glass circle as the header's buttons, transport-sized.
+   On: filled with the stage's purple accent, as the key button is. */
 .micBtn {
   display: inline-flex;
   align-items: center;
@@ -700,6 +706,87 @@
   --pill-base-color: rgba(244, 236, 255, 0.72);
 }
 
+/* The singer's key: the right slot's one control, the same glass circle as
+   the mic opposite. It opens the key sheet; the stepper lives there. */
+.keyBtn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.keyBtn:active {
+  transform: scale(0.92);
+}
+
+/* Moved off the song's own key: lit, like the mic when it is live. */
+.keyBtnOn {
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+}
+
+.keyBtnCaption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.keyBtnValue {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.keySheetBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 4px 12px;
+  color: #f4ecff;
+}
+
+.keySheetNote {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(244, 236, 255, 0.7);
+}
+
+/* "Find my key", in the sheet while it is open: the wait, then the fit. */
+.keySheetStatus {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #f4ecff;
+}
+
+.keySheetStatus:empty {
+  display: none;
+}
+
+.keySheetStatus[data-tone='warning'],
+.keySheetStatus[data-tone='error'] {
+  color: #ffb4a8;
+}
+
 /* Below about 560px the mirrored layout stops being possible: two 44px
    controls on each side plus the 226px transport needs 498px of the bar's
    354px. So the pair keeps its natural width, the empty slot absorbs what is
@@ -722,6 +809,27 @@
   .transportSpacer {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  /* The key's slot mirrors the pair as far as the bar allows, so play stays
+     near centre (8px off on a 390px phone); on the narrowest phone the slot
+     gives way, down to the key itself. */
+  .transportKeySlot {
+    flex: 0 1 98px;
+    min-width: 44px;
+  }
+}
+
+/* With the key in the right slot there is no empty slot left to absorb the
+   difference, so a phone's bar buys it back from the gaps: the pair, the
+   transport and the key then take 320px of the 324px a 360px phone has. */
+@media (max-width: 400px) {
+  .transportWithKey .transportSide {
+    gap: 6px;
+  }
+
+  .transportWithKey .transportMain {
+    gap: 10px;
   }
 }
 
@@ -1300,4 +1408,111 @@
     right: max(12px, var(--safe-right, 0px));
     bottom: calc(18px + var(--safe-bottom));
   }
+}
+
+/* ── The web's stage, on its side ──────────────────────────
+   The room's two columns (above), for the stage the web opens on a phone
+   held sideways: KaraokeMobileStage sets .sideways while
+   isShortTouchLandscape matches. The portrait column left the lyrics a
+   200 px strip at 844x390 and put Paste lyrics below the window.
+
+   Two things differ from the room. The left column is 320 px, not 286:
+   this transport also holds the key, and the mic pair, the transport and
+   the key take 320 px packed the way a 360 px phone packs them. And the
+   flow children are placed by name rather than all sent to one area: the
+   playlist overlay and its summary cover the stage from inside it, and an
+   absolutely placed child given a grid area would cover only that area.
+   The pitch ribbon has no class here; it falls into the first free cell of
+   the left column, the hint's row or the one under it.
+
+   `.stage.sideways` outweighs the kit's `.shell`, which sets the flex
+   column, whichever stylesheet loads first. */
+.stage.sideways {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head lyrics'
+    'hint lyrics'
+    'aside lyrics'
+    'bar lyrics';
+  column-gap: 26px;
+  padding: var(--safe-top, 0px) max(12px, var(--safe-right, 0px)) 0
+    max(16px, var(--safe-left, 0px));
+}
+
+.stage.sideways .header {
+  grid-area: head;
+  width: auto;
+  margin: 0;
+  padding: 8px 0 4px;
+}
+
+.stage.sideways .titleWrap {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.stage.sideways .notesHint {
+  grid-area: hint;
+  margin: 0.3rem 0 0;
+}
+
+/* The right padding keeps every line, and the finder, clear of the sing
+   pill in the corner. */
+.stage.sideways .lyrics {
+  grid-area: lyrics;
+  width: auto;
+  margin: 0;
+  padding: 14vh 54px 22vh 0;
+}
+
+.stage.sideways .lyricsEmpty {
+  padding: 8px 54px 8px 0;
+}
+
+.stage.sideways .noLyrics {
+  padding: 4px 0;
+}
+
+.stage.sideways .line {
+  font-size: calc(1.6rem * var(--lyrics-scale, 1));
+  margin-bottom: 0.8rem;
+}
+
+.stage.sideways .bottomBar {
+  grid-area: bar;
+  width: auto;
+  margin: 0;
+  padding: 6px 0 calc(8px + var(--safe-bottom));
+  background: none;
+}
+
+.stage.sideways .transport {
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.stage.sideways .transportSide {
+  flex: 0 1 auto;
+  gap: 6px;
+}
+
+.stage.sideways .transportMain {
+  gap: 10px;
+}
+
+.stage.sideways .transportSpacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stage.sideways .transportKeySlot {
+  flex: 0 1 98px;
+  min-width: 44px;
+}
+
+.stage.sideways .singPill {
+  right: max(12px, var(--safe-right, 0px));
+  bottom: calc(18px + var(--safe-bottom));
 }
