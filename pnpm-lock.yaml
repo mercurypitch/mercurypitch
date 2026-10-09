@@ -20,6 +20,15 @@ importers:
       '@fontsource-variable/gabarito':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource-variable/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/outfit':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/plus-jakarta-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@huggingface/transformers':
         specifier: ^4.2.0
         version: 4.2.0

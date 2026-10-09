@@ -2,7 +2,7 @@
 // The native bundle's three families, under the names the app asks for
 // ============================================================
 //
-// The web links Inter, Outfit and Plus Jakarta Sans from Google Fonts
+// The web once linked Inter, Outfit and Plus Jakarta Sans from Google Fonts
 // (index.html), which registers each under its plain name, and every stack
 // the two apps share asks for exactly those names: Appearance's `--app-font`
 // (src/App.tsx), app.css, some ninety CSS-module stacks and the canvases'
@@ -17,8 +17,9 @@
 // every stack that asks for 'Inter' gets the bundled face. An alias rather
 // than the Variable names prepended to every stack: that would be ninety
 // edits to files the web ships, and every stack written after them would
-// have to remember. Only this app's Vite config runs the plugin, and the web
-// never imports these packages, so the web cannot change.
+// have to remember. Only this app's Vite config runs the plugin. The web now
+// self-hosts the same packages too, and its Lightning CSS build gets the same
+// alias from tools/font-aliases.ts.
 //
 // A plain .mjs with no dependencies, as api-base.mjs is: the Vite config and
 // the suite (src/native-font-aliases.test.ts) both import it.

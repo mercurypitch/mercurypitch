@@ -71,15 +71,37 @@ describe('isRestrictedTimezone', () => {
     expect(isRestrictedTimezone('Europe/Zagreb')).toBe(true)
   })
 
+  it.each([
+    'Atlantic/Reykjavik',
+    'Asia/Nicosia',
+    'Asia/Famagusta',
+    'Atlantic/Canary',
+    'Africa/Ceuta',
+    'Atlantic/Madeira',
+    'Atlantic/Azores',
+    'America/Cayenne',
+    'America/Guadeloupe',
+    'America/Marigot',
+    'America/Martinique',
+    'Indian/Reunion',
+    'Indian/Mayotte',
+  ])('flags %s, an EEA zone outside Europe/*', (tz) => {
+    expect(isRestrictedTimezone(tz)).toBe(true)
+  })
+
   it('does not flag non-EEA zones', () => {
     expect(isRestrictedTimezone('America/New_York')).toBe(false)
     expect(isRestrictedTimezone('Australia/Sydney')).toBe(false)
     expect(isRestrictedTimezone('Europe/Moscow')).toBe(false)
     expect(isRestrictedTimezone('Europe/Istanbul')).toBe(false)
+    expect(isRestrictedTimezone('Atlantic/Faroe')).toBe(false)
   })
 
-  it('is cautious when the zone is unknown', () => {
+  it('is cautious when the zone is unknown or names no place', () => {
     expect(isRestrictedTimezone('')).toBe(true)
+    expect(isRestrictedTimezone('UTC')).toBe(true)
+    expect(isRestrictedTimezone('Etc/UTC')).toBe(true)
+    expect(isRestrictedTimezone('Etc/GMT')).toBe(true)
   })
 })
 
@@ -95,6 +117,22 @@ describe('initConsent', () => {
     expect(denied.ad_storage).toBe('denied')
     expect(denied.region).toContain('GB')
     expect(denied.region).toContain('IE')
+    // EU territory with its own ISO code: Åland and the outermost regions.
+    for (const code of ['AX', 'GF', 'GP', 'MF', 'MQ', 'RE', 'YT']) {
+      expect(denied.region).toContain(code)
+    }
+  })
+
+  it('redacts ad click ids from the first hit, before any choice', async () => {
+    await boot('Europe/Dublin')
+    expect(commands('set', 'ads_data_redaction').map((c) => c[2])).toEqual([
+      true,
+    ])
+    const all = dataLayer()
+    const redaction = all.findIndex(
+      (e) => e[0] === 'set' && e[1] === 'ads_data_redaction',
+    )
+    expect(redaction).toBeLessThan(all.findIndex((e) => e[0] === 'js'))
   })
 
   it('shows the banner and stays denied in the EEA with no prior choice', async () => {
@@ -102,18 +140,38 @@ describe('initConsent', () => {
     expect(mod.isConsentBannerOpen()).toBe(true)
     expect(mod.consentStatus()).toBeNull()
     expect(localStorage.getItem('mp.consent.v1')).toBeNull()
+    expect(commands('consent', 'update')).toHaveLength(0)
   })
 
-  it('grants silently and shows no banner outside the EEA', async () => {
+  // A `consent update` overrides the IP-based region default everywhere, so
+  // a phone in Germany set to America/New_York used to be granted unasked.
+  it('never grants on the visitor’s behalf outside the banner scope', async () => {
     const mod = await boot('America/New_York')
     expect(mod.isConsentBannerOpen()).toBe(false)
-    expect(mod.consentStatus()).toBe('granted')
-    const stored = JSON.parse(
-      localStorage.getItem('mp.consent.v1') ?? '{}',
-    ) as { status: string; implicit: boolean }
-    expect(stored.status).toBe('granted')
-    expect(stored.implicit).toBe(true)
-    expect(commands('consent', 'update')).toHaveLength(1)
+    expect(mod.consentStatus()).toBeNull()
+    expect(localStorage.getItem('mp.consent.v1')).toBeNull()
+    expect(commands('consent', 'update')).toHaveLength(0)
+  })
+
+  it('drops a silent grant stored by an earlier version', async () => {
+    localStorage.setItem(
+      'mp.consent.v1',
+      JSON.stringify({ status: 'granted', at: 1, implicit: true }),
+    )
+    const mod = await boot('America/New_York')
+    expect(mod.consentStatus()).toBeNull()
+    expect(commands('consent', 'update')).toHaveLength(0)
+    expect(localStorage.getItem('mp.consent.v1')).toBeNull()
+  })
+
+  it('asks again where an old silent grant sits inside the scope', async () => {
+    localStorage.setItem(
+      'mp.consent.v1',
+      JSON.stringify({ status: 'granted', at: 1, implicit: true }),
+    )
+    const mod = await boot('Asia/Nicosia')
+    expect(mod.isConsentBannerOpen()).toBe(true)
+    expect(commands('consent', 'update')).toHaveLength(0)
   })
 
   it('re-applies a stored decision without re-asking', async () => {
@@ -124,6 +182,12 @@ describe('initConsent', () => {
     const mod = await boot('Europe/London')
     expect(mod.isConsentBannerOpen()).toBe(false)
     expect(mod.consentStatus()).toBe('granted')
+    expect(commands('consent', 'update')).toHaveLength(1)
+    // Redacted from the first hit, then lifted by the stored grant.
+    expect(commands('set', 'ads_data_redaction').map((c) => c[2])).toEqual([
+      true,
+      false,
+    ])
   })
 })
 
@@ -155,6 +219,10 @@ describe('accept / decline', () => {
     const updates = commands('consent', 'update')
     const last = updates[updates.length - 1][2] as { ad_storage: string }
     expect(last.ad_storage).toBe('denied')
+    expect(commands('set', 'ads_data_redaction').map((c) => c[2])).toEqual([
+      true,
+      true,
+    ])
   })
 
   it('openConsentSettings re-opens the banner', async () => {

@@ -70,8 +70,8 @@
 import { configurePitchEngineAssets } from '@irchiinnuss/pitch-engine'
 import { render } from 'solid-js/web'
 // Self-hosted, so the first frame draws with the network off. The web app
-// links these from fonts.googleapis.com (index.html:81-84); a native app
-// cannot. Variable faces: one file each, every weight the design uses.
+// self-hosts the same packages (src/lib/self-hosted-fonts.ts). Variable
+// faces: one file each, every weight the design uses.
 import '@fontsource-variable/inter'
 import '@fontsource-variable/outfit'
 import '@fontsource-variable/plus-jakarta-sans'
