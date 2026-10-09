@@ -10,6 +10,7 @@
 // A sweep that cannot finish says so too.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import worker from '../src/index'
 import { applyMigration, interleaved, SqliteD1Database } from './sqlite-d1'
 import type { Harness } from './stripe-harness'
 import { alerts, balance, deliver, failingD1, openHarness, recorded, register, stripeReads, sweep, takeBacks, } from './stripe-harness'
@@ -48,6 +49,27 @@ describe('what the sweep asks Stripe for', () => {
     const to = Number(list.searchParams.get('created[lte]'))
     expect(Math.abs(from - (before - 30 * 24 * 60 * 60))).toBeLessThan(60)
     expect(Math.abs(to - (before - 10 * 60))).toBeLessThan(60)
+  })
+})
+
+describe('the 6-hourly cron', () => {
+  it('runs the sweep beside the others, and applies a refund the webhook missed', async () => {
+    const singer = await register(h, 'cron-refund@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    await deliver(h, purchase)
+    const refund = h.stripe.refund(
+      String(purchase.data.object.payment_intent),
+      500,
+    )
+
+    await worker.scheduled(
+      {} as ScheduledController,
+      h.env,
+      {} as ExecutionContext,
+    )
+
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(recorded(h, refund.id)).toBe(true)
   })
 })
 
