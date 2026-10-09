@@ -147,7 +147,9 @@ as `gauth_new=1` for the signup funnel — is what stands in for
 user and for the verified-email auto-link to an existing password account,
 so both of those remain prompt-gated exactly as before; it is true only for
 a brand-new account and for the in-place upgrade of this device's anonymous
-row, which are the two ways Google creates one.
+row, which are the two ways Google creates one. It counts only on a return
+this browser started (`REQ-GRB-003`, amended 2026-10-09): a link carrying
+somebody else's session and `gauth_new=1` adopts nothing.
 
 **When** the sign-in that resolves is a native sheet (Sign in with Apple,
 or Google through the platform) or a mailed code typed back, the `isNew` on

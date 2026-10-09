@@ -1143,6 +1143,25 @@ that the two sets are disjoint.
 **See:** `src/lib/jam/jam-session-songs.ts` (`ownSongRows`),
 `src/features/karaoke-night/seed-examples.ts`
 
+### Bind a session that comes back in the address bar to the browser that asked for it
+
+**Symptom:** a link such as `mercurypitch.com/#gauth=<token>&gauth_new=1`,
+holding any session the sender could mint for their own account, signed
+whoever opened it in to that account and adopted their unclaimed takes into
+it. `#gauth_error=account_suspended` signed people out, and any other
+`#gauth_error=` put the link's own words in the failure toast.
+**Cause:** the Google redirect returns the session in the URL fragment, and
+every page that took the return stored whatever fragment it found. The OAuth
+state is signed but stateless, so nothing tied a return to the browser that
+began the sign-in, and a fragment never reaches a server that could check.
+**Rule:** start Google sign-in only through `googleSignInUrl` (it keeps a
+nonce) and take a return only through `consumeGoogleRedirect` (it checks the
+echoed nonce and spends it). Any new redirect that carries a credential needs
+the same four steps: a nonce kept before leaving, signed into the state,
+echoed back, checked once.
+**See:** `src/lib/google-return-nonce.ts`, `OAuthState.nonce` in
+`workers/db-worker/src/auth.ts`, `docs/specs/google-return-binding.ears.md`
+
 ### A page that offers Google sign-in must take the redirect and run the after-sign-up step
 
 **Symptom:** a Google sign-up from Guitar Night or Drum Night left the
