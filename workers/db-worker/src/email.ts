@@ -911,7 +911,7 @@ export async function sendPasswordReset(
   vars: PasswordResetVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderPasswordReset(vars))
-  if (ok) console.log(`[email] password reset sent to ${to}`)
+  if (ok) console.log(`[email] password reset sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -923,7 +923,7 @@ export async function sendLoginCode(
   vars: LoginCodeVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderLoginCode(vars))
-  if (ok) console.log(`[email] sign-in code sent to ${to}`)
+  if (ok) console.log(`[email] sign-in code sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -949,7 +949,7 @@ export async function sendNewsletterIssue(
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
   })
-  if (result.ok) console.log(`[email] newsletter sent to ${to}`)
+  if (result.ok) console.log(`[email] newsletter sent to ${maskEmail(to)}`)
   return result
 }
 
@@ -968,7 +968,9 @@ export async function sendAccountNotice(
   vars: AccountNoticeVars,
 ): Promise<ResendResult> {
   const result = await resendPost(cfg, to, renderAccountNotice(vars))
-  if (result.ok) console.log(`[email] account notice sent to ${to}`)
+  if (result.ok) {
+    console.log(`[email] account notice sent to ${maskEmail(to)}`)
+  }
   return result
 }
 

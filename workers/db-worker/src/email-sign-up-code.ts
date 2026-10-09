@@ -6,7 +6,7 @@
 // one only borrows its palette, footer and sender.
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { ABOUT_URL, APP_URL, C, escapeHtml, footerHtml, REPO_URL, resendSend, } from './email'
+import { ABOUT_URL, APP_URL, C, escapeHtml, footerHtml, maskEmail, REPO_URL, resendSend, } from './email'
 
 export interface SignUpCodeVars {
   /** The six-digit code, exactly as the form expects it. */
@@ -131,6 +131,6 @@ export async function sendSignUpCode(
   vars: SignUpCodeVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderSignUpCode(vars))
-  if (ok) console.log(`[email] sign-up code sent to ${to}`)
+  if (ok) console.log(`[email] sign-up code sent to ${maskEmail(to)}`)
   return ok
 }
