@@ -52,6 +52,7 @@ import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
+import { StoreChips } from './StoreChips'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
 import { TrustInfo } from './TrustInfo'
@@ -1958,6 +1959,7 @@ const FreeResults: Component<{
           </button>
         </div>
         <ShareStatusNote status={props.shareStatus} />
+        <StoreChips />
       </Show>
     </section>
   )
@@ -2197,6 +2199,7 @@ const Results: Component<{
         onCosmic={() => props.onCosmic()}
       />
       <ShareStatusNote status={props.shareStatus} />
+      <StoreChips />
       <p class="mirror-foot">
         Saved on this device. Come back any time to see your delta.
       </p>
