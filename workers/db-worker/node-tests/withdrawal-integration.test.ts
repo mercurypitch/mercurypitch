@@ -82,6 +82,29 @@ function charged(charge: Record<string, unknown>): Record<string, unknown> {
   return charge
 }
 
+/** The owner refunds the whole price of the pack `paymentIntent` paid
+ *  for in the Stripe Dashboard, after the buyer cancelled by mail. */
+async function refundByHand(
+  paymentIntent: string,
+  amount: number,
+): Promise<number> {
+  const id = paymentIntent.replace(/^pi_/, '')
+  return deliver({
+    id: `evt_${id}_hand_refund`,
+    type: 'charge.refunded',
+    data: {
+      object: charged({
+        id: `ch_${id}`,
+        object: 'charge',
+        payment_intent: paymentIntent,
+        amount,
+        amount_refunded: amount,
+        refunded: true,
+      }),
+    },
+  })
+}
+
 function makeRefund(
   form: URLSearchParams,
   key: string | undefined,
@@ -1392,6 +1415,19 @@ describe('the refund the withdrawal asks for comes back as charge.refunded', () 
 })
 
 describe('a pack keeps the terms its own checkout recorded', () => {
+  it('is refunded by hand of every credit, used ones too, when its buyer ticked the box', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter')
+    spend(sam.userId, 10, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    // The buyer asked for the credits straight away: what they used is
+    // owed.
+    expect(takenBack(sam.userId)).toBe(30)
+    expect(balance(sam.userId)).toBe(-10)
+  })
+
   it('takes a statement for a pack sold under refund_unused after the mode turns to waiver, and finishes an earlier one', async () => {
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
@@ -1512,6 +1548,32 @@ describe('a pack with no consent on record', () => {
     expect(opened).toBe(200)
     expect(takenBack(sam.userId)).toBe(0)
     expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('takes back only what is unused when its whole price is refunded by hand', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    // The Starter pack, the older, pays for these.
+    spend(sam.userId, 10, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    // What a withdrawal of it would take: the 20 left. The Plus pack's 140
+    // stay whole.
+    expect(takenBack(sam.userId)).toBe(20)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('leaves a buyer who used every credit owing nothing when its whole price is refunded by hand', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter', false)
+    spend(sam.userId, 30, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(0)
   })
 
   it('takes nothing back for a chargeback whose write races its whole-price withdrawal', async () => {

@@ -135,6 +135,26 @@ describe('a refund', () => {
     expect(refundAlert?.text).toContain('25 of them were already spent')
   })
 
+  it('takes only unused credits for a whole refund of a purchase with no consent on record, and gives them back if it fails', async () => {
+    const singer = await register(h, 'no-consent@example.com')
+    const purchase = h.stripe.checkout(singer.userId, { consent: false })
+    expect((await deliver(h, purchase)).status).toBe(200)
+    const pi = String(purchase.data.object.payment_intent)
+    setSongCost(25)
+    expect((await spend(h, singer, 'job-no-consent')).status).toBe(200)
+
+    await deliver(h, h.stripe.refund(pi, 500))
+    const afterRefund = balance(h, singer.userId)
+    const { updated, failed } = h.stripe.failLastRefund(pi)
+    await deliver(h, failed)
+    await deliver(h, updated)
+
+    // The 25 used stay the buyer's; the 5 unused go, and come back.
+    expect(afterRefund).toBe(0)
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-5, 5])
+    expect(balance(h, singer.userId)).toBe(5)
+  })
+
   it('gives back what a failed refund took once, for both events Stripe sends', async () => {
     const singer = await register(h, 'bounced-refund@example.com')
     const pi = await bought(singer)

@@ -16,8 +16,12 @@ import type { Env } from './auth'
 import type { LedgerRow } from './songs-allowance'
 
 /** A row as readLedger() reads it: with the Stripe payment that granted it,
- *  where one did (migration 0058), for a refund or dispute to find. */
-export type LedgerEntry = LedgerRow & { paymentIntentId?: string | null }
+ *  where one did (migration 0058), for a refund or dispute to find, and its
+ *  id, which names a pack (withdrawal-rules.ts). */
+export type LedgerEntry = LedgerRow & {
+  id?: string
+  paymentIntentId?: string | null
+}
 
 export interface Ledger {
   rows: LedgerEntry[]
@@ -53,11 +57,11 @@ function versionOf(
 
 export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   const { results } = await env.DB.prepare(
-    `SELECT rowid AS seq, createdAt, delta, reason, jobRef, idempotencyKey, paymentIntentId
+    `SELECT rowid AS seq, id, createdAt, delta, reason, jobRef, idempotencyKey, paymentIntentId
        FROM creditLedger WHERE userId = ? ORDER BY rowid`,
   )
     .bind(userId)
-    .all<LedgerRow & { seq: number }>()
+    .all<LedgerEntry & { seq: number }>()
   return { rows: results, version: versionOf(results) }
 }
 

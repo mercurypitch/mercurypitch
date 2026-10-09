@@ -176,11 +176,15 @@ describe('settle', () => {
     ],
   })
 
+  /** A purchase with a consent on record, settled by its event alone. */
+  const CONSENTED = {
+    mayGiveBack: false,
+    settledWhole: false,
+    unusedWithoutConsent: null,
+  }
+
   it('takes what the buyer used when a whole-payment refund follows a withdrawal of the unused credits', () => {
-    const next = settle(withdrawn, 'pi_1', charge(), {
-      mayGiveBack: false,
-      settledWhole: false,
-    })
+    const next = settle(withdrawn, 'pi_1', charge(), CONSENTED)
 
     expect(next).toEqual({
       delta: -10,
@@ -188,11 +192,12 @@ describe('settle', () => {
       held: 10,
       takenOtherwise: 20,
       settledWhole: false,
+      keptUsed: false,
     })
   })
 
   it('takes nothing more from a payment a withdrawal refunded whole, by refund or dispute', () => {
-    const terms = { mayGiveBack: false, settledWhole: true }
+    const terms = { ...CONSENTED, settledWhole: true }
 
     expect(settle(withdrawn, 'pi_1', charge(), terms)).toEqual({
       delta: 0,
@@ -200,6 +205,7 @@ describe('settle', () => {
       held: 0,
       takenOtherwise: 20,
       settledWhole: true,
+      keptUsed: false,
     })
     expect(settle(withdrawn, 'pi_1', disputed, terms).delta).toBe(0)
   })
@@ -215,12 +221,63 @@ describe('settle', () => {
     }
 
     const next = settle(usedUp, 'pi_1', charge(), {
-      mayGiveBack: false,
+      ...CONSENTED,
       settledWhole: true,
     })
 
     expect(next.delta).toBe(0)
     expect(next.held).toBe(0)
+  })
+
+  /** The same EUR 5.00 pack of 30, 10 used, nothing withdrawn: bought with
+   *  no consent on record. */
+  const partUsed: Ledger = {
+    version: '2:2:20',
+    rows: [
+      row(30, 'purchase', { paymentIntentId: 'pi_1' }),
+      row(-10, 'uvr-job', { jobRef: 'job-1' }),
+    ],
+  }
+  const NO_CONSENT = { ...CONSENTED, unusedWithoutConsent: 20 }
+
+  it('takes back only what is unused when the whole price of a purchase with no consent on record is refunded', () => {
+    expect(settle(partUsed, 'pi_1', charge(), NO_CONSENT)).toEqual({
+      delta: -20,
+      granted: 30,
+      held: 20,
+      takenOtherwise: 0,
+      settledWhole: false,
+      keptUsed: true,
+    })
+  })
+
+  it('takes nothing more once the unused credits are gone', () => {
+    const taken: Ledger = {
+      version: '3:3:0',
+      rows: [...partUsed.rows, row(-20, 'purchase-refund', { jobRef: 'pi_1' })],
+    }
+
+    const next = settle(taken, 'pi_1', disputed, {
+      ...NO_CONSENT,
+      unusedWithoutConsent: 0,
+    })
+
+    expect(next.delta).toBe(0)
+    expect(next.held).toBe(20)
+  })
+
+  it('settles a part refund of a purchase with no consent on record by its share', () => {
+    const half = settle(partUsed, 'pi_1', charge({ amountRefunded: 250 }), {
+      ...NO_CONSENT,
+    })
+
+    expect(half).toMatchObject({ delta: -15, held: 15, keptUsed: false })
+  })
+
+  it('takes every credit back, used ones too, when the buyer gave the consent', () => {
+    const whole = settle(partUsed, 'pi_1', charge(), CONSENTED)
+
+    expect(whole).toMatchObject({ delta: -30, held: 30, keptUsed: false })
   })
 })
 

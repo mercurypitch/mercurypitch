@@ -50,10 +50,12 @@
 // whole payment takes the rest. A withdrawal that refunds the whole price (a
 // purchase with no consent on record, refundBasis 'full') settles the
 // payment outright: what the buyer used stays theirs (CRD Art. 14(4)(b)), so
-// no refund or dispute of it takes anything more (settledWhole). A
-// withdrawal's own refund that fails or is canceled is the withdrawal
-// sweep's to follow and report (withdrawal-finish.ts): it writes no row
-// here.
+// no refund or dispute of it takes anything more (settledWhole). A refund
+// of the whole price made by hand for such a purchase (a buyer who cancelled
+// by mail) settles the same way: it takes back only the credits the pack
+// still has unused, as the withdrawal would have (keptUsed). A withdrawal's
+// own refund that fails or is canceled is the withdrawal sweep's to follow
+// and report (withdrawal-finish.ts): it writes no row here.
 //
 // Credits already spent are owed: the balance goes below zero, and the
 // debit's own check (billing.ts, `SUM(delta) >= cost`) blocks spending until
@@ -75,7 +77,7 @@ import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, loadCharge, moneyGo
 import type { Env } from './auth'
 import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
-import type { Ledger } from './ledger'
+import type { Ledger, LedgerEntry } from './ledger'
 import { readLedger, writeOnLedgerOnce } from './ledger'
 
 /** The ledger reason of a pack's credits, granted when its checkout is paid
@@ -246,11 +248,29 @@ async function settledWhole(env: Env, paymentIntent: string): Promise<boolean> {
   return row !== null
 }
 
+/**
+ * What settling a payment reads of the purchase behind it, which this module
+ * cannot read for itself: checkout-consent.ts and withdrawal-rules.ts both
+ * import it. billing.ts hands it in (PURCHASE_RECORD).
+ */
+export interface PurchaseRecord {
+  /** Whether the purchase the payment made has no consent on record:
+   *  purchaseTerms 'no_consent' (checkout-consent.ts). */
+  noConsent(env: Env, userId: string, paymentIntent: string): Promise<boolean>
+  /** The credits of the payment's pack still unused, paid and bonus, as a
+   *  withdrawal of it counts them (withdrawal-rules.ts, packUses). */
+  unused(rows: readonly LedgerEntry[], paymentIntent: string): number
+}
+
 /** What else settling a payment depends on: whether the event may give
- *  credits back, and whether a withdrawal settled the payment whole. */
+ *  credits back, whether a withdrawal settled the payment whole, and, for a
+ *  purchase with no consent on record, its pack's credits still unused. */
 export interface SettleTerms {
   mayGiveBack: boolean
   settledWhole: boolean
+  /** PurchaseRecord.unused for a purchase with no consent on record; null
+   *  for one with a consent. */
+  unusedWithoutConsent: number | null
 }
 
 export interface Settle {
@@ -260,14 +280,29 @@ export interface Settle {
   /** What a withdrawal's own rows took back. */
   takenOtherwise: number
   settledWhole: boolean
+  /** Refunded whole with no consent on record: the credits the buyer used
+   *  stayed theirs. */
+  keptUsed: boolean
 }
 
-/** What settling the payment against `ledger` writes. Anything else that
- *  took the payment's credits back (takenFrom, less what refunds and
- *  disputes hold) counts as taken already. A withdrawal that refunded the
- *  whole price counts as having taken everything the payment granted:
- *  what the buyer used stays theirs (CRD Art. 14(4)(b)), so a refund or a
- *  dispute never leaves them owing for it. */
+/** Every cent of the charge went back by refund. */
+function refundedWhole(charge: ChargeState): boolean {
+  return charge.amount > 0 && charge.amountRefunded >= charge.amount
+}
+
+/**
+ * What settling the payment against `ledger` writes. Anything else that took
+ * the payment's credits back (takenFrom, less what refunds and disputes
+ * hold) counts as taken already.
+ *
+ * A payment settled like a withdrawal of its whole price leaves what the
+ * buyer used theirs (CRD Art. 14(4)(b)), so no refund or dispute of it ever
+ * leaves them owing for it. One a withdrawal refunded whole counts as having
+ * taken back everything it granted. One refunded whole by hand, for a
+ * purchase with no consent on record (a buyer who cancelled by mail), takes
+ * back only the credits its pack still has unused, as a withdrawal of it
+ * would have.
+ */
 export function settle(
   ledger: Ledger,
   paymentIntent: string,
@@ -278,12 +313,20 @@ export function settle(
   const held = heldByMoneyBack(ledger, paymentIntent)
   const takenOtherwise = Math.max(0, takenFrom(ledger, paymentIntent) - held)
   const { gone, paid } = moneyGoneBack(charge)
+  const unused = terms.unusedWithoutConsent
+  const keptUsed =
+    !terms.settledWhole && unused !== null && refundedWhole(charge)
+  const counted = terms.settledWhole
+    ? granted
+    : keptUsed
+      ? Math.max(0, granted - held - Math.max(0, unused ?? 0))
+      : takenOtherwise
   const next = settlement({
     granted,
     gone,
     paid,
     heldByMoneyBack: held,
-    takenOtherwise: terms.settledWhole ? granted : takenOtherwise,
+    takenOtherwise: counted,
     mayGiveBack: terms.mayGiveBack,
   })
   return {
@@ -292,7 +335,38 @@ export function settle(
     held: next.held,
     takenOtherwise,
     settledWhole: terms.settledWhole,
+    keptUsed,
   }
+}
+
+/** The terms settling a payment depends on beyond its event, read after
+ *  each read of the ledger. */
+type TermsOf = (ledger: Ledger, mayGiveBack: boolean) => Promise<SettleTerms>
+
+/**
+ * Reads the terms of the payment `paymentIntent` names. A withdrawal is
+ * looked for after every read of the ledger: it writes its statement and its
+ * rows in one batch, so a statement a read missed comes with rows that make
+ * the write lose and read again. Whether the purchase has a consent on
+ * record is asked once, and only of a charge refunded whole.
+ */
+async function termsReader(
+  env: Env,
+  record: PurchaseRecord,
+  userId: string,
+  paymentIntent: string,
+  charge: ChargeState,
+): Promise<TermsOf> {
+  const noConsent =
+    refundedWhole(charge) &&
+    (await record.noConsent(env, userId, paymentIntent))
+  return async (ledger, mayGiveBack) => ({
+    mayGiveBack,
+    settledWhole: await settledWhole(env, paymentIntent),
+    unusedWithoutConsent: noConsent
+      ? record.unused(ledger.rows, paymentIntent)
+      : null,
+  })
 }
 
 /** The row one event writes: its key, its reason, and whether it may give
@@ -315,12 +389,14 @@ async function settlePayment(
   paymentIntent: string,
   charge: ChargeState,
   row: SettleRow,
+  termsOf: TermsOf,
 ): Promise<Settled> {
   let after = {
     granted: 0,
     held: 0,
     takenOtherwise: 0,
     settledWhole: false,
+    keptUsed: false,
     balance: 0,
   }
   const written = await writeOnLedgerOnce(
@@ -329,18 +405,14 @@ async function settlePayment(
     row.key,
     row.reason,
     async (ledger) => {
-      // Asked after every read of the ledger: a withdrawal writes its
-      // statement and its rows in one batch, so a statement this read
-      // missed comes with rows that make the write lose and read again.
-      const next = settle(ledger, paymentIntent, charge, {
-        mayGiveBack: row.mayGiveBack,
-        settledWhole: await settledWhole(env, paymentIntent),
-      })
+      const terms = await termsOf(ledger, row.mayGiveBack)
+      const next = settle(ledger, paymentIntent, charge, terms)
       after = {
         granted: next.granted,
         held: next.held,
         takenOtherwise: next.takenOtherwise,
         settledWhole: next.settledWhole,
+        keptUsed: next.keptUsed,
         balance: balanceOf(ledger) + next.delta,
       }
       return { delta: next.delta, jobRef: paymentIntent }
@@ -601,6 +673,7 @@ export async function applyMoneyBack(
   env: Env,
   get: StripeGet,
   event: StripeEventInput,
+  record: PurchaseRecord,
 ): Promise<MoneyBackResult> {
   // A withdrawal's own refund that failed or was canceled is the withdrawal
   // sweep's (withdrawal-finish.ts): it follows the refund, marks the
@@ -649,15 +722,22 @@ export async function applyMoneyBack(
     return { kind: 'applied' }
   }
   const row = rowFor(event)
+  const termsOf = await termsReader(env, record, owner, paymentIntent, charge)
   if (row.onlyIfMoved) {
     const ledger = await readLedger(env, owner)
-    const next = settle(ledger, paymentIntent, charge, {
-      mayGiveBack: row.mayGiveBack,
-      settledWhole: await settledWhole(env, paymentIntent),
-    })
-    if (next.delta === 0) return { kind: 'applied' }
+    const terms = await termsOf(ledger, row.mayGiveBack)
+    if (settle(ledger, paymentIntent, charge, terms).delta === 0) {
+      return { kind: 'applied' }
+    }
   }
-  const moved = await settlePayment(env, owner, paymentIntent, charge, row)
+  const moved = await settlePayment(
+    env,
+    owner,
+    paymentIntent,
+    charge,
+    row,
+    termsOf,
+  )
   if (moved.wrote) {
     logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
     await sendAlert(
@@ -679,22 +759,28 @@ export async function settleEarlyMoneyBack(
   purchaseEventId: string,
   session: Record<string, unknown>,
   userId: string,
+  record: PurchaseRecord,
 ): Promise<void> {
   const paymentIntent = paymentIntentOf(session)
   if (paymentIntent === null) return
   const charge = await loadCharge(env, paymentIntent)
   if (charge === null) return
+  const termsOf = await termsReader(env, record, userId, paymentIntent, charge)
   const ledger = await readLedger(env, userId)
-  const terms = {
-    mayGiveBack: false,
-    settledWhole: await settledWhole(env, paymentIntent),
-  }
+  const terms = await termsOf(ledger, false)
   if (settle(ledger, paymentIntent, charge, terms).delta === 0) return
-  const moved = await settlePayment(env, userId, paymentIntent, charge, {
-    key: `clawback:early:${paymentIntent}`,
-    reason: anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
-    mayGiveBack: false,
-  })
+  const moved = await settlePayment(
+    env,
+    userId,
+    paymentIntent,
+    charge,
+    {
+      key: `clawback:early:${paymentIntent}`,
+      reason: anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+      mayGiveBack: false,
+    },
+    termsOf,
+  )
   if (!moved.wrote) return
   logSettled(
     `purchase ${purchaseEventId}, after its money went back`,

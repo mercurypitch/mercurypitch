@@ -7,7 +7,8 @@
 
 **Source:** `workers/db-worker/src/stripe-payments.ts`,
 `workers/db-worker/src/stripe-charge.ts`, `workers/db-worker/src/stripe-sweep.ts`,
-`workers/db-worker/src/stripe-alerts.ts`, `workers/db-worker/src/billing.ts`
+`workers/db-worker/src/stripe-alerts.ts`, `workers/db-worker/src/purchase-record.ts`,
+`workers/db-worker/src/billing.ts`
 (`applyStripeEvent`, `handleWebhook`, `reconcileBilling`),
 `workers/db-worker/migrations/0064_stripe_charges.sql` and
 `workers/db-worker/migrations/0065_reapply_money_back_events.sql`.
@@ -119,7 +120,10 @@ refund ending shall ever give credits back. The deprecated
 
 **When** the credits to take back are already spent, the worker shall take
 them anyway: the balance goes below zero, the debit's `SUM(delta) >= cost`
-check blocks spending, and the alert says how many were already spent.
+check blocks spending, and the alert says how many were already spent. The
+exceptions are a payment a withdrawal refunded whole (REQ-MB-027) and a
+whole refund of a purchase with no consent on record (REQ-MB-029): the
+credits the buyer used there stay theirs.
 
 ### REQ-MB-025 — Withdrawals count as taken
 
@@ -153,6 +157,18 @@ or is canceled, `refund.failed` and `refund.updated` shall write no ledger
 row and send no alert: the withdrawal sweep follows that refund, marks the
 statement failed and alerts the owner (withdrawal-finish.ts). The webhook
 shall acknowledge both events.
+
+### REQ-MB-029 — A whole refund with no consent on record
+
+**When** a payment's charge is refunded whole (refunded at least what it
+took) and its purchase has no consent on record (`purchaseTerms` is
+`no_consent`, checkout-consent.ts), the worker shall take back only the
+credits its pack still has unused, paid and bonus, as a withdrawal of it
+counts them (`packUses`, withdrawal-rules.ts), and never the credits the
+buyer used: a buyer who cancels by mail and is refunded in the Dashboard
+loses what a withdrawal through Settings would take. A part refund, and a
+whole refund of a purchase with a consent on record, shall take their share
+as in REQ-MB-020. The alert shall say why the used credits stayed.
 
 ## 4. The sweep
 

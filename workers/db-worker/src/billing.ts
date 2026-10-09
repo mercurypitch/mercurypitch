@@ -50,6 +50,7 @@ import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
 import { featuredPromoView } from './promo-rules'
 import { handlePromoRedeem, readPromoClaims } from './promo-claim'
+import { PURCHASE_RECORD } from './purchase-record'
 import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
@@ -1057,7 +1058,13 @@ async function applyCheckoutEvent(
   // the purchase takes it back now. On a redelivery too, in case the first
   // delivery failed between the grant and this.
   if (outcome.userId !== null && outcome.unit === 'credits') {
-    await settleEarlyMoneyBack(env, event.id, event.object, outcome.userId)
+    await settleEarlyMoneyBack(
+      env,
+      event.id,
+      event.object,
+      outcome.userId,
+      PURCHASE_RECORD,
+    )
   }
   // Only the claim winner may mark the event processed. A duplicate here
   // means another delivery (or the sweep) holds the claim RIGHT NOW - if
@@ -1097,7 +1104,7 @@ async function applyStripeEvent(
     .first<{ id: string }>()
   if (seen) return { kind: 'duplicate' }
   if (isCheckoutPaidEvent(event.type)) return applyCheckoutEvent(env, event)
-  const result = await applyMoneyBack(env, get, event)
+  const result = await applyMoneyBack(env, get, event, PURCHASE_RECORD)
   await recordBillingEvent(env, event.id, event.type)
   return result
 }

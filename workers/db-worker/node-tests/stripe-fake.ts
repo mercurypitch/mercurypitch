@@ -17,6 +17,8 @@
 // Charges carry the card and billing details a real charge does, so a test
 // can prove none of it reaches a log or an alert. All of it is fake.
 
+import { WITHDRAWAL_TEXT_VERSION } from '../src/withdrawal-wording'
+
 export interface StripeEvent {
   id: string
   object: 'event'
@@ -79,6 +81,9 @@ export interface CheckoutOptions {
   /** The launch offer's bonus on this pack. */
   bonus?: number
   planId?: string
+  /** False for a session opened before the checkout asked for the
+   *  withdrawal consent: no ticked box on record. */
+  consent?: boolean
 }
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
@@ -154,13 +159,20 @@ export class FakeStripe {
       amount_total: amount,
       currency: 'eur',
       customer_details: { email: BUYER_EMAIL },
-      // The withdrawal checkbox every pack's Checkout asks for
-      // (checkout-consent.ts), ticked.
-      consent: { terms_of_service: 'accepted' },
+      // The withdrawal checkbox every pack's Checkout asks for, ticked,
+      // with the terms it was worded in (checkout-consent.ts).
+      consent:
+        options.consent === false ? null : { terms_of_service: 'accepted' },
       metadata: {
         userId,
         planId: options.planId ?? 'pack-starter',
         credits: String(options.credits ?? 30),
+        ...(options.consent === false
+          ? {}
+          : {
+              withdrawalMode: 'refund_unused',
+              withdrawalText: WITHDRAWAL_TEXT_VERSION,
+            }),
         ...(options.bonus === undefined
           ? {}
           : { offer: 'launch-finisher', bonusCredits: String(options.bonus) }),
