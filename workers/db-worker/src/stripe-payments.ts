@@ -10,47 +10,67 @@
 // they grant: a pack's credits, and the launch offer's bonus credits on the
 // same payment.
 //
-// And money that goes back takes its credits back:
+// And money that goes back takes its credits back. Refunds and disputes of
+// a payment hold floor(granted x gone / paid) of its credits between them,
+// where `gone` is the money refunded so far plus what an open or lost
+// dispute holds (stripe-charge.ts, moneyGoneBack):
 //
-//   - charge.refunded, a refund made in the Stripe dashboard: in proportion
-//     to the money refunded so far. A full refund takes all of it; half the
-//     money takes half the credits, rounded down.
-//   - charge.dispute.created, a chargeback: all of it. The bank pulls the
-//     payment back the moment the dispute opens.
+//   - charge.refunded: the refunded share. Half the money, half the
+//     credits, rounded down.
+//   - charge.dispute.created: the disputed share, all of it for a full
+//     dispute, inquiries included. The bank pulls the money the moment a
+//     chargeback opens, and the credits stop with it.
+//   - charge.dispute.closed: won (or an inquiry closed without a chargeback)
+//     gives back what the dispute held; lost keeps it taken.
+//   - refund.failed, or refund.updated to failed or canceled: the refund's
+//     money stayed with us, so what it took comes back. Any other
+//     refund.updated is applied like charge.refunded.
 //
-// The balance never goes below zero: credits already spent stay spent, and
-// the billing alert says how many could not be taken back. What one payment
-// loses, over every refund and dispute of it, never passes what it granted,
-// so two partial refunds, or a refund and then a dispute, add up to the
-// payment at most.
-//
-// Every take is a ledger row, `purchase-refund` or `purchase-dispute`, with
-// the PaymentIntent in jobRef and keyed on the Stripe event, so a redelivered
-// event takes nothing twice.
+// Each event is applied from the charge as Stripe reports it at that moment
+// (stripe-charge.ts, readCharge), so the order events arrive in does not
+// matter, and writes one ledger row, `purchase-refund` or
+// `purchase-dispute`, keyed `clawback:<event id>` with the PaymentIntent in
+// jobRef: the row moves what refunds and disputes hold to what is due now.
+// A refund that ended writes its row under `clawback:refund-ended:<refund
+// id>` instead, so refund.failed and the refund.updated Stripe sends with it
+// give back once, and a refund.updated that moves nothing writes nothing
+// (Stripe sends one when a refund's trace number arrives). A redelivered
+// event writes nothing; an event that arrives before its purchase is kept
+// (stripeCharges), and the purchase takes it back when it lands
+// (settleEarlyMoneyBack). Only a dispute closing or a refund ending gives
+// credits back, so an old event read late never does.
 //
 // A withdrawal (withdrawal.ts) takes a pack's unused credits itself, as
 // `withdrawal` and `withdrawal-bonus` rows with the PaymentIntent in jobRef,
-// and then refunds the unused credits' share of the price. Its own
-// charge.refunded counts those rows as taken already (takenFrom), and the
-// share it refunds never adds up to more credits than they removed, so it
-// takes nothing more. A refund made by hand for a withdrawal Stripe refused
-// does the same. A withdrawal that refunds the whole price (a purchase with
-// no consent on record) settles the payment outright: what the buyer used
-// stays theirs (CRD Art. 14(4)(b)). Each one sends the billing alert
-// (BILLING_ALERT_EMAIL), and so does a payment with nothing on record to take:
-// a donation, or a purchase from before PaymentIntent ids were stored
-// (migration 0058).
+// and then refunds the unused credits' share of the price. Refunds and
+// disputes count those rows as taken already (takenFrom, in settle): the
+// share a withdrawal refunds never adds up to more credits than they
+// removed, so its own charge.refunded takes nothing more, and neither does a
+// refund made by hand for a withdrawal Stripe refused. A dispute of the
+// whole payment takes the rest.
 //
-// A dispute that is won later gives nothing back by itself; the alert says
-// so, and the credits go back by hand. The 6-hourly reconciliation sweep
-// recovers missed checkout events only: a refund event the webhook never
-// received takes nothing back.
+// Credits already spent are owed: the balance goes below zero, and the
+// debit's own check (billing.ts, `SUM(delta) >= cost`) blocks spending until
+// a purchase brings it back above zero. The payment's ledger rows then net
+// to what was really paid for, whatever order the spending, the refund and
+// the webhook came in. Taking only what was left would hand a buyer who
+// spends fast, or a webhook that arrives late, credits nobody paid for.
+//
+// Every refund that moves credits, every dispute, and every payment with
+// nothing on record to take (a donation, a purchase from before migration
+// 0058) sends the billing alert (BILLING_ALERT_EMAIL; wording in
+// stripe-alerts.ts). The 6-hourly sweep (stripe-sweep.ts) applies any of
+// these events the webhook missed, through this same path.
 
+import type { BillingAlert, CreditsMoved, EventRef, MoneyBackFacts, } from './stripe-alerts'
+import { earlyMoneyBackAlert, moneyBackAlert, nothingOnRecordAlert, notAppliedAlert, } from './stripe-alerts'
+import type { ChargeState, DisputeState, StripeGet } from './stripe-charge'
+import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, loadCharge, moneyGoneBack, readCharge, refundEnded, saveCharge, } from './stripe-charge'
 import type { Env } from './auth'
 import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
 import type { Ledger } from './ledger'
-import { writeOnLedger } from './ledger'
+import { readLedger, writeOnLedgerOnce } from './ledger'
 
 /** The ledger reason of a pack's credits, granted when its checkout is paid
  *  (billing.ts, grantCheckoutCredits). */
@@ -86,11 +106,33 @@ export function isCheckoutPaidEvent(type: unknown): boolean {
   return (CHECKOUT_PAID_EVENTS as readonly unknown[]).includes(type)
 }
 
-/** The Stripe events that move money back to the buyer. */
-export type MoneyBackEvent = 'charge.refunded' | 'charge.dispute.created'
+/** The Stripe events that move money back to the buyer, or end a move: a
+ *  refund and what becomes of it, a dispute opening and closing.
+ *  charge.refund.updated is not one: Stripe deprecated it for
+ *  refund.updated. */
+export const MONEY_BACK_EVENTS = [
+  'charge.refunded',
+  'refund.updated',
+  'refund.failed',
+  'charge.dispute.created',
+  'charge.dispute.closed',
+] as const
+
+export type MoneyBackEvent = (typeof MONEY_BACK_EVENTS)[number]
 
 export function isMoneyBackEvent(type: unknown): type is MoneyBackEvent {
-  return type === 'charge.refunded' || type === 'charge.dispute.created'
+  return (MONEY_BACK_EVENTS as readonly unknown[]).includes(type)
+}
+
+/** Every event type the webhook and the sweep apply. Any other type is
+ *  acknowledged without a write. */
+export const HANDLED_EVENTS: readonly string[] = [
+  ...CHECKOUT_PAID_EVENTS,
+  ...MONEY_BACK_EVENTS,
+]
+
+export function isHandledEvent(type: unknown): boolean {
+  return isCheckoutPaidEvent(type) || isMoneyBackEvent(type)
 }
 
 /** The PaymentIntent a Checkout Session, a Charge or a Dispute names: an id
@@ -107,41 +149,48 @@ export function paymentIntentOf(
   return null
 }
 
-/** How much of the payment has gone back, from 0 to 1. A dispute is the
- *  whole payment; a refund is what the charge says was refunded so far. */
-export function refundedShare(
-  type: MoneyBackEvent,
-  object: Record<string, unknown>,
-): number {
-  if (type === 'charge.dispute.created') return 1
-  if (object.refunded === true) return 1
-  const amount = Number(object.amount)
-  const refunded = Number(object.amount_refunded)
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(refunded)) {
-    return 0
-  }
-  return Math.min(1, Math.max(0, refunded / amount))
+export interface Settlement {
+  /** The row the event writes: negative takes credits back, positive gives
+   *  them back. */
+  delta: number
+  /** What refunds and disputes hold of the payment once it is written. */
+  held: number
 }
 
-export interface TakeBack {
-  /** Credits this event takes now. */
-  take: number
-  /** Credits this payment still owes, before this event takes any. */
-  owed: number
-}
-
-/** What one event takes back: the payment's credits in proportion to the
- *  money gone back, less what earlier events took, and never more than the
- *  balance holds. */
-export function creditsToTake(input: {
+/**
+ * What one money-back event writes. Refunds and disputes of a payment hold
+ * floor(granted x gone / paid) of its credits, less what anything else took
+ * back from the same payment (a withdrawal, which takes its own credits).
+ * The row moves what they hold to that. Only an event that can end a hold
+ * may give credits back: a dispute closing, a refund ending. Any other
+ * event that finds more held than is due leaves it, so an older event read
+ * late never gives back what a newer one took. The balance plays no part:
+ * credits already spent are owed.
+ */
+export function settlement(input: {
+  /** What the payment granted: its pack and any launch bonus. */
   granted: number
-  share: number
-  taken: number
-  balance: number
-}): TakeBack {
-  const due = Math.floor(input.granted * input.share)
-  const owed = Math.max(0, due - input.taken)
-  return { take: Math.min(owed, Math.max(0, input.balance)), owed }
+  /** Money gone back, and money paid, in minor units (moneyGoneBack). */
+  gone: number
+  paid: number
+  /** What refunds and disputes hold now. */
+  heldByMoneyBack: number
+  /** What anything else took back from the same payment. */
+  takenOtherwise: number
+  mayGiveBack: boolean
+}): Settlement {
+  const share =
+    input.paid > 0
+      ? Math.floor(
+          (input.granted * Math.min(Math.max(0, input.gone), input.paid)) /
+            input.paid,
+        )
+      : 0
+  const held = Math.max(0, share - Math.max(0, input.takenOtherwise))
+  const delta = input.heldByMoneyBack - held
+  return delta > 0 && !input.mayGiveBack
+    ? { delta: 0, held: input.heldByMoneyBack }
+    : { delta, held }
 }
 
 /** Credits already taken back from the payment `paymentIntent` names: by
@@ -157,163 +206,418 @@ function balanceOf(ledger: Ledger): number {
   return ledger.rows.reduce((sum, row) => sum + Number(row.delta), 0)
 }
 
-export interface ClawBack {
-  /** An earlier delivery of this event took its credits already. */
-  duplicate: boolean
-  /** Credits taken back by this event. */
-  taken: number
-  /** Credits the payment still owed that the balance could not cover. */
-  short: number
-  /** The account the payment's credits went to, or null when nothing on
-   *  record names this payment. */
-  userId: string | null
+/** What refunds and disputes of the payment hold now: their rows, net of
+ *  what they gave back. */
+function heldByMoneyBack(ledger: Ledger, paymentIntent: string): number {
+  return ledger.rows
+    .filter(
+      (row) =>
+        (row.reason === PURCHASE_REFUND || row.reason === PURCHASE_DISPUTE) &&
+        row.jobRef === paymentIntent,
+    )
+    .reduce((sum, row) => sum - Number(row.delta), 0)
 }
 
-/**
- * Take back what the payment behind a refund or a dispute granted. Safe to
- * call again for the same event: the row is keyed on it. Throws when the
- * ledger cannot be written, so Stripe delivers the event again.
- */
-export async function clawBackPayment(
-  env: Env,
-  eventId: string,
-  type: MoneyBackEvent,
-  object: Record<string, unknown>,
-): Promise<ClawBack> {
-  const key = `clawback:${eventId}`
-  const done = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
-  )
-    .bind(key)
-    .first<{ delta: number }>()
-  if (done !== null) {
-    return { duplicate: true, taken: -done.delta, short: 0, userId: null }
-  }
-
-  const paymentIntent = paymentIntentOf(object)
-  const grant =
-    paymentIntent === null
-      ? null
-      : await env.DB.prepare(
-          `SELECT userId, SUM(delta) AS granted FROM creditLedger
-            WHERE paymentIntentId = ? AND delta > 0
-            GROUP BY userId LIMIT 1`,
-        )
-          .bind(paymentIntent)
-          .first<{ userId: string; granted: number }>()
-  if (paymentIntent === null || grant === null) {
-    console.warn(
-      `[billing] ${type} ${eventId}: no credits on record for ${paymentIntent ?? 'a payment with no PaymentIntent'}, nothing taken back`,
+/** What the payment granted: its pack and the launch bonus that came with
+ *  it, the rows that carry its PaymentIntent (migration 0058). */
+function grantedBy(ledger: Ledger, paymentIntent: string): number {
+  return ledger.rows
+    .filter(
+      (row) => row.paymentIntentId === paymentIntent && Number(row.delta) > 0,
     )
-    await alertNothingOnRecord(env, eventId, type, paymentIntent)
-    return { duplicate: false, taken: 0, short: 0, userId: null }
-  }
+    .reduce((sum, row) => sum + Number(row.delta), 0)
+}
 
-  const share = refundedShare(type, object)
-  const settledWhole = await env.DB.prepare(
-    "SELECT 1 AS hit FROM withdrawals WHERE paymentIntentId = ? AND refundBasis = 'full'",
-  )
-    .bind(paymentIntent)
-    .first()
-  let owed = 0
-  const delta = await writeOnLedger(
+interface Settle {
+  delta: number
+  granted: number
+  held: number
+  takenOtherwise: number
+}
+
+/** What settling the payment against `ledger` writes. Anything else that
+ *  took the payment's credits back (takenFrom, less what refunds and
+ *  disputes hold) counts as taken already. */
+function settle(
+  ledger: Ledger,
+  paymentIntent: string,
+  charge: ChargeState,
+  mayGiveBack: boolean,
+): Settle {
+  const granted = grantedBy(ledger, paymentIntent)
+  const held = heldByMoneyBack(ledger, paymentIntent)
+  const takenOtherwise = Math.max(0, takenFrom(ledger, paymentIntent) - held)
+  const { gone, paid } = moneyGoneBack(charge)
+  const next = settlement({
+    granted,
+    gone,
+    paid,
+    heldByMoneyBack: held,
+    takenOtherwise,
+    mayGiveBack,
+  })
+  return { delta: next.delta, granted, held: next.held, takenOtherwise }
+}
+
+/** The row one event writes: its key, its reason, and whether it may give
+ *  credits back. */
+interface SettleRow {
+  key: string
+  reason: string
+  mayGiveBack: boolean
+}
+
+interface Settled extends CreditsMoved {
+  /** False when an earlier or a concurrent delivery wrote the row. */
+  wrote: boolean
+}
+
+/** Write the payment's settlement on its owner's ledger, once per key. */
+async function settlePayment(
+  env: Env,
+  userId: string,
+  paymentIntent: string,
+  charge: ChargeState,
+  row: SettleRow,
+): Promise<Settled> {
+  let after = { granted: 0, held: 0, takenOtherwise: 0, balance: 0 }
+  const written = await writeOnLedgerOnce(
     env,
-    grant.userId,
-    key,
-    type === 'charge.dispute.created' ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+    userId,
+    row.key,
+    row.reason,
     (ledger) => {
-      const back = creditsToTake({
-        granted: Number(grant.granted),
-        share,
-        taken:
-          settledWhole === null
-            ? takenFrom(ledger, paymentIntent)
-            : Number(grant.granted),
-        balance: balanceOf(ledger),
-      })
-      owed = back.owed
-      return { delta: -back.take, jobRef: paymentIntent }
+      const next = settle(ledger, paymentIntent, charge, row.mayGiveBack)
+      after = {
+        granted: next.granted,
+        held: next.held,
+        takenOtherwise: next.takenOtherwise,
+        balance: balanceOf(ledger) + next.delta,
+      }
+      return { delta: next.delta, jobRef: paymentIntent }
     },
   )
-  const outcome: ClawBack = {
-    duplicate: false,
-    taken: -delta,
-    short: Math.max(0, owed + delta),
-    userId: grant.userId,
-  }
+  return { userId, delta: written.delta, wrote: written.wrote, ...after }
+}
+
+function movedText(delta: number): string {
+  if (delta < 0) return `took back ${-delta} credit(s)`
+  return delta > 0 ? `gave back ${delta} credit(s)` : 'moved no credits'
+}
+
+function logSettled(
+  label: string,
+  paymentIntent: string,
+  moved: Settled,
+): void {
   console.log(
-    `[billing] ${type} ${eventId}: ${paymentIntent} took back ${outcome.taken} credit(s) from user=${grant.userId}` +
-      (outcome.short > 0 ? `, ${outcome.short} already spent` : ''),
+    `[billing] ${label}: ${paymentIntent} ${movedText(moved.delta)} for user=${moved.userId}; refunds and disputes hold ${moved.held} of ${moved.granted}, balance ${moved.balance}`,
   )
-  await alertTakenBack(env, eventId, type, paymentIntent, {
-    granted: Number(grant.granted),
-    share,
-    outcome,
-  })
-  return outcome
 }
 
 function alertConfig(env: Env): ResendConfig {
   return { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM }
 }
 
-function what(type: MoneyBackEvent): string {
-  return type === 'charge.dispute.created' ? 'Dispute' : 'Refund'
+async function sendAlert(env: Env, alert: BillingAlert | null): Promise<void> {
+  if (alert === null) return
+  await sendBillingAlert(
+    alertConfig(env),
+    env.BILLING_ALERT_EMAIL ?? '',
+    alert.subject,
+    alert.lines,
+  )
 }
 
-async function alertTakenBack(
+/** A Stripe event, as the webhook reads it from its body and the sweep from
+ *  the events list. */
+export interface StripeEventInput {
+  id: string
+  type: string
+  livemode: boolean
+  /** When Stripe created it, in seconds since 1970; 0 when it did not say. */
+  created: number
+  object: Record<string, unknown>
+}
+
+/** The event a parsed webhook body or events-list item holds, or why it
+ *  holds none. */
+export function parseStripeEvent(
+  value: unknown,
+): StripeEventInput | { ignored: 'malformed payload' | 'missing event id' } {
+  if (!isRecord(value)) return { ignored: 'malformed payload' }
+  if (typeof value.id !== 'string' || value.id === '') {
+    return { ignored: 'missing event id' }
+  }
+  const data = isRecord(value.data) ? value.data : {}
+  return {
+    id: value.id,
+    type: typeof value.type === 'string' ? value.type : '',
+    livemode: value.livemode === true,
+    created:
+      typeof value.created === 'number' && Number.isFinite(value.created)
+        ? value.created
+        : 0,
+    object: isRecord(data.object) ? data.object : {},
+  }
+}
+
+/**
+ * The event in a webhook body Stripe signed, or why it is acknowledged
+ * without being applied: a body nobody can read, an event with no id, or a
+ * type nothing here handles. Each of those is final, so the webhook answers
+ * 200 and Stripe stops sending it; none of them touches D1.
+ */
+export function readWebhookEvent(
+  payload: string,
+): StripeEventInput | { ignored: string } {
+  let body: unknown
+  try {
+    body = JSON.parse(payload)
+  } catch {
+    body = null
+  }
+  const event = parseStripeEvent(body)
+  if ('ignored' in event) {
+    console.warn(`[billing] webhook: ${event.ignored}, acknowledged unread`)
+    return event
+  }
+  return isHandledEvent(event.type)
+    ? event
+    : { ignored: 'unhandled event type' }
+}
+
+function refOf(event: StripeEventInput): EventRef {
+  return { id: event.id, type: event.type, livemode: event.livemode }
+}
+
+function isDisputeEvent(type: string): boolean {
+  return type.startsWith('charge.dispute.')
+}
+
+function isRefundEvent(type: string): boolean {
+  return type === 'charge.refunded' || type.startsWith('refund.')
+}
+
+/** How the refund an event is about ended with its money still ours, or
+ *  null when it did not: refund.failed says so by its type, refund.updated
+ *  by the refund's status. */
+function refundEndOf(event: StripeEventInput): 'failed' | 'canceled' | null {
+  const status = event.object.status
+  if (event.type === 'refund.failed') {
+    return status === 'canceled' ? 'canceled' : 'failed'
+  }
+  if (event.type !== 'refund.updated' || !refundEnded(status)) return null
+  return status === 'canceled' ? 'canceled' : 'failed'
+}
+
+/** The dispute a dispute event carries, as the event saw it. */
+function eventDispute(event: StripeEventInput): DisputeState | null {
+  return isDisputeEvent(event.type) ? disputeFrom(event.object) : null
+}
+
+/** What the event is about, with its dispute as Stripe reports it now. */
+function factsOf(event: StripeEventInput, charge: ChargeState): MoneyBackFacts {
+  const carried = eventDispute(event)
+  return {
+    dispute:
+      carried === null
+        ? null
+        : (charge.disputes.find((dispute) => dispute.id === carried.id) ??
+          carried),
+    refundEnded: refundEndOf(event),
+  }
+}
+
+/** The row the event writes. A dispute closing, or a refund ending, may
+ *  give credits back; a refund that ended is keyed by the refund, which
+ *  refund.failed and refund.updated both name. Any other refund.updated
+ *  writes only when it moves credits. */
+function rowFor(event: StripeEventInput): SettleRow & { onlyIfMoved: boolean } {
+  const ended = refundEndOf(event)
+  const refundId = typeof event.object.id === 'string' ? event.object.id : ''
+  return {
+    key:
+      ended !== null && refundId !== ''
+        ? `clawback:refund-ended:${refundId}`
+        : `clawback:${event.id}`,
+    reason: isDisputeEvent(event.type) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+    mayGiveBack: event.type === 'charge.dispute.closed' || ended !== null,
+    onlyIfMoved: event.type === 'refund.updated' && ended === null,
+  }
+}
+
+/** The account a payment's credits went to, or null when no credits on
+ *  record name the payment. */
+async function creditOwner(
   env: Env,
-  eventId: string,
-  type: MoneyBackEvent,
   paymentIntent: string,
-  facts: { granted: number; share: number; outcome: ClawBack },
+): Promise<string | null> {
+  const row = await env.DB.prepare(
+    'SELECT userId FROM creditLedger WHERE paymentIntentId = ? AND delta > 0 LIMIT 1',
+  )
+    .bind(paymentIntent)
+    .first<{ userId: string }>()
+  return row?.userId ?? null
+}
+
+/** The account a donation came from, when the payment was one: its audit
+ *  row (billing.ts, grantSupporterEntitlement) names it. */
+async function donor(env: Env, paymentIntent: string): Promise<string | null> {
+  const row = await env.DB.prepare(
+    "SELECT userId FROM creditLedger WHERE paymentIntentId = ? AND reason = 'donation' LIMIT 1",
+  )
+    .bind(paymentIntent)
+    .first<{ userId: string }>()
+  return row?.userId ?? null
+}
+
+/** What applying one Stripe event came to (billing.ts, applyStripeEvent):
+ *  what the webhook answers, and what the sweep reports. */
+export type StripeEventResult =
+  /** Applied now, and recorded. */
+  | { kind: 'applied'; detail?: string }
+  /** Final, and nothing could be applied: acknowledged, recorded when the
+   *  type is handled, and never tried again. */
+  | { kind: 'ignored'; reason: string }
+  /** Recorded before, or another delivery holds it right now. */
+  | { kind: 'duplicate' }
+  /** A checkout not paid yet: recorded, nothing granted. */
+  | { kind: 'unpaid' }
+
+/** What applying a money-back event came to. */
+export type MoneyBackResult = Extract<
+  StripeEventResult,
+  { kind: 'applied' | 'ignored' }
+>
+
+async function notApplied(
+  env: Env,
+  event: StripeEventInput,
+  why: string,
+  reason: string,
+): Promise<MoneyBackResult> {
+  console.warn(`[billing] ${event.type} ${event.id}: ${why}, nothing applied`)
+  await sendAlert(env, notAppliedAlert(refOf(event), why, eventDispute(event)))
+  return { kind: 'ignored', reason }
+}
+
+async function nothingOnRecord(
+  env: Env,
+  event: StripeEventInput,
+  charge: ChargeState,
 ): Promise<void> {
-  const { granted, share, outcome } = facts
-  await sendBillingAlert(
-    alertConfig(env),
-    env.BILLING_ALERT_EMAIL ?? '',
-    `${what(type)}: took back ${outcome.taken} credit(s)`,
-    [
-      `Stripe event: ${eventId} (${type})`,
-      `PaymentIntent: ${paymentIntent}`,
-      `Account: ${outcome.userId ?? 'unknown'}`,
-      `The payment granted ${granted} credit(s), its pack and any launch bonus.`,
-      `Gone back so far: ${Math.round(share * 100)}% of the payment.`,
-      `Taken back now: ${outcome.taken} credit(s).`,
-      ...(outcome.short > 0
-        ? [
-            `Not taken back: ${outcome.short} credit(s), already spent. The balance never goes below zero.`,
-          ]
-        : []),
-      ...(type === 'charge.dispute.created'
-        ? [
-            '',
-            'If the dispute is won, the credits do not come back by themselves:',
-            'give them back by hand.',
-          ]
-        : []),
-    ],
+  const paymentIntent = charge.paymentIntentId
+  console.warn(
+    `[billing] ${event.type} ${event.id}: no credits on record for ${paymentIntent ?? `${charge.chargeId}, which names no PaymentIntent`}, none taken back`,
+  )
+  const facts = factsOf(event, charge)
+  // A refund update is news only when it canceled the refund: a failure is
+  // refund.failed's to report, so the owner hears of it once.
+  if (event.type === 'refund.updated' && facts.refundEnded !== 'canceled') {
+    return
+  }
+  const userId = paymentIntent === null ? null : await donor(env, paymentIntent)
+  await sendAlert(
+    env,
+    nothingOnRecordAlert(
+      refOf(event),
+      charge,
+      userId === null ? null : { userId },
+      facts,
+    ),
   )
 }
 
-async function alertNothingOnRecord(
+/**
+ * Apply a refund or dispute event (MONEY_BACK_EVENTS) to the credits of the
+ * payment it is about, from what Stripe reports now: the charge, its refunds
+ * and its disputes. Safe to call again for the same event: its row is keyed
+ * on it, or on the refund it ended. Throws when D1 or Stripe fails, so the
+ * caller tries again later (the webhook answers 500, the sweep leaves the
+ * event for its next run).
+ */
+export async function applyMoneyBack(
   env: Env,
-  eventId: string,
-  type: MoneyBackEvent,
-  paymentIntent: string | null,
+  get: StripeGet,
+  event: StripeEventInput,
+): Promise<MoneyBackResult> {
+  const chargeId = chargeIdOf(event.type, event.object)
+  if (chargeId === null) {
+    return notApplied(
+      env,
+      event,
+      'it names no charge',
+      'no charge on the event',
+    )
+  }
+  const charge = await readCharge(get, chargeId, {
+    refund: isRefundEvent(event.type),
+    dispute: eventDispute(event),
+  })
+  if (charge === 'missing') {
+    return notApplied(
+      env,
+      event,
+      `Stripe knows no charge ${chargeId}`,
+      'charge not found',
+    )
+  }
+  const paymentIntent = charge.paymentIntentId
+  // Kept before the grant is looked for: a purchase landing at the same
+  // moment then finds the charge, if this does not find the purchase.
+  if (paymentIntent !== null) await saveCharge(env, paymentIntent, charge)
+  const owner =
+    paymentIntent === null ? null : await creditOwner(env, paymentIntent)
+  if (owner === null || paymentIntent === null) {
+    await nothingOnRecord(env, event, charge)
+    return { kind: 'applied' }
+  }
+  const row = rowFor(event)
+  if (row.onlyIfMoved) {
+    const ledger = await readLedger(env, owner)
+    const next = settle(ledger, paymentIntent, charge, row.mayGiveBack)
+    if (next.delta === 0) return { kind: 'applied' }
+  }
+  const moved = await settlePayment(env, owner, paymentIntent, charge, row)
+  if (moved.wrote) {
+    logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
+    await sendAlert(
+      env,
+      moneyBackAlert(refOf(event), charge, moved, factsOf(event, charge)),
+    )
+  }
+  return { kind: 'applied' }
+}
+
+/**
+ * After a purchase lands, take back what its refunds and disputes make due
+ * when one of them arrived first and found no credits to take: it kept the
+ * charge (stripeCharges). Runs on every delivery of the purchase, and
+ * writes one row per payment at most, none when nothing is due.
+ */
+export async function settleEarlyMoneyBack(
+  env: Env,
+  purchaseEventId: string,
+  session: Record<string, unknown>,
+  userId: string,
 ): Promise<void> {
-  await sendBillingAlert(
-    alertConfig(env),
-    env.BILLING_ALERT_EMAIL ?? '',
-    `${what(type)} with no credits on record`,
-    [
-      `Stripe event: ${eventId} (${type})`,
-      `PaymentIntent: ${paymentIntent ?? 'none on the event'}`,
-      '',
-      'No credits on record name this payment, so nothing was taken back.',
-      'It is a donation, or a purchase from before PaymentIntent ids were',
-      'stored on the ledger (migration 0058). Check it in the Stripe',
-      'dashboard and take the credits back by hand if they should go.',
-    ],
+  const paymentIntent = paymentIntentOf(session)
+  if (paymentIntent === null) return
+  const charge = await loadCharge(env, paymentIntent)
+  if (charge === null) return
+  const ledger = await readLedger(env, userId)
+  if (settle(ledger, paymentIntent, charge, false).delta === 0) return
+  const moved = await settlePayment(env, userId, paymentIntent, charge, {
+    key: `clawback:early:${paymentIntent}`,
+    reason: anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+    mayGiveBack: false,
+  })
+  if (!moved.wrote) return
+  logSettled(
+    `purchase ${purchaseEventId}, after its money went back`,
+    paymentIntent,
+    moved,
   )
+  await sendAlert(env, earlyMoneyBackAlert(purchaseEventId, charge, moved))
 }

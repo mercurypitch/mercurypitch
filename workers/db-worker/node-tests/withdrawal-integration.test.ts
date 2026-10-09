@@ -27,6 +27,7 @@ import worker from '../src/index'
 import { CHECKOUT_CHECKBOX, WITHDRAWAL_TEXT_VERSION, } from '../src/withdrawal-wording'
 import type { SqliteD1Statement } from './sqlite-d1'
 import { applyMigrations, interleaved, SqliteD1Database } from './sqlite-d1'
+import { chargeReads } from './stripe-charge-stub'
 
 const WEBHOOK_SECRET = 'whsec_withdrawal_integration'
 const PASSWORD = 'Singer123!pass'
@@ -71,6 +72,15 @@ let paymentIntents: Map<string, { amount_received: number; currency: string }>
  *  whether it will take the mail later; a number answers that status, a
  *  422 being a refusal for good. */
 let resendRefuses: (mail: { subject: string }) => boolean | number
+/** The charges Stripe reports now, by id (stripe-charge-stub.ts): a refund
+ *  or dispute is applied from the charge, not from its event. */
+const charges = new Map<string, Record<string, unknown>>()
+
+/** A charge as Stripe reports it from now on, for an event to carry. */
+function charged(charge: Record<string, unknown>): Record<string, unknown> {
+  charges.set(String(charge.id), charge)
+  return charge
+}
 
 function makeRefund(
   form: URLSearchParams,
@@ -204,6 +214,8 @@ function stubFetch(): void {
       if (url === `${STRIPE}/checkout/sessions`) {
         return Response.json({ id: 'cs_withdrawal', url: 'https://pay.test' })
       }
+      const charge = chargeReads(charges, url)
+      if (charge !== null) return charge
       if (method === 'GET') {
         const answer = stripeGetAnswer(url)
         if (answer !== null) return answer
@@ -550,6 +562,7 @@ beforeEach(() => {
   refundsMade = []
   paymentIntents = new Map()
   resendRefuses = () => false
+  charges.clear()
   stubFetch()
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
@@ -1207,14 +1220,14 @@ describe('a withdrawal is refused', () => {
       id: 'evt_dashboard_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: 2000,
           refunded: true,
-        },
+        }),
       },
     })
 
@@ -1282,14 +1295,14 @@ describe('the refund the withdrawal asks for comes back as charge.refunded', () 
       id,
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: refunded,
           refunded: refunded >= 2000,
-        },
+        }),
       },
     }
   }
@@ -1567,20 +1580,21 @@ describe('a launch bonus that lands late', () => {
       'evt:evt_pi_plus',
       'pi_plus',
     )
-    await deliver({
+    const refunded = await deliver({
       id: 'evt_dashboard_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: 2000,
           refunded: true,
-        },
+        }),
       },
     })
+    expect(refunded).toBe(200)
     expect(balance(sam.userId)).toBe(0)
 
     expect(await deliver(event)).toBe(200)

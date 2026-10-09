@@ -23,6 +23,7 @@ import type { Env } from '../src/auth'
 import { reconcileBilling } from '../src/billing'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { chargeReads } from './stripe-charge-stub'
 
 const WEBHOOK_SECRET = 'whsec_launch_finisher_integration'
 const SERVICE_KEY = 'launch-finisher-service-key'
@@ -40,6 +41,8 @@ interface Sent {
 }
 let sent: Sent[]
 let eventPages: Array<Record<string, unknown>>
+/** The charges Stripe reports now, by id (stripe-charge-stub.ts). */
+const charges = new Map<string, Record<string, unknown>>()
 
 function stubFetch(): void {
   vi.stubGlobal(
@@ -64,6 +67,9 @@ function stubFetch(): void {
           eventPages.shift() ?? { data: [], has_more: false },
         )
       }
+      // A refund is applied from the charge as Stripe reports it now.
+      const charge = chargeReads(charges, url)
+      if (charge !== null) return charge
       if (url === 'https://api.resend.com/emails') {
         return Response.json({ id: 'stubbed' })
       }
@@ -293,6 +299,7 @@ beforeEach(() => {
   at('2026-10-20T10:00:00.000Z')
   sent = []
   eventPages = []
+  charges.clear()
   stubFetch()
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
@@ -472,19 +479,21 @@ describe('using all five launch credits', () => {
     await deliver(paidEvent('evt_pack', await checkout(singer), 'pi_pack'))
     expect(await balanceOf(singer)).toBe(60)
 
+    const refunded = {
+      id: 'ch_pack',
+      object: 'charge',
+      payment_intent: 'pi_pack',
+      amount: 500,
+      amount_refunded: 500,
+      refunded: true,
+      currency: 'eur',
+      disputed: false,
+    }
+    charges.set('ch_pack', refunded)
     await deliver({
       id: 'evt_refund',
       type: 'charge.refunded',
-      data: {
-        object: {
-          id: 'ch_pack',
-          object: 'charge',
-          payment_intent: 'pi_pack',
-          amount: 500,
-          amount_refunded: 500,
-          refunded: true,
-        },
-      },
+      data: { object: refunded },
     })
 
     expect(await balanceOf(singer)).toBe(0)

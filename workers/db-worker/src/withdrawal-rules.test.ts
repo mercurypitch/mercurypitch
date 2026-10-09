@@ -87,6 +87,10 @@ function ledger() {
         reason: 'purchase-dispute',
         jobRef: paymentIntent,
       }),
+    /** A dispute's row (stripe-payments.ts): negative when it opens, and
+     *  positive when it is won and gives the credits back. */
+    disputeRow: (delta: number, paymentIntent: string) =>
+      add({ delta, reason: 'purchase-dispute', jobRef: paymentIntent }),
     withdrawn: (purchase: LedgerEntry, paid: number, bonus: number) => {
       add({
         delta: -paid,
@@ -318,6 +322,23 @@ describe('a pack already settled', () => {
 
     expect(use.settled).toBe(true)
     expect(canWithdraw('no_consent', use, STARTED, 3)).toBe(false)
+  })
+
+  it("gives a won dispute's credits back to its pack, and keeps the pack settled", () => {
+    const book = ledger()
+    const disputed = book.pack(140, 'pi_a')
+    book.disputeRow(-140, 'pi_a')
+    book.disputeRow(140, 'pi_a')
+    const next = book.pack(140, 'pi_b')
+    book.spend(10, 'job-1')
+
+    const use = useOf(book.rows, disputed)
+
+    // The give-back is the pack's own credits again, never free credits:
+    // the 10 spent count against the older pack first.
+    expect(use).toMatchObject({ settled: true, paidUnused: 130 })
+    expect(canWithdraw('refund_unused', use, STARTED, 3)).toBe(false)
+    expect(useOf(book.rows, next).paidUnused).toBe(140)
   })
 
   it('keeps a withdrawn pack withdrawn, and counts what it used for the next pack', () => {

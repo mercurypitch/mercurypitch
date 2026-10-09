@@ -577,7 +577,13 @@ describe('billing endpoints', () => {
     })
 
     it('accepts a correctly signed event and records it once', async () => {
-      const payload = JSON.stringify(event)
+      // A checkout still waiting for its money: handled, and nothing to grant.
+      const waiting = {
+        id: 'evt_test_waiting',
+        type: 'checkout.session.completed',
+        data: { object: { payment_status: 'unpaid', metadata: {} } },
+      }
+      const payload = JSON.stringify(waiting)
       const headers = { 'Stripe-Signature': await stripeSignature(payload) }
 
       const first = await post('webhook', env, { body: payload, headers })
@@ -587,6 +593,20 @@ describe('billing endpoints', () => {
       expect(first.body).toEqual({ received: true })
       expect(redelivery.body).toMatchObject({ duplicate: true })
       expect(db.billingEvents.size).toBe(1)
+    })
+
+    it('acknowledges a signed event of a type it does not handle, and records nothing', async () => {
+      const payload = JSON.stringify(event)
+      const headers = { 'Stripe-Signature': await stripeSignature(payload) }
+
+      const res = await post('webhook', env, { body: payload, headers })
+
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({
+        received: true,
+        ignored: 'unhandled event type',
+      })
+      expect(db.billingEvents.size).toBe(0)
     })
 
     it('is unavailable rather than open when no webhook secret is set', async () => {
