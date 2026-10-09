@@ -1403,6 +1403,21 @@
   color: #7fd3ff;
 }
 
+/* The store chips (StoreChips.tsx), last on the Map. Neutral grey pills
+   rather than the Mirror's violet, so nothing on them reads as a room or
+   as the Map's blue button; the caption at the size of the account line.
+   The component reads these properties; see StoreChips.module.css. */
+.mapStores {
+  --store-chips-margin: 10px auto 0;
+  --store-chips-ink: var(--ob-ink);
+  --store-chips-dim: var(--ob-ink-2);
+  --store-chips-accent: var(--ob-ink-3);
+  --store-chips-focus: var(--ob-blue);
+  --store-chips-caption-size: 0.78rem;
+
+  text-align: center;
+}
+
 /* ── Motion ──────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

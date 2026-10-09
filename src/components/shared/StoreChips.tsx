@@ -22,15 +22,24 @@
 // component is `() => null` and its copy is not in the bundle at all. (The
 // Mirror is a separate web entry that the native build does not include
 // either; this is the second lock, for whoever reuses the component.)
+//
+// SURFACE-AGNOSTIC. Mounted on the Mirror's two results and on First Light's
+// Map, which is why it lives here and not in either feature. It names no
+// surface. Its look is set through custom properties on the `class` a surface
+// passes in (StoreChips.module.css).
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createUniqueId, For, Show } from 'solid-js'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { StoreListings } from '@/lib/store-listings'
 import { STORE_LISTINGS, STORE_PREVIEW_VIDEO_URL, storeLinks, } from '@/lib/store-listings'
+import styles from './StoreChips.module.css'
+
+/** Which store a chip or badge names. */
+export type StoreId = 'app-store' | 'google-play'
 
 interface Store {
-  id: 'app-store' | 'google-play'
+  id: StoreId
   name: string
   /** The listing, once live and well formed. */
   href?: string
@@ -41,6 +50,9 @@ interface Store {
 export interface StoreChipsProps {
   /** Overrides the shipped config, for tests. */
   listings?: StoreListings
+  /** The surface's class on the root, where it sets the custom properties
+   *  StoreChips.module.css reads (colours, margin, caption size). */
+  class?: string
 }
 
 const WebStoreChips: Component<StoreChipsProps> = (props) => {
@@ -73,39 +85,40 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
   }
   const anyComingSoon = (): boolean =>
     stores().some((s) => s.href === undefined)
+  const captionId = createUniqueId()
 
   return (
-    <div class="mirror-stores">
+    <div class={`${styles.root} ${props.class ?? ''}`}>
       <Show when={anyComingSoon()}>
-        <p class="mirror-stores-caption" id="mirror-stores-caption">
+        <p class={styles.caption} id={captionId}>
           The MercuryPitch app is on its way. The video shows it on an Android
           tablet: leave the app mid-song and the karaoke keeps playing, with the
           lyrics floating on top.
         </p>
       </Show>
-      <div class="mirror-stores-row">
+      <div class={styles.row}>
         <For each={stores()}>
           {(store) => (
             <Show
               when={store.href}
               fallback={
                 <a
-                  class="mirror-store-chip"
+                  class={styles.chip}
                   data-store={store.id}
                   href={STORE_PREVIEW_VIDEO_URL}
                   target="_blank"
                   rel="noopener"
                   aria-label={`Coming soon: ${store.name}. Opens a video of the app on YouTube, in a new tab.`}
-                  aria-describedby="mirror-stores-caption"
+                  aria-describedby={captionId}
                 >
-                  <span class="mirror-store-chip-soon">Coming soon</span>
-                  <span class="mirror-store-chip-name">{store.name}</span>
+                  <span class={styles.chipSoon}>Coming soon</span>
+                  <span class={styles.chipName}>{store.name}</span>
                 </a>
               }
             >
               {(href) => (
                 <a
-                  class="mirror-store-badge"
+                  class={styles.badge}
                   data-store={store.id}
                   href={href()}
                   target="_blank"
@@ -130,4 +143,6 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
 
 /** The store chips, or nothing at all inside the native app. */
 export const StoreChips: Component<StoreChipsProps> = (props) =>
-  IS_NATIVE_BUILD ? null : <WebStoreChips listings={props.listings} />
+  IS_NATIVE_BUILD ? null : (
+    <WebStoreChips listings={props.listings} class={props.class} />
+  )

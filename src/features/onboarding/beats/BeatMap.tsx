@@ -8,11 +8,18 @@
 //
 // This beat is also mounted on its own for replays (#/map), which is
 // why it takes its content as props and owns no flow state.
+//
+// The store chips sit last, under the account line, and smaller than any
+// room. The Map is the last screen of every track and comes after the Keep
+// beat, so a link out of the app here cannot cost the account offer the way
+// one on the twin portrait would. It still must not cost a room: the beat's
+// job is sending people into one.
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
+import { StoreChips } from '@/components/shared/StoreChips'
 import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
@@ -295,6 +302,8 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           </p>
         </Match>
       </Switch>
+
+      <StoreChips class={styles.mapStores} />
     </div>
   )
 }
