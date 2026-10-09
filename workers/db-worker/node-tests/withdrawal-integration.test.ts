@@ -465,6 +465,34 @@ function takes(userId: string): Array<Record<string, unknown>> {
     .all(userId)
 }
 
+/** A refund the stub made, as Stripe's refund events carry it: with its
+ *  charge, and without the stub's own bookkeeping. */
+function refundAsEvents(
+  made: Record<string, unknown>,
+  charge: string,
+): Record<string, unknown> {
+  return {
+    id: made.id,
+    object: 'refund',
+    amount: made.amount,
+    charge,
+    payment_intent: made.payment_intent,
+    metadata: made.metadata,
+    status: made.status,
+    failure_reason: made.failure_reason ?? null,
+  }
+}
+
+/** Every row of the account's ledger, in the order they were written. */
+function ledgerOf(userId: string): Array<Record<string, unknown>> {
+  return sqlite
+    .prepare(
+      `SELECT delta, reason, jobRef, idempotencyKey FROM creditLedger
+        WHERE userId = ? ORDER BY rowid`,
+    )
+    .all(userId)
+}
+
 /** What refunds and disputes took back from the account, all told. */
 function takenBack(userId: string): number {
   const row = sqlite
@@ -1938,6 +1966,99 @@ describe('the cron finishes what a request left undone', () => {
 })
 
 describe('a refund Stripe has not finished', () => {
+  it('gives nothing back when it fails, and leaves the alert to the withdrawal sweep', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 40, 'job-1')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    // Stripe shows the refund on the charge from the moment it makes it.
+    const charge = charged({
+      id: 'ch_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: made.amount,
+      refunded: false,
+    })
+    const refunded = await deliver({
+      id: 'evt_withdrawal_refund',
+      type: 'charge.refunded',
+      data: { object: charge },
+    })
+    expect(refunded).toBe(200)
+    const ledgerBefore = ledgerOf(sam.userId)
+    const alertsBefore = alerts().length
+
+    // The refund fails: the money goes back to the Stripe balance, and
+    // Stripe says so in two events.
+    made.status = 'failed'
+    made.failure_reason = 'expired_or_canceled_card'
+    charge.amount_refunded = 0
+    const failed = refundAsEvents(made, 'ch_plus')
+    const answers = [
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: failed },
+      }),
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: failed },
+      }),
+    ]
+
+    expect(answers).toEqual([200, 200])
+    expect({ ledger: ledgerOf(sam.userId), alerts: alerts().length }).toEqual({
+      ledger: ledgerBefore,
+      alerts: alertsBefore,
+    })
+
+    // The withdrawal sweep finds the refund failed and says so, once.
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+    expect(subjects(alerts().slice(alertsBefore))).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €14.28 by hand',
+    ])
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+  })
+
+  it('gives nothing back when it is canceled, and alerts nothing from the webhook', async () => {
+    newRefundStatus = 'requires_action'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    charged({
+      id: 'ch_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: 0,
+      refunded: false,
+    })
+    const ledgerBefore = ledgerOf(sam.userId)
+    const alertsBefore = alerts().length
+
+    made.status = 'canceled'
+    const canceled = await deliver({
+      id: 'evt_refund_canceled',
+      type: 'refund.updated',
+      data: { object: refundAsEvents(made, 'ch_plus') },
+    })
+
+    expect(canceled).toBe(200)
+    expect({ ledger: ledgerOf(sam.userId), alerts: alerts().length }).toEqual({
+      ledger: ledgerBefore,
+      alerts: alertsBefore,
+    })
+  })
+
   it('is followed until Stripe fails it, then goes to the owner to refund by hand', async () => {
     newRefundStatus = 'pending'
     const sam = await buyer('sam@example.test')

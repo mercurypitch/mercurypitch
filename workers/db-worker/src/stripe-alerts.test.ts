@@ -265,7 +265,7 @@ describe('a refund', () => {
     expect(text(alert)).toContain('canceled before it reached the buyer')
   })
 
-  it('says what a withdrawal took when its refund fails', () => {
+  it('says what a withdrawal took when a hand refund of its payment fails', () => {
     const alert = moneyBackAlert(
       ref('refund.failed'),
       charge(),

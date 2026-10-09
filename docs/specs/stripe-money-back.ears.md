@@ -110,9 +110,10 @@ closing shall alert the owner.
 
 **When** a refund fails (`refund.failed`, or `refund.updated` to `failed`) or
 is canceled (`refund.updated` to `canceled`), the worker shall give back what
-it took and alert the owner that the buyer did not get the money. Only a
-dispute closing or a refund ending shall ever give credits back. The
-deprecated `charge.refund.updated` is not handled.
+it took and alert the owner that the buyer did not get the money, unless the
+refund is a withdrawal's own (REQ-MB-028). Only a dispute closing or a
+refund ending shall ever give credits back. The deprecated
+`charge.refund.updated` is not handled.
 
 ### REQ-MB-024 — Spent credits are owed
 
@@ -144,6 +145,14 @@ the buyer never owes for credits they used. The worker shall look for that
 withdrawal again after every read of the ledger, so one that lands between
 the read and the write is counted. The alert shall say why nothing was
 taken.
+
+### REQ-MB-028 — A withdrawal's own refund that fails
+
+**When** a refund tagged `metadata.withdrawalId` (withdrawal-refund.ts) fails
+or is canceled, `refund.failed` and `refund.updated` shall write no ledger
+row and send no alert: the withdrawal sweep follows that refund, marks the
+statement failed and alerts the owner (withdrawal-finish.ts). The webhook
+shall acknowledge both events.
 
 ## 4. The sweep
 

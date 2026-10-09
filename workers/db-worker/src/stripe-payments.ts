@@ -50,7 +50,10 @@
 // whole payment takes the rest. A withdrawal that refunds the whole price (a
 // purchase with no consent on record, refundBasis 'full') settles the
 // payment outright: what the buyer used stays theirs (CRD Art. 14(4)(b)), so
-// no refund or dispute of it takes anything more (settledWhole).
+// no refund or dispute of it takes anything more (settledWhole). A
+// withdrawal's own refund that fails or is canceled is the withdrawal
+// sweep's to follow and report (withdrawal-finish.ts): it writes no row
+// here.
 //
 // Credits already spent are owed: the balance goes below zero, and the
 // debit's own check (billing.ts, `SUM(delta) >= cost`) blocks spending until
@@ -457,6 +460,17 @@ function refundEndOf(event: StripeEventInput): 'failed' | 'canceled' | null {
   return status === 'canceled' ? 'canceled' : 'failed'
 }
 
+/** The withdrawal a refund event's refund was made for: withdrawal-refund.ts
+ *  tags each refund it asks for with metadata.withdrawalId. Null for any
+ *  other refund, and for a charge or a dispute. */
+function withdrawalOf(event: StripeEventInput): string | null {
+  if (!event.type.startsWith('refund.')) return null
+  const metadata = event.object.metadata
+  if (!isRecord(metadata)) return null
+  const id = metadata.withdrawalId
+  return typeof id === 'string' && id !== '' ? id : null
+}
+
 /** The dispute a dispute event carries, as the event saw it. */
 function eventDispute(event: StripeEventInput): DisputeState | null {
   return isDisputeEvent(event.type) ? disputeFrom(event.object) : null
@@ -588,6 +602,21 @@ export async function applyMoneyBack(
   get: StripeGet,
   event: StripeEventInput,
 ): Promise<MoneyBackResult> {
+  // A withdrawal's own refund that failed or was canceled is the withdrawal
+  // sweep's (withdrawal-finish.ts): it follows the refund, marks the
+  // statement failed and alerts the owner. Nothing here took credits for
+  // it, so nothing comes back, and the owner hears of it once.
+  const ended = refundEndOf(event)
+  const withdrawal = ended === null ? null : withdrawalOf(event)
+  if (withdrawal !== null) {
+    console.log(
+      `[billing] ${event.type} ${event.id}: the refund of withdrawal ${withdrawal} ${ended}, left to the withdrawal sweep`,
+    )
+    return {
+      kind: 'ignored',
+      reason: 'a withdrawal refund, which the withdrawal sweep follows',
+    }
+  }
   const chargeId = chargeIdOf(event.type, event.object)
   if (chargeId === null) {
     return notApplied(
