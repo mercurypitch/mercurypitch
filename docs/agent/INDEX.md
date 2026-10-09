@@ -124,10 +124,10 @@ These are the rules that break things when ignored.
 | `rooms` | [contract.ts](../../src/features/rooms/contract.ts) | 300 | The room contract. |
 | `recording` | [useRecordingController.ts](../../src/features/recording/useRecordingController.ts) | 250 | useRecordingController — sung input captured as editable notes Feeds mic frames through the shared live-pitch pipeline (@/lib/pitch-pipel... |
 | `instrument-room` | [InstrumentRoomDoor.tsx](../../src/features/instrument-room/InstrumentRoomDoor.tsx) | 200 | The instrument room door Shown once, the first time somebody presses the Piano or Guitar tab, because each of those now opens two differe... |
+| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 150 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `editor` | [useEditorController.ts](../../src/features/editor/useEditorController.ts) | 100 | useEditorController — Compose-tab actions (MIDI import/export, share) The thin action layer over the piano-roll editor: import a MIDI fil... |
 | `glass-adventure` | [main.tsx](../../src/features/glass-adventure/main.tsx) | 100 | Glassworks campaign entry — MercuryPitch's standalone museum front door |
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
-| `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 50 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
