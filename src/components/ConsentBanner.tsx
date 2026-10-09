@@ -44,8 +44,9 @@ export const ConsentBanner: Component = () => (
       <div class={styles.copy}>
         <ShieldIcon />
         <p class={styles.text}>
-          We use cookies to measure our ads and understand how the site is used.{' '}
-          <strong>Your voice recordings never leave your device.</strong>{' '}
+          We'd like to use Google cookies to measure our ads and see how the
+          site is used.{' '}
+          <strong>Pitch detection runs on your device either way.</strong>{' '}
           <a
             class={styles.link}
             href={PRIVACY_URL}

@@ -2462,7 +2462,7 @@ export const SettingsPanel: Component = () => {
                         d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 4 4 0 0 1-4-4 2 2 0 0 1-2-2zm-3 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-1 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm7 1a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"
                       />
                     </svg>
-                    Cookie preferences
+                    Cookie settings
                   </button>
                 </Show>
               </div>
