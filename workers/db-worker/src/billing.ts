@@ -44,7 +44,8 @@ import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
-import { featuredPromoView, PROMO_REFUSALS, promoRefusal } from './promo-rules'
+import { featuredPromoView } from './promo-rules'
+import { handlePromoRedeem, readPromoClaims } from './promo-claim'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
@@ -189,19 +190,7 @@ async function handleMe(
       sourceLabel: string | null
     }>()
 
-  let redeemedPromos: string[] = []
-  try {
-    const { results: redemptions } = await env.DB.prepare(
-      `SELECT p.code FROM promoRedemptions r
-       JOIN promoCodes p ON p.id = r.promoCodeId
-       WHERE r.userId = ?`,
-    )
-      .bind(auth.userId)
-      .all<{ code: string }>()
-    redeemedPromos = redemptions.map((r) => r.code)
-  } catch {
-    redeemedPromos = []
-  }
+  const promoClaims = await readPromoClaims(env, auth.userId)
 
   const balance = app?.left ?? creditBalance(ledger?.results ?? [])
   return respond({
@@ -216,7 +205,9 @@ async function handleMe(
       Date.now(),
       app ?? undefined,
     ),
-    redeemedPromos,
+    // The codes alone, as clients before promoClaims read them.
+    redeemedPromos: promoClaims.map((claim) => claim.code),
+    promoClaims,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
     // does not present purchase controls that checkout will reject.
@@ -1230,181 +1221,6 @@ export async function reconcileBilling(env: Env): Promise<void> {
       ],
     )
   }
-}
-
-async function handlePromoRedeem(
-  request: Request,
-  env: Env,
-  respond: Respond,
-): Promise<Response> {
-  const auth = await getAuth(request, env)
-  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-
-  if (auth.isTestAccount) {
-    return respond(
-      { error: 'Promo codes are disabled for managed testing accounts' },
-      { status: 403 },
-    )
-  }
-
-  if (auth.provider === 'anonymous') {
-    return respond(
-      { error: 'Please create an account to redeem promo codes' },
-      { status: 403 },
-    )
-  }
-
-  const rl = await checkRateLimit(env.DB, `user:${auth.userId}`, 'promo-redeem')
-  if (!rl.allowed) {
-    const after = rl.retryAfter ?? 60
-    return respond(
-      { error: `Too many attempts. Try again in ${after} seconds.` },
-      { status: 429, headers: { 'Retry-After': String(after) } },
-    )
-  }
-
-  const user = await env.DB.prepare(
-    'SELECT email, emailVerified, authProvider FROM users WHERE id = ?',
-  )
-    .bind(auth.userId)
-    .first<{
-      email: string | null
-      emailVerified: number
-      authProvider: string
-    }>()
-
-  if (!user || user.email == null || user.emailVerified !== 1) {
-    return respond(
-      { error: 'Please verify your email address to redeem promo codes.' },
-      { status: 403 },
-    )
-  }
-
-  let body: { code?: string }
-  try {
-    body = (await request.json()) as { code?: string }
-  } catch {
-    return respond({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  const rawCode = typeof body?.code === 'string' ? body.code.trim() : ''
-  if (rawCode === '') {
-    return respond({ error: 'Promo code is required.' }, { status: 400 })
-  }
-
-  const codeUpper = rawCode.toUpperCase()
-
-  const promo = await env.DB.prepare(
-    'SELECT id, code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE UPPER(code) = ? AND active = 1',
-  )
-    .bind(codeUpper)
-    .first<{
-      id: string
-      code: string
-      credits: number
-      maxRedemptions: number | null
-      redemptionCount: number
-      startsAt: string | null
-      expiresAt: string | null
-      active: number
-    }>()
-
-  if (!promo) {
-    return respond(
-      { error: 'Invalid or inactive promo code.' },
-      { status: 404 },
-    )
-  }
-
-  const now = new Date()
-  const nowIso = now.toISOString()
-
-  const refusal = promoRefusal(promo, now)
-  if (refusal !== null) {
-    const { error, status } = PROMO_REFUSALS[refusal]
-    return respond({ error }, { status })
-  }
-
-  // One transaction for the three writes that make a redemption: the
-  // per-user slot, the campaign counter and the credits. D1 runs a batch
-  // atomically, so a slot can never exist without its credits — three
-  // separate statements could leave a row behind that the user was then
-  // told they had "already redeemed". The cap is claimed by the slot INSERT
-  // itself, guarded by the counter it is about to move: two callers racing
-  // for the last slot serialise on the write lock, and the second one's
-  // INSERT lands nothing. The UNIQUE(promoCodeId, userId) constraint drops
-  // a second slot for the same account the same way.
-  const redemptionId = crypto.randomUUID()
-  const ledgerId = crypto.randomUUID()
-  const idempotencyKey = `promo:${promo.id}:${auth.userId}`
-  const [slot, , credited] = await env.DB.batch([
-    env.DB.prepare(
-      `INSERT OR IGNORE INTO promoRedemptions (id, promoCodeId, userId, redeemedAt)
-       SELECT ?, ?, ?, ?
-        WHERE EXISTS (
-          SELECT 1 FROM promoCodes
-           WHERE id = ? AND active = 1
-             AND (maxRedemptions IS NULL OR redemptionCount < maxRedemptions))`,
-    ).bind(redemptionId, promo.id, auth.userId, nowIso, promo.id),
-    env.DB.prepare(
-      `UPDATE promoCodes SET redemptionCount = redemptionCount + 1, updatedAt = ?
-        WHERE id = ? AND EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
-    ).bind(nowIso, promo.id, redemptionId),
-    env.DB.prepare(
-      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-       SELECT ?, ?, ?, ?, 'promo', ?, ?
-        WHERE EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
-    ).bind(
-      ledgerId,
-      nowIso,
-      auth.userId,
-      promo.credits,
-      promo.code,
-      idempotencyKey,
-      redemptionId,
-    ),
-  ])
-
-  if (slot.meta.changes === 0) {
-    // Nothing landed: either this account already holds a slot, or the
-    // campaign filled up between the read above and this write.
-    const taken = await env.DB.prepare(
-      'SELECT 1 FROM promoRedemptions WHERE promoCodeId = ? AND userId = ?',
-    )
-      .bind(promo.id, auth.userId)
-      .first()
-    return respond(
-      {
-        error: taken
-          ? 'You have already redeemed this promo code.'
-          : 'This promo code has reached its maximum redemption limit.',
-      },
-      { status: 400 },
-    )
-  }
-  if (credited.meta.changes === 0) {
-    // The slot is new but the ledger already had this key. Cannot happen
-    // through this handler; log it rather than fail a redemption that did
-    // land, and let the balance below say what the account actually holds.
-    console.error(
-      `[billing] promo ${promo.code}: slot ${redemptionId} landed on an existing ledger key ${idempotencyKey}`,
-    )
-  }
-
-  const ledger = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE userId = ?',
-  )
-    .bind(auth.userId)
-    .all<{ delta: number }>()
-
-  const balance = creditBalance(ledger.results)
-
-  return respond({
-    success: true,
-    code: promo.code,
-    creditsGranted: promo.credits,
-    newBalance: balance,
-  })
 }
 
 /**

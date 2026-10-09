@@ -32,6 +32,7 @@ import type { MailOrigins } from './email-layout'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 import { sendSignUpCode } from './email-sign-up-code'
 import { shouldTouchLastActive } from './last-active'
+import { claimLaunchGift } from './launch-offer'
 import type { LoginCodeClaim } from './login-codes'
 import { adoptSignUpCodes, claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, NO_ACCOUNT_YET, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
@@ -1651,6 +1652,7 @@ async function handleResetPassword(
   )
     .bind(passwordHash, nowIso(), user.id)
     .run()
+  if (user.emailVerified !== 1) await claimLaunchGift(env, user.id)
   return respond({ ok: true })
 }
 
@@ -2099,6 +2101,7 @@ async function handleEmailCodeVerify(
       .bind(nowIso(), row.id)
       .run()
     row.emailVerified = 1
+    await claimLaunchGift(env, row.id)
   }
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
@@ -2161,6 +2164,7 @@ async function finishSignUpCode(
     throw err
   }
   await adoptSignUpCodes(env.DB, email, userId, Date.now())
+  await claimLaunchGift(env, userId)
 
   const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
   await Promise.all([
@@ -2487,6 +2491,7 @@ export async function resolveFederatedUser(
       // a board, or in the profile) stays. The password upgrade writes outright
       // because there the singer types the name on our own sign-up form.
       await replaceDefaultHandle(env.DB, anon.id, identity.name)
+      await claimLaunchGift(env, anon.id)
       await sendWelcomeEmail(env, storedEmail, mail)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
@@ -2513,6 +2518,7 @@ export async function resolveFederatedUser(
     identity.name || defaultDisplayName(id),
     identity.picture ?? undefined,
   )
+  await claimLaunchGift(env, id)
   await sendWelcomeEmail(env, storedEmail, mail)
   return { row: (await findUserById(env.DB, id)) as UserRow, isNew: true }
 }
@@ -3566,6 +3572,9 @@ async function handleVerifyEmail(
   if (!user || user.email?.toLowerCase() !== row.email.toLowerCase()) {
     return fail('invalid_or_used')
   }
+  // The link has just proved the inbox, which is all the launch gift asks
+  // (launch-offer.ts), so it is claimed on that proof, ahead of the flag.
+  await claimLaunchGift(env, row.userId, row.email)
   await env.DB.prepare(
     'UPDATE users SET emailVerified = 1, updatedAt = ? WHERE id = ?',
   )
