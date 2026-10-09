@@ -199,3 +199,36 @@ describe('what a page without JavaScript says about the voice', () => {
       expect(page.noscript).not.toMatch(/upload/iu)
   })
 })
+
+// The imprint has to be "easily, directly and permanently accessible"
+// (E-Commerce Directive Art. 5), and an entry document is all a reader without
+// JavaScript, a crawler or an ad reviewer ever sees. So every document a visitor
+// can land on carries the same legal nav, as plain links in the first byte.
+describe('the legal nav in every entry document', () => {
+  const LEGAL_HREFS = [
+    'https://about.mercurypitch.com/privacy',
+    'https://about.mercurypitch.com/terms',
+    'https://about.mercurypitch.com/imprint/',
+  ]
+
+  function legalHrefs(html: string): (string | null)[] {
+    const document = new DOMParser().parseFromString(html, 'text/html')
+    const nav = document.querySelector('nav[aria-label="Legal"]')
+    return Array.from(nav?.querySelectorAll('a') ?? []).map((a) =>
+      a.getAttribute('href'),
+    )
+  }
+
+  it('links Privacy, Terms and Imprint from every generated entry', () => {
+    for (const page of ENTRY_PAGES) {
+      expect(legalHrefs(renderEntryPage(page))).toEqual(LEGAL_HREFS)
+    }
+  })
+
+  it.each(['index.html', '404.html', 'delete-account.html'])(
+    'links Privacy, Terms and Imprint from the hand-written %s',
+    (file) => {
+      expect(legalHrefs(repoFile(file))).toEqual(LEGAL_HREFS)
+    },
+  )
+})

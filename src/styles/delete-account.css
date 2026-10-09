@@ -111,3 +111,14 @@ body {
   border-top: 1px solid #30363d;
   font-size: 0.9375rem;
 }
+/* The legal row sits under the first one, inside the same rule. */
+.delete-account__links + .delete-account__links {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.delete-account__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

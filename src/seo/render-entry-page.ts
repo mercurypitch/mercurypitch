@@ -5,6 +5,9 @@
 // structured data, the prelude block and the cross-links. Per-page words live
 // in entry-pages.ts; nothing page-specific belongs below.
 
+// Relative, not '@/': vite.config.ts loads this file through
+// tools/generate-entry-pages.ts, before the alias exists.
+import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
 import type { EntryPage } from './entry-pages'
 import { ABOUT_URL, canonicalPath, navLinksFor, OG_IMAGE, SITE_ORIGIN, } from './entry-pages'
 
@@ -74,6 +77,9 @@ export function renderEntryPage(
   const nav = navLinksFor(page, unlisted)
     .map((link) => `        <a href="${esc(link.href)}">${esc(link.label)}</a>`)
     .join('\n')
+  const legalNav = LEGAL_DOCUMENT_LINKS.map(
+    (link) => `        <a href="${esc(link.href)}">${esc(link.label)}</a>`,
+  ).join('\n')
 
   const faqSection =
     page.faq !== undefined && page.faq.length > 0
@@ -182,6 +188,9 @@ ${JSON.stringify(node, null, 2)
       <nav aria-label="More from MercuryPitch">
 ${nav}
       </nav>${faqSection}
+      <nav class="entry-prelude__legal" aria-label="Legal">
+${legalNav}
+      </nav>
     </div>
     <noscript>${esc(page.noscript)}</noscript>${
       page.bootHash !== undefined && page.bootHash !== ''

@@ -45,3 +45,21 @@ export const PAYMENTS_TERMS_URL = `${LANDING_ORIGIN}/terms#donations`
  * Google Play's Data safety form links it as the deletion URL.
  */
 export const DELETE_ACCOUNT_URL = 'https://mercurypitch.com/delete-account'
+
+/**
+ * Imprint: who runs Mercury Pitch and how to reach them (E-Commerce Directive
+ * Art. 5). One page on the landing site, linked from every legal row.
+ */
+export const IMPRINT_URL = `${LANDING_ORIGIN}/imprint/`
+
+/**
+ * The legal documents every legal row links, in the order it shows them. The
+ * in-app row (LegalLinks) and the entry documents' raw-HTML nav both read
+ * this, so a new document is added here once.
+ */
+export const LEGAL_DOCUMENT_LINKS: readonly { href: string; label: string }[] =
+  [
+    { href: PRIVACY_URL, label: 'Privacy' },
+    { href: TERMS_URL, label: 'Terms' },
+    { href: IMPRINT_URL, label: 'Imprint' },
+  ]
