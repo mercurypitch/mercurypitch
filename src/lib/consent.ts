@@ -387,11 +387,99 @@ function loadTag(): void {
   document.head.appendChild(script)
 }
 
+// ── Cookie settings ───────────────────────────────────────────
+//
+// The same behaviour and words as the landing's banner (disjoint-colliders
+// #100, ConsentAnalytics.astro), so both hosts agree: reopened from Cookie
+// settings, the banner states the current choice and its date, can close
+// unchanged, and confirms a Decline instead of vanishing.
+
+// True while the banner is open as Cookie settings rather than as the first ask.
+const [settingsOpen, setSettingsOpen] = createSignal(false)
+const [settingsLine, setSettingsLine] = createSignal('')
+
+/** The status line above the buttons: empty except in Cookie settings. */
+export const consentSettingsLine = settingsLine
+
+/** True while the banner is open as Cookie settings. */
+export const isConsentSettingsOpen = settingsOpen
+
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+/** Copy C3: what this site has stored as the visitor's choice. */
+function choiceLine(choice: StoredConsent | null): string {
+  if (choice === null || choice.implicit) {
+    return 'You haven\u2019t made a choice for this site yet.'
+  }
+  const verb = choice.status === 'granted' ? 'accepted' : 'declined'
+  if (choice.at <= 0) return `You ${verb} cookies on this site.`
+  const d = new Date(choice.at)
+  return `You ${verb} cookies on ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}.`
+}
+
+/**
+ * Every domain a Google cookie may have been set on from `hostname`: the host
+ * itself with no Domain attribute (''), then the host and each parent short
+ * of the bare TLD. GA4 writes _ga to the widest it can (.mercurypitch.com,
+ * shared with the landing), and a cookie goes only when it is deleted the way
+ * it was set.
+ */
+export function googleCookieDomains(hostname: string): string[] {
+  const parts = hostname.split('.')
+  const domains = ['']
+  for (let i = 0; i < parts.length - 1; i++) {
+    domains.push(parts.slice(i).join('.'))
+  }
+  return domains
+}
+
+/**
+ * Delete _ga, _ga_* and _gcl_*. A Consent Mode update stops new writes but
+ * leaves the old cookies in place, so Decline has to remove them itself.
+ */
+function clearGoogleCookies(): void {
+  let jar: string
+  try {
+    jar = String(document.cookie)
+  } catch {
+    return
+  }
+  const domains = googleCookieDomains(window.location.hostname)
+  for (const pair of jar.split(';')) {
+    const name = pair.split('=')[0].trim()
+    if (!/^(_ga|_ga_.+|_gcl_.+)$/.test(name)) continue
+    for (const domain of domains) {
+      document.cookie = `${name}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/${
+        domain === '' ? '' : `; Domain=${domain}`
+      }`
+    }
+  }
+}
+
+function closeBanner(): void {
+  setBannerOpen(false)
+  setSettingsOpen(false)
+  setSettingsLine('')
+}
+
 export function acceptConsent(): void {
   persist('granted')
   setStatus('granted')
   applyConsent('granted')
-  setBannerOpen(false)
+  closeBanner()
   console.info('[consent] granted')
 }
 
@@ -399,13 +487,23 @@ export function declineConsent(): void {
   persist('denied')
   setStatus('denied')
   applyConsent('denied')
-  setBannerOpen(false)
+  clearGoogleCookies()
+  // Cookie settings stays open to confirm it; the first ask just closes.
+  if (settingsOpen()) setSettingsLine('Google cookies are off for this site.')
+  else closeBanner()
   console.info('[consent] denied')
 }
 
-/** Re-open the banner so a visitor can change a prior choice (Settings). */
+/** Re-open the banner as Cookie settings, stating the current choice. */
 export function openConsentSettings(): void {
+  setSettingsOpen(true)
+  setSettingsLine(choiceLine(readStored()))
   setBannerOpen(true)
+}
+
+/** Close Cookie settings without changing the choice. */
+export function closeConsentSettings(): void {
+  if (settingsOpen()) closeBanner()
 }
 
 /**

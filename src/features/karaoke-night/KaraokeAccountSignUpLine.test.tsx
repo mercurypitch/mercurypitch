@@ -40,3 +40,19 @@ describe('Karaoke Night sign-up line', () => {
     expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
   })
 })
+
+describe('Karaoke Night "by continuing" line', () => {
+  it('sits under Continue with Google on the sign-in form', () => {
+    render(() => <KaraokeAccount />)
+    fireEvent.click(screen.getByText('Sign in'))
+
+    const line = screen.getByTestId('continue-legal-line')
+    const google = screen.getByText('Continue with Google')
+
+    expect(
+      google.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+  })
+})

@@ -57,16 +57,24 @@ export function LegalLinks(props: LegalLinksProps): JSX.Element {
 export interface SignUpLegalLineProps {
   /** Extra class, so a host with its own palette can restyle the line. */
   class?: string
+  /**
+   * 'create' (default) sits under a create-account button. 'continue' sits
+   * under Google and Apple sign-in, which can create an account too.
+   */
+  variant?: 'create' | 'continue'
 }
 
-/** Under a create-account button: what the new account agrees to. */
+/** What a new account agrees to, under the button that can create one. */
 export function SignUpLegalLine(props: SignUpLegalLineProps): JSX.Element {
+  const continuing = (): boolean => props.variant === 'continue'
   return (
     <p
       class={`${styles.signUpLine} ${props.class ?? ''}`}
-      data-testid="signup-legal-line"
+      data-testid={continuing() ? 'continue-legal-line' : 'signup-legal-line'}
     >
-      By creating an account you accept our{' '}
+      {continuing()
+        ? 'By continuing, you accept our '
+        : 'By creating an account you accept our '}
       <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">
         Terms
       </a>

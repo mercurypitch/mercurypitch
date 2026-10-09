@@ -69,6 +69,19 @@ body {
   justify-content: safe center;
 }
 
+/* The legal row closes the page. Auto margins above the first block and above
+   the row split the spare height: the content stays centred in what is left
+   and the row sits at the foot. With no spare height (a long result page) the
+   margins are zero and the row simply follows the content. */
+.mirror-shell > :first-child {
+  margin-top: auto;
+}
+.mirror-legal {
+  margin-top: auto;
+  padding-top: 24px;
+  --accent: var(--mirror-dim);
+}
+
 .mirror-panel {
   text-align: center;
   width: 100%;

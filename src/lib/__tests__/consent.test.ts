@@ -274,3 +274,108 @@ describe('pending purchase (credits_purchase)', () => {
     expect(sessionStorage.getItem('mp.pendingPurchase.v1')).toBeNull()
   })
 })
+
+// Plan section 3.3 points 4 and 5, copy C3: the same behaviour and words as
+// the landing's banner (disjoint-colliders #100), so both hosts agree.
+describe('Cookie settings', () => {
+  function cookieNames(): string[] {
+    return document.cookie
+      .split(';')
+      .map((pair) => pair.split('=')[0].trim())
+      .filter((name) => name !== '')
+      .sort()
+  }
+
+  afterEach(() => {
+    for (const name of cookieNames()) {
+      document.cookie = `${name}=; Max-Age=0; Path=/`
+    }
+    vi.useRealTimers()
+  })
+
+  it('deletes Google’s cookies on Decline and leaves every other cookie', async () => {
+    const mod = await boot('Europe/Zagreb')
+    document.cookie = '_ga=GA1.1.123; Path=/'
+    document.cookie = '_ga_ABC123=GS1.1.456; Path=/'
+    document.cookie = '_gcl_au=1.1.789; Path=/'
+    document.cookie = 'mp_theme=dark; Path=/'
+
+    mod.declineConsent()
+
+    expect(cookieNames()).toEqual(['mp_theme'])
+  })
+
+  it('also clears them on every parent domain, where GA4 writes them', async () => {
+    const mod = await import('../consent')
+
+    expect(mod.googleCookieDomains('about.mercurypitch.com')).toEqual([
+      '',
+      'about.mercurypitch.com',
+      'mercurypitch.com',
+    ])
+    expect(mod.googleCookieDomains('mercurypitch.com')).toEqual([
+      '',
+      'mercurypitch.com',
+    ])
+    expect(mod.googleCookieDomains('localhost')).toEqual([''])
+  })
+
+  it('says there is no choice yet when reopened before one', async () => {
+    const mod = await boot('America/New_York')
+
+    mod.openConsentSettings()
+
+    expect(mod.consentSettingsLine()).toBe(
+      'You haven’t made a choice for this site yet.',
+    )
+  })
+
+  it('states the current choice and its date when reopened', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 9, 21, 30))
+    const mod = await boot('Europe/Zagreb')
+    mod.declineConsent()
+
+    mod.openConsentSettings()
+
+    expect(mod.isConsentBannerOpen()).toBe(true)
+    expect(mod.consentSettingsLine()).toBe(
+      'You declined cookies on 9 October 2026.',
+    )
+  })
+
+  it('stays open after Decline in Cookie settings, to confirm the cookies are off', async () => {
+    const mod = await boot('Europe/Zagreb')
+    mod.acceptConsent()
+    mod.openConsentSettings()
+
+    mod.declineConsent()
+
+    expect(mod.isConsentBannerOpen()).toBe(true)
+    expect(mod.consentSettingsLine()).toBe(
+      'Google cookies are off for this site.',
+    )
+  })
+
+  it('closes on the first ask, and the status line stays empty there', async () => {
+    const mod = await boot('Europe/Zagreb')
+    expect(mod.consentSettingsLine()).toBe('')
+
+    mod.declineConsent()
+
+    expect(mod.isConsentBannerOpen()).toBe(false)
+    expect(mod.consentSettingsLine()).toBe('')
+  })
+
+  it('closes Cookie settings unchanged', async () => {
+    const mod = await boot('Europe/Zagreb')
+    mod.acceptConsent()
+    mod.openConsentSettings()
+
+    mod.closeConsentSettings()
+
+    expect(mod.isConsentBannerOpen()).toBe(false)
+    expect(mod.consentStatus()).toBe('granted')
+    expect(mod.consentSettingsLine()).toBe('')
+  })
+})

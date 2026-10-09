@@ -12,6 +12,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { LegalLinks } from '@/components/LegalLinks'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
 import type { MicError } from '@/lib/mic-manager'
 import { listAudioInputs, micManager } from '@/lib/mic-manager'
@@ -1755,6 +1756,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           }}
         />
       </Show>
+      {/* An ad landing page with no route to Settings: the imprint has to
+          be reachable from here (E-Commerce Directive Art. 5). */}
+      <LegalLinks class="mirror-legal" />
     </div>
   )
 }

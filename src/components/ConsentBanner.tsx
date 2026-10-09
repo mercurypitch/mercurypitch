@@ -12,9 +12,9 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { onCleanup, onMount, Show } from 'solid-js'
 import { render } from 'solid-js/web'
-import { acceptConsent, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, markConsentBannerMounted, } from '@/lib/consent'
+import { acceptConsent, closeConsentSettings, consentSettingsLine, declineConsent, hasAnyTag, initConsent, isConsentBannerOpen, isConsentSettingsOpen, markConsentBannerMounted, } from '@/lib/consent'
 import { PRIVACY_URL } from '@/lib/legal-links'
 import styles from './ConsentBanner.module.css'
 
@@ -33,51 +33,89 @@ const ShieldIcon: Component = () => (
   </svg>
 )
 
-export const ConsentBanner: Component = () => (
-  <Show when={isConsentBannerOpen()}>
-    <section
-      class={styles.banner}
-      role="dialog"
-      aria-label="Cookie consent"
-      aria-live="polite"
-    >
-      <div class={styles.copy}>
-        <ShieldIcon />
-        <p class={styles.text}>
-          We'd like to use Google cookies to measure our ads and see how the
-          site is used.{' '}
-          <strong>Pitch detection runs on your device either way.</strong>{' '}
-          <a
-            class={styles.link}
-            href={PRIVACY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy&nbsp;Notice
-          </a>
-        </p>
-      </div>
-      <div class={styles.actions}>
-        <button
-          type="button"
-          class={styles.decline}
-          data-testid="consent-decline"
-          onClick={() => declineConsent()}
-        >
-          Decline
-        </button>
-        <button
-          type="button"
-          class={styles.accept}
-          data-testid="consent-accept"
-          onClick={() => acceptConsent()}
-        >
-          Accept
-        </button>
-      </div>
-    </section>
-  </Show>
+const CloseIcon: Component = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <path
+      d="M6 6l12 12M18 6L6 18"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+  </svg>
 )
+
+export const ConsentBanner: Component = () => {
+  // Escape closes Cookie settings, as the landing's banner does. The first
+  // ask has no close: it waits for a choice.
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && isConsentSettingsOpen()) closeConsentSettings()
+  }
+  onMount(() => document.addEventListener('keydown', onKey))
+  onCleanup(() => document.removeEventListener('keydown', onKey))
+
+  return (
+    <Show when={isConsentBannerOpen()}>
+      <section
+        class={styles.banner}
+        role="dialog"
+        aria-label="Cookie consent"
+        aria-live="polite"
+      >
+        <Show when={consentSettingsLine() !== ''}>
+          <p class={styles.status} data-testid="consent-status">
+            {consentSettingsLine()}
+          </p>
+        </Show>
+        <Show when={isConsentSettingsOpen()}>
+          <button
+            type="button"
+            class={styles.close}
+            aria-label="Close cookie settings"
+            onClick={() => closeConsentSettings()}
+          >
+            <CloseIcon />
+          </button>
+        </Show>
+        <div class={styles.copy}>
+          <ShieldIcon />
+          <p class={styles.text}>
+            We'd like to use Google cookies to measure our ads and see how the
+            site is used.{' '}
+            <strong>Pitch detection runs on your device either way.</strong>{' '}
+            <a
+              class={styles.link}
+              href={PRIVACY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy&nbsp;Notice
+            </a>
+          </p>
+        </div>
+        <div class={styles.actions}>
+          {/* One class for both: equal size, weight and contrast, so neither
+              reads as the default (EDPB cookie banner taskforce). */}
+          <button
+            type="button"
+            class={styles.choice}
+            data-testid="consent-decline"
+            onClick={() => declineConsent()}
+          >
+            Decline
+          </button>
+          <button
+            type="button"
+            class={styles.choice}
+            data-testid="consent-accept"
+            onClick={() => acceptConsent()}
+          >
+            Accept
+          </button>
+        </div>
+      </section>
+    </Show>
+  )
+}
 
 const HOST_ID = 'mp-consent-root'
 

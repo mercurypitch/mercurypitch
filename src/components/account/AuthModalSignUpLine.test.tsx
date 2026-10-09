@@ -51,3 +51,34 @@ describe('AuthModal sign-up line', () => {
     expect(screen.getByTestId('signup-legal-line')).toBeInTheDocument()
   })
 })
+
+// Google and Apple can create an account straight from the sign-in pane, so
+// that pane says what continuing means, under the provider buttons.
+describe('AuthModal "by continuing" line', () => {
+  it('states the Terms and the Privacy Notice under the sign-in providers', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('login')
+    await screen.findByTestId('auth-email')
+
+    const line = screen.getByTestId('continue-legal-line')
+    const google = screen.getByTestId('auth-google')
+
+    expect(line.textContent?.replace(/\u00a0/g, ' ')).toBe(
+      'By continuing, you accept our Terms. Our Privacy Notice explains what we keep and why.',
+    )
+    expect(
+      google.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(line.querySelector('a[href$="/terms"]')).not.toBeNull()
+    expect(line.querySelector('a[href$="/privacy"]')).not.toBeNull()
+  })
+
+  it('leaves it to the create-account line on the register pane', async () => {
+    render(() => <AuthModal />)
+    openAuthModal('register')
+    await screen.findByTestId('auth-email')
+
+    expect(screen.queryByTestId('continue-legal-line')).not.toBeInTheDocument()
+    expect(screen.getByTestId('signup-legal-line')).toBeInTheDocument()
+  })
+})
