@@ -41,4 +41,5 @@ shall not emit a `signup` funnel event for the `anonymous` auth route.
 
 **WHEN** the client consumes a successful Google redirect containing
 `gauth_new=1`, it shall emit exactly one `signup` funnel event and remove the
-auth fragment so consuming the redirect again cannot duplicate the event.
+auth fragment so consuming the redirect again cannot duplicate the event. A
+redirect this browser did not start emits nothing (`REQ-GRB-003`).

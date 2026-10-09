@@ -47,6 +47,23 @@ function clientToken(sub: string): string {
 /** Rows the app POSTed to /api/voiceprints during this test. */
 type Uploaded = { userId?: string; takenAt?: string; source?: string }
 
+const NONCE = 'e2e-started-here-0123456789abcdefghijklmnop'
+
+/**
+ * Leave the browser as starting a Google sign-in leaves it: holding the nonce
+ * the worker will echo (`beginGoogleReturn` in src/lib/google-return-nonce.ts).
+ * A return counts only beside that nonce, so without this every arrival below
+ * would be a link somebody else wrote.
+ */
+async function startSignInHere(page: Page): Promise<void> {
+  await page.addInitScript((nonce) => {
+    localStorage.setItem(
+      'mp:gauthPending',
+      JSON.stringify({ nonce, expiresAt: Date.now() + 10 * 60 * 1000 }),
+    )
+  }, NONCE)
+}
+
 /**
  * Answer every db-worker call. Voiceprint reads start empty so an adopted
  * take is always "missing" and must be uploaded; writes are recorded.
@@ -128,9 +145,12 @@ test.describe('Google sign-up adoption', () => {
   }) => {
     const uploaded = await mockCloud(page)
     await seedAnonymousTake(page)
+    await startSignInHere(page)
 
     // Exactly what the worker's callback redirects to on a first sign-in.
-    await page.goto(`/#gauth=${clientToken('google-user-1')}&gauth_new=1`)
+    await page.goto(
+      `/#gauth=${clientToken('google-user-1')}&gauth_new=1&gauth_nonce=${NONCE}`,
+    )
 
     await expect
       .poll(() => uploaded.length, { timeout: 10_000 })
@@ -146,10 +166,13 @@ test.describe('Google sign-up adoption', () => {
   }) => {
     const uploaded = await mockCloud(page)
     await seedAnonymousTake(page)
+    await startSignInHere(page)
 
     // Same arrival, no gauth_new: the worker resolved an account that
     // already existed, so this take is somebody's to offer, not to take.
-    await page.goto(`/#gauth=${clientToken('google-user-1')}`)
+    await page.goto(
+      `/#gauth=${clientToken('google-user-1')}&gauth_nonce=${NONCE}`,
+    )
 
     // Give the auth effect the same room the positive case gets, so this
     // asserts "never uploaded" rather than "not uploaded yet".
@@ -182,10 +205,34 @@ test.describe('Google sign-up adoption', () => {
       [VOICEPRINT_KEY, TAKEN_AT, SUMMARY] as const,
     )
 
-    await page.goto(`/#gauth=${clientToken('google-user-2')}&gauth_new=1`)
+    await startSignInHere(page)
+    await page.goto(
+      `/#gauth=${clientToken('google-user-2')}&gauth_new=1&gauth_nonce=${NONCE}`,
+    )
     await page.waitForTimeout(3_000)
 
     expect(uploaded).toHaveLength(0)
     expect(await localTags(page)).toEqual(['someone-else'])
+  })
+
+  // Login CSRF. Anyone can put their own session in a link to the app; a
+  // browser that never started that sign-in must not take it, and must not
+  // hand its takes to the account in it.
+  test("a link carrying somebody else's session signs nobody in and takes nothing", async ({
+    page,
+  }) => {
+    const uploaded = await mockCloud(page)
+    await seedAnonymousTake(page)
+
+    await page.goto(`/#gauth=${clientToken('attacker-1')}&gauth_new=1`)
+    await expect
+      .poll(() => page.evaluate(() => window.location.hash))
+      .not.toContain('gauth')
+
+    expect(
+      await page.evaluate(() => localStorage.getItem('mp:authToken')),
+    ).toBeNull()
+    expect(uploaded).toHaveLength(0)
+    expect(await localTags(page)).toEqual([undefined])
   })
 })

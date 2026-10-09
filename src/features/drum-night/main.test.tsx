@@ -9,6 +9,7 @@
 
 import type * as SolidWeb from 'solid-js/web'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { beginGoogleReturn } from '@/lib/google-return-nonce'
 
 const entry = vi.hoisted(() => ({
   renders: [] as { hash: string }[],
@@ -30,6 +31,11 @@ function sessionToken(): string {
   const exp = Math.floor(Date.now() / 1000) + 3600
   const body = btoa(JSON.stringify({ sub: 'user-1', provider: 'google', exp }))
   return `h.${body}.s`
+}
+
+/** The nonce this room kept when its dialog started the sign-in. */
+function startedHere(): string {
+  return `&gauth_nonce=${beginGoogleReturn()}`
 }
 
 beforeEach(() => {
@@ -59,7 +65,7 @@ it("stores a Google return's session before the room renders", async () => {
   window.history.replaceState(
     null,
     '',
-    `/drum-night#gauth=${encodeURIComponent(sessionToken())}`,
+    `/drum-night#gauth=${encodeURIComponent(sessionToken())}${startedHere()}`,
   )
 
   await import('./main')
@@ -76,12 +82,30 @@ it("adopts this device's takes when that return created the account", async () =
   window.history.replaceState(
     null,
     '',
-    `/drum-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1`,
+    `/drum-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1${startedHere()}`,
   )
 
   await import('./main')
 
   await vi.waitFor(() => expect(entry.adopt).toHaveBeenCalledTimes(1))
+})
+
+// Login CSRF: anyone can put their own session in a link to this room.
+it('signs nobody in and adopts nothing from a return this room never started', async () => {
+  window.history.replaceState(
+    null,
+    '',
+    `/drum-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1`,
+  )
+
+  await import('./main')
+  await vi.waitFor(() => expect(entry.renders).toHaveLength(1))
+  await new Promise((resolve) => setTimeout(resolve, 50))
+
+  expect(entry.renders[0].hash).toBe('')
+  const auth = await import('@/db/services/auth-service')
+  expect(auth.hasValidToken()).toBe(false)
+  expect(entry.adopt).not.toHaveBeenCalled()
 })
 
 it('renders an ordinary visit without loading the auth layer', async () => {

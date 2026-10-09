@@ -15,9 +15,10 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { beginGoogleReturn } from '@/lib/google-return-nonce'
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 
@@ -360,14 +361,19 @@ describe('suspension response recognition', () => {
   })
 })
 
+/**
+ * Land on `/` the way the worker answers a sign-in THIS browser started: the
+ * nonce googleSignInUrl() keeps, echoed back as `gauth_nonce`.
+ */
+function returnFromStartedSignIn(fragment: string): void {
+  const nonce = beginGoogleReturn()
+  history.replaceState(null, '', `/#${fragment}&gauth_nonce=${nonce}`)
+}
+
 describe('Google redirect signup tracking', () => {
   it('REQ-SFA-004 fires signup exactly once when gauth_new=1 is present', () => {
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(
-      null,
-      '',
-      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
-    )
+    returnFromStartedSignIn(`gauth=${makeToken(3600, 'google')}&gauth_new=1`)
 
     consumeGoogleRedirect()
     consumeGoogleRedirect()
@@ -381,11 +387,7 @@ describe('Google redirect signup tracking', () => {
   // account behind it was just created; gauth_new is the only thing that can.
   it('REQ-VPR-014 reports account creation when gauth_new=1', () => {
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(
-      null,
-      '',
-      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
-    )
+    returnFromStartedSignIn(`gauth=${makeToken(3600, 'google')}&gauth_new=1`)
 
     consumeGoogleRedirect()
 
@@ -394,7 +396,7 @@ describe('Google redirect signup tracking', () => {
 
   it('REQ-VPR-014 reports nothing for a returning Google user', () => {
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(null, '', `/#gauth=${makeToken(3600, 'google')}`)
+    returnFromStartedSignIn(`gauth=${makeToken(3600, 'google')}`)
 
     consumeGoogleRedirect()
 
@@ -405,11 +407,7 @@ describe('Google redirect signup tracking', () => {
   // from a sign-up two navigations ago and adopt somebody else's takes.
   it('REQ-VPR-014 reports creation exactly once', () => {
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(
-      null,
-      '',
-      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
-    )
+    returnFromStartedSignIn(`gauth=${makeToken(3600, 'google')}&gauth_new=1`)
 
     consumeGoogleRedirect()
 
@@ -439,7 +437,7 @@ describe('Google redirect signup tracking', () => {
 
   it('shows a human suspension result without exposing the internal error code', () => {
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(null, '', '/#gauth_error=account_suspended')
+    returnFromStartedSignIn('gauth_error=account_suspended')
 
     consumeGoogleRedirect()
 
@@ -455,7 +453,9 @@ describe('Google redirect signup tracking', () => {
     // Leave the consent screen open past the state's ten-minute life and
     // the worker sends you home with this code. It used to be a raw JSON
     // page on the API origin; now it has to arrive as something a singer
-    // can act on (owner report, 2026-08-17).
+    // can act on (owner report, 2026-08-17). The worker could not read the
+    // state, so there is no nonce to echo: this is the one error honoured
+    // without one.
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
     history.replaceState(null, '', '/#gauth_error=expired_state')
 
@@ -474,7 +474,7 @@ describe('Google redirect signup tracking', () => {
     // An unmapped code is still worth more in a bug report than a generic
     // "something went wrong".
     localStorage.setItem('mp:gauthReturnHash', '#/mirror')
-    history.replaceState(null, '', '/#gauth_error=some_new_worker_code')
+    returnFromStartedSignIn('gauth_error=some_new_worker_code')
 
     consumeGoogleRedirect()
 
@@ -482,6 +482,162 @@ describe('Google redirect signup tracking', () => {
       ok: false,
       error: 'some_new_worker_code',
     })
+  })
+})
+
+// Login CSRF. A fragment is text in a link, so anyone holding a session token
+// for their own account can write `/#gauth=<it>&gauth_new=1` and send it. A
+// browser that never started that sign-in must not store the session, must
+// not count a sign-up, and must not mark anything for adoption.
+describe('a Google return this browser never started', () => {
+  afterEach(() => {
+    // The outcomes are one-shot module state; drain them so a case that
+    // leaves one behind cannot answer for the next.
+    takeGoogleRedirectResult()
+    takeGoogleAccountCreated()
+  })
+
+  it('stores no session from a planted fragment, and says why', () => {
+    rememberSignInMethod('password')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_new=1`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBeNull()
+    expect(takeGoogleAccountCreated()).toBe(false)
+    expect(trackEventMock).not.toHaveBeenCalled()
+    expect(lastSignInMethod()).toBe('password')
+    expect(window.location.hash).toBe('')
+    expect(takeGoogleRedirectResult()).toEqual({
+      ok: false,
+      error:
+        "that sign-in didn't start in this browser, so it wasn't used. Sign in again from here.",
+    })
+  })
+
+  it('keeps the account a singer is already signed in to', () => {
+    const own = makeToken(3600, 'password')
+    setAuthToken(own)
+    history.replaceState(null, '', `/#gauth=${makeToken(3600, 'google')}`)
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBe(own)
+  })
+
+  it('refuses a nonce that is not the one this browser kept', () => {
+    beginGoogleReturn()
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${makeToken(3600, 'google')}&gauth_nonce=guessed-nonce-guessed-nonce`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBeNull()
+  })
+
+  it('opens no second-factor pane for a planted ceremony', () => {
+    history.replaceState(null, '', '/#gauth_2fa=planted-ceremony')
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleTwofaChallenge()).toBeNull()
+  })
+
+  it('signs nobody out on a planted suspension code', () => {
+    const own = makeToken(3600, 'password')
+    setAuthToken(own)
+    history.replaceState(null, '', '/#gauth_error=account_suspended')
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBe(own)
+    expect(needsSignIn()).toBe(false)
+    expect(takeGoogleRedirectResult()).toBeNull()
+  })
+
+  it('puts no words of the link into the app', () => {
+    history.replaceState(
+      null,
+      '',
+      `/#gauth_error=${encodeURIComponent('Your account is locked. Call 555-0100.')}`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleRedirectResult()).toBeNull()
+    expect(window.location.hash).toBe('')
+  })
+})
+
+describe('a Google return this browser did start', () => {
+  afterEach(() => {
+    // One-shot module state, drained so a case that fails part-way cannot
+    // leave an outcome behind for the next.
+    takeGoogleRedirectResult()
+    takeGoogleAccountCreated()
+    takeGoogleTwofaChallenge()
+  })
+
+  // The whole client half: googleSignInUrl() keeps a nonce and posts it, the
+  // worker echoes it, and the return carrying it is the one that counts.
+  async function startSignIn(): Promise<string> {
+    const fetchMock = mockFetchOnce(200, {
+      url: 'https://accounts.google.com/o/oauth2/v2/auth?state=signed',
+    })
+    await googleSignInUrl()
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    return (JSON.parse(init.body as string) as { nonce: string }).nonce
+  }
+
+  it('signs in with the session that comes back with its own nonce', async () => {
+    const nonce = await startSignIn()
+    const token = makeToken(3600, 'google')
+    history.replaceState(
+      null,
+      '',
+      `/#gauth=${token}&gauth_new=1&gauth_nonce=${nonce}`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBe(token)
+    expect(takeGoogleAccountCreated()).toBe(true)
+    expect(takeGoogleRedirectResult()).toEqual({ ok: true })
+  })
+
+  it('honours that return once, so a replayed link signs nobody in', async () => {
+    const nonce = await startSignIn()
+    const fragment = `/#gauth=${makeToken(3600, 'google')}&gauth_nonce=${nonce}`
+    history.replaceState(null, '', fragment)
+    consumeGoogleRedirect()
+    takeGoogleRedirectResult()
+    setAuthToken(null)
+    history.replaceState(null, '', fragment)
+
+    consumeGoogleRedirect()
+
+    expect(getAuthToken()).toBeNull()
+  })
+
+  it('opens the second-factor pane for its own ceremony', async () => {
+    const nonce = await startSignIn()
+    history.replaceState(
+      null,
+      '',
+      `/#gauth_2fa=own-ceremony&gauth_nonce=${nonce}`,
+    )
+
+    consumeGoogleRedirect()
+
+    expect(takeGoogleTwofaChallenge()).toBe('own-ceremony')
+    expect(getAuthToken()).toBeNull()
   })
 })
 
@@ -585,10 +741,8 @@ describe('Drive connect redirect', () => {
   // to handle it, because the fix moved the gdrive read OUT of the sign-in
   // branch precisely so both halves survive together.
   it('REQ-DRV-003: a combined pass records the sign-in AND the Drive refusal', () => {
-    history.replaceState(
-      null,
-      '',
-      `/#gauth=${makeToken(3600, 'google')}&gdrive_error=declined`,
+    returnFromStartedSignIn(
+      `gauth=${makeToken(3600, 'google')}&gdrive_error=declined`,
     )
 
     consumeGoogleRedirect()

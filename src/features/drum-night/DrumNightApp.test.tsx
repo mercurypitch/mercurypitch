@@ -11,10 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from
 // on a CI box rather than a timeout that only fails when the runner is busy.
 vi.setConfig({ testTimeout: 20000 })
 
-import { consumeGoogleRedirect, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, hasValidToken, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
+import { beginGoogleReturn } from '@/lib/google-return-nonce'
 import type * as GoogleSignIn from '@/lib/google-sign-in'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
@@ -3472,7 +3473,10 @@ describe('DrumNightApp', () => {
     // Google sign-in leaves the page, so the press that was blocked on
     // signing in has to be written down before it goes and picked up when
     // the worker sends the drummer back (#gauth=…), as Guitar Night does.
+    // The return counts only beside the nonce the start kept
+    // (src/lib/google-return-nonce.ts).
     const INTENT_KEY = 'mp:drumNightGoogleSeparationIntent'
+    let startedNonce: string | null = null
     const SIGNED_OUT: CloudSplitBlocker = {
       reason: 'signed-out',
       message: 'Sign in before separating the band.',
@@ -3518,9 +3522,11 @@ describe('DrumNightApp', () => {
       await within(drawer).findByText('Sign in before separating the band.')
       fireEvent.click(within(drawer).getByRole('button', { name: 'Sign in' }))
       const dialog = await screen.findByRole('dialog')
-      // The real start runs the host's preparation, then leaves the page.
+      // The real start runs the host's preparation, keeps the nonce its
+      // return must carry (googleSignInUrl), then leaves the page.
       googleSignIn.start.mockImplementationOnce(async (options) => {
         options.prepareRedirect?.()
+        startedNonce = beginGoogleReturn()
         return null
       })
       fireEvent.click(await within(dialog).findByTestId('auth-google'))
@@ -3528,12 +3534,21 @@ describe('DrumNightApp', () => {
       cleanup()
     }
 
-    /** Land back the way the worker sends a Google sign-in home. */
-    function returnFromGoogle(fragment: string): void {
+    /**
+     * Land back the way the worker sends a Google sign-in home, beside the
+     * nonce the start kept. A planted return is a link somebody else wrote:
+     * it cannot know that nonce.
+     */
+    function returnFromGoogle(
+      fragment: string,
+      { planted = false }: { planted?: boolean } = {},
+    ): void {
+      const bound =
+        planted || startedNonce === null ? '' : `&gauth_nonce=${startedNonce}`
       window.history.replaceState(
         null,
         '',
-        `${window.location.pathname}${window.location.search}#${fragment}`,
+        `${window.location.pathname}${window.location.search}#${fragment}${bound}`,
       )
       consumeGoogleRedirect()
       // A one-shot answer this test did not spend must not reach the next.
@@ -3626,6 +3641,35 @@ describe('DrumNightApp', () => {
         await screen.findByText('Google sign-in failed: access_denied'),
       ).toBeInTheDocument()
       // Spent even though it failed, so no later sign-in can replay it.
+      expect(storedIntent()).toBeNull()
+      await settlePastAResume()
+      expect(prepareBand).not.toHaveBeenCalled()
+    })
+
+    // Login CSRF with a song on stage: a link holding somebody else's session
+    // would have signed the drummer in to that account and sent their own
+    // recording off to be separated there.
+    it("separates nothing for a link carrying somebody else's session", async () => {
+      const catalog = twoStemSong()
+      await leaveForGoogle(catalog)
+      expect(storedIntent()).toMatchObject({ sessionId: 'google-return-song' })
+      returnFromGoogle(`gauth=${encodeURIComponent(sessionToken())}`, {
+        planted: true,
+      })
+      const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>()
+
+      renderRoom({
+        checkBandPreflight: () => null,
+        loadBandPreparationPort: vi.fn(async () => ({ prepareBand })),
+        loadSongPort: catalog.loadSongPort,
+      })
+
+      expect(
+        await screen.findByText(
+          "Google sign-in failed: that sign-in didn't start in this browser, so it wasn't used. Sign in again from here.",
+        ),
+      ).toBeInTheDocument()
+      expect(hasValidToken()).toBe(false)
       expect(storedIntent()).toBeNull()
       await settlePastAResume()
       expect(prepareBand).not.toHaveBeenCalled()

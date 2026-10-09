@@ -10,6 +10,7 @@
 // visit loads neither the auth layer nor the voiceprint one.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beginGoogleReturn } from './google-return-nonce'
 
 const loads = { auth: 0, voiceprints: 0 }
 const adoptDeviceVoiceprints = vi.fn(async () => 2)
@@ -39,13 +40,23 @@ function sessionToken(): string {
   return `h.${body}.s`
 }
 
-/** Land on `path` the way the worker sends a Google sign-in back. */
-function returnFromGoogle(path: string, created: boolean): void {
+/**
+ * Land on `path` the way the worker sends a Google sign-in back: to the
+ * browser that started it, with the nonce that browser kept. `planted` drops
+ * the nonce, which is what a link written by somebody else looks like.
+ */
+function returnFromGoogle(
+  path: string,
+  created: boolean,
+  options: { planted?: boolean } = {},
+): void {
   const fragment = `#gauth=${encodeURIComponent(sessionToken())}`
+  const bound =
+    options.planted === true ? '' : `&gauth_nonce=${beginGoogleReturn()}`
   window.history.replaceState(
     null,
     '',
-    `${path}${fragment}${created ? '&gauth_new=1' : ''}`,
+    `${path}${fragment}${created ? '&gauth_new=1' : ''}${bound}`,
   )
 }
 
@@ -124,6 +135,21 @@ describe('a room that keeps the auth layer out of its first paint', () => {
     await room.landRoomGoogleReturn()
 
     expect(loads.auth).toBe(0)
+  })
+
+  // Login CSRF: a link carrying somebody's own session must not sign this
+  // room in, and must not hand this device's takes to that account.
+  it('signs nobody in and adopts nothing from a return this room never started', async () => {
+    returnFromGoogle('/drum-night', true, { planted: true })
+    const room = await import('./room-google-return')
+
+    await room.landRoomGoogleReturn()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    const auth = await import('@/db/services/auth-service')
+    expect(auth.hasValidToken()).toBe(false)
+    expect(adoptDeviceVoiceprints).not.toHaveBeenCalled()
+    expect(window.location.hash).toBe('')
   })
 
   it('still resolves when the auth layer cannot load, so the room renders', async () => {
