@@ -662,6 +662,18 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
   backing bus shall provide fixed reference headroom against the acoustic kit,
   independently of user faders and without normalizing recorded drum strikes,
   changing live-input gain, or attenuating already-mixed separated stems.
+- **REQ-DN-PLAYALONG-014 — Separate drums survives Google sign-in
+  (2026-10-09):** WHEN a signed-out Separate drums press is blocked and the
+  drummer continues with Google from the room's sign-in dialog, Drum Night
+  shall write a single-use return lease (the session, a fingerprint of its
+  backing, and a 15-minute expiry) before the page leaves. WHEN Google sends
+  the drummer back signed in to the same song with the same backing, Drum
+  Night shall run the Separate drums action again, with the same account and
+  credit preflight as a press. A failed or expired return, another song, or a
+  different recording under the same session id shall start nothing, and the
+  lease shall be spent either way: it is an intent, never billing authority. A
+  Google sign-in that fails on its way back shall say so in the room. Guitar
+  Night keeps its lease the same way (`src/lib/google-separation-intent.ts`).
 
 ## Interaction and accessibility — `DN-A11Y-*`
 

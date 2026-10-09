@@ -7,19 +7,22 @@
 // It is consumed once, expires quickly, and remains an intent rather than an
 // authorization boundary: account, credits, and server admission are checked
 // again before any billable work.
+//
+// The lease itself (single use, expiry, exact rollback) lives in
+// lib/google-separation-intent, shared with Drum Night; what is Guitar
+// Night's own is the key and the fingerprint of its backing lease.
 
+import type { GoogleSeparationIntent } from '@/lib/google-separation-intent'
+import { GOOGLE_SEPARATION_INTENT_TTL_MS, googleSeparationIntentStore, } from '@/lib/google-separation-intent'
 import type { GuitarNightBackingLease } from './song-port'
 
-const STORAGE_KEY = 'mp:guitarNightGoogleSeparationIntent'
-export const GUITAR_NIGHT_GOOGLE_SEPARATION_INTENT_TTL_MS = 15 * 60 * 1000
+const intents = googleSeparationIntentStore(
+  'mp:guitarNightGoogleSeparationIntent',
+)
+export const GUITAR_NIGHT_GOOGLE_SEPARATION_INTENT_TTL_MS =
+  GOOGLE_SEPARATION_INTENT_TTL_MS
 
-export interface GuitarNightGoogleSeparationIntent {
-  version: 1
-  sessionId: string
-  backingFingerprint: string
-  createdAt: number
-  expiresAt: number
-}
+export type GuitarNightGoogleSeparationIntent = GoogleSeparationIntent
 
 /** Object URLs change when a durable song is reopened; its musical asset
  * identity does not. Sort the stable fields so port ordering cannot create a
@@ -52,7 +55,7 @@ export function guitarNightBackingFingerprint(
 }
 
 export function clearGuitarNightGoogleSeparationIntent(): void {
-  localStorage.removeItem(STORAGE_KEY)
+  intents.clear()
 }
 
 /** Persist immediately before Google navigation and return an exact-value
@@ -61,53 +64,16 @@ export function prepareGuitarNightGoogleSeparationIntent(
   backing: GuitarNightBackingLease,
   now = Date.now(),
 ): () => void {
-  clearGuitarNightGoogleSeparationIntent()
-  const serialized = JSON.stringify({
-    version: 1,
-    sessionId: backing.sessionId,
-    backingFingerprint: guitarNightBackingFingerprint(backing),
-    createdAt: now,
-    expiresAt: now + GUITAR_NIGHT_GOOGLE_SEPARATION_INTENT_TTL_MS,
-  } satisfies GuitarNightGoogleSeparationIntent)
-  localStorage.setItem(STORAGE_KEY, serialized)
-  return () => {
-    if (localStorage.getItem(STORAGE_KEY) === serialized) {
-      localStorage.removeItem(STORAGE_KEY)
-    }
-  }
+  return intents.prepare(
+    backing.sessionId,
+    guitarNightBackingFingerprint(backing),
+    now,
+  )
 }
 
-/** Remove before parsing: invalid, failed, expired, and successful returns are
- * all single-use and can never be replayed by a later unrelated sign-in. */
+/** Single-use: see GoogleSeparationIntentStore.take. */
 export function takeGuitarNightGoogleSeparationIntent(
   now = Date.now(),
 ): GuitarNightGoogleSeparationIntent | null {
-  const serialized = localStorage.getItem(STORAGE_KEY)
-  localStorage.removeItem(STORAGE_KEY)
-  if (serialized === null) return null
-  try {
-    const value = JSON.parse(
-      serialized,
-    ) as Partial<GuitarNightGoogleSeparationIntent>
-    if (
-      value.version !== 1 ||
-      typeof value.sessionId !== 'string' ||
-      value.sessionId.trim() === '' ||
-      typeof value.backingFingerprint !== 'string' ||
-      value.backingFingerprint === '' ||
-      typeof value.createdAt !== 'number' ||
-      !Number.isFinite(value.createdAt) ||
-      typeof value.expiresAt !== 'number' ||
-      !Number.isFinite(value.expiresAt) ||
-      value.createdAt > now ||
-      value.expiresAt <= now ||
-      value.expiresAt - value.createdAt !==
-        GUITAR_NIGHT_GOOGLE_SEPARATION_INTENT_TTL_MS
-    ) {
-      return null
-    }
-    return value as GuitarNightGoogleSeparationIntent
-  } catch {
-    return null
-  }
+  return intents.take(now)
 }

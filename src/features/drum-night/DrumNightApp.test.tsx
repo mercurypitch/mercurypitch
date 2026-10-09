@@ -11,12 +11,14 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi, } from
 // on a CI box rather than a timeout that only fails when the runner is busy.
 vi.setConfig({ testTimeout: 20000 })
 
+import { consumeGoogleRedirect, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import type { PlayAlongBandPreparationPort } from '@/features/play-along/band-preparation-port'
 import type { PlayAlongBackingSource, PlayAlongSongSourcePort, } from '@/features/play-along/song-port'
 import { premiumBackgroundCatalogStore } from '@/lib/backgrounds/background-catalog-store'
 import type * as GoogleSignIn from '@/lib/google-sign-in'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
+import { resetNotifications } from '@/stores/notifications-store'
 import type { DrumKitId, DrumKitPlayer, DrumKitPlayerOptions, DrumKitPlayerSnapshot, } from './audio'
 import { drumKitManifest } from './audio'
 import type { DrumNightAudioSession } from './drum-night-audio-session'
@@ -56,11 +58,14 @@ vi.mock('@/lib/use-viewport', async (importOriginal) => ({
 // what the room's dialog asks for is recorded, and everything before it is
 // real.
 const googleSignIn = vi.hoisted(() => ({
-  start: vi.fn(async (_options: unknown) => null),
+  start: vi.fn(
+    async (_options: GoogleSignIn.GoogleSignInOptions): Promise<null> => null,
+  ),
 }))
 vi.mock('@/lib/google-sign-in', async (importOriginal) => ({
   ...(await importOriginal<typeof GoogleSignIn>()),
-  startGoogleSignIn: (options: unknown) => googleSignIn.start(options),
+  startGoogleSignIn: (options: GoogleSignIn.GoogleSignInOptions) =>
+    googleSignIn.start(options),
 }))
 
 vi.mock('./play-along/drum-stem-play-along', async (importOriginal) => {
@@ -1113,6 +1118,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // The room shows toasts now, and the store behind them outlives a test: a
+  // toast one test raised must not turn up as a second alert in the next.
+  resetNotifications()
   viewportMocks.narrow = false
   stemConfigureFailure.next = false
   takeSummaryBuilderLoad.gate = null
@@ -3458,6 +3466,170 @@ describe('DrumNightApp', () => {
         }),
       ),
     )
+  })
+
+  describe('a blocked separation and the Google round trip', () => {
+    // Google sign-in leaves the page, so the press that was blocked on
+    // signing in has to be written down before it goes and picked up when
+    // the worker sends the drummer back (#gauth=…), as Guitar Night does.
+    const INTENT_KEY = 'mp:drumNightGoogleSeparationIntent'
+    const SIGNED_OUT: CloudSplitBlocker = {
+      reason: 'signed-out',
+      message: 'Sign in before separating the band.',
+      cta: { label: 'Sign in', section: 'account' },
+    }
+
+    function storedIntent(): unknown {
+      const stored = localStorage.getItem(INTENT_KEY)
+      return stored === null ? null : JSON.parse(stored)
+    }
+
+    function twoStemSong() {
+      const backing = preparedBackingHarness({
+        sessionId: 'google-return-song',
+        title: 'Prepared Session A',
+        kind: 'two-stem',
+      })
+      return Object.assign(songPortHarness([backing]), { backing })
+    }
+
+    /** Press "Separate drums" signed out, then Continue with Google. */
+    async function leaveForGoogle(
+      catalog: ReturnType<typeof songPortHarness>,
+    ): Promise<void> {
+      renderRoom({
+        checkBandPreflight: () => SIGNED_OUT,
+        loadBandPreparationPort: vi.fn(async () => ({
+          prepareBand: vi.fn<PlayAlongBandPreparationPort['prepareBand']>(),
+        })),
+        loadSongPort: catalog.loadSongPort,
+      })
+      fireEvent.click(screen.getAllByRole('button', { name: 'Songs' })[0])
+      const drawer = screen.getByRole('region', { name: 'Bring a song' })
+      fireEvent.click(
+        await within(drawer).findByRole('button', {
+          name: /Prepared Session A.*Two stems.*Load backing/i,
+        }),
+      )
+      await within(drawer).findByText('Backing with drums inside')
+      fireEvent.click(
+        within(drawer).getByRole('button', { name: 'Separate drums' }),
+      )
+      await within(drawer).findByText('Sign in before separating the band.')
+      fireEvent.click(within(drawer).getByRole('button', { name: 'Sign in' }))
+      const dialog = await screen.findByRole('dialog')
+      // The real start runs the host's preparation, then leaves the page.
+      googleSignIn.start.mockImplementationOnce(async (options) => {
+        options.prepareRedirect?.()
+        return null
+      })
+      fireEvent.click(await within(dialog).findByTestId('auth-google'))
+      await waitFor(() => expect(googleSignIn.start).toHaveBeenCalled())
+      cleanup()
+    }
+
+    /** Land back the way the worker sends a Google sign-in home. */
+    function returnFromGoogle(fragment: string): void {
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}#${fragment}`,
+      )
+      consumeGoogleRedirect()
+      // A one-shot answer this test did not spend must not reach the next.
+      onTestFinished(() => void takeGoogleRedirectResult())
+    }
+
+    /**
+     * Long past the point a wrongful resume would reach prepareBand: every
+     * await on that path (account, credits, preflight, port) is stubbed here
+     * and settles in a few milliseconds.
+     */
+    function settlePastAResume(): Promise<void> {
+      return new Promise((resolve) => setTimeout(resolve, 200))
+    }
+
+    function sessionToken(): string {
+      const exp = Math.floor(Date.now() / 1000) + 3600
+      const body = btoa(
+        JSON.stringify({ sub: 'drummer', provider: 'google', exp }),
+      )
+      return `h.${body}.s`
+    }
+
+    it('writes the blocked separation down before leaving for Google', async () => {
+      googleSignIn.start.mockClear()
+
+      await leaveForGoogle(twoStemSong())
+
+      expect(storedIntent()).toMatchObject({
+        version: 1,
+        sessionId: 'google-return-song',
+      })
+    })
+
+    it('resumes the blocked separation once Google brings the drummer back', async () => {
+      const catalog = twoStemSong()
+      await leaveForGoogle(catalog)
+      expect(storedIntent()).toMatchObject({ sessionId: 'google-return-song' })
+      returnFromGoogle(`gauth=${encodeURIComponent(sessionToken())}`)
+      const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>(
+        () => new Promise(() => undefined),
+      )
+
+      renderRoom({
+        checkBandPreflight: () => null,
+        loadBandPreparationPort: vi.fn(async () => ({ prepareBand })),
+        loadSongPort: catalog.loadSongPort,
+      })
+
+      await waitFor(() => expect(prepareBand).toHaveBeenCalledTimes(1))
+      expect(prepareBand.mock.calls[0]?.[0]).toBe('google-return-song')
+      expect(storedIntent()).toBeNull()
+    })
+
+    it('starts nothing when the song under that id is now a different recording', async () => {
+      const catalog = twoStemSong()
+      await leaveForGoogle(catalog)
+      expect(storedIntent()).toMatchObject({ sessionId: 'google-return-song' })
+      returnFromGoogle(`gauth=${encodeURIComponent(sessionToken())}`)
+      // Re-imported while the drummer was away: same id, other audio.
+      catalog.backing.source.durationSeconds = 187
+      const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>()
+
+      renderRoom({
+        checkBandPreflight: () => null,
+        loadBandPreparationPort: vi.fn(async () => ({ prepareBand })),
+        loadSongPort: catalog.loadSongPort,
+      })
+
+      await waitFor(() => expect(catalog.openSession).toHaveBeenCalledTimes(2))
+      await waitFor(() => expect(storedIntent()).toBeNull())
+      await settlePastAResume()
+      expect(prepareBand).not.toHaveBeenCalled()
+    })
+
+    it('says a failed Google return failed, and starts nothing', async () => {
+      const catalog = twoStemSong()
+      await leaveForGoogle(catalog)
+      expect(storedIntent()).toMatchObject({ sessionId: 'google-return-song' })
+      returnFromGoogle('gauth_error=access_denied')
+      const prepareBand = vi.fn<PlayAlongBandPreparationPort['prepareBand']>()
+
+      renderRoom({
+        checkBandPreflight: () => null,
+        loadBandPreparationPort: vi.fn(async () => ({ prepareBand })),
+        loadSongPort: catalog.loadSongPort,
+      })
+
+      expect(
+        await screen.findByText('Google sign-in failed: access_denied'),
+      ).toBeInTheDocument()
+      // Spent even though it failed, so no later sign-in can replay it.
+      expect(storedIntent()).toBeNull()
+      await settlePastAResume()
+      expect(prepareBand).not.toHaveBeenCalled()
+    })
   })
 
   it('keeps a newer authored file when an older separation finishes late', async () => {

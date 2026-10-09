@@ -61,6 +61,7 @@ import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions,
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
 import { createDrumScoreIndex, createDrumSessionHumanizer, createDrumSessionImportController, createDrumSessionScheduler, createFirstPocketGroove, DrumSessionCoach, drumSessionStateCopy, FIRST_POCKET_DEFAULT_VARIANT, FIRST_POCKET_VARIANTS, IDLE_DRUM_SESSION, projectDrumPocket, readyDrumSessionDocument, } from './session'
+import { useDrumNightGoogleSeparationReturn } from './useDrumNightGoogleSeparationReturn'
 import type { DrumPerformanceTakeCaptureController, DrumPerformanceTakeCaptureDependencies, } from './useDrumPerformanceTakeCaptureController'
 import { useDrumPerformanceTakeCaptureController } from './useDrumPerformanceTakeCaptureController'
 
@@ -121,6 +122,13 @@ const AuthModal = lazy(async () => {
 const DrumNightAccount = lazy(async () => {
   const module = await import('./DrumNightAccount')
   return { default: module.DrumNightAccount }
+})
+// Toasts: the account chip's "Google sign-in failed" and the dialog's own
+// confirmations had nowhere to show in this room. Lazy, like the chip, so
+// first paint stays the room's.
+const Notifications = lazy(async () => {
+  const module = await import('@/components/Notifications')
+  return { default: module.Notifications }
 })
 const DrumProjectLibraryHost = lazy(() =>
   import('./persistence/DrumProjectLibraryHost').then((module) => ({
@@ -1562,6 +1570,25 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
     if (songController.routeSessionId() !== pending.sessionId) return
     startBandSeparation(pending.sessionId)
   }
+
+  // Google leaves the page, so handleAuthenticated never runs for it: the
+  // blocked press is written down before the redirect and resumed when the
+  // worker sends the drummer back.
+  const googleSeparationReturn = useDrumNightGoogleSeparationReturn({
+    blockedSessionId: () => {
+      const pending = authIntent()
+      return pending?.kind === 'band-preparation' ? pending.sessionId : null
+    },
+    selection: () => songController.selectionState(),
+    routeSessionId: () => songController.routeSessionId(),
+    sourceRevision: () => sourceIntentGeneration,
+    refreshAccount: async () => {
+      const accountModule = await import('@/lib/standalone-account')
+      await accountModule.refreshAccount()
+      await accountModule.refreshCredits()
+    },
+    startSeparation: (sessionId) => startBandSeparation(sessionId),
+  })
 
   const syncStateFromUrl = (event?: PopStateEvent): void => {
     if (event !== undefined && routeHistory.vetoLockedPopState(event)) return
@@ -3837,7 +3864,12 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
               <ChevronDown />
             </button>
             <Suspense>
-              <DrumNightAccount onSignIn={openTopbarSignIn} />
+              <DrumNightAccount
+                onSignIn={openTopbarSignIn}
+                onGoogleRedirectResult={
+                  googleSeparationReturn.handleGoogleRedirectResult
+                }
+              />
             </Suspense>
           </div>
         </header>
@@ -5166,10 +5198,14 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
           <AuthModal
             tone="drum-night"
             onAuthenticated={handleAuthenticated}
+            prepareGoogleRedirect={googleSeparationReturn.prepareGoogleRedirect}
             adoptsGoogleSignup
           />
         </Suspense>
       </Show>
+      <Suspense>
+        <Notifications />
+      </Suspense>
 
       {/* Voice control, the same shape Karaoke and Guitar Night use: the
           wrapper owns the listener, the pill and the V shortcut, and the
