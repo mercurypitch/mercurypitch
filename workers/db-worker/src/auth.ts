@@ -189,6 +189,17 @@ export interface Env {
   STRIPE_SECRET_KEY?: string
   /** Stripe webhook signing secret (whsec_...) for /api/billing/webhook. */
   STRIPE_WEBHOOK_SECRET?: string
+  /** The launch offer's first day (launch-finisher.ts), an ISO date such as
+   *  2026-10-20, set per environment in wrangler.jsonc. Unset, the offer is
+   *  off: /me reports none and checkout adds no bonus. An account that
+   *  claimed the launch credits before it counts its days from it. */
+  OFFER_START_AT?: string
+  /** Days after the claim day to use the launch credits in. Default 14. */
+  OFFER_FINISHER_DAYS?: string
+  /** Extra credits on the next pack for using them all. Default 30. */
+  OFFER_BONUS_CREDITS?: string
+  /** The promo code whose claim starts the window. Default promo-2026-q4. */
+  OFFER_PROMO_ID?: string
   /** The Authorization header RevenueCat sends with every webhook, as set in
    *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
    *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
@@ -3894,6 +3905,8 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // A promo redemption names the account that claimed it. The foreign key
   // cascades, but erasure is a contract, not a side effect of one.
   { table: 'promoRedemptions', column: 'userId' },
+  // That the account earned the launch offer's reward (launch-finisher.ts).
+  { table: 'offerUnlocks', column: 'userId' },
   // Which newsletter issues went to this account. No address is stored, but
   // a list of what somebody was sent is still a record of them, and an
   // erased account must not leave one. Same reasoning as promoRedemptions:

@@ -169,6 +169,15 @@
         // Dev-target builds (TestFlight, license testers) buy in SANDBOX;
         // a PRODUCTION event is acknowledged and changes nothing.
         "REVENUECAT_ENVIRONMENT": "SANDBOX",
+        // The launch offer (launch-finisher.ts): an account that uses all of
+        // its launch credits within OFFER_FINISHER_DAYS of claiming them gets
+        // OFFER_BONUS_CREDITS extra on its next pack. OFFER_START_AT is the
+        // offer's first day; unset, it is off. Accounts that claimed before
+        // it count their days from it.
+        "OFFER_START_AT": "2026-10-09",
+        "OFFER_FINISHER_DAYS": "14",
+        "OFFER_BONUS_CREDITS": "30",
+        "OFFER_PROMO_ID": "promo-2026-q4",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -280,6 +289,12 @@
         // order src/revenuecat-sandbox.ts and
         // docs/plans/mobile-native/store-review-purchases.md give.
         "REVENUECAT_ENVIRONMENT": "PRODUCTION",
+        // The launch offer: see the dev block. OFFER_START_AT is added here
+        // in the release that ships it, set to that release's date. Until
+        // then the offer is off on prod.
+        "OFFER_FINISHER_DAYS": "14",
+        "OFFER_BONUS_CREDITS": "30",
+        "OFFER_PROMO_ID": "promo-2026-q4",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

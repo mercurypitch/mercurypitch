@@ -17,6 +17,9 @@ export interface PurchaseEmailVars extends MailOrigins {
   packLabel: string
   /** Credits this purchase granted. */
   credits: number
+  /** Extra credits the launch offer added to this pack (launch-finisher.ts),
+   *  or 0. One line says so; nothing else in the mail changes (D7). */
+  bonusCredits?: number
   /** Balance after the grant. */
   balance: number
   /** Price paid, in minor units (500 is €5.00). */
@@ -47,11 +50,24 @@ const REASON = "You're receiving this because you bought credits on"
 const count = (n: number, one: string, many: string): string =>
   `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`
 
+/** The launch offer's line, or null for a pack bought without it. */
+function bonusLine(vars: PurchaseEmailVars): string | null {
+  const bonus = vars.bonusCredits ?? 0
+  return bonus > 0
+    ? `Your launch offer added ${count(bonus, 'extra credit', 'extra credits')}.`
+    : null
+}
+
 function creditsPanel(vars: PurchaseEmailVars): string {
   const added = count(vars.credits, 'credit', 'credits')
   const balance = count(vars.balance, 'credit', 'credits')
   const paid = `${escapeHtml(formatMoney(vars.amountMinor, vars.currency))} &middot; ${escapeHtml(formatDate(vars.orderDateIso))}`
-  return `<tr><td style="padding:22px 24px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:16px;"><tr><td style="padding:20px 22px;">${eyebrow('Added to your account', W.violet)}<div style="font:700 34px/1.1 ${DISPLAY};color:${W.teal};">+${added}</div><div style="margin-top:8px;font:15px/1.5 ${SANS};color:${W.text};">New balance: <strong>${balance}</strong></div><div style="margin-top:14px;padding-top:12px;border-top:1px solid ${W.panelLine};font:13px/1.5 ${SANS};color:${W.muted};">${paid}</div></td></tr></table></td></tr>`
+  const bonus = bonusLine(vars)
+  const bonusHtml =
+    bonus === null
+      ? ''
+      : `<div style="margin-top:8px;font:600 15px/1.5 ${SANS};color:${W.text};">${escapeHtml(bonus)}</div>`
+  return `<tr><td style="padding:22px 24px 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${W.panel};border:1px solid ${W.panelLine};border-radius:16px;"><tr><td style="padding:20px 22px;">${eyebrow('Added to your account', W.violet)}<div style="font:700 34px/1.1 ${DISPLAY};color:${W.teal};">+${added}</div>${bonusHtml}<div style="margin-top:8px;font:15px/1.5 ${SANS};color:${W.text};">New balance: <strong>${balance}</strong></div><div style="margin-top:14px;padding-top:12px;border-top:1px solid ${W.panelLine};font:13px/1.5 ${SANS};color:${W.muted};">${paid}</div></td></tr></table></td></tr>`
 }
 
 function creditRow(appOrigin: string): string {
@@ -88,6 +104,7 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
     '',
     lines.eyebrow,
     `+${credits}`,
+    ...(bonusLine(vars) === null ? [] : [bonusLine(vars) as string]),
     `New balance: ${count(vars.balance, 'credit', 'credits')}`,
     `${formatMoney(vars.amountMinor, vars.currency)} · ${formatDate(vars.orderDateIso)}`,
     '',

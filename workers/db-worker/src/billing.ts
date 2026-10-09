@@ -46,6 +46,7 @@ import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
 import { featuredPromoView } from './promo-rules'
 import { handlePromoRedeem, readPromoClaims } from './promo-claim'
+import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
@@ -192,6 +193,8 @@ async function handleMe(
     }>()
 
   const promoClaims = await readPromoClaims(env, auth.userId)
+  // The launch offer is the web's, like the credits it counts.
+  const offer = app === null ? await readFinisherOffer(env, auth.userId) : null
 
   const balance = app?.left ?? creditBalance(ledger?.results ?? [])
   return respond({
@@ -209,6 +212,9 @@ async function handleMe(
     // The codes alone, as clients before promoClaims read them.
     redeemedPromos: promoClaims.map((claim) => claim.code),
     promoClaims,
+    // Where the account stands in the launch offer (launch-finisher.ts), or
+    // null when it has none.
+    offer,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
     // does not present purchase controls that checkout will reject.
@@ -325,6 +331,12 @@ async function handleCheckout(
     // Stripe's button reads "Donate" instead of "Pay".
     params.submit_type = 'donate'
   }
+  // The launch offer's bonus, when the account has it unlocked: metadata
+  // for the webhook and a line above the pay button.
+  Object.assign(
+    params,
+    await finisherCheckoutParams(env, auth.userId, plan.kind),
+  )
   const session = await stripeRequest(env, '/checkout/sessions', params)
   if (!session.ok || typeof session.data.url !== 'string') {
     console.error(
@@ -626,6 +638,10 @@ async function grantCheckoutCredits(
     `[billing] checkout ${eventId}: +${credits} credits user=${userId}` +
       (res.meta.changes === 0 ? ' [duplicate, skipped]' : ''),
   )
+  // The launch offer's bonus, when the pack was bought with it. Written on a
+  // redelivery too: if it failed after the pack's row, Stripe's retry finds
+  // the pack a duplicate and this writes the bonus (launch-finisher.ts).
+  const bonus = await grantFinisherBonus(env, session, userId)
 
   // Purchase "thank you" email — best-effort. Only on a real (non-duplicate)
   // grant, only when Resend is configured, and NEVER allowed to throw: the
@@ -663,6 +679,7 @@ async function grantCheckoutCredits(
             assetOrigin: app,
             packLabel: info.planLabel ?? 'credit',
             credits,
+            bonusCredits: bonus,
             balance: info.balance,
             amountMinor: paid.amountMinor,
             currency: paid.currency,
@@ -681,7 +698,7 @@ async function grantCheckoutCredits(
     }
   }
   return {
-    granted: res.meta.changes > 0 ? credits : 0,
+    granted: (res.meta.changes > 0 ? credits : 0) + bonus,
     userId,
     duplicate: res.meta.changes === 0,
     unit: 'credits',

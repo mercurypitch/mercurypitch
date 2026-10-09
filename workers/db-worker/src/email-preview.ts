@@ -130,6 +130,21 @@ const VARIANTS: readonly Variant[] = [
         orderDateIso: '2026-10-08T12:00:00.000Z',
       }),
   },
+  {
+    id: 'purchase-offer',
+    label: 'Credit pack bought with the launch offer',
+    render: (o) =>
+      renderPurchaseEmail({
+        ...o,
+        packLabel: 'Starter',
+        credits: 20,
+        bonusCredits: 30,
+        balance: 53,
+        amountMinor: 500,
+        currency: 'eur',
+        orderDateIso: '2026-10-28T12:00:00.000Z',
+      }),
+  },
 ]
 
 function page(body: string, contentType: string, status = 200): Response {
