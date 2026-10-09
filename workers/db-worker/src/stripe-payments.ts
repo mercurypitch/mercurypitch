@@ -47,7 +47,10 @@
 // share a withdrawal refunds never adds up to more credits than they
 // removed, so its own charge.refunded takes nothing more, and neither does a
 // refund made by hand for a withdrawal Stripe refused. A dispute of the
-// whole payment takes the rest.
+// whole payment takes the rest. A withdrawal that refunds the whole price (a
+// purchase with no consent on record, refundBasis 'full') settles the
+// payment outright: what the buyer used stays theirs (CRD Art. 14(4)(b)), so
+// no refund or dispute of it takes anything more (settledWhole).
 //
 // Credits already spent are owed: the balance goes below zero, and the
 // debit's own check (billing.ts, `SUM(delta) >= cost`) blocks spending until
@@ -228,21 +231,45 @@ function grantedBy(ledger: Ledger, paymentIntent: string): number {
     .reduce((sum, row) => sum + Number(row.delta), 0)
 }
 
-interface Settle {
+/** Whether a withdrawal refunds the whole price of the payment
+ *  `paymentIntent` names (withdrawals.refundBasis, migration 0061): a
+ *  purchase with no consent on record, settled outright. */
+async function settledWhole(env: Env, paymentIntent: string): Promise<boolean> {
+  const row = await env.DB.prepare(
+    "SELECT 1 AS hit FROM withdrawals WHERE paymentIntentId = ? AND refundBasis = 'full' LIMIT 1",
+  )
+    .bind(paymentIntent)
+    .first()
+  return row !== null
+}
+
+/** What else settling a payment depends on: whether the event may give
+ *  credits back, and whether a withdrawal settled the payment whole. */
+export interface SettleTerms {
+  mayGiveBack: boolean
+  settledWhole: boolean
+}
+
+export interface Settle {
   delta: number
   granted: number
   held: number
+  /** What a withdrawal's own rows took back. */
   takenOtherwise: number
+  settledWhole: boolean
 }
 
 /** What settling the payment against `ledger` writes. Anything else that
  *  took the payment's credits back (takenFrom, less what refunds and
- *  disputes hold) counts as taken already. */
-function settle(
+ *  disputes hold) counts as taken already. A withdrawal that refunded the
+ *  whole price counts as having taken everything the payment granted:
+ *  what the buyer used stays theirs (CRD Art. 14(4)(b)), so a refund or a
+ *  dispute never leaves them owing for it. */
+export function settle(
   ledger: Ledger,
   paymentIntent: string,
   charge: ChargeState,
-  mayGiveBack: boolean,
+  terms: SettleTerms,
 ): Settle {
   const granted = grantedBy(ledger, paymentIntent)
   const held = heldByMoneyBack(ledger, paymentIntent)
@@ -253,10 +280,16 @@ function settle(
     gone,
     paid,
     heldByMoneyBack: held,
-    takenOtherwise,
-    mayGiveBack,
+    takenOtherwise: terms.settledWhole ? granted : takenOtherwise,
+    mayGiveBack: terms.mayGiveBack,
   })
-  return { delta: next.delta, granted, held: next.held, takenOtherwise }
+  return {
+    delta: next.delta,
+    granted,
+    held: next.held,
+    takenOtherwise,
+    settledWhole: terms.settledWhole,
+  }
 }
 
 /** The row one event writes: its key, its reason, and whether it may give
@@ -280,18 +313,31 @@ async function settlePayment(
   charge: ChargeState,
   row: SettleRow,
 ): Promise<Settled> {
-  let after = { granted: 0, held: 0, takenOtherwise: 0, balance: 0 }
+  let after = {
+    granted: 0,
+    held: 0,
+    takenOtherwise: 0,
+    settledWhole: false,
+    balance: 0,
+  }
   const written = await writeOnLedgerOnce(
     env,
     userId,
     row.key,
     row.reason,
-    (ledger) => {
-      const next = settle(ledger, paymentIntent, charge, row.mayGiveBack)
+    async (ledger) => {
+      // Asked after every read of the ledger: a withdrawal writes its
+      // statement and its rows in one batch, so a statement this read
+      // missed comes with rows that make the write lose and read again.
+      const next = settle(ledger, paymentIntent, charge, {
+        mayGiveBack: row.mayGiveBack,
+        settledWhole: await settledWhole(env, paymentIntent),
+      })
       after = {
         granted: next.granted,
         held: next.held,
         takenOtherwise: next.takenOtherwise,
+        settledWhole: next.settledWhole,
         balance: balanceOf(ledger) + next.delta,
       }
       return { delta: next.delta, jobRef: paymentIntent }
@@ -576,7 +622,10 @@ export async function applyMoneyBack(
   const row = rowFor(event)
   if (row.onlyIfMoved) {
     const ledger = await readLedger(env, owner)
-    const next = settle(ledger, paymentIntent, charge, row.mayGiveBack)
+    const next = settle(ledger, paymentIntent, charge, {
+      mayGiveBack: row.mayGiveBack,
+      settledWhole: await settledWhole(env, paymentIntent),
+    })
     if (next.delta === 0) return { kind: 'applied' }
   }
   const moved = await settlePayment(env, owner, paymentIntent, charge, row)
@@ -607,7 +656,11 @@ export async function settleEarlyMoneyBack(
   const charge = await loadCharge(env, paymentIntent)
   if (charge === null) return
   const ledger = await readLedger(env, userId)
-  if (settle(ledger, paymentIntent, charge, false).delta === 0) return
+  const terms = {
+    mayGiveBack: false,
+    settledWhole: await settledWhole(env, paymentIntent),
+  }
+  if (settle(ledger, paymentIntent, charge, terms).delta === 0) return
   const moved = await settlePayment(env, userId, paymentIntent, charge, {
     key: `clawback:early:${paymentIntent}`,
     reason: anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,

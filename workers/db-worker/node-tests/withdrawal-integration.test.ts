@@ -550,6 +550,31 @@ function failNext(sql: RegExp, times = 1): void {
   }
 }
 
+/** `act` runs, and finishes, just before the next statement matching `sql`
+ *  is run: another request landing in between a read and its write. */
+function justBefore(sql: RegExp, act: () => Promise<unknown>): void {
+  const db = env.DB as unknown as SqliteD1Database
+  const prepare = db.prepare.bind(db)
+  let left = 1
+  const delayed = (statement: SqliteD1Statement): SqliteD1Statement => {
+    const bind = statement.bind.bind(statement)
+    const run = statement.run.bind(statement)
+    statement.bind = (...values: Parameters<SqliteD1Statement['bind']>) =>
+      delayed(bind(...values))
+    statement.run = async () => {
+      await act()
+      return run()
+    }
+    return statement
+  }
+  db.prepare = (text: string) => {
+    const statement = prepare(text)
+    if (left <= 0 || !sql.test(text)) return statement
+    left -= 1
+    return delayed(statement)
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   at('2026-10-20T10:00:00.000Z')
@@ -1400,20 +1425,107 @@ describe('a pack with no consent on record', () => {
     )
 
     // The whole price comes back as charge.refunded.
-    await deliver({
+    const refunded = await deliver({
       id: 'evt_starter_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_starter',
           object: 'charge',
           payment_intent: 'pi_starter',
           amount: 500,
           amount_refunded: 500,
           refunded: true,
+        }),
+      },
+    })
+    expect(refunded).toBe(200)
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('takes nothing back for a chargeback that follows its whole-price refund', async () => {
+    const sam = await buyer('sam@example.test')
+    const starter = await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 10, 'job-1')
+    await withdraw(sam, starter)
+    // The 20 credits left of the Starter pack went with the withdrawal, the
+    // whole EUR 5.00 went back, and the 10 used stay the buyer's.
+    expect(balance(sam.userId)).toBe(140)
+    charged({
+      id: 'ch_starter',
+      object: 'charge',
+      payment_intent: 'pi_starter',
+      amount: 500,
+      amount_refunded: 500,
+      refunded: true,
+      disputed: true,
+    })
+
+    // The buyer's bank pulls the money back as well.
+    const opened = await deliver({
+      id: 'evt_starter_dispute',
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_starter',
+          object: 'dispute',
+          charge: 'ch_starter',
+          payment_intent: 'pi_starter',
+          amount: 500,
+          currency: 'eur',
+          status: 'needs_response',
+          reason: 'fraudulent',
         },
       },
     })
+
+    expect(opened).toBe(200)
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('takes nothing back for a chargeback whose write races its whole-price withdrawal', async () => {
+    const sam = await buyer('sam@example.test')
+    const starter = await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 10, 'job-1')
+    charged({
+      id: 'ch_starter',
+      object: 'charge',
+      payment_intent: 'pi_starter',
+      amount: 500,
+      amount_refunded: 0,
+      refunded: false,
+      disputed: true,
+    })
+    // The withdrawal lands after the dispute's write read the ledger, and
+    // before it wrote.
+    justBefore(
+      /INSERT OR IGNORE INTO creditLedger[\s\S]*SELECT COUNT\(\*\)/,
+      () => withdraw(sam, starter),
+    )
+
+    const opened = await deliver({
+      id: 'evt_starter_dispute',
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_starter',
+          object: 'dispute',
+          charge: 'ch_starter',
+          payment_intent: 'pi_starter',
+          amount: 500,
+          currency: 'eur',
+          status: 'needs_response',
+          reason: 'fraudulent',
+        },
+      },
+    })
+
+    expect(opened).toBe(200)
+    expect(statementOf(starter)).toMatchObject({ refundBasis: 'full' })
     expect(takenBack(sam.userId)).toBe(0)
     expect(balance(sam.userId)).toBe(140)
   })

@@ -99,17 +99,22 @@ export async function writeOnLedger(
 /** writeOnLedger, saying also whether this call wrote the row: false when
  *  an earlier or a concurrent delivery of the same key did. What a caller
  *  that announces the write (a billing alert) needs, so a race announces it
- *  once. */
+ *  once. `rowFor` may read D1 too, after the ledger: a row written in
+ *  between makes the write lose and read both again. */
 export async function writeOnLedgerOnce(
   env: Env,
   userId: string,
   key: string,
   reason: string,
-  rowFor: (ledger: Ledger) => { delta: number; jobRef: string | null },
+  rowFor: (
+    ledger: Ledger,
+  ) =>
+    | { delta: number; jobRef: string | null }
+    | Promise<{ delta: number; jobRef: string | null }>,
 ): Promise<{ delta: number; wrote: boolean }> {
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readLedger(env, userId)
-    const { delta, jobRef } = rowFor(ledger)
+    const { delta, jobRef } = await rowFor(ledger)
     const written = await env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
        SELECT ?, ?, ?, ?, ?, ?, ?

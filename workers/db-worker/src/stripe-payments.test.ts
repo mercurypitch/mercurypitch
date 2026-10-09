@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { HANDLED_EVENTS, isCheckoutPaidEvent, isHandledEvent, isMoneyBackEvent, parseStripeEvent, paymentIntentOf, readWebhookEvent, settlement, } from './stripe-payments'
+import type { Ledger, LedgerEntry } from './ledger'
+import type { ChargeState } from './stripe-charge'
+import { HANDLED_EVENTS, isCheckoutPaidEvent, isHandledEvent, isMoneyBackEvent, parseStripeEvent, paymentIntentOf, readWebhookEvent, settle, settlement, } from './stripe-payments'
 
 describe('the events that grant and the events that take back', () => {
   it('grants from a completed checkout and from a delayed payment that arrived', () => {
@@ -126,6 +128,99 @@ describe('settlement', () => {
       delta: 0,
       held: 30,
     })
+  })
+})
+
+describe('settle', () => {
+  function row(
+    delta: number,
+    reason: string,
+    extra: Partial<LedgerEntry> = {},
+  ): LedgerEntry {
+    return { delta, reason, jobRef: null, idempotencyKey: null, ...extra }
+  }
+
+  /** A EUR 5.00 pack of 30 credits: 10 used, the other 20 taken by a
+   *  withdrawal of it. */
+  const withdrawn: Ledger = {
+    version: '4:4:0',
+    rows: [
+      row(30, 'purchase', { paymentIntentId: 'pi_1' }),
+      row(-10, 'uvr-job', { jobRef: 'job-1' }),
+      row(-20, 'withdrawal', { jobRef: 'pi_1' }),
+    ],
+  }
+
+  function charge(overrides: Partial<ChargeState> = {}): ChargeState {
+    return {
+      chargeId: 'ch_1',
+      paymentIntentId: 'pi_1',
+      amount: 500,
+      amountRefunded: 500,
+      currency: 'eur',
+      disputes: [],
+      ...overrides,
+    }
+  }
+
+  const disputed = charge({
+    disputes: [
+      {
+        id: 'dp_1',
+        status: 'needs_response',
+        amount: 500,
+        currency: 'eur',
+        reason: 'fraudulent',
+        dueBy: null,
+      },
+    ],
+  })
+
+  it('takes what the buyer used when a whole-payment refund follows a withdrawal of the unused credits', () => {
+    const next = settle(withdrawn, 'pi_1', charge(), {
+      mayGiveBack: false,
+      settledWhole: false,
+    })
+
+    expect(next).toEqual({
+      delta: -10,
+      granted: 30,
+      held: 10,
+      takenOtherwise: 20,
+      settledWhole: false,
+    })
+  })
+
+  it('takes nothing more from a payment a withdrawal refunded whole, by refund or dispute', () => {
+    const terms = { mayGiveBack: false, settledWhole: true }
+
+    expect(settle(withdrawn, 'pi_1', charge(), terms)).toEqual({
+      delta: 0,
+      granted: 30,
+      held: 0,
+      takenOtherwise: 20,
+      settledWhole: true,
+    })
+    expect(settle(withdrawn, 'pi_1', disputed, terms).delta).toBe(0)
+  })
+
+  it('leaves a buyer who used every credit owing nothing after a whole-price withdrawal', () => {
+    const usedUp: Ledger = {
+      version: '3:3:0',
+      rows: [
+        row(30, 'purchase', { paymentIntentId: 'pi_1' }),
+        row(-30, 'uvr-job', { jobRef: 'job-1' }),
+        row(0, 'withdrawal', { jobRef: 'pi_1' }),
+      ],
+    }
+
+    const next = settle(usedUp, 'pi_1', charge(), {
+      mayGiveBack: false,
+      settledWhole: true,
+    })
+
+    expect(next.delta).toBe(0)
+    expect(next.held).toBe(0)
   })
 })
 

@@ -50,6 +50,7 @@ function moved(overrides: Partial<CreditsMoved> = {}): CreditsMoved {
     granted: 30,
     held: 30,
     takenOtherwise: 0,
+    settledWhole: false,
     balance: 0,
     ...overrides,
   }
@@ -127,6 +128,30 @@ describe('a dispute opening', () => {
     expect(text(alert)).toContain(
       'Balance after: -25 credit(s). 25 of them were already spent',
     )
+  })
+
+  it('says a whole-price withdrawal is why a dispute takes nothing', () => {
+    const alert = moneyBackAlert(
+      ref('charge.dispute.created'),
+      charge({ amountRefunded: 500 }),
+      moved({ delta: 0, held: 0, takenOtherwise: 20, settledWhole: true }),
+      about(dispute()),
+    )
+
+    expect(text(alert)).toContain(
+      'A withdrawal refunded the whole price of this payment (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.',
+    )
+  })
+
+  it('says nothing of a whole-price withdrawal when there was none', () => {
+    const alert = moneyBackAlert(
+      ref('charge.dispute.created'),
+      charge(),
+      moved(),
+      about(dispute()),
+    )
+
+    expect(text(alert)).not.toContain('whole price')
   })
 })
 

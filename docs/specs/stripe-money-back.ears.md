@@ -134,6 +134,17 @@ and alert the owner, naming the donor when the payment was a donation. Of
 the `refund.updated` events, only a cancellation shall send that alert: a
 failure is reported once, by `refund.failed`.
 
+### REQ-MB-027 — A whole-price withdrawal settles the payment
+
+**When** a withdrawal of the payment refunds its whole price
+(`withdrawals.refundBasis = 'full'`: a purchase with no consent on record,
+CRD Art. 14(4)(b)), the worker shall count everything the payment granted as
+taken back already, so no refund or dispute of it takes any more credits and
+the buyer never owes for credits they used. The worker shall look for that
+withdrawal again after every read of the ledger, so one that lands between
+the read and the write is counted. The alert shall say why nothing was
+taken.
+
 ## 4. The sweep
 
 ### REQ-MB-030 — What it lists

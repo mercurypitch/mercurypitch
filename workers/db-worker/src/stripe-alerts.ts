@@ -47,6 +47,9 @@ export interface CreditsMoved {
   held: number
   /** What anything else took back from it: a withdrawal of the pack. */
   takenOtherwise: number
+  /** A withdrawal refunded its whole price (refundBasis 'full'): no refund
+   *  or dispute takes anything more from it. */
+  settledWhole: boolean
   /** The account's balance after the row. */
   balance: number
 }
@@ -96,7 +99,12 @@ function creditLines(moved: CreditsMoved): string[] {
       : moved.delta > 0
         ? `Given back now: ${moved.delta} credit(s).`
         : `No credits moved now. Refunds and disputes hold ${moved.held} of the ${moved.granted} the payment granted.`
-  return [`Account: ${moved.userId}`, moving, balanceLine(moved)]
+  const whole = moved.settledWhole
+    ? [
+        'A withdrawal refunded the whole price of this payment (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.',
+      ]
+    : []
+  return [`Account: ${moved.userId}`, moving, ...whole, balanceLine(moved)]
 }
 
 /** The dispute's facts, with where to answer it. */
