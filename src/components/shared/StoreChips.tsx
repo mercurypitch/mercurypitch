@@ -25,8 +25,10 @@
 //
 // SURFACE-AGNOSTIC. Mounted on the Mirror's two results and on First Light's
 // Map, which is why it lives here and not in either feature. It names no
-// surface. Its look is set through custom properties on the `class` a surface
-// passes in (StoreChips.module.css).
+// surface and counts nothing itself: the mount site passes `onChipClick` and
+// counts the click under its own event name, because the funnel stores an
+// event name and a client id and nothing else. Its look is set through custom
+// properties on the `class` a surface passes in (StoreChips.module.css).
 
 import type { Component } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
@@ -50,6 +52,11 @@ interface Store {
 export interface StoreChipsProps {
   /** Overrides the shipped config, for tests. */
   listings?: StoreListings
+  /**
+   * A chip or badge was clicked, coming soon or live. The mount site counts
+   * it under its own event name; the link opens either way.
+   */
+  onChipClick?: (store: StoreId) => void
   /** The surface's class on the root, where it sets the custom properties
    *  StoreChips.module.css reads (colours, margin, caption size). */
   class?: string
@@ -110,6 +117,7 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
                   rel="noopener"
                   aria-label={`Coming soon: ${store.name}. Opens a video of the app on YouTube, in a new tab.`}
                   aria-describedby={captionId}
+                  onClick={() => props.onChipClick?.(store.id)}
                 >
                   <span class={styles.chipSoon}>Coming soon</span>
                   <span class={styles.chipName}>{store.name}</span>
@@ -123,6 +131,7 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
                   href={href()}
                   target="_blank"
                   rel="noopener"
+                  onClick={() => props.onChipClick?.(store.id)}
                 >
                   <img
                     src={store.badge.src}
@@ -144,5 +153,9 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
 /** The store chips, or nothing at all inside the native app. */
 export const StoreChips: Component<StoreChipsProps> = (props) =>
   IS_NATIVE_BUILD ? null : (
-    <WebStoreChips listings={props.listings} class={props.class} />
+    <WebStoreChips
+      listings={props.listings}
+      onChipClick={props.onChipClick}
+      class={props.class}
+    />
   )

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as NativeBuild from '@/lib/native-build'
 import type { StoreListings } from '@/lib/store-listings'
@@ -115,5 +115,42 @@ describe('store chips on the voiceprint result', () => {
     ).toHaveAttribute('src', '/stores/google-play-badge.png')
     expect(screen.queryByText(/android tablet/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument()
+  })
+
+  it('tells the mount site which store a coming-soon chip names', () => {
+    const onChipClick = vi.fn()
+    render(() => <StoreChips listings={NOT_LIVE} onChipClick={onChipClick} />)
+
+    fireEvent.click(
+      screen.getByRole('link', { name: /^Coming soon: Google Play/ }),
+    )
+    expect(onChipClick).toHaveBeenLastCalledWith('google-play')
+    fireEvent.click(
+      screen.getByRole('link', { name: /^Coming soon: App Store/ }),
+    )
+    expect(onChipClick).toHaveBeenLastCalledWith('app-store')
+    expect(onChipClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('tells the mount site about a live badge the same way', () => {
+    const onChipClick = vi.fn()
+    render(() => (
+      <StoreChips
+        listings={{
+          appStore: { live: true, appleId: '6740000000' },
+          googlePlay: {
+            live: true,
+            packageName: 'com.irchiinnuss.mercurypitch',
+          },
+        }}
+        onChipClick={onChipClick}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('link', { name: 'Get it on Google Play' }))
+    fireEvent.click(
+      screen.getByRole('link', { name: 'Download on the App Store' }),
+    )
+    expect(onChipClick.mock.calls).toEqual([['google-play'], ['app-store']])
   })
 })
