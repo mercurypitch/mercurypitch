@@ -173,6 +173,16 @@ jobs:
         if: steps.preview-scope.outputs.deploy == 'true'
         run: pnpm install --frozen-lockfile
 
+      # A release tag deploys the website here and the prod DB worker in
+      # deploy-db-prod, side by side. The DB worker refuses to go out while
+      # the prod block of workers/db-worker/wrangler.jsonc lacks the
+      # seller's name or address (deploy-db.yml); this stops the website on
+      # the same check, before it is built, so a release never goes out
+      # half. Dev and preview deploys are never held by it.
+      - name: Check the seller details for production
+        if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+        run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
+
       # PR Gate owns pull-request build validation. Direct main, tag, and
       # manual deployments keep a pre-deploy gate; PR previews skip it because
       # `wrangler versions upload` builds the exact artifact it uploads below.

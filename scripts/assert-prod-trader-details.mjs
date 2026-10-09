@@ -8,9 +8,11 @@
 // (workers/db-worker/src/checkout-consent.ts). An empty name or address goes
 // out to a buyer as "[TRADER_NAME]" or "[TRADER_ADDRESS]". The production
 // deploy (.github/workflows/deploy-db.yml, prod only) runs this before it
-// touches the database or the worker, and stops when the prod block of
-// wrangler.jsonc lacks either. The VAT ID may stay empty: a sole trader
-// outside the VAT system has none. Dev deploys are never checked.
+// touches the database or the worker, and the website's deploy on a
+// release tag (.github/workflows/build.yml) before it builds, and each
+// stops when the prod block of wrangler.jsonc lacks either. The VAT ID may
+// stay empty: a sole trader outside the VAT system has none. Dev deploys
+// are never checked.
 //
 //   node scripts/assert-prod-trader-details.mjs [path/to/wrangler.jsonc]
 
