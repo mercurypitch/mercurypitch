@@ -73,10 +73,13 @@
   text-wrap: balance;
 }
 
+/* The stage gives way on a short phone: the lantern and Merc scale to
+   whatever height is left (layoutStage), and the room's clip must never
+   reach the controls below. */
 .stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: 260px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -123,10 +126,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Room for the mic's pulse ring at full travel. */
+  /* Room for the mic's pulse ring at full travel (25.5 px past the disc),
+     above it and below it, inside the room's clip. */
   gap: 28px;
-  min-height: 156px;
-  padding: 10px 16px 16px;
+  /* The picker, the gap and the mic with this padding. The result's buttons
+     are shorter; held at this height, the stage's floor and the lantern's
+     foot stay where they were when the buttons replace the mic. */
+  min-height: 194px;
+  padding: 10px 16px 28px;
 }
 
 .picker {
