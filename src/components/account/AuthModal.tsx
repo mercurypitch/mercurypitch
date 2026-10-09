@@ -438,6 +438,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   const emailOnlyPane = (): boolean =>
     pane() === 'forgot' || pane() === 'email-code'
 
+  /** True when a Google or Apple button is on screen. */
+  const socialSignInShown = (): boolean =>
+    appleSignInOffered() ||
+    nativeGoogleSignInOffered() ||
+    (webGoogleSignInOffered() && googleSignInUnavailableReason === null)
+
   // Live password validity (register only) — red border + checklist so
   // nobody discovers the rules one server rejection at a time.
   const pwdInvalid = (): boolean =>
@@ -845,6 +851,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     <Smartphone />
                     Sign in with your phone
                   </button>
+                </Show>
+                {/* Google and Apple create an account on first use, so the
+                    sign-in pane says what continuing means. The register pane
+                    has its own line under Create account. */}
+                <Show when={pane() === 'login' && socialSignInShown()}>
+                  <SignUpLegalLine variant="continue" />
                 </Show>
                 <div class={styles.divider} role="presentation">
                   <span>or use email</span>

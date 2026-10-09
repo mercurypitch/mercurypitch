@@ -18,6 +18,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { LegalLinks } from '@/components/LegalLinks'
 import { BusyLink } from '@/components/shared/BusyLink'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
 import type { CardFormat } from '@/features/mirror/card-renderer'
@@ -1771,6 +1772,9 @@ export const GlassApp: Component = () => {
           Karaoke Night
         </BusyLink>
       </footer>
+      {/* An ad landing page with no route to Settings: the imprint has to
+          be reachable from here (E-Commerce Directive Art. 5). */}
+      <LegalLinks class="glass-legal" />
     </div>
   )
 }

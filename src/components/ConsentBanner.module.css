@@ -84,45 +84,67 @@
   margin-left: auto;
 }
 
-.decline,
-.accept {
-  padding: 0.5rem 1.1rem;
+.choice {
+  min-height: 44px;
+  min-width: 96px;
+  padding: 0 1.1rem;
   border-radius: 0.5rem;
-  font-size: 0.8rem;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.28));
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #eef0f6);
+  font-size: 0.85rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease,
-    opacity 0.15s ease;
+    border-color 0.15s ease;
 }
 
-.decline {
-  background: transparent;
-  color: var(--text-primary, #eef0f6);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.28));
+.choice:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.14));
+  border-color: var(--accent, #8fa3ff);
 }
 
-.decline:hover {
-  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
-}
-
-.accept {
-  background: var(--accent, #8fa3ff);
-  color: var(--text-inverse, #0b1026);
-  border: 1px solid transparent;
-}
-
-.accept:hover {
-  opacity: 0.9;
-}
-
-.decline:focus-visible,
-.accept:focus-visible,
-.link:focus-visible {
+.choice:focus-visible,
+.link:focus-visible,
+.close:focus-visible {
   outline: 2px solid var(--accent, #8fa3ff);
   outline-offset: 2px;
+}
+
+/* Cookie settings: the current choice on its own row above the copy, clear
+   of the close button in the corner (the landing's banner does the same). */
+.status {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-right: 2.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-primary, #eef0f6);
+}
+
+.close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--text-secondary, #c7cbe0);
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--text-primary, #eef0f6);
+  background: var(--bg-hover, rgba(255, 255, 255, 0.08));
 }
 
 /* Narrow screens: let the buttons sit full-width under the copy. */
@@ -131,8 +153,7 @@
     width: 100%;
   }
 
-  .decline,
-  .accept {
+  .choice {
     flex: 1;
   }
 }

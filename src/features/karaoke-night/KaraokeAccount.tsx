@@ -303,6 +303,9 @@ export function KaraokeAccount() {
                 ? 'Opening Google\u2026'
                 : 'Continue with Google'}
             </button>
+            <Show when={mode() === 'login'}>
+              <SignUpLegalLine variant="continue" class="kn-signup-legal" />
+            </Show>
             <button
               class="kn-modal-switch"
               onClick={() => {

@@ -25,6 +25,9 @@ body {
   margin: 0;
   padding: 0;
   background: var(--glass-void-0);
+  /* The page's face, set on body too: the consent banner mounts there,
+     outside .glass-shell, and inherits it rather than the browser's serif. */
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 .glass-shell {
@@ -383,6 +386,12 @@ body {
 .glass-foot-link:hover {
   color: var(--glass-starlight);
   border-color: var(--glass-chrome-dim);
+}
+/* The legal row under the footer links, in the footer's chrome colour. */
+.glass-legal {
+  position: relative;
+  margin-top: -10px;
+  --accent: var(--glass-chrome);
 }
 .glass-foot-typegpu {
   font-weight: 600;
