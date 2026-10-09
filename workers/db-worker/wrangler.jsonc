@@ -157,6 +157,10 @@
         // Emailed links (reset/verify) from non-first-party origins (PR
         // previews) land on the dev app, never production.
         "APP_FALLBACK_ORIGIN": "https://dev.mercurypitch.com",
+        // Where a mailed link back to this worker points (the fresh confirm
+        // link). The console sends through studio-dev, which is behind
+        // Cloudflare Access: a link built on that host opens an Access login.
+        "PUBLIC_API_ORIGIN": "https://api-dev.mercurypitch.com",
         // GET /api/email-preview renders every sign-up mail with sample data
         // (email-preview.ts). Dev only: prod omits it, so there it is a 404.
         "EMAIL_PREVIEW": "1",
@@ -265,6 +269,9 @@
         // same sitting as tagging, like GOOGLE_CLIENT_SECRET above.
         "APPLE_CLIENT_IDS": "com.irchiinnuss.mercurypitch",
         "APP_FALLBACK_ORIGIN": "https://mercurypitch.com",
+        // See the dev block: links in mail point at the public host, never
+        // at studio.mercurypitch.com, which is behind Cloudflare Access.
+        "PUBLIC_API_ORIGIN": "https://api.mercurypitch.com",
         "PASSKEY_RP_ID": "mercurypitch.com",
         // Only real store purchases grant songs on prod: a SANDBOX event
         // (TestFlight, a license tester) is acknowledged and changes nothing.

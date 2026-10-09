@@ -17,6 +17,7 @@
 import { FUNNEL_EVENT_NAMES } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
 import { handleAccountNoticeRoute } from './account-notices'
+import { handleConfirmReminderRoute } from './confirm-reminders'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
@@ -2358,6 +2359,17 @@ async function handleRequest(
     () => isAdmin(request, env),
   )
   if (noticeResponse) return noticeResponse
+
+  // One more confirm link for accounts that never confirmed their address.
+  // Both routes are admin-only; see confirm-reminders.ts.
+  const reminderResponse = await handleConfirmReminderRoute(
+    request,
+    env,
+    url.pathname,
+    respondNoStore,
+    () => isAdmin(request, env),
+  )
+  if (reminderResponse) return reminderResponse
 
   // Sample renders of the sign-up mails, on the dev worker only. Ahead of
   // handleAuth for the same reason as the routes around it: email-preview
