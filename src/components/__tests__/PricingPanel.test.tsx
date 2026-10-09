@@ -428,4 +428,53 @@ describe('PricingPanel', () => {
     // A later, plain visit must find the guide folded.
     expect(creditCostGuideRequested()).toBe(false)
   })
+
+  describe('the footnote under the packs', () => {
+    const footnote = async (): Promise<HTMLElement> => {
+      await screen.findAllByTestId('pricing-pack')
+      return screen.getByTestId('pricing-footnote')
+    }
+
+    it('says a credit purchase can be cancelled for its unused credits', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue({
+        ...PRICING,
+        withdrawal: { mode: 'refund_unused', days: 14 },
+      })
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      const note = await footnote()
+      expect(note.textContent).toBe(
+        "Credits are prepaid and spent per server-side separation. You can cancel a credit purchase within 14 days and get back the price of credits you haven't used. Donations are voluntary and not refundable. See our Terms.",
+      )
+      expect(note.querySelector('a')?.getAttribute('href')).toBe(
+        'https://about.mercurypitch.com/terms/#withdrawal',
+      )
+    })
+
+    it('says the right to cancel ends at checkout under waiver', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue({
+        ...PRICING,
+        withdrawal: { mode: 'waiver', days: 14 },
+      })
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      await waitFor(async () =>
+        expect((await footnote()).textContent).toContain(
+          "They're added the moment you pay, and at checkout you confirm that you then lose your 14-day right to cancel.",
+        ),
+      )
+    })
+
+    it('keeps the default words with an older db-worker', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      expect((await footnote()).textContent).toContain(
+        'You can cancel a credit purchase within 14 days',
+      )
+    })
+  })
 })

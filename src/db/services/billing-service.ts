@@ -13,6 +13,8 @@ import { API_BASE_URL } from '@/lib/defaults'
 // Pure, dependency-free worker module — the single source of truth for the
 // per-model credit multipliers (also used by the db-worker's debit/pricing).
 import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../../workers/db-worker/src/billing-core'
+// The same for the 14-day withdrawal's model and wording.
+import type { WithdrawalMode } from '../../../workers/db-worker/src/withdrawal-wording'
 
 export interface PricingPlan {
   id: string
@@ -45,6 +47,9 @@ export interface Pricing {
    *  on an older db-worker. */
   uvrModelCredits?: Record<string, number>
   stripeConfigured: boolean
+  /** The 14-day withdrawal model the packs are sold under (WITHDRAWAL_MODE).
+   *  Absent on an older db-worker. */
+  withdrawal?: { mode: WithdrawalMode; days: number }
 }
 
 export interface BillingMe {
@@ -577,5 +582,96 @@ export async function redeemPromoCode(
     code: typeof data.code === 'string' ? data.code : code.trim().toUpperCase(),
     creditsGranted: Number(data.creditsGranted ?? 0),
     newBalance: Number(data.newBalance ?? 0),
+  }
+}
+
+// ── The 14-day withdrawal (workers/db-worker/src/withdrawal.ts) ──────
+
+/** A pack bought in the last 14 days that still holds unused paid credits. */
+export interface CancellablePack {
+  /** Names the purchase in a withdrawal statement. */
+  purchaseId: string
+  packLabel: string
+  purchasedAt: string
+  /** The last day to cancel: YYYY-MM-DD. */
+  deadline: string
+  paidCredits: number
+  unusedCredits: number
+  /** The pack's unused bonus credits, which leave with it. */
+  bonusCredits: number
+  /** What cancelling refunds, or null when the price is not on record. */
+  refund: { amountMinor: number; currency: string } | null
+}
+
+/** A withdrawal statement, as the worker recorded it. */
+export interface WithdrawalStatement {
+  id: string
+  purchaseId: string
+  packLabel: string
+  submittedAt: string
+  /** Where the acknowledgement went. */
+  email: string
+  unusedCredits: number
+  bonusCredits: number
+  refundMinor: number
+  currency: string
+  refundStatus: 'pending' | 'refunded' | 'failed' | 'manual' | 'none'
+}
+
+export interface Withdrawals {
+  mode: WithdrawalMode
+  /** The account's email, to prefill the form. */
+  email: string | null
+  packs: CancellablePack[]
+  statements: WithdrawalStatement[]
+}
+
+/** The packs this account can still cancel. Null when there is no cloud API
+ *  or no signed-in account. */
+export async function fetchWithdrawals(
+  base?: string,
+  signal?: AbortSignal,
+): Promise<Withdrawals | null> {
+  const b = apiBase(base)
+  const headers = getAuthHeaders()
+  if (b === '' || !headers.Authorization) return null
+  const res = await fetch(`${b}/api/billing/withdrawals`, { headers, signal })
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`Failed to load your purchases: ${res.status}`)
+  return (await res.json()) as Withdrawals
+}
+
+export interface WithdrawalRequest {
+  purchaseId: string
+  name: string
+  email: string
+}
+
+/** Send the withdrawal statement for one pack. The worker answers a second
+ *  statement for the same pack with the first (`duplicate`). */
+export async function submitWithdrawal(
+  request: WithdrawalRequest,
+  base?: string,
+): Promise<{ duplicate: boolean; statement: WithdrawalStatement }> {
+  const headers = getAuthHeaders()
+  if (!headers.Authorization) {
+    throw new Error('Sign in to cancel a purchase.')
+  }
+  const res = await fetch(`${apiBase(base)}/api/billing/withdrawals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(request),
+  })
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string'
+        ? data.error
+        : "We couldn't send your cancellation. Try again, or reply to your purchase email.",
+    )
+  }
+  return {
+    duplicate: data.duplicate === true,
+    statement: data.statement as WithdrawalStatement,
   }
 }
