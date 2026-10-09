@@ -200,6 +200,19 @@ export interface Env {
   OFFER_BONUS_CREDITS?: string
   /** The promo code whose claim starts the window. Default promo-2026-q4. */
   OFFER_PROMO_ID?: string
+  /** Retention periods for the cron's sweep (funnel-retention.ts), whole
+   *  numbers set in every env block of wrangler.jsonc. Unset or not a whole
+   *  number of at least 1 means the default (src/lib/retention-periods.ts).
+   *  Days a Google click id is kept on its funnelAcquisition row. Default 90. */
+  RETENTION_CLICK_ID_DAYS?: string
+  /** Calendar months mirrorEvents and funnelAcquisition rows are kept.
+   *  Default 13. */
+  RETENTION_FUNNEL_MONTHS?: string
+  /** Days an auth_ratelimit row is kept after its window started. Default 2. */
+  RETENTION_RATE_LIMIT_DAYS?: string
+  /** Days a promo code's promoEmailClaims rows are kept after the code's
+   *  expiresAt. A code with no expiresAt never closes. Default 30. */
+  RETENTION_PROMO_EMAIL_DAYS?: string
   /** The Authorization header RevenueCat sends with every webhook, as set in
    *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
    *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
@@ -893,6 +906,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'device/approve': { max: 20, windowMs: 300_000 }, // 20/5min
   'device-pending': { max: 60, windowMs: 300_000 }, // 60/5min
 }
+
+/** The longest window above. A row whose window started earlier than this
+ *  is dead: its next hit resets it. The retention sweep never deletes a row
+ *  younger than this (funnel-retention.ts). */
+export const LONGEST_RATE_LIMIT_WINDOW_MS = Math.max(
+  ...Object.values(RATE_LIMITS).map((limit) => limit.windowMs),
+)
 
 /**
  * Which bucket a request's writes count against.

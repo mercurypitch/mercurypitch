@@ -39,6 +39,12 @@
     // id exists for it. 2FA and email codes work there regardless.
     "PASSKEY_RP_ID": "localhost",
     "ALLOWED_ORIGINS": "localhost",
+    // Retention periods for the cron's sweep (src/funnel-retention.ts). The
+    // dev block explains them; keep all three blocks the same.
+    "RETENTION_CLICK_ID_DAYS": "90",
+    "RETENTION_FUNNEL_MONTHS": "13",
+    "RETENTION_RATE_LIMIT_DAYS": "2",
+    "RETENTION_PROMO_EMAIL_DAYS": "30",
   },
   "d1_databases": [
     {
@@ -178,6 +184,27 @@
         "OFFER_FINISHER_DAYS": "14",
         "OFFER_BONUS_CREDITS": "30",
         "OFFER_PROMO_ID": "promo-2026-q4",
+        // Retention periods (src/funnel-retention.ts), applied by the cron
+        // every 6 hours. Whole numbers only: anything else, zero included,
+        // means the default in src/lib/retention-periods.ts, and the cron
+        // logs the var it ignored. These are the privacy plan's recommended
+        // defaults (owner, 9 Oct 2026); the lawyer sets the final numbers,
+        // and the privacy notice states the same periods. The browser keeps
+        // its own copies of the click id and the funnel id on the same
+        // clock: VITE_RETENTION_* in .env.production and .env.development.
+        //   RETENTION_CLICK_ID_DAYS    gclid cleared on funnelAcquisition
+        //                              rows this many days old; rows stay
+        //   RETENTION_FUNNEL_MONTHS    mirrorEvents and funnelAcquisition
+        //                              rows deleted at this many months
+        //   RETENTION_RATE_LIMIT_DAYS  auth_ratelimit rows deleted this
+        //                              many days after their window started
+        //   RETENTION_PROMO_EMAIL_DAYS promoEmailClaims rows deleted this
+        //                              many days after their code's expiresAt;
+        //                              a code with no expiresAt keeps them
+        "RETENTION_CLICK_ID_DAYS": "90",
+        "RETENTION_FUNNEL_MONTHS": "13",
+        "RETENTION_RATE_LIMIT_DAYS": "2",
+        "RETENTION_PROMO_EMAIL_DAYS": "30",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -300,6 +327,12 @@
         "OFFER_FINISHER_DAYS": "14",
         "OFFER_BONUS_CREDITS": "30",
         "OFFER_PROMO_ID": "promo-2026-q4",
+        // Retention periods: see the dev block. The privacy notice states
+        // these numbers, so change it in the same release as them.
+        "RETENTION_CLICK_ID_DAYS": "90",
+        "RETENTION_FUNNEL_MONTHS": "13",
+        "RETENTION_RATE_LIMIT_DAYS": "2",
+        "RETENTION_PROMO_EMAIL_DAYS": "30",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

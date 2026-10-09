@@ -95,7 +95,7 @@ export function featuredPromoView(
 // the exact round trip also refuses a day that does not exist, which
 // `new Date` would otherwise roll into the next month.
 const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-const isInstant = (value: unknown): boolean =>
+export const isInstant = (value: unknown): value is string =>
   typeof value === 'string' &&
   INSTANT.test(value) &&
   new Date(value).toISOString() === value

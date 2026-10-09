@@ -30,6 +30,7 @@ import { handleBilling, reconcileBilling } from './billing'
 import type { DemoSongRow } from './demo-song'
 import { DEMO_SONG_FIELDS, demoSongValues, nextLyricsRevision, normalizeDemoSlug, publicDemoSong, } from './demo-song'
 import { sweepFreeSongEmails } from './free-song-email'
+import { retentionConfig, sweepFunnelRetention } from './funnel-retention'
 import { handleFriendAccept, handleFriendCode, handleFriendRedeem, handleFriendRemove, handleFriendRequest, handleFriendRequests, } from './friends'
 import { handleAchievementBulk, handleBadgeBulk, handleGrantContext, } from './grants'
 import { handleGuidedExerciseRequest } from './guided-exercises'
@@ -2298,6 +2299,19 @@ export default {
       await sweepFreeSongEmails(env.DB, Date.now())
     } catch (error) {
       console.error('[cron] free song email sweep failed:', error)
+    }
+    // Funnel rows, click ids, rate-limit counters and closed promo codes'
+    // email records, each kept only as long as the privacy notice says
+    // (funnel-retention.ts). Bounded per tick; a backlog drains over several.
+    try {
+      const { config, problems } = retentionConfig(env)
+      for (const problem of problems) {
+        console.warn(`[cron] retention config: ${problem}`)
+      }
+      const swept = await sweepFunnelRetention(env.DB, config, Date.now())
+      console.log('[cron] retention sweep:', JSON.stringify(swept))
+    } catch (error) {
+      console.error('[cron] retention sweep failed:', error)
     }
   },
 }
