@@ -25,9 +25,10 @@
 // checkout's own record (checkoutConsents), else what the PaymentIntent
 // received (paidAtStripe), else nobody knows it and the owner refunds by
 // hand. Only Stripe saying so makes the price unknown: a 404, or a
-// definitive refusal like the refund's own. A lookup that got no answer (a
-// network error, a 5xx, a 409 or a 429) leaves the price pending, to be
-// asked again (withdrawal-finish.ts).
+// PaymentIntent with no amount received. Any other answer (a network
+// error, a 5xx, a 409, a 429, or a 401 or 403 from a key that is wrong or
+// lacks a permission) says nothing of the payment and leaves the price
+// pending, to be asked again (withdrawal-finish.ts).
 
 import type { Env } from './auth'
 import type { WithdrawalRefundState } from './email-withdrawal'
@@ -113,7 +114,7 @@ export async function paidAtStripe(
   } catch {
     return NO_ANSWER
   }
-  if (!res.ok) return isPassing(res.status) ? NO_ANSWER : NOT_ON_RECORD
+  if (!res.ok) return res.status === 404 ? NOT_ON_RECORD : NO_ANSWER
   const amount = res.data.amount_received
   const currency = res.data.currency
   if (typeof amount !== 'number' || typeof currency !== 'string') {

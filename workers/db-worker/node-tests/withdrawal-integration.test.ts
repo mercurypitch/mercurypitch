@@ -2269,6 +2269,24 @@ describe('a price lookup Stripe does not answer', () => {
         throw new TypeError('fetch failed: the connection was reset')
       },
     ],
+    // A key that is wrong or lacks a permission says nothing of the
+    // payment: only a 404 does.
+    [
+      'a 401',
+      () =>
+        Response.json(
+          { error: { message: 'Invalid API Key provided: rk_test_****' } },
+          { status: 401 },
+        ),
+    ],
+    [
+      'a 403',
+      () =>
+        Response.json(
+          { error: { message: 'The provided key does not have access.' } },
+          { status: 403 },
+        ),
+    ],
   ])(
     'keeps the price pending after %s, and the cron refunds from it',
     async (_, answer) => {
