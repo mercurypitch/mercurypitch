@@ -10,8 +10,8 @@
 -- no account id, so it stays when the account goes.
 --
 -- `kind` says what was claimed: 'claim' for the code's own credits, and
--- 'offer-bonus' for the extra credits on a first pack that using all of the
--- launch credits earns (launch-offer.ts). Each happens once per address per
+-- 'offer-bonus' for the extra credits on the next pack that using all of the
+-- launch credits earns (launch-finisher.ts). Each happens once per address per
 -- code.
 --
 -- Nothing is back-filled: the code needs the secret, which SQL does not
