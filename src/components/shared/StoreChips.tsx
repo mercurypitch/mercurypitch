@@ -62,6 +62,30 @@ export interface StoreChipsProps {
   class?: string
 }
 
+/** What people hold, for the caption: an iPhone, not an App Store. */
+const DEVICE: Record<StoreId, string> = {
+  'app-store': 'iPhone',
+  'google-play': 'Android',
+}
+
+/**
+ * The caption over the coming-soon chips: the devices still waiting, the way
+ * launches say it ("coming soon to iPhone and Android"), then what the chips
+ * open meanwhile, which is the Android tablet video.
+ */
+function comingSoonCaption(waiting: readonly Store[]): string {
+  const devices = waiting.map((s) => DEVICE[s.id]).join(' and ')
+  const buttons =
+    waiting.length > 1
+      ? 'both buttons play'
+      : `the ${waiting[0].name} button plays`
+  return (
+    `Coming soon to ${devices}. For now, ${buttons} a first look, filmed ` +
+    'on an Android tablet: leave the app mid-song and the karaoke keeps ' +
+    'playing, with the lyrics floating on top.'
+  )
+}
+
 const WebStoreChips: Component<StoreChipsProps> = (props) => {
   const stores = (): Store[] => {
     const links = storeLinks(props.listings ?? STORE_LISTINGS)
@@ -90,17 +114,14 @@ const WebStoreChips: Component<StoreChipsProps> = (props) => {
       },
     ]
   }
-  const anyComingSoon = (): boolean =>
-    stores().some((s) => s.href === undefined)
+  const comingSoon = (): Store[] => stores().filter((s) => s.href === undefined)
   const captionId = createUniqueId()
 
   return (
     <div class={`${styles.root} ${props.class ?? ''}`}>
-      <Show when={anyComingSoon()}>
+      <Show when={comingSoon().length > 0}>
         <p class={styles.caption} id={captionId}>
-          The MercuryPitch app is on its way. The video shows it on an Android
-          tablet: leave the app mid-song and the karaoke keeps playing, with the
-          lyrics floating on top.
+          {comingSoonCaption(comingSoon())}
         </p>
       </Show>
       <div class={styles.row}>
