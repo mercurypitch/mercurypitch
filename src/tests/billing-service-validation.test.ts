@@ -138,3 +138,67 @@ describe('the Karaoke songs on /me (plan S8 §8)', () => {
     })
   }
 })
+
+describe('the launch offer on /me', () => {
+  const base = {
+    creditBalance: 3,
+    entitlements: [],
+    stripeConfigured: true,
+  }
+  const readable = {
+    state: 'counting',
+    used: 2,
+    goal: 5,
+    deadline: '2026-10-23T23:59:59.999Z',
+    bonusCredits: 30,
+  }
+
+  function answer(body: unknown): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })),
+    )
+  }
+
+  it('reads an offer in each of its states', async () => {
+    for (const state of ['counting', 'unlocked', 'used', 'lapsed']) {
+      const body = { ...base, offer: { ...readable, state } }
+      answer(body)
+      await expect(fetchBillingMe('https://api.test')).resolves.toEqual(body)
+    }
+  })
+
+  it('reads no offer, and an older worker that says nothing of one', async () => {
+    answer({ ...base, offer: null })
+    expect((await fetchBillingMe('https://api.test'))?.offer).toBeNull()
+    answer(base)
+    const billing = await fetchBillingMe('https://api.test')
+    expect(billing?.creditBalance).toBe(3)
+    expect(billing?.offer).toBeUndefined()
+  })
+
+  for (const [what, offer] of [
+    ['a state it does not know', { ...readable, state: 'expired' }],
+    ['credits used below none', { ...readable, used: -1 }],
+    ['a part of a credit used', { ...readable, used: 2.5 }],
+    ['nothing to use', { ...readable, goal: 0 }],
+    ['a goal that is not a number', { ...readable, goal: '5' }],
+    [
+      'extra credits that are not a number',
+      { ...readable, bonusCredits: '30' },
+    ],
+    ['a deadline that is not a date', { ...readable, deadline: 'soon' }],
+    ['no deadline', { ...readable, deadline: undefined }],
+    ['an offer that is not an object', 'yes'],
+  ] as const) {
+    it(`sets aside an offer with ${what}, and keeps the rest`, async () => {
+      answer({ ...base, offer })
+
+      const billing = await fetchBillingMe('https://api.test')
+
+      expect(billing?.creditBalance).toBe(3)
+      expect(billing?.stripeConfigured).toBe(true)
+      expect(billing?.offer).toBeNull()
+    })
+  }
+})

@@ -8,6 +8,7 @@
 import { createEffect, createRoot, createSignal } from 'solid-js'
 import type { AuthUserInfo } from '@/db/services/auth-service'
 import { fetchMe, hasValidToken, logout as authLogout, } from '@/db/services/auth-service'
+import type { LaunchOffer } from '@/db/services/billing-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
 import { authVersion } from '@/db/services/user-service'
 
@@ -18,9 +19,11 @@ export interface StandaloneAccount {
 
 const [account, setAccount] = createSignal<StandaloneAccount | null>(null)
 const [credits, setCredits] = createSignal<number | null>(null)
+/** The launch offer as the last /me said it, read with the credits. */
+const [offer, setOffer] = createSignal<LaunchOffer | null>(null)
 const [accountReady, setAccountReady] = createSignal(false)
 
-export { account, accountReady, credits }
+export { account, accountReady, credits, offer }
 
 /** A real (non-anonymous) sign-in — the gate for server-side processing. */
 export function signedIn(): boolean {
@@ -28,12 +31,18 @@ export function signedIn(): boolean {
   return a !== null && a.provider !== 'anonymous'
 }
 
+/** Nobody is signed in here: no account, so no offer either. */
+function signedOutHere(): void {
+  setAccount(null)
+  setOffer(null)
+}
+
 /** Reconcile the account signal with the stored token (call at boot and after
  *  any auth change). Tolerant of no-backend builds — fetchMe returns null. */
 export async function refreshAccount(): Promise<void> {
   try {
     if (!hasValidToken()) {
-      setAccount(null)
+      signedOutHere()
       return
     }
     const me = await fetchMe()
@@ -41,10 +50,10 @@ export async function refreshAccount(): Promise<void> {
       setAccount({ email: me.user.email, provider: me.user.authProvider })
       if (me.user.authProvider !== 'anonymous') void refreshCredits()
     } else {
-      setAccount(null)
+      signedOutHere()
     }
   } catch {
-    setAccount(null)
+    signedOutHere()
   } finally {
     setAccountReady(true)
   }
@@ -68,8 +77,10 @@ export async function refreshCredits(): Promise<void> {
   try {
     const b = await fetchBillingMe()
     setCredits(b !== null ? b.creditBalance : null)
+    setOffer(b?.offer ?? null)
   } catch {
     setCredits(null)
+    setOffer(null)
   }
 }
 
@@ -77,4 +88,5 @@ export function signOutStandalone(): void {
   authLogout()
   setAccount(null)
   setCredits(null)
+  setOffer(null)
 }

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/db/services/billing-service', async (importOriginal) => {
   // Keep formatPrice real; stub the network calls.
@@ -33,6 +33,7 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import type { Pricing } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
+import { askForPacks, packsAsked, packsShown } from '@/lib/launch-offer'
 import { setUvrProcessingMode } from '@/stores/app-store'
 import { authModalMode, closeAuthModal } from '@/stores/ui-store'
 
@@ -273,6 +274,122 @@ describe('PricingPanel', () => {
 
     const button = await screen.findByRole('button', { name: 'Unavailable' })
     expect(button).toBeDisabled()
+  })
+
+  describe('the launch offer', () => {
+    const OFFER = {
+      used: 2,
+      goal: 5,
+      deadline: '2026-10-23T23:59:59.999Z',
+      bonusCredits: 30,
+    }
+    const meWith = (offer: unknown) => ({
+      creditBalance: 3,
+      entitlements: [],
+      stripeConfigured: true,
+      offer,
+    })
+    const packLines = () =>
+      screen
+        .getAllByTestId('pricing-pack')
+        .map((card) => card.querySelector('p')?.textContent?.trim())
+
+    it('adds the earned credits to every pack', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+      vi.mocked(fetchBillingMe).mockResolvedValue(
+        meWith({ ...OFFER, state: 'unlocked', used: 5 }) as never,
+      )
+      render(() => <PricingPanel />)
+
+      const banner = await screen.findByTestId('offer-banner')
+      expect(banner.textContent).toBe('30 extra credits on your next pack')
+      expect(packLines()).toEqual(['Credits: Soon', '50 + 30 credits'])
+      // The packs are right here: no progress block pointing at them.
+      expect(screen.queryByTestId('launch-offer-progress')).toBeNull()
+    })
+
+    it('shows the count while the window is open, and no extra credits yet', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+      vi.mocked(fetchBillingMe).mockResolvedValue(
+        meWith({ ...OFFER, state: 'counting' }) as never,
+      )
+      render(() => <PricingPanel />)
+
+      const progress = await screen.findByTestId('launch-offer-progress')
+      expect(progress.textContent).toContain('2 of 5 used')
+      expect(progress.textContent).toContain('Use all 5 by 23 October')
+      await screen.findAllByTestId('pricing-pack')
+      expect(screen.queryByTestId('offer-banner')).toBeNull()
+      expect(packLines()).toEqual(['Credits: Soon', '50 credits'])
+    })
+
+    describe('"See the packs"', () => {
+      const scrollIntoView = vi.fn()
+      beforeEach(() => {
+        scrollIntoView.mockReset()
+        // jsdom lays nothing out, so it has neither of these.
+        Element.prototype.scrollIntoView = scrollIntoView
+        vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => {
+          run(0)
+          return 0
+        })
+      })
+      afterEach(() => {
+        packsShown()
+        vi.unstubAllGlobals()
+        delete (Element.prototype as Partial<Element>).scrollIntoView
+      })
+
+      it('opens Credits at the packs, once they are in', async () => {
+        askForPacks()
+        vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+        vi.mocked(fetchBillingMe).mockResolvedValue(
+          meWith({ ...OFFER, state: 'unlocked', used: 5 }) as never,
+        )
+        render(() => <PricingPanel />)
+
+        await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+        const heading = scrollIntoView.mock.contexts[0] as HTMLElement
+        expect(heading.textContent?.trim()).toBe('Credit packs')
+        expect(scrollIntoView.mock.calls[0][0]).toMatchObject({
+          block: 'start',
+        })
+        // Answered: opening Credits again starts at the top.
+        expect(packsAsked()).toBe(false)
+      })
+
+      it('opens Credits at the top when nobody asked for the packs', async () => {
+        vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+        vi.mocked(fetchBillingMe).mockResolvedValue(
+          meWith({ ...OFFER, state: 'unlocked', used: 5 }) as never,
+        )
+        render(() => <PricingPanel />)
+
+        await screen.findAllByTestId('pricing-pack')
+        await screen.findByTestId('offer-banner')
+        expect(scrollIntoView).not.toHaveBeenCalled()
+      })
+    })
+
+    it('says nothing of an offer that is used, lapsed or absent', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+      for (const offer of [
+        { ...OFFER, state: 'used', used: 5 },
+        { ...OFFER, state: 'lapsed' },
+        null,
+      ]) {
+        vi.mocked(fetchBillingMe).mockResolvedValue(meWith(offer) as never)
+        const { unmount } = render(() => <PricingPanel />)
+        await waitFor(() =>
+          expect(screen.getByTestId('credit-balance')).toBeInTheDocument(),
+        )
+        await screen.findAllByTestId('pricing-pack')
+        expect(screen.queryByTestId('offer-banner')).toBeNull()
+        expect(screen.queryByTestId('launch-offer-progress')).toBeNull()
+        expect(packLines()).toEqual(['Credits: Soon', '50 credits'])
+        unmount()
+      }
+    })
   })
 
   it('shows a "coming soon" note when there is no API', async () => {

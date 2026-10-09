@@ -6,9 +6,11 @@
 // faster server-side processing (see docs/plans/premium.md).
 
 import type { Component } from 'solid-js'
-import { createResource, For, onMount, Show } from 'solid-js'
+import { createEffect, createResource, For, onMount, Show } from 'solid-js'
+import { CreditCoin } from '@/components/billing/CreditCoin'
 import { CreditCostGuide } from '@/components/billing/CreditCostGuide'
 import { DonatePanel } from '@/components/billing/DonatePanel'
+import { LaunchOfferProgress } from '@/components/billing/LaunchOfferProgress'
 import { PromoCodeCard } from '@/components/billing/PromoCodeCard'
 import { accountHeld } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
@@ -16,6 +18,7 @@ import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon,
 import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
 import { colorTokenVars } from '@/lib/css-color-token'
+import { packsAsked, packsShown } from '@/lib/launch-offer'
 import { PAYMENTS_TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
@@ -66,6 +69,31 @@ export const PricingPanel: Component = () => {
   const loadedPricing = () =>
     !pricing.loading && pricing.error == null ? pricing() : undefined
   const checkoutUnavailable = (): boolean => me()?.stripeConfigured === false
+  /** The launch offer's extra credits, while they wait for a pack. */
+  const packBonus = (): number | null => {
+    const offer = me()?.offer
+    return offer?.state === 'unlocked' ? offer.bonusCredits : null
+  }
+
+  // "See the packs" sent the singer here: open at the packs, below the claim
+  // card and the processing cards, once they are on the page.
+  let packsHeading: HTMLHeadingElement | undefined
+  createEffect(() => {
+    if (!packsAsked()) return
+    if ((loadedPricing()?.packs.length ?? 0) === 0) return
+    packsShown()
+    // A frame later, once the packs are laid out.
+    requestAnimationFrame(() =>
+      packsHeading?.scrollIntoView({
+        block: 'start',
+        behavior:
+          window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ===
+          true
+            ? 'auto'
+            : 'smooth',
+      }),
+    )
+  })
 
   async function buy(plan: PricingPlan): Promise<void> {
     try {
@@ -144,6 +172,7 @@ export const PricingPanel: Component = () => {
       </Show>
 
       <PromoCodeCard />
+      <LaunchOfferProgress offer={me()?.offer} states={['counting']} />
 
       <p class={styles.intro}>
         On-device separation is free forever. Credits only cover faster
@@ -264,7 +293,17 @@ export const PricingPanel: Component = () => {
             </Show>
 
             <Show when={p().packs.length > 0}>
-              <h4 class={styles.heading}>Credit packs</h4>
+              <h4 ref={packsHeading} class={styles.heading}>
+                Credit packs
+              </h4>
+              <Show when={packBonus()}>
+                {(bonus) => (
+                  <p class={styles.offerBanner} data-testid="offer-banner">
+                    <CreditCoin size={22} />
+                    <span>{bonus()} extra credits on your next pack</span>
+                  </p>
+                )}
+              </Show>
               <div class={styles.grid}>
                 <For each={p().packs}>
                   {(pack, i) => (
@@ -286,9 +325,25 @@ export const PricingPanel: Component = () => {
                         {formatPrice(pack.amount, pack.currency)}
                       </div>
                       <p class={styles.desc}>
-                        {pack.credits != null
-                          ? `${pack.credits} credits`
-                          : 'Credits: Soon'}
+                        <Show
+                          when={pack.credits != null}
+                          fallback={'Credits: Soon'}
+                        >
+                          <Show
+                            when={packBonus()}
+                            fallback={`${pack.credits} credits`}
+                          >
+                            {(bonus) => (
+                              <>
+                                {pack.credits}{' '}
+                                <span class={styles.offerPlus}>
+                                  + {bonus()}
+                                </span>{' '}
+                                credits
+                              </>
+                            )}
+                          </Show>
+                        </Show>
                       </p>
                       <button
                         class={styles.buyBtn}

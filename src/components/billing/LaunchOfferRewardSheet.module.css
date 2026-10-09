@@ -1,0 +1,128 @@
+/* The reward sheet: the welcome flow's dark sheet and its gradient button,
+   rising from the bottom on a phone and centred on a desk. Fixed colours:
+   it is the same dark sheet over every theme, like onboarding. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(1, 4, 9, 0.72);
+}
+
+.sheet {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 16px 20px max(24px, env(safe-area-inset-bottom));
+  border: 1px solid #30363d;
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  background: #0d1117;
+  color: #e6edf3;
+  text-align: center;
+  box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.55);
+  animation: rise 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.notNow {
+  justify-self: end;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: #e6edf3;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.art {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.title {
+  margin: 8px 0 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #e6edf3;
+}
+
+/* Focus starts here when the sheet opens, so it is read first; a heading
+   is not a control, so it draws no ring. */
+.title:focus {
+  outline: none;
+}
+
+.line {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: #c5d1df;
+  text-wrap: balance;
+}
+
+.primary {
+  width: 100%;
+  max-width: 420px;
+  min-height: 54px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 30px;
+  font-size: 1.06rem;
+  font-weight: 600;
+  color: #06090f;
+  cursor: pointer;
+  background: linear-gradient(102deg, #58a6ff, #2dd4bf 60%, #bc8cff);
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+}
+
+.notNow:focus-visible,
+.primary:focus-visible {
+  outline: 2px solid #e6edf3;
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .sheet {
+    max-width: 460px;
+    padding: 16px 28px 28px;
+    border-bottom: 1px solid #30363d;
+    border-radius: 22px;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}

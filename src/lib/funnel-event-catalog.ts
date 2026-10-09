@@ -96,6 +96,13 @@ export const APP_FUNNEL_EVENTS = [
    *  said so: one tapped in Settings, or the launch gift claimed when the
    *  email was confirmed (src/stores/launch-gift-store.ts). Once a claim. */
   'promo_claimed',
+  /** The launch offer's progress ("Launch credits, 2 of 5 used") was shown:
+   *  once a session, wherever it was (LaunchOfferProgress). */
+  'offer_progress_view',
+  /** The reward sheet ("All 5 used") opened: once per account. */
+  'offer_unlocked_view',
+  /** "See the packs", on the reward sheet or under the progress. */
+  'offer_packs_tap',
 ] as const
 
 /** Karaoke Night (src/features/karaoke-night/funnel.ts). */

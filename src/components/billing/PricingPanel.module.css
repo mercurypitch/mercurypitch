@@ -26,6 +26,8 @@
   text-transform: uppercase;
   color: var(--text-secondary);
   margin: 6px 0 0;
+  /* Room above a heading that "See the packs" scrolls to the top. */
+  scroll-margin-top: 16px;
 }
 
 .grid {
@@ -314,4 +316,28 @@
   color: var(--accent);
   font-size: 1.1rem;
   font-weight: 700;
+}
+
+/* The launch offer's reward, above the packs it comes with. Amber is the
+   credits' colour and nothing else's. */
+.offerBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(240, 180, 90, 0.55);
+  background: rgba(240, 180, 90, 0.08);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.offerPlus {
+  font-weight: 700;
+  color: #f0b45a;
+}
+
+:global([data-theme='light']) .offerPlus {
+  color: #8a5300;
 }
