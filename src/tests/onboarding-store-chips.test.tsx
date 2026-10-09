@@ -8,11 +8,15 @@
 // screen, so the store chips go there: under the rooms, the button and the
 // account line, never above them.
 
-import { cleanup, render } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BeatMap } from '@/features/onboarding/beats/BeatMap'
+import { FirstLight } from '@/features/onboarding/FirstLight'
+import type * as OnboardingFunnelModule from '@/features/onboarding/funnel'
 import type * as NativeBuild from '@/lib/native-build'
 import { STORE_PREVIEW_VIDEO_URL } from '@/lib/store-listings'
+import type { OpenResult, ProbeResult, VoiceSession } from '@/lib/voice-session'
+import { openBeat, resetOnboarding } from '@/stores/onboarding-store'
 
 const build = vi.hoisted(() => ({ native: false }))
 vi.mock('@/lib/native-build', async (importOriginal) => ({
@@ -20,6 +24,39 @@ vi.mock('@/lib/native-build', async (importOriginal) => ({
   get IS_NATIVE_BUILD() {
     return build.native
   },
+}))
+
+const mocks = vi.hoisted(() => ({ trackOnboarding: vi.fn() }))
+
+// Only the counter is replaced: BEAT_EVENT and MAP_STORE_EVENT are the
+// flow's own tables, and the test is that the flow sends the Map's names.
+vi.mock('@/features/onboarding/funnel', async (importOriginal) => {
+  const actual = await importOriginal<typeof OnboardingFunnelModule>()
+  return { ...actual, trackOnboarding: mocks.trackOnboarding }
+})
+
+vi.mock('@/lib/jam/media-errors', () => ({
+  micPermissionState: (): Promise<string> => Promise.resolve('granted'),
+}))
+
+vi.mock('@/lib/voice-session', () => ({
+  createVoiceSession: (): VoiceSession =>
+    ({
+      open: (): Promise<OpenResult> =>
+        Promise.resolve({ ok: true } as OpenResult),
+      probe: (): Promise<ProbeResult> => Promise.resolve('ok' as ProbeResult),
+      arm: (): void => {},
+      record: () => Promise.resolve([]),
+      latest: () => null,
+      latestSmoothed: () => null,
+      level: (): number => 0,
+      context: () => null,
+      isOpen: (): boolean => false,
+      devices: (): Promise<MediaDeviceInfo[]> => Promise.resolve([]),
+      useDevice: (): Promise<ProbeResult> =>
+        Promise.resolve('ok' as ProbeResult),
+      close: (): void => {},
+    }) as unknown as VoiceSession,
 }))
 
 const noop = (): void => {}
@@ -86,5 +123,61 @@ describe('the store chips on the Map', () => {
     expect(map.querySelector('a[data-store]')).toBeNull()
     expect(map).not.toHaveTextContent(/google play/i)
     expect(map).not.toHaveTextContent(/app store/i)
+  })
+})
+
+describe('a store chip click on the Map', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetOnboarding()
+    // jsdom ships no matchMedia; the star field asks for reduced-motion.
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
+  })
+
+  afterEach(() => {
+    // Unmount before the stub goes: the star field asks on its way out.
+    cleanup()
+    vi.unstubAllGlobals()
+    resetOnboarding()
+  })
+
+  it('hands the store to the flow', () => {
+    const onStoreClick = vi.fn()
+    render(() => (
+      <BeatMap
+        voiceprint={null}
+        onEnter={noop}
+        onTour={noop}
+        onDone={noop}
+        onStoreClick={onStoreClick}
+      />
+    ))
+    fireEvent.click(
+      screen.getByRole('link', { name: /^Coming soon: App Store/ }),
+    )
+    expect(onStoreClick).toHaveBeenCalledWith('app-store')
+  })
+
+  it("counts each store under First Light's own Map names", async () => {
+    render(() => <FirstLight />)
+    openBeat('map')
+    const appStore = await screen.findByRole('link', {
+      name: /^Coming soon: App Store/,
+    })
+    mocks.trackOnboarding.mockClear()
+
+    fireEvent.click(appStore)
+    fireEvent.click(
+      screen.getByRole('link', { name: /^Coming soon: Google Play/ }),
+    )
+
+    expect(mocks.trackOnboarding.mock.calls).toEqual([
+      ['onboarding_map_app_store_tap'],
+      ['onboarding_map_google_play_tap'],
+    ])
   })
 })

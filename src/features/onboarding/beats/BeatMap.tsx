@@ -19,6 +19,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
+import type { StoreId } from '@/components/shared/StoreChips'
 import { StoreChips } from '@/components/shared/StoreChips'
 import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
@@ -66,6 +67,8 @@ export interface BeatMapProps {
   gift?: MapGift | null
   /** The gift line's link: sign up for it, or claim it. */
   onGift?: () => void
+  /** A store chip was clicked; the flow counts it. The link opens anyway. */
+  onStoreClick?: (store: StoreId) => void
 }
 
 export const BeatMap: Component<BeatMapProps> = (props) => {
@@ -303,7 +306,10 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
         </Match>
       </Switch>
 
-      <StoreChips class={styles.mapStores} />
+      <StoreChips
+        class={styles.mapStores}
+        onChipClick={(store) => props.onStoreClick?.(store)}
+      />
     </div>
   )
 }
