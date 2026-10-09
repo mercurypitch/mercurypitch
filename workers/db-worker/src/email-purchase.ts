@@ -17,7 +17,7 @@
 // (withdrawal-rules.ts).
 
 import type { RenderedEmail, ResendConfig, ResendResult } from './email'
-import { escapeHtml, formatDate, formatMoney, resendPost } from './email'
+import { escapeHtml, formatDate, formatMoney, maskEmail, resendPost, } from './email'
 import type { HeroLink, Lines, MailOrigins } from './email-layout'
 import { button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, SANS, signOffRow, url, W, } from './email-layout'
 import { deadlineToShow, DEFAULT_GRACE_WEEKDAYS } from './withdrawal-rules'
@@ -198,6 +198,8 @@ export async function sendPurchaseMail(
   const result = await resendPost(cfg, to, renderPurchaseEmail(vars), {
     idempotencyKey,
   })
-  if (result.ok) console.log(`[email] purchase thank-you sent to ${to}`)
+  if (result.ok) {
+    console.log(`[email] purchase thank-you sent to ${maskEmail(to)}`)
+  }
   return result
 }

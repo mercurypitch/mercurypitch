@@ -54,6 +54,16 @@ export function formatMoney(amountMinor: number, currency: string): string {
   }
 }
 
+/** An address as a log line may show it: enough to tell two apart, not
+ *  enough to write to. "maria.k@example.com" becomes "m***@***.com". */
+export function maskEmail(address: string): string {
+  const at = address.lastIndexOf('@')
+  if (at <= 0) return '***'
+  const domain = address.slice(at + 1)
+  const dot = domain.lastIndexOf('.')
+  return `${address[0]}***@***${dot === -1 ? '' : domain.slice(dot)}`
+}
+
 /** "5 July 2026" from an ISO timestamp (UTC, locale-stable). */
 export function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -890,7 +900,7 @@ export async function sendBillingAlert(
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')}</pre>`,
   })
-  if (ok) console.log(`[email] billing alert sent to ${to}`)
+  if (ok) console.log(`[email] billing alert sent to ${maskEmail(to)}`)
   return ok
 }
 
