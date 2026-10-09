@@ -17,9 +17,10 @@
 // Everything degrades silently when no API is configured (pure-local
 // dev), because telemetry must never break the product.
 
-import { getFunnelAcquisition } from '@/lib/acquisition'
+import { forgetFunnelAcquisition, funnelIdMonths, getFunnelAcquisition, } from '@/lib/acquisition'
 import { trackAdConversion, trackGa4Event } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
+import { monthsBefore } from '@/lib/retention-periods'
 
 /**
  * One anonymous id per DEVICE, deliberately shared by every funnel.
@@ -29,6 +30,12 @@ import { API_BASE_URL } from '@/lib/defaults'
  */
 const CLIENT_ID_KEY = 'mirror.clientId.v1'
 const LEGACY_APP_CLIENT_ID_KEY = 'mp.analytics.clientId.v1'
+/**
+ * When the id was issued, epoch ms. A key of its own rather than a field in
+ * the id's value, so a bundle from before the date existed (an open tab, a
+ * cached service worker) still reads the id as the plain string it expects.
+ */
+const CLIENT_ID_ISSUED_KEY = 'mirror.clientId.issuedAt.v1'
 
 /**
  * The shared anonymous event sink. Named for the Voice Mirror because
@@ -77,14 +84,44 @@ export type TrackFn<E extends string> = (
  * when it is the only id on an existing app-only device; otherwise the shared
  * id wins and is mirrored back to the legacy key so an older cached bundle
  * cannot split the same browser into a second visitor.
+ *
+ * The id is renewed 13 months after it was issued (privacy plan 4.2,
+ * VITE_RETENTION_FUNNEL_ID_MONTHS), and visits do not extend it. The server
+ * deletes funnel rows on the same clock; an id kept longer would bring a
+ * deleted row back with its next event. An id stored before the date
+ * existed is dated now, so a deploy does not make every returning visitor a
+ * new one.
  */
 export function getFunnelClientId(): string {
   try {
+    const nowMs = Date.now()
     let id = localStorage.getItem(CLIENT_ID_KEY)
+    let issuedAt = Number(localStorage.getItem(CLIENT_ID_ISSUED_KEY) ?? '')
+    let minted = false
     if (id === null || id === '') {
       id = localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY)
-      if (id === null || id === '') id = globalThis.crypto.randomUUID()
+      if (id === null || id === '') {
+        id = globalThis.crypto.randomUUID()
+        minted = true
+      }
       localStorage.setItem(CLIENT_ID_KEY, id)
+    }
+    // Number('') is 0, which is never a real issue date. A date left over
+    // from an id that is gone belongs to that id, not to a new one.
+    if (
+      minted ||
+      !Number.isFinite(issuedAt) ||
+      issuedAt <= 0 ||
+      issuedAt > nowMs
+    ) {
+      issuedAt = nowMs
+      localStorage.setItem(CLIENT_ID_ISSUED_KEY, String(issuedAt))
+    }
+    if (issuedAt <= monthsBefore(nowMs, funnelIdMonths())) {
+      id = globalThis.crypto.randomUUID()
+      localStorage.setItem(CLIENT_ID_KEY, id)
+      localStorage.setItem(CLIENT_ID_ISSUED_KEY, String(nowMs))
+      forgetFunnelAcquisition()
     }
     if (localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY) !== id) {
       localStorage.setItem(LEGACY_APP_CLIENT_ID_KEY, id)
