@@ -16,11 +16,18 @@
 // art never came forward at all. Nothing here waits on hover now. On a
 // phone the cards are rows, a square of the cover beside the words, so
 // six rooms fit in a scroll a thumb can manage.
+//
+// The store chips sit last, under the account line, and smaller than any
+// room. The Map is the last screen of every track and comes after the Keep
+// beat, so a link out of the app here cannot cost the account offer the way
+// one on the twin portrait would. It still must not cost a room: the beat's
+// job is sending people into one.
 
 import type { Component } from 'solid-js'
 import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
+import { StoreChips } from '@/components/shared/StoreChips'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
@@ -297,6 +304,8 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           </p>
         </Match>
       </Switch>
+
+      <StoreChips class={styles.mapStores} />
     </div>
   )
 }
