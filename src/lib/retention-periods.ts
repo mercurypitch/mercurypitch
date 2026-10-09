@@ -88,6 +88,31 @@ export function parsePeriod(
   return { value: n, problem: null }
 }
 
+/** How far ahead of the device clock a stored date may be and still be
+ *  believed: a clock corrected by a few hours is not a broken record. */
+export const CLOCK_SKEW_MS = DAY_MS
+
+/**
+ * The date a browser record was written, as stored, or `legacyMs` when it
+ * cannot be believed: missing (written before dates were stored), not a
+ * number, or more than a day in the future.
+ *
+ * `legacyMs` is a fixed day, the earliest the key could have been written,
+ * never "now". "Now" would give an old record a fresh period, and restart it
+ * on every read where the new date fails to save.
+ */
+export function storedDate(
+  value: unknown,
+  nowMs: number,
+  legacyMs: number,
+): number {
+  const ms = typeof value === 'string' && value !== '' ? Number(value) : value
+  if (typeof ms !== 'number' || !Number.isFinite(ms) || ms <= 0) {
+    return legacyMs
+  }
+  return ms > nowMs + CLOCK_SKEW_MS ? legacyMs : ms
+}
+
 /** The moment `days` whole days before `nowMs`. */
 export function daysBefore(nowMs: number, days: number): number {
   return nowMs - days * DAY_MS

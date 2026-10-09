@@ -20,7 +20,7 @@
 import { forgetFunnelAcquisition, funnelIdMonths, getFunnelAcquisition, } from '@/lib/acquisition'
 import { trackAdConversion, trackGa4Event } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
-import { monthsBefore } from '@/lib/retention-periods'
+import { monthsBefore, storedDate } from '@/lib/retention-periods'
 
 /**
  * One anonymous id per DEVICE, deliberately shared by every funnel.
@@ -36,6 +36,15 @@ const LEGACY_APP_CLIENT_ID_KEY = 'mp.analytics.clientId.v1'
  * cached service worker) still reads the id as the plain string it expects.
  */
 const CLIENT_ID_ISSUED_KEY = 'mirror.clientId.issuedAt.v1'
+
+/**
+ * The issue date of an id stored before ids were dated: the UTC day of the
+ * first commit that wrote either id key (5a9158dc7, 1 Jul 2026, for
+ * mirror.clientId.v1; the legacy app key followed on 10 Jul), found with
+ * `git log -S`. No stored id can be older, and all of them are renewed 13
+ * months after it, not 13 months after the deploy that started dating them.
+ */
+export const LEGACY_CLIENT_ID_ISSUED_AT = Date.UTC(2026, 6, 1)
 
 /**
  * The shared anonymous event sink. Named for the Voice Mirror because
@@ -77,6 +86,16 @@ export type TrackFn<E extends string> = (
   metrics?: FunnelMetrics,
 ) => void
 
+/** Best-effort: an id whose date cannot be saved still works, and reads as
+ *  the legacy day next time, so its clock never restarts. */
+function saveIssuedAt(ms: number): void {
+  try {
+    localStorage.setItem(CLIENT_ID_ISSUED_KEY, String(ms))
+  } catch {
+    // Telemetry must never break the product.
+  }
+}
+
 /**
  * Return the anonymous id shared by every product funnel.
  *
@@ -89,14 +108,15 @@ export type TrackFn<E extends string> = (
  * VITE_RETENTION_FUNNEL_ID_MONTHS), and visits do not extend it. The server
  * deletes funnel rows on the same clock; an id kept longer would bring a
  * deleted row back with its next event. An id stored before the date
- * existed is dated now, so a deploy does not make every returning visitor a
- * new one.
+ * existed is dated LEGACY_CLIENT_ID_ISSUED_AT: not now, which would give it
+ * a fresh 13 months, and not "expired", which would make every returning
+ * visitor a new one at deploy.
  */
 export function getFunnelClientId(): string {
   try {
     const nowMs = Date.now()
     let id = localStorage.getItem(CLIENT_ID_KEY)
-    let issuedAt = Number(localStorage.getItem(CLIENT_ID_ISSUED_KEY) ?? '')
+    const storedIssuedAt = localStorage.getItem(CLIENT_ID_ISSUED_KEY)
     let minted = false
     if (id === null || id === '') {
       id = localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY)
@@ -106,21 +126,16 @@ export function getFunnelClientId(): string {
       }
       localStorage.setItem(CLIENT_ID_KEY, id)
     }
-    // Number('') is 0, which is never a real issue date. A date left over
-    // from an id that is gone belongs to that id, not to a new one.
-    if (
-      minted ||
-      !Number.isFinite(issuedAt) ||
-      issuedAt <= 0 ||
-      issuedAt > nowMs
-    ) {
-      issuedAt = nowMs
-      localStorage.setItem(CLIENT_ID_ISSUED_KEY, String(issuedAt))
-    }
+    // A date left over from an id that is gone belongs to that id, not to a
+    // new one. A missing, unreadable or far-future date is the legacy day.
+    const issuedAt = minted
+      ? nowMs
+      : storedDate(storedIssuedAt, nowMs, LEGACY_CLIENT_ID_ISSUED_AT)
+    if (String(issuedAt) !== storedIssuedAt) saveIssuedAt(issuedAt)
     if (issuedAt <= monthsBefore(nowMs, funnelIdMonths())) {
       id = globalThis.crypto.randomUUID()
       localStorage.setItem(CLIENT_ID_KEY, id)
-      localStorage.setItem(CLIENT_ID_ISSUED_KEY, String(nowMs))
+      saveIssuedAt(nowMs)
       forgetFunnelAcquisition()
     }
     if (localStorage.getItem(LEGACY_APP_CLIENT_ID_KEY) !== id) {
@@ -152,11 +167,12 @@ export function funnelEventBody(
   event: string,
   metrics?: FunnelMetrics,
 ): string {
+  const clientId = getFunnelClientId()
   return JSON.stringify({
-    clientId: getFunnelClientId(),
+    clientId,
     event,
     metrics,
-    acq: getFunnelAcquisition(),
+    acq: getFunnelAcquisition(clientId),
   })
 }
 

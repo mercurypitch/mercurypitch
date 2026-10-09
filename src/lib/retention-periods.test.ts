@@ -7,7 +7,7 @@
 // the privacy notice says is kept.
 
 import { describe, expect, it } from 'vitest'
-import { DAY_MS, daysBefore, monthsBefore, parsePeriod, } from './retention-periods'
+import { DAY_MS, daysBefore, monthsBefore, parsePeriod, storedDate, } from './retention-periods'
 
 describe('parsePeriod', () => {
   it('takes a plain whole number', () => {
@@ -91,5 +91,33 @@ describe('monthsBefore', () => {
 
   it('stays in range at the largest period a config can ask for', () => {
     expect(Number.isFinite(monthsBefore(Date.now(), 1200))).toBe(true)
+  })
+})
+
+describe('storedDate', () => {
+  const NOW = Date.parse('2026-10-11T08:00:00.000Z')
+  const LEGACY = Date.parse('2026-07-01T00:00:00.000Z')
+
+  it('believes a stored date, as a number or as text', () => {
+    const then = NOW - 5 * DAY_MS
+    expect(storedDate(then, NOW, LEGACY)).toBe(then)
+    expect(storedDate(String(then), NOW, LEGACY)).toBe(then)
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['null', null],
+    ['empty', ''],
+    ['text', 'last tuesday'],
+    ['zero', 0],
+    ['negative', -5],
+    ['NaN', Number.NaN],
+  ])('gives the legacy day, never now, for %s', (_label, value) => {
+    expect(storedDate(value, NOW, LEGACY)).toBe(LEGACY)
+  })
+
+  it('takes up to a day ahead as clock skew, and no more', () => {
+    expect(storedDate(NOW + DAY_MS, NOW, LEGACY)).toBe(NOW + DAY_MS)
+    expect(storedDate(NOW + DAY_MS + 1, NOW, LEGACY)).toBe(LEGACY)
   })
 })
