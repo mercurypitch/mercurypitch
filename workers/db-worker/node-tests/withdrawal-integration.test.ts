@@ -22,6 +22,7 @@ import { createHmac } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from '../src/auth'
+import { UNSENT_PURCHASE_MAILS_SQL } from '../src/checkout-consent'
 import worker from '../src/index'
 import { CHECKOUT_CHECKBOX, WITHDRAWAL_TEXT_VERSION, } from '../src/withdrawal-wording'
 import type { SqliteD1Statement } from './sqlite-d1'
@@ -1736,6 +1737,17 @@ describe('the cron finishes what a request left undone', () => {
     expect(consentOf('cs_evt_pi_starter')?.mailStatus).toBe('sent')
     expect(purchaseMails()).toHaveLength(2)
     expect(alerts()).toHaveLength(1)
+  })
+
+  it('finds the unsent purchase mails by their index, never by reading every purchase', () => {
+    const plan = sqlite
+      .prepare(`EXPLAIN QUERY PLAN ${UNSENT_PURCHASE_MAILS_SQL}`)
+      .all('2026-10-20T16:07:00.000Z', '2026-10-20T16:07:00.000Z', 10)
+      .map((step) => String(step.detail))
+
+    expect(plan).toEqual([
+      'SEARCH checkoutConsents USING INDEX idx_checkoutConsents_unsent (createdAt<?)',
+    ])
   })
 })
 

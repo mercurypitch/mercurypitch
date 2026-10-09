@@ -552,6 +552,20 @@ async function giveUpPurchaseMail(
 }
 
 /**
+ * The purchase mails the sweep may still have to send, oldest first. The
+ * first condition repeats the WHERE of idx_checkoutConsents_unsent
+ * (migration 0061) word for word: SQLite uses a partial index only for a
+ * query that states its condition, and without it every run would read
+ * every purchase. Binds: the cut-off twice, then the batch size.
+ */
+export const UNSENT_PURCHASE_MAILS_SQL = `SELECT sessionId, createdAt FROM checkoutConsents
+      WHERE (mailStatus IS NULL OR mailStatus IN ('failed', 'sending'))
+        AND createdAt < ?
+        AND (mailStatus IS NULL OR mailStatus = 'failed'
+             OR (mailStatus = 'sending' AND mailAt < ?))
+      ORDER BY createdAt LIMIT ?`
+
+/**
  * The purchase mails a request left unsent: each older than
  * UNFINISHED_AFTER_MS that did not go, or whose send was cut off, goes
  * again, until GIVE_UP_AFTER_MS after the purchase; then the owner hears
@@ -562,13 +576,7 @@ export async function sweepPurchaseMails(
   nowMs: number,
 ): Promise<void> {
   const before = iso(nowMs - UNFINISHED_AFTER_MS)
-  const { results } = await env.DB.prepare(
-    `SELECT sessionId, createdAt FROM checkoutConsents
-      WHERE createdAt < ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
-             OR (mailStatus = 'sending' AND mailAt < ?))
-      ORDER BY createdAt LIMIT ?`,
-  )
+  const { results } = await env.DB.prepare(UNSENT_PURCHASE_MAILS_SQL)
     .bind(before, before, SWEEP_BATCH)
     .all<{ sessionId: string; createdAt: string }>()
   for (const row of results) {
