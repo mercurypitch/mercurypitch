@@ -364,8 +364,17 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   // other modal: focus in on open, Tab cycles inside, focus restored on
   // unmount. No onClose — Escape must not skip onboarding; leaving is a
   // deliberate choice the beats themselves offer.
+  //
+  // Focus opens on the beat, not on the first control in the DOM: that is
+  // the close button at the top right, and focused on open it wore its
+  // ring on the welcome, pointing at the way out. From the beat, the first
+  // Tab reaches the beat's own button.
   let overlayRef: HTMLDivElement | undefined
-  useFocusTrap(() => overlayRef, { isOpen: () => true })
+  let frameRef: HTMLDivElement | undefined
+  useFocusTrap(() => overlayRef, {
+    isOpen: () => true,
+    initialFocus: () => frameRef,
+  })
 
   return (
     <div
@@ -440,7 +449,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
         </Switch>
       </div>
 
-      <div class={styles.frame}>
+      <div ref={frameRef} class={styles.frame} tabIndex={-1}>
         <Switch>
           <Match when={currentBeat() === 'sky'}>
             <BeatSky onContinue={() => advanceBeat()} />

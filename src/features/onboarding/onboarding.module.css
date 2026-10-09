@@ -246,6 +246,12 @@
   overflow-y: auto;
 }
 
+/* Focused by script when the flow opens (FirstLight), never by Tab
+   (tabindex -1): no ring, the beat itself is the thing in focus. */
+.frame:focus {
+  outline: none;
+}
+
 .beat {
   display: flex;
   flex-direction: column;

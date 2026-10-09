@@ -510,15 +510,9 @@
     font-size: 1.25rem;
   }
 
-  /* Without the gift there is room to spare: the beat fills the frame and
-     the fact and the button sit at the bottom, as on the phone mock. A
-     beat taller than the frame still scrolls. */
-  .keepBeat[data-beat][data-gift='none'] {
-    flex: 1 0 auto;
-    margin-block: 0;
-  }
-
-  .keepBeat[data-gift='none'] .keepFact {
-    margin-top: auto;
-  }
+  /* Without the gift the beat stays one block, centred in the frame like
+     every other beat (the shared .beat margins). The phone mock left the
+     gift card's space empty and pinned the button to the bottom; the plan
+     (section 9) asks for the content centred instead, so the fact sits
+     under the rows it explains and no hole opens between them. */
 }
