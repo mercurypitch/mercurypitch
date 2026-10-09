@@ -5,6 +5,9 @@
 // The Sessions tab counts published setlists, the profile counts runs, and
 // the share picker lists runs of every kind. All three said "session" and
 // meant something different. These tests hold the distinction in place.
+//
+// The board's cards live here too, for the same reason: the board is
+// everyone's, and what a card offers depends on whether it is yours.
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -82,11 +85,38 @@ function openTab(name: RegExp): void {
   fireEvent.click(screen.getByRole('button', { name }))
 }
 
+/** A melody on the public board, published by `userId`. */
+function boardMelody(id: string, userId: string, name: string) {
+  return {
+    id,
+    userId,
+    name,
+    items: [{ midi: 60, startBeat: 0, duration: 1, freq: 261.63 }],
+    author: `Singer ${userId}`,
+    tags: [],
+    date: Date.parse('2026-09-01T10:00:00.000Z'),
+  }
+}
+
+/** A setlist on the public board, published by `userId`. */
+function boardSetlist(id: string, userId: string, name: string) {
+  return {
+    id,
+    userId,
+    name,
+    items: [],
+    author: `Singer ${userId}`,
+    results: [72],
+    date: Date.parse('2026-09-01T10:00:00.000Z'),
+  }
+}
+
 beforeEach(() => {
   mocks.accountHeld.mockReturnValue(true)
   mocks.loadSessionRecords.mockResolvedValue([])
   mocks.loadSharedSessions.mockResolvedValue([])
   mocks.loadSharedMelodies.mockResolvedValue([])
+  mocks.storageGet.mockImplementation((_key, fallback) => fallback)
 })
 
 afterEach(() => {
@@ -101,10 +131,24 @@ describe('Community > Sessions', () => {
 
     expect(
       await screen.findByText(
-        /setlists you published for other people to sing/i,
+        /setlists the community has published for anyone to sing/i,
       ),
     ).toBeInTheDocument()
     expect(screen.getByText(/They are\s+not runs/i)).toBeInTheDocument()
+  })
+
+  it("does not call the community's setlists yours", async () => {
+    // The tab is the public board, everyone's setlists side by side. The
+    // note above it used to say "setlists you published".
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+    ])
+
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    await screen.findByRole('button', { name: 'Open Their setlist' })
+
+    expect(screen.queryByText(/you published/i)).toBeNull()
   })
 
   it('opens the guide from that note', async () => {
@@ -154,6 +198,94 @@ describe('Community > Profile', () => {
     )
     expect(screen.getByText(/on this device only/i)).toBeInTheDocument()
     expect(screen.queryByText(/across your account/i)).toBeNull()
+  })
+
+  it("counts only the singer's own shares under Published", async () => {
+    // The board is everyone's. Counted whole, it credited each singer with
+    // the whole community's shares. The achievement count made the same
+    // mistake once; the worker now counts per owner (grants.ts,
+    // sharesPosted), and so does this.
+    mocks.loadSharedMelodies.mockResolvedValue([
+      boardMelody('m-mine', 'user-0001', 'Mine'),
+      boardMelody('m-theirs', 'user-0002', 'Theirs'),
+      boardMelody('m-also', 'user-0003', 'Also theirs'),
+    ])
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+    ])
+    // This browser's own copy of the same share, under its local id. It is
+    // the board row above, not a second publication.
+    const localCopy = { ...boardMelody('m-local', '', 'Mine') }
+    delete (localCopy as { userId?: string }).userId
+    mocks.storageGet.mockImplementation((key: string, fallback: unknown) =>
+      key === 'pp_shared_melodies' ? [localCopy] : fallback,
+    )
+
+    render(() => <CommunityShare />)
+    // The board has loaded once somebody else's card is on it.
+    await screen.findByRole('button', { name: 'Open Also theirs' })
+    openTab(/Profile/)
+
+    expect(screen.getByText('melody').previousElementSibling).toHaveTextContent(
+      '1',
+    )
+    expect(screen.queryByText(/^setlists?$/)).toBeNull()
+  })
+})
+
+describe('Community > board cards', () => {
+  it("offers Unpublish on the singer's own melody and not on anyone else's", async () => {
+    mocks.loadSharedMelodies.mockResolvedValue([
+      boardMelody('m-mine', 'user-0001', 'My warm-up'),
+      boardMelody('m-theirs', 'user-0002', 'Their warm-up'),
+    ])
+
+    render(() => <CommunityShare />)
+    await screen.findByRole('button', { name: 'Open Their warm-up' })
+
+    expect(
+      screen.getByRole('button', { name: 'Unpublish My warm-up' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Unpublish Their warm-up' }),
+    ).toBeNull()
+  })
+
+  it("offers Unpublish on the singer's own setlist and not on anyone else's", async () => {
+    mocks.loadSharedSessions.mockResolvedValue([
+      boardSetlist('s-mine', 'user-0001', 'My setlist'),
+      boardSetlist('s-theirs', 'user-0002', 'Their setlist'),
+    ])
+
+    render(() => <CommunityShare />)
+    openTab(/Sessions/)
+    await screen.findByRole('button', { name: 'Open Their setlist' })
+
+    expect(
+      screen.getByRole('button', { name: 'Unpublish My setlist' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Unpublish Their setlist' }),
+    ).toBeNull()
+  })
+
+  it('keeps Unpublish on a share that only ever lived in this browser', async () => {
+    // Shared without an account: it never reached the board, so it carries
+    // no owner id, and this browser's list is the only place it exists.
+    const localOnly = { ...boardMelody('m-local', '', 'Kept here') }
+    delete (localOnly as { userId?: string }).userId
+    mocks.storageGet.mockImplementation((key: string, fallback: unknown) =>
+      key === 'pp_shared_melodies' ? [localOnly] : fallback,
+    )
+
+    render(() => <CommunityShare />)
+    await screen.findByRole('button', { name: 'Unpublish Kept here' })
+
+    expect(
+      screen
+        .getAllByRole('button', { name: /^Unpublish / })
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual(['Unpublish Kept here'])
   })
 })
 

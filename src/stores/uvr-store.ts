@@ -1003,12 +1003,39 @@ export async function resumableServerSessions(): Promise<UvrSession[]> {
 }
 
 /**
+ * `provider` on every row the Examples seeder writes: EXAMPLE_PROVIDER in
+ * features/karaoke-night/examples-library, spelled here because a store may
+ * not import a feature. uvr-store-reload.test.ts seeds through the real
+ * seeder, so the two cannot drift apart without that test going red.
+ */
+const EXAMPLE_PROVIDER = 'examples'
+
+/**
+ * Whether a row is one of the shipped example songs rather than a song this
+ * device separated or the visitor brought. Its stems stream from R2 instead of
+ * living in uvrStemBlobs, and its `createdAt` is a sort key that files the
+ * examples below the visitor's own songs, not a date anything happened on.
+ */
+export function isShippedExample(
+  session: Pick<UvrSession, 'provider'> | undefined,
+): boolean {
+  return session?.provider === EXAMPLE_PROVIDER
+}
+
+/**
  * Remove 'completed' sessions whose playable stems are missing — the pre-fix
  * data loss. They can never open, so pruning them clears the confusing
  * "processed but can't open / retry" entries. Returns how many were pruned.
+ *
+ * A shipped example is never a candidate. Its stems stream from R2 and are
+ * never written to uvrStemBlobs, so "absent" is how it was made, not a loss.
+ * Counted as an orphan, it was deleted by every load that found it and
+ * seeded again by the next, so it came and went on alternate reloads.
  */
 export async function pruneOrphanedCompletedSessions(): Promise<number> {
-  const completed = getAllUvrSessions().filter((s) => s.status === 'completed')
+  const completed = getAllUvrSessions().filter(
+    (s) => s.status === 'completed' && !isShippedExample(s),
+  )
   let pruned = 0
   let skipped = 0
   for (const s of completed) {

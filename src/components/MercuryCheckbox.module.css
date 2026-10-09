@@ -52,6 +52,18 @@
     box-shadow 0.24s ease;
 }
 
+/* The dark well belongs to the dark themes. On a light page it rendered as a
+   solid black square, which is how a filled box looks, so an empty one read
+   as ticked. The light theme gives it the surface the text fields beside it
+   use and a border that holds 3:1. The checked metal below is unchanged. */
+[data-theme='light'] .box {
+  border-color: var(--border-strong);
+  background: var(--bg-primary);
+  /* Border-box: the shorthand resets this. See docs/agent/MISTAKES.md. */
+  background-origin: border-box;
+  box-shadow: none;
+}
+
 .tick {
   position: absolute;
   inset: 0;
