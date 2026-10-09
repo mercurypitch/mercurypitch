@@ -58,11 +58,44 @@ export interface BillingMe {
     sourceLabel?: string | null
   }>
   redeemedPromos?: string[]
+  /** The promo codes this account claimed, with when. Absent on an older
+   *  db-worker, and set aside when it does not read as a list of claims. */
+  promoClaims?: PromoClaim[]
   stripeConfigured: boolean
   /** The Karaoke room's songs (plan S8 §8): what a subscription grants, and
    *  what is left of the balance it grants into. Absent on an older
    *  db-worker, and set aside when it does not read as one. */
   songs?: BillingSongs
+  /** Where the account stands in the launch offer, or null when it has
+   *  none. Absent on an older db-worker, and null when it does not read as
+   *  one. */
+  offer?: LaunchOffer | null
+}
+
+/** The launch offer (workers/db-worker/src/offer-rules.ts): use all of the
+ *  launch credits by `deadline` and the next pack comes with `bonusCredits`
+ *  more. Earned, it does not expire. */
+export interface LaunchOffer {
+  /** counting: the window is open. unlocked: earned, waiting for a pack.
+   *  used: the bonus came with a pack. lapsed: the window closed short. */
+  state: 'counting' | 'unlocked' | 'used' | 'lapsed'
+  /** Launch credits used so far, never more than `goal`. */
+  used: number
+  /** The launch credits there are to use. */
+  goal: number
+  /** The window's last moment, ISO, in UTC. */
+  deadline: string
+  /** Extra credits on the next pack. */
+  bonusCredits: number
+}
+
+/** A promo code the account claimed: typed, tapped, or claimed for it when
+ *  its email was confirmed (workers/db-worker/src/launch-offer.ts). */
+export interface PromoClaim {
+  code: string
+  credits: number
+  /** ISO timestamp of the claim. */
+  claimedAt: string
 }
 
 export interface BillingSongs {
@@ -102,6 +135,59 @@ function isBillingSongs(value: unknown): value is BillingSongs {
 function withReadableSongs(me: BillingMe): BillingMe {
   if (me.songs === undefined || isBillingSongs(me.songs)) return me
   const { songs: _unreadable, ...rest } = me
+  return rest
+}
+
+function isPromoClaim(value: unknown): value is PromoClaim {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<PromoClaim>
+  return (
+    typeof candidate.code === 'string' &&
+    typeof candidate.credits === 'number' &&
+    Number.isFinite(candidate.credits) &&
+    typeof candidate.claimedAt === 'string' &&
+    Number.isFinite(Date.parse(candidate.claimedAt))
+  )
+}
+
+const OFFER_STATES: readonly string[] = [
+  'counting',
+  'unlocked',
+  'used',
+  'lapsed',
+]
+
+const isCount = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0
+
+export function isLaunchOffer(value: unknown): value is LaunchOffer {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<LaunchOffer>
+  return (
+    typeof candidate.state === 'string' &&
+    OFFER_STATES.includes(candidate.state) &&
+    isCount(candidate.used) &&
+    isCount(candidate.goal) &&
+    candidate.goal > 0 &&
+    isCount(candidate.bonusCredits) &&
+    typeof candidate.deadline === 'string' &&
+    Number.isFinite(Date.parse(candidate.deadline))
+  )
+}
+
+/** An offer that does not read as one is no offer: nothing is shown. */
+function withReadableOffer(me: BillingMe): BillingMe {
+  if (me.offer === undefined || me.offer === null) return me
+  return isLaunchOffer(me.offer) ? me : { ...me, offer: null }
+}
+
+/** Claims that do not read as claims are set aside the same way: the codes
+ *  in `redeemedPromos` still say what was claimed, only not when. */
+function withReadableClaims(me: BillingMe): BillingMe {
+  const claims: unknown = me.promoClaims
+  if (claims === undefined) return me
+  if (Array.isArray(claims) && claims.every(isPromoClaim)) return me
+  const { promoClaims: _unreadable, ...rest } = me
   return rest
 }
 
@@ -243,7 +329,9 @@ export async function fetchBillingMe(
     })
     if (!res.ok) return null
     const data = (await res.json()) as unknown
-    return isBillingMe(data) ? withReadableSongs(data) : null
+    return isBillingMe(data)
+      ? withReadableOffer(withReadableClaims(withReadableSongs(data)))
+      : null
   } catch {
     // Backend unreachable — degrade to "no billing info" instead of throwing.
     return null

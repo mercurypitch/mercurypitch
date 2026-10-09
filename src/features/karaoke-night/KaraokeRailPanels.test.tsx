@@ -14,9 +14,10 @@
 // These tests pin both halves: a same-id store tick refetches nothing, and a
 // genuinely new id set does not blank what is already on screen.
 
-import { fireEvent, render, waitFor } from '@solidjs/testing-library'
+import { fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal, Suspense } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { LaunchOffer } from '@/db/services/billing-service'
 import type * as StandaloneAccount from '@/lib/standalone-account'
 import type * as SyncUi from '@/stores/sync-ui-store'
 import type { SyncSessionSummary } from '@/stores/sync-ui-store'
@@ -28,6 +29,7 @@ const store = vi.hoisted(() => ({
   mode: 'local' as 'local' | 'server',
   signedIn: false,
   credits: null as number | null,
+  offer: null as LaunchOffer | null,
 }))
 
 const listStemTypes = vi.hoisted(() => vi.fn())
@@ -86,6 +88,7 @@ vi.mock('@/stores/sync-ui-store', async (importOriginal) => {
 vi.mock('@/lib/standalone-account', async (importOriginal) => ({
   ...(await importOriginal<typeof StandaloneAccount>()),
   credits: () => store.credits,
+  offer: () => store.offer,
   refreshCredits: vi.fn(),
   signedIn: () => store.signedIn,
 }))
@@ -121,6 +124,7 @@ afterEach(() => {
   store.mode = 'local'
   store.signedIn = false
   store.credits = null
+  store.offer = null
   // Module-level and shared with every other suite in the run.
   setSyncSummary(null)
 })
@@ -219,6 +223,55 @@ describe('the studio-quality card', () => {
     expect(container.textContent).toContain('5 cr left · what a song costs')
     // A song's price depends on its length and parts; the rail names none.
     expect(container.textContent).not.toMatch(/1\/song|per song/)
+  })
+})
+
+describe('the launch offer', () => {
+  const counting: LaunchOffer = {
+    state: 'counting',
+    used: 2,
+    goal: 5,
+    deadline: '2026-10-23T23:59:59.999Z',
+    bonusCredits: 30,
+  }
+
+  it('counts the launch credits on the song card', () => {
+    store.signedIn = true
+    store.credits = 3
+    store.offer = counting
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    const progress = container.querySelector(
+      '[data-testid="launch-offer-progress"]',
+    )
+    expect(progress?.textContent).toContain('2 of 5 used')
+    expect(progress?.textContent).toContain(
+      'Use all 5 by 23 October and your next pack comes with 30 extra credits.',
+    )
+  })
+
+  it('says nothing of it to a singer who is signed out', () => {
+    store.offer = counting
+    const { container } = render(() => <KaraokeRailPanels {...railProps} />)
+
+    expect(
+      container.querySelector('[data-testid="launch-offer-progress"]'),
+    ).toBeNull()
+  })
+
+  it('opens the reward once it is earned, and takes the singer to the packs', () => {
+    localStorage.clear()
+    store.signedIn = true
+    store.credits = 0
+    store.offer = { ...counting, state: 'unlocked', used: 5 }
+    render(() => <KaraokeRailPanels {...railProps} />)
+
+    const sheet = screen.getByRole('dialog', { name: 'All 5 used' })
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'See the packs' }),
+    )
+    expect(window.location.hash).toBe('#/settings/credits')
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
 

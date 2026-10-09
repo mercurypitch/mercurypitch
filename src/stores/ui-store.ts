@@ -12,6 +12,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
+import type { SignupSource } from '@/db/services/signup-context'
 import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
@@ -383,6 +384,11 @@ export type AuthModalMode = 'login' | 'register'
 export const [authModalMode, setAuthModalMode] =
   createSignal<AuthModalMode | null>(null)
 
+/** Where a sign-up opened from this dialog started, when that picks the
+ *  first mail's picture (signup-context.ts); null for everywhere else. */
+export const [authModalSignupSource, setAuthModalSignupSource] =
+  createSignal<SignupSource | null>(null)
+
 /**
  * Ask the singer to sign in (or to create an account).
  *
@@ -391,11 +397,15 @@ export const [authModalMode, setAuthModalMode] =
  * code, not the password form, the television's phone row or the passkey
  * button the dialog leads with.
  */
-export function openAuthModal(mode: AuthModalMode = 'login'): void {
+export function openAuthModal(
+  mode: AuthModalMode = 'login',
+  options: { signupSource?: SignupSource } = {},
+): void {
   if (IS_NATIVE_BUILD) {
     nativeShellApi()?.openSignIn?.()
     return
   }
+  setAuthModalSignupSource(options.signupSource ?? null)
   setAuthModalMode(mode)
 }
 

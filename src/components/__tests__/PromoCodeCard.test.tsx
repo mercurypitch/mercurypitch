@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   showNotification: vi.fn(),
   openAuthModal: vi.fn(),
   loadFeaturedPromo: vi.fn(async () => {}),
+  recordPromoClaim: vi.fn(),
   // Replaced by the promo-store mock below with a real signal's setter.
   setOffer: (_offer: Offer | null): void => {},
 }))
@@ -67,6 +68,10 @@ vi.mock('@/stores/promo-store', async () => {
   mocks.setOffer = (next) => setOffer(() => next)
   return { offeredPromo: offer, loadFeaturedPromo: mocks.loadFeaturedPromo }
 })
+
+vi.mock('@/stores/launch-gift-store', () => ({
+  recordPromoClaim: mocks.recordPromoClaim,
+}))
 
 import { PromoCodeCard } from '../billing/PromoCodeCard'
 
@@ -149,6 +154,34 @@ describe('PromoCodeCard', () => {
         screen.getByText(/promo code LAUNCH redeemed/i),
       ).toBeInTheDocument()
     })
+    // The header pill steps aside, and the claim is counted.
+    expect(mocks.recordPromoClaim).toHaveBeenCalledWith({
+      code: 'LAUNCH',
+      credits: 5,
+      claimedAt: expect.any(String),
+    })
+  })
+
+  it('says when the code on offer was claimed', async () => {
+    mocks.fetchMe.mockResolvedValue(VERIFIED)
+    const claimedAt = new Date(new Date().getFullYear(), 9, 9, 12).toISOString()
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 5,
+      entitlements: [],
+      redeemedPromos: ['LAUNCH'],
+      promoClaims: [{ code: 'LAUNCH', credits: 5, claimedAt }],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    const day = new Date(claimedAt).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+    })
+    const claimed = await screen.findByText(`Claimed on ${day}`)
+    expect(claimed.parentElement).toHaveTextContent('5 free credits')
+    expect(screen.queryByTestId('claim-promo-btn')).toBeNull()
   })
 
   it('shows Claimed once the code on offer has been redeemed', async () => {

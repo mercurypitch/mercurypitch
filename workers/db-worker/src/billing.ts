@@ -44,10 +44,13 @@ import type { AppDebit } from './app-songs'
 import { debitAppSongs, giveFreeSongBack, readAppSongs, spenderOf, } from './app-songs'
 import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
-import { featuredPromoView, PROMO_REFUSALS, promoRefusal } from './promo-rules'
+import { featuredPromoView } from './promo-rules'
+import { handlePromoRedeem, readPromoClaims } from './promo-claim'
+import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
+import { CHECKOUT_PAID_EVENTS, clawBackPayment, isCheckoutPaidEvent, isMoneyBackEvent, paymentIntentOf, } from './stripe-payments'
 import type { PricingRow } from './billing-core'
 import { UVR_TIER_PLAN_IDS, bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from './billing-core'
 
@@ -189,19 +192,9 @@ async function handleMe(
       sourceLabel: string | null
     }>()
 
-  let redeemedPromos: string[] = []
-  try {
-    const { results: redemptions } = await env.DB.prepare(
-      `SELECT p.code FROM promoRedemptions r
-       JOIN promoCodes p ON p.id = r.promoCodeId
-       WHERE r.userId = ?`,
-    )
-      .bind(auth.userId)
-      .all<{ code: string }>()
-    redeemedPromos = redemptions.map((r) => r.code)
-  } catch {
-    redeemedPromos = []
-  }
+  const promoClaims = await readPromoClaims(env, auth.userId)
+  // The launch offer is the web's, like the credits it counts.
+  const offer = app === null ? await readFinisherOffer(env, auth.userId) : null
 
   const balance = app?.left ?? creditBalance(ledger?.results ?? [])
   return respond({
@@ -216,7 +209,12 @@ async function handleMe(
       Date.now(),
       app ?? undefined,
     ),
-    redeemedPromos,
+    // The codes alone, as clients before promoClaims read them.
+    redeemedPromos: promoClaims.map((claim) => claim.code),
+    promoClaims,
+    // Where the account stands in the launch offer (launch-finisher.ts), or
+    // null when it has none.
+    offer,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
     // does not present purchase controls that checkout will reject.
@@ -333,6 +331,12 @@ async function handleCheckout(
     // Stripe's button reads "Donate" instead of "Pay".
     params.submit_type = 'donate'
   }
+  // The launch offer's bonus, when the account has it unlocked: metadata
+  // for the webhook and a line above the pay button.
+  Object.assign(
+    params,
+    await finisherCheckoutParams(env, auth.userId, plan.kind),
+  )
   const session = await stripeRequest(env, '/checkout/sessions', params)
   if (!session.ok || typeof session.data.url !== 'string') {
     console.error(
@@ -399,12 +403,21 @@ interface GrantOutcome {
   duplicate: boolean
   /** What `granted` counts, for logs and the reconciliation alert. */
   unit: 'credits' | 'supporter days'
+  /** The session is not paid yet, so nothing was granted: its
+   *  `checkout.session.async_payment_succeeded` grants it. */
+  unpaid?: boolean
 }
 
 /** Process one completed checkout. Credits and donations both arrive as
  *  `checkout.session.completed`; the session metadata says which. Routing both
  *  through here means the reconciliation sweep (which calls this same function)
- *  recovers missed donations for free — do NOT add a second recovery path. */
+ *  recovers missed donations for free — do NOT add a second recovery path.
+ *
+ *  Only a paid session grants. A delayed payment method (a bank debit)
+ *  completes the session before the money arrives, with `payment_status`
+ *  'unpaid'; its `checkout.session.async_payment_succeeded` carries the same
+ *  session, paid, and grants then, under its own event id. A payment that
+ *  fails grants nothing. */
 async function grantForCheckout(
   env: Env,
   eventId: string,
@@ -412,7 +425,24 @@ async function grantForCheckout(
 ): Promise<GrantOutcome> {
   const metadata =
     (session.metadata as Record<string, unknown> | undefined) ?? {}
-  return metadata.kind === 'donation'
+  const donation = metadata.kind === 'donation'
+  if (session.payment_status !== 'paid') {
+    // 'unpaid' is a delayed payment on its way. Nothing else should reach
+    // here: no session is created with a discount that could make it free.
+    const log =
+      session.payment_status === 'unpaid' ? console.log : console.error
+    log(
+      `[billing] checkout ${eventId}: payment ${String(session.payment_status)}, nothing granted until it is paid`,
+    )
+    return {
+      granted: 0,
+      userId: null,
+      duplicate: false,
+      unit: donation ? 'supporter days' : 'credits',
+      unpaid: true,
+    }
+  }
+  return donation
     ? grantSupporterEntitlement(env, eventId, session)
     : grantCheckoutCredits(env, eventId, session)
 }
@@ -459,10 +489,17 @@ async function grantSupporterEntitlement(
 
   const now = new Date().toISOString()
   const claimed = await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     VALUES (?, ?, ?, 0, 'donation', ?, ?)`,
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
+     VALUES (?, ?, ?, 0, 'donation', ?, ?, ?)`,
   )
-    .bind(crypto.randomUUID(), now, userId, planId, `evt:${eventId}`)
+    .bind(
+      crypto.randomUUID(),
+      now,
+      userId,
+      planId,
+      `evt:${eventId}`,
+      paymentIntentOf(session),
+    )
     .run()
   if (claimed.meta.changes === 0) {
     console.log(`[billing] donation ${eventId}: [duplicate, skipped]`)
@@ -582,16 +619,29 @@ async function grantCheckoutCredits(
 
   // idempotencyKey ties the grant to the event, so a redelivered webhook
   // (or a retry) can never double-credit — the UNIQUE constraint drops it.
+  // The PaymentIntent is what a refund or a dispute names (stripe-payments.ts).
   const res = await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     VALUES (?, ?, ?, ?, 'purchase', ?, ?)`,
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
+     VALUES (?, ?, ?, ?, 'purchase', ?, ?, ?)`,
   )
-    .bind(crypto.randomUUID(), now, userId, credits, planId, `evt:${eventId}`)
+    .bind(
+      crypto.randomUUID(),
+      now,
+      userId,
+      credits,
+      planId,
+      `evt:${eventId}`,
+      paymentIntentOf(session),
+    )
     .run()
   console.log(
     `[billing] checkout ${eventId}: +${credits} credits user=${userId}` +
       (res.meta.changes === 0 ? ' [duplicate, skipped]' : ''),
   )
+  // The launch offer's bonus, when the pack was bought with it. Written on a
+  // redelivery too: if it failed after the pack's row, Stripe's retry finds
+  // the pack a duplicate and this writes the bonus (launch-finisher.ts).
+  const bonus = await grantFinisherBonus(env, session, userId)
 
   // Purchase "thank you" email — best-effort. Only on a real (non-duplicate)
   // grant, only when Resend is configured, and NEVER allowed to throw: the
@@ -629,6 +679,7 @@ async function grantCheckoutCredits(
             assetOrigin: app,
             packLabel: info.planLabel ?? 'credit',
             credits,
+            bonusCredits: bonus,
             balance: info.balance,
             amountMinor: paid.amountMinor,
             currency: paid.currency,
@@ -647,7 +698,7 @@ async function grantCheckoutCredits(
     }
   }
   return {
-    granted: res.meta.changes > 0 ? credits : 0,
+    granted: (res.meta.changes > 0 ? credits : 0) + bonus,
     userId,
     duplicate: res.meta.changes === 0,
     unit: 'credits',
@@ -1100,7 +1151,7 @@ async function handleWebhook(
     .first<{ id: string }>()
   if (seen) return respond({ received: true, duplicate: true })
 
-  if (event.type === 'checkout.session.completed') {
+  if (isCheckoutPaidEvent(event.type)) {
     const outcome = await grantForCheckout(
       env,
       event.id,
@@ -1112,6 +1163,10 @@ async function handleWebhook(
     // behalf would make every retry and sweep skip it forever: paid, no
     // grant, no trace. The winner records it below on its own success.
     if (outcome.duplicate) return respond({ received: true, duplicate: true })
+  } else if (isMoneyBackEvent(event.type)) {
+    // One ledger row is the whole of a claw-back, so a duplicate holds
+    // nothing that could be released: it is recorded like any other.
+    await clawBackPayment(env, event.id, event.type, event.data?.object ?? {})
   }
   // Other event types are acknowledged (200) without action for now.
   await recordBillingEvent(env, event.id, event.type ?? null)
@@ -1137,7 +1192,7 @@ interface StripeEventListItem {
   data?: { object?: Record<string, unknown> }
 }
 
-/** Sweep Stripe's recent `checkout.session.completed` events and grant any
+/** Sweep Stripe's recent checkout events (CHECKOUT_PAID_EVENTS) and grant any
  *  the webhook missed. Safe to run at any frequency: already-seen events are
  *  skipped, and the grant itself is idempotent per event id. Alerts by email
  *  (BILLING_ALERT_EMAIL) when it had to recover anything — a recovery means
@@ -1154,10 +1209,10 @@ export async function reconcileBilling(env: Env): Promise<void> {
   let startingAfter: string | undefined
   for (let page = 0; page < RECONCILE_MAX_PAGES; page++) {
     const qs = new URLSearchParams({
-      type: 'checkout.session.completed',
       limit: '100',
       'created[gte]': String(since),
     })
+    for (const type of CHECKOUT_PAID_EVENTS) qs.append('types[]', type)
     if (startingAfter !== undefined) qs.set('starting_after', startingAfter)
     const res = await stripeGet(env, `/events?${qs.toString()}`)
     if (!res.ok) {
@@ -1192,6 +1247,9 @@ export async function reconcileBilling(env: Env): Promise<void> {
         // It also is not a recovery, so it does not belong in the alert.
         if (outcome.duplicate) continue
         await recordBillingEvent(env, ev.id, ev.type ?? null)
+        // A session still waiting for its money granted nothing to recover:
+        // its async_payment_succeeded event does, swept like this one.
+        if (outcome.unpaid === true) continue
         recovered.push(
           `${ev.id}: +${outcome.granted} ${outcome.unit}, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
         )
@@ -1230,181 +1288,6 @@ export async function reconcileBilling(env: Env): Promise<void> {
       ],
     )
   }
-}
-
-async function handlePromoRedeem(
-  request: Request,
-  env: Env,
-  respond: Respond,
-): Promise<Response> {
-  const auth = await getAuth(request, env)
-  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
-
-  if (auth.isTestAccount) {
-    return respond(
-      { error: 'Promo codes are disabled for managed testing accounts' },
-      { status: 403 },
-    )
-  }
-
-  if (auth.provider === 'anonymous') {
-    return respond(
-      { error: 'Please create an account to redeem promo codes' },
-      { status: 403 },
-    )
-  }
-
-  const rl = await checkRateLimit(env.DB, `user:${auth.userId}`, 'promo-redeem')
-  if (!rl.allowed) {
-    const after = rl.retryAfter ?? 60
-    return respond(
-      { error: `Too many attempts. Try again in ${after} seconds.` },
-      { status: 429, headers: { 'Retry-After': String(after) } },
-    )
-  }
-
-  const user = await env.DB.prepare(
-    'SELECT email, emailVerified, authProvider FROM users WHERE id = ?',
-  )
-    .bind(auth.userId)
-    .first<{
-      email: string | null
-      emailVerified: number
-      authProvider: string
-    }>()
-
-  if (!user || user.email == null || user.emailVerified !== 1) {
-    return respond(
-      { error: 'Please verify your email address to redeem promo codes.' },
-      { status: 403 },
-    )
-  }
-
-  let body: { code?: string }
-  try {
-    body = (await request.json()) as { code?: string }
-  } catch {
-    return respond({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  const rawCode = typeof body?.code === 'string' ? body.code.trim() : ''
-  if (rawCode === '') {
-    return respond({ error: 'Promo code is required.' }, { status: 400 })
-  }
-
-  const codeUpper = rawCode.toUpperCase()
-
-  const promo = await env.DB.prepare(
-    'SELECT id, code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE UPPER(code) = ? AND active = 1',
-  )
-    .bind(codeUpper)
-    .first<{
-      id: string
-      code: string
-      credits: number
-      maxRedemptions: number | null
-      redemptionCount: number
-      startsAt: string | null
-      expiresAt: string | null
-      active: number
-    }>()
-
-  if (!promo) {
-    return respond(
-      { error: 'Invalid or inactive promo code.' },
-      { status: 404 },
-    )
-  }
-
-  const now = new Date()
-  const nowIso = now.toISOString()
-
-  const refusal = promoRefusal(promo, now)
-  if (refusal !== null) {
-    const { error, status } = PROMO_REFUSALS[refusal]
-    return respond({ error }, { status })
-  }
-
-  // One transaction for the three writes that make a redemption: the
-  // per-user slot, the campaign counter and the credits. D1 runs a batch
-  // atomically, so a slot can never exist without its credits — three
-  // separate statements could leave a row behind that the user was then
-  // told they had "already redeemed". The cap is claimed by the slot INSERT
-  // itself, guarded by the counter it is about to move: two callers racing
-  // for the last slot serialise on the write lock, and the second one's
-  // INSERT lands nothing. The UNIQUE(promoCodeId, userId) constraint drops
-  // a second slot for the same account the same way.
-  const redemptionId = crypto.randomUUID()
-  const ledgerId = crypto.randomUUID()
-  const idempotencyKey = `promo:${promo.id}:${auth.userId}`
-  const [slot, , credited] = await env.DB.batch([
-    env.DB.prepare(
-      `INSERT OR IGNORE INTO promoRedemptions (id, promoCodeId, userId, redeemedAt)
-       SELECT ?, ?, ?, ?
-        WHERE EXISTS (
-          SELECT 1 FROM promoCodes
-           WHERE id = ? AND active = 1
-             AND (maxRedemptions IS NULL OR redemptionCount < maxRedemptions))`,
-    ).bind(redemptionId, promo.id, auth.userId, nowIso, promo.id),
-    env.DB.prepare(
-      `UPDATE promoCodes SET redemptionCount = redemptionCount + 1, updatedAt = ?
-        WHERE id = ? AND EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
-    ).bind(nowIso, promo.id, redemptionId),
-    env.DB.prepare(
-      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-       SELECT ?, ?, ?, ?, 'promo', ?, ?
-        WHERE EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
-    ).bind(
-      ledgerId,
-      nowIso,
-      auth.userId,
-      promo.credits,
-      promo.code,
-      idempotencyKey,
-      redemptionId,
-    ),
-  ])
-
-  if (slot.meta.changes === 0) {
-    // Nothing landed: either this account already holds a slot, or the
-    // campaign filled up between the read above and this write.
-    const taken = await env.DB.prepare(
-      'SELECT 1 FROM promoRedemptions WHERE promoCodeId = ? AND userId = ?',
-    )
-      .bind(promo.id, auth.userId)
-      .first()
-    return respond(
-      {
-        error: taken
-          ? 'You have already redeemed this promo code.'
-          : 'This promo code has reached its maximum redemption limit.',
-      },
-      { status: 400 },
-    )
-  }
-  if (credited.meta.changes === 0) {
-    // The slot is new but the ledger already had this key. Cannot happen
-    // through this handler; log it rather than fail a redemption that did
-    // land, and let the balance below say what the account actually holds.
-    console.error(
-      `[billing] promo ${promo.code}: slot ${redemptionId} landed on an existing ledger key ${idempotencyKey}`,
-    )
-  }
-
-  const ledger = await env.DB.prepare(
-    'SELECT delta FROM creditLedger WHERE userId = ?',
-  )
-    .bind(auth.userId)
-    .all<{ delta: number }>()
-
-  const balance = creditBalance(ledger.results)
-
-  return respond({
-    success: true,
-    code: promo.code,
-    creditsGranted: promo.credits,
-    newBalance: balance,
-  })
 }
 
 /**

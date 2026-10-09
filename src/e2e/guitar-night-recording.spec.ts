@@ -328,7 +328,7 @@ test('records and keeps a dry melody without playback, then practices its accept
   // This is the first visit to the main app, not a return from its onboarding.
   await page
     .getByRole('dialog', { name: 'Welcome to MercuryPitch', exact: true })
-    .getByRole('button', { name: 'Skip', exact: true })
+    .getByRole('button', { name: 'Skip the intro', exact: true })
     .click()
   await dismissOverlays(page)
   await openNavTab(page, 'tab-voice-history')

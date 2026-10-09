@@ -1,0 +1,518 @@
+/* ============================================================
+   Beat 7 — Keep, with and without the launch gift
+   ============================================================
+
+   Mocks 01 (desktop) and 02 (phone, gift and no gift) of the launch offer
+   plan. The beat reads left-aligned: a card, the ask, two or three rows,
+   then the gift card. On a desktop with the gift, the ask and the gift sit
+   side by side and the one button is centred under both.
+
+   Every rule hangs off .keepBeat, which also wears the shared .beat class;
+   the extra class keeps these rules ahead of .beat's without depending on
+   which sheet the bundle loads first. Colours come from the flow's own
+   tokens (onboarding.module.css .overlay), plus amber, which is only ever
+   the credits'. */
+
+.keepBeat[data-beat] {
+  max-width: 560px;
+  gap: 22px;
+}
+
+.keepBeat .keepColumns {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+
+.keepBeat .keepMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+}
+
+.keepBeat .keepEyebrow {
+  margin-top: 6px;
+  color: var(--ob-teal);
+  letter-spacing: 0.18em;
+}
+
+.keepBeat .keepHeadline {
+  font-weight: 700;
+  font-size: clamp(2.2rem, 7vw, 3.4rem);
+}
+
+.keepBeat .keepLine {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ob-ink);
+  max-width: 44ch;
+}
+
+/* ── The rows ────────────────────────────────────────────────── */
+
+.keepBeat .keepRows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.keepBeat .keepRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1.04rem;
+  line-height: 1.35;
+  color: var(--ob-ink);
+}
+
+/* Bare line icons, no tinted square behind them. */
+.keepBeat .keepRowIcon {
+  display: inline-flex;
+  flex: none;
+  color: var(--ob-teal);
+}
+
+.keepBeat .keepRowIcon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.keepBeat .keepRowIcon[data-tone='blue'] {
+  color: var(--ob-blue);
+}
+
+.keepBeat .keepRowIcon[data-tone='violet'] {
+  color: var(--ob-violet);
+}
+
+/* ── The voiceprint card ─────────────────────────────────────── */
+
+.keepBeat .rangeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 24px;
+  border: 1px solid var(--ob-rule);
+  border-radius: 18px;
+  background: #0f131b;
+  text-align: left;
+}
+
+.keepBeat .rangeHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.keepBeat .rangeType {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ob-ink);
+}
+
+.keepBeat .rangeNotes {
+  font-size: 1.12rem;
+  color: #c6d4e4;
+  font-variant-numeric: tabular-nums;
+}
+
+.keepBeat .rangeKeys {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #2c323e;
+  border-radius: 6px;
+}
+
+.keyWhite {
+  fill: #13171f;
+  stroke: #222731;
+  stroke-width: 1;
+}
+
+.keyLit {
+  fill: url(#keep-range-lit);
+  stroke: rgba(13, 17, 23, 0.55);
+  stroke-width: 1;
+}
+
+.keyBlack {
+  fill: #393f4b;
+}
+
+.keyBlackLit {
+  fill: #1d4c66;
+}
+
+.rangeEndLow,
+.rangeEndHigh {
+  stroke-width: 2.5;
+}
+
+.rangeEndLow {
+  stroke: #5dfdff;
+}
+
+.rangeEndHigh {
+  stroke: #b49add;
+}
+
+.rangeDotLow,
+.rangeDotHigh {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.rangeDotLow {
+  fill: #0dccbf;
+}
+
+.rangeDotHigh {
+  fill: #ab6ffa;
+}
+
+/* The phone's keyboard: one bar, the range lit along it. */
+.keepBeat .rangeBar {
+  display: none;
+  position: relative;
+  height: 16px;
+  border: 1px solid #453e6a;
+  border-radius: 999px;
+  background: #1b1e29;
+  overflow: hidden;
+}
+
+.keepBeat .rangeBarLit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4decfc, #2077fd 55%, #c991fb);
+  box-shadow: 0 0 7px rgba(32, 119, 253, 0.7);
+}
+
+/* ── The gift card ───────────────────────────────────────────── */
+
+.keepBeat .giftCard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--ob-rule);
+  border-radius: 20px;
+  background: #121720;
+  overflow: hidden;
+  text-align: left;
+}
+
+.keepBeat .giftArt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 20px 6px;
+}
+
+.keepBeat .giftCoins {
+  display: flex;
+  gap: 7px;
+}
+
+.keepBeat .giftMerc {
+  display: block;
+  margin-left: auto;
+  filter: drop-shadow(0 8px 22px rgba(188, 140, 255, 0.28));
+}
+
+.keepBeat .giftMerc svg {
+  display: block;
+  width: 92px;
+  height: auto;
+}
+
+.keepBeat .giftCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 22px 22px;
+}
+
+.keepBeat .giftEyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f2ad23;
+}
+
+.keepBeat .giftTitle {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--ob-ink);
+  text-wrap: balance;
+}
+
+.keepBeat .giftBody {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: #deeaf3;
+  text-wrap: pretty;
+}
+
+.keepBeat .giftFine {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #b2bfce;
+  text-wrap: pretty;
+}
+
+/* ── The action ──────────────────────────────────────────────── */
+
+.keepBeat .keepFact {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #cdd5df;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.keepBeat .keepAction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.keepBeat .keepButton {
+  width: min(100%, 520px);
+}
+
+.keepBeat .keepCaption {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #c6d6e6;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* Copy that only a wide screen has room for, and its short stand-in. */
+.narrowOnly {
+  display: none;
+}
+
+/* ── Desktop: the ask and the gift side by side ──────────────── */
+
+@media (min-width: 900px) {
+  .keepBeat.keepWithGift[data-beat] {
+    max-width: 1160px;
+    gap: 30px;
+  }
+
+  .keepWithGift .keepColumns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 52px;
+  }
+
+  .keepWithGift .keepHeadline {
+    font-size: clamp(2.6rem, 4.1vw, 4rem);
+    letter-spacing: -0.035em;
+  }
+
+  .keepWithGift .keepLine {
+    font-size: 1.12rem;
+  }
+
+  .keepWithGift .keepRow {
+    font-size: 1.15rem;
+  }
+
+  .keepWithGift .keepRowIcon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .keepWithGift .rangeCard {
+    padding: 26px 30px;
+  }
+
+  /* The art across the card's top: five coins in an arch, Merc under the
+     highest, fading into the card below. */
+  .keepWithGift .giftArt {
+    display: block;
+    aspect-ratio: 608 / 400;
+    padding: 0;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 38%,
+      rgba(188, 140, 255, 0.14),
+      rgba(13, 17, 25, 0) 70%
+    );
+  }
+
+  .keepWithGift .giftCoin {
+    position: absolute;
+    width: 14%;
+    height: auto;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+  }
+
+  .keepWithGift .giftCoin:nth-child(1) {
+    left: 18%;
+    top: 46%;
+  }
+
+  .keepWithGift .giftCoin:nth-child(2) {
+    left: 31%;
+    top: 30%;
+  }
+
+  .keepWithGift .giftCoin:nth-child(3) {
+    left: 48%;
+    top: 20%;
+    width: 15%;
+  }
+
+  .keepWithGift .giftCoin:nth-child(4) {
+    left: 65%;
+    top: 30%;
+  }
+
+  .keepWithGift .giftCoin:nth-child(5) {
+    left: 78%;
+    top: 45%;
+  }
+
+  .keepWithGift .giftMerc {
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    width: 30%;
+    margin: 0;
+    transform: translateX(-50%);
+  }
+
+  .keepWithGift .giftMerc svg {
+    width: 100%;
+  }
+
+  .keepWithGift .giftCopy {
+    gap: 8px;
+    padding: 0 34px 28px;
+  }
+
+  .keepWithGift .giftEyebrow {
+    font-size: 0.8rem;
+  }
+
+  .keepWithGift .giftTitle {
+    font-size: clamp(1.8rem, 2.6vw, 2.5rem);
+  }
+
+  .keepWithGift .giftBody {
+    font-size: 1.1rem;
+  }
+
+  .keepWithGift .giftFine {
+    font-size: 1rem;
+  }
+
+  .keepWithGift .keepButton {
+    min-height: 64px;
+    font-size: 1.18rem;
+  }
+
+  .keepWithGift .keepCaption {
+    font-size: 0.95rem;
+  }
+}
+
+/* ── Phone ───────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .keepBeat .wideOnly {
+    display: none;
+  }
+
+  .keepBeat .narrowOnly {
+    display: inline;
+  }
+
+  .keepBeat .rangeCard {
+    gap: 14px;
+    padding: 20px;
+  }
+
+  /* The bar first, then the words, as on the phone mock. */
+  .keepBeat .rangeKeys {
+    display: none;
+  }
+
+  .keepBeat .rangeBar {
+    display: block;
+    order: -1;
+  }
+
+  .keepBeat .rangeType {
+    font-size: 1.12rem;
+  }
+
+  .keepBeat .rangeNotes {
+    font-size: 1.05rem;
+  }
+
+  .keepBeat .keepRowIcon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .keepBeat .giftCoin {
+    width: 34px;
+    height: 34px;
+  }
+
+  .keepBeat .giftCoins {
+    gap: 6px;
+  }
+
+  .keepBeat .giftMerc svg {
+    width: 72px;
+  }
+
+  .keepBeat .keepButton {
+    width: 100%;
+  }
+
+  /* One line in a phone's card: "5 free Karaoke Night credits". */
+  .keepBeat .giftTitle {
+    font-size: 1.25rem;
+  }
+
+  /* Without the gift the beat stays one block, centred in the frame like
+     every other beat (the shared .beat margins). The phone mock left the
+     gift card's space empty and pinned the button to the bottom; the plan
+     (section 9) asks for the content centred instead, so the fact sits
+     under the rows it explains and no hole opens between them. */
+}

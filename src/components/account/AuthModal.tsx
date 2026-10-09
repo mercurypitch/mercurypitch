@@ -19,6 +19,7 @@ import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
 import type { SignInOutcome } from '@/db/services/auth-service'
 import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
+import type { SignupSource } from '@/db/services/signup-context'
 import { adoptDeviceVoiceprints, buildVoiceprintHint, } from '@/db/services/voiceprint-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { appleSignInOffered, nativeGoogleSignInOffered, webGoogleSignInOffered, } from '@/features/account/sign-in-methods'
@@ -27,9 +28,10 @@ import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, 
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { conditionalMediationAvailable, describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
+import { signUpGiftMessage } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import { armOnboardingResume } from '@/stores/onboarding-store'
-import { authModalMode, closeAuthModal } from '@/stores/ui-store'
+import { authModalMode, authModalSignupSource, closeAuthModal, } from '@/stores/ui-store'
 import { AppleMark } from './AppleMark'
 import styles from './AuthModal.module.css'
 import { GoogleMark } from './GoogleMark'
@@ -344,6 +346,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     initialFocus: () => dialogRef?.querySelector('input') ?? titleRef,
   })
 
+  /** Where this sign-up started, when the opener said (openAuthModal). */
+  function signupSource(): { signupSource?: SignupSource } {
+    const source = authModalSignupSource()
+    return source === null ? {} : { signupSource: source }
+  }
+
   /** Shows the failure inline, next to the form the singer is already
    *  looking at. Starting the redirect is shared — see lib/google-sign-in. */
   async function onGoogleSignIn(): Promise<void> {
@@ -358,8 +366,10 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
       // prop off, and its sign-ups send no hint.
       signup:
         props.adoptsGoogleSignup === true
-          ? { voiceprintHint: buildVoiceprintHint() }
-          : undefined,
+          ? { voiceprintHint: buildVoiceprintHint(), ...signupSource() }
+          : authModalSignupSource() === null
+            ? undefined
+            : signupSource(),
     })
     if (failure !== null) setError(failure)
   }
@@ -462,6 +472,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
               newsletterOptIn: wantsUpdates(),
               // Adopted just below, so the confirm mail may name the twin.
               voiceprintHint: buildVoiceprintHint(),
+              ...signupSource(),
             },
           )
           if (request !== requestGeneration) return
@@ -471,7 +482,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
           // brand-new account right away. Signing in to an EXISTING
           // account stays prompt-gated (spec REQ-VPR-014).
           void adoptDeviceVoiceprints()
-          signedIn('Account created — progress is now synced')
+          // With the launch gift on offer, the toast says what the confirm
+          // link will bring (launch-gift-store).
+          signedIn(
+            signUpGiftMessage() ?? 'Account created — progress is now synced',
+          )
         } else if (current === 'login') {
           const outcome = await loginWithPassword(
             credentials.email,

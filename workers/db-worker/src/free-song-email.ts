@@ -25,6 +25,10 @@
 // did before: no record is read or written, the free song is bounded per
 // account only, and the log says so once per isolate. Rotating the secret
 // forgets the current month's records.
+//
+// The promo codes' records (promo-claim.ts) use the same key through
+// emailRecordCode, each under its own prefix, so a code of one kind never
+// matches a code of another.
 
 import type { Env } from './auth'
 import { songMonth } from './songs-allowance'
@@ -48,7 +52,7 @@ async function emailKey(
     if (!warned) {
       warned = true
       console.warn(
-        `[billing] free song: FREE_SONG_EMAIL_SECRET is unset or shorter than ${KEY_BYTES} bytes; the month's free song is bounded per account only`,
+        `[billing] email records: FREE_SONG_EMAIL_SECRET is unset or shorter than ${KEY_BYTES} bytes; the month's free song and promo claims are bounded per account only`,
       )
     }
     return null
@@ -62,6 +66,27 @@ async function emailKey(
   )
 }
 
+/** The code an email record holds: HMAC-SHA256 of `prefix` and the email,
+ *  trimmed and lower-cased, in hex. Null while the Worker has no key. The
+ *  prefix says what the record is for, so records of different kinds never
+ *  share a code. */
+export async function emailRecordCode(
+  env: Pick<Env, 'FREE_SONG_EMAIL_SECRET'>,
+  prefix: string,
+  email: string,
+): Promise<string | null> {
+  const key = await emailKey(env)
+  if (key === null) return null
+  const mac = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(`${prefix}:${email.trim().toLowerCase()}`),
+  )
+  return [...new Uint8Array(mac)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 /** The code an email's record of the month's free song holds: HMAC-SHA256
  *  of the month and the email, trimmed and lower-cased, in hex. Null while
  *  the Worker has no key. */
@@ -70,16 +95,7 @@ export async function freeSongEmailCode(
   email: string,
   month: string,
 ): Promise<string | null> {
-  const key = await emailKey(env)
-  if (key === null) return null
-  const mac = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(`free-song:${month}:${email.trim().toLowerCase()}`),
-  )
-  return [...new Uint8Array(mac)]
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
+  return emailRecordCode(env, `free-song:${month}`, email)
 }
 
 /** An account's email, as the month's free song reads it. */

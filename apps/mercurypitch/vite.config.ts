@@ -112,6 +112,26 @@ function isFloatingConsole(id: string): boolean {
   return FLOATING_CONSOLE.some((module) => path.endsWith(module))
 }
 
+/**
+ * The launch offer, which is the web's (owner, 9 Oct): the gift's store, with
+ * its claim toasts, and the offer's words and storage. Every reference this
+ * bundle can reach is a plain conditional on IS_NATIVE_BUILD
+ * (VerifyEmailBanner, HeaderAccount), or a lazy import folded behind
+ * CAN_TAKE_PAYMENT; the stores' module-level signals would still keep them
+ * here, so they are declared free of side effects and a module nothing uses
+ * is dropped whole, as with KARAOKE_STAGE_2. `assert-bundle.mjs` OFFER checks
+ * every native build.
+ */
+const LAUNCH_OFFER = [
+  '/src/stores/launch-gift-store.ts',
+  '/src/lib/launch-offer.ts',
+]
+
+function isLaunchOffer(id: string): boolean {
+  const path = id.replace(/\?.*$/u, '').replace(/\\/gu, '/')
+  return LAUNCH_OFFER.some((module) => path.endsWith(module))
+}
+
 export default defineConfig(({ mode, command }) => {
   // Fail before producing a bundle, not after shipping one. The Cloud
   // subscription sells through RevenueCat wherever the build carries its
@@ -297,11 +317,13 @@ export default defineConfig(({ mode, command }) => {
           'index.html',
         ),
         treeshake: {
-          // A Karaoke Stage 2 or floating console module that nothing uses is
-          // dropped whole, its module-level state included (KARAOKE_STAGE_2
-          // and FLOATING_CONSOLE, above).
+          // A Karaoke Stage 2, floating console or launch offer module that
+          // nothing uses is dropped whole, its module-level state included
+          // (KARAOKE_STAGE_2, FLOATING_CONSOLE and LAUNCH_OFFER, above).
           moduleSideEffects: (id) =>
-            !isKaraokeStage2(id) && !isFloatingConsole(id),
+            !isKaraokeStage2(id) &&
+            !isFloatingConsole(id) &&
+            !isLaunchOffer(id),
         },
       },
     },

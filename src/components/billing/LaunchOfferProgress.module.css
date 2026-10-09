@@ -1,0 +1,178 @@
+/* The launch offer's progress. It sits on the app's themed panels and on
+   Karaoke Night's dark card, so colours read the app's tokens with the
+   dark design's values as the fallback (never inside a shorthand). Amber is
+   the credits' colour and nothing else's. */
+
+.progress {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(240, 180, 90, 0.32);
+  background: rgba(240, 180, 90, 0.06);
+  color: var(--text-primary, #e6edf3);
+  text-align: left;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f0b45a;
+}
+
+.count {
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.coins {
+  display: flex;
+  gap: 10px;
+}
+
+.line {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #c5d1df);
+  text-wrap: pretty;
+}
+
+.packs {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: #40bdf9;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.packs:focus-visible {
+  outline: 2px solid #40bdf9;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The Karaoke tab's header: the same block, smaller. */
+.compact {
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.compact .label {
+  font-size: 0.82rem;
+}
+
+.compact .count {
+  font-size: 0.82rem;
+}
+
+.compact .coins {
+  gap: 6px;
+}
+
+.compact .line {
+  font-size: 0.8rem;
+}
+
+/* The Karaoke tab's desk header: one row under the credit balance, the
+   size of that pill's type. The line is the row's title, and is read out. */
+.inline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-secondary, #c5d1df);
+  white-space: nowrap;
+}
+
+/* "See the packs" has a 44 px target that reaches 14 px above the row:
+   keep it clear of the credit balance pill above. */
+.inline[data-state='unlocked'] {
+  margin-top: 10px;
+}
+
+.inline .label {
+  font-size: inherit;
+}
+
+.inline .count {
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--text-primary, #e6edf3);
+}
+
+.inline .coins {
+  gap: 4px;
+}
+
+/* A 44 px target that does not grow the row it sits in. */
+.inlinePacks {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -14px 0;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: #40bdf9;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.inlinePacks:focus-visible {
+  outline: 2px solid #40bdf9;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The light theme: amber and sky blue are too pale on white to read. */
+:global([data-theme='light']) .label {
+  color: #8a5300;
+}
+
+:global([data-theme='light']) .packs,
+:global([data-theme='light']) .inlinePacks {
+  color: #0969da;
+}
+
+:global([data-theme='light']) .packs:focus-visible,
+:global([data-theme='light']) .inlinePacks:focus-visible {
+  outline-color: #0969da;
+}

@@ -2,6 +2,8 @@
 // This module owns every db/store dependency of the rail, so the page shell
 // stays in the tiny first-paint chunk and this loads behind it (lazy()).
 import { createMemo, createResource, createSignal, For, onMount, Show, } from 'solid-js'
+import { LaunchOfferProgress } from '@/components/billing/LaunchOfferProgress'
+import { LaunchOfferRewardSheet } from '@/components/billing/LaunchOfferRewardSheet'
 import type { GroupDeleteTarget } from '@/components/GroupDeleteConfirmDialog'
 import { GroupDeleteConfirmDialog } from '@/components/GroupDeleteConfirmDialog'
 import { DeviceSync, Trash2 } from '@/components/icons'
@@ -10,7 +12,7 @@ import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-ru
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
-import { credits, refreshCredits, signedIn } from '@/lib/standalone-account'
+import { credits, offer, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
 // sync-ui only, and never sync-store: this rail's first paint must not
@@ -23,6 +25,7 @@ import { completeUvrSession, deleteGroupWithSessions, getAllUvrSessionsReactive,
 import { isDemoSessionId } from './demo-song'
 import { isExampleSession } from './examples-library'
 import { trackKaraoke } from './funnel'
+import { KaraokeGiftLine } from './KaraokeGiftLine'
 import { groupLibrarySongs } from './library-grouping'
 
 export interface KaraokeSong {
@@ -399,8 +402,13 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     </li>
   )
 
+  // The launch offer, where a build can sell the packs it points at.
+  const launchOffer = () => (CAN_TAKE_PAYMENT && signedIn() ? offer() : null)
+  const seePacks = (): void => window.location.assign('/#/settings/credits')
+
   return (
     <>
+      <LaunchOfferRewardSheet offer={launchOffer()} onSeePacks={seePacks} />
       <section class="kn-card">
         <p class="kn-card-kicker">
           Your song
@@ -426,11 +434,12 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
         <Show
           when={effectiveMode() === 'server'}
           fallback={
-            <p class="kn-card-sub">
-              All data stays on your device. Higher-quality separation is
-              available as a paid option
-              {signedIn() ? '' : ' — sign in to use it'}.
-            </p>
+            <Show when={signedIn()} fallback={<KaraokeGiftLine />}>
+              <p class="kn-card-sub">
+                All data stays on your device. Higher-quality separation is
+                available as a paid option.
+              </p>
+            </Show>
           }
         >
           <p class="kn-card-sub">
@@ -471,6 +480,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
             </Show>
           </p>
         </Show>
+        <LaunchOfferProgress offer={launchOffer()} onSeePacks={seePacks} />
         <input
           ref={fileInputRef}
           type="file"

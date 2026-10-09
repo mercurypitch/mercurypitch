@@ -67,6 +67,29 @@ describe('FirstLight focus containment', () => {
     unmount()
   })
 
+  it('opens on the welcome itself, not on the close button that skips it', async () => {
+    // The close button is the first control in the DOM (top right). Focused
+    // on open it wears its focus ring on the very first screen, which
+    // points the eye at the way out instead of "Sing one note".
+    const { container, unmount } = render(() => <FirstLight />)
+    const dialog = container.querySelector('[role="dialog"]')!
+    await waitFor(
+      () => {
+        expect(dialog.contains(document.activeElement)).toBe(true)
+      },
+      { timeout: 4000 },
+    )
+    const close = dialog.querySelector('button[aria-label="Skip the intro"]')
+    expect(close).not.toBeNull()
+    expect(document.activeElement).not.toBe(close)
+    const main = [...dialog.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Sing one note',
+    )
+    expect(main).toBeDefined()
+    expect(document.activeElement!.contains(main!)).toBe(true)
+    unmount()
+  })
+
   it('wraps Tab inside the dialog instead of letting it reach the app', async () => {
     // A focusable control "behind" the overlay — the app the trap must fence off.
     const behind = document.createElement('button')

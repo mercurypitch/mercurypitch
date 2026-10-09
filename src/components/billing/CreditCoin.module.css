@@ -1,0 +1,39 @@
+/* A credit as an amber token: a smooth disc, no markings. Sizes come from
+   --coin-size, so one rule draws a 33 px coin beside a line and an 86 px
+   one in the gift's art. */
+
+.coin {
+  --coin-size: 40px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--coin-size);
+  height: var(--coin-size);
+  border-radius: 50%;
+  background:
+    /* The lilac light on the upper right. */
+    radial-gradient(
+      circle at 74% 22%,
+      rgba(247, 175, 217, 0.75) 0,
+      rgba(247, 175, 217, 0) 32%
+    ),
+    /* The sphere: amber deepening to its edge, the pale rim below. */
+    radial-gradient(
+        circle at 42% 36%,
+        #ffd77a 0,
+        #fec557 30%,
+        #f2a847 62%,
+        #e59647 80%,
+        #f6dd9c 100%
+      );
+  box-shadow:
+    0 0 calc(var(--coin-size) * 0.4) rgba(158, 81, 49, 0.55),
+    inset 0 calc(var(--coin-size) * -0.06) calc(var(--coin-size) * 0.12)
+      rgba(255, 236, 170, 0.45);
+}
+
+.spent {
+  background: none;
+  box-shadow: none;
+  border: 1.5px solid #c9955c;
+}

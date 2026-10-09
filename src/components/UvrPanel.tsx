@@ -52,6 +52,8 @@ import { openSettingsSection } from '@/stores/ui-store'
 import { karaokeFocus } from '@/stores/ui-store'
 import { activeUvrUploadQueueMode, setActiveUvrUploadQueueMode, uvrUploadQueue, } from '@/stores/uvr-upload-queue-store'
 import { KaraokePlaylistGallery, SessionGroupTabs, StemMixer, UvrGuide, UvrLibraryElsewhere, UvrProcessControl, UvrResultViewer, UvrSessionResult, UvrStemUploadControl, UvrUploadControl, UvrUploadQueue, } from '.'
+import type { LaunchOfferProgressProps } from './billing/LaunchOfferProgress'
+import type { LaunchOfferRewardSheetProps } from './billing/LaunchOfferRewardSheet'
 import { CheckCircle, ChevronDown, ChevronLeft, ChevronUp, Cpu, DeviceSync, ExportFile, ExportGroup, FilePlus, ImportFile, Loader2, Music, Plus, Search, Settings, SingMic, StageCurtains, Trash2, X, XCircle, Zap, } from './icons'
 import type { SessionExportPreset } from './SessionExportDialog'
 import { SessionExportDialog } from './SessionExportDialog'
@@ -69,6 +71,25 @@ const ShazamResults = lazy(async () =>
     default: m.ShazamResults,
   })),
 )
+// The launch offer points at the packs, so a build that cannot take payment
+// carries none of it: the constant folds, the imports sit in a dead branch,
+// and no chunk is emitted (see PricingPanel in SettingsPanel.tsx).
+const LaunchOfferProgress: Component<LaunchOfferProgressProps> =
+  CAN_TAKE_PAYMENT
+    ? lazy(async () =>
+        import('./billing/LaunchOfferProgress').then((m) => ({
+          default: m.LaunchOfferProgress,
+        })),
+      )
+    : () => null
+const LaunchOfferRewardSheet: Component<LaunchOfferRewardSheetProps> =
+  CAN_TAKE_PAYMENT
+    ? lazy(async () =>
+        import('./billing/LaunchOfferRewardSheet').then((m) => ({
+          default: m.LaunchOfferRewardSheet,
+        })),
+      )
+    : () => null
 
 export type { UvrView } from './uvr-view'
 
@@ -2088,9 +2109,15 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
     }
   }
 
+  /** The launch offer's way to the packs: Settings › Credits. */
+  const seeThePacks = (): void => {
+    setOptionsOpen(false)
+    openSettingsSection('credits')
+  }
+
   /** The header's processing controls: in the header on a desk, in the
    *  options sheet on a phone. One list, two containers. */
-  const headerExtras = () => (
+  const headerExtras = (place: 'header' | 'sheet') => (
     <>
       <div class="uvr-mode-stack">
         {/* Radiogroups, like the app's own segmented controls: which mode,
@@ -2231,6 +2258,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
           >
             {creditBalanceLabel()}
           </button>
+          {/* One row in the desk header; the block, smaller, in the
+              phone's options sheet, which has the room for its line. */}
+          <LaunchOfferProgress
+            offer={billingMe.latest?.offer}
+            inline={place === 'header'}
+            compact={place === 'sheet'}
+            onSeePacks={seeThePacks}
+          />
         </Show>
       </div>
       <div class="uvr-view-tabs">
@@ -2281,6 +2316,10 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
 
   return (
     <div class="uvr-panel">
+      <LaunchOfferRewardSheet
+        offer={billingMe.latest?.offer}
+        onSeePacks={seeThePacks}
+      />
       <div
         class={`uvr-panel-inner ${currentView() !== 'mixer' ? 'bounded' : ''}`}
       >
@@ -2351,7 +2390,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 mobile kit's options sheet behind one button, which is the
                 pattern every other mobile stage already uses. */}
             <div class="header-actions">
-              <Show when={!isNarrow()}>{headerExtras()}</Show>
+              <Show when={!isNarrow()}>{headerExtras('header')}</Show>
               <Show when={isNarrow()}>
                 <button
                   class="view-tab uvr-more-btn"
@@ -2369,7 +2408,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               close={() => setOptionsOpen(false)}
               ariaLabel="Separation options"
             >
-              <div class="uvr-options-sheet">{headerExtras()}</div>
+              <div class="uvr-options-sheet">{headerExtras('sheet')}</div>
             </OptionsSheet>
           </div>
 

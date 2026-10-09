@@ -20,6 +20,11 @@
 // survive a scan, and each one is a thing that actually happens in the
 // next ninety seconds, in the order it happens: we name your note, we
 // map your voice, and none of it leaves the device.
+//
+// One button, large and centred (owner decision D5, 9 Oct 2026). The way
+// out is the close button at the top right of the frame (FirstLight's
+// rail), not a second button of the same size beside the first: two equal
+// buttons ask the visitor to choose before they know what either does.
 
 import type { Component, JSX } from 'solid-js'
 import { For } from 'solid-js'
@@ -101,8 +106,6 @@ const PROMISES: readonly { icon: () => JSX.Element; text: string }[] = [
 
 export interface BeatSkyProps {
   onContinue: () => void
-  /** Straight into the app. Same weight as the door's skip had. */
-  onSkip: () => void
 }
 
 export const BeatSky: Component<BeatSkyProps> = (props) => (
@@ -131,17 +134,10 @@ export const BeatSky: Component<BeatSkyProps> = (props) => (
     <div class={styles.actions}>
       <button
         type="button"
-        class={styles.primary}
+        class={`${styles.primary} ${styles.primaryLarge}`}
         onClick={() => props.onContinue()}
       >
         Sing one note
-      </button>
-      <button
-        type="button"
-        class={styles.secondary}
-        onClick={() => props.onSkip()}
-      >
-        Skip — take me in
       </button>
     </div>
 
