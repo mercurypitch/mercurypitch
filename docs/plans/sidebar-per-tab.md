@@ -1,7 +1,12 @@
 # Sidebar per tab — audit and plan
 
-Status: **agreed 2026-08-12, in progress** on `feat/sidebar-per-tab`.
-Decisions taken: full panel registry (§3, not cheap gating) · Karaoke session
+Status: **steps 1–4 shipped** in PR #495 (2026-08-12): the registry, the
+subtractions, and the Karaoke and Jam rail panels. **Open:** step 5, the new
+cards in the §4 matrix (exercise progress and weakness, the Home challenge
+teaser, Path progress, Piano transport prefs, the Guitar library and tuner,
+the Community profile, Leaderboard rank, the Challenges card, the Analysis
+picker); and step 6 for Karaoke, whose rail hooks (`karaoke.rail-*`) no tour
+step targets yet. Jam's two rail steps exist. Decisions taken: full panel registry (§3, not cheap gating) · Karaoke session
 groups + setlists move into the rail (§4) · the rail is THE jam roster
 (JamPanel's duplicate goes) · Settings shows universal panels only. For the
 §7 questions not decided explicitly: queue-status card renders only while a

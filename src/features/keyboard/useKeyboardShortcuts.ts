@@ -11,12 +11,16 @@
 //   tab      -- most shortcuts are tab-scoped. The Karaoke tab (StemMixer)
 //               drives its own audio graph, so global transport keys are
 //               explicitly excluded there rather than merely unhandled.
+//
+// On a television the arrow keys are the remote's D-pad, so the speed keys
+// leave them to the page there (isTvDevice()).
 
 import type { Accessor, Setter } from 'solid-js'
 import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { isTvDevice } from '@/lib/device-tier'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
@@ -287,8 +291,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
       }
     }
 
+    // Up and Down set the speed, except on a television: there they are the
+    // D-pad, and cancelling them left a remote unable to leave its row.
+    const arrowsSetSpeed = !isTyping && !isTvDevice()
+
     // Up arrow -> faster playback
-    if (e.code === 'ArrowUp' && !isTyping) {
+    if (e.code === 'ArrowUp' && arrowsSetSpeed) {
       e.preventDefault()
       const current = transportStore.playbackSpeed()
       const steps = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
@@ -300,7 +308,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     }
 
     // Down arrow -> slower playback
-    if (e.code === 'ArrowDown' && !isTyping) {
+    if (e.code === 'ArrowDown' && arrowsSetSpeed) {
       e.preventDefault()
       const current = transportStore.playbackSpeed()
       const steps = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
