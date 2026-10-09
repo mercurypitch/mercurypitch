@@ -110,7 +110,7 @@ duplicate room-code copy (the invite modal has had both copies all along)
 while keeping the code visible because people read it aloud, and the lobby
 now states what the room is and what can be run in it.
 
-Covered by `src/tests/jam-catalog.test.ts` — transposition per range, beat
+Covered by `src/lib/jam/jam-catalog.test.ts` — transposition per range, beat
 layout, the `"G44"` bare-note-name trap, weekly pass-through, and the
 exclusion list.
 

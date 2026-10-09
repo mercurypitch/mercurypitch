@@ -4,6 +4,12 @@
 //
 // Not formatTimeLrc, which emits the LRC file format (mm:ss.xx) -- that
 // is a serialisation for a lyrics file, not a label for a human.
+//
+// A running clock truncates (formatClock): it must not show a second the
+// music has not reached. A length, or a time someone asked to jump to,
+// rounds to the nearest second (roundedMinutesSeconds). Both settle the
+// whole seconds before splitting off the minutes. Rounding afterwards is
+// how 179.5 seconds came to read "2:60".
 
 /** e.g. 65 -> "1:05". Negative and non-finite inputs read as "0:00". */
 export function formatClock(totalSeconds: number): string {
@@ -16,4 +22,16 @@ export function formatClock(totalSeconds: number): string {
   return h > 0
     ? `${h}:${mm}:${String(s).padStart(2, '0')}`
     : `${mm}:${String(s).padStart(2, '0')}`
+}
+
+/**
+ * e.g. 179.5 -> { minutes: 3, seconds: 0 }. Minutes keep counting past
+ * the hour. Callers keep their own guards for missing or empty lengths.
+ */
+export function roundedMinutesSeconds(totalSeconds: number): {
+  minutes: number
+  seconds: number
+} {
+  const whole = Math.round(totalSeconds)
+  return { minutes: Math.floor(whole / 60), seconds: whole % 60 }
 }
