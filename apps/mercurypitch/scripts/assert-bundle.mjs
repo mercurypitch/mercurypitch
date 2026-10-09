@@ -82,6 +82,14 @@
 //            review access is Stage 2 in an Android build only, so a store
 //            build is held to carrying none of it and no build to having it.
 //
+//   OFFER    The launch offer is not in the binary. It is the web's (owner,
+//            9 Oct): the gift of credits at sign-up, the toasts that say it
+//            arrived, and the extra credits on the next pack for using them
+//            all, which ride on a Stripe Checkout session. Every reference
+//            the native bundle can reach is folded out behind IS_NATIVE_BUILD
+//            and its modules are dropped whole (LAUNCH_OFFER in
+//            vite.config.ts), so no native build carries any of it.
+//
 // Every check runs against every bundle root it is given, `--android-assets`
 // included. Those are the bytes that reach the APK, `cap sync` copies webDir
 // wholesale, and a sync that did not overwrite the previous build leaves a
@@ -163,6 +171,18 @@ const WEB_SIGN_IN = [
     'Sign in with your phone',
     'the web sign-in dialog (AuthModal, its television phone row)',
   ],
+]
+
+/**
+ * The launch offer, in no native build at all. Each is the piece it is, when
+ * it shows up.
+ */
+const LAUNCH_OFFER = [
+  ['mp.launchGift', 'the launch gift store (src/stores/launch-gift-store.ts)'],
+  ['Try one in Karaoke Night', "the launch gift's claim toast"],
+  ['Karaoke Night credits', 'the launch gift on the Keep and Map screens'],
+  ['mp.launchOffer', 'the launch offer (src/lib/launch-offer.ts)'],
+  ['extra credits', "the launch offer's progress line and reward sheet"],
 ]
 
 /**
@@ -506,6 +526,20 @@ function main(argv) {
       webSignIn.length === 0,
       `${label}: the web sign-in dialog is not in the bundle`,
       `Found ${webSignIn.join('; ')}. Something renders the web AuthModal without the IS_NATIVE_BUILD fold (src/App.tsx) or reaches it from the shell${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The native way in is the shell's sign-in sheet; openAuthModal routes to it.`,
+    )
+
+    // OFFER
+    const launchOffer = []
+    for (const file of assets) {
+      for (const [needle, what] of LAUNCH_OFFER) {
+        if (contains(file, needle))
+          launchOffer.push(`${needle} (${what}) in ${file}`)
+      }
+    }
+    record(
+      launchOffer.length === 0,
+      `${label}: the launch offer is not in the bundle`,
+      `Found ${launchOffer.join('; ')}. Something reaches the launch gift or the offer from a path the IS_NATIVE_BUILD fold does not guard, or one of its modules is missing from LAUNCH_OFFER in vite.config.ts${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}. The offer is the web's; its bonus rides on Stripe Checkout.`,
     )
   }
 

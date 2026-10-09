@@ -14,6 +14,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { giftClaimed, syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
@@ -42,6 +43,15 @@ function UserIcon() {
   )
 }
 
+// The launch gift is the web's. A native build never mounts this header, but
+// App.tsx still compiles it in, so the constant swaps in stubs here and the
+// gift's store stays out of the native bundle (src/lib/native-build.ts;
+// apps/mercurypitch/scripts/assert-bundle.mjs, OFFER).
+const hasGift: () => boolean = IS_NATIVE_BUILD ? () => false : giftClaimed
+const syncGift: typeof syncPromoClaims = IS_NATIVE_BUILD
+  ? async () => {}
+  : syncPromoClaims
+
 export const HeaderAccount: Component = () => {
   const cloudConfigured = API_BASE_URL != null && API_BASE_URL !== ''
   const [me, setMe] = createSignal<MeResponse | null>(null)
@@ -68,7 +78,7 @@ export const HeaderAccount: Component = () => {
         setMe(account)
         // What this account has claimed, for the pill below, and the toast
         // when the launch gift has just landed (launch-gift-store).
-        void syncPromoClaims(
+        void syncGift(
           account === null
             ? null
             : {
@@ -131,7 +141,7 @@ export const HeaderAccount: Component = () => {
         <div class={styles.accountWrapper}>
           {/* Until the account has it: a pill that leads to "Claimed" is
               a pill with nothing behind it. */}
-          <Show when={!giftClaimed() && offeredPromo()}>
+          <Show when={!hasGift() && offeredPromo()}>
             {(promo) => (
               <a
                 href="#/settings/credits"
