@@ -42,6 +42,7 @@ import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { captchaFailureBody, verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
+import { DELETION_HELD, deletionHeld } from './withdrawal-hold'
 import type { PackedVoiceprintHint, SignupSource, SignupVoiceprint, } from './signup-hint'
 import { packVoiceprintHint, parseSignupSource, parseVoiceprintHint, readAccountVoiceprint, unpackVoiceprintHint, } from './signup-hint'
 
@@ -4010,6 +4011,19 @@ async function handleDeleteMe(
   const auth = await getAuth(request, env)
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
+
+  // A withdrawal refund still open keeps the account for now: deleting it
+  // would erase the statement the refund is owed on (withdrawal-hold.ts).
+  try {
+    if (await deletionHeld(env, userId)) {
+      return respond({ error: DELETION_HELD }, { status: 409 })
+    }
+  } catch {
+    return respond(
+      { error: 'Account deletion temporarily unavailable' },
+      { status: 503 },
+    )
+  }
 
   // Read the email before the user row disappears. Both the shared legacy
   // grant ledger and main-DB Premium Studio membership are keyed by it.

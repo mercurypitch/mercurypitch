@@ -4,6 +4,7 @@ import { getAuth, handleAuth } from './auth'
 import { AccountSuspendedError } from './moderation'
 import { resolvePremiumBackgroundAccess } from './premium-background-access'
 import { TABLES } from './tables'
+import { OPEN_REFUND_SQL } from './withdrawal-hold'
 
 interface UserRecord {
   id: string
@@ -166,6 +167,10 @@ class AuthStatement {
       return (this.db.deviceLinks.get(String(this.values[0])) ??
         null) as T | null
     }
+
+    // No account here has cancelled a credit pack, so none waits for a
+    // refund: withdrawal-integration.test.ts covers the hold itself.
+    if (this.sql === OPEN_REFUND_SQL.replace(/\s+/g, ' ').trim()) return null
 
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
   }
