@@ -63,6 +63,7 @@ function statement(
     refundMinor: 1800,
     currency: 'eur',
     refundStatus: 'refunded',
+    mailStatus: 'sent',
     ...overrides,
   }
 }
@@ -169,6 +170,31 @@ describe('PurchaseWithdrawals', () => {
     expect(screen.queryByTestId('withdrawal-form')).toBeNull()
     // The balance shown above refetches.
     expect(balanceVersion()).toBe(before + 1)
+  })
+
+  it("says so when the confirmation email hasn't gone out", async () => {
+    mocks.fetchWithdrawals.mockResolvedValue(answer())
+    mocks.submitWithdrawal.mockResolvedValue({
+      duplicate: false,
+      statement: statement({
+        email: 'receipts@example.test',
+        mailStatus: 'failed',
+      }),
+    })
+    render(() => <PurchaseWithdrawals />)
+    fireEvent.click(
+      (await screen.findAllByTestId('withdraw-link'))[0] as HTMLElement,
+    )
+    fireEvent.input(screen.getByTestId('withdrawal-name'), {
+      target: { value: 'Sam Singer' },
+    })
+    fireEvent.submit(screen.getByTestId('withdrawal-form'))
+
+    const received = await screen.findByTestId('withdrawal-received')
+    expect(received.textContent).not.toContain("We've sent a confirmation")
+    expect(received.textContent).toContain(
+      "Your confirmation email to receipts@example.test hasn't gone out yet. We'll keep trying.",
+    )
   })
 
   it('shows why a statement was refused', async () => {

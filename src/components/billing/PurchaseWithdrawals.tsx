@@ -7,7 +7,8 @@
 // the form names the buyer, the purchase and where the confirmation goes;
 // "Confirm withdrawal" sends the statement
 // (workers/db-worker/src/withdrawal.ts), and the panel says it arrived,
-// whatever the refund then does. A pack keeps the terms its own checkout
+// whatever the refund then does, and says the confirmation email went only
+// once it has. A pack keeps the terms its own checkout
 // recorded, so the panel asks whatever WITHDRAWAL_MODE says now, and shows
 // only while there is something to show, at the top of the Credits tab,
 // where the purchase mail sends the buyer.
@@ -71,6 +72,13 @@ function consequence(pack: CancellablePack): string {
   // commas.
   const aside = pack.basis === 'full' && pack.refund !== null ? ',' : ''
   return `We'll ${take}refund ${refundOf(pack)}${aside} to the card or account you paid with.`
+}
+
+/** Whether the confirmation email went. Only a sent one is called sent. */
+function confirmationState(statement: WithdrawalStatement): string {
+  return statement.mailStatus === 'sent'
+    ? `We've sent a confirmation to ${statement.email}.`
+    : `Your confirmation email to ${statement.email} hasn't gone out yet. We'll keep trying.`
 }
 
 /** Where the refund of a statement stands. */
@@ -168,8 +176,7 @@ export const PurchaseWithdrawals: Component = () => {
             >
               <p class={styles.receivedTitle}>{WITHDRAWAL_RECEIVED}</p>
               <p class={styles.text}>
-                We've sent a confirmation to {statement().email}.{' '}
-                {refundState(statement())}
+                {confirmationState(statement())} {refundState(statement())}
               </p>
             </div>
           )}

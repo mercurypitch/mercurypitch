@@ -615,15 +615,19 @@ export interface WithdrawalStatement {
   purchaseId: string
   packLabel: string
   submittedAt: string
-  /** Where the acknowledgement went. */
+  /** Where the acknowledgement goes. */
   email: string
   unusedCredits: number
   bonusCredits: number
   basis: RefundBasis
-  /** Null when the price paid is not on record: the owner refunds by hand. */
+  /** Null while the price paid is not known: Stripe has not answered yet,
+   *  or the owner refunds by hand. */
   refundMinor: number | null
   currency: string
   refundStatus: 'pending' | 'refunded' | 'failed' | 'manual' | 'none'
+  /** The acknowledgement mail: 'sent' once it went, else on its way or
+   *  failed so far. */
+  mailStatus: string | null
 }
 
 export interface Withdrawals {
