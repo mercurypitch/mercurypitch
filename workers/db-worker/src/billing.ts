@@ -49,6 +49,7 @@ import { handlePromoRedeem, readPromoClaims } from './promo-claim'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
+import { CHECKOUT_PAID_EVENTS, clawBackPayment, isCheckoutPaidEvent, isMoneyBackEvent, paymentIntentOf, } from './stripe-payments'
 import type { PricingRow } from './billing-core'
 import { UVR_TIER_PLAN_IDS, bestSupporterLevel, creditBalance, donationDays, extendSupporterExpiry, isUvrTier, isValidJobRef, mapPricingPlans, sourcePlanId, supporterLevel, timingSafeEqualStr, uvrDebitKey, uvrJobCost, uvrModelCredits, uvrRefundKey, verifyStripeSignature, } from './billing-core'
 
@@ -390,12 +391,21 @@ interface GrantOutcome {
   duplicate: boolean
   /** What `granted` counts, for logs and the reconciliation alert. */
   unit: 'credits' | 'supporter days'
+  /** The session is not paid yet, so nothing was granted: its
+   *  `checkout.session.async_payment_succeeded` grants it. */
+  unpaid?: boolean
 }
 
 /** Process one completed checkout. Credits and donations both arrive as
  *  `checkout.session.completed`; the session metadata says which. Routing both
  *  through here means the reconciliation sweep (which calls this same function)
- *  recovers missed donations for free — do NOT add a second recovery path. */
+ *  recovers missed donations for free — do NOT add a second recovery path.
+ *
+ *  Only a paid session grants. A delayed payment method (a bank debit)
+ *  completes the session before the money arrives, with `payment_status`
+ *  'unpaid'; its `checkout.session.async_payment_succeeded` carries the same
+ *  session, paid, and grants then, under its own event id. A payment that
+ *  fails grants nothing. */
 async function grantForCheckout(
   env: Env,
   eventId: string,
@@ -403,7 +413,24 @@ async function grantForCheckout(
 ): Promise<GrantOutcome> {
   const metadata =
     (session.metadata as Record<string, unknown> | undefined) ?? {}
-  return metadata.kind === 'donation'
+  const donation = metadata.kind === 'donation'
+  if (session.payment_status !== 'paid') {
+    // 'unpaid' is a delayed payment on its way. Nothing else should reach
+    // here: no session is created with a discount that could make it free.
+    const log =
+      session.payment_status === 'unpaid' ? console.log : console.error
+    log(
+      `[billing] checkout ${eventId}: payment ${String(session.payment_status)}, nothing granted until it is paid`,
+    )
+    return {
+      granted: 0,
+      userId: null,
+      duplicate: false,
+      unit: donation ? 'supporter days' : 'credits',
+      unpaid: true,
+    }
+  }
+  return donation
     ? grantSupporterEntitlement(env, eventId, session)
     : grantCheckoutCredits(env, eventId, session)
 }
@@ -450,10 +477,17 @@ async function grantSupporterEntitlement(
 
   const now = new Date().toISOString()
   const claimed = await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     VALUES (?, ?, ?, 0, 'donation', ?, ?)`,
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
+     VALUES (?, ?, ?, 0, 'donation', ?, ?, ?)`,
   )
-    .bind(crypto.randomUUID(), now, userId, planId, `evt:${eventId}`)
+    .bind(
+      crypto.randomUUID(),
+      now,
+      userId,
+      planId,
+      `evt:${eventId}`,
+      paymentIntentOf(session),
+    )
     .run()
   if (claimed.meta.changes === 0) {
     console.log(`[billing] donation ${eventId}: [duplicate, skipped]`)
@@ -573,11 +607,20 @@ async function grantCheckoutCredits(
 
   // idempotencyKey ties the grant to the event, so a redelivered webhook
   // (or a retry) can never double-credit — the UNIQUE constraint drops it.
+  // The PaymentIntent is what a refund or a dispute names (stripe-payments.ts).
   const res = await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     VALUES (?, ?, ?, ?, 'purchase', ?, ?)`,
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
+     VALUES (?, ?, ?, ?, 'purchase', ?, ?, ?)`,
   )
-    .bind(crypto.randomUUID(), now, userId, credits, planId, `evt:${eventId}`)
+    .bind(
+      crypto.randomUUID(),
+      now,
+      userId,
+      credits,
+      planId,
+      `evt:${eventId}`,
+      paymentIntentOf(session),
+    )
     .run()
   console.log(
     `[billing] checkout ${eventId}: +${credits} credits user=${userId}` +
@@ -1091,7 +1134,7 @@ async function handleWebhook(
     .first<{ id: string }>()
   if (seen) return respond({ received: true, duplicate: true })
 
-  if (event.type === 'checkout.session.completed') {
+  if (isCheckoutPaidEvent(event.type)) {
     const outcome = await grantForCheckout(
       env,
       event.id,
@@ -1103,6 +1146,10 @@ async function handleWebhook(
     // behalf would make every retry and sweep skip it forever: paid, no
     // grant, no trace. The winner records it below on its own success.
     if (outcome.duplicate) return respond({ received: true, duplicate: true })
+  } else if (isMoneyBackEvent(event.type)) {
+    // One ledger row is the whole of a claw-back, so a duplicate holds
+    // nothing that could be released: it is recorded like any other.
+    await clawBackPayment(env, event.id, event.type, event.data?.object ?? {})
   }
   // Other event types are acknowledged (200) without action for now.
   await recordBillingEvent(env, event.id, event.type ?? null)
@@ -1128,7 +1175,7 @@ interface StripeEventListItem {
   data?: { object?: Record<string, unknown> }
 }
 
-/** Sweep Stripe's recent `checkout.session.completed` events and grant any
+/** Sweep Stripe's recent checkout events (CHECKOUT_PAID_EVENTS) and grant any
  *  the webhook missed. Safe to run at any frequency: already-seen events are
  *  skipped, and the grant itself is idempotent per event id. Alerts by email
  *  (BILLING_ALERT_EMAIL) when it had to recover anything — a recovery means
@@ -1145,10 +1192,10 @@ export async function reconcileBilling(env: Env): Promise<void> {
   let startingAfter: string | undefined
   for (let page = 0; page < RECONCILE_MAX_PAGES; page++) {
     const qs = new URLSearchParams({
-      type: 'checkout.session.completed',
       limit: '100',
       'created[gte]': String(since),
     })
+    for (const type of CHECKOUT_PAID_EVENTS) qs.append('types[]', type)
     if (startingAfter !== undefined) qs.set('starting_after', startingAfter)
     const res = await stripeGet(env, `/events?${qs.toString()}`)
     if (!res.ok) {
@@ -1183,6 +1230,9 @@ export async function reconcileBilling(env: Env): Promise<void> {
         // It also is not a recovery, so it does not belong in the alert.
         if (outcome.duplicate) continue
         await recordBillingEvent(env, ev.id, ev.type ?? null)
+        // A session still waiting for its money granted nothing to recover:
+        // its async_payment_succeeded event does, swept like this one.
+        if (outcome.unpaid === true) continue
         recovered.push(
           `${ev.id}: +${outcome.granted} ${outcome.unit}, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
         )

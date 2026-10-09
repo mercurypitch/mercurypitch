@@ -316,7 +316,7 @@ Fix: divide by `this.bufferSize`, and restrict the peak search to the
 | medium   | `src/lib/uvr-processing-pipeline.ts:162`                             | Processing pipeline mutates the live session cache array in place, bypassing copy-on-write                                  | likely     | reported                                   |
 | medium   | `src/stores/melody-store.ts:1041`                                    | Deleting a melody leaves dangling melodyId references in every session that used it                                         | certain    | **CONFIRMED** — FIXED                      |
 | medium   | `src/workers/spectral.worker.ts:40`                                  | Spectral worker reads only STFT frame 0, which is half zero-padding — timbre is measured on a decaying half-window          | likely     | reported                                   |
-| medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | reported                                   |
+| medium   | `workers/db-worker/src/billing.ts:925`                               | Stripe checkout grants credits without checking payment_status                                                              | possible   | **FIXED**                                  |
 | medium   | `workers/db-worker/src/index.ts:218`                                 | where[] filters accept any column, turning masked/private columns into a query oracle                                       | certain    | **FIXED**                                  |
 | low      | `src/components/PitchCanvas.tsx:989`                                 | Target-pitch tolerance band on the practice canvas is 0.1 cents wide, so it renders as zero pixels                          | likely     | reported                                   |
 | low      | `src/components/StemMixerTransport.tsx:603`                          | Stem-mixer transport seek bar is a click-only div with no role, tabindex or keyboard handler                                | certain    | reported                                   |
@@ -796,7 +796,7 @@ The worker calls `stftForward(audio, nFft, nFft, ...)` and then indexes `stft.da
 
 ### [medium] Stripe checkout grants credits without checking payment_status
 
-`workers/db-worker/src/billing.ts:925` — confidence: possible — status: reported
+`workers/db-worker/src/billing.ts:925` — confidence: possible — status: FIXED
 
 `handleWebhook` routes every signature-verified `checkout.session.completed` event straight into `grantForCheckout`, and neither `grantCheckoutCredits` (billing.ts:474) nor `grantSupporterEntitlement` (billing.ts:378) ever inspects `session.payment_status` or `session.status`. Stripe fires `checkout.session.completed` when the customer finishes the Checkout flow, which is not the same as the money having arrived: for delayed-notification payment methods (SEPA direct debit, Bacs, OXXO, Boleto, Konbini, and bank transfers, all of which can be enabled from the Stripe Dashboard without touching this code), the session completes with `payment_status: 'unpaid'` and settles — or fails — days later. Stripe's own documented guidance is to gate fulfilment on `payment_status === 'paid'` and to handle `checkout.session.async_payment_succeeded`/`async_payment_failed`.
 
@@ -805,6 +805,8 @@ The reconciliation sweep (billing.ts:reconcileBilling) has the same gap: it list
 **Failure scenario.** An operator enables SEPA Direct Debit (or the Stripe Dashboard adds a delayed method to the automatic payment-method set). A buyer starts checkout for a credit pack; Stripe emits `checkout.session.completed` with `payment_status: 'unpaid'`. The webhook signature verifies, `grantCheckoutCredits` reads `metadata.credits` and writes a positive `creditLedger` row, and the buyer immediately spends the credits on GPU UVR jobs. Three days later the debit is refused; Stripe emits `checkout.session.async_payment_failed`, which this worker acknowledges with a bare `recordBillingEvent` and no action. The credits are never clawed back and the GPU spend is unrecoverable.
 
 **Suggested fix.** In `grantForCheckout`, return a no-grant outcome unless `session.payment_status === 'paid'` (or `session.status === 'complete'` with `payment_status !== 'unpaid'`), and add a `checkout.session.async_payment_succeeded` branch that runs the same idempotent grant. Apply the same guard in `reconcileBilling` when iterating listed events.
+
+**Fixed** (launch offer, Phase 3). `grantForCheckout` grants nothing unless `session.payment_status === 'paid'`; `checkout.session.async_payment_succeeded` runs the same idempotent grant under its own event id, and the reconciliation sweep lists both event types (`types[]`) and records a still-unpaid session without counting it as a recovery. Regression tests in `workers/db-worker/node-tests/stripe-payments-integration.test.ts` fail with the gate removed (4 of 13).
 
 ### [medium] where[] filters accept any column, turning masked/private columns into a query oracle
 
