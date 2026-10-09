@@ -47,9 +47,13 @@ describe('store chips on the voiceprint result', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('says beside the chips what the video shows', () => {
+  it('names the devices, then says the chips play the video meanwhile', () => {
     render(() => <StoreChips listings={NOT_LIVE} />)
-    expect(screen.getByText(/android tablet/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Coming soon to iPhone and Android\./),
+    ).toHaveTextContent(
+      'Coming soon to iPhone and Android. For now, both buttons play a first look, filmed on an Android tablet: leave the app mid-song and the karaoke keeps playing, with the lyrics floating on top.',
+    )
   })
 
   it('renders nothing inside the native app', () => {
@@ -89,6 +93,11 @@ describe('store chips on the voiceprint result', () => {
     // The other store is still a chip pointing at the video.
     const chip = screen.getByRole('link', { name: /^Coming soon: Google Play/ })
     expect(chip).toHaveAttribute('href', STORE_PREVIEW_VIDEO_URL)
+    // And the caption names only what is still to come.
+    expect(screen.getByText(/^Coming soon to Android\./)).toHaveTextContent(
+      /^Coming soon to Android\. For now, the Google Play button plays a first look/,
+    )
+    expect(screen.queryByText(/iPhone/)).not.toBeInTheDocument()
   })
 
   it('shows both badges, and no video caption, once both stores are live', () => {
