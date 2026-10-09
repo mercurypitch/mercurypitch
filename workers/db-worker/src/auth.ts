@@ -56,6 +56,16 @@ export interface Env {
    *  wrangler.jsonc - the dev worker must NEVER fall back to production. */
   APP_FALLBACK_ORIGIN?: string
   /**
+   * This worker's public origin (https://api.mercurypitch.com), for a link a
+   * mail carries back here when the request that sends the mail did not
+   * come in through it. The console calls the admin routes through the
+   * Cloudflare Access door (studio.*), and a confirm link built from that
+   * request would open an Access login for the person who taps it. Set per
+   * environment in wrangler.jsonc; unset (local, tests) means the request's
+   * own origin.
+   */
+  PUBLIC_API_ORIGIN?: string
+  /**
    * '1' serves GET /api/email-preview: every welcome and confirm mail
    * rendered with sample data, for checking in a browser. Set on the dev
    * worker and in a local .dev.vars only; anywhere else the route is a 404.
@@ -1301,8 +1311,9 @@ function requestAppOrigin(request: Request, env: Env): string {
 /**
  * Links follow the app; pictures need a host the reader's mail app can reach.
  * A sign-up made on localhost gets this environment's deployed pictures.
+ * Exported for confirm-reminders.ts.
  */
-function mailOrigins(appOrigin: string, env: Env): MailOrigins {
+export function mailOrigins(appOrigin: string, env: Env): MailOrigins {
   const { hostname, protocol } = new URL(appOrigin)
   const local =
     hostname === 'localhost' ||
@@ -1353,19 +1364,21 @@ async function sha256b64url(s: string): Promise<string> {
   return b64urlEncode(await crypto.subtle.digest('SHA-256', encoder.encode(s)))
 }
 
-/** Mint a single-use verification token (superseding any older ones for the
- *  user) and store only its SHA-256. Returns the raw token for the link. */
-async function createEmailVerification(
+/**
+ * Mint a single-use verification token and store only its SHA-256. Returns
+ * the raw token for the link and the hash it is stored under. Any older link
+ * for the user keeps working: superseding it is the caller's decision.
+ * Exported for confirm-reminders.ts, which supersedes only once the provider
+ * has accepted the mail, so a refused send leaves the account as it was.
+ */
+export async function mintEmailVerification(
   db: D1Database,
   userId: string,
   email: string,
-): Promise<string> {
+  ttlMs: number,
+): Promise<{ token: string; tokenHash: string }> {
   const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)))
   const tokenHash = await sha256b64url(token)
-  await db
-    .prepare('DELETE FROM emailVerifications WHERE userId = ?')
-    .bind(userId)
-    .run()
   await db
     .prepare(
       'INSERT INTO emailVerifications (tokenHash, userId, email, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?)',
@@ -1375,9 +1388,29 @@ async function createEmailVerification(
       userId,
       email,
       nowIso(),
-      new Date(Date.now() + VERIFY_TOKEN_TTL_MS).toISOString(),
+      new Date(Date.now() + ttlMs).toISOString(),
     )
     .run()
+  return { token, tokenHash }
+}
+
+/** Mint a single-use verification token (superseding any older ones for the
+ *  user) and store only its SHA-256. Returns the raw token for the link. */
+async function createEmailVerification(
+  db: D1Database,
+  userId: string,
+  email: string,
+): Promise<string> {
+  await db
+    .prepare('DELETE FROM emailVerifications WHERE userId = ?')
+    .bind(userId)
+    .run()
+  const { token } = await mintEmailVerification(
+    db,
+    userId,
+    email,
+    VERIFY_TOKEN_TTL_MS,
+  )
   return token
 }
 
@@ -3496,6 +3529,19 @@ async function handleVerifyEmail(
   )
     .bind(nowIso(), row.userId)
     .run()
+  // A fresh confirm link (confirm-reminders.ts) worked if its account
+  // confirms afterwards, whichever link did it. Only that account's row, and
+  // only once. A measurement, so a failure here must never cost anybody
+  // their confirmation.
+  try {
+    await env.DB.prepare(
+      'UPDATE confirmReminderSends SET confirmedAt = ? WHERE userId = ? AND confirmedAt IS NULL',
+    )
+      .bind(nowIso(), row.userId)
+      .run()
+  } catch (err) {
+    console.error(`[auth] fresh-link confirm not recorded: ${String(err)}`)
+  }
   return redirect(`${returnTo}/#everified=1`)
 }
 
@@ -3807,6 +3853,9 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // no user id) is kept, because that a breach notice went out is a record
   // we owe a regulator. Who it went to is a record of them, and goes.
   { table: 'accountNoticeSends', column: 'userId' },
+  // Which fresh confirm link went to this account, and whether it confirmed.
+  // The same reasoning again: a record of somebody, so it goes with them.
+  { table: 'confirmReminderSends', column: 'userId' },
   // An approved-but-uncollected device link names the account it would sign
   // a television into. Rows are short-lived, but the sweep only runs when
   // the NEXT device asks for a code — so with nobody linking anything, an

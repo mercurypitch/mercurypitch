@@ -733,6 +733,27 @@ const DEFAULT_REPLY_TO = 'hello@mercurypitch.com'
 export interface ResendResult {
   ok: boolean
   id?: string
+  /** No answer came back at all (the request threw), so whether Resend took
+   *  it is unknown. Only a caller with an idempotency key can safely ask
+   *  again. */
+  unanswered?: boolean
+}
+
+export interface ResendOptions {
+  /**
+   * Extra RFC-5322 headers. Only the newsletter uses this, for
+   * List-Unsubscribe — which Gmail and Yahoo have required of bulk senders
+   * since 2024, and without which a marketing send lands in spam however
+   * clean the list is.
+   */
+  headers?: Record<string, string>
+  /**
+   * Resend's Idempotency-Key request header: an identical request repeated
+   * under the same key within 24 hours gets the first one's answer instead
+   * of a second mail. A different body under a used key is refused (409).
+   * The fresh confirm link uses one key per campaign and account.
+   */
+  idempotencyKey?: string
 }
 
 /**
@@ -740,18 +761,13 @@ export interface ResendResult {
  * (no key / no recipient) or the API rejected it. NEVER throws — callers must
  * not let an email failure roll back a signup or a paid credit grant.
  */
-async function resendPost(
+export async function resendPost(
   cfg: ResendConfig,
   to: string,
   rendered: RenderedEmail,
-  /**
-   * Extra RFC-5322 headers. Only the newsletter uses this, for
-   * List-Unsubscribe — which Gmail and Yahoo have required of bulk senders
-   * since 2024, and without which a marketing send lands in spam however
-   * clean the list is.
-   */
-  headers?: Record<string, string>,
+  options: ResendOptions = {},
 ): Promise<ResendResult> {
+  const { headers, idempotencyKey } = options
   if (!cfg.apiKey) {
     console.log('[email] RESEND_API_KEY unset — email skipped')
     return { ok: false }
@@ -766,6 +782,9 @@ async function resendPost(
       headers: {
         Authorization: `Bearer ${cfg.apiKey}`,
         'Content-Type': 'application/json',
+        ...(idempotencyKey === undefined
+          ? {}
+          : { 'Idempotency-Key': idempotencyKey }),
       },
       body: JSON.stringify({
         from: cfg.from ?? DEFAULT_FROM,
@@ -795,7 +814,7 @@ async function resendPost(
     return { ok: true, id }
   } catch (err) {
     console.error(`[email] Resend request failed: ${String(err)}`)
-    return { ok: false }
+    return { ok: false, unanswered: true }
   }
 }
 
@@ -869,8 +888,10 @@ export async function sendNewsletterIssue(
   vars: NewsletterIssueVars,
 ): Promise<ResendResult> {
   const result = await resendPost(cfg, to, renderNewsletterIssue(vars), {
-    'List-Unsubscribe': `<${vars.unsubscribeUrl}>`,
-    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    headers: {
+      'List-Unsubscribe': `<${vars.unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   })
   if (result.ok) console.log(`[email] newsletter sent to ${to}`)
   return result

@@ -25,8 +25,9 @@ import { parseVoiceprintHint } from './signup-hint'
 
 export const EMAIL_PREVIEW_PATH = '/api/email-preview'
 
-/** The sample singer from the approved design. */
-const SAMPLE_VOICEPRINT = parseVoiceprintHint({
+/** The sample singer from the approved design. Also what a fresh-link test
+ *  mail or sample preview shows (confirm-reminders.ts). */
+export const SAMPLE_VOICEPRINT = parseVoiceprintHint({
   twin: 'Frank Sinatra',
   lowMidi: 40,
   highMidi: 67,
