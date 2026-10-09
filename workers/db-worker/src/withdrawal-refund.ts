@@ -24,7 +24,10 @@
 // The price a refund is worked out from is never the catalogue's: the
 // checkout's own record (checkoutConsents), else what the PaymentIntent
 // received (paidAtStripe), else nobody knows it and the owner refunds by
-// hand.
+// hand. Only Stripe saying so makes the price unknown: a 404, or a
+// definitive refusal like the refund's own. A lookup that got no answer (a
+// network error, a 5xx, a 409 or a 429) leaves the price pending, to be
+// asked again (withdrawal-finish.ts).
 
 import type { Env } from './auth'
 import type { WithdrawalRefundState } from './email-withdrawal'
@@ -78,26 +81,47 @@ function byHand(error: string): RefundOutcome {
   return { status: 'manual', refundId: null, error, stripeStatus: null }
 }
 
-/** What the PaymentIntent received, or null when Stripe does not say.
- *  Never throws. */
+/** What Stripe says the PaymentIntent received: the price; none on
+ *  record; or no answer yet, to ask again. */
+export type PriceAnswer =
+  | { kind: 'paid'; price: Price }
+  | { kind: 'not-on-record' }
+  | { kind: 'no-answer' }
+
+const NOT_ON_RECORD: PriceAnswer = { kind: 'not-on-record' }
+const NO_ANSWER: PriceAnswer = { kind: 'no-answer' }
+
+/** A 409, a 429 or a 5xx: Stripe answered, but not about the payment. */
+function isPassing(status: number): boolean {
+  return status === 409 || status === 429 || status >= 500
+}
+
+/** What the PaymentIntent received. Never throws. */
 export async function paidAtStripe(
   env: Env,
   paymentIntentId: string | null,
-): Promise<Price | null> {
-  if (paymentIntentId === null || !isStripeConfigured(env)) return null
+): Promise<PriceAnswer> {
+  if (paymentIntentId === null || !isStripeConfigured(env)) {
+    return NOT_ON_RECORD
+  }
+  let res: StripeAnswer
   try {
-    const res = await stripeGet(
+    res = await stripeGet(
       env,
       `/payment_intents/${encodeURIComponent(paymentIntentId)}`,
     )
-    const amount = res.data.amount_received
-    const currency = res.data.currency
-    if (!res.ok || typeof amount !== 'number' || typeof currency !== 'string')
-      return null
-    return currency === '' ? null : { amountMinor: amount, currency }
   } catch {
-    return null
+    return NO_ANSWER
   }
+  if (!res.ok) return isPassing(res.status) ? NO_ANSWER : NOT_ON_RECORD
+  const amount = res.data.amount_received
+  const currency = res.data.currency
+  if (typeof amount !== 'number' || typeof currency !== 'string') {
+    return NOT_ON_RECORD
+  }
+  return currency === ''
+    ? NOT_ON_RECORD
+    : { kind: 'paid', price: { amountMinor: amount, currency } }
 }
 
 function stripeError(data: Record<string, unknown>, status: number): string {
@@ -134,9 +158,7 @@ function refundAnswer(res: StripeAnswer): RefundOutcome {
   if (res.ok) return fromRefund(res.data)
   // 409: the same key is still being worked on. 429: too many requests.
   // 5xx: Stripe's own trouble. None says whether the refund was made.
-  if (res.status === 409 || res.status === 429 || res.status >= 500) {
-    return UNKNOWN
-  }
+  if (isPassing(res.status)) return UNKNOWN
   return {
     status: 'failed',
     refundId: null,

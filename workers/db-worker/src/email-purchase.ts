@@ -17,7 +17,7 @@
 // (withdrawal-rules.ts).
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { escapeHtml, formatDate, formatMoney, resendPost } from './email'
+import { escapeHtml, formatDate, formatMoney, resendPost, sentUnderKeyAlready, } from './email'
 import type { HeroLink, Lines, MailOrigins } from './email-layout'
 import { button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, SANS, signOffRow, url, W, } from './email-layout'
 import { deadlineToShow, DEFAULT_GRACE_WEEKDAYS } from './withdrawal-rules'
@@ -187,16 +187,20 @@ export function renderPurchaseEmail(vars: PurchaseEmailVars): RenderedEmail {
 
 /** Send the purchase mail. Best-effort; see resendPost. The caller records
  *  whether it went (checkout-consent.ts). `idempotencyKey` makes a second
- *  send of the same purchase's mail within a day a no-op at Resend. */
+ *  send of the same purchase's mail within a day a no-op at Resend, and
+ *  Resend refusing a second body under it means the first went
+ *  (sentUnderKeyAlready). */
 export async function sendPurchaseMail(
   cfg: ResendConfig,
   to: string,
   vars: PurchaseEmailVars,
   idempotencyKey?: string,
 ): Promise<boolean> {
-  const { ok } = await resendPost(cfg, to, renderPurchaseEmail(vars), {
+  const result = await resendPost(cfg, to, renderPurchaseEmail(vars), {
     idempotencyKey,
   })
-  if (ok) console.log(`[email] purchase thank-you sent to ${to}`)
-  return ok
+  const sent =
+    result.ok || (idempotencyKey !== undefined && sentUnderKeyAlready(result))
+  if (sent) console.log(`[email] purchase thank-you sent to ${to}`)
+  return sent
 }

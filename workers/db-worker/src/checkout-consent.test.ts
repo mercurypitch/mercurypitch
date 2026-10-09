@@ -9,7 +9,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
-import { purchaseTerms, traderDetails, withdrawalGraceWeekdays, } from './checkout-consent'
+import { consentTerms, purchaseTerms, traderDetails, withdrawalGraceWeekdays, } from './checkout-consent'
 
 const env = (vars: Partial<Env>): Env => vars as Env
 
@@ -115,5 +115,41 @@ describe('the terms a purchase keeps', () => {
     expect(purchaseTerms({ mode: null, termsOfService: 'accepted' })).toBe(
       'no_consent',
     )
+  })
+})
+
+describe('the terms a purchase follows now', () => {
+  const ticked = { termsOfService: 'accepted' }
+
+  it('are the box its buyer ticked, once the purchase mail confirmed it', () => {
+    expect(
+      consentTerms({ ...ticked, mode: 'refund_unused', mailStatus: 'sent' }),
+    ).toBe('refund_unused')
+    expect(
+      consentTerms({ ...ticked, mode: 'waiver', mailStatus: 'sent' }),
+    ).toBe('waiver')
+  })
+
+  it('are no_consent while the purchase mail has not gone', () => {
+    for (const mailStatus of [
+      null,
+      'sending',
+      'failed',
+      'no-email',
+      'not-configured',
+      'gave-up',
+    ]) {
+      expect(consentTerms({ ...ticked, mode: 'waiver', mailStatus })).toBe(
+        'no_consent',
+      )
+    }
+    expect(consentTerms(undefined)).toBe('no_consent')
+    expect(
+      consentTerms({
+        termsOfService: null,
+        mode: 'waiver',
+        mailStatus: 'sent',
+      }),
+    ).toBe('no_consent')
   })
 })

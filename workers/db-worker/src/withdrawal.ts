@@ -9,12 +9,14 @@
 //        withdrawal statement for one pack.
 //
 // A pack keeps the terms its own checkout recorded (checkout-consent.ts,
-// purchaseTerms), whatever WITHDRAWAL_MODE says now: one sold under the
+// consentTerms), whatever WITHDRAWAL_MODE says now: one sold under the
 // waiver has no withdrawal function; one sold under refund_unused can be
 // cancelled while it holds unused paid credits, for the unused share of the
 // price; one with no ticked box on record (every pack bought before the box
 // shipped) can be cancelled with every credit used, for the whole price
-// (withdrawal-rules.ts). A statement already made is always finished.
+// (withdrawal-rules.ts). A ticked box counts only once the purchase mail
+// confirmed it: until then the pack is one with no consent. A statement
+// already made is always finished.
 //
 // One statement per pack (withdrawals.purchaseId is UNIQUE): sending it again
 // answers with the first, and finishes what the first left undone. It is
@@ -24,25 +26,25 @@
 // spend in between makes it count again.
 //
 // The refund is worked out from the price paid: the checkout's own record,
-// else what the PaymentIntent received at Stripe, never the catalogue's.
-// When neither knows it, the statement stands and the owner refunds by
-// hand. The statement stands whatever Stripe says, because one made inside
-// the 14 days counts (Art. 11a(5)). The refund, its acknowledgement mail and
-// the owner's alert follow in withdrawal-finish.ts; what a request leaves
-// undone, the 6-hourly sweep finishes (sweepWithdrawals).
+// else what the PaymentIntent received at Stripe, asked when the refund is
+// (withdrawal-finish.ts), never the catalogue's. When neither knows it, the
+// statement stands and the owner refunds by hand. The statement stands
+// whatever Stripe says, because one made inside the 14 days counts
+// (Art. 11a(5)). The refund, its acknowledgement mail and the owner's alert
+// follow in withdrawal-finish.ts; what a request leaves undone, the
+// 6-hourly sweep finishes (sweepWithdrawals).
 //
 // The refund comes back as charge.refunded: stripe-payments.ts counts the
 // withdrawal's ledger rows as taken back already, so nothing goes twice.
 
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
-import { purchaseTerms, sweepPurchaseMails, withdrawalGraceWeekdays, withdrawalMode, } from './checkout-consent'
+import { consentTerms, sweepPurchaseMails, withdrawalGraceWeekdays, withdrawalMode, } from './checkout-consent'
 import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readNamedLedger, } from './ledger'
 import { WITHDRAWAL_BONUS, WITHDRAWAL_PAID } from './stripe-payments'
-import type { PriceSource, StatementRow } from './withdrawal-finish'
-import { finish, PRICE_NOT_ON_RECORD, priceKnown, sweepStatements, } from './withdrawal-finish'
+import type { StatementRow } from './withdrawal-finish'
+import { finish, priceKnown, sweepStatements } from './withdrawal-finish'
 import type { Price } from './withdrawal-refund'
-import { paidAtStripe } from './withdrawal-refund'
 import type { PackUse } from './withdrawal-rules'
 import { canWithdraw, deadlineToShow, packUses, refundBasis, refundFor, withdrawalBonusKey, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
 import type { PurchaseTerms } from './withdrawal-wording'
@@ -63,16 +65,22 @@ interface ConsentRow {
   termsOfService: string | null
   amountMinor: number
   currency: string
+  mailStatus: string | null
 }
 
 const MAX_NAME = 200
 const MAX_EMAIL = 254
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/** A link or an address where only a name belongs: "@", a scheme, "www."
+ *  or a domain ("evil.example"). The acknowledgement goes out from our
+ *  domain with the name in it, so it can carry neither. */
+const NOT_A_NAME = /@|:\/\/|\bwww\.|\b[a-z0-9-]+\.[a-z]{2,}\b/i
 
 // ── Reading ──────────────────────────────────────────────────────────
 
 /** What each of the account's packs was sold under, from its checkout's
- *  consent row (checkout-consent.ts). */
+ *  consent row and whether its purchase mail confirmed it
+ *  (checkout-consent.ts). */
 async function purchaseFacts(
   env: Env,
   userId: string,
@@ -83,7 +91,7 @@ async function purchaseFacts(
       label: string | null
     }>(),
     env.DB.prepare(
-      'SELECT eventId, mode, termsOfService, amountMinor, currency FROM checkoutConsents WHERE userId = ?',
+      'SELECT eventId, mode, termsOfService, amountMinor, currency, mailStatus FROM checkoutConsents WHERE userId = ?',
     )
       .bind(userId)
       .all<ConsentRow>(),
@@ -94,7 +102,7 @@ async function purchaseFacts(
     const consent = byEvent.get(pack.eventId ?? '')
     return {
       label: labels.get(pack.planId ?? '') ?? 'Credit',
-      terms: purchaseTerms(consent),
+      terms: consentTerms(consent),
       price:
         consent === undefined
           ? null
@@ -121,8 +129,9 @@ async function statementFor(
     .first<StatementRow>()
 }
 
-/** What the app shows of a statement. The refund is null when the price
- *  paid is not on record. */
+/** What the app shows of a statement. The refund is null while the price
+ *  paid is not known. `mailStatus` is the acknowledgement's: 'sent' once it
+ *  went. */
 function statementView(row: StatementRow) {
   return {
     id: row.id,
@@ -136,6 +145,7 @@ function statementView(row: StatementRow) {
     refundMinor: priceKnown(row) ? row.refundMinor : null,
     currency: row.currency,
     refundStatus: row.refundStatus,
+    mailStatus: row.mailStatus,
   }
 }
 
@@ -218,6 +228,9 @@ function readBody(raw: unknown): StatementBody | string {
     return 'Choose the purchase to cancel.'
   }
   if (name === '' || name.length > MAX_NAME) return 'Enter your name.'
+  if (NOT_A_NAME.test(name)) {
+    return 'Enter just your name, without a link or an email address.'
+  }
   if (email.length > MAX_EMAIL || !EMAIL_SHAPE.test(email)) {
     return 'Enter the email address for the confirmation.'
   }
@@ -245,35 +258,19 @@ function refusal(
   return null
 }
 
-/** The price a statement refunds from: the checkout's record, else what
- *  the PaymentIntent received at Stripe (asked once a request), else
- *  none. */
-function pricing(env: Env) {
-  let atStripe: Promise<Price | null> | null = null
-  return async (
-    recorded: Price | null,
-    paymentIntentId: string | null,
-  ): Promise<{ price: Price | null; source: PriceSource }> => {
-    if (recorded !== null) return { price: recorded, source: 'checkout' }
-    atStripe ??= paidAtStripe(env, paymentIntentId)
-    const price = await atStripe
-    return { price, source: price === null ? 'none' : 'stripe' }
-  }
-}
-
-/** The statement's row, before anything is written. With no price on
- *  record it goes to the owner to refund by hand. */
+/** The statement's row, before anything is written. With no price on its
+ *  checkout's record, the price is pending: the refund step asks Stripe
+ *  for it (withdrawal-finish.ts). */
 function draftStatement(
   auth: AuthUser,
   body: StatementBody,
   pack: PackUse,
   facts: PurchaseFacts,
-  priced: { price: Price | null; source: PriceSource },
   submittedAt: string,
   id: string,
 ): StatementRow {
   const basis = refundBasis(facts.terms)
-  const { price } = priced
+  const { price } = facts
   return {
     id,
     userId: auth.userId,
@@ -290,13 +287,13 @@ function draftStatement(
     amountMinor: price?.amountMinor ?? 0,
     refundMinor: price === null ? 0 : refundFor(basis, price.amountMinor, pack),
     currency: price?.currency ?? 'eur',
-    refundStatus: price === null ? 'manual' : 'pending',
+    refundStatus: 'pending',
     stripeRefundId: null,
-    refundError: price === null ? PRICE_NOT_ON_RECORD : null,
+    refundError: null,
     mailStatus: null,
     mailAt: null,
     refundBasis: basis,
-    priceSource: priced.source,
+    priceSource: price === null ? 'pending' : 'checkout',
     stripeRefundStatus: null,
   }
 }
@@ -407,7 +404,6 @@ async function placeStatement(
   const id = crypto.randomUUID()
   const grace = withdrawalGraceWeekdays(env)
   const facts = await purchaseFacts(env, auth.userId)
-  const priceOf = pricing(env)
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readNamedLedger(env, auth.userId)
     const pack = packUses(ledger.rows).find(
@@ -420,16 +416,7 @@ async function placeStatement(
     const refused = refusal(pack, fact.terms, now, grace)
     if (refused !== null)
       return { kind: 'refused', status: 409, error: refused }
-    const priced = await priceOf(fact.price, pack.paymentIntentId)
-    const draft = draftStatement(
-      auth,
-      body,
-      pack,
-      fact,
-      priced,
-      submittedAt,
-      id,
-    )
+    const draft = draftStatement(auth, body, pack, fact, submittedAt, id)
     const stands = await writeStatement(env, draft, ledger.version)
     if (stands !== null) {
       return { kind: 'placed', row: stands, duplicate: stands.id !== id }

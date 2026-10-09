@@ -10,7 +10,7 @@
 // the purchase mail's layout (email-layout.ts).
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { escapeHtml, formatDate, formatMoney, resendPost } from './email'
+import { escapeHtml, formatDate, formatMoney, resendPost, sentUnderKeyAlready, } from './email'
 import type { Lines, MailOrigins } from './email-layout'
 import { documentHtml, eyebrow, footerText, introRow, SANS, signOffRow, W, } from './email-layout'
 import type { RefundBasis } from './withdrawal-rules'
@@ -181,20 +181,25 @@ export function renderWithdrawalEmail(
   return { subject, html, text }
 }
 
-/** Send the acknowledgement. Best-effort; the caller records whether it
- *  went (withdrawal.ts). `idempotencyKey` makes a second send of the same
- *  statement's mail within a day a no-op at Resend. */
+/** Send the acknowledgement to the address the statement names, with a
+ *  hidden copy to `copyTo`, the account's own address, when that is
+ *  another. Best-effort; the caller records whether it went
+ *  (withdrawal-finish.ts). `idempotencyKey` makes a second send of the same
+ *  statement's mail within a day a no-op at Resend, and Resend refusing a
+ *  second body under it means the first went (sentUnderKeyAlready). */
 export async function sendWithdrawalMail(
   cfg: ResendConfig,
   vars: WithdrawalEmailVars,
   idempotencyKey: string,
+  copyTo?: string,
 ): Promise<boolean> {
-  const { ok } = await resendPost(
+  const result = await resendPost(
     cfg,
     vars.email,
     renderWithdrawalEmail(vars),
-    { idempotencyKey },
+    { idempotencyKey, bcc: copyTo },
   )
-  if (ok) console.log('[email] withdrawal acknowledgement sent')
-  return ok
+  const sent = result.ok || sentUnderKeyAlready(result)
+  if (sent) console.log('[email] withdrawal acknowledgement sent')
+  return sent
 }

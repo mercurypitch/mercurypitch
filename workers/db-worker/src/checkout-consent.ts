@@ -14,14 +14,18 @@
 // Art. 8(7)) and records whether that mail went. Every delivery of the
 // event does both, so a delivery cut off after the credits landed loses
 // neither: the row is written once per session, and the mail goes only
-// while it has not. The 6-hourly sweep (withdrawal.ts, sweepWithdrawals)
-// sends a mail that did not go again, for 3 days, then gives up and tells
-// the owner once.
+// while it has not. A row that cannot be written throws, so the webhook
+// answers 500 and Stripe delivers the event again. The 6-hourly sweep
+// (withdrawal.ts, sweepWithdrawals) sends a mail that did not go again, the
+// longest untried first, then gives up after MAIL_ATTEMPTS tries or 3 days
+// and tells the owner once.
 //
 // The row is also what the purchase keeps of its terms (purchaseTerms): a
 // pack's right to cancel follows the box its buyer ticked, whatever
 // WITHDRAWAL_MODE says later, and a pack with no ticked box on record keeps
-// the whole right (withdrawal-rules.ts).
+// the whole right (withdrawal-rules.ts). The box counts only once the
+// purchase mail confirmed it (consentTerms): until then the buyer keeps the
+// whole right too.
 //
 // A paid pack without the box (a session opened before this shipped), a
 // mail that did not go, and a record that could not be written each alert
@@ -123,6 +127,29 @@ export function purchaseTerms(
     return 'no_consent'
   }
   return parseWithdrawalMode(consent.mode)
+}
+
+/**
+ * The terms a purchase's withdrawal follows now: the box its buyer ticked
+ * (purchaseTerms) once the purchase mail has confirmed it, else
+ * no_consent. The exception that ends or limits the right to cancel holds
+ * only once that confirmation has reached the buyer (CRD Art. 16(m) and
+ * 8(7)); until then they bear no cost for what they used (Art.
+ * 14(4)(b)(iii)), so the whole price comes back. The ticked box counts
+ * again the moment the mail goes.
+ */
+export function consentTerms(
+  consent:
+    | {
+        mode: string | null
+        termsOfService: string | null
+        mailStatus: string | null
+      }
+    | null
+    | undefined,
+): PurchaseTerms {
+  if (consent == null || consent.mailStatus !== 'sent') return 'no_consent'
+  return purchaseTerms(consent)
 }
 
 /**
@@ -258,7 +285,10 @@ async function planPrice(
 }
 
 /** Write what the session says of the consent, once per session: a later
- *  delivery of the event finds the row and leaves it. Never throws. */
+ *  delivery of the event finds the row and leaves it. Throws when the row
+ *  cannot be written, after telling the owner: the webhook answers 500, so
+ *  Stripe delivers the event again and the reconciliation sweep leaves it
+ *  for later, and the next delivery writes the row. */
 async function recordConsent(
   env: Env,
   grant: PackGrant,
@@ -273,8 +303,7 @@ async function recordConsent(
           : grant.eventCreated * 1000,
       ).toISOString()
     : null
-  // Unknown when the write fails: the owner hears of the box either way.
-  let fresh = true
+  let fresh: boolean
   try {
     const res = await env.DB.prepare(
       `INSERT OR IGNORE INTO checkoutConsents
@@ -304,10 +333,13 @@ async function recordConsent(
       ...grantFacts(grant, sessionId),
       `Error: ${String(err)}`,
       '',
-      'The credits landed. The consent is still on the Checkout Session in',
-      'Stripe; the row in checkoutConsents is missing until Stripe delivers',
-      'the event again.',
+      'The credits landed. The webhook answered 500, so Stripe delivers the',
+      'event again, and the 6-hourly reconciliation tries it too: the next',
+      'delivery writes the row and sends the purchase mail. Until then the',
+      'consent is only on the Checkout Session in Stripe, and Settings ›',
+      'Credits treats the pack as bought without it.',
     ])
+    throw err
   }
   if (fresh && !consent.accepted) {
     console.error(
@@ -335,6 +367,10 @@ export const UNFINISHED_AFTER_MS = 10 * 60_000
 /** The sweep stops sending a mail that keeps failing this long after its
  *  purchase or statement, and tells the owner once. */
 export const GIVE_UP_AFTER_MS = 3 * 86_400_000
+/** Or after this many tries, the first one included: about 30 hours of
+ *  6-hourly sweeps, so a mail Resend keeps refusing does not hold a place
+ *  in every run for 3 days. */
+export const MAIL_ATTEMPTS = 6
 /** Rows of each kind one sweep takes on. */
 export const SWEEP_BATCH = 10
 /** A mail the sweep stopped sending. */
@@ -406,7 +442,8 @@ async function claimPurchaseMail(
   nowMs: number,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
-    `UPDATE checkoutConsents SET mailStatus = 'sending', mailAt = ?
+    `UPDATE checkoutConsents
+        SET mailStatus = 'sending', mailAt = ?, mailAttempts = mailAttempts + 1
       WHERE sessionId = ?
         AND (mailStatus IS NULL OR mailStatus IN ('failed', 'no-email', 'not-configured')
              OR (mailStatus = 'sending' AND mailAt < ?))`,
@@ -489,11 +526,12 @@ async function alertMailNotSent(
     `Mail: ${status === 'no-email' ? 'no email address on the account' : 'Resend did not take it'}`,
     '',
     'This mail is the legal confirmation of the purchase and of the',
-    'withdrawal consent.',
+    'withdrawal consent. Until it goes, Settings › Credits lets the buyer',
+    'cancel for the whole price, used credits too.',
     ...(status === 'failed'
       ? [
-          'The sweep sends it again every 6 hours for 3 days, and tells you',
-          'once more if it gives up.',
+          `The sweep tries again every 6 hours, ${MAIL_ATTEMPTS} tries in all over at most`,
+          '3 days, and tells you once more if it gives up.',
         ]
       : ['Send the buyer a confirmation by hand.']),
   ])
@@ -545,31 +583,37 @@ async function giveUpPurchaseMail(
     ...(row === null ? [`Checkout Session: ${sessionId}`] : purchaseFacts(row)),
     `Buyer: ${row?.email ?? 'no email address on the account'}`,
     '',
-    'The purchase mail has not gone for 3 days, and the sweep has stopped',
-    'trying. It is the legal confirmation of the purchase and of the',
-    'withdrawal consent (CRD Art. 8(7)): send the buyer one by hand.',
+    `The purchase mail did not go in ${MAIL_ATTEMPTS} tries or 3 days, and the sweep`,
+    'has stopped trying. It is the legal confirmation of the purchase and',
+    'of the withdrawal consent (CRD Art. 8(7)): send the buyer one by hand.',
+    'Nothing records a mail sent by hand, so Settings › Credits keeps',
+    'letting the buyer cancel for the whole price, used credits too, for',
+    'the 14 days.',
   ])
 }
 
 /**
- * The purchase mails the sweep may still have to send, oldest first. The
- * first condition repeats the WHERE of idx_checkoutConsents_unsent
- * (migration 0061) word for word: SQLite uses a partial index only for a
- * query that states its condition, and without it every run would read
- * every purchase. Binds: the cut-off twice, then the batch size.
+ * The purchase mails the sweep may still have to send, the longest untried
+ * first: one never tried (no mailAt), then by its last try, so mails that
+ * keep failing never hold back a later one. The first condition repeats
+ * the WHERE of idx_checkoutConsents_unsent (migration 0061) word for word:
+ * SQLite uses a partial index only for a query that states its condition,
+ * and without it every run would read every purchase. Binds: the cut-off
+ * twice, then the batch size.
  */
-export const UNSENT_PURCHASE_MAILS_SQL = `SELECT sessionId, createdAt FROM checkoutConsents
+export const UNSENT_PURCHASE_MAILS_SQL = `SELECT sessionId, createdAt, mailAttempts FROM checkoutConsents
       WHERE (mailStatus IS NULL OR mailStatus IN ('failed', 'sending'))
         AND createdAt < ?
         AND (mailStatus IS NULL OR mailStatus = 'failed'
              OR (mailStatus = 'sending' AND mailAt < ?))
-      ORDER BY createdAt LIMIT ?`
+      ORDER BY mailAt, createdAt LIMIT ?`
 
 /**
  * The purchase mails a request left unsent: each older than
  * UNFINISHED_AFTER_MS that did not go, or whose send was cut off, goes
- * again, until GIVE_UP_AFTER_MS after the purchase; then the owner hears
- * once. At most SWEEP_BATCH a run (withdrawal.ts, sweepWithdrawals).
+ * again, until MAIL_ATTEMPTS tries or GIVE_UP_AFTER_MS after the purchase;
+ * then the owner hears once. At most SWEEP_BATCH a run (withdrawal.ts,
+ * sweepWithdrawals).
  */
 export async function sweepPurchaseMails(
   env: Env,
@@ -578,10 +622,11 @@ export async function sweepPurchaseMails(
   const before = iso(nowMs - UNFINISHED_AFTER_MS)
   const { results } = await env.DB.prepare(UNSENT_PURCHASE_MAILS_SQL)
     .bind(before, before, SWEEP_BATCH)
-    .all<{ sessionId: string; createdAt: string }>()
+    .all<{ sessionId: string; createdAt: string; mailAttempts: number }>()
   for (const row of results) {
     try {
-      if (Date.parse(row.createdAt) <= nowMs - GIVE_UP_AFTER_MS) {
+      const expired = Date.parse(row.createdAt) <= nowMs - GIVE_UP_AFTER_MS
+      if (expired || Number(row.mailAttempts) >= MAIL_ATTEMPTS) {
         await giveUpPurchaseMail(env, row.sessionId, nowMs)
       } else {
         await confirmByMail(env, row.sessionId, nowMs)
@@ -597,7 +642,8 @@ export async function sweepPurchaseMails(
 /**
  * On every delivery of a pack's paid event: keep the consent, once per
  * session, and send the mail that confirms it unless it went already.
- * Never throws.
+ * Throws only when the consent row cannot be written (recordConsent), so
+ * the event comes again; the mail never throws.
  */
 export async function confirmPurchase(
   env: Env,

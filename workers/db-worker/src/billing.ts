@@ -612,7 +612,9 @@ async function grantCheckoutCredits(
   // confirms it, each recorded (checkout-consent.ts). On a redelivery too:
   // the consent is kept once per session and the mail goes only while it has
   // not, so a delivery cut off after the credits landed loses neither. It
-  // never throws, so it can never undo the credits that landed.
+  // throws only when the consent row cannot be written: the webhook answers
+  // 500 and records nothing, and Stripe's next delivery finds the credits
+  // granted and writes the row. Nothing undoes the credits that landed.
   await confirmPurchase(env, {
     eventId,
     eventCreated,
