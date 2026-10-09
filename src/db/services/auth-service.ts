@@ -18,6 +18,7 @@
 import { createSignal } from 'solid-js'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
+import { beginGoogleReturn, EXPIRED_STATE_CODE, readGoogleReturn, UNSTARTED_RETURN_CODE, } from '@/lib/google-return-nonce'
 import { forgetSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 import type { GrantFlushCredentials } from './grant-flush'
@@ -247,13 +248,13 @@ export function authErrorDetails(
   return { status, ...(code === undefined ? {} : { code }), ...parsed }
 }
 
-/** The worker's answer when the OAuth state is unusable — almost always
- *  because its ten-minute life ran out while the consent screen sat open in
- *  a tab the singer walked away from. It arrives as a code rather than a
- *  sentence so the wording lives here, next to the rest of the copy. */
-const EXPIRED_STATE_CODE = 'expired_state'
+/** What a Google return's codes say (google-return-nonce.ts). They arrive as
+ *  codes rather than sentences so the wording lives here, with the rest of
+ *  the copy. */
 const EXPIRED_STATE_MESSAGE =
   'that sign-in link expired. Please try signing in again.'
+const UNSTARTED_RETURN_MESSAGE =
+  "that sign-in didn't start in this browser, so it wasn't used. Sign in again from here."
 
 const ACCOUNT_SUSPENDED_CODE = 'account_suspended'
 const ACCOUNT_SUSPENDED_MESSAGE =
@@ -808,12 +809,25 @@ export async function googleSignInUrl(signup?: SignupContext): Promise<string> {
       deviceSecret: getDeviceSecret(),
       returnTo,
       ...signup,
+      // Echoed back beside the session: the return counts only here.
+      nonce: beginGoogleReturn(),
     }),
   })
   if (!res.ok) throw new Error(`google/start failed: ${res.status}`)
   const { url } = (await res.json()) as { url?: string }
   if (url == null || url === '') throw new Error('google/start returned no url')
   return url
+}
+
+/** Codes the worker sends deliberately get a sentence; anything else is
+ *  passed through, because an unrecognised code is still more use to a bug
+ *  report than a swallowed one. Only a return this browser started gets
+ *  that far: readGoogleReturn drops the codes of any other. */
+function googleErrorMessage(code: string): string {
+  if (code === ACCOUNT_SUSPENDED_CODE) return ACCOUNT_SUSPENDED_MESSAGE
+  if (code === EXPIRED_STATE_CODE) return EXPIRED_STATE_MESSAGE
+  if (code === UNSTARTED_RETURN_CODE) return UNSTARTED_RETURN_MESSAGE
+  return code
 }
 
 /**
@@ -823,69 +837,44 @@ export async function googleSignInUrl(signup?: SignupContext): Promise<string> {
  * startDriveConnect() so the user lands back on the page they started
  * from. Runs at app startup, before the router boots and before any other
  * auth call.
+ *
+ * Only a return this browser started can sign anybody in or out. The
+ * fragment is a link anyone can write, so readGoogleReturn has already
+ * dropped the session, ceremony and error of any other (login CSRF, see
+ * google-return-nonce.ts). The fragment is stripped either way.
  */
-/** Codes the worker sends deliberately get a sentence; anything else is
- *  passed through, because an unrecognised code is still more use to a bug
- *  report than a swallowed one. */
-function googleErrorMessage(code: string): string {
-  if (code === ACCOUNT_SUSPENDED_CODE) return ACCOUNT_SUSPENDED_MESSAGE
-  if (code === EXPIRED_STATE_CODE) return EXPIRED_STATE_MESSAGE
-  return code
-}
-
 export function consumeGoogleRedirect(): void {
-  const hash = window.location.hash
-  // `#gdrive` as well as `#gauth`: a connect-Drive pass is NOT a sign-in.
-  // The worker returns from it early — before any account is resolved, on
-  // purpose, so that picking a different Google account for your Drive
-  // cannot change who you are signed in as — so it comes back carrying
-  // `#gdrive=1` or `#gdrive_error=…` and no `gauth` token at all. Matching
-  // only `#gauth` meant this function returned immediately on every Drive
-  // return, which left `driveConnectResult` unset: the settings page showed
-  // no reason for a refusal and never auto-scanned after a success, and the
-  // stashed route was never consumed — so it stayed in sessionStorage and
-  // was restored by the next unrelated sign-in instead.
-  if (!hash.startsWith('#gauth') && !hash.startsWith('#gdrive')) return
-  const params = new URLSearchParams(hash.slice(1))
-  const token = params.get('gauth')
-  const error = params.get('gauth_error')
+  // `#gdrive` as well as `#gauth`: a connect-Drive pass is not a sign-in and
+  // comes back with no `gauth` at all. Matching only `#gauth` once dropped
+  // every Drive return, leaving its outcome unread and its stashed route for
+  // the next unrelated sign-in to restore.
+  const landed = readGoogleReturn(window.location.hash)
+  if (landed === null) return
   // The account has a second factor, so the worker sent a ceremony token in
-  // place of a session. Same URL fragment as the token itself, for the same
-  // reason: a fragment never reaches a server. Stashed for the UI to pick up
-  // and open the code pane with — nothing is signed in yet.
-  const twofa = params.get('gauth_2fa')
-  if (twofa != null && twofa !== '') {
-    pendingGoogleTwofa = twofa
+  // place of a session, for the UI to open the code pane with. Nothing is
+  // signed in yet.
+  if (landed.twofa !== null) {
+    pendingGoogleTwofa = landed.twofa
     rememberSignInMethod('google')
   }
+  // Outside the sign-in branch, so a pass whose sign-in half succeeded while
+  // its Drive half was declined keeps both.
+  if (landed.drive !== null) driveConnectResult = landed.drive
 
-  // Read outside the sign-in branch: the Drive outcome has to survive both
-  // shapes of return — the standalone connect pass, which is the only one
-  // the worker actually produces today, and a combined pass whose sign-in
-  // half succeeded while its Drive half was declined.
-  if (params.get('gdrive') === '1') {
-    driveConnectResult = { ok: true }
-  } else {
-    const driveError = params.get('gdrive_error')
-    if (driveError != null && driveError !== '') {
-      driveConnectResult = { ok: false, error: driveError }
-    }
-  }
-
-  if (token != null && token !== '') {
-    setAuthToken(token)
+  if (landed.token !== null) {
+    setAuthToken(landed.token)
     setRequiresLogin(false)
     tokenServerVerified = true // freshly issued by the worker
     googleRedirectResult = { ok: true }
     rememberSignInMethod('google')
     authChanged()
     // gauth_new marks a first-time Google account (set by the worker).
-    if (params.get('gauth_new') === '1') {
+    if (landed.created) {
       trackEvent('signup')
       googleAccountCreated = true
     }
-  } else if (error != null && error !== '') {
-    if (error === ACCOUNT_SUSPENDED_CODE) {
+  } else if (landed.error !== null) {
+    if (landed.error === ACCOUNT_SUSPENDED_CODE) {
       handleAuthErrorResponse(
         403,
         JSON.stringify({ code: ACCOUNT_SUSPENDED_CODE }),
@@ -895,7 +884,7 @@ export function consumeGoogleRedirect(): void {
     }
     googleRedirectResult = {
       ok: false,
-      error: googleErrorMessage(error),
+      error: googleErrorMessage(landed.error),
     }
   }
   const returnHash = localStorage.getItem(RETURN_HASH_KEY) ?? ''

@@ -9,6 +9,7 @@
 
 import type * as SolidWeb from 'solid-js/web'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { beginGoogleReturn } from '@/lib/google-return-nonce'
 
 const entry = vi.hoisted(() => ({
   voiceprintLoads: 0,
@@ -26,6 +27,11 @@ function sessionToken(): string {
   const exp = Math.floor(Date.now() / 1000) + 3600
   const body = btoa(JSON.stringify({ sub: 'user-1', provider: 'google', exp }))
   return `h.${body}.s`
+}
+
+/** The nonce this room kept when its dialog started the sign-in. */
+function startedHere(): string {
+  return `&gauth_nonce=${beginGoogleReturn()}`
 }
 
 /** Long enough for any fire-and-forget step the entry started to finish. */
@@ -64,7 +70,7 @@ it("adopts this device's takes when a Google return created the account", async 
   window.history.replaceState(
     null,
     '',
-    `/guitar-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1`,
+    `/guitar-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1${startedHere()}`,
   )
 
   await import('./main')
@@ -72,11 +78,28 @@ it("adopts this device's takes when a Google return created the account", async 
   await vi.waitFor(() => expect(entry.adopt).toHaveBeenCalledTimes(1))
 })
 
+// Login CSRF: anyone can put their own session in a link to this room.
+it('signs nobody in and adopts nothing from a return this room never started', async () => {
+  window.history.replaceState(
+    null,
+    '',
+    `/guitar-night#gauth=${encodeURIComponent(sessionToken())}&gauth_new=1`,
+  )
+
+  await import('./main')
+  await settle()
+
+  const auth = await import('@/db/services/auth-service')
+  expect(auth.hasValidToken()).toBe(false)
+  expect(entry.adopt).not.toHaveBeenCalled()
+  expect(window.location.hash).toBe('')
+})
+
 it('adopts nothing after a returning Google sign-in', async () => {
   window.history.replaceState(
     null,
     '',
-    `/guitar-night#gauth=${encodeURIComponent(sessionToken())}`,
+    `/guitar-night#gauth=${encodeURIComponent(sessionToken())}${startedHere()}`,
   )
 
   await import('./main')

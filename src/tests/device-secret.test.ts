@@ -175,7 +175,37 @@ describe('googleSignInUrl', () => {
       deviceId: getUserId(),
       deviceSecret: getDeviceSecret(),
       returnTo: expect.any(String),
+      nonce: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/),
     })
+  })
+
+  // Login CSRF: the worker echoes this nonce beside the session, and the app
+  // takes a session only when the echo matches what this browser kept.
+  it('keeps the nonce it sends, fresh for every sign-in', async () => {
+    const fetchMock = stubStart(200, {
+      url: 'https://accounts.google.com/o/oauth2/v2/auth?state=signed',
+    })
+
+    await googleSignInUrl()
+    await googleSignInUrl()
+
+    const nonces = fetchMock.mock.calls.map(
+      (call) =>
+        (
+          JSON.parse(
+            (call as unknown as [string, RequestInit])[1].body as string,
+          ) as {
+            nonce: string
+          }
+        ).nonce,
+    )
+    expect(nonces[0]).not.toBe(nonces[1])
+    const kept = JSON.parse(
+      localStorage.getItem('mp:gauthPending') ?? '{}',
+    ) as {
+      nonce?: string
+    }
+    expect(kept.nonce).toBe(nonces[1])
   })
 
   it("carries a sign-up's hint, which the worker signs into the state", async () => {

@@ -1165,6 +1165,8 @@ interface AuthBody {
   deviceLabel?: string
   /** Where to land after the Google redirect (POST /api/auth/google/start). */
   returnTo?: string
+  /** The app's nonce for that redirect, validated by parseReturnNonce. */
+  nonce?: unknown
   /** Cloudflare Turnstile CAPTCHA response token (register, login, forgot-password). */
   cfTurnstileToken?: string
   /**
@@ -2576,19 +2578,22 @@ async function handleGoogle(
 // of null (reading 'postMessage')". So Google sign-in is a full-page
 // redirect through this worker instead:
 //
-//   app → POST /api/auth/google/start {deviceId, deviceSecret, returnTo}
-//       → { url } (state = HMAC-signed {deviceId,returnTo}) — the app navigates
+//   app → POST /api/auth/google/start {deviceId, deviceSecret, returnTo, nonce}
+//       → { url } (state = HMAC-signed {deviceId,returnTo,nonce}) — the app
+//         navigates
 //   (GET ?deviceId=&returnTo= still 302s directly, for older client builds;
 //    it cannot carry the secret, so it only keeps a deviceId whose account has
 //    never bound one)
 //       → 302 GET /api/auth/google/callback?code=&state=
 //       → code exchange (GOOGLE_CLIENT_SECRET) → id_token → user
-//       → 302 {returnTo}#gauth=<our JWT>   (app stores it on load)
+//       → 302 {returnTo}#gauth=<our JWT>&gauth_nonce=<nonce>   (the app stores
+//         the JWT only when the nonce is the one it kept; OAuthState.nonce)
 
 const STATE_TTL_MS = 10 * 60 * 1000
 
-/** Matches EXPIRED_STATE_CODE in src/db/services/auth-service.ts, which
- *  turns it into the sentence the singer reads. */
+/** Matches EXPIRED_STATE_CODE in src/lib/google-return-nonce.ts, the one
+ *  sign-in error the app honours without a nonce: a state this worker cannot
+ *  read has none to echo. auth-service turns it into the sentence. */
 const EXPIRED_STATE_CODE = 'expired_state'
 
 const DEFAULT_APP_ORIGINS = [
@@ -2647,6 +2652,32 @@ interface OAuthState {
   vp?: PackedVoiceprintHint
   /** A sign-in pass's sign-up source, when it was Karaoke Night. */
   src?: SignupSource
+  /**
+   * The nonce the browser that started this sign-in kept for it
+   * (src/lib/google-return-nonce.ts). Every redirect back carries it as
+   * `gauth_nonce`, and the app honours a session, ceremony or error only
+   * when it matches. The session rides in a URL fragment, and a fragment is
+   * a link anyone can write: without this, a link holding the sender's own
+   * session signed whoever opened it in to the sender's account.
+   */
+  nonce?: string
+}
+
+/** A nonce as the app mints it (32 random bytes, base64url), or null. A start
+ *  without one is an older app, which checks nothing, so it simply gets none
+ *  back. */
+function parseReturnNonce(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{16,128}$/.test(value)
+    ? value
+    : null
+}
+
+/** The fragment parameter that ties a redirect to the sign-in its browser
+ *  started, or nothing for a state minted without a nonce. */
+function nonceParam(state: OAuthState): string {
+  return typeof state.nonce === 'string'
+    ? `&gauth_nonce=${encodeURIComponent(state.nonce)}`
+    : ''
 }
 
 async function signState(state: OAuthState, secret: string): Promise<string> {
@@ -2692,8 +2723,14 @@ function redirect(location: string): Response {
   return new Response(null, { status: 302, headers: { Location: location } })
 }
 
-function redirectWithError(returnTo: string, message: string): Response {
-  return redirect(`${returnTo}#gauth_error=${encodeURIComponent(message)}`)
+function redirectWithError(
+  returnTo: string,
+  message: string,
+  bind = '',
+): Response {
+  return redirect(
+    `${returnTo}#gauth_error=${encodeURIComponent(message)}${bind}`,
+  )
 }
 
 async function handleGoogleStart(
@@ -2730,6 +2767,7 @@ async function handleGoogleStart(
   // be believed takes up room in the URL.
   const voiceprint = parseVoiceprintHint(posted?.voiceprintHint)
   const src = parseSignupSource(posted?.signupSource)
+  const nonce = parseReturnNonce(posted?.nonce)
   const state = await signState(
     {
       deviceId,
@@ -2737,6 +2775,7 @@ async function handleGoogleStart(
       ts: Date.now(),
       ...(voiceprint === null ? {} : { vp: packVoiceprintHint(voiceprint) }),
       ...(src === null ? {} : { src }),
+      ...(nonce === null ? {} : { nonce }),
     },
     env.JWT_SECRET as string,
   )
@@ -2837,14 +2876,16 @@ async function handleGoogleCallback(
     // without a path.
     return redirectWithError(`${fallbackAppOrigin(env)}/`, EXPIRED_STATE_CODE)
   }
+  // From here every redirect names the sign-in it answers (OAuthState.nonce).
+  const bind = nonceParam(state)
 
   const oauthError = url.searchParams.get('error')
   if (oauthError) {
-    return redirectWithError(state.returnTo, oauthError)
+    return redirectWithError(state.returnTo, oauthError, bind)
   }
   const code = url.searchParams.get('code')
   if (!code) {
-    return redirectWithError(state.returnTo, 'Missing authorization code')
+    return redirectWithError(state.returnTo, 'Missing authorization code', bind)
   }
 
   // Exchange the code for an id_token
@@ -2878,6 +2919,7 @@ async function handleGoogleCallback(
     return redirectWithError(
       state.returnTo,
       `Google code exchange failed${code !== '' ? ` (${code})` : ` (${tokenRes.status})`}`,
+      bind,
     )
   }
   const tokenData = await tokenRes.json<{
@@ -2887,7 +2929,7 @@ async function handleGoogleCallback(
     scope?: string
   }>()
   if (!tokenData.id_token) {
-    return redirectWithError(state.returnTo, 'No id_token from Google')
+    return redirectWithError(state.returnTo, 'No id_token from Google', bind)
   }
 
   const claims = await verifyGoogleIdToken(tokenData.id_token, [
@@ -2896,7 +2938,7 @@ async function handleGoogleCallback(
     env.GOOGLE_CLIENT_ID as string,
   ])
   if (!claims) {
-    return redirectWithError(state.returnTo, 'Invalid Google token')
+    return redirectWithError(state.returnTo, 'Invalid Google token', bind)
   }
 
   // A connect-Drive pass is NOT a sign-in, and returns before anything
@@ -2936,7 +2978,7 @@ async function handleGoogleCallback(
     }
   } catch (error) {
     if (error instanceof AccountSuspendedError) {
-      return redirectWithError(state.returnTo, error.code)
+      return redirectWithError(state.returnTo, error.code, bind)
     }
     throw error
   }
@@ -2944,13 +2986,13 @@ async function handleGoogleCallback(
 
   if (pendingTwofa !== null) {
     return redirect(
-      `${state.returnTo}#gauth_2fa=${encodeURIComponent(pendingTwofa)}`,
+      `${state.returnTo}#gauth_2fa=${encodeURIComponent(pendingTwofa)}${bind}`,
     )
   }
   // gauth_new lets the client count first-time signups (funnel) — the token
   // alone can't distinguish a signup from a returning login.
   return redirect(
-    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}`,
+    `${state.returnTo}#gauth=${encodeURIComponent(token)}${isNew ? '&gauth_new=1' : ''}${bind}`,
   )
 }
 
