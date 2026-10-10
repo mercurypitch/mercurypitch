@@ -5,6 +5,59 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.17] - 2026-10-11
+
+Five free credits arrive when you confirm your email, using all five earns 30
+more, and you can cancel a credit pack within 14 days.
+
+### Added
+
+- **Five free credits when you confirm your email.** While the LAUNCH code is
+  on offer, confirming your address adds them with no code to type. A Google
+  sign-up gets them at once.
+- **Use all five within 14 days and your next pack gets 30 extra credits.**
+  Karaoke Night, the Karaoke tab and Settings › Credits show how many you've
+  used. Once earned, the extra credits wait for whichever pack you buy next.
+- **Cancel a credit pack within 14 days.** Settings › Credits lists each pack
+  you can still cancel under **Withdraw from contract here**, and you get back
+  the price of the credits you haven't used. Free and bonus credits are not
+  refunded.
+- **Checkout spells out the 14 days.** The box you tick says what cancelling
+  gets back once your credits are in, and the purchase mail gives the date to
+  cancel by.
+- **Privacy, Terms and Imprint links** on the website's pages, the Voice
+  Mirror, the glass challenge and Settings › About.
+- **Cookie settings shows your choice.** Reopen the banner from Settings ›
+  About to see what you chose and when, and change it. Declining deletes the
+  Google cookies already set.
+
+### Changed
+
+- **One button on the welcome screen: Sing one note.** The X at the top right
+  skips the intro, and the last step offers the five free credits beside
+  **Create my free account**.
+- **Refunds and chargebacks take back the credits they paid for.** A partial
+  refund takes back a matching share.
+- **Google cookies wait for your yes in the EU, the UK and Switzerland**,
+  whatever time zone your device uses. The banner says plainly what it asks
+  for, and that pitch detection runs on your device either way.
+- **The app's fonts load from MercuryPitch itself**, not from Google.
+- **Old tracking data is deleted on a schedule.** Ad click ids go after 90
+  days, and visit records after 13 months.
+
+### Fixed
+
+- **A Google sign-in only finishes in the browser that started it.** A link
+  from someone else can no longer sign you in to their account.
+- **Drum Night picks up after a Google sign-in.** Press Separate drums while
+  signed out, sign in with Google, and the separation starts when you're back.
+  The room's notifications now show too.
+- **Karaoke Night's "what a song costs" link opens the price guide** in
+  Settings › Credits, already in view.
+- **The tour offer waits for the welcome to close.** It no longer pops up over
+  the first screen, and Home still offers its tour afterwards.
+- **The Promo button leaves the header once you've claimed the code.**
+
 ## [0.9.16] - 2026-10-09
 
 New welcome and credit mails, and Settings › Credits now shows what a song
