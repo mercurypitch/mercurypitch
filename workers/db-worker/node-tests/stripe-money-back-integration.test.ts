@@ -717,7 +717,8 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
   // whenever nothing told them of that chargeback before: the dispute
   // opened as an inquiry, or its opening is not on record. That holds
   // whether or not credits moved. A chargeback whose opening said so
-  // already gets no second mail.
+  // already gets no second mail, and neither does an opening that arrives
+  // after the money leaving said so, unless it moved credits.
 
   const CHARGEBACK =
     '[MercuryPitch billing] Chargeback: €5.00 taken from your Stripe balance'
@@ -810,12 +811,10 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
 
     expect(subjects(start)).toEqual([CHARGEBACK])
     expectChargebackAlert()
-    // The opening, when it comes, has its own mail.
+    // The opening, when it comes, says nothing the chargeback's mail did
+    // not (#970 round-4 review, N-2).
     await deliver(h, opened)
-    expect(subjects(start)).toEqual([
-      CHARGEBACK,
-      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026',
-    ])
+    expect(subjects(start)).toEqual([CHARGEBACK])
   })
 
   it('says nothing more of a chargeback whose opening told the owner already', async () => {
@@ -1072,6 +1071,130 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
       expect(subjects(start)).toEqual([CHARGEBACK])
       expect(recorded(h, escalation.id)).toBe(true)
       expect(claims()).toEqual([])
+    })
+  })
+
+  describe('that opens as one (#970 round-4 review, N-2)', () => {
+    // Stripe sends charge.dispute.created and charge.dispute.funds_withdrawn
+    // together for a dispute that opens as a chargeback, in either order.
+    // The first to tell the owner says all the other would: the amount,
+    // the reason, the evidence due date and where to answer. The other
+    // mails only for credits it moved.
+
+    const OPENED =
+      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026'
+
+    /** A pack with `credits` on record, and the two events of a dispute
+     *  that opens as a chargeback. */
+    async function chargeback(credits: number): Promise<{
+      start: number
+      opened: StripeEvent
+      withdrawn: StripeEvent
+    }> {
+      const singer = await register(h, `opens-as-one-${credits}@example.com`)
+      const pi = await bought(singer, credits)
+      return {
+        start: alerts(h).length,
+        opened: h.stripe.dispute(pi),
+        withdrawn: h.stripe.escalateDispute(pi),
+      }
+    }
+
+    it.each([30, 0])(
+      'sends one mail when the money leaving arrives before the opening (%i credits on record)',
+      async (credits) => {
+        const { start, opened, withdrawn } = await chargeback(credits)
+
+        await deliver(h, withdrawn)
+        await deliver(h, opened)
+
+        expect(subjects(start)).toEqual([CHARGEBACK])
+        expectChargebackAlert()
+      },
+    )
+
+    it.each([
+      ['the opening', 'the money leaving'],
+      ['the money leaving', 'the opening'],
+    ] as const)(
+      'sends one mail when %s takes the credits and %s tells the owner first',
+      async (taker, teller) => {
+        const { start, opened, withdrawn } = await chargeback(30)
+        const [first, second] =
+          taker === 'the opening' ? [opened, withdrawn] : [withdrawn, opened]
+
+        // The first has written its row when it goes to claim the dispute;
+        // the second lands in between, writes a row that moves nothing,
+        // and tells the owner from the ledger both rows left.
+        justBefore(db(), /INSERT INTO chargebackAlertClaims/, async () => {
+          expect((await deliver(h, second)).status).toBe(200)
+        })
+        expect((await deliver(h, first)).status).toBe(200)
+
+        expect(subjects(start)).toEqual([
+          teller === 'the opening' ? OPENED : CHARGEBACK,
+        ])
+        expect(alerts(h).at(-1)?.text).toContain(
+          'Refunds and disputes hold 30 of the 30',
+        )
+        expect(alerts(h).at(-1)?.text).toContain(
+          'Evidence due: 30 October 2026, 23:59 UTC',
+        )
+      },
+    )
+
+    it.each([
+      ['the opening', 30],
+      ['the opening', 0],
+      ['the money leaving', 30],
+      ['the money leaving', 0],
+    ] as const)(
+      'sends one mail when both arrive at once, %s first (%i credits on record)',
+      async (first, credits) => {
+        const { start, opened, withdrawn } = await chargeback(credits)
+        const [one, two] =
+          first === 'the opening' ? [opened, withdrawn] : [withdrawn, opened]
+
+        const real = h.env.DB
+        h.env.DB = interleaved(new SqliteD1Database(h.sqlite))
+        await Promise.all([deliver(h, one), deliver(h, two)]).finally(() => {
+          h.env.DB = real
+        })
+        // Stripe sends again whatever got a 500.
+        await deliver(h, one)
+        await deliver(h, two)
+
+        expect(subjects(start)).toHaveLength(1)
+        expect(alerts(h).at(-1)?.text).toContain(
+          'Evidence due: 30 October 2026, 23:59 UTC',
+        )
+        expect([recorded(h, one.id), recorded(h, two.id)]).toEqual([true, true])
+      },
+    )
+
+    it('still sends the opening when it takes credits the money leaving did not', async () => {
+      // 25 of 30 credits spent, the box ticked but not yet confirmed by the
+      // purchase mail: the money leaving takes only the 5 unused.
+      const singer = await register(h, 'opens-as-one-late-mail@example.com')
+      const purchase = h.stripe.checkout(singer.userId)
+      expect((await deliver(h, purchase)).status).toBe(200)
+      const pi = String(purchase.data.object.payment_intent)
+      const mail = h.sqlite.prepare(
+        'UPDATE checkoutConsents SET mailStatus = ? WHERE paymentIntentId = ?',
+      )
+      mail.run(null, pi)
+      setSongCost(25)
+      expect((await spend(h, singer, 'job-used-25')).status).toBe(200)
+      const start = alerts(h).length
+      const opened = h.stripe.dispute(pi)
+      await deliver(h, h.stripe.escalateDispute(pi))
+      // The purchase mail confirms the box, so the opening takes the rest.
+      mail.run('sent', pi)
+      await deliver(h, opened)
+
+      expect(subjects(start)).toEqual([CHARGEBACK, OPENED])
+      expect(alerts(h).at(-1)?.text).toContain('Taken back now: 25 credit(s)')
+      expect(balance(h, singer.userId)).toBe(-25)
     })
   })
 })

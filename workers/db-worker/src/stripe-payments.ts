@@ -651,11 +651,12 @@ async function nothingOnRecord(
       ),
     )
   }
-  // A chargeback's mail goes until Resend takes it (chargeback-alert.ts).
-  // The money leaving for a dispute is news only when nothing told the
-  // owner of that chargeback before.
+  // A chargeback's mail goes until Resend takes it (chargeback-alert.ts),
+  // from whichever of its events tells the owner first; the other, with no
+  // credits to move, says nothing more. The money leaving is news only as
+  // a chargeback's.
   const told = await tellChargeback(env, event, facts.dispute, charge, alert)
-  if (told === 'sent' || event.type === 'charge.dispute.funds_withdrawn') return
+  if (told !== null || event.type === 'charge.dispute.funds_withdrawn') return
   await alert()
 }
 
@@ -730,7 +731,9 @@ export async function applyMoneyBack(
       chargebackNews,
     })
   // A chargeback's mail goes until Resend takes it, from a redelivery too,
-  // which finds the ledger moved already (chargeback-alert.ts).
+  // which finds the ledger moved already (chargeback-alert.ts), and from
+  // whichever of its events tells the owner first. The other mails only
+  // for credits it moved that the first mail cannot show.
   const told = await tellChargeback(
     env,
     event,
@@ -738,7 +741,7 @@ export async function applyMoneyBack(
     moved.charge,
     () => send(alert(true)),
   )
-  if (told === 'sent') return { kind: 'applied' }
+  if (told === 'sent' || told === 'told') return { kind: 'applied' }
   if (moved.wrote) await send(alert(false))
   return { kind: 'applied' }
 }

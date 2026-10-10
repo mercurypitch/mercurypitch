@@ -12,23 +12,30 @@
 // The first of them whose mail Resend takes tells the owner, and the
 // dispute is recorded as told (chargebackAlerts, migration 0067) only
 // then. Until then this throws, so the webhook answers 500 and Stripe sends
-// the event again, and the sweep applies it if Stripe gives up: the mail
-// may go twice, but it is never lost. A delivery claims the dispute before
+// the event again, and the sweep applies it if Stripe gives up: a mail may
+// go twice rather than not at all. A delivery claims the dispute before
 // it mails (chargebackAlertClaims, migration 0069), so of two at once only
 // one mails. Another event about the same dispute, while one holds the
 // claim, leaves the mail to it; the same event, delivered again while its
 // twin holds the claim, throws, so Stripe sends it once more. A claim goes
 // back when its mail does not go, and one older than CLAIM_STALE_MS belongs
 // to a delivery that died and is taken over.
+//
+// The mail that tells the owner says all the other event's would: the
+// amount, the reason, the evidence due date, where to answer, and the
+// credits as the ledger stood at its event's row. So the other event sends
+// its own alert only for credits its row moved after that one: the box of
+// a purchase whose mail confirmed it in between, say (movedSince).
 
 import type { Env } from './auth'
 import type { ChargeState, DisputeState } from './stripe-charge'
 import { isInquiry } from './stripe-charge'
 
-/** What became of the chargeback's mail: this event sent it; an event told
- *  the owner already; or another event holds the claim and tells them (or
- *  is delivered again if it cannot). */
-export type ChargebackTold = 'sent' | 'told' | 'telling'
+/** What became of the chargeback's mail: this event sent it; another
+ *  event told the owner, or holds the claim and tells them (or is delivered
+ *  again if it cannot), in a mail that shows what this event moved; or one
+ *  that does not, because this event moved credits since. */
+export type ChargebackTold = 'sent' | 'told' | 'moved-since'
 
 /** The chargeback's mail did not go, so nothing was recorded. */
 export class ChargebackNotTold extends Error {
@@ -90,23 +97,48 @@ function release(env: Env, mine: Claim) {
   ).bind(mine.disputeId, mine.eventId, mine.at)
 }
 
-/** What a delivery that did not get the claim answers: 'told' when the
- *  dispute is recorded, 'telling' when another event holds the claim. The
- *  same event, held by its twin, throws, so Stripe sends it once more. */
+/** Whether this event's ledger row moved credits after the row of the
+ *  event whose mail tells the owner: that mail shows the ledger as its own
+ *  row left it, so a move written later is news of its own. A dispute
+ *  event's row is keyed clawback:<event id> (stripe-payments.ts, rowFor);
+ *  an event on a payment with no credits on record has none. */
+async function movedSince(
+  env: Env,
+  eventId: string,
+  teller: string | null,
+): Promise<boolean> {
+  const mine = await env.DB.prepare(
+    `SELECT delta <> 0 AND rowid > COALESCE(
+              (SELECT rowid FROM creditLedger WHERE idempotencyKey = ?), 0) AS since
+       FROM creditLedger WHERE idempotencyKey = ?`,
+  )
+    .bind(`clawback:${teller ?? ''}`, `clawback:${eventId}`)
+    .first<{ since: number }>()
+  return mine?.since === 1
+}
+
+/** What a delivery that did not get the claim answers, once another event
+ *  told the owner or holds the claim: 'moved-since' when this one moved
+ *  credits that mail cannot show, 'told' otherwise. The same event, held
+ *  by its twin, throws, so Stripe sends it once more. */
 async function claimedElsewhere(
   env: Env,
   disputeId: string,
   eventId: string,
 ): Promise<ChargebackTold> {
   const now = await env.DB.prepare(
-    `SELECT EXISTS (SELECT 1 FROM chargebackAlerts WHERE disputeId = ?) AS told,
+    `SELECT (SELECT eventId FROM chargebackAlerts WHERE disputeId = ?) AS toldBy,
             (SELECT eventId FROM chargebackAlertClaims WHERE disputeId = ?) AS claimedBy`,
   )
     .bind(disputeId, disputeId)
-    .first<{ told: number; claimedBy: string | null }>()
-  if (now?.told === 1) return 'told'
-  if (now?.claimedBy === eventId) throw new ChargebackNotTold(disputeId)
-  return 'telling'
+    .first<{ toldBy: string | null; claimedBy: string | null }>()
+  const toldBy = now?.toldBy ?? null
+  const claimedBy = now?.claimedBy ?? null
+  if (toldBy === null && claimedBy === eventId) {
+    throw new ChargebackNotTold(disputeId)
+  }
+  const since = await movedSince(env, eventId, toldBy ?? claimedBy)
+  return since ? 'moved-since' : 'told'
 }
 
 /**
@@ -115,7 +147,7 @@ async function claimedElsewhere(
  * holds the claim. Null when the event says no such thing. Records the
  * dispute as told once `mail` says Resend took it. Throws ChargebackNotTold
  * when it did not, with nothing recorded, so the caller answers 500 and is
- * called again.
+ * called again. Run it after the event's ledger row is written.
  */
 export async function tellChargeback(
   env: Env,

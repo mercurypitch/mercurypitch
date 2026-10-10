@@ -139,9 +139,13 @@ lets the payment be refunded, and shall still alert the owner.
 `charge.dispute.funds_withdrawn` shall alert whenever the owner was not told
 of that dispute's chargeback before: it opened as an inquiry, or its opening
 is not on record. That holds whether or not credits moved, and whether or
-not any credits are on record for the payment (REQ-MB-026). A chargeback
-whose opening told the owner gets no second alert unless the money leaving
-moved credits. The worker shall record each dispute whose chargeback the
+not any credits are on record for the payment (REQ-MB-026). Of a
+chargeback's opening and the money leaving, whichever tells the owner first
+says all the other would, the evidence deadline included, so the other shall
+send no second alert, in either order, unless its own ledger row moved
+credits after the first one's row, which that alert cannot show (a purchase
+mail that confirmed the box in between). The worker shall record each
+dispute whose chargeback the
 owner was told of (`chargebackAlerts`, migration 0067), so the alert goes
 once, and shall record it only once Resend has taken that alert. **While**
 the alert does not go, the webhook shall answer 500 and leave the event
@@ -197,8 +201,9 @@ refused, takes nothing a second time.
 **When** no credits on record name the payment, the worker shall take nothing
 and alert the owner, naming the donor when the payment was a donation. Of
 the `refund.updated` events, only a cancellation shall send that alert: a
-failure is reported once, by `refund.failed`. A
-`charge.dispute.funds_withdrawn` alerts as REQ-MB-021 says.
+failure is reported once, by `refund.failed`. A `charge.dispute.created`
+read as a chargeback, and a `charge.dispute.funds_withdrawn`, alert as
+REQ-MB-021 says.
 
 ### REQ-MB-027 — A whole-price withdrawal settles the payment
 
