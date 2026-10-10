@@ -88,12 +88,16 @@ test('lets the deploy go on once both are set', () => {
 const CHECK =
   'node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc'
 
-function stepsOf(workflow, job) {
+function jobsOf(workflow) {
   const text = readFileSync(
     new URL(`../.github/workflows/${workflow}`, import.meta.url),
     'utf8',
   )
-  return parse(text).jobs[job].steps
+  return parse(text).jobs
+}
+
+function stepsOf(workflow, job) {
+  return jobsOf(workflow)[job].steps
 }
 
 function indexOf(steps, name) {
@@ -123,4 +127,23 @@ test('stops the production database deploy too', () => {
 
   assert.notEqual(check, -1, 'deploy-db.yml never runs the check')
   assert.equal(steps[check].if, "env.DEPLOY_ENV == 'prod'")
+})
+
+// The prod Jam worker deploys first, and a tag must not ship it alone: the
+// whole prod deploy waits on the check, and deploys nothing when it fails.
+test('holds every prod worker of a release, the Jam worker first, on the check', () => {
+  const jobs = jobsOf('deploy-db.yml')
+  const gate = jobs['check-seller-details']
+  assert.ok(gate, 'deploy-db.yml has no check-seller-details job')
+  assert.equal(gate.env.DEPLOY_ENV, "${{ inputs.environment || 'dev' }}")
+  const check = gate.steps.findIndex((step) => step.run === CHECK)
+  assert.notEqual(check, -1, 'check-seller-details never runs the check')
+  assert.equal(gate.steps[check].if, "env.DEPLOY_ENV == 'prod'")
+  assert.ok(indexOf(gate.steps, 'Install dependencies') < check)
+  assert.deepEqual([jobs['deploy-jam-worker'].needs].flat(), [
+    'check-seller-details',
+  ])
+  assert.deepEqual([jobs['deploy-db-worker'].needs].flat(), [
+    'deploy-jam-worker',
+  ])
 })
