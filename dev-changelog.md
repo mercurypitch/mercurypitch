@@ -11,16 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-68 commits since `v0.9.16` (14 on `main`'s first-parent line, every one a PR
-merge) before #970: PRs #957 to #962, #964 to #969, #971 and #972, plus #970,
-which merges before the tag. The release is the launch gift (LAUNCH claimed
-at email confirmation, 30 extra credits on the next pack for using all five)
-and the legal and money compliance work that has to ship with it: the 14-day
-withdrawal for credit packs, refunds and disputes applied exactly once,
-consent that waits for a yes in the EEA, retention sweeps, and the legal
-links. The native app is not part of it and keeps its version: under
-`apps/mercurypitch` only the bundle check, the Vite config that leaves the
-offer out (#961) and the shared font aliases (#962) change.
+119 commits since `v0.9.16` (16 on `main`'s first-parent line, every one a PR
+merge) before this release PR, #974: PRs #957 to #962, #964 to #972 and #975.
+The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
+credits on the next pack for using all five) and the legal and money
+compliance work that has to ship with it: the 14-day withdrawal for credit
+packs, refunds and disputes applied exactly once, consent that waits for a yes
+in the EEA, retention sweeps, and the legal links. The native app is not part
+of it and keeps its version: under `apps/mercurypitch` only the bundle check,
+the Vite config that leaves the offer out (#961) and the shared font aliases
+(#962) change.
 
 ### Release steps (prod)
 
@@ -42,7 +42,8 @@ The order matters. Each step names the PR that asks for it.
    `consent_collection[terms_of_service]=required` needs it, and without it
    every pack checkout fails with "Could not start checkout". The Terms
    section `#withdrawal` arrives with the landing in step 5.
-3. **Merge #970, then #975.**
+3. **#970 and #975 merged on 10 October**, so `main` holds every migration
+   below.
 4. **Run Deploy DB Worker with `environment: prod` from `main`, before the
    tag (#965).** It backs up D1, applies the migrations below, and deploys
    the Jam worker and then the DB worker. On the tag, `deploy-db-prod` and
@@ -294,7 +295,8 @@ what #975's own review found.
   lost if anything fails after their ledger row), H-1 (events that fail
   on every run use up the sweep's cap; a chargeback whose mail Resend keeps
   refusing is now one of them), a redelivered alert that can leave out the
-  no-consent line, and addresses sign-up accepts but RFC 5322 does not
+  no-consent line or describe a debt a later purchase has already paid, and
+  addresses sign-up accepts but RFC 5322 does not
   (`pat<o>@example.com` still shows in logs).
 
 ### Web and API: retention (#969)
