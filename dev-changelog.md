@@ -9,6 +9,398 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.17] - 2026-10-11
+
+121 commits since `v0.9.16` (17 on `main`'s first-parent line, every one a PR
+merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 and
+#976.
+The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
+credits on the next pack for using all five) and the legal and money
+compliance work that has to ship with it: the 14-day withdrawal for credit
+packs, refunds and disputes applied exactly once, consent that waits for a yes
+in the EEA, retention sweeps, and the legal links. The native app is not part
+of it and keeps its version: under `apps/mercurypitch` only the bundle check,
+the Vite config that leaves the offer out (#961) and the shared font aliases
+(#962) change.
+
+### Release steps (prod)
+
+The order matters. Each step names the PR that asks for it.
+
+1. **Seller details on the prod worker (#968, #976).** Set the `TRADER_NAME`
+   and `TRADER_ADDRESS` secrets (full geographic address with country) on the
+   prod db-worker with `wrangler secret put --env prod`; since #976 they are
+   Worker secrets, not `wrangler.jsonc` vars. `scripts/assert-prod-trader-details.mjs`
+   reads `wrangler secret list --env prod` and runs in three places, all for
+   prod only: the `check-seller-details` job that opens `deploy-db.yml` (the
+   Jam worker job needs it and the DB worker job needs the Jam job), a step of
+   the same name in the DB worker job before the D1 backup, and a step in
+   `build.yml`'s `build-and-deploy` before the website is built. Until both are
+   set, the tag and a prod dispatch of `deploy-db.yml` deploy nothing.
+   `TRADER_VAT_ID` may stay unset; it only drops the VAT sentence.
+2. **Stripe live mode, Terms of service URL (#968).** Settings › Public
+   details › Terms of service URL: `https://about.mercurypitch.com/terms`.
+   `consent_collection[terms_of_service]=required` needs it, and without it
+   every pack checkout fails with "Could not start checkout". The Terms
+   section `#withdrawal` arrives with the landing in step 5.
+3. **#970 and #975 merged on 10 October**, so `main` holds every migration
+   below.
+4. **Run Deploy DB Worker with `environment: prod` from `main`, before the
+   tag (#965).** It backs up D1, applies the migrations below, and deploys
+   the Jam worker and then the DB worker. On the tag, `deploy-db-prod` and
+   the website deploy run side by side; an app that sends the Google return
+   nonce before the worker echoes it refuses every Google sign-in until the
+   worker lands. A worker deployed first breaks nothing: the old app sends
+   no nonce and gets the old redirects.
+5. **Deploy the landing straight after the worker (disjoint-colliders #99
+   and #100).** It brings the Terms section `#withdrawal` that the checkbox,
+   the footnote and both mails link, and the privacy notice whose deletion
+   periods the retention sweep (#969) enforces from this deploy on. Keep the
+   gap between the two deploys to minutes.
+6. **Stripe webhook events (#970), after the worker deploy.** The live
+   endpoint must send eight types. Add `charge.dispute.closed`,
+   `charge.dispute.funds_withdrawn`, `refund.failed` and `refund.updated`.
+   Keep `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `charge.refunded` and
+   `charge.dispute.created` (#961 asked for the last three). Do not add `charge.refund.updated`: Stripe deprecated it, and the
+   worker acknowledges it without acting. A type the endpoint does not send
+   is still applied by the sweep within six hours, with a "Sweep recovered N
+   missed event(s)" alert each time. Re-running 0065's `UPDATE` by hand
+   right after the deploy is optional (owner decision).
+7. **Push the tag `v0.9.17`.** `deploy-db-prod` runs again and finds no
+   migration left to apply.
+
+If `STRIPE_SECRET_KEY` is a restricted key, it needs read access to Charges,
+Refunds, Disputes, Events and PaymentIntents (a withdrawal finds its charge
+through the PaymentIntent), on top of the refund writes #968 makes. Without
+one, Stripe answers 403: the webhook answers 500 so Stripe retries, the
+sweep's "could not apply" alert names the read that failed, and a withdrawal
+keeps its price pending.
+
+`BILLING_ALERT_EMAIL` must stay set on prod: nothing is given up, escalated or
+handed over until Resend has taken the owner's alert, and the alert goes to
+this address. Since #975 a chargeback event answers 500 while it or
+`RESEND_API_KEY` is missing, so Stripe keeps sending it until both are set;
+both are set on dev and prod (names checked 10 Oct). The promo email
+records are keyed with `FREE_SONG_EMAIL_SECRET`; without it, claims stay
+bounded per account only.
+
+### Migrations
+
+Prod ran `0055` with `v0.9.16`, so this release brings fourteen. `wrangler d1
+migrations apply` runs the files it has not recorded in file-name order:
+
+| Migration                                | PR   | What it does                                                                                                                |
+| ---------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| `0056_confirm_reminder_sends`            | #960 | `confirmReminderSends (campaign, userId)`: one fresh confirm link per account, ever                                         |
+| `0057_promo_email_claims`                | #961 | `promoEmailClaims`: a keyed HMAC of the confirmed address per promo claim, kept after the account goes                      |
+| `0058_ledger_payment_intent`             | #961 | `creditLedger.paymentIntentId` and its index, so refunds and disputes find what a payment granted; not back-filled          |
+| `0059_offer_unlocks`                     | #961 | `offerUnlocks`: the moment an account earned the launch reward, written once                                                |
+| `0060_checkout_consents_and_withdrawals` | #968 | `checkoutConsents` (one row per paid pack) and `withdrawals` (one statement per pack, `purchaseId` UNIQUE)                  |
+| `0061_withdrawal_refund_tracking`        | #968 | `withdrawals.refundBasis`, `priceSource`, `stripeRefundStatus`; index of unsent purchase mails                              |
+| `0062_withdrawal_sweep_attempts`         | #968 | `refundTriedAt`, `refundEscalatedAt`, `mailAttempts` for the sweep                                                          |
+| `0063_retention_sweep_indexes`           | #969 | `createdAt` indexes on `mirrorEvents` and `funnelAcquisition`, `windowStart` on `auth_ratelimit`; changes no rows           |
+| `0064_stripe_charges`                    | #970 | `stripeCharges`: what Stripe last said of a charge money went back on, one row per PaymentIntent                            |
+| `0065_reapply_money_back_events`         | #970 | renames refund and dispute events v0.9.16 recorded without applying to `reopened:<type>`, so the first sweep applies them   |
+| `0066_withdrawal_mail_outcomes`          | #968 | `mailError`, `mailWarnedAt`, `refundHandedOverAt`; partial index `idx_checkoutConsents_open`                                |
+| `0067_chargeback_alerts`                 | #970 | `chargebackAlerts`: one row per dispute once its chargeback alert is raised, so a later event does not raise it again       |
+| `0068_withdrawal_refund_failure_claims`  | #970 | `withdrawals.refundFailureClaimedAt` and `refundFailureClaimedBy`: the delivery that claims a failed refund tells the owner |
+| `0069_chargeback_alert_claims`           | #975 | `chargebackAlertClaims`: the delivery that claims a dispute mails its chargeback alert; deleted once told or refused        |
+
+Dev applied them in merge order instead (0056; 0057 to 0059; 0063; 0060 to
+0062 and 0066; then #970's 0064, 0065, 0067 and 0068; then #975's 0069).
+#968 checked that 0066 applies cleanly in every order a D1 can see. The
+deploy applies the migrations before it deploys the worker, so 0065 has run
+when the old worker gets its last events.
+
+### Web and API: the launch gift and the finish-five reward (#961, #966)
+
+- **Auto-claim.** `claimLaunchGift` runs wherever `emailVerified` becomes 1:
+  the confirm link, a mailed code, a sign-up code, the reset link, and a
+  Google or Apple create or upgrade. The redeem route's claim moved to
+  `promo-claim.ts`, so all three ways of claiming share one batch.
+  `/api/billing/me` adds `promoClaims`. The singer hears about it in a toast,
+  never by mail.
+- **One claim per inbox (#966).** `promoMailbox` keys `promoEmailClaims`:
+  plus tags fold at every provider, dots fold at Gmail only, and
+  `googlemail.com` reads as `gmail.com`. The same key serves the gift claim
+  and the once-per-address `offer-bonus`. The free song's email records keep
+  the plain form, so production's rows still match.
+- **The reward.** An account that uses all 5 launch credits within
+  `OFFER_FINISHER_DAYS` (14) of the claim earns `OFFER_BONUS_CREDITS` (30) on
+  its next pack, any pack, with nothing created in Stripe. The moment it is
+  earned goes in `offerUnlocks` and is never revoked; the reward has no
+  expiry. Checkout
+  carries `metadata[offer]`, `metadata[bonusCredits]` and the line "Your
+  launch offer adds 30 extra credits to this pack.", and the webhook writes
+  an `offer-bonus` ledger row on the same PaymentIntent. The purchase mail
+  gets one line when the bonus applied.
+- **`OFFER_START_AT`** is `2026-10-09` on dev and `2026-10-11` on prod, read
+  as a UTC day. Accounts that claimed earlier count their 14 days from it.
+  It must not be later than the day the release goes out, because credits
+  spent before it do not count: if the tag moves to Saturday 10 October, set
+  `2026-10-10` in the release commit. Keep it set after launch; unset, the
+  reward is off, earned ones included.
+- **Paid checkouts only.** Credits are granted only when `payment_status` is
+  `paid`, and `checkout.session.async_payment_succeeded` grants a delayed
+  payment. Grant rows carry the PaymentIntent id (0058). #961's clawback on
+  `charge.refunded` and `charge.dispute.created` is replaced by #970's rules.
+- **UI.** Keep shows the gift card beside the account ask with one button,
+  "Create my free account", and "Not now" at the top right; with no promo
+  featured it shows three rows (voiceprint, progress, leaderboard). The
+  welcome has one centred "Sing one note", and the only skip is the X at the
+  top right (accessible name "Skip the intro", 44 px); `onboarding_skipped`
+  fires from the same handler. The Map tags Karaoke "5 free credits".
+  Karaoke Night has a signed-out gift line. The header's Promo pill hides
+  once the account has claimed. A progress block ("Launch credits, 2 of 5
+  used") shows in Karaoke Night, the Karaoke tab and Settings › Credits, and
+  the reward sheet opens once per account in a browser. New events:
+  `onboarding_keep_gift`, `onboarding_map_gift_tap`, `karaoke_gift_signup_tap`,
+  `promo_claimed`, `offer_progress_view`, `offer_unlocked_view`,
+  `offer_packs_tap`.
+- **Web only.** The native Vite config drops the gift and offer modules
+  (`LAUNCH_OFFER`), and `assert-bundle.mjs` fails a native build that
+  carries the offer's words or storage keys. `GiftIcon` sits beside
+  `CreditCoin`, out of the shared icon chunk, which kept Drum Night's first
+  paint under its 520,000-byte budget.
+
+### API and web: the 14-day withdrawal for credit packs (#968)
+
+- **One switch for new checkouts.** `WITHDRAWAL_MODE` is `refund_unused`
+  (the default, also for unset or unknown values) or `waiver`, in both
+  blocks. The app reads it from `GET /api/billing/pricing`. Each pack keeps
+  the terms its own checkout recorded; a pack with no ticked box on record,
+  every pack bought before this release included, is `no_consent`.
+- **Checkout** (packs only, never donations) requires the
+  `terms_of_service` box, worded per mode in
+  `workers/db-worker/src/withdrawal-wording.ts` (version `wd-2026-10-v1`),
+  with "Your credits are added as soon as you pay." above the pay button.
+  `checkoutConsents` records the session, mode, wording version, what Stripe
+  reported of the box, the price paid and the purchase mail's fate. A paid
+  pack without the box is granted anyway, logged and alerted once.
+- **A consent stands once its mail has gone.** `consentTerms` reads a pack's
+  recorded terms only when its purchase mail is `sent`; until then the pack
+  is `no_consent` and cancellable for the whole price (CRD Art. 8(7),
+  14(4)(b)(iii), 16(m); open for the lawyer). The purchase mail gains a
+  "Your right to cancel" panel and a seller line from the `TRADER_*` settings.
+- **The function.** `GET /api/billing/withdrawals` lists what can still be
+  withdrawn, with its refund and basis (`unused` or `full`); `POST` takes
+  `{ purchaseId, name, email }`. Settings › Credits shows it at the top only
+  while there is something to show ("Withdraw from contract here", then
+  "Confirm withdrawal"). Names with a link or an address in them get 400.
+  Rate limit `billing-withdrawal`: 10 per 5 minutes per account.
+- **The rule** (`withdrawal-rules.ts`). Only paid credits are refundable.
+  Spending counts in the order it happened: free credits first, then paid
+  credits oldest pack first, then a pack's bonus. Refund = amount paid x
+  unused paid credits / paid credits, rounded down to the cent; `full`
+  refunds the whole amount paid. The window is 14 days from the day the
+  credits landed, by the calendar in Croatia, plus `WITHDRAWAL_GRACE_WEEKDAYS`
+  (3) weekdays, open until the last day has ended at UTC-12. Mails and the
+  Terms keep "14 days".
+- **The refund** is partial, `reason=requested_by_customer`, with
+  `Idempotency-Key: withdrawal-<statement id>`, priced from
+  `checkoutConsents` or the PaymentIntent's `amount_received`, never the
+  catalogue. Only a definitive 4xx (not 409 or 429) is final and goes to the
+  owner to refund by hand; anything else stays `pending` for the cron, which
+  looks for the refund by metadata before it asks again. A refund still open
+  after 5 days alerts once, and after 11 days is handed to the owner with the
+  14th day as its due date.
+- **The cron** (`17 */6 * * *`, after the retention sweep) runs five duties
+  in batches of 10: unsent acknowledgements, pending refunds, refunds Stripe
+  has not finished, refunds to make by hand the owner has not heard of, and
+  unsent purchase mails. `mail-answer.ts` tells an unknown outcome (sent
+  again under the same key, owner told after 3 days) from a refusal of the
+  mail itself (given up once the owner's alert goes).
+- **Account deletion waits** (`withdrawal-hold.ts`): `DELETE /api/auth/me`
+  answers 409 while a withdrawal still owes a refund or an acknowledgement,
+  and every statement of the deletion batch carries the same guard.
+- Known limitations and open lawyer points are in #968's body.
+
+### API: refunds and disputes applied exactly once (#970)
+
+- **One handler.** The webhook and the 6-hourly sweep both call
+  `applyStripeEvent`, which skips an event `billingEvents` has recorded and
+  records it only after it applied. Each event reads what Stripe reports now
+  (`GET /v1/charges/:id`, its refunds, its disputes), never the event's copy,
+  so late or out-of-order events land on the same answer; the read is kept in
+  `stripeCharges`.
+- **Settle to a target.** Refunds and disputes hold `floor(granted x gone /
+paid)` of a payment's credits, pack and launch bonus together. Each event
+  writes one ledger row keyed `clawback:<event id>`; a refund that failed or
+  was canceled is keyed `clawback:refund-ended:<refund id>`. A chargeback
+  holds its share from the moment it opens; an inquiry holds nothing until
+  `charge.dispute.funds_withdrawn`. `won`, `warning_closed` and `prevented`
+  give back, `lost` keeps.
+- **With withdrawals.** Withdrawal rows count as already taken, a
+  whole-price withdrawal settles the payment and keeps what an earlier
+  refund took back, and a purchase with no consent on record never loses the
+  credits its buyer used. A pack is settled while a
+  chargeback holds its money or refunds returned its whole charge. A
+  withdrawal never refunds past what the charge still holds, read from
+  Stripe before the promise and before every attempt. A withdrawal's own
+  refund that fails or is canceled reaches `markWithdrawalRefundFailed`
+  through `refund.failed` and `refund.updated`.
+- **The sweep** lists events from the last 30 days, up to 10 pages of 100,
+  with one `billingEvents` query a page, and applies at most 25 refunds and
+  disputes a run. After 0065 it reapplies the reopened events in one
+  "Reapplied N event(s) after migration 0065" summary.
+- **Alerts.** `charge.dispute.funds_withdrawn` tells the owner of a
+  chargeback unless the dispute's `created` event already did
+  (`chargebackAlerts`, 0067), so an inquiry that turns into a chargeback is
+  no longer silent. A failed withdrawal refund is told once per statement:
+  the delivery that claims it sends the alert (0068), and a failed send
+  releases the claim and answers 500, so Stripe delivers it again.
+- An account's pack list reads its charges with one bound value
+  (`json_each`), so it no longer fails past D1's 100 bound parameters.
+- Log lines mask email addresses, including those in Resend's and
+  Google's error text: any script, every character RFC 5322 allows before
+  the `@`, quoted local parts and address literals.
+- Other alerts stay best-effort: a send that fails at the wrong moment loses
+  that alert, and Stripe's own dispute emails are the backup. #975 makes the
+  chargeback alert retry; the rest are follow-ups in #975's body.
+
+### API: chargeback alerts that arrive (#975)
+
+The second review of #970 found four Low defects. This fixes them, and
+what #975's own review found.
+
+- **A refused chargeback mail is sent again.** `chargebackAlerts` records a
+  dispute only once Resend has taken its mail. A refusal records nothing
+  and answers 500, so Stripe delivers the event again. The mail goes when
+  there is no row yet, not when the ledger moved, because a redelivery
+  finds the ledger already moved.
+- **One mail per chargeback.** Stripe sends `charge.dispute.created` and
+  `charge.dispute.funds_withdrawn` together for a dispute that opens as a
+  chargeback. A delivery claims the dispute in `chargebackAlertClaims`
+  (0069) before it mails, as #970's withdrawal claims do: the same event
+  answers 500 while its twin holds the claim, another event leaves the mail
+  to it, and a claim older than 10 minutes is taken over. The other event
+  mails only when its own ledger row moved credits after the alert's row.
+- **A claim given back untold is not lost.** A delivery that finds the
+  claim released with nobody told answers 500, so Stripe's redelivery
+  mails. Before, it answered 200 and the owner never heard. #970's
+  failed-refund claim had the same race and gets the same fix.
+- **A redelivered alert reports the balance its own row left**, not one a
+  later purchase changed.
+- **Masking in logs** takes time linear in the text: every measured 50 KB
+  text masks in under 8 ms, where main took up to 1.7 s. A local part of
+  any length is masked whole, and so are quoted local parts and address
+  literals, except two shapes RFC 5321 does not allow: a quoted local part
+  over 64 characters with a backslash before its opening quote, and a
+  literal over 64 characters with a `[` inside. A symbol or emoji before
+  the `@` no longer leaves the address readable, and neither does an
+  address glued to the one before it, as in
+  `?to=bob@example.org&cc=carol@example.net`.
+- Not fixed here, in #975's body: the cron's follow-up of a pending refund
+  can race the webhook's failure mail (two mails), F-4 (other alerts are
+  lost if anything fails after their ledger row), H-1 (events that fail
+  on every run use up the sweep's cap; a chargeback whose mail Resend keeps
+  refusing is now one of them), a redelivered alert that can leave out the
+  no-consent line or describe a debt a later purchase has already paid, and
+  addresses sign-up accepts but RFC 5322 does not
+  (`pat<o>@example.com` still shows in logs).
+
+### Web and API: retention (#969)
+
+The privacy notice states these periods, so they ship before it. They are
+the privacy plan's defaults; the lawyer sets the final numbers.
+
+| Data                                           | Kept for                             | Var                               |
+| ---------------------------------------------- | ------------------------------------ | --------------------------------- |
+| `gclid` on `funnelAcquisition` (row kept)      | 90 days                              | `RETENTION_CLICK_ID_DAYS`         |
+| `mirrorEvents` and `funnelAcquisition` rows    | 13 calendar months                   | `RETENTION_FUNNEL_MONTHS`         |
+| `auth_ratelimit` rows                          | 2 days                               | `RETENTION_RATE_LIMIT_DAYS`       |
+| `promoEmailClaims` rows                        | 30 days after the code's `expiresAt` | `RETENTION_PROMO_EMAIL_DAYS`      |
+| The browser's stored `gclid`                   | 90 days after capture                | `VITE_RETENTION_CLICK_ID_DAYS`    |
+| The browser's funnel id and acquisition record | a new id after 13 months             | `VITE_RETENTION_FUNNEL_ID_MONTHS` |
+
+`sweepFunnelRetention` runs in `scheduled()` in its own try/catch, at most
+1,000 rows a statement and 5 statements per rule per tick, oldest first. The
+worker vars are set in all three `wrangler.jsonc` blocks, and a node test
+fails if they disagree. In the browser, an id or record stored before this
+release takes a fixed legacy date: undated click ids are dropped from 6
+November 2026, and undated funnel ids renew from 1 August 2027. Change the
+privacy notice in the same release as a period.
+
+### Web: consent, fonts and legal links (#962, #967, #971, #972)
+
+- **Only Accept grants (#962).** With no stored choice the app sends no
+  consent update, so Google's IP region default decides. Old silent grants
+  (`implicit: true`) are removed. `ads_data_redaction` is on from the first
+  hit. The banner also shows for EEA time zones outside `Europe/*` and for
+  UTC or GMT clocks, and the region list gains AX, GF, GP, MF, MQ, RE and YT.
+- **Fonts (#962).** Inter, Outfit and Plus Jakarta Sans come from the
+  `@fontsource-variable` packages the native app already bundles;
+  `tools/font-aliases.ts` registers them under the plain family names. The
+  CSP drops `fonts.googleapis.com` and `fonts.gstatic.com`.
+- **Truthful lines (#967).** The banner said "Your voice recordings never
+  leave your device", which Jam and Karaoke Night contradict. It now asks
+  for Google cookies and says "Pitch detection runs on your device either
+  way." The Mirror's result foot reads "Saved on this device." because its
+  numbers reach the funnel.
+- **Legal links (#971, #972).** Every entry document (the generated
+  prelude, `index.html`, `404.html`, `delete-account.html`) ends with
+  `<nav aria-label="Legal">`: Privacy, Terms, Imprint (`IMPRINT_URL`,
+  `https://about.mercurypitch.com/imprint/`). The shared `LegalLinks` row
+  (44 px items) is in Settings › About, the Mirror and Glass, with Cookie
+  settings only where the banner is mounted (`canReopenConsent()`). The
+  sign-up and social sign-in panes name the Terms and the Privacy Notice.
+- **The banner (#972).** Accept and Decline share one style. Decline deletes
+  `_ga`, `_ga_*` and `_gcl_*` on the host and every parent domain. Reopened
+  from Cookie settings, it states the current choice and its date.
+- Not in this release, for the owner or the lawyer: Basic or Advanced
+  Consent Mode in the EEA, the `gclid` in GA4's page URL before a choice,
+  first-party ids written before consent, and separate analytics and ads
+  toggles.
+
+### Web and API: Google sign-in returns bound to their browser (#965)
+
+The `#gauth=` fragment was a login CSRF on the app, Karaoke Night, Guitar
+Night and Drum Night: a link carrying an attacker's session signed the reader
+in to it, counted a sign-up and adopted their local takes.
+`src/lib/google-return-nonce.ts` mints a 256-bit nonce (`mp:gauthPending`,
+15 minutes), `POST /api/auth/google/start` signs it into the OAuth state, and
+the worker appends `&gauth_nonce=` to every redirect a verified state
+produces. A return without the matching nonce stores nothing and says
+"Google sign-in failed: that sign-in didn't start in this browser, so it
+wasn't used. Sign in again from here." `#gauth_error=expired_state` and the
+Drive outcomes stay unbound by design. Native sign-in is unaffected. On an
+iOS home-screen web app, a Google sign-in that finishes in Safari is now
+refused. Spec: `docs/specs/google-return-binding.ears.md`.
+
+### Web: Drum Night, the cost guide and the tour offer (#957, #959, #964)
+
+- **Drum Night (#957).** A blocked Separate drums press survives the Google
+  round trip through a shared lease store
+  (`src/lib/google-separation-intent.ts`: read once, 15 minutes, exact
+  rollback). The hook compares the song's fingerprint and runs the room's
+  own press, preflight included. Since #965 it resumes only after a bound
+  return. The room now mounts `<Notifications />`, lazily.
+- **The cost guide (#959).** Karaoke Night links
+  `/#/settings/credits?open=costs`. Settings routes accept a query; the
+  router sets a one-shot `creditCostGuideRequested` and rewrites the address
+  to `#/settings/credits`. `CreditCostGuide` opens and scrolls itself into
+  view a frame later. What's New holds its announcement for such a link.
+- **The tour offer (#964).** `usePageTourOffer` takes a `paused` accessor;
+  `App.tsx` pauses it while First Light is open, and the tab on screen is
+  offered a microtask after the flow closes, so Home's one offer is no longer
+  spent behind the welcome.
+
+### API and console: fresh confirm links and the mail wordmark (#960, #958)
+
+- **Fresh confirm links (#960)**, for the operator console only:
+  `GET /api/confirm-reminders/audience` (counts only) and
+  `POST /api/confirm-reminders/send` (a dry run unless `dryRun` is `false`;
+  real sends are pages of at most 25, 600 ms apart). One link per account,
+  ever, written before it goes (0056), with a Resend `Idempotency-Key` of
+  campaign and account. The fresh link lasts 7 days. `PUBLIC_API_ORIGIN` is
+  `https://api.mercurypitch.com` on prod, so a link never points at an
+  Access-gated host. Nothing sends on its own.
+- **The mail wordmark (#958)** is `/email/wordmark-v1-2x.png`: Cloudflare's
+  assets answered the `@` name with a 307. The old file stays for mails
+  already sent, and a test refuses a mail picture name that needs
+  percent-encoding.
+
 ## [0.9.16] - 2026-10-09
 
 92 commits since `v0.9.15` (68 on `main`'s first-parent line): PRs #921 to
