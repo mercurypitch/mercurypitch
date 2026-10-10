@@ -250,7 +250,7 @@ paid)` of a payment's credits, pack and launch bonus together. Each event
   releases the claim and answers 500, so Stripe delivers it again.
 - An account's pack list reads its charges with one bound value
   (`json_each`), so it no longer fails past D1's 100 bound parameters.
-- Log lines mask every email address, including those in Resend's and
+- Log lines mask email addresses, including those in Resend's and
   Google's error text: any script, every character RFC 5322 allows before
   the `@`, quoted local parts and address literals.
 - Other alerts stay best-effort: a send that fails at the wrong moment loses
@@ -259,7 +259,8 @@ paid)` of a payment's credits, pack and launch bonus together. Each event
 
 ### API: chargeback alerts that arrive (#975)
 
-The second review of #970 found four Low defects; this fixes them.
+The second review of #970 found four Low defects. This fixes them, and
+what #975's own review found.
 
 - **A refused chargeback mail is sent again.** `chargebackAlerts` records a
   dispute only once Resend has taken its mail. A refusal records nothing
@@ -273,14 +274,28 @@ The second review of #970 found four Low defects; this fixes them.
   answers 500 while its twin holds the claim, another event leaves the mail
   to it, and a claim older than 10 minutes is taken over. The other event
   mails only when its own ledger row moved credits after the alert's row.
-- **Masking in logs:** the local part is bounded at 64 characters (RFC 5321),
-  so 50 KB of base64 masks in about 11 ms instead of 1.7 s, and a symbol or
-  emoji before the `@` no longer leaves the address readable.
+- **A claim given back untold is not lost.** A delivery that finds the
+  claim released with nobody told answers 500, so Stripe's redelivery
+  mails. Before, it answered 200 and the owner never heard. #970's
+  failed-refund claim had the same race and gets the same fix.
+- **A redelivered alert reports the balance its own row left**, not one a
+  later purchase changed.
+- **Masking in logs** takes time linear in the text: every measured 50 KB
+  text masks in under 8 ms, where main took up to 1.7 s. A local part of
+  any length is masked whole, and so are quoted local parts and address
+  literals, except two shapes RFC 5321 does not allow: a quoted local part
+  over 64 characters with a backslash before its opening quote, and a
+  literal over 64 characters with a `[` inside. A symbol or emoji before
+  the `@` no longer leaves the address readable, and neither does an
+  address glued to the one before it, as in
+  `?to=bob@example.org&cc=carol@example.net`.
 - Not fixed here, in #975's body: the cron's follow-up of a pending refund
   can race the webhook's failure mail (two mails), F-4 (other alerts are
-  lost if anything fails after their ledger row) and H-1 (events that fail
+  lost if anything fails after their ledger row), H-1 (events that fail
   on every run use up the sweep's cap; a chargeback whose mail Resend keeps
-  refusing is now one of them).
+  refusing is now one of them), a redelivered alert that can leave out the
+  no-consent line, and addresses sign-up accepts but RFC 5322 does not
+  (`pat<o>@example.com` still shows in logs).
 
 ### Web and API: retention (#969)
 
