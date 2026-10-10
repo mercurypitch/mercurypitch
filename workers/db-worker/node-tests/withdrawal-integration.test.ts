@@ -2515,6 +2515,7 @@ describe('the acknowledgement and who it goes to', () => {
     'Restore it at evil.example/restore',
     'www.evil.example',
     'Visit evil.com today',
+    'evil.dev',
     'sam@example.test',
   ])('refuses a name with a link or an address in it: %s', async (name) => {
     const sam = await buyer('sam@example.test')
@@ -3541,18 +3542,29 @@ describe('a refund the owner has to make by hand', () => {
 })
 
 describe('a name', () => {
-  it.each(['J.Smith', 'Dr.Ana Horvat', 'St.John Smith', 'A.Kumar'])(
-    'takes %s',
-    async (name) => {
-      const sam = await buyer('sam@example.test')
-      const plus = await buy(sam, 'pack-plus', 'pi_plus')
+  it.each([
+    'J.Smith',
+    'Dr.Ana Horvat',
+    'St.John Smith',
+    'A.Kumar',
+    // An initial before a dot, though the rest reads like a domain ending.
+    'A.Dev Patel',
+    'P.Dev',
+    'H.Link',
+    'J.Top',
+    'L.Ru',
+    'Y.Cn Wang',
+    'M.Io',
+    'K.App',
+  ])('takes %s', async (name) => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
 
-      const res = await withdraw(sam, plus, { name })
+    const res = await withdraw(sam, plus, { name })
 
-      expect(res.status).toBe(200)
-      expect(acknowledgements()[0]?.text).toContain(name)
-    },
-  )
+    expect(res.status).toBe(200)
+    expect(acknowledgements()[0]?.text).toContain(name)
+  })
 })
 
 describe('a refund that fails after Stripe said it succeeded', () => {

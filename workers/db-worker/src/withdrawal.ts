@@ -73,14 +73,15 @@ const MAX_NAME = 200
 const MAX_EMAIL = 254
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 /** A link or an address where only a name belongs: "@", a scheme, "www.",
- *  a host with a path ("evil.example/restore"), or a host on a common
- *  top-level domain ("evil.com"). The acknowledgement goes out from our
- *  domain with the name in it, so it can carry neither. A dot between
- *  names is a name ("J.Smith", "Dr.Ana Horvat"); a link dressed up past
- *  this gets through, which one statement per paid pack and the rate limit
- *  keep rare. */
+ *  a host with a path ("evil.example/restore"), or a host of two or more
+ *  characters on a common top-level domain ("evil.com"). The
+ *  acknowledgement goes out from our domain with the name in it, so it can
+ *  carry neither. A dot between names is a name ("J.Smith", "Dr.Ana
+ *  Horvat"), and so is an initial before one, whatever follows ("A.Dev
+ *  Patel", "K.App"); a link dressed up past this gets through, which one
+ *  statement per paid pack and the rate limit keep rare. */
 const NOT_A_NAME =
-  /@|:\/\/|\bwww\.|\.[a-z]{2,}\/|\b[a-z0-9-]+\.(?:com|net|org|info|biz|io|app|dev|xyz|top|site|online|link|click|shop|ru|cn)\b/i
+  /@|:\/\/|\bwww\.|\.[a-z]{2,}\/|\b[a-z0-9-]{2,}\.(?:com|net|org|info|biz|io|app|dev|xyz|top|site|online|link|click|shop|ru|cn)\b/i
 
 // ── Reading ──────────────────────────────────────────────────────────
 
