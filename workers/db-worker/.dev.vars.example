@@ -86,9 +86,9 @@ GOOGLE_CLIENT_SECRET=
 #WITHDRAWAL_GRACE_WEEKDAYS=3
 
 # Who sells the credits, printed in the purchase and withdrawal mails
-# (checkout-consent.ts). Public details, so wrangler.jsonc "vars" holds the
-# real ones per environment; an unset name, address or email shows as
-# [TRADER_NAME] and the like. The VAT ID is optional.
+# (checkout-consent.ts). Dev and prod hold the name, address and VAT ID as
+# secrets and the email in wrangler.jsonc; an unset name, address or email
+# shows as [TRADER_NAME] and the like. The VAT ID is optional.
 #TRADER_NAME=
 #TRADER_ADDRESS=
 #TRADER_EMAIL=

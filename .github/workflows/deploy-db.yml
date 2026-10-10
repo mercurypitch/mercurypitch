@@ -74,9 +74,8 @@ permissions:
 
 jobs:
   # A release deploys nothing, the Jam worker included, while the prod
-  # block of workers/db-worker/wrangler.jsonc lacks the seller's name or
-  # address: every deploy job below waits on this one. Dev deploys skip
-  # each step and go straight on.
+  # worker lacks the seller's name or address secret: every deploy job
+  # below waits on this one. Dev deploys skip each step and go straight on.
   check-seller-details:
     name: Check the seller details for production
     runs-on: ubuntu-latest
@@ -100,13 +99,16 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      # The check reads wrangler.jsonc through wrangler.
+      # The check asks wrangler for the prod worker's secrets.
       - name: Install dependencies
         if: env.DEPLOY_ENV == 'prod'
         run: pnpm install --frozen-lockfile
 
       - name: Check the seller details for production
         if: env.DEPLOY_ENV == 'prod'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
 
   deploy-jam-worker:
@@ -151,12 +153,15 @@ jobs:
         run: pnpm typecheck:db
 
       # The purchase and withdrawal mails name the seller from the TRADER_*
-      # vars, and an empty one goes out to buyers as "[TRADER_NAME]". A
+      # settings, and an unset one goes out to buyers as "[TRADER_NAME]". A
       # release stops here, before the database or the worker is touched,
-      # when the prod block of wrangler.jsonc lacks a name or an address.
-      # The VAT ID may stay empty. Dev deploys are never held by it.
+      # when the prod worker lacks the name or the address secret. The VAT
+      # ID may stay unset. Dev deploys are never held by it.
       - name: Check the seller details for production
         if: env.DEPLOY_ENV == 'prod'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
 
       # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is

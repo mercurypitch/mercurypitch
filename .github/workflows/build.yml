@@ -176,12 +176,15 @@ jobs:
 
       # A release tag deploys the website here and the prod DB worker in
       # deploy-db-prod, side by side. The DB worker refuses to go out while
-      # the prod block of workers/db-worker/wrangler.jsonc lacks the
-      # seller's name or address (deploy-db.yml); this stops the website on
-      # the same check, before it is built, so a release never goes out
-      # half. Dev and preview deploys are never held by it.
+      # the prod worker lacks the seller's name or address secret
+      # (deploy-db.yml); this stops the website on the same check, before it
+      # is built, so a release never goes out half. Dev and preview deploys
+      # are never held by it.
       - name: Check the seller details for production
         if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
 
       # PR Gate owns pull-request build validation. Direct main, tag, and
