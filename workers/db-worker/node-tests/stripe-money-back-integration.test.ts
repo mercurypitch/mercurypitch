@@ -394,6 +394,103 @@ describe('a dispute', () => {
   })
 })
 
+describe('a purchase with no consent on record', () => {
+  // Refunds and disputes never take back the credits its buyer used, by
+  // whatever route the money goes back: every take is capped at what they
+  // hold already plus the pack's credits still unused (CRD Art. 14(4)(b)).
+
+  /** A 30-credit EUR 5.00 pack bought with no consent on record, 25 of its
+   *  credits spent: 5 left. */
+  async function mostlyUsed(singer: Singer): Promise<string> {
+    const purchase = h.stripe.checkout(singer.userId, { consent: false })
+    expect((await deliver(h, purchase)).status).toBe(200)
+    setSongCost(25)
+    expect((await spend(h, singer, 'job-used-25')).status).toBe(200)
+    setSongCost(1)
+    expect(balance(h, singer.userId)).toBe(5)
+    return String(purchase.data.object.payment_intent)
+  }
+
+  it('takes only the unused credits when the whole price goes back in two refunds', async () => {
+    const singer = await register(h, 'split-no-consent@example.com')
+    const pi = await mostlyUsed(singer)
+
+    await deliver(h, h.stripe.refund(pi, 333))
+    const afterFirst = balance(h, singer.userId)
+    await deliver(h, h.stripe.refund(pi, 167))
+
+    expect(afterFirst).toBe(0)
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-5, 0])
+  })
+
+  it('takes only the unused credits through an inquiry, a whole refund and the inquiry closing', async () => {
+    const singer = await register(h, 'inquiry-no-consent@example.com')
+    const pi = await mostlyUsed(singer)
+
+    await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
+    const afterInquiry = balance(h, singer.userId)
+    await deliver(h, h.stripe.refund(pi, 500))
+    const afterRefund = balance(h, singer.userId)
+    await deliver(h, h.stripe.closeDispute(pi, 'warning_closed'))
+
+    expect([afterInquiry, afterRefund]).toEqual([0, 0])
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([
+      -5, 0, 0,
+    ])
+  })
+
+  it('leaves the buyer owing nothing when a dispute is lost', async () => {
+    const singer = await register(h, 'lost-no-consent@example.com')
+    const pi = await mostlyUsed(singer)
+
+    await deliver(h, h.stripe.dispute(pi))
+    const held = balance(h, singer.userId)
+    await deliver(h, h.stripe.closeDispute(pi, 'lost'))
+
+    expect(held).toBe(0)
+    expect(balance(h, singer.userId)).toBe(0)
+  })
+
+  it('gives back exactly what a capped dispute held when it is won', async () => {
+    const singer = await register(h, 'won-no-consent@example.com')
+    const pi = await mostlyUsed(singer)
+
+    await deliver(h, h.stripe.dispute(pi))
+    await deliver(h, h.stripe.closeDispute(pi, 'won'))
+
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-5, 5])
+    expect(balance(h, singer.userId)).toBe(5)
+  })
+
+  it('says how many used credits stay with the buyer', async () => {
+    const singer = await register(h, 'alert-no-consent@example.com')
+    const pi = await mostlyUsed(singer)
+
+    await deliver(h, h.stripe.refund(pi, 250))
+
+    const alert = alerts(h).find((mail) => mail.subject.includes('Refund'))
+    expect(alert?.subject).toBe(
+      '[MercuryPitch billing] Refund: took back 5 credit(s)',
+    )
+    expect(alert?.text).toContain(
+      'This purchase has no consent on record, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
+    )
+  })
+
+  it('still leaves a buyer who gave the consent owing for the credits they used', async () => {
+    const singer = await register(h, 'consented@example.com')
+    const pi = await bought(singer)
+    setSongCost(25)
+    expect((await spend(h, singer, 'job-consented-25')).status).toBe(200)
+
+    await deliver(h, h.stripe.refund(pi, 500))
+
+    expect(balance(h, singer.userId)).toBe(-25)
+  })
+})
+
 describe('an event whose Stripe read is older than the ledger', () => {
   // Another delivery for the same payment lands between this one's read of
   // Stripe and its write. Every write reads Stripe again after the ledger,

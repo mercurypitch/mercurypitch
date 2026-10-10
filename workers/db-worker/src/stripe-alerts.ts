@@ -50,9 +50,9 @@ export interface CreditsMoved {
   /** A withdrawal refunded its whole price (refundBasis 'full'): no refund
    *  or dispute takes anything more from it. */
   settledWhole: boolean
-  /** Refunded whole with no consent on record: only the credits still
-   *  unused were taken back. */
-  keptUsed: boolean
+  /** No consent on record: credits the buyer used that the money gone
+   *  back would hold, and that stay theirs. */
+  keptUsed: number
   /** The account's balance after the row. */
   balance: number
 }
@@ -106,9 +106,9 @@ function creditLines(moved: CreditsMoved): string[] {
     ? [
         'A withdrawal refunded the whole price of this payment (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.',
       ]
-    : moved.keptUsed
+    : moved.keptUsed > 0
       ? [
-          'This purchase has no consent on record and its whole price went back, so only the credits still unused were taken back: the ones the buyer used stay theirs.',
+          `This purchase has no consent on record, so refunds and disputes take back only credits still unused: ${moved.keptUsed} credit(s) the buyer used stay theirs.`,
         ]
       : []
   return [`Account: ${moved.userId}`, moving, ...whole, balanceLine(moved)]

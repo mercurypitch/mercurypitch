@@ -53,19 +53,22 @@
 // whole payment takes the rest. A withdrawal that refunds the whole price (a
 // purchase with no consent on record, refundBasis 'full') settles the
 // payment outright: what the buyer used stays theirs (CRD Art. 14(4)(b)), so
-// no refund or dispute of it takes anything more (settledWhole). A refund
-// of the whole price made by hand for such a purchase (a buyer who cancelled
-// by mail) settles the same way: it takes back only the credits the pack
-// still has unused, as the withdrawal would have (keptUsed). A withdrawal's
-// own refund that fails or is canceled is the withdrawal sweep's to follow
-// and report (withdrawal-finish.ts): it writes no row here.
+// no refund or dispute of it takes anything more (settledWhole). The same
+// holds for every purchase with no consent on record, by whatever route its
+// money goes back (a refund made by hand for a buyer who cancelled by mail,
+// a part refund, a dispute): refunds and disputes never hold more than they
+// hold already plus the credits its pack still has unused, so the credits
+// the buyer used stay theirs (keptUsed). A withdrawal's own refund that
+// fails or is canceled is the withdrawal sweep's to follow and report
+// (withdrawal-finish.ts): it writes no row here.
 //
-// Credits already spent are owed: the balance goes below zero, and the
-// debit's own check (billing.ts, `SUM(delta) >= cost`) blocks spending until
-// a purchase brings it back above zero. The payment's ledger rows then net
-// to what was really paid for, whatever order the spending, the refund and
-// the webhook came in. Taking only what was left would hand a buyer who
-// spends fast, or a webhook that arrives late, credits nobody paid for.
+// Otherwise credits already spent are owed: the balance goes below zero,
+// and the debit's own check (billing.ts, `SUM(delta) >= cost`) blocks
+// spending until a purchase brings it back above zero. The payment's ledger
+// rows then net to what was really paid for, whatever order the spending,
+// the refund and the webhook came in. Taking only what was left would hand a
+// buyer who spends fast, or a webhook that arrives late, credits nobody paid
+// for.
 //
 // Every refund that moves credits, every dispute, and every payment with
 // nothing on record to take (a donation, a purchase from before migration
@@ -166,6 +169,9 @@ export interface Settlement {
   delta: number
   /** What refunds and disputes hold of the payment once it is written. */
   held: number
+  /** What the money gone back would hold beyond `most`: credits the buyer
+   *  used that stay theirs. */
+  kept: number
 }
 
 /**
@@ -176,7 +182,7 @@ export interface Settlement {
  * may give credits back: a dispute closing, a refund ending. Any other
  * event that finds more held than is due leaves it, so an older event read
  * late never gives back what a newer one took. The balance plays no part:
- * credits already spent are owed.
+ * credits already spent are owed, unless `most` caps what may be held.
  */
 export function settlement(input: {
   /** What the payment granted: its pack and any launch bonus. */
@@ -189,6 +195,8 @@ export function settlement(input: {
   /** What anything else took back from the same payment. */
   takenOtherwise: number
   mayGiveBack: boolean
+  /** The most refunds and disputes may hold, or null for no limit. */
+  most?: number | null
 }): Settlement {
   const share =
     input.paid > 0
@@ -197,11 +205,13 @@ export function settlement(input: {
             input.paid,
         )
       : 0
-  const held = Math.max(0, share - Math.max(0, input.takenOtherwise))
+  const due = Math.max(0, share - Math.max(0, input.takenOtherwise))
+  const held = input.most == null ? due : Math.min(due, Math.max(0, input.most))
+  const kept = due - held
   const delta = input.heldByMoneyBack - held
   return delta > 0 && !input.mayGiveBack
-    ? { delta: 0, held: input.heldByMoneyBack }
-    : { delta, held }
+    ? { delta: 0, held: input.heldByMoneyBack, kept }
+    : { delta, held, kept }
 }
 
 /** Credits already taken back from the payment `paymentIntent` names: by
@@ -271,7 +281,8 @@ export interface PurchaseRecord {
 export interface SettleTerms {
   mayGiveBack: boolean
   settledWhole: boolean
-  /** PurchaseRecord.unused for a purchase with no consent on record; null
+  /** PurchaseRecord.unused for a purchase with no consent on record: what
+   *  refunds and disputes may hold on top of what they hold already. Null
    *  for one with a consent. */
   unusedWithoutConsent: number | null
 }
@@ -283,14 +294,9 @@ export interface Settle {
   /** What a withdrawal's own rows took back. */
   takenOtherwise: number
   settledWhole: boolean
-  /** Refunded whole with no consent on record: the credits the buyer used
-   *  stayed theirs. */
-  keptUsed: boolean
-}
-
-/** Every cent of the charge went back by refund. */
-function refundedWhole(charge: ChargeState): boolean {
-  return charge.amount > 0 && charge.amountRefunded >= charge.amount
+  /** No consent on record: credits the buyer used that the money gone back
+   *  would hold, and that stay theirs. */
+  keptUsed: number
 }
 
 /**
@@ -298,13 +304,12 @@ function refundedWhole(charge: ChargeState): boolean {
  * the payment's credits back (takenFrom, less what refunds and disputes
  * hold) counts as taken already.
  *
- * A payment settled like a withdrawal of its whole price leaves what the
- * buyer used theirs (CRD Art. 14(4)(b)), so no refund or dispute of it ever
- * leaves them owing for it. One a withdrawal refunded whole counts as having
- * taken back everything it granted. One refunded whole by hand, for a
- * purchase with no consent on record (a buyer who cancelled by mail), takes
- * back only the credits its pack still has unused, as a withdrawal of it
- * would have.
+ * A payment a withdrawal refunded whole counts as having taken back
+ * everything it granted. A purchase with no consent on record leaves what the
+ * buyer used theirs (CRD Art. 14(4)(b)), however its money goes back:
+ * refunds and disputes hold at most what they hold already plus the credits
+ * its pack still has unused, counted after their own earlier takes, so an
+ * earlier take never leaves the buyer owing for what they used.
  */
 export function settle(
   ledger: Ledger,
@@ -317,20 +322,14 @@ export function settle(
   const takenOtherwise = Math.max(0, takenFrom(ledger, paymentIntent) - held)
   const { gone, paid } = moneyGoneBack(charge)
   const unused = terms.unusedWithoutConsent
-  const keptUsed =
-    !terms.settledWhole && unused !== null && refundedWhole(charge)
-  const counted = terms.settledWhole
-    ? granted
-    : keptUsed
-      ? Math.max(0, granted - held - Math.max(0, unused ?? 0))
-      : takenOtherwise
   const next = settlement({
     granted,
     gone,
     paid,
     heldByMoneyBack: held,
-    takenOtherwise: counted,
+    takenOtherwise: terms.settledWhole ? granted : takenOtherwise,
     mayGiveBack: terms.mayGiveBack,
+    most: unused === null ? null : held + Math.max(0, unused),
   })
   return {
     delta: next.delta,
@@ -338,32 +337,29 @@ export function settle(
     held: next.held,
     takenOtherwise,
     settledWhole: terms.settledWhole,
-    keptUsed,
+    keptUsed: next.kept,
   }
 }
 
 /**
- * The terms of settling the payment `paymentIntent` names against `ledger`
- * and `charge`, both as just read. A withdrawal is looked for after every
+ * The terms of settling the payment `paymentIntent` names against `ledger`,
+ * as just read. A withdrawal is looked for after every
  * read of the ledger: it writes its statement and its rows in one batch, so
  * a statement a read missed comes with rows that make the write lose and
- * read again. Whether the purchase has a consent on record is asked only of
- * a charge refunded whole.
+ * read again. Whether the purchase has a consent on record is asked of every
+ * event, unless that withdrawal settled the payment already.
  */
 async function termsOf(
   env: Env,
   record: PurchaseRecord,
   userId: string,
   paymentIntent: string,
-  charge: ChargeState,
   ledger: Ledger,
   mayGiveBack: boolean,
 ): Promise<SettleTerms> {
   const whole = await settledWhole(env, paymentIntent)
   const noConsent =
-    !whole &&
-    refundedWhole(charge) &&
-    (await record.noConsent(env, userId, paymentIntent))
+    !whole && (await record.noConsent(env, userId, paymentIntent))
   return {
     mayGiveBack,
     settledWhole: whole,
@@ -421,7 +417,6 @@ async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
         input.record,
         input.userId,
         input.paymentIntent,
-        charge,
         ledger,
         input.row.mayGiveBack,
       )

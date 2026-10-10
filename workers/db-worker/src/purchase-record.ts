@@ -2,14 +2,14 @@
 // purchase-record — what settling a refund reads of the purchase behind it
 // ============================================================
 //
-// A refund of the whole price of a purchase with no consent on record
-// settles like a withdrawal of it (stripe-payments.ts, settle): it takes back
-// only the credits the pack still has unused, and the ones the buyer used
-// stay theirs (CRD Art. 14(4)(b)). Both halves come from the modules the
-// withdrawal itself reads: the consent through purchaseTerms
-// (checkout-consent.ts), and what is unused through packUses
-// (withdrawal-rules.ts). A buyer who cancels by mail and one who cancels in
-// Settings › Credits then lose the same credits.
+// Money that goes back on a purchase with no consent on record, by any
+// refund or dispute, takes back at most the credits its pack still has
+// unused (stripe-payments.ts, settle): the ones the buyer used stay theirs
+// (CRD Art. 14(4)(b)). Both halves come from the modules the withdrawal
+// itself reads: the consent through purchaseTerms (checkout-consent.ts), and
+// what is unused through packUses (withdrawal-rules.ts). A buyer who cancels
+// by mail and one who cancels in Settings › Credits then lose the same
+// credits.
 //
 // Both of those modules import stripe-payments.ts, so it cannot import them:
 // billing.ts hands it this record instead.

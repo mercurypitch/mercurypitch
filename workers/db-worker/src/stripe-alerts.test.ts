@@ -51,7 +51,7 @@ function moved(overrides: Partial<CreditsMoved> = {}): CreditsMoved {
     held: 30,
     takenOtherwise: 0,
     settledWhole: false,
-    keptUsed: false,
+    keptUsed: 0,
     balance: 0,
     ...overrides,
   }
@@ -231,17 +231,17 @@ describe('a refund', () => {
     expect(text(alert)).toContain('Refunded so far: €2.50 of a €5.00 payment.')
   })
 
-  it('says a whole-price refund of a purchase with no consent on record took only unused credits', () => {
+  it('says how many used credits a purchase with no consent on record leaves the buyer', () => {
     const alert = moneyBackAlert(
       ref('charge.refunded'),
       charge({ amountRefunded: 500 }),
-      moved({ delta: -20, held: 20, keptUsed: true, balance: 0 }),
+      moved({ delta: -20, held: 20, keptUsed: 10, balance: 0 }),
       REFUND,
     )
 
     expect(alert?.subject).toBe('Refund: took back 20 credit(s)')
     expect(text(alert)).toContain(
-      'This purchase has no consent on record and its whole price went back, so only the credits still unused were taken back: the ones the buyer used stay theirs.',
+      'This purchase has no consent on record, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
     )
   })
 

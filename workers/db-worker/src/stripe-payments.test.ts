@@ -67,36 +67,61 @@ const PACK = {
 
 describe('settlement', () => {
   it('takes the share of what was granted that the money gone back makes due', () => {
-    expect(settlement({ ...PACK, gone: 500 })).toEqual({ delta: -30, held: 30 })
-    expect(settlement({ ...PACK, gone: 250 })).toEqual({ delta: -15, held: 15 })
+    expect(settlement({ ...PACK, gone: 500 })).toEqual({
+      delta: -30,
+      held: 30,
+      kept: 0,
+    })
+    expect(settlement({ ...PACK, gone: 250 })).toEqual({
+      delta: -15,
+      held: 15,
+      kept: 0,
+    })
   })
 
   it('rounds the share down, so a payment never loses a credit it kept', () => {
-    expect(settlement({ ...PACK, gone: 100 })).toEqual({ delta: -6, held: 6 })
-    expect(settlement({ ...PACK, gone: 1 })).toEqual({ delta: 0, held: 0 })
+    expect(settlement({ ...PACK, gone: 100 })).toEqual({
+      delta: -6,
+      held: 6,
+      kept: 0,
+    })
+    expect(settlement({ ...PACK, gone: 1 })).toEqual({
+      delta: 0,
+      held: 0,
+      kept: 0,
+    })
   })
 
   it('counts exactly in whole cents: a third of the money is a third of the credits', () => {
     const third = settlement({ ...PACK, granted: 30, paid: 300, gone: 100 })
 
-    expect(third).toEqual({ delta: -10, held: 10 })
+    expect(third).toEqual({ delta: -10, held: 10, kept: 0 })
   })
 
   it('takes only what earlier events left owing', () => {
     const second = settlement({ ...PACK, gone: 500, heldByMoneyBack: 15 })
 
-    expect(second).toEqual({ delta: -15, held: 30 })
+    expect(second).toEqual({ delta: -15, held: 30, kept: 0 })
   })
 
   it('never holds more than the payment granted, whatever Stripe reports', () => {
-    expect(settlement({ ...PACK, gone: 900 })).toEqual({ delta: -30, held: 30 })
-    expect(settlement({ ...PACK, gone: -50 })).toEqual({ delta: 0, held: 0 })
+    expect(settlement({ ...PACK, gone: 900 })).toEqual({
+      delta: -30,
+      held: 30,
+      kept: 0,
+    })
+    expect(settlement({ ...PACK, gone: -50 })).toEqual({
+      delta: 0,
+      held: 0,
+      kept: 0,
+    })
   })
 
   it('takes nothing from a payment that says it took no money', () => {
     expect(settlement({ ...PACK, paid: 0, gone: 500 })).toEqual({
       delta: 0,
       held: 0,
+      kept: 0,
     })
   })
 
@@ -108,13 +133,13 @@ describe('settlement', () => {
       takenOtherwise: 18,
     })
 
-    expect(refundOfWithdrawal).toEqual({ delta: 0, held: 0 })
+    expect(refundOfWithdrawal).toEqual({ delta: 0, held: 0, kept: 0 })
   })
 
   it('takes the rest after a withdrawal when the whole payment goes back', () => {
     const disputed = settlement({ ...PACK, gone: 500, takenOtherwise: 18 })
 
-    expect(disputed).toEqual({ delta: -12, held: 12 })
+    expect(disputed).toEqual({ delta: -12, held: 12, kept: 0 })
   })
 
   it('gives back what is held past the due only for an event that may', () => {
@@ -123,11 +148,39 @@ describe('settlement', () => {
     expect(settlement({ ...won, mayGiveBack: true })).toEqual({
       delta: 30,
       held: 0,
+      kept: 0,
     })
     expect(settlement({ ...won, mayGiveBack: false })).toEqual({
       delta: 0,
       held: 30,
+      kept: 0,
     })
+  })
+
+  it('holds no more than the cap, and says how many credits that leaves the buyer', () => {
+    expect(settlement({ ...PACK, gone: 500, most: 5 })).toEqual({
+      delta: -5,
+      held: 5,
+      kept: 25,
+    })
+    // A cap above what is due changes nothing.
+    expect(settlement({ ...PACK, gone: 250, most: 20 })).toEqual({
+      delta: -15,
+      held: 15,
+      kept: 0,
+    })
+  })
+
+  it('never gives back because of the cap', () => {
+    // Held 5 already, nothing more unused: the cap is what is held.
+    const capped = settlement({
+      ...PACK,
+      gone: 500,
+      heldByMoneyBack: 5,
+      most: 5,
+    })
+
+    expect(capped).toEqual({ delta: 0, held: 5, kept: 25 })
   })
 })
 
@@ -192,7 +245,7 @@ describe('settle', () => {
       held: 10,
       takenOtherwise: 20,
       settledWhole: false,
-      keptUsed: false,
+      keptUsed: 0,
     })
   })
 
@@ -205,7 +258,7 @@ describe('settle', () => {
       held: 0,
       takenOtherwise: 20,
       settledWhole: true,
-      keptUsed: false,
+      keptUsed: 0,
     })
     expect(settle(withdrawn, 'pi_1', disputed, terms).delta).toBe(0)
   })
@@ -247,7 +300,7 @@ describe('settle', () => {
       held: 20,
       takenOtherwise: 0,
       settledWhole: false,
-      keptUsed: true,
+      keptUsed: 10,
     })
   })
 
@@ -271,13 +324,35 @@ describe('settle', () => {
       ...NO_CONSENT,
     })
 
-    expect(half).toMatchObject({ delta: -15, held: 15, keptUsed: false })
+    expect(half).toMatchObject({ delta: -15, held: 15, keptUsed: 0 })
+  })
+
+  it('caps a part refund of a purchase with no consent on record at the credits still unused', () => {
+    const most = settle(partUsed, 'pi_1', charge({ amountRefunded: 400 }), {
+      ...NO_CONSENT,
+    })
+
+    expect(most).toMatchObject({ delta: -20, held: 20, keptUsed: 4 })
+  })
+
+  it('takes nothing more from a purchase with no consent on record once its unused credits are held', () => {
+    const taken: Ledger = {
+      version: '3:3:0',
+      rows: [...partUsed.rows, row(-20, 'purchase-refund', { jobRef: 'pi_1' })],
+    }
+
+    const next = settle(taken, 'pi_1', charge({ amountRefunded: 450 }), {
+      ...NO_CONSENT,
+      unusedWithoutConsent: 0,
+    })
+
+    expect(next).toMatchObject({ delta: 0, held: 20 })
   })
 
   it('takes every credit back, used ones too, when the buyer gave the consent', () => {
     const whole = settle(partUsed, 'pi_1', charge(), CONSENTED)
 
-    expect(whole).toMatchObject({ delta: -30, held: 30, keptUsed: false })
+    expect(whole).toMatchObject({ delta: -30, held: 30, keptUsed: 0 })
   })
 })
 
