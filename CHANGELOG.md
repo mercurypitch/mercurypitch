@@ -7,8 +7,8 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ## [0.9.17] - 2026-10-11
 
-Five free credits arrive when you confirm your email, using all five earns 30
-more, and you can cancel a credit pack within 14 days.
+Confirm your email for five free credits, and use all five for 30 more. Credit
+packs can now be cancelled within 14 days.
 
 ### Added
 
@@ -26,7 +26,7 @@ more, and you can cancel a credit pack within 14 days.
   gets back once your credits are in, and the purchase mail gives the date to
   cancel by.
 - **Privacy, Terms and Imprint links** on the website's pages, the Voice
-  Mirror, the glass challenge and Settings › About.
+  Mirror, Break Glass and Settings › About.
 - **Cookie settings shows your choice.** Reopen the banner from Settings ›
   About to see what you chose and when, and change it. Declining deletes the
   Google cookies already set.
