@@ -16,12 +16,14 @@
 `workers/db-worker/src/withdrawal-finish.ts`,
 `workers/db-worker/src/withdrawal-refund.ts`,
 `workers/db-worker/src/withdrawal-refund-failed.ts`,
+`workers/db-worker/src/chargeback-alert.ts`,
 `workers/db-worker/src/email.ts` (`maskEmail`, `maskAddresses`),
 `workers/db-worker/src/auth.ts` (`handleGoogleCallback`),
 `workers/db-worker/migrations/0064_stripe_charges.sql`,
 `workers/db-worker/migrations/0065_reapply_money_back_events.sql`,
-`workers/db-worker/migrations/0067_chargeback_alerts.sql` and
-`workers/db-worker/migrations/0068_withdrawal_refund_failure_claims.sql`.
+`workers/db-worker/migrations/0067_chargeback_alerts.sql`,
+`workers/db-worker/migrations/0068_withdrawal_refund_failure_claims.sql` and
+`workers/db-worker/migrations/0069_chargeback_alert_claims.sql`.
 
 **Tests:** `workers/db-worker/node-tests/stripe-money-back-integration.test.ts`,
 `workers/db-worker/node-tests/stripe-webhook-hygiene-integration.test.ts`,
@@ -141,7 +143,20 @@ not any credits are on record for the payment (REQ-MB-026). A chargeback
 whose opening told the owner gets no second alert unless the money leaving
 moved credits. The worker shall record each dispute whose chargeback the
 owner was told of (`chargebackAlerts`, migration 0067), so the alert goes
-once.
+once, and shall record it only once Resend has taken that alert. **While**
+the alert does not go, the webhook shall answer 500 and leave the event
+unrecorded, so Stripe delivers it again, and a delivery that finds the
+ledger moved already by an earlier delivery of the event shall still send
+it. Stripe sends `charge.dispute.created` and
+`charge.dispute.funds_withdrawn` at once for a dispute that opens as a
+chargeback, and may deliver either twice, so a delivery shall claim the
+dispute before it alerts (`chargebackAlertClaims`, migration 0069), and only
+the delivery that claimed it shall alert. Another event about the same
+dispute shall leave the alert to the claim and answer 200; the same event,
+while its twin holds the claim, shall answer 500. A claim shall go back when
+its alert does not go, and one older than 10 minutes belongs to a delivery
+that died and shall be taken over. An alert the sweep holds for its
+migration 0065 summary (REQ-MB-032) counts as sent once it is held.
 
 ### REQ-MB-022 — Closing
 

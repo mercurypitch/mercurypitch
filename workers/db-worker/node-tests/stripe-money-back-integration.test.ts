@@ -13,9 +13,8 @@
 // Stripe (stripe-fake.ts), the way it reads the real one: the event says
 // what changed, Stripe's API says what is true now.
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { SqliteD1Database } from './sqlite-d1'
-import { justBefore } from './sqlite-d1'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { interleaved, justBefore, SqliteD1Database } from './sqlite-d1'
 import type { StripeEvent } from './stripe-fake'
 import type { Harness, Singer } from './stripe-harness'
 import { alerts, balance, deliver, openHarness, recorded, register, spend, sweep, takeBacks, } from './stripe-harness'
@@ -844,5 +843,235 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
     expect(subjects()).toEqual([
       '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026',
     ])
+  })
+
+  describe('when Resend refuses its mail (#970 round-4 review, N-1)', () => {
+    // The chargeback's mail is the owner's only word of it from the worker.
+    // The dispute is recorded as told only once Resend took that mail, and
+    // until then its event answers 500, so Stripe sends it again: a mail
+    // may go twice, never not at all.
+
+    const OPENED =
+      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026'
+
+    /** Resend answers 500 to each billing mail whose subject has `word`,
+     *  until `up()`. A refused mail never reaches h.sent, so alerts(h)
+     *  lists only the mails Resend took. */
+    function resendRefuses(word: string): {
+      refused: () => number
+      up: () => void
+    } {
+      const inner = globalThis.fetch
+      let refused = 0
+      let down = true
+      vi.stubGlobal(
+        'fetch',
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = input instanceof Request ? input.url : String(input)
+          const mail =
+            url === 'https://api.resend.com/emails' &&
+            typeof init?.body === 'string'
+              ? (JSON.parse(init.body) as { subject: string })
+              : null
+          if (down && mail !== null && mail.subject.includes(word)) {
+            refused += 1
+            return Response.json(
+              { statusCode: 500, name: 'internal_server_error' },
+              { status: 500 },
+            )
+          }
+          return inner(input, init)
+        },
+      )
+      return {
+        refused: () => refused,
+        up: () => {
+          down = false
+        },
+      }
+    }
+
+    /** The disputes recorded as told (migration 0067). */
+    function told(): unknown[] {
+      return h.sqlite
+        .prepare('SELECT disputeId, eventId FROM chargebackAlerts')
+        .all()
+    }
+
+    /** The claims deliveries hold while their mail goes (migration 0069). */
+    function claims(): unknown[] {
+      return h.sqlite
+        .prepare('SELECT disputeId, eventId FROM chargebackAlertClaims')
+        .all()
+    }
+
+    /** A claim on the event's dispute, taken by `eventId` `minutesAgo`. */
+    function claimedBy(
+      event: StripeEvent,
+      eventId: string,
+      minutesAgo: number,
+    ): void {
+      h.sqlite
+        .prepare(
+          'INSERT INTO chargebackAlertClaims (disputeId, eventId, claimedAt) VALUES (?, ?, ?)',
+        )
+        .run(
+          String(event.data.object.id),
+          eventId,
+          new Date(Date.now() - minutesAgo * 60_000).toISOString(),
+        )
+    }
+
+    /** An inquiry on a payment bought by `path`'s route, and the event
+     *  that makes it a chargeback. */
+    async function escalating(
+      path: string,
+    ): Promise<{ singer: Singer; start: number; escalation: StripeEvent }> {
+      const singer = await register(
+        h,
+        `${path.replace(/\W+/g, '-')}@example.com`,
+      )
+      const pi =
+        path === 'credits unused'
+          ? await bought(singer)
+          : path === 'no credits on record'
+            ? await bought(singer, 0)
+            : await usedUp(singer)
+      await deliver(
+        h,
+        h.stripe.dispute(pi, { status: 'warning_needs_response' }),
+      )
+      return {
+        singer,
+        start: alerts(h).length,
+        escalation: h.stripe.escalateDispute(pi),
+      }
+    }
+
+    it.each([
+      ['credits unused', 'Taken back now: 30 credit(s)'],
+      [
+        'every credit used, no consent',
+        '30 credit(s) the buyer used stay theirs',
+      ],
+      ['no credits on record', 'No credits on record name this payment'],
+    ] as const)(
+      'tells the owner of a chargeback once Resend takes the mail it refused (%s)',
+      async (path, credits) => {
+        const { singer, start, escalation } = await escalating(path)
+        const resend = resendRefuses('Chargeback')
+
+        // Refused: nothing recorded, so Stripe sends the event again.
+        expect((await deliver(h, escalation)).status).toBe(500)
+        expect(resend.refused()).toBe(1)
+        expect(recorded(h, escalation.id)).toBe(false)
+        expect(told()).toEqual([])
+        expect(claims()).toEqual([])
+
+        resend.up()
+        // The ledger moved on the first delivery; the mail still goes.
+        expect((await deliver(h, escalation)).status).toBe(200)
+        await sweep(h)
+
+        expect(subjects(start)).toEqual([CHARGEBACK])
+        expectChargebackAlert()
+        expect(alerts(h).at(-1)?.text).toContain(credits)
+        expect(recorded(h, escalation.id)).toBe(true)
+        expect(told()).toEqual([
+          {
+            disputeId: String(escalation.data.object.id),
+            eventId: escalation.id,
+          },
+        ])
+        expect(claims()).toEqual([])
+        expect(balance(h, singer.userId)).toBe(0)
+      },
+    )
+
+    it('tells the owner of a chargeback once Resend takes the opening mail it refused', async () => {
+      const singer = await register(h, 'opening-refused@example.com')
+      const pi = await bought(singer)
+      const start = alerts(h).length
+      const opened = h.stripe.dispute(pi)
+      const resend = resendRefuses('Dispute opened')
+
+      expect((await deliver(h, opened)).status).toBe(500)
+      expect(recorded(h, opened.id)).toBe(false)
+      expect(told()).toEqual([])
+      resend.up()
+      expect((await deliver(h, opened)).status).toBe(200)
+      await deliver(h, h.stripe.escalateDispute(pi))
+
+      expect(subjects(start)).toEqual([OPENED])
+      expect(alerts(h).at(-1)?.text).toContain('Taken back now: 30 credit(s)')
+      expect(told()).toHaveLength(1)
+      expect(balance(h, singer.userId)).toBe(0)
+    })
+
+    it('tells the owner from the sweep when Stripe stops sending the event', async () => {
+      const { start, escalation } = await escalating('swept')
+      const resend = resendRefuses('Chargeback')
+      expect((await deliver(h, escalation)).status).toBe(500)
+
+      resend.up()
+      await sweep(h)
+
+      expect(
+        subjects(start).filter((subject) => subject === CHARGEBACK),
+      ).toHaveLength(1)
+      expectChargebackAlert()
+      expect(recorded(h, escalation.id)).toBe(true)
+      expect(claims()).toEqual([])
+    })
+
+    it('answers 500 to the same event while its twin holds the claim, and takes the claim over once it is stale', async () => {
+      const { start, escalation } = await escalating('twin-claim')
+      claimedBy(escalation, escalation.id, 1)
+
+      expect((await deliver(h, escalation)).status).toBe(500)
+      expect(subjects(start)).toEqual([])
+      expect(recorded(h, escalation.id)).toBe(false)
+
+      // Ten minutes on, the claim belongs to a delivery that died.
+      h.sqlite
+        .prepare('UPDATE chargebackAlertClaims SET claimedAt = ?')
+        .run(new Date(Date.now() - 11 * 60_000).toISOString())
+      expect((await deliver(h, escalation)).status).toBe(200)
+      expect(subjects(start)).toEqual([CHARGEBACK])
+      expect(claims()).toEqual([])
+    })
+
+    it("leaves the mail to another event's live claim on the dispute", async () => {
+      const { start, escalation } = await escalating('other-claim')
+      claimedBy(escalation, 'evt_other', 1)
+
+      expect((await deliver(h, escalation)).status).toBe(200)
+
+      expect(subjects(start)).toEqual([])
+      expect(told()).toEqual([])
+      expect(claims()).toEqual([
+        { disputeId: String(escalation.data.object.id), eventId: 'evt_other' },
+      ])
+    })
+
+    it('tells the owner once when Stripe delivers the same event twice at once', async () => {
+      const { start, escalation } = await escalating('twins')
+
+      const real = h.env.DB
+      h.env.DB = interleaved(new SqliteD1Database(h.sqlite))
+      const answers = await Promise.all([
+        deliver(h, escalation),
+        deliver(h, escalation),
+      ]).finally(() => {
+        h.env.DB = real
+      })
+      // Stripe sends again whatever got a 500.
+      expect((await deliver(h, escalation)).status).toBe(200)
+
+      expect(answers.map((answer) => answer.status)).toContain(200)
+      expect(subjects(start)).toEqual([CHARGEBACK])
+      expect(recorded(h, escalation.id)).toBe(true)
+      expect(claims()).toEqual([])
+    })
   })
 })
