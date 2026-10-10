@@ -193,8 +193,11 @@ or is canceled, even after Stripe reported it succeeded, `refund.failed` and
 withdrawal took them. The webhook shall hand the refund to its statement
 (`markWithdrawalRefundFailed`, withdrawal-refund-failed.ts), which marks the
 refund failed and tells the owner to refund by hand, once per statement and
-status. **While** the owner's alert does not go, the webhook shall answer 500
-and leave the event unrecorded, so Stripe delivers it again.
+status. The alert shall say the refund failed after it went through only
+when the statement records that Stripe had reported it succeeded; a refund
+still pending, and one whose statement is gone, it shall report as failed.
+**While** the owner's alert does not go, the webhook shall answer 500 and
+leave the event unrecorded, so Stripe delivers it again.
 
 ### REQ-MB-029 — A purchase with no consent on record
 

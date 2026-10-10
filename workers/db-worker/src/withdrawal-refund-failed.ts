@@ -1,33 +1,38 @@
 // ============================================================
-// withdrawal-refund-failed — a refund that fails after Stripe said it went
+// withdrawal-refund-failed — a withdrawal refund Stripe fails or cancels
 // ============================================================
 //
 // Stripe can fail a refund it had reported 'succeeded': the buyer's bank
 // sends the money back, up to 30 days on, or the card has gone. The sweep
 // stops following a refund once it succeeded (withdrawal-finish.ts), so the
-// refund webhook hands each such refund here, by its metadata.withdrawalId,
-// whenever Stripe reports it 'failed' or 'canceled'.
+// refund webhook hands each refund here, by its metadata.withdrawalId,
+// whenever Stripe reports it 'failed' or 'canceled': one that had
+// succeeded, and one still pending, whose webhook may come before the
+// sweep notices.
 //
 // The statement's refund becomes 'failed', with Stripe's status and reason,
 // and the owner is told to refund by hand: the buyer is still owed the
-// money (CRD Art. 13(1)). Nothing goes back to the balance: the withdrawal
-// took the credits, and they stay taken.
+// money (CRD Art. 13(1)). The alert says the refund failed "after it went
+// through" only when the statement records that Stripe had said it
+// succeeded. Nothing goes back to the balance: the withdrawal took the
+// credits, and they stay taken.
 //
 // Recorded only once Resend has taken that alert, and recorded as handed
 // over (refundHandedOverAt), so no sweep tells again: until then this
 // throws, so the webhook answers 500 and Stripe sends the event again. Once per
 // statement and Stripe status: the same failure again answers 'already'
-// and tells nobody. A statement that is gone (its account was deleted after
-// the refund went through) has nothing to mark: the owner is told, from
-// what the webhook knows, each time it is called.
+// and tells nobody. A statement that is gone (its account was deleted
+// since) has nothing to mark, and nothing to say whether the refund had
+// gone through: the owner is told, from what the webhook knows, each time
+// it is called.
 
 import type { Env } from './auth'
 import { formatMoney } from './email'
 import type { StatementRow } from './withdrawal-row'
 import { alert, priceKnown, refundLine, statementFacts } from './withdrawal-row'
 
-/** A withdrawal refund Stripe failed after it succeeded, as the refund
- *  webhook reads it from the refund object. */
+/** A withdrawal refund Stripe failed or canceled, as the refund webhook
+ *  reads it from the refund object. */
 export interface FailedRefund {
   /** metadata.withdrawalId: the statement the refund was made for. */
   withdrawalId: string
@@ -58,8 +63,14 @@ export class RefundFailureNotTold extends Error {
   }
 }
 
-function whyFailed(failure: FailedRefund): string {
-  return `Stripe ${failure.stripeStatus} the refund after it succeeded: ${failure.reason ?? 'no reason given'}`
+/** Whether Stripe had said the statement's refund went through. */
+function wentThrough(row: StatementRow): boolean {
+  return row.stripeRefundStatus === 'succeeded'
+}
+
+function whyFailed(failure: FailedRefund, afterSuccess: boolean): string {
+  const when = afterSuccess ? ' after it succeeded' : ''
+  return `Stripe ${failure.stripeStatus} the refund${when}: ${failure.reason ?? 'no reason given'}`
 }
 
 const BY_HAND = [
@@ -99,7 +110,7 @@ function goneLines(failure: FailedRefund): string[] {
 }
 
 /**
- * Mark a withdrawal's refund failed after Stripe had reported it
+ * Mark a withdrawal's refund failed, whether or not Stripe had reported it
  * succeeded, and tell the owner to refund it by hand. Gives no credits
  * back. Idempotent per statement and Stripe status. Throws
  * RefundFailureNotTold when the owner's alert did not go, with nothing
@@ -115,7 +126,7 @@ export async function markWithdrawalRefundFailed(
   if (row === null) {
     const told = await alert(
       env,
-      'Withdrawal: refund FAILED after it went through, statement gone, refund by hand',
+      'Withdrawal: refund FAILED, statement gone, refund by hand',
       goneLines(failure),
     )
     if (!told) throw new RefundFailureNotTold(failure.withdrawalId)
@@ -130,7 +141,9 @@ export async function markWithdrawalRefundFailed(
   const money = priceKnown(row)
     ? ` ${formatMoney(row.refundMinor, row.currency)}`
     : ''
-  const subject = `Withdrawal: refund FAILED after it went through, refund${money} by hand`
+  const afterSuccess = wentThrough(row)
+  const when = afterSuccess ? ' after it went through' : ''
+  const subject = `Withdrawal: refund FAILED${when}, refund${money} by hand`
   if (!(await alert(env, subject, failedLines(row, failure)))) {
     throw new RefundFailureNotTold(failure.withdrawalId)
   }
@@ -144,7 +157,7 @@ export async function markWithdrawalRefundFailed(
     .bind(
       failure.stripeStatus,
       failure.refundId,
-      whyFailed(failure),
+      whyFailed(failure, afterSuccess),
       new Date().toISOString(),
       row.id,
       failure.stripeStatus,

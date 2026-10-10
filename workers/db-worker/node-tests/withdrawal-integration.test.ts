@@ -2139,14 +2139,16 @@ describe('a refund Stripe has not finished', () => {
 
     // The webhook marks the statement's refund failed and tells the owner
     // (withdrawal-refund-failed.ts); the second event finds it told.
+    // Stripe never said it went through: the owner is not told it did.
     expect(answers).toEqual([200, 200])
     expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
     expect(statementOf(plus)).toMatchObject({
       refundStatus: 'failed',
       stripeRefundStatus: 'failed',
+      refundError: 'Stripe failed the refund: expired_or_canceled_card',
     })
     expect(subjects(alerts().slice(alertsBefore))).toEqual([
-      '[MercuryPitch billing] Withdrawal: refund FAILED after it went through, refund €14.28 by hand',
+      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €14.28 by hand',
     ])
 
     // The withdrawal sweep has nothing more to say.
@@ -2186,8 +2188,11 @@ describe('a refund Stripe has not finished', () => {
     expect(statementOf(plus)).toMatchObject({
       refundStatus: 'failed',
       stripeRefundStatus: 'canceled',
+      refundError: 'Stripe canceled the refund: no reason given',
     })
-    expect(alerts()).toHaveLength(alertsBefore + 1)
+    expect(subjects(alerts().slice(alertsBefore))).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €20.00 by hand',
+    ])
   })
 
   it('is followed until Stripe fails it, then goes to the owner to refund by hand', async () => {
@@ -3946,7 +3951,7 @@ describe('a name', () => {
   })
 })
 
-describe('a refund that fails after Stripe said it succeeded', () => {
+describe('a withdrawal refund the refund webhook reports failed', () => {
   type Failure = {
     withdrawalId: string
     refundId: string
@@ -3992,8 +3997,8 @@ describe('a refund that fails after Stripe said it succeeded', () => {
       refundStatus: 'failed',
       stripeRefundStatus: 'failed',
     })
-    expect(String(statementOf(plus)?.refundError)).toContain(
-      'expired_or_canceled_card',
+    expect(statementOf(plus)?.refundError).toBe(
+      'Stripe failed the refund after it succeeded: expired_or_canceled_card',
     )
     expect(subjects(alerts()).filter((s) => s === FAILED_SUBJECT)).toHaveLength(
       1,
@@ -4010,6 +4015,36 @@ describe('a refund that fails after Stripe said it succeeded', () => {
     expect(
       subjects(alerts()).filter((s) => s.includes('refund FAILED, refund')),
     ).toEqual([])
+  })
+
+  it('says only that it FAILED when Stripe had not said it went through', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const statement = statementOf(plus)
+    expect(statement).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'pending',
+    })
+
+    expect(
+      await failed({
+        withdrawalId: String(statement?.id),
+        refundId: 're_1',
+        stripeStatus: 'failed',
+        reason: 'expired_or_canceled_card',
+      }),
+    ).toBe('recorded')
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+      refundError: 'Stripe failed the refund: expired_or_canceled_card',
+    })
+    expect(
+      subjects(alerts()).filter((s) => s.includes('refund FAILED')),
+    ).toEqual([`${BILLING}Withdrawal: refund FAILED, refund €20.00 by hand`])
   })
 
   it('changes nothing until the owner alert about it goes', async () => {
@@ -4043,8 +4078,9 @@ describe('a refund that fails after Stripe said it succeeded', () => {
         currency: 'eur',
       }),
     ).toBe('not-found')
+    // Nothing on record says Stripe had reported it through.
     expect(subjects(alerts())).toEqual([
-      `${BILLING}Withdrawal: refund FAILED after it went through, statement gone, refund by hand`,
+      `${BILLING}Withdrawal: refund FAILED, statement gone, refund by hand`,
     ])
     expect(alerts()[0]?.text).toContain('pi_gone')
     expect(alerts()[0]?.text).toContain('€5.00')
