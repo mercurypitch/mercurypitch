@@ -70,19 +70,22 @@ export function maskEmail(address: string): string {
 }
 
 /** Anything that reads like an address, in text a log line carries from
- *  elsewhere (an API's error body, a thrown error): letters, marks and
+ *  elsewhere (an API's error body, a thrown error). An unquoted local part
+ *  is any run of characters but a space, an @ and those that end an
+ *  address in text ("<>()[]\\,;: and the double quote): letters, marks and
  *  digits in any script ("josé@exämple.com"), every other character RFC
- *  5322 allows in a local part (!#$%&'*+-/=?^_`{|}~ and the dot, so
- *  "mary.o'brien@example.com" masks whole), a quoted local part
- *  ("\"quoted local\"@example.com") and an address literal
- *  ("user@[192.0.2.1]"). Punctuation a local part may hold is masked with
- *  the address when it touches it: "'jane@example.com'" logs as
- *  "'***@***.com'" (#970 review, F-7). An unquoted local part is read for
- *  at most 64 characters, all RFC 5321 allows, so a long run with no @ in
- *  it (a base64 blob) costs time linear in its length, not quadratic
- *  (#970 round-4 review, N-4). */
+ *  5322 allows (!#$%&'*+-/=?^_`{|}~ and the dot, so
+ *  "mary.o'brien@example.com" masks whole), and a symbol or an emoji, even
+ *  right before the @, all of which sign-up takes (#970 round-4 review,
+ *  N-5). Also a quoted local part ("\"quoted local\"@example.com")
+ *  and an address literal ("user@[192.0.2.1]"). Punctuation a local part
+ *  may hold is masked with the address when it touches it:
+ *  "'jane@example.com'" logs as "'***@***.com'" (#970 review, F-7). An
+ *  unquoted local part is read for at most 64 characters, all RFC 5321
+ *  allows, so a long run with no @ in it (a base64 blob) costs time linear
+ *  in its length, not quadratic (#970 round-4 review, N-4). */
 const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]{1,64})@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+  /(?:"(?:[^"\\\r\n]|\\.)*"|[^\s@"<>()[\]\\,;:]{1,64})@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */

@@ -362,11 +362,14 @@ amounts, and never an email address, a card's details or a secret. An email
 address a log line must name shall be masked (`maskEmail`). What a provider
 answers when it refuses a request (Resend refusing a mail, Google refusing a
 sign-in code) shall be logged with every address in it masked
-(`maskAddresses`). Letters, marks and digits in any script
-(`josé@exämple.com`), every other character RFC 5322 allows in a local part
-(`mary.o'brien@example.com` logs as `m***@***.com`), a quoted local part and
-an address literal (`user@[192.0.2.1]` logs as `u***@***`) are masked whole:
-no character of a local part after its first shows. Punctuation a local part
+(`maskAddresses`). An unquoted local part is any run of characters but a
+space, an @ and those that end an address in text (`"<>()[]\,;:`): letters,
+marks and digits in any script (`josé@exämple.com`), every other character
+RFC 5322 allows in a local part (`mary.o'brien@example.com` logs as
+`m***@***.com`), and a symbol or an emoji, even right before the @
+(`jane€@example.com` logs as `j***@***.com`). It, a quoted local part and an
+address literal (`user@[192.0.2.1]` logs as `u***@***`) are masked whole: no
+character of a local part after its first shows. Punctuation a local part
 may hold is masked with the address when it touches it
 (`'jane@example.com'` logs as `'***@***.com'`). An unquoted local part shall
 be read for at most 64 characters, all RFC 5321 allows, so that masking a

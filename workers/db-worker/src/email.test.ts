@@ -251,6 +251,39 @@ describe('maskAddresses', () => {
     ).toBe('The `to` field `***@***.com` is invalid')
   })
 
+  // Sign-up takes a local part with any character but a space or an @
+  // (EMAIL_RE in auth.ts). A symbol or an emoji next to the @ must not leave
+  // the rest of it readable (#970 round-4 review, N-5).
+  it.each([
+    [
+      'an emoji right before the @',
+      'smile\u{1F600}@example.com',
+      's***@***.com',
+    ],
+    ['an emoji first', '\u{1F600}smile@example.com', '\u{1F600}***@***.com'],
+    ['a symbol right before the @', 'jane\u20AC@example.com', 'j***@***.com'],
+    ['a symbol first', '\u20ACjane@example.com', '\u20AC***@***.com'],
+  ])('masks a local part with %s whole', (_, input, masked) => {
+    expect(maskAddresses(`to ${input} now`)).toBe(`to ${masked} now`)
+  })
+
+  // The rest of the round-4 review's cases. A top-level domain shows, as
+  // maskEmail means it to.
+  it.each([
+    ['a!b#c$d&e*f/g=h?i^j`k{l|m}n~o@example.com', 'a***@***.com'],
+    ['first/last@example.com', 'f***@***.com'],
+    ['tom&jerry@example.com', 't***@***.com'],
+    ['ANNA.SMITH@EXAMPLE.COM', 'A***@***.COM'],
+    [
+      'to=<bob@example.org>; cc=carol@example.net',
+      'to=<b***@***.org>; c***@***.net',
+    ],
+    ['user@sub-domain.example', 'u***@***.example'],
+    ['"a\\"b"@example.com', '"***@***.com'],
+  ])('masks %s as %s', (input, masked) => {
+    expect(maskAddresses(input)).toBe(masked)
+  })
+
   // A run of characters a local part may hold, with no @ in it, was read to
   // its end from every place it could start: 50 KB of base64 or hex in an
   // error text took 1.7 s to mask (#970 round-4 review, N-4). A local part
