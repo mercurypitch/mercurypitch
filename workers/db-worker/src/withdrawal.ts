@@ -26,13 +26,21 @@
 // spend in between makes it count again.
 //
 // The refund is worked out from the price paid: the checkout's own record,
-// else what the PaymentIntent received at Stripe, asked when the refund is
-// (withdrawal-finish.ts), never the catalogue's. When neither knows it, the
-// statement stands and the owner refunds by hand. The statement stands
-// whatever Stripe says, because one made inside the 14 days counts
-// (Art. 11a(5)). The refund, its acknowledgement mail and the owner's alert
-// follow in withdrawal-finish.ts; what a request leaves undone, the
-// 6-hourly sweep finishes (sweepWithdrawals).
+// else what the PaymentIntent received at Stripe, never the catalogue's.
+// When neither knows it, the statement stands and the owner refunds by
+// hand. The statement stands whatever Stripe says, because one made inside
+// the 14 days counts (Art. 11a(5)). The refund, its acknowledgement mail and
+// the owner's alert follow in withdrawal-finish.ts; what a request leaves
+// undone, the 6-hourly sweep finishes (sweepWithdrawals).
+//
+// What the money says decides as much as the credits (withdrawal-rules.ts):
+// the list reads what Stripe last said of each payment (stripeCharges),
+// and asks Stripe nothing. A statement reads Stripe afresh before it
+// promises an amount (paymentAtStripe): a pack whose money Stripe holds
+// back (a chargeback, or refunds of all of it) is refused, and the refund
+// is never more than the charge still holds. When Stripe does not answer,
+// the statement stands with its price pending, and no amount is promised
+// until it does.
 //
 // The refund comes back as charge.refunded: stripe-payments.ts counts the
 // withdrawal's ledger rows as taken back already, so nothing goes twice.
@@ -41,13 +49,16 @@ import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth } from './auth'
 import { consentTerms, sweepPurchaseMails, withdrawalGraceWeekdays, withdrawalMode, } from './checkout-consent'
 import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readNamedLedger, } from './ledger'
+import type { ChargeState } from './stripe-charge'
+import { loadCharge, loadCharges } from './stripe-charge'
 import { WITHDRAWAL_BONUS, WITHDRAWAL_PAID } from './stripe-payments'
 import { finish, sweepStatements } from './withdrawal-finish'
-import type { Price } from './withdrawal-refund'
+import type { PaymentAnswer, Price } from './withdrawal-refund'
+import { paymentAtStripe } from './withdrawal-refund'
 import type { StatementRow } from './withdrawal-row'
 import { priceKnown } from './withdrawal-row'
-import type { PackUse } from './withdrawal-rules'
-import { canWithdraw, deadlineToShow, packUses, refundBasis, refundFor, withdrawalBonusKey, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
+import type { PackUse, PaymentMoney, RefundBasis } from './withdrawal-rules'
+import { canWithdraw, deadlineToShow, moneyOf, packUses, refundBasis, refundFor, refundOwed, withdrawalBonusKey, withdrawalKey, withdrawalOpen, withMoney, } from './withdrawal-rules'
 import type { PurchaseTerms } from './withdrawal-wording'
 
 type Respond = (body: object | null, init?: ResponseInit) => Response
@@ -158,13 +169,30 @@ function statementView(row: StatementRow) {
   }
 }
 
+/** The refund the list shows: by what Stripe last said of the payment;
+ *  with nothing kept, by the rule alone, unless money went back on the
+ *  payment before Stripe's word was kept: then none, and the statement
+ *  reads Stripe. */
+function listedRefund(
+  basis: RefundBasis,
+  price: Price,
+  pack: PackUse,
+  money: PaymentMoney | null,
+): number | null {
+  if (money !== null) return refundOwed(basis, price.amountMinor, pack, money)
+  return pack.moneyBack ? null : refundFor(basis, price.amountMinor, pack)
+}
+
 function packView(
   pack: PackUse,
   facts: PurchaseFacts,
+  money: PaymentMoney | null,
   nowMs: number,
   graceWeekdays: number,
 ) {
   const basis = refundBasis(facts.terms)
+  const refund =
+    facts.price === null ? null : listedRefund(basis, facts.price, pack, money)
   return {
     purchaseId: pack.purchaseId,
     packLabel: facts.label,
@@ -175,13 +203,20 @@ function packView(
     unusedCredits: pack.paidUnused,
     bonusCredits: pack.bonusUnused,
     refund:
-      facts.price === null
+      facts.price === null || refund === null
         ? null
-        : {
-            amountMinor: refundFor(basis, facts.price.amountMinor, pack),
-            currency: facts.price.currency,
-          },
+        : { amountMinor: refund, currency: facts.price.currency },
   }
+}
+
+/** What Stripe last said of a pack's payment, or null when nothing is kept. */
+function keptMoney(
+  kept: ReadonlyMap<string, ChargeState>,
+  pack: PackUse,
+): PaymentMoney | null {
+  const charge =
+    pack.paymentIntentId === null ? undefined : kept.get(pack.paymentIntentId)
+  return charge === undefined ? null : moneyOf(charge)
 }
 
 async function handleList(
@@ -205,10 +240,19 @@ async function handleList(
   ])
   const now = Date.now()
   const grace = withdrawalGraceWeekdays(env)
-  const packs = packUses(ledger.rows).flatMap((pack) => {
+  const uses = packUses(ledger.rows)
+  const kept = await loadCharges(
+    env,
+    uses.flatMap((use) =>
+      use.paymentIntentId === null ? [] : [use.paymentIntentId],
+    ),
+  )
+  const packs = uses.flatMap((use) => {
+    const money = keptMoney(kept, use)
+    const pack = withMoney(use, money)
     const fact = facts(pack)
     return canWithdraw(fact.terms, pack, now, grace)
-      ? [packView(pack, fact, now, grace)]
+      ? [packView(pack, fact, money, now, grace)]
       : []
   })
   return respond({
@@ -267,19 +311,47 @@ function refusal(
   return null
 }
 
-/** The statement's row, before anything is written. With no price on its
- *  checkout's record, the price is pending: the refund step asks Stripe
- *  for it (withdrawal-finish.ts). */
+/** The refund a statement promises, and the price it is worked out from:
+ *  the checkout's record, else what Stripe says the payment received. Capped
+ *  at what the charge holds, by Stripe's word just read. None while Stripe
+ *  has not answered, or no price is known: the price is pending, and the
+ *  refund step asks again (withdrawal-finish.ts). */
+function promised(
+  basis: RefundBasis,
+  pack: PackUse,
+  facts: PurchaseFacts,
+  read: PaymentAnswer,
+): {
+  price: Price | null
+  refundMinor: number
+  source: StatementRow['priceSource']
+} {
+  const price = facts.price ?? (read.kind === 'paid' ? read.price : null)
+  if (price === null || read.kind === 'no-answer') {
+    return { price, refundMinor: 0, source: 'pending' }
+  }
+  return {
+    price,
+    refundMinor:
+      read.kind === 'paid'
+        ? refundOwed(basis, price.amountMinor, pack, moneyOf(read.charge))
+        : refundFor(basis, price.amountMinor, pack),
+    source: facts.price === null ? 'stripe' : 'checkout',
+  }
+}
+
+/** The statement's row, before anything is written. */
 function draftStatement(
   auth: AuthUser,
   body: StatementBody,
   pack: PackUse,
   facts: PurchaseFacts,
+  read: PaymentAnswer,
   submittedAt: string,
   id: string,
 ): StatementRow {
   const basis = refundBasis(facts.terms)
-  const { price } = facts
+  const { price, refundMinor, source } = promised(basis, pack, facts, read)
   return {
     id,
     userId: auth.userId,
@@ -294,15 +366,15 @@ function draftStatement(
     unusedCredits: pack.paidUnused,
     bonusCredits: pack.bonusUnused,
     amountMinor: price?.amountMinor ?? 0,
-    refundMinor: price === null ? 0 : refundFor(basis, price.amountMinor, pack),
+    refundMinor,
     currency: price?.currency ?? 'eur',
     refundStatus: 'pending',
     stripeRefundId: null,
-    refundError: null,
+    refundError: read.kind === 'no-answer' ? read.why : null,
     mailStatus: null,
     mailAt: null,
     refundBasis: basis,
-    priceSource: price === null ? 'pending' : 'checkout',
+    priceSource: source,
     stripeRefundStatus: null,
   }
 }
@@ -399,10 +471,31 @@ async function writeStatement(
 }
 
 type Placed =
-  | { kind: 'placed'; row: StatementRow; duplicate: boolean }
+  | {
+      kind: 'placed'
+      row: StatementRow
+      duplicate: boolean
+      /** What Stripe said of the payment as the statement was made. */
+      read: PaymentAnswer
+    }
   | { kind: 'refused'; status: number; error: string }
 
-/** Count the pack, and write the statement on the ledger counted. */
+/** What Stripe last said of the pack's payment, kept (stripeCharges). */
+async function keptMoneyOf(
+  env: Env,
+  pack: PackUse,
+): Promise<PaymentMoney | null> {
+  if (pack.paymentIntentId === null) return null
+  const charge = await loadCharge(env, pack.paymentIntentId)
+  return charge === null ? null : moneyOf(charge)
+}
+
+/**
+ * Count the pack, and write the statement on the ledger counted. The pack
+ * is checked against what Stripe last said of its payment, then against
+ * what Stripe says now, read once per request before any amount is
+ * promised.
+ */
 async function placeStatement(
   env: Env,
   auth: AuthUser,
@@ -413,22 +506,31 @@ async function placeStatement(
   const id = crypto.randomUUID()
   const grace = withdrawalGraceWeekdays(env)
   const facts = await purchaseFacts(env, auth.userId)
+  let read: PaymentAnswer | null = null
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readNamedLedger(env, auth.userId)
-    const pack = packUses(ledger.rows).find(
-      (use) => use.purchaseId === body.purchaseId,
+    const use = packUses(ledger.rows).find(
+      (entry) => entry.purchaseId === body.purchaseId,
     )
-    if (pack === undefined) {
+    if (use === undefined) {
       return { kind: 'refused', status: 404, error: 'Purchase not found.' }
     }
-    const fact = facts(pack)
+    const fact = facts(use)
+    const kept = withMoney(use, await keptMoneyOf(env, use))
+    const refusedKept = refusal(kept, fact.terms, now, grace)
+    if (refusedKept !== null) {
+      return { kind: 'refused', status: 409, error: refusedKept }
+    }
+    read ??= await paymentAtStripe(env, use.paymentIntentId)
+    const pack =
+      read.kind === 'paid' ? withMoney(use, moneyOf(read.charge)) : kept
     const refused = refusal(pack, fact.terms, now, grace)
     if (refused !== null)
       return { kind: 'refused', status: 409, error: refused }
-    const draft = draftStatement(auth, body, pack, fact, submittedAt, id)
+    const draft = draftStatement(auth, body, pack, fact, read, submittedAt, id)
     const stands = await writeStatement(env, draft, ledger.version)
     if (stands !== null) {
-      return { kind: 'placed', row: stands, duplicate: stands.id !== id }
+      return { kind: 'placed', row: stands, duplicate: stands.id !== id, read }
     }
   }
   throw new LedgerBusy(
@@ -496,7 +598,14 @@ async function handleStatement(
   if (placed.kind === 'refused') {
     return respond({ error: placed.error }, { status: placed.status })
   }
-  const row = await finish(env, placed.row, placed.duplicate)
+  // The request that made the statement read Stripe already: its refund
+  // step works from that read.
+  const row = await finish(
+    env,
+    placed.row,
+    placed.duplicate,
+    placed.duplicate ? undefined : placed.read,
+  )
   console.log(
     `[billing] withdrawal ${row.id}: user=${row.userId} purchase=${row.purchaseId} -${row.unusedCredits} paid -${row.bonusCredits} bonus, refund ${row.refundMinor} ${row.refundStatus} (${row.refundBasis ?? 'unused'}, price ${row.priceSource ?? 'checkout'})`,
   )

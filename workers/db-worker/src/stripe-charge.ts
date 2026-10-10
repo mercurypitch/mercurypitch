@@ -419,6 +419,17 @@ function storedDisputes(json: string, paymentIntentId: string): DisputeState[] {
   return disputes
 }
 
+function chargeOfRow(row: ChargeRow, paymentIntentId: string): ChargeState {
+  return {
+    chargeId: row.chargeId,
+    paymentIntentId,
+    amount: row.amount,
+    amountRefunded: row.amountRefunded,
+    currency: row.currency,
+    disputes: storedDisputes(row.disputes, paymentIntentId),
+  }
+}
+
 /** What Stripe last said about the payment's charge, or null when no
  *  money ever went back on it. */
 export async function loadCharge(
@@ -431,13 +442,26 @@ export async function loadCharge(
   )
     .bind(paymentIntentId)
     .first<ChargeRow>()
-  if (row === null) return null
-  return {
-    chargeId: row.chargeId,
-    paymentIntentId,
-    amount: row.amount,
-    amountRefunded: row.amountRefunded,
-    currency: row.currency,
-    disputes: storedDisputes(row.disputes, paymentIntentId),
+  return row === null ? null : chargeOfRow(row, paymentIntentId)
+}
+
+/** What Stripe last said about each of these payments' charges, in one
+ *  read: only the payments money went back on are in it. */
+export async function loadCharges(
+  env: Env,
+  paymentIntentIds: readonly string[],
+): Promise<Map<string, ChargeState>> {
+  const kept = new Map<string, ChargeState>()
+  const ids = [...new Set(paymentIntentIds)]
+  if (ids.length === 0) return kept
+  const { results } = await env.DB.prepare(
+    `SELECT paymentIntentId, chargeId, currency, amount, amountRefunded, disputes
+       FROM stripeCharges WHERE paymentIntentId IN (${ids.map(() => '?').join(', ')})`,
+  )
+    .bind(...ids)
+    .all<ChargeRow & { paymentIntentId: string }>()
+  for (const row of results) {
+    kept.set(row.paymentIntentId, chargeOfRow(row, row.paymentIntentId))
   }
+  return kept
 }
