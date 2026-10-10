@@ -71,13 +71,15 @@ export function maskEmail(address: string): string {
 
 /** Anything that reads like an address, in text a log line carries from
  *  elsewhere (an API's error body, a thrown error): letters, marks and
- *  digits in any script ("josé@exämple.com"), a quoted local part
+ *  digits in any script ("josé@exämple.com"), every other character RFC
+ *  5322 allows in a local part (!#$%&'*+-/=?^_`{|}~ and the dot, so
+ *  "mary.o'brien@example.com" masks whole), a quoted local part
  *  ("\"quoted local\"@example.com") and an address literal
- *  ("user@[192.0.2.1]"). On plain ASCII the letter and digit classes are
- *  the A-Z, a-z and 0-9 they always were, so an ordinary address masks as
- *  it did before (#970 review, F-7). */
+ *  ("user@[192.0.2.1]"). Punctuation a local part may hold is masked with
+ *  the address when it touches it: "'jane@example.com'" logs as
+ *  "'***@***.com'" (#970 review, F-7). */
 const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}._%+-]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */

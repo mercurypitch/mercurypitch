@@ -223,4 +223,31 @@ describe('maskAddresses', () => {
     )
     expect(maskAddresses('to <user@[192.0.2.1]>')).toBe('to <u***@***>')
   })
+
+  // RFC 5322 lets a local part hold these as well as letters, digits and
+  // dots, and sign-up takes them. Each is masked with the rest of the local
+  // part, never read as where an address starts (#970 review, F-7).
+  const LOCAL_PART_SPECIALS = "!#$%&'*+-/=?^_`{|}~."
+
+  it.each([...LOCAL_PART_SPECIALS])(
+    'shows nothing of a local part after its first character, with %s in it',
+    (special) => {
+      expect(maskAddresses(`to x${special}secret@example.com`)).toBe(
+        'to x***@***.com',
+      )
+    },
+  )
+
+  it('masks a local part with an apostrophe whole', () => {
+    expect(maskAddresses("to mary.o'brien@example.com")).toBe('to m***@***.com')
+  })
+
+  it('masks an address in single quotes or backticks, quote and all', () => {
+    expect(maskAddresses("refused 'jane.doe@example.com' for now")).toBe(
+      "refused '***@***.com' for now",
+    )
+    expect(
+      maskAddresses('The `to` field `jane.doe@example.com` is invalid'),
+    ).toBe('The `to` field `***@***.com` is invalid')
+  })
 })
