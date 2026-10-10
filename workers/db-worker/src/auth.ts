@@ -27,7 +27,7 @@ import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
 import { createAuthSession, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
-import { sendLoginCode, sendPasswordReset } from './email'
+import { maskAddresses, sendLoginCode, sendPasswordReset } from './email'
 import type { MailOrigins } from './email-layout'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 import { sendSignUpCode } from './email-sign-up-code'
@@ -2964,13 +2964,14 @@ async function handleGoogleCallback(
   })
   if (!tokenRes.ok) {
     // Google's error body ({"error":"invalid_client", …}) names the
-    // misconfiguration (bad secret, redirect_uri mismatch, …) — log it
-    // and surface the code so the failure is diagnosable from the UI.
+    // misconfiguration (bad secret, redirect_uri mismatch, …) — log it,
+    // with any address in it masked, and surface the code so the failure
+    // is diagnosable from the UI.
     const detail = await tokenRes.text().catch(() => '')
     console.error(
       '[google-callback] code exchange failed:',
       tokenRes.status,
-      detail,
+      maskAddresses(detail),
     )
     let code = ''
     try {
