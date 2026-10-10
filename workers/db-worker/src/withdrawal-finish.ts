@@ -17,6 +17,14 @@
 // statement keeps what Stripe answered (refundError), and the owner's
 // alerts name it.
 //
+// Every attempt reads what Stripe says of the payment before it asks for
+// the refund (paymentAtStripe), and never asks past what the charge still
+// holds (refundOwed): a refund made in the dashboard since the statement
+// lowers it, the statement keeps the lower amount, and the owner hears
+// both; the buyer is not mailed again. A payment a chargeback holds, or
+// one Stripe says it cannot refund (is_charge_refundable false), is never
+// asked for: the refund is the owner's to settle by hand.
+//
 // A refund Stripe refused is never asked for again: the owner refunds it
 // by hand, and a second request could refund it twice. The owner is alerted
 // whenever a request moves the refund, and when the acknowledgement is
@@ -40,11 +48,14 @@ import type { Env } from './auth'
 import { SWEEP_BATCH, UNFINISHED_AFTER_MS } from './checkout-consent'
 import { formatDate, formatMoney } from './email'
 import { acknowledgeStep, mailLines, warnAcknowledgement, } from './withdrawal-ack'
-import type { Price, RefundOutcome } from './withdrawal-refund'
-import { followRefund, paidAtStripe, refundAtStripe } from './withdrawal-refund'
+import type { ChargeState } from './stripe-charge'
+import { disputeHolds } from './stripe-charge'
+import type { PaymentAnswer, Price, RefundOutcome } from './withdrawal-refund'
+import { earlierRefund, followRefund, paymentAtStripe, refundAtStripe, } from './withdrawal-refund'
 import type { StatementRow } from './withdrawal-row'
 import { alert, byHand, byHandUntold, iso, PRICE_NOT_ON_RECORD, priceKnown, refundLine, refundMoney, refundOpen, statementFacts, } from './withdrawal-row'
-import { refundFor } from './withdrawal-rules'
+import type { PaymentMoney } from './withdrawal-rules'
+import { moneyLeft, moneyOf, refundOwed } from './withdrawal-rules'
 
 /** A refund not through this long after its statement alerts the owner
  *  once more. */
@@ -59,20 +70,32 @@ const REFUND_DUE_MS = 14 * 86_400_000
 // ── The price ────────────────────────────────────────────────────────
 
 /** The refund a statement owes once its price is known, from what the
- *  statement counted when it was made. */
-function refundOnPrice(row: StatementRow, price: Price): number {
-  return refundFor(row.refundBasis ?? 'unused', price.amountMinor, {
-    paid: row.paidCredits,
-    paidUnused: row.unusedCredits,
-    bonus: 0,
-    takenBack: 0,
-  })
+ *  statement counted when it was made, never past what the charge holds. */
+function refundOnPrice(
+  row: StatementRow,
+  price: Price,
+  money: PaymentMoney,
+): number {
+  return refundOwed(
+    row.refundBasis ?? 'unused',
+    price.amountMinor,
+    { paid: row.paidCredits, paidUnused: row.unusedCredits },
+    money,
+  )
+}
+
+/** A refund the cap lowered after it was worked out, and so promised. */
+interface Lowered {
+  from: number
+  to: number
 }
 
 interface RefundStep {
   row: StatementRow
   /** The owner should hear of it. */
   moved: boolean
+  /** The refund was lowered to what the charge holds. */
+  lowered?: Lowered
 }
 
 /** Keep what Stripe answered a price lookup or a refund that left the
@@ -96,23 +119,20 @@ async function notePending(
   return { ...row, refundError: why }
 }
 
-/** Ask Stripe again for the price of a statement made while it did not
- *  answer, and keep the answer if nobody priced the statement since. Only
- *  Stripe saying it has none sends it to the owner, by hand. */
+/** Price a statement made while Stripe did not answer, from what Stripe
+ *  says now, and keep it if nobody priced the statement since. Only Stripe
+ *  saying it has no such payment sends it to the owner, by hand. */
 async function priceStatement(
   env: Env,
   row: StatementRow,
+  answer: Exclude<PaymentAnswer, { kind: 'no-answer' }>,
 ): Promise<RefundStep> {
-  const answer = await paidAtStripe(env, row.paymentIntentId)
-  if (answer.kind === 'no-answer') {
-    return { row: await notePending(env, row, answer.why), moved: false }
-  }
   const priced: StatementRow =
     answer.kind === 'paid'
       ? {
           ...row,
           amountMinor: answer.price.amountMinor,
-          refundMinor: refundOnPrice(row, answer.price),
+          refundMinor: refundOnPrice(row, answer.price, moneyOf(answer.charge)),
           currency: answer.price.currency,
           priceSource: 'stripe',
           refundError: null,
@@ -243,16 +263,83 @@ async function followUp(env: Env, row: StatementRow): Promise<RefundStep> {
   return { row: withOutcome(row, outcome), moved: outcome.status === 'failed' }
 }
 
-/** Ask for a pending refund, pricing the statement first when Stripe did
- *  not answer the price before. */
+/** Keep what became of the refund: pending keeps what Stripe answered;
+ *  anything else is recorded, unless another request recorded it first. */
+async function keepOutcome(
+  env: Env,
+  row: StatementRow,
+  outcome: RefundOutcome,
+): Promise<RefundStep> {
+  if (outcome.status === 'pending') {
+    return { row: await notePending(env, row, outcome.error), moved: false }
+  }
+  if (!(await recordRefund(env, row, outcome))) return { row, moved: false }
+  return { row: withOutcome(row, outcome), moved: true }
+}
+
+/** Why Stripe will not refund the payment, or null when it will: a
+ *  chargeback holds the money, or a dispute says the payment cannot be
+ *  refunded. Stripe would answer charge_disputed. */
+function barredBy(charge: ChargeState): string | null {
+  const dispute = charge.disputes.find(
+    (entry) => disputeHolds(entry) || entry.refundable === false,
+  )
+  return dispute === undefined
+    ? null
+    : `Stripe will not refund this payment outside dispute ${dispute.id} (${dispute.status}); settle the refund with the buyer by hand`
+}
+
+/** The statement's refund, lowered to what the charge holds now when a
+ *  refund made elsewhere took the rest since it was worked out. Never
+ *  raised. Null when another request moved the statement first. */
+async function capToCharge(
+  env: Env,
+  row: StatementRow,
+  money: PaymentMoney,
+): Promise<{ row: StatementRow; lowered?: Lowered } | null> {
+  const left = moneyLeft(money)
+  if (row.refundMinor <= left) return { row }
+  const res = await env.DB.prepare(
+    `UPDATE withdrawals SET refundMinor = ?
+      WHERE id = ? AND refundStatus = 'pending' AND refundMinor = ?`,
+  )
+    .bind(left, row.id, row.refundMinor)
+    .run()
+  if (res.meta.changes === 0) return null
+  console.warn(
+    `[billing] withdrawal ${row.id}: refund lowered from ${row.refundMinor} to ${left}, what the charge holds now`,
+  )
+  return {
+    row: { ...row, refundMinor: left },
+    lowered: { from: row.refundMinor, to: left },
+  }
+}
+
+/**
+ * Ask for a pending refund. A retry first looks for the refund an earlier
+ * attempt may have made. Then what Stripe says of the payment now (`fresh`,
+ * when the request that made the statement read it already): it prices a
+ * statement made while Stripe did not answer, bars a payment Stripe will
+ * not refund, and caps the refund at what the charge still holds.
+ */
 async function askForRefund(
   env: Env,
   row: StatementRow,
   retry: boolean,
+  fresh?: PaymentAnswer,
 ): Promise<RefundStep> {
+  // A statement whose price is pending never asked for its refund.
+  if (retry && row.priceSource !== 'pending') {
+    const earlier = await earlierRefund(env, row)
+    if (earlier !== null) return keepOutcome(env, row, earlier)
+  }
+  const answer = fresh ?? (await paymentAtStripe(env, row.paymentIntentId))
+  if (answer.kind === 'no-answer') {
+    return { row: await notePending(env, row, answer.why), moved: false }
+  }
   let current = row
   if (current.priceSource === 'pending') {
-    const priced = await priceStatement(env, current)
+    const priced = await priceStatement(env, current, answer)
     if (
       priced.moved ||
       priced.row.priceSource === 'pending' ||
@@ -262,14 +349,29 @@ async function askForRefund(
     }
     current = priced.row
   }
-  const outcome = await refundAtStripe(env, current, retry)
-  if (outcome.status === 'pending') {
-    return { row: await notePending(env, current, outcome.error), moved: false }
+  // Stripe knows no such payment: its answer to the refund says the rest.
+  if (answer.kind !== 'paid') {
+    return keepOutcome(env, current, await refundAtStripe(env, current, false))
   }
-  if (!(await recordRefund(env, current, outcome))) {
-    return { row: current, moved: false }
+  const barred = barredBy(answer.charge)
+  if (barred !== null) {
+    return keepOutcome(env, current, {
+      status: 'manual',
+      refundId: null,
+      error: barred,
+      stripeStatus: null,
+    })
   }
-  return { row: withOutcome(current, outcome), moved: true }
+  const capped = await capToCharge(env, current, moneyOf(answer.charge))
+  if (capped === null) return { row: current, moved: false }
+  const step = await keepOutcome(
+    env,
+    capped.row,
+    await refundAtStripe(env, capped.row, false),
+  )
+  return capped.lowered === undefined
+    ? step
+    : { ...step, moved: true, lowered: capped.lowered }
 }
 
 /** The refund step: ask while it is pending, follow while Stripe has not
@@ -278,10 +380,13 @@ async function settleRefund(
   env: Env,
   row: StatementRow,
   retry: boolean,
+  fresh?: PaymentAnswer,
 ): Promise<RefundStep> {
   if (!refundOpen(row)) return { row, moved: false }
   await markRefundTried(env, row)
-  if (row.refundStatus === 'pending') return askForRefund(env, row, retry)
+  if (row.refundStatus === 'pending') {
+    return askForRefund(env, row, retry, fresh)
+  }
   return row.stripeRefundId === null
     ? { row, moved: false }
     : followUp(env, row)
@@ -317,11 +422,26 @@ function dueDate(row: StatementRow): string {
   return formatDate(iso(Date.parse(row.submittedAt) + REFUND_DUE_MS))
 }
 
-function alertLines(row: StatementRow): string[] {
+/** What the owner reads of a refund the cap lowered. */
+function loweredLines(
+  row: StatementRow,
+  lowered: Lowered | undefined,
+): string[] {
+  if (lowered === undefined) return []
+  const from = formatMoney(lowered.from, row.currency)
+  const to = formatMoney(lowered.to, row.currency)
+  return [
+    `Lowered: the statement promised ${from}, and Stripe holds only ${to} of the payment now`,
+    `(refunded elsewhere since), so ${to} is refunded. The buyer is not mailed again.`,
+  ]
+}
+
+function alertLines(row: StatementRow, lowered?: Lowered): string[] {
   return [
     ...statementFacts(row),
     `Credits removed: ${row.unusedCredits} paid, ${row.bonusCredits} bonus`,
     refundLine(row),
+    ...loweredLines(row, lowered),
     ...(row.stripeRefundId === null
       ? []
       : [
@@ -371,22 +491,27 @@ async function recordHandedOver(
 /**
  * Everything after the statement is written, or whatever an earlier
  * request left undone: the refund step, then the acknowledgement until it
- * is sent or given up, each on its own. Alerts the owner when this request
- * moved the refund, or made the acknowledgement's first try; a refund to
- * make by hand is handed over only once Resend has taken that alert.
- * Never throws.
+ * is sent or given up, each on its own. `fresh` is what Stripe said of the
+ * payment to the request that made the statement, moments ago; without
+ * it, the refund step reads Stripe again. Alerts the owner when this
+ * request moved the refund, lowered it to what the charge holds, or made
+ * the acknowledgement's first try; a refund to make by hand is handed over
+ * only once Resend has taken that alert. Never throws.
  */
 export async function finish(
   env: Env,
   row: StatementRow,
   retry: boolean,
+  fresh?: PaymentAnswer,
 ): Promise<StatementRow> {
   let done = row
   let moved = false
+  let lowered: Lowered | undefined
   try {
-    const step = await settleRefund(env, row, retry)
+    const step = await settleRefund(env, row, retry, fresh)
     done = step.row
     moved = step.moved
+    lowered = step.lowered
   } catch (err) {
     console.error(
       `[billing] withdrawal ${row.id}: refund step failed: ${String(err)}`,
@@ -402,7 +527,7 @@ export async function finish(
     )
   }
   if (!moved) return done
-  const told = await alert(env, alertSubject(done), alertLines(done))
+  const told = await alert(env, alertSubject(done), alertLines(done, lowered))
   return told && byHandUntold(done)
     ? recordHandedOver(env, done, Date.now())
     : done

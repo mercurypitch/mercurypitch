@@ -50,12 +50,19 @@ import { LedgerBusy } from './ledger'
 import type { FeaturedPromoRow } from './promo-rules'
 import { featuredPromoView } from './promo-rules'
 import { handlePromoRedeem, readPromoClaims } from './promo-claim'
+import { PURCHASE_RECORD } from './purchase-record'
 import { finisherCheckoutParams, grantFinisherBonus, readFinisherOffer, } from './launch-finisher'
 import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
 import { isStripeConfigured, stripeGet, stripeRequest } from './stripe-api'
-import { CHECKOUT_PAID_EVENTS, clawBackPayment, isCheckoutPaidEvent, isMoneyBackEvent, paymentIntentOf, } from './stripe-payments'
+import type { BillingAlert } from './stripe-alerts'
+import type { StripeGet } from './stripe-charge'
+import type { StripeEventInput, StripeEventResult } from './stripe-events'
+import { isCheckoutPaidEvent, isMoneyBackEvent, readWebhookEvent, } from './stripe-events'
+import { applyMoneyBack, paymentIntentOf, settleEarlyMoneyBack, } from './stripe-payments'
+import type { EventRecord } from './stripe-sweep'
+import { REOPENED_PREFIX, sweepStripeEvents } from './stripe-sweep'
 import { handleWithdrawals } from './withdrawal'
 import { WITHDRAWAL_DAYS } from './withdrawal-wording'
 import type { PricingRow } from './billing-core'
@@ -633,17 +640,42 @@ async function grantCheckoutCredits(
   }
 }
 
-/** Mark a Stripe event as fully processed (idempotent). */
+/** Mark a Stripe event as fully processed (idempotent). An event migration
+ *  0065 reopened (REOPENED_PREFIX) gets its own type back. */
 async function recordBillingEvent(
   env: Env,
   eventId: string,
   type: string | null,
 ): Promise<void> {
   await env.DB.prepare(
-    'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
+    `INSERT INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET type = excluded.type
+      WHERE billingEvents.type LIKE '${REOPENED_PREFIX}%'`,
   )
     .bind(eventId, new Date().toISOString(), type)
     .run()
+}
+
+/** What billingEvents holds of up to a page of Stripe events, in one query
+ *  (stripe-sweep.ts): a page is 100 ids, D1's most bound values a query. */
+async function recordedEvents(
+  env: Env,
+  ids: string[],
+): Promise<Map<string, EventRecord>> {
+  const records = new Map<string, EventRecord>()
+  if (ids.length === 0) return records
+  const { results } = await env.DB.prepare(
+    `SELECT id, type FROM billingEvents WHERE id IN (${ids.map(() => '?').join(', ')})`,
+  )
+    .bind(...ids)
+    .all<{ id: string; type: string | null }>()
+  for (const row of results) {
+    records.set(
+      row.id,
+      row.type?.startsWith(REOPENED_PREFIX) === true ? 'reopened' : 'recorded',
+    )
+  }
+  return records
 }
 
 // ── UVR job metering (debit / refund) ────────────────────────────────
@@ -1035,6 +1067,117 @@ async function handleRefund(
   return respond({ refunded: amount, duplicate: res.meta.changes === 0 })
 }
 
+/** What a checkout event's grant came to, as the sweep's alert lists it. */
+function grantDetail(outcome: GrantOutcome): string {
+  return `+${outcome.granted} ${outcome.unit}, user=${outcome.userId ?? 'UNKNOWN (bad metadata, investigate)'}`
+}
+
+async function applyCheckoutEvent(
+  env: Env,
+  get: StripeGet,
+  event: StripeEventInput,
+): Promise<StripeEventResult> {
+  const outcome = await grantForCheckout(
+    env,
+    event.id,
+    event.object,
+    event.created > 0 ? event.created : undefined,
+  )
+  // A refund or dispute that reached us before this purchase took nothing:
+  // the purchase takes it back now. On a redelivery too, in case the first
+  // delivery failed between the grant and this.
+  if (outcome.userId !== null && outcome.unit === 'credits') {
+    await settleEarlyMoneyBack(
+      env,
+      get,
+      event.id,
+      event.object,
+      outcome.userId,
+      PURCHASE_RECORD,
+    )
+  }
+  // A pack's grant row is never taken back, and everything after it (the
+  // launch bonus, the consent and its mail, the early take-back) ran again
+  // on this delivery and succeeded, so a redelivery finishes the event and
+  // records it. Otherwise a delivery that failed past the grant would leave
+  // it unrecorded for good, and every sweep would apply it again.
+  if (outcome.duplicate && outcome.unit === 'credits') {
+    await recordBillingEvent(env, event.id, event.type)
+    return { kind: 'duplicate' }
+  }
+  // Only the claim winner may mark a donation processed. A duplicate here
+  // means another delivery (or the sweep) holds the claim RIGHT NOW - if
+  // that winner fails and releases it, recording the event on the loser's
+  // behalf would make every retry and sweep skip it forever: paid, no
+  // grant, no trace. The winner records it below on its own success.
+  if (outcome.duplicate) return { kind: 'duplicate' }
+  await recordBillingEvent(env, event.id, event.type)
+  return outcome.unpaid === true
+    ? { kind: 'unpaid' }
+    : { kind: 'applied', detail: grantDetail(outcome) }
+}
+
+/**
+ * Apply one Stripe event. The webhook and the reconciliation sweep both come
+ * here, so an event applies the same way whichever reaches it first, and
+ * once: billingEvents records it when it is done, and a recorded event is
+ * skipped. Throws on anything that may pass on a retry (D1, Stripe, a busy
+ * ledger), and leaves the event unrecorded. With `held`, a refund's or a
+ * dispute's alert goes there instead of to the owner (stripe-sweep.ts).
+ */
+async function applyStripeEvent(
+  env: Env,
+  get: StripeGet,
+  event: StripeEventInput,
+  held?: BillingAlert[],
+): Promise<StripeEventResult> {
+  if (!isCheckoutPaidEvent(event.type) && !isMoneyBackEvent(event.type)) {
+    return { kind: 'ignored', reason: 'unhandled event type' }
+  }
+  // Idempotency: an event id already in billingEvents was FULLY processed.
+  // The id is recorded only after the event is applied: recording first
+  // would turn a failure halfway (500, Stripe retries, "duplicate") into a
+  // grant or a take-back lost for good. A concurrent double delivery can
+  // reach the work twice; the ledger's UNIQUE idempotencyKey (`evt:<id>`,
+  // `clawback:<id>`) makes the second write a no-op. An event migration
+  // 0065 reopened is not recorded yet.
+  const seen = await env.DB.prepare(
+    `SELECT id FROM billingEvents
+      WHERE id = ? AND COALESCE(type, '') NOT LIKE '${REOPENED_PREFIX}%'`,
+  )
+    .bind(event.id)
+    .first<{ id: string }>()
+  if (seen) return { kind: 'duplicate' }
+  if (isCheckoutPaidEvent(event.type)) {
+    return applyCheckoutEvent(env, get, event)
+  }
+  const result = await applyMoneyBack(env, get, event, PURCHASE_RECORD, held)
+  await recordBillingEvent(env, event.id, event.type)
+  return result
+}
+
+/** Stripe's REST GET, for the money-back handler and the sweep. */
+function stripeReader(env: Env): StripeGet {
+  return (pathWithQuery) => stripeGet(env, pathWithQuery)
+}
+
+function webhookAnswer(result: StripeEventResult): object {
+  if (result.kind === 'duplicate') return { received: true, duplicate: true }
+  if (result.kind === 'ignored') {
+    return { received: true, ignored: result.reason }
+  }
+  return { received: true }
+}
+
+/**
+ * Stripe's webhook. Stripe redelivers any event it does not get a 2xx for,
+ * for three days, so the answer says whether a retry can help: 400 for a
+ * signature that does not verify (or is older than five minutes), 500 for a
+ * failure that may pass (D1 or Stripe out of reach), and 200 for everything
+ * else, including what never will: a body Stripe signed that nobody can
+ * read, a charge Stripe no longer knows, a type nothing here handles. The
+ * 500 says nothing about why; the log does.
+ */
 async function handleWebhook(
   request: Request,
   env: Env,
@@ -1054,173 +1197,63 @@ async function handleWebhook(
   )
   if (!valid) return respond({ error: 'Invalid signature' }, { status: 400 })
 
-  let event: StripeEventListItem
+  const event = readWebhookEvent(payload)
+  if ('ignored' in event) {
+    return respond({ received: true, ignored: event.ignored })
+  }
   try {
-    event = JSON.parse(payload)
-  } catch {
-    return respond({ error: 'Invalid payload' }, { status: 400 })
-  }
-  if (typeof event.id !== 'string') {
-    return respond({ error: 'Missing event id' }, { status: 400 })
-  }
-
-  // Idempotency: an event id already in billingEvents was FULLY processed —
-  // ack the redelivery as a duplicate. The id is recorded only after the
-  // grant succeeds (below): recording first would turn a mid-grant failure
-  // (500 → Stripe retry → "duplicate") into permanently lost credits. A
-  // concurrent double delivery can reach the grant twice, but the ledger's
-  // UNIQUE idempotencyKey (`evt:<id>`) makes the second write a no-op.
-  const seen = await env.DB.prepare('SELECT id FROM billingEvents WHERE id = ?')
-    .bind(event.id)
-    .first<{ id: string }>()
-  if (seen) return respond({ received: true, duplicate: true })
-
-  if (isCheckoutPaidEvent(event.type)) {
-    const outcome = await grantForCheckout(
-      env,
-      event.id,
-      event.data?.object ?? {},
-      createdOf(event),
+    return respond(
+      webhookAnswer(await applyStripeEvent(env, stripeReader(env), event)),
     )
-    // Only the claim winner may mark the event processed. A duplicate here
-    // means another delivery (or the sweep) holds the claim RIGHT NOW - if
-    // that winner fails and releases it, recording the event on the loser's
-    // behalf would make every retry and sweep skip it forever: paid, no
-    // grant, no trace. The winner records it below on its own success.
-    if (outcome.duplicate) return respond({ received: true, duplicate: true })
-  } else if (isMoneyBackEvent(event.type)) {
-    // One ledger row is the whole of a claw-back, so a duplicate holds
-    // nothing that could be released: it is recorded like any other.
-    await clawBackPayment(env, event.id, event.type, event.data?.object ?? {})
+  } catch (err) {
+    console.error(
+      `[billing] webhook ${event.type} ${event.id}: failed, answered 500 so Stripe retries:`,
+      err,
+    )
+    return respond({ error: 'Not processed, retry later' }, { status: 500 })
   }
-  // Other event types are acknowledged (200) without action for now.
-  await recordBillingEvent(env, event.id, event.type ?? null)
-  return respond({ received: true })
 }
 
 // ── Reconciliation (cron) ────────────────────────────────────────────
 // Webhooks fail silently: Stripe keeps the money, we never learn a grant was
-// missed (2026-07: the endpoints pointed at a dead host for 10 days). This
-// sweep is the safety net for ANY delivery failure — it asks Stripe for
-// recent checkout completions and processes every event billingEvents has
-// never seen, through the exact same grant path the webhook uses.
+// missed (2026-07: the endpoints pointed at a dead host for 10 days), and a
+// refund or dispute whose webhook failed for all of Stripe's three days of
+// retries is never taken back. The sweep (stripe-sweep.ts) is the safety net
+// for ANY delivery failure: it lists every event type the webhook handles
+// from the last 30 days and applies each one billingEvents has never seen,
+// through the webhook's own handler, applyStripeEvent.
 
-/** How far back the sweep looks. Stripe's events list retains 30 days —
- *  wide enough to survive a long outage, tiny at our purchase volume. */
-const RECONCILE_WINDOW_DAYS = 30
-/** Pagination bound (100 events/page). Purely a runaway guard. */
-const RECONCILE_MAX_PAGES = 10
-
-interface StripeEventListItem {
-  id?: string
-  type?: string
-  /** When Stripe created the event, in seconds. */
-  created?: unknown
-  data?: { object?: Record<string, unknown> }
-}
-
-function createdOf(event: StripeEventListItem): number | undefined {
-  return typeof event.created === 'number' && Number.isFinite(event.created)
-    ? event.created
-    : undefined
-}
-
-/** Sweep Stripe's recent checkout events (CHECKOUT_PAID_EVENTS) and grant any
- *  the webhook missed. Safe to run at any frequency: already-seen events are
- *  skipped, and the grant itself is idempotent per event id. Alerts by email
- *  (BILLING_ALERT_EMAIL) when it had to recover anything — a recovery means
- *  webhook delivery is broken and needs looking at. */
+/** Run the sweep. Never throws: a sweep that cannot run alerts instead, as
+ *  one that cannot finish does. */
 export async function reconcileBilling(env: Env): Promise<void> {
   if (!isStripeConfigured(env)) {
     console.log('[billing] reconcile: Stripe not configured — skipped')
     return
   }
-  const since =
-    Math.floor(Date.now() / 1000) - RECONCILE_WINDOW_DAYS * 24 * 60 * 60
-  const recovered: string[] = []
-  let checked = 0
-  let startingAfter: string | undefined
-  for (let page = 0; page < RECONCILE_MAX_PAGES; page++) {
-    const qs = new URLSearchParams({
-      limit: '100',
-      'created[gte]': String(since),
-    })
-    for (const type of CHECKOUT_PAID_EVENTS) qs.append('types[]', type)
-    if (startingAfter !== undefined) qs.set('starting_after', startingAfter)
-    const res = await stripeGet(env, `/events?${qs.toString()}`)
-    if (!res.ok) {
-      console.error(
-        `[billing] reconcile: Stripe events list failed (${res.status})`,
-      )
-      break
-    }
-    const events = Array.isArray(res.data.data)
-      ? (res.data.data as StripeEventListItem[])
-      : []
-    for (const ev of events) {
-      if (typeof ev.id !== 'string') continue
-      checked++
-      const seen = await env.DB.prepare(
-        'SELECT id FROM billingEvents WHERE id = ?',
-      )
-        .bind(ev.id)
-        .first<{ id: string }>()
-      if (seen) continue
-      // One poisoned event must not abort the sweep - it is the safety net
-      // for every OTHER missed grant. The failed event stays unrecorded, so
-      // the next sweep retries it.
-      try {
-        const outcome = await grantForCheckout(
-          env,
-          ev.id,
-          ev.data?.object ?? {},
-          createdOf(ev),
-        )
-        // A duplicate = the webhook (or a parallel sweep) holds the claim;
-        // recording it here would strand the grant if that winner fails.
-        // It also is not a recovery, so it does not belong in the alert.
-        if (outcome.duplicate) continue
-        await recordBillingEvent(env, ev.id, ev.type ?? null)
-        // A session still waiting for its money granted nothing to recover:
-        // its async_payment_succeeded event does, swept like this one.
-        if (outcome.unpaid === true) continue
-        recovered.push(
-          `${ev.id}: +${outcome.granted} ${outcome.unit}, user=${outcome.userId ?? 'UNKNOWN (bad metadata — investigate!)'}`,
-        )
-      } catch (err) {
-        console.error(`[billing] reconcile: grant for ${ev.id} failed:`, err)
-      }
-    }
-    if (res.data.has_more !== true || events.length === 0) break
-    if (page === RECONCILE_MAX_PAGES - 1) {
-      // Never truncate silently — at this volume something is very wrong.
-      console.error(
-        `[billing] reconcile: page cap hit (${RECONCILE_MAX_PAGES}) with more events pending — sweep incomplete`,
-      )
-    }
-    startingAfter = events[events.length - 1].id
-  }
-  console.log(
-    `[billing] reconcile: ${checked} event(s) checked, ${recovered.length} recovered`,
-  )
-  if (recovered.length > 0) {
-    console.error(
-      `[billing] reconcile RECOVERED missed grants — webhook delivery is broken:\n${recovered.join('\n')}`,
-    )
+  const get = stripeReader(env)
+  const alert = async (subject: string, lines: string[]): Promise<void> => {
     await sendBillingAlert(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       env.BILLING_ALERT_EMAIL ?? '',
-      `Recovered ${recovered.length} missed grant(s)`,
-      [
-        'The billing reconciliation sweep found paid checkouts (credits or',
-        'donations) whose webhook event was never processed, and granted them',
-        'now. This means',
-        'Stripe webhook delivery is BROKEN — check the endpoint URL and its',
-        'recent deliveries in the Stripe dashboard.',
-        '',
-        ...recovered,
-      ],
+      subject,
+      lines,
     )
+  }
+  try {
+    await sweepStripeEvents({
+      get,
+      recorded: (ids) => recordedEvents(env, ids),
+      apply: (event, held) => applyStripeEvent(env, get, event, held),
+      alert,
+      nowSec: Math.floor(Date.now() / 1000),
+    })
+  } catch (err) {
+    console.error('[billing] reconcile: the sweep stopped:', err)
+    await alert('Sweep failed: it stopped before the end', [
+      'The reconciliation sweep stopped on an error before it finished, so a',
+      'purchase, refund or dispute the webhook missed may not be applied yet.',
+      'It runs again in six hours. The worker logs say what stopped it.',
+    ])
   }
 }
 

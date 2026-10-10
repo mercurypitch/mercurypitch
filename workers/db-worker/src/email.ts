@@ -54,6 +54,39 @@ export function formatMoney(amountMinor: number, currency: string): string {
   }
 }
 
+/** An address as a log line may show it: enough to tell two apart, not
+ *  enough to write to. "maria.k@example.com" becomes "m***@***.com", and
+ *  "user@[192.0.2.1]" becomes "u***@***". */
+export function maskEmail(address: string): string {
+  const at = address.lastIndexOf('@')
+  if (at <= 0) return '***'
+  const domain = address.slice(at + 1)
+  const dot = domain.lastIndexOf('.')
+  // The whole first character, never half of one outside the BMP.
+  const first = String.fromCodePoint(address.codePointAt(0) ?? 0x2a)
+  // An address literal ("[192.0.2.1]") has no top-level domain to show.
+  const tld = dot === -1 || domain.startsWith('[') ? '' : domain.slice(dot)
+  return `${first}***@***${tld}`
+}
+
+/** Anything that reads like an address, in text a log line carries from
+ *  elsewhere (an API's error body, a thrown error): letters, marks and
+ *  digits in any script ("josé@exämple.com"), every other character RFC
+ *  5322 allows in a local part (!#$%&'*+-/=?^_`{|}~ and the dot, so
+ *  "mary.o'brien@example.com" masks whole), a quoted local part
+ *  ("\"quoted local\"@example.com") and an address literal
+ *  ("user@[192.0.2.1]"). Punctuation a local part may hold is masked with
+ *  the address when it touches it: "'jane@example.com'" logs as
+ *  "'***@***.com'" (#970 review, F-7). */
+const ADDRESS =
+  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+
+/** `text` with every address in it masked (maskEmail): for text a log line
+ *  carries but did not write, which may name the recipient. */
+export function maskAddresses(text: string): string {
+  return text.replace(ADDRESS, (address) => maskEmail(address))
+}
+
 /** "5 July 2026" from an ISO timestamp (UTC, locale-stable). */
 export function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -845,7 +878,9 @@ export async function resendPost(
     })
     if (!res.ok) {
       const text = await res.text()
-      console.error(`[email] Resend rejected (${res.status}): ${text}`)
+      console.error(
+        `[email] Resend rejected (${res.status}): ${maskAddresses(text)}`,
+      )
       return { ok: false, status: res.status, ...errorOf(text) }
     }
     // The id is a nicety, not the verdict: a 200 with an unreadable body is
@@ -859,7 +894,9 @@ export async function resendPost(
     }
     return { ok: true, id }
   } catch (err) {
-    console.error(`[email] Resend request failed: ${String(err)}`)
+    console.error(
+      `[email] Resend request failed: ${maskAddresses(String(err))}`,
+    )
     return { ok: false, unanswered: true }
   }
 }
@@ -890,7 +927,7 @@ export async function sendBillingAlert(
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')}</pre>`,
   })
-  if (ok) console.log(`[email] billing alert sent to ${to}`)
+  if (ok) console.log(`[email] billing alert sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -901,7 +938,7 @@ export async function sendPasswordReset(
   vars: PasswordResetVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderPasswordReset(vars))
-  if (ok) console.log(`[email] password reset sent to ${to}`)
+  if (ok) console.log(`[email] password reset sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -913,7 +950,7 @@ export async function sendLoginCode(
   vars: LoginCodeVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderLoginCode(vars))
-  if (ok) console.log(`[email] sign-in code sent to ${to}`)
+  if (ok) console.log(`[email] sign-in code sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -939,7 +976,7 @@ export async function sendNewsletterIssue(
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
   })
-  if (result.ok) console.log(`[email] newsletter sent to ${to}`)
+  if (result.ok) console.log(`[email] newsletter sent to ${maskEmail(to)}`)
   return result
 }
 
@@ -958,7 +995,9 @@ export async function sendAccountNotice(
   vars: AccountNoticeVars,
 ): Promise<ResendResult> {
   const result = await resendPost(cfg, to, renderAccountNotice(vars))
-  if (result.ok) console.log(`[email] account notice sent to ${to}`)
+  if (result.ok) {
+    console.log(`[email] account notice sent to ${maskEmail(to)}`)
+  }
   return result
 }
 

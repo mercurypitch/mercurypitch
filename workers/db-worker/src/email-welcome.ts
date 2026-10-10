@@ -11,7 +11,7 @@
 // The layout they share with the purchase mail is in email-layout.ts.
 
 import type { RenderedEmail, ResendConfig } from './email'
-import { escapeHtml, resendSend } from './email'
+import { escapeHtml, maskEmail, resendSend } from './email'
 import type { HeroLink, Lines, MailArt, MailOrigins } from './email-layout'
 import { arrowLink, button, DISPLAY, documentHtml, eyebrow, footerText, heroRow, inlineLink, introRow, MAIL_ART, MONO, SANS, signOffRow, url, W, } from './email-layout'
 import type { SignupSource, SignupVoiceprint } from './signup-hint'
@@ -480,7 +480,7 @@ export async function sendWelcomeMail(
   vars: WelcomeEmailVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderWelcomeEmail(vars))
-  if (ok) console.log(`[email] signup welcome sent to ${to}`)
+  if (ok) console.log(`[email] signup welcome sent to ${maskEmail(to)}`)
   return ok
 }
 
@@ -491,6 +491,6 @@ export async function sendConfirmMail(
   vars: ConfirmEmailVars,
 ): Promise<boolean> {
   const ok = await resendSend(cfg, to, renderConfirmEmail(vars))
-  if (ok) console.log(`[email] verification sent to ${to}`)
+  if (ok) console.log(`[email] verification sent to ${maskEmail(to)}`)
   return ok
 }

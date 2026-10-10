@@ -26,7 +26,8 @@ import { UNSENT_PURCHASE_MAILS_SQL } from '../src/checkout-consent'
 import worker from '../src/index'
 import { CHECKOUT_CHECKBOX, WITHDRAWAL_TEXT_VERSION, } from '../src/withdrawal-wording'
 import type { SqliteD1Statement } from './sqlite-d1'
-import { applyMigrations, interleaved, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, interleaved, justBefore as holdBefore, SqliteD1Database, } from './sqlite-d1'
+import { chargeReads } from './stripe-charge-stub'
 
 const WEBHOOK_SECRET = 'whsec_withdrawal_integration'
 const PASSWORD = 'Singer123!pass'
@@ -71,6 +72,94 @@ let paymentIntents: Map<string, { amount_received: number; currency: string }>
  *  whether it will take the mail later; a number answers that status, a
  *  422 being a refusal for good. */
 let resendRefuses: (mail: { subject: string }) => boolean | number
+/** The charges Stripe reports now, by id (stripe-charge-stub.ts): a refund
+ *  or dispute is applied from the charge, not from its event. */
+const charges = new Map<string, Record<string, unknown>>()
+
+/** The disputes Stripe lists for each charge, by charge id. */
+const disputes = new Map<string, Array<Record<string, unknown>>>()
+
+/** A charge as Stripe reports it from now on, for an event to carry. */
+function charged(charge: Record<string, unknown>): Record<string, unknown> {
+  charges.set(String(charge.id), charge)
+  return charge
+}
+
+/** A dispute as Stripe lists it from now on, for an event to carry. Its
+ *  charge says it is disputed. */
+function disputedWith(
+  dispute: Record<string, unknown>,
+): Record<string, unknown> {
+  const chargeId = String(dispute.charge)
+  const others = (disputes.get(chargeId) ?? []).filter(
+    (listed) => listed.id !== dispute.id,
+  )
+  disputes.set(chargeId, [...others, dispute])
+  const charge = charges.get(chargeId)
+  if (charge !== undefined) charge.disputed = true
+  return dispute
+}
+
+/** The charge Stripe reports for `chargeId`: one a test set (charged), else
+ *  the charge of a PaymentIntent the suite knows (ch_<PaymentIntent id>),
+ *  with what the refunds made on it so far sent back. */
+function chargeNow(chargeId: string): Record<string, unknown> | undefined {
+  const set = charges.get(chargeId)
+  if (set !== undefined) return set
+  const known = [...paymentIntents].find(([id]) => `ch_${id}` === chargeId)
+  if (known === undefined) return undefined
+  const [paymentIntent, intent] = known
+  const refunded = refundsMade
+    .filter(
+      (refund) =>
+        refund.payment_intent === paymentIntent &&
+        refund.status !== 'failed' &&
+        refund.status !== 'canceled',
+    )
+    .reduce((sum, refund) => sum + Number(refund.amount), 0)
+  return {
+    id: chargeId,
+    object: 'charge',
+    payment_intent: paymentIntent,
+    amount: intent.amount_received,
+    currency: intent.currency,
+    amount_refunded: refunded,
+    refunded: refunded >= intent.amount_received,
+    disputed: (disputes.get(chargeId) ?? []).length > 0,
+  }
+}
+
+/** The charge Stripe names as a PaymentIntent's latest: one a test set for
+ *  it, else its own. */
+function latestCharge(paymentIntent: string): string {
+  for (const [id, charge] of charges) {
+    if (charge.payment_intent === paymentIntent) return id
+  }
+  return `ch_${paymentIntent}`
+}
+
+/** The owner refunds the whole price of the pack `paymentIntent` paid
+ *  for in the Stripe Dashboard, after the buyer cancelled by mail. */
+async function refundByHand(
+  paymentIntent: string,
+  amount: number,
+): Promise<number> {
+  const id = paymentIntent.replace(/^pi_/, '')
+  return deliver({
+    id: `evt_${id}_hand_refund`,
+    type: 'charge.refunded',
+    data: {
+      object: charged({
+        id: `ch_${id}`,
+        object: 'charge',
+        payment_intent: paymentIntent,
+        amount,
+        amount_refunded: amount,
+        refunded: true,
+      }),
+    },
+  })
+}
 
 function makeRefund(
   form: URLSearchParams,
@@ -161,7 +250,12 @@ function stripeGetAnswer(url: string): Response | null {
           { error: { message: `No such payment_intent: '${id}'` } },
           { status: 404 },
         )
-      : Response.json({ id, object: 'payment_intent', ...intent })
+      : Response.json({
+          id,
+          object: 'payment_intent',
+          ...intent,
+          latest_charge: latestCharge(id),
+        })
   }
   // The cron's reconciliation asks for recent events: none here.
   if (url.startsWith(`${STRIPE}/events?`)) {
@@ -204,6 +298,8 @@ function stubFetch(): void {
       if (url === `${STRIPE}/checkout/sessions`) {
         return Response.json({ id: 'cs_withdrawal', url: 'https://pay.test' })
       }
+      const charge = chargeReads(chargeNow, url, (id) => disputes.get(id) ?? [])
+      if (charge !== null) return charge
       if (method === 'GET') {
         const answer = stripeGetAnswer(url)
         if (answer !== null) return answer
@@ -379,6 +475,12 @@ async function buy(
 ): Promise<string> {
   const params = await checkout(who, planId)
   const eventId = `evt_${paymentIntent}`
+  if (!paymentIntents.has(paymentIntent)) {
+    paymentIntents.set(paymentIntent, {
+      amount_received: PRICES[planId] ?? 0,
+      currency: 'eur',
+    })
+  }
   expect(await deliver(paidEvent(eventId, params, paymentIntent, ticked))).toBe(
     200,
   )
@@ -449,6 +551,34 @@ function takes(userId: string): Array<Record<string, unknown>> {
     .prepare(
       `SELECT delta, reason, jobRef, idempotencyKey FROM creditLedger
         WHERE userId = ? AND delta < 0 AND reason <> 'uvr-job' ORDER BY rowid`,
+    )
+    .all(userId)
+}
+
+/** A refund the stub made, as Stripe's refund events carry it: with its
+ *  charge, and without the stub's own bookkeeping. */
+function refundAsEvents(
+  made: Record<string, unknown>,
+  charge: string,
+): Record<string, unknown> {
+  return {
+    id: made.id,
+    object: 'refund',
+    amount: made.amount,
+    charge,
+    payment_intent: made.payment_intent,
+    metadata: made.metadata,
+    status: made.status,
+    failure_reason: made.failure_reason ?? null,
+  }
+}
+
+/** Every row of the account's ledger, in the order they were written. */
+function ledgerOf(userId: string): Array<Record<string, unknown>> {
+  return sqlite
+    .prepare(
+      `SELECT delta, reason, jobRef, idempotencyKey FROM creditLedger
+        WHERE userId = ? ORDER BY rowid`,
     )
     .all(userId)
 }
@@ -538,6 +668,13 @@ function failNext(sql: RegExp, times = 1): void {
   }
 }
 
+/** `act` runs, and finishes, just before the next statement matching `sql`
+ *  is written, alone or in a batch: another request landing in between a
+ *  read and its write. */
+function justBefore(sql: RegExp, act: () => Promise<unknown>): void {
+  holdBefore(env.DB as unknown as SqliteD1Database, sql, act)
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   at('2026-10-20T10:00:00.000Z')
@@ -550,6 +687,8 @@ beforeEach(() => {
   refundsMade = []
   paymentIntents = new Map()
   resendRefuses = () => false
+  charges.clear()
+  disputes.clear()
   stubFetch()
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'info').mockImplementation(() => {})
@@ -784,7 +923,7 @@ describe('Settings › Credits lists what can still be cancelled', () => {
           paidCredits: 140,
           unusedCredits: 126,
           bonusCredits: 0,
-          refund: { amountMinor: 1800, currency: 'eur' },
+          refund: { amountMinor: 1800, currency: 'eur', priceMinor: 2000 },
         },
       ],
       statements: [],
@@ -1207,14 +1346,14 @@ describe('a withdrawal is refused', () => {
       id: 'evt_dashboard_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: 2000,
           refunded: true,
-        },
+        }),
       },
     })
 
@@ -1233,12 +1372,17 @@ describe('a withdrawal is refused', () => {
       id: 'evt_dispute',
       type: 'charge.dispute.created',
       data: {
-        object: {
+        object: disputedWith({
           id: 'dp_plus',
           object: 'dispute',
+          charge: 'ch_pi_plus',
           payment_intent: 'pi_plus',
           amount: 2000,
-        },
+          currency: 'eur',
+          reason: 'fraudulent',
+          status: 'needs_response',
+          is_charge_refundable: false,
+        }),
       },
     })
 
@@ -1282,14 +1426,14 @@ describe('the refund the withdrawal asks for comes back as charge.refunded', () 
       id,
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: refunded,
           refunded: refunded >= 2000,
-        },
+        }),
       },
     }
   }
@@ -1326,6 +1470,19 @@ describe('the refund the withdrawal asks for comes back as charge.refunded', () 
 })
 
 describe('a pack keeps the terms its own checkout recorded', () => {
+  it('is refunded by hand of every credit, used ones too, when its buyer ticked the box', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter')
+    spend(sam.userId, 10, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    // The buyer asked for the credits straight away: what they used is
+    // owed.
+    expect(takenBack(sam.userId)).toBe(30)
+    expect(balance(sam.userId)).toBe(-10)
+  })
+
   it('takes a statement for a pack sold under refund_unused after the mode turns to waiver, and finishes an earlier one', async () => {
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
@@ -1366,7 +1523,7 @@ describe('a pack with no consent on record', () => {
         purchaseId: starter,
         basis: 'full',
         unusedCredits: 0,
-        refund: { amountMinor: 500, currency: 'eur' },
+        refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
       }),
       expect.objectContaining({ basis: 'unused', unusedCredits: 140 }),
     ])
@@ -1387,20 +1544,142 @@ describe('a pack with no consent on record', () => {
     )
 
     // The whole price comes back as charge.refunded.
-    await deliver({
+    const refunded = await deliver({
       id: 'evt_starter_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_starter',
           object: 'charge',
           payment_intent: 'pi_starter',
           amount: 500,
           amount_refunded: 500,
           refunded: true,
+        }),
+      },
+    })
+    expect(refunded).toBe(200)
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('takes nothing back for a chargeback that follows its whole-price refund', async () => {
+    const sam = await buyer('sam@example.test')
+    const starter = await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 10, 'job-1')
+    await withdraw(sam, starter)
+    // The 20 credits left of the Starter pack went with the withdrawal, the
+    // whole EUR 5.00 went back, and the 10 used stay the buyer's.
+    expect(balance(sam.userId)).toBe(140)
+    charged({
+      id: 'ch_starter',
+      object: 'charge',
+      payment_intent: 'pi_starter',
+      amount: 500,
+      amount_refunded: 500,
+      refunded: true,
+      disputed: true,
+    })
+
+    // The buyer's bank pulls the money back as well.
+    const opened = await deliver({
+      id: 'evt_starter_dispute',
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_starter',
+          object: 'dispute',
+          charge: 'ch_starter',
+          payment_intent: 'pi_starter',
+          amount: 500,
+          currency: 'eur',
+          status: 'needs_response',
+          reason: 'fraudulent',
         },
       },
     })
+
+    expect(opened).toBe(200)
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('takes back only what is unused when its whole price is refunded by hand', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    // The Starter pack, the older, pays for these.
+    spend(sam.userId, 10, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    // What a withdrawal of it would take: the 20 left. The Plus pack's 140
+    // stay whole.
+    expect(takenBack(sam.userId)).toBe(20)
+    expect(balance(sam.userId)).toBe(140)
+  })
+
+  it('leaves a buyer who used every credit owing nothing when its whole price is refunded by hand', async () => {
+    const sam = await buyer('sam@example.test')
+    await buy(sam, 'pack-starter', 'pi_starter', false)
+    spend(sam.userId, 30, 'job-1')
+
+    expect(await refundByHand('pi_starter', 500)).toBe(200)
+
+    expect(takenBack(sam.userId)).toBe(0)
+    expect(balance(sam.userId)).toBe(0)
+  })
+
+  it('takes nothing back for a chargeback whose write races its whole-price withdrawal', async () => {
+    const sam = await buyer('sam@example.test')
+    const starter = await buy(sam, 'pack-starter', 'pi_starter', false)
+    await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 10, 'job-1')
+    charged({
+      id: 'ch_starter',
+      object: 'charge',
+      payment_intent: 'pi_starter',
+      amount: 500,
+      amount_refunded: 0,
+      refunded: false,
+      disputed: true,
+    })
+    // What Stripe said of the payment before the dispute is kept already,
+    // so the dispute's word lands only with its write; and Stripe's list
+    // does not show the dispute yet, so the withdrawal goes through.
+    sqlite
+      .prepare(
+        `INSERT INTO stripeCharges (paymentIntentId, chargeId, currency, amount, amountRefunded, disputes, updatedAt)
+         VALUES ('pi_starter', 'ch_starter', 'eur', 500, 0, '[]', ?)`,
+      )
+      .run(new Date().toISOString())
+    // The withdrawal lands after the dispute's write read the ledger, and
+    // before it wrote.
+    justBefore(
+      /INSERT OR IGNORE INTO creditLedger[\s\S]*SELECT COUNT\(\*\)/,
+      () => withdraw(sam, starter),
+    )
+
+    const opened = await deliver({
+      id: 'evt_starter_dispute',
+      type: 'charge.dispute.created',
+      data: {
+        object: {
+          id: 'dp_starter',
+          object: 'dispute',
+          charge: 'ch_starter',
+          payment_intent: 'pi_starter',
+          amount: 500,
+          currency: 'eur',
+          status: 'needs_response',
+          reason: 'fraudulent',
+        },
+      },
+    })
+
+    expect(opened).toBe(200)
+    expect(statementOf(starter)).toMatchObject({ refundBasis: 'full' })
     expect(takenBack(sam.userId)).toBe(0)
     expect(balance(sam.userId)).toBe(140)
   })
@@ -1490,7 +1769,7 @@ describe('a pack with no consent on record', () => {
       '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
     ])
     expect(acknowledgements()[0]?.text).toContain(
-      "We'll refund what you paid to the card or account you paid with within 14 days.",
+      "We'll refund what you paid, less any earlier refund, to the card or account you paid with within 14 days.",
     )
   })
 })
@@ -1567,20 +1846,21 @@ describe('a launch bonus that lands late', () => {
       'evt:evt_pi_plus',
       'pi_plus',
     )
-    await deliver({
+    const refunded = await deliver({
       id: 'evt_dashboard_refund',
       type: 'charge.refunded',
       data: {
-        object: {
+        object: charged({
           id: 'ch_plus',
           object: 'charge',
           payment_intent: 'pi_plus',
           amount: 2000,
           amount_refunded: 2000,
           refunded: true,
-        },
+        }),
       },
     })
+    expect(refunded).toBe(200)
     expect(balance(sam.userId)).toBe(0)
 
     expect(await deliver(event)).toBe(200)
@@ -1812,6 +2092,109 @@ describe('the cron finishes what a request left undone', () => {
 })
 
 describe('a refund Stripe has not finished', () => {
+  it('gives nothing back when it fails, and the webhook hands the refund to the owner, once', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 40, 'job-1')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    // Stripe shows the refund on the charge from the moment it makes it.
+    const charge = charged({
+      id: 'ch_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: made.amount,
+      refunded: false,
+    })
+    const refunded = await deliver({
+      id: 'evt_withdrawal_refund',
+      type: 'charge.refunded',
+      data: { object: charge },
+    })
+    expect(refunded).toBe(200)
+    const ledgerBefore = ledgerOf(sam.userId)
+    const alertsBefore = alerts().length
+
+    // The refund fails: the money goes back to the Stripe balance, and
+    // Stripe says so in two events.
+    made.status = 'failed'
+    made.failure_reason = 'expired_or_canceled_card'
+    charge.amount_refunded = 0
+    const failed = refundAsEvents(made, 'ch_plus')
+    const answers = [
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: failed },
+      }),
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: failed },
+      }),
+    ]
+
+    // The webhook marks the statement's refund failed and tells the owner
+    // (withdrawal-refund-failed.ts); the second event finds it told.
+    // Stripe never said it went through: the owner is not told it did.
+    expect(answers).toEqual([200, 200])
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+      refundError: 'Stripe failed the refund: expired_or_canceled_card',
+    })
+    expect(subjects(alerts().slice(alertsBefore))).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €14.28 by hand',
+    ])
+
+    // The withdrawal sweep has nothing more to say.
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+    expect(alerts()).toHaveLength(alertsBefore + 1)
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+  })
+
+  it('gives nothing back when it is canceled, and the webhook hands the refund to the owner', async () => {
+    newRefundStatus = 'requires_action'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    charged({
+      id: 'ch_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: 0,
+      refunded: false,
+    })
+    const ledgerBefore = ledgerOf(sam.userId)
+    const alertsBefore = alerts().length
+
+    made.status = 'canceled'
+    const canceled = await deliver({
+      id: 'evt_refund_canceled',
+      type: 'refund.updated',
+      data: { object: refundAsEvents(made, 'ch_plus') },
+    })
+
+    expect(canceled).toBe(200)
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'canceled',
+      refundError: 'Stripe canceled the refund: no reason given',
+    })
+    expect(subjects(alerts().slice(alertsBefore))).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €20.00 by hand',
+    ])
+  })
+
   it('is followed until Stripe fails it, then goes to the owner to refund by hand', async () => {
     newRefundStatus = 'pending'
     const sam = await buyer('sam@example.test')
@@ -1963,14 +2346,15 @@ function chargeRefunded(
     id,
     type: 'charge.refunded',
     data: {
-      object: {
+      object: charged({
         id: `ch_${paymentIntent}`,
         object: 'charge',
         payment_intent: paymentIntent,
         amount,
         amount_refunded: refunded,
         refunded: refunded >= amount,
-      },
+        currency: 'eur',
+      }),
     },
   }
 }
@@ -2233,7 +2617,7 @@ describe('a recorded consent stands only once the purchase mail confirmed it', (
       expect.objectContaining({
         purchaseId: starter,
         basis: 'full',
-        refund: { amountMinor: 500, currency: 'eur' },
+        refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
       }),
     ])
     const res = await withdraw(sam, starter)
@@ -2281,7 +2665,7 @@ describe('a recorded consent stands only once the purchase mail confirmed it', (
       expect.objectContaining({
         basis: 'unused',
         unusedCredits: 40,
-        refund: { amountMinor: 571, currency: 'eur' },
+        refund: { amountMinor: 571, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     expect(purchaseMails().at(-1)?.text).toContain(
@@ -2646,7 +3030,7 @@ describe('a partial refund in the Stripe dashboard', () => {
         purchaseId: plus,
         basis: 'unused',
         unusedCredits: 112,
-        refund: { amountMinor: 1600, currency: 'eur' },
+        refund: { amountMinor: 1600, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     const res = await withdraw(sam, plus)
@@ -3567,7 +3951,7 @@ describe('a name', () => {
   })
 })
 
-describe('a refund that fails after Stripe said it succeeded', () => {
+describe('a withdrawal refund the refund webhook reports failed', () => {
   type Failure = {
     withdrawalId: string
     refundId: string
@@ -3613,8 +3997,8 @@ describe('a refund that fails after Stripe said it succeeded', () => {
       refundStatus: 'failed',
       stripeRefundStatus: 'failed',
     })
-    expect(String(statementOf(plus)?.refundError)).toContain(
-      'expired_or_canceled_card',
+    expect(statementOf(plus)?.refundError).toBe(
+      'Stripe failed the refund after it succeeded: expired_or_canceled_card',
     )
     expect(subjects(alerts()).filter((s) => s === FAILED_SUBJECT)).toHaveLength(
       1,
@@ -3631,6 +4015,36 @@ describe('a refund that fails after Stripe said it succeeded', () => {
     expect(
       subjects(alerts()).filter((s) => s.includes('refund FAILED, refund')),
     ).toEqual([])
+  })
+
+  it('says only that it FAILED when Stripe had not said it went through', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const statement = statementOf(plus)
+    expect(statement).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'pending',
+    })
+
+    expect(
+      await failed({
+        withdrawalId: String(statement?.id),
+        refundId: 're_1',
+        stripeStatus: 'failed',
+        reason: 'expired_or_canceled_card',
+      }),
+    ).toBe('recorded')
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+      refundError: 'Stripe failed the refund: expired_or_canceled_card',
+    })
+    expect(
+      subjects(alerts()).filter((s) => s.includes('refund FAILED')),
+    ).toEqual([`${BILLING}Withdrawal: refund FAILED, refund €20.00 by hand`])
   })
 
   it('changes nothing until the owner alert about it goes', async () => {
@@ -3664,10 +4078,874 @@ describe('a refund that fails after Stripe said it succeeded', () => {
         currency: 'eur',
       }),
     ).toBe('not-found')
+    // Nothing on record says Stripe had reported it through.
     expect(subjects(alerts())).toEqual([
-      `${BILLING}Withdrawal: refund FAILED after it went through, statement gone, refund by hand`,
+      `${BILLING}Withdrawal: refund FAILED, statement gone, refund by hand`,
     ])
     expect(alerts()[0]?.text).toContain('pi_gone')
     expect(alerts()[0]?.text).toContain('€5.00')
+  })
+})
+
+// ── #970: settled and the refund follow the money ───────────────────
+//
+// Whether a pack can be cancelled, and what its withdrawal refunds, follow
+// what Stripe says of its payment (stripeCharges, read afresh when the
+// statement is made and again before its refund is asked for), never the
+// credits a refund or a dispute could take.
+
+/** A dispute event for `dispute`, which Stripe lists from now on. */
+function disputeEvent(
+  id: string,
+  type: string,
+  dispute: Record<string, unknown>,
+): StripeEvent {
+  return { id, type, data: { object: disputedWith({ ...dispute }) } }
+}
+
+/** A chargeback of the whole Plus pack paid by pi_plus. */
+const CHARGEBACK = {
+  id: 'dp_plus',
+  object: 'dispute',
+  charge: 'ch_pi_plus',
+  payment_intent: 'pi_plus',
+  amount: 2000,
+  currency: 'eur',
+  reason: 'fraudulent',
+  status: 'needs_response',
+  is_charge_refundable: false,
+}
+
+/** An inquiry on the same payment: no money has moved. */
+const INQUIRY = {
+  ...CHARGEBACK,
+  id: 'dp_inquiry',
+  status: 'warning_needs_response',
+  is_charge_refundable: true,
+}
+
+function askedAmounts(): Array<string | null> {
+  return refundRequests().map((request) =>
+    new URLSearchParams(request.body).get('amount'),
+  )
+}
+
+describe('a dispute and the withdrawal (#970, F4)', () => {
+  it('leaves a pack withdrawable once the dispute is won, and the withdrawal refunds it', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 14, 'job-1')
+    await deliver(
+      disputeEvent('evt_opened', 'charge.dispute.created', CHARGEBACK),
+    )
+    expect((await listFor(sam)).body.packs).toEqual([])
+
+    await deliver(
+      disputeEvent('evt_won', 'charge.dispute.closed', {
+        ...CHARGEBACK,
+        status: 'won',
+        is_charge_refundable: true,
+      }),
+    )
+
+    expect(balance(sam.userId)).toBe(126)
+    expect((await listFor(sam)).body.packs).toEqual([
+      expect.objectContaining({
+        purchaseId: plus,
+        unusedCredits: 126,
+        refund: { amountMinor: 1800, currency: 'eur', priceMinor: 2000 },
+      }),
+    ])
+    const res = await withdraw(sam, plus)
+    expect(res.body.statement).toMatchObject({
+      refundMinor: 1800,
+      refundStatus: 'refunded',
+    })
+    expect(askedAmounts()).toEqual(['1800'])
+  })
+
+  it('takes the statement of a pack whose won dispute Stripe will not refund through, and hands the refund to the owner', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await deliver(
+      disputeEvent('evt_opened', 'charge.dispute.created', CHARGEBACK),
+    )
+    await deliver(
+      disputeEvent('evt_won', 'charge.dispute.closed', {
+        ...CHARGEBACK,
+        status: 'won',
+      }),
+    )
+
+    const res = await withdraw(sam, plus)
+
+    expect(res.status).toBe(200)
+    expect(refundRequests()).toHaveLength(0)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'manual',
+      refundMinor: 2000,
+    })
+    expect(statementOf(plus)?.refundError).toContain('dispute')
+    expect(subjects(alerts())).toContain(
+      `${BILLING}Withdrawal: refund €20.00 by hand`,
+    )
+  })
+
+  it('keeps a pack with no consent on record settled once its dispute is lost with every credit used, and offers no withdrawal', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', false)
+    spend(sam.userId, 140, 'job-1')
+    await deliver(
+      disputeEvent('evt_opened', 'charge.dispute.created', CHARGEBACK),
+    )
+    await deliver(
+      disputeEvent('evt_lost', 'charge.dispute.closed', {
+        ...CHARGEBACK,
+        status: 'lost',
+      }),
+    )
+
+    // The credits the buyer used stay theirs (no consent on record).
+    expect(balance(sam.userId)).toBe(0)
+    expect((await listFor(sam)).body.packs).toEqual([])
+    expect(await withdraw(sam, plus)).toEqual({
+      status: 409,
+      body: { error: 'This purchase has been cancelled or refunded already.' },
+    })
+    expect(refundRequests()).toHaveLength(0)
+  })
+
+  it('leaves a pack withdrawable once the refund that settled it fails', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await deliver(chargeRefunded('evt_dashboard', 'pi_plus', 2000, 2000))
+    expect(balance(sam.userId)).toBe(0)
+    expect((await listFor(sam)).body.packs).toEqual([])
+
+    // The card has gone: Stripe fails the refund, and the money stays ours.
+    charged({
+      ...charges.get('ch_pi_plus'),
+      amount_refunded: 0,
+      refunded: false,
+    })
+    await deliver({
+      id: 'evt_dashboard_failed',
+      type: 'refund.failed',
+      data: {
+        object: {
+          id: 're_dashboard',
+          object: 'refund',
+          status: 'failed',
+          failure_reason: 'expired_or_canceled_card',
+          charge: 'ch_pi_plus',
+          payment_intent: 'pi_plus',
+          amount: 2000,
+          currency: 'eur',
+        },
+      },
+    })
+
+    expect(balance(sam.userId)).toBe(140)
+    expect((await listFor(sam)).body.packs).toEqual([
+      expect.objectContaining({
+        purchaseId: plus,
+        unusedCredits: 140,
+        refund: { amountMinor: 2000, currency: 'eur', priceMinor: 2000 },
+      }),
+    ])
+    expect((await withdraw(sam, plus)).body.statement).toMatchObject({
+      refundMinor: 2000,
+      refundStatus: 'refunded',
+    })
+  })
+
+  it('refunds once through an inquiry, and the inquiry closing afterwards gives nothing back', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await deliver(
+      disputeEvent('evt_inquiry', 'charge.dispute.created', INQUIRY),
+    )
+    expect(balance(sam.userId)).toBe(140)
+
+    const res = await withdraw(sam, plus)
+    expect(res.body.statement).toMatchObject({
+      refundMinor: 2000,
+      refundStatus: 'refunded',
+    })
+    expect(balance(sam.userId)).toBe(0)
+
+    // The refund comes back, and the full refund closes the inquiry.
+    await deliver(
+      chargeRefunded('evt_withdrawal_refund', 'pi_plus', 2000, 2000),
+    )
+    charges.set('ch_pi_plus', { ...charges.get('ch_pi_plus'), disputed: true })
+    await deliver(
+      disputeEvent('evt_inquiry_closed', 'charge.dispute.closed', {
+        ...INQUIRY,
+        status: 'warning_closed',
+      }),
+    )
+
+    expect(askedAmounts()).toEqual(['2000'])
+    expect(balance(sam.userId)).toBe(0)
+    expect(takenBack(sam.userId)).toBe(0)
+  })
+
+  it('never asks Stripe to refund a payment charged back after the statement', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    stripeRefunds = 'down'
+    expect((await withdraw(sam, plus)).body.statement).toMatchObject({
+      refundMinor: 2000,
+      refundStatus: 'pending',
+    })
+
+    // The bank charges the payment back before the sweep asks again.
+    disputedWith({ ...CHARGEBACK })
+    stripeRefunds = 'ok'
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+
+    expect(askedAmounts()).toEqual(['2000'])
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'manual' })
+    expect(statementOf(plus)?.refundError).toContain('needs_response')
+    expect(subjects(alerts())).toContain(
+      `${BILLING}Withdrawal: refund €20.00 by hand`,
+    )
+  })
+})
+
+describe('what a withdrawal refunds of what the charge holds (#970, F9)', () => {
+  it('keeps a pack with no consent on record settled once the dashboard refunded it in full, however few credits that took', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', false)
+    spend(sam.userId, 100, 'job-1')
+
+    await deliver(chargeRefunded('evt_full_refund', 'pi_plus', 2000, 2000))
+
+    expect(takenBack(sam.userId)).toBe(40)
+    expect((await listFor(sam)).body.packs).toEqual([])
+    expect(await withdraw(sam, plus)).toEqual({
+      status: 409,
+      body: { error: 'This purchase has been cancelled or refunded already.' },
+    })
+    expect(refundRequests()).toHaveLength(0)
+  })
+
+  it('asks only what the charge still holds after a EUR 1.50 refund of an unused pack', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await deliver(chargeRefunded('evt_small_refund', 'pi_plus', 2000, 150))
+    expect(takenBack(sam.userId)).toBe(10)
+
+    expect((await listFor(sam)).body.packs).toEqual([
+      expect.objectContaining({
+        unusedCredits: 130,
+        refund: { amountMinor: 1850, currency: 'eur', priceMinor: 2000 },
+      }),
+    ])
+    expect((await withdraw(sam, plus)).body.statement).toMatchObject({
+      refundMinor: 1850,
+      refundStatus: 'refunded',
+    })
+    expect(askedAmounts()).toEqual(['1850'])
+  })
+
+  it('promises what the charge holds when a dashboard refund lands between the list and the statement', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', false)
+    expect((await listFor(sam)).body.packs).toEqual([
+      expect.objectContaining({
+        refund: { amountMinor: 2000, currency: 'eur', priceMinor: 2000 },
+      }),
+    ])
+
+    // The owner refunds EUR 5.00 in the dashboard; its webhook has not
+    // arrived yet.
+    charged({
+      id: 'ch_pi_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: 500,
+      refunded: false,
+      currency: 'eur',
+    })
+    const res = await withdraw(sam, plus)
+
+    expect(res.body.statement).toMatchObject({
+      basis: 'full',
+      refundMinor: 1500,
+      refundStatus: 'refunded',
+    })
+    expect(askedAmounts()).toEqual(['1500'])
+    expect(acknowledgements()[0]?.text).toContain('€15.00')
+    expect(acknowledgements()[0]?.text).not.toContain('€20.00 to the card')
+  })
+
+  it('caps the refund at what the charge holds when a dashboard refund lands between the statement and the refund, and tells the owner', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', false)
+    stripeRefunds = 'down'
+    expect((await withdraw(sam, plus)).body.statement).toMatchObject({
+      refundMinor: 2000,
+      refundStatus: 'pending',
+    })
+    expect(acknowledgements()).toHaveLength(1)
+
+    charged({
+      id: 'ch_pi_plus',
+      object: 'charge',
+      payment_intent: 'pi_plus',
+      amount: 2000,
+      amount_refunded: 500,
+      refunded: false,
+      currency: 'eur',
+    })
+    stripeRefunds = 'ok'
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+
+    // EUR 5.00 by hand and EUR 15.00 here: the buyer has the whole price.
+    expect(askedAmounts()).toEqual(['2000', '1500'])
+    expect(statementOf(plus)).toMatchObject({
+      refundMinor: 1500,
+      refundStatus: 'refunded',
+    })
+    const told = alerts().find((mail) =>
+      mail.subject.endsWith('Withdrawal: refunded €15.00'),
+    )
+    expect(told?.text).toContain(
+      'Lowered: the statement promised €20.00, and Stripe holds only €15.00',
+    )
+    expect(acknowledgements()).toHaveLength(1)
+  })
+
+  it('prices a statement from Stripe after a partial refund: what the refund left, not the whole price again', async () => {
+    const sam = await buyer('sam@example.test')
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_legacy',
+      'pi_legacy',
+    )
+    paymentIntents.set('pi_legacy', { amount_received: 2000, currency: 'eur' })
+    await deliver(chargeRefunded('evt_goodwill', 'pi_legacy', 2000, 200))
+    expect(balance(sam.userId)).toBe(126)
+
+    const res = await withdraw(sam, purchaseOf('evt_legacy'))
+
+    expect(askedAmounts()).toEqual(['1800'])
+    expect(res.body.statement).toMatchObject({
+      basis: 'full',
+      refundMinor: 1800,
+    })
+  })
+
+  it('never promises the whole price again when Stripe refuses the refund of a partly refunded pack', async () => {
+    const sam = await buyer('sam@example.test')
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_legacy',
+      'pi_legacy',
+    )
+    paymentIntents.set('pi_legacy', { amount_received: 2000, currency: 'eur' })
+    await deliver(chargeRefunded('evt_goodwill', 'pi_legacy', 2000, 200))
+    stripeRefunds = 'refused'
+
+    await withdraw(sam, purchaseOf('evt_legacy'))
+
+    expect(acknowledgements()[0]?.text).toContain('€18.00')
+    expect(acknowledgements()[0]?.text).not.toContain('€20.00 to the card')
+  })
+})
+
+describe('a withdrawal refund that fails after it went through (#970, F10)', () => {
+  /** The refund the withdrawal made, as Stripe sends it once it failed. */
+  function failedRefund(): Record<string, unknown> {
+    const [refund] = refundsMade
+    if (refund === undefined) throw new Error('no refund was made')
+    refund.status = 'failed'
+    refund.failure_reason = 'expired_or_canceled_card'
+    return { ...refund, charge: 'ch_pi_plus', currency: 'eur' }
+  }
+
+  it('marks the statement failed for the owner to refund by hand, once, and gives no credits back', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'succeeded',
+    })
+    const refund = failedRefund()
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+    expect(
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+    })
+    expect(
+      subjects(alerts()).filter((subject) =>
+        subject.includes('refund FAILED after it went through'),
+      ),
+    ).toEqual([
+      `${BILLING}Withdrawal: refund FAILED after it went through, refund €20.00 by hand`,
+    ])
+    expect(balance(sam.userId)).toBe(0)
+  })
+
+  it('answers 500 and records nothing while the owner has not heard, so Stripe sends it again', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: failedRefund() },
+    }
+    resendRefuses = (mail) =>
+      mail.subject.includes('refund FAILED after it went through')
+
+    expect(await deliver(event)).toBe(500)
+    expect(billingEventSeen('evt_refund_failed')).toBe(false)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+
+    resendRefuses = () => false
+    expect(await deliver(event)).toBe(200)
+    expect(billingEventSeen('evt_refund_failed')).toBe(true)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+})
+
+// ── #970 review of 32e42e835 ────────────────────────────────────────
+
+describe('a whole-price withdrawal after an earlier refund (#970 review, F-1)', () => {
+  /** A Plus pack (140 credits, EUR 20.00) with EUR 5.00 refunded as
+   *  goodwill in the dashboard: 35 credits taken back. */
+  async function goodwillRefunded(ticked: boolean) {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', ticked)
+    expect(
+      await deliver(chargeRefunded('evt_goodwill', 'pi_plus', 2000, 500)),
+    ).toBe(200)
+    expect(balance(sam.userId)).toBe(105)
+    return { sam, plus }
+  }
+
+  /** The row an event wrote on the buyer's ledger. */
+  function rowOf(userId: string, key: string) {
+    return ledgerOf(userId).find((row) => row.idempotencyKey === key)
+  }
+
+  for (const ticked of [false, true]) {
+    const label = ticked ? 'consented' : 'no consent on record'
+
+    it(`${label}: an inquiry that closes after the withdrawal gives nothing back`, async () => {
+      const { sam, plus } = await goodwillRefunded(ticked)
+      expect(
+        await deliver(
+          disputeEvent('evt_inquiry', 'charge.dispute.created', INQUIRY),
+        ),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(105)
+
+      const res = await withdraw(sam, plus)
+      expect(res.body.statement).toMatchObject({
+        basis: ticked ? 'unused' : 'full',
+        refundMinor: 1500,
+        refundStatus: 'refunded',
+      })
+      expect(balance(sam.userId)).toBe(0)
+      // The withdrawal's EUR 15.00 lands: all EUR 20.00 is back.
+      expect(
+        await deliver(
+          chargeRefunded('evt_withdrawal_refund', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      charges.set('ch_pi_plus', {
+        ...charges.get('ch_pi_plus'),
+        disputed: true,
+      })
+      expect(balance(sam.userId)).toBe(0)
+
+      // The inquiry closes without becoming a chargeback.
+      expect(
+        await deliver(
+          disputeEvent('evt_inquiry_closed', 'charge.dispute.closed', {
+            ...INQUIRY,
+            status: 'warning_closed',
+          }),
+        ),
+      ).toBe(200)
+
+      // The buyer has every cent back: no credit comes back with it.
+      expect(rowOf(sam.userId, 'clawback:evt_inquiry_closed')).toMatchObject({
+        delta: 0,
+      })
+      expect(balance(sam.userId)).toBe(0)
+    })
+
+    it(`${label}: a goodwill refund that fails and is made again by hand leaves no credits`, async () => {
+      const { sam, plus } = await goodwillRefunded(ticked)
+      const res = await withdraw(sam, plus)
+      expect(res.body.statement).toMatchObject({ refundMinor: 1500 })
+      expect(
+        await deliver(
+          chargeRefunded('evt_withdrawal_refund', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(0)
+
+      // The goodwill refund fails: only the withdrawal's EUR 15.00 is back,
+      // so the 35 credits it took come back with its money.
+      charged({
+        ...charges.get('ch_pi_plus'),
+        amount_refunded: 1500,
+        refunded: false,
+      })
+      expect(
+        await deliver({
+          id: 'evt_goodwill_failed',
+          type: 'refund.failed',
+          data: {
+            object: {
+              id: 're_goodwill',
+              object: 'refund',
+              status: 'failed',
+              failure_reason: 'expired_or_canceled_card',
+              charge: 'ch_pi_plus',
+              payment_intent: 'pi_plus',
+              amount: 500,
+              currency: 'eur',
+            },
+          },
+        }),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(35)
+
+      // The owner refunds the EUR 5.00 again by hand: all EUR 20.00 is back,
+      // and the 35 credits go with it.
+      charged({
+        ...charges.get('ch_pi_plus'),
+        amount_refunded: 2000,
+        refunded: true,
+      })
+      expect(
+        await deliver(
+          chargeRefunded('evt_goodwill_again', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      expect(rowOf(sam.userId, 'clawback:evt_goodwill_again')).toMatchObject({
+        delta: -35,
+      })
+      expect(balance(sam.userId)).toBe(0)
+    })
+  }
+})
+
+describe('a refund that lands while the statement is written (#970 review, F-2)', () => {
+  for (const ticked of [false, true]) {
+    const label = ticked ? 'consented' : 'no consent on record'
+
+    it(`${label}: never promises or asks Stripe for more than the charge holds`, async () => {
+      const sam = await buyer('sam@example.test')
+      const plus = await buy(sam, 'pack-plus', 'pi_plus', ticked)
+
+      // The statement has read the ledger and Stripe (nothing refunded)
+      // when the owner's EUR 5.00 dashboard refund lands and its webhook
+      // takes 35 credits, just before the statement's batch. The batch
+      // loses to that write, and the next attempt counts again.
+      justBefore(/INSERT OR IGNORE INTO withdrawals/, async () => {
+        expect(
+          await deliver(chargeRefunded('evt_dashboard', 'pi_plus', 2000, 500)),
+        ).toBe(200)
+      })
+      const res = await withdraw(sam, plus)
+
+      expect(res.status).toBe(200)
+      // The charge holds EUR 15.00: what is left after the dashboard refund.
+      expect(askedAmounts()).toEqual(['1500'])
+      expect(statementOf(plus)).toMatchObject({
+        refundMinor: 1500,
+        refundStatus: 'refunded',
+      })
+      expect(acknowledgements()[0]?.text).toContain('€15.00')
+      expect(balance(sam.userId)).toBe(0)
+    })
+  }
+})
+
+describe('Settings › Credits for an account with many packs (#970 review, F-5)', () => {
+  /** D1's limit of 100 bound values a query, which node:sqlite does not
+   *  have (developers.cloudflare.com/d1/platform/limits). */
+  function withD1ParameterLimit(): void {
+    const db = env.DB as unknown as SqliteD1Database
+    const prepare = db.prepare.bind(db)
+    db.prepare = (text: string) => {
+      const wrap = (inner: SqliteD1Statement): SqliteD1Statement => {
+        const bind = inner.bind.bind(inner)
+        inner.bind = (...values: Parameters<SqliteD1Statement['bind']>) => {
+          const bound = bind(...values)
+          if (values.length > 100) {
+            const refuse = () =>
+              Promise.reject(
+                new Error('D1_ERROR: too many SQL variables (limit 100)'),
+              )
+            bound.first = refuse as typeof bound.first
+            bound.all = refuse as typeof bound.all
+            bound.run = refuse as typeof bound.run
+            return bound
+          }
+          return wrap(bound)
+        }
+        return inner
+      }
+      return wrap(prepare(text))
+    }
+  }
+
+  for (const packs of [100, 101, 250]) {
+    it(`lists the packs of an account with ${packs} on record`, async () => {
+      const sam = await buyer('sam@example.test')
+      for (let n = 0; n < packs; n += 1) {
+        insertRow(
+          sam.userId,
+          30,
+          'purchase',
+          'pack-starter',
+          `evt:evt_old_${n}`,
+          `pi_old_${n}`,
+        )
+      }
+      withD1ParameterLimit()
+
+      const res = await listFor(sam)
+
+      expect(res.status).toBe(200)
+    })
+  }
+
+  it('reads what Stripe last said of a pack among 250', async () => {
+    const sam = await buyer('sam@example.test')
+    for (let n = 0; n < 250; n += 1) {
+      insertRow(
+        sam.userId,
+        30,
+        'purchase',
+        'pack-starter',
+        `evt:evt_old_${n}`,
+        `pi_old_${n}`,
+      )
+    }
+    withD1ParameterLimit()
+    const listed = ((await listFor(sam)).body.packs as unknown[]).length
+
+    // Stripe said all of the 201st pack's money went back: it is settled.
+    sqlite
+      .prepare(
+        `INSERT INTO stripeCharges (paymentIntentId, chargeId, currency, amount, amountRefunded, disputes, updatedAt)
+         VALUES ('pi_old_200', 'ch_old_200', 'eur', 500, 500, '[]', ?)`,
+      )
+      .run(new Date().toISOString())
+
+    expect(listed).toBeGreaterThan(200)
+    expect((await listFor(sam)).body.packs).toHaveLength(listed - 1)
+  })
+})
+
+describe('a failed withdrawal refund delivered more than once (#970 review, F-6)', () => {
+  const FAILED = `${BILLING}Withdrawal: refund FAILED after it went through, refund €20.00 by hand`
+
+  /** The withdrawal's refund, as Stripe sends it once it failed. */
+  async function failedWithdrawalRefund() {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    made.status = 'failed'
+    made.failure_reason = 'expired_or_canceled_card'
+    const refund = { ...made, charge: 'ch_pi_plus', currency: 'eur' }
+    return { sam, plus, refund }
+  }
+
+  function failedAlerts(): string[] {
+    return subjects(alerts()).filter((subject) => subject === FAILED)
+  }
+
+  it('tells the owner once when refund.failed and refund.updated arrive at once', async () => {
+    const { sam, plus, refund } = await failedWithdrawalRefund()
+
+    env.DB = interleaved(new SqliteD1Database(sqlite))
+    const answers = await Promise.all([
+      deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+      deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ])
+
+    expect(failedAlerts()).toHaveLength(1)
+    expect(answers).toEqual([200, 200])
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+      refundFailureClaimedAt: null,
+    })
+    expect(balance(sam.userId)).toBe(0)
+  })
+
+  it('tells the owner once when one event is delivered twice at once', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: refund },
+    }
+
+    env.DB = interleaved(new SqliteD1Database(sqlite))
+    const answers = await Promise.all([deliver(event), deliver(event)])
+
+    // A delivery that finds its twin still holding the claim answers 500,
+    // so Stripe sends it again; one that finds the failure recorded, 200.
+    expect(failedAlerts()).toHaveLength(1)
+    expect(answers).toContain(200)
+    expect(answers.every((answer) => answer === 200 || answer === 500)).toBe(
+      true,
+    )
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+    expect(await deliver(event)).toBe(200)
+    expect(failedAlerts()).toHaveLength(1)
+  })
+
+  /** A claim on the statement, `minutes` old, by `event`. */
+  function claimedBy(purchaseId: string, event: string, minutes: number) {
+    sqlite
+      .prepare(
+        `UPDATE withdrawals SET refundFailureClaimedAt = ?, refundFailureClaimedBy = ?
+          WHERE purchaseId = ?`,
+      )
+      .run(
+        new Date(Date.now() - minutes * 60_000).toISOString(),
+        event,
+        purchaseId,
+      )
+  }
+
+  it('answers 500 to an event its twin is telling the owner of, and tells them once that twin is gone', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: refund },
+    }
+    claimedBy(plus, 'evt_refund_failed', 1)
+
+    expect(await deliver(event)).toBe(500)
+    expect(failedAlerts()).toEqual([])
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+
+    // The twin died: 11 minutes on, its claim is stale.
+    claimedBy(plus, 'evt_refund_failed', 11)
+    expect(await deliver(event)).toBe(200)
+    expect(failedAlerts()).toHaveLength(1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+
+  it('leaves the owner to another event about the same failure while it holds the claim', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    claimedBy(plus, 'evt_refund_updated', 1)
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(failedAlerts()).toEqual([])
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      refundFailureClaimedBy: 'evt_refund_updated',
+    })
+  })
+
+  it('tells the owner when a delivery that claimed the statement died before it did', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    // A delivery claimed the statement 11 minutes ago and never finished.
+    claimedBy(plus, 'evt_died', 11)
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      refundFailureClaimedAt: null,
+      refundFailureClaimedBy: null,
+    })
+    expect(failedAlerts()).toHaveLength(1)
+  })
+
+  it('leaves the owner to the delivery that holds a live claim, and hands it back when its alert fails', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    resendRefuses = (mail) =>
+      mail.subject.includes('refund FAILED after it went through')
+
+    // refund.updated claims the statement, and its alert does not go.
+    expect(
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+    ).toBe(500)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      refundFailureClaimedAt: null,
+    })
+    const refused = failedAlerts().length
+
+    // The claim was handed back, so refund.failed tells the owner.
+    resendRefuses = () => false
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+    expect(failedAlerts()).toHaveLength(refused + 1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
   })
 })

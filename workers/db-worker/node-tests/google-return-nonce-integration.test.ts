@@ -191,3 +191,37 @@ describe('a sign-in started without a usable nonce', () => {
     expect(location).toBe(`${DEV}/#gauth_error=expired_state`)
   })
 })
+
+describe('a code exchange Google refuses', () => {
+  it('logs what Google answered with any address in it masked', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL) => {
+        const url = String(input instanceof Request ? input.url : input)
+        if (url === 'https://oauth2.googleapis.com/token') {
+          return Response.json(
+            {
+              error: 'invalid_grant',
+              error_description:
+                'Code was already redeemed for google-singer@example.com',
+            },
+            { status: 400 },
+          )
+        }
+        throw new Error(`unexpected fetch to ${url}`)
+      },
+    )
+
+    const location = await callback(await startSignIn(NONCE))
+
+    expect(fragment(location).get('gauth_error')).toBe(
+      'Google code exchange failed (invalid_grant)',
+    )
+    const logged = errors.mock.calls
+      .map((args) => args.map(String).join(' '))
+      .join('\n')
+    expect(logged).toContain('[google-callback] code exchange failed: 400')
+    expect(logged).toContain('redeemed for g***@***.com')
+    expect(logged).not.toContain('google-singer@example.com')
+  })
+})

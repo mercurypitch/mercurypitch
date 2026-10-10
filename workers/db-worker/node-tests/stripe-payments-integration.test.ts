@@ -1,14 +1,15 @@
 // @vitest-environment node
 //
-// ── Only paid money grants, and money that goes back takes its credits ──
+// ── Only paid money grants ─────────────────────────────────────────────
 //
 // The Stripe webhook grants a pack when its Checkout Session is paid: at
 // checkout.session.completed for a card, at
 // checkout.session.async_payment_succeeded for a delayed method, never for a
-// session still waiting for its money. Each grant keeps its PaymentIntent, so
-// charge.refunded takes back the refunded share of what the payment granted
-// and charge.dispute.created takes all of it, never below a zero balance and
-// never twice (stripe-payments.ts). The reconciliation sweep recovers both
+// session still waiting for its money. Each grant keeps its PaymentIntent,
+// which is what a refund or a dispute takes it back by: those, and the sweep
+// that applies the refunds and disputes the webhook missed, have their own
+// suites on a fake Stripe (stripe-money-back-integration.test.ts,
+// stripe-sweep-integration.test.ts). The reconciliation sweep recovers both
 // checkout events the webhook missed.
 //
 // Real SQLite with every migration applied, through the worker's own fetch.
@@ -150,46 +151,6 @@ function checkout(
   }
 }
 
-function refund(
-  id: string,
-  options: { paymentIntent?: string; amount?: number; refunded?: number } = {},
-): StripeEvent {
-  const amount = options.amount ?? 500
-  const refunded = options.refunded ?? amount
-  return {
-    id,
-    type: 'charge.refunded',
-    data: {
-      object: {
-        id: 'ch_starter',
-        object: 'charge',
-        payment_intent: options.paymentIntent ?? 'pi_starter',
-        amount,
-        amount_refunded: refunded,
-        refunded: refunded >= amount,
-      },
-    },
-  }
-}
-
-function dispute(id: string, paymentIntent = 'pi_starter'): StripeEvent {
-  return {
-    id,
-    type: 'charge.dispute.created',
-    data: {
-      object: {
-        id: 'dp_starter',
-        object: 'dispute',
-        charge: 'ch_starter',
-        payment_intent: paymentIntent,
-        amount: 500,
-        reason: 'fraudulent',
-        status: 'needs_response',
-      },
-    },
-  }
-}
-
 function balance(userId: string): number {
   const row = sqlite
     .prepare(
@@ -212,23 +173,6 @@ function rows(userId: string): Row[] {
       'SELECT delta, reason, jobRef, paymentIntentId FROM creditLedger WHERE userId = ? ORDER BY rowid',
     )
     .all(userId) as unknown as Row[]
-}
-
-/** A separation paid with credits, as the debit route writes it. */
-function spend(userId: string, credits: number, jobRef: string): void {
-  sqlite
-    .prepare(
-      `INSERT INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-       VALUES (?, ?, ?, ?, 'uvr-job', ?, ?)`,
-    )
-    .run(
-      crypto.randomUUID(),
-      new Date().toISOString(),
-      userId,
-      -credits,
-      jobRef,
-      `uvr:${jobRef}`,
-    )
 }
 
 function recorded(eventId: string): boolean {
@@ -319,152 +263,8 @@ describe('a checkout grants once it is paid', () => {
     )
 
     expect(balance(userId)).toBe(0)
-    expect(recorded('evt_failed')).toBe(true)
-  })
-})
-
-describe('a refund takes back what the payment granted', () => {
-  it('takes the whole pack back after a full refund, and says so', async () => {
-    const userId = await register('refunded@example.com')
-    await deliver(checkout('evt_buy', userId))
-
-    const res = await deliver(refund('evt_refund'))
-
-    expect(res.status).toBe(200)
-    expect(balance(userId)).toBe(0)
-    expect(rows(userId).at(-1)).toEqual({
-      delta: -30,
-      reason: 'purchase-refund',
-      jobRef: 'pi_starter',
-      paymentIntentId: null,
-    })
-    expect(recorded('evt_refund')).toBe(true)
-    const [alert] = alerts()
-    expect(alert?.subject).toBe(
-      '[MercuryPitch billing] Refund: took back 30 credit(s)',
-    )
-    expect(alert?.text).toContain(`Account: ${userId}`)
-    expect(alert?.text).not.toContain('Not taken back')
-  })
-
-  it('never takes the balance below zero, and reports what was spent', async () => {
-    const userId = await register('spent@example.com')
-    await deliver(checkout('evt_buy', userId))
-    spend(userId, 25, 'job-1')
-
-    await deliver(refund('evt_refund'))
-
-    expect(balance(userId)).toBe(0)
-    expect(rows(userId).at(-1)?.delta).toBe(-5)
-    expect(alerts()[0]?.text).toContain(
-      'Not taken back: 25 credit(s), already spent.',
-    )
-  })
-
-  it('takes back the refunded share, and the rest when the refund completes', async () => {
-    const userId = await register('partial@example.com')
-    await deliver(checkout('evt_buy', userId))
-
-    await deliver(refund('evt_half', { refunded: 250 }))
-    expect(balance(userId)).toBe(15)
-
-    // Stripe reports the refunded amount so far, not this refund's own.
-    await deliver(refund('evt_rest', { refunded: 500 }))
-    expect(balance(userId)).toBe(0)
-    expect(
-      rows(userId)
-        .filter((row) => row.reason === 'purchase-refund')
-        .map((row) => row.delta),
-    ).toEqual([-15, -15])
-  })
-
-  it('takes nothing twice for a redelivered refund', async () => {
-    const userId = await register('replayed@example.com')
-    await deliver(checkout('evt_buy', userId))
-    await deliver(
-      checkout('evt_buy_again', userId, { paymentIntent: 'pi_other' }),
-    )
-
-    const first = await deliver(refund('evt_refund'))
-    const again = await deliver(refund('evt_refund'))
-    // A different event about the same full refund owes nothing more.
-    await deliver(refund('evt_refund_echo'))
-
-    expect(first.body).toEqual({ received: true })
-    expect(again.body).toMatchObject({ duplicate: true })
-    expect(balance(userId)).toBe(30)
-    expect(
-      rows(userId).filter((row) => row.reason === 'purchase-refund'),
-    ).toHaveLength(2)
-  })
-
-  it('takes the launch bonus back with the pack it came with', async () => {
-    const userId = await register('bonus@example.com')
-    await deliver(checkout('evt_buy', userId))
-    sqlite
-      .prepare(
-        `INSERT INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey, paymentIntentId)
-         VALUES (?, ?, ?, 30, 'offer-bonus', 'launch-finisher', ?, 'pi_starter')`,
-      )
-      .run(
-        crypto.randomUUID(),
-        new Date().toISOString(),
-        userId,
-        `offer:launch-finisher:${userId}`,
-      )
-
-    await deliver(refund('evt_refund'))
-
-    expect(balance(userId)).toBe(0)
-    expect(rows(userId).at(-1)?.delta).toBe(-60)
-  })
-
-  it('leaves a payment it has no credits for alone, and says so', async () => {
-    const userId = await register('stranger@example.com')
-    await deliver(checkout('evt_buy', userId))
-
-    const res = await deliver(
-      refund('evt_unknown', { paymentIntent: 'pi_old' }),
-    )
-
-    expect(res.status).toBe(200)
-    expect(balance(userId)).toBe(30)
-    expect(recorded('evt_unknown')).toBe(true)
-    expect(alerts()[0]?.subject).toBe(
-      '[MercuryPitch billing] Refund with no credits on record',
-    )
-  })
-})
-
-describe('a dispute takes back all of it', () => {
-  it('takes the pack back the moment the dispute opens', async () => {
-    const userId = await register('disputed@example.com')
-    await deliver(checkout('evt_buy', userId))
-
-    await deliver(dispute('evt_dispute'))
-
-    expect(balance(userId)).toBe(0)
-    expect(rows(userId).at(-1)).toMatchObject({
-      delta: -30,
-      reason: 'purchase-dispute',
-      jobRef: 'pi_starter',
-    })
-    const [alert] = alerts()
-    expect(alert?.subject).toBe(
-      '[MercuryPitch billing] Dispute: took back 30 credit(s)',
-    )
-    expect(alert?.text).toContain('If the dispute is won')
-  })
-
-  it('takes nothing more for a dispute of a payment already refunded', async () => {
-    const userId = await register('both@example.com')
-    await deliver(checkout('evt_buy', userId))
-    await deliver(checkout('evt_more', userId, { paymentIntent: 'pi_more' }))
-
-    await deliver(refund('evt_refund'))
-    await deliver(dispute('evt_dispute'))
-
-    expect(balance(userId)).toBe(30)
+    // Nothing handles the failure: it is acknowledged and never recorded.
+    expect(recorded('evt_failed')).toBe(false)
   })
 })
 
@@ -488,19 +288,23 @@ describe('the reconciliation sweep', () => {
     const list = new URL(
       sent.find((request) => request.url.includes('/v1/events'))?.url ?? '',
     )
-    expect(list.searchParams.getAll('types[]')).toEqual([
-      'checkout.session.completed',
-      'checkout.session.async_payment_succeeded',
-    ])
+    expect(list.searchParams.getAll('types[]')).toEqual(
+      expect.arrayContaining([
+        'checkout.session.completed',
+        'checkout.session.async_payment_succeeded',
+      ]),
+    )
     expect(list.searchParams.has('type')).toBe(false)
     expect(balance(userId)).toBe(30)
     expect(recorded('evt_swept_waiting')).toBe(true)
     expect(recorded('evt_swept_paid')).toBe(true)
     const [alert] = alerts()
     expect(alert?.subject).toBe(
-      '[MercuryPitch billing] Recovered 1 missed grant(s)',
+      '[MercuryPitch billing] Sweep recovered 1 missed event(s)',
     )
-    expect(alert?.text).toContain('evt_swept_paid')
+    expect(alert?.text).toContain(
+      `evt_swept_paid (checkout.session.async_payment_succeeded): +30 credits, user=${userId}`,
+    )
     expect(alert?.text).not.toContain('evt_swept_waiting')
   })
 

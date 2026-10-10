@@ -2276,19 +2276,13 @@ export default {
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    // Stripe out of reach makes reconcileBilling throw, and it has no catch
-    // of its own.
-    try {
-      await reconcileBilling(env)
-    } catch (error) {
-      console.error('[cron] billing reconcile failed:', error)
-    }
     await runWeeklyLeagueCut(env)
     // Nothing removes an authSessions row except an explicit sign-out, so
     // without this the table grows by a row per sign-in forever and the
     // account's device list fills with dead entries that "sign out this
     // device" cannot remove — there is nothing left to revoke. Swallows its
-    // own errors, like the two above, so one sweep can never starve another.
+    // own errors, like the league cut above and every sweep below, so one
+    // sweep can never starve another.
     try {
       await sweepExpiredSessions(env.DB, TOKEN_TTL_SECONDS)
     } catch (error) {
@@ -2321,6 +2315,15 @@ export default {
       await sweepWithdrawals(env, Date.now())
     } catch (error) {
       console.error('[cron] withdrawal sweep failed:', error)
+    }
+    // The Stripe events the webhook missed in the last 30 days: purchases,
+    // refunds and disputes, applied through the webhook's own handler
+    // (billing.ts, reconcileBilling; stripe-sweep.ts). It alerts the owner
+    // itself when it cannot finish.
+    try {
+      await reconcileBilling(env)
+    } catch (error) {
+      console.error('[cron] billing reconcile failed:', error)
     }
   },
 }

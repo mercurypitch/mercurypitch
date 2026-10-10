@@ -33,7 +33,7 @@ const PLUS: CancellablePack = {
   paidCredits: 140,
   unusedCredits: 126,
   bonusCredits: 30,
-  refund: { amountMinor: 1800, currency: 'eur' },
+  refund: { amountMinor: 1800, currency: 'eur', priceMinor: 2000 },
 }
 
 const STARTER: CancellablePack = {
@@ -45,7 +45,7 @@ const STARTER: CancellablePack = {
   paidCredits: 30,
   unusedCredits: 30,
   bonusCredits: 0,
-  refund: { amountMinor: 500, currency: 'eur' },
+  refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
 }
 
 function statement(
@@ -305,7 +305,7 @@ describe('PurchaseWithdrawals', () => {
       purchaseId: 'purchase-old',
       basis: 'full',
       unusedCredits: 0,
-      refund: { amountMinor: 500, currency: 'eur' },
+      refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
     }
 
     it('offers the whole price back, used credits and all', async () => {
@@ -328,16 +328,64 @@ describe('PurchaseWithdrawals', () => {
       )
     })
 
-    it('says the whole price when its price is not on record', async () => {
+    it('says what an earlier refund left of the price', async () => {
+      // €2.00 of the €5.00 went back before the cancel: the rest is owed.
+      mocks.fetchWithdrawals.mockResolvedValue(
+        answer({
+          packs: [
+            {
+              ...OLD,
+              refund: { amountMinor: 300, currency: 'eur', priceMinor: 500 },
+            },
+          ],
+        }),
+      )
+      render(() => <PurchaseWithdrawals />)
+
+      const [row] = await screen.findAllByTestId('cancellable-pack')
+      expect(row?.textContent).toContain(
+        "Refund €3.00, what's left after an earlier refund, until",
+      )
+      expect(row?.textContent).not.toContain('the whole price')
+
+      fireEvent.click(screen.getByTestId('withdraw-link'))
+      expect(screen.getByTestId('withdrawal-form').textContent).toContain(
+        "We'll refund €3.00, what's left after an earlier refund, to the card or account you paid with.",
+      )
+    })
+
+    it('names no amount for it when an older db-worker sends no price', async () => {
+      mocks.fetchWithdrawals.mockResolvedValue(
+        answer({
+          packs: [{ ...OLD, refund: { amountMinor: 500, currency: 'eur' } }],
+        }),
+      )
+      render(() => <PurchaseWithdrawals />)
+
+      const [row] = await screen.findAllByTestId('cancellable-pack')
+      expect(row?.textContent).toContain(
+        'Refund the price, less any earlier refund, until',
+      )
+      expect(row?.textContent).not.toContain('€5.00')
+    })
+
+    it('says the price less any earlier refund when the amount is not known', async () => {
       mocks.fetchWithdrawals.mockResolvedValue(
         answer({ packs: [{ ...OLD, unusedCredits: 10, refund: null }] }),
       )
       render(() => <PurchaseWithdrawals />)
 
-      fireEvent.click(await screen.findByTestId('withdraw-link'))
+      const [row] = await screen.findAllByTestId('cancellable-pack')
+      expect(row?.textContent).toContain(
+        'Refund the price, less any earlier refund, until',
+      )
 
+      fireEvent.click(screen.getByTestId('withdraw-link'))
       expect(screen.getByTestId('withdrawal-form').textContent).toContain(
-        "We'll take the 10 unused credits off your balance and refund the whole price to the card or account you paid with.",
+        "We'll take the 10 unused credits off your balance and refund the price, less any earlier refund, to the card or account you paid with.",
+      )
+      expect(screen.getByTestId('withdrawal-form').textContent).not.toContain(
+        'the whole price',
       )
     })
   })
@@ -365,9 +413,45 @@ describe('PurchaseWithdrawals', () => {
     expect(list.textContent).toContain(
       "We'll refund what you paid for those credits within 14 days.",
     )
+    // An earlier refund comes off a refund of the whole price (#970).
     expect(list.textContent).toContain(
+      "We'll refund what you paid, less any earlier refund, within 14 days.",
+    )
+    expect(list.textContent).not.toContain(
       "We'll refund what you paid within 14 days.",
     )
     expect(list.textContent).not.toContain('€0.00')
+  })
+
+  it('says a started refund of the whole price, with no amount on record, is less any earlier refund', async () => {
+    mocks.fetchWithdrawals.mockResolvedValue(
+      answer({
+        packs: [],
+        statements: [
+          statement({
+            basis: 'full',
+            refundMinor: null,
+            stripeRefundStatus: 'pending',
+          }),
+          statement({
+            id: 'statement-2',
+            basis: 'full',
+            refundMinor: 500,
+            stripeRefundStatus: 'pending',
+          }),
+        ],
+      }),
+    )
+    render(() => <PurchaseWithdrawals />)
+
+    const list = await screen.findByRole('list', {
+      name: 'Cancelled purchases',
+    })
+    expect(list.textContent).toContain(
+      "We've started a refund of what you paid, less any earlier refund, to the card or account you paid with.",
+    )
+    expect(list.textContent).toContain(
+      "We've started a refund of €5.00 to the card or account you paid with.",
+    )
   })
 })

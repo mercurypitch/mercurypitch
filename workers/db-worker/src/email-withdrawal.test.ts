@@ -145,17 +145,18 @@ describe('the withdrawal acknowledgement', () => {
     expect(text).not.toContain('€0.00')
   })
 
-  it('promises the whole price for a purchase with no consent on record', () => {
-    expect(
-      mail({
-        amountMinor: null,
-        refundMinor: null,
-        basis: 'full',
-        refundState: 'manual',
-      }).text,
-    ).toContain(
-      "We'll refund what you paid to the card or account you paid with within 14 days.",
-    )
+  it('promises what was paid, less any earlier refund, for a purchase with no consent on record', () => {
+    const { text, html } = mail({
+      amountMinor: null,
+      refundMinor: null,
+      basis: 'full',
+      refundState: 'manual',
+    })
+    const promise =
+      "We'll refund what you paid, less any earlier refund, to the card or account you paid with within 14 days."
+
+    expect(text).toContain(promise)
+    expect(visibleText(html)).toContain(promise)
     expect(
       mail({ basis: 'full', refundMinor: 500, refundState: 'pending' }).text,
     ).toContain(

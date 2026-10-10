@@ -423,7 +423,8 @@ describe('the record of an address’s free song', () => {
   it('is swept even when the billing check before it fails', async () => {
     const singer = await signUp(EMAIL)
     await debit(singer, 'rp_gpu_october')
-    // Stripe configured, and out of reach: reconcileBilling throws.
+    // Stripe configured, and out of reach: the billing sweep cannot list
+    // its events, and says so.
     env = { ...env, STRIPE_SECRET_KEY: 'sk_test_unreachable' }
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(
       new TypeError('fetch failed'),
@@ -435,8 +436,7 @@ describe('the record of an address’s free song', () => {
 
     expect(records()).toEqual([])
     expect(error).toHaveBeenCalledWith(
-      '[cron] billing reconcile failed:',
-      expect.any(TypeError),
+      '[billing] sweep: incomplete, Stripe could not be reached for the events list (TypeError: fetch failed)',
     )
   })
 })

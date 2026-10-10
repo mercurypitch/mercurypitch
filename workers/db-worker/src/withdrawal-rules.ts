@@ -27,11 +27,18 @@
 // the balance is theirs after each row; the rest is the web's own credits,
 // which this file splits by the order above. Money that went back for a
 // pack (a refund or a dispute, stripe-payments.ts) takes from that pack's
-// own credits first, when it went back. A partial refund leaves the rest of
-// the pack cancellable: the credits it took are gone, so the unused share
-// is what is left to refund. A dispute, a refund that took back every
-// credit the payment granted, or a withdrawal settles the pack: it cannot
-// be withdrawn again here.
+// own credits first, when it went back, and what a won dispute or a failed
+// refund gives back is that pack's own credits again.
+//
+// Whether a pack is settled follows the money, as Stripe last reported it
+// (stripeCharges, stripe-charge.ts), never the credits: a take capped at
+// the credits left can be 0 while the money is gone. A pack is settled while
+// Stripe holds its money back: a chargeback open or lost, or refunds that
+// returned the whole price. A won dispute, an inquiry (no money moves), a
+// dispute prevented, or a refund that failed or was canceled leave it
+// open. A partial refund leaves the rest of the pack cancellable, for what
+// the charge still holds: never more than its amount less what went back
+// (refundOwed). A withdrawal settles its pack for good.
 //
 // A buyer who never ticked the checkbox at checkout (every pack bought
 // before it shipped) never asked for the credits straight away, so the
@@ -52,6 +59,8 @@
 // Terms still say 14 days.
 
 import { APP_SEPARATION, REVIEW_ACCESS, SEPARATION_REFUND, SUBSCRIPTION_GRANT, SUBSCRIPTION_MOVED_IN, SUBSCRIPTION_REFUND_REVERSED, SUBSCRIPTION_SANDBOX, SUBSCRIPTION_SANDBOX_MOVED_IN, WEB_SEPARATION, webCreditsAfterEach, } from './songs-allowance'
+import type { ChargeState } from './stripe-charge'
+import { anyDisputeHolds, refundBarredByDispute } from './stripe-charge'
 import { PACK_PURCHASE, PURCHASE_DISPUTE, PURCHASE_REFUND, WITHDRAWAL_BONUS, WITHDRAWAL_PAID, } from './stripe-payments'
 import type { PurchaseTerms } from './withdrawal-wording'
 import { WITHDRAWAL_DAYS } from './withdrawal-wording'
@@ -91,9 +100,11 @@ export interface PackUse {
    *  they took off this pack and anything else on the balance
    *  (stripe-payments.ts). */
   takenBack: number
-  /** Money went back for all of it (a dispute, or refunds that took back
-   *  every credit the payment granted), or it was withdrawn: settled, and
-   *  not withdrawable here. */
+  /** A refund or a dispute of its payment wrote a row, even one that moved
+   *  nothing: money may have gone back, and Stripe's word on it decides. */
+  moneyBack: boolean
+  /** Withdrawn already, or (withMoney) Stripe holds its money back:
+   *  settled, and not withdrawable here. */
   settled: boolean
 }
 
@@ -123,6 +134,10 @@ interface Pools {
   /** Paid and bonus credits still held. */
   paidLeft: number
   bonusLeft: number
+  /** What refunds and disputes took off each pool, net of what they gave
+   *  back: a give-back returns there. */
+  paidTaken: number
+  bonusTaken: number
 }
 
 /** Where a spend took credits from: free credits, bonus credits with no
@@ -162,10 +177,13 @@ function addPack(walk: Walk, row: LedgerEntry): void {
       bonus: 0,
       bonusUnused: 0,
       takenBack: 0,
+      moneyBack: false,
       settled: false,
     },
     paidLeft: paid,
     bonusLeft: 0,
+    paidTaken: 0,
+    bonusTaken: 0,
   }
   walk.packs.push(pack)
   walk.byId.set(row.id, pack)
@@ -218,20 +236,40 @@ function takeBack(pack: Pools, credits: number): void {
   const fromBonus = Math.min(pack.bonusLeft, take - fromPaid)
   pack.paidLeft -= fromPaid
   pack.bonusLeft -= fromBonus
+  pack.paidTaken += fromPaid
+  pack.bonusTaken += fromBonus
+}
+
+/** What a won dispute or a refund that ended gives back: the credits its
+ *  take took off the pack's pools, to the same pools, in proportion to
+ *  what each lost. Anything more was owed, not held, and is the buyer's. */
+function returnTo(pack: Pools, credits: number): number {
+  const taken = pack.paidTaken + pack.bonusTaken
+  const back = Math.min(credits, taken)
+  if (back <= 0) return 0
+  const toBonus = Math.min(
+    pack.bonusTaken,
+    Math.round((back * pack.bonusTaken) / taken),
+  )
+  const toPaid = Math.min(pack.paidTaken, back - toBonus)
+  const restBonus = Math.min(pack.bonusTaken - toBonus, back - toPaid - toBonus)
+  pack.paidLeft += toPaid
+  pack.paidTaken -= toPaid
+  pack.bonusLeft += toBonus + restBonus
+  pack.bonusTaken -= toBonus + restBonus
+  return toPaid + toBonus + restBonus
 }
 
 /** Money that went back for the pack its payment bought: the take comes
- *  off that pack first. A dispute settles the pack, and so do refunds once
- *  they have taken back every credit the payment granted. */
+ *  off that pack first, and a give-back returns there. Whether the pack is
+ *  settled is the money's to say (withMoney), not the credits'. */
 function moneyBack(walk: Walk, row: LedgerEntry, credits: number): void {
   const pack = walk.byPayment.get(row.jobRef ?? '')
   if (pack === undefined) return
-  takeBack(pack, credits)
+  pack.use.moneyBack = true
+  if (credits >= 0) takeBack(pack, credits)
+  else returnTo(pack, -credits)
   pack.use.takenBack += credits
-  const all = pack.use.paid + pack.use.bonus
-  if (row.reason === PURCHASE_DISPUTE || pack.use.takenBack >= all) {
-    pack.use.settled = true
-  }
 }
 
 /** What a row adds to, or takes off, a pack or the free credits by its
@@ -489,12 +527,12 @@ export type RefundFacts = Pick<
 >
 
 /**
- * The refund a withdrawal owes, in minor units, by its basis. The whole
- * price is what an earlier partial refund left of it: the share of the
- * payment's credits it did not take back, rounded down to the cent. A
- * refund that took less than it was due (the credits were spent) leaves
- * more than Stripe holds, and Stripe refuses it for the owner to refund by
- * hand.
+ * The refund a withdrawal owes, in minor units, by its basis, when Stripe's
+ * word on the payment is not to hand: the list of a pack nothing went back
+ * on, and a statement Stripe has not answered for yet. The whole price is
+ * what an earlier partial refund left of it: the share of the payment's
+ * credits it did not take back, rounded down to the cent. Once Stripe says
+ * what is left of the charge, refundOwed decides, and caps it there.
  */
 export function refundFor(
   basis: RefundBasis,
@@ -507,6 +545,74 @@ export function refundFor(
   if (!(pack.takenBack > 0) || !(granted > 0)) return Math.floor(amountMinor)
   const left = Math.max(0, granted - pack.takenBack)
   return Math.floor((amountMinor * left) / granted)
+}
+
+// ── The money ────────────────────────────────────────────────────────
+
+/** What Stripe says of a pack's payment, as a withdrawal reads it: kept
+ *  (stripeCharges) for the list, read afresh when a statement is made and
+ *  before its refund is asked for (withdrawal.ts, withdrawal-finish.ts). */
+export interface PaymentMoney {
+  /** What the charge took, in minor units. */
+  amount: number
+  /** What its refunds sent back: those that did not fail or get canceled. */
+  refunded: number
+  currency: string
+  /** A chargeback holds the money: open or lost (disputeHolds). */
+  disputed: boolean
+  /** Stripe will not refund it: a dispute's is_charge_refundable is false. */
+  barred: boolean
+}
+
+export function moneyOf(charge: ChargeState): PaymentMoney {
+  return {
+    amount: Math.max(0, charge.amount),
+    refunded: Math.max(0, charge.amountRefunded),
+    currency: charge.currency,
+    disputed: anyDisputeHolds(charge),
+    barred: refundBarredByDispute(charge),
+  }
+}
+
+/** Whether Stripe holds the payment's money back: a chargeback open or
+ *  lost, or refunds that returned all of it. A partial refund never does. */
+export function moneySettled(money: PaymentMoney): boolean {
+  return money.disputed || (money.amount > 0 && money.refunded >= money.amount)
+}
+
+/** The pack as its money leaves it: settled once Stripe holds the money
+ *  back, whatever its credits say. */
+export function withMoney(pack: PackUse, money: PaymentMoney | null): PackUse {
+  return money !== null && !pack.settled && moneySettled(money)
+    ? { ...pack, settled: true }
+    : pack
+}
+
+/** What the charge still holds of the payment: its amount less what its
+ *  refunds sent back. */
+export function moneyLeft(money: PaymentMoney): number {
+  return Math.max(0, money.amount - money.refunded)
+}
+
+/**
+ * The refund a withdrawal owes, in minor units, by what Stripe says is left
+ * of the payment: with no consent on record, everything the charge still
+ * holds, never more than the price; otherwise the unused paid credits'
+ * share of the price, never more than the charge still holds. Stripe
+ * refuses a refund larger than what is left of the charge, so no statement
+ * promises one.
+ */
+export function refundOwed(
+  basis: RefundBasis,
+  amountMinor: number,
+  pack: Pick<PackUse, 'paid' | 'paidUnused'>,
+  money: PaymentMoney,
+): number {
+  const left = moneyLeft(money)
+  if (basis === 'full') {
+    return Math.min(Math.max(0, Math.floor(amountMinor)), left)
+  }
+  return Math.min(refundMinor(amountMinor, pack), left)
 }
 
 /**

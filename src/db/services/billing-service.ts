@@ -605,8 +605,11 @@ export interface CancellablePack {
   unusedCredits: number
   /** The pack's unused bonus credits, which leave with it. */
   bonusCredits: number
-  /** What cancelling refunds, or null when the price is not on record. */
-  refund: { amountMinor: number; currency: string } | null
+  /** What cancelling refunds, or null when the price is not on record.
+   *  priceMinor is the price it comes out of, in the same currency: a
+   *  refund below it is what an earlier refund left. priceMinor is absent
+   *  on an older db-worker. */
+  refund: { amountMinor: number; currency: string; priceMinor?: number } | null
 }
 
 /** A withdrawal statement, as the worker recorded it. */

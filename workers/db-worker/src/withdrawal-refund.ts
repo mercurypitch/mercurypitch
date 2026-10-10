@@ -23,12 +23,18 @@
 //
 // The price a refund is worked out from is never the catalogue's: the
 // checkout's own record (checkoutConsents), else what the PaymentIntent
-// received (paidAtStripe), else nobody knows it and the owner refunds by
-// hand. Only Stripe saying so makes the price unknown: a 404, or a
-// PaymentIntent with no amount received. Any other answer (a network
-// error, a 5xx, a 409, a 429, or a 401 or 403 from a key that is wrong or
-// lacks a permission) says nothing of the payment and leaves the price
-// pending, to be asked again (withdrawal-finish.ts).
+// received, else nobody knows it and the owner refunds by hand. Only Stripe
+// saying so makes the price unknown: a 404, or a PaymentIntent with no
+// amount received. Any other answer (a network error, a 5xx, a 409, a 429,
+// or a 401 or 403 from a key that is wrong or lacks a permission) says
+// nothing of the payment and leaves the price pending, to be asked again
+// (withdrawal-finish.ts).
+//
+// The same read (paymentAtStripe) says what is left of the payment: its
+// charge, with the refunds and disputes on it (stripe-charge.ts). A refund
+// is never asked for, or promised, past what the charge still holds, and
+// never on a payment Stripe will not refund (withdrawal-rules.ts,
+// refundOwed).
 //
 // Whatever leaves a refund or a price pending says what Stripe answered
 // (`error`, `why`): the statement keeps it, and the owner's alerts name it.
@@ -37,6 +43,8 @@ import type { Env } from './auth'
 import type { WithdrawalRefundState } from './email-withdrawal'
 import type { StripeAnswer } from './stripe-api'
 import { isStripeConfigured, stripeGet, stripeRequest } from './stripe-api'
+import type { ChargeState } from './stripe-charge'
+import { expandableId, isRecord, readCharge } from './stripe-charge'
 
 export interface Price {
   amountMinor: number
@@ -85,25 +93,46 @@ function byHand(error: string): RefundOutcome {
   return { status: 'manual', refundId: null, error, stripeStatus: null }
 }
 
-/** What Stripe says the PaymentIntent received: the price; none on
- *  record; or no answer yet, to ask again, with what Stripe did say. */
-export type PriceAnswer =
-  | { kind: 'paid'; price: Price }
+/** What Stripe says of a payment now: what its PaymentIntent received and
+ *  its charge, with the refunds and disputes on it; none on record; or no
+ *  answer yet, to ask again, with what Stripe did say. */
+export type PaymentAnswer =
+  | { kind: 'paid'; price: Price; charge: ChargeState }
   | { kind: 'not-on-record' }
   | { kind: 'no-answer'; why: string }
 
-const NOT_ON_RECORD: PriceAnswer = { kind: 'not-on-record' }
+const NOT_ON_RECORD = { kind: 'not-on-record' } as const
 
 /** A 409, a 429 or a 5xx: Stripe answered, but not about the payment. */
 function isPassing(status: number): boolean {
   return status === 409 || status === 429 || status >= 500
 }
 
-/** What the PaymentIntent received. Never throws. */
-export async function paidAtStripe(
+/** What the PaymentIntent received, or null when it says nothing. */
+function priceOf(intent: Record<string, unknown>): Price | null {
+  const amount = intent.amount_received
+  const currency = intent.currency
+  if (typeof amount !== 'number' || typeof currency !== 'string') return null
+  return currency === '' ? null : { amountMinor: amount, currency }
+}
+
+/** The charge a PaymentIntent names: its latest_charge, or the first of
+ *  its charges on an API version from before latest_charge. */
+function chargeOfIntent(intent: Record<string, unknown>): string | null {
+  const latest = expandableId(intent.latest_charge)
+  if (latest !== null) return latest
+  const listed =
+    isRecord(intent.charges) && Array.isArray(intent.charges.data)
+      ? (intent.charges.data as unknown[])
+      : []
+  return expandableId(listed[0])
+}
+
+/** What Stripe says of the payment now. Never throws. */
+export async function paymentAtStripe(
   env: Env,
   paymentIntentId: string | null,
-): Promise<PriceAnswer> {
+): Promise<PaymentAnswer> {
   if (paymentIntentId === null || !isStripeConfigured(env)) {
     return NOT_ON_RECORD
   }
@@ -123,14 +152,29 @@ export async function paidAtStripe(
   if (!res.ok) {
     return { kind: 'no-answer', why: stripeSaid('the price lookup', res) }
   }
-  const amount = res.data.amount_received
-  const currency = res.data.currency
-  if (typeof amount !== 'number' || typeof currency !== 'string') {
-    return NOT_ON_RECORD
+  const price = priceOf(res.data)
+  if (price === null) return NOT_ON_RECORD
+  const chargeId = chargeOfIntent(res.data)
+  if (chargeId === null) {
+    return {
+      kind: 'no-answer',
+      why: `Stripe named no charge for ${paymentIntentId}`,
+    }
   }
-  return currency === ''
-    ? NOT_ON_RECORD
-    : { kind: 'paid', price: { amountMinor: amount, currency } }
+  try {
+    const charge = await readCharge((path) => stripeGet(env, path), chargeId, {
+      refund: false,
+      dispute: null,
+    })
+    return charge === 'missing'
+      ? NOT_ON_RECORD
+      : { kind: 'paid', price, charge }
+  } catch (err) {
+    return {
+      kind: 'no-answer',
+      why: `Stripe did not say what is left of the payment: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
 }
 
 function stripeMessage(data: Record<string, unknown>): string | null {
@@ -226,6 +270,27 @@ async function refundOnRecord(env: Env, ask: RefundAsk): Promise<Lookup> {
   return {
     kind: 'unknown',
     why: `Stripe listed more than ${LOOKUP_PAGES} pages of refunds of the payment`,
+  }
+}
+
+/**
+ * On a retry: the refund this statement already has at Stripe, found by its
+ * metadata, as an outcome to keep (an unknown one when the look failed); or
+ * null when Stripe has none, so it may be asked for. Never throws.
+ */
+export async function earlierRefund(
+  env: Env,
+  ask: RefundAsk,
+): Promise<RefundOutcome | null> {
+  if (ask.paymentIntentId === null || !isStripeConfigured(env)) return null
+  try {
+    const earlier = await refundOnRecord(env, ask)
+    if (earlier.kind === 'unknown') return unknown(earlier.why)
+    return earlier.kind === 'found' ? fromRefund(earlier.refund) : null
+  } catch (err) {
+    return unknown(
+      `Stripe did not answer the look for its refund: ${String(err)}`,
+    )
   }
 }
 
