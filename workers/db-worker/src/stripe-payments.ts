@@ -55,15 +55,15 @@
 // share a withdrawal refunds never adds up to more credits than they
 // removed, so its own charge.refunded takes nothing more, and neither does a
 // refund made by hand for a withdrawal Stripe refused. A dispute of the
-// whole payment takes the rest. A withdrawal that refunds the whole price (a
-// purchase with no consent on record, refundBasis 'full') settles the
-// payment outright: what the buyer used stays theirs (CRD Art. 14(4)(b)), so
-// no refund or dispute of it takes anything more (settledWhole). The same
-// holds for every purchase with no consent on record, by whatever route its
-// money goes back (a refund made by hand for a buyer who cancelled by mail,
-// a part refund, a dispute): refunds and disputes never hold more than they
-// hold already plus the credits its pack still has unused, so the credits
-// the buyer used stay theirs (keptUsed). A withdrawal's own refund that
+// whole payment takes the rest. Every purchase with no consent on record,
+// by whatever route its money goes back (a withdrawal of the whole price,
+// refundBasis 'full'; a refund made by hand for a buyer who cancelled by
+// mail; a part refund; a dispute), leaves what the buyer used theirs (CRD
+// Art. 14(4)(b)): refunds and disputes never hold more than they hold
+// already plus the credits its pack still has unused (keptUsed). A payment
+// a withdrawal settled whole (settledWhole) stays capped so even once a late
+// purchase mail confirms the box, and what an earlier refund took for money
+// still gone stays taken. A withdrawal's own refund that
 // fails or is canceled, even after Stripe said it succeeded, goes to its
 // statement (withdrawal-refund-failed.ts): the refund becomes the owner's to
 // make by hand. It writes no row here and gives no credits back: the
@@ -218,9 +218,9 @@ function grantedBy(ledger: Ledger, paymentIntent: string): number {
     .reduce((sum, row) => sum + Number(row.delta), 0)
 }
 
-/** Whether a withdrawal refunds the whole price of the payment
- *  `paymentIntent` names (withdrawals.refundBasis, migration 0061): a
- *  purchase with no consent on record, settled outright. */
+/** Whether a withdrawal settled the payment `paymentIntent` names whole
+ *  (withdrawals.refundBasis 'full', migration 0061): it refunded the price,
+ *  less any earlier refund, of a purchase with no consent on record. */
 async function settledWhole(env: Env, paymentIntent: string): Promise<boolean> {
   const row = await env.DB.prepare(
     "SELECT 1 AS hit FROM withdrawals WHERE paymentIntentId = ? AND refundBasis = 'full' LIMIT 1",
@@ -250,9 +250,10 @@ export interface PurchaseRecord {
 export interface SettleTerms {
   mayGiveBack: boolean
   settledWhole: boolean
-  /** PurchaseRecord.unused for a purchase with no consent on record: what
-   *  refunds and disputes may hold on top of what they hold already. Null
-   *  for one with a consent. */
+  /** PurchaseRecord.unused for a purchase with no consent on record, or
+   *  one a withdrawal settled whole (which only a purchase with no consent
+   *  on record gets): what refunds and disputes may hold on top of what
+   *  they hold already. Null for one with a consent. */
   unusedWithoutConsent: number | null
 }
 
@@ -271,14 +272,15 @@ export interface Settle {
 /**
  * What settling the payment against `ledger` writes. Anything else that took
  * the payment's credits back (takenFrom, less what refunds and disputes
- * hold) counts as taken already.
+ * hold) counts as taken already: a withdrawal's own rows, whatever its
+ * basis.
  *
- * A payment a withdrawal refunded whole counts as having taken back
- * everything it granted. A purchase with no consent on record leaves what the
- * buyer used theirs (CRD Art. 14(4)(b)), however its money goes back:
- * refunds and disputes hold at most what they hold already plus the credits
- * its pack still has unused, counted after their own earlier takes, so an
- * earlier take never leaves the buyer owing for what they used.
+ * A purchase with no consent on record leaves what the buyer used theirs
+ * (CRD Art. 14(4)(b)), however its money goes back, and so does a payment a
+ * withdrawal settled whole: refunds and disputes hold at most what they hold
+ * already plus the credits its pack still has unused, counted after their
+ * own earlier takes, so an earlier take never leaves the buyer owing for
+ * what they used, and what they hold for money still gone stays held.
  */
 export function settle(
   ledger: Ledger,
@@ -296,7 +298,7 @@ export function settle(
     gone,
     paid,
     heldByMoneyBack: held,
-    takenOtherwise: terms.settledWhole ? granted : takenOtherwise,
+    takenOtherwise,
     mayGiveBack: terms.mayGiveBack,
     most: unused === null ? null : held + Math.max(0, unused),
   })
@@ -316,7 +318,10 @@ export function settle(
  * read of the ledger: it writes its statement and its rows in one batch, so
  * a statement a read missed comes with rows that make the write lose and
  * read again. Whether the purchase has a consent on record is asked of every
- * event, unless that withdrawal settled the payment already.
+ * event (consentTerms, purchase-record.ts), unless that withdrawal settled
+ * the payment already: it did so only because the same question found no
+ * consent then, and what it settled stays settled once a late purchase mail
+ * goes.
  */
 async function termsOf(
   env: Env,
@@ -332,9 +337,8 @@ async function termsOf(
   return {
     mayGiveBack,
     settledWhole: whole,
-    unusedWithoutConsent: noConsent
-      ? record.unused(ledger.rows, paymentIntent)
-      : null,
+    unusedWithoutConsent:
+      whole || noConsent ? record.unused(ledger.rows, paymentIntent) : null,
   }
 }
 

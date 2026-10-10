@@ -212,7 +212,9 @@ describe('settle', () => {
   })
 
   it('takes nothing more from a payment a withdrawal refunded whole, by refund or dispute', () => {
-    const terms = { ...CONSENTED, settledWhole: true }
+    // termsOf caps a payment a withdrawal settled whole like a purchase
+    // with no consent on record: nothing of this pack is unused.
+    const terms = { ...CONSENTED, settledWhole: true, unusedWithoutConsent: 0 }
 
     expect(settle(withdrawn, 'pi_1', charge(), terms)).toEqual({
       delta: 0,
@@ -220,7 +222,7 @@ describe('settle', () => {
       held: 0,
       takenOtherwise: 20,
       settledWhole: true,
-      keptUsed: 0,
+      keptUsed: 10,
     })
     expect(settle(withdrawn, 'pi_1', disputed, terms).delta).toBe(0)
   })
@@ -238,10 +240,40 @@ describe('settle', () => {
     const next = settle(usedUp, 'pi_1', charge(), {
       ...CONSENTED,
       settledWhole: true,
+      unusedWithoutConsent: 0,
     })
 
     expect(next.delta).toBe(0)
     expect(next.held).toBe(0)
+  })
+
+  it('keeps what an earlier refund took when a payment a withdrawal settled whole may give back', () => {
+    // A EUR 20.00 pack of 140: a EUR 5.00 refund took 35, the withdrawal
+    // the other 105, and its refund brought the money back to EUR 20.00.
+    // An inquiry closing may give back, but all of the money is still gone.
+    const settled: Ledger = {
+      version: '3:3:0',
+      rows: [
+        row(140, 'purchase', { paymentIntentId: 'pi_1' }),
+        row(-35, 'purchase-refund', { jobRef: 'pi_1' }),
+        row(-105, 'withdrawal', { jobRef: 'pi_1' }),
+      ],
+    }
+
+    expect(
+      settle(settled, 'pi_1', charge({ amount: 2000, amountRefunded: 2000 }), {
+        mayGiveBack: true,
+        settledWhole: true,
+        unusedWithoutConsent: 0,
+      }),
+    ).toEqual({
+      delta: 0,
+      granted: 140,
+      held: 35,
+      takenOtherwise: 105,
+      settledWhole: true,
+      keptUsed: 0,
+    })
   })
 
   /** The same EUR 5.00 pack of 30, 10 used, nothing withdrawn: bought with

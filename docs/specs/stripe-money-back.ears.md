@@ -178,12 +178,18 @@ failure is reported once, by `refund.failed`.
 
 **When** a withdrawal of the payment refunds its price, less any earlier
 refund (`withdrawals.refundBasis = 'full'`: a purchase with no consent on
-record, CRD Art. 14(4)(b); REQ-MB-052), the worker shall count everything
-the payment granted as taken back already, so no refund or dispute of it
-takes any more credits and the buyer never owes for credits they used. The
-worker shall look for that withdrawal again after every read of the ledger,
-so one that lands between the read and the write is counted. The alert
-shall say why nothing was taken.
+record, CRD Art. 14(4)(b); REQ-MB-052), the worker shall count the
+withdrawal's own rows as taken back already (REQ-MB-025), and shall cap what
+refunds and disputes hold as for a purchase with no consent on record
+(REQ-MB-029), even once a late purchase mail confirms the box: at most what
+they hold already plus the pack's credits still unused. So the buyer never
+owes for credits they used, and what an earlier refund or dispute took for
+money still gone stays taken: an event that may give credits back gives
+back only what the money no longer holds. The worker shall look for that
+withdrawal again after every read of the ledger, so one that lands between
+the read and the write is counted. The alert shall say that refunds and
+disputes take back only credits still unused, and how many used credits
+stay with the buyer.
 
 ### REQ-MB-028 — A withdrawal's own refund that fails
 

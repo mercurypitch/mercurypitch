@@ -136,13 +136,42 @@ describe('a dispute opening', () => {
     const alert = moneyBackAlert(
       ref('charge.dispute.created'),
       charge({ amountRefunded: 500 }),
-      moved({ delta: 0, held: 0, takenOtherwise: 20, settledWhole: true }),
+      moved({
+        delta: 0,
+        held: 0,
+        takenOtherwise: 20,
+        settledWhole: true,
+        keptUsed: 10,
+      }),
       about(dispute()),
     )
 
     expect(text(alert)).toContain(
-      "A withdrawal refunded this payment's price, less any earlier refund (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.",
+      "A withdrawal refunded this payment's price, less any earlier refund, with no consent on record, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.",
     )
+  })
+
+  it('says a refund after a whole-price withdrawal takes only credits still unused', () => {
+    // A failed refund gave its credits back to the pack, and the owner
+    // refunds that money again: those credits go back with it.
+    const alert = moneyBackAlert(
+      ref('charge.refunded'),
+      charge({ amountRefunded: 500 }),
+      moved({
+        delta: -15,
+        held: 15,
+        takenOtherwise: 15,
+        settledWhole: true,
+        keptUsed: 0,
+      }),
+      REFUND,
+    )
+
+    expect(text(alert)).toContain('Taken back now: 15 credit(s)')
+    expect(text(alert)).toContain(
+      "A withdrawal refunded this payment's price, less any earlier refund, with no consent on record, so refunds and disputes take back only credits still unused.",
+    )
+    expect(text(alert)).not.toContain('stay theirs')
   })
 
   it('says nothing of a whole-price withdrawal when there was none', () => {

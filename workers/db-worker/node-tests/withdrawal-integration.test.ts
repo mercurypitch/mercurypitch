@@ -4536,3 +4536,129 @@ describe('a withdrawal refund that fails after it went through (#970, F10)', () 
     expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
   })
 })
+
+// ── #970 review of 32e42e835 ────────────────────────────────────────
+
+describe('a whole-price withdrawal after an earlier refund (#970 review, F-1)', () => {
+  /** A Plus pack (140 credits, EUR 20.00) with EUR 5.00 refunded as
+   *  goodwill in the dashboard: 35 credits taken back. */
+  async function goodwillRefunded(ticked: boolean) {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus', ticked)
+    expect(
+      await deliver(chargeRefunded('evt_goodwill', 'pi_plus', 2000, 500)),
+    ).toBe(200)
+    expect(balance(sam.userId)).toBe(105)
+    return { sam, plus }
+  }
+
+  /** The row an event wrote on the buyer's ledger. */
+  function rowOf(userId: string, key: string) {
+    return ledgerOf(userId).find((row) => row.idempotencyKey === key)
+  }
+
+  for (const ticked of [false, true]) {
+    const label = ticked ? 'consented' : 'no consent on record'
+
+    it(`${label}: an inquiry that closes after the withdrawal gives nothing back`, async () => {
+      const { sam, plus } = await goodwillRefunded(ticked)
+      expect(
+        await deliver(
+          disputeEvent('evt_inquiry', 'charge.dispute.created', INQUIRY),
+        ),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(105)
+
+      const res = await withdraw(sam, plus)
+      expect(res.body.statement).toMatchObject({
+        basis: ticked ? 'unused' : 'full',
+        refundMinor: 1500,
+        refundStatus: 'refunded',
+      })
+      expect(balance(sam.userId)).toBe(0)
+      // The withdrawal's EUR 15.00 lands: all EUR 20.00 is back.
+      expect(
+        await deliver(
+          chargeRefunded('evt_withdrawal_refund', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      charges.set('ch_pi_plus', {
+        ...charges.get('ch_pi_plus'),
+        disputed: true,
+      })
+      expect(balance(sam.userId)).toBe(0)
+
+      // The inquiry closes without becoming a chargeback.
+      expect(
+        await deliver(
+          disputeEvent('evt_inquiry_closed', 'charge.dispute.closed', {
+            ...INQUIRY,
+            status: 'warning_closed',
+          }),
+        ),
+      ).toBe(200)
+
+      // The buyer has every cent back: no credit comes back with it.
+      expect(rowOf(sam.userId, 'clawback:evt_inquiry_closed')).toMatchObject({
+        delta: 0,
+      })
+      expect(balance(sam.userId)).toBe(0)
+    })
+
+    it(`${label}: a goodwill refund that fails and is made again by hand leaves no credits`, async () => {
+      const { sam, plus } = await goodwillRefunded(ticked)
+      const res = await withdraw(sam, plus)
+      expect(res.body.statement).toMatchObject({ refundMinor: 1500 })
+      expect(
+        await deliver(
+          chargeRefunded('evt_withdrawal_refund', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(0)
+
+      // The goodwill refund fails: only the withdrawal's EUR 15.00 is back,
+      // so the 35 credits it took come back with its money.
+      charged({
+        ...charges.get('ch_pi_plus'),
+        amount_refunded: 1500,
+        refunded: false,
+      })
+      expect(
+        await deliver({
+          id: 'evt_goodwill_failed',
+          type: 'refund.failed',
+          data: {
+            object: {
+              id: 're_goodwill',
+              object: 'refund',
+              status: 'failed',
+              failure_reason: 'expired_or_canceled_card',
+              charge: 'ch_pi_plus',
+              payment_intent: 'pi_plus',
+              amount: 500,
+              currency: 'eur',
+            },
+          },
+        }),
+      ).toBe(200)
+      expect(balance(sam.userId)).toBe(35)
+
+      // The owner refunds the EUR 5.00 again by hand: all EUR 20.00 is back,
+      // and the 35 credits go with it.
+      charged({
+        ...charges.get('ch_pi_plus'),
+        amount_refunded: 2000,
+        refunded: true,
+      })
+      expect(
+        await deliver(
+          chargeRefunded('evt_goodwill_again', 'pi_plus', 2000, 2000),
+        ),
+      ).toBe(200)
+      expect(rowOf(sam.userId, 'clawback:evt_goodwill_again')).toMatchObject({
+        delta: -35,
+      })
+      expect(balance(sam.userId)).toBe(0)
+    })
+  }
+})

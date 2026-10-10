@@ -47,8 +47,9 @@ export interface CreditsMoved {
   held: number
   /** What anything else took back from it: a withdrawal of the pack. */
   takenOtherwise: number
-  /** A withdrawal refunded its whole price (refundBasis 'full'): no refund
-   *  or dispute takes anything more from it. */
+  /** A withdrawal settled the payment whole (refundBasis 'full', no
+   *  consent on record): refunds and disputes take back only credits still
+   *  unused. */
   settledWhole: boolean
   /** No consent on record: credits the buyer used that the money gone
    *  back would hold, and that stay theirs. */
@@ -95,6 +96,26 @@ function balanceLine(moved: CreditsMoved): string {
     : `${line} ${owed} of them were already spent, so the account owes them and cannot spend until its balance is back above zero.`
 }
 
+/** Why refunds and disputes leave the buyer's used credits theirs: a
+ *  withdrawal settled the payment, or the purchase has no consent on
+ *  record. */
+function consentLines(moved: CreditsMoved): string[] {
+  const kept =
+    moved.keptUsed > 0
+      ? `: ${moved.keptUsed} credit(s) the buyer used stay theirs`
+      : ''
+  if (moved.settledWhole) {
+    return [
+      `A withdrawal refunded this payment's price, less any earlier refund, with no consent on record, so refunds and disputes take back only credits still unused${kept}.`,
+    ]
+  }
+  return moved.keptUsed > 0
+    ? [
+        `This purchase has no consent on record, or its purchase mail has not confirmed one yet, so refunds and disputes take back only credits still unused${kept}.`,
+      ]
+    : []
+}
+
 function creditLines(moved: CreditsMoved): string[] {
   const moving =
     moved.delta < 0
@@ -102,16 +123,12 @@ function creditLines(moved: CreditsMoved): string[] {
       : moved.delta > 0
         ? `Given back now: ${moved.delta} credit(s).`
         : `No credits moved now. Refunds and disputes hold ${moved.held} of the ${moved.granted} the payment granted.`
-  const whole = moved.settledWhole
-    ? [
-        "A withdrawal refunded this payment's price, less any earlier refund (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.",
-      ]
-    : moved.keptUsed > 0
-      ? [
-          `This purchase has no consent on record, or its purchase mail has not confirmed one yet, so refunds and disputes take back only credits still unused: ${moved.keptUsed} credit(s) the buyer used stay theirs.`,
-        ]
-      : []
-  return [`Account: ${moved.userId}`, moving, ...whole, balanceLine(moved)]
+  return [
+    `Account: ${moved.userId}`,
+    moving,
+    ...consentLines(moved),
+    balanceLine(moved),
+  ]
 }
 
 /** The dispute's facts, with where to answer it. */
