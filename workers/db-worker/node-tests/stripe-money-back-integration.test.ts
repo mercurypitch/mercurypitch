@@ -669,6 +669,30 @@ describe('an event whose Stripe read is older than the ledger', () => {
     expect(balance(h, singer.userId)).toBe(0)
     expect(savedCharge(pi)).toMatchObject({ amountRefunded: 500 })
   })
+
+  it('never lets a duplicate delivery replace the read kept with its ledger row (#970 review, T-1)', async () => {
+    const singer = await register(h, 'keep-guard@example.com')
+    const pi = await bought(singer)
+    await deliver(h, h.stripe.refund(pi, 500))
+    const { updated } = h.stripe.failLastRefund(pi)
+
+    // The test above holds before markCharge's INSERT OR IGNORE, and the
+    // held delivery then reads Stripe afresh. This one holds before
+    // keepCharge's own write in the ledger batch, so only the guard on that
+    // write stands between an older read and the row (stripe-charge.ts).
+    // Delivery 1 of the late refund.updated has read Stripe (the refund
+    // failed, nothing refunded). Meanwhile the owner refunds the whole
+    // price again, and delivery 2 of the same event reads that, writes the
+    // event's ledger row and keeps the newer read.
+    justBefore(db(), /^\s*INSERT INTO stripeCharges/, async () => {
+      h.stripe.refund(pi, 500)
+      expect((await deliver(h, updated)).status).toBe(200)
+    })
+    expect((await deliver(h, updated)).status).toBe(200)
+
+    expect(savedCharge(pi)).toMatchObject({ amount: 500, amountRefunded: 500 })
+    expect(balance(h, singer.userId)).toBe(0)
+  })
 })
 
 describe('the launch bonus', () => {
