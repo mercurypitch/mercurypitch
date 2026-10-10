@@ -281,7 +281,10 @@ lost, or refunds that returned the whole amount of its charge; and once it
 has been withdrawn. A won dispute, an inquiry, a `prevented` dispute, or a
 refund that failed or was canceled shall leave it open, and a partial refund
 shall never settle it. The list in Settings › Credits shall read what Stripe
-last said of each payment (`stripeCharges`) and ask Stripe nothing.
+last said of each payment (`stripeCharges`) and ask Stripe nothing, in one
+query that binds the account's PaymentIntent ids as one JSON value, so an
+account with more packs than D1's 100 bound values a query still gets its
+list.
 
 ### REQ-MB-051 — Credits given back return to their pack
 

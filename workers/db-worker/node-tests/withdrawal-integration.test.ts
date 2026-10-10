@@ -4694,3 +4694,81 @@ describe('a refund that lands while the statement is written (#970 review, F-2)'
     })
   }
 })
+
+describe('Settings › Credits for an account with many packs (#970 review, F-5)', () => {
+  /** D1's limit of 100 bound values a query, which node:sqlite does not
+   *  have (developers.cloudflare.com/d1/platform/limits). */
+  function withD1ParameterLimit(): void {
+    const db = env.DB as unknown as SqliteD1Database
+    const prepare = db.prepare.bind(db)
+    db.prepare = (text: string) => {
+      const wrap = (inner: SqliteD1Statement): SqliteD1Statement => {
+        const bind = inner.bind.bind(inner)
+        inner.bind = (...values: Parameters<SqliteD1Statement['bind']>) => {
+          const bound = bind(...values)
+          if (values.length > 100) {
+            const refuse = () =>
+              Promise.reject(
+                new Error('D1_ERROR: too many SQL variables (limit 100)'),
+              )
+            bound.first = refuse as typeof bound.first
+            bound.all = refuse as typeof bound.all
+            bound.run = refuse as typeof bound.run
+            return bound
+          }
+          return wrap(bound)
+        }
+        return inner
+      }
+      return wrap(prepare(text))
+    }
+  }
+
+  for (const packs of [100, 101, 250]) {
+    it(`lists the packs of an account with ${packs} on record`, async () => {
+      const sam = await buyer('sam@example.test')
+      for (let n = 0; n < packs; n += 1) {
+        insertRow(
+          sam.userId,
+          30,
+          'purchase',
+          'pack-starter',
+          `evt:evt_old_${n}`,
+          `pi_old_${n}`,
+        )
+      }
+      withD1ParameterLimit()
+
+      const res = await listFor(sam)
+
+      expect(res.status).toBe(200)
+    })
+  }
+
+  it('reads what Stripe last said of a pack among 250', async () => {
+    const sam = await buyer('sam@example.test')
+    for (let n = 0; n < 250; n += 1) {
+      insertRow(
+        sam.userId,
+        30,
+        'purchase',
+        'pack-starter',
+        `evt:evt_old_${n}`,
+        `pi_old_${n}`,
+      )
+    }
+    withD1ParameterLimit()
+    const listed = ((await listFor(sam)).body.packs as unknown[]).length
+
+    // Stripe said all of the 201st pack's money went back: it is settled.
+    sqlite
+      .prepare(
+        `INSERT INTO stripeCharges (paymentIntentId, chargeId, currency, amount, amountRefunded, disputes, updatedAt)
+         VALUES ('pi_old_200', 'ch_old_200', 'eur', 500, 500, '[]', ?)`,
+      )
+      .run(new Date().toISOString())
+
+    expect(listed).toBeGreaterThan(200)
+    expect((await listFor(sam)).body.packs).toHaveLength(listed - 1)
+  })
+})

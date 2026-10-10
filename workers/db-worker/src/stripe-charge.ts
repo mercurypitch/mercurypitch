@@ -446,7 +446,9 @@ export async function loadCharge(
 }
 
 /** What Stripe last said about each of these payments' charges, in one
- *  read: only the payments money went back on are in it. */
+ *  read: only the payments money went back on are in it. The ids go in as
+ *  one JSON value, however many there are: D1 binds at most 100 values a
+ *  query, and an account's packs can outnumber that. */
 export async function loadCharges(
   env: Env,
   paymentIntentIds: readonly string[],
@@ -456,9 +458,10 @@ export async function loadCharges(
   if (ids.length === 0) return kept
   const { results } = await env.DB.prepare(
     `SELECT paymentIntentId, chargeId, currency, amount, amountRefunded, disputes
-       FROM stripeCharges WHERE paymentIntentId IN (${ids.map(() => '?').join(', ')})`,
+       FROM stripeCharges
+      WHERE paymentIntentId IN (SELECT value FROM json_each(?))`,
   )
-    .bind(...ids)
+    .bind(JSON.stringify(ids))
     .all<ChargeRow & { paymentIntentId: string }>()
   for (const row of results) {
     kept.set(row.paymentIntentId, chargeOfRow(row, row.paymentIntentId))
