@@ -69,6 +69,34 @@ export function maskEmail(address: string): string {
   return `${first}***@***${tld}`
 }
 
+// The pieces of ADDRESS. A character of an unquoted local part, of a quoted
+// one (an escaped pair counting as one), and of a domain's label.
+const LOCAL_CHAR = String.raw`[^\s@"<>()[\]\\,;:]`
+const QUOTED_CHAR = String.raw`(?:[^"\\\r\n]|\\.)`
+const LABEL_CHAR = String.raw`[\p{L}\p{M}\p{N}-]`
+
+// A local part, read in one of these ways. None reads the same text over
+// and over, so masking takes time linear in the length of the text.
+const LOCAL_PART = [
+  // Quoted, for at most 64 characters, from any quote.
+  String.raw`"${QUOTED_CHAR}{0,64}"`,
+  // Quoted, however long, from a quote with no backslash right before it.
+  // A quote inside one always has one, so none starts inside another.
+  String.raw`(?<!\\)"${QUOTED_CHAR}*"`,
+  // Unquoted, from where its run starts.
+  String.raw`(?<!${LOCAL_CHAR})${LOCAL_CHAR}+`,
+].join('|')
+
+// What follows the @, read the same way.
+const DOMAIN_PART = [
+  // An address literal, for at most 64 characters.
+  String.raw`\[[^\]\s]{0,64}\]`,
+  // One however long with no "[" in it, so none starts inside another.
+  String.raw`\[[^\]\s[]*\]`,
+  // A domain.
+  String.raw`${LABEL_CHAR}+(?:\.${LABEL_CHAR}+)*`,
+].join('|')
+
 /** Anything that reads like an address, in text a log line carries from
  *  elsewhere (an API's error body, a thrown error). An unquoted local part
  *  is any run of characters but a space, an @ and those that end an
@@ -79,18 +107,19 @@ export function maskEmail(address: string): string {
  *  right before the @, all of which sign-up takes (#970 round-4 review,
  *  N-5). It is read from where its run starts, so it masks whole however
  *  long it is, and a long run with no @ in it (a base64 blob) is read once
- *  (#970 round-4 review, N-4). Also a quoted local part of at most 64
- *  characters between its quotes, an escaped pair counting as one
- *  ("\"quoted local\"@example.com"), and an address literal of at most 64
- *  between its brackets ("user@[192.0.2.1]"): read no further, so text
- *  full of escaped quotes or of "a@[" masks in time linear in its length
- *  too (#975 review). An address with a longer one, which RFC 5321 does
- *  not allow or no IPv4 or IPv6 address needs, is not masked, apart from
- *  any piece of it that reads as an address on its own. Punctuation a
- *  local part may hold is masked with the address when it touches it:
- *  "'jane@example.com'" logs as "'***@***.com'" (#970 review, F-7). */
-const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.){0,64}"|(?<![^\s@"<>()[\]\\,;:])[^\s@"<>()[\]\\,;:]+)@(?:\[[^\]\s]{0,64}\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+ *  (#970 round-4 review, N-4). A quoted local part ("\"quoted
+ *  local\"@example.com") and an address literal ("user@[192.0.2.1]") mask
+ *  whole however long they are too, but for two that RFC 5321 allows
+ *  neither of: a quoted local part over 64 characters between its quotes
+ *  with a backslash right before its opening quote, and an address literal
+ *  over 64 characters between its brackets with a "[" among them. Those
+ *  are left as written, apart from any piece of them that reads as an
+ *  address on its own: read to their end, they would make text full of
+ *  escaped quotes, or of "a@[", slow to mask again (#975 review).
+ *  Punctuation a local part may hold is masked with the address when it
+ *  touches it: "'jane@example.com'" logs as "'***@***.com'" (#970 review,
+ *  F-7). */
+const ADDRESS = new RegExp(`(?:${LOCAL_PART})@(?:${DOMAIN_PART})`, 'gu')
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */
