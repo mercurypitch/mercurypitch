@@ -181,7 +181,7 @@ function closedIntro(dispute: DisputeState): string {
     return 'The bank decided the dispute in your favor: Stripe returns the disputed amount, and the account gets back the credits the dispute held.'
   }
   if (dispute.status === 'warning_closed') {
-    return 'The inquiry closed without becoming a chargeback, so the account gets back the credits it held.'
+    return 'The inquiry closed without becoming a chargeback: no money moved, and an inquiry holds no credits.'
   }
   if (dispute.status === 'prevented') {
     return 'The dispute was stopped before it became a chargeback, so it holds no credits. If the buyer got the money back as a refund, the refund holds its share.'
@@ -192,12 +192,13 @@ function closedIntro(dispute: DisputeState): string {
 }
 
 function disputeClosingHint(dispute: DisputeState): string[] {
-  return CLOSED.has(dispute.status)
-    ? []
-    : [
-        '',
-        'If you win, the credits come back by themselves. If you lose, they stay taken back.',
-      ]
+  if (CLOSED.has(dispute.status)) return []
+  return [
+    '',
+    isInquiry(dispute)
+      ? 'No credits are taken back while it stays an inquiry. If it becomes a chargeback, they are taken back then.'
+      : 'If you win, the credits come back by themselves. If you lose, they stay taken back.',
+  ]
 }
 
 function refundSummary(charge: ChargeState): string {
@@ -251,6 +252,24 @@ export function moneyBackAlert(
       subject: openedSubject(dispute),
       lines: [
         openedIntro(dispute),
+        '',
+        ...disputeLines(event, charge, dispute),
+        '',
+        ...creditLines(moved),
+        ...disputeClosingHint(dispute),
+        '',
+        ...references(event, charge),
+      ],
+    }
+  }
+  // The money left the balance: news when it took credits, so an inquiry
+  // that became a chargeback; a chargeback's opening said it already.
+  if (event.type === 'charge.dispute.funds_withdrawn' && dispute !== null) {
+    if (moved.delta === 0) return null
+    return {
+      subject: `Chargeback: ${money(dispute.amount, dispute.currency)} taken from your Stripe balance`,
+      lines: [
+        "The buyer's bank turned this payment's inquiry into a chargeback and took the disputed amount back from your Stripe balance.",
         '',
         ...disputeLines(event, charge, dispute),
         '',

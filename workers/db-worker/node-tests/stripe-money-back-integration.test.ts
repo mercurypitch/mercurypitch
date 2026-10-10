@@ -381,7 +381,7 @@ describe('a dispute', () => {
     expect(balance(h, singer.userId)).toBe(15)
   })
 
-  it('treats an inquiry that closes without a chargeback like a won dispute', async () => {
+  it('takes nothing for an inquiry, where no money has moved, and its closing gives nothing back', async () => {
     const singer = await register(h, 'inquiry@example.com')
     const pi = await bought(singer)
     await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
@@ -389,7 +389,21 @@ describe('a dispute', () => {
 
     await deliver(h, h.stripe.closeDispute(pi, 'warning_closed'))
 
-    expect(held).toBe(0)
+    expect(held).toBe(30)
+    expect(balance(h, singer.userId)).toBe(30)
+  })
+
+  it('takes the credits once an inquiry becomes a chargeback and the money goes', async () => {
+    const singer = await register(h, 'escalated@example.com')
+    const pi = await bought(singer)
+    await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
+    const duringInquiry = balance(h, singer.userId)
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+    const charged = balance(h, singer.userId)
+    await deliver(h, h.stripe.closeDispute(pi, 'won'))
+
+    expect([duringInquiry, charged]).toEqual([30, 0])
     expect(balance(h, singer.userId)).toBe(30)
   })
 })
@@ -434,10 +448,10 @@ describe('a purchase with no consent on record', () => {
     const afterRefund = balance(h, singer.userId)
     await deliver(h, h.stripe.closeDispute(pi, 'warning_closed'))
 
-    expect([afterInquiry, afterRefund]).toEqual([0, 0])
+    expect([afterInquiry, afterRefund]).toEqual([5, 0])
     expect(balance(h, singer.userId)).toBe(0)
     expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([
-      -5, 0, 0,
+      0, -5, 0,
     ])
   })
 

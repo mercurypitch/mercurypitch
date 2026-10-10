@@ -24,10 +24,11 @@ describe('the events that grant and the events that take back', () => {
     expect(isMoneyBackEvent('charge.succeeded')).toBe(false)
   })
 
-  it('handles the seven types the sweep lists, and no other', () => {
+  it('handles the eight types the sweep lists, and no other', () => {
     expect([...HANDLED_EVENTS].sort()).toEqual([
       'charge.dispute.closed',
       'charge.dispute.created',
+      'charge.dispute.funds_withdrawn',
       'charge.refunded',
       'checkout.session.async_payment_succeeded',
       'checkout.session.completed',

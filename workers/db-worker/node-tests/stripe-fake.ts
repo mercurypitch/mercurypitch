@@ -272,6 +272,7 @@ export class FakeStripe {
     options: { amount?: number; reason?: string; status?: string } = {},
   ): StripeEvent {
     const charge = this.charge(paymentIntent)
+    const status = options.status ?? 'needs_response'
     const dispute: Dispute = {
       id: this.next('dp'),
       object: 'dispute',
@@ -280,8 +281,10 @@ export class FakeStripe {
       payment_intent: paymentIntent,
       currency: charge.currency,
       reason: options.reason ?? 'fraudulent',
-      status: options.status ?? 'needs_response',
-      is_charge_refundable: false,
+      status,
+      // Stripe still refunds a payment under an inquiry, never one charged
+      // back.
+      is_charge_refundable: status.startsWith('warning_'),
       // 2026-10-30 23:59:59 UTC.
       evidence_details: { due_by: 1_793_404_799 },
     }
@@ -290,15 +293,30 @@ export class FakeStripe {
     return this.emit('charge.dispute.created', dispute)
   }
 
-  /** The bank decides the newest dispute on the payment. */
-  closeDispute(paymentIntent: string, status: string): StripeEvent {
+  /** The newest dispute on the payment. */
+  private newestDispute(paymentIntent: string): Dispute {
     const charge = this.charge(paymentIntent)
     const dispute = [...this.disputes.values()]
       .filter((entry) => entry.charge === charge.id)
       .at(-1)
     if (dispute === undefined) throw new Error(`no dispute on ${paymentIntent}`)
+    return dispute
+  }
+
+  /** The bank decides the newest dispute on the payment. */
+  closeDispute(paymentIntent: string, status: string): StripeEvent {
+    const dispute = this.newestDispute(paymentIntent)
     dispute.status = status
     return this.emit('charge.dispute.closed', dispute)
+  }
+
+  /** The bank turns the newest dispute on the payment, an inquiry, into a
+   *  chargeback, and Stripe takes the money from the balance. */
+  escalateDispute(paymentIntent: string): StripeEvent {
+    const dispute = this.newestDispute(paymentIntent)
+    dispute.status = 'needs_response'
+    dispute.is_charge_refundable = false
+    return this.emit('charge.dispute.funds_withdrawn', dispute)
   }
 
   /** The next request whose path starts with `prefix` gets `status`. */

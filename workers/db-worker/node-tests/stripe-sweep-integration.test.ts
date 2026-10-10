@@ -35,6 +35,7 @@ const HANDLED = [
   'refund.updated',
   'refund.failed',
   'charge.dispute.created',
+  'charge.dispute.funds_withdrawn',
   'charge.dispute.closed',
 ]
 

@@ -18,10 +18,15 @@
 //   - charge.refunded: the refunded share. Half the money, half the
 //     credits, rounded down.
 //   - charge.dispute.created: the disputed share, all of it for a full
-//     dispute, inquiries included. The bank pulls the money the moment a
-//     chargeback opens, and the credits stop with it.
-//   - charge.dispute.closed: won (or an inquiry closed without a chargeback)
-//     gives back what the dispute held; lost keeps it taken.
+//     dispute. The bank pulls the money the moment a chargeback opens, and
+//     the credits stop with it. An inquiry takes nothing: no money moves
+//     unless it becomes a chargeback, and Stripe still lets the payment be
+//     refunded.
+//   - charge.dispute.funds_withdrawn: the money left the balance for a
+//     dispute, which is how an inquiry that became a chargeback takes its
+//     share.
+//   - charge.dispute.closed: won gives back what the dispute held; lost
+//     keeps it taken.
 //   - refund.failed, or refund.updated to failed or canceled: the refund's
 //     money stayed with us, so what it took comes back. Any other
 //     refund.updated is applied like charge.refunded.
@@ -584,10 +589,12 @@ async function nothingOnRecord(
   )
   const facts = factsOf(event, charge)
   // A refund update is news only when it canceled the refund: a failure is
-  // refund.failed's to report, so the owner hears of it once.
+  // refund.failed's to report, so the owner hears of it once. The money
+  // leaving for a dispute is its opening's to report.
   if (event.type === 'refund.updated' && facts.refundEnded !== 'canceled') {
     return
   }
+  if (event.type === 'charge.dispute.funds_withdrawn') return
   const userId = paymentIntent === null ? null : await donor(env, paymentIntent)
   await send(
     nothingOnRecordAlert(

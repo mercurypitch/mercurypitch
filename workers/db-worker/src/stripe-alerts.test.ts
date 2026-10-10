@@ -16,6 +16,7 @@ function dispute(overrides: Partial<DisputeState> = {}): DisputeState {
     reason: 'fraudulent',
     // 2026-10-30 23:59:59 UTC.
     dueBy: 1_793_404_799,
+    refundable: false,
     ...overrides,
   }
 }

@@ -23,14 +23,16 @@ export function isCheckoutPaidEvent(type: unknown): boolean {
 }
 
 /** The Stripe events that move money back to the buyer, or end a move: a
- *  refund and what becomes of it, a dispute opening and closing.
- *  charge.refund.updated is not one: Stripe deprecated it for
- *  refund.updated. */
+ *  refund and what becomes of it, a dispute opening, the money leaving the
+ *  balance for it (an inquiry that became a chargeback holds nothing
+ *  before), and its closing. charge.refund.updated is not one: Stripe
+ *  deprecated it for refund.updated. */
 export const MONEY_BACK_EVENTS = [
   'charge.refunded',
   'refund.updated',
   'refund.failed',
   'charge.dispute.created',
+  'charge.dispute.funds_withdrawn',
   'charge.dispute.closed',
 ] as const
 

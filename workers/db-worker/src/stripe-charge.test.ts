@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChargeState, DisputeState, ReadFor, StripeGet, } from './stripe-charge'
-import { chargeFrom, chargeIdOf, disputeHolds, moneyGoneBack, readCharge, StripeUnavailable, } from './stripe-charge'
+import { chargeFrom, chargeIdOf, disputeFrom, disputeHolds, moneyGoneBack, readCharge, refundBarredByDispute, StripeUnavailable, } from './stripe-charge'
 
 const CHARGE = {
   id: 'ch_1',
@@ -26,6 +26,7 @@ const DISPUTE = {
   reason: 'fraudulent',
   status: 'needs_response',
   evidence_details: { due_by: 1_793_404_799 },
+  is_charge_refundable: false,
 }
 
 function refund(id: string, amount: number, status: string) {
@@ -52,6 +53,7 @@ function dispute(overrides: Partial<DisputeState> = {}): DisputeState {
     currency: 'eur',
     reason: 'fraudulent',
     dueBy: null,
+    refundable: false,
     ...overrides,
   }
 }
@@ -230,6 +232,7 @@ describe('readCharge', () => {
           currency: 'eur',
           reason: 'fraudulent',
           dueBy: 1_793_404_799,
+          refundable: false,
         },
       ],
     })
@@ -329,15 +332,15 @@ describe('readCharge', () => {
 })
 
 describe('disputeHolds', () => {
-  it('holds from the moment a dispute or an inquiry opens', () => {
-    for (const status of [
-      'warning_needs_response',
-      'warning_under_review',
-      'needs_response',
-      'under_review',
-      'lost',
-    ]) {
+  it('holds from the moment a chargeback opens, and for good once it is lost', () => {
+    for (const status of ['needs_response', 'under_review', 'lost']) {
       expect(disputeHolds(dispute({ status }))).toBe(true)
+    }
+  })
+
+  it('holds nothing for an inquiry, where no money has moved', () => {
+    for (const status of ['warning_needs_response', 'warning_under_review']) {
+      expect(disputeHolds(dispute({ status, refundable: true }))).toBe(false)
     }
   })
 
@@ -349,6 +352,36 @@ describe('disputeHolds', () => {
 
   it('holds for a status Stripe adds later', () => {
     expect(disputeHolds(dispute({ status: 'escalated_somehow' }))).toBe(true)
+  })
+})
+
+describe('whether Stripe will refund a disputed payment', () => {
+  it("reads Stripe's is_charge_refundable, and nothing when it is not said", () => {
+    expect(disputeFrom(DISPUTE)?.refundable).toBe(false)
+    expect(
+      disputeFrom({ ...DISPUTE, is_charge_refundable: true })?.refundable,
+    ).toBe(true)
+    const { is_charge_refundable: _, ...unsaid } = DISPUTE
+    expect(disputeFrom(unsaid)?.refundable).toBeNull()
+  })
+
+  it('is barred by any dispute that says the payment cannot be refunded', () => {
+    expect(refundBarredByDispute(state())).toBe(false)
+    expect(
+      refundBarredByDispute(
+        state({
+          disputes: [
+            dispute({ status: 'warning_needs_response', refundable: true }),
+          ],
+        }),
+      ),
+    ).toBe(false)
+    expect(
+      refundBarredByDispute(
+        state({ disputes: [dispute({ refundable: null })] }),
+      ),
+    ).toBe(false)
+    expect(refundBarredByDispute(state({ disputes: [dispute()] }))).toBe(true)
   })
 })
 

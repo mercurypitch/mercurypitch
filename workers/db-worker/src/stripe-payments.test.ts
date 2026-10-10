@@ -186,6 +186,7 @@ describe('settle', () => {
         currency: 'eur',
         reason: 'fraudulent',
         dueBy: null,
+        refundable: false,
       },
     ],
   })

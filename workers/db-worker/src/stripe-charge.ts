@@ -52,6 +52,11 @@ export interface DisputeState {
   reason: string | null
   /** When the evidence is due, in seconds since 1970, if Stripe says. */
   dueBy: number | null
+  /** Stripe's is_charge_refundable: whether the disputed payment can still
+   *  be refunded (true through an inquiry, false once it is charged back).
+   *  Null when Stripe did not say, or the dispute was kept before it was
+   *  read. */
+  refundable: boolean | null
 }
 
 /** A charge, as far as the credits are concerned. */
@@ -99,6 +104,10 @@ function text(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value : null
 }
 
+function flag(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null
+}
+
 /** The id an expandable Stripe field holds: the id itself, as a webhook
  *  sends it, or the id of the object a caller expanded. */
 export function expandableId(value: unknown): string | null {
@@ -124,6 +133,7 @@ export function disputeFrom(value: unknown): DisputeState | null {
     currency: text(value.currency) ?? '',
     reason: text(value.reason),
     dueBy: whole(evidence.due_by),
+    refundable: flag(value.is_charge_refundable),
   }
 }
 
@@ -260,12 +270,22 @@ export async function readCharge(
  *  chargeback, and a dispute prevented before it became one. */
 const RELEASED = new Set(['won', 'warning_closed', 'prevented'])
 
-/** Whether a dispute holds its share of the payment: from the moment it
- *  opens, inquiries included, until it ends in the merchant's favor. A
- *  status Stripe adds later holds too: a hold given back by mistake cannot
- *  be taken again once the credits are spent. */
+/** Whether the dispute is an inquiry (warning_needs_response,
+ *  warning_under_review, warning_closed): the bank asks about the payment,
+ *  and no money moves unless it becomes a chargeback. Stripe still lets the
+ *  payment be refunded, and a full refund closes the inquiry. */
+export function isInquiry(dispute: DisputeState): boolean {
+  return dispute.status.startsWith('warning_')
+}
+
+/** Whether a dispute holds its share of the payment: from the moment the
+ *  bank takes the money back (a chargeback: needs_response, under_review)
+ *  until it ends in the merchant's favor, and for good once it is lost. An
+ *  inquiry holds nothing: no money has moved. A status Stripe adds later
+ *  holds too: a hold given back by mistake cannot be taken again once the
+ *  credits are spent. */
 export function disputeHolds(dispute: DisputeState): boolean {
-  return !RELEASED.has(dispute.status)
+  return !RELEASED.has(dispute.status) && !isInquiry(dispute)
 }
 
 /** Whether any dispute of the charge holds its share. */
@@ -273,10 +293,11 @@ export function anyDisputeHolds(charge: ChargeState): boolean {
   return charge.disputes.some(disputeHolds)
 }
 
-/** Whether the dispute is an inquiry: no money moves unless it becomes a
- *  chargeback. */
-export function isInquiry(dispute: DisputeState): boolean {
-  return dispute.status.startsWith('warning_')
+/** Whether Stripe refuses to refund the payment because of a dispute on
+ *  it: one whose is_charge_refundable is false. A refund asked for then is
+ *  answered charge_disputed; the dispute decides where the money goes. */
+export function refundBarredByDispute(charge: ChargeState): boolean {
+  return charge.disputes.some((dispute) => dispute.refundable === false)
 }
 
 /** How much of the payment has gone back, in minor units: `gone` of
@@ -375,6 +396,7 @@ function storedDispute(entry: unknown): DisputeState | null {
     currency: text(entry.currency) ?? '',
     reason: text(entry.reason),
     dueBy: whole(entry.dueBy),
+    refundable: flag(entry.refundable),
   }
 }
 
