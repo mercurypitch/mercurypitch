@@ -1718,7 +1718,8 @@ describe('the cron finishes what a request left undone', () => {
     await withdraw(sam, plus)
     expect(statementOf(plus)).toMatchObject({
       mailStatus: 'failed',
-      mailError: 'Resend answered 500 internal_server_error',
+      mailError:
+        'Resend answered 500 internal_server_error: An unexpected error occurred.',
     })
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Withdrawal: refunded €20.00',
@@ -2765,6 +2766,105 @@ describe('a mail Resend gives no clear answer to', () => {
     expect((await listFor(sam)).body.packs).toEqual([])
   })
 
+  it('keeps sending the acknowledgement while Resend refuses our own key, and it goes once the key works', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    // 403 invalid_api_key: our key is wrong, alerts included.
+    let keyBroken = true
+    const taken = resendTakes(() => (keyBroken ? 403 : false))
+    await withdraw(sam, plus)
+    await sweeps(1, 4)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'failed' })
+    expect(String(statementOf(plus)?.mailError)).toContain('403')
+
+    keyBroken = false
+    await sweeps(5, 5)
+
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'sent' })
+    expect(taken).toContain(ACK_SUBJECT)
+    expect(taken).not.toContain(ACK_GIVEN_UP)
+  })
+
+  it('keeps sending the purchase mail while Resend refuses our own key, and it goes once the key works', async () => {
+    const sam = await buyer('sam@example.test')
+    let keyBroken = true
+    const taken = resendTakes(() => (keyBroken ? 403 : false))
+    await buy(sam, 'pack-plus', 'pi_plus')
+    await sweeps(1, 4)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'failed' })
+
+    keyBroken = false
+    await sweeps(5, 5)
+
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'sent' })
+    expect(taken.filter((s) => PURCHASE_SUBJECT.test(s))).toHaveLength(1)
+    expect(taken).not.toContain(PURCHASE_GIVEN_UP)
+  })
+
+  it('never counts an acknowledgement as sent while Resend holds its key from a refusal of our own', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    // The case Resend's docs leave open, at its worst: a key kept from a
+    // request it refused, so the same key with another body is 409
+    // invalid_idempotent_request for 24 hours.
+    const inner = globalThis.fetch
+    const keys = new Map<string, { body: string; at: number; status: number }>()
+    const ackStatuses: number[] = []
+    let keyBroken = true
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url !== RESEND) return inner(input, init)
+        const body = String(init?.body)
+        const key = new Headers(init?.headers).get('idempotency-key')
+        const kept = key === null ? undefined : keys.get(key)
+        const live = kept !== undefined && Date.now() - kept.at < 86_400_000
+        const fresh = keyBroken ? 403 : 200
+        const status = live ? (kept.body === body ? kept.status : 409) : fresh
+        if (key !== null && !live) {
+          keys.set(key, { body, at: Date.now(), status })
+        }
+        const { subject } = JSON.parse(body) as { subject: string }
+        if (subject === ACK_SUBJECT) ackStatuses.push(status)
+        sent.push({ url, method: 'POST', body, headers: {} })
+        if (status === 200) return Response.json({ id: 'stubbed' })
+        return Response.json(
+          status === 409
+            ? {
+                statusCode: 409,
+                name: 'invalid_idempotent_request',
+                message:
+                  'Same idempotency key used with a different request payload.',
+              }
+            : {
+                statusCode: 403,
+                name: 'invalid_api_key',
+                message: 'API key is invalid',
+              },
+          { status },
+        )
+      },
+    )
+    await withdraw(sam, plus)
+    keyBroken = false
+    // Stripe finishes the refund, so the acknowledgement now says so: a
+    // body other than the one Resend kept.
+    const [refund] = refundsMade
+    if (refund === undefined) throw new Error('no refund was made')
+    refund.status = 'succeeded'
+
+    await sweeps(1, 3)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'failed' })
+
+    // A day on, Resend has let the key go, and the acknowledgement goes.
+    await sweeps(4, 4)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'sent' })
+    expect(ackStatuses).toEqual([403, 409, 409, 409, 200])
+    expect(acknowledgements().at(-1)?.text).toContain("We've refunded")
+  })
+
   it('answers a repeated statement with the acknowledgement still being tried', async () => {
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
@@ -2996,14 +3096,19 @@ describe('a mail Resend refuses for good', () => {
         sent.push({ url, method: 'POST', body, headers: {} })
         if (status === 200) return Response.json({ id: 'stubbed' })
         return Response.json(
-          {
-            statusCode: status,
-            name:
-              status === 409
-                ? 'invalid_idempotent_request'
-                : 'validation_error',
-            message: 'refused',
-          },
+          status === 409
+            ? {
+                statusCode: 409,
+                name: 'invalid_idempotent_request',
+                message:
+                  'Same idempotency key used with a different request payload.',
+              }
+            : {
+                statusCode: 422,
+                name: 'validation_error',
+                message:
+                  'Invalid `to` field. The email address needs to follow the `email@example.com` or `Name <email@example.com>` format.',
+              },
           { status },
         )
       },

@@ -13,20 +13,23 @@
 // Resend answered (mail-answer.ts):
 //
 //   - sent: done.
-//   - unknown ('failed'): every sweep sends it again, as long as it takes.
-//     The owner hears once if it has still not gone 3 days after the
-//     statement (warnAcknowledgement), and nothing more unless Resend
-//     refuses it.
-//   - refused: never sent again. The owner is told to send it by hand, and
-//     it is 'gave-up' only once Resend has taken that alert; until then
-//     every sweep, and every request for the pack, tells again.
+//   - unknown ('failed'), Resend's refusals about our side of the request
+//     included (a key, the sending domain, the quota): every sweep sends it
+//     again, as long as it takes. The owner hears once if it has still not
+//     gone 3 days after the statement (warnAcknowledgement), with what
+//     Resend last said, and nothing more unless Resend refuses the mail
+//     itself.
+//   - refused (its recipient or its content): never sent again. The owner
+//     is told to send it by hand, and it is 'gave-up' only once Resend has
+//     taken that alert; until then every sweep, and every request for the
+//     pack, tells again.
 
 import type { Env } from './auth'
 import { fallbackAppOrigin } from './auth'
 import { traderDetails, UNFINISHED_AFTER_MS } from './checkout-consent'
 import { sendWithdrawalMail } from './email-withdrawal'
 import type { MailAnswer } from './mail-answer'
-import { GAVE_UP, mailAnswer, REFUSED, statusAfter, WARN_AFTER_MS, } from './mail-answer'
+import { GAVE_UP, mailAnswer, mayHaveGone, REFUSED, statusAfter, WARN_AFTER_MS, } from './mail-answer'
 import type { StatementRow } from './withdrawal-row'
 import { alert, iso, priceKnown, statementFacts } from './withdrawal-row'
 
@@ -69,12 +72,12 @@ async function accountCopy(
 }
 
 /** Send the acknowledgement: what Resend's answer says of it, or null when
- *  Resend is not configured here. `afterUnknown`: the try before this one
- *  ended without a known outcome. Never throws. */
+ *  Resend is not configured here. `earlierMayHaveGone`: Resend may have
+ *  taken the try before this one (mayHaveGone). Never throws. */
 async function sendAcknowledgement(
   env: Env,
   row: StatementRow,
-  afterUnknown: boolean,
+  earlierMayHaveGone: boolean,
 ): Promise<MailAnswer | null> {
   const apiKey = env.RESEND_API_KEY ?? ''
   if (apiKey === '') return null
@@ -105,7 +108,7 @@ async function sendAcknowledgement(
       `withdrawal-${row.id}`,
       await accountCopy(env, row),
     )
-    return mailAnswer(result, afterUnknown)
+    return mailAnswer(result, earlierMayHaveGone)
   } catch (err) {
     return {
       kind: 'unknown',
@@ -187,7 +190,11 @@ export async function acknowledgeStep(
   }
   if (!(await claimMail(env, row))) return { row, firstTry: false }
   const firstTry = row.mailStatus === null || row.mailStatus === 'sending'
-  const answer = await sendAcknowledgement(env, row, row.mailStatus !== null)
+  const answer = await sendAcknowledgement(
+    env,
+    row,
+    mayHaveGone(row.mailStatus, row.mailError ?? null),
+  )
   const tried: StatementRow = {
     ...row,
     mailStatus: answer === null ? 'not-configured' : statusAfter(answer),
@@ -206,10 +213,13 @@ function stuckLines(row: StatementRow): string[] {
     `Send it to: ${row.email}`,
     `Tries: ${row.mailAttempts ?? 0}, the last at ${row.mailAt ?? 'none'}: ${row.mailError ?? 'no answer kept'}`,
     '',
-    'Resend has neither taken nor refused the acknowledgement in 3 days.',
-    'The sweep keeps sending it every 6 hours, under the same key, until',
-    'Resend takes it; you hear again only if Resend refuses it. Sent by',
-    'hand meanwhile, it may reach the buyer twice.',
+    'Resend has not taken the acknowledgement in 3 days, and nothing it',
+    'answered says the mail itself cannot go. If its last answer above is',
+    'about our key, its permissions, the sending domain or the quota, fix',
+    'that and the next sweep sends it. Until Resend takes it, the sweep',
+    'keeps sending it every 6 hours under the same key; you hear again',
+    'only if Resend refuses the mail itself. Sent by hand meanwhile, it may',
+    'reach the buyer twice.',
   ]
 }
 

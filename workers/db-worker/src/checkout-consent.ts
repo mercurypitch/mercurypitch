@@ -19,9 +19,10 @@
 // (withdrawal.ts, sweepWithdrawals) sends a mail that did not go again, the
 // longest untried first, for as long as Resend's answer leaves it unknown
 // and the pack can be cancelled (mail-answer.ts), and tells the owner once
-// if it has still not gone after 3 days. A mail Resend refuses for good is
-// never sent again: the owner is told to send it by hand, and it counts as
-// given up only once Resend has taken that alert.
+// if it has still not gone after 3 days. A mail Resend refuses for good
+// (its recipient or its content, never our key, domain or quota) is never
+// sent again: the owner is told to send it by hand, and it counts as given
+// up only once Resend has taken that alert.
 //
 // The row is also what the purchase keeps of its terms (purchaseTerms): a
 // pack's right to cancel follows the box its buyer ticked, whatever
@@ -44,7 +45,7 @@ import { fallbackAppOrigin } from './auth'
 import { sendBillingAlert } from './email'
 import { sendPurchaseMail } from './email-purchase'
 import type { MailAnswer } from './mail-answer'
-import { GAVE_UP, mailAnswer, REFUSED, statusAfter, WARN_AFTER_MS, } from './mail-answer'
+import { GAVE_UP, mailAnswer, mayHaveGone, REFUSED, statusAfter, WARN_AFTER_MS, } from './mail-answer'
 import { paymentIntentOf } from './stripe-payments'
 import { DEFAULT_GRACE_WEEKDAYS, withdrawalOpen } from './withdrawal-rules'
 import type { PurchaseTerms, TraderDetails, WithdrawalMode, } from './withdrawal-wording'
@@ -460,12 +461,12 @@ async function claimPurchaseMail(
 }
 
 /** Send the purchase mail for the row: what Resend's answer says of it, or
- *  null when Resend is not configured here. `afterUnknown`: the try before
- *  this one ended without a known outcome. Never throws. */
+ *  null when Resend is not configured here. `earlierMayHaveGone`: Resend
+ *  may have taken the try before this one (mayHaveGone). Never throws. */
 async function deliverPurchaseMail(
   env: Env,
   row: PurchaseMailRow,
-  afterUnknown: boolean,
+  earlierMayHaveGone: boolean,
 ): Promise<MailAnswer | null> {
   if (!env.RESEND_API_KEY) {
     console.log(
@@ -499,7 +500,7 @@ async function deliverPurchaseMail(
       },
       `purchase-${row.sessionId}`,
     )
-    return mailAnswer(result, afterUnknown)
+    return mailAnswer(result, earlierMayHaveGone)
   } catch (err) {
     console.error(`[billing] purchase mail failed: ${String(err)}`)
     return {
@@ -626,8 +627,11 @@ async function tryPurchaseMail(
   nowMs: number,
 ): Promise<void> {
   const before = row.mailStatus
-  const afterUnknown = before === 'failed' || before === 'sending'
-  const answer = await deliverPurchaseMail(env, row, afterUnknown)
+  const answer = await deliverPurchaseMail(
+    env,
+    row,
+    mayHaveGone(before, row.mailError),
+  )
   const status = answer === null ? 'not-configured' : statusAfter(answer)
   const why = answer === null || answer.kind === 'sent' ? null : answer.why
   await recordPurchaseMail(env, row, status, why)
@@ -683,11 +687,14 @@ async function warnPurchaseMail(
       `Buyer: ${row.email ?? 'no email address on the account'}`,
       `Tries: ${row.mailAttempts}, the last at ${row.mailAt ?? 'none'}: ${row.mailError ?? 'no answer kept'}`,
       '',
-      'Resend has neither taken nor refused the purchase mail in 3 days.',
-      'The sweep keeps sending it every 6 hours, under the same key, until',
-      'Resend takes it or the pack can no longer be cancelled; you hear',
-      'again only then, or if Resend refuses it. Until it goes, Settings ›',
-      'Credits lets the buyer cancel for the whole price, used credits too.',
+      'Resend has not taken the purchase mail in 3 days, and nothing it',
+      'answered says the mail itself cannot go. If its last answer above is',
+      'about our key, its permissions, the sending domain or the quota, fix',
+      'that and the next sweep sends it. Until Resend takes it or the pack',
+      'can no longer be cancelled, the sweep keeps sending it every 6 hours',
+      'under the same key; you hear again only then, or if Resend refuses',
+      'the mail itself. Until it goes, Settings › Credits lets the buyer',
+      'cancel for the whole price, used credits too.',
     ],
   )
   if (!told) return

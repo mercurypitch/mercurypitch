@@ -737,10 +737,11 @@ export interface ResendResult {
    *  it is unknown. Only a caller with an idempotency key can safely ask
    *  again. */
   unanswered?: boolean
-  /** Resend's refusal, when it answered one: the HTTP status and the
-   *  error's `name`. */
+  /** Resend's refusal, when it answered one: the HTTP status, and the
+   *  error's `name` and `message`. */
   status?: number
   errorName?: string
+  errorMessage?: string
 }
 
 export interface ResendOptions {
@@ -783,13 +784,21 @@ export function sentUnderKeyAlready(result: ResendResult): boolean {
   )
 }
 
-/** The error's `name` from a Resend refusal, when its body has one. */
-function errorNameOf(text: string): string | undefined {
+/** The error's `name` and `message` from a Resend refusal, when its body
+ *  has them. */
+function errorOf(
+  text: string,
+): Pick<ResendResult, 'errorName' | 'errorMessage'> {
   try {
-    const name = (JSON.parse(text) as { name?: unknown }).name
-    return typeof name === 'string' ? name : undefined
+    const body = JSON.parse(text) as { name?: unknown; message?: unknown }
+    return {
+      ...(typeof body.name === 'string' ? { errorName: body.name } : {}),
+      ...(typeof body.message === 'string'
+        ? { errorMessage: body.message }
+        : {}),
+    }
   } catch {
-    return undefined
+    return {}
   }
 }
 
@@ -837,7 +846,7 @@ export async function resendPost(
     if (!res.ok) {
       const text = await res.text()
       console.error(`[email] Resend rejected (${res.status}): ${text}`)
-      return { ok: false, status: res.status, errorName: errorNameOf(text) }
+      return { ok: false, status: res.status, ...errorOf(text) }
     }
     // The id is a nicety, not the verdict: a 200 with an unreadable body is
     // still a send, and treating it as a failure would mail somebody twice.
