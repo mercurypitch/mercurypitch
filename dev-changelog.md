@@ -41,8 +41,7 @@ The order matters. Each step names the PR that asks for it.
    details › Terms of service URL: `https://about.mercurypitch.com/terms`.
    `consent_collection[terms_of_service]=required` needs it, and without it
    every pack checkout fails with "Could not start checkout". The Terms
-   section `#withdrawal` (disjoint-colliders) must be live too: the checkbox,
-   the footnote and both mails link it.
+   section `#withdrawal` arrives with the landing in step 5.
 3. **Merge #970.**
 4. **Run Deploy DB Worker with `environment: prod` from `main`, before the
    tag (#965).** It backs up D1, applies the migrations below, and deploys
@@ -51,7 +50,12 @@ The order matters. Each step names the PR that asks for it.
    nonce before the worker echoes it refuses every Google sign-in until the
    worker lands. A worker deployed first breaks nothing: the old app sends
    no nonce and gets the old redirects.
-5. **Stripe webhook events (#970), after the worker deploy.** The live
+5. **Deploy the landing straight after the worker (disjoint-colliders #99
+   and #100).** It brings the Terms section `#withdrawal` that the checkbox,
+   the footnote and both mails link, and the privacy notice whose deletion
+   periods the retention sweep (#969) enforces from this deploy on. Keep the
+   gap between the two deploys to minutes.
+6. **Stripe webhook events (#970), after the worker deploy.** The live
    endpoint must send eight types. Add `charge.dispute.closed`,
    `charge.dispute.funds_withdrawn`, `refund.failed` and `refund.updated`.
    Keep `checkout.session.completed`,
@@ -61,7 +65,7 @@ The order matters. Each step names the PR that asks for it.
    is still applied by the sweep within six hours, with a "Sweep recovered N
    missed event(s)" alert each time. Re-running 0065's `UPDATE` by hand
    right after the deploy is optional (owner decision).
-6. **Push the tag `v0.9.17`.** `deploy-db-prod` runs again and finds no
+7. **Push the tag `v0.9.17`.** `deploy-db-prod` runs again and finds no
    migration left to apply.
 
 If `STRIPE_SECRET_KEY` is a restricted key, it needs read access to Charges,
