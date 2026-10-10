@@ -2092,7 +2092,7 @@ describe('the cron finishes what a request left undone', () => {
 })
 
 describe('a refund Stripe has not finished', () => {
-  it('gives nothing back when it fails, and leaves the alert to the withdrawal sweep', async () => {
+  it('gives nothing back when it fails, and the webhook hands the refund to the owner, once', async () => {
     newRefundStatus = 'pending'
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
@@ -2137,23 +2137,26 @@ describe('a refund Stripe has not finished', () => {
       }),
     ]
 
+    // The webhook marks the statement's refund failed and tells the owner
+    // (withdrawal-refund-failed.ts); the second event finds it told.
     expect(answers).toEqual([200, 200])
-    expect({ ledger: ledgerOf(sam.userId), alerts: alerts().length }).toEqual({
-      ledger: ledgerBefore,
-      alerts: alertsBefore,
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
     })
+    expect(subjects(alerts().slice(alertsBefore))).toEqual([
+      '[MercuryPitch billing] Withdrawal: refund FAILED after it went through, refund €14.28 by hand',
+    ])
 
-    // The withdrawal sweep finds the refund failed and says so, once.
+    // The withdrawal sweep has nothing more to say.
     at('2026-10-20T16:17:00.000Z')
     await cron()
-    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
-    expect(subjects(alerts().slice(alertsBefore))).toEqual([
-      '[MercuryPitch billing] Withdrawal: refund FAILED, refund €14.28 by hand',
-    ])
+    expect(alerts()).toHaveLength(alertsBefore + 1)
     expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
   })
 
-  it('gives nothing back when it is canceled, and alerts nothing from the webhook', async () => {
+  it('gives nothing back when it is canceled, and the webhook hands the refund to the owner', async () => {
     newRefundStatus = 'requires_action'
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
@@ -2179,10 +2182,12 @@ describe('a refund Stripe has not finished', () => {
     })
 
     expect(canceled).toBe(200)
-    expect({ ledger: ledgerOf(sam.userId), alerts: alerts().length }).toEqual({
-      ledger: ledgerBefore,
-      alerts: alertsBefore,
+    expect(ledgerOf(sam.userId)).toEqual(ledgerBefore)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'canceled',
     })
+    expect(alerts()).toHaveLength(alertsBefore + 1)
   })
 
   it('is followed until Stripe fails it, then goes to the owner to refund by hand', async () => {
@@ -4421,5 +4426,77 @@ describe('what a withdrawal refunds of what the charge holds (#970, F9)', () => 
 
     expect(acknowledgements()[0]?.text).toContain('€18.00')
     expect(acknowledgements()[0]?.text).not.toContain('€20.00 to the card')
+  })
+})
+
+describe('a withdrawal refund that fails after it went through (#970, F10)', () => {
+  /** The refund the withdrawal made, as Stripe sends it once it failed. */
+  function failedRefund(): Record<string, unknown> {
+    const [refund] = refundsMade
+    if (refund === undefined) throw new Error('no refund was made')
+    refund.status = 'failed'
+    refund.failure_reason = 'expired_or_canceled_card'
+    return { ...refund, charge: 'ch_pi_plus', currency: 'eur' }
+  }
+
+  it('marks the statement failed for the owner to refund by hand, once, and gives no credits back', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'succeeded',
+    })
+    const refund = failedRefund()
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+    expect(
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+    })
+    expect(
+      subjects(alerts()).filter((subject) =>
+        subject.includes('refund FAILED after it went through'),
+      ),
+    ).toEqual([
+      `${BILLING}Withdrawal: refund FAILED after it went through, refund €20.00 by hand`,
+    ])
+    expect(balance(sam.userId)).toBe(0)
+  })
+
+  it('answers 500 and records nothing while the owner has not heard, so Stripe sends it again', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: failedRefund() },
+    }
+    resendRefuses = (mail) =>
+      mail.subject.includes('refund FAILED after it went through')
+
+    expect(await deliver(event)).toBe(500)
+    expect(billingEventSeen('evt_refund_failed')).toBe(false)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+
+    resendRefuses = () => false
+    expect(await deliver(event)).toBe(200)
+    expect(billingEventSeen('evt_refund_failed')).toBe(true)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
   })
 })

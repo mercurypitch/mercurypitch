@@ -64,8 +64,10 @@
 // a part refund, a dispute): refunds and disputes never hold more than they
 // hold already plus the credits its pack still has unused, so the credits
 // the buyer used stay theirs (keptUsed). A withdrawal's own refund that
-// fails or is canceled is the withdrawal sweep's to follow and report
-// (withdrawal-finish.ts): it writes no row here.
+// fails or is canceled, even after Stripe said it succeeded, goes to its
+// statement (withdrawal-refund-failed.ts): the refund becomes the owner's to
+// make by hand. It writes no row here and gives no credits back: the
+// withdrawal took them, and they stay taken.
 //
 // Otherwise credits already spent are owed: the balance goes below zero,
 // and the debit's own check (billing.ts, `SUM(delta) >= cost`) blocks
@@ -91,6 +93,7 @@ import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
 import type { Ledger, LedgerEntry } from './ledger'
 import { readLedger, writeOnLedgerOnce } from './ledger'
+import { markWithdrawalRefundFailed } from './withdrawal-refund-failed'
 
 /** The ledger reason of a pack's credits, granted when its checkout is paid
  *  (billing.ts, grantCheckoutCredits). */
@@ -507,6 +510,36 @@ function withdrawalOf(event: StripeEventInput): string | null {
   return typeof id === 'string' && id !== '' ? id : null
 }
 
+/**
+ * A withdrawal's own refund that failed or was canceled, even one Stripe
+ * said had succeeded: the statement's refund becomes the owner's to make by
+ * hand, once per statement and status (withdrawal-refund-failed.ts).
+ * Throws when the owner's alert did not go, with nothing recorded, so the
+ * event is delivered again.
+ */
+async function withdrawalRefundEnded(
+  env: Env,
+  event: StripeEventInput,
+  withdrawalId: string,
+  ended: 'failed' | 'canceled',
+): Promise<MoneyBackResult> {
+  const refund = event.object
+  const answer = await markWithdrawalRefundFailed(env, {
+    withdrawalId,
+    refundId: typeof refund.id === 'string' ? refund.id : '',
+    stripeStatus: ended,
+    reason:
+      typeof refund.failure_reason === 'string' ? refund.failure_reason : null,
+    paymentIntentId: paymentIntentOf(refund),
+    amountMinor: typeof refund.amount === 'number' ? refund.amount : null,
+    currency: typeof refund.currency === 'string' ? refund.currency : null,
+  })
+  console.log(
+    `[billing] ${event.type} ${event.id}: the refund of withdrawal ${withdrawalId} ${ended}, ${answer}`,
+  )
+  return { kind: 'applied' }
+}
+
 /** The dispute a dispute event carries, as the event saw it. */
 function eventDispute(event: StripeEventInput): DisputeState | null {
   return isDisputeEvent(event.type) ? disputeFrom(event.object) : null
@@ -623,20 +656,12 @@ export async function applyMoneyBack(
   held?: BillingAlert[],
 ): Promise<MoneyBackResult> {
   const send = alertSink(env, held)
-  // A withdrawal's own refund that failed or was canceled is the withdrawal
-  // sweep's (withdrawal-finish.ts): it follows the refund, marks the
-  // statement failed and alerts the owner. Nothing here took credits for
-  // it, so nothing comes back, and the owner hears of it once.
+  // A withdrawal's own refund that failed or was canceled goes to its
+  // statement. Nothing here took credits for it, so nothing comes back.
   const ended = refundEndOf(event)
   const withdrawal = ended === null ? null : withdrawalOf(event)
-  if (withdrawal !== null) {
-    console.log(
-      `[billing] ${event.type} ${event.id}: the refund of withdrawal ${withdrawal} ${ended}, left to the withdrawal sweep`,
-    )
-    return {
-      kind: 'ignored',
-      reason: 'a withdrawal refund, which the withdrawal sweep follows',
-    }
+  if (ended !== null && withdrawal !== null) {
+    return withdrawalRefundEnded(env, event, withdrawal, ended)
   }
   const chargeId = chargeIdOf(event.type, event.object)
   if (chargeId === null) {
