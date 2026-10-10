@@ -497,8 +497,11 @@ async function keptMoneyOf(
 /**
  * Count the pack, and write the statement on the ledger counted. The pack
  * is checked against what Stripe last said of its payment, then against
- * what Stripe says now, read once per request before any amount is
- * promised.
+ * what Stripe says now, read on every attempt before any amount is
+ * promised: an attempt after the first runs because a ledger write landed,
+ * most often a refund's or a dispute's take, which an earlier read of
+ * Stripe cannot have seen. The read returned is the one the winning
+ * attempt took.
  */
 async function placeStatement(
   env: Env,
@@ -510,7 +513,6 @@ async function placeStatement(
   const id = crypto.randomUUID()
   const grace = withdrawalGraceWeekdays(env)
   const facts = await purchaseFacts(env, auth.userId)
-  let read: PaymentAnswer | null = null
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readNamedLedger(env, auth.userId)
     const use = packUses(ledger.rows).find(
@@ -525,7 +527,7 @@ async function placeStatement(
     if (refusedKept !== null) {
       return { kind: 'refused', status: 409, error: refusedKept }
     }
-    read ??= await paymentAtStripe(env, use.paymentIntentId)
+    const read = await paymentAtStripe(env, use.paymentIntentId)
     const pack =
       read.kind === 'paid' ? withMoney(use, moneyOf(read.charge)) : kept
     const refused = refusal(pack, fact.terms, now, grace)
@@ -602,8 +604,8 @@ async function handleStatement(
   if (placed.kind === 'refused') {
     return respond({ error: placed.error }, { status: placed.status })
   }
-  // The request that made the statement read Stripe already: its refund
-  // step works from that read.
+  // The request that made the statement read Stripe already, on the
+  // attempt whose batch won: its refund step works from that read.
   const row = await finish(
     env,
     placed.row,

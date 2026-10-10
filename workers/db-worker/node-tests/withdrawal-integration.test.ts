@@ -4662,3 +4662,35 @@ describe('a whole-price withdrawal after an earlier refund (#970 review, F-1)', 
     })
   }
 })
+
+describe('a refund that lands while the statement is written (#970 review, F-2)', () => {
+  for (const ticked of [false, true]) {
+    const label = ticked ? 'consented' : 'no consent on record'
+
+    it(`${label}: never promises or asks Stripe for more than the charge holds`, async () => {
+      const sam = await buyer('sam@example.test')
+      const plus = await buy(sam, 'pack-plus', 'pi_plus', ticked)
+
+      // The statement has read the ledger and Stripe (nothing refunded)
+      // when the owner's EUR 5.00 dashboard refund lands and its webhook
+      // takes 35 credits, just before the statement's batch. The batch
+      // loses to that write, and the next attempt counts again.
+      justBefore(/INSERT OR IGNORE INTO withdrawals/, async () => {
+        expect(
+          await deliver(chargeRefunded('evt_dashboard', 'pi_plus', 2000, 500)),
+        ).toBe(200)
+      })
+      const res = await withdraw(sam, plus)
+
+      expect(res.status).toBe(200)
+      // The charge holds EUR 15.00: what is left after the dashboard refund.
+      expect(askedAmounts()).toEqual(['1500'])
+      expect(statementOf(plus)).toMatchObject({
+        refundMinor: 1500,
+        refundStatus: 'refunded',
+      })
+      expect(acknowledgements()[0]?.text).toContain('€15.00')
+      expect(balance(sam.userId)).toBe(0)
+    })
+  }
+})

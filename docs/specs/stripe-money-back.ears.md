@@ -305,11 +305,15 @@ and with no amount known, the price less any earlier refund.
 
 **When** a statement is made, the worker shall read Stripe (the
 PaymentIntent, its charge, the refunds and disputes on it) before promising
-an amount, and refuse a pack whose money Stripe holds back. **While** Stripe
-does not answer, the statement shall stand with its price pending and promise
-no amount. Before every refund request the worker shall read Stripe again
-and lower the refund to what the charge holds, keep the lower amount on the
-statement, and tell the owner both amounts; the buyer is not mailed again.
+an amount, and refuse a pack whose money Stripe holds back. It shall read
+again on every attempt of the statement's write, since an attempt after the
+first runs because a ledger write landed, most often a refund's or a
+dispute's take, and the first refund attempt shall work from the read of the
+attempt whose write won. **While** Stripe does not answer, the statement
+shall stand with its price pending and promise no amount. Before every
+refund request the worker shall read Stripe again and lower the refund to
+what the charge holds, keep the lower amount on the statement, and tell the
+owner both amounts; the buyer is not mailed again.
 
 ### REQ-MB-054 — Never refund a payment charged back
 
