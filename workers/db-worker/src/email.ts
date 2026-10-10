@@ -64,6 +64,16 @@ export function maskEmail(address: string): string {
   return `${address[0]}***@***${dot === -1 ? '' : domain.slice(dot)}`
 }
 
+/** Anything that reads like an address, in text a log line carries from
+ *  elsewhere (an API's error body, a thrown error). */
+const ADDRESS = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*/g
+
+/** `text` with every address in it masked (maskEmail): for text a log line
+ *  carries but did not write, which may name the recipient. */
+export function maskAddresses(text: string): string {
+  return text.replace(ADDRESS, (address) => maskEmail(address))
+}
+
 /** "5 July 2026" from an ISO timestamp (UTC, locale-stable). */
 export function formatDate(iso: string): string {
   const d = new Date(iso)
@@ -855,7 +865,9 @@ export async function resendPost(
     })
     if (!res.ok) {
       const text = await res.text()
-      console.error(`[email] Resend rejected (${res.status}): ${text}`)
+      console.error(
+        `[email] Resend rejected (${res.status}): ${maskAddresses(text)}`,
+      )
       return { ok: false, status: res.status, ...errorOf(text) }
     }
     // The id is a nicety, not the verdict: a 200 with an unreadable body is
@@ -869,7 +881,9 @@ export async function resendPost(
     }
     return { ok: true, id }
   } catch (err) {
-    console.error(`[email] Resend request failed: ${String(err)}`)
+    console.error(
+      `[email] Resend request failed: ${maskAddresses(String(err))}`,
+    )
     return { ok: false, unanswered: true }
   }
 }

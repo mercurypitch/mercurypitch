@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ResendConfig } from './email'
-import { maskEmail, sendAccountNotice, sendLoginCode, sendNewsletterIssue, sendPasswordReset, } from './email'
+import { maskAddresses, maskEmail, sendAccountNotice, sendLoginCode, sendNewsletterIssue, sendPasswordReset, } from './email'
 import { sendSignUpCode } from './email-sign-up-code'
 import { sendConfirmMail, sendWelcomeMail } from './email-welcome'
 
@@ -114,5 +114,78 @@ describe('what a sent mail logs', () => {
 
     expect(logged).toEqual([expect.stringContaining('sent to m***@***.com')])
     expect(logged.join('\n')).not.toContain(TO)
+  })
+})
+
+describe('what a mail Resend refuses logs', () => {
+  const CFG: ResendConfig = { apiKey: 're_test_mask' }
+  const TO = 'maria.k@example.com'
+  let logged: string[]
+
+  beforeEach(() => {
+    logged = []
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      logged.push(args.map(String).join(' '))
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('masks an address in the body Resend refuses it with', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json(
+          {
+            statusCode: 422,
+            name: 'validation_error',
+            message: `The address ${TO} cannot receive mail; try Maria <${TO}> later.`,
+          },
+          { status: 422 },
+        ),
+      ),
+    )
+
+    await sendPasswordReset(CFG, TO, {
+      resetUrl: 'https://app.example.test/#/reset-password?token=t',
+      ttlHours: 1,
+    })
+
+    expect(logged).toEqual([
+      expect.stringContaining('[email] Resend rejected (422)'),
+    ])
+    expect(logged[0]).toContain('validation_error')
+    expect(logged[0]).toContain('m***@***.com')
+    expect(logged[0]).not.toContain('maria.k')
+    expect(logged[0]).not.toContain('example.com')
+  })
+
+  it('masks an address in the error a request that never got through throws', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError(`fetch failed for ${TO}`)
+      }),
+    )
+
+    await sendPasswordReset(CFG, TO, {
+      resetUrl: 'https://app.example.test/#/reset-password?token=t',
+      ttlHours: 1,
+    })
+
+    expect(logged).toEqual([
+      '[email] Resend request failed: TypeError: fetch failed for m***@***.com',
+    ])
+  })
+})
+
+describe('maskAddresses', () => {
+  it('masks every address in a text, and leaves the rest', () => {
+    expect(
+      maskAddresses('to a.b@example.com and <c+d@mail.example.org>, code 42'),
+    ).toBe('to a***@***.com and <c***@***.org>, code 42')
   })
 })
