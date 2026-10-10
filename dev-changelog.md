@@ -42,7 +42,7 @@ The order matters. Each step names the PR that asks for it.
    `consent_collection[terms_of_service]=required` needs it, and without it
    every pack checkout fails with "Could not start checkout". The Terms
    section `#withdrawal` arrives with the landing in step 5.
-3. **Merge #970.**
+3. **Merge #970, then #975.**
 4. **Run Deploy DB Worker with `environment: prod` from `main`, before the
    tag (#965).** It backs up D1, applies the migrations below, and deploys
    the Jam worker and then the DB worker. On the tag, `deploy-db-prod` and
@@ -77,12 +77,15 @@ keeps its price pending.
 
 `BILLING_ALERT_EMAIL` must stay set on prod: nothing is given up, escalated or
 handed over until Resend has taken the owner's alert, and the alert goes to
-this address. The promo email records are keyed with `FREE_SONG_EMAIL_SECRET`;
-without it, claims stay bounded per account only.
+this address. Since #975 a chargeback event answers 500 while it or
+`RESEND_API_KEY` is missing, so Stripe keeps sending it until both are set;
+both are set on dev and prod (names checked 10 Oct). The promo email
+records are keyed with `FREE_SONG_EMAIL_SECRET`; without it, claims stay
+bounded per account only.
 
 ### Migrations
 
-Prod ran `0055` with `v0.9.16`, so this release brings thirteen. `wrangler d1
+Prod ran `0055` with `v0.9.16`, so this release brings fourteen. `wrangler d1
 migrations apply` runs the files it has not recorded in file-name order:
 
 | Migration                                | PR   | What it does                                                                                                                |
@@ -100,12 +103,13 @@ migrations apply` runs the files it has not recorded in file-name order:
 | `0066_withdrawal_mail_outcomes`          | #968 | `mailError`, `mailWarnedAt`, `refundHandedOverAt`; partial index `idx_checkoutConsents_open`                                |
 | `0067_chargeback_alerts`                 | #970 | `chargebackAlerts`: one row per dispute once its chargeback alert is raised, so a later event does not raise it again       |
 | `0068_withdrawal_refund_failure_claims`  | #970 | `withdrawals.refundFailureClaimedAt` and `refundFailureClaimedBy`: the delivery that claims a failed refund tells the owner |
+| `0069_chargeback_alert_claims`           | #975 | `chargebackAlertClaims`: the delivery that claims a dispute mails its chargeback alert; deleted once told or refused        |
 
 Dev applied them in merge order instead (0056; 0057 to 0059; 0063; 0060 to
-0062 and 0066; then #970's 0064, 0065, 0067 and 0068). #968 checked that
-0066 applies cleanly in every order a D1 can see. The deploy applies the
-migrations before it deploys the worker, so 0065 has run when the old worker
-gets its last events.
+0062 and 0066; then #970's 0064, 0065, 0067 and 0068; then #975's 0069).
+#968 checked that 0066 applies cleanly in every order a D1 can see. The
+deploy applies the migrations before it deploys the worker, so 0065 has run
+when the old worker gets its last events.
 
 ### Web and API: the launch gift and the finish-five reward (#961, #966)
 
@@ -249,9 +253,34 @@ paid)` of a payment's credits, pack and launch bonus together. Each event
 - Log lines mask every email address, including those in Resend's and
   Google's error text: any script, every character RFC 5322 allows before
   the `@`, quoted local parts and address literals.
-- Alerts stay best-effort: a send that fails at the wrong moment loses that
-  alert, and Stripe's own dispute emails are the backup. The follow-ups are
-  in #970's body.
+- Other alerts stay best-effort: a send that fails at the wrong moment loses
+  that alert, and Stripe's own dispute emails are the backup. #975 makes the
+  chargeback alert retry; the rest are follow-ups in #975's body.
+
+### API: chargeback alerts that arrive (#975)
+
+The second review of #970 found four Low defects; this fixes them.
+
+- **A refused chargeback mail is sent again.** `chargebackAlerts` records a
+  dispute only once Resend has taken its mail. A refusal records nothing
+  and answers 500, so Stripe delivers the event again. The mail goes when
+  there is no row yet, not when the ledger moved, because a redelivery
+  finds the ledger already moved.
+- **One mail per chargeback.** Stripe sends `charge.dispute.created` and
+  `charge.dispute.funds_withdrawn` together for a dispute that opens as a
+  chargeback. A delivery claims the dispute in `chargebackAlertClaims`
+  (0069) before it mails, as #970's withdrawal claims do: the same event
+  answers 500 while its twin holds the claim, another event leaves the mail
+  to it, and a claim older than 10 minutes is taken over. The other event
+  mails only when its own ledger row moved credits after the alert's row.
+- **Masking in logs:** the local part is bounded at 64 characters (RFC 5321),
+  so 50 KB of base64 masks in about 11 ms instead of 1.7 s, and a symbol or
+  emoji before the `@` no longer leaves the address readable.
+- Not fixed here, in #975's body: the cron's follow-up of a pending refund
+  can race the webhook's failure mail (two mails), F-4 (other alerts are
+  lost if anything fails after their ledger row) and H-1 (events that fail
+  on every run use up the sweep's cap; a chargeback whose mail Resend keeps
+  refusing is now one of them).
 
 ### Web and API: retention (#969)
 
