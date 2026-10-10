@@ -405,6 +405,11 @@ describe('a dispute', () => {
 
     expect([duringInquiry, charged]).toEqual([30, 0])
     expect(balance(h, singer.userId)).toBe(30)
+    expect(alerts(h).map((alert) => alert.subject)).toEqual([
+      '[MercuryPitch billing] Inquiry opened: €5.00, evidence due 30 October 2026',
+      '[MercuryPitch billing] Chargeback: €5.00 taken from your Stripe balance',
+      '[MercuryPitch billing] Dispute won: gave back 30 credit(s)',
+    ])
   })
 })
 

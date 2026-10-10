@@ -219,6 +219,40 @@ describe('a dispute closing', () => {
   })
 })
 
+describe("a dispute's money leaving the balance", () => {
+  it('says an inquiry became a chargeback, and what it took back', () => {
+    const escalated = dispute({ status: 'needs_response' })
+    const alert = moneyBackAlert(
+      ref('charge.dispute.funds_withdrawn'),
+      charge({ disputes: [escalated] }),
+      moved(),
+      about(escalated),
+    )
+
+    expect(alert?.subject).toBe(
+      'Chargeback: €5.00 taken from your Stripe balance',
+    )
+    expect(text(alert)).toContain(
+      "turned this payment's inquiry into a chargeback",
+    )
+    expect(text(alert)).toContain('Taken back now: 30 credit(s)')
+    expect(text(alert)).toContain(
+      'If you win, the credits come back by themselves.',
+    )
+  })
+
+  it("needs no alert when the chargeback's opening took the credits already", () => {
+    const alert = moneyBackAlert(
+      ref('charge.dispute.funds_withdrawn'),
+      charge({ disputes: [dispute()] }),
+      moved({ delta: 0 }),
+      about(dispute()),
+    )
+
+    expect(alert).toBeNull()
+  })
+})
+
 describe('a refund', () => {
   it('says what it took back and how much was refunded', () => {
     const alert = moneyBackAlert(
@@ -419,6 +453,12 @@ describe('every alert', () => {
         ref('charge.dispute.created'),
         charge({ disputes: [dispute()] }),
         moved({ balance: -5 }),
+        about(dispute()),
+      ),
+      moneyBackAlert(
+        ref('charge.dispute.funds_withdrawn'),
+        charge({ disputes: [dispute()] }),
+        moved(),
         about(dispute()),
       ),
       moneyBackAlert(
