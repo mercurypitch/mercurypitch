@@ -69,10 +69,15 @@ const BY_HAND = [
   'to their balance: the withdrawal took the credits, and they stay taken.',
 ]
 
+/** The alert, from the statement as this records it: its refund failed. */
 function failedLines(row: StatementRow, failure: FailedRefund): string[] {
   return [
     ...statementFacts(row),
-    refundLine(row),
+    refundLine({
+      ...row,
+      refundStatus: 'failed',
+      stripeRefundStatus: failure.stripeStatus,
+    }),
     `Stripe refund: ${failure.refundId}, now ${failure.stripeStatus}`,
     `Why: ${failure.reason ?? 'Stripe gave no reason'}`,
     ...BY_HAND,

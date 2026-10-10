@@ -134,7 +134,10 @@ export function refundLine(row: StatementRow): string {
     ? 'everything that was paid'
     : `${row.unusedCredits}/${row.paidCredits} of what was paid, rounded down to the cent`
   if (row.priceSource === 'pending') {
-    return `Refund: ${share}; Stripe has not said what was paid yet, and is asked again every 6 hours`
+    // Asked again only while the refund waits for it (withdrawal-finish.ts).
+    return row.refundStatus === 'pending'
+      ? `Refund: ${share}; Stripe has not said what was paid yet, and is asked again every 6 hours`
+      : `Refund: ${share}; Stripe has not said what was paid`
   }
   if (!priceKnown(row)) {
     return whole

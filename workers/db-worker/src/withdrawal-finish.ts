@@ -341,20 +341,25 @@ function alertLines(row: StatementRow): string[] {
 }
 
 /** Keep that the owner has heard the refund is theirs, so no sweep tells
- *  again. One that fails to record is told again at the next sweep. */
+ *  again: only while it stands as `row`, what the alert described. One
+ *  that fails to record, or has moved since, is told again at the next
+ *  sweep. */
 async function recordHandedOver(
   env: Env,
   row: StatementRow,
   nowMs: number,
 ): Promise<StatementRow> {
   try {
-    await env.DB.prepare(
+    const res = await env.DB.prepare(
       `UPDATE withdrawals SET refundHandedOverAt = ?
-        WHERE id = ? AND refundStatus = ? AND refundHandedOverAt IS NULL`,
+        WHERE id = ? AND refundStatus = ? AND stripeRefundStatus IS ?
+          AND refundHandedOverAt IS NULL`,
     )
-      .bind(iso(nowMs), row.id, row.refundStatus)
+      .bind(iso(nowMs), row.id, row.refundStatus, row.stripeRefundStatus)
       .run()
-    return { ...row, refundHandedOverAt: iso(nowMs) }
+    return res.meta.changes > 0
+      ? { ...row, refundHandedOverAt: iso(nowMs) }
+      : row
   } catch (err) {
     console.error(
       `[billing] withdrawal ${row.id}: hand-over not recorded: ${String(err)}`,
@@ -482,7 +487,10 @@ function handOverLines(row: StatementRow, due: string): string[] {
  * to the owner, to finish by day 14: by hand when Stripe never took it, in
  * the Stripe dashboard when Stripe has it open. A pending one becomes
  * 'manual', so the sweep never asks for it again and it can never go
- * twice. Once, and only once Resend has taken the alert.
+ * twice, and its alert says so. Once, and only once Resend has taken the
+ * alert, and only for the refund the alert described: one that moved while
+ * the alert went (Stripe failed it, say) is left for the next sweep, which
+ * tells the owner what it is now.
  */
 async function handOver(
   env: Env,
@@ -494,18 +502,20 @@ async function handOver(
   }
   if (Date.parse(row.submittedAt) > nowMs - HAND_OVER_AFTER_MS) return
   const due = dueDate(row)
-  const subject =
-    row.refundStatus === 'pending'
-      ? `Withdrawal: refund${refundMoney(row)} by hand by ${due}`
-      : `Withdrawal: refund${refundMoney(row)} not finished at Stripe, due by ${due}`
-  if (!(await alert(env, subject, handOverLines(row, due)))) return
+  const pending = row.refundStatus === 'pending'
+  const subject = pending
+    ? `Withdrawal: refund${refundMoney(row)} by hand by ${due}`
+    : `Withdrawal: refund${refundMoney(row)} not finished at Stripe, due by ${due}`
+  const told = pending ? { ...row, refundStatus: 'manual' as const } : row
+  if (!(await alert(env, subject, handOverLines(told, due)))) return
   await env.DB.prepare(
     `UPDATE withdrawals
         SET refundHandedOverAt = ?,
             refundStatus = CASE refundStatus WHEN 'pending' THEN 'manual' ELSE refundStatus END
-      WHERE id = ? AND refundHandedOverAt IS NULL`,
+      WHERE id = ? AND refundHandedOverAt IS NULL
+        AND refundStatus = ? AND stripeRefundStatus IS ?`,
   )
-    .bind(iso(nowMs), row.id)
+    .bind(iso(nowMs), row.id, row.refundStatus, row.stripeRefundStatus)
     .run()
 }
 

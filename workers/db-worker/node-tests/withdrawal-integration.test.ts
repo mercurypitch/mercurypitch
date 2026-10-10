@@ -3261,6 +3261,97 @@ describe('a refund that stays open', () => {
     })
     expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
   })
+
+  it('says at the day-11 hand-over only that the sweep stopped asking Stripe', async () => {
+    const sam = await buyer('sam@example.test')
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_legacy',
+      'pi_legacy',
+    )
+    const inner = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.startsWith(`${STRIPE}/payment_intents/`)) {
+          return Response.json(
+            {
+              error: {
+                message:
+                  'The provided key does not have the required permissions for this endpoint.',
+              },
+            },
+            { status: 403 },
+          )
+        }
+        return inner(input, init)
+      },
+    )
+    const purchase = purchaseOf('evt_legacy')
+    await withdraw(sam, purchase)
+
+    await sweeps(1, 45)
+
+    const handOver = alerts().find((a) =>
+      a.subject.includes('by hand by 3 November 2026'),
+    )
+    expect(statementOf(purchase)).toMatchObject({
+      refundStatus: 'manual',
+      priceSource: 'pending',
+    })
+    expect(handOver?.text).toContain(
+      'The sweep has stopped asking Stripe for it',
+    )
+    expect(handOver?.text).not.toContain('is asked again every 6 hours')
+  })
+
+  it('records the day-11 hand-over only for the refund its alert described', async () => {
+    newRefundStatus = 'requires_action'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const id = String(statementOf(plus)?.id)
+    await sweeps(1, 43)
+    expect(statementOf(plus)?.refundHandedOverAt).toBeNull()
+
+    // Day 11. While its alert is on the way, a request for the same pack
+    // finds Stripe canceled the refund and records it failed, and Resend
+    // does not take that request's alert.
+    let raced = false
+    resendRefuses = (mail) => {
+      if (!raced && mail.subject.includes('not finished at Stripe, due by')) {
+        raced = true
+        sqlite
+          .prepare(
+            `UPDATE withdrawals
+                SET refundStatus = 'failed', stripeRefundStatus = 'canceled',
+                    refundError = 'Stripe did not complete the refund: canceled',
+                    refundHandedOverAt = NULL
+              WHERE id = ?`,
+          )
+          .run(id)
+      }
+      return false
+    }
+    await sweeps(44, 44)
+    expect(raced).toBe(true)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'canceled',
+    })
+    expect(statementOf(plus)?.refundHandedOverAt).toBeNull()
+
+    // The next sweep tells the owner it failed, and only then hands it over.
+    await sweeps(45, 45)
+    expect(subjects(alerts())).toContain(
+      `${BILLING}Withdrawal: refund FAILED, refund €20.00 by hand`,
+    )
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+  })
 })
 
 describe('a refund the owner has to make by hand', () => {
@@ -3411,6 +3502,10 @@ describe('a refund that fails after Stripe said it succeeded', () => {
     expect(subjects(alerts()).filter((s) => s === FAILED_SUBJECT)).toHaveLength(
       1,
     )
+    // The alert says what it is now, not what it was.
+    const told = alerts().find((a) => a.subject === FAILED_SUBJECT)?.text
+    expect(told).toContain('Refund: €20.00 of €20.00, failed')
+    expect(told).not.toContain(', refunded')
     expect(balance(sam.userId)).toBe(credits)
 
     // The owner has heard: no sweep tells again.
