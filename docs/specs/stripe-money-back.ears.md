@@ -372,12 +372,16 @@ space, an @ and those that end an address in text (`"<>()[]\,;:`): letters,
 marks and digits in any script (`josé@exämple.com`), every other character
 RFC 5322 allows in a local part (`mary.o'brien@example.com` logs as
 `m***@***.com`), and a symbol or an emoji, even right before the @
-(`jane€@example.com` logs as `j***@***.com`). It, a quoted local part and an
-address literal (`user@[192.0.2.1]` logs as `u***@***`) are masked whole: no
-character of a local part after its first shows. Punctuation a local part
-may hold is masked with the address when it touches it
-(`'jane@example.com'` logs as `'***@***.com'`). An unquoted local part shall
-be read for at most 64 characters, all RFC 5321 allows, so that masking a
-long run with no @ in it (50 KB of base64 in an error text) takes time
-linear in its length; a longer local part, which no mail server takes, shows
-what comes before its last 64 characters.
+(`jane€@example.com` logs as `j***@***.com`). It shall be read from where
+its run starts, so it is masked whole however long it is. A quoted local
+part of at most 64 characters between its quotes, an escaped pair counting
+as one, and an address literal of at most 64 between its brackets
+(`user@[192.0.2.1]` logs as `u***@***`) are masked whole too: no character
+of a local part after its first shows. Punctuation a local part may hold is
+masked with the address when it touches it (`'jane@example.com'` logs as
+`'***@***.com'`). Masking shall take time linear in the length of the text,
+whatever it holds: 50 KB of base64, of escaped quotes, or of `a@[` over and
+over. So a quoted local part and an address literal are read no further
+than those 64, and an address with a longer one, which RFC 5321 does not
+allow or no IPv4 or IPv6 address needs, is not masked, apart from any piece
+of it that reads as an address on its own.

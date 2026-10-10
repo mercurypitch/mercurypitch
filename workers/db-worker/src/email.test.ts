@@ -284,10 +284,12 @@ describe('maskAddresses', () => {
     expect(maskAddresses(input)).toBe(masked)
   })
 
-  // A run of characters a local part may hold, with no @ in it, was read to
-  // its end from every place it could start: 50 KB of base64 or hex in an
-  // error text took 1.7 s to mask (#970 round-4 review, N-4). A local part
-  // holds at most 64 characters (RFC 5321), so none is read further.
+  // Text with no address in it was read to its end from every place an
+  // address could start in it: 50 KB of base64 or hex in an error text took
+  // 1.7 s to mask (#970 round-4 review, N-4), and 50 KB of escaped quotes,
+  // or of "a@[" over and over, 1.1 s and 0.65 s (#975 review). An unquoted
+  // local part is now read once, from where its run starts, and a quoted
+  // local part and an address literal for at most 64 characters.
   const BASE64 =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   const RUNS = [
@@ -296,6 +298,8 @@ describe('maskAddresses', () => {
       `${Array.from({ length: 50_000 }, (_, i) => BASE64[(i * 7919) % 64]).join('')}==`,
     ],
     ['hex', '0123456789abcdef'.repeat(3_125)],
+    ['escaped quotes', `"${'\\"'.repeat(25_000)}`],
+    ['"a@[" over and over', 'a@['.repeat(16_667)],
   ] as const
 
   /** The fastest of three runs, in milliseconds: one slow run is noise. */
@@ -308,11 +312,34 @@ describe('maskAddresses', () => {
     return Math.min(...times)
   }
 
-  it('masks a local part of 64 characters whole, and reads no further back', () => {
+  it('masks an unquoted local part whole, however long it is', () => {
     expect(maskAddresses(`${'a'.repeat(64)}@example.com`)).toBe('a***@***.com')
-    // 65 characters, past what RFC 5321 allows: the first one shows.
-    expect(maskAddresses(`b${'a'.repeat(64)}@example.com`)).toBe(
-      'ba***@***.com',
+    // Past the 64 characters RFC 5321 allows.
+    expect(maskAddresses(`b${'a'.repeat(64)}@example.com`)).toBe('b***@***.com')
+    expect(maskAddresses(`${'n'.repeat(60)}0123456789@example.com`)).toBe(
+      'n***@***.com',
+    )
+  })
+
+  it('masks a quoted local part or an address literal of up to 64 characters whole, and an address with a longer one only where a piece of it reads as an address', () => {
+    expect(maskAddresses(`"${'q'.repeat(64)}"@example.com`)).toBe(
+      '"***@***.com',
+    )
+    // An escaped pair counts as one.
+    expect(maskAddresses(`"${'\\"'.repeat(64)}"@example.com`)).toBe(
+      '"***@***.com',
+    )
+    expect(maskAddresses(`user@[${'1.'.repeat(32)}]`)).toBe('u***@***')
+    for (const longer of [
+      `"${'q'.repeat(65)}"@example.com`,
+      `user@[${'1.'.repeat(32)}1]`,
+    ]) {
+      expect(maskAddresses(`to ${longer} now`)).toBe(`to ${longer} now`)
+    }
+    // Unless a piece of it reads as an address on its own: here its last
+    // 64 escaped quotes, a quoted local part from the second quote.
+    expect(maskAddresses(`"${'\\"'.repeat(65)}"@example.com`)).toBe(
+      '"\\"***@***.com',
     )
   })
 

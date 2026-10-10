@@ -77,15 +77,20 @@ export function maskEmail(address: string): string {
  *  5322 allows (!#$%&'*+-/=?^_`{|}~ and the dot, so
  *  "mary.o'brien@example.com" masks whole), and a symbol or an emoji, even
  *  right before the @, all of which sign-up takes (#970 round-4 review,
- *  N-5). Also a quoted local part ("\"quoted local\"@example.com")
- *  and an address literal ("user@[192.0.2.1]"). Punctuation a local part
- *  may hold is masked with the address when it touches it:
- *  "'jane@example.com'" logs as "'***@***.com'" (#970 review, F-7). An
- *  unquoted local part is read for at most 64 characters, all RFC 5321
- *  allows, so a long run with no @ in it (a base64 blob) costs time linear
- *  in its length, not quadratic (#970 round-4 review, N-4). */
+ *  N-5). It is read from where its run starts, so it masks whole however
+ *  long it is, and a long run with no @ in it (a base64 blob) is read once
+ *  (#970 round-4 review, N-4). Also a quoted local part of at most 64
+ *  characters between its quotes, an escaped pair counting as one
+ *  ("\"quoted local\"@example.com"), and an address literal of at most 64
+ *  between its brackets ("user@[192.0.2.1]"): read no further, so text
+ *  full of escaped quotes or of "a@[" masks in time linear in its length
+ *  too (#975 review). An address with a longer one, which RFC 5321 does
+ *  not allow or no IPv4 or IPv6 address needs, is not masked, apart from
+ *  any piece of it that reads as an address on its own. Punctuation a
+ *  local part may hold is masked with the address when it touches it:
+ *  "'jane@example.com'" logs as "'***@***.com'" (#970 review, F-7). */
 const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.)*"|[^\s@"<>()[\]\\,;:]{1,64})@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+  /(?:"(?:[^"\\\r\n]|\\.){0,64}"|(?<![^\s@"<>()[\]\\,;:])[^\s@"<>()[\]\\,;:]+)@(?:\[[^\]\s]{0,64}\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */
