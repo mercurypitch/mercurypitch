@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BillingAlert } from './stripe-alerts'
 import type { StripeGet } from './stripe-charge'
-import type { StripeEventInput, StripeEventResult } from './stripe-payments'
-import { HANDLED_EVENTS } from './stripe-payments'
+import type { StripeEventInput, StripeEventResult } from './stripe-events'
+import { HANDLED_EVENTS } from './stripe-events'
 import type { EventRecord, SweepPorts } from './stripe-sweep'
 import { SWEEP_MAX_PAGES, SWEEP_MONEY_BACK_PER_RUN, sweepStripeEvents, } from './stripe-sweep'
 

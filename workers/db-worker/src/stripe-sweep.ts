@@ -35,8 +35,8 @@
 import type { BillingAlert } from './stripe-alerts'
 import type { StripeGet } from './stripe-charge'
 import { isRecord } from './stripe-charge'
-import type { StripeEventInput, StripeEventResult } from './stripe-payments'
-import { HANDLED_EVENTS, isMoneyBackEvent, parseStripeEvent, } from './stripe-payments'
+import type { StripeEventInput, StripeEventResult } from './stripe-events'
+import { HANDLED_EVENTS, isMoneyBackEvent, parseStripeEvent, } from './stripe-events'
 
 /** How far back the sweep looks: all that Stripe's events list keeps. */
 export const SWEEP_WINDOW_SECONDS = 30 * 24 * 60 * 60
