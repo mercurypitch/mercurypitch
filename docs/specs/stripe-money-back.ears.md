@@ -16,12 +16,14 @@
 `workers/db-worker/src/withdrawal-finish.ts`,
 `workers/db-worker/src/withdrawal-refund.ts`,
 `workers/db-worker/src/withdrawal-refund-failed.ts`,
+`workers/db-worker/src/chargeback-alert.ts`,
 `workers/db-worker/src/email.ts` (`maskEmail`, `maskAddresses`),
 `workers/db-worker/src/auth.ts` (`handleGoogleCallback`),
 `workers/db-worker/migrations/0064_stripe_charges.sql`,
 `workers/db-worker/migrations/0065_reapply_money_back_events.sql`,
-`workers/db-worker/migrations/0067_chargeback_alerts.sql` and
-`workers/db-worker/migrations/0068_withdrawal_refund_failure_claims.sql`.
+`workers/db-worker/migrations/0067_chargeback_alerts.sql`,
+`workers/db-worker/migrations/0068_withdrawal_refund_failure_claims.sql` and
+`workers/db-worker/migrations/0069_chargeback_alert_claims.sql`.
 
 **Tests:** `workers/db-worker/node-tests/stripe-money-back-integration.test.ts`,
 `workers/db-worker/node-tests/stripe-webhook-hygiene-integration.test.ts`,
@@ -137,11 +139,31 @@ lets the payment be refunded, and shall still alert the owner.
 `charge.dispute.funds_withdrawn` shall alert whenever the owner was not told
 of that dispute's chargeback before: it opened as an inquiry, or its opening
 is not on record. That holds whether or not credits moved, and whether or
-not any credits are on record for the payment (REQ-MB-026). A chargeback
-whose opening told the owner gets no second alert unless the money leaving
-moved credits. The worker shall record each dispute whose chargeback the
+not any credits are on record for the payment (REQ-MB-026). Of a
+chargeback's opening and the money leaving, whichever tells the owner first
+says all the other would, the evidence deadline included, so the other shall
+send no second alert, in either order, unless its own ledger row moved
+credits after the first one's row, which that alert cannot show (a purchase
+mail that confirmed the box in between). The worker shall record each
+dispute whose chargeback the
 owner was told of (`chargebackAlerts`, migration 0067), so the alert goes
-once.
+once, and shall record it only once Resend has taken that alert. **While**
+the alert does not go, the webhook shall answer 500 and leave the event
+unrecorded, so Stripe delivers it again, and a delivery that finds the
+ledger moved already by an earlier delivery of the event shall still send
+it, with the balance and the credits held as that row left them, not as a
+settle would leave them now. Stripe sends `charge.dispute.created` and
+`charge.dispute.funds_withdrawn` at once for a dispute that opens as a
+chargeback, and may deliver either twice, so a delivery shall claim the
+dispute before it alerts (`chargebackAlertClaims`, migration 0069), and only
+the delivery that claimed it shall alert. Another event about the same
+dispute shall leave the alert to the claim and answer 200; the same event,
+while its twin holds the claim, shall answer 500. A claim shall go back when
+its alert does not go, so a delivery that failed to claim the dispute and
+then finds neither a claim nor the alert recorded shall answer 500 as well,
+whichever event it is. A claim older than 10 minutes belongs to a delivery
+that died and shall be taken over. An alert the sweep holds for its
+migration 0065 summary (REQ-MB-032) counts as sent once it is held.
 
 ### REQ-MB-022 — Closing
 
@@ -182,8 +204,9 @@ refused, takes nothing a second time.
 **When** no credits on record name the payment, the worker shall take nothing
 and alert the owner, naming the donor when the payment was a donation. Of
 the `refund.updated` events, only a cancellation shall send that alert: a
-failure is reported once, by `refund.failed`. A
-`charge.dispute.funds_withdrawn` alerts as REQ-MB-021 says.
+failure is reported once, by `refund.failed`. A `charge.dispute.created`
+read as a chargeback, and a `charge.dispute.funds_withdrawn`, alert as
+REQ-MB-021 says.
 
 ### REQ-MB-027 — A whole-price withdrawal settles the payment
 
@@ -221,8 +244,10 @@ UPDATE before it alerts (`refundFailureClaimedAt`, `refundFailureClaimedBy`,
 migration 0068), and only the delivery that claimed it shall alert. Another
 event about the same failure shall leave the owner to the claim and answer
 200; the same event, while its twin holds the claim, shall answer 500. A
-claim shall go back when its alert does not go, and one older than 10
-minutes belongs to a delivery that died and shall be taken over.
+claim shall go back when its alert does not go, so a delivery that failed
+to claim the statement and then finds neither a claim nor the failure
+recorded shall answer 500 as well, whichever event it is. A claim older
+than 10 minutes belongs to a delivery that died and shall be taken over.
 
 ### REQ-MB-029 — A purchase with no consent on record
 
@@ -342,10 +367,25 @@ amounts, and never an email address, a card's details or a secret. An email
 address a log line must name shall be masked (`maskEmail`). What a provider
 answers when it refuses a request (Resend refusing a mail, Google refusing a
 sign-in code) shall be logged with every address in it masked
-(`maskAddresses`). Letters, marks and digits in any script
-(`josé@exämple.com`), every other character RFC 5322 allows in a local part
-(`mary.o'brien@example.com` logs as `m***@***.com`), a quoted local part and
-an address literal (`user@[192.0.2.1]` logs as `u***@***`) are masked whole:
-no character of a local part after its first shows. Punctuation a local part
-may hold is masked with the address when it touches it
-(`'jane@example.com'` logs as `'***@***.com'`).
+(`maskAddresses`). An unquoted local part is any run of characters but a
+space, an @ and those that end an address in text (`"<>()[]\,;:`): letters,
+marks and digits in any script (`josé@exämple.com`), every other character
+RFC 5322 allows in a local part (`mary.o'brien@example.com` logs as
+`m***@***.com`), and a symbol or an emoji, even right before the @
+(`jane€@example.com` logs as `j***@***.com`). It shall be read from where
+its run starts or, when the address before it ends inside the same run
+(`?to=bob@example.org&cc=carol@example.net` logs as
+`?***@***.org&***@***.net`), from where that address ends, so it is masked
+whole however long it is. A quoted local part (`"jane doe"@example.com`)
+and an address literal (`user@[192.0.2.1]` logs as `u***@***`) shall be
+masked whole however long they are too, so no character of a local part
+after its first shows. Punctuation a local part may hold is masked with the
+address when it touches it (`'jane@example.com'` logs as `'***@***.com'`).
+Masking shall take time linear in the length of the text, whatever it
+holds: 50 KB of base64, of escaped quotes, of `a@[` over and over, of
+dotted names or of a query string. For that, two addresses RFC 5321 does
+not allow are left as written, apart from any piece of them that reads as
+an address on its own: one whose quoted local part has more than 64
+characters between its quotes, an escaped pair counting as one, and a
+backslash right before its opening quote, and one whose address literal has
+more than 64 characters between its brackets with a `[` among them.

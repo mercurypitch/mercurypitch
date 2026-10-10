@@ -80,19 +80,22 @@
 // Every refund that moves credits, every dispute, and every payment with
 // nothing on record to take (a donation, a purchase from before migration
 // 0058) sends the billing alert (BILLING_ALERT_EMAIL; wording in
-// stripe-alerts.ts). The 6-hourly sweep (stripe-sweep.ts) applies any of
-// these events the webhook missed, through this same path.
+// stripe-alerts.ts). A chargeback's alert is the one that must arrive: its
+// event answers 500 until Resend takes it (chargeback-alert.ts). The
+// 6-hourly sweep (stripe-sweep.ts) applies any of these events the webhook
+// missed, through this same path.
 
 import type { BillingAlert, CreditsMoved, EventRef, MoneyBackFacts, } from './stripe-alerts'
 import { earlyMoneyBackAlert, moneyBackAlert, nothingOnRecordAlert, notAppliedAlert, } from './stripe-alerts'
 import type { ChargeState, DisputeState, ReadFor, StripeGet, } from './stripe-charge'
-import { anyDisputeHolds, chargeIdOf, disputeFrom, isInquiry, isRecord, keepCharge, loadCharge, markCharge, moneyGoneBack, readCharge, refundEnded, StripeUnavailable, } from './stripe-charge'
+import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, keepCharge, loadCharge, markCharge, moneyGoneBack, readCharge, refundEnded, StripeUnavailable, } from './stripe-charge'
+import { tellChargeback } from './chargeback-alert'
 import type { Env } from './auth'
 import type { MoneyBackResult, StripeEventInput } from './stripe-events'
 import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
 import type { Ledger, LedgerEntry } from './ledger'
-import { readLedger, writeOnLedgerOnce } from './ledger'
+import { ledgerAt, readLedger, writeOnLedgerOnce } from './ledger'
 import { markWithdrawalRefundFailed } from './withdrawal-refund-failed'
 
 /** The ledger reason of a pack's credits, granted when its checkout is paid
@@ -374,7 +377,7 @@ interface SettleInput {
  * attempt reads the ledger, then Stripe, then the terms, and writes under
  * the ledger's version check with the charge it read (keepCharge), so a
  * write never lands on a ledger another event wrote after its read of
- * Stripe.
+ * Stripe. A row an earlier delivery wrote reports the ledger it left.
  */
 async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
   let after: Omit<Settled, 'userId' | 'delta' | 'wrote'> | null = null
@@ -394,14 +397,15 @@ async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
         input.row.mayGiveBack,
       )
       const next = settle(ledger, input.paymentIntent, charge, terms)
+      const left = ledgerAt(ledger, input.row.key)
       after = {
         charge,
         granted: next.granted,
-        held: next.held,
+        held: left ? heldByMoneyBack(left, input.paymentIntent) : next.held,
         takenOtherwise: next.takenOtherwise,
         settledWhole: next.settledWhole,
         keptUsed: next.keptUsed,
-        balance: balanceOf(ledger) + next.delta,
+        balance: left ? balanceOf(left) : balanceOf(ledger) + next.delta,
       }
       return {
         delta: next.delta,
@@ -457,9 +461,13 @@ function alertConfig(env: Env): ResendConfig {
   return { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM }
 }
 
-async function sendAlert(env: Env, alert: BillingAlert | null): Promise<void> {
-  if (alert === null) return
-  await sendBillingAlert(
+/** True once Resend took the alert, or when there is none to send. */
+async function sendAlert(
+  env: Env,
+  alert: BillingAlert | null,
+): Promise<boolean> {
+  if (alert === null) return true
+  return sendBillingAlert(
     alertConfig(env),
     env.BILLING_ALERT_EMAIL ?? '',
     alert.subject,
@@ -467,8 +475,8 @@ async function sendAlert(env: Env, alert: BillingAlert | null): Promise<void> {
   )
 }
 
-/** Where a money-back event's alert goes. */
-type AlertSink = (alert: BillingAlert | null) => Promise<void>
+/** Where a money-back event's alert goes: true once it went. */
+type AlertSink = (alert: BillingAlert | null) => Promise<boolean>
 
 /** To the owner, now; or into `held`, for an event the sweep applies again
  *  after migration 0065 and reports in one summary (stripe-sweep.ts). */
@@ -476,6 +484,7 @@ function alertSink(env: Env, held: BillingAlert[] | undefined): AlertSink {
   if (held === undefined) return (alert) => sendAlert(env, alert)
   return async (alert) => {
     if (alert !== null) held.push(alert)
+    return true
   }
 }
 
@@ -579,33 +588,6 @@ function rowFor(event: StripeEventInput): SettleRow {
   }
 }
 
-/**
- * Whether this event is the first word the owner gets of the dispute's
- * chargeback, recorded when it is (chargebackAlerts, migration 0067): a
- * dispute's opening read as a chargeback says the bank took the money, and
- * so does charge.dispute.funds_withdrawn for a dispute nothing told them of
- * before, one that opened as an inquiry or whose opening is not on record.
- * INSERT OR IGNORE, so of two deliveries at once, one is the news.
- */
-async function chargebackNews(
-  env: Env,
-  event: StripeEventInput,
-  dispute: DisputeState | null,
-  paymentIntent: string | null,
-): Promise<boolean> {
-  if (dispute === null) return false
-  const tells =
-    event.type === 'charge.dispute.funds_withdrawn' ||
-    (event.type === 'charge.dispute.created' && !isInquiry(dispute))
-  if (!tells) return false
-  const res = await env.DB.prepare(
-    'INSERT OR IGNORE INTO chargebackAlerts (disputeId, paymentIntentId, eventId, alertedAt) VALUES (?, ?, ?, ?)',
-  )
-    .bind(dispute.id, paymentIntent, event.id, new Date().toISOString())
-    .run()
-  return res.meta.changes > 0
-}
-
 /** The account a payment's credits went to, or null when no credits on
  *  record name the payment. */
 async function creditOwner(
@@ -658,19 +640,25 @@ async function nothingOnRecord(
   if (event.type === 'refund.updated' && facts.refundEnded !== 'canceled') {
     return
   }
-  // The money leaving for a dispute is news only when nothing told the
-  // owner of that chargeback before.
-  const news = await chargebackNews(env, event, facts.dispute, paymentIntent)
-  if (event.type === 'charge.dispute.funds_withdrawn' && !news) return
-  const userId = paymentIntent === null ? null : await donor(env, paymentIntent)
-  await send(
-    nothingOnRecordAlert(
-      refOf(event),
-      charge,
-      userId === null ? null : { userId },
-      facts,
-    ),
-  )
+  const alert = async () => {
+    const userId =
+      paymentIntent === null ? null : await donor(env, paymentIntent)
+    return send(
+      nothingOnRecordAlert(
+        refOf(event),
+        charge,
+        userId === null ? null : { userId },
+        facts,
+      ),
+    )
+  }
+  // A chargeback's mail goes until Resend takes it (chargeback-alert.ts),
+  // from whichever of its events tells the owner first; the other, with no
+  // credits to move, says nothing more. The money leaving is news only as
+  // a chargeback's.
+  const told = await tellChargeback(env, event, facts.dispute, charge, alert)
+  if (told !== null || event.type === 'charge.dispute.funds_withdrawn') return
+  await alert()
 }
 
 /**
@@ -736,17 +724,26 @@ export async function applyMoneyBack(
     record,
     readCharge: chargeReader(get, chargeId, readFor),
   })
-  if (moved.wrote) {
-    logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
-    const facts = factsOf(event, moved.charge)
-    const news = await chargebackNews(env, event, facts.dispute, paymentIntent)
-    await send(
-      moneyBackAlert(refOf(event), moved.charge, moved, {
-        ...facts,
-        chargebackNews: news,
-      }),
-    )
-  }
+  if (moved.wrote) logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
+  const facts = factsOf(event, moved.charge)
+  const alert = (chargebackNews: boolean) =>
+    moneyBackAlert(refOf(event), moved.charge, moved, {
+      ...facts,
+      chargebackNews,
+    })
+  // A chargeback's mail goes until Resend takes it, from a redelivery too,
+  // which finds the ledger moved already (chargeback-alert.ts), and from
+  // whichever of its events tells the owner first. The other mails only
+  // for credits it moved that the first mail cannot show.
+  const told = await tellChargeback(
+    env,
+    event,
+    facts.dispute,
+    moved.charge,
+    () => send(alert(true)),
+  )
+  if (told === 'sent' || told === 'told') return { kind: 'applied' }
+  if (moved.wrote) await send(alert(false))
   return { kind: 'applied' }
 }
 

@@ -65,6 +65,13 @@ export async function readLedger(env: Env, userId: string): Promise<Ledger> {
   return { rows: results, version: versionOf(results) }
 }
 
+/** The ledger as the row `key` names left it: its rows up to that one.
+ *  Null when the ledger holds no such row. */
+export function ledgerAt(ledger: Ledger, key: string): Ledger | null {
+  const at = ledger.rows.findIndex((row) => row.idempotencyKey === key)
+  return at < 0 ? null : { ...ledger, rows: ledger.rows.slice(0, at + 1) }
+}
+
 /** A row with what names it: its own id, and the Stripe payment behind it. */
 export type NamedLedgerRow = LedgerRow & {
   id: string

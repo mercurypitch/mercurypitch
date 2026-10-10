@@ -26,7 +26,7 @@ import { UNSENT_PURCHASE_MAILS_SQL } from '../src/checkout-consent'
 import worker from '../src/index'
 import { CHECKOUT_CHECKBOX, WITHDRAWAL_TEXT_VERSION, } from '../src/withdrawal-wording'
 import type { SqliteD1Statement } from './sqlite-d1'
-import { applyMigrations, interleaved, justBefore as holdBefore, SqliteD1Database, } from './sqlite-d1'
+import { applyMigrations, heldUntil, interleaved, justBefore as holdBefore, SqliteD1Database, } from './sqlite-d1'
 import { chargeReads } from './stripe-charge-stub'
 
 const WEBHOOK_SECRET = 'whsec_withdrawal_integration'
@@ -4947,5 +4947,57 @@ describe('a failed withdrawal refund delivered more than once (#970 review, F-6)
     ).toBe(200)
     expect(failedAlerts()).toHaveLength(refused + 1)
     expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+
+  it('tells the owner once when a refused delivery gives the claim back while its twin reads it (#975 review, X)', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: refund },
+    }
+    // The twin's read of who holds the claim (claimedElsewhere) waits for
+    // the holder's release, run when its alert does not go.
+    const gate = heldUntil(
+      new SqliteD1Database(sqlite),
+      /^SELECT refundStatus, stripeRefundStatus, refundFailureClaimedBy FROM withdrawals/,
+      /SET refundFailureClaimedAt = NULL, refundFailureClaimedBy = NULL\s+WHERE id = \? AND refundFailureClaimedBy = \?/,
+    )
+    env.DB = gate.d1
+    let twin: Promise<number> | null = null
+    const stubbed = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        const body = typeof init?.body === 'string' ? init.body : ''
+        if (url === RESEND && twin === null && body.includes('refund FAILED')) {
+          // The holder alerts: the twin fails to claim, and waits to read.
+          twin = deliver(event)
+          await Promise.race([gate.arrived, twin])
+        }
+        return stubbed(input, init)
+      },
+    )
+    resendRefuses = (mail) => mail.subject === FAILED
+
+    const holder = await deliver(event)
+    const twinAnswer = await twin
+    env.DB = new SqliteD1Database(sqlite) as unknown as D1Database
+
+    // Neither told the owner, so neither may record the event.
+    expect([holder, twinAnswer]).toEqual([500, 500])
+    expect(billingEventSeen('evt_refund_failed')).toBe(false)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      refundFailureClaimedBy: null,
+    })
+    const refused = failedAlerts().length
+
+    resendRefuses = () => false
+    expect(await deliver(event)).toBe(200)
+    expect(failedAlerts()).toHaveLength(refused + 1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+    expect(billingEventSeen('evt_refund_failed')).toBe(true)
   })
 })

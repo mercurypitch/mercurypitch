@@ -27,11 +27,12 @@
 // that claimed it tells the owner. Another event about the same failure
 // leaves it to that one and answers 'already'; the same event, delivered
 // again while its twin holds the claim, throws, so Stripe sends it once
-// more. A claim goes back when its alert does not go, and one older than
-// CLAIM_STALE_MS belongs to a delivery that died and is taken over. A statement that is gone (its account was deleted
-// since) has nothing to mark, and nothing to say whether the refund had
-// gone through: the owner is told, from what the webhook knows, each time
-// it is called.
+// more. A claim goes back when its alert does not go, so a delivery that
+// finds it gone and the failure not recorded throws as well. One older
+// than CLAIM_STALE_MS belongs to a delivery that died and is taken over.
+// A statement that is gone (its account was deleted since) has nothing to
+// mark, and nothing to say whether the refund had gone through: the owner
+// is told, from what the webhook knows, each time it is called.
 
 import type { Env } from './auth'
 import { formatMoney } from './email'
@@ -129,7 +130,9 @@ function release(env: Env, row: StatementRow, mine: Claim) {
 /** What a delivery that found the statement claimed answers: 'already'
  *  when the failure is recorded, or another event about it holds the
  *  claim and tells the owner (or is delivered again if it cannot). The
- *  same event, held by its twin, throws, so Stripe sends it once more. */
+ *  same event, held by its twin, throws, so Stripe sends it once more, and
+ *  so does any event that finds the claim given back with the failure not
+ *  recorded: the holder's alert did not go. */
 async function claimedElsewhere(
   env: Env,
   row: StatementRow,
@@ -148,7 +151,8 @@ async function claimedElsewhere(
   if (now === null || recorded(now, failure)) return 'already'
   if (
     failure.eventId !== undefined &&
-    now.refundFailureClaimedBy === failure.eventId
+    (now.refundFailureClaimedBy === failure.eventId ||
+      now.refundFailureClaimedBy === null)
   ) {
     throw new RefundFailureNotTold(failure.withdrawalId)
   }

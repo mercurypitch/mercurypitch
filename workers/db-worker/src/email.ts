@@ -69,17 +69,64 @@ export function maskEmail(address: string): string {
   return `${first}***@***${tld}`
 }
 
+// The pieces of ADDRESS. A character of an unquoted local part, of a quoted
+// one (an escaped pair counting as one), and of a domain's label, and a
+// domain.
+const LOCAL_CHAR = String.raw`[^\s@"<>()[\]\\,;:]`
+const QUOTED_CHAR = String.raw`(?:[^"\\\r\n]|\\.)`
+const LABEL_CHAR = String.raw`[\p{L}\p{M}\p{N}-]`
+const DOMAIN = String.raw`${LABEL_CHAR}+(?:\.${LABEL_CHAR}+)*`
+
+// A local part, read in one of these ways. None reads the same text over
+// and over, so masking takes time linear in the length of the text.
+const LOCAL_PART = [
+  // Quoted, for at most 64 characters, from any quote.
+  String.raw`"${QUOTED_CHAR}{0,64}"`,
+  // Quoted, however long, from a quote with no backslash right before it.
+  // A quote inside one always has one, so none starts inside another.
+  String.raw`(?<!\\)"${QUOTED_CHAR}*"`,
+  // Unquoted, from where its run starts.
+  String.raw`(?<!${LOCAL_CHAR})${LOCAL_CHAR}+`,
+  // Unquoted, glued to the address before it, from where that address's
+  // domain ends inside the run: where no domain can carry on, right after
+  // an @ and a domain. A run has one such place at most, and looking back
+  // for the @ stops where a domain could not reach.
+  String.raw`(?!${LABEL_CHAR}|\.${LABEL_CHAR})(?<=@${DOMAIN})${LOCAL_CHAR}+`,
+].join('|')
+
+// What follows the @, read the same way.
+const DOMAIN_PART = [
+  // An address literal, for at most 64 characters.
+  String.raw`\[[^\]\s]{0,64}\]`,
+  // One however long with no "[" in it, so none starts inside another.
+  String.raw`\[[^\]\s[]*\]`,
+  DOMAIN,
+].join('|')
+
 /** Anything that reads like an address, in text a log line carries from
- *  elsewhere (an API's error body, a thrown error): letters, marks and
+ *  elsewhere (an API's error body, a thrown error). An unquoted local part
+ *  is any run of characters but a space, an @ and those that end an
+ *  address in text ("<>()[]\\,;: and the double quote): letters, marks and
  *  digits in any script ("josé@exämple.com"), every other character RFC
- *  5322 allows in a local part (!#$%&'*+-/=?^_`{|}~ and the dot, so
- *  "mary.o'brien@example.com" masks whole), a quoted local part
- *  ("\"quoted local\"@example.com") and an address literal
- *  ("user@[192.0.2.1]"). Punctuation a local part may hold is masked with
- *  the address when it touches it: "'jane@example.com'" logs as
+ *  5322 allows (!#$%&'*+-/=?^_`{|}~ and the dot, so
+ *  "mary.o'brien@example.com" masks whole), and a symbol or an emoji, even
+ *  right before the @, all of which sign-up takes (#970 round-4 review,
+ *  N-5). It is read from where its run starts or, glued to an address
+ *  before it ("?to=bob@example.org&cc=carol@example.net"), from where that
+ *  address ends, so it masks whole however long it is, and a long run with
+ *  no @ in it (a base64 blob) is read once (#970 round-4 review, N-4). A
+ *  quoted local part ("\"quoted local\"@example.com") and an address
+ *  literal ("user@[192.0.2.1]") mask whole however long they are too, but
+ *  for two that RFC 5321 allows neither of: a quoted local part over 64
+ *  characters between its quotes with a backslash right before its opening
+ *  quote, and an address literal over 64 characters between its brackets
+ *  with a "[" among them. Those are left as written, apart from any piece
+ *  of them that reads as an address on its own: read to their end, they
+ *  would make text full of escaped quotes, or of "a@[", slow to mask again
+ *  (#975 review). Punctuation a local part may hold is masked with the
+ *  address when it touches it: "'jane@example.com'" logs as
  *  "'***@***.com'" (#970 review, F-7). */
-const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+const ADDRESS = new RegExp(`(?:${LOCAL_PART})@(?:${DOMAIN_PART})`, 'gu')
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */
