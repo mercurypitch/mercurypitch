@@ -625,8 +625,11 @@ export interface WithdrawalStatement {
   refundMinor: number | null
   currency: string
   refundStatus: 'pending' | 'refunded' | 'failed' | 'manual' | 'none'
-  /** The acknowledgement mail: 'sent' once it went, else on its way or
-   *  failed so far. */
+  /** The refund's own status at Stripe: only 'succeeded' says the money
+   *  went back. Null before Stripe has the refund. */
+  stripeRefundStatus: string | null
+  /** The acknowledgement mail: 'sent' once it went; 'refused' or 'gave-up'
+   *  when Resend refused it for good; else on its way, still being tried. */
   mailStatus: string | null
 }
 

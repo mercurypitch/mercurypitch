@@ -63,6 +63,7 @@ function statement(
     refundMinor: 1800,
     currency: 'eur',
     refundStatus: 'refunded',
+    stripeRefundStatus: 'succeeded',
     mailStatus: 'sent',
     ...overrides,
   }
@@ -196,6 +197,50 @@ describe('PurchaseWithdrawals', () => {
       "Your confirmation email to receipts@example.test hasn't gone out yet. We'll keep trying.",
     )
   })
+
+  /** Confirm a withdrawal of the Plus pack; what the panel says back. */
+  async function confirmWith(reply: WithdrawalStatement): Promise<string> {
+    mocks.fetchWithdrawals.mockResolvedValue(answer())
+    mocks.submitWithdrawal.mockResolvedValue({
+      duplicate: false,
+      statement: reply,
+    })
+    render(() => <PurchaseWithdrawals />)
+    fireEvent.click(
+      (await screen.findAllByTestId('withdraw-link'))[0] as HTMLElement,
+    )
+    fireEvent.input(screen.getByTestId('withdrawal-name'), {
+      target: { value: 'Sam Singer' },
+    })
+    fireEvent.submit(screen.getByTestId('withdrawal-form'))
+    return (await screen.findByTestId('withdrawal-received')).textContent ?? ''
+  }
+
+  it.each(['refused', 'gave-up'])(
+    "says the confirmation email couldn't go once it was given up (%s)",
+    async (mailStatus) => {
+      const received = await confirmWith(
+        statement({ email: 'receipts@example.test', mailStatus }),
+      )
+
+      expect(received).toContain(
+        "We couldn't email this confirmation to receipts@example.test. Your cancellation still counts, and we'll contact you about it.",
+      )
+      expect(received).not.toContain("We'll keep trying")
+    },
+  )
+
+  it.each(['pending', 'requires_action'])(
+    'says the refund has started while Stripe has it %s',
+    async (stripeRefundStatus) => {
+      const received = await confirmWith(statement({ stripeRefundStatus }))
+
+      expect(received).toContain(
+        "We've started a refund of €18.00 to the card or account you paid with.",
+      )
+      expect(received).not.toContain('refunded to the card')
+    },
+  )
 
   it('shows why a statement was refused', async () => {
     mocks.fetchWithdrawals.mockResolvedValue(answer())

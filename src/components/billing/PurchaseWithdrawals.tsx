@@ -7,8 +7,9 @@
 // the form names the buyer, the purchase and where the confirmation goes;
 // "Confirm withdrawal" sends the statement
 // (workers/db-worker/src/withdrawal.ts), and the panel says it arrived,
-// whatever the refund then does, and says the confirmation email went only
-// once it has. A pack keeps the terms its own checkout
+// whatever the refund then does. It says the confirmation email went only
+// once it has, and the refund went back only once Stripe finished it. A
+// pack keeps the terms its own checkout
 // recorded, so the panel asks whatever WITHDRAWAL_MODE says now, and shows
 // only while there is something to show, at the top of the Credits tab,
 // where the purchase mail sends the buyer.
@@ -74,11 +75,18 @@ function consequence(pack: CancellablePack): string {
   return `We'll ${take}refund ${refundOf(pack)}${aside} to the card or account you paid with.`
 }
 
-/** Whether the confirmation email went. Only a sent one is called sent. */
+/** Whether the confirmation email went. Only a sent one is called sent,
+ *  and only one still being tried promises another try. */
 function confirmationState(statement: WithdrawalStatement): string {
-  return statement.mailStatus === 'sent'
-    ? `We've sent a confirmation to ${statement.email}.`
-    : `Your confirmation email to ${statement.email} hasn't gone out yet. We'll keep trying.`
+  switch (statement.mailStatus) {
+    case 'sent':
+      return `We've sent a confirmation to ${statement.email}.`
+    case 'refused':
+    case 'gave-up':
+      return `We couldn't email this confirmation to ${statement.email}. Your cancellation still counts, and we'll contact you about it.`
+    default:
+      return `Your confirmation email to ${statement.email} hasn't gone out yet. We'll keep trying.`
+  }
 }
 
 /** Where the refund of a statement stands. */
@@ -89,6 +97,10 @@ function refundState(statement: WithdrawalStatement): string {
       : formatPrice(statement.refundMinor, statement.currency)
   switch (statement.refundStatus) {
     case 'refunded':
+      // Stripe has the refund; only once it succeeded has the money gone.
+      if (statement.stripeRefundStatus !== 'succeeded') {
+        return `We've started a refund of ${money ?? 'what you paid'} to the card or account you paid with.`
+      }
       return `${money ?? 'Your refund'} refunded to the card or account you paid with.`
     case 'none':
       return 'There was nothing left to refund.'
