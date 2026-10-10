@@ -291,7 +291,11 @@ describe('maskAddresses', () => {
   // local part is now read from where its run starts, a quoted one to its
   // end only from a quote with no backslash right before it, and an address
   // literal to its end only when no "[" is in it, so none of those reads
-  // starts inside another. Any other read stops after 64 characters.
+  // starts inside another. Any other read stops after 64 characters, but
+  // one: a local part glued to the address before it is read from where
+  // that address ends, once in a run at most, looked for only where no
+  // domain can carry on and only after an @. Dotted names and a query
+  // string time those two conditions.
   const BASE64 =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   const RUNS = [
@@ -302,6 +306,8 @@ describe('maskAddresses', () => {
     ['hex', '0123456789abcdef'.repeat(3_125)],
     ['escaped quotes', `"${'\\"'.repeat(25_000)}`],
     ['"a@[" over and over', 'a@['.repeat(16_667)],
+    ['dotted names', 'a.'.repeat(25_000)],
+    ['a query string', 'a=b&'.repeat(12_500)],
   ] as const
 
   /** The fastest of three runs, in milliseconds: one slow run is noise. */
@@ -321,6 +327,33 @@ describe('maskAddresses', () => {
     expect(maskAddresses(`${'n'.repeat(60)}0123456789@example.com`)).toBe(
       'n***@***.com',
     )
+  })
+
+  // With no space between them, the run an address's local part is in
+  // starts inside the address before it. Main masked these.
+  it.each([
+    [
+      'in a query string',
+      '?to=bob@example.org&cc=carol@example.net',
+      '?***@***.org&***@***.net',
+    ],
+    [
+      'after a slash',
+      'bob@example.org/carol@example.net',
+      'b***@***.org/***@***.net',
+    ],
+    [
+      'after two dots',
+      'bob@example.org..carol@example.net',
+      'b***@***.org.***@***.net',
+    ],
+    [
+      'with a local part of 70 characters',
+      `bob@example.org&${'c'.repeat(70)}@example.net`,
+      'b***@***.org&***@***.net',
+    ],
+  ])('masks an address glued to the one before it, %s', (_, input, masked) => {
+    expect(maskAddresses(input)).toBe(masked)
   })
 
   // Past 64 characters too, as main masked them (#975 review).

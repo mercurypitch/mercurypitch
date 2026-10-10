@@ -373,16 +373,19 @@ marks and digits in any script (`josé@exämple.com`), every other character
 RFC 5322 allows in a local part (`mary.o'brien@example.com` logs as
 `m***@***.com`), and a symbol or an emoji, even right before the @
 (`jane€@example.com` logs as `j***@***.com`). It shall be read from where
-its run starts, so it is masked whole however long it is. A quoted local
-part (`"jane doe"@example.com`) and an address literal (`user@[192.0.2.1]`
-logs as `u***@***`) shall be masked whole however long they are too, so no
-character of a local part after its first shows. Punctuation a local part
-may hold is masked with the address when it touches it
-(`'jane@example.com'` logs as `'***@***.com'`). Masking shall take time
-linear in the length of the text, whatever it holds: 50 KB of base64, of
-escaped quotes, or of `a@[` over and over. For that, two addresses RFC 5321
-does not allow are left as written, apart from any piece of them that reads
-as an address on its own: one whose quoted local part has more than 64
+its run starts or, when the address before it ends inside the same run
+(`?to=bob@example.org&cc=carol@example.net` logs as
+`?***@***.org&***@***.net`), from where that address ends, so it is masked
+whole however long it is. A quoted local part (`"jane doe"@example.com`)
+and an address literal (`user@[192.0.2.1]` logs as `u***@***`) shall be
+masked whole however long they are too, so no character of a local part
+after its first shows. Punctuation a local part may hold is masked with the
+address when it touches it (`'jane@example.com'` logs as `'***@***.com'`).
+Masking shall take time linear in the length of the text, whatever it
+holds: 50 KB of base64, of escaped quotes, of `a@[` over and over, of
+dotted names or of a query string. For that, two addresses RFC 5321 does
+not allow are left as written, apart from any piece of them that reads as
+an address on its own: one whose quoted local part has more than 64
 characters between its quotes, an escaped pair counting as one, and a
 backslash right before its opening quote, and one whose address literal has
 more than 64 characters between its brackets with a `[` among them.
