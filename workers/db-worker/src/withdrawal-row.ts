@@ -59,6 +59,10 @@ export interface StatementRow {
   mailError?: string | null
   mailWarnedAt?: string | null
   refundHandedOverAt?: string | null
+  /** Migration 0068: the claim of the delivery telling the owner that the
+   *  refund failed (withdrawal-refund-failed.ts). */
+  refundFailureClaimedAt?: string | null
+  refundFailureClaimedBy?: string | null
 }
 
 /** Whether the statement knows what was paid. */

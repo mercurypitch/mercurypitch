@@ -530,6 +530,7 @@ async function withdrawalRefundEnded(
   const refund = event.object
   const answer = await markWithdrawalRefundFailed(env, {
     withdrawalId,
+    eventId: event.id,
     refundId: typeof refund.id === 'string' ? refund.id : '',
     stripeStatus: ended,
     reason:

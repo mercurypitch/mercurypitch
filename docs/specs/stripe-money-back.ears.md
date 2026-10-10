@@ -19,8 +19,9 @@
 `workers/db-worker/src/email.ts` (`maskEmail`, `maskAddresses`),
 `workers/db-worker/src/auth.ts` (`handleGoogleCallback`),
 `workers/db-worker/migrations/0064_stripe_charges.sql`,
-`workers/db-worker/migrations/0065_reapply_money_back_events.sql` and
-`workers/db-worker/migrations/0067_chargeback_alerts.sql`.
+`workers/db-worker/migrations/0065_reapply_money_back_events.sql`,
+`workers/db-worker/migrations/0067_chargeback_alerts.sql` and
+`workers/db-worker/migrations/0068_withdrawal_refund_failure_claims.sql`.
 
 **Tests:** `workers/db-worker/node-tests/stripe-money-back-integration.test.ts`,
 `workers/db-worker/node-tests/stripe-webhook-hygiene-integration.test.ts`,
@@ -213,7 +214,15 @@ status. The alert shall say the refund failed after it went through only
 when the statement records that Stripe had reported it succeeded; a refund
 still pending, and one whose statement is gone, it shall report as failed.
 **While** the owner's alert does not go, the webhook shall answer 500 and
-leave the event unrecorded, so Stripe delivers it again.
+leave the event unrecorded, so Stripe delivers it again. Stripe sends
+`refund.failed` and `refund.updated` for a failure at once, and may deliver
+either twice, so a delivery shall claim the statement with a conditional
+UPDATE before it alerts (`refundFailureClaimedAt`, `refundFailureClaimedBy`,
+migration 0068), and only the delivery that claimed it shall alert. Another
+event about the same failure shall leave the owner to the claim and answer
+200; the same event, while its twin holds the claim, shall answer 500. A
+claim shall go back when its alert does not go, and one older than 10
+minutes belongs to a delivery that died and shall be taken over.
 
 ### REQ-MB-029 — A purchase with no consent on record
 

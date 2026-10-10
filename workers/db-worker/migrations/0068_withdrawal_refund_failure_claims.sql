@@ -1,0 +1,26 @@
+-- 0068_withdrawal_refund_failure_claims.sql — one alert for a withdrawal
+-- refund that fails, however its events arrive.
+--
+-- When Stripe fails a withdrawal's refund, it sends refund.failed and
+-- refund.updated at the same moment, and either can be delivered twice.
+-- Each goes to markWithdrawalRefundFailed (withdrawal-refund-failed.ts),
+-- which tells the owner to refund by hand. A delivery now claims the
+-- statement before it alerts, with a conditional UPDATE, and only the one
+-- that claimed it sends the alert:
+--
+--   refundFailureClaimedAt: when the claim was taken. A claim older than
+--     10 minutes belongs to a delivery that died, and the next one takes
+--     it over.
+--   refundFailureClaimedBy: the Stripe event that took it. The same event
+--     delivered again while it is held answers 500, so Stripe sends it once
+--     more; another event about the same failure leaves the owner to it.
+--
+-- Both go back to NULL when the failure is recorded, and when the alert
+-- does not go, so the next delivery tells the owner.
+--
+-- No personal data: a time and a Stripe event id.
+--
+-- Purely additive, like 0066: new nullable columns change nothing other
+-- branches wrote on the shared preview database.
+ALTER TABLE withdrawals ADD COLUMN refundFailureClaimedAt TEXT;
+ALTER TABLE withdrawals ADD COLUMN refundFailureClaimedBy TEXT;

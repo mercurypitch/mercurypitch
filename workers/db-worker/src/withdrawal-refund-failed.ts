@@ -21,7 +21,14 @@
 // over (refundHandedOverAt), so no sweep tells again: until then this
 // throws, so the webhook answers 500 and Stripe sends the event again. Once per
 // statement and Stripe status: the same failure again answers 'already'
-// and tells nobody. A statement that is gone (its account was deleted
+// and tells nobody. Stripe sends refund.failed and refund.updated for a
+// failure at the same moment, and may deliver either twice, so a delivery
+// claims the statement before it alerts (migration 0068), and only the one
+// that claimed it tells the owner. Another event about the same failure
+// leaves it to that one and answers 'already'; the same event, delivered
+// again while its twin holds the claim, throws, so Stripe sends it once
+// more. A claim goes back when its alert does not go, and one older than
+// CLAIM_STALE_MS belongs to a delivery that died and is taken over. A statement that is gone (its account was deleted
 // since) has nothing to mark, and nothing to say whether the refund had
 // gone through: the owner is told, from what the webhook knows, each time
 // it is called.
@@ -42,6 +49,9 @@ export interface FailedRefund {
   stripeStatus: string
   /** Stripe's failure_reason, when it gave one. */
   reason?: string | null
+  /** The Stripe event that says so, which claims the statement while it
+   *  tells the owner. */
+  eventId?: string
   /** What the refund object says, for the alert when the statement is
    *  gone. */
   paymentIntentId?: string | null
@@ -61,6 +71,88 @@ export class RefundFailureNotTold extends Error {
     )
     this.name = 'RefundFailureNotTold'
   }
+}
+
+/** How long a claim on a statement holds: longer than any delivery takes
+ *  to alert and record, so an older one belongs to a delivery that died. */
+const CLAIM_STALE_MS = 10 * 60_000
+
+/** Whether the statement records this failure already. */
+function recorded(
+  row: Pick<StatementRow, 'refundStatus' | 'stripeRefundStatus'>,
+  failure: FailedRefund,
+): boolean {
+  return (
+    row.refundStatus === 'failed' &&
+    row.stripeRefundStatus === failure.stripeStatus
+  )
+}
+
+interface Claim {
+  by: string
+  at: string
+}
+
+/** Claim the statement to tell the owner of its failed refund: null when
+ *  another delivery holds a claim that is not stale, or the failure is
+ *  recorded already. */
+async function claim(
+  env: Env,
+  row: StatementRow,
+  failure: FailedRefund,
+): Promise<Claim | null> {
+  const mine = {
+    by: failure.eventId ?? crypto.randomUUID(),
+    at: new Date().toISOString(),
+  }
+  const stale = new Date(Date.now() - CLAIM_STALE_MS).toISOString()
+  const res = await env.DB.prepare(
+    `UPDATE withdrawals
+        SET refundFailureClaimedAt = ?, refundFailureClaimedBy = ?
+      WHERE id = ? AND NOT (refundStatus = 'failed' AND stripeRefundStatus IS ?)
+        AND (refundFailureClaimedAt IS NULL OR refundFailureClaimedAt < ?)`,
+  )
+    .bind(mine.at, mine.by, row.id, failure.stripeStatus, stale)
+    .run()
+  return res.meta.changes > 0 ? mine : null
+}
+
+/** Give a claim back, if it is still this delivery's. */
+function release(env: Env, row: StatementRow, mine: Claim) {
+  return env.DB.prepare(
+    `UPDATE withdrawals
+        SET refundFailureClaimedAt = NULL, refundFailureClaimedBy = NULL
+      WHERE id = ? AND refundFailureClaimedBy = ? AND refundFailureClaimedAt = ?`,
+  ).bind(row.id, mine.by, mine.at)
+}
+
+/** What a delivery that found the statement claimed answers: 'already'
+ *  when the failure is recorded, or another event about it holds the
+ *  claim and tells the owner (or is delivered again if it cannot). The
+ *  same event, held by its twin, throws, so Stripe sends it once more. */
+async function claimedElsewhere(
+  env: Env,
+  row: StatementRow,
+  failure: FailedRefund,
+): Promise<FailedRefundAnswer> {
+  const now = await env.DB.prepare(
+    'SELECT refundStatus, stripeRefundStatus, refundFailureClaimedBy FROM withdrawals WHERE id = ?',
+  )
+    .bind(row.id)
+    .first<
+      Pick<
+        StatementRow,
+        'refundStatus' | 'stripeRefundStatus' | 'refundFailureClaimedBy'
+      >
+    >()
+  if (now === null || recorded(now, failure)) return 'already'
+  if (
+    failure.eventId !== undefined &&
+    now.refundFailureClaimedBy === failure.eventId
+  ) {
+    throw new RefundFailureNotTold(failure.withdrawalId)
+  }
+  return 'already'
 }
 
 /** Whether Stripe had said the statement's refund went through. */
@@ -132,12 +224,9 @@ export async function markWithdrawalRefundFailed(
     if (!told) throw new RefundFailureNotTold(failure.withdrawalId)
     return 'not-found'
   }
-  if (
-    row.refundStatus === 'failed' &&
-    row.stripeRefundStatus === failure.stripeStatus
-  ) {
-    return 'already'
-  }
+  if (recorded(row, failure)) return 'already'
+  const mine = await claim(env, row, failure)
+  if (mine === null) return claimedElsewhere(env, row, failure)
   const money = priceKnown(row)
     ? ` ${formatMoney(row.refundMinor, row.currency)}`
     : ''
@@ -145,23 +234,26 @@ export async function markWithdrawalRefundFailed(
   const when = afterSuccess ? ' after it went through' : ''
   const subject = `Withdrawal: refund FAILED${when}, refund${money} by hand`
   if (!(await alert(env, subject, failedLines(row, failure)))) {
+    await release(env, row, mine).run()
     throw new RefundFailureNotTold(failure.withdrawalId)
   }
-  await env.DB.prepare(
-    `UPDATE withdrawals
-        SET refundStatus = 'failed', stripeRefundStatus = ?,
-            stripeRefundId = COALESCE(stripeRefundId, ?), refundError = ?,
-            refundHandedOverAt = ?
-      WHERE id = ? AND NOT (refundStatus = 'failed' AND stripeRefundStatus IS ?)`,
-  )
-    .bind(
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE withdrawals
+          SET refundStatus = 'failed', stripeRefundStatus = ?,
+              stripeRefundId = COALESCE(stripeRefundId, ?), refundError = ?,
+              refundHandedOverAt = ?,
+              refundFailureClaimedAt = NULL, refundFailureClaimedBy = NULL
+        WHERE id = ? AND NOT (refundStatus = 'failed' AND stripeRefundStatus IS ?)`,
+    ).bind(
       failure.stripeStatus,
       failure.refundId,
       whyFailed(failure, afterSuccess),
       new Date().toISOString(),
       row.id,
       failure.stripeStatus,
-    )
-    .run()
+    ),
+    release(env, row, mine),
+  ])
   return 'recorded'
 }

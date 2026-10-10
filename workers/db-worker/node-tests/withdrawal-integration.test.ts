@@ -4772,3 +4772,180 @@ describe('Settings › Credits for an account with many packs (#970 review, F-5)
     expect((await listFor(sam)).body.packs).toHaveLength(listed - 1)
   })
 })
+
+describe('a failed withdrawal refund delivered more than once (#970 review, F-6)', () => {
+  const FAILED = `${BILLING}Withdrawal: refund FAILED after it went through, refund €20.00 by hand`
+
+  /** The withdrawal's refund, as Stripe sends it once it failed. */
+  async function failedWithdrawalRefund() {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const [made] = refundsMade
+    if (made === undefined) throw new Error('no refund was made')
+    made.status = 'failed'
+    made.failure_reason = 'expired_or_canceled_card'
+    const refund = { ...made, charge: 'ch_pi_plus', currency: 'eur' }
+    return { sam, plus, refund }
+  }
+
+  function failedAlerts(): string[] {
+    return subjects(alerts()).filter((subject) => subject === FAILED)
+  }
+
+  it('tells the owner once when refund.failed and refund.updated arrive at once', async () => {
+    const { sam, plus, refund } = await failedWithdrawalRefund()
+
+    env.DB = interleaved(new SqliteD1Database(sqlite))
+    const answers = await Promise.all([
+      deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+      deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ])
+
+    expect(failedAlerts()).toHaveLength(1)
+    expect(answers).toEqual([200, 200])
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+      refundFailureClaimedAt: null,
+    })
+    expect(balance(sam.userId)).toBe(0)
+  })
+
+  it('tells the owner once when one event is delivered twice at once', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: refund },
+    }
+
+    env.DB = interleaved(new SqliteD1Database(sqlite))
+    const answers = await Promise.all([deliver(event), deliver(event)])
+
+    // A delivery that finds its twin still holding the claim answers 500,
+    // so Stripe sends it again; one that finds the failure recorded, 200.
+    expect(failedAlerts()).toHaveLength(1)
+    expect(answers).toContain(200)
+    expect(answers.every((answer) => answer === 200 || answer === 500)).toBe(
+      true,
+    )
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+    expect(await deliver(event)).toBe(200)
+    expect(failedAlerts()).toHaveLength(1)
+  })
+
+  /** A claim on the statement, `minutes` old, by `event`. */
+  function claimedBy(purchaseId: string, event: string, minutes: number) {
+    sqlite
+      .prepare(
+        `UPDATE withdrawals SET refundFailureClaimedAt = ?, refundFailureClaimedBy = ?
+          WHERE purchaseId = ?`,
+      )
+      .run(
+        new Date(Date.now() - minutes * 60_000).toISOString(),
+        event,
+        purchaseId,
+      )
+  }
+
+  it('answers 500 to an event its twin is telling the owner of, and tells them once that twin is gone', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    const event = {
+      id: 'evt_refund_failed',
+      type: 'refund.failed',
+      data: { object: refund },
+    }
+    claimedBy(plus, 'evt_refund_failed', 1)
+
+    expect(await deliver(event)).toBe(500)
+    expect(failedAlerts()).toEqual([])
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+
+    // The twin died: 11 minutes on, its claim is stale.
+    claimedBy(plus, 'evt_refund_failed', 11)
+    expect(await deliver(event)).toBe(200)
+    expect(failedAlerts()).toHaveLength(1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+
+  it('leaves the owner to another event about the same failure while it holds the claim', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    claimedBy(plus, 'evt_refund_updated', 1)
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(failedAlerts()).toEqual([])
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      refundFailureClaimedBy: 'evt_refund_updated',
+    })
+  })
+
+  it('tells the owner when a delivery that claimed the statement died before it did', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    // A delivery claimed the statement 11 minutes ago and never finished.
+    claimedBy(plus, 'evt_died', 11)
+
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      refundFailureClaimedAt: null,
+      refundFailureClaimedBy: null,
+    })
+    expect(failedAlerts()).toHaveLength(1)
+  })
+
+  it('leaves the owner to the delivery that holds a live claim, and hands it back when its alert fails', async () => {
+    const { plus, refund } = await failedWithdrawalRefund()
+    resendRefuses = (mail) =>
+      mail.subject.includes('refund FAILED after it went through')
+
+    // refund.updated claims the statement, and its alert does not go.
+    expect(
+      await deliver({
+        id: 'evt_refund_updated',
+        type: 'refund.updated',
+        data: { object: refund },
+      }),
+    ).toBe(500)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      refundFailureClaimedAt: null,
+    })
+    const refused = failedAlerts().length
+
+    // The claim was handed back, so refund.failed tells the owner.
+    resendRefuses = () => false
+    expect(
+      await deliver({
+        id: 'evt_refund_failed',
+        type: 'refund.failed',
+        data: { object: refund },
+      }),
+    ).toBe(200)
+    expect(failedAlerts()).toHaveLength(refused + 1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+})
