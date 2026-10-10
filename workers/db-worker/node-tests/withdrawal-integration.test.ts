@@ -26,7 +26,7 @@ import { UNSENT_PURCHASE_MAILS_SQL } from '../src/checkout-consent'
 import worker from '../src/index'
 import { CHECKOUT_CHECKBOX, WITHDRAWAL_TEXT_VERSION, } from '../src/withdrawal-wording'
 import type { SqliteD1Statement } from './sqlite-d1'
-import { applyMigrations, interleaved, SqliteD1Database } from './sqlite-d1'
+import { applyMigrations, interleaved, justBefore as holdBefore, SqliteD1Database, } from './sqlite-d1'
 import { chargeReads } from './stripe-charge-stub'
 
 const WEBHOOK_SECRET = 'whsec_withdrawal_integration'
@@ -602,28 +602,10 @@ function failNext(sql: RegExp, times = 1): void {
 }
 
 /** `act` runs, and finishes, just before the next statement matching `sql`
- *  is run: another request landing in between a read and its write. */
+ *  is written, alone or in a batch: another request landing in between a
+ *  read and its write. */
 function justBefore(sql: RegExp, act: () => Promise<unknown>): void {
-  const db = env.DB as unknown as SqliteD1Database
-  const prepare = db.prepare.bind(db)
-  let left = 1
-  const delayed = (statement: SqliteD1Statement): SqliteD1Statement => {
-    const bind = statement.bind.bind(statement)
-    const run = statement.run.bind(statement)
-    statement.bind = (...values: Parameters<SqliteD1Statement['bind']>) =>
-      delayed(bind(...values))
-    statement.run = async () => {
-      await act()
-      return run()
-    }
-    return statement
-  }
-  db.prepare = (text: string) => {
-    const statement = prepare(text)
-    if (left <= 0 || !sql.test(text)) return statement
-    left -= 1
-    return delayed(statement)
-  }
+  holdBefore(env.DB as unknown as SqliteD1Database, sql, act)
 }
 
 beforeEach(() => {

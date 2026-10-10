@@ -14,8 +14,11 @@
 // what changed, Stripe's API says what is true now.
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { SqliteD1Database } from './sqlite-d1'
+import { justBefore } from './sqlite-d1'
+import type { StripeEvent } from './stripe-fake'
 import type { Harness, Singer } from './stripe-harness'
-import { alerts, balance, deliver, openHarness, recorded, register, spend, takeBacks, } from './stripe-harness'
+import { alerts, balance, deliver, openHarness, recorded, register, spend, sweep, takeBacks, } from './stripe-harness'
 
 let h: Harness
 
@@ -38,6 +41,23 @@ function setSongCost(credits: number): void {
   h.sqlite
     .prepare("UPDATE pricingPlans SET credits = ? WHERE id = 'tier-runpod-gpu'")
     .run(credits)
+}
+
+function db(): SqliteD1Database {
+  return h.env.DB as unknown as SqliteD1Database
+}
+
+/** The guarded write of a ledger row (ledger.ts, writeOnLedgerOnce). */
+const LEDGER_WRITE =
+  /INSERT OR IGNORE INTO creditLedger[\s\S]*SELECT COUNT\(\*\)/
+
+/** What stripeCharges keeps of the payment's charge. */
+function savedCharge(paymentIntent: string): unknown {
+  return h.sqlite
+    .prepare(
+      'SELECT amount, amountRefunded, disputes FROM stripeCharges WHERE paymentIntentId = ?',
+    )
+    .get(paymentIntent)
 }
 
 describe('a refund', () => {
@@ -189,7 +209,7 @@ describe('a refund', () => {
     )
   })
 
-  it('writes nothing for a refund update that moves no money', async () => {
+  it('writes a row that moves nothing, and sends no alert, for a refund update that moves no money', async () => {
     const singer = await register(h, 'traced-refund@example.com')
     const pi = await bought(singer)
     await deliver(h, h.stripe.refund(pi, 500))
@@ -197,9 +217,15 @@ describe('a refund', () => {
 
     const res = await deliver(h, traced)
 
+    // The row moves nothing; writing it is what makes a write that read
+    // Stripe before this event read again (ledger.ts, the version check).
     expect(res).toEqual({ status: 200, body: { received: true } })
     expect(recorded(h, traced.id)).toBe(true)
-    expect(takeBacks(h, singer.userId)).toHaveLength(1)
+    expect(takeBacks(h, singer.userId)).toMatchObject([
+      { delta: -30 },
+      { delta: 0, idempotencyKey: `clawback:${traced.id}` },
+    ])
+    expect(balance(h, singer.userId)).toBe(0)
     expect(alerts(h)).toHaveLength(1)
   })
 
@@ -365,6 +391,96 @@ describe('a dispute', () => {
 
     expect(held).toBe(0)
     expect(balance(h, singer.userId)).toBe(30)
+  })
+})
+
+describe('an event whose Stripe read is older than the ledger', () => {
+  // Another delivery for the same payment lands between this one's read of
+  // Stripe and its write. Every write reads Stripe again after the ledger,
+  // and every event writes its row, so the last row written always comes
+  // from the newest read.
+
+  it('keeps the credits taken back when the whole price is refunded again before a failed refund gives them back', async () => {
+    const singer = await register(h, 'stale-giveback@example.com')
+    const pi = await bought(singer)
+    await deliver(h, h.stripe.refund(pi, 500))
+    const { failed } = h.stripe.failLastRefund(pi)
+
+    // refund.failed has read Stripe (nothing refunded any more) when the
+    // owner refunds the whole price again, and that refund's charge.refunded
+    // is applied before refund.failed writes.
+    justBefore(db(), LEDGER_WRITE, async () => {
+      expect((await deliver(h, h.stripe.refund(pi, 500))).status).toBe(200)
+    })
+    expect((await deliver(h, failed)).status).toBe(200)
+    await sweep(h)
+
+    // Stripe: the second refund sent the whole EUR 5.00 back.
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(savedCharge(pi)).toMatchObject({ amountRefunded: 500 })
+  })
+
+  it('takes nothing for a refund that failed before its take was written', async () => {
+    const singer = await register(h, 'stale-take@example.com')
+    const pi = await bought(singer)
+    const refunded = h.stripe.refund(pi, 500)
+
+    // charge.refunded has read Stripe (the refund on its way) when the
+    // refund fails, and refund.failed is applied before charge.refunded
+    // writes.
+    let echo: StripeEvent | null = null
+    justBefore(db(), LEDGER_WRITE, async () => {
+      const ended = h.stripe.failLastRefund(pi)
+      echo = ended.updated
+      expect((await deliver(h, ended.failed)).status).toBe(200)
+    })
+    expect((await deliver(h, refunded)).status).toBe(200)
+    // Stripe's second event for the same failure, delivered late.
+    if (echo !== null) await deliver(h, echo)
+    await sweep(h)
+
+    // Stripe: the refund failed, and the money stayed with the shop.
+    expect(balance(h, singer.userId)).toBe(30)
+    expect(savedCharge(pi)).toMatchObject({ amountRefunded: 0 })
+  })
+
+  it('settles a purchase that lands after its refund from what Stripe says then, not from an older read', async () => {
+    const singer = await register(h, 'stale-early@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    const pi = String(purchase.data.object.payment_intent)
+    const refunded = h.stripe.refund(pi, 500)
+
+    // Neither event finds the purchase. charge.refunded has read Stripe
+    // (refunded whole) when the refund fails, and refund.failed keeps what
+    // Stripe says before charge.refunded keeps its older read.
+    justBefore(db(), /INTO stripeCharges/, async () => {
+      const ended = h.stripe.failLastRefund(pi)
+      expect((await deliver(h, ended.failed)).status).toBe(200)
+    })
+    expect((await deliver(h, refunded)).status).toBe(200)
+    expect((await deliver(h, purchase)).status).toBe(200)
+
+    // Stripe: the refund failed. The purchase keeps its 30 credits.
+    expect(balance(h, singer.userId)).toBe(30)
+  })
+
+  it('never keeps an older read of Stripe over a newer one', async () => {
+    const singer = await register(h, 'stale-keep@example.com')
+    const pi = await bought(singer)
+    await deliver(h, h.stripe.refund(pi, 500))
+    const { updated, failed } = h.stripe.failLastRefund(pi)
+    await deliver(h, failed)
+
+    // The late refund.updated for the same failure has read Stripe (nothing
+    // refunded) when the owner refunds the whole price again, and that
+    // refund is applied, and kept, before the late event leaves its read.
+    justBefore(db(), /INTO stripeCharges/, async () => {
+      expect((await deliver(h, h.stripe.refund(pi, 500))).status).toBe(200)
+    })
+    expect((await deliver(h, updated)).status).toBe(200)
+
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(savedCharge(pi)).toMatchObject({ amountRefunded: 500 })
   })
 })
 

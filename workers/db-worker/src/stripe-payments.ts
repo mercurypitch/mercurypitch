@@ -26,19 +26,22 @@
 //     money stayed with us, so what it took comes back. Any other
 //     refund.updated is applied like charge.refunded.
 //
-// Each event is applied from the charge as Stripe reports it at that moment
-// (stripe-charge.ts, readCharge), so the order events arrive in does not
-// matter, and writes one ledger row, `purchase-refund` or
-// `purchase-dispute`, keyed `clawback:<event id>` with the PaymentIntent in
-// jobRef: the row moves what refunds and disputes hold to what is due now.
-// A refund that ended writes its row under `clawback:refund-ended:<refund
-// id>` instead, so refund.failed and the refund.updated Stripe sends with it
-// give back once, and a refund.updated that moves nothing writes nothing
-// (Stripe sends one when a refund's trace number arrives). A redelivered
-// event writes nothing; an event that arrives before its purchase is kept
-// (stripeCharges), and the purchase takes it back when it lands
-// (settleEarlyMoneyBack). Only a dispute closing or a refund ending gives
-// credits back, so an old event read late never does.
+// Each event is applied from the charge as Stripe reports it (stripe-
+// charge.ts, readCharge), read after the ledger on every attempt of the
+// write, so the order events arrive in does not matter. Each writes one
+// ledger row, `purchase-refund` or `purchase-dispute`, keyed `clawback:<event
+// id>` with the PaymentIntent in jobRef: the row moves what refunds and
+// disputes hold to what is due now, and is written even when that moves
+// nothing (a refund.updated for a refund's trace number, say). Writing it is
+// what makes any write that read Stripe before this event read again
+// (ledger.ts, the version check), so the last row always comes from the
+// newest read. A refund that ended writes its row under
+// `clawback:refund-ended:<refund id>` instead, so refund.failed and the
+// refund.updated Stripe sends with it give back once. A redelivered event
+// writes nothing. An event that arrives before its purchase leaves word of
+// it (stripeCharges), and the purchase reads Stripe and takes back what is
+// due when it lands (settleEarlyMoneyBack). Only a dispute closing or a
+// refund ending gives credits back, so an old event read late never does.
 //
 // A withdrawal (withdrawal.ts) takes a pack's unused credits itself, as
 // `withdrawal` and `withdrawal-bonus` rows with the PaymentIntent in jobRef,
@@ -72,8 +75,8 @@
 
 import type { BillingAlert, CreditsMoved, EventRef, MoneyBackFacts, } from './stripe-alerts'
 import { earlyMoneyBackAlert, moneyBackAlert, nothingOnRecordAlert, notAppliedAlert, } from './stripe-alerts'
-import type { ChargeState, DisputeState, StripeGet } from './stripe-charge'
-import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, loadCharge, moneyGoneBack, readCharge, refundEnded, saveCharge, } from './stripe-charge'
+import type { ChargeState, DisputeState, ReadFor, StripeGet, } from './stripe-charge'
+import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, keepCharge, loadCharge, markCharge, moneyGoneBack, readCharge, refundEnded, StripeUnavailable, } from './stripe-charge'
 import type { Env } from './auth'
 import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
@@ -339,34 +342,35 @@ export function settle(
   }
 }
 
-/** The terms settling a payment depends on beyond its event, read after
- *  each read of the ledger. */
-type TermsOf = (ledger: Ledger, mayGiveBack: boolean) => Promise<SettleTerms>
-
 /**
- * Reads the terms of the payment `paymentIntent` names. A withdrawal is
- * looked for after every read of the ledger: it writes its statement and its
- * rows in one batch, so a statement a read missed comes with rows that make
- * the write lose and read again. Whether the purchase has a consent on
- * record is asked once, and only of a charge refunded whole.
+ * The terms of settling the payment `paymentIntent` names against `ledger`
+ * and `charge`, both as just read. A withdrawal is looked for after every
+ * read of the ledger: it writes its statement and its rows in one batch, so
+ * a statement a read missed comes with rows that make the write lose and
+ * read again. Whether the purchase has a consent on record is asked only of
+ * a charge refunded whole.
  */
-async function termsReader(
+async function termsOf(
   env: Env,
   record: PurchaseRecord,
   userId: string,
   paymentIntent: string,
   charge: ChargeState,
-): Promise<TermsOf> {
+  ledger: Ledger,
+  mayGiveBack: boolean,
+): Promise<SettleTerms> {
+  const whole = await settledWhole(env, paymentIntent)
   const noConsent =
+    !whole &&
     refundedWhole(charge) &&
     (await record.noConsent(env, userId, paymentIntent))
-  return async (ledger, mayGiveBack) => ({
+  return {
     mayGiveBack,
-    settledWhole: await settledWhole(env, paymentIntent),
+    settledWhole: whole,
     unusedWithoutConsent: noConsent
       ? record.unused(ledger.rows, paymentIntent)
       : null,
-  })
+  }
 }
 
 /** The row one event writes: its key, its reason, and whether it may give
@@ -380,34 +384,50 @@ interface SettleRow {
 interface Settled extends CreditsMoved {
   /** False when an earlier or a concurrent delivery wrote the row. */
   wrote: boolean
+  /** The charge as Stripe reported it to the read the row came from. */
+  charge: ChargeState
 }
 
-/** Write the payment's settlement on its owner's ledger, once per key. */
-async function settlePayment(
-  env: Env,
-  userId: string,
-  paymentIntent: string,
-  charge: ChargeState,
-  row: SettleRow,
-  termsOf: TermsOf,
-): Promise<Settled> {
-  let after = {
-    granted: 0,
-    held: 0,
-    takenOtherwise: 0,
-    settledWhole: false,
-    keptUsed: false,
-    balance: 0,
-  }
+/** Everything settling one payment reads, on every attempt of its write. */
+interface SettleInput {
+  userId: string
+  paymentIntent: string
+  row: SettleRow
+  record: PurchaseRecord
+  /** Stripe's charge, read afresh. */
+  readCharge: () => Promise<ChargeState>
+  /** The row's reason, when it depends on the charge as read. */
+  reasonFor?: (charge: ChargeState) => string
+}
+
+/**
+ * Write the payment's settlement on its owner's ledger, once per key. Each
+ * attempt reads the ledger, then Stripe, then the terms, and writes under
+ * the ledger's version check with the charge it read (keepCharge), so a
+ * write never lands on a ledger another event wrote after its read of
+ * Stripe.
+ */
+async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
+  let after: Omit<Settled, 'userId' | 'delta' | 'wrote'> | null = null
   const written = await writeOnLedgerOnce(
     env,
-    userId,
-    row.key,
-    row.reason,
+    input.userId,
+    input.row.key,
+    input.row.reason,
     async (ledger) => {
-      const terms = await termsOf(ledger, row.mayGiveBack)
-      const next = settle(ledger, paymentIntent, charge, terms)
+      const charge = await input.readCharge()
+      const terms = await termsOf(
+        env,
+        input.record,
+        input.userId,
+        input.paymentIntent,
+        charge,
+        ledger,
+        input.row.mayGiveBack,
+      )
+      const next = settle(ledger, input.paymentIntent, charge, terms)
       after = {
+        charge,
         granted: next.granted,
         held: next.held,
         takenOtherwise: next.takenOtherwise,
@@ -415,10 +435,39 @@ async function settlePayment(
         keptUsed: next.keptUsed,
         balance: balanceOf(ledger) + next.delta,
       }
-      return { delta: next.delta, jobRef: paymentIntent }
+      return {
+        delta: next.delta,
+        jobRef: input.paymentIntent,
+        reason: input.reasonFor?.(charge),
+        alongside: (guard) => [
+          keepCharge(env, input.paymentIntent, charge, guard),
+        ],
+      }
     },
   )
-  return { userId, delta: written.delta, wrote: written.wrote, ...after }
+  if (after === null) throw new Error(`${input.row.key}: never read`)
+  return {
+    userId: input.userId,
+    delta: written.delta,
+    wrote: written.wrote,
+    ...(after as Omit<Settled, 'userId' | 'delta' | 'wrote'>),
+  }
+}
+
+/** Stripe's charge again, for an attempt of a write. Stripe knew it a
+ *  moment ago; if it no longer does, the event is tried again later. */
+function chargeReader(
+  get: StripeGet,
+  chargeId: string,
+  readFor: ReadFor,
+): () => Promise<ChargeState> {
+  return async () => {
+    const charge = await readCharge(get, chargeId, readFor)
+    if (charge === 'missing') {
+      throw new StripeUnavailable(`Stripe no longer knows ${chargeId}`)
+    }
+    return charge
+  }
 }
 
 function movedText(delta: number): string {
@@ -563,9 +612,8 @@ function factsOf(event: StripeEventInput, charge: ChargeState): MoneyBackFacts {
 
 /** The row the event writes. A dispute closing, or a refund ending, may
  *  give credits back; a refund that ended is keyed by the refund, which
- *  refund.failed and refund.updated both name. Any other refund.updated
- *  writes only when it moves credits. */
-function rowFor(event: StripeEventInput): SettleRow & { onlyIfMoved: boolean } {
+ *  refund.failed and refund.updated both name. */
+function rowFor(event: StripeEventInput): SettleRow {
   const ended = refundEndOf(event)
   const refundId = typeof event.object.id === 'string' ? event.object.id : ''
   return {
@@ -575,7 +623,6 @@ function rowFor(event: StripeEventInput): SettleRow & { onlyIfMoved: boolean } {
         : `clawback:${event.id}`,
     reason: isDisputeEvent(event.type) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
     mayGiveBack: event.type === 'charge.dispute.closed' || ended !== null,
-    onlyIfMoved: event.type === 'refund.updated' && ended === null,
   }
 }
 
@@ -699,10 +746,11 @@ export async function applyMoneyBack(
       'no charge on the event',
     )
   }
-  const charge = await readCharge(get, chargeId, {
+  const readFor: ReadFor = {
     refund: isRefundEvent(event.type),
     dispute: eventDispute(event),
-  })
+  }
+  const charge = await readCharge(get, chargeId, readFor)
   if (charge === 'missing') {
     return notApplied(
       env,
@@ -712,37 +760,32 @@ export async function applyMoneyBack(
     )
   }
   const paymentIntent = charge.paymentIntentId
-  // Kept before the grant is looked for: a purchase landing at the same
-  // moment then finds the charge, if this does not find the purchase.
-  if (paymentIntent !== null) await saveCharge(env, paymentIntent, charge)
+  // Left before the grant is looked for: a purchase landing at the same
+  // moment then finds it, if this does not find the purchase.
+  if (paymentIntent !== null) await markCharge(env, paymentIntent, charge)
   const owner =
     paymentIntent === null ? null : await creditOwner(env, paymentIntent)
   if (owner === null || paymentIntent === null) {
     await nothingOnRecord(env, event, charge)
     return { kind: 'applied' }
   }
-  const row = rowFor(event)
-  const termsOf = await termsReader(env, record, owner, paymentIntent, charge)
-  if (row.onlyIfMoved) {
-    const ledger = await readLedger(env, owner)
-    const terms = await termsOf(ledger, row.mayGiveBack)
-    if (settle(ledger, paymentIntent, charge, terms).delta === 0) {
-      return { kind: 'applied' }
-    }
-  }
-  const moved = await settlePayment(
-    env,
-    owner,
+  const moved = await settlePayment(env, {
+    userId: owner,
     paymentIntent,
-    charge,
-    row,
-    termsOf,
-  )
+    row: rowFor(event),
+    record,
+    readCharge: chargeReader(get, chargeId, readFor),
+  })
   if (moved.wrote) {
     logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
     await sendAlert(
       env,
-      moneyBackAlert(refOf(event), charge, moved, factsOf(event, charge)),
+      moneyBackAlert(
+        refOf(event),
+        moved.charge,
+        moved,
+        factsOf(event, moved.charge),
+      ),
     )
   }
   return { kind: 'applied' }
@@ -750,12 +793,14 @@ export async function applyMoneyBack(
 
 /**
  * After a purchase lands, take back what its refunds and disputes make due
- * when one of them arrived first and found no credits to take: it kept the
- * charge (stripeCharges). Runs on every delivery of the purchase, and
- * writes one row per payment at most, none when nothing is due.
+ * when one of them arrived first and found no credits to take: it left word
+ * (stripeCharges). Reads Stripe again, since what was kept may be older than
+ * what Stripe says now. Runs on every delivery of the purchase, and writes
+ * one row per payment at most, moving nothing when nothing is due.
  */
 export async function settleEarlyMoneyBack(
   env: Env,
+  get: StripeGet,
   purchaseEventId: string,
   session: Record<string, unknown>,
   userId: string,
@@ -763,29 +808,32 @@ export async function settleEarlyMoneyBack(
 ): Promise<void> {
   const paymentIntent = paymentIntentOf(session)
   if (paymentIntent === null) return
-  const charge = await loadCharge(env, paymentIntent)
-  if (charge === null) return
-  const termsOf = await termsReader(env, record, userId, paymentIntent, charge)
-  const ledger = await readLedger(env, userId)
-  const terms = await termsOf(ledger, false)
-  if (settle(ledger, paymentIntent, charge, terms).delta === 0) return
-  const moved = await settlePayment(
-    env,
+  const kept = await loadCharge(env, paymentIntent)
+  if (kept === null) return
+  const moved = await settlePayment(env, {
     userId,
     paymentIntent,
-    charge,
-    {
+    row: {
       key: `clawback:early:${paymentIntent}`,
-      reason: anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+      reason: PURCHASE_REFUND,
       mayGiveBack: false,
     },
-    termsOf,
-  )
-  if (!moved.wrote) return
+    record,
+    readCharge: chargeReader(get, kept.chargeId, {
+      refund: true,
+      dispute: null,
+    }),
+    reasonFor: (charge) =>
+      anyDisputeHolds(charge) ? PURCHASE_DISPUTE : PURCHASE_REFUND,
+  })
+  if (!moved.wrote || moved.delta === 0) return
   logSettled(
     `purchase ${purchaseEventId}, after its money went back`,
     paymentIntent,
     moved,
   )
-  await sendAlert(env, earlyMoneyBackAlert(purchaseEventId, charge, moved))
+  await sendAlert(
+    env,
+    earlyMoneyBackAlert(purchaseEventId, moved.charge, moved),
+  )
 }

@@ -100,49 +100,72 @@ export async function writeOnLedger(
   return (await writeOnLedgerOnce(env, userId, key, reason, rowFor)).delta
 }
 
+/** What a write that lands with a ledger row adds to its own WHERE: the
+ *  ledger is still what was read, and the row's key is still unused. Its
+ *  values bind after the statement's own, in this order. */
+export interface LedgerGuard {
+  sql: string
+  values: [userId: string, version: string, key: string]
+}
+
+/** The row `rowFor` works out from one read of the ledger. */
+export interface LedgerWrite {
+  delta: number
+  jobRef: string | null
+  /** The row's reason, when it depends on what was read. */
+  reason?: string
+  /** Statements written with the row, in one batch and before it, each
+   *  under `guard`: they land when the row does, or not at all. */
+  alongside?: (guard: LedgerGuard) => D1PreparedStatement[]
+}
+
 /** writeOnLedger, saying also whether this call wrote the row: false when
  *  an earlier or a concurrent delivery of the same key did. What a caller
  *  that announces the write (a billing alert) needs, so a race announces it
- *  once. `rowFor` may read D1 too, after the ledger: a row written in
- *  between makes the write lose and read both again. */
+ *  once. `rowFor` may read D1 and Stripe too, after the ledger: a row
+ *  written in between makes the write lose and read everything again. */
 export async function writeOnLedgerOnce(
   env: Env,
   userId: string,
   key: string,
   reason: string,
-  rowFor: (
-    ledger: Ledger,
-  ) =>
-    | { delta: number; jobRef: string | null }
-    | Promise<{ delta: number; jobRef: string | null }>,
+  rowFor: (ledger: Ledger) => LedgerWrite | Promise<LedgerWrite>,
 ): Promise<{ delta: number; wrote: boolean }> {
   for (let attempt = 0; attempt < LEDGER_ATTEMPTS; attempt += 1) {
     const ledger = await readLedger(env, userId)
-    const { delta, jobRef } = await rowFor(ledger)
-    const written = await env.DB.prepare(
+    const write = await rowFor(ledger)
+    const insert = env.DB.prepare(
       `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
        SELECT ?, ?, ?, ?, ?, ?, ?
         WHERE ${LEDGER_VERSION} = ?`,
+    ).bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      userId,
+      write.delta,
+      write.reason ?? reason,
+      write.jobRef,
+      key,
+      userId,
+      ledger.version,
     )
-      .bind(
-        crypto.randomUUID(),
-        new Date().toISOString(),
-        userId,
-        delta,
-        reason,
-        jobRef,
-        key,
-        userId,
-        ledger.version,
-      )
-      .run()
+    const alongside =
+      write.alongside?.({
+        sql: `${LEDGER_VERSION} = ? AND NOT EXISTS (SELECT 1 FROM creditLedger WHERE idempotencyKey = ?)`,
+        values: [userId, ledger.version, key],
+      }) ?? []
+    const changes =
+      alongside.length === 0
+        ? (await insert.run()).meta.changes
+        : ((await env.DB.batch([...alongside, insert])).at(-1)?.meta.changes ??
+          0)
     const row = await env.DB.prepare(
       'SELECT delta FROM creditLedger WHERE idempotencyKey = ?',
     )
       .bind(key)
       .first<{ delta: number }>()
     if (row !== null) {
-      return { delta: row.delta, wrote: written.meta.changes > 0 }
+      return { delta: row.delta, wrote: changes > 0 }
     }
   }
   throw new LedgerBusy(`${key}: the ledger kept changing under the write`)

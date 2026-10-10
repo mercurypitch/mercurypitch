@@ -1046,6 +1046,7 @@ function grantDetail(outcome: GrantOutcome): string {
 
 async function applyCheckoutEvent(
   env: Env,
+  get: StripeGet,
   event: StripeEventInput,
 ): Promise<StripeEventResult> {
   const outcome = await grantForCheckout(
@@ -1060,6 +1061,7 @@ async function applyCheckoutEvent(
   if (outcome.userId !== null && outcome.unit === 'credits') {
     await settleEarlyMoneyBack(
       env,
+      get,
       event.id,
       event.object,
       outcome.userId,
@@ -1103,7 +1105,9 @@ async function applyStripeEvent(
     .bind(event.id)
     .first<{ id: string }>()
   if (seen) return { kind: 'duplicate' }
-  if (isCheckoutPaidEvent(event.type)) return applyCheckoutEvent(env, event)
+  if (isCheckoutPaidEvent(event.type)) {
+    return applyCheckoutEvent(env, get, event)
+  }
   const result = await applyMoneyBack(env, get, event, PURCHASE_RECORD)
   await recordBillingEvent(env, event.id, event.type)
   return result

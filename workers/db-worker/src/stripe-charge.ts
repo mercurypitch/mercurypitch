@@ -17,15 +17,19 @@
 // `disputed: true`, so its disputes come from their own list. Each list is
 // read only when the charge or the event says there is something on it.
 //
-// The last answer is kept per PaymentIntent (stripeCharges, migration 0064)
-// for the one case with no charge to read yet on our side: a purchase whose
-// own webhook lands after its refund or dispute (stripe-payments.ts).
+// What Stripe said is kept per PaymentIntent (stripeCharges, migration
+// 0064). The read a ledger row was worked out from is kept with that row, in
+// the same batch and under the same check (ledger.ts, LedgerGuard), so an
+// older read never replaces a newer one. An event whose purchase has not
+// landed yet leaves its read only where there is none: the purchase reads
+// Stripe again when it lands (stripe-payments.ts, settleEarlyMoneyBack).
 //
 // Only ids, amounts, statuses and the dispute's reason code are read out of
 // what Stripe sends. A charge also carries the buyer's email and card
 // details: nothing here copies them anywhere, and nothing logs a charge.
 
 import type { Env } from './auth'
+import type { LedgerGuard } from './ledger'
 
 /** Stripe's REST GET, as billing.ts makes it: injected, so the webhook and
  *  the sweep read through the same one and tests read from a fake. */
@@ -305,16 +309,49 @@ interface ChargeRow {
   disputes: string
 }
 
-/** Keep what Stripe said about the payment's charge, for a purchase that
- *  lands later (loadCharge). */
-export async function saveCharge(
+const CHARGE_COLUMNS =
+  'paymentIntentId, chargeId, currency, amount, amountRefunded, disputes, updatedAt'
+
+function chargeValues(paymentIntentId: string, charge: ChargeState): unknown[] {
+  return [
+    paymentIntentId,
+    charge.chargeId,
+    charge.currency,
+    charge.amount,
+    charge.amountRefunded,
+    JSON.stringify(charge.disputes),
+    new Date().toISOString(),
+  ]
+}
+
+/** Leave word that money went back on the payment, for a purchase that
+ *  lands later (loadCharge). Never replaces what is kept: the purchase
+ *  reads Stripe again, and a newer read may be kept already. */
+export async function markCharge(
   env: Env,
   paymentIntentId: string,
   charge: ChargeState,
 ): Promise<void> {
   await env.DB.prepare(
-    `INSERT INTO stripeCharges (paymentIntentId, chargeId, currency, amount, amountRefunded, disputes, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT OR IGNORE INTO stripeCharges (${CHARGE_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(...chargeValues(paymentIntentId, charge))
+    .run()
+}
+
+/** Keep what Stripe said about the payment's charge, with the ledger row
+ *  worked out from it (ledger.ts, LedgerWrite.alongside): only while
+ *  `guard` holds, so a read older than one kept already never replaces it. */
+export function keepCharge(
+  env: Env,
+  paymentIntentId: string,
+  charge: ChargeState,
+  guard: LedgerGuard,
+): D1PreparedStatement {
+  return env.DB.prepare(
+    `INSERT INTO stripeCharges (${CHARGE_COLUMNS})
+     SELECT ?, ?, ?, ?, ?, ?, ?
+      WHERE ${guard.sql}
      ON CONFLICT(paymentIntentId) DO UPDATE SET
        chargeId = excluded.chargeId,
        currency = excluded.currency,
@@ -322,20 +359,10 @@ export async function saveCharge(
        amountRefunded = excluded.amountRefunded,
        disputes = excluded.disputes,
        updatedAt = excluded.updatedAt`,
-  )
-    .bind(
-      paymentIntentId,
-      charge.chargeId,
-      charge.currency,
-      charge.amount,
-      charge.amountRefunded,
-      JSON.stringify(charge.disputes),
-      new Date().toISOString(),
-    )
-    .run()
+  ).bind(...chargeValues(paymentIntentId, charge), ...guard.values)
 }
 
-/** A dispute as saveCharge wrote it: DisputeState, not Stripe's shape. */
+/** A dispute as it is kept: DisputeState, not Stripe's shape. */
 function storedDispute(entry: unknown): DisputeState | null {
   if (!isRecord(entry)) return null
   const id = text(entry.id)

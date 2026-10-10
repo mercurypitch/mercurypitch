@@ -68,19 +68,35 @@ keyed `clawback:<event id>`, and its alert shall be sent once. **When** a
 refund fails or is canceled, its `refund.failed` and its `refund.updated`
 shall share one row keyed `clawback:refund-ended:<refund id>`, and one
 alert. **When** a `refund.updated` that ends nothing moves no credits (a
-trace number arriving, say), the worker shall write no row.
+trace number arriving, say), the worker shall still write its row, moving
+nothing, and send no alert (REQ-MB-013).
 
 ### REQ-MB-012 — Any order
 
-Every refund and dispute event shall be applied from what Stripe reports at
-that moment, never from the copy in the event, so events read late or out of
-order land on the same balance: the charge (`GET /v1/charges/:id`), its
+Every refund and dispute event shall be applied from what Stripe reports,
+read after the ledger on every attempt of its write, never from the copy in
+the event, so events read late or out of order land on the same balance: the
+charge (`GET /v1/charges/:id`), its
 refunds (`GET /v1/refunds?charge=`) when the charge or the event says there
 is one, and its disputes (`GET /v1/disputes?charge=`) when the charge says it
 is `disputed` or the event is a dispute's. A dispute event whose dispute
-Stripe's list lacks shall keep the event's copy of it. **When** a refund or dispute arrives before the purchase it is about,
-the worker shall keep the charge (`stripeCharges`) and the purchase shall take
-back what is due when it lands.
+Stripe's list lacks shall keep the event's copy of it. **When** a refund or
+dispute arrives before the purchase it is about, the worker shall leave word
+of it (`stripeCharges`, never replacing what is kept there), and the purchase
+shall read Stripe again and take back what is due when it lands.
+
+### REQ-MB-013 — The newest read decides
+
+Each attempt to write an event's row shall read the ledger, then Stripe, then
+the consent and withdrawal terms, and write under the ledger's version
+check, so a row never lands on a ledger another event wrote after this one
+read Stripe. Every refund and dispute event applied to a purchase on record
+shall write its row, moving nothing when nothing is due, so a write that
+holds an older read of Stripe always loses and reads again. What Stripe said
+(`stripeCharges`) shall be kept with the row, in the same batch and under the
+same check, so an older read never replaces a newer one. A withdrawal's own
+refund that fails or is canceled writes no row (REQ-MB-028): it reads
+nothing and decides nothing.
 
 ## 3. What money going back does to the credits
 

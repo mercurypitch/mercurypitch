@@ -131,6 +131,47 @@ export function interleaved(db: SqliteD1Database): D1Database {
   } as unknown as D1Database
 }
 
+/**
+ * Run `act`, to its end, just before the next statement whose SQL matches
+ * `sql` is written: on its own (`run`), or in a batch with others. That is
+ * how another request lands between one request's reads and its write.
+ * Fires once.
+ */
+export function justBefore(
+  db: SqliteD1Database,
+  sql: RegExp,
+  act: () => Promise<unknown>,
+): void {
+  const prepare = db.prepare.bind(db)
+  const batch = db.batch.bind(db)
+  const held = new WeakSet<SqliteD1Statement>()
+  let armed = true
+  const fire = async (): Promise<void> => {
+    if (!armed) return
+    armed = false
+    await act()
+  }
+  const hold = (statement: SqliteD1Statement): SqliteD1Statement => {
+    held.add(statement)
+    const bind = statement.bind.bind(statement)
+    const run = statement.run.bind(statement)
+    statement.bind = (...values: SQLInputValue[]) => hold(bind(...values))
+    statement.run = async () => {
+      await fire()
+      return run()
+    }
+    return statement
+  }
+  db.prepare = (text: string) => {
+    const statement = prepare(text)
+    return armed && sql.test(text) ? hold(statement) : statement
+  }
+  db.batch = async (statements: SqliteD1Statement[]) => {
+    if (statements.some((statement) => held.has(statement))) await fire()
+    return batch(statements)
+  }
+}
+
 const MIGRATIONS_DIR = join(import.meta.dirname, '../migrations')
 
 /** Migration filenames in the order the worker applies them. */

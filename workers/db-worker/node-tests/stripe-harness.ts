@@ -287,16 +287,18 @@ export function stripeReads(h: Harness, path: string): URL[] {
 
 /**
  * D1 with an outage: the next `times` statements whose SQL matches
- * `pattern` throw, as D1 does when it is unavailable. Everything else runs.
+ * `pattern` throw, as D1 does when it is unavailable, and so does a batch
+ * that holds one, as a whole. Everything else runs.
  */
 export function failingD1(h: Harness, pattern: RegExp, times = 1): D1Database {
   const db = new SqliteD1Database(h.sqlite)
   let left = times
+  const sqlOf = new WeakMap<object, string>()
   const statement = (
     sql: string,
     inner: SqliteD1Statement,
-  ): SqliteD1Statement =>
-    new Proxy(inner, {
+  ): SqliteD1Statement => {
+    const proxy = new Proxy(inner, {
       get(target, property, receiver) {
         if (property === 'bind') {
           return (...values: SQLInputValue[]) =>
@@ -316,8 +318,20 @@ export function failingD1(h: Harness, pattern: RegExp, times = 1): D1Database {
           : value
       },
     })
+    sqlOf.set(proxy, sql)
+    return proxy
+  }
   return {
     prepare: (sql: string) => statement(sql, db.prepare(sql)),
-    batch: (statements: SqliteD1Statement[]) => db.batch(statements),
+    batch: async (statements: SqliteD1Statement[]) => {
+      const hit = statements.some((entry) =>
+        pattern.test(sqlOf.get(entry) ?? ''),
+      )
+      if (hit && left > 0) {
+        left -= 1
+        throw new Error('D1_ERROR: stubbed outage')
+      }
+      return db.batch(statements)
+    },
   } as unknown as D1Database
 }
