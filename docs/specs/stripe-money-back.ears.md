@@ -199,16 +199,20 @@ and leave the event unrecorded, so Stripe delivers it again.
 ### REQ-MB-029 — A purchase with no consent on record
 
 **When** money goes back on a payment whose purchase has no consent on
-record (`purchaseTerms` is `no_consent`, checkout-consent.ts), by a refund of
-any size or a dispute, refunds and disputes shall hold at most
-what they hold already plus the credits its pack still has unused, paid and
-bonus, as a withdrawal of it counts them (`packUses`, withdrawal-rules.ts,
-after their own earlier takes), and never the credits the buyer used. A buyer
-who cancels by mail and is refunded in the Dashboard loses what a withdrawal
-through Settings would take, and no earlier take leaves them owing. A
-purchase with a consent on record shall take its share as in REQ-MB-020.
-Every event shall ask whether the purchase has a consent on record, and the
-alert shall say how many used credits stay with the buyer.
+record, by a refund of any size or a dispute, refunds and disputes shall
+hold at most what they hold already plus the credits its pack still has
+unused, paid and bonus, as a withdrawal of it counts them (`packUses`,
+withdrawal-rules.ts, after their own earlier takes), and never the credits
+the buyer used. A purchase counts as having no consent on record as the
+withdrawal counts it (`consentTerms` is `no_consent`, checkout-consent.ts):
+no ticked box, or a ticked box its purchase mail has not confirmed yet (CRD
+Art. 14(4)(b)(iii)). A buyer who cancels by mail and is refunded in the
+Dashboard loses what a withdrawal through Settings would take, and no
+earlier take leaves them owing. A purchase with a confirmed consent shall
+take its share as in REQ-MB-020. Every event shall ask afresh, so once the
+purchase mail goes, a later refund or dispute follows the ticked box and
+can take the used credits an earlier one left with the buyer. The alert
+shall say how many used credits stay with the buyer.
 
 ## 4. The sweep
 

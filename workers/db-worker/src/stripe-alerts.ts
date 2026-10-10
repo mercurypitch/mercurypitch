@@ -108,7 +108,7 @@ function creditLines(moved: CreditsMoved): string[] {
       ]
     : moved.keptUsed > 0
       ? [
-          `This purchase has no consent on record, so refunds and disputes take back only credits still unused: ${moved.keptUsed} credit(s) the buyer used stay theirs.`,
+          `This purchase has no consent on record, or its purchase mail has not confirmed one yet, so refunds and disputes take back only credits still unused: ${moved.keptUsed} credit(s) the buyer used stay theirs.`,
         ]
       : []
   return [`Account: ${moved.userId}`, moving, ...whole, balanceLine(moved)]

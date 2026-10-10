@@ -6,23 +6,29 @@
 // refund or dispute, takes back at most the credits its pack still has
 // unused (stripe-payments.ts, settle): the ones the buyer used stay theirs
 // (CRD Art. 14(4)(b)). Both halves come from the modules the withdrawal
-// itself reads: the consent through purchaseTerms (checkout-consent.ts), and
+// itself reads: the consent through consentTerms (checkout-consent.ts), and
 // what is unused through packUses (withdrawal-rules.ts). A buyer who cancels
 // by mail and one who cancels in Settings › Credits then lose the same
 // credits.
+//
+// consentTerms counts a ticked box only once the purchase mail confirmed
+// it (Art. 14(4)(b)(iii)), so a purchase whose mail has not gone counts as
+// having no consent: its refunds and disputes leave the used credits with
+// the buyer. Once the mail goes, what comes after follows the box: the next
+// refund or dispute can take the used credits an earlier one left.
 //
 // Both of those modules import stripe-payments.ts, so it cannot import them:
 // billing.ts hands it this record instead.
 
 import type { Env } from './auth'
-import { purchaseTerms } from './checkout-consent'
+import { consentTerms } from './checkout-consent'
 import type { LedgerEntry } from './ledger'
 import type { PurchaseRecord } from './stripe-payments'
 import { packUses } from './withdrawal-rules'
 
-/** A purchase's consent row, as purchaseTerms reads it. The read takes every
+/** A purchase's consent row, as consentTerms reads it. The read takes every
  *  column, so the rule can grow without this read falling behind it. */
-type ConsentRow = NonNullable<Parameters<typeof purchaseTerms>[0]>
+type ConsentRow = NonNullable<Parameters<typeof consentTerms>[0]>
 
 export const PURCHASE_RECORD: PurchaseRecord = {
   async noConsent(
@@ -35,7 +41,7 @@ export const PURCHASE_RECORD: PurchaseRecord = {
     )
       .bind(userId, paymentIntent)
       .first<ConsentRow>()
-    return purchaseTerms(consent) === 'no_consent'
+    return consentTerms(consent) === 'no_consent'
   },
 
   unused(rows: readonly LedgerEntry[], paymentIntent: string): number {

@@ -494,7 +494,7 @@ describe('a purchase with no consent on record', () => {
       '[MercuryPitch billing] Refund: took back 5 credit(s)',
     )
     expect(alert?.text).toContain(
-      'This purchase has no consent on record, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
+      'This purchase has no consent on record, or its purchase mail has not confirmed one yet, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
     )
   })
 
@@ -507,6 +507,77 @@ describe('a purchase with no consent on record', () => {
     await deliver(h, h.stripe.refund(pi, 500))
 
     expect(balance(h, singer.userId)).toBe(-25)
+  })
+})
+
+describe('a ticked box its purchase mail has not confirmed', () => {
+  // A ticked box counts only once the purchase mail confirmed it
+  // (checkout-consent.ts, consentTerms; CRD Art. 14(4)(b)(iii)): until
+  // then a refund or a dispute takes only the credits still unused, as for
+  // a purchase with no consent at all, and once the mail goes, what comes
+  // after follows the box.
+
+  function setPurchaseMail(paymentIntent: string, mail: string | null): void {
+    h.sqlite
+      .prepare(
+        'UPDATE checkoutConsents SET mailStatus = ? WHERE paymentIntentId = ?',
+      )
+      .run(mail, paymentIntent)
+  }
+
+  /** A 30-credit EUR 5.00 pack bought with the box ticked, its purchase
+   *  mail at `mail` (null: never tried), 25 of its credits spent: 5 left. */
+  async function boxTicked(
+    singer: Singer,
+    mail: string | null,
+  ): Promise<string> {
+    const purchase = h.stripe.checkout(singer.userId)
+    expect((await deliver(h, purchase)).status).toBe(200)
+    const pi = String(purchase.data.object.payment_intent)
+    setPurchaseMail(pi, mail)
+    setSongCost(25)
+    expect((await spend(h, singer, 'job-used-25')).status).toBe(200)
+    setSongCost(1)
+    expect(balance(h, singer.userId)).toBe(5)
+    return pi
+  }
+
+  for (const mail of ['failed', null] as const) {
+    it(`takes only the unused credits on a whole refund while the mail is ${mail ?? 'not tried'}`, async () => {
+      const singer = await register(h, `mail-${mail ?? 'untried'}@example.com`)
+      const pi = await boxTicked(singer, mail)
+
+      await deliver(h, h.stripe.refund(pi, 500))
+
+      expect(balance(h, singer.userId)).toBe(0)
+      expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-5])
+    })
+  }
+
+  it('takes every credit back once the mail went, the used ones owed', async () => {
+    const singer = await register(h, 'mail-sent@example.com')
+    const pi = await boxTicked(singer, 'sent')
+
+    await deliver(h, h.stripe.refund(pi, 500))
+
+    expect(balance(h, singer.userId)).toBe(-25)
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-30])
+  })
+
+  it('follows the box once the mail goes: the next refund takes what the cap left', async () => {
+    const singer = await register(h, 'mail-late@example.com')
+    const pi = await boxTicked(singer, null)
+
+    await deliver(h, h.stripe.refund(pi, 250))
+    const beforeMail = balance(h, singer.userId)
+    setPurchaseMail(pi, 'sent')
+    await deliver(h, h.stripe.refund(pi, 250))
+
+    expect(beforeMail).toBe(0)
+    expect(balance(h, singer.userId)).toBe(-25)
+    expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([
+      -5, -25,
+    ])
   })
 })
 

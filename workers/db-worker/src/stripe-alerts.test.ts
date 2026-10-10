@@ -276,7 +276,7 @@ describe('a refund', () => {
 
     expect(alert?.subject).toBe('Refund: took back 20 credit(s)')
     expect(text(alert)).toContain(
-      'This purchase has no consent on record, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
+      'This purchase has no consent on record, or its purchase mail has not confirmed one yet, so refunds and disputes take back only credits still unused: 10 credit(s) the buyer used stay theirs.',
     )
   })
 
