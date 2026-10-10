@@ -737,6 +737,11 @@ export interface ResendResult {
    *  it is unknown. Only a caller with an idempotency key can safely ask
    *  again. */
   unanswered?: boolean
+  /** Resend's refusal, when it answered one: the HTTP status, and the
+   *  error's `name` and `message`. */
+  status?: number
+  errorName?: string
+  errorMessage?: string
 }
 
 export interface ResendOptions {
@@ -750,10 +755,51 @@ export interface ResendOptions {
   /**
    * Resend's Idempotency-Key request header: an identical request repeated
    * under the same key within 24 hours gets the first one's answer instead
-   * of a second mail. A different body under a used key is refused (409).
-   * The fresh confirm link uses one key per campaign and account.
+   * of a second mail. A different body under a used key is refused (409
+   * invalid_idempotent_request; see sentUnderKeyAlready). The fresh confirm
+   * link uses one key per campaign and account.
    */
   idempotencyKey?: string
+  /** One more recipient, out of sight of `to`: the withdrawal
+   *  acknowledgement's copy to the account's own address. */
+  bcc?: string
+}
+
+/**
+ * Whether Resend refused the request because its Idempotency-Key went with
+ * another body in the last 24 hours (409 invalid_idempotent_request). Its
+ * docs (idempotency keys, October 2026): a key lasts 24 hours; the same key
+ * and body again answers what the first request got and sends nothing;
+ * another body under the key is this 409, which retrying never changes;
+ * two requests at once under one key are 409 concurrent_idempotent_requests,
+ * safe to retry later. They say nothing of a key whose first request
+ * failed. A mail that is sent again renders again, and its body can differ
+ * (a balance, a refund that went through since), so for a mail keyed once
+ * per purchase or statement this 409 says an earlier try was taken, when
+ * that try's outcome was unknown (mail-answer.ts).
+ */
+export function sentUnderKeyAlready(result: ResendResult): boolean {
+  return (
+    result.status === 409 && result.errorName === 'invalid_idempotent_request'
+  )
+}
+
+/** The error's `name` and `message` from a Resend refusal, when its body
+ *  has them. */
+function errorOf(
+  text: string,
+): Pick<ResendResult, 'errorName' | 'errorMessage'> {
+  try {
+    const body = JSON.parse(text) as { name?: unknown; message?: unknown }
+    return {
+      ...(typeof body.name === 'string' ? { errorName: body.name } : {}),
+      ...(typeof body.message === 'string'
+        ? { errorMessage: body.message }
+        : {}),
+    }
+  } catch {
+    return {}
+  }
 }
 
 /**
@@ -767,7 +813,7 @@ export async function resendPost(
   rendered: RenderedEmail,
   options: ResendOptions = {},
 ): Promise<ResendResult> {
-  const { headers, idempotencyKey } = options
+  const { headers, idempotencyKey, bcc } = options
   if (!cfg.apiKey) {
     console.log('[email] RESEND_API_KEY unset — email skipped')
     return { ok: false }
@@ -790,6 +836,7 @@ export async function resendPost(
         from: cfg.from ?? DEFAULT_FROM,
         reply_to: cfg.replyTo ?? DEFAULT_REPLY_TO,
         to: [to],
+        ...(bcc === undefined ? {} : { bcc: [bcc] }),
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text,
@@ -797,10 +844,9 @@ export async function resendPost(
       }),
     })
     if (!res.ok) {
-      console.error(
-        `[email] Resend rejected (${res.status}): ${await res.text()}`,
-      )
-      return { ok: false }
+      const text = await res.text()
+      console.error(`[email] Resend rejected (${res.status}): ${text}`)
+      return { ok: false, status: res.status, ...errorOf(text) }
     }
     // The id is a nicety, not the verdict: a 200 with an unreadable body is
     // still a send, and treating it as a failure would mail somebody twice.

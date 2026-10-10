@@ -14,7 +14,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Env } from './auth'
-import { handleBilling, paidPrice } from './billing'
+import { handleBilling } from './billing'
+import { paidPrice } from './checkout-consent'
 
 const JWT_SECRET = 'test-jwt-secret'
 const WEBHOOK_SECRET = 'whsec_test_secret'

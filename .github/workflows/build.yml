@@ -56,8 +56,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Release tags deploy Jam first, then migrate the prod database and deploy
-  # the prod DB Worker through the same reusable workflow the dev path uses.
+  # Release tags check the seller details, deploy Jam, then migrate the prod
+  # database and deploy the prod DB Worker through the same reusable
+  # workflow the dev path uses; a failed check deploys none of them.
   # The order matters because the DB Worker binds the JamHostVerifier named
   # entrypoint. The frontend prod deploy below can still run in parallel.
   deploy-db-prod:
@@ -172,6 +173,16 @@ jobs:
       - name: Install dependencies
         if: steps.preview-scope.outputs.deploy == 'true'
         run: pnpm install --frozen-lockfile
+
+      # A release tag deploys the website here and the prod DB worker in
+      # deploy-db-prod, side by side. The DB worker refuses to go out while
+      # the prod block of workers/db-worker/wrangler.jsonc lacks the
+      # seller's name or address (deploy-db.yml); this stops the website on
+      # the same check, before it is built, so a release never goes out
+      # half. Dev and preview deploys are never held by it.
+      - name: Check the seller details for production
+        if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+        run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
 
       # PR Gate owns pull-request build validation. Direct main, tag, and
       # manual deployments keep a pre-deploy gate; PR previews skip it because

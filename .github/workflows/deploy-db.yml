@@ -9,6 +9,8 @@ name: Deploy DB Worker
 # - Every path deploys the Jam Worker first, because the DB Worker binds its
 #   JamHostVerifier named entrypoint. Migrations then run before the DB Worker
 #   deploy, so application code never runs against a database missing tables.
+# - A prod deploy checks the seller details before any of that
+#   (check-seller-details), and deploys nothing without them.
 #
 # Schema changes ship as tracked migrations in workers/db-worker/migrations/,
 # applied here by `wrangler d1 migrations apply` (wrangler records applied
@@ -71,8 +73,45 @@ permissions:
   contents: read
 
 jobs:
+  # A release deploys nothing, the Jam worker included, while the prod
+  # block of workers/db-worker/wrangler.jsonc lacks the seller's name or
+  # address: every deploy job below waits on this one. Dev deploys skip
+  # each step and go straight on.
+  check-seller-details:
+    name: Check the seller details for production
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_ENV: ${{ inputs.environment || 'dev' }}
+
+    steps:
+      - name: Checkout code
+        if: env.DEPLOY_ENV == 'prod'
+        uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v4
+        if: env.DEPLOY_ENV == 'prod'
+        with:
+          version: 11.12.0
+
+      - name: Setup Node.js
+        if: env.DEPLOY_ENV == 'prod'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      # The check reads wrangler.jsonc through wrangler.
+      - name: Install dependencies
+        if: env.DEPLOY_ENV == 'prod'
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the seller details for production
+        if: env.DEPLOY_ENV == 'prod'
+        run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
+
   deploy-jam-worker:
     name: Deploy Jam Worker prerequisite
+    needs: check-seller-details
     uses: ./.github/workflows/deploy-jam.yml
     with:
       environment: ${{ inputs.environment || 'dev' }}
@@ -110,6 +149,15 @@ jobs:
 
       - name: Typecheck worker
         run: pnpm typecheck:db
+
+      # The purchase and withdrawal mails name the seller from the TRADER_*
+      # vars, and an empty one goes out to buyers as "[TRADER_NAME]". A
+      # release stops here, before the database or the worker is touched,
+      # when the prod block of wrangler.jsonc lacks a name or an address.
+      # The VAT ID may stay empty. Dev deploys are never held by it.
+      - name: Check the seller details for production
+        if: env.DEPLOY_ENV == 'prod'
+        run: node scripts/assert-prod-trader-details.mjs workers/db-worker/wrangler.jsonc
 
       # Rollback story: D1 Time Travel, NOT a dump-to-artifact. This repo is
       # public, and workflow artifacts on a public repo are downloadable by

@@ -26,7 +26,17 @@
 //
 // Every take is a ledger row, `purchase-refund` or `purchase-dispute`, with
 // the PaymentIntent in jobRef and keyed on the Stripe event, so a redelivered
-// event takes nothing twice. Each one sends the billing alert
+// event takes nothing twice.
+//
+// A withdrawal (withdrawal.ts) takes a pack's unused credits itself, as
+// `withdrawal` and `withdrawal-bonus` rows with the PaymentIntent in jobRef,
+// and then refunds the unused credits' share of the price. Its own
+// charge.refunded counts those rows as taken already (takenFrom), and the
+// share it refunds never adds up to more credits than they removed, so it
+// takes nothing more. A refund made by hand for a withdrawal Stripe refused
+// does the same. A withdrawal that refunds the whole price (a purchase with
+// no consent on record) settles the payment outright: what the buyer used
+// stays theirs (CRD Art. 14(4)(b)). Each one sends the billing alert
 // (BILLING_ALERT_EMAIL), and so does a payment with nothing on record to take:
 // a donation, or a purchase from before PaymentIntent ids were stored
 // (migration 0058).
@@ -42,10 +52,28 @@ import { sendBillingAlert } from './email'
 import type { Ledger } from './ledger'
 import { writeOnLedger } from './ledger'
 
+/** The ledger reason of a pack's credits, granted when its checkout is paid
+ *  (billing.ts, grantCheckoutCredits). */
+export const PACK_PURCHASE = 'purchase'
 /** The ledger reason of the credits a refund takes back. */
 export const PURCHASE_REFUND = 'purchase-refund'
 /** The ledger reason of the credits a dispute takes back. */
 export const PURCHASE_DISPUTE = 'purchase-dispute'
+/** The ledger reasons of what a withdrawal removes (withdrawal.ts): the
+ *  pack's unused paid credits, and the unused bonus that came with it. The
+ *  refund the withdrawal asks Stripe for comes back as charge.refunded, and
+ *  these rows are what that event finds already taken. */
+export const WITHDRAWAL_PAID = 'withdrawal'
+export const WITHDRAWAL_BONUS = 'withdrawal-bonus'
+
+/** Rows that took a payment's credits back: refunds, disputes and
+ *  withdrawals. Each names the PaymentIntent in its jobRef. */
+const TAKEN_BACK: ReadonlySet<string | null> = new Set([
+  PURCHASE_REFUND,
+  PURCHASE_DISPUTE,
+  WITHDRAWAL_PAID,
+  WITHDRAWAL_BONUS,
+])
 
 /** The checkout events whose session may be paid: the webhook and the
  *  reconciliation sweep grant from both. */
@@ -116,14 +144,12 @@ export function creditsToTake(input: {
   return { take: Math.min(owed, Math.max(0, input.balance)), owed }
 }
 
-/** Credits already taken back from the payment `paymentIntent` names. */
+/** Credits already taken back from the payment `paymentIntent` names: by
+ *  earlier refunds and disputes, and by a withdrawal, whose own refund must
+ *  not take its credits a second time. */
 function takenFrom(ledger: Ledger, paymentIntent: string): number {
   return ledger.rows
-    .filter(
-      (row) =>
-        (row.reason === PURCHASE_REFUND || row.reason === PURCHASE_DISPUTE) &&
-        row.jobRef === paymentIntent,
-    )
+    .filter((row) => TAKEN_BACK.has(row.reason) && row.jobRef === paymentIntent)
     .reduce((sum, row) => sum - Number(row.delta), 0)
 }
 
@@ -184,6 +210,11 @@ export async function clawBackPayment(
   }
 
   const share = refundedShare(type, object)
+  const settledWhole = await env.DB.prepare(
+    "SELECT 1 AS hit FROM withdrawals WHERE paymentIntentId = ? AND refundBasis = 'full'",
+  )
+    .bind(paymentIntent)
+    .first()
   let owed = 0
   const delta = await writeOnLedger(
     env,
@@ -194,7 +225,10 @@ export async function clawBackPayment(
       const back = creditsToTake({
         granted: Number(grant.granted),
         share,
-        taken: takenFrom(ledger, paymentIntent),
+        taken:
+          settledWhole === null
+            ? takenFrom(ledger, paymentIntent)
+            : Number(grant.granted),
         balance: balanceOf(ledger),
       })
       owed = back.owed

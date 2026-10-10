@@ -11,6 +11,14 @@ const APP = 'https://app.test'
 const PICTURES = 'https://pictures.test'
 const ORIGINS: MailOrigins = { appOrigin: APP, assetOrigin: PICTURES }
 
+// Made up: the real values are the owner's TRADER_* vars.
+const TRADER = {
+  name: 'Sample Trader',
+  address: '1 Sample Street, 00000 Sampletown',
+  email: 'sales@example.test',
+  vatId: 'XX000000000',
+}
+
 const STARTER: PurchaseEmailVars = {
   ...ORIGINS,
   packLabel: 'Starter',
@@ -19,6 +27,8 @@ const STARTER: PurchaseEmailVars = {
   amountMinor: 500,
   currency: 'eur',
   orderDateIso: '2026-10-08T12:00:00.000Z',
+  terms: 'refund_unused',
+  trader: TRADER,
 }
 
 const purchase = (vars: Partial<PurchaseEmailVars> = {}) =>
@@ -81,7 +91,7 @@ describe('the purchase mail', () => {
         /per song|about one song|1 credit|one credit|server|GPU/i,
       )
       expect(
-        copy.replace('Settings > Credits', 'Settings › Credits'),
+        copy.replaceAll('Settings > Credits', 'Settings › Credits'),
       ).toContain(
         'See your balance and what each song costs in Settings › Credits',
       )
@@ -141,5 +151,108 @@ describe('the purchase mail', () => {
     expect(html).not.toContain('<b>Pro</b>')
     expect(html).toContain('&lt;b&gt;Pro&lt;/b&gt; &amp; &quot;Co&quot; pack')
     expect(html).not.toContain('X<Y')
+  })
+})
+
+describe('the right to cancel in the purchase mail', () => {
+  const SELLER =
+    'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test. VAT ID XX000000000.'
+
+  it('gives the last day to cancel and what a refund covers', () => {
+    const { html, text } = purchase()
+    for (const copy of [visibleText(html), text]) {
+      expect(copy).toContain('Your right to cancel')
+      expect(copy).toContain(
+        "You can still cancel this purchase until 22 October 2026 and get back the price of the credits you haven't used.",
+      )
+      expect(copy).toContain(
+        "Credits you've used aren't refunded, and once you've used all 20, you can no longer cancel.",
+      )
+    }
+  })
+
+  it('counts the 14 days from the day the credits landed, in Croatia', () => {
+    // 23:30 UTC on 8 October is already 9 October in Zagreb.
+    const late = purchase({ orderDateIso: '2026-10-08T23:30:00.000Z' })
+    expect(late.text).toContain('until 23 October 2026')
+  })
+
+  it('sends the buyer to the withdrawal function in Settings', () => {
+    const { html, text } = purchase()
+    expect(visibleText(html)).toContain(
+      'To cancel, open Settings › Credits and choose Withdraw from contract here, or reply to this email.',
+    )
+    expect(
+      hrefs(html).filter((href) => href === `${APP}/#/settings/credits`),
+    ).toHaveLength(2)
+    expect(text).toContain(
+      `To cancel, open Settings > Credits (${APP}/#/settings/credits) and choose Withdraw from contract here, or reply to this email.`,
+    )
+  })
+
+  it('names the seller and links the terms with the cancellation form', () => {
+    const { html, text } = purchase()
+    expect(visibleText(html)).toContain(SELLER)
+    expect(hrefs(html)).toContain(
+      'https://about.mercurypitch.com/terms/#withdrawal',
+    )
+    expect(text).toContain(SELLER)
+    expect(text).toContain(
+      'Our terms, with the cancellation form: https://about.mercurypitch.com/terms/#withdrawal',
+    )
+  })
+
+  it('says the right to cancel ended when the checkout took the waiver', () => {
+    const { html, text } = purchase({ terms: 'waiver' })
+    for (const copy of [visibleText(html), text]) {
+      expect(copy).toContain(
+        "You asked us to add these credits straight away and confirmed that you lose your right to cancel once they're added.",
+      )
+      expect(copy).not.toContain('Withdraw from contract here')
+      expect(copy).not.toMatch(/until \d+ \w+ 2026/)
+    }
+    expect(visibleText(html)).toContain(SELLER)
+  })
+
+  it('moves a 14th day that falls on a Saturday to the Monday', () => {
+    // Bought Saturday 10 October 2026: the 14th day is Saturday 24 October.
+    const weekend = purchase({ orderDateIso: '2026-10-10T09:00:00.000Z' })
+    expect(weekend.text).toContain('until 26 October 2026')
+  })
+
+  it('claims no consent for a purchase with no ticked box on record', () => {
+    const { html, text } = purchase({ terms: 'no_consent' })
+    for (const copy of [visibleText(html), text]) {
+      expect(copy).toContain(
+        'You can cancel this purchase until 22 October 2026 and get back what you paid.',
+      )
+      expect(copy).not.toContain('straight away')
+      expect(copy).not.toContain("haven't used")
+    }
+    expect(visibleText(html)).toContain(
+      'To cancel, open Settings › Credits and choose Withdraw from contract here, or reply to this email.',
+    )
+  })
+
+  it('leaves the VAT sentence out for a seller with no VAT ID', () => {
+    const { text } = purchase({ trader: { ...TRADER, vatId: '' } })
+    expect(text).toContain(
+      'Sold by Sample Trader, 1 Sample Street, 00000 Sampletown. Email sales@example.test.\n',
+    )
+    expect(text).not.toContain('VAT ID')
+  })
+
+  it('says "it" for a pack of one credit', () => {
+    expect(purchase({ credits: 1 }).text).toContain(
+      "once you've used it, you can no longer cancel.",
+    )
+  })
+
+  it('escapes the seller details', () => {
+    const { html } = purchase({
+      trader: { ...TRADER, name: '<i>Sample</i> & Co' },
+    })
+    expect(html).not.toContain('<i>Sample</i>')
+    expect(html).toContain('Sold by &lt;i&gt;Sample&lt;/i&gt; &amp; Co,')
   })
 })

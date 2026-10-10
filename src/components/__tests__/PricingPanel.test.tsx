@@ -13,6 +13,7 @@ vi.mock('@/db/services/billing-service', async (importOriginal) => {
     fetchPricing: vi.fn(),
     startCheckout: vi.fn(),
     fetchBillingMe: vi.fn(),
+    fetchWithdrawals: vi.fn(),
   }
 })
 
@@ -32,7 +33,7 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => {
 
 import { PricingPanel } from '@/components/billing/PricingPanel'
 import type { Pricing } from '@/db/services/billing-service'
-import { fetchBillingMe, fetchPricing } from '@/db/services/billing-service'
+import { fetchBillingMe, fetchPricing, fetchWithdrawals, } from '@/db/services/billing-service'
 import { askForPacks, packsAsked, packsShown } from '@/lib/launch-offer'
 import { setUvrProcessingMode } from '@/stores/app-store'
 import { authModalMode, closeAuthModal, creditCostGuideRequested, setCreditCostGuideRequested, } from '@/stores/ui-store'
@@ -427,5 +428,83 @@ describe('PricingPanel', () => {
 
     // A later, plain visit must find the guide folded.
     expect(creditCostGuideRequested()).toBe(false)
+  })
+
+  describe('the footnote under the packs', () => {
+    const footnote = async (): Promise<HTMLElement> => {
+      await screen.findAllByTestId('pricing-pack')
+      return screen.getByTestId('pricing-footnote')
+    }
+
+    it('says a credit purchase can be cancelled for its unused credits', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue({
+        ...PRICING,
+        withdrawal: { mode: 'refund_unused', days: 14 },
+      })
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      const note = await footnote()
+      expect(note.textContent).toBe(
+        "Credits are prepaid and spent per server-side separation. You can cancel a credit purchase within 14 days and get back the price of credits you haven't used. Donations are voluntary and not refundable. See our Terms.",
+      )
+      expect(note.querySelector('a')?.getAttribute('href')).toBe(
+        'https://about.mercurypitch.com/terms/#withdrawal',
+      )
+    })
+
+    it('says the right to cancel ends at checkout under waiver', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue({
+        ...PRICING,
+        withdrawal: { mode: 'waiver', days: 14 },
+      })
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      await waitFor(async () =>
+        expect((await footnote()).textContent).toContain(
+          "They're added the moment you pay, and at checkout you confirm that you then lose your 14-day right to cancel.",
+        ),
+      )
+    })
+
+    it('keeps listing what can still be cancelled under waiver: a pack keeps its terms', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue({
+        ...PRICING,
+        withdrawal: { mode: 'waiver', days: 14 },
+      })
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      vi.mocked(fetchWithdrawals).mockResolvedValue({
+        mode: 'waiver',
+        email: 'sam@example.test',
+        packs: [
+          {
+            purchaseId: 'purchase-plus',
+            packLabel: 'Plus',
+            purchasedAt: '2026-10-20T10:00:00.000Z',
+            deadline: '2026-11-03',
+            basis: 'unused',
+            paidCredits: 140,
+            unusedCredits: 126,
+            bonusCredits: 0,
+            refund: { amountMinor: 1800, currency: 'eur' },
+          },
+        ],
+        statements: [],
+      })
+      render(() => <PricingPanel />)
+
+      expect(await screen.findAllByTestId('cancellable-pack')).toHaveLength(1)
+    })
+
+    it('keeps the default words with an older db-worker', async () => {
+      vi.mocked(fetchPricing).mockResolvedValue(PRICING)
+      vi.mocked(fetchBillingMe).mockResolvedValue(null)
+      render(() => <PricingPanel />)
+
+      expect((await footnote()).textContent).toContain(
+        'You can cancel a credit purchase within 14 days',
+      )
+    })
   })
 })

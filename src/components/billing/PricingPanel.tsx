@@ -12,6 +12,7 @@ import { CreditCostGuide } from '@/components/billing/CreditCostGuide'
 import { DonatePanel } from '@/components/billing/DonatePanel'
 import { LaunchOfferProgress } from '@/components/billing/LaunchOfferProgress'
 import { PromoCodeCard } from '@/components/billing/PromoCodeCard'
+import { PurchaseWithdrawals } from '@/components/billing/PurchaseWithdrawals'
 import { accountHeld } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
@@ -19,12 +20,13 @@ import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { packsAsked, packsShown } from '@/lib/launch-offer'
-import { PAYMENTS_TERMS_URL } from '@/lib/legal-links'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, setCreditCostGuideRequested } from '@/stores/ui-store'
+import type { WithdrawalMode } from '../../../workers/db-worker/src/withdrawal-wording'
+import { PACK_FOOTNOTE, WITHDRAWAL_TERMS_URL, } from '../../../workers/db-worker/src/withdrawal-wording'
 import styles from './PricingPanel.module.css'
 
 // Distinct, subtle per-card accent hues, cycled by card position. Drive the
@@ -73,6 +75,10 @@ export const PricingPanel: Component = () => {
   const loadedPricing = () =>
     !pricing.loading && pricing.error == null ? pricing() : undefined
   const checkoutUnavailable = (): boolean => me()?.stripeConfigured === false
+  /** The 14-day withdrawal model the packs are sold under; an older
+   *  db-worker, or pricing still loading, means the default. */
+  const withdrawalMode = (): WithdrawalMode =>
+    loadedPricing()?.withdrawal?.mode ?? 'refund_unused'
   /** The launch offer's extra credits, while they wait for a pack. */
   const packBonus = (): number | null => {
     const offer = me()?.offer
@@ -174,6 +180,11 @@ export const PricingPanel: Component = () => {
           </div>
         )}
       </Show>
+
+      {/* The withdrawal function: up top, where the purchase mail sends a
+          buyer, whatever WITHDRAWAL_MODE says now (a pack keeps the terms
+          it was sold under), and only while there is something to show. */}
+      <PurchaseWithdrawals />
 
       <PromoCodeCard />
       <LaunchOfferProgress offer={me()?.offer} states={['counting']} />
@@ -370,13 +381,16 @@ export const PricingPanel: Component = () => {
           want to buy credits still has a way to back the project. */}
       <DonatePanel />
 
-      {/* Sits below BOTH panels, so it has to speak to both: credits are a
-          refundable-on-failure purchase, a donation is neither. */}
-      <p style="margin: 14px auto 0; max-width: 46ch; text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted);">
-        Credits are prepaid and spent per server-side separation. Donations are
-        voluntary and not refundable. Both are subject to our{' '}
+      {/* Sits below BOTH panels, so it has to speak to both: what a credit
+          purchase can be cancelled for under WITHDRAWAL_MODE, and that a
+          donation cannot. The words are withdrawal-wording.ts's. */}
+      <p
+        style="margin: 14px auto 0; max-width: 46ch; text-align: center; font-size: 0.72rem; line-height: 1.5; color: var(--text-muted);"
+        data-testid="pricing-footnote"
+      >
+        {PACK_FOOTNOTE[withdrawalMode()]}{' '}
         <a
-          href={PAYMENTS_TERMS_URL}
+          href={WITHDRAWAL_TERMS_URL}
           target="_blank"
           rel="noopener noreferrer"
           style="color: var(--accent); text-decoration: none;"

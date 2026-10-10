@@ -42,6 +42,7 @@ import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { captchaFailureBody, verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
+import { deletionHeld, unlessOwed } from './withdrawal-hold'
 import type { PackedVoiceprintHint, SignupSource, SignupVoiceprint, } from './signup-hint'
 import { packVoiceprintHint, parseSignupSource, parseVoiceprintHint, readAccountVoiceprint, unpackVoiceprintHint, } from './signup-hint'
 
@@ -213,6 +214,27 @@ export interface Env {
   /** Days a promo code's promoEmailClaims rows are kept after the code's
    *  expiresAt. A code with no expiresAt never closes. Default 30. */
   RETENTION_PROMO_EMAIL_DAYS?: string
+  /** How a credit pack's 14-day right to cancel works (withdrawal-wording.ts):
+   *  `refund_unused` (the default, and what anything unrecognised means) or
+   *  `waiver`. Decides the checkbox on Stripe Checkout for new packs, and
+   *  the footnote under the packs. A pack already bought keeps the terms its
+   *  own checkout recorded (checkout-consent.ts, purchaseTerms). */
+  WITHDRAWAL_MODE?: string
+  /** Weekdays (Monday to Friday) the withdrawal function stays open past a
+   *  pack's 14th day, for a last day that falls on a holiday
+   *  (withdrawal-rules.ts). A whole number from 0 to 20; default 3. */
+  WITHDRAWAL_GRACE_WEEKDAYS?: string
+  /** Who sells the credits, printed in the purchase mail and the
+   *  withdrawal acknowledgement (CRD Art. 6(1)(b), (c)): the trading name,
+   *  the full geographic address with the country, a contact email and the
+   *  VAT ID. Unset, the first three show as their own name in brackets, and
+   *  a production deploy without a name or an address fails
+   *  (scripts/assert-prod-trader-details.mjs). The VAT ID is optional: a
+   *  sole trader outside the VAT system has none. */
+  TRADER_NAME?: string
+  TRADER_ADDRESS?: string
+  TRADER_EMAIL?: string
+  TRADER_VAT_ID?: string
   /** The Authorization header RevenueCat sends with every webhook, as set in
    *  its dashboard (`wrangler secret put REVENUECAT_WEBHOOK_AUTH`). While
    *  unset, /api/billing/revenuecat answers 501 and nothing grants songs. */
@@ -889,6 +911,9 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   'billing-checkout': { max: 10, windowMs: 300_000 },
   // Promo code redemptions: bound guessing loops per account.
   'promo-redeem': { max: 10, windowMs: 300_000 },
+  // Withdrawal statements (withdrawal.ts): each one may ask Stripe for a
+  // refund. A buyer sends one per pack; ten in five minutes is a loop.
+  'billing-withdrawal': { max: 10, windowMs: 300_000 },
   // Play review access (review-access.ts). A reviewer types one code once;
   // an anonymous identity is free to mint, so the address has a cap of its
   // own as well as the account.
@@ -3927,6 +3952,11 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   { table: 'promoRedemptions', column: 'userId' },
   // That the account earned the launch offer's reward (launch-finisher.ts).
   { table: 'offerUnlocks', column: 'userId' },
+  // The withdrawal consent of each pack and the withdrawal statements
+  // (migration 0060). Like the ledger they go with the account: Stripe keeps
+  // the Checkout Session, with its consent, and the refunds.
+  { table: 'checkoutConsents', column: 'userId' },
+  { table: 'withdrawals', column: 'userId' },
   // Which newsletter issues went to this account. No address is stored, but
   // a list of what somebody was sent is still a record of them, and an
   // erased account must not leave one. Same reasoning as promoRedemptions:
@@ -3982,6 +4012,19 @@ async function handleDeleteMe(
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
 
+  // A withdrawal that still owes its refund or its acknowledgement keeps
+  // the account for now: deleting it would erase the statement it is owed
+  // on (withdrawal-hold.ts). The batch below checks again, atomically.
+  try {
+    const held = await deletionHeld(env, userId)
+    if (held !== null) return respond({ error: held }, { status: 409 })
+  } catch {
+    return respond(
+      { error: 'Account deletion temporarily unavailable' },
+      { status: 503 },
+    )
+  }
+
   // Read the email before the user row disappears. Both the shared legacy
   // grant ledger and main-DB Premium Studio membership are keyed by it.
   const userRow = await env.DB.prepare(
@@ -4030,23 +4073,32 @@ async function handleDeleteMe(
     // Deleting the row below removes our copy regardless.
   }
 
+  // Every statement changes nothing while a withdrawal of the account
+  // still owes its buyer (unlessOwed): one written since the check above
+  // keeps all of the account, never half of it.
   const statements = [
     ...USER_OWNED_TABLES.map(({ table, column }) =>
-      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(
-        userId,
-      ),
+      env.DB.prepare(
+        unlessOwed(`DELETE FROM "${table}" WHERE "${column}" = ?`, '?1'),
+      ).bind(userId),
     ),
     // Capability-mint audit rows identify the account and its private Jam
     // room. They have no useful anonymous lifecycle context once the issuing
     // account and capability rows are erased.
     env.DB.prepare(
-      `DELETE FROM premiumPerkAudit
+      unlessOwed(
+        `DELETE FROM premiumPerkAudit
         WHERE actorType = 'user' AND actorId = ?1`,
+        '?1',
+      ),
     ).bind(userId),
     // Preserve non-user lifecycle audit while removing the deleted account
     // as an actor (for example, an authenticated Premium Studio operator).
     env.DB.prepare(
-      `UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1`,
+      unlessOwed(
+        `UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1`,
+        '?1',
+      ),
     ).bind(userId),
     ...(verifiedEmail === null
       ? []
@@ -4055,14 +4107,18 @@ async function handleDeleteMe(
           // account state. Hard-delete active and revoked rows alike so a
           // later account registering the same address cannot inherit it.
           env.DB.prepare(
-            `DELETE FROM premiumSupporterGroupMembers
+            unlessOwed(
+              `DELETE FROM premiumSupporterGroupMembers
               WHERE email = ?1 COLLATE NOCASE`,
-          ).bind(verifiedEmail),
+              '?2',
+            ),
+          ).bind(verifiedEmail, userId),
           // Premium Studio audit remains useful after erasure, but it must
           // not retain the member's address in either its actor, entity key,
           // or structured details. Preserve the group and action context.
           env.DB.prepare(
-            `UPDATE premiumPerkAudit
+            unlessOwed(
+              `UPDATE premiumPerkAudit
                 SET actorId = CASE
                       WHEN actorId = ?1 COLLATE NOCASE THEN NULL
                       ELSE actorId
@@ -4087,20 +4143,62 @@ async function handleDeleteMe(
                    entityType = 'supporter-group-member'
                    AND json_extract(detailsJson, '$.email') = ?1 COLLATE NOCASE
                  )`,
-          ).bind(verifiedEmail),
+              '?2',
+            ),
+          ).bind(verifiedEmail, userId),
         ]),
     env.DB.prepare(
-      'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
+      unlessOwed(
+        'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
+        '?1',
+      ),
     ).bind(userId, userId),
-    env.DB.prepare('DELETE FROM userProfiles WHERE id = ?').bind(userId),
-    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
+    env.DB.prepare(
+      unlessOwed('DELETE FROM userProfiles WHERE id = ?', '?1'),
+    ).bind(userId),
+    env.DB.prepare(unlessOwed('DELETE FROM users WHERE id = ?', '?1')).bind(
+      userId,
+    ),
   ]
 
   // One batch so a mid-way failure can't strand a user row without its data
   // (or, worse, orphaned data without its user).
-  await env.DB.batch(statements)
+  const results = await env.DB.batch(statements)
+  if (results.at(-1)?.meta.changes === 0) {
+    return deletionRefusedLate(env, userId, respond)
+  }
 
   return respond({ ok: true, deleted: userId })
+}
+
+/**
+ * The deletion batch changed nothing: a withdrawal written while it ran
+ * still owes its buyer (withdrawal-hold.ts), so the account stays whole,
+ * and the buyer reads what the check before it would have said. An account
+ * deleted meanwhile by another request is deleted.
+ */
+async function deletionRefusedLate(
+  env: Env,
+  userId: string,
+  respond: Respond,
+): Promise<Response> {
+  const unavailable = () =>
+    respond(
+      { error: 'Account deletion temporarily unavailable' },
+      { status: 503 },
+    )
+  try {
+    const held = await deletionHeld(env, userId)
+    if (held !== null) return respond({ error: held }, { status: 409 })
+    const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ id: string }>()
+    return user === null
+      ? respond({ ok: true, deleted: userId })
+      : unavailable()
+  } catch {
+    return unavailable()
+  }
 }
 
 /** Route /api/auth/* requests. Returns null when the path doesn't match. */

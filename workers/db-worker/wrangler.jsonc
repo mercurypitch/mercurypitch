@@ -205,6 +205,27 @@
         "RETENTION_FUNNEL_MONTHS": "13",
         "RETENTION_RATE_LIMIT_DAYS": "2",
         "RETENTION_PROMO_EMAIL_DAYS": "30",
+        // The 14-day withdrawal for credit packs (withdrawal-wording.ts):
+        // refund_unused refunds the price of a pack's unused credits from
+        // Settings › Credits; waiver asks the buyer at checkout to give the
+        // right up, and there is nothing to cancel. Unset or unknown is
+        // refund_unused. It words new checkouts only: a pack keeps the terms
+        // its own checkout recorded.
+        "WITHDRAWAL_MODE": "refund_unused",
+        // Weekdays (Mon to Fri) the withdrawal stays open past a pack's 14th
+        // day, for a last day that falls on a holiday (withdrawal-rules.ts).
+        "WITHDRAWAL_GRACE_WEEKDAYS": "3",
+        // Who sells the credits: the seller line in the purchase and
+        // withdrawal mails (checkout-consent.ts). An empty name, address or
+        // email shows "[TRADER_NAME]" and the like, and the log names what
+        // is missing; a production deploy without a name and an address
+        // fails (scripts/assert-prod-trader-details.mjs). The VAT ID is
+        // optional: a sole trader outside the VAT system leaves it empty,
+        // and the mails leave the VAT sentence out.
+        "TRADER_NAME": "",
+        "TRADER_ADDRESS": "",
+        "TRADER_EMAIL": "hello@mercurypitch.com",
+        "TRADER_VAT_ID": "",
         // Dev is the testing environment: the dev frontend, any localhost port
         // (local vite, tour walks), and per-PR preview Workers may call it.
         // `*.workers.dev` allows the versioned preview frontends
@@ -333,6 +354,15 @@
         "RETENTION_FUNNEL_MONTHS": "13",
         "RETENTION_RATE_LIMIT_DAYS": "2",
         "RETENTION_PROMO_EMAIL_DAYS": "30",
+        // The withdrawal and the seller: see the dev block. TRADER_NAME and
+        // TRADER_ADDRESS must be filled in before a release tag: the
+        // production deploy refuses to go out without them.
+        "WITHDRAWAL_MODE": "refund_unused",
+        "WITHDRAWAL_GRACE_WEEKDAYS": "3",
+        "TRADER_NAME": "",
+        "TRADER_ADDRESS": "",
+        "TRADER_EMAIL": "hello@mercurypitch.com",
+        "TRADER_VAT_ID": "",
         // PROD IS STRICT: only the real app domains. No localhost — a
         // locally served build must never reach the prod DB (this is what
         // let tour walks/previews create thousands of junk anonymous

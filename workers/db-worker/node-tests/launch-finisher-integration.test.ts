@@ -230,6 +230,11 @@ function paidEvent(
         payment_intent: paymentIntent,
         amount_total: 500,
         currency: 'eur',
+        // What Stripe reports when the session asked for the checkbox.
+        consent:
+          params.get('consent_collection[terms_of_service]') === 'required'
+            ? { terms_of_service: 'accepted' }
+            : null,
         metadata,
       },
     },
@@ -408,14 +413,17 @@ describe('using all five launch credits', () => {
 
     const before = await checkout(singer)
     expect(before.has('metadata[offer]')).toBe(false)
-    expect(before.has('custom_text[submit][message]')).toBe(false)
+    expect(before.get('custom_text[submit][message]')).toBe(
+      'Your credits are added as soon as you pay.',
+    )
 
     await useAllFive(singer)
     const after = await checkout(singer)
     expect(after.get('metadata[offer]')).toBe('launch-finisher')
     expect(after.get('metadata[bonusCredits]')).toBe('30')
+    // The withdrawal line every pack carries comes first (checkout-consent.ts).
     expect(after.get('custom_text[submit][message]')).toBe(
-      'Your launch offer adds 30 extra credits to this pack.',
+      'Your credits are added as soon as you pay. Your launch offer adds 30 extra credits to this pack.',
     )
     // The price is the pack's own: nothing is created in Stripe.
     expect(after.get('line_items[0][price]')).toBe('price_starter')

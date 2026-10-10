@@ -46,6 +46,7 @@ import { blockedForAnonymous, fromSql, maskPublicRow, TABLES } from './tables'
 import { ManagedTestAccountInactiveError, managedTestAccountErrorResponse, } from './testing-account-state'
 import { handleTestingAccountRequest } from './testing-accounts'
 import { validateWrite } from './validation'
+import { sweepWithdrawals } from './withdrawal'
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -2312,6 +2313,14 @@ export default {
       console.log('[cron] retention sweep:', JSON.stringify(swept))
     } catch (error) {
       console.error('[cron] retention sweep failed:', error)
+    }
+    // What a request left unfinished of a purchase's confirmation mail or a
+    // withdrawal: the refund, Stripe's later word on it, the acknowledgement
+    // (withdrawal.ts). Safe to run while a request is at work.
+    try {
+      await sweepWithdrawals(env, Date.now())
+    } catch (error) {
+      console.error('[cron] withdrawal sweep failed:', error)
     }
   },
 }

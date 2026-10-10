@@ -31,12 +31,9 @@ export const PRIVACY_URL = `${LANDING_ORIGIN}/privacy`
  */
 export const CONTENT_POLICY_URL = `${LANDING_ORIGIN}/terms#your-content`
 
-/**
- * Deep link to the payments/donations section of the Terms — used under the
- * credits and donation panels, where "is this refundable?" is the question
- * that actually matters.
- */
-export const PAYMENTS_TERMS_URL = `${LANDING_ORIGIN}/terms#donations`
+// The footnote under the credit packs links the Terms' withdrawal section,
+// WITHDRAWAL_TERMS_URL in workers/db-worker/src/withdrawal-wording.ts, which
+// the Stripe checkbox and the purchase mail link too.
 
 /**
  * How to delete an account, and what deleting keeps (delete-account.html).

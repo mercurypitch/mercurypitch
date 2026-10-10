@@ -4,7 +4,9 @@
 //
 // GET /api/email-preview lists every variant; ?mail=<id> renders one exactly
 // as Resend would receive it, and &part=text shows its plain-text part. The
-// sample singer is made up and no account, token or address is ever read.
+// sample singer and buyer are made up and no account, token or address is
+// ever read. The seller line in the credit mails is this environment's
+// TRADER_* vars, so the owner can check them before a buyer sees them.
 //
 // Off unless the environment sets EMAIL_PREVIEW=1: the dev worker does, and
 // a local .dev.vars can. Anywhere else this answers 404 like any unknown path.
@@ -15,13 +17,17 @@
 
 import type { Env } from './auth'
 import { fallbackAppOrigin, isAllowedReturnTo } from './auth'
+import { traderDetails } from './checkout-consent'
 import { escapeHtml } from './email'
 import type { MailOrigins } from './email-layout'
 import { renderPurchaseEmail } from './email-purchase'
+import type { WithdrawalEmailVars } from './email-withdrawal'
+import { renderWithdrawalEmail } from './email-withdrawal'
 import { renderConfirmEmail, renderFreshLinkEmail, renderWelcomeEmail, } from './email-welcome'
 import type { RenderedEmail } from './email'
 import type { SignupVoiceprint } from './signup-hint'
 import { parseVoiceprintHint } from './signup-hint'
+import type { TraderDetails } from './withdrawal-wording'
 
 export const EMAIL_PREVIEW_PATH = '/api/email-preview'
 
@@ -37,11 +43,39 @@ export const SAMPLE_VOICEPRINT = parseVoiceprintHint({
 
 const SAMPLE_SIGNED_UP_AT = '2026-10-03T18:20:00.000Z'
 
+/** What a variant renders with: where links point, and who sells. */
+interface PreviewContext extends MailOrigins {
+  trader: TraderDetails
+}
+
 interface Variant {
   id: string
   label: string
-  render: (origins: MailOrigins) => RenderedEmail
+  render: (context: PreviewContext) => RenderedEmail
 }
+
+/** A cancelled Starter pack: 14 of its 20 credits unused, and the launch
+ *  offer's 30 bonus credits with it. */
+const sampleWithdrawal = (
+  o: PreviewContext,
+  refundState: WithdrawalEmailVars['refundState'],
+): RenderedEmail =>
+  renderWithdrawalEmail({
+    ...o,
+    name: 'Sam Singer',
+    email: 'sam@example.com',
+    packLabel: 'Starter',
+    paidCredits: 20,
+    purchasedAtIso: '2026-10-08T12:00:00.000Z',
+    amountMinor: 500,
+    currency: 'eur',
+    submittedAtIso: '2026-10-12T14:32:00.000Z',
+    unusedCredits: 14,
+    bonusCredits: 30,
+    refundMinor: 350,
+    refundState,
+    stripeRefundStatus: refundState === 'refunded' ? 'succeeded' : null,
+  })
 
 const sampleVerifyUrl = (origins: MailOrigins): string =>
   `${origins.appOrigin}/api/auth/verify-email?token=sample-token&returnTo=${encodeURIComponent(origins.appOrigin)}`
@@ -128,6 +162,22 @@ const VARIANTS: readonly Variant[] = [
         amountMinor: 500,
         currency: 'eur',
         orderDateIso: '2026-10-08T12:00:00.000Z',
+        terms: 'refund_unused',
+      }),
+  },
+  {
+    id: 'purchase-waiver',
+    label: 'Credit pack bought, WITHDRAWAL_MODE waiver',
+    render: (o) =>
+      renderPurchaseEmail({
+        ...o,
+        packLabel: 'Starter',
+        credits: 20,
+        balance: 23,
+        amountMinor: 500,
+        currency: 'eur',
+        orderDateIso: '2026-10-08T12:00:00.000Z',
+        terms: 'waiver',
       }),
   },
   {
@@ -143,7 +193,18 @@ const VARIANTS: readonly Variant[] = [
         amountMinor: 500,
         currency: 'eur',
         orderDateIso: '2026-10-28T12:00:00.000Z',
+        terms: 'refund_unused',
       }),
+  },
+  {
+    id: 'withdrawal',
+    label: 'Credit pack cancelled, refunded through Stripe',
+    render: (o) => sampleWithdrawal(o, 'refunded'),
+  },
+  {
+    id: 'withdrawal-by-hand',
+    label: 'Credit pack cancelled, refund to follow by hand',
+    render: (o) => sampleWithdrawal(o, 'manual'),
   },
 ]
 
@@ -194,7 +255,11 @@ export function handleEmailPreview(
   if (variant === undefined) {
     return page('No such mail', 'text/plain; charset=utf-8', 404)
   }
-  const rendered = variant.render({ appOrigin: app, assetOrigin: app })
+  const rendered = variant.render({
+    appOrigin: app,
+    assetOrigin: app,
+    trader: traderDetails(env),
+  })
   return url.searchParams.get('part') === 'text'
     ? page(
         `Subject: ${rendered.subject}\n\n${rendered.text}`,
