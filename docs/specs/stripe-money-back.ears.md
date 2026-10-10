@@ -176,14 +176,14 @@ failure is reported once, by `refund.failed`.
 
 ### REQ-MB-027 — A whole-price withdrawal settles the payment
 
-**When** a withdrawal of the payment refunds its whole price
-(`withdrawals.refundBasis = 'full'`: a purchase with no consent on record,
-CRD Art. 14(4)(b)), the worker shall count everything the payment granted as
-taken back already, so no refund or dispute of it takes any more credits and
-the buyer never owes for credits they used. The worker shall look for that
-withdrawal again after every read of the ledger, so one that lands between
-the read and the write is counted. The alert shall say why nothing was
-taken.
+**When** a withdrawal of the payment refunds its price, less any earlier
+refund (`withdrawals.refundBasis = 'full'`: a purchase with no consent on
+record, CRD Art. 14(4)(b); REQ-MB-052), the worker shall count everything
+the payment granted as taken back already, so no refund or dispute of it
+takes any more credits and the buyer never owes for credits they used. The
+worker shall look for that withdrawal again after every read of the ledger,
+so one that lands between the read and the write is counted. The alert
+shall say why nothing was taken.
 
 ### REQ-MB-028 — A withdrawal's own refund that fails
 
@@ -277,7 +277,10 @@ its charge still holds (its amount less the refunds that did not fail or get
 canceled), never more than the price; for any other, the unused paid
 credits' share of the price, never more than the charge still holds. A pack
 whose payment has refund or dispute rows but no kept Stripe state shall be
-listed with no amount.
+listed with no amount. The app and the owner's alerts shall call a refund
+for a purchase with no consent on record the whole price only when it
+equals the price: below it, it is what an earlier refund left of the price,
+and with no amount known, the price less any earlier refund.
 
 ### REQ-MB-053 — Read afresh before promising, and before refunding
 
