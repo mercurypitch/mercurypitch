@@ -250,7 +250,7 @@ function recordedByOldWorker(
 }
 
 describe('what one run asks of D1', () => {
-  it('asks once about a page of recorded events, and applies none of them', async () => {
+  it('asks once about a page of recorded purchases and refunds, and applies none of them', async () => {
     const singer = await register(h, 'all-recorded@example.com')
     for (let n = 0; n < 30; n += 1) {
       const purchase = h.stripe.checkout(singer.userId)
