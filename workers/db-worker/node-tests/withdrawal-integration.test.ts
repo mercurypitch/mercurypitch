@@ -923,7 +923,7 @@ describe('Settings › Credits lists what can still be cancelled', () => {
           paidCredits: 140,
           unusedCredits: 126,
           bonusCredits: 0,
-          refund: { amountMinor: 1800, currency: 'eur' },
+          refund: { amountMinor: 1800, currency: 'eur', priceMinor: 2000 },
         },
       ],
       statements: [],
@@ -1523,7 +1523,7 @@ describe('a pack with no consent on record', () => {
         purchaseId: starter,
         basis: 'full',
         unusedCredits: 0,
-        refund: { amountMinor: 500, currency: 'eur' },
+        refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
       }),
       expect.objectContaining({ basis: 'unused', unusedCredits: 140 }),
     ])
@@ -2612,7 +2612,7 @@ describe('a recorded consent stands only once the purchase mail confirmed it', (
       expect.objectContaining({
         purchaseId: starter,
         basis: 'full',
-        refund: { amountMinor: 500, currency: 'eur' },
+        refund: { amountMinor: 500, currency: 'eur', priceMinor: 500 },
       }),
     ])
     const res = await withdraw(sam, starter)
@@ -2660,7 +2660,7 @@ describe('a recorded consent stands only once the purchase mail confirmed it', (
       expect.objectContaining({
         basis: 'unused',
         unusedCredits: 40,
-        refund: { amountMinor: 571, currency: 'eur' },
+        refund: { amountMinor: 571, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     expect(purchaseMails().at(-1)?.text).toContain(
@@ -3025,7 +3025,7 @@ describe('a partial refund in the Stripe dashboard', () => {
         purchaseId: plus,
         basis: 'unused',
         unusedCredits: 112,
-        refund: { amountMinor: 1600, currency: 'eur' },
+        refund: { amountMinor: 1600, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     const res = await withdraw(sam, plus)
@@ -4117,7 +4117,7 @@ describe('a dispute and the withdrawal (#970, F4)', () => {
       expect.objectContaining({
         purchaseId: plus,
         unusedCredits: 126,
-        refund: { amountMinor: 1800, currency: 'eur' },
+        refund: { amountMinor: 1800, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     const res = await withdraw(sam, plus)
@@ -4214,7 +4214,7 @@ describe('a dispute and the withdrawal (#970, F4)', () => {
       expect.objectContaining({
         purchaseId: plus,
         unusedCredits: 140,
-        refund: { amountMinor: 2000, currency: 'eur' },
+        refund: { amountMinor: 2000, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     expect((await withdraw(sam, plus)).body.statement).toMatchObject({
@@ -4305,7 +4305,7 @@ describe('what a withdrawal refunds of what the charge holds (#970, F9)', () => 
     expect((await listFor(sam)).body.packs).toEqual([
       expect.objectContaining({
         unusedCredits: 130,
-        refund: { amountMinor: 1850, currency: 'eur' },
+        refund: { amountMinor: 1850, currency: 'eur', priceMinor: 2000 },
       }),
     ])
     expect((await withdraw(sam, plus)).body.statement).toMatchObject({
@@ -4320,7 +4320,7 @@ describe('what a withdrawal refunds of what the charge holds (#970, F9)', () => 
     const plus = await buy(sam, 'pack-plus', 'pi_plus', false)
     expect((await listFor(sam)).body.packs).toEqual([
       expect.objectContaining({
-        refund: { amountMinor: 2000, currency: 'eur' },
+        refund: { amountMinor: 2000, currency: 'eur', priceMinor: 2000 },
       }),
     ])
 

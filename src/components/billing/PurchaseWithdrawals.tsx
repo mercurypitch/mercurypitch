@@ -41,16 +41,25 @@ const plural = (n: number, one: string, many: string): string =>
   `${n} ${n === 1 ? one : many}`
 
 /** What cancelling the pack refunds. A pack with no consent on record
- *  refunds the whole price. */
+ *  refunds its price, less any refund made of it already: "the whole
+ *  price" only when nothing was. */
 function refundOf(pack: CancellablePack): string {
-  const money =
-    pack.refund === null
-      ? null
-      : formatPrice(pack.refund.amountMinor, pack.refund.currency)
-  if (pack.basis === 'full') {
-    return money === null ? 'the whole price' : `${money}, the whole price`
+  const refund = pack.refund
+  const full = pack.basis === 'full'
+  if (refund === null) {
+    return full
+      ? 'the price, less any earlier refund'
+      : 'the price of those credits'
   }
-  return money ?? 'the price of those credits'
+  const money = formatPrice(refund.amountMinor, refund.currency)
+  if (!full) return money
+  // An older db-worker sends no price to measure the refund against.
+  if (refund.priceMinor === undefined) {
+    return 'the price, less any earlier refund'
+  }
+  return refund.amountMinor === refund.priceMinor
+    ? `${money}, the whole price`
+    : `${money}, what's left after an earlier refund`
 }
 
 /** What leaves the balance with the pack, or null when nothing is left. */
@@ -69,9 +78,10 @@ function creditsTaken(pack: CancellablePack): string | null {
 function consequence(pack: CancellablePack): string {
   const taken = creditsTaken(pack)
   const take = taken === null ? '' : `take ${taken} off your balance and `
-  // "refund €5.00, the whole price, to the card": the aside takes both
-  // commas.
-  const aside = pack.basis === 'full' && pack.refund !== null ? ',' : ''
+  // "refund €5.00, the whole price, to the card": what a pack with no
+  // consent on record refunds always carries an aside (refundOf), and the
+  // aside takes both commas.
+  const aside = pack.basis === 'full' ? ',' : ''
   return `We'll ${take}refund ${refundOf(pack)}${aside} to the card or account you paid with.`
 }
 

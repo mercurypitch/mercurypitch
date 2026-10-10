@@ -205,7 +205,11 @@ function packView(
     refund:
       facts.price === null || refund === null
         ? null
-        : { amountMinor: refund, currency: facts.price.currency },
+        : {
+            amountMinor: refund,
+            currency: facts.price.currency,
+            priceMinor: facts.price.amountMinor,
+          },
   }
 }
 

@@ -127,11 +127,23 @@ export function refundMoney(row: StatementRow): string {
     : ''
 }
 
+/** Why the refund of a pack with no consent on record is what it is: the
+ *  whole price, what an earlier refund left of it, or, while the amount is
+ *  not known, the price less any earlier refund. */
+function wholeBasis(row: StatementRow): string {
+  if (!priceKnown(row)) {
+    return 'the price less any earlier refund: no consent on record'
+  }
+  return row.refundMinor === row.amountMinor
+    ? 'the whole price: no consent on record'
+    : "what's left of the price: no consent on record"
+}
+
 /** What the refund is, in words for the owner. */
 export function refundLine(row: StatementRow): string {
   const whole = row.refundBasis === 'full'
   const share = whole
-    ? 'everything that was paid'
+    ? wholeBasis(row)
     : `${row.unusedCredits}/${row.paidCredits} of what was paid, rounded down to the cent`
   if (row.priceSource === 'pending') {
     // Asked again only while the refund waits for it (withdrawal-finish.ts).
@@ -140,10 +152,8 @@ export function refundLine(row: StatementRow): string {
       : `Refund: ${share}; Stripe has not said what was paid`
   }
   if (!priceKnown(row)) {
-    return whole
-      ? 'Refund: everything that was paid (no consent on record); the price paid is not on record'
-      : `Refund: ${share}; the price paid is not on record`
+    return `Refund: ${share}; the price paid is not on record`
   }
-  const basis = whole ? ', the whole price: no consent on record' : ''
+  const basis = whole ? `, ${wholeBasis(row)}` : ''
   return `Refund: ${formatMoney(row.refundMinor, row.currency)} of ${formatMoney(row.amountMinor, row.currency)}, ${row.refundStatus}${basis}`
 }

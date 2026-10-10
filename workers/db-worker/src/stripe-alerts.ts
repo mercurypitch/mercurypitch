@@ -104,7 +104,7 @@ function creditLines(moved: CreditsMoved): string[] {
         : `No credits moved now. Refunds and disputes hold ${moved.held} of the ${moved.granted} the payment granted.`
   const whole = moved.settledWhole
     ? [
-        'A withdrawal refunded the whole price of this payment (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.',
+        "A withdrawal refunded this payment's price, less any earlier refund (no consent on record): the credits the buyer used stay theirs, so no refund or dispute takes any back.",
       ]
     : moved.keptUsed > 0
       ? [
