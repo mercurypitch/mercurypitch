@@ -82,28 +82,30 @@ without it, claims stay bounded per account only.
 
 ### Migrations
 
-Prod ran `0055` with `v0.9.16`, so this release brings eleven. `wrangler d1
+Prod ran `0055` with `v0.9.16`, so this release brings thirteen. `wrangler d1
 migrations apply` runs the files it has not recorded in file-name order:
 
-| Migration                                | PR   | What it does                                                                                                              |
-| ---------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------- |
-| `0056_confirm_reminder_sends`            | #960 | `confirmReminderSends (campaign, userId)`: one fresh confirm link per account, ever                                       |
-| `0057_promo_email_claims`                | #961 | `promoEmailClaims`: a keyed HMAC of the confirmed address per promo claim, kept after the account goes                    |
-| `0058_ledger_payment_intent`             | #961 | `creditLedger.paymentIntentId` and its index, so refunds and disputes find what a payment granted; not back-filled        |
-| `0059_offer_unlocks`                     | #961 | `offerUnlocks`: the moment an account earned the launch reward, written once                                              |
-| `0060_checkout_consents_and_withdrawals` | #968 | `checkoutConsents` (one row per paid pack) and `withdrawals` (one statement per pack, `purchaseId` UNIQUE)                |
-| `0061_withdrawal_refund_tracking`        | #968 | `withdrawals.refundBasis`, `priceSource`, `stripeRefundStatus`; index of unsent purchase mails                            |
-| `0062_withdrawal_sweep_attempts`         | #968 | `refundTriedAt`, `refundEscalatedAt`, `mailAttempts` for the sweep                                                        |
-| `0063_retention_sweep_indexes`           | #969 | `createdAt` indexes on `mirrorEvents` and `funnelAcquisition`, `windowStart` on `auth_ratelimit`; changes no rows         |
-| `0064_stripe_charges`                    | #970 | `stripeCharges`: what Stripe last said of a charge money went back on, one row per PaymentIntent                          |
-| `0065_reapply_money_back_events`         | #970 | renames refund and dispute events v0.9.16 recorded without applying to `reopened:<type>`, so the first sweep applies them |
-| `0066_withdrawal_mail_outcomes`          | #968 | `mailError`, `mailWarnedAt`, `refundHandedOverAt`; partial index `idx_checkoutConsents_open`                              |
+| Migration                                | PR   | What it does                                                                                                                |
+| ---------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| `0056_confirm_reminder_sends`            | #960 | `confirmReminderSends (campaign, userId)`: one fresh confirm link per account, ever                                         |
+| `0057_promo_email_claims`                | #961 | `promoEmailClaims`: a keyed HMAC of the confirmed address per promo claim, kept after the account goes                      |
+| `0058_ledger_payment_intent`             | #961 | `creditLedger.paymentIntentId` and its index, so refunds and disputes find what a payment granted; not back-filled          |
+| `0059_offer_unlocks`                     | #961 | `offerUnlocks`: the moment an account earned the launch reward, written once                                                |
+| `0060_checkout_consents_and_withdrawals` | #968 | `checkoutConsents` (one row per paid pack) and `withdrawals` (one statement per pack, `purchaseId` UNIQUE)                  |
+| `0061_withdrawal_refund_tracking`        | #968 | `withdrawals.refundBasis`, `priceSource`, `stripeRefundStatus`; index of unsent purchase mails                              |
+| `0062_withdrawal_sweep_attempts`         | #968 | `refundTriedAt`, `refundEscalatedAt`, `mailAttempts` for the sweep                                                          |
+| `0063_retention_sweep_indexes`           | #969 | `createdAt` indexes on `mirrorEvents` and `funnelAcquisition`, `windowStart` on `auth_ratelimit`; changes no rows           |
+| `0064_stripe_charges`                    | #970 | `stripeCharges`: what Stripe last said of a charge money went back on, one row per PaymentIntent                            |
+| `0065_reapply_money_back_events`         | #970 | renames refund and dispute events v0.9.16 recorded without applying to `reopened:<type>`, so the first sweep applies them   |
+| `0066_withdrawal_mail_outcomes`          | #968 | `mailError`, `mailWarnedAt`, `refundHandedOverAt`; partial index `idx_checkoutConsents_open`                                |
+| `0067_chargeback_alerts`                 | #970 | `chargebackAlerts`: one row per dispute once its chargeback alert is raised, so a later event does not raise it again       |
+| `0068_withdrawal_refund_failure_claims`  | #970 | `withdrawals.refundFailureClaimedAt` and `refundFailureClaimedBy`: the delivery that claims a failed refund tells the owner |
 
 Dev applied them in merge order instead (0056; 0057 to 0059; 0063; 0060 to
-0062 and 0066; then #970's 0064 and 0065). #968 checked that 0066 applies
-cleanly in every order a D1 can see. The deploy applies the migrations before
-it deploys the worker, so 0065 has run when the old worker gets its last
-events.
+0062 and 0066; then #970's 0064, 0065, 0067 and 0068). #968 checked that
+0066 applies cleanly in every order a D1 can see. The deploy applies the
+migrations before it deploys the worker, so 0065 has run when the old worker
+gets its last events.
 
 ### Web and API: the launch gift and the finish-five reward (#961, #966)
 
@@ -224,8 +226,9 @@ paid)` of a payment's credits, pack and launch bonus together. Each event
   `charge.dispute.funds_withdrawn`. `won`, `warning_closed` and `prevented`
   give back, `lost` keeps.
 - **With withdrawals.** Withdrawal rows count as already taken, a
-  whole-price withdrawal settles the payment, and a purchase with no consent
-  on record never loses the credits its buyer used. A pack is settled while a
+  whole-price withdrawal settles the payment and keeps what an earlier
+  refund took back, and a purchase with no consent on record never loses the
+  credits its buyer used. A pack is settled while a
   chargeback holds its money or refunds returned its whole charge. A
   withdrawal never refunds past what the charge still holds, read from
   Stripe before the promise and before every attempt. A withdrawal's own
@@ -235,8 +238,20 @@ paid)` of a payment's credits, pack and launch bonus together. Each event
   with one `billingEvents` query a page, and applies at most 25 refunds and
   disputes a run. After 0065 it reapplies the reopened events in one
   "Reapplied N event(s) after migration 0065" summary.
+- **Alerts.** `charge.dispute.funds_withdrawn` tells the owner of a
+  chargeback unless the dispute's `created` event already did
+  (`chargebackAlerts`, 0067), so an inquiry that turns into a chargeback is
+  no longer silent. A failed withdrawal refund is told once per statement:
+  the delivery that claims it sends the alert (0068), and a failed send
+  releases the claim and answers 500, so Stripe delivers it again.
+- An account's pack list reads its charges with one bound value
+  (`json_each`), so it no longer fails past D1's 100 bound parameters.
 - Log lines mask every email address, including those in Resend's and
-  Google's error text.
+  Google's error text: any script, every character RFC 5322 allows before
+  the `@`, quoted local parts and address literals.
+- Alerts stay best-effort: a send that fails at the wrong moment loses that
+  alert, and Stripe's own dispute emails are the backup. The follow-ups are
+  in #970's body.
 
 ### Web and API: retention (#969)
 
