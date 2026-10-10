@@ -188,4 +188,39 @@ describe('maskAddresses', () => {
       maskAddresses('to a.b@example.com and <c+d@mail.example.org>, code 42'),
     ).toBe('to a***@***.com and <c***@***.org>, code 42')
   })
+
+  // Sign-up takes any address with no whitespace, an @ and a dot after it
+  // (EMAIL_RE in auth.ts), and a provider's error text can quote one back
+  // (#970 review, F-7).
+  it.each([
+    ['Invalid `to` field: maria.k@example.com', ['maria', 'example']],
+    [
+      '{"message":"to: Jane <jane.doe+tag@sub.example.co.uk>"}',
+      ['jane.doe', 'example'],
+    ],
+    ['müller@example.com was refused', ['müller', 'mül', 'ller', 'example']],
+    ['josé@example.com was refused', ['josé', 'example']],
+    ['user@exämple.com was refused', ['exämple', 'mple']],
+    ['"quoted local"@example.com', ['quoted', 'local', 'example']],
+    ['user@[192.0.2.1]', ['192.0.2.1', '192']],
+  ])('leaves nothing of %s readable', (input, secrets) => {
+    const output = maskAddresses(input)
+
+    expect(secrets.filter((secret) => output.includes(secret))).toEqual([])
+    expect(output).toContain('***@***')
+  })
+
+  it('masks a Unicode address the way it masks an ASCII one', () => {
+    expect(maskAddresses('josé@exämple.com was refused')).toBe(
+      'j***@***.com was refused',
+    )
+    expect(maskAddresses('müller@example.com')).toBe('m***@***.com')
+    // "é" written as "e" plus a combining accent (NFD).
+    expect(maskAddresses('jose\u0301@example.com')).toBe('j***@***.com')
+    // A first letter outside the BMP shows whole, never half of it.
+    expect(maskAddresses('\u{1D4A5}ane@example.com')).toBe(
+      '\u{1D4A5}***@***.com',
+    )
+    expect(maskAddresses('to <user@[192.0.2.1]>')).toBe('to <u***@***>')
+  })
 })

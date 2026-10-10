@@ -55,18 +55,29 @@ export function formatMoney(amountMinor: number, currency: string): string {
 }
 
 /** An address as a log line may show it: enough to tell two apart, not
- *  enough to write to. "maria.k@example.com" becomes "m***@***.com". */
+ *  enough to write to. "maria.k@example.com" becomes "m***@***.com", and
+ *  "user@[192.0.2.1]" becomes "u***@***". */
 export function maskEmail(address: string): string {
   const at = address.lastIndexOf('@')
   if (at <= 0) return '***'
   const domain = address.slice(at + 1)
   const dot = domain.lastIndexOf('.')
-  return `${address[0]}***@***${dot === -1 ? '' : domain.slice(dot)}`
+  // The whole first character, never half of one outside the BMP.
+  const first = String.fromCodePoint(address.codePointAt(0) ?? 0x2a)
+  // An address literal ("[192.0.2.1]") has no top-level domain to show.
+  const tld = dot === -1 || domain.startsWith('[') ? '' : domain.slice(dot)
+  return `${first}***@***${tld}`
 }
 
 /** Anything that reads like an address, in text a log line carries from
- *  elsewhere (an API's error body, a thrown error). */
-const ADDRESS = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*/g
+ *  elsewhere (an API's error body, a thrown error): letters, marks and
+ *  digits in any script ("josé@exämple.com"), a quoted local part
+ *  ("\"quoted local\"@example.com") and an address literal
+ *  ("user@[192.0.2.1]"). On plain ASCII the letter and digit classes are
+ *  the A-Z, a-z and 0-9 they always were, so an ordinary address masks as
+ *  it did before (#970 review, F-7). */
+const ADDRESS =
+  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}._%+-]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */

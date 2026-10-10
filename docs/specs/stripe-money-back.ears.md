@@ -342,4 +342,10 @@ amounts, and never an email address, a card's details or a secret. An email
 address a log line must name shall be masked (`maskEmail`). What a provider
 answers when it refuses a request (Resend refusing a mail, Google refusing a
 sign-in code) shall be logged with every address in it masked
-(`maskAddresses`).
+(`maskAddresses`). Letters, marks and digits in any script
+("josé@exämple.com"), a quoted local part and an address literal
+("user@[192.0.2.1]" logs as "u***@***") are masked whole. Known gap: an
+ASCII address masks as it always did, so a local part with a character
+other than a letter, a digit or one of `._%+-` still shows what comes
+before that character ("mary.o'brien@example.com" logs as
+"mary.o'b***@***.com").
