@@ -172,6 +172,69 @@ export function justBefore(
   }
 }
 
+/**
+ * D1 that holds the first read (`first` or `all`) of a statement whose SQL
+ * matches `hold` until the first statement whose SQL matches `until` has
+ * run on its own (`run`). `arrived` settles once that read waits. That is
+ * how one request reads just after another request's write, whatever
+ * else either does first. Each fires once.
+ */
+export function heldUntil(
+  db: SqliteD1Database,
+  hold: RegExp,
+  until: RegExp,
+): { d1: D1Database; arrived: Promise<void> } {
+  let open = (): void => {}
+  const opened = new Promise<void>((resolve) => {
+    open = resolve
+  })
+  let arrive = (): void => {}
+  const arrived = new Promise<void>((resolve) => {
+    arrive = resolve
+  })
+  let holding = true
+  let waiting = true
+  const statement = (
+    sql: string,
+    inner: SqliteD1Statement,
+  ): SqliteD1Statement =>
+    new Proxy(inner, {
+      get(target, property, receiver) {
+        if (property === 'bind') {
+          return (...values: SQLInputValue[]) =>
+            statement(sql, target.bind(...values))
+        }
+        const value: unknown = Reflect.get(target, property, receiver)
+        const query = value as (...args: unknown[]) => Promise<unknown>
+        const read = property === 'first' || property === 'all'
+        if (read && holding && hold.test(sql)) {
+          holding = false
+          return async (...args: unknown[]) => {
+            arrive()
+            await opened
+            return query.apply(target, args)
+          }
+        }
+        if (property === 'run' && waiting && until.test(sql)) {
+          waiting = false
+          return async (...args: unknown[]) => {
+            const result = await query.apply(target, args)
+            open()
+            return result
+          }
+        }
+        return value
+      },
+    })
+  return {
+    d1: {
+      prepare: (sql: string) => statement(sql, db.prepare(sql)),
+      batch: (statements: SqliteD1Statement[]) => db.batch(statements),
+    } as unknown as D1Database,
+    arrived,
+  }
+}
+
 const MIGRATIONS_DIR = join(import.meta.dirname, '../migrations')
 
 /** Migration filenames in the order the worker applies them. */

@@ -158,7 +158,9 @@ dispute before it alerts (`chargebackAlertClaims`, migration 0069), and only
 the delivery that claimed it shall alert. Another event about the same
 dispute shall leave the alert to the claim and answer 200; the same event,
 while its twin holds the claim, shall answer 500. A claim shall go back when
-its alert does not go, and one older than 10 minutes belongs to a delivery
+its alert does not go, so a delivery that failed to claim the dispute and
+then finds neither a claim nor the alert recorded shall answer 500 as well,
+whichever event it is. A claim older than 10 minutes belongs to a delivery
 that died and shall be taken over. An alert the sweep holds for its
 migration 0065 summary (REQ-MB-032) counts as sent once it is held.
 

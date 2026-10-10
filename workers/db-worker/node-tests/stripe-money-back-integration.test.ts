@@ -14,7 +14,7 @@
 // what changed, Stripe's API says what is true now.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { interleaved, justBefore, SqliteD1Database } from './sqlite-d1'
+import { heldUntil, interleaved, justBefore, SqliteD1Database, } from './sqlite-d1'
 import type { StripeEvent } from './stripe-fake'
 import type { Harness, Singer } from './stripe-harness'
 import { alerts, balance, deliver, openHarness, recorded, register, spend, sweep, takeBacks, } from './stripe-harness'
@@ -854,9 +854,12 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
       '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026'
 
     /** Resend answers 500 to each billing mail whose subject has `word`,
-     *  until `up()`. A refused mail never reaches h.sent, so alerts(h)
-     *  lists only the mails Resend took. */
-    function resendRefuses(word: string): {
+     *  until `up()`, once `first()` has settled. A refused mail never
+     *  reaches h.sent, so alerts(h) lists only the mails Resend took. */
+    function resendRefuses(
+      word: string,
+      first: () => Promise<unknown> = async () => {},
+    ): {
       refused: () => number
       up: () => void
     } {
@@ -874,6 +877,7 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
               : null
           if (down && mail !== null && mail.subject.includes(word)) {
             refused += 1
+            await first()
             return Response.json(
               { statusCode: 500, name: 'internal_server_error' },
               { status: 500 },
@@ -1072,6 +1076,59 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
       expect(recorded(h, escalation.id)).toBe(true)
       expect(claims()).toEqual([])
     })
+
+    /** Who told the owner and who holds the claim, as a delivery that
+     *  failed to claim the dispute reads them (claimedElsewhere). */
+    const WHO_HOLDS = /AS toldBy,\s+\(SELECT eventId FROM chargebackAlertClaims/
+    /** A delivery giving its claim back (release). */
+    const RELEASE = /^DELETE FROM chargebackAlertClaims/
+
+    it.each([
+      ['Stripe', []],
+      // The sweep says it could not apply the event, as for any it cannot.
+      [
+        'the sweep',
+        ['[MercuryPitch billing] Sweep could not apply 1 event(s)'],
+      ],
+    ] as const)(
+      'tells the owner once when a refused delivery gives the claim back while its twin from %s reads it (#975 review, X)',
+      async (twinFrom, before) => {
+        const { start, escalation } = await escalating('credits unused')
+        const gate = heldUntil(
+          new SqliteD1Database(h.sqlite),
+          WHO_HOLDS,
+          RELEASE,
+        )
+        const real = h.env.DB
+        h.env.DB = gate.d1
+        let twin: Promise<unknown> | null = null
+        const resend = resendRefuses('Chargeback', async () => {
+          // The twin fails to claim the dispute, and reads who holds it
+          // only once the holder, refused, has given the claim back.
+          if (twin === null) {
+            twin = twinFrom === 'Stripe' ? deliver(h, escalation) : sweep(h)
+          }
+          await Promise.race([gate.arrived, twin])
+        })
+        const holder = await deliver(h, escalation)
+        await twin
+        h.env.DB = real
+
+        // Neither told the owner, so neither may record the event.
+        expect(holder.status).toBe(500)
+        expect(resend.refused()).toBe(1)
+        expect(recorded(h, escalation.id)).toBe(false)
+        expect(told()).toEqual([])
+
+        resend.up()
+        expect((await deliver(h, escalation)).status).toBe(200)
+        await sweep(h)
+        expect(subjects(start)).toEqual([...before, CHARGEBACK])
+        expectChargebackAlert()
+        expect(recorded(h, escalation.id)).toBe(true)
+        expect(claims()).toEqual([])
+      },
+    )
   })
 
   describe('that opens as one (#970 round-4 review, N-2)', () => {

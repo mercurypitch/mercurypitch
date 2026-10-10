@@ -18,7 +18,8 @@
 // one mails. Another event about the same dispute, while one holds the
 // claim, leaves the mail to it; the same event, delivered again while its
 // twin holds the claim, throws, so Stripe sends it once more. A claim goes
-// back when its mail does not go, and one older than CLAIM_STALE_MS belongs
+// back when its mail does not go, so a delivery that finds it gone and the
+// dispute not told throws as well. One older than CLAIM_STALE_MS belongs
 // to a delivery that died and is taken over.
 //
 // The mail that tells the owner says all the other event's would: the
@@ -120,7 +121,9 @@ async function movedSince(
 /** What a delivery that did not get the claim answers, once another event
  *  told the owner or holds the claim: 'moved-since' when this one moved
  *  credits that mail cannot show, 'told' otherwise. The same event, held
- *  by its twin, throws, so Stripe sends it once more. */
+ *  by its twin, throws, so Stripe sends it once more, and so does any
+ *  event that finds the claim given back with the dispute not told: the
+ *  holder's mail did not go. */
 async function claimedElsewhere(
   env: Env,
   disputeId: string,
@@ -134,7 +137,7 @@ async function claimedElsewhere(
     .first<{ toldBy: string | null; claimedBy: string | null }>()
   const toldBy = now?.toldBy ?? null
   const claimedBy = now?.claimedBy ?? null
-  if (toldBy === null && claimedBy === eventId) {
+  if (toldBy === null && (claimedBy === eventId || claimedBy === null)) {
     throw new ChargebackNotTold(disputeId)
   }
   const since = await movedSince(env, eventId, toldBy ?? claimedBy)
