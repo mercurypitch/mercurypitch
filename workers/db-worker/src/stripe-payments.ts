@@ -86,7 +86,7 @@
 import type { BillingAlert, CreditsMoved, EventRef, MoneyBackFacts, } from './stripe-alerts'
 import { earlyMoneyBackAlert, moneyBackAlert, nothingOnRecordAlert, notAppliedAlert, } from './stripe-alerts'
 import type { ChargeState, DisputeState, ReadFor, StripeGet, } from './stripe-charge'
-import { anyDisputeHolds, chargeIdOf, disputeFrom, isRecord, keepCharge, loadCharge, markCharge, moneyGoneBack, readCharge, refundEnded, StripeUnavailable, } from './stripe-charge'
+import { anyDisputeHolds, chargeIdOf, disputeFrom, isInquiry, isRecord, keepCharge, loadCharge, markCharge, moneyGoneBack, readCharge, refundEnded, StripeUnavailable, } from './stripe-charge'
 import type { Env } from './auth'
 import type { MoneyBackResult, StripeEventInput } from './stripe-events'
 import type { ResendConfig } from './email'
@@ -578,6 +578,33 @@ function rowFor(event: StripeEventInput): SettleRow {
   }
 }
 
+/**
+ * Whether this event is the first word the owner gets of the dispute's
+ * chargeback, recorded when it is (chargebackAlerts, migration 0067): a
+ * dispute's opening read as a chargeback says the bank took the money, and
+ * so does charge.dispute.funds_withdrawn for a dispute nothing told them of
+ * before, one that opened as an inquiry or whose opening is not on record.
+ * INSERT OR IGNORE, so of two deliveries at once, one is the news.
+ */
+async function chargebackNews(
+  env: Env,
+  event: StripeEventInput,
+  dispute: DisputeState | null,
+  paymentIntent: string | null,
+): Promise<boolean> {
+  if (dispute === null) return false
+  const tells =
+    event.type === 'charge.dispute.funds_withdrawn' ||
+    (event.type === 'charge.dispute.created' && !isInquiry(dispute))
+  if (!tells) return false
+  const res = await env.DB.prepare(
+    'INSERT OR IGNORE INTO chargebackAlerts (disputeId, paymentIntentId, eventId, alertedAt) VALUES (?, ?, ?, ?)',
+  )
+    .bind(dispute.id, paymentIntent, event.id, new Date().toISOString())
+    .run()
+  return res.meta.changes > 0
+}
+
 /** The account a payment's credits went to, or null when no credits on
  *  record name the payment. */
 async function creditOwner(
@@ -626,12 +653,14 @@ async function nothingOnRecord(
   )
   const facts = factsOf(event, charge)
   // A refund update is news only when it canceled the refund: a failure is
-  // refund.failed's to report, so the owner hears of it once. The money
-  // leaving for a dispute is its opening's to report.
+  // refund.failed's to report, so the owner hears of it once.
   if (event.type === 'refund.updated' && facts.refundEnded !== 'canceled') {
     return
   }
-  if (event.type === 'charge.dispute.funds_withdrawn') return
+  // The money leaving for a dispute is news only when nothing told the
+  // owner of that chargeback before.
+  const news = await chargebackNews(env, event, facts.dispute, paymentIntent)
+  if (event.type === 'charge.dispute.funds_withdrawn' && !news) return
   const userId = paymentIntent === null ? null : await donor(env, paymentIntent)
   await send(
     nothingOnRecordAlert(
@@ -708,13 +737,13 @@ export async function applyMoneyBack(
   })
   if (moved.wrote) {
     logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
+    const facts = factsOf(event, moved.charge)
+    const news = await chargebackNews(env, event, facts.dispute, paymentIntent)
     await send(
-      moneyBackAlert(
-        refOf(event),
-        moved.charge,
-        moved,
-        factsOf(event, moved.charge),
-      ),
+      moneyBackAlert(refOf(event), moved.charge, moved, {
+        ...facts,
+        chargebackNews: news,
+      }),
     )
   }
   return { kind: 'applied' }

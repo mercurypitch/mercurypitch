@@ -688,3 +688,137 @@ describe('the launch bonus', () => {
     expect(takeBacks(h, singer.userId).map((row) => row.delta)).toEqual([-60])
   })
 })
+
+describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
+  // charge.dispute.funds_withdrawn tells the owner the bank took the money
+  // whenever nothing told them of that chargeback before: the dispute
+  // opened as an inquiry, or its opening is not on record. That holds
+  // whether or not credits moved. A chargeback whose opening said so
+  // already gets no second mail.
+
+  const CHARGEBACK =
+    '[MercuryPitch billing] Chargeback: €5.00 taken from your Stripe balance'
+
+  /** What the owner was sent since the `from`th alert. */
+  function subjects(from = 0): string[] {
+    return alerts(h)
+      .slice(from)
+      .map((alert) => alert.subject)
+  }
+
+  /** The chargeback alert, with the facts the owner answers it from. */
+  function expectChargebackAlert(): void {
+    const alert = alerts(h).find((entry) => entry.subject === CHARGEBACK)
+    expect(alert?.text).toContain('Amount: €5.00 of a €5.00 payment')
+    expect(alert?.text).toContain('Reason: fraudulent')
+    expect(alert?.text).toContain('Evidence due: 30 October 2026, 23:59 UTC')
+    expect(alert?.text).toContain(
+      'https://dashboard.stripe.com/test/disputes/dp_',
+    )
+  }
+
+  /** A pack bought with no consent on record, every credit spent. */
+  async function usedUp(singer: Singer): Promise<string> {
+    const purchase = h.stripe.checkout(singer.userId, { consent: false })
+    expect((await deliver(h, purchase)).status).toBe(200)
+    setSongCost(30)
+    expect((await spend(h, singer, 'job-all-30')).status).toBe(200)
+    setSongCost(1)
+    expect(balance(h, singer.userId)).toBe(0)
+    return String(purchase.data.object.payment_intent)
+  }
+
+  it('control: tells the owner when an inquiry becomes a chargeback that takes credits', async () => {
+    const singer = await register(h, 'control@example.com')
+    const pi = await bought(singer)
+    await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(subjects()).toEqual([
+      '[MercuryPitch billing] Inquiry opened: €5.00, evidence due 30 October 2026',
+      CHARGEBACK,
+    ])
+    expectChargebackAlert()
+  })
+
+  it('tells the owner when an inquiry becomes a chargeback that takes no credits', async () => {
+    const singer = await register(h, 'used-up@example.com')
+    const pi = await usedUp(singer)
+    const start = alerts(h).length
+    await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(subjects(start)).toEqual([
+      '[MercuryPitch billing] Inquiry opened: €5.00, evidence due 30 October 2026',
+      CHARGEBACK,
+    ])
+    expectChargebackAlert()
+  })
+
+  it('tells the owner when an inquiry becomes a chargeback on a payment with no credits on record', async () => {
+    const singer = await register(h, 'nothing@example.com')
+    const purchase = h.stripe.checkout(singer.userId, { credits: 0 })
+    await deliver(h, purchase)
+    const pi = String(purchase.data.object.payment_intent)
+    await deliver(h, h.stripe.dispute(pi, { status: 'warning_needs_response' }))
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(subjects().filter((subject) => subject === CHARGEBACK)).toHaveLength(
+      1,
+    )
+    expectChargebackAlert()
+    expect(alerts(h).at(-1)?.text).toContain('No credits on record')
+  })
+
+  it('tells the owner of a chargeback whose opening is not on record', async () => {
+    const singer = await register(h, 'opening-missed@example.com')
+    const pi = await usedUp(singer)
+    const start = alerts(h).length
+    // Stripe opened a chargeback, but its charge.dispute.created has not
+    // reached the worker.
+    const opened = h.stripe.dispute(pi)
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(subjects(start)).toEqual([CHARGEBACK])
+    expectChargebackAlert()
+    // The opening, when it comes, has its own mail.
+    await deliver(h, opened)
+    expect(subjects(start)).toEqual([
+      CHARGEBACK,
+      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026',
+    ])
+  })
+
+  it('says nothing more of a chargeback whose opening told the owner already', async () => {
+    const singer = await register(h, 'told@example.com')
+    const pi = await usedUp(singer)
+    const start = alerts(h).length
+    await deliver(h, h.stripe.dispute(pi))
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(subjects(start)).toEqual([
+      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026',
+    ])
+  })
+
+  it('says nothing more of a chargeback on a payment with no credits on record whose opening told the owner', async () => {
+    const singer = await register(h, 'told-nothing@example.com')
+    const purchase = h.stripe.checkout(singer.userId, { credits: 0 })
+    await deliver(h, purchase)
+    const pi = String(purchase.data.object.payment_intent)
+    await deliver(h, h.stripe.dispute(pi))
+
+    await deliver(h, h.stripe.escalateDispute(pi))
+
+    expect(subjects()).toEqual([
+      '[MercuryPitch billing] Dispute opened: €5.00, evidence due 30 October 2026',
+    ])
+  })
+})

@@ -262,12 +262,31 @@ describe("a dispute's money leaving the balance", () => {
       'Chargeback: €5.00 taken from your Stripe balance',
     )
     expect(text(alert)).toContain(
-      "turned this payment's inquiry into a chargeback",
+      "The buyer's bank took the disputed amount back from your Stripe balance: the dispute on this payment is a chargeback now.",
     )
     expect(text(alert)).toContain('Taken back now: 30 credit(s)')
     expect(text(alert)).toContain(
       'If you win, the credits come back by themselves.',
     )
+  })
+
+  it('tells of a chargeback nothing told the owner of before, though it took nothing', () => {
+    const escalated = dispute({ status: 'needs_response' })
+    const alert = moneyBackAlert(
+      ref('charge.dispute.funds_withdrawn'),
+      charge({ disputes: [escalated] }),
+      moved({ delta: 0, held: 0, keptUsed: 30 }),
+      { ...about(escalated), chargebackNews: true },
+    )
+
+    expect(alert?.subject).toBe(
+      'Chargeback: €5.00 taken from your Stripe balance',
+    )
+    expect(text(alert)).toContain('Amount: €5.00')
+    expect(text(alert)).toContain('Reason: fraudulent')
+    expect(text(alert)).toContain('Evidence due:')
+    expect(text(alert)).toContain('https://dashboard.stripe.com/')
+    expect(text(alert)).toContain('No credits moved now.')
   })
 
   it("needs no alert when the chargeback's opening took the credits already", () => {

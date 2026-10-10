@@ -18,8 +18,9 @@
 `workers/db-worker/src/withdrawal-refund-failed.ts`,
 `workers/db-worker/src/email.ts` (`maskEmail`, `maskAddresses`),
 `workers/db-worker/src/auth.ts` (`handleGoogleCallback`),
-`workers/db-worker/migrations/0064_stripe_charges.sql` and
-`workers/db-worker/migrations/0065_reapply_money_back_events.sql`.
+`workers/db-worker/migrations/0064_stripe_charges.sql`,
+`workers/db-worker/migrations/0065_reapply_money_back_events.sql` and
+`workers/db-worker/migrations/0067_chargeback_alerts.sql`.
 
 **Tests:** `workers/db-worker/node-tests/stripe-money-back-integration.test.ts`,
 `workers/db-worker/node-tests/stripe-webhook-hygiene-integration.test.ts`,
@@ -132,6 +133,14 @@ deadline and a link to answer it. **When** an inquiry opens
 (`warning_needs_response`, `warning_under_review`), the worker shall take
 nothing, since no money moves unless it becomes a chargeback and Stripe still
 lets the payment be refunded, and shall still alert the owner.
+`charge.dispute.funds_withdrawn` shall alert whenever the owner was not told
+of that dispute's chargeback before: it opened as an inquiry, or its opening
+is not on record. That holds whether or not credits moved, and whether or
+not any credits are on record for the payment (REQ-MB-026). A chargeback
+whose opening told the owner gets no second alert unless the money leaving
+moved credits. The worker shall record each dispute whose chargeback the
+owner was told of (`chargebackAlerts`, migration 0067), so the alert goes
+once.
 
 ### REQ-MB-022 — Closing
 
@@ -172,7 +181,8 @@ refused, takes nothing a second time.
 **When** no credits on record name the payment, the worker shall take nothing
 and alert the owner, naming the donor when the payment was a donation. Of
 the `refund.updated` events, only a cancellation shall send that alert: a
-failure is reported once, by `refund.failed`.
+failure is reported once, by `refund.failed`. A
+`charge.dispute.funds_withdrawn` alerts as REQ-MB-021 says.
 
 ### REQ-MB-027 — A whole-price withdrawal settles the payment
 

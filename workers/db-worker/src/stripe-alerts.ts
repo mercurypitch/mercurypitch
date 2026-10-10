@@ -34,6 +34,10 @@ export interface EventRef {
 export interface MoneyBackFacts {
   dispute: DisputeState | null
   refundEnded: 'failed' | 'canceled' | null
+  /** charge.dispute.funds_withdrawn: nothing told the owner of this
+   *  dispute's chargeback before (it opened as an inquiry, or its opening is
+   *  not on record), so the money leaving is news whatever it moved. */
+  chargebackNews?: boolean
 }
 
 /** What applying a money-back event did to the payment's credits. */
@@ -167,6 +171,13 @@ function openedSubject(dispute: DisputeState): string {
   return `${what} opened: ${amount}${due}`
 }
 
+function chargebackSubject(dispute: DisputeState): string {
+  return `Chargeback: ${money(dispute.amount, dispute.currency)} taken from your Stripe balance`
+}
+
+const CHARGEBACK_INTRO =
+  "The buyer's bank took the disputed amount back from your Stripe balance: the dispute on this payment is a chargeback now."
+
 function openedIntro(dispute: DisputeState): string {
   return isInquiry(dispute)
     ? "A buyer's bank opened an inquiry on this payment. No money has moved yet; left unanswered, an inquiry can become a chargeback."
@@ -279,14 +290,15 @@ export function moneyBackAlert(
       ],
     }
   }
-  // The money left the balance: news when it took credits, so an inquiry
-  // that became a chargeback; a chargeback's opening said it already.
+  // The money left the balance: news when it took credits, or when nothing
+  // told the owner of this chargeback before (it opened as an inquiry, or
+  // its opening is not on record). A chargeback's opening said it already.
   if (event.type === 'charge.dispute.funds_withdrawn' && dispute !== null) {
-    if (moved.delta === 0) return null
+    if (moved.delta === 0 && facts.chargebackNews !== true) return null
     return {
-      subject: `Chargeback: ${money(dispute.amount, dispute.currency)} taken from your Stripe balance`,
+      subject: chargebackSubject(dispute),
       lines: [
-        "The buyer's bank turned this payment's inquiry into a chargeback and took the disputed amount back from your Stripe balance.",
+        CHARGEBACK_INTRO,
         '',
         ...disputeLines(event, charge, dispute),
         '',
@@ -376,7 +388,9 @@ export function nothingOnRecordAlert(
   const subject = isDispute
     ? event.type === 'charge.dispute.created'
       ? openedSubject(dispute)
-      : closedSubject(dispute, null)
+      : event.type === 'charge.dispute.funds_withdrawn'
+        ? chargebackSubject(dispute)
+        : closedSubject(dispute, null)
     : facts.refundEnded !== null
       ? refundEndedSubject(facts.refundEnded, null)
       : 'Refund with no credits on record'
@@ -387,7 +401,9 @@ export function nothingOnRecordAlert(
         ? [
             event.type === 'charge.dispute.created'
               ? openedIntro(dispute)
-              : closedIntro(dispute),
+              : event.type === 'charge.dispute.funds_withdrawn'
+                ? CHARGEBACK_INTRO
+                : closedIntro(dispute),
             '',
             ...disputeLines(event, charge, dispute),
           ]
