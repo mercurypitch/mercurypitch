@@ -1769,7 +1769,7 @@ describe('a pack with no consent on record', () => {
       '[MercuryPitch billing] Withdrawal: refund by hand, the price paid is not on record',
     ])
     expect(acknowledgements()[0]?.text).toContain(
-      "We'll refund what you paid to the card or account you paid with within 14 days.",
+      "We'll refund what you paid, less any earlier refund, to the card or account you paid with within 14 days.",
     )
   })
 })

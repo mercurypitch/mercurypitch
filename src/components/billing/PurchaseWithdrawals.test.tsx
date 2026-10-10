@@ -413,9 +413,45 @@ describe('PurchaseWithdrawals', () => {
     expect(list.textContent).toContain(
       "We'll refund what you paid for those credits within 14 days.",
     )
+    // An earlier refund comes off a refund of the whole price (#970).
     expect(list.textContent).toContain(
+      "We'll refund what you paid, less any earlier refund, within 14 days.",
+    )
+    expect(list.textContent).not.toContain(
       "We'll refund what you paid within 14 days.",
     )
     expect(list.textContent).not.toContain('€0.00')
+  })
+
+  it('says a started refund of the whole price, with no amount on record, is less any earlier refund', async () => {
+    mocks.fetchWithdrawals.mockResolvedValue(
+      answer({
+        packs: [],
+        statements: [
+          statement({
+            basis: 'full',
+            refundMinor: null,
+            stripeRefundStatus: 'pending',
+          }),
+          statement({
+            id: 'statement-2',
+            basis: 'full',
+            refundMinor: 500,
+            stripeRefundStatus: 'pending',
+          }),
+        ],
+      }),
+    )
+    render(() => <PurchaseWithdrawals />)
+
+    const list = await screen.findByRole('list', {
+      name: 'Cancelled purchases',
+    })
+    expect(list.textContent).toContain(
+      "We've started a refund of what you paid, less any earlier refund, to the card or account you paid with.",
+    )
+    expect(list.textContent).toContain(
+      "We've started a refund of €5.00 to the card or account you paid with.",
+    )
   })
 })

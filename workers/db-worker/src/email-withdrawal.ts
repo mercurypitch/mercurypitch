@@ -87,12 +87,15 @@ function statementRows(vars: WithdrawalEmailVars): Array<[string, string]> {
   ]
 }
 
-/** What the refund will be, said before it is made. */
+/** What the refund will be, said before it is made (refundSentence). With
+ *  no amount on record, a refund of the whole price still leaves out what
+ *  an earlier refund gave back, and a comma closes that aside before the
+ *  sentence goes on. */
 function refundToCome(vars: WithdrawalEmailVars): string {
   if (vars.refundMinor !== null)
     return formatMoney(vars.refundMinor, vars.currency)
   return vars.basis === 'full'
-    ? 'what you paid'
+    ? 'what you paid, less any earlier refund,'
     : 'what you paid for the unused credits'
 }
 

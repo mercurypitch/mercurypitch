@@ -109,7 +109,14 @@ function refundState(statement: WithdrawalStatement): string {
     case 'refunded':
       // Stripe has the refund; only once it succeeded has the money gone.
       if (statement.stripeRefundStatus !== 'succeeded') {
-        return `We've started a refund of ${money ?? 'what you paid'} to the card or account you paid with.`
+        // A refund of the whole price leaves out what an earlier refund
+        // gave back already. The comma closes that aside mid-sentence.
+        const what =
+          money ??
+          (statement.basis === 'full'
+            ? 'what you paid, less any earlier refund,'
+            : 'what you paid')
+        return `We've started a refund of ${what} to the card or account you paid with.`
       }
       return `${money ?? 'Your refund'} refunded to the card or account you paid with.`
     case 'none':
@@ -117,7 +124,7 @@ function refundState(statement: WithdrawalStatement): string {
     default:
       if (money !== null) return `We'll refund ${money} within 14 days.`
       return statement.basis === 'full'
-        ? "We'll refund what you paid within 14 days."
+        ? "We'll refund what you paid, less any earlier refund, within 14 days."
         : "We'll refund what you paid for those credits within 14 days."
   }
 }
