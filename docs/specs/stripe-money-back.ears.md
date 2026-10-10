@@ -368,4 +368,8 @@ sign-in code) shall be logged with every address in it masked
 an address literal (`user@[192.0.2.1]` logs as `u***@***`) are masked whole:
 no character of a local part after its first shows. Punctuation a local part
 may hold is masked with the address when it touches it
-(`'jane@example.com'` logs as `'***@***.com'`).
+(`'jane@example.com'` logs as `'***@***.com'`). An unquoted local part shall
+be read for at most 64 characters, all RFC 5321 allows, so that masking a
+long run with no @ in it (50 KB of base64 in an error text) takes time
+linear in its length; a longer local part, which no mail server takes, shows
+what comes before its last 64 characters.

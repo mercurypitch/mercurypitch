@@ -250,4 +250,47 @@ describe('maskAddresses', () => {
       maskAddresses('The `to` field `jane.doe@example.com` is invalid'),
     ).toBe('The `to` field `***@***.com` is invalid')
   })
+
+  // A run of characters a local part may hold, with no @ in it, was read to
+  // its end from every place it could start: 50 KB of base64 or hex in an
+  // error text took 1.7 s to mask (#970 round-4 review, N-4). A local part
+  // holds at most 64 characters (RFC 5321), so none is read further.
+  const BASE64 =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  const RUNS = [
+    [
+      'base64',
+      `${Array.from({ length: 50_000 }, (_, i) => BASE64[(i * 7919) % 64]).join('')}==`,
+    ],
+    ['hex', '0123456789abcdef'.repeat(3_125)],
+  ] as const
+
+  /** The fastest of three runs, in milliseconds: one slow run is noise. */
+  function fastest(run: () => void): number {
+    const times = [0, 1, 2].map(() => {
+      const start = performance.now()
+      run()
+      return performance.now() - start
+    })
+    return Math.min(...times)
+  }
+
+  it('masks a local part of 64 characters whole, and reads no further back', () => {
+    expect(maskAddresses(`${'a'.repeat(64)}@example.com`)).toBe('a***@***.com')
+    // 65 characters, past what RFC 5321 allows: the first one shows.
+    expect(maskAddresses(`b${'a'.repeat(64)}@example.com`)).toBe(
+      'ba***@***.com',
+    )
+  })
+
+  it.each(RUNS)(
+    'masks 50 KB of %s with no address in it in time linear in its length',
+    (_, run) => {
+      const text = `Resend error: ${run}`
+
+      expect(fastest(() => maskAddresses(text))).toBeLessThan(500)
+      expect(maskAddresses(text)).toBe(text)
+    },
+    60_000,
+  )
 })

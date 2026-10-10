@@ -77,9 +77,12 @@ export function maskEmail(address: string): string {
  *  ("\"quoted local\"@example.com") and an address literal
  *  ("user@[192.0.2.1]"). Punctuation a local part may hold is masked with
  *  the address when it touches it: "'jane@example.com'" logs as
- *  "'***@***.com'" (#970 review, F-7). */
+ *  "'***@***.com'" (#970 review, F-7). An unquoted local part is read for
+ *  at most 64 characters, all RFC 5321 allows, so a long run with no @ in
+ *  it (a base64 blob) costs time linear in its length, not quadratic
+ *  (#970 round-4 review, N-4). */
 const ADDRESS =
-  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]+)@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
+  /(?:"(?:[^"\\\r\n]|\\.)*"|[\p{L}\p{M}\p{N}!#$%&'*+\-\/=?^_`{|}~.]{1,64})@(?:\[[^\]\s]*\]|[\p{L}\p{M}\p{N}-]+(?:\.[\p{L}\p{M}\p{N}-]+)*)/gu
 
 /** `text` with every address in it masked (maskEmail): for text a log line
  *  carries but did not write, which may name the recipient. */
