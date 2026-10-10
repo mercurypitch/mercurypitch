@@ -151,7 +151,8 @@ once, and shall record it only once Resend has taken that alert. **While**
 the alert does not go, the webhook shall answer 500 and leave the event
 unrecorded, so Stripe delivers it again, and a delivery that finds the
 ledger moved already by an earlier delivery of the event shall still send
-it. Stripe sends `charge.dispute.created` and
+it, with the balance and the credits held as that row left them, not as a
+settle would leave them now. Stripe sends `charge.dispute.created` and
 `charge.dispute.funds_withdrawn` at once for a dispute that opens as a
 chargeback, and may deliver either twice, so a delivery shall claim the
 dispute before it alerts (`chargebackAlertClaims`, migration 0069), and only

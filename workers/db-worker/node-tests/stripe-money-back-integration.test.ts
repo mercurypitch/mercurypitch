@@ -1129,6 +1129,86 @@ describe('a chargeback the owner has not heard of (#970 review, F-3)', () => {
         expect(claims()).toEqual([])
       },
     )
+
+    it('says the balance its row left when the mail goes on a later delivery, whatever the terms are by then (#975 review, U2)', async () => {
+      // A ticked box its purchase mail has not confirmed: the money leaving
+      // takes only the 5 credits still unused of 30.
+      const singer = await register(h, 'later-terms@example.com')
+      const purchase = h.stripe.checkout(singer.userId)
+      expect((await deliver(h, purchase)).status).toBe(200)
+      const pi = String(purchase.data.object.payment_intent)
+      const purchaseMail = h.sqlite.prepare(
+        'UPDATE checkoutConsents SET mailStatus = ? WHERE paymentIntentId = ?',
+      )
+      purchaseMail.run(null, pi)
+      setSongCost(25)
+      expect((await spend(h, singer, 'job-used-25')).status).toBe(200)
+      setSongCost(1)
+      const start = alerts(h).length
+      const opened = h.stripe.dispute(pi)
+      const withdrawn = h.stripe.escalateDispute(pi)
+      const resend = resendRefuses('Chargeback')
+      expect((await deliver(h, withdrawn)).status).toBe(500)
+      expect(balance(h, singer.userId)).toBe(0)
+
+      // The purchase mail goes before Stripe sends the event again, so a
+      // settle now would take all 30, the used ones owed.
+      purchaseMail.run('sent', pi)
+      resend.up()
+      expect((await deliver(h, withdrawn)).status).toBe(200)
+
+      expect(subjects(start)).toEqual([CHARGEBACK])
+      const told = alerts(h).at(-1)?.text
+      expect(told).toContain('Taken back now: 5 credit(s) of the 30')
+      expect(told).toContain('Balance after: 0 credit(s).')
+      expect(told).not.toContain('already spent')
+
+      // The opening takes the 25 the new terms add, and says so itself.
+      expect((await deliver(h, opened)).status).toBe(200)
+      expect(subjects(start)).toEqual([CHARGEBACK, OPENED])
+      const opening = alerts(h).at(-1)?.text
+      expect(opening).toContain('Taken back now: 25 credit(s) of the 30')
+      expect(opening).toContain(
+        'Balance after: -25 credit(s). 25 of them were already spent',
+      )
+      expect(balance(h, singer.userId)).toBe(-25)
+    })
+
+    it('says the balance its row left, not what later rows made it, when the mail goes on a later delivery (#975 review, U2)', async () => {
+      const { singer, start, escalation } = await escalating('credits unused')
+      const resend = resendRefuses('Chargeback')
+      expect((await deliver(h, escalation)).status).toBe(500)
+      // A second pack, bought before Stripe sends the event again.
+      await bought(singer)
+      resend.up()
+      expect((await deliver(h, escalation)).status).toBe(200)
+
+      expect(subjects(start)).toEqual([CHARGEBACK])
+      const told = alerts(h).at(-1)?.text
+      expect(told).toContain('Taken back now: 30 credit(s) of the 30')
+      expect(told).toContain('Balance after: 0 credit(s).')
+      expect(balance(h, singer.userId)).toBe(30)
+    })
+
+    it('says the balance the row left when its twin wrote the row after this delivery read the ledger, and was refused (#975 review, U2)', async () => {
+      const { singer, start, escalation } = await escalating('credits unused')
+      // Resend refuses the first chargeback mail, the twin's.
+      const resend = resendRefuses('Chargeback', async () => {
+        resend.up()
+      })
+      justBefore(db(), LEDGER_WRITE, async () => {
+        expect((await deliver(h, escalation)).status).toBe(500)
+      })
+
+      expect((await deliver(h, escalation)).status).toBe(200)
+
+      expect(resend.refused()).toBe(1)
+      expect(subjects(start)).toEqual([CHARGEBACK])
+      const told = alerts(h).at(-1)?.text
+      expect(told).toContain('Taken back now: 30 credit(s) of the 30')
+      expect(told).toContain('Balance after: 0 credit(s).')
+      expect(balance(h, singer.userId)).toBe(0)
+    })
   })
 
   describe('that opens as one (#970 round-4 review, N-2)', () => {

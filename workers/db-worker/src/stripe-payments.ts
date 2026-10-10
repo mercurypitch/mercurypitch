@@ -95,7 +95,7 @@ import type { MoneyBackResult, StripeEventInput } from './stripe-events'
 import type { ResendConfig } from './email'
 import { sendBillingAlert } from './email'
 import type { Ledger, LedgerEntry } from './ledger'
-import { readLedger, writeOnLedgerOnce } from './ledger'
+import { ledgerAt, readLedger, writeOnLedgerOnce } from './ledger'
 import { markWithdrawalRefundFailed } from './withdrawal-refund-failed'
 
 /** The ledger reason of a pack's credits, granted when its checkout is paid
@@ -377,7 +377,7 @@ interface SettleInput {
  * attempt reads the ledger, then Stripe, then the terms, and writes under
  * the ledger's version check with the charge it read (keepCharge), so a
  * write never lands on a ledger another event wrote after its read of
- * Stripe.
+ * Stripe. A row an earlier delivery wrote reports the ledger it left.
  */
 async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
   let after: Omit<Settled, 'userId' | 'delta' | 'wrote'> | null = null
@@ -397,14 +397,15 @@ async function settlePayment(env: Env, input: SettleInput): Promise<Settled> {
         input.row.mayGiveBack,
       )
       const next = settle(ledger, input.paymentIntent, charge, terms)
+      const left = ledgerAt(ledger, input.row.key)
       after = {
         charge,
         granted: next.granted,
-        held: next.held,
+        held: left ? heldByMoneyBack(left, input.paymentIntent) : next.held,
         takenOtherwise: next.takenOtherwise,
         settledWhole: next.settledWhole,
         keptUsed: next.keptUsed,
-        balance: balanceOf(ledger) + next.delta,
+        balance: left ? balanceOf(left) : balanceOf(ledger) + next.delta,
       }
       return {
         delta: next.delta,
