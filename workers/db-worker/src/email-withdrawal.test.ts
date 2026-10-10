@@ -25,6 +25,7 @@ const CANCELLED: WithdrawalEmailVars = {
   bonusCredits: 30,
   refundMinor: 350,
   refundState: 'refunded',
+  stripeRefundStatus: 'succeeded',
   trader: TRADER,
 }
 
@@ -80,10 +81,22 @@ describe('the withdrawal acknowledgement', () => {
     )
   })
 
-  it('says the refund went back to the card when Stripe took it', () => {
+  it('says the refund went back to the card once Stripe finished it', () => {
     expect(mail().text).toContain(
       "We've refunded €3.50 to the card or account you paid with. Banks usually show it within 5 to 10 business days.",
     )
+  })
+
+  it('says the refund has started while Stripe has not finished it', () => {
+    for (const stripeRefundStatus of ['pending', 'requires_action', null]) {
+      const { html, text } = mail({ stripeRefundStatus })
+      for (const copy of [visibleText(html), text]) {
+        expect(copy).toContain(
+          "We've started a refund of €3.50 to the card or account you paid with. Banks usually show it within 5 to 10 business days.",
+        )
+        expect(copy).not.toContain("We've refunded")
+      }
+    }
   })
 
   it('promises the refund within 14 days when it is still to come', () => {

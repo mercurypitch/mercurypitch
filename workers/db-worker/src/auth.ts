@@ -42,7 +42,7 @@ import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
 import { captchaFailureBody, verifyTurnstile } from './turnstile'
 import { getTotpForLogin } from './twofa'
-import { DELETION_HELD, deletionHeld } from './withdrawal-hold'
+import { deletionHeld, unlessOwed } from './withdrawal-hold'
 import type { PackedVoiceprintHint, SignupSource, SignupVoiceprint, } from './signup-hint'
 import { packVoiceprintHint, parseSignupSource, parseVoiceprintHint, readAccountVoiceprint, unpackVoiceprintHint, } from './signup-hint'
 
@@ -4012,12 +4012,12 @@ async function handleDeleteMe(
   if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
   const { userId } = auth
 
-  // A withdrawal refund still open keeps the account for now: deleting it
-  // would erase the statement the refund is owed on (withdrawal-hold.ts).
+  // A withdrawal that still owes its refund or its acknowledgement keeps
+  // the account for now: deleting it would erase the statement it is owed
+  // on (withdrawal-hold.ts). The batch below checks again, atomically.
   try {
-    if (await deletionHeld(env, userId)) {
-      return respond({ error: DELETION_HELD }, { status: 409 })
-    }
+    const held = await deletionHeld(env, userId)
+    if (held !== null) return respond({ error: held }, { status: 409 })
   } catch {
     return respond(
       { error: 'Account deletion temporarily unavailable' },
@@ -4073,23 +4073,32 @@ async function handleDeleteMe(
     // Deleting the row below removes our copy regardless.
   }
 
+  // Every statement changes nothing while a withdrawal of the account
+  // still owes its buyer (unlessOwed): one written since the check above
+  // keeps all of the account, never half of it.
   const statements = [
     ...USER_OWNED_TABLES.map(({ table, column }) =>
-      env.DB.prepare(`DELETE FROM "${table}" WHERE "${column}" = ?`).bind(
-        userId,
-      ),
+      env.DB.prepare(
+        unlessOwed(`DELETE FROM "${table}" WHERE "${column}" = ?`, '?1'),
+      ).bind(userId),
     ),
     // Capability-mint audit rows identify the account and its private Jam
     // room. They have no useful anonymous lifecycle context once the issuing
     // account and capability rows are erased.
     env.DB.prepare(
-      `DELETE FROM premiumPerkAudit
+      unlessOwed(
+        `DELETE FROM premiumPerkAudit
         WHERE actorType = 'user' AND actorId = ?1`,
+        '?1',
+      ),
     ).bind(userId),
     // Preserve non-user lifecycle audit while removing the deleted account
     // as an actor (for example, an authenticated Premium Studio operator).
     env.DB.prepare(
-      `UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1`,
+      unlessOwed(
+        `UPDATE premiumPerkAudit SET actorId = NULL WHERE actorId = ?1`,
+        '?1',
+      ),
     ).bind(userId),
     ...(verifiedEmail === null
       ? []
@@ -4098,14 +4107,18 @@ async function handleDeleteMe(
           // account state. Hard-delete active and revoked rows alike so a
           // later account registering the same address cannot inherit it.
           env.DB.prepare(
-            `DELETE FROM premiumSupporterGroupMembers
+            unlessOwed(
+              `DELETE FROM premiumSupporterGroupMembers
               WHERE email = ?1 COLLATE NOCASE`,
-          ).bind(verifiedEmail),
+              '?2',
+            ),
+          ).bind(verifiedEmail, userId),
           // Premium Studio audit remains useful after erasure, but it must
           // not retain the member's address in either its actor, entity key,
           // or structured details. Preserve the group and action context.
           env.DB.prepare(
-            `UPDATE premiumPerkAudit
+            unlessOwed(
+              `UPDATE premiumPerkAudit
                 SET actorId = CASE
                       WHEN actorId = ?1 COLLATE NOCASE THEN NULL
                       ELSE actorId
@@ -4130,20 +4143,62 @@ async function handleDeleteMe(
                    entityType = 'supporter-group-member'
                    AND json_extract(detailsJson, '$.email') = ?1 COLLATE NOCASE
                  )`,
-          ).bind(verifiedEmail),
+              '?2',
+            ),
+          ).bind(verifiedEmail, userId),
         ]),
     env.DB.prepare(
-      'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
+      unlessOwed(
+        'DELETE FROM follows WHERE userId = ? OR followedUserId = ?',
+        '?1',
+      ),
     ).bind(userId, userId),
-    env.DB.prepare('DELETE FROM userProfiles WHERE id = ?').bind(userId),
-    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
+    env.DB.prepare(
+      unlessOwed('DELETE FROM userProfiles WHERE id = ?', '?1'),
+    ).bind(userId),
+    env.DB.prepare(unlessOwed('DELETE FROM users WHERE id = ?', '?1')).bind(
+      userId,
+    ),
   ]
 
   // One batch so a mid-way failure can't strand a user row without its data
   // (or, worse, orphaned data without its user).
-  await env.DB.batch(statements)
+  const results = await env.DB.batch(statements)
+  if (results.at(-1)?.meta.changes === 0) {
+    return deletionRefusedLate(env, userId, respond)
+  }
 
   return respond({ ok: true, deleted: userId })
+}
+
+/**
+ * The deletion batch changed nothing: a withdrawal written while it ran
+ * still owes its buyer (withdrawal-hold.ts), so the account stays whole,
+ * and the buyer reads what the check before it would have said. An account
+ * deleted meanwhile by another request is deleted.
+ */
+async function deletionRefusedLate(
+  env: Env,
+  userId: string,
+  respond: Respond,
+): Promise<Response> {
+  const unavailable = () =>
+    respond(
+      { error: 'Account deletion temporarily unavailable' },
+      { status: 503 },
+    )
+  try {
+    const held = await deletionHeld(env, userId)
+    if (held !== null) return respond({ error: held }, { status: 409 })
+    const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?')
+      .bind(userId)
+      .first<{ id: string }>()
+    return user === null
+      ? respond({ ok: true, deleted: userId })
+      : unavailable()
+  } catch {
+    return unavailable()
+  }
 }
 
 /** Route /api/auth/* requests. Returns null when the path doesn't match. */

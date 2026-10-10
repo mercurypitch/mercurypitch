@@ -17,8 +17,11 @@
 // while it has not. A row that cannot be written throws, so the webhook
 // answers 500 and Stripe delivers the event again. The 6-hourly sweep
 // (withdrawal.ts, sweepWithdrawals) sends a mail that did not go again, the
-// longest untried first, then gives up after MAIL_ATTEMPTS tries or 3 days
-// and tells the owner once.
+// longest untried first, for as long as Resend's answer leaves it unknown
+// and the pack can be cancelled (mail-answer.ts), and tells the owner once
+// if it has still not gone after 3 days. A mail Resend refuses for good is
+// never sent again: the owner is told to send it by hand, and it counts as
+// given up only once Resend has taken that alert.
 //
 // The row is also what the purchase keeps of its terms (purchaseTerms): a
 // pack's right to cancel follows the box its buyer ticked, whatever
@@ -40,8 +43,10 @@ import type { Env } from './auth'
 import { fallbackAppOrigin } from './auth'
 import { sendBillingAlert } from './email'
 import { sendPurchaseMail } from './email-purchase'
+import type { MailAnswer } from './mail-answer'
+import { GAVE_UP, mailAnswer, REFUSED, statusAfter, WARN_AFTER_MS, } from './mail-answer'
 import { paymentIntentOf } from './stripe-payments'
-import { DEFAULT_GRACE_WEEKDAYS } from './withdrawal-rules'
+import { DEFAULT_GRACE_WEEKDAYS, withdrawalOpen } from './withdrawal-rules'
 import type { PurchaseTerms, TraderDetails, WithdrawalMode, } from './withdrawal-wording'
 import { CHECKOUT_CHECKBOX, CHECKOUT_SUBMIT_LINE, isKnownWithdrawalMode, parseWithdrawalMode, WITHDRAWAL_TEXT_VERSION, } from './withdrawal-wording'
 
@@ -364,19 +369,8 @@ async function recordConsent(
  *  off mid-send, and may be sent again. Also how long the sweep leaves a
  *  fresh purchase or statement to the request that made it. */
 export const UNFINISHED_AFTER_MS = 10 * 60_000
-/** The sweep stops sending a mail that keeps failing this long after its
- *  purchase or statement, and tells the owner once. */
-export const GIVE_UP_AFTER_MS = 3 * 86_400_000
-/** Or after this many tries, the first one included: about 30 hours of
- *  6-hourly sweeps, so a mail Resend keeps refusing does not hold a place
- *  in every run for 3 days. */
-export const MAIL_ATTEMPTS = 6
 /** Rows of each kind one sweep takes on. */
 export const SWEEP_BATCH = 10
-/** A mail the sweep stopped sending. */
-export const GAVE_UP = 'gave-up'
-
-type MailStatus = 'sent' | 'failed' | 'no-email' | 'not-configured'
 
 /** A purchase's consent row, and what its mail says. */
 interface PurchaseMailRow {
@@ -390,6 +384,10 @@ interface PurchaseMailRow {
   currency: string
   createdAt: string
   mailStatus: string | null
+  mailAt: string | null
+  mailError: string | null
+  mailWarnedAt: string | null
+  mailAttempts: number
   email: string | null
   credits: number | null
   planId: string | null
@@ -405,7 +403,8 @@ async function readPurchaseMail(
 ): Promise<PurchaseMailRow | null> {
   return env.DB.prepare(
     `SELECT c.sessionId, c.userId, c.eventId, c.paymentIntentId, c.mode, c.termsOfService,
-            c.amountMinor, c.currency, c.createdAt, c.mailStatus,
+            c.amountMinor, c.currency, c.createdAt, c.mailStatus, c.mailAt, c.mailError,
+            c.mailWarnedAt, c.mailAttempts,
             u.email AS email,
             p.delta AS credits, p.jobRef AS planId, p.createdAt AS purchasedAt,
             pp.label AS planLabel,
@@ -435,42 +434,53 @@ function purchaseFacts(row: PurchaseMailRow): string[] {
 }
 
 /** Take the purchase mail for this request, so two never both send it:
- *  one not yet sent, one that did not go, or a claim gone stale. */
+ *  one not yet sent, one whose last try ended unknown or never reached
+ *  Resend, or a claim gone stale. Only while it stands as `row` read it,
+ *  so the try knows what the one before it ended in. */
 async function claimPurchaseMail(
   env: Env,
-  sessionId: string,
+  row: PurchaseMailRow,
   nowMs: number,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
     `UPDATE checkoutConsents
         SET mailStatus = 'sending', mailAt = ?, mailAttempts = mailAttempts + 1
-      WHERE sessionId = ?
+      WHERE sessionId = ? AND mailStatus IS ?
         AND (mailStatus IS NULL OR mailStatus IN ('failed', 'no-email', 'not-configured')
              OR (mailStatus = 'sending' AND mailAt < ?))`,
   )
-    .bind(iso(nowMs), sessionId, iso(nowMs - UNFINISHED_AFTER_MS))
+    .bind(
+      iso(nowMs),
+      row.sessionId,
+      row.mailStatus,
+      iso(nowMs - UNFINISHED_AFTER_MS),
+    )
     .run()
   return res.meta.changes > 0
 }
 
-/** Send the purchase mail for the row; say what happened to it. Never
- *  throws. */
+/** Send the purchase mail for the row: what Resend's answer says of it, or
+ *  null when Resend is not configured here. `afterUnknown`: the try before
+ *  this one ended without a known outcome. Never throws. */
 async function deliverPurchaseMail(
   env: Env,
   row: PurchaseMailRow,
-): Promise<MailStatus> {
+  afterUnknown: boolean,
+): Promise<MailAnswer | null> {
   if (!env.RESEND_API_KEY) {
     console.log(
       `[billing] checkout ${row.eventId}: RESEND_API_KEY unset, purchase mail not sent`,
     )
-    return 'not-configured'
+    return null
   }
-  if (row.email == null || row.email === '') return 'no-email'
+  if (row.email == null || row.email === '') {
+    return { kind: 'refused', why: 'no email address on the account' }
+  }
   try {
     // A webhook or a cron has no page behind it: links and pictures go to
     // this environment's own app.
     const app = fallbackAppOrigin(env)
-    const sent = await sendPurchaseMail(
+    const result = await sendPurchaseMail(
       { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
       row.email,
       {
@@ -489,22 +499,30 @@ async function deliverPurchaseMail(
       },
       `purchase-${row.sessionId}`,
     )
-    return sent ? 'sent' : 'failed'
+    return mailAnswer(result, afterUnknown)
   } catch (err) {
     console.error(`[billing] purchase mail failed: ${String(err)}`)
-    return 'failed'
+    return {
+      kind: 'unknown',
+      why: `the mail could not be sent: ${String(err)}`,
+    }
   }
 }
 
+/** Keep what the try ended in, unless another request took the mail
+ *  since. A record that fails leaves the claim to go stale, and the sweep
+ *  tries again. */
 async function recordPurchaseMail(
   env: Env,
   row: PurchaseMailRow,
-  status: MailStatus,
+  status: string,
+  why: string | null,
 ): Promise<void> {
   await env.DB.prepare(
-    'UPDATE checkoutConsents SET mailStatus = ?, mailAt = ? WHERE sessionId = ?',
+    `UPDATE checkoutConsents SET mailStatus = ?, mailAt = ?, mailError = ?
+      WHERE sessionId = ? AND mailStatus = 'sending'`,
   )
-    .bind(status, new Date().toISOString(), row.sessionId)
+    .bind(status, new Date().toISOString(), why, row.sessionId)
     .run()
     .catch((err: unknown) => {
       console.error(
@@ -513,33 +531,115 @@ async function recordPurchaseMail(
     })
 }
 
+/** What the sweep does with a purchase mail that has not gone. */
+const SCHEDULE = [
+  'The sweep sends it again every 6 hours until Resend takes it, and tells',
+  'you if it has still not gone 3 days after the purchase. Once the pack',
+  'can no longer be cancelled, it stops, and tells you so.',
+]
+
+/** The first try did not go, and nothing says it never will: the owner
+ *  hears once, and the sweep keeps sending it. */
 async function alertMailNotSent(
   env: Env,
   row: PurchaseMailRow,
-  status: 'failed' | 'no-email',
+  why: string,
 ): Promise<void> {
   console.error(
-    `[billing] checkout ${row.eventId}: purchase mail ${status}, the buyer has no confirmation`,
+    `[billing] checkout ${row.eventId}: purchase mail not sent (${why}), the buyer has no confirmation yet`,
   )
   await alert(env, 'Purchase confirmation not sent', [
     ...purchaseFacts(row),
-    `Mail: ${status === 'no-email' ? 'no email address on the account' : 'Resend did not take it'}`,
+    `Mail: Resend did not take it (${why})`,
     '',
     'This mail is the legal confirmation of the purchase and of the',
     'withdrawal consent. Until it goes, Settings › Credits lets the buyer',
     'cancel for the whole price, used credits too.',
-    ...(status === 'failed'
-      ? [
-          `The sweep tries again every 6 hours, ${MAIL_ATTEMPTS} tries in all over at most`,
-          '3 days, and tells you once more if it gives up.',
-        ]
-      : ['Send the buyer a confirmation by hand.']),
+    ...SCHEDULE,
   ])
 }
 
-/** Send the purchase mail unless it went already, and record it. The
- *  owner hears the first time it does not go, not at every retry. Never
- *  throws. */
+/** Why a purchase mail stops: Resend refused it for good, or the pack can
+ *  no longer be cancelled and it still never went. */
+type GiveUpReason = 'refused' | 'closed'
+
+function givenUpLines(row: PurchaseMailRow, reason: GiveUpReason): string[] {
+  const why = row.mailError ?? 'no answer kept'
+  const story =
+    reason === 'refused'
+      ? [`Resend refused it for good: ${why}`, '', 'Nothing sends it again.']
+      : [
+          `Tries: ${row.mailAttempts}, the last at ${row.mailAt ?? 'none'}: ${why}`,
+          '',
+          'The pack can no longer be cancelled, and the mail never went: the',
+          'sweep has stopped sending it.',
+        ]
+  return [
+    ...purchaseFacts(row),
+    `Buyer: ${row.email ?? 'no email address on the account'}`,
+    ...story,
+    'It is the legal confirmation of the purchase and of the withdrawal',
+    'consent (CRD Art. 8(7)): send the buyer one by hand. Nothing records a',
+    'mail sent by hand, so Settings › Credits keeps letting the buyer',
+    'cancel for the whole price, used credits too, while cancelling is open.',
+  ]
+}
+
+/**
+ * Tell the owner to send the purchase mail by hand, and stop sending it.
+ * It is given up only once Resend has taken that alert; until then it
+ * stays as it is, and the next sweep tells again.
+ */
+async function giveUpPurchaseMail(
+  env: Env,
+  row: PurchaseMailRow,
+  reason: GiveUpReason,
+  nowMs: number,
+): Promise<void> {
+  const lines = givenUpLines(row, reason)
+  if (!(await alert(env, 'Purchase confirmation given up', lines))) {
+    // Last in the sweep's line, so a refused alert never holds back others.
+    await env.DB.prepare(
+      `UPDATE checkoutConsents SET mailAt = ?
+        WHERE sessionId = ? AND mailStatus IN ('failed', 'refused')`,
+    )
+      .bind(iso(nowMs), row.sessionId)
+      .run()
+      .catch(() => undefined)
+    return
+  }
+  await env.DB.prepare(
+    `UPDATE checkoutConsents SET mailStatus = ?, mailAt = ?
+      WHERE sessionId = ?
+        AND (mailStatus IS NULL OR mailStatus IN ('failed', 'refused')
+             OR (mailStatus = 'sending' AND mailAt < ?))`,
+  )
+    .bind(GAVE_UP, iso(nowMs), row.sessionId, iso(nowMs - UNFINISHED_AFTER_MS))
+    .run()
+}
+
+/** One try at a claimed purchase mail, recorded; the owner hears of a
+ *  refusal, and of a first try that did not go. */
+async function tryPurchaseMail(
+  env: Env,
+  row: PurchaseMailRow,
+  nowMs: number,
+): Promise<void> {
+  const before = row.mailStatus
+  const afterUnknown = before === 'failed' || before === 'sending'
+  const answer = await deliverPurchaseMail(env, row, afterUnknown)
+  const status = answer === null ? 'not-configured' : statusAfter(answer)
+  const why = answer === null || answer.kind === 'sent' ? null : answer.why
+  await recordPurchaseMail(env, row, status, why)
+  if (status === REFUSED) {
+    await giveUpPurchaseMail(env, { ...row, mailError: why }, 'refused', nowMs)
+  } else if (status === 'failed' && (before === null || before === 'sending')) {
+    await alertMailNotSent(env, row, why ?? 'no answer kept')
+  }
+}
+
+/** Send the purchase mail unless it went, or Resend refused it; tell the
+ *  owner again of one refused and not yet given up. Never throws. */
 async function confirmByMail(
   env: Env,
   sessionId: string,
@@ -549,12 +649,12 @@ async function confirmByMail(
     const row = await readPurchaseMail(env, sessionId)
     if (row === null || row.mailStatus === 'sent' || row.mailStatus === GAVE_UP)
       return
-    if (!(await claimPurchaseMail(env, sessionId, nowMs))) return
-    const status = await deliverPurchaseMail(env, row)
-    await recordPurchaseMail(env, row, status)
-    const firstTry = row.mailStatus === null || row.mailStatus === 'sending'
-    if (firstTry && (status === 'failed' || status === 'no-email')) {
-      await alertMailNotSent(env, row, status)
+    if (row.mailStatus === REFUSED) {
+      await giveUpPurchaseMail(env, row, 'refused', nowMs)
+      return
+    }
+    if (await claimPurchaseMail(env, row, nowMs)) {
+      await tryPurchaseMail(env, row, nowMs)
     }
   } catch (err) {
     console.error(
@@ -563,57 +663,84 @@ async function confirmByMail(
   }
 }
 
-/** Stop sending a purchase mail that kept failing: once, with one alert. */
-async function giveUpPurchaseMail(
+/** Tell the owner, once, of a purchase mail still not sent WARN_AFTER_MS
+ *  after the purchase, while the sweep keeps sending it. Recorded only once
+ *  Resend has taken the alert. */
+async function warnPurchaseMail(
   env: Env,
   sessionId: string,
   nowMs: number,
 ): Promise<void> {
-  const res = await env.DB.prepare(
-    `UPDATE checkoutConsents SET mailStatus = ?, mailAt = ?
-      WHERE sessionId = ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
-             OR (mailStatus = 'sending' AND mailAt < ?))`,
-  )
-    .bind(GAVE_UP, iso(nowMs), sessionId, iso(nowMs - UNFINISHED_AFTER_MS))
-    .run()
-  if (res.meta.changes === 0) return
   const row = await readPurchaseMail(env, sessionId)
-  await alert(env, 'Purchase confirmation given up', [
-    ...(row === null ? [`Checkout Session: ${sessionId}`] : purchaseFacts(row)),
-    `Buyer: ${row?.email ?? 'no email address on the account'}`,
-    '',
-    `The purchase mail did not go in ${MAIL_ATTEMPTS} tries or 3 days, and the sweep`,
-    'has stopped trying. It is the legal confirmation of the purchase and',
-    'of the withdrawal consent (CRD Art. 8(7)): send the buyer one by hand.',
-    'Nothing records a mail sent by hand, so Settings › Credits keeps',
-    'letting the buyer cancel for the whole price, used credits too, for',
-    'the 14 days.',
-  ])
+  if (row === null || row.mailWarnedAt !== null) return
+  if (row.mailStatus !== 'failed' && row.mailStatus !== 'sending') return
+  if (Date.parse(row.createdAt) > nowMs - WARN_AFTER_MS) return
+  const told = await alert(
+    env,
+    'Purchase confirmation still not sent after 3 days',
+    [
+      ...purchaseFacts(row),
+      `Buyer: ${row.email ?? 'no email address on the account'}`,
+      `Tries: ${row.mailAttempts}, the last at ${row.mailAt ?? 'none'}: ${row.mailError ?? 'no answer kept'}`,
+      '',
+      'Resend has neither taken nor refused the purchase mail in 3 days.',
+      'The sweep keeps sending it every 6 hours, under the same key, until',
+      'Resend takes it or the pack can no longer be cancelled; you hear',
+      'again only then, or if Resend refuses it. Until it goes, Settings ›',
+      'Credits lets the buyer cancel for the whole price, used credits too.',
+    ],
+  )
+  if (!told) return
+  await env.DB.prepare(
+    'UPDATE checkoutConsents SET mailWarnedAt = ? WHERE sessionId = ? AND mailWarnedAt IS NULL',
+  )
+    .bind(iso(nowMs), sessionId)
+    .run()
 }
 
 /**
- * The purchase mails the sweep may still have to send, the longest untried
- * first: one never tried (no mailAt), then by its last try, so mails that
- * keep failing never hold back a later one. The first condition repeats
- * the WHERE of idx_checkoutConsents_unsent (migration 0061) word for word:
- * SQLite uses a partial index only for a query that states its condition,
- * and without it every run would read every purchase. Binds: the cut-off
- * twice, then the batch size.
+ * The purchase mails the sweep may still have to send or give up, the
+ * longest untried first: one never tried (no mailAt), then by its last try,
+ * so mails that keep failing never hold back a later one. The first
+ * condition repeats the WHERE of idx_checkoutConsents_open (migration 0066)
+ * word for word: SQLite uses a partial index only for a query that states
+ * its condition, and without it every run would read every purchase.
+ * Binds: the cut-off twice, then the batch size.
  */
-export const UNSENT_PURCHASE_MAILS_SQL = `SELECT sessionId, createdAt, mailAttempts FROM checkoutConsents
-      WHERE (mailStatus IS NULL OR mailStatus IN ('failed', 'sending'))
+export const UNSENT_PURCHASE_MAILS_SQL = `SELECT sessionId, createdAt, mailStatus FROM checkoutConsents
+      WHERE (mailStatus IS NULL OR mailStatus IN ('failed', 'sending', 'refused'))
         AND createdAt < ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
+        AND (mailStatus IS NULL OR mailStatus IN ('failed', 'refused')
              OR (mailStatus = 'sending' AND mailAt < ?))
       ORDER BY mailAt, createdAt LIMIT ?`
+
+/** One purchase mail the sweep took: sent again while the pack can still
+ *  be cancelled, with the 3-day alert when it is due; told of again when
+ *  refused; given up once the pack cannot be cancelled any more. */
+async function sweepPurchaseMail(
+  env: Env,
+  row: { sessionId: string; createdAt: string; mailStatus: string | null },
+  nowMs: number,
+  graceWeekdays: number,
+): Promise<void> {
+  if (
+    row.mailStatus === REFUSED ||
+    withdrawalOpen(row.createdAt, nowMs, graceWeekdays)
+  ) {
+    await confirmByMail(env, row.sessionId, nowMs)
+    await warnPurchaseMail(env, row.sessionId, nowMs)
+    return
+  }
+  const full = await readPurchaseMail(env, row.sessionId)
+  if (full !== null) await giveUpPurchaseMail(env, full, 'closed', nowMs)
+}
 
 /**
  * The purchase mails a request left unsent: each older than
  * UNFINISHED_AFTER_MS that did not go, or whose send was cut off, goes
- * again, until MAIL_ATTEMPTS tries or GIVE_UP_AFTER_MS after the purchase;
- * then the owner hears once. At most SWEEP_BATCH a run (withdrawal.ts,
- * sweepWithdrawals).
+ * again for as long as the pack can be cancelled; one Resend refused for
+ * good is given up once the owner has heard. At most SWEEP_BATCH a run
+ * (withdrawal.ts, sweepWithdrawals).
  */
 export async function sweepPurchaseMails(
   env: Env,
@@ -622,15 +749,11 @@ export async function sweepPurchaseMails(
   const before = iso(nowMs - UNFINISHED_AFTER_MS)
   const { results } = await env.DB.prepare(UNSENT_PURCHASE_MAILS_SQL)
     .bind(before, before, SWEEP_BATCH)
-    .all<{ sessionId: string; createdAt: string; mailAttempts: number }>()
+    .all<{ sessionId: string; createdAt: string; mailStatus: string | null }>()
+  const grace = withdrawalGraceWeekdays(env)
   for (const row of results) {
     try {
-      const expired = Date.parse(row.createdAt) <= nowMs - GIVE_UP_AFTER_MS
-      if (expired || Number(row.mailAttempts) >= MAIL_ATTEMPTS) {
-        await giveUpPurchaseMail(env, row.sessionId, nowMs)
-      } else {
-        await confirmByMail(env, row.sessionId, nowMs)
-      }
+      await sweepPurchaseMail(env, row, nowMs, grace)
     } catch (err) {
       console.error(
         `[cron] purchase mail ${row.sessionId}: sweep FAILED: ${String(err)}`,

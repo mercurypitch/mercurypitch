@@ -74,6 +74,7 @@ const sampleWithdrawal = (
     bonusCredits: 30,
     refundMinor: 350,
     refundState,
+    stripeRefundStatus: refundState === 'refunded' ? 'succeeded' : null,
   })
 
 const sampleVerifyUrl = (origins: MailOrigins): string =>

@@ -774,7 +774,8 @@ export interface ResendOptions {
  * safe to retry later. They say nothing of a key whose first request
  * failed. A mail that is sent again renders again, and its body can differ
  * (a balance, a refund that went through since), so for a mail keyed once
- * per purchase or statement this 409 says the first one was taken: sent.
+ * per purchase or statement this 409 says an earlier try was taken, when
+ * that try's outcome was unknown (mail-answer.ts).
  */
 export function sentUnderKeyAlready(result: ResendResult): boolean {
   return (

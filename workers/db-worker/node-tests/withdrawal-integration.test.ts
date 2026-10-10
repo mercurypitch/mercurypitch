@@ -67,8 +67,10 @@ let refundPageSize: number
 let refundsMade: Array<Record<string, unknown>>
 /** What Stripe says each PaymentIntent received. */
 let paymentIntents: Map<string, { amount_received: number; currency: string }>
-/** Which mails Resend refuses. */
-let resendRefuses: (mail: { subject: string }) => boolean
+/** Which mails Resend refuses: true answers 500, which says nothing of
+ *  whether it will take the mail later; a number answers that status, a
+ *  422 being a refusal for good. */
+let resendRefuses: (mail: { subject: string }) => boolean | number
 
 function makeRefund(
   form: URLSearchParams,
@@ -168,6 +170,20 @@ function stripeGetAnswer(url: string): Response | null {
   return null
 }
 
+/** A refusal as Resend words one. */
+function resendError(status: number): Response {
+  const named: Record<number, [string, string]> = {
+    403: ['invalid_api_key', 'API key is invalid'],
+    422: ['validation_error', 'Invalid `to` field.'],
+    429: ['rate_limit_exceeded', 'Too many requests.'],
+  }
+  const [name, message] = named[status] ?? [
+    'internal_server_error',
+    'An unexpected error occurred.',
+  ]
+  return Response.json({ statusCode: status, name, message }, { status })
+}
+
 function stubFetch(): void {
   vi.stubGlobal(
     'fetch',
@@ -196,10 +212,9 @@ function stubFetch(): void {
         return refundAnswer(body, headers['idempotency-key'])
       }
       if (url === RESEND) {
-        const mail = JSON.parse(body) as { subject: string }
-        return resendRefuses(mail)
-          ? Response.json({ message: 'refused' }, { status: 500 })
-          : Response.json({ id: 'stubbed' })
+        const refusal = resendRefuses(JSON.parse(body) as { subject: string })
+        if (refusal === false) return Response.json({ id: 'stubbed' })
+        return resendError(refusal === true ? 500 : refusal)
       }
       throw new Error(`unexpected fetch in a test: ${url}`)
     }),
@@ -685,6 +700,8 @@ describe('a paid pack keeps the consent and its confirmation', () => {
       mailStatus: 'sent',
       mailAt: '2026-10-20T10:00:00.000Z',
       mailAttempts: 1,
+      mailError: null,
+      mailWarnedAt: null,
     })
     const [mail] = mails().filter(
       (m) => m.subject === 'Your 140 credits are ready',
@@ -1694,15 +1711,21 @@ describe('the cron finishes what a request left undone', () => {
     expect(alerts()).toHaveLength(1)
   })
 
-  it('sends an acknowledgement that did not go again, then gives up after 3 days with one alert', async () => {
+  it('sends an acknowledgement that did not go again, and tells the owner once when it has still not gone after 3 days', async () => {
     resendRefuses = (mail) => mail.subject === ACK_SUBJECT
     const sam = await buyer('sam@example.test')
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
     await withdraw(sam, plus)
-    expect(statementOf(plus)?.mailStatus).toBe('failed')
+    expect(statementOf(plus)).toMatchObject({
+      mailStatus: 'failed',
+      mailError: 'Resend answered 500 internal_server_error',
+    })
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Withdrawal: refunded €20.00',
     ])
+    expect(alerts()[0]?.text).toContain(
+      'The sweep sends it again every 6 hours until Resend takes it',
+    )
 
     at('2026-10-20T10:11:00.000Z')
     await cron()
@@ -1713,21 +1736,22 @@ describe('the cron finishes what a request left undone', () => {
 
     at('2026-10-23T10:01:00.000Z')
     await cron()
-    expect(statementOf(plus)?.mailStatus).toBe('gave-up')
-    expect(acknowledgements()).toHaveLength(2)
+    expect(statementOf(plus)?.mailStatus).toBe('failed')
+    expect(acknowledgements()).toHaveLength(3)
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Withdrawal: refunded €20.00',
-      '[MercuryPitch billing] Withdrawal: acknowledgement NOT sent, send it by hand',
+      '[MercuryPitch billing] Withdrawal: acknowledgement still not sent after 3 days',
     ])
     expect(alerts()[1]?.text).toContain('Send it to: sam@example.test')
 
+    // Still sent again at every sweep; the owner heard once.
     at('2026-10-23T16:01:00.000Z')
     await cron()
-    expect(acknowledgements()).toHaveLength(2)
+    expect(acknowledgements()).toHaveLength(4)
     expect(alerts()).toHaveLength(2)
   })
 
-  it('sends a purchase mail that did not go again, then gives up after 3 days with one alert', async () => {
+  it('sends a purchase mail that did not go again, and tells the owner once when it has still not gone after 3 days', async () => {
     resendRefuses = (mail) => /^Your .* ready$/.test(mail.subject)
     const sam = await buyer('sam@example.test')
     await buy(sam, 'pack-starter', 'pi_starter')
@@ -1739,18 +1763,22 @@ describe('the cron finishes what a request left undone', () => {
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Purchase confirmation not sent',
     ])
+    expect(alerts()[0]?.text).toContain(
+      'The sweep sends it again every 6 hours until Resend takes it',
+    )
 
     at('2026-10-23T10:01:00.000Z')
     await cron()
-    expect(consentOf('cs_evt_pi_starter')?.mailStatus).toBe('gave-up')
+    expect(consentOf('cs_evt_pi_starter')?.mailStatus).toBe('failed')
+    expect(purchaseMails()).toHaveLength(3)
     expect(subjects(alerts())).toEqual([
       '[MercuryPitch billing] Purchase confirmation not sent',
-      '[MercuryPitch billing] Purchase confirmation given up',
+      '[MercuryPitch billing] Purchase confirmation still not sent after 3 days',
     ])
 
     at('2026-10-23T16:01:00.000Z')
     await cron()
-    expect(purchaseMails()).toHaveLength(2)
+    expect(purchaseMails()).toHaveLength(4)
     expect(alerts()).toHaveLength(2)
   })
 
@@ -1768,7 +1796,7 @@ describe('the cron finishes what a request left undone', () => {
     expect(alerts()).toHaveLength(1)
   })
 
-  it('finds the unsent purchase mails by their index, never by reading every purchase', () => {
+  it('finds the purchase mails still to send or give up by their index, never by reading every purchase', () => {
     const plan = sqlite
       .prepare(`EXPLAIN QUERY PLAN ${UNSENT_PURCHASE_MAILS_SQL}`)
       .all('2026-10-20T16:07:00.000Z', '2026-10-20T16:07:00.000Z', 10)
@@ -1776,7 +1804,7 @@ describe('the cron finishes what a request left undone', () => {
 
     // Only the unsent ones are read, then put in order of their last try.
     expect(plan).toEqual([
-      'SEARCH checkoutConsents USING INDEX idx_checkoutConsents_unsent (createdAt<?)',
+      'SEARCH checkoutConsents USING INDEX idx_checkoutConsents_open (createdAt<?)',
       'USE TEMP B-TREE FOR ORDER BY',
     ])
   })
@@ -2138,7 +2166,7 @@ describe('the cron reaches every unfinished duty, least recently tried first', (
     ])
   })
 
-  it('sends a purchase mail again behind ten that always fail, and gives each of those up after six tries', async () => {
+  it('sends a purchase mail again behind ten that always fail, and keeps sending each of those', async () => {
     let lateRefusals = 1
     refuseMailsTo((to, subject) => {
       if (!PURCHASE_SUBJECT.test(subject)) return false
@@ -2162,19 +2190,28 @@ describe('the cron reaches every unfinished duty, least recently tried first', (
     expect(consentOf('cs_evt_pi_late')).toMatchObject({ mailStatus: 'sent' })
     expect(mailsTo('late@example.test', PURCHASE_SUBJECT)).toHaveLength(2)
 
+    // Four days of sweeps: Resend never refuses them for good, so none is
+    // given up, and the owner hears of each once, after 3 days.
     await crons(3, 16)
     for (let i = 0; i < 10; i += 1) {
-      expect(mailsTo(`bad${i}@example.test`, PURCHASE_SUBJECT)).toHaveLength(6)
+      expect(
+        mailsTo(`bad${i}@example.test`, PURCHASE_SUBJECT).length,
+      ).toBeGreaterThanOrEqual(16)
       expect(consentOf(`cs_evt_pi_bad${i}`)).toMatchObject({
-        mailStatus: 'gave-up',
+        mailStatus: 'failed',
+        mailWarnedAt: expect.any(String),
       })
     }
     expect(
       subjects(alerts()).filter(
         (subject) =>
-          subject === '[MercuryPitch billing] Purchase confirmation given up',
+          subject ===
+          '[MercuryPitch billing] Purchase confirmation still not sent after 3 days',
       ),
     ).toHaveLength(10)
+    expect(subjects(alerts())).not.toContain(
+      '[MercuryPitch billing] Purchase confirmation given up',
+    )
   })
 })
 
@@ -2257,17 +2294,20 @@ describe('a price lookup Stripe does not answer', () => {
     [
       'a 503',
       () => Response.json({ error: { message: 'Busy.' } }, { status: 503 }),
+      'Stripe answered the price lookup 503: Busy.',
     ],
     [
       'a 429',
       () =>
         Response.json({ error: { message: 'Slow down.' } }, { status: 429 }),
+      'Stripe answered the price lookup 429: Slow down.',
     ],
     [
       'no answer at all',
       (): Response => {
         throw new TypeError('fetch failed: the connection was reset')
       },
+      'Stripe did not answer the price lookup: TypeError: fetch failed: the connection was reset',
     ],
     // A key that is wrong or lacks a permission says nothing of the
     // payment: only a 404 does.
@@ -2278,6 +2318,7 @@ describe('a price lookup Stripe does not answer', () => {
           { error: { message: 'Invalid API Key provided: rk_test_****' } },
           { status: 401 },
         ),
+      'Stripe answered the price lookup 401: Invalid API Key provided: rk_test_****',
     ],
     [
       'a 403',
@@ -2286,10 +2327,11 @@ describe('a price lookup Stripe does not answer', () => {
           { error: { message: 'The provided key does not have access.' } },
           { status: 403 },
         ),
+      'Stripe answered the price lookup 403: The provided key does not have access.',
     ],
   ])(
-    'keeps the price pending after %s, and the cron refunds from it',
-    async (_, answer) => {
+    'keeps the price pending after %s, says why, and the cron refunds from it',
+    async (_, answer, why) => {
       const sam = await buyer('sam@example.test')
       // Bought before checkouts kept the price.
       insertRow(
@@ -2328,12 +2370,13 @@ describe('a price lookup Stripe does not answer', () => {
       })
       expect(statementOf(purchase)).toMatchObject({
         priceSource: 'pending',
-        refundError: null,
+        refundError: why,
       })
       expect(refundRequests()).toEqual([])
       expect(subjects(alerts())).toEqual([
         '[MercuryPitch billing] Withdrawal: refund waits for the price paid',
       ])
+      expect(alerts()[0]?.text).toContain(`Why not: ${why}`)
 
       at('2026-10-20T16:17:00.000Z')
       await cron()
@@ -2343,6 +2386,7 @@ describe('a price lookup Stripe does not answer', () => {
         amountMinor: 2000,
         refundMinor: 2000,
         refundStatus: 'refunded',
+        refundError: null,
       })
       expect(new URLSearchParams(refundRequests()[0]?.body).get('amount')).toBe(
         '2000',
@@ -2411,7 +2455,7 @@ describe('a mail Resend took under its key already', () => {
     const sam = await buyer('sam@example.test')
     // The mail goes; recording that it went fails.
     failNext(
-      /UPDATE checkoutConsents SET mailStatus = \?, mailAt = \? WHERE sessionId = \?/,
+      /UPDATE checkoutConsents SET mailStatus = \?, mailAt = \?, mailError = \?/,
     )
     await buy(sam, 'pack-plus', 'pi_plus')
     expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'sending' })
@@ -2438,7 +2482,7 @@ describe('a mail Resend took under its key already', () => {
     const plus = await buy(sam, 'pack-plus', 'pi_plus')
     stripeRefunds = 'down'
     failNext(
-      /UPDATE withdrawals SET mailStatus = \?, mailAt = \? WHERE id = \?/,
+      /UPDATE withdrawals SET mailStatus = \?, mailAt = \?, mailError = \?/,
     )
     await withdraw(sam, plus)
     expect(statementOf(plus)).toMatchObject({
@@ -2469,7 +2513,7 @@ describe('the acknowledgement and who it goes to', () => {
     'Sam https://evil.example/restore',
     'Restore it at evil.example/restore',
     'www.evil.example',
-    'Visit evil.example today',
+    'Visit evil.com today',
     'sam@example.test',
   ])('refuses a name with a link or an address in it: %s', async (name) => {
     const sam = await buyer('sam@example.test')
@@ -2633,5 +2677,785 @@ describe('a partial refund in the Stripe dashboard', () => {
       refundMinor: 1800,
       refundStatus: 'refunded',
     })
+  })
+})
+
+// ── What the fourth review found ────────────────────────────────────
+
+const START = Date.parse('2026-10-20T10:00:00.000Z')
+const SIX_HOURS = 6 * 3_600_000
+
+/** The 6-hourly crons from run `from` to run `to`, at 17 past. */
+async function sweeps(from: number, to: number): Promise<void> {
+  for (let run = from; run <= to; run += 1) {
+    at(new Date(START + run * SIX_HOURS + 17 * 60_000).toISOString())
+    await cron()
+  }
+}
+
+/** Resend answering 500 to everything, alerts too, until `up()`; the
+ *  subjects it took after. */
+function outage(): { delivered: string[]; up: () => void } {
+  const delivered: string[] = []
+  let down = true
+  resendRefuses = (mail) => {
+    if (!down) delivered.push(mail.subject)
+    return down
+  }
+  return {
+    delivered,
+    up: () => {
+      down = false
+    },
+  }
+}
+
+/** Resend refusing what `refuse` says; the subjects it took. */
+function resendTakes(refuse: (subject: string) => boolean | number): string[] {
+  const taken: string[] = []
+  resendRefuses = (mail) => {
+    const refusal = refuse(mail.subject)
+    if (refusal === false) taken.push(mail.subject)
+    return refusal
+  }
+  return taken
+}
+
+const BILLING = '[MercuryPitch billing] '
+const ACK_GIVEN_UP = `${BILLING}Withdrawal: acknowledgement NOT sent, send it by hand`
+const ACK_STUCK = `${BILLING}Withdrawal: acknowledgement still not sent after 3 days`
+const PURCHASE_GIVEN_UP = `${BILLING}Purchase confirmation given up`
+const PURCHASE_STUCK = `${BILLING}Purchase confirmation still not sent after 3 days`
+const isAlert = (subject: string): boolean => subject.startsWith(BILLING)
+
+describe('a mail Resend gives no clear answer to', () => {
+  it('keeps sending the acknowledgement through an outage, so the buyer gets it once Resend is back', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    const resend = outage()
+    await withdraw(sam, plus)
+    // A day and a half of 500s.
+    await sweeps(1, 6)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'failed' })
+
+    resend.up()
+    await sweeps(7, 7)
+
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'sent' })
+    expect(resend.delivered).toContain(ACK_SUBJECT)
+    expect(resend.delivered).not.toContain(ACK_GIVEN_UP)
+  })
+
+  it('keeps sending the purchase mail through an outage, and the consent stands once it goes', async () => {
+    const sam = await buyer('sam@example.test')
+    const resend = outage()
+    await buy(sam, 'pack-plus', 'pi_plus')
+    spend(sam.userId, 140, 'job-all')
+    await sweeps(1, 6)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'failed' })
+    expect((await listFor(sam)).body.packs).toEqual([
+      expect.objectContaining({ basis: 'full' }),
+    ])
+
+    resend.up()
+    await sweeps(7, 7)
+
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'sent' })
+    expect(resend.delivered.some((s) => PURCHASE_SUBJECT.test(s))).toBe(true)
+    expect((await listFor(sam)).body.packs).toEqual([])
+  })
+
+  it('answers a repeated statement with the acknowledgement still being tried', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    resendRefuses = (mail) => mail.subject === ACK_SUBJECT
+    await withdraw(sam, plus)
+    await sweeps(1, 6)
+
+    const again = await withdraw(sam, plus)
+
+    expect(again.body.statement).toMatchObject({ mailStatus: 'failed' })
+  })
+
+  it('tells the owner once, 3 days on, that the acknowledgement still has not gone, and keeps trying', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    resendRefuses = (mail) => mail.subject === ACK_SUBJECT
+    await withdraw(sam, plus)
+
+    await sweeps(1, 11)
+    expect(subjects(alerts())).not.toContain(ACK_STUCK)
+    await sweeps(12, 20)
+
+    expect(subjects(alerts()).filter((s) => s === ACK_STUCK)).toHaveLength(1)
+    expect(alerts().find((a) => a.subject === ACK_STUCK)?.text).toContain(
+      'every 6 hours',
+    )
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'failed' })
+    expect(statementOf(plus)?.mailWarnedAt).toEqual(expect.any(String))
+    const tries = acknowledgements().length
+    await sweeps(21, 22)
+    expect(acknowledgements()).toHaveLength(tries + 2)
+    expect(subjects(alerts())).not.toContain(ACK_GIVEN_UP)
+  })
+
+  it('sends the 3-day warning at a later sweep when Resend refuses the warning itself', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    let warningRefused = true
+    const taken = resendTakes((subject) =>
+      subject === ACK_SUBJECT ? true : subject === ACK_STUCK && warningRefused,
+    )
+    await withdraw(sam, plus)
+
+    await sweeps(1, 12)
+    expect(statementOf(plus)?.mailWarnedAt).toBeNull()
+    warningRefused = false
+    await sweeps(13, 16)
+
+    expect(taken.filter((s) => s === ACK_STUCK)).toHaveLength(1)
+    expect(statementOf(plus)?.mailWarnedAt).toEqual(expect.any(String))
+  })
+
+  it('tells the owner once, 3 days on, that the purchase mail still has not gone', async () => {
+    const sam = await buyer('sam@example.test')
+    resendRefuses = (mail) => PURCHASE_SUBJECT.test(mail.subject)
+    await buy(sam, 'pack-plus', 'pi_plus')
+
+    await sweeps(1, 11)
+    expect(subjects(alerts())).not.toContain(PURCHASE_STUCK)
+    await sweeps(12, 20)
+
+    expect(subjects(alerts()).filter((s) => s === PURCHASE_STUCK)).toHaveLength(
+      1,
+    )
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'failed' })
+    expect(consentOf('cs_evt_pi_plus')?.mailWarnedAt).toEqual(
+      expect.any(String),
+    )
+    expect(subjects(alerts())).not.toContain(PURCHASE_GIVEN_UP)
+  })
+
+  it('stops sending a purchase mail once the withdrawal period is over, after the owner has heard', async () => {
+    const sam = await buyer('sam@example.test')
+    let alertsDown = false
+    const taken = resendTakes((subject) =>
+      PURCHASE_SUBJECT.test(subject) ? true : isAlert(subject) && alertsDown,
+    )
+    await buy(sam, 'pack-plus', 'pi_plus')
+
+    // 14 days and more: still trying.
+    await sweeps(1, 60)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'failed' })
+    expect(taken).not.toContain(PURCHASE_GIVEN_UP)
+
+    // The period is over while alerts do not go: nothing is recorded.
+    alertsDown = true
+    await sweeps(61, 80)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'failed' })
+
+    alertsDown = false
+    await sweeps(81, 81)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'gave-up' })
+    expect(taken.filter((s) => s === PURCHASE_GIVEN_UP)).toHaveLength(1)
+    const sends = purchaseMails().length
+    await sweeps(82, 84)
+    expect(purchaseMails()).toHaveLength(sends)
+  })
+
+  it('sends the 5-day escalation at a later sweep when Resend refuses it at the first', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    let refusing = false
+    const taken = resendTakes(
+      (subject) => subject.includes('still open after 5 days') && refusing,
+    )
+    await sweeps(1, 19)
+    refusing = true
+    await sweeps(20, 20)
+    expect(statementOf(plus)?.refundEscalatedAt).toBeNull()
+
+    refusing = false
+    await sweeps(21, 24)
+
+    expect(
+      taken.filter((s) => s.includes('still open after 5 days')),
+    ).toHaveLength(1)
+    expect(statementOf(plus)?.refundEscalatedAt).toEqual(expect.any(String))
+  })
+})
+
+describe('a mail Resend refuses for good', () => {
+  it('gives the acknowledgement up at once, with one alert, and never sends it again', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    resendRefuses = (mail) => (mail.subject === ACK_SUBJECT ? 422 : false)
+
+    const res = await withdraw(sam, plus)
+
+    expect(res.body.statement).toMatchObject({ mailStatus: 'gave-up' })
+    const givenUp = alerts().filter((a) => a.subject === ACK_GIVEN_UP)
+    expect(givenUp).toHaveLength(1)
+    expect(givenUp[0]?.text).toContain('422')
+    expect(givenUp[0]?.text).toContain('Send it to: sam@example.test')
+    await sweeps(1, 8)
+    expect(acknowledgements()).toHaveLength(1)
+    expect(alerts().filter((a) => a.subject === ACK_GIVEN_UP)).toHaveLength(1)
+  })
+
+  it('records the acknowledgement given up only once the owner alert about it goes', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    let alertsDown = true
+    const taken = resendTakes((subject) =>
+      subject === ACK_SUBJECT ? 422 : isAlert(subject) && alertsDown,
+    )
+    await withdraw(sam, plus)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'refused' })
+
+    await sweeps(1, 4)
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'refused' })
+    expect(acknowledgements()).toHaveLength(1)
+
+    alertsDown = false
+    await sweeps(5, 8)
+
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'gave-up' })
+    expect(taken.filter((s) => s === ACK_GIVEN_UP)).toHaveLength(1)
+    expect(acknowledgements()).toHaveLength(1)
+  })
+
+  it('gives the purchase mail up at once, with one alert, and never sends it again', async () => {
+    const sam = await buyer('sam@example.test')
+    resendRefuses = (mail) =>
+      PURCHASE_SUBJECT.test(mail.subject) ? 422 : false
+
+    await buy(sam, 'pack-plus', 'pi_plus')
+
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'gave-up' })
+    const givenUp = alerts().filter((a) => a.subject === PURCHASE_GIVEN_UP)
+    expect(givenUp).toHaveLength(1)
+    expect(givenUp[0]?.text).toContain('422')
+    await sweeps(1, 8)
+    expect(purchaseMails()).toHaveLength(1)
+    expect(
+      alerts().filter((a) => a.subject === PURCHASE_GIVEN_UP),
+    ).toHaveLength(1)
+  })
+
+  it('records the purchase mail given up only once the owner alert about it goes', async () => {
+    const sam = await buyer('sam@example.test')
+    let alertsDown = true
+    const taken = resendTakes((subject) =>
+      PURCHASE_SUBJECT.test(subject) ? 422 : isAlert(subject) && alertsDown,
+    )
+    await buy(sam, 'pack-plus', 'pi_plus')
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'refused' })
+
+    await sweeps(1, 4)
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'refused' })
+    expect(purchaseMails()).toHaveLength(1)
+
+    alertsDown = false
+    await sweeps(5, 8)
+
+    expect(consentOf('cs_evt_pi_plus')).toMatchObject({ mailStatus: 'gave-up' })
+    expect(taken.filter((s) => s === PURCHASE_GIVEN_UP)).toHaveLength(1)
+  })
+
+  it('never counts a refused acknowledgement as sent when Resend answers a later send 409', async () => {
+    // Resend keeps whatever it answered under a key, a refusal included,
+    // and answers another body under it 409.
+    const inner = globalThis.fetch
+    const keys = new Map<string, { body: string; status: number }>()
+    const ackStatuses: number[] = []
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        const key =
+          url === RESEND
+            ? new Headers(init?.headers).get('idempotency-key')
+            : null
+        if (key === null) return inner(input, init)
+        const body = String(init?.body)
+        const mail = JSON.parse(body) as { subject: string; to: string[] }
+        const seen = keys.get(key)
+        const status =
+          seen === undefined
+            ? mail.to.some((to) => to.includes('..'))
+              ? 422
+              : 200
+            : seen.body === body
+              ? seen.status
+              : 409
+        if (seen === undefined) keys.set(key, { body, status })
+        if (mail.subject === ACK_SUBJECT) ackStatuses.push(status)
+        sent.push({ url, method: 'POST', body, headers: {} })
+        if (status === 200) return Response.json({ id: 'stubbed' })
+        return Response.json(
+          {
+            statusCode: status,
+            name:
+              status === 409
+                ? 'invalid_idempotent_request'
+                : 'validation_error',
+            message: 'refused',
+          },
+          { status },
+        )
+      },
+    )
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    stripeRefunds = 'down'
+    // A typo the form's shape check lets through.
+    await withdraw(sam, plus, { email: 'sam@example..test' })
+    stripeRefunds = 'ok'
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+
+    expect(ackStatuses).toEqual([422])
+    expect(statementOf(plus)?.mailStatus).toBe('gave-up')
+  })
+})
+
+describe('deleting an account a withdrawal still owes something', () => {
+  const ACK_HELD =
+    "The confirmation email for your cancelled credit pack hasn't gone out yet. You can delete your account once it has."
+
+  it('waits while the acknowledgement has not gone, and goes ahead once it has', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    resendRefuses = (mail) => mail.subject === ACK_SUBJECT
+    await withdraw(sam, plus)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      mailStatus: 'failed',
+    })
+
+    expect(await deleteAccount(sam)).toEqual({
+      status: 409,
+      body: { error: ACK_HELD },
+    })
+    expect(subjects(alerts()).at(-1)).toBe(
+      `${BILLING}Account deletion held: a withdrawal acknowledgement has not gone`,
+    )
+
+    resendRefuses = () => false
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+    expect(statementOf(plus)).toMatchObject({ mailStatus: 'sent' })
+    expect((await deleteAccount(sam)).status).toBe(200)
+  })
+
+  it('is never carried out while a withdrawal written during it still owes its refund', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    stripeRefunds = 'down'
+    const db = env.DB as unknown as SqliteD1Database
+    const prepare = db.prepare.bind(db)
+    let fired = false
+    db.prepare = (text: string) => {
+      const statement = prepare(text)
+      if (fired || !/googleDriveTokens/.test(text)) return statement
+      fired = true
+      // The deletion has passed its check and is revoking the Drive grant
+      // when the buyer's withdrawal lands.
+      const bind = statement.bind.bind(statement)
+      statement.bind = (...values: Parameters<SqliteD1Statement['bind']>) => {
+        const bound = bind(...values)
+        const first = bound.first.bind(bound)
+        bound.first = (async (...args: unknown[]) => {
+          await withdraw(sam, plus)
+          return (first as (...a: unknown[]) => unknown)(...args)
+        }) as typeof bound.first
+        return bound
+      }
+      return statement
+    }
+
+    const deletion = await deleteAccount(sam)
+
+    expect(fired).toBe(true)
+    expect(deletion).toEqual({
+      status: 409,
+      body: {
+        error:
+          'Your refund for a cancelled credit pack is still in progress. You can delete your account once it has gone through.',
+      },
+    })
+    expect(
+      sqlite.prepare('SELECT id FROM users WHERE id = ?').get(sam.userId),
+    ).toBeDefined()
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'pending' })
+
+    db.prepare = prepare
+    stripeRefunds = 'ok'
+    at('2026-10-20T16:17:00.000Z')
+    await cron()
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+    expect(refundsMade).toHaveLength(1)
+  })
+})
+
+describe('an acknowledgement sent before Stripe has finished the refund', () => {
+  it.each(['requires_action', 'pending'])(
+    'says the refund has started while it is %s',
+    async (status) => {
+      newRefundStatus = status
+      const sam = await buyer('sam@example.test')
+      const plus = await buy(sam, 'pack-plus', 'pi_plus')
+
+      const res = await withdraw(sam, plus)
+
+      expect(res.body.statement).toMatchObject({
+        refundStatus: 'refunded',
+        stripeRefundStatus: status,
+      })
+      const ack = acknowledgements()[0]
+      expect(ack?.text).toContain(
+        "We've started a refund of €20.00 to the card or account you paid with. Banks usually show it within 5 to 10 business days.",
+      )
+      expect(ack?.text).not.toContain("We've refunded")
+    },
+  )
+
+  it('says the money went back once Stripe reports the refund succeeded', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+
+    const res = await withdraw(sam, plus)
+
+    expect(res.body.statement).toMatchObject({
+      stripeRefundStatus: 'succeeded',
+    })
+    expect(acknowledgements()[0]?.text).toContain("We've refunded €20.00")
+  })
+})
+
+describe('a refund that stays open', () => {
+  it('tells the owner what Stripe answered a price lookup, and hands the refund over before day 14', async () => {
+    const sam = await buyer('sam@example.test')
+    insertRow(
+      sam.userId,
+      140,
+      'purchase',
+      'pack-plus',
+      'evt:evt_legacy',
+      'pi_legacy',
+    )
+    paymentIntents.set('pi_legacy', { amount_received: 2000, currency: 'eur' })
+    const inner = globalThis.fetch
+    let lookups = 0
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.startsWith(`${STRIPE}/payment_intents/`)) {
+          lookups += 1
+          return Response.json(
+            {
+              error: {
+                type: 'invalid_request_error',
+                message:
+                  'The provided key does not have the required permissions for this endpoint.',
+              },
+            },
+            { status: 403 },
+          )
+        }
+        return inner(input, init)
+      },
+    )
+    const purchase = purchaseOf('evt_legacy')
+
+    await withdraw(sam, purchase)
+
+    expect(statementOf(purchase)).toMatchObject({
+      refundStatus: 'pending',
+      priceSource: 'pending',
+    })
+    expect(String(statementOf(purchase)?.refundError)).toMatch(/403/)
+    expect(alerts()[0]?.text).toMatch(/403.*permissions/)
+
+    // Day 10: still pending, and asked again every run.
+    await sweeps(1, 40)
+    expect(statementOf(purchase)).toMatchObject({ refundStatus: 'pending' })
+    expect(statementOf(purchase)?.refundHandedOverAt).toBeNull()
+
+    // Day 11: the owner is told to refund it by hand by 3 November, and the
+    // sweep stops asking, so it can never go twice.
+    await sweeps(41, 44)
+    const handover = alerts().filter((a) =>
+      a.subject.includes('by hand by 3 November 2026'),
+    )
+    expect(handover).toHaveLength(1)
+    expect(handover[0]?.text).toMatch(/403/)
+    expect(statementOf(purchase)).toMatchObject({ refundStatus: 'manual' })
+    expect(statementOf(purchase)?.refundHandedOverAt).toEqual(
+      expect.any(String),
+    )
+    const asked = lookups
+    await sweeps(45, 52)
+    expect(lookups).toBe(asked)
+    expect(refundRequests()).toEqual([])
+    expect(
+      alerts().filter((a) => a.subject.includes('by hand by 3 November 2026')),
+    ).toHaveLength(1)
+  })
+
+  it('hands it over at a later sweep when Resend refuses the day-11 alert', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    stripeRefunds = 'down'
+    await withdraw(sam, plus)
+    let refusing = false
+    const taken = resendTakes(
+      (subject) => subject.includes('by hand by') && refusing,
+    )
+    await sweeps(1, 43)
+    refusing = true
+    await sweeps(44, 44)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'pending' })
+    expect(statementOf(plus)?.refundHandedOverAt).toBeNull()
+
+    refusing = false
+    await sweeps(45, 46)
+
+    expect(taken.filter((s) => s.includes('by hand by'))).toHaveLength(1)
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'manual' })
+    expect(String(statementOf(plus)?.refundError)).toMatch(/503/)
+  })
+
+  it('keeps what Stripe answered a refund it did not take, for the owner', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    stripeRefunds = 'down'
+
+    await withdraw(sam, plus)
+
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'pending' })
+    expect(String(statementOf(plus)?.refundError)).toContain(
+      'Something went wrong on our end.',
+    )
+    expect(alerts()[0]?.text).toContain('Something went wrong on our end.')
+  })
+
+  it('tells the owner on day 11 that Stripe has still not finished it, once', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+
+    await sweeps(1, 48)
+
+    const due = alerts().filter((a) => a.subject.includes('3 November 2026'))
+    expect(due).toHaveLength(1)
+    expect(due[0]?.text).toContain('re_1')
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'pending',
+    })
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+  })
+})
+
+describe('a refund the owner has to make by hand', () => {
+  const BY_HAND = `${BILLING}Withdrawal: refund FAILED, refund €20.00 by hand`
+
+  it('tells the owner again of a refund Stripe refused, until Resend takes that alert', async () => {
+    stripeRefunds = 'refused'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    let refusing = true
+    const taken = resendTakes((subject) => isAlert(subject) && refusing)
+
+    await withdraw(sam, plus)
+    await sweeps(1, 2)
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      mailStatus: 'sent',
+    })
+    expect(statementOf(plus)?.refundHandedOverAt).toBeNull()
+    expect(taken.filter((s) => s === BY_HAND)).toEqual([])
+
+    refusing = false
+    await sweeps(3, 6)
+
+    expect(taken.filter((s) => s === BY_HAND)).toHaveLength(1)
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+    expect(refundRequests()).toHaveLength(1)
+  })
+
+  it('tells the owner of a refund Stripe fails after the day-11 alert, until Resend takes that alert', async () => {
+    newRefundStatus = 'pending'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    await sweeps(1, 44)
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+
+    const [refund] = refundsMade
+    if (refund === undefined) throw new Error('no refund was made')
+    refund.status = 'failed'
+    refund.failure_reason = 'expired_or_canceled_card'
+    let refusing = true
+    const taken = resendTakes((subject) => isAlert(subject) && refusing)
+    await sweeps(45, 46)
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+    })
+    expect(statementOf(plus)?.refundHandedOverAt).toBeNull()
+
+    refusing = false
+    await sweeps(47, 48)
+
+    expect(taken.filter((s) => s === BY_HAND)).toHaveLength(1)
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+  })
+
+  it('holds the account deletion until the owner has heard of it', async () => {
+    stripeRefunds = 'refused'
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    resendRefuses = (mail) => isAlert(mail.subject)
+    await withdraw(sam, plus)
+
+    expect(await deleteAccount(sam)).toEqual({
+      status: 409,
+      body: {
+        error:
+          'Your refund for a cancelled credit pack is still in progress. You can delete your account once it has gone through.',
+      },
+    })
+    expect(statementOf(plus)).toBeDefined()
+
+    resendRefuses = () => false
+    await sweeps(1, 1)
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+
+    expect((await deleteAccount(sam)).status).toBe(200)
+    expect(statementOf(plus)).toBeUndefined()
+  })
+})
+
+describe('a name', () => {
+  it.each(['J.Smith', 'Dr.Ana Horvat', 'St.John Smith', 'A.Kumar'])(
+    'takes %s',
+    async (name) => {
+      const sam = await buyer('sam@example.test')
+      const plus = await buy(sam, 'pack-plus', 'pi_plus')
+
+      const res = await withdraw(sam, plus, { name })
+
+      expect(res.status).toBe(200)
+      expect(acknowledgements()[0]?.text).toContain(name)
+    },
+  )
+})
+
+describe('a refund that fails after Stripe said it succeeded', () => {
+  type Failure = {
+    withdrawalId: string
+    refundId: string
+    stripeStatus: string
+    reason?: string | null
+    paymentIntentId?: string | null
+    amountMinor?: number | null
+    currency?: string | null
+  }
+  /** What #970's refund webhook calls. */
+  async function failed(failure: Failure): Promise<string> {
+    const module = (await import('../src/withdrawal-refund-failed')) as {
+      markWithdrawalRefundFailed: (
+        env: Env,
+        failure: Failure,
+      ) => Promise<string>
+    }
+    return module.markWithdrawalRefundFailed(env, failure)
+  }
+  const FAILED_SUBJECT = `${BILLING}Withdrawal: refund FAILED after it went through, refund €20.00 by hand`
+
+  it('goes to the owner to refund by hand, once per status, with no credits back', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const statement = statementOf(plus)
+    expect(statement).toMatchObject({
+      refundStatus: 'refunded',
+      stripeRefundStatus: 'succeeded',
+    })
+    const credits = balance(sam.userId)
+    const failure = {
+      withdrawalId: String(statement?.id),
+      refundId: 're_1',
+      stripeStatus: 'failed',
+      reason: 'expired_or_canceled_card',
+    }
+
+    expect(await failed(failure)).toBe('recorded')
+    expect(await failed(failure)).toBe('already')
+
+    expect(statementOf(plus)).toMatchObject({
+      refundStatus: 'failed',
+      stripeRefundStatus: 'failed',
+    })
+    expect(String(statementOf(plus)?.refundError)).toContain(
+      'expired_or_canceled_card',
+    )
+    expect(subjects(alerts()).filter((s) => s === FAILED_SUBJECT)).toHaveLength(
+      1,
+    )
+    expect(balance(sam.userId)).toBe(credits)
+
+    // The owner has heard: no sweep tells again.
+    expect(statementOf(plus)?.refundHandedOverAt).toEqual(expect.any(String))
+    await sweeps(1, 2)
+    expect(
+      subjects(alerts()).filter((s) => s.includes('refund FAILED, refund')),
+    ).toEqual([])
+  })
+
+  it('changes nothing until the owner alert about it goes', async () => {
+    const sam = await buyer('sam@example.test')
+    const plus = await buy(sam, 'pack-plus', 'pi_plus')
+    await withdraw(sam, plus)
+    const id = String(statementOf(plus)?.id)
+    resendRefuses = (mail) => isAlert(mail.subject)
+    const failure = {
+      withdrawalId: id,
+      refundId: 're_1',
+      stripeStatus: 'failed',
+    }
+
+    await expect(failed(failure)).rejects.toThrow()
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'refunded' })
+
+    resendRefuses = () => false
+    expect(await failed(failure)).toBe('recorded')
+    expect(statementOf(plus)).toMatchObject({ refundStatus: 'failed' })
+  })
+
+  it('tells the owner of a failed refund whose statement is gone', async () => {
+    expect(
+      await failed({
+        withdrawalId: 'no-such-statement',
+        refundId: 're_9',
+        stripeStatus: 'failed',
+        paymentIntentId: 'pi_gone',
+        amountMinor: 500,
+        currency: 'eur',
+      }),
+    ).toBe('not-found')
+    expect(subjects(alerts())).toEqual([
+      `${BILLING}Withdrawal: refund FAILED after it went through, statement gone, refund by hand`,
+    ])
+    expect(alerts()[0]?.text).toContain('pi_gone')
+    expect(alerts()[0]?.text).toContain('€5.00')
   })
 })

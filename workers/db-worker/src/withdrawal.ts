@@ -42,9 +42,10 @@ import { checkRateLimit, getAuth } from './auth'
 import { consentTerms, sweepPurchaseMails, withdrawalGraceWeekdays, withdrawalMode, } from './checkout-consent'
 import { LEDGER_ATTEMPTS, LEDGER_VERSION, LedgerBusy, readNamedLedger, } from './ledger'
 import { WITHDRAWAL_BONUS, WITHDRAWAL_PAID } from './stripe-payments'
-import type { StatementRow } from './withdrawal-finish'
-import { finish, priceKnown, sweepStatements } from './withdrawal-finish'
+import { finish, sweepStatements } from './withdrawal-finish'
 import type { Price } from './withdrawal-refund'
+import type { StatementRow } from './withdrawal-row'
+import { priceKnown } from './withdrawal-row'
 import type { PackUse } from './withdrawal-rules'
 import { canWithdraw, deadlineToShow, packUses, refundBasis, refundFor, withdrawalBonusKey, withdrawalKey, withdrawalOpen, } from './withdrawal-rules'
 import type { PurchaseTerms } from './withdrawal-wording'
@@ -71,10 +72,15 @@ interface ConsentRow {
 const MAX_NAME = 200
 const MAX_EMAIL = 254
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-/** A link or an address where only a name belongs: "@", a scheme, "www."
- *  or a domain ("evil.example"). The acknowledgement goes out from our
- *  domain with the name in it, so it can carry neither. */
-const NOT_A_NAME = /@|:\/\/|\bwww\.|\b[a-z0-9-]+\.[a-z]{2,}\b/i
+/** A link or an address where only a name belongs: "@", a scheme, "www.",
+ *  a host with a path ("evil.example/restore"), or a host on a common
+ *  top-level domain ("evil.com"). The acknowledgement goes out from our
+ *  domain with the name in it, so it can carry neither. A dot between
+ *  names is a name ("J.Smith", "Dr.Ana Horvat"); a link dressed up past
+ *  this gets through, which one statement per paid pack and the rate limit
+ *  keep rare. */
+const NOT_A_NAME =
+  /@|:\/\/|\bwww\.|\.[a-z]{2,}\/|\b[a-z0-9-]+\.(?:com|net|org|info|biz|io|app|dev|xyz|top|site|online|link|click|shop|ru|cn)\b/i
 
 // ── Reading ──────────────────────────────────────────────────────────
 
@@ -130,8 +136,9 @@ async function statementFor(
 }
 
 /** What the app shows of a statement. The refund is null while the price
- *  paid is not known. `mailStatus` is the acknowledgement's: 'sent' once it
- *  went. */
+ *  paid is not known; `stripeRefundStatus` says whether a refund Stripe
+ *  took has finished ('succeeded'). `mailStatus` is the acknowledgement's:
+ *  'sent' once it went, 'refused' or 'gave-up' when it never will. */
 function statementView(row: StatementRow) {
   return {
     id: row.id,
@@ -145,6 +152,7 @@ function statementView(row: StatementRow) {
     refundMinor: priceKnown(row) ? row.refundMinor : null,
     currency: row.currency,
     refundStatus: row.refundStatus,
+    stripeRefundStatus: row.stripeRefundStatus,
     mailStatus: row.mailStatus,
   }
 }

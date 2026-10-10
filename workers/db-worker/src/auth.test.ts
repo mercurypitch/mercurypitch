@@ -4,7 +4,7 @@ import { getAuth, handleAuth } from './auth'
 import { AccountSuspendedError } from './moderation'
 import { resolvePremiumBackgroundAccess } from './premium-background-access'
 import { TABLES } from './tables'
-import { OPEN_REFUND_SQL } from './withdrawal-hold'
+import { nothingOwed, OWED_STATEMENT_SQL } from './withdrawal-hold'
 
 interface UserRecord {
   id: string
@@ -54,6 +54,9 @@ class AuthStatement {
   constructor(
     private readonly db: AuthDatabase,
     private readonly sql: string,
+    /** The parameter the withdrawal guard binds the account to, when the
+     *  statement carries it (withdrawal-hold.ts, unlessOwed). */
+    readonly guardedBy: string | null = null,
   ) {}
 
   bind(...values: unknown[]): AuthStatement {
@@ -169,8 +172,9 @@ class AuthStatement {
     }
 
     // No account here has cancelled a credit pack, so none waits for a
-    // refund: withdrawal-integration.test.ts covers the hold itself.
-    if (this.sql === OPEN_REFUND_SQL.replace(/\s+/g, ' ').trim()) return null
+    // refund or an acknowledgement: withdrawal-integration.test.ts covers
+    // the hold itself.
+    if (this.sql === OWED_STATEMENT_SQL.replace(/\s+/g, ' ').trim()) return null
 
     throw new Error(`Unexpected first() SQL: ${this.sql}`)
   }
@@ -565,6 +569,8 @@ class AuthDatabase {
   readonly premiumGroupPerks = new Map<string, string[]>()
   /** Every statement this database was asked to build, normalized. */
   readonly preparedSql: string[] = []
+  /** Each batch, as the guard each of its statements carries. */
+  readonly batches: Array<Array<string | null>> = []
   failProviderLookup = false
 
   prepare(sql: string): AuthStatement {
@@ -577,10 +583,21 @@ class AuthDatabase {
     ) {
       throw new Error('provider lookup unavailable')
     }
+    // The deletion's statements carry the withdrawal guard: this database
+    // holds no withdrawals, so each runs as if it had none.
+    for (const param of ['?1', '?2']) {
+      const guard = ` AND ${nothingOwed(param).replace(/\s+/g, ' ').trim()}`
+      if (!normalized.endsWith(guard)) continue
+      const bare = normalized
+        .slice(0, -guard.length)
+        .replace(/^(.*?) WHERE \((.*)\)$/, '$1 WHERE $2')
+      return new AuthStatement(this, bare, param)
+    }
     return new AuthStatement(this, normalized)
   }
 
   async batch(statements: AuthStatement[]): Promise<unknown[]> {
+    this.batches.push(statements.map((statement) => statement.guardedBy))
     return Promise.all(
       statements.map((statement) =>
         statement.normalizedSql.startsWith('SELECT')
@@ -1627,6 +1644,48 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
     expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
       [],
     )
+  })
+
+  /**
+   * A withdrawal statement written while the deletion runs (between the
+   * hold check and this batch) must survive it with everything else of the
+   * account: every statement of the batch changes nothing while one of the
+   * account's statements still owes its buyer a refund or an
+   * acknowledgement. withdrawal-integration.test.ts runs that race on
+   * SQLite.
+   */
+  it('guards every statement of the deletion batch on what a withdrawal still owes', async () => {
+    const db = new AuthDatabase()
+    const perks = new PerksDatabase()
+    const env = makeEnv(db, perks)
+    const auth = await postAuth(
+      'register',
+      {
+        email: 'guarded@example.com',
+        password: 'Sing1ngPass',
+        deviceId: FRESH_DEVICE_ID,
+      },
+      env,
+    )
+    const userId = String((auth.user as Record<string, unknown>).id)
+    db.user(userId).emailVerified = 1
+
+    const response = await handleAuth(
+      new Request('https://api.test/api/auth/me', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${String(auth.token)}` },
+      }),
+      env,
+      '/api/auth/me',
+      respond,
+    )
+
+    expect(response?.status).toBe(200)
+    const deletion = db.batches.at(-1) ?? []
+    expect(deletion.length).toBeGreaterThan(20)
+    // The verified address's statements bind it first, the account second.
+    expect(deletion.filter((guard) => guard === null)).toEqual([])
+    expect(deletion.filter((guard) => guard === '?2')).toHaveLength(2)
   })
 
   it('does not purge an email-keyed grant for an unverified account', async () => {

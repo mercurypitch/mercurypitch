@@ -9,8 +9,8 @@
 // what happens to the money and the credits, and who received it. Shares
 // the purchase mail's layout (email-layout.ts).
 
-import type { RenderedEmail, ResendConfig } from './email'
-import { escapeHtml, formatDate, formatMoney, resendPost, sentUnderKeyAlready, } from './email'
+import type { RenderedEmail, ResendConfig, ResendResult } from './email'
+import { escapeHtml, formatDate, formatMoney, resendPost } from './email'
 import type { Lines, MailOrigins } from './email-layout'
 import { documentHtml, eyebrow, footerText, introRow, SANS, signOffRow, W, } from './email-layout'
 import type { RefundBasis } from './withdrawal-rules'
@@ -47,6 +47,9 @@ export interface WithdrawalEmailVars extends MailOrigins {
   /** 'full' for a purchase with no consent on record: the whole price. */
   basis?: RefundBasis
   refundState: WithdrawalRefundState
+  /** The refund's own status at Stripe. Only 'succeeded' says the money
+   *  went back; until then a refund Stripe took has only started. */
+  stripeRefundStatus?: string | null
   trader: TraderDetails
 }
 
@@ -96,7 +99,12 @@ function refundToCome(vars: WithdrawalEmailVars): string {
 function refundSentence(vars: WithdrawalEmailVars): string {
   if (vars.refundState === 'none') return 'There was nothing left to refund.'
   if (vars.refundState === 'refunded' && vars.refundMinor !== null) {
-    return `We've refunded ${formatMoney(vars.refundMinor, vars.currency)} to the card or account you paid with. Banks usually show it within 5 to 10 business days.`
+    const money = formatMoney(vars.refundMinor, vars.currency)
+    const done =
+      vars.stripeRefundStatus === 'succeeded'
+        ? `We've refunded ${money}`
+        : `We've started a refund of ${money}`
+    return `${done} to the card or account you paid with. Banks usually show it within 5 to 10 business days.`
   }
   return `We'll refund ${refundToCome(vars)} to the card or account you paid with within 14 days.`
 }
@@ -183,23 +191,22 @@ export function renderWithdrawalEmail(
 
 /** Send the acknowledgement to the address the statement names, with a
  *  hidden copy to `copyTo`, the account's own address, when that is
- *  another. Best-effort; the caller records whether it went
- *  (withdrawal-finish.ts). `idempotencyKey` makes a second send of the same
- *  statement's mail within a day a no-op at Resend, and Resend refusing a
- *  second body under it means the first went (sentUnderKeyAlready). */
+ *  another; Resend's answer, which the caller reads (mail-answer.ts) and
+ *  records (withdrawal-ack.ts). Never throws; see resendPost.
+ *  `idempotencyKey` makes a second send of the same statement's mail
+ *  within a day a no-op at Resend. */
 export async function sendWithdrawalMail(
   cfg: ResendConfig,
   vars: WithdrawalEmailVars,
   idempotencyKey: string,
   copyTo?: string,
-): Promise<boolean> {
+): Promise<ResendResult> {
   const result = await resendPost(
     cfg,
     vars.email,
     renderWithdrawalEmail(vars),
     { idempotencyKey, bcc: copyTo },
   )
-  const sent = result.ok || sentUnderKeyAlready(result)
-  if (sent) console.log('[email] withdrawal acknowledgement sent')
-  return sent
+  if (result.ok) console.log('[email] withdrawal acknowledgement sent')
+  return result
 }

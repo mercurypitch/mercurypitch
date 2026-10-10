@@ -29,6 +29,9 @@
 // error, a 5xx, a 409, a 429, or a 401 or 403 from a key that is wrong or
 // lacks a permission) says nothing of the payment and leaves the price
 // pending, to be asked again (withdrawal-finish.ts).
+//
+// Whatever leaves a refund or a price pending says what Stripe answered
+// (`error`, `why`): the statement keeps it, and the owner's alerts name it.
 
 import type { Env } from './auth'
 import type { WithdrawalRefundState } from './email-withdrawal'
@@ -43,6 +46,8 @@ export interface Price {
 export interface RefundOutcome {
   status: WithdrawalRefundState
   refundId: string | null
+  /** Why it is not refunded: Stripe's refusal, or what it answered when
+   *  the outcome is unknown. */
   error: string | null
   /** The refund's own status at Stripe, once it has one. */
   stripeStatus: string | null
@@ -57,12 +62,10 @@ export interface RefundAsk {
   refundMinor: number
 }
 
-/** Stripe's answer is not known: the statement stays pending. */
-const UNKNOWN: RefundOutcome = {
-  status: 'pending',
-  refundId: null,
-  error: null,
-  stripeStatus: null,
+/** Stripe's answer is not known: the statement stays pending, and keeps
+ *  what Stripe did answer. */
+function unknown(why: string): RefundOutcome {
+  return { status: 'pending', refundId: null, error: why, stripeStatus: null }
 }
 
 /** The statuses of a refund Stripe has not finished. */
@@ -83,14 +86,13 @@ function byHand(error: string): RefundOutcome {
 }
 
 /** What Stripe says the PaymentIntent received: the price; none on
- *  record; or no answer yet, to ask again. */
+ *  record; or no answer yet, to ask again, with what Stripe did say. */
 export type PriceAnswer =
   | { kind: 'paid'; price: Price }
   | { kind: 'not-on-record' }
-  | { kind: 'no-answer' }
+  | { kind: 'no-answer'; why: string }
 
 const NOT_ON_RECORD: PriceAnswer = { kind: 'not-on-record' }
-const NO_ANSWER: PriceAnswer = { kind: 'no-answer' }
 
 /** A 409, a 429 or a 5xx: Stripe answered, but not about the payment. */
 function isPassing(status: number): boolean {
@@ -111,10 +113,16 @@ export async function paidAtStripe(
       env,
       `/payment_intents/${encodeURIComponent(paymentIntentId)}`,
     )
-  } catch {
-    return NO_ANSWER
+  } catch (err) {
+    return {
+      kind: 'no-answer',
+      why: `Stripe did not answer the price lookup: ${String(err)}`,
+    }
   }
-  if (!res.ok) return res.status === 404 ? NOT_ON_RECORD : NO_ANSWER
+  if (res.status === 404) return NOT_ON_RECORD
+  if (!res.ok) {
+    return { kind: 'no-answer', why: stripeSaid('the price lookup', res) }
+  }
   const amount = res.data.amount_received
   const currency = res.data.currency
   if (typeof amount !== 'number' || typeof currency !== 'string') {
@@ -125,16 +133,27 @@ export async function paidAtStripe(
     : { kind: 'paid', price: { amountMinor: amount, currency } }
 }
 
-function stripeError(data: Record<string, unknown>, status: number): string {
+function stripeMessage(data: Record<string, unknown>): string | null {
   const error = data.error as { message?: unknown } | undefined
-  return typeof error?.message === 'string'
-    ? error.message
-    : `Stripe answered ${status}`
+  return typeof error?.message === 'string' ? error.message : null
+}
+
+function stripeError(data: Record<string, unknown>, status: number): string {
+  return stripeMessage(data) ?? `Stripe answered ${status}`
+}
+
+/** What Stripe answered `what`, in words: "Stripe answered the price
+ *  lookup 403: The provided key does not have the required permissions". */
+function stripeSaid(what: string, res: StripeAnswer): string {
+  const message = stripeMessage(res.data)
+  return `Stripe answered ${what} ${res.status}${message === null ? '' : `: ${message}`}`
 }
 
 /** What a refund object says of the refund. */
 function fromRefund(refund: Record<string, unknown>): RefundOutcome {
-  if (typeof refund.id !== 'string') return UNKNOWN
+  if (typeof refund.id !== 'string') {
+    return unknown('Stripe answered the refund request without a refund id')
+  }
   const state = typeof refund.status === 'string' ? refund.status : null
   if (state === 'failed' || state === 'canceled') {
     const reason =
@@ -159,7 +178,9 @@ function refundAnswer(res: StripeAnswer): RefundOutcome {
   if (res.ok) return fromRefund(res.data)
   // 409: the same key is still being worked on. 429: too many requests.
   // 5xx: Stripe's own trouble. None says whether the refund was made.
-  if (isPassing(res.status)) return UNKNOWN
+  if (isPassing(res.status)) {
+    return unknown(stripeSaid('the refund request', res))
+  }
   return {
     status: 'failed',
     refundId: null,
@@ -171,7 +192,7 @@ function refundAnswer(res: StripeAnswer): RefundOutcome {
 type Lookup =
   | { kind: 'found'; refund: Record<string, unknown> }
   | { kind: 'none' }
-  | { kind: 'unknown' }
+  | { kind: 'unknown'; why: string }
 
 /** The refund this statement already has at Stripe, by its metadata, over
  *  every page of the PaymentIntent's refunds. Unknown when a page fails. */
@@ -183,7 +204,12 @@ async function refundOnRecord(env: Env, ask: RefundAsk): Promise<Lookup> {
     const refunds = Array.isArray(res.data.data)
       ? (res.data.data as Array<Record<string, unknown>>)
       : null
-    if (!res.ok || refunds === null) return { kind: 'unknown' }
+    if (!res.ok || refunds === null) {
+      return {
+        kind: 'unknown',
+        why: stripeSaid('the look for its refund', res),
+      }
+    }
     const ours = refunds.find(
       (refund) =>
         (refund.metadata as Record<string, unknown> | undefined)
@@ -192,10 +218,15 @@ async function refundOnRecord(env: Env, ask: RefundAsk): Promise<Lookup> {
     if (ours !== undefined) return { kind: 'found', refund: ours }
     if (res.data.has_more !== true) return { kind: 'none' }
     const last = refunds.at(-1)?.id
-    if (typeof last !== 'string') return { kind: 'unknown' }
+    if (typeof last !== 'string') {
+      return { kind: 'unknown', why: 'Stripe listed a refund without an id' }
+    }
     after = `&starting_after=${encodeURIComponent(last)}`
   }
-  return { kind: 'unknown' }
+  return {
+    kind: 'unknown',
+    why: `Stripe listed more than ${LOOKUP_PAGES} pages of refunds of the payment`,
+  }
 }
 
 /** Why no refund can be asked for at all, or null when one can. */
@@ -225,7 +256,7 @@ export async function refundAtStripe(
   try {
     if (retry) {
       const earlier = await refundOnRecord(env, ask)
-      if (earlier.kind === 'unknown') return UNKNOWN
+      if (earlier.kind === 'unknown') return unknown(earlier.why)
       if (earlier.kind === 'found') return fromRefund(earlier.refund)
     }
     return refundAnswer(
@@ -243,10 +274,10 @@ export async function refundAtStripe(
         `withdrawal-${ask.id}`,
       ),
     )
-  } catch {
+  } catch (err) {
     // The request went out and no answer came back: Stripe may have made
     // the refund, so it stays pending for the lookup to find.
-    return UNKNOWN
+    return unknown(`Stripe did not answer the refund request: ${String(err)}`)
   }
 }
 

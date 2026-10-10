@@ -6,106 +6,55 @@
 // that wrote it, a later request for the same pack, or the 6-hourly sweep
 // (sweepStatements): the refund while it is pending, then followed while
 // Stripe has not finished it (withdrawal-refund.ts); and the
-// acknowledgement mail (email-withdrawal.ts), with the statement and the
-// time it reached us, until it is sent. The two steps stand apart, so an
-// error in one never skips the other, and one request at a time takes each.
+// acknowledgement mail (withdrawal-ack.ts) until it is sent or given up.
+// The two steps stand apart, so an error in one never skips the other, and
+// one request at a time takes each.
 //
 // A statement made while Stripe did not answer the price lookup waits with
 // its price pending: the refund step asks again first, and refunds once
 // Stripe answers. Only Stripe saying it has no such payment sends it to the
-// owner to refund by hand.
+// owner to refund by hand. Whatever leaves the refund pending, the
+// statement keeps what Stripe answered (refundError), and the owner's
+// alerts name it.
 //
 // A refund Stripe refused is never asked for again: the owner refunds it
 // by hand, and a second request could refund it twice. The owner is alerted
-// whenever a request moves the refund, and when the acknowledgement first
-// goes or fails; a retry that fails again tells nothing new. A refund still
-// not through 5 days after its statement is news once more, once.
-//
-// The acknowledgement goes to the address the statement names, with a
-// hidden copy to the account's own address when that is another.
+// whenever a request moves the refund, and when the acknowledgement is
+// first tried. A refund that becomes the owner's to make by hand counts as
+// handed over (refundHandedOverAt) only once Resend has taken that alert;
+// until then every sweep tells again (retellByHand), and the account cannot
+// be deleted (withdrawal-hold.ts). A refund still open 5 days after its
+// statement is news once more; one still open after 11 days is handed to
+// the owner to finish by day 14 (CRD Art. 13(1)), and a pending one is no
+// longer asked for, so it can never go twice. Each of those is recorded
+// only once Resend has taken its alert: until then the next sweep sends it
+// again.
 //
 // The sweep takes each duty on its own, at most SWEEP_BATCH a run, the
-// longest untried first: acknowledgements not sent, refunds still pending,
-// and refunds Stripe has not finished. Rows that keep failing never hold
-// back a later one. It sends a failed acknowledgement again until
-// MAIL_ATTEMPTS tries or GIVE_UP_AFTER_MS after the statement, then stops
-// and alerts the owner once.
+// longest untried first: acknowledgements not sent or not yet given up,
+// refunds still pending, refunds Stripe has not finished, and refunds to
+// make by hand the owner has not heard of. Rows that keep failing never
+// hold back a later one.
 
 import type { Env } from './auth'
-import { fallbackAppOrigin } from './auth'
-import { GAVE_UP, GIVE_UP_AFTER_MS, MAIL_ATTEMPTS, SWEEP_BATCH, traderDetails, UNFINISHED_AFTER_MS, } from './checkout-consent'
-import { formatMoney, sendBillingAlert } from './email'
-import type { WithdrawalRefundState } from './email-withdrawal'
-import { sendWithdrawalMail } from './email-withdrawal'
+import { SWEEP_BATCH, UNFINISHED_AFTER_MS } from './checkout-consent'
+import { formatDate, formatMoney } from './email'
+import { acknowledgeStep, mailLines, warnAcknowledgement, } from './withdrawal-ack'
 import type { Price, RefundOutcome } from './withdrawal-refund'
-import { followRefund, isOpenAtStripe, paidAtStripe, refundAtStripe, } from './withdrawal-refund'
-import type { RefundBasis } from './withdrawal-rules'
+import { followRefund, paidAtStripe, refundAtStripe } from './withdrawal-refund'
+import type { StatementRow } from './withdrawal-row'
+import { alert, byHand, byHandUntold, iso, PRICE_NOT_ON_RECORD, priceKnown, refundLine, refundMoney, refundOpen, statementFacts, } from './withdrawal-row'
 import { refundFor } from './withdrawal-rules'
-
-/** Where a statement's price came from: the checkout's record, what the
- *  PaymentIntent received, nowhere, or not known yet (Stripe did not answer
- *  the lookup, which is asked again). */
-export type PriceSource = 'checkout' | 'stripe' | 'none' | 'pending'
-
-/** Why a statement with no known price is refunded by hand. */
-export const PRICE_NOT_ON_RECORD = 'The price paid is not on record'
 
 /** A refund not through this long after its statement alerts the owner
  *  once more. */
 export const ESCALATE_AFTER_MS = 5 * 86_400_000
-
-/** A statement as withdrawals stores it. */
-export interface StatementRow {
-  id: string
-  userId: string
-  purchaseId: string
-  paymentIntentId: string | null
-  submittedAt: string
-  name: string
-  email: string
-  packLabel: string
-  purchasedAt: string
-  paidCredits: number
-  unusedCredits: number
-  bonusCredits: number
-  amountMinor: number
-  refundMinor: number
-  currency: string
-  refundStatus: WithdrawalRefundState
-  stripeRefundId: string | null
-  refundError: string | null
-  mailStatus: string | null
-  mailAt: string | null
-  /** NULL on a statement from before migration 0061: 'unused'. */
-  refundBasis: RefundBasis | null
-  priceSource: PriceSource | null
-  stripeRefundStatus: string | null
-  /** Migration 0062: the refund's last try, the 5-day alert, and the
-   *  acknowledgement's tries. */
-  refundTriedAt?: string | null
-  refundEscalatedAt?: string | null
-  mailAttempts?: number
-}
-
-/** Whether the statement knows what was paid. */
-export function priceKnown(row: Pick<StatementRow, 'priceSource'>): boolean {
-  return row.priceSource !== 'none' && row.priceSource !== 'pending'
-}
-
-/** Whether the buyer is still waiting for the refund: not asked for, or
- *  not answered, yet, or taken by Stripe but not finished. */
-export function refundOpen(
-  row: Pick<StatementRow, 'refundStatus' | 'stripeRefundStatus'>,
-): boolean {
-  return (
-    row.refundStatus === 'pending' ||
-    (row.refundStatus === 'refunded' && isOpenAtStripe(row.stripeRefundStatus))
-  )
-}
-
-function iso(ms: number): string {
-  return new Date(ms).toISOString()
-}
+/** A refund still not through this long after its statement goes to the
+ *  owner to finish by REFUND_DUE_MS. */
+export const HAND_OVER_AFTER_MS = 11 * 86_400_000
+/** The buyer has the money back within this of the statement (CRD
+ *  Art. 13(1)). */
+const REFUND_DUE_MS = 14 * 86_400_000
 
 // ── The price ────────────────────────────────────────────────────────
 
@@ -126,6 +75,27 @@ interface RefundStep {
   moved: boolean
 }
 
+/** Keep what Stripe answered a price lookup or a refund that left the
+ *  statement pending, for the owner. Best effort: it only explains. */
+async function notePending(
+  env: Env,
+  row: StatementRow,
+  why: string | null,
+): Promise<StatementRow> {
+  if (why === null || why === row.refundError) return row
+  await env.DB.prepare(
+    `UPDATE withdrawals SET refundError = ? WHERE id = ? AND refundStatus = 'pending'`,
+  )
+    .bind(why, row.id)
+    .run()
+    .catch((err: unknown) => {
+      console.error(
+        `[billing] withdrawal ${row.id}: refund note not recorded: ${String(err)}`,
+      )
+    })
+  return { ...row, refundError: why }
+}
+
 /** Ask Stripe again for the price of a statement made while it did not
  *  answer, and keep the answer if nobody priced the statement since. Only
  *  Stripe saying it has none sends it to the owner, by hand. */
@@ -134,7 +104,9 @@ async function priceStatement(
   row: StatementRow,
 ): Promise<RefundStep> {
   const answer = await paidAtStripe(env, row.paymentIntentId)
-  if (answer.kind === 'no-answer') return { row, moved: false }
+  if (answer.kind === 'no-answer') {
+    return { row: await notePending(env, row, answer.why), moved: false }
+  }
   const priced: StatementRow =
     answer.kind === 'paid'
       ? {
@@ -143,6 +115,7 @@ async function priceStatement(
           refundMinor: refundOnPrice(row, answer.price),
           currency: answer.price.currency,
           priceSource: 'stripe',
+          refundError: null,
         }
       : {
           ...row,
@@ -184,6 +157,10 @@ function withOutcome(row: StatementRow, outcome: RefundOutcome): StatementRow {
     stripeRefundId: outcome.refundId ?? row.stripeRefundId,
     refundError: outcome.error,
     stripeRefundStatus: outcome.stripeStatus,
+    // A refund that has just become the owner's has not been handed over.
+    refundHandedOverAt: byHand({ refundStatus: outcome.status })
+      ? null
+      : row.refundHandedOverAt,
   }
 }
 
@@ -212,20 +189,25 @@ async function recordRefund(
   return res.meta.changes > 0
 }
 
-/** Keep where a refund Stripe took has got to, if nobody moved it since. */
+/** Keep where a refund Stripe took has got to, if nobody moved it since. A
+ *  refund Stripe failed is the owner's to make by hand, and not handed over
+ *  until they hear of it, even when the day-11 alert went. */
 async function recordFollowUp(
   env: Env,
   row: StatementRow,
   outcome: RefundOutcome,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
-    `UPDATE withdrawals SET refundStatus = ?, refundError = ?, stripeRefundStatus = ?
+    `UPDATE withdrawals
+        SET refundStatus = ?, refundError = ?, stripeRefundStatus = ?,
+            refundHandedOverAt = CASE WHEN ? THEN NULL ELSE refundHandedOverAt END
       WHERE id = ? AND refundStatus = 'refunded' AND stripeRefundStatus IS ?`,
   )
     .bind(
       outcome.status,
       outcome.error,
       outcome.stripeStatus,
+      byHand({ refundStatus: outcome.status }) ? 1 : 0,
       row.id,
       row.stripeRefundStatus,
     )
@@ -281,7 +263,9 @@ async function askForRefund(
     current = priced.row
   }
   const outcome = await refundAtStripe(env, current, retry)
-  if (outcome.status === 'pending') return { row: current, moved: false }
+  if (outcome.status === 'pending') {
+    return { row: await notePending(env, current, outcome.error), moved: false }
+  }
   if (!(await recordRefund(env, current, outcome))) {
     return { row: current, moved: false }
   }
@@ -303,94 +287,7 @@ async function settleRefund(
     : followUp(env, row)
 }
 
-// ── The acknowledgement ──────────────────────────────────────────────
-
-/** Take the acknowledgement for this request, so two requests never both
- *  send it: one not yet sent, one that failed, or a claim gone stale. */
-async function claimMail(env: Env, row: StatementRow): Promise<boolean> {
-  const now = Date.now()
-  const res = await env.DB.prepare(
-    `UPDATE withdrawals
-        SET mailStatus = 'sending', mailAt = ?, mailAttempts = mailAttempts + 1
-      WHERE id = ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
-             OR (mailStatus = 'sending' AND mailAt < ?))`,
-  )
-    .bind(iso(now), row.id, iso(now - UNFINISHED_AFTER_MS))
-    .run()
-  return res.meta.changes > 0
-}
-
-/** The account's own address, when the statement names another: the
- *  acknowledgement's hidden copy goes there. */
-async function accountCopy(
-  env: Env,
-  row: StatementRow,
-): Promise<string | undefined> {
-  const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
-    .bind(row.userId)
-    .first<{ email: string | null }>()
-    .catch(() => null)
-  const account = (user?.email ?? '').trim()
-  const same = account.toLowerCase() === row.email.trim().toLowerCase()
-  return account === '' || same ? undefined : account
-}
-
-/** Send the acknowledgement and record whether it went. Never throws. */
-async function acknowledge(env: Env, row: StatementRow): Promise<string> {
-  let status = 'not-configured'
-  const apiKey = env.RESEND_API_KEY ?? ''
-  if (apiKey !== '') {
-    const app = fallbackAppOrigin(env)
-    const known = priceKnown(row)
-    const sent = await sendWithdrawalMail(
-      { apiKey, from: env.EMAIL_FROM },
-      {
-        appOrigin: app,
-        assetOrigin: app,
-        name: row.name,
-        email: row.email,
-        packLabel: row.packLabel,
-        paidCredits: row.paidCredits,
-        purchasedAtIso: row.purchasedAt,
-        amountMinor: known ? row.amountMinor : null,
-        currency: row.currency,
-        submittedAtIso: row.submittedAt,
-        unusedCredits: row.unusedCredits,
-        bonusCredits: row.bonusCredits,
-        refundMinor: known ? row.refundMinor : null,
-        basis: row.refundBasis ?? 'unused',
-        refundState: row.refundStatus,
-        trader: traderDetails(env),
-      },
-      `withdrawal-${row.id}`,
-      await accountCopy(env, row),
-    ).catch(() => false)
-    status = sent ? 'sent' : 'failed'
-  }
-  await env.DB.prepare(
-    'UPDATE withdrawals SET mailStatus = ?, mailAt = ? WHERE id = ?',
-  )
-    .bind(status, new Date().toISOString(), row.id)
-    .run()
-    .catch((err: unknown) => {
-      console.error(
-        `[billing] withdrawal ${row.id}: mail record FAILED: ${String(err)}`,
-      )
-    })
-  return status
-}
-
 // ── The owner's alert ────────────────────────────────────────────────
-
-function alert(env: Env, subject: string, lines: string[]): Promise<boolean> {
-  return sendBillingAlert(
-    { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
-    env.BILLING_ALERT_EMAIL ?? '',
-    subject,
-    lines,
-  ).catch(() => false)
-}
 
 function alertSubject(row: StatementRow): string {
   if (row.priceSource === 'pending') {
@@ -414,35 +311,13 @@ function alertSubject(row: StatementRow): string {
   }
 }
 
-/** What the refund is, in words for the owner. */
-function refundLine(row: StatementRow): string {
-  const whole = row.refundBasis === 'full'
-  const share = whole
-    ? 'everything that was paid'
-    : `${row.unusedCredits}/${row.paidCredits} of what was paid, rounded down to the cent`
-  if (row.priceSource === 'pending') {
-    return `Refund: ${share}; Stripe has not said what was paid yet, and is asked again every 6 hours`
-  }
-  if (!priceKnown(row)) {
-    return whole
-      ? 'Refund: everything that was paid (no consent on record); the price paid is not on record'
-      : `Refund: ${share}; the price paid is not on record`
-  }
-  const basis = whole ? ', the whole price: no consent on record' : ''
-  return `Refund: ${formatMoney(row.refundMinor, row.currency)} of ${formatMoney(row.amountMinor, row.currency)}, ${row.refundStatus}${basis}`
+/** The day the buyer must have the money back by, 14 days after the
+ *  statement (CRD Art. 13(1)). */
+function dueDate(row: StatementRow): string {
+  return formatDate(iso(Date.parse(row.submittedAt) + REFUND_DUE_MS))
 }
 
-function statementFacts(row: StatementRow): string[] {
-  return [
-    `Statement: ${row.id}, submitted ${row.submittedAt}`,
-    `Account: ${row.userId}`,
-    `Purchase: ${row.purchaseId} (${row.packLabel}, ${row.paidCredits} credits, bought ${row.purchasedAt})`,
-    `PaymentIntent: ${row.paymentIntentId ?? 'none on record'}`,
-  ]
-}
-
-function alertLines(row: StatementRow, mail: string): string[] {
-  const byHand = row.refundStatus === 'failed' || row.refundStatus === 'manual'
+function alertLines(row: StatementRow): string[] {
   return [
     ...statementFacts(row),
     `Credits removed: ${row.unusedCredits} paid, ${row.bonusCredits} bonus`,
@@ -453,29 +328,48 @@ function alertLines(row: StatementRow, mail: string): string[] {
           `Stripe refund: ${row.stripeRefundId}, ${row.stripeRefundStatus ?? 'status not given'}`,
         ]),
     ...(row.refundError === null ? [] : [`Why not: ${row.refundError}`]),
-    `Acknowledgement mail: ${mail}`,
-    ...(mail === 'failed'
-      ? [
-          `The sweep tries again every 6 hours, ${MAIL_ATTEMPTS} tries in all over at most 3 days.`,
-        ]
-      : []),
-    ...(byHand
+    ...mailLines(row),
+    ...(byHand(row)
       ? [
           '',
-          'The statement stands: refund this in the Stripe dashboard within',
-          '14 days of the statement. That refund takes no more credits; the',
-          'withdrawal took them already.',
+          `The statement stands: refund this in the Stripe dashboard by ${dueDate(row)},`,
+          '14 days after the statement (CRD Art. 13(1)). That refund takes no',
+          'more credits; the withdrawal took them already.',
         ]
       : []),
   ]
 }
 
+/** Keep that the owner has heard the refund is theirs, so no sweep tells
+ *  again. One that fails to record is told again at the next sweep. */
+async function recordHandedOver(
+  env: Env,
+  row: StatementRow,
+  nowMs: number,
+): Promise<StatementRow> {
+  try {
+    await env.DB.prepare(
+      `UPDATE withdrawals SET refundHandedOverAt = ?
+        WHERE id = ? AND refundStatus = ? AND refundHandedOverAt IS NULL`,
+    )
+      .bind(iso(nowMs), row.id, row.refundStatus)
+      .run()
+    return { ...row, refundHandedOverAt: iso(nowMs) }
+  } catch (err) {
+    console.error(
+      `[billing] withdrawal ${row.id}: hand-over not recorded: ${String(err)}`,
+    )
+    return row
+  }
+}
+
 /**
  * Everything after the statement is written, or whatever an earlier
  * request left undone: the refund step, then the acknowledgement until it
- * is sent, each on its own. Alerts the owner when this request moved the
- * refund, or sent or failed the acknowledgement the first time. Never
- * throws.
+ * is sent or given up, each on its own. Alerts the owner when this request
+ * moved the refund, or made the acknowledgement's first try; a refund to
+ * make by hand is handed over only once Resend has taken that alert.
+ * Never throws.
  */
 export async function finish(
   env: Env,
@@ -494,79 +388,29 @@ export async function finish(
     )
   }
   try {
-    const firstTry = row.mailStatus === null || row.mailStatus === 'sending'
-    if (await claimMail(env, done)) {
-      done = { ...done, mailStatus: await acknowledge(env, done) }
-      moved = moved || firstTry
-    }
+    const mail = await acknowledgeStep(env, done)
+    done = mail.row
+    moved = moved || mail.firstTry
   } catch (err) {
     console.error(
       `[billing] withdrawal ${row.id}: acknowledgement step failed: ${String(err)}`,
     )
   }
-  if (moved) {
-    await alert(
-      env,
-      alertSubject(done),
-      alertLines(done, done.mailStatus ?? 'not sent yet'),
-    )
-  }
-  return done
+  if (!moved) return done
+  const told = await alert(env, alertSubject(done), alertLines(done))
+  return told && byHandUntold(done)
+    ? recordHandedOver(env, done, Date.now())
+    : done
 }
 
-// ── The sweep ────────────────────────────────────────────────────────
-
-function mailUnsent(row: StatementRow, nowMs: number): boolean {
-  if (row.mailStatus === null || row.mailStatus === 'failed') return true
-  return (
-    row.mailStatus === 'sending' &&
-    Date.parse(row.mailAt ?? '') < nowMs - UNFINISHED_AFTER_MS
-  )
-}
-
-/** Whether to stop sending an acknowledgement that keeps failing: after
- *  MAIL_ATTEMPTS tries, or GIVE_UP_AFTER_MS after the statement. */
-function mailExpired(row: StatementRow, nowMs: number): boolean {
-  if (!mailUnsent(row, nowMs)) return false
-  return (
-    Number(row.mailAttempts ?? 0) >= MAIL_ATTEMPTS ||
-    Date.parse(row.submittedAt) <= nowMs - GIVE_UP_AFTER_MS
-  )
-}
-
-/** Stop sending an acknowledgement that kept failing: once, with one
- *  alert. */
-async function giveUpAcknowledgement(
-  env: Env,
-  row: StatementRow,
-  nowMs: number,
-): Promise<StatementRow> {
-  const res = await env.DB.prepare(
-    `UPDATE withdrawals SET mailStatus = ?, mailAt = ?
-      WHERE id = ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
-             OR (mailStatus = 'sending' AND mailAt < ?))`,
-  )
-    .bind(GAVE_UP, iso(nowMs), row.id, iso(nowMs - UNFINISHED_AFTER_MS))
-    .run()
-  if (res.meta.changes === 0) return row
-  await alert(env, 'Withdrawal: acknowledgement NOT sent, send it by hand', [
-    ...statementFacts(row),
-    `Send it to: ${row.email}`,
-    '',
-    `The acknowledgement did not go in ${MAIL_ATTEMPTS} tries or 3 days, and the sweep`,
-    'has stopped trying. CRD Art. 11a(4) asks for one on a durable medium',
-    'without undue delay: send the buyer their statement and when it',
-    'reached us.',
-  ])
-  return { ...row, mailStatus: GAVE_UP }
-}
+// ── What the owner hears later ───────────────────────────────────────
 
 function escalationLines(row: StatementRow): string[] {
   const atStripe = row.refundStatus === 'refunded'
   return [
     ...statementFacts(row),
     refundLine(row),
+    ...(row.refundError === null ? [] : [`Why not: ${row.refundError}`]),
     ...(atStripe
       ? [
           `Stripe refund: ${row.stripeRefundId ?? 'id not given'}, still ${row.stripeRefundStatus ?? 'open'}`,
@@ -578,44 +422,140 @@ function escalationLines(row: StatementRow): string[] {
           'Stripe has not confirmed the refund. The sweep asks again every 6',
           'hours, under the same idempotency key and metadata, so do not',
           'refund it by hand while it waits: it would go twice. Find out why',
-          'Stripe is not answering.',
+          'Stripe is not answering: its last answer is above.',
         ]),
     '',
     'The buyer must have the money back within 14 days of the statement',
-    '(CRD Art. 13(1)). This is the only reminder for this statement.',
+    '(CRD Art. 13(1)). If it is still open 11 days after the statement, you',
+    'hear once more, with the date to finish it by.',
   ]
 }
 
 /** Tell the owner, once, of a refund still not through ESCALATE_AFTER_MS
- *  after its statement. */
+ *  after its statement. Recorded only once Resend took the alert. */
 async function escalate(
   env: Env,
   row: StatementRow,
   nowMs: number,
 ): Promise<void> {
   if (!refundOpen(row) || (row.refundEscalatedAt ?? null) !== null) return
-  if (Date.parse(row.submittedAt) > nowMs - ESCALATE_AFTER_MS) return
-  const res = await env.DB.prepare(
+  const submitted = Date.parse(row.submittedAt)
+  // Past 11 days the hand-over says it all (handOver).
+  if (submitted > nowMs - ESCALATE_AFTER_MS) return
+  if (submitted <= nowMs - HAND_OVER_AFTER_MS) return
+  const subject = `Withdrawal: refund${refundMoney(row)} still open after 5 days`
+  if (!(await alert(env, subject, escalationLines(row)))) return
+  await env.DB.prepare(
     'UPDATE withdrawals SET refundEscalatedAt = ? WHERE id = ? AND refundEscalatedAt IS NULL',
   )
     .bind(iso(nowMs), row.id)
     .run()
-  if (res.meta.changes === 0) return
-  const money = priceKnown(row)
-    ? ` of ${formatMoney(row.refundMinor, row.currency)}`
-    : ''
-  await alert(
-    env,
-    `Withdrawal: refund${money} still open after 5 days`,
-    escalationLines(row),
-  )
 }
 
-/** Acknowledgements not sent: never tried first, then by their last try.
- *  Binds: the cut-off twice, then the batch size. */
+function handOverLines(row: StatementRow, due: string): string[] {
+  const facts = [...statementFacts(row), refundLine(row)]
+  if (row.refundStatus === 'refunded') {
+    return [
+      ...facts,
+      `Stripe refund: ${row.stripeRefundId ?? 'id not given'}, still ${row.stripeRefundStatus ?? 'open'}`,
+      '',
+      `The buyer must have the money back by ${due} (CRD Art. 13(1)), and`,
+      'Stripe has not finished this refund. Check it in the Stripe',
+      'dashboard: one that requires action waits for you or the buyer.',
+    ]
+  }
+  return [
+    ...facts,
+    `Why not: ${row.refundError ?? 'Stripe has not answered'}`,
+    '',
+    `Refund this by hand by ${due}, 14 days after the statement (CRD`,
+    'Art. 13(1)). The sweep has stopped asking Stripe for it, so it can',
+    'never go twice. Look in the Stripe dashboard first for a refund of',
+    `this PaymentIntent with metadata withdrawalId ${row.id}: if there is`,
+    'one, it went already. The withdrawal took the credits already; the',
+    'refund takes no more.',
+  ]
+}
+
+/**
+ * Hand a refund still not through HAND_OVER_AFTER_MS after its statement
+ * to the owner, to finish by day 14: by hand when Stripe never took it, in
+ * the Stripe dashboard when Stripe has it open. A pending one becomes
+ * 'manual', so the sweep never asks for it again and it can never go
+ * twice. Once, and only once Resend has taken the alert.
+ */
+async function handOver(
+  env: Env,
+  row: StatementRow,
+  nowMs: number,
+): Promise<void> {
+  if (!refundOpen(row) || (row.refundHandedOverAt ?? null) !== null) {
+    return
+  }
+  if (Date.parse(row.submittedAt) > nowMs - HAND_OVER_AFTER_MS) return
+  const due = dueDate(row)
+  const subject =
+    row.refundStatus === 'pending'
+      ? `Withdrawal: refund${refundMoney(row)} by hand by ${due}`
+      : `Withdrawal: refund${refundMoney(row)} not finished at Stripe, due by ${due}`
+  if (!(await alert(env, subject, handOverLines(row, due)))) return
+  await env.DB.prepare(
+    `UPDATE withdrawals
+        SET refundHandedOverAt = ?,
+            refundStatus = CASE refundStatus WHEN 'pending' THEN 'manual' ELSE refundStatus END
+      WHERE id = ? AND refundHandedOverAt IS NULL`,
+  )
+    .bind(iso(nowMs), row.id)
+    .run()
+}
+
+/**
+ * Tell the owner again of a refund to make by hand they have not heard of:
+ * the alert sent when it became theirs did not go. Handed over only once
+ * Resend has taken this one; until then it goes last in the sweep's line,
+ * so it never holds back another.
+ */
+async function retellByHand(
+  env: Env,
+  row: StatementRow,
+  nowMs: number,
+): Promise<void> {
+  if (!byHandUntold(row)) return
+  if (await alert(env, alertSubject(row), alertLines(row))) {
+    await recordHandedOver(env, row, nowMs)
+    return
+  }
+  await markRefundTried(env, row)
+}
+
+/** What the owner hears of a statement the sweep took: an acknowledgement
+ *  still not sent after 3 days, a refund still open after 5 days and after
+ *  11, and a refund to make by hand they have not heard of yet. Each on its
+ *  own, so one that fails never holds back another. */
+async function tellOwner(
+  env: Env,
+  row: StatementRow,
+  nowMs: number,
+): Promise<void> {
+  for (const tell of [warnAcknowledgement, escalate, handOver, retellByHand]) {
+    try {
+      await tell(env, row, nowMs)
+    } catch (err) {
+      console.error(
+        `[cron] withdrawal ${row.id}: owner alert FAILED: ${String(err)}`,
+      )
+    }
+  }
+}
+
+// ── The sweep ────────────────────────────────────────────────────────
+
+/** Acknowledgements not sent, or refused and not yet given up: never tried
+ *  first, then by their last try. Binds: the cut-off twice, then the batch
+ *  size. */
 const UNSENT_ACKNOWLEDGEMENTS_SQL = `SELECT * FROM withdrawals
       WHERE submittedAt < ?
-        AND (mailStatus IS NULL OR mailStatus = 'failed'
+        AND (mailStatus IS NULL OR mailStatus IN ('failed', 'refused')
              OR (mailStatus = 'sending' AND mailAt < ?))
       ORDER BY mailAt, submittedAt LIMIT ?`
 
@@ -630,6 +570,13 @@ const OPEN_REFUNDS_SQL = `SELECT * FROM withdrawals
         AND stripeRefundStatus IN ('pending', 'requires_action')
       ORDER BY refundTriedAt, submittedAt LIMIT ?`
 
+/** Refunds to make by hand the owner has not heard of: by their last
+ *  try. */
+const BY_HAND_UNTOLD_SQL = `SELECT * FROM withdrawals
+      WHERE submittedAt < ? AND refundStatus IN ('failed', 'manual')
+        AND refundHandedOverAt IS NULL
+      ORDER BY refundTriedAt, submittedAt LIMIT ?`
+
 /** The statements each duty takes this run, each statement once. A duty
  *  whose query fails leaves the others to run. */
 async function unfinished(env: Env, before: string): Promise<StatementRow[]> {
@@ -641,6 +588,9 @@ async function unfinished(env: Env, before: string): Promise<StatementRow[]> {
       .bind(before, SWEEP_BATCH)
       .all<StatementRow>(),
     env.DB.prepare(OPEN_REFUNDS_SQL)
+      .bind(before, SWEEP_BATCH)
+      .all<StatementRow>(),
+    env.DB.prepare(BY_HAND_UNTOLD_SQL)
       .bind(before, SWEEP_BATCH)
       .all<StatementRow>(),
   ])
@@ -659,18 +609,16 @@ async function unfinished(env: Env, before: string): Promise<StatementRow[]> {
 
 /**
  * What requests left unfinished, for statements older than
- * UNFINISHED_AFTER_MS: an acknowledgement not sent, a refund still pending,
- * and one Stripe has not finished, each duty at most SWEEP_BATCH a run, the
- * longest untried first (withdrawal.ts, sweepWithdrawals). A refund still
- * open 5 days after its statement alerts the owner once.
+ * UNFINISHED_AFTER_MS: an acknowledgement not sent or not yet given up, a
+ * refund still pending, one Stripe has not finished, and one to make by
+ * hand the owner has not heard of, each duty at most SWEEP_BATCH a run, the
+ * longest untried first (withdrawal.ts, sweepWithdrawals); then what the
+ * owner has to hear of each.
  */
 export async function sweepStatements(env: Env, nowMs: number): Promise<void> {
   for (const row of await unfinished(env, iso(nowMs - UNFINISHED_AFTER_MS))) {
     try {
-      const current = mailExpired(row, nowMs)
-        ? await giveUpAcknowledgement(env, row, nowMs)
-        : row
-      await escalate(env, await finish(env, current, true), nowMs)
+      await tellOwner(env, await finish(env, row, true), nowMs)
     } catch (err) {
       console.error(`[cron] withdrawal ${row.id}: sweep FAILED: ${String(err)}`)
     }
