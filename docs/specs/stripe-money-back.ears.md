@@ -243,8 +243,10 @@ UPDATE before it alerts (`refundFailureClaimedAt`, `refundFailureClaimedBy`,
 migration 0068), and only the delivery that claimed it shall alert. Another
 event about the same failure shall leave the owner to the claim and answer
 200; the same event, while its twin holds the claim, shall answer 500. A
-claim shall go back when its alert does not go, and one older than 10
-minutes belongs to a delivery that died and shall be taken over.
+claim shall go back when its alert does not go, so a delivery that failed
+to claim the statement and then finds neither a claim nor the failure
+recorded shall answer 500 as well, whichever event it is. A claim older
+than 10 minutes belongs to a delivery that died and shall be taken over.
 
 ### REQ-MB-029 — A purchase with no consent on record
 
