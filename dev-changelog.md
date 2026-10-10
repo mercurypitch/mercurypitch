@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-119 commits since `v0.9.16` (16 on `main`'s first-parent line, every one a PR
-merge) before this release PR, #974: PRs #957 to #962, #964 to #972 and #975.
+121 commits since `v0.9.16` (17 on `main`'s first-parent line, every one a PR
+merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 and
+#976.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -26,17 +27,17 @@ the Vite config that leaves the offer out (#961) and the shared font aliases
 
 The order matters. Each step names the PR that asks for it.
 
-1. **Seller details on `main` (#968).** Fill in `TRADER_NAME` and
-   `TRADER_ADDRESS` (full geographic address with country) in the `dev` and
-   `prod` vars of `workers/db-worker/wrangler.jsonc`. #968 merged them
-   empty. `scripts/assert-prod-trader-details.mjs` fails on an empty
-   one in `env.prod.vars` and runs in three places, all for prod only: the
-   `check-seller-details` job that opens `deploy-db.yml` (the Jam worker job
-   needs it and the DB worker job needs the Jam job), a step of the same name
-   in the DB worker job before the D1 backup, and a step in `build.yml`'s
-   `build-and-deploy` before the website is built. Until they are filled in,
-   the tag and a prod dispatch of `deploy-db.yml` deploy nothing.
-   `TRADER_VAT_ID` may stay empty; it only drops the VAT sentence.
+1. **Seller details on the prod worker (#968, #976).** Set the `TRADER_NAME`
+   and `TRADER_ADDRESS` secrets (full geographic address with country) on the
+   prod db-worker with `wrangler secret put --env prod`; since #976 they are
+   Worker secrets, not `wrangler.jsonc` vars. `scripts/assert-prod-trader-details.mjs`
+   reads `wrangler secret list --env prod` and runs in three places, all for
+   prod only: the `check-seller-details` job that opens `deploy-db.yml` (the
+   Jam worker job needs it and the DB worker job needs the Jam job), a step of
+   the same name in the DB worker job before the D1 backup, and a step in
+   `build.yml`'s `build-and-deploy` before the website is built. Until both are
+   set, the tag and a prod dispatch of `deploy-db.yml` deploy nothing.
+   `TRADER_VAT_ID` may stay unset; it only drops the VAT sentence.
 2. **Stripe live mode, Terms of service URL (#968).** Settings › Public
    details › Terms of service URL: `https://about.mercurypitch.com/terms`.
    `consent_collection[terms_of_service]=required` needs it, and without it
@@ -181,7 +182,7 @@ when the old worker gets its last events.
   recorded terms only when its purchase mail is `sent`; until then the pack
   is `no_consent` and cancellable for the whole price (CRD Art. 8(7),
   14(4)(b)(iii), 16(m); open for the lawyer). The purchase mail gains a
-  "Your right to cancel" panel and a seller line from the `TRADER_*` vars.
+  "Your right to cancel" panel and a seller line from the `TRADER_*` settings.
 - **The function.** `GET /api/billing/withdrawals` lists what can still be
   withdrawn, with its refund and basis (`unused` or `full`); `POST` takes
   `{ purchaseId, name, email }`. Settings › Credits shows it at the top only
