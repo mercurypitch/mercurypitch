@@ -13,7 +13,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { BUYER_EMAIL, CARD_LAST4 } from './stripe-fake'
 import type { Harness } from './stripe-harness'
-import { ALERT_ADDRESS, alerts, balance, deliver, failingD1, openHarness, post, recorded, recordedCount, register, signature, takeBacks, } from './stripe-harness'
+import { ALERT_ADDRESS, alerts, balance, deliver, failingD1, openHarness, post, recorded, recordedCount, register, signature, sweep, takeBacks, } from './stripe-harness'
 
 let h: Harness
 
@@ -163,6 +163,42 @@ describe('answers that ask Stripe to try again', () => {
     expect(recorded(h, refund.id)).toBe(false)
     expect(recorded(h, dispute.id)).toBe(false)
     expect(balance(h, singer.userId)).toBe(30)
+  })
+
+  it('records a purchase on the redelivery that finishes it, after a failure past its grant', async () => {
+    const singer = await register(h, 'past-the-grant@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    const db = h.env.DB
+    h.env.DB = failingD1(h, /FROM stripeCharges/)
+
+    const failed = await deliver(h, purchase)
+    const recordedAfterFailure = recorded(h, purchase.id)
+    h.env.DB = db
+    const again = await deliver(h, purchase)
+
+    expect(failed.status).toBe(500)
+    expect(recordedAfterFailure).toBe(false)
+    expect(again).toEqual({
+      status: 200,
+      body: { received: true, duplicate: true },
+    })
+    expect(recorded(h, purchase.id)).toBe(true)
+    expect(balance(h, singer.userId)).toBe(30)
+  })
+
+  it('records a purchase the sweep finishes, after a failure past its grant, and reports nothing missed', async () => {
+    const singer = await register(h, 'swept-past-the-grant@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    const db = h.env.DB
+    h.env.DB = failingD1(h, /FROM stripeCharges/)
+    await deliver(h, purchase)
+    h.env.DB = db
+
+    await sweep(h)
+
+    expect(recorded(h, purchase.id)).toBe(true)
+    expect(balance(h, singer.userId)).toBe(30)
+    expect(alerts(h)).toEqual([])
   })
 })
 

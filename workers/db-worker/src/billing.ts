@@ -1068,7 +1068,16 @@ async function applyCheckoutEvent(
       PURCHASE_RECORD,
     )
   }
-  // Only the claim winner may mark the event processed. A duplicate here
+  // A pack's grant row is never taken back, and everything after it (the
+  // launch bonus, the consent and its mail, the early take-back) ran again
+  // on this delivery and succeeded, so a redelivery finishes the event and
+  // records it. Otherwise a delivery that failed past the grant would leave
+  // it unrecorded for good, and every sweep would apply it again.
+  if (outcome.duplicate && outcome.unit === 'credits') {
+    await recordBillingEvent(env, event.id, event.type)
+    return { kind: 'duplicate' }
+  }
+  // Only the claim winner may mark a donation processed. A duplicate here
   // means another delivery (or the sweep) holds the claim RIGHT NOW - if
   // that winner fails and releases it, recording the event on the loser's
   // behalf would make every retry and sweep skip it forever: paid, no
