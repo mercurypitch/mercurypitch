@@ -194,7 +194,11 @@ alert shall say how many used credits stay with the buyer.
 
 Every six hours the sweep shall list, from Stripe's Events API, every event
 type the webhook handles, created from 30 days ago to ten minutes ago, and
-apply each one not yet recorded, oldest first.
+apply each one not yet recorded, oldest first. It shall ask billingEvents
+about a whole page of events (100) in one query, and apply at most
+`SWEEP_MONEY_BACK_PER_RUN` (25) refund and dispute events in one run,
+leaving the rest for the next run and logging that it did, so a run stays
+within D1's 1,000 queries per Worker invocation. Purchases are not capped.
 
 ### REQ-MB-031 — What it reports
 
@@ -202,15 +206,21 @@ apply each one not yet recorded, oldest first.
 missed it. **When** an event fails, the sweep shall go on with the rest, leave
 it for the next run, and alert. **When** Stripe will not list the events (two
 attempts per page), or the list stops at the page cap, the sweep shall alert
-that it failed.
+that it failed. An event migration 0065 reopened (REQ-MB-032) is not a
+missed delivery: it shall be left out of that alert.
 
 ### REQ-MB-032 — Events an older worker skipped
 
-Migration 0065 shall forget the refund and dispute events an older worker
+Migration 0065 shall reopen the refund and dispute events an older worker
 recorded without applying (`charge.refunded`, `refund.failed`,
-`refund.updated`, `charge.dispute.created`, `charge.dispute.closed`), so the
-first sweep after the deploy applies those Stripe still lists. Checkout
-events shall be left recorded.
+`refund.updated`, `charge.dispute.created`, `charge.dispute.closed`) by
+giving each the type `reopened:<type>`, so the first sweep after the deploy
+applies those Stripe still lists. The webhook and the sweep shall take a
+reopened event as not recorded, and recording it shall give it its own type
+back. The sweep shall apply reopened events without an alert each and send
+one summary instead, "Reapplied N event(s) after migration 0065", listing
+each event with the alert it would have sent. An event that fails shall
+still alert as in REQ-MB-031. Checkout events shall be left recorded.
 
 ## 5. Logs and alerts
 

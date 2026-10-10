@@ -56,10 +56,12 @@ import { handleReviewAccess } from './review-access'
 import { handleRevenueCatWebhook } from './revenuecat'
 import { songAllowance, songsSummary } from './songs-allowance'
 import { isStripeConfigured, stripeGet, stripeRequest } from './stripe-api'
+import type { BillingAlert } from './stripe-alerts'
 import type { StripeGet } from './stripe-charge'
 import type { StripeEventInput, StripeEventResult } from './stripe-payments'
 import { applyMoneyBack, isCheckoutPaidEvent, isMoneyBackEvent, paymentIntentOf, readWebhookEvent, settleEarlyMoneyBack, } from './stripe-payments'
-import { sweepStripeEvents } from './stripe-sweep'
+import type { EventRecord } from './stripe-sweep'
+import { REOPENED_PREFIX, sweepStripeEvents } from './stripe-sweep'
 import { handleWithdrawals } from './withdrawal'
 import { WITHDRAWAL_DAYS } from './withdrawal-wording'
 import type { PricingRow } from './billing-core'
@@ -637,17 +639,42 @@ async function grantCheckoutCredits(
   }
 }
 
-/** Mark a Stripe event as fully processed (idempotent). */
+/** Mark a Stripe event as fully processed (idempotent). An event migration
+ *  0065 reopened (REOPENED_PREFIX) gets its own type back. */
 async function recordBillingEvent(
   env: Env,
   eventId: string,
   type: string | null,
 ): Promise<void> {
   await env.DB.prepare(
-    'INSERT OR IGNORE INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)',
+    `INSERT INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET type = excluded.type
+      WHERE billingEvents.type LIKE '${REOPENED_PREFIX}%'`,
   )
     .bind(eventId, new Date().toISOString(), type)
     .run()
+}
+
+/** What billingEvents holds of up to a page of Stripe events, in one query
+ *  (stripe-sweep.ts): a page is 100 ids, D1's most bound values a query. */
+async function recordedEvents(
+  env: Env,
+  ids: string[],
+): Promise<Map<string, EventRecord>> {
+  const records = new Map<string, EventRecord>()
+  if (ids.length === 0) return records
+  const { results } = await env.DB.prepare(
+    `SELECT id, type FROM billingEvents WHERE id IN (${ids.map(() => '?').join(', ')})`,
+  )
+    .bind(...ids)
+    .all<{ id: string; type: string | null }>()
+  for (const row of results) {
+    records.set(
+      row.id,
+      row.type?.startsWith(REOPENED_PREFIX) === true ? 'reopened' : 'recorded',
+    )
+  }
+  return records
 }
 
 // ── UVR job metering (debit / refund) ────────────────────────────────
@@ -1094,12 +1121,14 @@ async function applyCheckoutEvent(
  * here, so an event applies the same way whichever reaches it first, and
  * once: billingEvents records it when it is done, and a recorded event is
  * skipped. Throws on anything that may pass on a retry (D1, Stripe, a busy
- * ledger), and leaves the event unrecorded.
+ * ledger), and leaves the event unrecorded. With `held`, a refund's or a
+ * dispute's alert goes there instead of to the owner (stripe-sweep.ts).
  */
 async function applyStripeEvent(
   env: Env,
   get: StripeGet,
   event: StripeEventInput,
+  held?: BillingAlert[],
 ): Promise<StripeEventResult> {
   if (!isCheckoutPaidEvent(event.type) && !isMoneyBackEvent(event.type)) {
     return { kind: 'ignored', reason: 'unhandled event type' }
@@ -1109,15 +1138,19 @@ async function applyStripeEvent(
   // would turn a failure halfway (500, Stripe retries, "duplicate") into a
   // grant or a take-back lost for good. A concurrent double delivery can
   // reach the work twice; the ledger's UNIQUE idempotencyKey (`evt:<id>`,
-  // `clawback:<id>`) makes the second write a no-op.
-  const seen = await env.DB.prepare('SELECT id FROM billingEvents WHERE id = ?')
+  // `clawback:<id>`) makes the second write a no-op. An event migration
+  // 0065 reopened is not recorded yet.
+  const seen = await env.DB.prepare(
+    `SELECT id FROM billingEvents
+      WHERE id = ? AND COALESCE(type, '') NOT LIKE '${REOPENED_PREFIX}%'`,
+  )
     .bind(event.id)
     .first<{ id: string }>()
   if (seen) return { kind: 'duplicate' }
   if (isCheckoutPaidEvent(event.type)) {
     return applyCheckoutEvent(env, get, event)
   }
-  const result = await applyMoneyBack(env, get, event, PURCHASE_RECORD)
+  const result = await applyMoneyBack(env, get, event, PURCHASE_RECORD, held)
   await recordBillingEvent(env, event.id, event.type)
   return result
 }
@@ -1208,7 +1241,8 @@ export async function reconcileBilling(env: Env): Promise<void> {
   try {
     await sweepStripeEvents({
       get,
-      apply: (event) => applyStripeEvent(env, get, event),
+      recorded: (ids) => recordedEvents(env, ids),
+      apply: (event, held) => applyStripeEvent(env, get, event, held),
       alert,
       nowSec: Math.floor(Date.now() / 1000),
     })

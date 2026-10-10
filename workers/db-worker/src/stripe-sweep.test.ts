@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BillingAlert } from './stripe-alerts'
 import type { StripeGet } from './stripe-charge'
 import type { StripeEventInput, StripeEventResult } from './stripe-payments'
 import { HANDLED_EVENTS } from './stripe-payments'
-import type { SweepPorts } from './stripe-sweep'
-import { SWEEP_MAX_PAGES, sweepStripeEvents } from './stripe-sweep'
+import type { EventRecord, SweepPorts } from './stripe-sweep'
+import { SWEEP_MAX_PAGES, SWEEP_MONEY_BACK_PER_RUN, sweepStripeEvents, } from './stripe-sweep'
 
 const NOW = 1_790_000_000
 
@@ -22,20 +23,28 @@ interface Fake {
   ports: SweepPorts
   paths: string[]
   applied: string[]
+  /** The ids of each question put to billingEvents. */
+  asked: string[][]
   alerts: Array<{ subject: string; lines: string[] }>
 }
 
 /** Ports over `pages` (each a page Stripe answers, or a status it fails
- *  with) and an `apply` that answers per event id. */
+ *  with), an `apply` that answers per event id, and what billingEvents
+ *  holds (`records`). */
 function fake(
   pages: Array<Array<ReturnType<typeof item>> | number>,
-  answer: (event: StripeEventInput) => StripeEventResult = () => ({
+  answer: (
+    event: StripeEventInput,
+    held: BillingAlert[] | undefined,
+  ) => StripeEventResult = () => ({
     kind: 'applied',
   }),
+  records: Record<string, EventRecord> = {},
 ): Fake {
   const queue = [...pages]
   const paths: string[] = []
   const applied: string[] = []
+  const asked: string[][] = []
   const alerts: Fake['alerts'] = []
   const get: StripeGet = async (path) => {
     paths.push(path)
@@ -50,12 +59,22 @@ function fake(
   return {
     paths,
     applied,
+    asked,
     alerts,
     ports: {
       get,
-      apply: async (event) => {
+      recorded: async (ids) => {
+        asked.push(ids)
+        return new Map(
+          ids.flatMap(
+            (id): Array<[string, EventRecord]> =>
+              records[id] === undefined ? [] : [[id, records[id]]],
+          ),
+        )
+      },
+      apply: async (event, held) => {
         applied.push(event.id)
-        return answer(event)
+        return answer(event, held)
       },
       alert: async (subject, lines) => {
         alerts.push({ subject, lines })
@@ -183,6 +202,177 @@ describe('what the sweep reports', () => {
       'Sweep recovered 1 missed event(s)',
       'Sweep could not apply 1 event(s)',
     ])
+  })
+})
+
+describe('what the sweep asks D1', () => {
+  it('asks about a page of events in one question, and applies only the ones not recorded', async () => {
+    const stripe = fake(
+      [[item('evt_3', 3), item('evt_2', 2), item('evt_1', 1)]],
+      undefined,
+      { evt_2: 'recorded' },
+    )
+
+    await sweepStripeEvents(stripe.ports)
+
+    expect(stripe.asked).toEqual([['evt_1', 'evt_2', 'evt_3']])
+    expect(stripe.applied).toEqual(['evt_1', 'evt_3'])
+  })
+
+  it('asks once for every hundred events', async () => {
+    const events = Array.from({ length: 150 }, (_, n) =>
+      item(`evt_${n}`, 1000 - n, 'checkout.session.completed'),
+    )
+    const stripe = fake([events.slice(0, 100), events.slice(100)], () => ({
+      kind: 'duplicate',
+    }))
+
+    await sweepStripeEvents(stripe.ports)
+
+    expect(stripe.asked.map((ids) => ids.length)).toEqual([100, 50])
+  })
+})
+
+describe('how much one run applies', () => {
+  it('applies at most SWEEP_MONEY_BACK_PER_RUN refunds and disputes, and leaves the rest for the next run, past which it still applies purchases', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const refunds = Array.from(
+      { length: SWEEP_MONEY_BACK_PER_RUN + 2 },
+      (_, n) => item(`evt_refund_${n}`, 10 + n),
+    )
+    const late = item('evt_purchase', 1000, 'checkout.session.completed')
+    const stripe = fake([[late, ...[...refunds].reverse()]])
+
+    const report = await sweepStripeEvents(stripe.ports)
+
+    expect(stripe.applied).toEqual([
+      ...refunds.slice(0, SWEEP_MONEY_BACK_PER_RUN).map((event) => event.id),
+      'evt_purchase',
+    ])
+    expect(report.left).toBe(2)
+    expect(warn).toHaveBeenCalledWith(
+      `[billing] sweep: applied ${SWEEP_MONEY_BACK_PER_RUN} refund and dispute event(s), the most one run applies; 2 left for the next run`,
+    )
+  })
+
+  it('counts no recorded event against the cap', async () => {
+    const recorded = Array.from({ length: SWEEP_MONEY_BACK_PER_RUN }, (_, n) =>
+      item(`evt_done_${n}`, 10 + n),
+    )
+    const fresh = item('evt_fresh', 1000)
+    const stripe = fake(
+      [[fresh, ...[...recorded].reverse()]],
+      undefined,
+      Object.fromEntries(
+        recorded.map((event): [string, EventRecord] => [event.id, 'recorded']),
+      ),
+    )
+
+    const report = await sweepStripeEvents(stripe.ports)
+
+    expect(stripe.applied).toEqual(['evt_fresh'])
+    expect(report.left).toBe(0)
+  })
+})
+
+describe('events migration 0065 reopened', () => {
+  const tookBack: BillingAlert = {
+    subject: 'Refund: took back 30 credit(s)',
+    lines: ['Account: user_1', 'Balance after: 0 credit(s).'],
+  }
+
+  it('applies them with their alerts held, and sums them up in one alert that blames no webhook', async () => {
+    const stripe = fake(
+      [[item('evt_2', 2), item('evt_1', 1)]],
+      (event, held) => {
+        if (event.id === 'evt_1') held?.push(tookBack)
+        return { kind: 'applied' }
+      },
+      { evt_1: 'reopened', evt_2: 'reopened' },
+    )
+
+    const report = await sweepStripeEvents(stripe.ports)
+
+    expect(report.recovered).toEqual([])
+    expect(report.reapplied).toEqual([
+      'evt_1 (charge.refunded): Refund: took back 30 credit(s)',
+      'evt_2 (charge.refunded): nothing moved now',
+    ])
+    expect(stripe.alerts.map((alert) => alert.subject)).toEqual([
+      'Reapplied 2 event(s) after migration 0065',
+    ])
+    expect(stripe.alerts[0].lines).toEqual(
+      expect.arrayContaining([
+        'evt_1 (charge.refunded): Refund: took back 30 credit(s)',
+        '  Account: user_1',
+        '  Balance after: 0 credit(s).',
+        'evt_2 (charge.refunded): nothing moved now',
+      ]),
+    )
+    expect(stripe.alerts[0].lines.join('\n')).not.toContain('webhook delivery')
+  })
+
+  it('hands a missed event its alert, and reports it as missed, beside a reopened one', async () => {
+    const heldFor: Record<string, boolean> = {}
+    const stripe = fake(
+      [[item('evt_2', 2), item('evt_1', 1)]],
+      (event, held) => {
+        heldFor[event.id] = held !== undefined
+        return { kind: 'applied' }
+      },
+      { evt_1: 'reopened' },
+    )
+
+    await sweepStripeEvents(stripe.ports)
+
+    expect(heldFor).toEqual({ evt_1: true, evt_2: false })
+    expect(stripe.alerts.map((alert) => alert.subject)).toEqual([
+      'Sweep recovered 1 missed event(s)',
+      'Reapplied 1 event(s) after migration 0065',
+    ])
+  })
+
+  it('still alerts a reopened event that fails', async () => {
+    const stripe = fake(
+      [[item('evt_1', 1)]],
+      () => {
+        throw new Error('D1_ERROR: stubbed outage')
+      },
+      { evt_1: 'reopened' },
+    )
+
+    const report = await sweepStripeEvents(stripe.ports)
+
+    expect(report.failed).toEqual([
+      'evt_1 (charge.refunded): Error: D1_ERROR: stubbed outage',
+    ])
+    expect(stripe.alerts.map((alert) => alert.subject)).toEqual([
+      'Sweep could not apply 1 event(s)',
+    ])
+  })
+
+  it('says in the summary how many refunds and disputes wait for the next run', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const events = Array.from(
+      { length: SWEEP_MONEY_BACK_PER_RUN + 3 },
+      (_, n) => item(`evt_${n}`, 10 + n),
+    )
+    const stripe = fake(
+      [[...events].reverse()],
+      undefined,
+      Object.fromEntries(
+        events.map((event): [string, EventRecord] => [event.id, 'reopened']),
+      ),
+    )
+
+    await sweepStripeEvents(stripe.ports)
+
+    expect(stripe.alerts[0].subject).toBe(
+      `Reapplied ${SWEEP_MONEY_BACK_PER_RUN} event(s) after migration 0065`,
+    )
+    expect(stripe.alerts[0].lines).toContain(
+      '3 more refund and dispute event(s) are left for the next run, in six hours.',
+    )
   })
 })
 

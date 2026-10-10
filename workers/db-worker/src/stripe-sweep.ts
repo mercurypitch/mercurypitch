@@ -15,17 +15,28 @@
 // that was never missed. Each event applies on its own: one that fails
 // stays unrecorded for the next run, and the rest go on.
 //
+// D1 allows a Worker invocation 1,000 queries. The sweep asks billingEvents
+// about a whole page of events in one query (`recorded`), so a recorded
+// event costs nothing more, and applies at most SWEEP_MONEY_BACK_PER_RUN
+// refunds and disputes, which cost about ten queries each; the next run
+// applies the rest. Purchases are not capped: a missed one is rare, and a
+// paid pack waits for nothing.
+//
 // The owner hears (`alert`, sendBillingAlert) when the sweep applied
 // anything, since that means the webhook missed it; when an event failed;
-// and when Stripe would not list the events, or not all of them.
+// and when Stripe would not list the events, or not all of them. The
+// events migration 0065 reopened, which an older worker recorded without
+// applying them, are no webhook failure: the sweep applies them quietly
+// and lists them all in one summary.
 //
 // Stripe, the handler, the alert and the clock come in as ports, so the
 // tests drive the sweep through fakes.
 
+import type { BillingAlert } from './stripe-alerts'
 import type { StripeGet } from './stripe-charge'
 import { isRecord } from './stripe-charge'
 import type { StripeEventInput, StripeEventResult } from './stripe-payments'
-import { HANDLED_EVENTS, parseStripeEvent } from './stripe-payments'
+import { HANDLED_EVENTS, isMoneyBackEvent, parseStripeEvent, } from './stripe-payments'
 
 /** How far back the sweep looks: all that Stripe's events list keeps. */
 export const SWEEP_WINDOW_SECONDS = 30 * 24 * 60 * 60
@@ -38,11 +49,32 @@ const PAGE_SIZE = 100
 export const SWEEP_MAX_PAGES = 10
 /** Each page is asked for twice before the sweep gives up on the list. */
 const LIST_ATTEMPTS = 2
+/** The refunds and disputes one run applies at most. At about ten D1
+ *  queries each, with the listing and the purchases, a run stays far below
+ *  D1's 1,000 queries per invocation; the next run applies the rest. */
+export const SWEEP_MONEY_BACK_PER_RUN = 25
+
+/** The type migration 0065 gave each refund and dispute event an older
+ *  worker recorded without applying it: `reopened:<type>`. The webhook and
+ *  the sweep take such an event as not recorded, and recording it drops the
+ *  prefix (billing.ts, recordBillingEvent). */
+export const REOPENED_PREFIX = 'reopened:'
+
+/** What billingEvents holds of an event the sweep listed: done, or reopened
+ *  by migration 0065 for the sweep to apply. */
+export type EventRecord = 'recorded' | 'reopened'
 
 export interface SweepPorts {
   get: StripeGet
-  /** The webhook's handler. Throws when the event may pass on a retry. */
-  apply: (event: StripeEventInput) => Promise<StripeEventResult>
+  /** What billingEvents holds of these events, in one query: up to a page
+   *  of them. An event it holds nothing of is missing from the map. */
+  recorded: (ids: string[]) => Promise<Map<string, EventRecord>>
+  /** The webhook's handler. Throws when the event may pass on a retry. With
+   *  `held`, the alert a refund or dispute sends goes there instead. */
+  apply: (
+    event: StripeEventInput,
+    held?: BillingAlert[],
+  ) => Promise<StripeEventResult>
   alert: (subject: string, lines: string[]) => Promise<void>
   /** Now, in seconds since 1970. */
   nowSec: number
@@ -53,8 +85,13 @@ export interface SweepReport {
   listed: number
   /** The events the sweep applied, each with what it did. */
   recovered: string[]
+  /** The events migration 0065 reopened that the sweep applied. */
+  reapplied: string[]
   /** The events that failed, left for the next run. */
   failed: string[]
+  /** The refunds and disputes past SWEEP_MONEY_BACK_PER_RUN, left for the
+   *  next run. */
+  left: number
   /** Why the list stopped short, or null when Stripe listed it all. */
   incomplete: string | null
 }
@@ -155,26 +192,93 @@ function recoveredLine(
   return result.detail === undefined ? label : `${label}: ${result.detail}`
 }
 
+/** What a reopened event's reapplication did, for the summary: its line,
+ *  with the alert it would have sent beneath it. Null when another delivery
+ *  recorded it first. */
+function reappliedLines(
+  label: string,
+  result: StripeEventResult,
+  held: BillingAlert[],
+): string[] | null {
+  if (result.kind === 'duplicate') return null
+  const what =
+    held.length > 0
+      ? held.map((alert) => alert.subject).join('; ')
+      : result.kind === 'ignored'
+        ? `acknowledged, ${result.reason}`
+        : 'nothing moved now'
+  return [
+    `${label}: ${what}`,
+    ...held.flatMap((alert) => alert.lines.map((line) => `  ${line}`)),
+  ]
+}
+
+/** What billingEvents holds of the listed events: one query a page. */
+async function recordsOf(
+  ports: SweepPorts,
+  events: StripeEventInput[],
+): Promise<Map<string, EventRecord>> {
+  const records = new Map<string, EventRecord>()
+  for (let start = 0; start < events.length; start += PAGE_SIZE) {
+    const ids = events.slice(start, start + PAGE_SIZE).map((event) => event.id)
+    for (const [id, record] of await ports.recorded(ids)) {
+      records.set(id, record)
+    }
+  }
+  return records
+}
+
+interface Applied {
+  recovered: string[]
+  /** One entry per event, its lines. */
+  reapplied: string[][]
+  failed: string[]
+  left: number
+}
+
 async function applyAll(
   ports: SweepPorts,
   events: StripeEventInput[],
-): Promise<{ recovered: string[]; failed: string[] }> {
-  const recovered: string[] = []
-  const failed: string[] = []
+): Promise<Applied> {
+  const records = await recordsOf(ports, events)
+  const applied: Applied = { recovered: [], reapplied: [], failed: [], left: 0 }
+  let moneyBack = 0
   for (const event of events) {
+    const record = records.get(event.id)
+    if (record === 'recorded') continue
+    if (isMoneyBackEvent(event.type)) {
+      if (moneyBack >= SWEEP_MONEY_BACK_PER_RUN) {
+        applied.left += 1
+        continue
+      }
+      moneyBack += 1
+    }
     const label = `${event.id} (${event.type})`
+    const held: BillingAlert[] | undefined =
+      record === 'reopened' ? [] : undefined
     try {
-      const line = recoveredLine(label, await ports.apply(event))
-      if (line !== null) recovered.push(line)
+      const result = await ports.apply(event, held)
+      if (held === undefined) {
+        const line = recoveredLine(label, result)
+        if (line !== null) applied.recovered.push(line)
+      } else {
+        const lines = reappliedLines(label, result, held)
+        if (lines !== null) applied.reapplied.push(lines)
+      }
     } catch (err) {
       console.error(
         `[billing] sweep: ${label} failed, left for the next run:`,
         err,
       )
-      failed.push(`${label}: ${errorText(err)}`)
+      applied.failed.push(`${label}: ${errorText(err)}`)
     }
   }
-  return { recovered, failed }
+  if (applied.left > 0) {
+    console.warn(
+      `[billing] sweep: applied ${SWEEP_MONEY_BACK_PER_RUN} refund and dispute event(s), the most one run applies; ${applied.left} left for the next run`,
+    )
+  }
+  return applied
 }
 
 async function alertRecovered(
@@ -192,6 +296,32 @@ async function alertRecovered(
     '',
     ...recovered,
   ])
+}
+
+async function alertReapplied(
+  ports: SweepPorts,
+  reapplied: string[][],
+  left: number,
+): Promise<void> {
+  console.log(
+    `[billing] sweep: reapplied ${reapplied.length} event(s) after migration 0065`,
+  )
+  await ports.alert(
+    `Reapplied ${reapplied.length} event(s) after migration 0065`,
+    [
+      'Migration 0065 reopened the refund and dispute events an older worker',
+      '(v0.9.16) recorded without applying them. The sweep has applied these',
+      'now. That is not a webhook failure, so they are listed here, each with',
+      'the alert it would have sent, instead of one alert each.',
+      ...(left > 0
+        ? [
+            '',
+            `${left} more refund and dispute event(s) are left for the next run, in six hours.`,
+          ]
+        : []),
+      ...reapplied.flatMap((lines) => ['', ...lines]),
+    ],
+  )
 }
 
 async function alertFailed(ports: SweepPorts, failed: string[]): Promise<void> {
@@ -225,19 +355,25 @@ export async function sweepStripeEvents(
   ports: SweepPorts,
 ): Promise<SweepReport> {
   const listing = await listEvents(ports)
-  const { recovered, failed } = await applyAll(ports, listing.events)
+  const { recovered, reapplied, failed, left } = await applyAll(
+    ports,
+    listing.events,
+  )
   if (recovered.length > 0) await alertRecovered(ports, recovered)
+  if (reapplied.length > 0) await alertReapplied(ports, reapplied, left)
   if (failed.length > 0) await alertFailed(ports, failed)
   if (listing.incomplete !== null) {
     await alertIncomplete(ports, listing.incomplete, listing.events.length)
   }
   console.log(
-    `[billing] sweep: ${listing.events.length} event(s) listed, ${recovered.length} recovered, ${failed.length} failed`,
+    `[billing] sweep: ${listing.events.length} event(s) listed, ${recovered.length} recovered, ${reapplied.length} reapplied after migration 0065, ${failed.length} failed, ${left} left for the next run`,
   )
   return {
     listed: listing.events.length,
     recovered,
+    reapplied: reapplied.map((lines) => lines[0]),
     failed,
+    left,
     incomplete: listing.incomplete,
   }
 }

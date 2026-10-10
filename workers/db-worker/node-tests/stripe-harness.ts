@@ -245,12 +245,24 @@ export function takeBacks(h: Harness, userId: string): Row[] {
   )
 }
 
+/** Whether billingEvents records the event as processed: an event migration
+ *  0065 reopened (`reopened:<type>`) is not, until it is applied again. */
 export function recorded(h: Harness, eventId: string): boolean {
   return (
     h.sqlite
-      .prepare('SELECT id FROM billingEvents WHERE id = ?')
+      .prepare(
+        "SELECT id FROM billingEvents WHERE id = ? AND COALESCE(type, '') NOT LIKE 'reopened:%'",
+      )
       .get(eventId) !== undefined
   )
+}
+
+/** The type billingEvents holds for an event, or null when it holds none. */
+export function recordedType(h: Harness, eventId: string): string | null {
+  const row = h.sqlite
+    .prepare('SELECT type FROM billingEvents WHERE id = ?')
+    .get(eventId) as { type: string | null } | undefined
+  return row === undefined ? null : row.type
 }
 
 export function recordedCount(h: Harness): number {

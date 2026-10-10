@@ -105,7 +105,7 @@ class FakeStatement {
         ? null
         : ({ userId: row.userId, delta: row.delta } as T)
     }
-    if (sql === 'SELECT id FROM billingEvents WHERE id = ?') {
+    if (sql.startsWith('SELECT id FROM billingEvents')) {
       return db.billingEvents.has(String(values[0]))
         ? ({ id: values[0] } as T)
         : null
@@ -199,7 +199,7 @@ class FakeStatement {
       return { meta: { changes: 1 } }
     }
 
-    if (sql.startsWith('INSERT OR IGNORE INTO billingEvents')) {
+    if (sql.startsWith('INSERT INTO billingEvents')) {
       const id = String(values[0])
       const fresh = !db.billingEvents.has(id)
       db.billingEvents.add(id)

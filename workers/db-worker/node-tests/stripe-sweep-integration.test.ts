@@ -9,11 +9,14 @@
 // retries is applied here, and the owner hears that the webhook missed it.
 // A sweep that cannot finish says so too.
 
+import type { SQLInputValue } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import worker from '../src/index'
+import { SWEEP_MONEY_BACK_PER_RUN } from '../src/stripe-sweep'
+import type { SqliteD1Statement } from './sqlite-d1'
 import { applyMigration, interleaved, SqliteD1Database } from './sqlite-d1'
 import type { Harness } from './stripe-harness'
-import { alerts, balance, deliver, failingD1, openHarness, recorded, register, stripeReads, sweep, takeBacks, } from './stripe-harness'
+import { alerts, balance, deliver, failingD1, openHarness, recorded, recordedType, register, stripeReads, sweep, takeBacks, } from './stripe-harness'
 
 let h: Harness
 
@@ -200,8 +203,102 @@ describe('a sweep that cannot finish', () => {
   })
 })
 
+/** D1 that counts its queries: each statement run on its own, and each
+ *  statement of a batch, as D1 counts them against an invocation. */
+function countingD1(h: Harness): { db: D1Database; queries: () => number } {
+  const db = new SqliteD1Database(h.sqlite)
+  let queries = 0
+  const statement = (inner: SqliteD1Statement): SqliteD1Statement =>
+    new Proxy(inner, {
+      get(target, property, receiver) {
+        if (property === 'bind') {
+          return (...values: SQLInputValue[]) =>
+            statement(target.bind(...values))
+        }
+        const value: unknown = Reflect.get(target, property, receiver)
+        if (property === 'first' || property === 'all' || property === 'run') {
+          const query = value as (...args: unknown[]) => Promise<unknown>
+          return async (...args: unknown[]) => {
+            queries += 1
+            return query.apply(target, args)
+          }
+        }
+        return value
+      },
+    })
+  return {
+    db: {
+      prepare: (sql: string) => statement(db.prepare(sql)),
+      batch: async (statements: SqliteD1Statement[]) => {
+        queries += statements.length
+        return db.batch(statements)
+      },
+    } as unknown as D1Database,
+    queries: () => queries,
+  }
+}
+
+/** What an older worker (v0.9.16) did with a refund or dispute event:
+ *  recorded it, applied nothing. */
+function recordedByOldWorker(
+  h: Harness,
+  event: { id: string; type: string },
+): void {
+  h.sqlite
+    .prepare('INSERT INTO billingEvents (id, createdAt, type) VALUES (?, ?, ?)')
+    .run(event.id, new Date().toISOString(), event.type)
+}
+
+describe('what one run asks of D1', () => {
+  it('asks once about a page of recorded events, and applies none of them', async () => {
+    const singer = await register(h, 'all-recorded@example.com')
+    for (let n = 0; n < 30; n += 1) {
+      const purchase = h.stripe.checkout(singer.userId)
+      await deliver(h, purchase)
+      await deliver(
+        h,
+        h.stripe.refund(String(purchase.data.object.payment_intent), 250),
+      )
+    }
+    const counted = countingD1(h)
+    h.env.DB = counted.db
+
+    await sweep(h)
+
+    expect(counted.queries()).toBe(1)
+  })
+
+  it('applies SWEEP_MONEY_BACK_PER_RUN refunds in a run, within D1 1,000 queries, and the rest in the next', async () => {
+    const singer = await register(h, 'many-refunds@example.com')
+    const refunds = []
+    for (let n = 0; n < SWEEP_MONEY_BACK_PER_RUN + 2; n += 1) {
+      const purchase = h.stripe.checkout(singer.userId)
+      await deliver(h, purchase)
+      refunds.push(
+        h.stripe.refund(String(purchase.data.object.payment_intent), 500),
+      )
+    }
+    const counted = countingD1(h)
+    h.env.DB = counted.db
+
+    await sweep(h)
+    const firstRun = {
+      queries: counted.queries(),
+      recorded: refunds.filter((refund) => recorded(h, refund.id)).length,
+      balance: balance(h, singer.userId),
+    }
+    await sweep(h)
+
+    expect(firstRun.recorded).toBe(SWEEP_MONEY_BACK_PER_RUN)
+    expect(firstRun.balance).toBe(2 * 30)
+    expect(firstRun.queries).toBeLessThan(1000)
+    expect(refunds.every((refund) => recorded(h, refund.id))).toBe(true)
+    expect(balance(h, singer.userId)).toBe(0)
+  })
+})
+
 describe('events an older worker recorded without applying them', () => {
-  it('applies them on the first sweep after the migration forgets them', async () => {
+  it('applies them on the first sweep after the migration reopens them', async () => {
     const singer = await register(h, 'old-worker@example.com')
     const purchase = h.stripe.checkout(singer.userId)
     await deliver(h, purchase)
@@ -226,5 +323,133 @@ describe('events an older worker recorded without applying them', () => {
     expect(purchaseKept).toBe(true)
     expect(balance(h, singer.userId)).toBe(0)
     expect(recorded(h, refund.id)).toBe(true)
+    expect(recordedType(h, refund.id)).toBe('charge.refunded')
+  })
+
+  it('sums them up in one alert that blames no webhook, with the alert each would have sent', async () => {
+    const singer = await register(h, 'reopened-summary@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    await deliver(h, purchase)
+    const refund = h.stripe.refund(
+      String(purchase.data.object.payment_intent),
+      500,
+    )
+    recordedByOldWorker(h, refund)
+    // A purchase from before PaymentIntent ids were stored (migration 0058).
+    const old = h.stripe.checkout(singer.userId)
+    await deliver(h, old)
+    h.sqlite
+      .prepare(
+        'UPDATE creditLedger SET paymentIntentId = NULL WHERE paymentIntentId = ?',
+      )
+      .run(String(old.data.object.payment_intent))
+    const oldRefund = h.stripe.refund(
+      String(old.data.object.payment_intent),
+      500,
+    )
+    recordedByOldWorker(h, oldRefund)
+    applyMigration(h.sqlite, '0065_reapply_money_back_events.sql')
+    const alertsBefore = alerts(h).length
+
+    await sweep(h)
+
+    const sent = alerts(h).slice(alertsBefore)
+    expect(sent.map((alert) => alert.subject)).toEqual([
+      '[MercuryPitch billing] Reapplied 2 event(s) after migration 0065',
+    ])
+    expect(sent[0].text).toContain(
+      `${refund.id} (charge.refunded): Refund: took back 30 credit(s)`,
+    )
+    expect(sent[0].text).toContain(
+      `${oldRefund.id} (charge.refunded): Refund with no credits on record`,
+    )
+    expect(sent[0].text).toContain(`  Account: ${singer.userId}`)
+    expect(sent[0].text).not.toContain('webhook delivery is failing')
+    expect(balance(h, singer.userId)).toBe(30)
+    expect(recorded(h, refund.id)).toBe(true)
+    expect(recorded(h, oldRefund.id)).toBe(true)
+  })
+
+  it('reports an event the webhook missed beside them as missed, with its own alert', async () => {
+    const singer = await register(h, 'reopened-and-missed@example.com')
+    const first = h.stripe.checkout(singer.userId)
+    await deliver(h, first)
+    const reopened = h.stripe.refund(
+      String(first.data.object.payment_intent),
+      500,
+    )
+    recordedByOldWorker(h, reopened)
+    const second = h.stripe.checkout(singer.userId)
+    await deliver(h, second)
+    const missed = h.stripe.refund(
+      String(second.data.object.payment_intent),
+      500,
+    )
+    applyMigration(h.sqlite, '0065_reapply_money_back_events.sql')
+    const alertsBefore = alerts(h).length
+
+    await sweep(h)
+
+    const subjects = alerts(h)
+      .slice(alertsBefore)
+      .map((alert) => alert.subject)
+    expect(subjects).toEqual([
+      '[MercuryPitch billing] Refund: took back 30 credit(s)',
+      '[MercuryPitch billing] Sweep recovered 1 missed event(s)',
+      '[MercuryPitch billing] Reapplied 1 event(s) after migration 0065',
+    ])
+    const recovered = alerts(h).find((alert) =>
+      alert.subject.includes('Sweep recovered'),
+    )
+    expect(recovered?.text).toContain(`${missed.id} (charge.refunded)`)
+    expect(recovered?.text).not.toContain(reopened.id)
+    expect(balance(h, singer.userId)).toBe(0)
+  })
+
+  it('still alerts a reopened event that fails, and applies it on the next run', async () => {
+    const singer = await register(h, 'reopened-fails@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    await deliver(h, purchase)
+    const refund = h.stripe.refund(
+      String(purchase.data.object.payment_intent),
+      500,
+    )
+    recordedByOldWorker(h, refund)
+    applyMigration(h.sqlite, '0065_reapply_money_back_events.sql')
+    const alertsBefore = alerts(h).length
+    const healthy = h.env.DB
+    h.env.DB = failingD1(h, /INSERT OR IGNORE INTO creditLedger/)
+
+    await sweep(h)
+    const afterFailure = {
+      subjects: alerts(h)
+        .slice(alertsBefore)
+        .map((alert) => alert.subject),
+      balance: balance(h, singer.userId),
+      recorded: recorded(h, refund.id),
+    }
+    h.env.DB = healthy
+    await sweep(h)
+
+    expect(afterFailure).toEqual({
+      subjects: ['[MercuryPitch billing] Sweep could not apply 1 event(s)'],
+      balance: 30,
+      recorded: false,
+    })
+    expect(alerts(h).at(-1)?.subject).toBe(
+      '[MercuryPitch billing] Reapplied 1 event(s) after migration 0065',
+    )
+    expect(balance(h, singer.userId)).toBe(0)
+    expect(recorded(h, refund.id)).toBe(true)
+  })
+
+  it('leaves checkout events recorded', async () => {
+    const singer = await register(h, 'checkout-kept@example.com')
+    const purchase = h.stripe.checkout(singer.userId)
+    await deliver(h, purchase)
+
+    applyMigration(h.sqlite, '0065_reapply_money_back_events.sql')
+
+    expect(recordedType(h, purchase.id)).toBe('checkout.session.completed')
   })
 })

@@ -494,6 +494,18 @@ async function sendAlert(env: Env, alert: BillingAlert | null): Promise<void> {
   )
 }
 
+/** Where a money-back event's alert goes. */
+type AlertSink = (alert: BillingAlert | null) => Promise<void>
+
+/** To the owner, now; or into `held`, for an event the sweep applies again
+ *  after migration 0065 and reports in one summary (stripe-sweep.ts). */
+function alertSink(env: Env, held: BillingAlert[] | undefined): AlertSink {
+  if (held === undefined) return (alert) => sendAlert(env, alert)
+  return async (alert) => {
+    if (alert !== null) held.push(alert)
+  }
+}
+
 /** A Stripe event, as the webhook reads it from its body and the sweep from
  *  the events list. */
 export interface StripeEventInput {
@@ -666,18 +678,19 @@ export type MoneyBackResult = Extract<
 >
 
 async function notApplied(
-  env: Env,
+  send: AlertSink,
   event: StripeEventInput,
   why: string,
   reason: string,
 ): Promise<MoneyBackResult> {
   console.warn(`[billing] ${event.type} ${event.id}: ${why}, nothing applied`)
-  await sendAlert(env, notAppliedAlert(refOf(event), why, eventDispute(event)))
+  await send(notAppliedAlert(refOf(event), why, eventDispute(event)))
   return { kind: 'ignored', reason }
 }
 
 async function nothingOnRecord(
   env: Env,
+  send: AlertSink,
   event: StripeEventInput,
   charge: ChargeState,
 ): Promise<void> {
@@ -692,8 +705,7 @@ async function nothingOnRecord(
     return
   }
   const userId = paymentIntent === null ? null : await donor(env, paymentIntent)
-  await sendAlert(
-    env,
+  await send(
     nothingOnRecordAlert(
       refOf(event),
       charge,
@@ -709,14 +721,17 @@ async function nothingOnRecord(
  * and its disputes. Safe to call again for the same event: its row is keyed
  * on it, or on the refund it ended. Throws when D1 or Stripe fails, so the
  * caller tries again later (the webhook answers 500, the sweep leaves the
- * event for its next run).
+ * event for its next run). With `held`, its alert goes there instead of to
+ * the owner.
  */
 export async function applyMoneyBack(
   env: Env,
   get: StripeGet,
   event: StripeEventInput,
   record: PurchaseRecord,
+  held?: BillingAlert[],
 ): Promise<MoneyBackResult> {
+  const send = alertSink(env, held)
   // A withdrawal's own refund that failed or was canceled is the withdrawal
   // sweep's (withdrawal-finish.ts): it follows the refund, marks the
   // statement failed and alerts the owner. Nothing here took credits for
@@ -735,7 +750,7 @@ export async function applyMoneyBack(
   const chargeId = chargeIdOf(event.type, event.object)
   if (chargeId === null) {
     return notApplied(
-      env,
+      send,
       event,
       'it names no charge',
       'no charge on the event',
@@ -748,7 +763,7 @@ export async function applyMoneyBack(
   const charge = await readCharge(get, chargeId, readFor)
   if (charge === 'missing') {
     return notApplied(
-      env,
+      send,
       event,
       `Stripe knows no charge ${chargeId}`,
       'charge not found',
@@ -761,7 +776,7 @@ export async function applyMoneyBack(
   const owner =
     paymentIntent === null ? null : await creditOwner(env, paymentIntent)
   if (owner === null || paymentIntent === null) {
-    await nothingOnRecord(env, event, charge)
+    await nothingOnRecord(env, send, event, charge)
     return { kind: 'applied' }
   }
   const moved = await settlePayment(env, {
@@ -773,8 +788,7 @@ export async function applyMoneyBack(
   })
   if (moved.wrote) {
     logSettled(`${event.type} ${event.id}`, paymentIntent, moved)
-    await sendAlert(
-      env,
+    await send(
       moneyBackAlert(
         refOf(event),
         moved.charge,
