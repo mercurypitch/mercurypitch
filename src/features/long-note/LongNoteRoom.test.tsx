@@ -367,6 +367,44 @@ describe('LongNoteRoom', () => {
     })
   })
 
+  it('times the 90 s cap and the run from the first voice, not the wait', async () => {
+    // Review A of PR 973, m1 and m2: the cap and durationMs counted from
+    // the mic opening, so a wait before singing cut the note short and
+    // was credited as practice. The page's clock runs with the frames.
+    let wall = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => wall)
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: 40 s of room, then 55 s on the note: 95 s since the mic opened.
+    fake.frames = sequence(
+      (t) => silence(40, t),
+      (t) => tone(57, 55, { startT: t }),
+    )
+    wall = 95_000
+    flushFrames()
+    await settle()
+
+    // Assert: 55 s of singing is well inside the cap.
+    expect(phase()).toBe('hold')
+
+    // Act: on to 91 s of singing.
+    fake.frames = [...fake.frames, ...tone(57, 36, { startT: 95 })]
+    wall = 131_000
+    flushFrames()
+    await settle()
+
+    // Assert: the cap ends it, and the run lasted the singing.
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(1)
+    const [entry] = recorded.calls as {
+      metrics: { durationMs: number; inBandSeconds: number }
+    }[]
+    expect(entry.metrics.inBandSeconds).toBeGreaterThan(90)
+    expect(entry.metrics.durationMs).toBeGreaterThanOrEqual(90_000)
+    expect(entry.metrics.durationMs).toBeLessThanOrEqual(91_000)
+  })
+
   it('treats a cough as a false start and keeps listening', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()

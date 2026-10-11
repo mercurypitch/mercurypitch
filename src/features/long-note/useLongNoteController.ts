@@ -103,7 +103,10 @@ export interface LongNoteController {
   script: LongNoteScript
 }
 
-/** The longest hold the room times; past it, the note is called ended. */
+/**
+ * The longest hold the room times, from the first voice; past it, the note
+ * is called ended.
+ */
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
 const SLEEP_AFTER_SECONDS = 25
@@ -232,6 +235,13 @@ export function useLongNoteController(): LongNoteController {
     setChip(null)
   }
 
+  /**
+   * Seconds since the take's first voice, on the frames' clock: the wait
+   * before it is neither held nor practice.
+   */
+  const singingSeconds = (): number =>
+    engine.firstVoicedAt === null ? 0 : engine.clock - engine.firstVoicedAt
+
   const openWindow = (): void => {
     if (scripted === null) capture.startWindow()
     windowStartedAt = performance.now()
@@ -319,12 +329,12 @@ export function useLongNoteController(): LongNoteController {
       merc.move('beside', take.after)
       return
     }
-    const durationMs = Math.round(performance.now() - windowStartedAt)
     const result = computeHoldResult({
       frames,
       state: engine,
       targetMidi: target,
-      durationMs,
+      // The run's practice time: from the first voice, not the mic.
+      durationMs: Math.round(singingSeconds() * 1000),
     })
 
     if (take === null && isFalseStart(engine, result)) {
@@ -422,7 +432,7 @@ export function useLongNoteController(): LongNoteController {
     followChip(engine.clock - before)
     if (
       engine.phase === 'ended' ||
-      (untrack(state).phase === 'hold' && engine.clock > MAX_HOLD_SECONDS)
+      (untrack(state).phase === 'hold' && singingSeconds() > MAX_HOLD_SECONDS)
     ) {
       finish()
     }

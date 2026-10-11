@@ -60,7 +60,8 @@ const roundSeconds = (seconds: number): number =>
 /**
  * `frames` must be the frames that drove `state`, in order, ticked through
  * `holdTickFromFrame` (or replayed with `runHold`): the engine's clock 0 is
- * `frames[0].t`. `durationMs` is the run's wall time, passed through.
+ * `frames[0].t`. `durationMs` is the run's practice time, passed through to
+ * the history; the Long note counts it from the first voice.
  */
 export function computeHoldResult(input: {
   frames: readonly PitchFrame[]
