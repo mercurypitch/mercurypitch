@@ -14,6 +14,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { giftClaimed, syncPromoClaims } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -140,13 +141,15 @@ export const HeaderAccount: Component = () => {
       >
         <div class={styles.accountWrapper}>
           {/* Until the account has it: a pill that leads to "Claimed" is
-              a pill with nothing behind it. */}
+              a pill with nothing behind it. Its title names the gift as
+              onboarding and Karaoke Night do, by what it buys, for
+              everyone: "Claim up to 5 free song separations". */}
           <Show when={!hasGift() && offeredPromo()}>
             {(promo) => (
               <a
                 href="#/settings/credits"
                 class={styles.promoPill}
-                title={`Claim ${promo().credits} free cloud separation credits`}
+                title={`Claim ${giftCount(promo().credits)}`}
                 data-testid="header-promo-pill"
               >
                 <GiftIcon size={13} />

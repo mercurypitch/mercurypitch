@@ -131,11 +131,11 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         claimedAt: new Date().toISOString(),
       })
       setMessage({
-        text: `Promo code ${res.code} redeemed! +${res.creditsGranted} credits added.`,
+        text: `Promo code ${res.code} redeemed! +${freeCredits(res.creditsGranted)} added.`,
         type: 'success',
       })
       showNotification(
-        `+${res.creditsGranted} credits added to your account!`,
+        `+${freeCredits(res.creditsGranted)} added to your account!`,
         'info',
       )
       setCode('')
@@ -289,7 +289,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
                 }}
                 data-testid="claim-promo-btn"
               >
-                {busy() ? 'Claiming…' : `Claim ${promo().credits} Credits`}
+                {busy() ? 'Claiming…' : `Claim ${freeCredits(promo().credits)}`}
               </button>
             </Show>
           </div>

@@ -213,7 +213,7 @@ describe('PromoCodeCard', () => {
     render(() => <PromoCodeCard />)
 
     const claimBtn = await screen.findByTestId('claim-promo-btn')
-    expect(claimBtn).toHaveTextContent(/claim 5 credits/i)
+    expect(claimBtn).toHaveTextContent('Claim 5 free credits')
     expect(screen.queryByText('Claimed')).toBeNull()
     fireEvent.click(claimBtn)
     await waitFor(() => {
@@ -234,7 +234,7 @@ describe('PromoCodeCard', () => {
     render(() => <PromoCodeCard />)
 
     const claimBtn = await screen.findByTestId('claim-promo-btn')
-    expect(claimBtn).toHaveTextContent(/claim 8 credits/i)
+    expect(claimBtn).toHaveTextContent('Claim 8 free credits')
     expect(screen.getByText('WINTER')).toBeInTheDocument()
     fireEvent.click(claimBtn)
     await waitFor(() => {
@@ -258,7 +258,7 @@ describe('PromoCodeCard', () => {
 
     mocks.setOffer(LAUNCH)
     expect(await screen.findByTestId('claim-promo-btn')).toHaveTextContent(
-      /claim 5 credits/i,
+      'Claim 5 free credits',
     )
   })
 
@@ -393,7 +393,7 @@ describe('PromoCodeCard', () => {
     expect(
       screen.getByText('Up to 5 song separations on the Cloud GPU'),
     ).toBeInTheDocument()
-    expect(screen.getByText(/^Claim 5 free credits/)).toHaveTextContent(
+    expect(screen.getByText(/^Claim 5 free credits for/)).toHaveTextContent(
       'Claim 5 free credits for separating songs on the Cloud GPU, or redeem a code you were given.',
     )
   })
@@ -416,6 +416,44 @@ describe('PromoCodeCard', () => {
     )
     expect(screen.queryByText(/1 free credits/)).toBeNull()
   })
+
+  // The button, the line under the form and the toast: every place the
+  // card counts credits says "1 credit", never "1 credits".
+  for (const [credits, words] of [
+    [1, '1 free credit'],
+    [5, '5 free credits'],
+  ] as const) {
+    it(`counts ${credits} on the claim button and in what the claim says back`, async () => {
+      mocks.setOffer({ ...LAUNCH, credits })
+      mocks.fetchMe.mockResolvedValue(VERIFIED)
+      mocks.fetchBillingMe.mockResolvedValue({
+        creditBalance: 0,
+        entitlements: [],
+        redeemedPromos: [],
+        stripeConfigured: true,
+      })
+      mocks.redeemPromoCode.mockResolvedValue({
+        success: true,
+        code: 'LAUNCH',
+        creditsGranted: credits,
+        newBalance: credits,
+      })
+
+      render(() => <PromoCodeCard />)
+
+      const claimBtn = await screen.findByTestId('claim-promo-btn')
+      expect(claimBtn.textContent).toBe(`Claim ${words}`)
+      fireEvent.click(claimBtn)
+
+      expect(
+        (await screen.findByText(/promo code LAUNCH redeemed/i)).textContent,
+      ).toBe(`Promo code LAUNCH redeemed! +${words} added.`)
+      expect(mocks.showNotification).toHaveBeenCalledWith(
+        `+${words} added to your account!`,
+        'info',
+      )
+    })
+  }
 
   it('tells a signed-out visitor about free credits only while some are on offer', async () => {
     mocks.setOffer(null)
