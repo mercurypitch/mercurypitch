@@ -2,6 +2,7 @@
 // Auth Service Tests — anonymous bootstrap, login, register
 // ============================================================
 
+import { createEffect, createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/defaults', () => ({
@@ -14,12 +15,13 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
+import { accountKnownHere } from '@/db/services/account-known'
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { beginGoogleReturn } from '@/lib/google-return-nonce'
-import { lastSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
+import { forgetSignInMethod, lastSignInMethod, rememberSignInMethod, } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 
 const trackEventMock = vi.mocked(trackEvent)
@@ -99,6 +101,79 @@ describe('which providers are an account', () => {
     expect(hasUpgradedAccount()).toBe(true)
     setAuthToken(makeToken(3600, 'anonymous'))
     expect(hasUpgradedAccount()).toBe(false)
+  })
+})
+
+// The Voice Mirror offers an account only to a browser that has never met
+// one (owner, 2026-10-11): signed in, or signed out of an account this browser
+// knows, there is no offer. Each note that survives a sign-out is enough.
+describe('a real account this browser has met', () => {
+  beforeEach(() => {
+    // The sign-in note is a module signal: clearing storage leaves it set.
+    forgetSignInMethod()
+  })
+
+  it('is false for a browser that has never met an account', () => {
+    expect(accountKnownHere()).toBe(false)
+  })
+
+  it('is false for the lazily made anonymous identity', () => {
+    setAuthToken(makeToken(3600, 'anonymous'))
+    expect(accountKnownHere()).toBe(false)
+  })
+
+  it('is true while a real account is signed in', () => {
+    setAuthToken(makeToken(3600, 'google'))
+    expect(accountKnownHere()).toBe(true)
+  })
+
+  it('stays true after that account signs out here', () => {
+    setAuthToken(makeToken(3600, 'password'))
+    logout()
+
+    expect(hasUpgradedAccount()).toBe(false)
+    expect(accountKnownHere()).toBe(true)
+  })
+
+  it("is true from the last sign-in's note alone", () => {
+    rememberSignInMethod('passkey')
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(false)
+
+    expect(accountKnownHere()).toBe(true)
+  })
+
+  it("is true for a real account's session that ran out", () => {
+    setAuthToken(makeToken(-100, 'google'))
+
+    expect(hasUpgradedAccount()).toBe(false)
+    expect(accountKnownHere()).toBe(true)
+  })
+
+  it('answers false rather than throwing when storage refuses reads', () => {
+    const blocked = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('blocked')
+      })
+    try {
+      expect(accountKnownHere()).toBe(false)
+    } finally {
+      blocked.mockRestore()
+    }
+  })
+
+  it('follows a sign-in without a reload', () => {
+    const seen: boolean[] = []
+    const dispose = createRoot((done) => {
+      createEffect(() => seen.push(accountKnownHere()))
+      return done
+    })
+
+    setAuthToken(makeToken(3600, 'google'))
+    dispose()
+
+    expect(seen).toEqual([false, true])
   })
 })
 
@@ -638,6 +713,23 @@ describe('a Google return this browser did start', () => {
 
     expect(takeGoogleTwofaChallenge()).toBe('own-ceremony')
     expect(getAuthToken()).toBeNull()
+  })
+
+  it('says a second factor is owed without taking the ceremony', async () => {
+    const nonce = await startSignIn()
+    history.replaceState(
+      null,
+      '',
+      `/#gauth_2fa=own-ceremony&gauth_nonce=${nonce}`,
+    )
+    expect(googleTwofaPending()).toBe(false)
+
+    consumeGoogleRedirect()
+
+    expect(googleTwofaPending()).toBe(true)
+    // Asking did not take it: the dialog still opens on it.
+    expect(takeGoogleTwofaChallenge()).toBe('own-ceremony')
+    expect(googleTwofaPending()).toBe(false)
   })
 })
 

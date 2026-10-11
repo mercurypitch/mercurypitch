@@ -13,8 +13,9 @@
 //
 // These are that step for a room, shaped for a room's first paint: neither
 // module below is imported up front, and each loads only when a return needs
-// it. Karaoke Night is deliberately not a caller: its standalone account UI
-// adopts nothing (spec REQ-VPR-022).
+// it. The Voice Mirror's entry is a caller too, for the sign-up its account
+// ask under the results starts (2026-10-11). Karaoke Night is deliberately
+// not a caller: its standalone account UI adopts nothing (spec REQ-VPR-022).
 
 /** A Google return's fragment: a session (`#gauth…`) or a Drive grant (`#gdrive…`). */
 const GOOGLE_RETURN = /^#g(?:auth|drive)/

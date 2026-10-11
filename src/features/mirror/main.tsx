@@ -12,7 +12,10 @@ import './mirror.css'
 import { setupConsent } from '@/components/ConsentBanner'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { armDeveloperConsole } from '@/lib/developer-console'
+import { landRoomGoogleReturn } from '@/lib/room-google-return'
+import { takeGoogleLanding } from './account-ask'
 import { mirrorEntryIntent } from './entry-intent'
+import { MirrorAccountHostSlot } from './MirrorAccountAsk'
 import { MirrorApp } from './MirrorApp'
 
 // Voice control and the on-device console are per DOCUMENT, and several rooms
@@ -50,8 +53,24 @@ armDeveloperConsole()
 // before the tag loads, so EEA/UK/CH clicks are gated from the first paint.
 setupConsent()
 
+// A Google sign-in started from the account ask under the results comes back
+// to THIS page, with the session in the fragment (#gauth=...). It is stored
+// before anything renders, so the results' #take-N is back in the address
+// when MirrorApp reads it, and a return that created the account adopts this
+// browser's voiceprints (REQ-VPR-014). An ordinary visit renders at once.
 const root = document.getElementById('root')
 if (root) {
   const entryIntent = mirrorEntryIntent(window.location.pathname)
-  render(() => <MirrorApp entryIntent={entryIntent} />, root)
+  void landRoomGoogleReturn().then(() => {
+    takeGoogleLanding()
+    render(
+      () => (
+        <>
+          <MirrorApp entryIntent={entryIntent} />
+          <MirrorAccountHostSlot />
+        </>
+      ),
+      root,
+    )
+  })
 }

@@ -69,10 +69,11 @@ export interface AuthModalProps {
   prepareGoogleRedirect?: () => (() => void) | undefined
   /**
    * This page adopts the device's takes when Google sends a new account
-   * back: App through adoptAfterGoogleSignup, Guitar Night and Drum Night
-   * through adoptAfterRoomGoogleSignup in their entries. Only then does the
-   * redirect carry the voiceprint hint: a sign-up that adopts nothing sends
-   * none (REQ-VPR-022), or its welcome would say a voiceprint was saved.
+   * back: App through adoptAfterGoogleSignup, Guitar Night, Drum Night and
+   * the Voice Mirror through adoptAfterRoomGoogleSignup in their entries.
+   * Only then does the redirect carry the voiceprint hint: a sign-up that
+   * adopts nothing sends none (REQ-VPR-022), or its welcome would say a
+   * voiceprint was saved.
    */
   adoptsGoogleSignup?: boolean
 }
