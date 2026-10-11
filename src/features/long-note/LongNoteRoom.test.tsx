@@ -9,6 +9,7 @@ import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
+import { STEADY_WORDS } from './chip-follower'
 import lanternStyles from './Lantern.module.css'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
@@ -353,21 +354,21 @@ const sparkles = (): number =>
     .querySelectorAll(`.${lanternStyles.sparkle}`).length
 
 /**
- * The longest stretch, engine seconds, where the chip calls the voice
- * steady (or the top not filling) while the engine's own steady flag, the
- * one that fills the top, says otherwise.
+ * The longest stretch, engine seconds, where the chip says something the
+ * engine does not: the voice steady (its steadiness under STEADY_WORDS),
+ * the top filling when it has stopped, or stopped when it fills.
  */
-function longestSteadyDisagreement(heard: readonly Heard[]): number {
+function longestClaimDisagreement(heard: readonly Heard[]): number {
   let worst = 0
   let since: number | null = null
   for (const { chip, state } of heard) {
-    const claim =
-      says('steady', chip) || says('topSteady', chip)
-        ? true
-        : says('topShaky', chip)
-          ? false
-          : null
-    if (claim === null || claim === state.steady) since = null
+    const filling = state.reach > state.topCharge + 1e-6
+    const steady = (state.steadiness ?? 0) >= STEADY_WORDS
+    const wrong =
+      ((says('steady', chip) || says('topSteady', chip)) && !steady) ||
+      ((says('topSteady', chip) || says('topFilling', chip)) && !filling) ||
+      (says('topStalled', chip) && filling)
+    if (!wrong) since = null
     else {
       since ??= state.clock
       worst = Math.max(worst, state.clock - since)
@@ -1780,9 +1781,10 @@ describe('LongNoteRoom', () => {
     expect(atResult).toBeLessThan(0.7)
     expect(haloShine()).toBe(GOAL_SHINE)
     expect(sparkles()).toBe(0)
+    // The note ended while the top was still filling: hold on longer.
     expect(
       says(
-        'resultFull',
+        'resultLonger',
         screen.getByTestId('long-note-line').textContent,
         'G3',
       ),
@@ -1804,6 +1806,58 @@ describe('LongNoteRoom', () => {
     expect(
       says('resultBrim', screen.getByTestId('long-note-line').textContent),
     ).toBe(true)
+  })
+
+  it('calls a voice steady only when its steadiness says so: a beginner brims with a vibrato, and nothing calls it steady', async () => {
+    // A natural vibrato (+-40 cents, a steadiness of about 44) clears
+    // Beginner's bar and fills the top. The light says how far the level
+    // lets it fill; the words say how steady the voice was.
+    setExerciseLevel('beginner')
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: four frames an animation frame (the room takes whatever the
+    // mic delivered since the last one). A chip line stands at least
+    // 0.7 s, so reading the chip every 4 frames misses none.
+    const take = [
+      ...realisticTake(57, {
+        seconds: 25.5,
+        vibratoHz: 5.5,
+        vibratoCents: 40,
+        jitterCents: 2,
+        seed: 5,
+      }),
+      ...silence(0.8, 25.5),
+    ]
+    const chips = new Set<string>()
+    for (let i = 0; i < take.length; i += 4) {
+      fake.frames.push(...take.slice(i, i + 4))
+      flushFrames()
+      const chip = screen.queryByTestId('long-note-chip')?.textContent
+      if (chip !== undefined) chips.add(chip)
+    }
+    await settle()
+
+    // Assert: to the brim, a steadiness under STEADY_WORDS, and not one
+    // chip, result line or spoken result that calls the voice steady.
+    expect(phase()).toBe('result')
+    expect(shownLevel()).toBeCloseTo(1, 6)
+    const steadiness = Number(
+      /\d+/.exec(
+        screen.getByTestId('long-note-steadiness').textContent ?? '',
+      )?.[0],
+    )
+    expect(steadiness).toBeLessThan(STEADY_WORDS)
+    const line = screen.getByTestId('long-note-line').textContent
+    expect(says('resultBrim', line)).toBe(true)
+    const words = [
+      ...chips,
+      line,
+      screen.getByTestId('long-note-said').textContent,
+    ]
+    for (const text of words) expect(text ?? '').not.toMatch(/\bsteady\b/i)
+    expect([...chips].some((chip) => says('topFilling', chip))).toBe(true)
+    expect([...chips].some((chip) => says('brim', chip))).toBe(true)
   })
 
   it('celebrates nothing it would not keep: a vibrato at the band edge never finds the note', async () => {
@@ -1844,7 +1898,7 @@ describe('LongNoteRoom', () => {
 
   // Two 26 s takes through the rendered room, as above: 1.7 s on a CI
   // runner, so this case gets 10 s too.
-  it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
+  it('says the goal is halfway, then whether the top fills', async () => {
     for (const shape of [PRACTISED, WIDE]) {
       render(() => <LongNoteRoom onDone={() => undefined} />)
       await startListening()
@@ -1856,17 +1910,21 @@ describe('LongNoteRoom', () => {
       const goal = heard.find((h) => h.state.events.includes('goal'))
       expect(says('full', said[0].chip)).toBe(true)
       expect(said[0].state.clock).toBe(goal?.state.clock)
-      // Then whether the top fills, never against the engine's own steady
-      // flag for longer than the line takes to settle and be read.
+      // Then whether the top fills, never against the engine for longer
+      // than the line takes to settle and be read.
       const top = said.slice(1).map((h) => h.chip)
       if (shape === PRACTISED) {
-        expect(top.some((chip) => says('topSteady', chip))).toBe(true)
+        expect(
+          top.some(
+            (chip) => says('topSteady', chip) || says('topFilling', chip),
+          ),
+        ).toBe(true)
         expect(says('brim', top[top.length - 1])).toBe(true)
       } else {
-        expect(top.some((chip) => says('topShaky', chip))).toBe(true)
+        expect(top.some((chip) => says('topStalled', chip))).toBe(true)
         expect(top.some((chip) => says('brim', chip))).toBe(false)
       }
-      expect(longestSteadyDisagreement(heard)).toBeLessThanOrEqual(
+      expect(longestClaimDisagreement(heard)).toBeLessThanOrEqual(
         1 + 0.7 + 1 / FPS,
       )
       cleanup()

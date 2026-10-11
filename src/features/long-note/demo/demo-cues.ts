@@ -3,8 +3,8 @@
 // ============================================================
 //
 // Every tooltip waits for the engine event it explains: "it stops filling"
-// for take 1's break, "the note is over" for its end, "only steady singing
-// fills the top" for take 2's goal, and so on. The driver
+// for take 1's break, "the note is over" for its end, "the top fills by how
+// steady you sing" for take 2's goal, and so on. The driver
 // (useLongNoteDemo.ts) keys them to the events the room's engine really
 // fires, each on the first time its event or mark comes; `planLongNoteDemo`
 // lays the same table out on the script's own replay, which is what the
@@ -147,7 +147,7 @@ export function demoCueText(id: DemoCueId, note: string, own: boolean): string {
     case 'twelve':
       return '12 seconds on the line fill it halfway.'
     case 'steady':
-      return 'Then only steady singing fills the top.'
+      return 'Then the top fills by how steady you sing.'
     case 'score':
       return 'Steadier holds score higher.'
   }

@@ -25,7 +25,7 @@ export interface LongNoteRunSummary {
   readonly improved: boolean
   /** The lantern filled to the goal, halfway. */
   readonly full: boolean
-  /** Steady singing past the goal filled it to the brim. */
+  /** Past the goal the top filled too: the brim. */
   readonly brim: boolean
 }
 

@@ -240,8 +240,8 @@ describe('Long note demo, the plan', () => {
     // "It stops filling" while the voice is still off the line.
     expect(at('stops')).toBeLessThan(offEnd)
     expect(at('breath')).toBeGreaterThan(offEnd)
-    // "12 seconds fill it halfway" before the goal; "only steady singing
-    // fills the top" after it, while the top is still filling.
+    // "12 seconds fill it halfway" before the goal; "the top fills by how
+    // steady you sing" after it, while the top is still filling.
     expect(at('twelve')).toBeLessThan(plan.goal)
     expect(at('steady')).toBeGreaterThan(plan.goal)
     expect(at('steady')).toBeLessThan(plan.brim - 1.5)
@@ -278,5 +278,18 @@ describe('Long note demo, the plan', () => {
     for (const text of words) {
       expect(text).not.toMatch(/—|calm|practise/i)
     }
+  })
+
+  it('says what fills the top in words that hold at every level', () => {
+    // Review of the levels, 12 Oct 2026: a level sets how steady the top
+    // asks a voice to be, and a beginner's natural vibrato fills it. So
+    // the tooltip says the top fills by steadiness, and never that only a
+    // steady voice fills it.
+    for (const cue of DEMO_CUES) {
+      expect(demoCueText(cue.id, 'A3', true)).not.toMatch(
+        /\bonly\b.*\bsteady\b|\bsteady singing\b/i,
+      )
+    }
+    expect(demoCueText('steady', 'A3', true)).toMatch(/\btop\b/)
   })
 })

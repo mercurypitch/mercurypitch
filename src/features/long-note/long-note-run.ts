@@ -47,22 +47,26 @@ export function keepRun(target: number, result: HoldResult): boolean {
   return improved
 }
 
+/** A reach this close to 1 lets the top fill to the brim. */
+const FULL_REACH = 1 - 1e-6
+
 /**
- * What Merc says over the result: a take that never locked is missed,
- * whatever else it reached, since keepRun keeps nothing of it. Then the
- * brim first (steady singing filled the top), a new best, the goal (half
- * full).
+ * What Merc says over the result, from the take's engine at its end: a take
+ * that never locked is missed, whatever else it reached, since keepRun
+ * keeps nothing of it. Then the brim first, a new best, and past the goal
+ * why the brim did not come: the voice was steady enough for it at this
+ * level and the note ended first (longer), or it was not, which no length
+ * would have mended (steadier).
  */
 export function resultMoment(
   improved: boolean,
-  full: boolean,
-  brim: boolean,
+  engine: HoldState,
   locked: boolean,
 ): LongNoteMoment {
   // The mic is closed by now: never a line that asks for more singing.
   if (!locked) return 'missed'
-  if (brim) return 'resultBrim'
+  if (engine.brimReached) return 'resultBrim'
   if (improved) return 'newBest'
-  if (full) return 'resultFull'
-  return 'result'
+  if (!engine.goalReached) return 'result'
+  return engine.reach < FULL_REACH ? 'resultSteadier' : 'resultLonger'
 }

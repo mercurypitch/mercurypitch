@@ -249,8 +249,8 @@ export function useLongNoteController(): LongNoteController {
         case 'break':
           merc.mood('sing')
           break
-        // Halfway: he steps out of the glass to cheer, and the top is the
-        // steady singing's to fill. Full: he cheers again.
+        // Halfway: he steps out of the glass to cheer, and the top fills by
+        // the voice's steadiness. Full: he cheers again.
         case 'goal':
           feel('success')
           setShine(GOAL_SHINE)
@@ -326,11 +326,11 @@ export function useLongNoteController(): LongNoteController {
       clearChip()
       dispatch({ type: 'end' })
       // The light stays as high as the take filled it: halfway at the
-      // goal, the brim only when steady singing filled the top.
+      // goal, the brim only when the top filled too.
       lantern.set(fillLevel(engine.charge, engine.topCharge))
     })
     // The demo's result keeps Merc's bubble clear for its own tooltip.
-    if (take === null) say(resultMoment(improved, full, brim, result.locked))
+    if (take === null) say(resultMoment(improved, engine, result.locked))
     merc.move('beside', full || improved ? 'celebrate' : 'idle')
   }
 
