@@ -62,7 +62,7 @@ export function hostDidNotLoad(): void {
 
 /**
  * Take what a Google return said, once. The entry calls it after the return
- * is stored (landRoomGoogleReturn) and before the page renders. A return
+ * is stored (consumeGoogleRedirect) and before the page renders. A return
  * loads the dialog's chunk: its toast says how the sign-in went, and a second
  * factor still owed opens the dialog on the code pane. Without that, the
  * sign-in would end in silence, with nothing on the page asking for the code.

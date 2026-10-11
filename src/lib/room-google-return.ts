@@ -13,9 +13,12 @@
 //
 // These are that step for a room, shaped for a room's first paint: neither
 // module below is imported up front, and each loads only when a return needs
-// it. The Voice Mirror's entry is a caller too, for the sign-up its account
-// ask under the results starts (2026-10-11). Karaoke Night is deliberately
-// not a caller: its standalone account UI adopts nothing (spec REQ-VPR-022).
+// it. Karaoke Night is deliberately not a caller: its standalone account UI
+// adopts nothing (spec REQ-VPR-022). Nor is the Voice Mirror, whose first
+// paint carries both layers already, so its entry calls consumeGoogleRedirect
+// and adoptAfterGoogleSignup itself. A third importer would split this module
+// into a chunk of its own, which added 673 bytes to Drum Night's first paint
+// and took it over its boundary (2026-10-11).
 
 /** A Google return's fragment: a session (`#gauth…`) or a Drive grant (`#gdrive…`). */
 const GOOGLE_RETURN = /^#g(?:auth|drive)/

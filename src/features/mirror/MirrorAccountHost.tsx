@@ -10,8 +10,8 @@
 // Taking the voiceprint along is the dialog's work and the entry's. A
 // password sign-up adopts this browser's unclaimed takes as it resolves
 // (AuthModal). A Google sign-up leaves the page and comes back to it, and
-// the entry adopts on `gauth_new=1` before anything renders (main.tsx,
-// landRoomGoogleReturn). `adoptsGoogleSignup` is what lets that redirect
+// the entry adopts on `gauth_new=1` as it lands (main.tsx,
+// adoptAfterGoogleSignup). `adoptsGoogleSignup` is what lets that redirect
 // carry the voiceprint hint for the first mail (REQ-VPR-022).
 
 import { createEffect, onMount } from 'solid-js'

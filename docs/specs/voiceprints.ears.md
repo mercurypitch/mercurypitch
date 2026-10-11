@@ -172,9 +172,9 @@ sign-up codes today; the dialog's code pane asks for sign-in codes, so its
 `isNew` stays false until it asks for the other kind. A second factor still
 owed adopts nothing, because an account that has one already existed. The
 Google redirect is adopted once, where it lands, never also by the surface
-that started it: the main app's page runs `adoptAfterGoogleSignup`, and
-Guitar Night, Drum Night and the Voice Mirror run `adoptAfterRoomGoogleSignup`
-(below).
+that started it: the main app's page and the Voice Mirror run
+`adoptAfterGoogleSignup`, and Guitar Night and Drum Night run
+`adoptAfterRoomGoogleSignup` (below).
 
 **Not** covered: Karaoke Night's standalone account UI. It is a separate
 Vite entry that never imports the IndexedDB layer, and adoption would pull
@@ -203,7 +203,12 @@ sign-in adopts nothing.
 document, `mirror.html`, and the worker sends the return to the door that
 started it. The entry stores the session before the Mirror renders, so the
 results' `#take-N` is back in the address when the page reads it and the
-visitor lands on the results they left.
+visitor lands on the results they left. The Mirror's first paint carries the
+auth and voiceprint layers already, so its entry makes the main app's own
+calls (`consumeGoogleRedirect`, `adoptAfterGoogleSignup`) rather than the
+rooms' lazy helper: a third importer would split that helper into a chunk of
+its own, which added 673 bytes to Drum Night's first paint and took it over
+its boundary.
 
 Records tagged with this **device's own id** are treated as unclaimed: an
 anonymous identity's id IS the device id (the worker keys

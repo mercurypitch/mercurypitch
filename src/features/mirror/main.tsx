@@ -10,9 +10,10 @@
 import { render } from 'solid-js/web'
 import './mirror.css'
 import { setupConsent } from '@/components/ConsentBanner'
+import { consumeGoogleRedirect } from '@/db/services/auth-service'
+import { adoptAfterGoogleSignup } from '@/db/services/voiceprint-service'
 import { announceVoiceDiagnostics, initVoiceDiagnostics, } from '@/features/voice-control/voice-diagnostics'
 import { armDeveloperConsole } from '@/lib/developer-console'
-import { landRoomGoogleReturn } from '@/lib/room-google-return'
 import { takeGoogleLanding } from './account-ask'
 import { mirrorEntryIntent } from './entry-intent'
 import { MirrorAccountHostSlot } from './MirrorAccountAsk'
@@ -57,20 +58,25 @@ setupConsent()
 // to THIS page, with the session in the fragment (#gauth=...). It is stored
 // before anything renders, so the results' #take-N is back in the address
 // when MirrorApp reads it, and a return that created the account adopts this
-// browser's voiceprints (REQ-VPR-014). An ordinary visit renders at once.
+// browser's voiceprints (REQ-VPR-014). These are the main app's own calls,
+// not the rooms' lazy helper (lib/room-google-return): the Mirror's first
+// paint carries the auth and voiceprint layers already, and a third importer
+// would split that helper into a chunk of its own, which took Drum Night's
+// first paint over its boundary (2026-10-11).
+consumeGoogleRedirect()
+void adoptAfterGoogleSignup()
+takeGoogleLanding()
+
 const root = document.getElementById('root')
 if (root) {
   const entryIntent = mirrorEntryIntent(window.location.pathname)
-  void landRoomGoogleReturn().then(() => {
-    takeGoogleLanding()
-    render(
-      () => (
-        <>
-          <MirrorApp entryIntent={entryIntent} />
-          <MirrorAccountHostSlot />
-        </>
-      ),
-      root,
-    )
-  })
+  render(
+    () => (
+      <>
+        <MirrorApp entryIntent={entryIntent} />
+        <MirrorAccountHostSlot />
+      </>
+    ),
+    root,
+  )
 }

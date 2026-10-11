@@ -50,9 +50,15 @@ async function startedHere(): Promise<string> {
 beforeEach(() => {
   vi.resetModules()
   entry.renders.length = 0
-  vi.doMock('@/db/services/voiceprint-service', () => ({
-    adoptDeviceVoiceprints: () => entry.adopt(),
-  }))
+  // The real adoptAfterGoogleSignup, minus the upload: it reads the same
+  // one-shot flag the return sets, and adopts only when that is true.
+  vi.doMock('@/db/services/voiceprint-service', async () => {
+    const auth = await import('@/db/services/auth-service')
+    return {
+      adoptAfterGoogleSignup: async () =>
+        auth.takeGoogleAccountCreated() ? entry.adopt() : 0,
+    }
+  })
   entry.adopt.mockClear()
   localStorage.clear()
   document.body.innerHTML = '<div id="root"></div>'
