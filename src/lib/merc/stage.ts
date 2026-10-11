@@ -14,7 +14,7 @@
 import type { MercQuality, MercState, MercView, MercViewName, } from './constants'
 import type { MercRenderer } from './renderer'
 import { mount } from './renderer'
-import type { MercVoice } from './sim'
+import type { MercVoice, SparkleSide } from './sim'
 
 export interface MercStageOptions {
   /**
@@ -30,6 +30,8 @@ export interface MercStageOptions {
   state?: MercState
   /** Default min(2, devicePixelRatio). */
   pixelRatio?: number
+  /** Where a celebration's sparkles land. Default 'around'. */
+  sparkles?: SparkleSide
   /** Called once, when Merc stops drawing for good (also during mount). */
   onFailure?: (reason: string) => void
 }
@@ -79,6 +81,7 @@ export function mountMercStage(
       view: opts.view ?? 'front',
       state: opts.state ?? 'idle',
       pixelRatio: opts.pixelRatio,
+      sparkles: opts.sparkles,
       onFailure: report,
     })
   } catch (err) {

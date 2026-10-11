@@ -331,10 +331,12 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             active={tracing}
             muted={() => phase() === 'result'}
           />
+          {/* He celebrates beside the lantern: his stars go on his far side. */}
           <MercView
             class={hopping() ? `${styles.merc} ${styles.mercHop}` : styles.merc}
             state={room.mercState}
             voice={room.mercVoice}
+            sparkles="right"
             style={{
               width: `${mercBox().size}px`,
               height: `${mercBox().size}px`,

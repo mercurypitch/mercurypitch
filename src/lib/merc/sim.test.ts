@@ -162,6 +162,39 @@ describe('Sim', () => {
     expect(sim.pose().mouth[1]).toBeLessThan(0.05)
   })
 
+  it('fans the sparkles out on one side when asked, all around by default', () => {
+    // Arrange: the full ring has stars on both sides of him.
+    const around = new Sim('idle')
+    around.sparkle()
+    const reach = (sim: Sim, sign: number): number =>
+      Math.max(...sim.sparks.map((s) => sign * (s.p[0] - sim.rootX) + s.size))
+    expect(around.sparks.some((s) => s.p[0] < around.rootX - 0.5)).toBe(true)
+    expect(around.sparks.some((s) => s.p[0] > around.rootX + 0.5)).toBe(true)
+
+    for (const [side, sign] of [
+      ['right', 1],
+      ['left', -1],
+    ] as const) {
+      // Act
+      const sim = new Sim('idle')
+      sim.sparkleSide = side
+      sim.sparkle()
+
+      // Assert: the same stars, every one's near tip on his side of his
+      // middle (a lantern beside him starts 0.56 out), none further out
+      // than the ring reaches.
+      expect(sim.sparks).toHaveLength(around.sparks.length)
+      for (const spark of sim.sparks) {
+        expect(sign * (spark.p[0] - sim.rootX) - spark.size).toBeGreaterThan(
+          -0.15,
+        )
+      }
+      expect(reach(sim, sign)).toBeLessThanOrEqual(
+        Math.max(reach(around, 1), reach(around, -1)) + 0.001,
+      )
+    }
+  })
+
   it('replays the same frames after restoring a snapshot', () => {
     // Arrange
     const sim = simAt('idle', 1)

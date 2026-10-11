@@ -59,15 +59,21 @@ vi.mock('./useLongNoteCapture', async () => {
   }
 })
 
-const merc = vi.hoisted(() => ({ states: [] as string[] }))
+const merc = vi.hoisted(() => ({
+  states: [] as string[],
+  options: [] as unknown[],
+}))
 vi.mock('@/lib/merc/stage', () => ({
-  mountMercStage: () => ({
-    ok: true,
-    setState: (name: string) => merc.states.push(name),
-    setVoice: () => undefined,
-    setPaused: () => undefined,
-    destroy: () => undefined,
-  }),
+  mountMercStage: (_host: HTMLElement, options: unknown) => {
+    merc.options.push(options)
+    return {
+      ok: true,
+      setState: (name: string) => merc.states.push(name),
+      setVoice: () => undefined,
+      setPaused: () => undefined,
+      destroy: () => undefined,
+    }
+  },
 }))
 
 const recorded = vi.hoisted(() => ({ calls: [] as unknown[] }))
@@ -211,6 +217,7 @@ describe('LongNoteRoom', () => {
     target.pick = { midi: 57, source: 'voiceprint' }
     memory.note = null
     merc.states = []
+    merc.options = []
     recorded.calls = []
     rafQueue = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
@@ -550,6 +557,13 @@ describe('LongNoteRoom', () => {
       ).toBeLessThanOrEqual(w)
       cleanup()
     }
+  })
+
+  it("puts his celebration's stars on his far side, off the lantern", async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    // His renderer arrives in a chunk of its own.
+    await vi.waitFor(() => expect(merc.options).toHaveLength(1))
+    expect(merc.options[0]).toMatchObject({ sparkles: 'right' })
   })
 
   it("turns the voice amber where the light stops filling, by the engine's centre", async () => {

@@ -24,7 +24,7 @@ import type { GradientStop, MercLook, MercPalette, MercQuality, MercState, MercV
 import { BG, BLOOM, isMercQuality, isMercState, LOOK, PALETTE, QUALITY, RIM, SHAPE, VIEWS, } from './constants'
 import type { PostProgram, PostPrograms, RenderTargets, SceneProgram, } from './gl'
 import { cameraFor, createPostPrograms, createRenderTargets, createSceneProgram, deleteRenderTargets, flat, lookUniforms, paletteUniforms, srgbToLin, } from './gl'
-import type { MercPose, MercVoice, MercVoiceSource, PoseBias, SimSnapshot, } from './sim'
+import type { MercPose, MercVoice, MercVoiceSource, PoseBias, SimSnapshot, SparkleSide, } from './sim'
 import { Sim, STEP } from './sim'
 
 export interface MercMountOptions {
@@ -52,6 +52,8 @@ export interface MercMountOptions {
   /** Default 'idle'. */
   state?: MercState
   voiceAt?: MercVoiceSource | null
+  /** Where a celebration's sparkles land. Default 'around'. */
+  sparkles?: SparkleSide
   /** Called once if Merc stops drawing for good after mount. */
   onFailure?: (error: Error) => void
 }
@@ -140,6 +142,7 @@ export function mount(
 
   const sim = new Sim(opts.state ?? 'idle')
   sim.voiceAt = opts.voiceAt ?? null
+  sim.sparkleSide = opts.sparkles ?? 'around'
 
   // ---------------------------------------------------------- GL resources
 

@@ -156,9 +156,43 @@ const freshLock = (): Lock => ({
   lastPulse: 0,
 })
 
+/** Where a celebration's sparkles land around him. */
+export type SparkleSide = 'around' | 'right' | 'left'
+
+/** A celebration's stars: angle (degrees), radius, size, delay (s). */
+const SPARKLES: readonly Q4[] = [
+  [158, 0.86, 0.075, 0.0],
+  [122, 0.92, 0.055, 0.12],
+  [52, 0.9, 0.085, 0.05],
+  [18, 0.84, 0.06, 0.2],
+  [-22, 0.88, 0.07, 0.1],
+  [-150, 0.84, 0.065, 0.16],
+  [92, 1.0, 0.05, 0.24],
+]
+
+/**
+ * The same stars, each with its size, delay and colour, fanned out on his
+ * right (mirrored for the left): none crosses to his other side, and none
+ * reaches further out than the full ring does.
+ */
+const SPARKLES_RIGHT: readonly Q4[] = [
+  [22, 0.86, 0.075, 0.0],
+  [68, 0.92, 0.055, 0.12],
+  [45, 0.9, 0.085, 0.05],
+  [0, 0.84, 0.06, 0.2],
+  [-22, 0.88, 0.07, 0.1],
+  [-44, 0.84, 0.065, 0.16],
+  [88, 1.0, 0.05, 0.24],
+]
+
 export class Sim {
   voiceAt: MercVoiceSource | null = null
   readonly bias: PoseBias = { yaw: 0, lookX: 0, lookY: 0 }
+  /**
+   * Where a celebration's sparkles land: all around him, or on one side
+   * only, so a host can keep them off whatever stands on his other side.
+   */
+  sparkleSide: SparkleSide = 'around'
 
   // Set by reset().
   state!: MercState
@@ -299,20 +333,13 @@ export class Sim {
   }
 
   sparkle(): void {
-    const A: readonly Q4[] = [
-      [158, 0.86, 0.075, 0.0],
-      [122, 0.92, 0.055, 0.12],
-      [52, 0.9, 0.085, 0.05],
-      [18, 0.84, 0.06, 0.2],
-      [-22, 0.88, 0.07, 0.1],
-      [-150, 0.84, 0.065, 0.16],
-      [92, 1.0, 0.05, 0.24],
-    ]
+    const A = this.sparkleSide === 'around' ? SPARKLES : SPARKLES_RIGHT
+    const side = this.sparkleSide === 'left' ? -1 : 1
     this.sparks = A.map(([deg, r, s, delay], i) => {
       const a = (deg * Math.PI) / 180
       return {
         p: [
-          this.rootX + Math.cos(a) * r,
+          this.rootX + side * Math.cos(a) * r,
           this.rootY + 0.6 + SHAPE.bodyY0 + Math.sin(a) * r * 0.85,
           0.15,
         ],

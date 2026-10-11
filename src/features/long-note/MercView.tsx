@@ -10,13 +10,15 @@
 import type { JSX } from 'solid-js'
 import { createEffect, onCleanup, onMount, untrack } from 'solid-js'
 import type { MercState } from '@/lib/merc/constants'
-import type { MercVoice } from '@/lib/merc/sim'
+import type { MercVoice, SparkleSide } from '@/lib/merc/sim'
 import type { MercStage } from '@/lib/merc/stage'
 
 export interface MercViewProps {
   state: () => MercState
   /** Read every frame while he sings; not reactive. */
   voice: () => MercVoice
+  /** Where his celebration's sparkles land; read once, at mount. */
+  sparkles?: SparkleSide
   class?: string
   style?: JSX.CSSProperties
 }
@@ -43,6 +45,7 @@ export function MercView(props: MercViewProps): JSX.Element {
         quality: 'medium',
         // Whatever he is doing by the time his chunk arrives.
         state: untrack(() => props.state()),
+        sparkles: untrack(() => props.sparkles),
       })
       if (stage.ok) frame = requestAnimationFrame(feed)
     })
