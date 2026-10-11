@@ -11,19 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-211 commits since `v0.9.16` (22 on `main`'s first-parent line, every one a PR
-merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 to
-#979, #981 and #982.
+301 commits since `v0.9.16` (24 on `main`'s first-parent line, every one a PR
+merge) before this release PR, #974: PRs #957 to #962, #964 to #973, #975 to
+#979 and #981 to #983.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
 packs, refunds and disputes applied exactly once, consent that waits for a yes
 in the EEA, retention sweeps, and the legal links. It also brings the
 voiceprint-first intro (#977, polished in #981), the compact sign-in sheet
-(#979) and the Voice Mirror's account offer (#978), so the launch traffic
-meets all three. The native app is not part of it and keeps its version: under `apps/mercurypitch` only the bundle check,
-the Vite config that leaves the offer out (#961) and the shared font aliases
-(#962) change.
+(#979) and the Voice Mirror's account offer and start screen (#978, #983),
+so the launch traffic meets all of them. The native app is not part of it
+and keeps its version. Under `apps/mercurypitch` the changes are the bundle
+check, the Vite config that leaves the offer out (#961), the shared font
+aliases (#962) and #973's Long note room, which only native test builds
+carry.
 
 ### Release steps (prod)
 
@@ -473,6 +475,45 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - **Funnel.** Four `onboarding_map_door_*` events count the Map's door taps;
   the worker must deploy first (step 4).
 - **Tap targets.** Secondary buttons are 44 px tall.
+
+### Web: the Voice Mirror's start screen and count-in (#983)
+
+- **Start screen.** Every door (/mirror, /vocal-range-test,
+  /voice-type-test, /which-singer-has-my-vocal-range, /free-sing and ?v=)
+  opens on the onboarding's welcome over Merc's sky (`MirrorLanding`,
+  `MirrorBackdrop`): the eyebrow, the door's own H1 (word for word) and
+  lede, one 54 px pill, "How it works" as a 44 px text button, the privacy
+  "i" at the top right, and Break the Glass as a quiet link above the legal
+  row. On ?v= the pill pins to the bottom on phones and stands above the
+  cookie banner while it is open (`--consent-banner-space`).
+- **Plates.** After mount, phones get `merc-sky-tall.webp` (105,684 B) and
+  wide windows `merc-sky-wide.webp` (62,200 B); the overview stands on the
+  plain sky. The loading screen wears the plate's radial scrim, so the
+  handover changes nothing outside the words. The four documents'
+  theme-color is #0d1117.
+- **Speed.** Lighthouse mobile on /vocal-range-test, median of five: 93 to
+  96, LCP 2,924 to 2,328 ms (the lede both times; the phone's loading screen
+  no longer fetches `first-light-tall.webp`). Mirror first paint: JS 391,307
+  to 392,740 B, CSS 28,108 to 37,466 B of 40,960.
+- **Count-in.** Before every take the Mirror shows "Ready…", a plain line
+  and the number; "Your turn. Sing it back." (or Slide up, Slide down, Hold
+  it) shows only while it records. Durations and events are unchanged, and
+  the overview's demo uses the same words.
+- **Copy.** The privacy line is "Only you can hear you." The ledes lost
+  their em dashes. Fake-mic runs give the same funnel sequence as `main`
+  on every door.
+
+### Native test builds: Long note (#973)
+
+`long-note-lantern`, the first premium exercise: the hold engine
+(`src/lib/hold`), Merc's renderer (`src/lib/merc`), the room
+(`src/features/long-note`) and the Sing screen's exercise row
+(`src/features/premium-exercises`). It rides `PREMIUM_EXERCISES`, which is
+`KARAOKE_IMPORT` (`IS_NATIVE_BUILD && __KARAOKE_IMPORT__`), so only native
+test builds carry it. The web build sets `__KARAOKE_IMPORT__` to false and
+the store build folds it out (`assert-bundle` STAGE 2): nothing changes on
+the website. L3, the one free run before the paywall, lands with the V1
+flip.
 
 ### Tests: the Jam lyric-row spec (#982)
 

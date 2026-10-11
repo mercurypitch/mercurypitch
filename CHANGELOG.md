@@ -9,8 +9,8 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 Confirm your email for five free credits, and use all five for 30 more. Credit
 packs can now be canceled within 14 days. The intro now starts with your
-voiceprint, the Voice Mirror offers a free account after your results, and
-the sign-in sheet fits on a phone.
+voiceprint, the Voice Mirror has a new start screen and offers a free
+account after your results, and the sign-in sheet fits on a phone.
 
 ### Added
 
@@ -51,6 +51,9 @@ the sign-in sheet fits on a phone.
   button all name it that way.
 - **mirror.mercurypitch.com now opens mercurypitch.com/mirror**, so the Voice
   Mirror has one address and every visitor gets the same page.
+- **A new start screen for the Voice Mirror.** Each test opens over Merc's
+  sky with one Start button, and How it works and Break the Glass sit below
+  it.
 - **A sign-in sheet that fits on a phone.** Google and Phone sit side by side,
   each label sits inside its field, and the newsletter box is one line:
   "Email me product updates. Unsubscribe anytime." Settings uses the same
@@ -68,6 +71,9 @@ the sign-in sheet fits on a phone.
 
 ### Fixed
 
+- **The Voice Mirror's countdown no longer tells you to sing early.** While
+  the number counts it says Ready…, and Your turn comes when it starts
+  listening.
 - **A Google sign-in only finishes in the browser that started it.** A link
   from someone else can no longer sign you in to their account.
 - **Drum Night picks up after a Google sign-in.** Press Separate drums while
