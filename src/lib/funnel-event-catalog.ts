@@ -166,9 +166,6 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_track_short',
   'onboarding_track_full',
   'onboarding_track_gallery',
-  /** Not emitted since 11 Oct 2026: "Make another" left the returning Fork
-   *  and the prints (owner decisions V1 and V2). Still accepted, so the
-   *  rows already counted keep their name. */
   'onboarding_another_voiceprint',
   /** The twin beat's Share button got the card out — a share sheet, a saved
    *  picture, or a saved picture with the link copied beside it. First Light's

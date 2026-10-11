@@ -218,6 +218,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       : null
   }
 
+  /** A returning singer's fresh take: the Voice Mirror, where a voiceprint
+   *  is made outside the flow (owner decision V12). */
+  const handleAnotherVoiceprint = () => {
+    trackOnboarding('onboarding_another_voiceprint')
+    leave()
+    window.location.href = '/mirror'
+  }
+
   const latestSaved = () => savedVoiceprints()[0] ?? null
 
   const savedWhen = (): string | null => {
@@ -509,12 +517,14 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               savedCount={savedVoiceprints().length}
               savedWhen={savedWhen()}
               onChoose={handleTrack}
+              onAnother={handleAnotherVoiceprint}
             />
           </Match>
           <Match when={currentBeat() === 'prints'}>
             <BeatPrints
               records={savedVoiceprints()}
               onContinue={() => advanceBeat()}
+              onAnother={handleAnotherVoiceprint}
               onExplore={openVoiceConstellation}
             />
           </Match>

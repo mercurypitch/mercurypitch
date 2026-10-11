@@ -198,8 +198,10 @@ const SAVED_PRINT = {
 
 /** The ways out that used to sit inside a beat. Matched anywhere in a
  *  button's text, with no word boundary in front: a card button's title
- *  runs straight on from its label ("Straight awayTake me in…"). */
-const EXIT_INSIDE = /(Skip|Not now|Take me in|Make another)/
+ *  runs straight on from its label ("Straight awayTake me in…"). "Make
+ *  another voiceprint" is not one of them: it is a destination for a
+ *  returning singer, the Voice Mirror (owner decision V12). */
+const EXIT_INSIDE = /(Skip|Not now|Take me in)/
 
 describe('one way out on every beat', () => {
   // The Map is the last beat: its rooms and its own button are the way
@@ -284,6 +286,37 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
     await waitFor(() => expect(currentBeat()).toBe('map'))
     expect(voiceprint()).toBeNull()
   })
+})
+
+describe('"Make another voiceprint" for a returning singer (owner decision V12)', () => {
+  it.each<[Beat, string]>([
+    ['fork', 'Make another voiceprint'],
+    ['prints', 'Make another voiceprint'],
+  ])(
+    'opens the Voice Mirror from the %s beat, counted as another voiceprint',
+    async (name, label) => {
+      // Arrange: one voiceprint already on this device.
+      localStorage.setItem(
+        'mercurypitch.voiceprints.v1',
+        JSON.stringify([SAVED_PRINT]),
+      )
+      render(() => <FirstLight />)
+      await waitFor(() => expect(savedVoiceprints()).toHaveLength(1))
+      cleanup()
+      const shown = await at(name)
+      const location = { href: '' }
+      vi.stubGlobal('location', location)
+
+      // Act
+      fireEvent.click(within(shown).getByRole('button', { name: label }))
+
+      // Assert
+      expect(tracked()).toContain('onboarding_another_voiceprint')
+      expect(location.href).toBe('/mirror')
+      expect(flowOpen()).toBe(false)
+      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+    },
+  )
 })
 
 describe('focus on a beat change', () => {

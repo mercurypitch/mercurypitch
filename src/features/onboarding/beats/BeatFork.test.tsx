@@ -5,7 +5,8 @@
 // After the first note the only button leads into the voiceprint. The
 // way out is FirstLight's "Not now" in the rail, tested with the flow in
 // FirstLight.test.tsx; this file holds the beat itself to one button and
-// to the words agreed for it on 11 Oct 2026.
+// to the words agreed for it on 11 Oct 2026. A returning singer also gets
+// "Make another voiceprint" (V12): V1 and V8 cover the first-run path.
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import type { Mock } from 'vitest'
@@ -16,16 +17,20 @@ import { VOICEPRINT_STEPS, VOICEPRINT_TIME } from './BeatVoiceprint'
 
 afterEach(cleanup)
 
+const onAnother = vi.fn<() => void>()
+
 function renderFork(
   savedCount: number,
 ): Mock<(track: OnboardingTrack) => void> {
   const onChoose = vi.fn<(track: OnboardingTrack) => void>()
+  onAnother.mockClear()
   render(() => (
     <BeatFork
       firstNote="A3"
       savedCount={savedCount}
       savedWhen={savedCount > 0 ? '10 Oct 2026' : null}
       onChoose={onChoose}
+      onAnother={onAnother}
     />
   ))
   return onChoose
@@ -49,7 +54,7 @@ describe('the first-run Fork', () => {
   it('no longer offers the second card or a skip of its own', () => {
     renderFork(0)
 
-    for (const gone of [/Take me in/, /Map my whole voice/, /^Skip$/]) {
+    for (const gone of [/Take me in/, /Map my whole voice/, /^Skip$/, /another/i]) {
       expect(screen.queryByRole('button', { name: gone })).toBeNull()
     }
   })
@@ -90,7 +95,7 @@ describe('the first-run Fork', () => {
 })
 
 describe('the returning Fork', () => {
-  it('offers one button, back to the voiceprints already on file', () => {
+  it('leads with the voiceprints already on file', () => {
     // Arrange
     const onChoose = renderFork(2)
     const buttons = screen.getAllByRole('button')
@@ -99,14 +104,26 @@ describe('the returning Fork', () => {
     fireEvent.click(buttons[0])
 
     // Assert
-    expect(buttons.map((b) => b.textContent)).toEqual(['See my voiceprints'])
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      'See my voiceprints',
+      'Make another voiceprint',
+    ])
     expect(onChoose).toHaveBeenCalledOnce()
     expect(onChoose).toHaveBeenCalledWith('gallery')
+    expect(onAnother).not.toHaveBeenCalled()
   })
 
-  it('no longer offers to make another voiceprint from the Fork', () => {
-    renderFork(1)
+  it('offers a fresh voiceprint second (owner decision V12)', () => {
+    // Arrange
+    const onChoose = renderFork(1)
 
-    expect(screen.queryByRole('button', { name: /another/i })).toBeNull()
+    // Act
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Make another voiceprint' }),
+    )
+
+    // Assert
+    expect(onAnother).toHaveBeenCalledOnce()
+    expect(onChoose).not.toHaveBeenCalled()
   })
 })

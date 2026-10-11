@@ -21,9 +21,11 @@
 // singing) plus the four "I'm ready" gates. If BeatVoiceprint's script
 // changes, this sentence changes with it.
 //
-// Someone who has ALREADY mapped their voice gets a different fork, with
-// the same single-button shape: their voiceprints, shown at full size,
-// rather than a second measurement they did not ask for.
+// Someone who has ALREADY mapped their voice gets a different fork: their
+// voiceprints, shown at full size, rather than a second measurement they
+// did not ask for, and under that "Make another voiceprint", which opens
+// the Voice Mirror (owner decision V12, 11 Oct 2026; V1 and V8 cover the
+// first-run path).
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
@@ -58,6 +60,8 @@ export interface BeatForkProps {
   /** When the newest one was taken, already formatted. Null if none. */
   savedWhen: string | null
   onChoose: (track: OnboardingTrack) => void
+  /** A returning singer's fresh take, in the Voice Mirror. */
+  onAnother: () => void
 }
 
 export const BeatFork: Component<BeatForkProps> = (props) => (
@@ -104,6 +108,13 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
           onClick={() => props.onChoose('gallery')}
         >
           {props.savedCount === 1 ? 'See my voiceprint' : 'See my voiceprints'}
+        </button>
+        <button
+          type="button"
+          class={styles.secondary}
+          onClick={() => props.onAnother()}
+        >
+          Make another voiceprint
         </button>
       </div>
     </Show>
