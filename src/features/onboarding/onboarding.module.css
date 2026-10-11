@@ -1008,40 +1008,8 @@
   display: block;
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.stat {
-  flex: 1 1 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
-  border: 1px solid var(--ob-rule);
-  border-radius: 12px;
-  background: var(--ob-card);
-}
-
-.statValue {
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.statLabel {
-  font-size: 0.72rem;
-  color: var(--ob-ink-3);
-}
-
-/* What the map screen after this one is for — quieter than .sub so the
-   stats above keep the weight. */
+/* What the map screen after this one is for: quieter than .sub so the
+   stat card above keeps the weight. */
 .mapExplainer {
   margin: 0;
   font-size: 0.85rem;

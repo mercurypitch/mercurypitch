@@ -331,6 +331,25 @@ describe('beat 5 — the twin', () => {
     expect(container.textContent).toContain(COPY.TWIN_NEXT)
     expect(container.textContent).not.toContain(EM_DASH)
   })
+
+  // FVC-15
+  it("puts its numbers on one stat card, drawn from the singer's glides", () => {
+    const { container } = render(() => (
+      <BeatTwin
+        result={TWIN_RESULT}
+        strip={[45.5, 52, 60, 68.5, 61, 53, 46]}
+        onContinue={noop}
+      />
+    ))
+
+    expect(container.querySelectorAll('[data-stat-card]')).toHaveLength(1)
+    expect(container.querySelector('[data-ridge-line]')).not.toBeNull()
+    expect(
+      [...container.querySelectorAll('[data-stat] [data-value]')].map(
+        (value) => value.textContent,
+      ),
+    ).toEqual(['24', '82', '74'])
+  })
 })
 
 // Since 11 Oct 2026 only the returning singer's fork says the note back:

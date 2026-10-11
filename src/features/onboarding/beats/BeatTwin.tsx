@@ -20,6 +20,7 @@ import type { MirrorResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { TWIN_NEXT } from '../copy'
 import styles from '../onboarding.module.css'
+import { TwinStatCard } from './TwinStatCard'
 
 export interface BeatTwinProps {
   /** Share the freshly made voiceprint card (twin + numbers). May resolve to
@@ -28,14 +29,13 @@ export interface BeatTwinProps {
    *  otherwise say the link is sitting on the clipboard. */
   onShare?: () => Promise<string | null>
   result: MirrorResult
+  /** The singer's glides as one line, for the stat card's ridge. */
+  strip?: readonly number[] | null
   onContinue: () => void
 }
 
 export const BeatTwin: Component<BeatTwinProps> = (props) => {
   const twin = createMemo(() => singerForRange(props.result.range))
-  const range = () => props.result.range
-  const accuracy = () => props.result.accuracy
-  const steadiness = () => props.result.steadiness
   const [shareNote, setShareNote] = createSignal<string | null>(null)
 
   const share = async (): Promise<void> => {
@@ -73,32 +73,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         </p>
       </Show>
 
-      <div class={styles.stats}>
-        <Show when={range() !== null}>
-          <div class={styles.stat}>
-            <span class={styles.statValue}>
-              {range()?.lowNote}–{range()?.highNote}
-            </span>
-            <span class={styles.statLabel}>
-              your range · {range()?.semitones} semitones
-            </span>
-          </div>
-        </Show>
-        <Show when={steadiness() !== null}>
-          <div class={styles.stat}>
-            <span class={styles.statValue}>{steadiness()?.score}</span>
-            <span class={styles.statLabel}>steadiness</span>
-          </div>
-        </Show>
-        <Show when={accuracy() !== null}>
-          <div class={styles.stat}>
-            <span class={styles.statValue}>
-              {Math.round(accuracy()?.score ?? 0)}
-            </span>
-            <span class={styles.statLabel}>pitch accuracy</span>
-          </div>
-        </Show>
-      </div>
+      <TwinStatCard result={props.result} strip={props.strip ?? null} />
 
       <p class={styles.mapExplainer}>{TWIN_NEXT}</p>
       <div class={styles.actions}>

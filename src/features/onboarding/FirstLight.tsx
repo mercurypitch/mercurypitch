@@ -26,7 +26,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
@@ -47,6 +47,7 @@ import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
 import type { RoomTarget } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
+import { glideStrip } from './voice-strip'
 
 /**
  * The beats this build can render. Phase 3 adds 'keep'. Anything absent
@@ -261,8 +262,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     advanceBeat()
   }
 
-  const handleVoiceprint = (result: MirrorResult, _glides: F0Frame[][]) => {
-    recordVoiceprint(result)
+  const handleVoiceprint = (result: MirrorResult, glides: F0Frame[][]) => {
+    // The glides travel on as one line for the twin's stat card.
+    recordVoiceprint(result, glideStrip(glides, result.range))
     const matched = singerForRange(result.range)
     setTwin(matched)
 
@@ -562,6 +564,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
           <Match when={currentBeat() === 'twin' && voiceprint() !== null}>
             <BeatTwin
               result={voiceprint() as MirrorResult}
+              strip={voiceStrip()}
               onContinue={() => advanceBeat()}
               onShare={handleShareVoiceprint}
             />

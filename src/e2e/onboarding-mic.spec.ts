@@ -226,10 +226,12 @@ test.describe('First Light with a microphone', () => {
       'Step 4 of 4 · Match',
     ])
 
-    // The payoff: a twin, and the numbers a voiceprint record stores.
+    // The payoff: a twin, and the numbers a voiceprint record stores, on
+    // one stat card (owner testing, 11 Oct 2026).
     const twin = beat(page, 'twin')
     await expect(twin).toBeVisible({ timeout: 30000 })
     await expect(twin).toContainText(/steadiness/i)
+    await expect(twin.locator('[data-stat-card]')).toHaveCount(1)
 
     // "Continue", not "See my map": this advances to `keep`, and the Map
     // is one screen further on. The Prints beat above DOES say "See my
