@@ -9,7 +9,7 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.17] - 2026-10-11
+## [0.9.17] - 2026-10-12
 
 301 commits since `v0.9.16` (24 on `main`'s first-parent line, every one a PR
 merge) before this release PR, #974: PRs #957 to #962, #964 to #973, #975 to
@@ -143,7 +143,7 @@ when the old worker gets its last events.
   launch offer adds 30 extra credits to this pack.", and the webhook writes
   an `offer-bonus` ledger row on the same PaymentIntent. The purchase mail
   gets one line when the bonus applied.
-- **`OFFER_START_AT`** is `2026-10-09` on dev and `2026-10-11` on prod, read
+- **`OFFER_START_AT`** is `2026-10-09` on dev and `2026-10-12` on prod, read
   as a UTC day. Accounts that claimed earlier count their 14 days from it.
   It must not be later than the day the release goes out, because credits
   spent before it do not count: if the tag moves to Saturday 10 October, set
@@ -394,7 +394,7 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
 - **The gift.** "Up to N free song separations" (`giftCount`, "1 free song
   separation" at N=1), shown while the featured promo has credits, the
   browser holds no account and the mic was allowed; never in native builds.
-  Like before, it is not gated by `OFFER_START_AT`; from 11 October both
+  Like before, it is not gated by `OFFER_START_AT`; from 12 October both
   agree.
 - **Art.** New Merc plates for the sky, First light (with a star layer) and
   the Map, and room cards cut at 560 and 800 px, all webp.

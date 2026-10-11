@@ -5,7 +5,7 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.9.17] - 2026-10-11
+## [0.9.17] - 2026-10-12
 
 Confirm your email for five free credits, and use all five for 30 more. Credit
 packs can now be canceled within 14 days. The intro now starts with your

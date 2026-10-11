@@ -343,7 +343,7 @@
         // earlier day is safe; it only shortens the windows of accounts that
         // claimed before it. Keep it set once it ships: unset, the offer is
         // off, and so are rewards already earned and not yet used.
-        "OFFER_START_AT": "2026-10-11",
+        "OFFER_START_AT": "2026-10-12",
         "OFFER_FINISHER_DAYS": "14",
         "OFFER_BONUS_CREDITS": "30",
         "OFFER_PROMO_ID": "promo-2026-q4",
