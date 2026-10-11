@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { registerNativeDevice } from '@/stores/native-shell-store'
 import type * as BestModule from '../long-note-best'
 import type * as CaptureModule from '../useLongNoteCapture'
 import { DEMO_COPY } from './demo-cues'
@@ -356,6 +358,33 @@ describe('the Long note demo', () => {
     expect(kept.haptics).toBe(0)
     expect(fake.acquired).toBe(0)
     expect(fake.windows).toBe(0)
+  })
+
+  it('leaves the screen to its own sleep rules, then keeps it on for the singer', async () => {
+    // About 22 s from the tap or the arrival that starts it, the demo ends
+    // inside the shortest auto-lock (30 s), so it never holds the screen.
+    const keepAwake = vi.fn()
+    const unregister = registerNativeDevice({
+      keepAwake,
+    } as unknown as NativeDeviceApi)
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await run(22_500)
+      expect(demoMode()).toBe('end')
+      expect(keepAwake).not.toHaveBeenCalled()
+
+      // The singer's own take is another matter.
+      fireEvent.click(screen.getByTestId('long-note-demo-try'))
+      await run(50)
+      await liveTake()
+      expect(room().dataset.phase).toBe('result')
+      expect(keepAwake.mock.calls.map(([on]) => on as boolean)).toEqual([
+        true,
+        false,
+      ])
+    } finally {
+      unregister()
+    }
   })
 
   it('hands over to the singer on Try it, and the mic opens on its tap', async () => {

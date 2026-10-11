@@ -6,6 +6,8 @@ import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/l
 import type { TakeShape } from '@/lib/hold/test-takes'
 import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type { NativeDeviceApi } from '@/stores/native-shell-store'
+import { registerNativeDevice } from '@/stores/native-shell-store'
 import lanternStyles from './Lantern.module.css'
 import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
@@ -474,6 +476,68 @@ describe('LongNoteRoom', () => {
     document.dispatchEvent(new Event('visibilitychange'))
     expect(phase()).toBe('intro')
     expect(fake.released).toBe(1)
+  })
+
+  it('keeps the screen on while it listens and holds, and only then', async () => {
+    // Review B of PR 973, M2: the mic tap is the singer's last touch, and a
+    // phone that locks 30 s after it hid the page and ended the hold there.
+    const keepAwake = vi.fn()
+    const unregister = registerNativeDevice({
+      keepAwake,
+    } as unknown as NativeDeviceApi)
+    try {
+      const { unmount } = render(() => (
+        <LongNoteRoom onDone={() => undefined} />
+      ))
+      expect(keepAwake).not.toHaveBeenCalled()
+
+      await startListening()
+      expect(keepAwake).toHaveBeenLastCalledWith(true)
+
+      // Three seconds on the note and a breath: the result lets it sleep.
+      fake.frames = sequence(
+        (t) => tone(57, 3, { startT: t }),
+        (t) => silence(0.8, t),
+      )
+      flushFrames()
+      await settle()
+      expect(phase()).toBe('result')
+      expect(keepAwake).toHaveBeenLastCalledWith(false)
+
+      // Again listens; the page going to the background lets it sleep.
+      fireEvent.click(screen.getByTestId('long-note-again'))
+      await settle()
+      expect(keepAwake).toHaveBeenLastCalledWith(true)
+      const hidden = vi
+        .spyOn(document, 'visibilityState', 'get')
+        .mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(phase()).toBe('intro')
+      expect(keepAwake).toHaveBeenLastCalledWith(false)
+      hidden.mockRestore()
+
+      // Leaving mid-hold lets it sleep too.
+      await startListening()
+      fake.frames = tone(57, 1)
+      flushFrames()
+      await settle()
+      expect(phase()).toBe('hold')
+      expect(keepAwake).toHaveBeenLastCalledWith(true)
+      unmount()
+      expect(keepAwake).toHaveBeenLastCalledWith(false)
+
+      // Each call flips the switch: on, off, on, off, on, off.
+      expect(keepAwake.mock.calls.map(([on]) => on as boolean)).toEqual([
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+      ])
+    } finally {
+      unregister()
+    }
   })
 
   it('finishes the note when the mic is tapped mid-hold', async () => {

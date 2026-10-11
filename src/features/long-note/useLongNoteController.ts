@@ -22,7 +22,7 @@
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import type { Accessor } from 'solid-js'
-import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
 import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
@@ -46,6 +46,7 @@ import { createMercLineSelector } from './merc-lines'
 import type { MercPlace } from './merc-moves'
 import { createMercMoves } from './merc-moves'
 import { rememberedLongNote } from './remembered-note'
+import { createScreenAwake } from './screen-awake'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
@@ -608,6 +609,14 @@ export function useLongNoteController(): LongNoteController {
   }
   document.addEventListener('visibilitychange', onVisibility)
 
+  // The screen stays on while the singer's take listens, and only then:
+  // the demo ends inside the shortest auto-lock, so it never holds it.
+  const awake = createScreenAwake()
+  createEffect(() => {
+    const { phase } = state()
+    awake.set(!scriptActive() && (phase === 'listen' || phase === 'hold'))
+  })
+
   // The app's mic watchdog: the icon is on while the room listens, and a
   // microphone that died under it ends the take the same way.
   const unregisterIndicator = registerMicIndicator(
@@ -709,6 +718,7 @@ export function useLongNoteController(): LongNoteController {
     timers.clear()
     windowOpen = false
     setExerciseFocus(false)
+    awake.set(false)
   })
 
   return {
