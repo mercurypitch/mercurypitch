@@ -13,6 +13,11 @@ import { cleanup, render, screen, within } from '@solidjs/testing-library'
 import { readdirSync, readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_COPY } from '@/features/long-note/demo/demo-cues'
+// Loaded once, here. The options read no stored state, and loading their
+// graph fresh inside the test ran past the 5 s timeout under a full run.
+// The row and the picker load after seed() below: they read storage as
+// they load.
+import { SingRoomOptions } from '@/features/sing-room/SingRoomOptions'
 import type * as NativeBuild from '@/lib/native-build'
 import { catalogueEntry } from './catalogue'
 
@@ -130,9 +135,7 @@ describe('the decided words, as they render', () => {
     )
   })
 
-  it('names the options row', async () => {
-    const { SingRoomOptions } =
-      await import('@/features/sing-room/SingRoomOptions')
+  it('names the options row', () => {
     const none = (): undefined => undefined
     render(() => (
       <SingRoomOptions
