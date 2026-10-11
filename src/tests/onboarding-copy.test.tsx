@@ -358,10 +358,7 @@ describe('beat 5 — the twin', () => {
   // FVC-17
   it('says what Merc heard when there is no range to match a twin to', () => {
     const { container } = render(() => (
-      <BeatTwin
-        result={{ ...TWIN_RESULT, range: null }}
-        onContinue={noop}
-      />
+      <BeatTwin result={{ ...TWIN_RESULT, range: null }} onContinue={noop} />
     ))
 
     expect(container.querySelector('h1')?.textContent).toBe(

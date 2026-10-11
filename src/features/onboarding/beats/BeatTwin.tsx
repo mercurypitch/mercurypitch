@@ -51,9 +51,9 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
             <p class={styles.eyebrow}>Your voiceprint</p>
             <h1 class={styles.headline}>Here's what Merc heard</h1>
             <p class={styles.sub}>
-              Merc couldn't get a clean read on your range this time, so
-              there's no twin to show yet. The Map still works, and you can
-              retake this whenever you like.
+              Merc couldn't get a clean read on your range this time, so there's
+              no twin to show yet. The Map still works, and you can retake this
+              whenever you like.
             </p>
           </>
         }

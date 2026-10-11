@@ -37,8 +37,8 @@ export function MicTroubleshooting() {
         </p>
         <ol>
           <li>
-            Close any recording or meeting apps. If another MercuryPitch tab
-            has the mic, this one offers to move it here.
+            Close any recording or meeting apps. If another MercuryPitch tab has
+            the mic, this one offers to move it here.
           </li>
           <li>
             Turn the mic off and on again so MercuryPitch opens a fresh input.

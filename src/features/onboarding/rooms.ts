@@ -15,8 +15,8 @@
 // and in words a first-timer already owns: no "harmonics", no "orbs".
 
 import type { ActiveTab } from '@/features/tabs/constants'
-import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 import { TAB_ANALYSIS, TAB_EXERCISES, TAB_JAM, TAB_PATH, TAB_SINGING, } from '@/features/tabs/constants'
+import type { OnboardingFunnelEvent } from '@/lib/funnel-event-catalog'
 
 export type RoomId =
   | 'practice'
