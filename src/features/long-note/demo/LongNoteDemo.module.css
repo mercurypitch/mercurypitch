@@ -117,6 +117,15 @@
   visibility: hidden;
 }
 
+/* On a 360 or 375 px phone the side of the lantern or the timer leaves a
+   tooltip about 112 px: a size down keeps it to three lines there. */
+@media (max-width: 380px) {
+  .tip {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
 /* The same card off screen, to measure how a text wraps at a width. */
 .measure {
   top: 0;

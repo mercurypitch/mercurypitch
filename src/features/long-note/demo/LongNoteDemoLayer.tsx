@@ -27,6 +27,23 @@ export interface LongNoteDemoLayerProps {
 
 /** A tooltip is never wider than this. */
 const MAX_TIP_WIDTH = 240
+/** A tooltip wraps to this many lines at most, wherever a place allows. */
+const MAX_TIP_LINES = 3
+
+/** The card's height at `MAX_TIP_LINES` lines, from its own style. */
+function tallestTip(card: HTMLElement): number {
+  const style = getComputedStyle(card)
+  const px = (value: string): number => parseFloat(value) || 0
+  const line = px(style.lineHeight)
+  if (line === 0) return Infinity
+  const frame =
+    px(style.paddingTop) +
+    px(style.paddingBottom) +
+    px(style.borderTopWidth) +
+    px(style.borderBottomWidth)
+  // One px for the rounding of a fractional line height.
+  return MAX_TIP_LINES * line + frame + 1
+}
 
 /** The room's parts, measured from the layer (which covers the room). */
 function measureScene(layer: HTMLElement, level: number): DemoScene | null {
@@ -93,6 +110,7 @@ function TipCard(props: {
       ...target,
       bounds: scene.room,
       maxWidth: MAX_TIP_WIDTH,
+      maxHeight: tallestTip(box),
       size: (maxWidth) => {
         box.style.maxWidth = `${maxWidth}px`
         return { w: box.offsetWidth, h: box.offsetHeight }

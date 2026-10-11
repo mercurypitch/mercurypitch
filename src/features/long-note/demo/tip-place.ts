@@ -11,6 +11,8 @@
 // anchor. It may slide along that side while the arrow still reaches; of
 // the places that cover nothing in `avoid`, the one covering least of
 // `prefer` wins, nearer the middle and on an earlier side breaking ties.
+// Past `maxHeight` (three lines) a tooltip reads as a column of words, so
+// a place that wraps it shorter wins whenever one covers nothing.
 
 export interface Rect {
   readonly x: number
@@ -42,6 +44,8 @@ export interface TipRequest {
   /** Better not covered. */
   readonly prefer?: readonly Rect[]
   readonly maxWidth: number
+  /** The tallest a tooltip should wrap to, px. */
+  readonly maxHeight?: number
 }
 
 export interface TipPlace {
@@ -99,6 +103,8 @@ function slides(centre: number, lo: number, hi: number): number[] {
 
 interface Candidate extends TipPlace {
   readonly cost: number
+  /** Wrapped past `maxHeight`. */
+  readonly tall: boolean
 }
 
 function candidates(
@@ -175,6 +181,7 @@ function sideCandidates(
         arrow,
         anchor,
         clear: hard === 0,
+        tall: size.h > (request.maxHeight ?? Infinity),
         // Wider reads better: a narrower wrap has to earn its place.
         cost: hard * 1e6 + soft * 4 + offCentre + rank * 120 + (widest - width),
       })
@@ -189,7 +196,10 @@ export function placeTip(request: TipRequest): TipPlace | null {
     sideCandidates(request, side, rank),
   )
   if (all.length === 0) return null
-  const best = all.reduce((a, b) => (b.cost < a.cost ? b : a))
+  const short = all.filter((candidate) => candidate.clear && !candidate.tall)
+  const best = (short.length > 0 ? short : all).reduce((a, b) =>
+    b.cost < a.cost ? b : a,
+  )
   return {
     side: best.side,
     box: best.box,

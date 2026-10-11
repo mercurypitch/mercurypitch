@@ -98,6 +98,32 @@ describe('placeTip', () => {
     expect(result.clear).toBe(false)
   })
 
+  it('keeps to three lines where a place allows, on a later side if need be', () => {
+    // Four lines narrower than 130 px, two at 130 and wider.
+    const wrap = (maxWidth: number) => {
+      const w = Math.min(maxWidth, 200)
+      return { w, h: w < 130 ? 88 : 48 }
+    }
+    // 112 px to the left of the left anchor, 172 to the right of the right.
+    const request = {
+      anchors: { left: { x: 130, y: 300 }, right: { x: 200, y: 300 } },
+      sides: ['left', 'right'] as Side[],
+      size: wrap,
+      bounds: ROOM,
+      avoid: [],
+      maxWidth: 240,
+    }
+    expect(placeTip(request)?.side).toBe('left')
+    const short = placeTip({ ...request, maxHeight: 70 })
+    expect(short?.side).toBe('right')
+    expect(short?.box.h).toBe(48)
+    // When the only shorter place would cover a control, the taller wrap.
+    const control: Rect = { x: 200, y: 0, w: 190, h: 700 }
+    const tall = placeTip({ ...request, avoid: [control], maxHeight: 70 })
+    expect(tall?.side).toBe('left')
+    expect(tall?.clear).toBe(true)
+  })
+
   it('wraps narrower rather than cover what it should keep off', () => {
     // A two-line tooltip at 120 wide, one line at 200.
     const wrap = (maxWidth: number) =>
