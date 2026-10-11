@@ -347,15 +347,17 @@
    <label>), and an `.input + .floatLabel` rule then stopped matching: the
    words dropped back over a filled address as its menu opened (owner,
    2026-10-11). `data-filled` comes from the field's value, read back on
-   input, change, focus, blur and autofill (AuthModal.tsx). */
+   input, change, focus, blur and autofill (AuthModal.tsx).
+
+   13px at weight 500: at 11px and 600 the dot of the "i" in "Email" all
+   but touched its stem on a 1x screen, and the word read "Emall". */
 .field:focus-within .floatLabel,
 .field[data-filled='true'] .floatLabel,
 .input:not(:placeholder-shown) ~ .floatLabel {
-  top: 7px;
+  top: 6px;
   color: var(--text-secondary, #a8b3bf);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: 13px;
+  font-weight: 500;
   transform: none;
 }
 
@@ -363,16 +365,16 @@
    drops the whole rule. A browser that fills the field before anyone types
    does not always clear :placeholder-shown for it. */
 .input:autofill ~ .floatLabel {
-  top: 7px;
-  font-size: 11px;
-  font-weight: 600;
+  top: 6px;
+  font-size: 13px;
+  font-weight: 500;
   transform: none;
 }
 
 .input:-webkit-autofill ~ .floatLabel {
-  top: 7px;
-  font-size: 11px;
-  font-weight: 600;
+  top: 6px;
+  font-size: 13px;
+  font-weight: 500;
   transform: none;
 }
 

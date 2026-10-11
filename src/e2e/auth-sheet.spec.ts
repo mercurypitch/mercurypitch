@@ -202,7 +202,7 @@ test.describe('the compact sheet on a phone', () => {
     expect((await labelInset(email)).top).toBeGreaterThan(0)
     await expect(email.locator('xpath=following-sibling::span[1]')).toHaveCSS(
       'font-size',
-      '11px',
+      '13px',
     )
   })
 
