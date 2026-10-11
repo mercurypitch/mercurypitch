@@ -213,6 +213,16 @@ const KARAOKE_STAGE_2 = [
   ['sing-exercise-picker', 'the exercise picker'],
   ['sing-options-exercises', "the Sing options' exercises row"],
   ['mp_last_exercise', 'the last exercise opened'],
+  // The catalogue's own words. The four above are the way in; this is the
+  // catalogue (catalogue.ts), the head of the chain into Long note's entry,
+  // its remembered note, its bests and its demo's record, each a persisted
+  // signal built at import. A static import of the catalogue from the store
+  // graph carries none of the four, and this line with it (review C of
+  // PR 973, minor 1).
+  [
+    'Hold one note and fill the lantern with light',
+    "the exercise picker's Long note card",
+  ],
 ]
 
 /**
