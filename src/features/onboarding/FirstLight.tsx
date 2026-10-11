@@ -155,8 +155,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       handleReopenAccount()
       return
     }
-    // The gift is Karaoke Night credits, so the welcome mail wears that
-    // room's picture.
+    // The gift is song separations for Karaoke Night, so the welcome mail
+    // wears that room's picture.
     rememberGiftOffered()
     openAuthModal('register', { signupSource: 'karaoke' })
   }

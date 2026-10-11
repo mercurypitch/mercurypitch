@@ -24,6 +24,7 @@ import { GiftIcon } from '@/components/billing/GiftIcon'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
+import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
 import type { Room, RoomTarget, SideDoor } from '../rooms'
@@ -140,15 +141,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 />
               </span>
 
-              <Show when={room.id === 'karaoke' && joinGift()}>
-                {(gift) => (
-                  <span class={styles.roomGift}>
-                    <span class={styles.roomGiftIcon} aria-hidden="true">
-                      <GiftIcon size={12} />
-                    </span>
-                    {gift().credits} free credits
+              <Show when={room.id === 'karaoke' && joinGift() !== false}>
+                <span class={styles.roomGift}>
+                  <span class={styles.roomGiftIcon} aria-hidden="true">
+                    <GiftIcon size={12} />
                   </span>
-                )}
+                  {KARAOKE_GIFT_TAG}
+                </span>
               </Show>
 
               {/* The words, in one column: under the cover on a wide
@@ -243,8 +242,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <p class={styles.mapGift}>
               <CreditCoin size={30} class={styles.mapGiftCoin} />
               <span>
-                Your launch gift is waiting: {gift().credits} Karaoke Night
-                credits.{' '}
+                {mapGiftWaiting(gift().credits)}{' '}
                 <button
                   type="button"
                   class={styles.mapGiftLink}
@@ -261,14 +259,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <p class={styles.mapGift}>
               <CreditCoin size={30} class={styles.mapGiftCoin} />
               <span>
-                Launch gift: {gift().credits} free Karaoke Night credits with a
-                free account.{' '}
+                {mapGiftJoin(gift().credits)}{' '}
                 <button
                   type="button"
                   class={styles.mapGiftLink}
                   onClick={() => props.onGift?.()}
                 >
-                  Get my {gift().credits} credits
+                  {MAP_GIFT_JOIN_LINK}
                 </button>
               </span>
             </p>
@@ -289,15 +286,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 </button>
               }
             >
-              {(gift) => (
-                <button
-                  type="button"
-                  class={styles.mapKeepLink}
-                  onClick={() => props.onGift?.()}
-                >
-                  Save it and get {gift().credits} free credits
-                </button>
-              )}
+              <button
+                type="button"
+                class={styles.mapKeepLink}
+                onClick={() => props.onGift?.()}
+              >
+                {MAP_KEEP_GIFT_LINK}
+              </button>
             </Show>
           </p>
         </Match>

@@ -86,3 +86,7 @@ export const KARAOKE_GIFT_TAG = 'Launch gift'
 
 /** The Map's way back to Keep, while the gift is on offer. */
 export const MAP_KEEP_GIFT_LINK = 'Save it and get the launch gift'
+
+/** Under Keep's button while the gift is on offer: when it lands. */
+export const KEEP_GIFT_CAPTION =
+  'Your gift arrives when your email is confirmed.'

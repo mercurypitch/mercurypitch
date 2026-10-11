@@ -143,7 +143,7 @@ describe('First Light and the launch gift', () => {
     const keep = await atKeep()
 
     expect(keep).toHaveAttribute('data-gift', 'offered')
-    expect(keep).toHaveTextContent('5 free Karaoke Night credits')
+    expect(keep).toHaveTextContent('Up to 5 free song separations')
     await waitFor(() =>
       expect(mocks.trackOnboarding).toHaveBeenCalledWith(
         'onboarding_keep_gift',
@@ -162,7 +162,7 @@ describe('First Light and the launch gift', () => {
     const keep = await atKeep()
 
     expect(keep).toHaveAttribute('data-gift', 'none')
-    expect(keep).not.toHaveTextContent('Karaoke Night credits')
+    expect(keep).not.toHaveTextContent('song separations')
     expect(mocks.trackOnboarding).toHaveBeenCalledWith('onboarding_keep')
     expect(mocks.trackOnboarding).not.toHaveBeenCalledWith(
       'onboarding_keep_gift',
@@ -214,8 +214,8 @@ describe('First Light and the launch gift', () => {
 
     expect(
       beat('map')?.querySelector('[data-room="karaoke"]'),
-    ).toHaveTextContent('5 free credits')
-    fireEvent.click(screen.getByRole('button', { name: 'Get my 5 credits' }))
+    ).toHaveTextContent('Launch gift')
+    fireEvent.click(screen.getByRole('button', { name: 'Get my gift' }))
 
     expect(mocks.trackOnboarding).toHaveBeenCalledWith(
       'onboarding_map_gift_tap',
@@ -233,7 +233,7 @@ describe('First Light and the launch gift', () => {
     await waitFor(() => expect(beat('map')).not.toBeNull())
 
     expect(beat('map')).not.toHaveTextContent('Launch gift')
-    expect(beat('map')).not.toHaveTextContent('free credits')
+    expect(beat('map')).not.toHaveTextContent('separations')
   })
 
   it('carries the gift on the way back to Keep for a voiceprint', async () => {
@@ -243,7 +243,7 @@ describe('First Light and the launch gift', () => {
     await waitFor(() => expect(beat('map')).not.toBeNull())
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Save it and get 5 free credits' }),
+      screen.getByRole('button', { name: 'Save it and get the launch gift' }),
     )
 
     expect(mocks.trackOnboarding).toHaveBeenCalledWith(
@@ -273,7 +273,7 @@ describe('First Light and the launch gift', () => {
       'Your voiceprint is saved in this browser only.',
     )
     expect(
-      screen.getByRole('button', { name: 'Save it and get 5 free credits' }),
+      screen.getByRole('button', { name: 'Save it and get the launch gift' }),
     ).toBeTruthy()
     expect(beat('map')).not.toHaveTextContent('Launch gift:')
     expect(mocks.trackOnboarding).toHaveBeenCalledWith('onboarding_skipped')

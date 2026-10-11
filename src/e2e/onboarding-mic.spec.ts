@@ -254,7 +254,7 @@ test.describe('First Light with a microphone', () => {
     await expect(map).toBeVisible({ timeout: 15000 })
     // Declining the offer must leave a way back to it on the Map.
     await expect(map).toContainText(
-      /Save it (to a free account|and get \d+ free credits)/i,
+      /Save it (to a free account|and get the launch gift)/i,
     )
   })
 })
