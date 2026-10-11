@@ -43,6 +43,7 @@ import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
 import { createMercMoves } from './merc-moves'
+import { prefersReducedMotion } from './reduced-motion'
 import { rememberedLongNote } from './remembered-note'
 import { createScreenAwake } from './screen-awake'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
@@ -174,7 +175,7 @@ export function useLongNoteController(): LongNoteController {
   // Merc's state and place; after a cheer he sings along with the voice.
   const merc = createMercMoves({
     later,
-    still: () => scripted?.still === true,
+    still: () => scripted?.still === true || prefersReducedMotion(),
     afterCheer: () => {
       if (!windowOpen) return null
       return engine.phase === 'locked' ? 'lock' : 'sing'

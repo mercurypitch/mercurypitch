@@ -8,6 +8,10 @@
 // scheduled before it cannot overwrite what came after. While he cheers,
 // the lock's ups and downs leave him be; after it he follows the voice
 // again, from beside the lantern.
+//
+// Under reduced motion (`still`) he never drops in, hops or jumps: he goes
+// straight to his place, and a state that leaps or sparkles shows as a
+// still one (STILL_STATE).
 
 import type { Accessor } from 'solid-js'
 import { batch, createSignal, untrack } from 'solid-js'
@@ -20,10 +24,19 @@ export const HOP_MS = 650
 /** His cheer at the goal and the brim, ms: two of his jumps. */
 export const CHEER_MS = 1600
 
+/**
+ * Under reduced motion: his fall from above shows as standing there, and
+ * his jumping, sparkling cheer as the lock's smile.
+ */
+const STILL_STATE: Partial<Record<MercState, MercState>> = {
+  drop: 'idle',
+  celebrate: 'lock',
+}
+
 export interface MercMovesDeps {
   /** A timer that belongs to the screen, dropped when it goes. */
   later: (ms: number, fn: () => void) => void
-  /** A demo take under reduced motion: he moves without hopping. */
+  /** Reduced motion: he moves without dropping, hopping or jumping. */
   still: () => boolean
   /** His face after a cheer, for the voice as it is; null once the take is over. */
   afterCheer: () => MercState | null
@@ -39,8 +52,8 @@ export interface MercMoves {
   /** A hop from one place to the other, landing in `then`. */
   hopTo: (place: MercPlace, then: MercState) => void
   /**
-   * A hop, or straight there when he is there already or a demo take runs
-   * under reduced motion. True when he hops.
+   * A hop, or straight there when he is there already or under reduced
+   * motion. True when he hops.
    */
   move: (place: MercPlace, then: MercState) => boolean
   /** His face for the lock's ups and downs, unless he is cheering. */
@@ -52,7 +65,9 @@ export interface MercMoves {
 }
 
 export function createMercMoves(deps: MercMovesDeps): MercMoves {
-  const [state, setState] = createSignal<MercState>('drop')
+  const shown = (next: MercState): MercState =>
+    deps.still() ? (STILL_STATE[next] ?? next) : next
+  const [state, setState] = createSignal<MercState>(shown('drop'))
   const [place, setPlace] = createSignal<MercPlace>('beside')
   let change = 0
   /** Bumped by each cheer and each stop, so an old cheer's end is dropped. */
@@ -61,7 +76,7 @@ export function createMercMoves(deps: MercMovesDeps): MercMoves {
 
   const set = (next: MercState): void => {
     change += 1
-    setState(next)
+    setState(shown(next))
   }
   const put = (next: MercState, where: MercPlace): void => {
     batch(() => {
@@ -70,6 +85,10 @@ export function createMercMoves(deps: MercMovesDeps): MercMoves {
     })
   }
   const hopTo = (where: MercPlace, then: MercState): void => {
+    if (deps.still()) {
+      put(then, where)
+      return
+    }
     put('hop', where)
     const hop = change
     deps.later(HOP_MS, () => {

@@ -13,6 +13,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, untrack } from 'solid-js'
 import { LANTERN_VIEW_H, LANTERN_VIEW_W } from './lantern-geometry'
+import { prefersReducedMotion } from './reduced-motion'
 
 /** Merc's canvas, square, at full size (standing beside the lantern). */
 export const MERC_UNITS = 210
@@ -90,10 +91,6 @@ export function mixLayouts(
 const sameLayout = (a: StageLayout, b: StageLayout): boolean =>
   a.k === b.k && a.left === b.left && a.top === b.top
 
-const reducedMotion = (): boolean =>
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
 /**
  * The layout on screen: it follows `target`, easing over GLIDE_MS each
  * time the target moves, so the lantern never jumps. The first layout of
@@ -113,7 +110,7 @@ export function createLayoutGlide(
     on(target, (to) => {
       stop()
       const from = untrack(shown)
-      if (from.width === 0 || sameLayout(from, to) || reducedMotion()) {
+      if (from.width === 0 || sameLayout(from, to) || prefersReducedMotion()) {
         setShown(to)
         return
       }

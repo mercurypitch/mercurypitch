@@ -17,6 +17,7 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import { prefersReducedMotion } from '../reduced-motion'
 import type { ScriptedTake } from '../scripted-take'
 import type { LongNoteController } from '../useLongNoteController'
 import { longNoteDemoAutoPlays } from './demo-auto-play'
@@ -68,13 +69,6 @@ const AUDIO_WAIT_MS = 700
 /** The mic hint after Try it, seconds. */
 const HINT_SECONDS = 3.2
 
-function prefersStill(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-}
-
 /** One take as the room sings it: its frames released on its own clock. */
 function scriptedTake(
   take: DemoTake,
@@ -118,7 +112,7 @@ function scriptedTake(
 
 export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
   const script = room.script
-  const still = prefersStill()
+  const still = prefersReducedMotion()
   const [mode, setMode] = createSignal<DemoMode>('idle')
   const [take, setTake] = createSignal<DemoTakeId | null>(null)
   const [tip, setTip] = createSignal<DemoTip | null>(null)

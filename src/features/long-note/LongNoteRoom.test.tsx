@@ -1116,6 +1116,68 @@ describe('LongNoteRoom', () => {
     }
   })
 
+  it('keeps Merc to still moves under reduced motion: no drop, hop or jumping cheer', async () => {
+    // Review B of PR 973, minor 2: the room's CSS stopped its own hops,
+    // but Merc's canvas still dropped in, hopped and cheered with jumps
+    // and sparkles.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      const mercEl = (): HTMLElement => screen.getByTestId('long-note-merc')
+      const inGlass = (): boolean =>
+        mercEl().style.transform.includes('scale(0.7)')
+      // Every state he shows, from the first.
+      const shown = [mercEl().getAttribute('data-merc-state') ?? '']
+      const watch = new MutationObserver(() => {
+        shown.push(mercEl().getAttribute('data-merc-state') ?? '')
+      })
+      watch.observe(mercEl(), {
+        attributes: true,
+        attributeFilter: ['data-merc-state'],
+      })
+      const wait = async (ms: number): Promise<void> => {
+        vi.advanceTimersByTime(ms)
+        await settle()
+      }
+      await wait(1200)
+      await startListening()
+
+      // Into the glass with the voice.
+      fake.frames = tone(57, 11.5)
+      flushFrames()
+      await wait(1000)
+      expect(inGlass()).toBe(true)
+      // The goal: out of the glass, and his cheer.
+      fake.frames = [...fake.frames, ...tone(57, 1.5, { startT: 11.5 })]
+      flushFrames()
+      await wait(700)
+      expect(inGlass()).toBe(false)
+      await wait(1700)
+      // A breath ends it, half full: the result's cheer.
+      fake.frames = [...fake.frames, ...silence(0.8, 13)]
+      flushFrames()
+      await wait(2000)
+      watch.disconnect()
+
+      expect(phase()).toBe('result')
+      expect(screen.getByTestId('lantern-halo').style.opacity).toBe(
+        String(GOAL_SHINE),
+      )
+      expect(shown).toContain('lock')
+      for (const lively of ['drop', 'hop', 'celebrate']) {
+        expect(shown).not.toContain(lively)
+      }
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
     for (const [shape, brims] of [
       [PRACTISED, true],
