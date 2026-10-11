@@ -8,7 +8,8 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 ## [0.9.17] - 2026-10-11
 
 Confirm your email for five free credits, and use all five for 30 more. Credit
-packs can now be cancelled within 14 days.
+packs can now be cancelled within 14 days. The intro now starts with your
+voiceprint, and the sign-in sheet fits on a phone.
 
 ### Added
 
@@ -33,9 +34,22 @@ packs can now be cancelled within 14 days.
 
 ### Changed
 
-- **One button on the welcome screen: Sing one note.** The X at the top right
-  skips the intro, and the last step offers the five free credits beside
-  **Create my free account**.
+- **The intro starts with your voiceprint.** Sing one note and Merc lights the
+  first star. **Find my twin** then takes about 90 seconds of glides and five
+  notes to show which legend has a range like yours, and the Map picks a room
+  for your voice. **Not now** at the top right always opens the Map, and a
+  voiceprint you've made stays saved: on this device, or on your account once
+  you create one. The welcome keeps one button, **Sing one note**, and the X
+  skips the intro.
+- **The launch gift says what it buys:** up to 5 free song separations for
+  Karaoke Night, offered beside **Create my free account** and again on the
+  Map.
+- **A sign-in sheet that fits on a phone.** Google and Phone sit side by side,
+  each label sits inside its field, and the newsletter box is one line:
+  "Email me product updates. Unsubscribe anytime." Settings uses the same
+  words. The Cloudflare check appears only when Cloudflare needs a click, and
+  a tap that comes before it finishes shows **Checking…** and goes through by
+  itself.
 - **Refunds and chargebacks take back the credits they paid for.** A partial
   refund takes back a matching share.
 - **Google cookies wait for your yes in the EU, the UK and Switzerland**,
