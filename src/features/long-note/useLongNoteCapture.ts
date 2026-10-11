@@ -11,8 +11,10 @@
 // `acquire` must run inside the singer's tap: iOS unlocks audio and the mic
 // only from a gesture. Each acquisition is numbered, so a release during the
 // permission prompt hands the stream straight back instead of holding it
-// for a room that is gone (the Ear Lab's rule, use-sing-capture.ts). Once
-// the screen is gone, `acquire` opens nothing at all.
+// for a room that is gone (the Ear Lab's rule, use-sing-capture.ts). A tap
+// after that release starts an acquisition of its own, once the old one has
+// handed back what it got. Once the screen is gone, `acquire` opens nothing
+// at all.
 
 import { onCleanup, untrack } from 'solid-js'
 import type { MicError } from '@/lib/mic-manager'
@@ -62,7 +64,8 @@ export function useLongNoteCapture(): LongNoteCapture {
   const lease = untrack(nativeDeviceApi)?.acquireAudio(LONG_NOTE_AUDIO_OWNER)
   let ownContext: AudioContext | null = null
   let f0: F0Stream | null = null
-  let acquiring: Promise<void> | null = null
+  /** The acquisition in flight, and the release count it began under. */
+  let acquiring: { generation: number; done: Promise<void> } | null = null
   let generation = 0
   let disposed = false
 
@@ -90,6 +93,40 @@ export function useLongNoteCapture(): LongNoteCapture {
     micManager.release(LONG_NOTE_AUDIO_OWNER)
   }
 
+  /**
+   * Open the mic for acquisition `mine`, after `before` has settled: the
+   * mic manager keeps one hold per owner, so an older acquisition handing
+   * its stream back later would end this one's.
+   */
+  const open = async (mine: number, before: Promise<void>): Promise<void> => {
+    // Called inside the tap, so the clock is unlocked inside it.
+    const ctx = await unlock()
+    await before
+    if (mine !== generation) return
+    if (ctx === null) throw new CaptureError('unavailable')
+    let stream: MediaStream
+    try {
+      stream = await micManager.acquire(LONG_NOTE_AUDIO_OWNER)
+    } catch (error) {
+      throw new CaptureError(
+        isMicError(error) && error.kind === 'permission-denied'
+          ? 'denied'
+          : 'unavailable',
+      )
+    }
+    if (mine !== generation) {
+      micManager.release(LONG_NOTE_AUDIO_OWNER)
+      return
+    }
+    try {
+      f0 = createF0Stream(ctx, stream)
+    } catch {
+      // No pitch stream, no reason to keep the mic.
+      micManager.release(LONG_NOTE_AUDIO_OWNER)
+      throw new CaptureError('unavailable')
+    }
+  }
+
   onCleanup(() => {
     disposed = true
     release()
@@ -103,36 +140,17 @@ export function useLongNoteCapture(): LongNoteCapture {
   return {
     acquire: () => {
       if (disposed || f0 !== null) return Promise.resolve()
-      acquiring ??= (async () => {
-        const mine = generation
-        const ctx = await unlock()
-        if (mine !== generation) return
-        if (ctx === null) throw new CaptureError('unavailable')
-        let stream: MediaStream
-        try {
-          stream = await micManager.acquire(LONG_NOTE_AUDIO_OWNER)
-        } catch (error) {
-          throw new CaptureError(
-            isMicError(error) && error.kind === 'permission-denied'
-              ? 'denied'
-              : 'unavailable',
-          )
-        }
-        if (mine !== generation) {
-          micManager.release(LONG_NOTE_AUDIO_OWNER)
-          return
-        }
-        try {
-          f0 = createF0Stream(ctx, stream)
-        } catch {
-          // No pitch stream, no reason to keep the mic.
-          micManager.release(LONG_NOTE_AUDIO_OWNER)
-          throw new CaptureError('unavailable')
-        }
-      })().finally(() => {
-        acquiring = null
-      })
-      return acquiring
+      // A second tap shares the opening under way, unless a release gave
+      // that one up: it will open nothing, so this tap needs its own.
+      if (acquiring?.generation === generation) return acquiring.done
+      const before = acquiring?.done.catch(() => undefined) ?? Promise.resolve()
+      const entry = { generation, done: open(generation, before) }
+      acquiring = entry
+      const settled = (): void => {
+        if (acquiring === entry) acquiring = null
+      }
+      entry.done.then(settled, settled)
+      return entry.done
     },
     release,
     held: () => f0 !== null,

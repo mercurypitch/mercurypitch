@@ -100,6 +100,38 @@ describe('useLongNoteCapture', () => {
     dispose()
   })
 
+  // Review A2 of PR 973, minor 1: the second tap was handed the first
+  // acquisition, which a release had given up on, so it resolved with no
+  // pitch stream and the room listened to nothing.
+  it('opens the mic for a tap after a release, while the last one was still opening', async () => {
+    let grant: (value: MediaStream) => void = () => undefined
+    mic.acquire.mockReturnValueOnce(
+      new Promise<MediaStream>((resolve) => {
+        grant = resolve
+      }),
+    )
+    const { capture, dispose } = mount()
+    const first = capture.acquire()
+    await vi.waitFor(() => expect(mic.acquire).toHaveBeenCalledTimes(1))
+
+    // Act: the app goes away while the mic opens, comes back, and the
+    // singer taps again before the first opening settled.
+    capture.release()
+    const second = capture.acquire()
+    grant(stream)
+    await first
+    await second
+
+    // Assert: the second tap has a mic and a pitch stream.
+    expect(capture.held()).toBe(true)
+    expect(pitch.createF0Stream).toHaveBeenCalledTimes(1)
+    // The first hands its hold back before the second takes one: the mic
+    // manager keeps one hold per owner, so a later hand-back would end it.
+    const lastRelease = Math.max(...mic.release.mock.invocationCallOrder)
+    expect(mic.acquire.mock.invocationCallOrder[1]).toBeGreaterThan(lastRelease)
+    dispose()
+  })
+
   it('fails without the mic when the clock will not start', async () => {
     device.lease = {
       ensure: () => context,
