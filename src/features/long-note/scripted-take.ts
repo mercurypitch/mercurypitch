@@ -9,13 +9,15 @@
 // A scripted take never opens the mic, fires a haptic or keeps a result.
 
 import type { Accessor } from 'solid-js'
-import type { HoldEventType } from '@/lib/hold/hold-engine'
+import type { HoldEventType, HoldPreset } from '@/lib/hold/hold-engine'
 import type { MercState } from '@/lib/merc/constants'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 
 /** One of the demo's takes, sung through the room instead of the mic. */
 export interface ScriptedTake {
   readonly targetMidi: number
+  /** The rules it is sung under: the demo's own level, not the singer's. */
+  readonly preset: HoldPreset
   /** The frames released so far, oldest first, on the take's own clock. */
   frames: () => readonly PitchFrame[]
   /** The take's clock: engine seconds since it started. */

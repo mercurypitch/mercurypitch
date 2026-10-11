@@ -48,7 +48,8 @@ export interface LongNoteController {
   trace: VoiceTraceBuffer
   /** The trace's clock: seconds since the take started. */
   now: () => number
-  readonly toleranceCents: number
+  /** The band either side of the line: the take's level, or the demo's. */
+  toleranceCents: Accessor<number>
   start: () => void
   /** Stop listening before a note and go back to the intro. */
   cancel: () => void

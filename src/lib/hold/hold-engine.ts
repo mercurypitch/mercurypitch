@@ -29,12 +29,13 @@
 //   first lock the voice has not found the note, so nothing it does fills
 //   the lantern; the run that locks counts whole.
 //
-// A preset may carry a stretch rule (the Long note lantern's): past the
-// goal, a second fill grows only with steady singing, judged by the same
-// steadiness the result scores (hold-steadiness.ts), on the same reading of
-// the voice, over its last seconds. Without one the engine stops at the
-// goal.
+// A preset may carry a stretch rule (the Long note lantern's, one for each
+// exercise level): past the goal, a second fill grows with steady singing,
+// judged by the same steadiness the result scores (hold-steadiness.ts), on
+// the same reading of the voice, over its last seconds; a voice under the
+// level's bar fills part of it. Without one the engine stops at the goal.
 
+import type { ExerciseLevel } from '@/lib/exercise-level'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { PitchPoint } from './hold-reading'
 import { heldCents, offTarget } from './hold-reading'
@@ -62,23 +63,26 @@ export interface ExerciseHoldPreset {
 }
 
 /**
- * Past the goal, the top fills only with steady singing: on the line (in
- * the band) while the last `windowSeconds` of the voice score at least
+ * Past the goal, the top fills with steady singing: on the line (in the
+ * band) while the last `windowSeconds` of the voice score at least
  * `steadyScore` on the result's own steadiness (liveSteadiness), checked
- * every `checkSeconds`. `seconds` of it fill the top. Like the goal's fill,
- * it never drains.
+ * every `checkSeconds`. `seconds` of it fill the top. A voice under that
+ * bar but over `partScore` fills part of the top, in proportion: one
+ * halfway between the two fills half of it, and no more until it is
+ * steadier. Like the goal's fill, it never drains.
  */
 export interface StretchRule {
   seconds: number
   windowSeconds: number
   steadyScore: number
+  partScore: number
   checkSeconds: number
 }
 
 /** Open for `GlassBreakHoldPreset` when the onboarding beat lands. */
 export type HoldPreset = ExerciseHoldPreset
 
-export type HoldPresetId = 'exercise' | 'lantern'
+export type HoldPresetId = 'exercise'
 
 /** Every feel knob of the hold, one line each. */
 export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
@@ -91,12 +95,25 @@ export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
     goalSeconds: 12,
     centreTauSec: 0.1,
   },
-  // The Long note lantern: the goal fills it halfway, steady singing the
-  // rest. A practised singer is steady nearly all the time and reaches the
-  // brim about 12 s after the goal; a wobbly one fills part of it.
-  lantern: {
+}
+
+/**
+ * How far under the steady bar a voice still fills part of the lantern's
+ * top, in steadiness points: at the bar, all of it; this far under, none.
+ */
+const LANTERN_PART_SPAN = 40
+
+/**
+ * The Long note lantern at one level: the band either side of the note,
+ * and the steadiness (hold-steadiness.ts, 100 less twice the spread) that
+ * fills the top to the brim. The goal fills it halfway at every level, 12 s
+ * on the line; past it, 12 s at the bar fill the top, and a voice under it
+ * fills part of the top (StretchRule).
+ */
+function lantern(tolCents: number, steadyScore: number): HoldPreset {
+  return {
     mode: 'exercise',
-    tolCents: 30,
+    tolCents,
     lockMs: 250,
     breakMs: 200,
     endMs: 450,
@@ -105,10 +122,34 @@ export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
     stretch: {
       seconds: 12,
       windowSeconds: 2,
-      steadyScore: 90,
+      steadyScore,
+      partScore: steadyScore - LANTERN_PART_SPAN,
       checkSeconds: 0.15,
     },
-  },
+  }
+}
+
+/**
+ * The lantern at each exercise level (src/lib/exercise-level.ts). The
+ * owner's call (11 Oct 2026): a beginner fills it without a perfect
+ * 12 seconds, and Pro makes the brim harder to reach. Calibrated on 26 s
+ * takes (a 5.5 Hz vibrato's swing is its depth over root 2 in spread):
+ *
+ * - Beginner: a natural vibrato (+-40 cents, steadiness about 44) and small
+ *   wobbles reach the brim; any voice that reaches the goal fills some of
+ *   the top.
+ * - Singer: a light vibrato (+-15 to 20 cents, about 72 to 79) reaches the
+ *   brim, a natural one fills about 40 % of the top, and a shake wider
+ *   than a light vibrato does not reach it. (Held well past 30 s, a
+ *   shake's steadier moments can add up to the brim: the top never
+ *   drains.)
+ * - Pro: only a near-straight tone (a spread under 6 cents) reaches the
+ *   brim; a natural vibrato fills none of the top.
+ */
+export const LANTERN_LEVELS: Record<ExerciseLevel, HoldPreset> = {
+  beginner: lantern(40, 35),
+  singer: lantern(30, 70),
+  pro: lantern(20, 88),
 }
 
 export type HoldPhase =
@@ -174,9 +215,17 @@ export interface HoldState {
   recent: readonly PitchPoint[]
   /** The last steadiness check found the voice steady. */
   steady: boolean
+  /**
+   * How far up the top the last check's steadiness lets it fill, 0..1: 1
+   * when steady, in proportion between the stretch's two bars.
+   */
+  reach: number
   /** When it last checked, clock seconds; null before the first lock. */
   steadyCheckedAt: number | null
-  /** Seconds on the line and steady since the goal. */
+  /**
+   * The top's fill past the goal, in seconds on the line: steady, or
+   * filling part of the way (`reach`).
+   */
   steadySeconds: number
   /** The top's fill past the goal, 0..1: steadySeconds / stretch seconds. */
   topCharge: number
@@ -220,6 +269,7 @@ export function createHoldState(): HoldState {
     noteEndedAt: null,
     recent: [],
     steady: false,
+    reach: 0,
     steadyCheckedAt: null,
     steadySeconds: 0,
     topCharge: 0,
@@ -273,20 +323,30 @@ function checkSteady(
   voiced: boolean,
   recent: readonly PitchPoint[],
   rule: StretchRule,
-): Pick<HoldState, 'steady' | 'steadyCheckedAt'> {
+): Pick<HoldState, 'steady' | 'reach' | 'steadyCheckedAt'> {
   const last = state.steadyCheckedAt
   const due =
     voiced &&
     next.firstLockAt !== null &&
     (last === null || next.clock - last >= rule.checkSeconds - EPS)
-  if (!due) return { steady: state.steady, steadyCheckedAt: last }
+  if (!due) {
+    return { steady: state.steady, reach: state.reach, steadyCheckedAt: last }
+  }
   const span = recent[recent.length - 1].t - recent[0].t
   const score =
     span >= rule.windowSeconds / 2 - EPS ? liveSteadiness(recent) : null
   return {
     steady: score !== null && score >= rule.steadyScore,
+    reach: score === null ? 0 : reachOf(score, rule),
     steadyCheckedAt: next.clock,
   }
+}
+
+/** How far up the top a steadiness score lets it fill, 0..1. */
+function reachOf(score: number, rule: StretchRule): number {
+  if (score >= rule.steadyScore) return 1
+  const part = (score - rule.partScore) / (rule.steadyScore - rule.partScore)
+  return Math.max(0, Math.min(1, part))
 }
 
 /** The stretch past the goal: steady seconds on the line fill the top. */
@@ -302,8 +362,10 @@ function tickStretch(
       ? state.recent
       : withReading(state.recent, next.clock, reading, rule.windowSeconds)
   const verdict = checkSteady(state, next, reading !== null, recent, rule)
-  const counts = state.goalReached && next.inBand && verdict.steady
-  const steadySeconds = state.steadySeconds + (counts ? dt : 0)
+  // The top fills as far as this steadiness reaches, and no further.
+  const room = verdict.reach * rule.seconds - state.steadySeconds
+  const counts = state.goalReached && next.inBand && room > 0
+  const steadySeconds = state.steadySeconds + (counts ? Math.min(dt, room) : 0)
   const brimReached = state.brimReached || steadySeconds >= rule.seconds - EPS
   return {
     ...next,
@@ -477,6 +539,7 @@ function tickVoiced(
     noteEndedAt: null,
     recent: state.recent,
     steady: state.steady,
+    reach: state.reach,
     steadyCheckedAt: state.steadyCheckedAt,
     steadySeconds: state.steadySeconds,
     topCharge: state.topCharge,

@@ -1,12 +1,12 @@
 // ============================================================
-// Hold steadiness — realistic takes, against the Voice Mirror's score
+// Hold steadiness — realistic takes, scored as the web Long note scores
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { silence } from '@/lib/glass/test-frames'
-import { computeSteadiness } from '@/lib/mirror/metrics'
+import { FPS, midiToF0, silence } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { HOLD_PRESETS, runHold } from './hold-engine'
+import { hzToCents } from '@/lib/pitch-measurements'
+import { LANTERN_LEVELS, runHold } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
 import { fitSteadiness, holdSteadiness, liveSteadiness, } from './hold-steadiness'
 import type { TakeShape } from './test-takes'
@@ -37,11 +37,43 @@ function scored(shape: TakeShape): number {
   }).score
 }
 
+/**
+ * The web Long note's score (use-long-note-controller.ts): 100 less twice
+ * the standard deviation of the cents, on the held frames the result keeps
+ * (the onset's 0.4 s and the release's 0.2 s trimmed, as the Mirror trims).
+ */
+function webScore(frames: readonly PitchFrame[]): number {
+  const voiced = frames.filter((frame) => frame.f0 > 0)
+  const first = voiced[0].t + 0.4
+  const last = voiced[voiced.length - 1].t - 0.2
+  const cents = voiced
+    .filter((frame) => frame.t >= first && frame.t <= last)
+    .map((frame) => hzToCents(frame.f0) - TARGET * 100)
+  const mean = cents.reduce((sum, c) => sum + c, 0) / cents.length
+  const sd = Math.sqrt(
+    cents.reduce((sum, c) => sum + (c - mean) ** 2, 0) / cents.length,
+  )
+  return Math.round(Math.max(0, 100 - 2 * sd))
+}
+
+/** 24 s on A3 swinging `depth` cents either side at `hz`, with grain. */
+function swing(depth: number, hz: number): PitchFrame[] {
+  const grain = realisticTake(TARGET, { seconds: 24, jitterCents: 1, seed: 5 })
+  return grain.map((frame) => ({
+    ...frame,
+    f0: midiToF0(
+      TARGET +
+        (hzToCents(frame.f0) - TARGET * 100) / 100 +
+        (depth * Math.sin(2 * Math.PI * hz * frame.t)) / 100,
+    ),
+  }))
+}
+
 describe('holdSteadiness', () => {
-  it('leaves a natural vibrato out of a long hold, its rate breathing', () => {
+  it('counts a natural vibrato against steadiness, as the web Long note does', () => {
     // Arrange: the same practised singer, straight and with a vibrato
     // whose rate wanders by a quarter hertz and depth by 12%, as a real
-    // one does. One sine over 24 s loses it: the Mirror scored this 68.
+    // one does. Round 4 took the vibrato out and scored both 96 to 97.
     const straight = scored({ ...PRACTISED, seed: 11 })
 
     for (const [hz, depth] of [
@@ -49,39 +81,19 @@ describe('holdSteadiness', () => {
       [6, 60],
     ]) {
       // Act
-      const vibrato = scored({
-        ...PRACTISED,
-        vibratoHz: hz,
-        vibratoCents: depth,
-        seed: 11,
-      })
+      const shape = { ...PRACTISED, vibratoHz: hz, vibratoCents: depth }
+      const vibrato = scored({ ...shape, seed: 11 })
 
-      // Assert
-      expect(vibrato).toBeGreaterThanOrEqual(93)
-      expect(Math.abs(vibrato - straight)).toBeLessThanOrEqual(4)
+      // Assert: the swing costs what the web Long note says it costs, to
+      // a point (a reading past a semitone counts as a semitone here).
+      const web = webScore(realisticTake(TARGET, { ...shape, seed: 11 }))
+      expect(Math.abs(vibrato - web)).toBeLessThanOrEqual(1)
+      expect(straight - vibrato).toBeGreaterThanOrEqual(40)
     }
+    expect(straight).toBeGreaterThanOrEqual(85)
   })
 
-  it('names the vibrato it took out, at about its rate and depth', () => {
-    const steadiness = holdSteadiness(
-      realisticTake(TARGET, {
-        ...PRACTISED,
-        vibratoHz: 5.5,
-        vibratoCents: 35,
-        seed: 3,
-      }),
-      TARGET,
-    )
-    expect(steadiness?.vibrato?.rateHz).toBeGreaterThan(5)
-    expect(steadiness?.vibrato?.rateHz).toBeLessThan(6)
-    // The median of five trims a little off the top of each swing.
-    expect(steadiness?.vibrato?.extentCents).toBeGreaterThan(25)
-    expect(steadiness?.vibrato?.extentCents).toBeLessThan(40)
-  })
-
-  it('scores a wobble, a shake and a sway as the Voice Mirror does', () => {
-    // No vibrato in these: whatever the second-by-second fit takes out, it
-    // must not be a real unsteadiness.
+  it('scores 100 less twice the spread of the held note, a wobble, a sway and a drift alike', () => {
     for (const shape of [
       { wanderCents: 25, wanderSeconds: 0.2, jitterCents: 5, seed: 19 },
       { wanderCents: 15, wanderSeconds: 0.2, jitterCents: 4, seed: 18 },
@@ -89,15 +101,33 @@ describe('holdSteadiness', () => {
       { wanderCents: 15, wanderSeconds: 1, jitterCents: 3, seed: 27 },
       { driftCents: -45, wanderCents: 5, jitterCents: 3, seed: 16 },
     ]) {
+      // Arrange
       const frames = realisticTake(TARGET, { seconds: 24, ...shape })
+
+      // Act
       const ours = holdSteadiness(frames, TARGET)?.score ?? -1
-      const mirror = computeSteadiness(frames)?.score ?? -1
-      expect(Math.abs(ours - mirror)).toBeLessThanOrEqual(1)
+
+      // Assert: to a point, as above.
+      expect(Math.abs(ours - webScore(frames))).toBeLessThanOrEqual(1)
     }
-    // And the wobbly one stays well down the scale.
-    expect(
-      scored({ seconds: 24, wanderCents: 25, jitterCents: 5 }),
-    ).toBeLessThan(70)
+  })
+
+  it('costs a fast shake no less than a slow one of the same depth', () => {
+    // A median of five over 60 frames a second takes the top off every
+    // swing faster than about 6 Hz: round 4 scored a 10 Hz shake of 20 c
+    // close to a straight tone, and a 2 Hz one in the seventies.
+    for (const depth of [10, 20, 30]) {
+      // Act
+      const scores = [1.5, 5.5, 10, 12].map(
+        (hz) => holdSteadiness(swing(depth, hz), TARGET)?.score ?? -1,
+      )
+
+      // Assert: each faster swing costs at least as much as the slower.
+      for (let i = 1; i < scores.length; i++) {
+        expect(scores[i]).toBeLessThanOrEqual(scores[i - 1] + 1)
+      }
+      expect(scores[3]).toBeLessThanOrEqual(100 - 2 * (depth / Math.SQRT2) + 2)
+    }
   })
 
   it('needs five points over 0.3 s, as the Mirror does', () => {
@@ -108,14 +138,18 @@ describe('holdSteadiness', () => {
     expect(fitSteadiness(points(10, 0.05))?.score).toBe(100)
   })
 
-  it('reads a one-frame octave slip in the live window as no wobble', () => {
-    // Two seconds dead on the note, one frame clamped 100 c off.
-    const points = Array.from({ length: 120 }, (_, i) => ({
-      t: i / 60,
-      cents: i === 60 ? 100 : 0,
-    }))
-    expect(liveSteadiness(points)).toBe(100)
-    expect(fitSteadiness(points)?.score).toBeLessThan(100)
+  it('reads an octave slip in the live window as no wobble, and a real excursion as one', () => {
+    // Two seconds dead on the note, and four frames (67 ms) in the middle
+    // an octave off, where the tracker slipped, or 80 c sharp, where the
+    // voice went.
+    const window = (cents: number): { t: number; cents: number }[] =>
+      Array.from({ length: 2 * FPS }, (_, i) => ({
+        t: i / FPS,
+        cents: i >= 60 && i < 64 ? cents : 0,
+      }))
+    expect(liveSteadiness(window(1200))).toBe(100)
+    expect(liveSteadiness(window(-1200))).toBe(100)
+    expect(liveSteadiness(window(80))).toBeLessThan(80)
   })
 })
 
@@ -170,9 +204,9 @@ function slipTake(
   return frames
 }
 
-/** The lantern's run of a take, and what its result scores. */
+/** The lantern's run of a take at Singer, and what its result scores. */
 function lanternRun(frames: PitchFrame[]): { brim: boolean; score: number } {
-  const state = runHold(frames, TARGET, HOLD_PRESETS.lantern)
+  const state = runHold(frames, TARGET, LANTERN_LEVELS.singer)
   const { score } = computeHoldResult({
     frames,
     state,

@@ -89,7 +89,8 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     // A semitone or more away, or back from a gap off the note.
     break: [{ id: 'break-off', text: 'Off the note. Find {note} again.' }],
     // The goal: 12 seconds on the note fill the lantern halfway. Past it
-    // only steady singing fills the top (the hold engine's stretch).
+    // steady singing fills the top (the hold engine's stretch; a voice
+    // under the level's bar fills part of it).
     full: [
       {
         id: 'full-twelve',

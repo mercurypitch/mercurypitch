@@ -1,8 +1,9 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setExerciseLevel } from '@/lib/exercise-level'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import type { TakeShape } from '@/lib/hold/test-takes'
 import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
@@ -287,7 +288,7 @@ function hear(frames: readonly PitchFrame[]): Heard[] {
     state = tickHold(
       state,
       holdTickFromFrame(frame, previous, 57),
-      HOLD_PRESETS.lantern,
+      LANTERN_LEVELS.singer,
     )
     previous = frame
     return {
@@ -317,24 +318,21 @@ const says = (
 ): boolean =>
   MERC_LINES[moment].some((line) => fillNote(line.text, note) === text)
 
-/** A practised singer: a slow wander, the tracker's grain, a vibrato. */
+/** A practised singer: a slow wander, the tracker's grain, a light vibrato. */
 const PRACTISED: TakeShape = {
   seconds: 26,
   wanderCents: 4,
   wanderSeconds: 0.4,
   jitterCents: 3,
   vibratoHz: 5.5,
-  vibratoCents: 35,
+  vibratoCents: 12,
   seed: 12,
 }
-/** On the line all along, but wobbling on it. */
-const WOBBLY: TakeShape = {
-  seconds: 26,
-  wanderCents: 15,
-  wanderSeconds: 0.2,
-  jitterCents: 4,
-  seed: 18,
-}
+/**
+ * On the line all along, with a wide vibrato: +-30 cents, a spread of 21,
+ * a steadiness under Singer's bar.
+ */
+const WIDE: TakeShape = { ...PRACTISED, vibratoCents: 30, seed: 18 }
 
 /** The lantern's level, read off the liquid's window in its back layer. */
 function shownLevel(): number {
@@ -401,6 +399,9 @@ function longestDisagreement(heard: readonly Heard[]): number {
 describe('LongNoteRoom', () => {
   beforeEach(() => {
     localStorage.clear()
+    // The room's tests sing at Singer, the +-30 cent band the room had
+    // before levels; the level's own tests pick theirs.
+    setExerciseLevel('singer')
     fake.frames = []
     fake.acquireError = null
     fake.acquireGate = null
@@ -1629,7 +1630,7 @@ describe('LongNoteRoom', () => {
   it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
     for (const [shape, brims] of [
       [PRACTISED, true],
-      [WOBBLY, false],
+      [WIDE, false],
     ] as const) {
       // Arrange
       render(() => <LongNoteRoom onDone={() => undefined} />)
@@ -1751,7 +1752,7 @@ describe('LongNoteRoom', () => {
   // Two 26 s takes through the rendered room, as above: 1.7 s on a CI
   // runner, so this case gets 10 s too.
   it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
-    for (const shape of [PRACTISED, WOBBLY]) {
+    for (const shape of [PRACTISED, WIDE]) {
       render(() => <LongNoteRoom onDone={() => undefined} />)
       await startListening()
 

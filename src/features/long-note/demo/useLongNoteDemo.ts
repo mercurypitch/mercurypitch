@@ -89,6 +89,7 @@ function scriptedTake(
     Math.max(0, take.engineAt((performance.now() - startsAt) / 1000))
   return {
     targetMidi: note,
+    preset: take.preset,
     toResult: take.id === 'on',
     // Sheepish: he glances about, out of the glass.
     after: 'idle',

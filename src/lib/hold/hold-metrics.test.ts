@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import { computeSteadiness } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { HOLD_PRESETS, runHold } from './hold-engine'
+import { HOLD_PRESETS, LANTERN_LEVELS, runHold } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
 import type { TakeShape } from './test-takes'
 import { realisticTake } from './test-takes'
@@ -84,7 +84,7 @@ describe('computeHoldResult', () => {
     expect(wholeTake?.score).toBeLessThan(100)
   })
 
-  it('keeps a 5.5 Hz, +-40 cent vibrato locked and scores it as steady', () => {
+  it('keeps a 5.5 Hz, +-40 cent vibrato locked and scores its swing against steadiness', () => {
     // Arrange
     const vibrato = track(6, (t) => 40 * Math.sin(2 * Math.PI * 5.5 * t))
     const frames = sequence(vibrato, rest(0.5))
@@ -92,20 +92,19 @@ describe('computeHoldResult', () => {
     // Act
     const run = result(frames)
 
-    // Assert
+    // Assert: the band holds it, and the score counts it, as the web Long
+    // note does: a swing of 40 cents either side is a spread of 28.3, and
+    // 100 less twice that is 43. Long note names no vibrato.
     expect(run.metrics.breaks).toBe(0)
     expect(run.metrics.longestLockSeconds).toBe(5.983)
-    // The 5-frame median filter trims the measured depth to about 35 c;
-    // the median of the second-by-second fits reads 34.
-    expect(run.steadiness?.vibrato).toEqual({ rateHz: 5.5, extentCents: 34 })
-    // What survives the sinusoid fit is about 3 c of wobble: 98, not 100.
-    expect(run.score).toBe(98)
+    expect(run.steadiness?.vibrato).toBeNull()
+    expect(run.score).toBe(43)
   })
 
   it('stays locked through a slow wobble but scores it lower', () => {
     // Arrange: 1.3 Hz +-20 c plus 2.1 Hz +-15 c, below the vibrato band.
-    // Residual SD about sqrt(20^2/2 + 15^2/2) = 17.7 c before the median
-    // filter, so the Mirror's piecewise score lands in the 70s.
+    // A spread of about sqrt(20^2/2 + 15^2/2) = 17.7 c, so 100 less twice
+    // that is about 65; the held part, trimmed, reads 66.
     const wobble = track(
       6,
       (t) =>
@@ -121,7 +120,7 @@ describe('computeHoldResult', () => {
     expect(run.metrics.breaks).toBe(0)
     expect(run.metrics.inBandSeconds).toBe(5.983)
     expect(run.steadiness?.vibrato).toBeNull()
-    expect(run.score).toBe(76)
+    expect(run.score).toBe(66)
   })
 
   it('counts no break for a 150 ms dropout and one for a 250 ms dropout', () => {
@@ -209,7 +208,7 @@ describe('computeHoldResult', () => {
       const frames = realisticTake(TARGET, shape)
       return [...frames, ...silence(0.6, shape.seconds)]
     }
-    const fill = (frames: PitchFrame[], preset = HOLD_PRESETS.lantern) =>
+    const fill = (frames: PitchFrame[], preset = LANTERN_LEVELS.singer) =>
       computeHoldResult({
         frames,
         state: runHold(frames, TARGET, preset),
@@ -217,7 +216,13 @@ describe('computeHoldResult', () => {
         durationMs: 1,
       }).metrics.topFill
     const steady = take({ seconds: 26, wanderCents: 4, jitterCents: 3 })
-    const wobbly = take({ seconds: 26, wanderCents: 15, wanderSeconds: 0.2 })
+    const wobbly = take({
+      seconds: 26,
+      wanderCents: 28,
+      wanderSeconds: 0.2,
+      jitterCents: 4,
+      seed: 18,
+    })
 
     expect(fill(steady)).toBe(1)
     expect(fill(wobbly)).toBeGreaterThan(0)

@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setExerciseLevel } from '@/lib/exercise-level'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
+import { LANTERN_LEVELS } from '@/lib/hold/hold-engine'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { NativeDeviceApi } from '@/stores/native-shell-store'
 import { registerNativeDevice } from '@/stores/native-shell-store'
@@ -175,6 +177,8 @@ interface Moment {
   /** Merc's state, and the lantern's halo (half at the goal, all at the brim). */
   merc: string | null
   halo: number
+  /** The band's height either side of the line, px. */
+  band: number
 }
 
 /** What the screen showed along the way, each change once. */
@@ -235,6 +239,7 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
             .getByTestId('long-note-merc')
             .getAttribute('data-merc-state') ?? null,
         halo: Number(screen.getByTestId('lantern-halo').style.opacity),
+        band: parseFloat(screen.getByTestId('long-note-band').style.height) / 2,
       }
     }
     push(log.tips, tip)
@@ -302,6 +307,7 @@ describe('the Long note demo', () => {
     seen.value = false
     merc.states = []
     localStorage.clear()
+    setExerciseLevel('beginner')
   })
 
   afterEach(() => {
@@ -312,8 +318,14 @@ describe('the Long note demo', () => {
   })
 
   it('plays by itself on a first visit, every tooltip on its event, and keeps nothing', async () => {
+    // A Pro singer's room: the demo sings at its own level (Singer), so its
+    // story is the same at every level.
+    setExerciseLevel('pro')
     render(() => <LongNoteRoom onDone={() => undefined} />)
     expect(demoMode()).toBe('idle')
+    const bandAtPro = parseFloat(
+      screen.getByTestId('long-note-band').style.height,
+    )
 
     const log = await run(1300)
     expect(demoMode()).toBe('playing')
@@ -346,6 +358,12 @@ describe('the Long note demo', () => {
     expect(log.at.breath.chip).toBeNull()
     expect(log.at.fills.take).toBe('Like this')
     expect(log.at.fills.fast).toBe(false)
+    // He sings in Singer's band, half again the Pro band the room showed.
+    expect(log.at.fills.band * 2).toBeCloseTo(
+      (bandAtPro * LANTERN_LEVELS.singer.tolCents) /
+        LANTERN_LEVELS.pro.tolCents,
+      6,
+    )
     expect(log.at.twelve.fast).toBe(true)
     expect(log.at.twelve.halo).toBe(0)
     // Past the goal, at its own speed: Merc out of the glass to cheer, half

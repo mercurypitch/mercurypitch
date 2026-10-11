@@ -22,9 +22,10 @@
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { exerciseLevel } from '@/lib/exercise-level'
 import { haptics } from '@/lib/haptics'
-import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
-import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import type { HoldEventType, HoldPreset, HoldState, HoldTick, } from '@/lib/hold/hold-engine'
+import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
 import { loadHoldTarget } from '@/lib/hold/load-hold-target'
@@ -50,9 +51,6 @@ import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settledRunStart, settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
-
-// The goal fills the lantern halfway; past it, steady singing fills the top.
-const PRESET = HOLD_PRESETS.lantern
 
 export type { MercPlace } from './merc-moves'
 export type {
@@ -107,6 +105,11 @@ export function useLongNoteController(): LongNoteController {
   const [demoPlaying, setDemoPlaying] = createSignal(false)
   let scripted: ScriptedTake | null = null
   const demoOn = (): boolean => untrack(scriptActive)
+  // The take's rules (the goal fills the lantern halfway; past it, steady
+  // singing fills the top): the singer's level as the take opens, or the
+  // demo's own. Between takes the band follows the level as it is picked.
+  const levelPreset = (): HoldPreset => LANTERN_LEVELS[exerciseLevel()]
+  const [preset, setPreset] = createSignal(untrack(levelPreset))
 
   const trace = new VoiceTraceBuffer()
   const noteName = (): string => {
@@ -168,6 +171,10 @@ export function useLongNoteController(): LongNoteController {
   let lastTick: HoldTick | null = null
   let windowOpen = false
   let windowStartedAt = 0
+  createEffect(() => {
+    const next = levelPreset()
+    if (!windowOpen && !untrack(scriptActive)) setPreset(next)
+  })
   /** The last voice the listen heard, on now()'s clock. */
   let heardAt = 0
   let loop = 0
@@ -208,6 +215,7 @@ export function useLongNoteController(): LongNoteController {
 
   const openWindow = (): void => {
     if (scripted === null) capture.startWindow()
+    setPreset(scripted?.preset ?? untrack(levelPreset))
     windowStartedAt = performance.now()
     heardAt = 0
     engine = createHoldState()
@@ -354,6 +362,7 @@ export function useLongNoteController(): LongNoteController {
   /** The take against its note: the engine, Merc, the chip, the end. */
   const follow = (frames: readonly PitchFrame[], target: number): void => {
     const phase = untrack(state).phase
+    const rules = untrack(preset)
     const events: HoldEventType[] = []
     const before = engine.clock
     for (let i = processed; i < frames.length; i++) {
@@ -361,7 +370,7 @@ export function useLongNoteController(): LongNoteController {
       const heard = holdTickFromFrame(frame, previous, target)
       const step =
         i < heardFrom ? { ...heard, offCents: null, level: 0 } : heard
-      engine = tickHold(engine, step, PRESET)
+      engine = tickHold(engine, step, rules)
       events.push(...engine.events)
       trace.push(
         frame.t,
@@ -383,7 +392,7 @@ export function useLongNoteController(): LongNoteController {
       level: levelFromRms(step?.level ?? 0),
       steady:
         step?.offCents !== null && step !== null
-          ? 1 - Math.min(1, Math.abs(cents) / PRESET.tolCents)
+          ? 1 - Math.min(1, Math.abs(cents) / rules.tolCents)
           : 0,
       midi: target + cents / 100,
     }
@@ -713,6 +722,7 @@ export function useLongNoteController(): LongNoteController {
         setScriptActive(false)
         setScriptNote(null)
         setDemoPlaying(false)
+        setPreset(levelPreset())
         dispatch({ type: 'demo', phase: 'intro' })
       })
       easeLevel(0, 450)
@@ -761,7 +771,7 @@ export function useLongNoteController(): LongNoteController {
     shine,
     trace,
     now,
-    toleranceCents: PRESET.tolCents,
+    toleranceCents: () => preset().tolCents,
     start,
     cancel,
     stop: stopListening,

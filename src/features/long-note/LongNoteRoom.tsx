@@ -9,8 +9,8 @@
 //            breathing in, the note to hold and one big microphone button
 //   hold     the voice line flowing along the target, the light rising,
 //            Merc floating on it inside the glass, a big timer and one chip;
-//            at the goal (half full) he steps out to cheer, and only steady
-//            singing fills the top
+//            at the goal (half full) he steps out to cheer, and steady
+//            singing fills the top (a less steady voice, part of it)
 //   result   the lantern as full as the take filled it, the seconds and the
 //            steadiness, Merc out of the glass, Again and Done
 //
@@ -184,7 +184,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     return left + TRACE_HEAD_X * k
   }
   /** The tolerance band's half-height either side of the line, px. */
-  const band = (): number => room.toleranceCents * TRACE_PX_PER_CENT
+  const band = (): number => room.toleranceCents() * TRACE_PX_PER_CENT
   const tracing = (): boolean => phase() === 'listen' || phase() === 'hold'
   /** The result shows the full lantern, as storyboard 3 does: no line. */
   const lineClass = (base: string): string =>
@@ -319,6 +319,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         <div
           class={lineClass(styles.band)}
           style={{ top: `${lineY() - band()}px`, height: `${2 * band()}px` }}
+          data-testid="long-note-band"
         />
         <Show when={room.noteName() !== ''}>
           {/* The line's note, which plays on a tap. While the take listens
