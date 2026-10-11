@@ -696,6 +696,17 @@
   background: linear-gradient(90deg, var(--ob-blue), var(--ob-violet));
 }
 
+/* A step the run did not take: the match, when the slides gave no range
+   to pitch its notes from. Dotted, so it reads as passed over rather
+   than done or still to come. */
+.stepSegment[data-state='skipped'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ob-ink-3) 0 4px,
+    transparent 4px 8px
+  );
+}
+
 .stepCounter {
   margin: 0;
   font-size: 0.72rem;

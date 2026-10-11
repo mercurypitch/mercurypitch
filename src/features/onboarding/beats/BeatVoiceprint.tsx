@@ -92,6 +92,12 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   })
   const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
+  /**
+   * True when the glides gave no range: the five notes are pitched from
+   * it, so step 4 is skipped rather than run, and the counter says so
+   * instead of waiting on the hold while the result is read.
+   */
+  const [matchSkipped, setMatchSkipped] = createSignal(false)
   /** Where the five-note match stands; null outside it. */
   const [matchNote, setMatchNote] = createSignal<{
     index: number
@@ -358,13 +364,19 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       mode: 'hold',
     })
     if (!alive()) return
-    await brief(
-      'Nice and steady.',
-      targets.length > 0
-        ? 'Last one: match five notes.'
-        : 'That is everything we need.',
-      1,
-    )
+    if (targets.length > 0) {
+      await brief('Nice and steady.', 'Last one: match five notes.', 1)
+    } else {
+      // The Fork promised five notes, so say why they are not coming, and
+      // long enough to read: one screen later the twin says it could not
+      // read a range either.
+      setStep(4)
+      setMatchSkipped(true)
+      await brief(
+        "We couldn't hear your slides",
+        "The five notes are pitched from your range, so we'll skip them this time.",
+      )
+    }
     if (!alive()) return
 
     // ── Task C: match five. Reference then record, never together. ──
@@ -451,7 +463,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
                   index() + 1 < step()
                     ? 'done'
                     : index() + 1 === step()
-                      ? 'current'
+                      ? matchSkipped()
+                        ? 'skipped'
+                        : 'current'
                       : 'ahead'
                 }
               />
@@ -462,7 +476,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
           Step {step()} of {VOICEPRINT_STEPS.length}
           {step() === 1
             ? ` · ${VOICEPRINT_TIME}`
-            : ` · ${VOICEPRINT_STEPS[step() - 1]}`}
+            : ` · ${VOICEPRINT_STEPS[step() - 1]}${matchSkipped() ? ' skipped' : ''}`}
         </p>
       </div>
 

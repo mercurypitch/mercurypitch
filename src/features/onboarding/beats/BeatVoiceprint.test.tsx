@@ -172,7 +172,7 @@ describe('the voiceprint counter', () => {
     expect(document.querySelector('[data-match-progress]')).toBeNull()
   })
 
-  it('finishes after the hold, and says so, when the glides heard nothing', async () => {
+  it('says it could not hear the slides, and counts the match as skipped, when the glides heard nothing', async () => {
     // Arrange: silence for every take, so there is no range to pitch
     // the five notes against.
     takes.next = () => []
@@ -180,16 +180,48 @@ describe('the voiceprint counter', () => {
     // Act
     const run = await runThrough()
 
-    // Assert
+    // Assert: the run ends after the hold, and the brief says why the
+    // five notes the Fork promised are not coming. It used to say "That
+    // is everything we need", one screen before the twin said it could
+    // not read a range.
     expect(run.onComplete).toHaveBeenCalledOnce()
     expect(run.intros).toEqual([
       'Step 1 of 4 · about 90 seconds',
       'Step 2 of 4 · Glide down',
       'Step 3 of 4 · Hold',
     ])
-    expect(
-      run.screens.some((t) => t.includes('That is everything we need.')),
-    ).toBe(true)
+    const brief = run.screens.find((t) =>
+      t.includes("We couldn't hear your slides"),
+    )
+    expect(brief).toContain(
+      "The five notes are pitched from your range, so we'll skip them this time.",
+    )
+    expect(brief).toContain('Step 4 of 4 · Match skipped')
+    expect(run.screens.some((t) => t.includes('everything we need'))).toBe(
+      false,
+    )
     expect(run.screens.some((t) => t.includes('Note 1 of 5'))).toBe(false)
+
+    // The counter does not wait on the hold while the result is read.
+    expect(document.body).toHaveTextContent('Reading your voice…')
+    expect(counter()).toBe('Step 4 of 4 · Match skipped')
+    const segments = document.querySelectorAll(
+      '[data-beat="voiceprint"] li[data-state]',
+    )
+    expect([...segments].map((s) => s.getAttribute('data-state'))).toEqual([
+      'done',
+      'done',
+      'done',
+      'skipped',
+    ])
+  })
+
+  it('still says "Last one" and counts the match after a hold it can follow', async () => {
+    const run = await runThrough()
+
+    expect(
+      run.screens.some((t) => t.includes('Last one: match five notes.')),
+    ).toBe(true)
+    expect(run.screens.some((t) => t.includes('skipped'))).toBe(false)
   })
 })
