@@ -111,7 +111,7 @@ export const ROOMS: readonly Room[] = [
     title: 'Karaoke',
     line: 'Your own songs turned into karaoke — the vocal split out, with lyrics and scoring.',
     target: { kind: 'page', href: '/karaoke' },
-    cover: cover('karaoke', '52% 72%'),
+    cover: cover('karaoke', '52% 50%'),
   },
   {
     id: 'jam',
@@ -119,7 +119,7 @@ export const ROOMS: readonly Room[] = [
     line: 'A shared room for singing together in real time — send someone the code.',
     target: { kind: 'tab', tab: TAB_JAM },
     tourTab: TAB_JAM,
-    cover: cover('jam', '46% 72%'),
+    cover: cover('jam', '46% 52%'),
   },
   {
     id: 'analysis',
@@ -127,7 +127,7 @@ export const ROOMS: readonly Room[] = [
     line: 'A plain-language read of your voice — where your pitch went, how steady you held it, and what your tone is made of.',
     target: { kind: 'tab', tab: TAB_ANALYSIS },
     tourTab: TAB_ANALYSIS,
-    cover: cover('analysis', '50% 72%'),
+    cover: cover('analysis', '50% 45%'),
   },
 ]
 

@@ -10,10 +10,11 @@
 //
 // The art was generated with Codex imagegen on 11 Oct 2026 and ships as
 // webp at full resolution: 1672x941 for wide screens, 941x1672 for tall
-// ones (the Map has no tall cut: on a phone its cards cover the middle,
-// and the wide one is anchored on Merc instead). The stylesheet picks
-// the file by aspect ratio; this module only names it, so the flow can
-// fetch the next beat's picture before the visitor gets there.
+// ones. The Map's pair (v2) puts Merc where its cards never reach: the
+// top left corner of a wide window, the top centre of a tall one, with
+// the Map's words starting under him. The stylesheet picks the file by
+// aspect ratio; this module only names it, so the flow can fetch the
+// next beat's picture before the visitor gets there.
 
 import type { Beat } from './flow'
 
@@ -47,8 +48,8 @@ const PLATE_FILES: Record<Plate, { wide: string; tall: string }> = {
     tall: '/onboarding/merc-first-light-tall.webp',
   },
   map: {
-    wide: '/onboarding/merc-map-wide.webp',
-    tall: '/onboarding/merc-map-wide.webp',
+    wide: '/onboarding/merc-map-v2-wide.webp',
+    tall: '/onboarding/merc-map-v2-tall.webp',
   },
   plain: {
     wide: '/onboarding/sky-wide.webp',

@@ -97,10 +97,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
     props.gift?.kind === 'join' ? props.gift : false
 
   return (
-    <div class={`${styles.beat} ${styles.beatWide}`} data-beat="map">
+    <div
+      class={`${styles.beat} ${styles.beatWide} ${styles.mapBeat}`}
+      data-beat="map"
+    >
       <p class={styles.eyebrow}>Your map</p>
       <h1 class={styles.headline}>Choose your next room</h1>
-      <p class={styles.sub}>
+      <p class={`${styles.sub} ${styles.mapSub}`}>
         Everything here is free and runs on your own device. Start where we've
         pointed you, or go anywhere you like — nothing is locked.
       </p>
@@ -151,14 +154,18 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
               {/* The words, in one column: under the cover on a wide
                   screen, beside its square on a phone. */}
               <span class={styles.roomBody}>
-                <Show when={isFirst(room)}>
-                  <span class={styles.roomFlag}>Your first stop</span>
-                </Show>
-                <span class={styles.roomTitle}>
-                  {room.title}
-                  <Show when={isFirst(room) && stop().detail !== null}>
-                    {' · '}
-                    {stop().detail}
+                {/* The flag rides beside the title rather than on a row of
+                    its own: one line less on the first row of cards. */}
+                <span class={styles.roomHead}>
+                  <span class={styles.roomTitle}>
+                    {room.title}
+                    <Show when={isFirst(room) && stop().detail !== null}>
+                      {' · '}
+                      {stop().detail}
+                    </Show>
+                  </span>
+                  <Show when={isFirst(room)}>
+                    <span class={styles.roomFlag}>Your first stop</span>
                   </Show>
                 </span>
                 {/* What the room IS, on every card including the
@@ -203,8 +210,10 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
         </For>
       </div>
 
-      <p class={styles.sideLabel}>And also</p>
+      {/* The label leads the row of doors instead of taking a line above
+          them; on a phone it still takes its own line. */}
       <div class={styles.sideDoors}>
+        <span class={styles.sideDoorsLabel}>And also</span>
         <For each={SIDE_DOORS}>
           {(door: SideDoor) => (
             <button

@@ -121,11 +121,14 @@
   background-image: url('/onboarding/merc-first-light-wide.webp');
 }
 
-/* Merc stands on the path at the bottom left; anchoring there keeps him
-   in the frame at every width, the phone's included. */
+/* Merc keeps watch from a floating island in the top left corner, facing
+   the viewer: beside the headline and above the cards at every desktop
+   width from 1024 px up (at 1440x900 he spans x 80-268, y 48-206, and the
+   cards start at y 225). Anchored top left so he stays put as the window
+   changes shape. The tall cut puts him top centre, over the words. */
 .plate[data-plate='map'] {
-  background-image: url('/onboarding/merc-map-wide.webp');
-  background-position: 12% 100%;
+  background-image: url('/onboarding/merc-map-v2-wide.webp');
+  background-position: left top;
 }
 
 /* The scrim. The composition keeps the copy column dark at the shapes
@@ -158,6 +161,21 @@
   .plate[data-plate='first-light'] {
     background-image: url('/onboarding/merc-first-light-tall.webp');
     background-position: center top;
+  }
+
+  .plate[data-plate='map'] {
+    background-image: url('/onboarding/merc-map-v2-tall.webp');
+    background-position: center top;
+  }
+
+  /* Merc's island ends at 18.3% of the tall cut's height. The picture
+     covers the frame from the top, so that is the larger of 32.5vw and
+     18.3vh down the screen, and the Map's words start under it. Before,
+     the cards covered him on a phone and the scrim darkened what was
+     left. 30 px: the rail and the frame's own top padding, less a gap. */
+  .mapBeat {
+    padding-top: calc(max(32.5vw, 18.3vh) - 30px);
+    padding-top: calc(max(32.5vw, 18.3dvh) - 30px);
   }
 
   /* Merc is above the copy here, so the scrim starts below him. */
@@ -1220,15 +1238,16 @@
     box-shadow 0.4s var(--ob-ease);
 }
 
-/* The cover: Merc in the room, the whole picture at rest, on every
-   device (owner decision V5). It used to be the room's own interface,
-   blurred and dimmed until a pointer hovered it, which a phone never
-   does. A band at 12:5 rather than the master's 16:9, so two rows of
-   cards and the button under them still fit a laptop screen. */
+/* The cover: Merc in the room, at rest, on every device (owner decision
+   V5). It used to be the room's own interface, blurred and dimmed until a
+   pointer hovered it, which a phone never does. A band at 3:1 rather than
+   the master's 16:9, each room's `focus` keeping Merc whole in it, so the
+   two rows of cards, the side doors, "Start singing" and the gift line
+   all fit a 1440x900 window without a scroll. */
 .roomCover {
   display: block;
   flex: none;
-  aspect-ratio: 12 / 5;
+  aspect-ratio: 3 / 1;
   overflow: hidden;
   background: var(--ob-ground);
 }
@@ -1244,7 +1263,15 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  padding: 14px 18px 18px;
+  padding: 12px 16px 14px;
+}
+
+/* The title, with the first stop's flag beside it when it fits. */
+.roomHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
 }
 
 /* The launch gift, pinned to the Karaoke card's top right: solid amber,
@@ -1299,11 +1326,11 @@
     var(--ob-card-solid);
 }
 
-/* In flow, not absolute. Absolutely positioned it sat on top of the
-   title as soon as the card narrowed — the label is longer than the
-   corner it was pinned into. */
+/* In flow beside the title, not absolute. Absolutely positioned it sat
+   on top of the title as soon as the card narrowed: the label is longer
+   than the corner it was pinned into. In the title's row it wraps under
+   the title instead. */
 .roomFlag {
-  align-self: flex-start;
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--ob-blue) 45%, transparent);
@@ -1366,9 +1393,32 @@
 .sideDoors {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 9px;
   margin-top: 6px;
+}
+
+/* "And also", leading the row of doors. */
+.sideDoorsLabel {
+  margin-right: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+/* The Map carries the most: six cards, eight doors, the button and the
+   gift line. A tighter step between them is what lets the gift line
+   clear the bottom of a 1440x900 window. */
+.mapBeat {
+  gap: 14px;
+}
+
+/* Room for the Map's one sentence on two lines rather than three. */
+.mapSub {
+  max-width: 62ch;
 }
 
 /* A row of controls, not a row of outlines. At 6px/0.78rem on
@@ -1586,6 +1636,12 @@
     min-width: 0;
     gap: 5px;
     padding: 2px 0 0;
+  }
+
+  .sideDoorsLabel {
+    flex-basis: 100%;
+    margin: 0 0 2px;
+    text-align: center;
   }
 
   /* Eight chips at desktop padding become four rows on a 360px phone.
