@@ -1,14 +1,14 @@
 # Onboarding First-Value Copy — EARS Requirements
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.0 | Date: 2026-08-16 | Scope: the sentence that names the note we
+> Version: 1.1 | Date: 2026-10-11 | Scope: the sentence that names the note we
 > just heard, and the "what this is" line on every First Light Map card
 
 ---
 
 **Source:** `src/lib/note-utils.ts` (`noteArticle`);
 `src/features/onboarding/beats/BeatFirstLight.tsx` (the `heard` phase headline);
-`src/features/onboarding/beats/BeatFork.tsx` (`SangNote`);
+`src/features/onboarding/beats/BeatFork.tsx` (`SangNote`, returning fork only);
 `src/features/onboarding/rooms.ts` (`ROOMS[].line`);
 `src/features/onboarding/beats/BeatMap.tsx` (the room card body)
 **Tests:** `src/tests/note-utils.test.ts` (`NART-*`),
@@ -20,8 +20,11 @@ behaviour), **WHERE** (optional feature), otherwise ubiquitous ("shall").
 Background: CLAUDE-JOURNEY-002. Beat 2 is the app's first moment of value —
 "we heard you, and here is what you sang" — and it rendered a hard-coded "a"
 in front of the note name, so a singer holding an A3 was told "That's a A3".
-The same clause repeats on beat 3. Note names are read out loud, and A, E and
+The same clause repeated on beat 3. Note names are read out loud, and A, E and
 F are all _said_ starting on a vowel sound, so all three need "an".
+
+Since 2026-10-11 (owner decision V2) the first-run Fork is one question and
+one button, so only the returning singer's fork says the note back on beat 3.
 
 ## Note article — `NART-*`
 
@@ -53,21 +56,24 @@ wrong article instead of a blank screen. Verified by `NART-4`.
 ### REQ-FVC-001 — "an" before a vowel-sound note
 
 **WHEN** the onboarding says back the note it heard — the beat 2 headline
-("That's an A3") and the beat 3 opener ("You sang an A3.") — the article
-shall come from `noteArticle`, so an A, E or F reads "an". Verified by
-`FVC-1` in both describes: beat 2 is driven from the ask screen through a
-faked take on a 220 Hz tone, so the headline is asserted as rendered.
+("That's an A3") and the returning singer's beat 3 opener ("You sang an
+A3.") — the article shall come from `noteArticle`, so an A, E or F reads
+"an". Verified by `FVC-1` in both describes: beat 2 is driven from the ask
+screen through a faked take on a 220 Hz tone, so the headline is asserted as
+rendered.
 
 ### REQ-FVC-002 — "a" is preserved everywhere else
 
 **WHEN** the note heard begins with B, C, D or G, the same sentences shall
 still read "a G3". Verified by `FVC-2` in both describes.
 
-### REQ-FVC-003 — Both forks are covered
+### REQ-FVC-003 — The first-run Fork asks its one question
 
-**WHILE** the visitor already has a voiceprint on file and therefore sees the
-returning-singer fork, the note-heard clause shall use the same corrected
-article as the first-run fork. Verified by `FVC-3`.
+**WHILE** the visitor has no voiceprint on file and therefore sees the
+first-run Fork, beat 3 shall not repeat the note: beat 2 has just named it,
+and the Fork's one line is the question "Which legend has a range like
+yours?" (owner decision V2, 2026-10-11). Only the returning-singer fork
+carries the note-heard clause. Verified by `FVC-3`.
 
 ### REQ-FVC-004 — No note, no clause
 

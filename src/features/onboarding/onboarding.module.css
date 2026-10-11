@@ -24,6 +24,16 @@
   --ob-ink-3: #7d8590;
   --ob-rule: #30363d;
   --ob-card: rgba(28, 33, 40, 0.72);
+  /* A card over a painted plate: opaque enough that its small type
+     clears AA over the brightest part of the picture (Merc himself). */
+  --ob-card-solid: rgba(28, 33, 40, 0.9);
+  /* Behind the rail's exits (see .railNotNow). */
+  --ob-rail-pill: color-mix(in srgb, var(--ob-ground) 78%, transparent);
+  --ob-rail-pill-hover: color-mix(
+    in srgb,
+    var(--ob-ink) 10%,
+    var(--ob-rail-pill)
+  );
   --ob-blue: #58a6ff;
   --ob-teal: #2dd4bf;
   --ob-violet: #bc8cff;
@@ -225,25 +235,44 @@
   transition: width 0.5s var(--ob-ease);
 }
 
-.skip {
-  background: none;
+/* "Not now" on every beat but the welcome and Keep: small type, a whole
+   thumb to tap (44 px), and readable (--ob-ink-2 clears AA where Skip's
+   --ob-ink-3 did not). It is the way out, so it has to be findable
+   without competing with the beat's one button (owner decision V8).
+   The rail sits over Merc's pictures, and on a phone the first note's
+   new star lands right behind it, so the exits carry a small pill of
+   the ground: 4.5:1 or better over any picture, and next to invisible
+   over the plain sky. */
+.railNotNow {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px -8px -12px 0;
+  padding: 0 12px;
   border: 0;
-  color: var(--ob-ink-3);
-  font-size: 0.78rem;
+  border-radius: 999px;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ob-ink-2);
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 6px 4px;
-  border-radius: 6px;
-  transition: color 0.2s var(--ob-ease);
+  transition:
+    color 0.2s var(--ob-ease),
+    background-color 0.2s var(--ob-ease);
 }
 
-.skip:hover {
-  color: var(--ob-ink-2);
+@media (hover: hover) {
+  .railNotNow:hover {
+    color: var(--ob-ink);
+    background: var(--ob-rail-pill-hover);
+  }
 }
 
-.skip:focus-visible {
+.railNotNow:focus-visible {
   outline: 2px solid var(--ob-blue);
-  outline-offset: 2px;
+  outline-offset: 0;
   color: var(--ob-ink);
 }
 
@@ -259,7 +288,9 @@
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: none;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: var(--ob-ink-2);
   cursor: pointer;
   transition:
@@ -275,7 +306,7 @@
 
 .railClose:hover {
   color: var(--ob-ink);
-  background: rgba(230, 237, 243, 0.06);
+  background: var(--ob-rail-pill-hover);
 }
 
 .railClose:focus-visible {
@@ -956,72 +987,6 @@
   }
 }
 
-/* ── Fork ────────────────────────────────────────────────────── */
-
-.forkOptions {
-  display: grid;
-  gap: 12px;
-  width: 100%;
-  margin-top: 6px;
-}
-
-@media (min-width: 620px) {
-  .forkOptions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.forkCard {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  text-align: left;
-  padding: 26px 24px;
-  border-radius: 14px;
-  border: 1px solid var(--ob-rule);
-  background: var(--ob-card);
-  color: inherit;
-  cursor: pointer;
-  transition:
-    border-color 0.25s var(--ob-ease),
-    transform 0.25s var(--ob-ease);
-}
-
-.forkCard:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--ob-blue) 50%, var(--ob-rule));
-}
-
-.forkCard:focus-visible {
-  outline: 2px solid var(--ob-blue);
-  outline-offset: 2px;
-}
-
-.forkLead {
-  border-color: color-mix(in srgb, var(--ob-violet) 44%, var(--ob-rule));
-}
-
-.forkTitle {
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  font-size: 1.22rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.forkTime {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ob-ink-3);
-}
-
-.forkBody {
-  font-size: 0.86rem;
-  line-height: 1.5;
-  color: var(--ob-ink-2);
-}
-
 /* ── Beat: the voiceprint gallery ─────────────────────────────── */
 
 /* The cards are the exported share art (3:4-ish). Bounded by HEIGHT as
@@ -1504,16 +1469,14 @@
   .progressFill,
   .primary,
   .secondary,
-  .forkCard,
   .roomCard,
   .sideDoor,
-  .skip,
+  .railNotNow,
   .railClose,
   .railAction {
     transition: none;
   }
 
-  .forkCard:hover,
   .roomCard:hover,
   .primary:hover {
     transform: none;
@@ -1563,12 +1526,6 @@
     /* …and clear of the home indicator underneath it. */
     padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
     gap: 20px;
-  }
-
-  /* Grey-on-smoke at the top of the plate, where the artwork is at its
-     busiest — the escape hatch has to be visible without a hunt. */
-  .skip {
-    color: var(--ob-ink-2);
   }
 
   .actions {

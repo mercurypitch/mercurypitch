@@ -73,7 +73,6 @@ function forkText(firstNote: string | null, savedCount = 0): string {
       savedCount={savedCount}
       savedWhen={savedCount > 0 ? 'yesterday' : null}
       onChoose={noop}
-      onAnother={noop}
     />
   ))
   return container.textContent ?? ''
@@ -111,25 +110,30 @@ describe('beat 2 — the note said back', () => {
   })
 })
 
+// Since 11 Oct 2026 only the returning singer's fork says the note back:
+// the first-run Fork is one question and one button (owner decision V2),
+// and beat 2 has just named the note on the screen before it.
 describe('beat 3 — the note we heard, said back', () => {
   // FVC-1
   it('says "an" before a vowel-sound note name', () => {
-    expect(forkText('A3')).toContain('You sang an A3.')
-    expect(forkText('E4')).toContain('You sang an E4.')
-    expect(forkText('F2')).toContain('You sang an F2.')
+    expect(forkText('A3', 1)).toContain('You sang an A3.')
+    expect(forkText('E4', 1)).toContain('You sang an E4.')
+    expect(forkText('F2', 1)).toContain('You sang an F2.')
   })
 
   // FVC-2
   it('keeps "a" before every other note name', () => {
-    expect(forkText('G3')).toContain('You sang a G3.')
-    expect(forkText('C4')).toContain('You sang a C4.')
-    expect(forkText('B3')).toContain('You sang a B3.')
+    expect(forkText('G3', 1)).toContain('You sang a G3.')
+    expect(forkText('C4', 1)).toContain('You sang a C4.')
+    expect(forkText('B3', 1)).toContain('You sang a B3.')
   })
 
   // FVC-3
-  it('fixes the article on the returning-singer fork too', () => {
-    expect(forkText('A3', 1)).toContain('You sang an A3.')
-    expect(forkText('G3', 1)).toContain('You sang a G3.')
+  it('leaves the note out of the first-run fork, which asks its one question', () => {
+    const text = forkText('A3')
+
+    expect(text).not.toContain('You sang')
+    expect(text).toContain('Which legend has a range like yours?')
   })
 
   // FVC-4

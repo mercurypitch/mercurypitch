@@ -179,11 +179,13 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * A fresh voiceprint for someone who already has one. This is the
-   * Voice Mirror, the same destination Settings offers — a real page,
-   * so the overlay closes first, exactly as `handleEnterRoom` does for
-   * its page targets, or Back lands inside a dead onboarding.
+   * The Fork's "Not now": the Map, with nothing measured (owner decision
+   * V3). It is the old "Take me in" card moved to the top right, so it
+   * keeps that card's event, `onboarding_track_short`, and stays countable
+   * apart from the welcome's skip (`onboarding_skipped`).
    */
+  const handleForkNotNow = () => handleTrack('short')
+
   /** Share the voiceprint that was just made. Resolves to a line worth
    *  saying afterwards, and only for the one outcome nothing else announces:
    *  the share sheet speaks for itself and a saved file shows in the browser,
@@ -214,12 +216,6 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     return outcome === 'downloaded-link-copied'
       ? shareOutcomeMessage(outcome)
       : null
-  }
-
-  const handleAnotherVoiceprint = () => {
-    trackOnboarding('onboarding_another_voiceprint')
-    leave()
-    window.location.href = '/mirror'
   }
 
   const latestSaved = () => savedVoiceprints()[0] ?? null
@@ -467,10 +463,15 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             }}
           />
         </div>
-        {/* One way out, top right, and never two. The welcome's is a
-            close button: the beat itself carries one action. On Keep it
-            is "Not now", in words, at full contrast: declining is an
-            answer to the question on screen, not an escape from the flow. */}
+        {/* One way out, top right, and never two (owner decisions V1 and
+            V8). The welcome's is a close button: the beat itself carries
+            one action. Everywhere else it is "Not now", in words. On Keep
+            it declines the account and moves on to the Map, at full
+            contrast: declining is an answer to the question on screen. On
+            the Fork it is the old "Take me in" card, so it lands on the
+            Map without a voiceprint. On the other beats it leaves the
+            flow, as Skip did. The Map is the last beat; its rooms are the
+            way out. */}
         <Switch>
           <Match when={currentBeat() === 'sky'}>
             <button
@@ -494,9 +495,22 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               Not now
             </button>
           </Match>
+          <Match when={currentBeat() === 'fork'}>
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleForkNotNow}
+            >
+              Not now
+            </button>
+          </Match>
           <Match when={currentBeat() !== 'map'}>
-            <button type="button" class={styles.skip} onClick={handleSkip}>
-              Skip
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleSkip}
+            >
+              Not now
             </button>
           </Match>
         </Switch>
@@ -520,14 +534,12 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               savedCount={savedVoiceprints().length}
               savedWhen={savedWhen()}
               onChoose={handleTrack}
-              onAnother={handleAnotherVoiceprint}
             />
           </Match>
           <Match when={currentBeat() === 'prints'}>
             <BeatPrints
               records={savedVoiceprints()}
               onContinue={() => advanceBeat()}
-              onAnother={handleAnotherVoiceprint}
               onExplore={openVoiceConstellation}
             />
           </Match>

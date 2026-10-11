@@ -17,6 +17,11 @@
 // Rendering is per-record and lazy: each card is a canvas built from a
 // 928x1152 portrait, and a singer with a dozen takes must not pay for
 // twelve of them on mount.
+//
+// No "Make another" button beside "See my map" (owner decision V1, 10 Oct
+// 2026: one way out of the flow, the "Not now" at the top right). It left
+// the flow for the Voice Mirror, which the Map's "And also" row opens one
+// screen later.
 
 import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
@@ -30,8 +35,6 @@ export interface BeatPrintsProps {
   records: readonly VoiceprintRecord[]
   /** On to the Map. */
   onContinue: () => void
-  /** Leave the flow for the Voice Mirror and take a fresh one. */
-  onAnother: () => void
   /** Open the saved match map without leaving this returning-user beat. */
   onExplore: () => void
 }
@@ -155,7 +158,7 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
       <p class={styles.sub}>
         <Show
           when={count() > 1}
-          fallback="This is the take we have on record. Make another whenever you like — a voice moves."
+          fallback="This is the take we have on record. A voice moves: make another in the Voice Mirror whenever you like."
         >
           Newest first, then every take before it. Watching them change is the
           point of keeping more than one.
@@ -180,13 +183,6 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
           onClick={() => props.onContinue()}
         >
           See my map
-        </button>
-        <button
-          type="button"
-          class={styles.secondary}
-          onClick={() => props.onAnother()}
-        >
-          Make another
         </button>
         <button
           type="button"
