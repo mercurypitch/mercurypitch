@@ -210,8 +210,15 @@
 }
 
 .phoneButton {
-  flex: 0 0 auto;
+  flex: 1 0 auto;
   gap: 7px;
+}
+
+/* Beside Google, the phone takes a thousandth of the spare width, so Google
+   stays wide and the phone snug. Wrapped onto a row of its own (a narrow
+   screen, or larger text), it fills that row rather than sitting at the left. */
+.providerRow > .providerButton:not(.phoneButton) {
+  flex-grow: 1000;
 }
 
 /* Apple on its own row above the pair, at least as prominent as Google. */
@@ -278,8 +285,9 @@
 
 .input {
   display: block;
+  box-sizing: border-box;
   width: 100%;
-  height: 48px;
+  min-height: 48px;
   padding: 18px 12px 4px;
   border-radius: 8px;
   border: 1px solid var(--border, #30363d);
@@ -336,7 +344,7 @@
 .input:not(:placeholder-shown) + .floatLabel {
   top: 7px;
   color: var(--text-secondary, #a8b3bf);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.3px;
   transform: none;
@@ -347,14 +355,14 @@
    does not always clear :placeholder-shown for it. */
 .input:autofill + .floatLabel {
   top: 7px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   transform: none;
 }
 
 .input:-webkit-autofill + .floatLabel {
   top: 7px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   transform: none;
 }
@@ -696,5 +704,35 @@
   }
   .submit {
     min-height: 44px;
+  }
+}
+
+/* Any touch screen, at any width: a phone held sideways is wider than 768px,
+   and iOS zooms into a field under 16px there as well. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+  .floatLabel {
+    font-size: 15px;
+  }
+}
+
+/* Under 340px (a 320px phone). Cloudflare's checkbox is never narrower than
+   300px, and inside the usual 8px of backdrop and 14px of padding a side the
+   form is 274px, so a drawn check scrolled the sheet sideways. Here the sheet
+   meets the screen's edges and keeps 9px inside its border: 300px of form. */
+@media (max-width: 339px) {
+  .overlay {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .dialog {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+  /* Its 44px target reaches only as far as the narrower padding. */
+  .close {
+    margin-right: -9px;
   }
 }

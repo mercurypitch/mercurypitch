@@ -202,7 +202,7 @@ test.describe('the compact sheet on a phone', () => {
     expect((await labelInset(email)).top).toBeGreaterThan(0)
     await expect(email.locator('xpath=following-sibling::span[1]')).toHaveCSS(
       'font-size',
-      '10.5px',
+      '11px',
     )
   })
 
@@ -264,3 +264,32 @@ test.describe('the compact sheet on a phone', () => {
   })
 })
 
+// The narrowest phone still sold. Cloudflare's checkbox is never narrower
+// than 300px, and inside the usual padding the form was 274px, so a drawn
+// check scrolled the sheet sideways by 12px (review of PR #979).
+test.describe('a 320x568 phone', () => {
+  test.use({
+    viewport: { width: 320, height: 568 },
+    isMobile: true,
+    hasTouch: true,
+  })
+
+  for (const mode of ['login', 'register'] as const) {
+    test(`fits a drawn check across ${TITLES[mode]} without sideways scroll`, async ({
+      page,
+    }) => {
+      const dialog = await openSheet(page, mode, true)
+      await expect(page.getByTestId('turnstile-host')).toHaveAttribute(
+        'data-turnstile',
+        'drawn',
+      )
+      const [form, overflowX] = await dialog.evaluate((el) => [
+        el.querySelector<HTMLElement>('[data-testid="auth-email"]')
+          ?.offsetWidth,
+        el.scrollWidth - el.clientWidth,
+      ])
+      expect(form).toBeGreaterThanOrEqual(300)
+      expect(overflowX).toBeLessThanOrEqual(0)
+    })
+  }
+})
