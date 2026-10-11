@@ -8,6 +8,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ExerciseLevel } from '@/lib/exercise-level'
 
 interface Seed {
   last?: string
@@ -17,7 +18,7 @@ interface Seed {
   best?: number
   demoSeen?: boolean
   /** The level every premium exercise is at. */
-  level?: string
+  level?: ExerciseLevel
 }
 
 beforeEach(() => {
@@ -54,7 +55,8 @@ async function openPicker(seed: Seed = {}) {
     )
   }
   if (seed.level !== undefined) {
-    localStorage.setItem('pitchperfect_premium_exercise_level', seed.level)
+    const { setExerciseLevel } = await import('@/lib/exercise-level')
+    setExerciseLevel(seed.level)
   }
   const { ExercisePicker } = await import('./ExercisePicker')
   const { EXERCISE_CATALOGUE } = await import('./catalogue')

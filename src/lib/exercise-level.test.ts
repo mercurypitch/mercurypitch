@@ -5,7 +5,20 @@
 // The level is read from storage when it is first read, so each case seeds
 // storage and loads the module fresh.
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, relative, resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const SRC = resolve(__dirname, '..')
+
+/** Every .ts and .tsx file under `dir`. */
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) return sourceFiles(path)
+    return /\.tsx?$/.test(entry.name) ? [path] : []
+  })
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -56,6 +69,24 @@ describe('the exercise level', () => {
     applyPersistedValue('pitchperfect_premium_exercise_level', 'singer')
 
     expect(exerciseLevel()).toBe('singer')
+  })
+
+  it('is the one module that knows where the level lives', () => {
+    // Where the level comes from may change (the accuracy tier in
+    // Settings is one candidate). Then this module changes, and the bundle
+    // check's marker for it, and nothing else: every other file, tests
+    // too, reads and sets the level through exerciseLevel and
+    // setExerciseLevel.
+    const key = 'pitchperfect_premium_exercise_level'
+    const naming = sourceFiles(SRC)
+      .filter((file) => readFileSync(file, 'utf8').includes(key))
+      .map((file) => relative(SRC, file))
+      .sort()
+
+    expect(naming).toEqual([
+      'lib/exercise-level.test.ts',
+      'lib/exercise-level.ts',
+    ])
   })
 
   it('names the three levels in order, easiest first', async () => {

@@ -16,6 +16,12 @@
 //
 // Built on first read, not on import, like last-exercise.ts: nothing at this
 // module's top level touches storage.
+//
+// The one module that knows where the level lives. Everything else, tests
+// too, reads and sets it through exerciseLevel and setExerciseLevel (a test
+// here holds the code to that), so keeping the level somewhere else, the
+// accuracy tier in Settings say, changes this file and the marker the
+// bundle check looks for (apps/mercurypitch/scripts/assert-bundle.mjs).
 
 import type { Signal } from 'solid-js'
 import { createPersistedSignal } from '@/lib/storage'

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { setExerciseLevel } from '@/lib/exercise-level'
+import { exerciseLevel, setExerciseLevel } from '@/lib/exercise-level'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
 import { createHoldState, holdTickFromFrame, LANTERN_LEVELS, tickHold, } from '@/lib/hold/hold-engine'
@@ -972,9 +972,7 @@ describe('LongNoteRoom', () => {
     expect(screen.queryByRole('dialog', { name: 'Level' })).toBeNull()
     expect(pill().textContent).toBe('Pro')
     expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
-    expect(localStorage.getItem('pitchperfect_premium_exercise_level')).toBe(
-      'pro',
-    )
+    expect(exerciseLevel()).toBe('pro')
 
     // Out of reach while the take listens, and the take is heard at Pro:
     // 30 cents sharp is off its line, so the note is never found.
