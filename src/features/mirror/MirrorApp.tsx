@@ -10,7 +10,7 @@
 // component owns timers, audio and rendering.
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { LegalLinks } from '@/components/LegalLinks'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
@@ -66,6 +66,12 @@ const MATCH_TAKE_SEC = 3
 // A "get ready" count-in between hearing the note and singing it back, so the
 // match task doesn't fire notes at the singer with no time to prepare.
 const MATCH_PREPARE_SEC = 2
+// Every count-in says "Ready…" and a line like this one, never "sing": a
+// number counting down beside an instruction to sing reads as "sing now", and
+// people sang into the count-in before the take had started (owner, 11 Oct
+// 2026). The instruction to sing is each task's `cue`, shown with the take.
+const COUNT_IN_LINE = 'Take a breath.'
+const FREE_SING_CUE = 'Your turn. Sing anything.'
 /** How much of a take must exist before "I'm done" appears. Below this there
  *  is not enough voiced audio to measure, and an instant tap would hand the
  *  analyser an empty take that reads as a failed mic. */
@@ -105,6 +111,8 @@ type SubPhase =
 interface TaskCopy {
   title: string
   instruction: string
+  /** The instruction to sing, on screen only while the take is recording. */
+  cue: string
 }
 
 const TASK_COPY: Record<string, TaskCopy> = {
@@ -112,20 +120,40 @@ const TASK_COPY: Record<string, TaskCopy> = {
     title: 'Glide up',
     instruction:
       'Slide from your lowest comfy note to your highest — like a siren.',
+    cue: 'Your turn. Slide up.',
   },
   'glide-down': {
     title: 'Glide down',
     instruction: 'Now slide back down, top to bottom. Same siren, reversed.',
+    cue: 'Your turn. Slide down.',
   },
   hold: {
     title: 'Hold',
     instruction:
       'Pick any comfortable note and hold it steady. The ring tightens as you hold.',
+    cue: 'Your turn. Hold it.',
   },
   match: {
     title: 'Match',
     instruction: 'Listen to the tone, then sing it back. Any octave counts.',
+    cue: 'Your turn. Sing it back.',
   },
+}
+
+interface CountInProps {
+  line: string
+  remaining: number
+}
+
+/** The count-in before a take: get set, with the seconds left. */
+function CountIn(props: CountInProps): JSX.Element {
+  return (
+    <div class="mirror-prepare">
+      <span class="mirror-prepare-label">Ready…</span>
+      <span class="mirror-prepare-line">{props.line}</span>
+      <span class="mirror-countdown">{Math.ceil(props.remaining)}</span>
+    </div>
+  )
 }
 
 interface MirrorAppProps {
@@ -145,6 +173,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
    *  to the match phase rather than resolving a gate nobody is awaiting. */
   const [pendingResume, setPendingResume] = createSignal(false)
   const [remaining, setRemaining] = createSignal(0)
+  const [countInLine, setCountInLine] = createSignal(COUNT_IN_LINE)
+  /** True from the moment a take starts recording until it ends: the only
+   *  time the screen asks someone to sing. */
+  const [takeLive, setTakeLive] = createSignal(false)
   /** Whether the take in progress accepts an early finish (glides and the
    *  hold; a 3s match note is too short to be worth cutting). */
   const [stoppable, setStoppable] = createSignal(false)
@@ -466,13 +498,15 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setRemaining(0)
   }
 
-  async function brief(seconds: number): Promise<void> {
+  async function brief(seconds: number, line = COUNT_IN_LINE): Promise<void> {
+    setCountInLine(line)
     setSubPhase('brief')
     await countdown(seconds)
   }
 
-  /** "Your turn" count-in after the reference tone, before recording. */
-  async function prepare(seconds: number): Promise<void> {
+  /** The count-in after the reference tone, before recording. */
+  async function prepare(seconds: number, line: string): Promise<void> {
+    setCountInLine(line)
     setSubPhase('prepare')
     await countdown(seconds)
   }
@@ -487,7 +521,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setStoppable(stoppable)
     setSubPhase('recording')
     f0.startTask()
+    setTakeLive(true)
     await countdown(seconds, stoppable)
+    setTakeLive(false)
     setStoppable(false)
     // The take is void if the run was reset/restored mid-count, and f0 may
     // have been torn down while we were awaiting (unmount mid-take).
@@ -770,7 +806,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     const alive = (): boolean => !cancelled && gen === flowGen
     await taskIntro(gen)
     if (!alive()) return
-    await brief(2)
+    await brief(2, 'Here comes the first note.')
     while (alive() && session().phase === 'match') {
       const state = session()
       const target = state.targets[state.matchIndex]
@@ -783,7 +819,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       }
       if (!alive()) return
       // Breathing room: hear the note, then a short count-in before singing.
-      await prepare(MATCH_PREPARE_SEC)
+      await prepare(MATCH_PREPARE_SEC, 'Keep that note in your head.')
       if (!alive()) return
       const take = await record(MATCH_TAKE_SEC)
       if (!alive()) return
@@ -1444,9 +1480,12 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           </p>
           <div class="mirror-stage">
             <Show when={subPhase() === 'brief'}>
-              <div class="mirror-countdown">{Math.ceil(remaining())}</div>
+              <CountIn line={countInLine()} remaining={remaining()} />
             </Show>
             <Show when={subPhase() === 'recording'}>
+              <Show when={takeLive()}>
+                <p class="mirror-sing-cue">{FREE_SING_CUE}</p>
+              </Show>
               <LiveViz
                 latest={() => f0?.latest() ?? null}
                 mode="glide"
@@ -1652,19 +1691,16 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
                 I'm ready
               </button>
             </Show>
-            <Show when={subPhase() === 'brief'}>
-              <div class="mirror-countdown">{Math.ceil(remaining())}</div>
-            </Show>
             <Show when={subPhase() === 'listening'}>
               <div class="mirror-listening">listen…</div>
             </Show>
-            <Show when={subPhase() === 'prepare'}>
-              <div class="mirror-prepare">
-                <span class="mirror-prepare-label">your turn — sing it</span>
-                <span class="mirror-countdown">{Math.ceil(remaining())}</span>
-              </div>
+            <Show when={subPhase() === 'brief' || subPhase() === 'prepare'}>
+              <CountIn line={countInLine()} remaining={remaining()} />
             </Show>
             <Show when={subPhase() === 'recording'}>
+              <Show when={takeLive()}>
+                <p class="mirror-sing-cue">{currentTask()?.cue}</p>
+              </Show>
               <LiveViz
                 latest={() => f0?.latest() ?? null}
                 mode={

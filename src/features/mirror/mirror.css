@@ -816,6 +816,19 @@ body {
   color: var(--mirror-accent);
   animation: mirror-pulse 1s ease-in-out infinite;
 }
+.mirror-prepare-line {
+  color: var(--mirror-dim);
+  font-size: 0.95rem;
+}
+
+/* The instruction to sing. It appears with the recording and never during a
+   count-in, so the moment it shows is the moment to start. */
+.mirror-sing-cue {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--mirror-accent);
+}
 
 @keyframes mirror-pulse {
   50% {

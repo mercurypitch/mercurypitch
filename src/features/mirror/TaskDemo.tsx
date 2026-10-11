@@ -47,10 +47,13 @@ const SIZES = { card: { w: 320, h: 132 }, stage: { w: 640, h: 240 } }
 const PAD_X = 20
 const PAD_Y = 18
 
+// The same words the real match note shows at the same moments, so the demo
+// teaches the screen people are about to see: "Ready…" for the count-in, and
+// the ask to sing only once the voice is drawing.
 const CAPTIONS: Record<'listen' | 'ready' | 'sing' | 'rest', string> = {
   listen: 'Listen…',
-  ready: 'Get ready…',
-  sing: 'Now sing it back',
+  ready: 'Ready…',
+  sing: 'Your turn. Sing it back.',
   rest: ' ',
 }
 
