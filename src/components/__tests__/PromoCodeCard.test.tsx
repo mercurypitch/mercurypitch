@@ -410,10 +410,11 @@ describe('PromoCodeCard', () => {
 
     render(() => <PromoCodeCard />)
 
-    expect(await screen.findByText('1 free credit')).toBeInTheDocument()
-    expect(
-      screen.getByText('1 song separation on the Cloud GPU'),
-    ).toBeInTheDocument()
+    const title = await screen.findByText('1 free credit')
+    expect(title.parentElement).toHaveTextContent(
+      '1 free credit1 song separation on the Cloud GPU',
+    )
+    expect(screen.queryByText(/1 free credits/)).toBeNull()
   })
 
   it('tells a signed-out visitor about free credits only while some are on offer', async () => {
