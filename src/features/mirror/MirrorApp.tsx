@@ -47,6 +47,7 @@ import { LiveViz, MicLevelBar } from './LiveViz'
 import { MirrorAccountAsk } from './MirrorAccountAsk'
 import type { MirrorScreen } from './MirrorBackdrop'
 import { MirrorBackdrop, plateFor } from './MirrorBackdrop'
+import { MirrorLanding, TrustInfo } from './MirrorLanding'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
@@ -1778,132 +1779,6 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           be reachable from here (E-Commerce Directive Art. 5). */}
       <LegalLinks class="mirror-legal" />
     </div>
-  )
-}
-
-/** Copy for the /free-sing entry — the open-take path, kept off the main
- *  landing so it cannot be picked by accident, but addressable for anyone
- *  (a creator brief, a link) pointed at it on purpose. */
-function FreeSingIntro() {
-  return (
-    <>
-      <h1>Just sing.</h1>
-      <p>
-        Forty seconds of anything you like — your shower song counts. No targets
-        and no score: we measure the range you actually use, the note you keep
-        coming back to, and how long your phrases run.
-      </p>
-    </>
-  )
-}
-
-/** The privacy story as an "i" affordance rather than a paragraph.
- *
- *  It used to be two sentences of body copy on both the landing and the mic
- *  screen, competing with the thing the visitor came to do. The promise still
- *  has to be one gesture away — it is the reason someone grants a microphone —
- *  so this mirrors Glass's TrustInfo, with one addition: Glass opens on click
- *  only, which leaves desktop users clicking a thing that looks hoverable.
- *  Hover is handled in CSS for fine pointers; the click toggle stays for touch,
- *  where hover does not exist. */
-function TrustInfo() {
-  const [open, setOpen] = createSignal(false)
-  return (
-    <div class="mirror-info">
-      <button
-        type="button"
-        class="mirror-info-btn"
-        aria-expanded={open()}
-        aria-label="Privacy: how your audio is handled"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9.5" />
-          <path d="M12 10.8v5.4" />
-          <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
-        </svg>
-      </button>
-      <div class="mirror-info-pop" role="note" data-open={open()}>
-        Private by design: your audio never leaves this device. The analysis
-        runs here in your browser, and the recording stays with you.
-      </div>
-    </div>
-  )
-}
-
-export interface MirrorLandingProps {
-  entryIntent: MirrorEntryIntent
-  onStart: (mode: 'guided' | 'free') => void
-  onHowItWorks: () => void
-}
-
-export function MirrorLanding(props: MirrorLandingProps) {
-  const isVocalRange = (): boolean => props.entryIntent === 'vocal-range'
-  const isFreeSing = (): boolean => props.entryIntent === 'free-sing'
-
-  return (
-    <section class="mirror-panel mirror-landing">
-      <TrustInfo />
-      <p class="mirror-wordmark">MercuryPitch</p>
-      <Show when={!isFreeSing()} fallback={<FreeSingIntro />}>
-        <Show
-          when={isVocalRange()}
-          fallback={
-            <>
-              <h1>Meet your voice twin.</h1>
-              <p>
-                Sing a couple of short tasks and we name the legend your range
-                lines up with — then map your voice as a voiceprint you can
-                share.
-              </p>
-            </>
-          }
-        >
-          <h1>Find your vocal range.</h1>
-          <p>
-            Glide from your lowest comfortable note to your highest. Your result
-            leads with both notes, your span in semitones and a broad voice-type
-            guide; two short follow-ups add accuracy and steadiness.
-          </p>
-        </Show>
-      </Show>
-      <div class="mirror-actions">
-        {/* One door. The secondary "Just sing" button used to sit here and
-            split the visitor's decision at the exact moment they had committed
-            to singing — two paths, no basis to choose between them. Free Sing
-            now has its own entry at /free-sing for anyone sent there
-            deliberately. */}
-        <button
-          class="mirror-cta"
-          onClick={() => props.onStart(isFreeSing() ? 'free' : 'guided')}
-        >
-          {isFreeSing()
-            ? 'Just sing · 40 s'
-            : isVocalRange()
-              ? 'Test my vocal range'
-              : 'Find my voice twin'}
-        </button>
-      </div>
-      <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
-        {isVocalRange() ? 'How the test works' : 'How it works'}
-      </button>
-      <p class="mirror-crosslink">
-        Or{' '}
-        <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
-          break glass with your voice
-        </a>
-        .
-      </p>
-    </section>
   )
 }
 

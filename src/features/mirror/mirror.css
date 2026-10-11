@@ -432,21 +432,6 @@ body {
   color: var(--mirror-gold);
 }
 
-.mirror-wordmark {
-  font-weight: 700;
-  font-size: 1.3rem;
-  line-height: 1.2;
-  margin: 0 0 4px;
-  background: linear-gradient(
-    135deg,
-    var(--mirror-brand-a),
-    var(--mirror-brand-b)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .mirror-trust {
   color: var(--mirror-dim);
   font-size: 0.92rem;
@@ -454,20 +439,298 @@ body {
   margin: 1.2em auto 0;
 }
 
-/* Cross-link to the sibling Glass experience (reciprocal of Glass's footer
-   link back to the mirror). */
-.mirror-crosslink {
-  color: var(--mirror-dim);
-  font-size: 0.86rem;
-  margin: 0.8em auto 0;
+/* ── The start screen (MirrorLanding.tsx) ──────────────────────
+   The onboarding's welcome beat in the Mirror's page shell: the words in
+   a centred column over Merc's sky, one large pill, a quiet "How it
+   works" under it, and the side door to Break Glass at the foot of the
+   page above the legal row. */
+.mirror-shell[data-screen='landing'],
+.mirror-shell[data-screen='shared'] {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
-.mirror-crosslink a {
-  color: #2dd4bf;
+
+.mirror-landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.mirror-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ob-ink);
+}
+
+/* Outranks `.mirror-panel h1`, which the later screens keep. */
+.mirror-landing .mirror-headline {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  color: var(--ob-ink);
+}
+
+/* The payoff words: the brand's blue, teal and violet. The onboarding's
+   stops (teal at 52%, violet at the end) leave the violet on the full stop
+   alone here, so it arrives sooner. */
+.mirror-lit {
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 45%,
+    var(--ob-violet) 88%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mirror-lede {
+  margin: 0;
+  max-width: 42ch;
+  font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+  text-wrap: pretty;
+}
+
+.mirror-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* The onboarding's pill (.primary, .primaryLarge): the screen's one
+   primary action, carried at a size that says so. */
+.mirror-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 54px;
+  padding: 15px 44px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #06090f;
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 60%,
+    var(--ob-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ob-ease),
+    box-shadow 0.25s var(--ob-ease);
+}
+
+@media (hover: hover) {
+  .mirror-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+  }
+}
+
+.mirror-pill:focus-visible {
+  outline: 2px solid var(--ob-ink);
+  outline-offset: 3px;
+}
+
+/* "How it works": findable, a whole thumb tall, and quieter than the pill
+   in every way. */
+.mirror-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ob-ink-2);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--ob-ink-2) 45%, transparent);
+  text-underline-offset: 4px;
+  cursor: pointer;
 }
-.mirror-crosslink a:hover {
-  color: #7ff0dd;
+
+@media (hover: hover) {
+  .mirror-quiet:hover {
+    color: var(--ob-ink);
+  }
+}
+
+.mirror-quiet:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* The privacy "i" pinned to the window's top right, where the onboarding
+   keeps its rail: a 44 px pill of the ground, readable over the picture. */
+.mirror-landing .mirror-info {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+}
+
+.mirror-landing .mirror-info-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ob-ink-2);
+}
+
+.mirror-landing .mirror-info-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mirror-landing .mirror-info-pop {
+  top: 52px;
+  border-color: var(--ob-rule);
+  background: var(--ob-card-solid);
+  color: var(--ob-ink-2);
+}
+
+/* The side door to Break Glass: a quiet link at the foot, just above the
+   legal row, quieter than "How it works" (a bordered chip read as a second
+   button on a phone). Its auto margin and the first block's share the
+   spare height, so the screen stays centred above the foot. */
+.mirror-sidedoor {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.mirror-sidedoor + .mirror-legal {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.mirror-sidedoor-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--ob-ink-3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s var(--ob-ease);
+}
+
+@media (hover: hover) {
+  .mirror-sidedoor-link:hover {
+    color: var(--ob-ink);
+  }
+}
+
+.mirror-sidedoor-link:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .mirror-start-actions .mirror-pill {
+    width: 100%;
+    max-width: 420px;
+  }
+}
+
+/* Merc stands at the top of the tall cut, his glow ending 30% of the way
+   down it. The picture covers the window from the top, so that is
+   max(53.3vw, 30dvh) down the screen (the onboarding's measure for its
+   welcome, .skyBeat). The words start 28 px under it: the section's own
+   padding, less the 24 px the shell already gives. */
+@media (max-aspect-ratio: 1/1) {
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) + 4px);
+    padding-top: calc(max(53.3vw, 30dvh) + 4px);
+  }
+
+  /* The words stay under him instead of centring in the sky below: with
+     the spare height split above them and above the foot, a tall phone
+     read as three islands (the picture, the words, the foot). All of it
+     goes above the foot now. */
+  .mirror-shell > .mirror-backdrop + .mirror-landing {
+    margin-top: 0;
+  }
+}
+
+/* A short phone (700 px tall or less) runs the start screen past the
+   window: the foot was cut through the middle at 320x640 and 360x640. Here
+   the words start 8 px under Merc's glow (still clear of his figure, which
+   ends above it), the gaps and the pill tighten as the onboarding's own
+   short-phone rule does, and the shell keeps only the notch's and the
+   home indicator's room. */
+@media (max-aspect-ratio: 1/1) and (max-height: 700px) {
+  .mirror-shell[data-screen='landing'] {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) - 4px);
+    padding-top: calc(max(53.3vw, 30dvh) - 4px);
+    gap: 12px;
+  }
+
+  .mirror-lede {
+    line-height: 1.45;
+  }
+
+  .mirror-start-actions {
+    margin-top: 4px;
+    gap: 2px;
+  }
+
+  .mirror-start-actions .mirror-pill {
+    min-height: 48px;
+    padding-block: 12px;
+  }
+
+  .mirror-sidedoor {
+    padding-top: 8px;
+  }
+}
+
+/* Narrower than 375 px the longest promise (the vocal range test's) runs
+   to six lines, and the foot still ran 11 px past a 320x640 window. The
+   words start where the glow ends: the picture's last bright pixels are at
+   28% of its height (measured on merc-sky-tall.webp, 11 Oct 2026), about
+   10 px above them at 320x640. */
+@media (max-aspect-ratio: 1/1) and (max-width: 374px) and (max-height: 700px) {
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) - 12px);
+    padding-top: calc(max(53.3vw, 30dvh) - 12px);
+  }
+
+  .mirror-sidedoor {
+    padding-top: 0;
+  }
 }
 
 .mirror-dim {
@@ -2029,5 +2292,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mirror-plate {
     animation: none;
+  }
+
+  .mirror-pill,
+  .mirror-sidedoor-link {
+    transition: none;
+  }
+
+  .mirror-pill:hover {
+    transform: none;
   }
 }

@@ -170,3 +170,12 @@ export const IconShare: Component<IconProps> = (p) => (
     <circle cx="19.9" cy="4.4" r="0.95" fill="currentColor" stroke="none" />
   </svg>
 )
+
+/** A wine glass with a crack through its bowl: the door to Break Glass. */
+export const IconGlass: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M7 3h10v2.5a5 5 0 0 1-10 0V3Z" />
+    <path d="M12 10.5V20M8.5 20h7" />
+    <path d="m10 4.5 2.2 1.6-1.4 1.4 1.6 1.1" />
+  </svg>
+)

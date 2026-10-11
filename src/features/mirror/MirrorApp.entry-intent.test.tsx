@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RangeResult } from '@/lib/mirror/metrics'
-import { MirrorLanding, VocalRangeResultSummary } from './MirrorApp'
+import { VocalRangeResultSummary } from './MirrorApp'
+import { MirrorLanding } from './MirrorLanding'
 
 afterEach(cleanup)
 
