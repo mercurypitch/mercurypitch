@@ -1881,9 +1881,13 @@
    keep (a phone's taller frame padding gave it 44), the gaps tighten, and
    the bottom padding keeps only the home indicator's room. A 640 px tall
    phone (320 or 360 wide) scrolled 39 px for the same reasons, so the
-   rule reaches it too; from 667 px up the welcome already fits and is
-   untouched. */
-@media (max-aspect-ratio: 1/1) and (max-height: 660px) {
+   rule reaches it too. Narrow phones need it further up: at 320-362 px
+   wide the welcome still scrolled 1-23 px from 662 to 694 px tall
+   (360x672 cut the terms line), so under 375 px wide the rule runs to
+   700 px tall. From 375 px wide it stops at 660, and above that the
+   welcome already fits and is untouched. */
+@media (max-aspect-ratio: 1/1) and (max-height: 660px),
+  (max-aspect-ratio: 1/1) and (max-width: 374px) and (max-height: 700px) {
   .frame:has(> .skyBeat) {
     padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
