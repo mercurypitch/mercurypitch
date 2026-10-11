@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import styles from './LongNoteRoom.module.css'
+import { recordingContext, ribbonColours } from './trace-test-context'
 import type * as CaptureModule from './useLongNoteCapture'
 
 // ── A capture the test feeds by hand ────────────────────────────
@@ -449,6 +450,51 @@ describe('LongNoteRoom', () => {
     expect(phase()).toBe('result')
     for (const id of ['long-note-trace-inner', 'long-note-trace']) {
       expect(screen.getByTestId(id).classList).toContain(styles.lineAway)
+    }
+  })
+
+  it("turns the voice amber where the light stops filling, by the engine's centre", async () => {
+    vi.useFakeTimers({ toFake: ['performance'] })
+    try {
+      const { ctx, strokes } = recordingContext()
+      // The overloads end on WebGPU's context; the recorder stands in for 2D.
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+        ctx as never,
+      )
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await startListening()
+      /** Whether the ribbon drawn by the next frames has any amber in it. */
+      const amberDrawn = async (atSeconds: number): Promise<boolean> => {
+        vi.advanceTimersByTime(atSeconds * 1000 - performance.now())
+        strokes.length = 0
+        flushFrames(2)
+        await settle()
+        const ribbon = strokes.filter((stroke) => stroke.stops.length > 0)
+        expect(ribbon.length).toBeGreaterThan(0)
+        return ribbon.some((stroke) =>
+          ribbonColours(stroke.stops).some((colour) => colour.amber),
+        )
+      }
+
+      // On the note, with one raw reading 90 cents off: the engine's
+      // smoothed centre moves 14 cents, still on the line, and the light
+      // keeps filling. The ribbon stays cyan.
+      fake.frames = [
+        ...tone(57, 0.5),
+        ...tone(57, 1 / 60, { startT: 0.5, detuneCents: 90 }),
+        ...tone(57, 0.5, { startT: 0.5 + 1 / 60 }),
+      ]
+      expect(await amberDrawn(1.05)).toBe(false)
+      expect(phase()).toBe('hold')
+
+      // Off it for half a second: amber where the light stopped.
+      fake.frames = [
+        ...fake.frames,
+        ...tone(57, 0.5, { startT: 1.04, detuneCents: 60 }),
+      ]
+      expect(await amberDrawn(1.6)).toBe(true)
+    } finally {
+      vi.useRealTimers()
     }
   })
 

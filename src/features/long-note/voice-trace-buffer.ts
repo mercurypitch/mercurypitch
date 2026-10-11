@@ -11,6 +11,11 @@ export interface TraceSample {
   readonly t: number
   /** Cents from the target, or null where the voice was silent. */
   readonly cents: number | null
+  /**
+   * The light filled on this frame: the hold engine's own band state, judged
+   * on its smoothed centre, never on the raw pitch.
+   */
+  readonly filling: boolean
 }
 
 export class VoiceTraceBuffer {
@@ -18,8 +23,8 @@ export class VoiceTraceBuffer {
 
   constructor(private readonly keepSeconds = 5) {}
 
-  push(t: number, cents: number | null): void {
-    this.samples.push({ t, cents })
+  push(t: number, cents: number | null, filling: boolean): void {
+    this.samples.push({ t, cents, filling })
     const cutoff = t - this.keepSeconds
     let drop = 0
     while (drop < this.samples.length && this.samples[drop].t < cutoff) drop++

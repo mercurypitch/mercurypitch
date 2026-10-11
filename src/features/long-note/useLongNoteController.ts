@@ -420,6 +420,7 @@ export function useLongNoteController(): LongNoteController {
       trace.push(
         frame.t,
         step.offCents === null ? null : (engine.needleCents ?? step.offCents),
+        engine.inBand,
       )
       lastTick = step
       previous = frame
