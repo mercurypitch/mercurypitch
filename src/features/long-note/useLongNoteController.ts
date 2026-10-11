@@ -110,6 +110,8 @@ export interface LongNoteController {
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
 const SLEEP_AFTER_SECONDS = 25
+/** Nobody sang for this long while the room listened: the mic closes. */
+const QUIET_LIMIT_SECONDS = 60
 /** The halo at the goal, of the brim's full shine. */
 export const GOAL_SHINE = 0.5
 /** RMS to Merc's 0..1 loudness: -50 dBFS is silent, -10 dBFS is full. */
@@ -206,6 +208,8 @@ export function useLongNoteController(): LongNoteController {
   let lastTick: HoldTick | null = null
   let windowOpen = false
   let windowStartedAt = 0
+  /** The last voice the listen heard, on now()'s clock. */
+  let heardAt = 0
   let loop = 0
   const chips = createChipFollower()
   let asleep = false
@@ -245,6 +249,7 @@ export function useLongNoteController(): LongNoteController {
   const openWindow = (): void => {
     if (scripted === null) capture.startWindow()
     windowStartedAt = performance.now()
+    heardAt = 0
     engine = createHoldState()
     processed = 0
     previous = null
@@ -473,6 +478,16 @@ export function useLongNoteController(): LongNoteController {
     follow(frames, midi)
   }
 
+  /** A minute with no voice while the room listens: the mic closes. */
+  const restIfQuiet = (): void => {
+    if (untrack(state).phase !== 'listen') return
+    if (voice.voiced) heardAt = now()
+    else if (now() - heardAt > QUIET_LIMIT_SECONDS) {
+      cancel()
+      say('rest')
+    }
+  }
+
   function tick(): void {
     loop = 0
     if (!alive) return
@@ -484,6 +499,7 @@ export function useLongNoteController(): LongNoteController {
         const frames = capture.peekFrames()
         if (targetMidi === null) findNote(frames)
         else follow(frames, targetMidi)
+        restIfQuiet()
       }
     }
     // A false start inside this tick may already have scheduled the next.

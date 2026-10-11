@@ -70,6 +70,12 @@ describe('merc-lines', () => {
       texts('break').every((text) => text.startsWith('Off the note')),
     ).toBe(true)
     expect(texts('steady').every((text) => /steady/i.test(text))).toBe(true)
+    // The mic closed on a quiet minute: say so, and how to start again.
+    for (const text of texts('rest')) {
+      expect(text).toMatch(/minute/)
+      expect(text).toMatch(/mic is off|mic off/i)
+      expect(text).toMatch(/tap it/i)
+    }
   })
 
   it('calls the goal half full and keeps the brim for steady singing', () => {

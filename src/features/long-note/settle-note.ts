@@ -8,9 +8,15 @@
 // median), but live: it answers as soon as the end of the current run has
 // sat still long enough, and only when every frame of that stretch agrees
 // with its median, so a slide into the note is never named.
+//
+// Called on every frame while the room listens, so it reads only the end
+// of the take: the last SETTLE_LOOKBACK_SEC before the last voiced frame,
+// which holds everything the answer depends on. It used to preprocess the
+// whole capture each time, and the work grew with the wait (review A of
+// PR 973, m3).
 
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { centsToMidi, median, preprocess } from '@/lib/mirror/metrics'
+import { centsToMidi, CONF_MIN, median, preprocess } from '@/lib/mirror/metrics'
 
 /** The start of a run is the attack: singers slide into a note. */
 export const SETTLE_ONSET_TRIM_SEC = 0.25
@@ -22,13 +28,37 @@ export const SETTLE_SPREAD_CENTS = 40
 const RUN_GAP_SEC = 0.15
 /** Fewer frames than this are not enough to trust a median. */
 const MIN_FRAMES = 12
+/**
+ * How far back from the last voiced frame a pass reads. The answer needs
+ * the run's onset trim and the still stretch (0.85 s) with room for a gap
+ * that does not end the run, and the median of five inside that stretch
+ * never reaches the edge of what is read, so it matches a read of the
+ * whole take.
+ */
+const SETTLE_LOOKBACK_SEC = 1.2
+
+/** The end of the take a pass reads: back from its last voiced frame. */
+function lastMoments(frames: readonly F0Frame[]): readonly F0Frame[] {
+  let end = frames.length
+  while (
+    end > 0 &&
+    !(frames[end - 1].f0 > 0 && frames[end - 1].conf >= CONF_MIN)
+  ) {
+    end -= 1
+  }
+  if (end === 0) return []
+  const from = frames[end - 1].t - SETTLE_LOOKBACK_SEC
+  let start = end - 1
+  while (start > 0 && frames[start - 1].t >= from) start -= 1
+  return frames.slice(start, end)
+}
 
 /**
  * The note the singer has settled on, as a fractional MIDI value, or null
  * while they have not held one still for SETTLE_SECONDS.
  */
 export function settleLiveNote(frames: readonly F0Frame[]): number | null {
-  const voiced = preprocess(frames)
+  const voiced = preprocess(lastMoments(frames))
   if (voiced.length < MIN_FRAMES) return null
 
   // Back to the start of the latest unbroken run.

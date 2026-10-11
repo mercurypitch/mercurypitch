@@ -405,6 +405,60 @@ describe('LongNoteRoom', () => {
     expect(entry.metrics.durationMs).toBeLessThanOrEqual(91_000)
   })
 
+  it('closes the mic after a minute with no voice, and says so', async () => {
+    // Review A of PR 973, m3: Merc fell asleep at 25 s, and the mic stayed
+    // open for as long as the phone was left.
+    let wall = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => wall)
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    fake.frames = silence(59, 0)
+    wall = 59_000
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('listen')
+
+    fake.frames = [...fake.frames, ...silence(2, 59)]
+    wall = 61_000
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('intro')
+    expect(fake.released).toBe(1)
+    expect(says('rest', screen.getByTestId('long-note-line').textContent)).toBe(
+      true,
+    )
+  })
+
+  it('with no note yet, listens while the voice goes on, then rests after a quiet minute', async () => {
+    target.pick = { midi: 52, source: 'preset' }
+    let wall = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => wall)
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // 70 s of a voice that never sits still on one note.
+    fake.frames = sequence(
+      ...Array.from(
+        { length: 233 },
+        (_, i) => (t: number) =>
+          tone(i % 2 === 0 ? 55 : 59, 0.3, { startT: t }),
+      ),
+    )
+    wall = 70_000
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('listen')
+
+    // Then a minute and more of quiet.
+    fake.frames = [...fake.frames, ...silence(61, 70)]
+    wall = 131_000
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('intro')
+    expect(fake.released).toBe(1)
+  })
+
   it('treats a cough as a false start and keeps listening', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()
