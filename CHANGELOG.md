@@ -8,8 +8,9 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 ## [0.9.17] - 2026-10-11
 
 Confirm your email for five free credits, and use all five for 30 more. Credit
-packs can now be cancelled within 14 days. The intro now starts with your
-voiceprint, and the sign-in sheet fits on a phone.
+packs can now be canceled within 14 days. The intro now starts with your
+voiceprint, the Voice Mirror offers a free account after your results, and
+the sign-in sheet fits on a phone.
 
 ### Added
 
@@ -19,6 +20,10 @@ voiceprint, and the sign-in sheet fits on a phone.
 - **Use all five within 14 days and your next pack gets 30 extra credits.**
   Karaoke Night, the Karaoke tab and Settings › Credits show how many you've
   used. Once earned, the extra credits wait for whichever pack you buy next.
+- **The Voice Mirror offers a free account after your results.** If this
+  browser has never had an account, **Create my free account** sits under
+  your results with the launch gift beside it, and a new account keeps the
+  voiceprint you just made.
 - **Cancel a credit pack within 14 days.** Settings › Credits lists each pack
   you can still cancel under **Withdraw from contract here**, and you get back
   the price of the credits you haven't used. Free and bonus credits are not
@@ -42,8 +47,10 @@ voiceprint, and the sign-in sheet fits on a phone.
   you create one. The welcome keeps one button, **Sing one note**, and the X
   skips the intro.
 - **The launch gift says what it buys:** up to 5 free song separations for
-  Karaoke Night, offered beside **Create my free account** and again on the
-  Map.
+  Karaoke Night. The intro, the Voice Mirror, Karaoke Night and the Promo
+  button all name it that way.
+- **mirror.mercurypitch.com now opens mercurypitch.com/mirror**, so the Voice
+  Mirror has one address and every visitor gets the same page.
 - **A sign-in sheet that fits on a phone.** Google and Phone sit side by side,
   each label sits inside its field, and the newsletter box is one line:
   "Email me product updates. Unsubscribe anytime." Settings uses the same
