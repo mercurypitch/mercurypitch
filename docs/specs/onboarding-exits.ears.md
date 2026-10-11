@@ -1,7 +1,7 @@
 # Onboarding exits: EARS Requirements
 
 > **EARS** = Easy Approach to Requirements Syntax
-> Version: 1.0 | Date: 2026-10-11 | Scope: every way out of the First Light
+> Version: 1.1 | Date: 2026-10-11 | Scope: every way out of the First Light
 > onboarding, where each one lands, and what each one counts
 
 ---
@@ -15,6 +15,7 @@ mic"); `src/features/onboarding/beats/BeatFork.tsx` and
 `src/stores/onboarding-store.ts` (`openBeat`, `advanceBeat`, `markMicDenied`)
 **Tests:** `src/features/onboarding/FirstLight.test.tsx`,
 `src/features/onboarding/beats/BeatFork.test.tsx`,
+`src/features/onboarding/beats/BeatMap.test.tsx`,
 `src/tests/onboarding-launch-gift-flow.test.tsx`,
 `src/e2e/onboarding.spec.ts`, `src/e2e/onboarding-mic.spec.ts`
 
@@ -123,3 +124,18 @@ Voice Mirror from the %s beat, counted as another voiceprint" in
 `FirstLight.test.tsx`, and by "offers a fresh voiceprint second (owner
 decision V12)" and "offers exactly one button, and it starts the
 voiceprint" in `BeatFork.test.tsx`.
+
+## The Map's side doors: `EX-011`
+
+### REQ-EX-011: Four side doors, one row on a phone
+
+**Ubiquitous:** Under the room cards the Map shall offer four side doors
+after "And also": Challenges, Guitar, Piano and the Voice Mirror, each
+opening its room. Eight wrapped to three rows on a phone (owner testing,
+11 Oct 2026). The Voice Mirror stays by the owner's call; the other three
+are the rooms the welcome mail names under "Also waiting for you", because
+no tap on a door is counted per door. On a phone each door shall be a 44 px
+tap target, and the four shall sit in one row from a 360 px screen up.
+Verified by "offers four doors, the Voice Mirror among them, each opening
+its room" and "gives every door a 44 px tap target on a phone" in
+`BeatMap.test.tsx`; the one row was measured at 360, 375, 390 and 430 px.
