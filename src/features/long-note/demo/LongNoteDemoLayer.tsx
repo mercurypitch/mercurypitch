@@ -32,7 +32,7 @@ const MAX_TIP_LINES = 3
 
 /** The card's height at `MAX_TIP_LINES` lines, from its own style. */
 function tallestTip(card: HTMLElement): number {
-  const style = getComputedStyle(card)
+  const style = window.getComputedStyle(card)
   const px = (value: string): number => parseFloat(value) || 0
   const line = px(style.lineHeight)
   if (line === 0) return Infinity
