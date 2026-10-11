@@ -7,9 +7,10 @@
 // a new account's first songs, so the line says what is: splitting on this
 // device costs nothing, and a free account brings song separations for the
 // studio split: named by what they buy, since a visitor here has not met a
-// credit yet (as First Light's gift names them). The button opens the account chip's form on "Create your account";
-// a sign-up from this page already carries `signupSource: 'karaoke'`, which
-// gives its first mail the Karaoke Night picture.
+// credit yet (as First Light's gift names them). The button opens the
+// account chip's form on "Create your account"; a sign-up from this page
+// already carries `signupSource: 'karaoke'`, which gives its first mail the
+// Karaoke Night picture.
 //
 // Its own file so KaraokeRailPanels stays under the size ratchet.
 
@@ -31,7 +32,7 @@ export function KaraokeGiftLine() {
       fallback={
         <p class="kn-card-sub">
           All data stays on your device. Higher-quality separation is available
-          as a paid option — sign in to use it.
+          as a paid option. Sign in to use it.
         </p>
       }
     >

@@ -99,14 +99,15 @@ describe('the signed-out line under Add a song', () => {
     expect(signUpAsked()).toBe(true)
   })
 
-  it('says what it always said when no code is on offer', () => {
+  it('says what it always said when no code is on offer, without a dash', () => {
     mocks.setOffer(null)
     const { container } = render(() => <KaraokeGiftLine />)
 
     expect(screen.queryByTestId('kn-launch-gift')).toBeNull()
     expect(container).toHaveTextContent(
-      'Higher-quality separation is available as a paid option — sign in to use it.',
+      'Higher-quality separation is available as a paid option. Sign in to use it.',
     )
+    expect(container.textContent).not.toContain('\u2014')
   })
 })
 
