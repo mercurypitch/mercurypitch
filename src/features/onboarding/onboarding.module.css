@@ -710,6 +710,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* A 44 px tap target (owner rule): the padding alone made 42. */
+  min-height: 44px;
   border: 1px solid var(--ob-rule);
   border-radius: 999px;
   padding: 12px 24px;
