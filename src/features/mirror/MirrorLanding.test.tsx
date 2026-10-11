@@ -3,8 +3,8 @@
 // ============================================================
 //
 // Rendered through the whole app from each door's address, the way main.tsx
-// picks the door. Every door shows its own H1, one primary action (the
-// pill), and the side door to Break Glass at the foot of the page rather
+// picks the door. Every door shows its own H1 and promise, one primary action
+// (the pill), and the side door to Break Glass at the foot of the page rather
 // than beside the pill.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
@@ -25,36 +25,44 @@ beforeEach(() => {
   trackFunnelMock.mockClear()
 })
 
+const TWIN_LEDE =
+  'Sing a couple of short tasks and we name the legend your range lines up with, then map your voice as a voiceprint you can share.'
+
 /** What each address promises (src/seo/entry-pages.ts sends the ads and the
  *  search pages here), and the one thing its start screen asks for. */
 const DOORS = [
   {
     path: '/mirror',
     h1: 'Meet your voice twin.',
+    lede: TWIN_LEDE,
     cta: 'Find my voice twin',
     howItWorks: 'How it works',
   },
   {
     path: '/vocal-range-test',
     h1: 'Find your vocal range.',
+    lede: 'Glide from your lowest comfortable note to your highest. Your result leads with both notes, your span in semitones and a broad voice-type guide; two short follow-ups add accuracy and steadiness.',
     cta: 'Test my vocal range',
     howItWorks: 'How the test works',
   },
   {
     path: '/voice-type-test',
     h1: 'Meet your voice twin.',
+    lede: TWIN_LEDE,
     cta: 'Find my voice twin',
     howItWorks: 'How it works',
   },
   {
     path: '/which-singer-has-my-vocal-range',
     h1: 'Meet your voice twin.',
+    lede: TWIN_LEDE,
     cta: 'Find my voice twin',
     howItWorks: 'How it works',
   },
   {
     path: '/free-sing',
     h1: 'Just sing.',
+    lede: 'Forty seconds of anything you like. Your shower song counts. No targets and no score: we measure the range you actually use, the note you keep coming back to, and how long your phrases run.',
     cta: 'Just sing · 40 s',
     howItWorks: 'How it works',
   },
@@ -71,13 +79,18 @@ function buttonName(button: HTMLElement): string {
 
 describe('Voice Mirror start screen', () => {
   it.each(DOORS)(
-    '$path opens on its own H1 and one primary action',
-    ({ path, h1, cta, howItWorks }) => {
+    '$path opens on its own H1, its promise and one primary action',
+    ({ path, h1, lede, cta, howItWorks }) => {
       const { container } = renderDoor(path)
 
       expect(
         screen.getAllByRole('heading', { level: 1 }).map((h) => h.textContent),
       ).toEqual([h1])
+      expect(
+        Array.from(container.querySelectorAll('.mirror-lede'), (p) =>
+          p.textContent?.trim(),
+        ),
+      ).toEqual([lede])
 
       // One pill on the page, and it is the door's own action.
       const pills = container.querySelectorAll('.mirror-pill')
