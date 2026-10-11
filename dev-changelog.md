@@ -11,14 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-121 commits since `v0.9.16` (17 on `main`'s first-parent line, every one a PR
-merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 and
-#976.
+169 commits since `v0.9.16` (19 on `main`'s first-parent line, every one a PR
+merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 to
+#977 and #979.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
 packs, refunds and disputes applied exactly once, consent that waits for a yes
-in the EEA, retention sweeps, and the legal links. The native app is not part
+in the EEA, retention sweeps, and the legal links. It also brings the
+voiceprint-first intro (#977) and the compact sign-in sheet (#979), so the
+launch traffic meets both. The native app is not part
 of it and keeps its version: under `apps/mercurypitch` only the bundle check,
 the Vite config that leaves the offer out (#961) and the shared font aliases
 (#962) change.
@@ -150,7 +152,7 @@ when the old worker gets its last events.
   featured it shows three rows (voiceprint, progress, leaderboard). The
   welcome has one centred "Sing one note", and the only skip is the X at the
   top right (accessible name "Skip the intro", 44 px); `onboarding_skipped`
-  fires from the same handler. The Map tags Karaoke "5 free credits".
+  fires from the same handler. The Map tags Karaoke "Launch gift" (#977).
   Karaoke Night has a signed-out gift line. The header's Promo pill hides
   once the account has claimed. A progress block ("Launch credits, 2 of 5
   used") shows in Karaoke Night, the Karaoke tab and Settings › Credits, and
@@ -367,6 +369,56 @@ wasn't used. Sign in again from here." `#gauth_error=expired_state` and the
 Drive outcomes stay unbound by design. Native sign-in is unaffected. On an
 iOS home-screen web app, a Google sign-in that finishes in Safari is now
 refused. Spec: `docs/specs/google-return-binding.ears.md`.
+
+### Web: the voiceprint-first intro (#977)
+
+- **Beats.** Sky (the welcome) → First light (one held note; Merc listens,
+  and his glow follows the voice) → Fork ("Which legend has a
+  range like yours?", one button, **Find my twin**) → Voiceprint (four
+  steps, about 90 seconds: glides, then five matched notes) → Twin (one stat
+  card) → Prints → Keep → Map. The words live in
+  `src/features/onboarding/copy.ts`.
+- **Exits.** Every "Not now" opens the Map. The Fork's sends
+  `onboarding_track_short`, the others `onboarding_skipped`. A voiceprint is
+  never dropped: it stays in the browser, and sign-up adopts it. Returning
+  singers keep "Make another voiceprint", which opens the Voice Mirror.
+- **Sound.** `sound-lane.ts` plays one sound at a time. A note scheduled on a
+  clock that iOS froze ('interrupted' or 'suspended') is stopped at its own
+  start, never left to play on resume.
+- **The gift.** "Up to N free song separations" (`giftCount`, "1 free song
+  separation" at N=1), shown while the featured promo has credits, the
+  browser holds no account and the mic was allowed; never in native builds.
+  Like before, it is not gated by `OFFER_START_AT`; from 11 October both
+  agree.
+- **Art.** New Merc plates for the sky, First light (with a star layer) and
+  the Map, and room cards cut at 560 and 800 px, all webp.
+
+### Web: the compact sign-in sheet (#979)
+
+- **Layout.** Google and Phone share a row, then the Terms line, "or use
+  email", fields with floating labels, and one link row (Email me a code, Use
+  a passkey where the device has one, Forgot password?). At 375x812,
+  sign-up went from 21 rows to 12 and sign-in from 17 to 10; both fit
+  375x635. Below 340 px the sheet runs edge to edge with 9 px of padding.
+  The spectrum is now the dialog's border.
+- **Turnstile.** The sheet passes `appearance="interaction-only"` and
+  `size="flexible"`; before, it passed no appearance, so Cloudflare drew the
+  widget for everyone. The host has zero height until
+  `before-interactive-callback` and stays drawn after the click. A submit
+  before the token is held ("Checking…", `aria-busy`) and sent when the token
+  arrives; a failed check drops it. Karaoke and the reset-password page keep
+  the default appearance. The native sign-in sheet also passes
+  `interaction-only`: look at it in the next native build.
+- **Newsletter.** The sheet's box reads "Email me product updates.
+  Unsubscribe anytime." and Settings reads "Email me product updates"; the
+  monthly cap is gone from both. `docs/plans/newsletter-registered-users.md`
+  §11 records every consent wording with the dates it was shown. The stored
+  fields (`newsletterOptIn`, `newsletterOptInAt`, `newsletterSource`) are
+  unchanged.
+- **Legibility.** Fields are 16 px under `pointer: coarse`, so iOS doesn't
+  zoom on focus. Floated labels are 11 px, light-theme links use
+  `--accent-text` (5.83:1), and every fallback is the app's dark value, so
+  the sheet reads on a page without the theme tokens.
 
 ### Web: Drum Night, the cost guide and the tour offer (#957, #959, #964)
 
