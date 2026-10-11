@@ -9,6 +9,7 @@
 // then offers them their own.
 
 import { createResource, createSignal, onCleanup, onMount, Show, } from 'solid-js'
+import { isConsentBannerOpen } from '@/lib/consent'
 import { formatSpan, sharedRangeNotes, sharedVoiceprintTitle, } from '@/lib/mirror/shared-voiceprint'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import { renderSharedVoiceprintCard } from './shared-voiceprint-card'
@@ -37,7 +38,9 @@ export function SharedVoiceprintWelcome(
   // Whether the pill row has come to rest at the end of the section. The
   // row is pinned to the bottom of a phone over a backing that hides what
   // scrolls under it; once the end of the section is on screen nothing
-  // does, and the backing would only dim the last step.
+  // does, and the backing would only dim the last step. Not while the cookie
+  // banner is up: the row stands on it (mirror.css), above its place at the
+  // end, so the steps still pass under it.
   const [settled, setSettled] = createSignal(false)
   let end: HTMLDivElement | undefined
   onMount(() => {
@@ -113,7 +116,7 @@ export function SharedVoiceprintWelcome(
           so the one thing to do next is never below the fold. */}
       <div
         class="mirror-start-actions shared-vp-actions"
-        data-settled={settled()}
+        data-settled={settled() && !isConsentBannerOpen()}
       >
         <button
           class="mirror-pill"

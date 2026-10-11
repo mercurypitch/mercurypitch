@@ -2408,9 +2408,12 @@ body {
    fades rather than being cut. Once the row has settled
    (`data-settled`), nothing is under it and the backing goes. */
 @media (max-width: 640px), (max-height: 700px) {
+  /* The cookie banner sits at the window's foot on a first visit from the
+     EEA, UK or CH; ConsentBanner.tsx publishes the room it takes, and the
+     row stands on top of it rather than under it. */
   .shared-vp-actions {
     position: sticky;
-    bottom: 0;
+    bottom: var(--consent-banner-space, 0px);
     z-index: 2;
     margin-top: 12px;
     padding: 12px 0 calc(20px + env(safe-area-inset-bottom, 0px));
@@ -2420,11 +2423,12 @@ body {
     max-width: 360px;
   }
 
+  /* Down to the window's foot: under the cookie banner too, when it is up. */
   .shared-vp-actions::before {
     content: '';
     position: absolute;
     z-index: -1;
-    inset: -56px -100vmax 0;
+    inset: -56px -100vmax calc(-1 * var(--consent-banner-space, 0px));
     background: linear-gradient(
       180deg,
       transparent,

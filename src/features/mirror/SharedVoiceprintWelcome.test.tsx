@@ -2,6 +2,15 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 
+// The cookie banner's open state, driven by the test.
+const banner = vi.hoisted(() => ({ setOpen: (_open: boolean): void => {} }))
+vi.mock('@/lib/consent', async () => {
+  const { createSignal } = await import('solid-js')
+  const [open, setOpen] = createSignal(false)
+  banner.setOpen = setOpen
+  return { isConsentBannerOpen: open }
+})
+
 afterEach(cleanup)
 
 // `ac` and `sd` are the card's two scores, out of a hundred. They are not
@@ -133,6 +142,14 @@ describe('the pinned pill row', () => {
 
     report?.([{ isIntersecting: false }])
     expect(row?.getAttribute('data-settled')).toBe('false')
+
+    // With the cookie banner up the row stands on it, above its place at
+    // the end, so it keeps its backing even there.
+    report?.([{ isIntersecting: true }])
+    banner.setOpen(true)
+    expect(row?.getAttribute('data-settled')).toBe('false')
+    banner.setOpen(false)
+    expect(row?.getAttribute('data-settled')).toBe('true')
   })
 })
 
