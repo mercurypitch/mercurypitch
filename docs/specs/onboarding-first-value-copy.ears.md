@@ -164,9 +164,9 @@ measures are saved or shared. Verified by `FVC-12`.
 ### REQ-FVC-013 — No em dash on the first note
 
 **Ubiquitous:** No swappable line, and no screen of beat 2 from the ask to
-the heard note, shall contain an em dash. The shared microphone help panel
-is outside this beat's copy and is left out of the check. Verified by the two
-`FVC-13` tests.
+the heard note, shall contain an em dash, the shared microphone help panel
+included (its one em dash went in the follow-up to PR 977). Verified by the
+two `FVC-13` tests.
 
 ### REQ-FVC-014 — The twin says what comes next in one true line
 

@@ -167,9 +167,9 @@ async function waitingScreen(level: number): Promise<HTMLElement> {
 }
 
 /**
- * A screen's own words. The shared microphone help (MicTroubleshooting, a
- * closed <details> also used by Challenges) is left out: it is not this
- * beat's copy, and its one em dash sits in a panel that opens on request.
+ * Everything a screen says, the shared microphone help panel
+ * (MicTroubleshooting, a closed <details> also used by Challenges)
+ * included: its one em dash went in the follow-up to PR 977.
  */
 function ownText(container: HTMLElement): string {
   const copy = container.cloneNode(true) as HTMLElement
