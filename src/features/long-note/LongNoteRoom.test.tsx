@@ -158,6 +158,24 @@ function voice(
   }))
 }
 
+/** A3-relative voice for `seconds`, its offset `cents(u)` u seconds in. */
+const sung =
+  (seconds: number, cents: (u: number) => number) =>
+  (startT: number): PitchFrame[] =>
+    voice(seconds, (t) => cents(t - startT), startT)
+
+/** Hand the room one frame per animation frame, as a phone delivers them. */
+function feed(frames: readonly PitchFrame[]): void {
+  for (const frame of frames) {
+    fake.frames.push(frame)
+    flushFrames()
+  }
+}
+
+interface RecordedRun {
+  metrics: { targetMidi: number; durationMs: number; inBandSeconds: number }
+}
+
 /**
  * The chip and the lantern's level after a frame, beside the engine's own
  * state on that frame.
@@ -673,6 +691,105 @@ describe('LongNoteRoom', () => {
     cleanup()
     render(() => <LongNoteRoom onDone={() => undefined} />)
     expect(screen.getByTestId('long-note-note').textContent).toBe('C4')
+  })
+
+  // Review A2 of PR 973, Major: once the room named the singer's note, it
+  // replayed everything since the mic opened against it. A sound before
+  // the note, then a pause, was a note the engine had already ended, so
+  // the take ended the moment it began.
+  it('with no note yet, a sentence before the note leaves the note to be held', async () => {
+    target.pick = { midi: 52, source: 'preset' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: "okay, ready", 1.6 s of speech well off A3, a breath, then A3.
+    feed(
+      sequence(
+        (t) => silence(1, t),
+        sung(1.6, (u) => 400 + 250 * Math.sin(2 * Math.PI * 1.7 * u)),
+        (t) => silence(0.8, t),
+        (t) => tone(57, 6, { startT: t }),
+      ),
+    )
+    await settle()
+
+    // Assert: the singer is still holding A3, and the mic is still open.
+    expect(phase()).toBe('hold')
+    expect(fake.released).toBe(0)
+    expect(recorded.calls).toHaveLength(0)
+
+    // Act: the note ends.
+    feed(silence(0.8, 9.4))
+    await settle()
+
+    // Assert: one run on A3, timed from the note's first voice.
+    expect(phase()).toBe('result')
+    const [run] = recorded.calls as RecordedRun[]
+    expect(run.metrics.targetMidi).toBe(57)
+    expect(run.metrics.inBandSeconds).toBeGreaterThan(5.5)
+    expect(run.metrics.durationMs).toBeGreaterThanOrEqual(6000)
+    expect(run.metrics.durationMs).toBeLessThan(7000)
+  })
+
+  it('with no note yet, keeps nothing of a hum that crossed the note before it', async () => {
+    target.pick = { midi: 52, source: 'preset' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: a tentative hum sliding up across A3, a breath, then A3.
+    feed(
+      sequence(
+        (t) => silence(1, t),
+        sung(2, (u) => -150 + 120 * u + 40 * Math.sin(2 * Math.PI * 3 * u)),
+        (t) => silence(0.6, t),
+        (t) => tone(57, 6, { startT: t }),
+      ),
+    )
+    await settle()
+
+    // Assert: nothing kept from the hum. keepRun writes the history first,
+    // then the best and the remembered note, so no history means neither.
+    expect(phase()).toBe('hold')
+    expect(recorded.calls).toHaveLength(0)
+    expect(memory.note).toBeNull()
+
+    // Act: the note ends.
+    feed(silence(0.8, 9.6))
+    await settle()
+
+    // Assert: the run kept is the note's.
+    const [run] = recorded.calls as RecordedRun[]
+    expect(recorded.calls).toHaveLength(1)
+    expect(run.metrics.inBandSeconds).toBeGreaterThan(5.5)
+    expect(memory.note).toBe(57)
+  })
+
+  it('with no note yet, restarts nothing over a cough before the note', async () => {
+    target.pick = { midi: 52, source: 'preset' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: a cough, quiet, then A3.
+    feed(
+      sequence(
+        (t) => silence(1, t),
+        sung(0.1, () => 700),
+        (t) => silence(1.9, t),
+        (t) => tone(57, 6, { startT: t }),
+      ),
+    )
+    await settle()
+
+    // Assert: one window all along, the note held from its start.
+    expect(phase()).toBe('hold')
+    expect(fake.windows).toBe(1)
+
+    feed(silence(0.8, 9))
+    await settle()
+    const [run] = recorded.calls as RecordedRun[]
+    expect(run.metrics.durationMs).toBeGreaterThanOrEqual(6000)
+    expect(run.metrics.durationMs).toBeLessThan(7000)
+    expect(run.metrics.inBandSeconds).toBeGreaterThan(5.5)
   })
 
   it('starts the arrows from the voice type when there is no note', async () => {

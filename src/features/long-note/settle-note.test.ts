@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { SETTLE_ONSET_TRIM_SEC, SETTLE_SECONDS, settleLiveNote, } from './settle-note'
+import { SETTLE_ONSET_TRIM_SEC, SETTLE_SECONDS, settledRunStart, settleLiveNote, } from './settle-note'
 
 const ENOUGH = SETTLE_ONSET_TRIM_SEC + SETTLE_SECONDS + 0.05
 
@@ -99,5 +99,38 @@ describe('settleLiveNote', () => {
 
   it('names nothing in silence', () => {
     expect(settleLiveNote(silence(2, 0))).toBeNull()
+  })
+})
+
+describe('settledRunStart', () => {
+  it('starts the take at the note, past a word and a breath before it', () => {
+    const frames = sequence(
+      (t) => tone(64, 1.6, { startT: t }),
+      (t) => silence(0.8, t),
+      (t) => tone(57, ENOUGH, { startT: t }),
+    )
+    const start = settledRunStart(frames)
+
+    expect(frames[start].t).toBeCloseTo(2.4, 5)
+    expect(frames.slice(start).every((frame) => frame.f0 > 0)).toBe(true)
+  })
+
+  it('keeps a run whole across a gap shorter than a breath', () => {
+    const frames = sequence(
+      (t) => tone(57, 0.5, { startT: t }),
+      (t) => silence(0.1, t),
+      (t) => tone(57, ENOUGH, { startT: t }),
+    )
+    expect(settledRunStart(frames)).toBe(0)
+  })
+
+  it('reads the whole take, back past the last moments', () => {
+    // A voice that wandered for 20 s without a break, then sat still.
+    const frames = [...wandering(20), ...tone(57, ENOUGH, { startT: 20 })]
+    expect(settledRunStart(frames)).toBe(0)
+  })
+
+  it('is -1 in silence', () => {
+    expect(settledRunStart(silence(2, 0))).toBe(-1)
   })
 })

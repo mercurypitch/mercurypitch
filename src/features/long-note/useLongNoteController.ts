@@ -47,7 +47,7 @@ import { prefersReducedMotion } from './reduced-motion'
 import { rememberedLongNote } from './remembered-note'
 import { createScreenAwake } from './screen-awake'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
-import { settleLiveNote } from './settle-note'
+import { settledRunStart, settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
 
@@ -161,6 +161,8 @@ export function useLongNoteController(): LongNoteController {
   // ── The take ───────────────────────────────────────────────
   let engine = createHoldState()
   let processed = 0
+  /** Frames before this one are not the take: the engine hears silence. */
+  let heardFrom = 0
   let previous: PitchFrame | null = null
   let lastTick: HoldTick | null = null
   let windowOpen = false
@@ -209,6 +211,7 @@ export function useLongNoteController(): LongNoteController {
     heardAt = 0
     engine = createHoldState()
     processed = 0
+    heardFrom = 0
     previous = null
     lastTick = null
     asleep = false
@@ -354,7 +357,9 @@ export function useLongNoteController(): LongNoteController {
     const before = engine.clock
     for (let i = processed; i < frames.length; i++) {
       const frame = frames[i]
-      const step = holdTickFromFrame(frame, previous, target)
+      const heard = holdTickFromFrame(frame, previous, target)
+      const step =
+        i < heardFrom ? { ...heard, offCents: null, level: 0 } : heard
       engine = tickHold(engine, step, PRESET)
       events.push(...engine.events)
       trace.push(
@@ -426,7 +431,13 @@ export function useLongNoteController(): LongNoteController {
     }
     dispatch({ type: 'settle', midi })
     foundPending = true
-    // The run so far counts: replay the take against the note just named.
+    // The note so far counts: replay the take against it. The take is the
+    // run the settle found, from its first voice; anything before it (a
+    // word, a hum, a cough) the engine hears as silence. Replayed as voice,
+    // it was a note the engine had already ended, and the take ended the
+    // moment it began (review A2 of PR 973). The engine still counts from
+    // the window's first frame, the clock the result reads frames on.
+    heardFrom = Math.max(0, settledRunStart(frames))
     processed = 0
     previous = null
     lastTick = null

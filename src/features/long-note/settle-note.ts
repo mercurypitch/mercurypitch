@@ -14,6 +14,9 @@
 // which holds everything the answer depends on. It used to preprocess the
 // whole capture each time, and the work grew with the wait (review A of
 // PR 973, m3).
+//
+// The run it names is the take: settledRunStart says where it began, and
+// anything voiced before that (a word, a hum, a cough) is not the note.
 
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { centsToMidi, CONF_MIN, median, preprocess } from '@/lib/mirror/metrics'
@@ -37,15 +40,14 @@ const MIN_FRAMES = 12
  */
 const SETTLE_LOOKBACK_SEC = 1.2
 
+/** Voiced by the Mirror's rule, as `preprocess` keeps a frame. */
+const isVoiced = (frame: F0Frame): boolean =>
+  frame.f0 > 0 && frame.conf >= CONF_MIN
+
 /** The end of the take a pass reads: back from its last voiced frame. */
 function lastMoments(frames: readonly F0Frame[]): readonly F0Frame[] {
   let end = frames.length
-  while (
-    end > 0 &&
-    !(frames[end - 1].f0 > 0 && frames[end - 1].conf >= CONF_MIN)
-  ) {
-    end -= 1
-  }
+  while (end > 0 && !isVoiced(frames[end - 1])) end -= 1
   if (end === 0) return []
   const from = frames[end - 1].t - SETTLE_LOOKBACK_SEC
   let start = end - 1
@@ -83,4 +85,20 @@ export function settleLiveNote(frames: readonly F0Frame[]): number | null {
     if (Math.abs(cents - middle) > SETTLE_SPREAD_CENTS) return null
   }
   return centsToMidi(middle)
+}
+
+/**
+ * Where the latest run starts: the index of its first voiced frame, back
+ * over the whole take by the rule settleLiveNote reads a run with (no
+ * silence longer than RUN_GAP_SEC). Once a note is named, that run is the
+ * take. -1 when nothing is voiced.
+ */
+export function settledRunStart(frames: readonly F0Frame[]): number {
+  let start = -1
+  for (let i = frames.length - 1; i >= 0; i--) {
+    if (!isVoiced(frames[i])) continue
+    if (start !== -1 && frames[start].t - frames[i].t > RUN_GAP_SEC) break
+    start = i
+  }
+  return start
 }
