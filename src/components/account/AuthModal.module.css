@@ -148,7 +148,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -164,8 +164,12 @@
   margin: 0 0 12px;
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }
+
+/* Every fallback below is the app's own dark value (src/styles/app.css), so
+   a page that mounts the sheet without the app's theme tokens gets the same
+   sheet, at the same contrast, as the app does. */
 
 /* ── Ways in ─────────────────────────────────────────────────────────── */
 
@@ -187,8 +191,8 @@
   min-height: 44px;
   padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-tertiary, #21262d);
   color: var(--text-primary, #e6edf3);
   font-size: 13.5px;
   font-weight: 600;
@@ -220,10 +224,10 @@
   flex: 1 1 100%;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
-  color: var(--text-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-secondary, #a8b3bf);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -241,7 +245,7 @@
   align-items: center;
   gap: 10px;
   margin: 12px 0;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -252,7 +256,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--border, #30363d);
 }
 
 /* ── Fields ──────────────────────────────────────────────────────────── */
@@ -278,8 +282,8 @@
   height: 48px;
   padding: 18px 12px 4px;
   border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  background: var(--bg-primary, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-primary, #0d1117);
   color: var(--text-primary, #e6edf3);
   font-size: 14px;
   transition: border-color 0.15s ease;
@@ -292,7 +296,7 @@
 }
 
 .input:focus::placeholder {
-  color: var(--text-muted, #6e7681);
+  color: var(--text-muted, #868f9a);
 }
 
 .input:focus {
@@ -304,7 +308,7 @@
    state stays visible mid-typing. */
 .input[aria-invalid='true'],
 .input[aria-invalid='true']:focus {
-  border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
+  border-color: color-mix(in srgb, var(--red, #f85149) 70%, transparent);
 }
 
 .floatLabel {
@@ -313,7 +317,7 @@
   left: 13px;
   right: 12px;
   overflow: hidden;
-  color: var(--text-muted, #6e7681);
+  color: var(--text-muted, #868f9a);
   font-size: 14px;
   line-height: 1.2;
   white-space: nowrap;
@@ -331,7 +335,7 @@
 .input:focus + .floatLabel,
 .input:not(:placeholder-shown) + .floatLabel {
   top: 7px;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -361,7 +365,7 @@
 
 .fieldOptional {
   font-weight: 400;
-  color: var(--text-muted, #6e7681);
+  color: var(--text-muted, #868f9a);
 }
 
 /* The reveal button sits over the field's right end, outside its label. */
@@ -389,7 +393,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   cursor: pointer;
   border-radius: 8px;
 }
@@ -415,7 +419,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--red, #e05555);
+  color: var(--red, #f85149);
 }
 
 /* The CAPTCHA and the button it guards, as one flex item: an undrawn
@@ -448,7 +452,7 @@
   margin: 4px 0 0;
   text-align: center;
   font-size: 12.5px;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }
 
 /* The quiet line under a code that has been asked for again. */
@@ -457,7 +461,7 @@
   text-align: center;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }
 
 .linkButton {
@@ -478,6 +482,13 @@
   opacity: 0.55;
   cursor: default;
   text-decoration: none;
+}
+
+/* The light theme's link blue (#0969da) is 4.31:1 on the sheet's #e8eaed,
+   short of 4.5:1 for 12.5px text; its text shade (#0f57ad) is 5.83:1. The
+   rooms' tones keep their own accent. */
+:global([data-theme='light']) .overlay[data-tone='default'] .linkButton {
+  color: var(--accent-text, #0f57ad);
 }
 
 /* Forgot-sent confirmation */
@@ -510,7 +521,7 @@
 @media (hover: hover) {
   .close:hover {
     color: var(--text-primary, #e6edf3);
-    background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+    background: var(--bg-tertiary, #21262d);
   }
 
   .providerButton:hover {
