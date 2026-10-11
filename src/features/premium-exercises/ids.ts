@@ -1,0 +1,23 @@
+// ============================================================
+// The premium exercises' ids, and the check for one
+// ============================================================
+//
+// The one list of exercises the Sing screen can open. Long note is the
+// only one today. A new exercise adds its id here, to the type in
+// exercise-contracts.ts, and an entry to the catalogue (catalogue.ts).
+
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_LONG_NOTE_LANTERN } from '@/lib/domain/exercise-contracts'
+
+export const PREMIUM_EXERCISE_IDS: readonly PremiumExerciseId[] = [
+  EXERCISE_LONG_NOTE_LANTERN,
+]
+
+const KNOWN: ReadonlySet<string> = new Set(PREMIUM_EXERCISE_IDS)
+
+/** True for the id of an exercise this build can open, and nothing else. */
+export function isPremiumExerciseId(
+  value: unknown,
+): value is PremiumExerciseId {
+  return typeof value === 'string' && KNOWN.has(value)
+}

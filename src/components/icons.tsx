@@ -1705,6 +1705,26 @@ export const Info: Component<{ size?: number }> = (p) => (
   </svg>
 )
 
+// HelpCircle — "how does this work?": opens a room's guided demo. Labelled
+// by its button, so hidden from assistive tech here.
+export const HelpCircle: Component<{ size?: number }> = (p) => (
+  <svg
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="9.5" />
+    <path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 3.9" />
+    <circle cx="12" cy="17.4" r="0.6" fill="currentColor" />
+  </svg>
+)
+
 // Playback speed — a gauge sweeping from slow to fast with the needle past
 // the middle. "1x natural" used to carry this meaning as a word inside every
 // dropdown option; the gauge says it once, beside the control, and leaves the

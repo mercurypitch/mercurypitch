@@ -56,6 +56,18 @@ export const KARAOKE_IMPORT: boolean =
   __KARAOKE_IMPORT__
 
 /**
+ * Whether this build carries the premium exercises (Long note first). They
+ * ride the Karaoke subscription (owner, 9 Oct 2026), so they ship in exactly
+ * the builds the subscription does: a native test build, TestFlight among
+ * them, and not the store build until the V1 flip puts the subscription in
+ * it. Folded like `KARAOKE_IMPORT`, so the store build carries none of their
+ * code (assert-bundle.mjs STAGE 2). The flip must bring the exercises' own
+ * gate with it (one free run, then the paywall): a build that answers true
+ * today opens them to everyone.
+ */
+export const PREMIUM_EXERCISES: boolean = KARAOKE_IMPORT
+
+/**
  * The origin `/api/uvr/*` is asked on. Empty on the web, whose page is on
  * the worker that serves it. A native page is on capacitor://localhost, so
  * a native build names the web host that goes with its db-worker.

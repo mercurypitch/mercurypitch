@@ -28,7 +28,7 @@
 // read anyway is work nobody sees.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, lazy, Match, on, onCleanup, onMount, Show, Suspense, Switch, untrack, } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
@@ -36,8 +36,10 @@ import type { PracticeFrameListener } from '@/features/practice/usePracticeContr
 import { roomName } from '@/features/rooms/room-names'
 import { TAB_HOME, TAB_SINGING } from '@/features/tabs/constants'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { haptics } from '@/lib/haptics'
 import { micManager } from '@/lib/mic-manager'
+import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { buildMultiOctaveScale, scaleDegreeSet } from '@/lib/scale-data'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
@@ -52,7 +54,7 @@ import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores
 import type { MelodyItem, PitchResult, PitchSample, ScaleDegree } from '@/types'
 import { centsToNearestScaleNote, keyChipLabel, noteChipSignal, } from './hud-signals'
 import type { SingRoomState } from './room-machine'
-import { hasUnsavedTake as takeUndecided, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
+import { hasUnsavedTake as takeUndecided, micChipAction, micChipState, micIntent, offersExercises, runIsLive, runIsPaused, startsNewTake, } from './room-machine'
 import { createRunOutWatch } from './run-out-watch'
 import { loadSingGlass, persistSingGlass, SING_GLASS_VAR } from './sing-glass'
 import styles from './sing-room.module.css'
@@ -151,6 +153,47 @@ const FREE_WINDOW_SECONDS = 17
 const EMPTY_MELODY: MelodyItem[] = []
 const EMPTY_HISTORY: PitchSample[] = []
 
+// ── The way in to the premium exercises ──────────────────────
+//
+// The exercise row and its picker live in the premium-exercises feature
+// and load on first draw, on a build that has them. Each island is a
+// ternary on PREMIUM_EXERCISES with the dynamic import inside it, so a
+// store build folds both to nothing: the row, the picker and Long note's
+// stored signals never reach its graph. A static import would run even
+// under a folded branch (MISTAKES.md).
+//
+// The props are declared here, not imported: a type import from that
+// feature would count as a cross-feature import, and assigning the lazy
+// component to these types still checks the shape.
+
+interface ExerciseRowProps {
+  disabled: boolean
+  onOpen: (id: PremiumExerciseId) => void
+  onBrowse: () => void
+}
+
+interface ExercisePickerProps {
+  isOpen: boolean
+  close: () => void
+  onPick: (id: PremiumExerciseId) => void
+}
+
+const ExerciseRow: Component<ExerciseRowProps> = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('@/features/premium-exercises/sing-entry').then((module) => ({
+        default: module.ExerciseRow,
+      })),
+    )
+  : () => null
+
+const ExercisePicker: Component<ExercisePickerProps> = PREMIUM_EXERCISES
+  ? lazy(async () =>
+      import('@/features/premium-exercises/sing-entry').then((module) => ({
+        default: module.ExercisePicker,
+      })),
+    )
+  : () => null
+
 export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const [optionsOpen, setOptionsOpen] = createSignal(false)
   /** "Your takes", from the pitch pill (R4). */
@@ -159,6 +202,9 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   const [songOpen, setSongOpen] = createSignal(false)
   /** The room sheet — which photograph, and the veil over it (R5). */
   const [pickerOpen, setPickerOpen] = createSignal(false)
+  /** The premium exercises, one card each: from the row's door, the lone
+   *  "Exercises" pill, or the options. */
+  const [exercisesOpen, setExercisesOpen] = createSignal(false)
   const [glass, setGlass] = createSignal(loadSingGlass())
 
   // The premium catalogue is retained only while the picker is open: the room
@@ -463,6 +509,42 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   }
 
   /**
+   * Does the room offer the premium exercises right now? At rest and in a
+   * free run (`offersExercises`), and only when the shell can open one: a
+   * build without them registers no `openExercise`.
+   */
+  const exercisesOffered = (): boolean =>
+    offersExercises(ctx()) && nativeShellApi()?.openExercise !== undefined
+
+  /** The picker, over whatever is running: the gear's options leave a run
+   *  going too. */
+  const openExercises = (): void => {
+    haptics.tapLight()
+    setExercisesOpen(true)
+  }
+
+  /**
+   * Open a premium exercise over the room, from the row or the picker.
+   *
+   * The exercise needs the microphone to itself, so a free run ends first,
+   * and its take is kept, as every other way out of the end card keeps it
+   * (Back, a park). Then every sheet closes and the room hands the mic
+   * back. Unlike a park there is no leave: Back from the exercise returns
+   * to this room at rest.
+   */
+  const leaveForExercise = (id: PremiumExerciseId): void => {
+    haptics.tapLight()
+    if (state() === 'priming') dispatchSingRoom({ type: 'priming-cancel' })
+    if (runIsLive(ctx()) || runIsPaused(ctx())) {
+      handleStop()
+      if (takeUndecided(ctx())) keepTake()
+    }
+    closeAllRoomSheets()
+    if (props.micActive()) props.stopMic()
+    nativeShellApi()?.openExercise?.(id)
+  }
+
+  /**
    * Back, once the shell's own layers have declined it.
    *
    * The room's overlays in the order they are stacked. The end card is last
@@ -489,6 +571,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     }
     if (pickerOpen()) {
       setPickerOpen(false)
+      return true
+    }
+    if (exercisesOpen()) {
+      setExercisesOpen(false)
       return true
     }
     if (optionsOpen()) {
@@ -862,6 +948,24 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
           </Switch>
         </div>
 
+        {/* The way in to the exercises: the last one, and all of them. One
+            line, at rest above the capsule and in a free run between the
+            stage and the shell's transport, so the row stays put when rest
+            turns into a run. The slot holds the line while the code loads. */}
+        {PREMIUM_EXERCISES ? (
+          <Show when={exercisesOffered()}>
+            <div class={styles.exerciseSlot}>
+              <Suspense>
+                <ExerciseRow
+                  disabled={!ctx().active}
+                  onOpen={leaveForExercise}
+                  onBrowse={openExercises}
+                />
+              </Suspense>
+            </div>
+          </Show>
+        ) : null}
+
         {/* R0/R1 — the silent trace asks for nothing, and one capsule is the
             moment of intent the permission is asked inside. */}
         <Show when={state() === 'resting'}>
@@ -1026,7 +1130,22 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         onPerNoteBurnChange={setSingPerNoteBurn}
         onSessionSkip={props.onSessionSkip}
         onSessionEnd={props.onSessionEnd}
+        onOpenExercises={
+          // The constant first, so a store build folds the whole way in
+          // out of the room, the predicate and the opener with it.
+          PREMIUM_EXERCISES && exercisesOffered() ? openExercises : undefined
+        }
       />
+
+      {PREMIUM_EXERCISES ? (
+        <Suspense>
+          <ExercisePicker
+            isOpen={exercisesOpen()}
+            close={() => setExercisesOpen(false)}
+            onPick={leaveForExercise}
+          />
+        </Suspense>
+      ) : null}
 
       {/* The picker modals: the room hosts them, as the mobile stage did —
           but PORTALLED, like the priming screen and for the same reason. The

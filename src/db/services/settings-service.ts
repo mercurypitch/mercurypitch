@@ -22,7 +22,8 @@ import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
 import type { PathProgress } from '@/features/path/path-progress'
 import { mergePathProgress, PATH_PROGRESS_KEY, } from '@/features/path/path-progress'
 import { API_BASE_URL } from '@/lib/defaults'
-import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { LONG_NOTE_BESTS_KEY, mergeBestsOnPull } from '@/lib/hold/hold-bests'
+import { IS_NATIVE_BUILD, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
 
 /** Preference keys all share this prefix (see src/stores/*.ts). */
@@ -101,6 +102,11 @@ const MERGE_ON_PULL: Record<
     }
   },
 }
+
+// The Long note's bests are a record too: a pull keeps the better best on
+// each note, not the newest device's table (hold-bests.ts). Named only in a
+// build with the Long note; a store build folds the key and the merge away.
+if (PREMIUM_EXERCISES) MERGE_ON_PULL[LONG_NOTE_BESTS_KEY] = mergeBestsOnPull
 
 /**
  * Which ACCOUNT the device's merge-key values belong to.

@@ -1,0 +1,295 @@
+/* ============================================================
+   The Sing screen's exercise row, and the exercise picker
+   ============================================================
+   The row copies the session pill (shell.css, `.mp-pill`): 44 px of glass,
+   the same shadow, a 32 px accent disc in a 44 px target. Where the row
+   sits, and when it hides, is the Sing room's business (`.exerciseSlot` in
+   sing-room.module.css). The picker's head and its current-card mark are
+   the Karaoke library's (karaoke-room.module.css). */
+
+/* ── The row ─────────────────────────────────────────────── */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pill,
+.browse,
+.door {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--glass-border, rgb(230 237 243 / 10%));
+  border-radius: 999px;
+  background: var(--glass-bg, rgb(22 27 34 / 72%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  backdrop-filter: var(--glass-blur, blur(18px) saturate(1.35));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text-primary, #e6edf3);
+  cursor: pointer;
+}
+
+/* The pill may shrink, down to its glyph and disc; the door may not. */
+.pill {
+  flex: 0 1 auto;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 8px 0 12px;
+  text-align: left;
+}
+
+.browse {
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 0 16px 0 12px;
+  font: 500 14px/18px var(--font-body, sans-serif);
+}
+
+.door {
+  flex: 0 0 auto;
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+}
+
+/* Until the room has arrived the row takes no tap (ExerciseRow.tsx), and
+   it looks it: a control that refuses with no sign reads as broken. */
+.pill[aria-disabled='true'],
+.browse[aria-disabled='true'],
+.door[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.glyph {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.browse svg,
+.door svg {
+  width: 20px;
+  height: 20px;
+}
+
+.glyph svg {
+  width: 22px;
+  height: 22px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The name may ellipsize; " · A3" may not, as the session pill keeps its
+   state word. */
+.title {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  font: 500 14px/18px var(--font-body, sans-serif);
+}
+
+.name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* `pre`, not `nowrap`: the leading space of " · A3" is the only space
+   between the name and the note, and `nowrap` collapses it. */
+.note {
+  flex: 0 0 auto;
+  white-space: pre;
+}
+
+.best {
+  overflow: hidden;
+  font: 400 12px/16px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary, #a8b3bf);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The session pill's button: a 32 px disc in a 44 px target, and the
+   negative margins keep the pill 44 tall. */
+.play {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-block: -6px;
+  margin-right: -6px;
+  border-radius: 50%;
+  color: var(--bg-primary, #0d1117);
+}
+
+.play::before {
+  content: '';
+  grid-area: 1 / 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent, #58a6ff);
+}
+
+.play svg {
+  grid-area: 1 / 1;
+  width: 16px;
+  height: 16px;
+  place-self: center;
+}
+
+/* ── The picker ──────────────────────────────────────────── */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font: 600 20px/26px var(--font-body, sans-serif);
+  letter-spacing: -0.01em;
+  color: var(--text-primary, #e6edf3);
+}
+
+/* The glyph on the sheet's content edge, the 44 px target reaching left
+   from it, as the Karaoke library's close does. */
+.sheetClose {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  width: 44px;
+  height: 44px;
+  padding: 0 1px 0 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary, #a8b3bf);
+  cursor: pointer;
+}
+
+.sheetClose svg {
+  width: 22px;
+  height: 22px;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardItem {
+  min-width: 0;
+}
+
+/* Tinted with the theme's own text colour, so a card keeps its edge on
+   Light's pale sheet as it does on Dark's (card-contrast.test.ts). */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardCurrent {
+  border-color: color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
+  background: color-mix(in srgb, var(--accent, #58a6ff) 12%, transparent);
+}
+
+.cardArt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-secondary, #a8b3bf);
+}
+
+.cardCurrent .cardArt {
+  color: var(--accent, #58a6ff);
+}
+
+.cardArt svg {
+  width: 24px;
+  height: 24px;
+}
+
+.cardText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cardTitle {
+  font: 600 15px/20px var(--font-body, sans-serif);
+  color: var(--text-primary, #e6edf3);
+  overflow-wrap: anywhere;
+}
+
+.cardLine {
+  font: 400 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary, #a8b3bf);
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font: 400 12px/16px var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary, #8b949e);
+}
+
+.cardMeta svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}

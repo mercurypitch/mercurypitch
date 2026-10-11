@@ -84,6 +84,7 @@ These are the rules that break things when ignored.
 | `piano-night` | [piano-night-music-source.ts](../../src/features/piano-night/piano-night-music-source.ts) | 8.5k | Piano Night music source — lazy, failure-bearing local catalogue boundary Piano Night discovers canonical projects and lightweight compos... |
 | `progress` | [ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 7.3k | Progress — the Resonance Atlas THESIS: The Atlas is the interface: practice leaves physical pressure in a personal record, instead of bec... |
 | `mirror` | [MirrorApp.tsx](../../src/features/mirror/MirrorApp.tsx) | 7.1k | Voice Mirror — the guided 3-task flow (spec §2). |
+| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 6.2k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.7k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
@@ -94,7 +95,7 @@ These are the rules that break things when ignored.
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 4.4k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
-| `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.8k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
+| `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.9k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
 | `karaoke-night` | [KaraokeNightApp.tsx](../../src/features/karaoke-night/KaraokeNightApp.tsx) | 3.7k | KaraokeNightApp — the standalone Karaoke Night shell A separate entry surface from the in-app Karaoke tab: its own stage, song rails and... |
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
@@ -116,6 +117,7 @@ These are the rules that break things when ignored.
 | `whats-new` | [whats-new-content.tsx](../../src/features/whats-new/whats-new-content.tsx) | 600 | What's New — the 0.9 line, in the visitor's terms One page for the whole release LINE, not one per version, because that is the granulari... |
 | `backgrounds` | [PremiumBackgroundPicker.tsx](../../src/features/backgrounds/PremiumBackgroundPicker.tsx) | 550 | PremiumBackgroundPicker — compact accessible stage gallery Locked cards intentionally render an atmospheric placeholder and never ask the... |
 | `routing` | [useHashRouter.ts](../../src/features/routing/useHashRouter.ts) | 550 | useHashRouter — binds the URL hash to app state, both directions The app has no file-system router. |
+| `premium-exercises` | [ExerciseRow.tsx](../../src/features/premium-exercises/ExerciseRow.tsx) | 500 | The Sing screen's way into the exercises: the last one, and all of them One line in the Sing room's own column: at rest above the capsule... |
 | `session` | [useSessionSequencer.ts](../../src/features/session/useSessionSequencer.ts) | 450 | useSessionSequencer — drives a multi-item practice session item by item Between items it rewrites global musical context (key, scale, bpm... |
 | `tabs` | [constants.ts](../../src/features/tabs/constants.ts) | 400 | ── Tab ID constants Use these everywhere instead of raw strings. |
 | `keyboard` | [useKeyboardShortcuts.ts](../../src/features/keyboard/useKeyboardShortcuts.ts) | 350 | useKeyboardShortcuts — global hotkeys, mounted once by App One document-level keydown listener for the whole app. |
@@ -138,11 +140,13 @@ These are the rules that break things when ignored.
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.4k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
+| `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 4.1k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.5k | Voice Mirror — pure metrics over F0 frame streams. |
 | `transcription` | [transcription-score.ts](../../src/lib/transcription/transcription-score.ts) | 2.4k | Scoring a transcription against a tab Shared by `node scripts/transcribe-bench.mjs` and the Lab's transcription bench, so a number on scr... |
 | `pitch-algorithms` | [index.ts](../../src/lib/pitch-algorithms/index.ts) | 2.0k | Pitch Algorithms Library Export |
 | `shazam` | [melody-matcher.ts](../../src/lib/shazam/melody-matcher.ts) | 2.0k | Melody Matcher — Multi-feature DTW scoring against fingerprints Phase 3 of Shazam Sing Takes a LivePitchContour (from the live pitch buff... |
+| `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.4k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
@@ -419,6 +423,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.3k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
+| [src/features/sing-room/SingRoomStage.tsx](../../src/features/sing-room/SingRoomStage.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->
 
 CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,

@@ -1,0 +1,502 @@
+/* The room fills the pushed screen's body; the body's own bottom padding
+   keeps the dock clear (shell.css .mp-pushed__body). */
+.room {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 520px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 70% at 50% 62%,
+      rgba(64, 52, 140, 0.22) 0%,
+      rgba(13, 17, 23, 0) 70%
+    ),
+    var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.top {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 132px;
+  padding: 14px 16px 0;
+}
+
+.timer {
+  position: relative;
+  font: 700 56px/1 var(--font-body, sans-serif);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #f4efff;
+  text-shadow: 0 0 24px rgba(160, 120, 255, 0.45);
+}
+
+/* The demo's fast-forward, beside the timer it speeds up. */
+.fast {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 196, 92, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 186, 73, 0.16);
+  color: #ffd58a;
+  font: 700 15px/1 var(--font-body, sans-serif);
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  transform: translate(10px, -50%);
+}
+
+.chipRow {
+  min-height: 36px;
+  margin-top: 10px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(190, 160, 255, 0.35);
+  background: rgba(155, 120, 255, 0.16);
+  color: #ece4ff;
+  font: 600 14px/1.2 var(--font-body, sans-serif);
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.steadiness {
+  font: 600 18px/1.2 var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+/* The room's one live region: there from the start, so its first words
+   are read (LongNoteRoom.tsx `said`). Seen by screen readers only. */
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bubble {
+  margin: 12px auto 0;
+  max-width: 320px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  font: 500 16px/1.35 var(--font-body, sans-serif);
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* The stage gives way on a short phone: the lantern and Merc scale to
+   whatever height is left (layoutStage), and the room's clip must never
+   reach the controls below. */
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The voice and the target line: over the stage, or (inside the lantern)
+   placed back over the stage by the room. */
+.trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 600ms ease-out;
+}
+
+/* The tolerance either side of the line, behind the lantern. */
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(120, 200, 255, 0.07);
+  pointer-events: none;
+  transition: opacity 600ms ease-out;
+}
+
+/* The result shows the full lantern: the line all but goes. */
+.lineAway {
+  opacity: 0.2;
+}
+
+.noteTag {
+  position: absolute;
+  right: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  transform: translateY(-100%);
+  border: 0;
+  background: transparent;
+  color: #a9d6ff;
+  font: 700 15px/44px var(--font-body, sans-serif);
+  text-align: right;
+}
+
+/* While the take listens the note will not play: the tag dims to a label,
+   and its title says when it will (MISTAKES.md, a control that refuses
+   silently). */
+.noteTag:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lantern {
+  position: absolute;
+}
+
+/* "?" and the demo's Skip share the stage's top corner, clear of the timer
+   and the chip above it and the note tag on the line below. */
+.ask,
+.skip {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 6;
+  height: 44px;
+}
+
+.ask {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.skip {
+  min-width: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+}
+
+.merc {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.mercHop {
+  transition: transform 650ms cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.bottom {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Room for the mic's pulse ring at full travel (25.5 px past the disc),
+     above it and below it, inside the room's clip. */
+  gap: 28px;
+  /* The picker, the gap and the mic with this padding. The result's buttons
+     are shorter; held at this height, the stage's floor and the lantern's
+     foot stay where they were when the buttons replace the mic. */
+  min-height: 194px;
+  padding: 10px 16px 28px;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pickerAway {
+  visibility: hidden;
+}
+
+/* The demo's take pill stands in the picker's place, at its height. */
+.pickerOut {
+  display: none;
+}
+
+.takeSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+}
+
+.take {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  font: 700 15px/1 var(--font-body, sans-serif);
+}
+
+.take svg {
+  width: 16px;
+  height: 16px;
+}
+
+.take[data-take='off'] {
+  border: 1px solid rgba(255, 184, 77, 0.55);
+  background: rgba(255, 168, 51, 0.14);
+  color: #ffcf85;
+}
+
+.take[data-take='on'] {
+  border: 1px solid rgba(4, 236, 216, 0.55);
+  background: rgba(4, 236, 216, 0.12);
+  color: #8ff7ec;
+}
+
+/* A card covers the controls: they keep their place, out of sight. */
+.bottomAway > * {
+  visibility: hidden;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.hear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(150, 205, 255, 0.35);
+  background: rgba(120, 190, 255, 0.1);
+  color: #cfe8ff;
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+.hear svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    #49f0e0 0%,
+    #2a86e8 45%,
+    #7b4cf5 100%
+  );
+  box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
+  color: #fff;
+}
+
+.mic svg {
+  width: 32px;
+  height: 32px;
+}
+
+.mic::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(160, 130, 255, 0.55);
+  animation: long-note-pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.micListening::after {
+  border-color: rgba(4, 236, 216, 0.7);
+  animation-duration: 1.2s;
+}
+
+.mic:disabled {
+  opacity: 0.6;
+}
+
+/* While the demo sings, the mic is not listening and looks it. */
+.micDemo {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.micDemo::after {
+  animation: none;
+  opacity: 0;
+}
+
+/* After Try it: one nudge to say "this one". */
+.micPulse {
+  animation: long-note-nudge 900ms ease-out 1;
+}
+
+@keyframes long-note-nudge {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
+  }
+  40% {
+    transform: scale(1.1);
+    box-shadow:
+      0 8px 28px rgba(123, 76, 245, 0.45),
+      0 0 0 10px rgba(160, 130, 255, 0.28);
+  }
+}
+
+@keyframes long-note-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.again,
+.done {
+  flex: 1;
+  height: 52px;
+  border-radius: 26px;
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+.again {
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.done {
+  border: 0;
+  background: #7c4dff;
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+  color: #fff;
+}
+
+.textButton {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: 500 15px/1 var(--font-body, sans-serif);
+}
+
+.blocked {
+  max-width: 320px;
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 15px/1.4 var(--font-body, sans-serif);
+  text-align: center;
+}
+
+/* A short phone (360 x 640, 375 x 667) keeps a third of its height for the
+   lantern: a smaller timer and mic, and tighter gaps. The ring's travel is
+   (64 + 2 x 6) x 1.35 / 2 - 32 = 19.3 px past the disc, inside the gap and
+   the bottom padding. The room fits the screen's body (495 px at 640). */
+@media (max-height: 700px) {
+  .room {
+    min-height: 440px;
+  }
+
+  .top {
+    min-height: 88px;
+    padding-top: 6px;
+  }
+
+  .timer {
+    font-size: 44px;
+  }
+
+  .chipRow {
+    min-height: 34px;
+    margin-top: 4px;
+  }
+
+  .result {
+    gap: 4px;
+  }
+
+  .bubble {
+    margin-top: 6px;
+    padding: 7px 14px;
+  }
+
+  .bottom {
+    gap: 20px;
+    min-height: 154px;
+    padding: 6px 16px 20px;
+  }
+
+  .mic {
+    width: 64px;
+    height: 64px;
+  }
+
+  .mic svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .mic::after {
+    inset: -6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic::after {
+    animation: none;
+  }
+
+  .mercHop {
+    transition: none;
+  }
+
+  .micPulse {
+    animation: none;
+  }
+}

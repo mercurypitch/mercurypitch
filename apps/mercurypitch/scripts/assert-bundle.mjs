@@ -196,6 +196,33 @@ const KARAOKE_STAGE_2 = [
   ['Remove imported songs', 'Settings and Storage for imported songs'],
   ['Songs this month', 'the songs left, in the room and in Settings'],
   ['RevenueCatUI', "the store's paywall and subscription pages (RevenueCat)"],
+  // The premium exercises ride the same subscription and the same switch
+  // (PREMIUM_EXERCISES, src/lib/native-build.ts): in every build that
+  // imports songs, and not in the store build until the V1 flip.
+  ['long-note-room', 'the premium Long note exercise'],
+  // Found by file name, not by what a file says: nothing in a store build
+  // names the Long note lantern's plates, and they were in it anyway until
+  // the native config folded the room's pictures (vite.config.ts,
+  // PREMIUM_IMAGES).
+  [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
+  // The Sing room's way in to them: its exercise row, the picker, the
+  // options' row and the record of the last one opened. The row and the
+  // picker are lazy islands and the options' section a ternary, all on
+  // PREMIUM_EXERCISES (SingRoomStage.tsx, SingRoomOptions.tsx).
+  ['sing-exercise-row', "the Sing room's exercise row"],
+  ['sing-exercise-picker', 'the exercise picker'],
+  ['sing-options-exercises', "the Sing options' exercises row"],
+  ['mp_last_exercise', 'the last exercise opened'],
+  // The catalogue's own words. The four above are the way in; this is the
+  // catalogue (catalogue.ts), the head of the chain into Long note's entry,
+  // its remembered note, its bests and its demo's record, each a persisted
+  // signal built at import. A static import of the catalogue from the store
+  // graph carries none of the four, and this line with it (review C of
+  // PR 973, minor 1).
+  [
+    'Hold one note and fill the lantern with light',
+    "the exercise picker's Long note card",
+  ],
 ]
 
 /**
@@ -487,7 +514,12 @@ function main(argv) {
         ? [...KARAOKE_STAGE_2, ...(ios ? [] : KARAOKE_STAGE_2_ANDROID)]
         : []
       const carried = [...KARAOKE_STAGE_2, ...KARAOKE_STAGE_2_ANDROID].filter(
-        ([needle]) => assets.some((file) => contains(file, needle)),
+        ([needle]) =>
+          assets.some((file) =>
+            needle instanceof RegExp
+              ? needle.test(file.replace(/\\/gu, '/'))
+              : contains(file, needle),
+          ),
       )
       const missing = expected.filter((piece) => !carried.includes(piece))
       const extra = carried.filter((piece) => !expected.includes(piece))

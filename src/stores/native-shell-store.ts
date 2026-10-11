@@ -34,6 +34,7 @@
 import { createSignal } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { LyricWindowScript } from '@/lib/lyric-window-script'
 import type { SettingsSection } from '@/stores/settings-section'
 
@@ -163,6 +164,13 @@ export interface NativeShellApi {
    * that offers it draws no row for it.
    */
   openKaraokeStudio?: () => void
+  /**
+   * Push a premium exercise over the room (Long note first): the Sing
+   * room's exercise row, its picker and its options open one by id.
+   * Optional, like `openKaraokeStudio`: a build without the premium
+   * exercises registers none, and the room draws no way in.
+   */
+  openExercise?: (id: PremiumExerciseId) => void
   /**
    * The Karaoke subscription, bought and restored through the store (plan
    * S8 §6.7). The purchase port it wraps lives in the app, which the room
@@ -468,6 +476,23 @@ export const roomInPictureInPicture = pictureInPicture
 
 export function setRoomInPictureInPicture(on: boolean): void {
   setPictureInPicture(on)
+}
+
+// ── A held note keeps the rail out of reach ──────────────────
+//
+// An exercise pushed over a tab (Long note) has no run for the shell to
+// drive, so `registerRunControls` is the wrong tool: it would take the slot
+// from the room underneath and hand it back to nobody when it left. A held
+// note still wants the rail out of the way, so a stray thumb cannot change
+// tab mid-breath. The shell folds this into `railVisible`.
+
+const [exerciseFocus, setExerciseFocusSignal] = createSignal(false)
+
+/** True while an exercise is holding the singer's attention (a held note). */
+export const exerciseHoldsFocus = exerciseFocus
+
+export function setExerciseFocus(on: boolean): void {
+  setExerciseFocusSignal(on)
 }
 
 // ── Where "Skip to main content" goes ────────────────────────

@@ -1,0 +1,291 @@
+/* The demo's layer covers the room and takes no taps except on its cards. */
+.layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* The room dims at its edges while the demo plays: playback, not live. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 92% at 50% 50%,
+    rgba(6, 8, 18, 0) 55%,
+    rgba(6, 8, 18, 0.5) 100%
+  );
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.on {
+  opacity: 1;
+}
+
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.progressFill {
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: linear-gradient(90deg, #04ecd8, #9d7bff);
+  animation: demo-progress linear forwards;
+}
+
+.progressDone {
+  transform: scaleX(1);
+  animation: none;
+}
+
+@keyframes demo-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* A small glass card with a 1 px violet edge and an arrow at --arrow. */
+.tip {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid rgba(176, 146, 255, 0.6);
+  border-radius: 12px;
+  background: rgba(17, 14, 36, 0.9);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #f2edff;
+  font: 600 14px/1.35 var(--font-body, sans-serif);
+  text-wrap: balance;
+  animation: tip-in 220ms ease-out;
+}
+
+.tip::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 0 solid rgba(176, 146, 255, 0.6);
+  background: rgb(17, 14, 36);
+  transform: rotate(45deg);
+}
+
+.tip[data-side='above']::after {
+  left: calc(var(--arrow) - 7px);
+  top: calc(100% - 7px);
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.tip[data-side='below']::after {
+  left: calc(var(--arrow) - 7px);
+  bottom: calc(100% - 7px);
+  border-left-width: 1px;
+  border-top-width: 1px;
+  clip-path: polygon(0 100%, 0 0, 100% 0);
+}
+
+.tip[data-side='left']::after {
+  top: calc(var(--arrow) - 7px);
+  left: calc(100% - 7px);
+  border-top-width: 1px;
+  border-right-width: 1px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.tip[data-side='right']::after {
+  top: calc(var(--arrow) - 7px);
+  right: calc(100% - 7px);
+  border-left-width: 1px;
+  border-bottom-width: 1px;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.tipWaiting {
+  visibility: hidden;
+}
+
+/* On a 360 or 375 px phone the side of the lantern or the timer leaves a
+   tooltip about 112 px: a size down keeps it to three lines there. */
+@media (max-width: 380px) {
+  .tip {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+/* The same card off screen, to measure how a text wraps at a width. */
+.measure {
+  top: 0;
+  left: 0;
+  width: max-content;
+  visibility: hidden;
+  animation: none;
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A soft glow on what the tooltip explains. */
+.glow {
+  position: absolute;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: glow-pulse 1.4s ease-in-out infinite;
+}
+
+.glow[data-kind='line'] {
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(150, 215, 255, 0) 0%,
+    rgba(150, 215, 255, 0.7) 12%,
+    rgba(150, 215, 255, 0.7) 88%,
+    rgba(150, 215, 255, 0) 100%
+  );
+  filter: blur(3px);
+}
+
+.glow[data-kind='light'] {
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(170, 140, 255, 0.34),
+    rgba(170, 140, 255, 0) 100%
+  );
+}
+
+.glow[data-kind='text'] {
+  border-radius: 18px;
+  background: radial-gradient(
+    closest-side,
+    rgba(190, 160, 255, 0.4),
+    rgba(190, 160, 255, 0) 100%
+  );
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The play card and the end card sit where the room's controls are. */
+.card {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 22px;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(176, 146, 255, 0.45);
+  border-radius: 22px;
+  background: rgba(18, 15, 38, 0.94);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  text-align: center;
+  pointer-events: auto;
+  animation: tip-in 260ms ease-out;
+}
+
+.cardTitle {
+  margin: 0;
+  color: #f4efff;
+  font: 700 20px/1.2 var(--font-body, sans-serif);
+}
+
+.cardLine {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font: 500 15px/1.35 var(--font-body, sans-serif);
+}
+
+.cardActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  border-radius: 26px;
+  font: 600 17px/1 var(--font-body, sans-serif);
+}
+
+.primary {
+  border: 0;
+  background: #7c4dff;
+  box-shadow: 0 6px 20px rgba(124, 77, 255, 0.4);
+  color: #fff;
+}
+
+.primary svg {
+  width: 18px;
+  height: 18px;
+}
+
+.secondary {
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--text-primary);
+}
+
+/* Said out loud, never shown. */
+.said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vignette {
+    transition: none;
+  }
+
+  .tip,
+  .card {
+    animation: none;
+  }
+
+  .glow {
+    opacity: 0.8;
+    animation: none;
+  }
+}

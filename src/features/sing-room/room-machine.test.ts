@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SingRoomContext, SingRoomEvent } from './room-machine'
-import { hasUnsavedTake, initialSingRoomContext, melodyRanOut, micChipAction, micChipState, micIntent, runIsLive, runIsPaused, singRoomReducer, startsNewTake, transportPhase, } from './room-machine'
+import { hasUnsavedTake, initialSingRoomContext, melodyRanOut, micChipAction, micChipState, micIntent, offersExercises, runIsLive, runIsPaused, singRoomReducer, startsNewTake, transportPhase, } from './room-machine'
 
 const run = (
   ctx: SingRoomContext,
@@ -510,4 +510,31 @@ describe('dismissing the priming door', () => {
     )
     expect(run(live, { type: 'priming-cancel' })).toBe(live)
   })
+})
+
+describe('the way in to the exercises', () => {
+  // The exercise row and the options' row, from one predicate. Every row of
+  // the table in the exercise-entry plan, with a melody run and without.
+  it.each([
+    { state: 'resting', melody: false, offered: true },
+    { state: 'priming', melody: false, offered: false },
+    { state: 'live', melody: false, offered: true },
+    { state: 'paused', melody: false, offered: true },
+    { state: 'live', melody: true, offered: false },
+    { state: 'paused', melody: true, offered: false },
+    { state: 'ended', melody: false, offered: false },
+    { state: 'ended', melody: true, offered: false },
+    { state: 'denied', melody: false, offered: false },
+  ] as const)(
+    '$state, melody run $melody: offered $offered',
+    ({ state, melody, offered }) => {
+      const ctx = initialSingRoomContext({
+        state,
+        melody,
+        permission: state === 'denied' ? 'denied' : 'granted',
+      })
+
+      expect(offersExercises(ctx)).toBe(offered)
+    },
+  )
 })

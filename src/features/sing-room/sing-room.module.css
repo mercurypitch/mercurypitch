@@ -779,3 +779,31 @@
     transition: none;
   }
 }
+
+/* ── The way in to the exercises ─────────────────────────── */
+
+/* One line, left-aligned: at rest above the foot, in a free run between the
+   stage and the shell's transport. 44 px tall before the row's code has
+   arrived, so nothing moves when it does. The row itself is the
+   premium-exercises feature's (premium-exercises.module.css). */
+.exerciseSlot {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+}
+
+/* The corner chip floats over the room's bottom-right while a run is going:
+   the row ends 8 px short of its 56 px. */
+:global(:root[data-shell-chip='on']) .exerciseSlot {
+  max-width: calc(100% - 64px);
+}
+
+/* On its side the stage has no line to spare. The options keep their row,
+   which is the way in here. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .exerciseSlot {
+    display: none;
+  }
+}

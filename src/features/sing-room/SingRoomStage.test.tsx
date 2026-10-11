@@ -19,11 +19,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
-import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
+import type { NativeShellApi } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, registerShellApi, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import { setVocalRangePreset } from '@/stores/settings-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { setSingCoachMarkSeen, SING_COACH_MARK, singCoachMarkSeen, } from './sing-room-settings'
-import { dispatchSingRoom, singRoomContext } from './sing-room-store'
+import { dispatchSingRoom, resetSingRoom, singRoomContext, } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
 import { SingRoomStage } from './SingRoomStage'
 
@@ -519,5 +520,51 @@ describe('arriving through an alley door', () => {
     mountRoom()
     await Promise.resolve()
     expect(singRoomContext().active).toBe(true)
+  })
+})
+
+describe('a build without the premium exercises', () => {
+  // This suite runs as the store build does: PREMIUM_EXERCISES is false, so
+  // the room folds its exercise row, its picker and its options' row away.
+  // SingRoomStage.exercises.test.tsx runs the same room with them.
+  beforeEach(() => {
+    resetSingRoom()
+  })
+
+  /** The shell's gear: throws when the room registered no options control,
+   *  so the absent case cannot pass on a room that never opened them. */
+  const openRoomOptions = (): void => {
+    const open = nativeRunControls()?.openOptions
+    if (open === undefined) throw new Error('no options control registered')
+    open()
+  }
+
+  it('draws no way in, even where the shell could open an exercise', async () => {
+    const openExercise = vi.fn()
+    const unregister = registerShellApi({
+      openExercise,
+    } as unknown as NativeShellApi)
+    try {
+      mountRoom()
+      await vi.dynamicImportSettled()
+      openRoomOptions()
+      await Promise.resolve()
+
+      const present = [
+        'sing-exercise-row',
+        'sing-exercise-pill',
+        'sing-exercise-browse',
+        'sing-exercise-door',
+        'sing-exercise-picker',
+        'sing-options-exercises',
+      ].filter((id) => screen.queryByTestId(id) !== null)
+      expect(
+        dialogs().map((dialog) => dialog.getAttribute('aria-label')),
+      ).toEqual(['Practice options'])
+      expect(present).toEqual([])
+      expect(openExercise).not.toHaveBeenCalled()
+    } finally {
+      unregister()
+    }
   })
 })

@@ -401,3 +401,20 @@ export function runIsLive(ctx: SingRoomContext): boolean {
 export function runIsPaused(ctx: SingRoomContext): boolean {
   return ctx.state === 'paused'
 }
+
+/**
+ * Does the room offer the premium exercises: its exercise row, and the row
+ * in its options?
+ *
+ * At rest, and in a free run, live or paused: an exercise needs the
+ * microphone to itself, and a free run gives it up with nothing lost, since
+ * its take is kept on the way out. Never over a melody run, which has a
+ * song to finish, nor on the priming door, the end card or the denied
+ * screen, which each ask one question of their own. The exercises need
+ * the microphone too, so a refusal is no way in.
+ */
+export function offersExercises(ctx: SingRoomContext): boolean {
+  if (ctx.state === 'resting') return true
+  if (ctx.state === 'live' || ctx.state === 'paused') return !ctx.melody
+  return false
+}

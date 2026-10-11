@@ -48,6 +48,12 @@
 // round, measured for text or a control in the top, side or bottom insets.
 // `--safe-areas-only` walks that alone.
 //
+// THE WAY IN TO THE EXERCISES (probe-exercise-entry.mjs): the Sing room's
+// exercise row, its picker and the options' row, upright on three phones
+// and on two phones' sides, in a build that imports songs. Every frame
+// prints the stage's height; `--baseline` prints only that, for comparing
+// a build without the row. `--exercises-only` walks that alone.
+//
 // PROGRESS WITH A RECORD ON IT (probe-progress.mjs): signed in, the worker
 // answering with badges, achievements, a league and a voiceprint, scrolled
 // to its end and shared from; then the Leaderboard its league card opens,
@@ -68,6 +74,7 @@ import { walkKaraoke, walkKaraokeNoDecoder } from './probe-karaoke.mjs'
 import { importTarget, walkKaraokeImport } from './probe-karaoke-import.mjs'
 import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { walkLeaderboard, walkProgress } from './probe-progress.mjs'
+import { EXERCISE_FRAMES, EXERCISE_LANDSCAPE_FRAMES, walkExerciseEntry, } from './probe-exercise-entry.mjs'
 import { walkRoomHandover } from './probe-room-handover.mjs'
 import { frameName, SAFE_AREA_FRAMES, walkSafeAreas, } from './probe-safe-areas.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
@@ -120,6 +127,8 @@ function parseArgs(argv) {
     handoverOnly: false,
     safeAreasOnly: false,
     progressOnly: false,
+    exercisesOnly: false,
+    baseline: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -134,6 +143,8 @@ function parseArgs(argv) {
     else if (flag === '--handover-only') args.handoverOnly = true
     else if (flag === '--safe-areas-only') args.safeAreasOnly = true
     else if (flag === '--progress-only') args.progressOnly = true
+    else if (flag === '--exercises-only') args.exercisesOnly = true
+    else if (flag === '--baseline') args.baseline = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -5025,6 +5036,15 @@ async function main() {
     }
   }
 
+  /** The Sing room's way in to the exercises, on one frame. */
+  const walkExercisesFrame = async (frame) => {
+    try {
+      steps.push(...(await walkExerciseEntry(browser, args, frame, kit)))
+    } catch (error) {
+      failures.push(error.message)
+    }
+  }
+
   /** Sing and Karaoke, one after the other, on one frame. */
   const walkHandoverFrame = async (frame) => {
     try {
@@ -5065,11 +5085,17 @@ async function main() {
     for (const frame of args.progressOnly ? FRAMES : []) {
       await walkProgressFrame(frame)
     }
+    for (const frame of args.exercisesOnly
+      ? [...EXERCISE_FRAMES, ...EXERCISE_LANDSCAPE_FRAMES]
+      : []) {
+      await walkExercisesFrame(frame)
+    }
     for (const frame of args.landscapeOnly ||
     args.karaokeOnly ||
     args.handoverOnly ||
     args.safeAreasOnly ||
-    args.progressOnly
+    args.progressOnly ||
+    args.exercisesOnly
       ? []
       : FRAMES) {
       const result = await walkFrame(browser, args, frame)
@@ -5120,7 +5146,8 @@ async function main() {
       !args.karaokeOnly &&
       !args.handoverOnly &&
       !args.safeAreasOnly &&
-      !args.progressOnly
+      !args.progressOnly &&
+      !args.exercisesOnly
     ) {
       for (const frame of LANDSCAPE_FRAMES) {
         try {
@@ -5155,6 +5182,12 @@ async function main() {
       for (const frame of args.landscapeOnly ? [] : SAFE_AREA_FRAMES) {
         await walkSafeAreaFrame(frame)
       }
+      // The row exists only where the premium exercises do.
+      for (const frame of args.landscapeOnly || !imports.importing
+        ? []
+        : [...EXERCISE_FRAMES, ...EXERCISE_LANDSCAPE_FRAMES]) {
+        await walkExercisesFrame(frame)
+      }
     }
   } finally {
     await browser.close()
@@ -5178,7 +5211,9 @@ async function main() {
           ? `the safe areas only, ${SAFE_AREA_FRAMES.map(frameName).join(', ')}`
           : args.progressOnly
             ? `Progress only, ${FRAMES.length} frames`
-            : `${FRAMES.length} frames`
+            : args.exercisesOnly
+              ? `the way in to the exercises only, ${EXERCISE_FRAMES.length} frames and ${EXERCISE_LANDSCAPE_FRAMES.length} sideways${args.baseline ? ', the stage only' : ''}`
+              : `${FRAMES.length} frames`
   console.log(`\nprobe-bundle: every step passed (${args.theme}, ${scope}).`)
 }
 

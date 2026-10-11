@@ -1,0 +1,104 @@
+// ============================================================
+// Settle note — the singer's own note, caught while they sing it (pure)
+// ============================================================
+//
+// With no voiceprint and no note held before, Merc asks for any easy note
+// and takes the one the singer settles on. The same reading as First
+// Light's naming of a note (Mirror preprocessing, the attack ignored, the
+// median), but live: it answers as soon as the end of the current run has
+// sat still long enough, and only when every frame of that stretch agrees
+// with its median, so a slide into the note is never named.
+//
+// Called on every frame while the room listens, so it reads only the end
+// of the take: the last SETTLE_LOOKBACK_SEC before the last voiced frame,
+// which holds everything the answer depends on. It used to preprocess the
+// whole capture each time, and the work grew with the wait (review A of
+// PR 973, m3).
+//
+// The run it names is the take: settledRunStart says where it began, and
+// anything voiced before that (a word, a hum, a cough) is not the note.
+
+import type { F0Frame } from '@/lib/mirror/metrics'
+import { centsToMidi, CONF_MIN, median, preprocess } from '@/lib/mirror/metrics'
+
+/** The start of a run is the attack: singers slide into a note. */
+export const SETTLE_ONSET_TRIM_SEC = 0.25
+/** How long the note sits still before it is named. */
+export const SETTLE_SECONDS = 0.6
+/** How far any frame of that stretch may stray from its median. */
+export const SETTLE_SPREAD_CENTS = 40
+/** A longer silence than this starts a new run. */
+const RUN_GAP_SEC = 0.15
+/** Fewer frames than this are not enough to trust a median. */
+const MIN_FRAMES = 12
+/**
+ * How far back from the last voiced frame a pass reads. The answer needs
+ * the run's onset trim and the still stretch (0.85 s) with room for a gap
+ * that does not end the run, and the median of five inside that stretch
+ * never reaches the edge of what is read, so it matches a read of the
+ * whole take.
+ */
+const SETTLE_LOOKBACK_SEC = 1.2
+
+/** Voiced by the Mirror's rule, as `preprocess` keeps a frame. */
+const isVoiced = (frame: F0Frame): boolean =>
+  frame.f0 > 0 && frame.conf >= CONF_MIN
+
+/** The end of the take a pass reads: back from its last voiced frame. */
+function lastMoments(frames: readonly F0Frame[]): readonly F0Frame[] {
+  let end = frames.length
+  while (end > 0 && !isVoiced(frames[end - 1])) end -= 1
+  if (end === 0) return []
+  const from = frames[end - 1].t - SETTLE_LOOKBACK_SEC
+  let start = end - 1
+  while (start > 0 && frames[start - 1].t >= from) start -= 1
+  return frames.slice(start, end)
+}
+
+/**
+ * The note the singer has settled on, as a fractional MIDI value, or null
+ * while they have not held one still for SETTLE_SECONDS.
+ */
+export function settleLiveNote(frames: readonly F0Frame[]): number | null {
+  const voiced = preprocess(lastMoments(frames))
+  if (voiced.length < MIN_FRAMES) return null
+
+  // Back to the start of the latest unbroken run.
+  let first = voiced.length - 1
+  while (first > 0 && voiced[first].t - voiced[first - 1].t <= RUN_GAP_SEC) {
+    first -= 1
+  }
+  const lastT = voiced[voiced.length - 1].t
+  if (lastT - voiced[first].t < SETTLE_ONSET_TRIM_SEC + SETTLE_SECONDS) {
+    return null
+  }
+
+  const from = lastT - SETTLE_SECONDS
+  const stretch: number[] = []
+  for (let i = first; i < voiced.length; i++) {
+    if (voiced[i].t >= from) stretch.push(voiced[i].cents)
+  }
+  if (stretch.length < MIN_FRAMES) return null
+
+  const middle = median(stretch)
+  for (const cents of stretch) {
+    if (Math.abs(cents - middle) > SETTLE_SPREAD_CENTS) return null
+  }
+  return centsToMidi(middle)
+}
+
+/**
+ * Where the latest run starts: the index of its first voiced frame, back
+ * over the whole take by the rule settleLiveNote reads a run with (no
+ * silence longer than RUN_GAP_SEC). Once a note is named, that run is the
+ * take. -1 when nothing is voiced.
+ */
+export function settledRunStart(frames: readonly F0Frame[]): number {
+  let start = -1
+  for (let i = frames.length - 1; i >= 0; i--) {
+    if (!isVoiced(frames[i])) continue
+    if (start !== -1 && frames[start].t - frames[i].t > RUN_GAP_SEC) break
+    start = i
+  }
+  return start
+}

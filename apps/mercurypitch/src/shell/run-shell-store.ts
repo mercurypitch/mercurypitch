@@ -58,7 +58,7 @@
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_GUITAR, TAB_PIANO } from '@/features/tabs/constants'
-import { markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { exerciseHoldsFocus, markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import type { SettingsSection } from '@/stores/settings-section'
 import { activeTab } from '@/stores/ui-store'
@@ -96,6 +96,7 @@ export type PushedScreen =
   | 'about'
   | 'karaoke'
   | 'karaoke-studio'
+  | 'long-note'
   | 'developer'
 
 /** How long an untouched tab column stays open (brief §6). */
@@ -300,9 +301,13 @@ export const transportVisible = createMemo<boolean>(
 
 /**
  * The full rail is gone exactly while a run is on screen: the shell's
- * transport has its slot, or the room is its own transport.
+ * transport has its slot, or the room is its own transport. And while an
+ * exercise pushed over the tab holds a note (`exerciseHoldsFocus`): nothing
+ * takes the rail's place then, it only steps aside until the note ends.
  */
-export const railVisible = createMemo<boolean>(() => !runOnScreen())
+export const railVisible = createMemo<boolean>(
+  () => !runOnScreen() && !exerciseHoldsFocus(),
+)
 
 /** R2's corner chip: present whenever the transport took the rail's place. */
 export const chipVisible = createMemo<boolean>(
@@ -435,7 +440,7 @@ export function pushScreen(screen: PushedScreen): void {
 /** A screen that is only ever reached through Settings. */
 export type SettingsChild = Exclude<
   PushedScreen,
-  'settings' | 'developer' | 'karaoke-studio'
+  'settings' | 'developer' | 'karaoke-studio' | 'long-note'
 >
 
 /**
