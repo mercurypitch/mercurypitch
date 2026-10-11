@@ -87,11 +87,12 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   let stageEl: HTMLDivElement | undefined
   const [stageSize, setStageSize] = createSignal({ width: 0, height: 0 })
   // Centred while Merc floats in the glass, moved over for him beside it;
-  // gliding between the two.
-  const layout = createLayoutGlide(() => {
+  // gliding between the two. `settled` is where a glide is going.
+  const settled = createMemo(() => {
     const { width, height } = stageSize()
     return layoutStage(width, height, room.mercPlace() === 'beside' ? 1 : 0)
   })
+  const layout = createLayoutGlide(() => settled())
 
   onMount(() => {
     const measure = (): void => {
@@ -112,10 +113,14 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const phase = (): string => room.state().phase
 
   // Merc's canvas: one size, moved and scaled. The transform's origin is his
-  // feet, so the same point lands on the ground or on the liquid.
+  // feet, so the same point lands on the ground or on the liquid. The size
+  // is the one a glide ends at and the glide itself is in the scale, so the
+  // renderer sizes its canvas, and rebuilds its render targets, once a
+  // move rather than on each of its frames.
   const mercBox = createMemo(() => {
     const { k } = layout()
-    const size = MERC_UNITS * k
+    const end = settled().k
+    const size = MERC_UNITS * end
     const inside = room.mercPlace() === 'inside'
     const feetX = inside ? LANTERN_VIEW_W / 2 : BESIDE_X
     const feetY = inside
@@ -125,7 +130,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       size,
       left: feetX * k - size / 2,
       top: feetY * k - size * MERC_FEET,
-      scale: inside ? MERC_INSIDE_SCALE : 1,
+      scale: (inside ? MERC_INSIDE_SCALE : 1) * (k / end),
     }
   })
 

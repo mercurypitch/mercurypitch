@@ -1178,6 +1178,64 @@ describe('LongNoteRoom', () => {
     }
   })
 
+  it("sizes Merc's canvas once a move, and glides it by its transform", async () => {
+    // Review B of PR 973, minor 3: the canvas followed the gliding scale,
+    // so the renderer resized it, and rebuilt its render targets, on every
+    // frame of a glide.
+    const observers: ResizeObserverCallback[] = []
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          observers.push(callback)
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    )
+    let wall = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => wall)
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const stage = screen.getByTestId('long-note-stage')
+    let size = { width: 430, height: 461 }
+    Object.defineProperty(stage, 'clientWidth', { get: () => size.width })
+    Object.defineProperty(stage, 'clientHeight', { get: () => size.height })
+    const resize = (width: number, height: number): void => {
+      size = { width, height }
+      for (const callback of observers) callback([], {} as ResizeObserver)
+    }
+    resize(430, 461)
+    const mercEl = screen.getByTestId('long-note-merc')
+    const scaleOf = (): number =>
+      Number(/scale\(([\d.]+)\)/.exec(mercEl.style.transform)?.[1])
+    const before = parseFloat(mercEl.style.width) * scaleOf()
+
+    // Act: the stage gets shorter (the controls below it change), and the
+    // lantern and Merc shrink over a glide.
+    resize(430, 380)
+    const widths = new Set<string>()
+    const shown: number[] = []
+    for (let i = 0; i < 45; i++) {
+      wall += 1000 / 60
+      flushFrames()
+      widths.add(mercEl.style.width)
+      shown.push(parseFloat(mercEl.style.width) * scaleOf())
+    }
+
+    // Assert: one canvas size for the whole glide, the new one, while what
+    // shows still eases from the old size down to it.
+    expect(widths.size).toBe(1)
+    const after = parseFloat(mercEl.style.width)
+    expect(after).toBeLessThan(before)
+    expect(shown[0]).toBeLessThan(before)
+    expect(shown[0]).toBeGreaterThan(after)
+    expect(shown[shown.length - 1]).toBeCloseTo(after, 6)
+    for (let i = 1; i < shown.length; i++) {
+      expect(shown[i]).toBeLessThanOrEqual(shown[i - 1] + 1e-9)
+    }
+  })
+
   it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
     for (const [shape, brims] of [
       [PRACTISED, true],
