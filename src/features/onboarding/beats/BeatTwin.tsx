@@ -18,6 +18,7 @@ import { IconCheck } from '@/features/mirror/icons'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
+import { TWIN_NEXT } from '../copy'
 import styles from '../onboarding.module.css'
 
 export interface BeatTwinProps {
@@ -67,7 +68,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           Your range overlaps <span class={styles.lit}>{twin()}</span>
         </h1>
         <p class={styles.sub}>
-          A playful overlap, not a verdict — it's about where your voice sits,
+          A playful overlap, not a verdict: it's about where your voice sits,
           not how it sounds.
         </p>
       </Show>
@@ -99,10 +100,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         </Show>
       </div>
 
-      <p class={styles.mapExplainer}>
-        The map is your guided next step — rooms in the app picked for what your
-        voice showed us, so you know exactly where to go from here.
-      </p>
+      <p class={styles.mapExplainer}>{TWIN_NEXT}</p>
       <div class={styles.actions}>
         {/* Not "See my map": this advances to `keep`, and the Map is one
             screen further on. Promising the Map and then showing an

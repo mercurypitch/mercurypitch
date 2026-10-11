@@ -3,7 +3,7 @@
 // ============================================================
 //
 // Turns what we just heard into one recommendation with a reason.
-// The reason matters as much as the room: "your tone wavers — let's
+// The reason matters as much as the room: "your tone wavers. Let's
 // steady it" reads as an observation, "recommended for you" reads as
 // a guess.
 //
@@ -39,7 +39,7 @@ export interface FirstStop {
 const DEFAULT_STOP: FirstStop = {
   room: 'practice',
   detail: null,
-  reason: 'Start here — everything else branches off it.',
+  reason: 'Start here: everything else branches off it.',
 }
 
 /**
@@ -87,7 +87,7 @@ export function pickFirstStop(result: MirrorResult | null): FirstStop {
 const STEADINESS_STOP: FirstStop = {
   room: 'exercises',
   detail: 'Long Note',
-  reason: "Your tone wavers when you hold — let's steady it.",
+  reason: "Your tone wavers when you hold. Let's steady it.",
 }
 
 const ACCURACY_STOP: FirstStop = {
@@ -105,5 +105,5 @@ const RANGE_STOP: FirstStop = {
 const STRONG_STOP: FirstStop = {
   room: 'karaoke',
   detail: null,
-  reason: "That was solid — you're ready to sing a real song.",
+  reason: "That was solid. You're ready to sing a real song.",
 }

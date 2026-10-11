@@ -6,10 +6,13 @@
 // note" — at the moment of intent, with the reason on screen, not at
 // first paint next to a tooltip.
 //
-// Then they hold a note and we say it back. That claim ("we can hear
-// you") is the whole beat, which is why `settledNote` returns null
+// Then they hold a note and Merc says it back. That claim ("Merc can
+// hear you") is the whole beat, which is why `settledNote` returns null
 // rather than guessing: a confident wrong answer costs more here than
 // an honest miss.
+//
+// Merc is the one listening on this beat, never "we" (owner decision,
+// 11 Oct 2026). The lines the owner may swap live in ../copy.ts.
 //
 // Two rules earned from owner testing, and the reason this beat is
 // shaped the way it is:
@@ -46,6 +49,7 @@ import { noteArticle } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
+import { FIRST_LIGHT_ASK, FIRST_LIGHT_ASK_ALLOWED, FIRST_LIGHT_AUTO_START, FIRST_LIGHT_HEADLINE, FIRST_LIGHT_HEARD, FIRST_LIGHT_HEARD_EYEBROW, FIRST_LIGHT_METER_LIVE, FIRST_LIGHT_PRIVACY, } from '../copy'
 import styles from '../onboarding.module.css'
 import type { SettledNote } from '../settled-note'
 import { settledNote } from '../settled-note'
@@ -160,7 +164,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
         if (state !== 'denied' || phase() !== 'ask') return
         setPicker(false)
         setError(
-          'Your browser is blocking the microphone for this site. Allow it in the site settings — the padlock or sliders next to the address — and try again.',
+          'Your browser is blocking the microphone for this site. Allow it in the site settings (the padlock or sliders next to the address), then try again.',
         )
         setPhase('blocked')
       })
@@ -337,23 +341,13 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     <div class={styles.beat} data-beat="first-light">
       <Show when={phase() === 'ask'}>
         <p class={styles.eyebrow}>One note</p>
-        <h1 class={styles.headline}>Let's hear you</h1>
-        <Show
-          when={permission() === 'granted'}
-          fallback={
-            <p class={styles.sub}>
-              Sing any note you like and hold it for a few seconds. Your browser
-              will ask for the microphone first — choose Allow. We listen on
-              your device, and the sound stays there.
-            </p>
-          }
-        >
-          <p class={styles.sub}>
-            Your microphone is already allowed. Sing any note you like and hold
-            it — we start recording the moment we hear you. It all happens on
-            your device, and the sound stays there.
-          </p>
-        </Show>
+        <h1 class={styles.headline}>{FIRST_LIGHT_HEADLINE}</h1>
+        <p class={styles.sub}>
+          {permission() === 'granted'
+            ? FIRST_LIGHT_ASK_ALLOWED
+            : FIRST_LIGHT_ASK}{' '}
+          {FIRST_LIGHT_PRIVACY}
+        </p>
         <div class={styles.actions}>
           <button
             type="button"
@@ -371,23 +365,18 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
         <p class={styles.eyebrow}>Waking the microphone</p>
         <h1 class={styles.headline}>One moment</h1>
         <p class={styles.sub}>
-          Your browser will ask for permission — choose Allow.
+          Your browser will ask for permission. Choose Allow.
         </p>
       </Show>
 
       <Show when={phase() === 'waiting'}>
         <p class={styles.eyebrow}>Your turn</p>
         <h1 class={styles.headline}>
-          Sing <span class={styles.lit}>ahh</span> — whenever you're ready
+          Sing <span class={styles.lit}>ahh</span> whenever you're ready
         </h1>
         <Show
           when={manual()}
-          fallback={
-            <p class={styles.sub}>
-              Any note at all, held for a few seconds. Recording starts by
-              itself the moment we hear you.
-            </p>
-          }
+          fallback={<p class={styles.sub}>{FIRST_LIGHT_AUTO_START}</p>}
         >
           <p class={styles.sub}>
             Any note at all, held for a few seconds. Take a breath, then press
@@ -411,7 +400,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
           }`}
         >
           {level() > AUDIBLE_RMS
-            ? 'We can hear you'
+            ? FIRST_LIGHT_METER_LIVE
             : 'Microphone is on and listening'}
         </p>
 
@@ -469,7 +458,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       <Show when={phase() === 'listening'}>
         <p class={styles.recordingTag}>Recording</p>
         <h1 class={styles.headline}>
-          Hold it — <span class={styles.lit}>{remaining()}s</span>
+          Hold it: <span class={styles.lit}>{remaining()}s</span>
         </h1>
         <div
           class={styles.meterBig}
@@ -484,7 +473,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       </Show>
 
       <Show when={phase() === 'heard'}>
-        <p class={styles.eyebrow}>We heard you</p>
+        <p class={styles.eyebrow}>{FIRST_LIGHT_HEARD_EYEBROW}</p>
         <h1 class={styles.headline}>
           {/* "an A3", not "a A3" — the note name is read out loud, and A,
               E and F are all said starting on a vowel sound. */}
@@ -495,10 +484,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
           {note()?.hz.toFixed(1)} Hz · held for{' '}
           {note()?.voicedSeconds.toFixed(1)}s
         </p>
-        <p class={styles.sub}>
-          One note, and the sky has a star in it. There's a lot more where that
-          came from.
-        </p>
+        <p class={styles.sub}>{FIRST_LIGHT_HEARD}</p>
         <div class={styles.actions}>
           <button
             type="button"
