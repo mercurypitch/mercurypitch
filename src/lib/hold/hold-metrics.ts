@@ -5,8 +5,9 @@
 // The counts come from the engine's final state, so the result always agrees
 // with what the room showed during the run. Steadiness comes from the frames
 // of the held part only (first lock to the end of the note), scored by
-// `holdSteadiness`: the wobble around the singer's own line, a vibrato
-// taken out second by second, on the Voice Mirror's scale. Drift along
+// `holdSteadiness` on the reading the live check uses (hold-reading.ts):
+// the wobble around the singer's own line, a vibrato taken out second by
+// second, on the Voice Mirror's scale. Drift along
 // the line is reported, not scored; the band and its seconds answer for
 // it. The scoop before the lock is the time-to-lock number's business,
 // not steadiness's.
@@ -79,7 +80,7 @@ export function computeHoldResult(input: {
       const at = frame.t - base
       return at >= firstLockAt - ALIGN_EPS && at <= noteEnd + ALIGN_EPS
     })
-    steadiness = holdSteadiness(held)
+    steadiness = holdSteadiness(held, targetMidi)
   }
 
   const metrics: HoldRunMetrics = {

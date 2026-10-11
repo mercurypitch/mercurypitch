@@ -19,18 +19,18 @@
 // Mirror's.
 //
 // The room's live measure of steady singing (the hold engine's stretch)
-// is this same fit over the last two seconds of the voice.
+// is this same fit over the last two seconds of the voice, and both read
+// the voice the one way hold-reading.ts sets out: cents off the note, held
+// to a semitone either side, a median of five along each voiced run.
 
 import type { F0Frame, SteadinessResult, VibratoInfo, } from '@/lib/mirror/metrics'
-import { HOLD_TRIM_END_SEC, HOLD_TRIM_START_SEC, preprocess, steadinessScore, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, } from '@/lib/mirror/metrics'
+import { HOLD_TRIM_END_SEC, HOLD_TRIM_START_SEC, steadinessScore, VIBRATO_MAX_HZ, VIBRATO_MIN_HZ, } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
-import { centsToMidi, estimateFrameHop, median, MEDIAN_WINDOW, medianFilter, } from '@/lib/pitch-measurements'
+import { centsToMidi, estimateFrameHop, median } from '@/lib/pitch-measurements'
+import type { PitchPoint } from './hold-reading'
+import { steadyReadings, takeReadings } from './hold-reading'
 
-/** A voiced pitch reading: seconds, and cents on any fixed reference. */
-export interface PitchPoint {
-  readonly t: number
-  readonly cents: number
-}
+export type { PitchPoint } from './hold-reading'
 
 export interface SteadinessFit {
   /** The spread around the take's own line with the vibrato out, cents. */
@@ -218,21 +218,23 @@ export function fitSteadiness(
 }
 
 /**
- * The held part's steadiness, for the result: the Mirror's own clean-up
- * (confidence, a median of five, the onset and release trimmed), then the
- * fit above. The same shape as the Mirror's result.
+ * The held part's steadiness, for the result: its frames read as the live
+ * check reads them (steadyReadings, against the note held), the onset and
+ * release trimmed as the Mirror trims them, then the fit above. The same
+ * shape as the Mirror's result.
  */
 export function holdSteadiness(
   frames: readonly F0Frame[],
+  targetMidi: number,
 ): SteadinessResult | null {
-  const voiced = preprocess(frames)
+  const voiced = steadyReadings(takeReadings(frames, targetMidi))
   if (voiced.length === 0) return null
   const start = voiced[0].t + HOLD_TRIM_START_SEC
   const end = voiced[voiced.length - 1].t - HOLD_TRIM_END_SEC
   const kept = voiced.filter((f) => f.t >= start && f.t <= end)
   const fit = fitSteadiness(kept)
   if (fit === null) return null
-  const referenceCents = median(kept.map((f) => f.cents))
+  const referenceCents = targetMidi * 100 + median(kept.map((f) => f.cents))
   return {
     referenceCents,
     referenceNote: midiToNoteNameOctave(centsToMidi(referenceCents)),
@@ -245,18 +247,11 @@ export function holdSteadiness(
 }
 
 /**
- * The live score of the last stretch of the voice, for the room while it
- * listens: the same fit, after the same median of five the result's
- * clean-up applies (a one-frame octave slip is not a wobble).
+ * The live score of the last stretch of the voice (readings off the note,
+ * as the engine took them), for the room while it listens: the result's
+ * own reading and fit, so a slip of the tracker costs the room and the
+ * result alike.
  */
 export function liveSteadiness(points: readonly PitchPoint[]): number | null {
-  const smoothed = medianFilter(
-    points.map((p) => p.cents),
-    MEDIAN_WINDOW,
-    'truncate-window',
-  )
-  return (
-    fitSteadiness(points.map((p, i) => ({ t: p.t, cents: smoothed[i] })))
-      ?.score ?? null
-  )
+  return fitSteadiness(steadyReadings(points))?.score ?? null
 }

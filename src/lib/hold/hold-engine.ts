@@ -15,8 +15,9 @@
 //   band 46 % of the time on raw readings, in 42 ms bursts; the in-band runs
 //   are about 98 ms long, so a raw judge could never reach a 250 ms lock. The
 //   centre (one-pole, `centreTauSec`) takes that vibrato down to about +-11
-//   cents. Readings are clamped to `centreClampCents` first, so a one-frame
-//   octave flicker moves the centre by a few cents instead of 180.
+//   cents. Readings are held to a semitone first (heldCents, hold-reading.ts,
+//   the one reading the result shares), so a one-frame octave flicker moves
+//   the centre by a few cents instead of 180.
 // - A break is only ever declared on voiced evidence. Silence after a lock
 //   may be the end of the note, and the release must not read as a break, so
 //   a silent gap counts as a break when the voice comes back (200-450 ms),
@@ -24,12 +25,13 @@
 //
 // A preset may carry a stretch rule (the Long note lantern's): past the
 // goal, a second fill grows only with steady singing, judged by the same
-// steadiness the result scores (hold-steadiness.ts) over the last
-// seconds of the voice. Without one the engine stops at the goal.
+// steadiness the result scores (hold-steadiness.ts), on the same reading of
+// the voice, over its last seconds. Without one the engine stops at the
+// goal.
 
-import { CONF_MIN, hzToCents } from '@/lib/mirror/metrics'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import type { PitchPoint } from './hold-steadiness'
+import type { PitchPoint } from './hold-reading'
+import { heldCents, offTarget } from './hold-reading'
 import { liveSteadiness } from './hold-steadiness'
 
 /** `glassBreak` (the onboarding glass beat) joins this union in S7b. */
@@ -49,8 +51,6 @@ export interface ExerciseHoldPreset {
   goalSeconds: number
   /** Time constant of the smoothed centre the band is judged on. */
   centreTauSec: number
-  /** Readings are clamped to +-this before smoothing. */
-  centreClampCents: number
   /** After the goal, steady singing fills a second time; absent, nothing. */
   stretch?: StretchRule
 }
@@ -84,7 +84,6 @@ export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
     endMs: 450,
     goalSeconds: 12,
     centreTauSec: 0.1,
-    centreClampCents: 100,
   },
   // The Long note lantern: the goal fills it halfway, steady singing the
   // rest. A practised singer is steady nearly all the time and reaches the
@@ -97,7 +96,6 @@ export const HOLD_PRESETS: Record<HoldPresetId, HoldPreset> = {
     endMs: 450,
     goalSeconds: 12,
     centreTauSec: 0.1,
-    centreClampCents: 100,
     stretch: {
       seconds: 12,
       windowSeconds: 2,
@@ -133,7 +131,7 @@ export interface HoldState {
   clock: number
   /** The smoothed centre is inside the band on this tick. */
   inBand: boolean
-  /** Smoothed, clamped cents off target for a needle; null until voiced. */
+  /** Smoothed, held cents off target for a needle; null until voiced. */
   needleCents: number | null
   /** The lantern's fill, 0..1: inBandSeconds / goalSeconds. */
   charge: number
@@ -160,8 +158,8 @@ export interface HoldState {
   /** The last voiced moment of a note that has ended. */
   noteEndedAt: number | null
   /**
-   * The voice's last readings (clamped cents) that the live steadiness
-   * reads, `windowSeconds` of them; empty without a stretch rule.
+   * The voice's last readings (cents off the note, as ticked) that the live
+   * steadiness reads, `windowSeconds` of them; empty without a stretch rule.
    */
   recent: readonly PitchPoint[]
   /** The last steadiness check found the voice steady. */
@@ -235,9 +233,7 @@ export function tickHold(
     ? tickVoiced(state, offCents, dt, preset)
     : tickUnvoiced(state, dt, preset)
   if (preset.stretch === undefined) return next
-  const clamp = preset.centreClampCents
-  const reading = voiced ? Math.max(-clamp, Math.min(clamp, offCents)) : null
-  return tickStretch(state, next, reading, dt, preset.stretch)
+  return tickStretch(state, next, voiced ? offCents : null, dt, preset.stretch)
 }
 
 /** The window's readings, the oldest past `windowSeconds` let go. */
@@ -342,15 +338,14 @@ function tickUnvoiced(
   }
 }
 
-/** The needle for a voiced tick: clamped, then smoothed. */
+/** The needle for a voiced tick: held, then smoothed. */
 function centreFor(
   state: HoldState,
   offCents: number,
   dt: number,
   preset: HoldPreset,
 ): number {
-  const clamp = preset.centreClampCents
-  const raw = Math.max(-clamp, Math.min(clamp, offCents))
+  const raw = heldCents(offCents)
   // A fresh start (first voice, or back after a gap long enough to break)
   // takes the reading as is; anything else is smoothed.
   const previous = state.needleCents
@@ -480,16 +475,16 @@ function tickVoiced(
  * One captured pitch frame as an engine tick. Feed the engine through this,
  * frame by frame, and its clock reads `frame.t - frames[0].t`, which is what
  * `computeHoldResult` relies on to find the held part of the take. Voicing
- * follows the Voice Mirror's rule (f0 > 0 and confidence >= CONF_MIN).
+ * follows the Voice Mirror's rule (f0 > 0 and confidence >= CONF_MIN), the
+ * result's own (offTarget, hold-reading.ts).
  */
 export function holdTickFromFrame(
   frame: PitchFrame,
   previous: PitchFrame | null,
   targetMidi: number,
 ): HoldTick {
-  const voiced = frame.f0 > 0 && frame.conf >= CONF_MIN
   return {
-    offCents: voiced ? hzToCents(frame.f0) - targetMidi * 100 : null,
+    offCents: offTarget(frame, targetMidi),
     level: frame.rms,
     dt: previous === null ? 0 : Math.max(0, frame.t - previous.t),
   }
