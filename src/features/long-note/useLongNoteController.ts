@@ -21,7 +21,6 @@
 // The "how it works" demo sings its takes through this same room, by
 // `script` (scripted-take.ts): frames in place of the mic, nothing kept.
 
-import type { Accessor } from 'solid-js'
 import { batch, createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { haptics } from '@/lib/haptics'
 import type { HoldEventType, HoldState, HoldTick } from '@/lib/hold/hold-engine'
@@ -29,7 +28,6 @@ import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/l
 import { computeHoldResult } from '@/lib/hold/hold-metrics'
 import { HOLD_TARGET_MAX_MIDI, HOLD_TARGET_MIN_MIDI, nudgeTarget, } from '@/lib/hold/hold-target'
 import { loadHoldTarget } from '@/lib/hold/load-hold-target'
-import type { MercState } from '@/lib/merc/constants'
 import type { MercVoice } from '@/lib/merc/sim'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -38,12 +36,12 @@ import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
 import { fillLevel } from './lantern-geometry'
+import type { LongNoteController, LongNoteRunSummary, } from './long-note-controller-types'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
-import type { MercPlace } from './merc-moves'
 import { createMercMoves } from './merc-moves'
 import { rememberedLongNote } from './remembered-note'
 import { createScreenAwake } from './screen-awake'
@@ -56,52 +54,10 @@ import { VoiceTraceBuffer } from './voice-trace-buffer'
 const PRESET = HOLD_PRESETS.lantern
 
 export type { MercPlace } from './merc-moves'
-
-export interface LongNoteRunSummary {
-  /** The big number: seconds the light filled. */
-  readonly inBandSeconds: number
-  /** Out of 100, or null when the run never found the note. */
-  readonly steadiness: number | null
-  readonly locked: boolean
-  /** Beat a previous best on this note. */
-  readonly improved: boolean
-  /** The lantern filled to the goal, halfway. */
-  readonly full: boolean
-  /** Steady singing past the goal filled it to the brim. */
-  readonly brim: boolean
-}
-
-export interface LongNoteController {
-  state: Accessor<LongNoteState>
-  /** The note to hold ("A3"), or '' while the singer picks their own. */
-  noteName: Accessor<string>
-  hold: Accessor<HoldState>
-  summary: Accessor<LongNoteRunSummary | null>
-  line: Accessor<string>
-  chip: Accessor<string | null>
-  mercState: Accessor<MercState>
-  mercPlace: Accessor<MercPlace>
-  /** Read by Merc's renderer every frame; deliberately not reactive. */
-  mercVoice: () => MercVoice
-  lanternLevel: Accessor<number>
-  lanternGlow: Accessor<number>
-  /** The lantern's shine: 0, GOAL_SHINE from the goal, 1 at the brim. */
-  shine: Accessor<number>
-  trace: VoiceTraceBuffer
-  /** The trace's clock: seconds since the take started. */
-  now: () => number
-  readonly toleranceCents: number
-  start: () => void
-  /** Stop listening before a note and go back to the intro. */
-  cancel: () => void
-  /** The mic button while the room listens: ends the hold, or cancels. */
-  stop: () => void
-  again: () => void
-  changeNote: () => void
-  nudge: (step: 1 | -1) => void
-  hearNote: () => void
-  script: LongNoteScript
-}
+export type {
+  LongNoteController,
+  LongNoteRunSummary,
+} from './long-note-controller-types'
 
 /**
  * The longest hold the room times, from the first voice; past it, the note
