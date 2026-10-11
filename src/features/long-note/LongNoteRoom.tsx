@@ -17,6 +17,8 @@
 // "How it works" (demo/) plays over the same room: Merc sings two takes
 // through it while tooltips explain them. A first visit opens on it, and
 // the "?" in the stage's corner plays it again at the start or a result.
+// The level in the corner across from it (LongNoteLevel.tsx) sets how much
+// room the note has and how steady the top asks the voice to be.
 //
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
@@ -36,6 +38,7 @@ import { createFocusHandoff } from './focus-handoff'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import { formatHoldSeconds } from './long-note-entry'
+import { LongNoteLevel } from './LongNoteLevel'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
@@ -408,6 +411,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           muted={() => phase() === 'result'}
         />
         <Show when={demo.canAsk()}>
+          <LongNoteLevel class={styles.level} />
           <button
             type="button"
             class={styles.ask}

@@ -16,6 +16,8 @@ interface Seed {
   /** The best on that note, in seconds held in the band. */
   best?: number
   demoSeen?: boolean
+  /** The level every premium exercise is at. */
+  level?: string
 }
 
 beforeEach(() => {
@@ -51,6 +53,9 @@ async function openPicker(seed: Seed = {}) {
       JSON.stringify(seed.demoSeen),
     )
   }
+  if (seed.level !== undefined) {
+    localStorage.setItem('pitchperfect_premium_exercise_level', seed.level)
+  }
   const { ExercisePicker } = await import('./ExercisePicker')
   const { EXERCISE_CATALOGUE } = await import('./catalogue')
   const calls: string[] = []
@@ -65,6 +70,9 @@ const cards = (): HTMLElement[] => screen.getAllByTestId('sing-exercise-card')
 const meta = (): string | null =>
   screen.queryByTestId('sing-exercise-meta')?.textContent ?? null
 
+const level = (): string | null =>
+  screen.queryByTestId('sing-exercise-level')?.textContent ?? null
+
 describe('the cards', () => {
   it('lists one card per catalogue entry, in catalogue order', async () => {
     const { catalogue } = await openPicker()
@@ -78,7 +86,7 @@ describe('the cards', () => {
     await openPicker({ demoSeen: true })
 
     expect(cards()[0]?.textContent).toBe(
-      'Long noteHold one note and fill the lantern with light.',
+      'Long noteBeginnerHold one note and fill the lantern with light.',
     )
   })
 
@@ -117,6 +125,20 @@ describe("a card's third line", () => {
     await openPicker({ demoSeen: true, note: 57 })
 
     expect(meta()).toBeNull()
+  })
+})
+
+describe("a card's level", () => {
+  it('names the level the exercises are at: Beginner, to start', async () => {
+    await openPicker()
+
+    expect(level()).toBe('Beginner')
+  })
+
+  it('names the level the singer picked', async () => {
+    await openPicker({ level: 'pro' })
+
+    expect(level()).toBe('Pro')
   })
 })
 

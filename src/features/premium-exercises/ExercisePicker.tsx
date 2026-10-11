@@ -7,9 +7,11 @@
 // its rows grown to two lines, so a card can say what the exercise is.
 //
 // The last exercise opened is marked, not moved: catalogue order stays put,
-// so a card is where it was the last time. A card's third line says one
-// thing a singer cannot see from its name: that Merc sings it first (only
-// when its demo will play by itself), or the best on the note it opens on.
+// so a card is where it was the last time. Beside its name a card names the
+// level the exercises are at (exercise-level.ts), picked in the exercise. A
+// card's third line says one thing a singer cannot see from its name: that
+// Merc sings it first (only when its demo will play by itself), or the best
+// on the note it opens on.
 //
 // A tap closes the sheet and hands the id to the room, which winds down
 // whatever is running before the exercise opens over it.
@@ -20,6 +22,7 @@ import { Dynamic } from 'solid-js/web'
 import { Volume2 } from '@/components/icons'
 import { Sheet } from '@/components/mobile/Sheet'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import { exerciseLevel, exerciseLevelName } from '@/lib/exercise-level'
 import type { PremiumExercise } from './catalogue'
 import { EXERCISE_CATALOGUE } from './catalogue'
 import { lastExercise } from './last-exercise'
@@ -72,7 +75,12 @@ const Card: Component<{
           <Dynamic component={props.exercise.Glyph} />
         </span>
         <span class={styles.cardText}>
-          <span class={styles.cardTitle}>{props.exercise.name}</span>
+          <span class={styles.cardHead}>
+            <span class={styles.cardTitle}>{props.exercise.name}</span>
+            <span class={styles.cardLevel} data-testid="sing-exercise-level">
+              {exerciseLevelName(exerciseLevel())}
+            </span>
+          </span>
           <span class={styles.cardLine}>{props.exercise.line}</span>
           <Show
             when={props.exercise.demoAutoPlays()}

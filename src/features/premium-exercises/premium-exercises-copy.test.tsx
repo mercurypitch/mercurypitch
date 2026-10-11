@@ -99,7 +99,7 @@ describe('the decided words, as they render', () => {
     await showPicker()
     const card = screen.getByRole('button', { name: /^Long note/u })
     expect(card.textContent).toBe(
-      'Long noteHold one note and fill the lantern with light.',
+      'Long noteBeginnerHold one note and fill the lantern with light.',
     )
   })
 

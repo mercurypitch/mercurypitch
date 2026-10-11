@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setExerciseLevel } from '@/lib/exercise-level'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
@@ -16,6 +16,7 @@ import type { LongNoteMoment } from './merc-lines'
 import { fillNote, MERC_LINES } from './merc-lines'
 import { recordingContext, ribbonColours } from './trace-test-context'
 import type * as CaptureModule from './useLongNoteCapture'
+import { TRACE_PX_PER_CENT } from './VoiceTrace'
 
 // ── A capture the test feeds by hand ────────────────────────────
 
@@ -943,6 +944,50 @@ describe('LongNoteRoom', () => {
     await settle()
     expect(phase()).toBe('result')
     expect(recorded.calls).toHaveLength(1)
+  })
+
+  it('picks the level in the corner across from "?": the band follows it, and the next take is heard at it', async () => {
+    setExerciseLevel('beginner')
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const pill = (): HTMLElement => screen.getByTestId('long-note-level')
+    const band = (): number =>
+      parseFloat(screen.getByTestId('long-note-band').style.height) / 2
+    expect(pill().textContent).toBe('Beginner')
+    expect(pill().getAttribute('aria-label')).toBe('Level: Beginner')
+    expect(band()).toBeCloseTo(40 * TRACE_PX_PER_CENT, 6)
+
+    // Three levels, the one in use pressed; a tap picks one and closes.
+    fireEvent.click(pill())
+    const sheet = screen.getByRole('dialog', { name: 'Level' })
+    const levels = within(
+      within(sheet).getByRole('group', { name: 'Levels' }),
+    ).getAllByRole('button')
+    expect(levels.map((row) => row.getAttribute('aria-pressed'))).toEqual([
+      'true',
+      'false',
+      'false',
+    ])
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Pro\b/ }))
+    expect(screen.queryByRole('dialog', { name: 'Level' })).toBeNull()
+    expect(pill().textContent).toBe('Pro')
+    expect(band()).toBeCloseTo(20 * TRACE_PX_PER_CENT, 6)
+    expect(localStorage.getItem('pitchperfect_premium_exercise_level')).toBe(
+      'pro',
+    )
+
+    // Out of reach while the take listens, and the take is heard at Pro:
+    // 30 cents sharp is off its line, so the note is never found.
+    await startListening()
+    expect(screen.queryByTestId('long-note-level')).toBeNull()
+    fake.frames = sequence(
+      (t) => tone(57.3, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(0)
+    expect(pill().textContent).toBe('Pro')
   })
 
   it('keeps the screen on while it listens and holds, and only then', async () => {

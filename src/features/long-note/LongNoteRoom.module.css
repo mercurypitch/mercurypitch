@@ -187,6 +187,15 @@
   color: var(--text-secondary);
 }
 
+/* The level pill takes the stage's other top corner, across from "?": on a
+   narrow phone the lantern's handle reaches into the space beside "?". */
+.level {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  z-index: 6;
+}
+
 .skip {
   min-width: 44px;
   padding: 0 16px;

@@ -223,6 +223,11 @@ const KARAOKE_STAGE_2 = [
     'Hold one note and fill the lantern with light',
     "the exercise picker's Long note card",
   ],
+  // The level the premium exercises are at (exercise-level.ts), and Long
+  // note's control for it: built with the room and the picker, and folded
+  // away with them.
+  ['long-note-level', "Long note's level control"],
+  ['pitchperfect_premium_exercise_level', "the premium exercises' level"],
 ]
 
 /**
