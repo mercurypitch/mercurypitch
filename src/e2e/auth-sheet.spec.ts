@@ -26,7 +26,8 @@ import { expect, test } from '@playwright/test'
  * widget is always on screen: 65px of "Verifying" and then "Success". Asked
  * for 'interaction-only', it draws nothing unless the person has to click,
  * and then a 69px checkbox, announced through before-interactive-callback.
- * A visitor who needs no click gets a token either way.
+ * Ticked, the checkbox turns into Cloudflare's "Success" at the same 69px,
+ * and the token follows. A visitor who needs no click gets a token either way.
  */
 const TURNSTILE_STUB = `
 window.turnstile = {
@@ -39,6 +40,11 @@ window.turnstile = {
       el.appendChild(box)
     }
     if (needsClick) {
+      box.addEventListener('click', function () {
+        box.setAttribute('data-stub', 'success')
+        if (opts['after-interactive-callback']) opts['after-interactive-callback']()
+        opts.callback('stub-token')
+      })
       if (opts['before-interactive-callback']) opts['before-interactive-callback']()
     } else {
       setTimeout(function () { opts.callback('stub-token') }, 50)
@@ -230,7 +236,31 @@ test.describe('the compact sheet on a phone', () => {
       el.querySelector<HTMLElement>('[data-testid="auth-email"]')?.offsetWidth,
     ])
     expect(checkbox).toBe(field)
-    await expect(page.getByTestId('auth-submit')).toBeDisabled()
     await expect.poll(() => hiddenOverflow(dialog)).toBeLessThanOrEqual(0)
+
+    // A tap before the click is held, and the button says so, rather than
+    // sitting disabled.
+    await page.getByTestId('auth-email').fill('singer@example.com')
+    await page.getByTestId('auth-password').fill('scales4days')
+    const submit = page.getByTestId('auth-submit')
+    await submit.click()
+    await expect(submit).toHaveText('Checking…')
+    await expect(submit).toHaveAttribute('aria-busy', 'true')
+
+    // Ticked: Cloudflare's "Success" stays at 69px, so its spacing stays too.
+    // Dropping it lifted the widget 4px and left no gap above the button.
+    const host = page.getByTestId('turnstile-host')
+    await page.locator('[data-stub="checkbox"]').click()
+    await expect(page.locator('[data-stub="success"]')).toBeVisible()
+    await expect(host).toHaveAttribute('data-turnstile', 'drawn')
+    const gap = await dialog.evaluate((el) => {
+      const h = el.querySelector('[data-testid="turnstile-host"]')
+      const b = el.querySelector('[data-testid="auth-submit"]')
+      if (h === null || b === null) return Number.NaN
+      return b.getBoundingClientRect().top - h.getBoundingClientRect().bottom
+    })
+    expect(gap).toBeCloseTo(12, 0)
+    await expect(submit).not.toHaveText('Checking…')
   })
 })
+

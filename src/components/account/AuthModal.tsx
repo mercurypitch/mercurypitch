@@ -98,6 +98,11 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [turnstileToken, setTurnstileToken] = createSignal('')
+  // A tap that came before the hidden check's token. The check takes ~1.6s
+  // after the sheet opens, after a failed attempt and after an expiry, and a
+  // password manager fills the form sooner than that. The tap is held, the
+  // button says so, and the form goes as soon as the token arrives.
+  const [awaitingCheck, setAwaitingCheck] = createSignal(false)
   // The address the forgot-sent confirmation names (snapshotted on send,
   // so later edits to the field can't rewrite the message).
   const [sentTo, setSentTo] = createSignal('')
@@ -156,6 +161,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     setError('')
     setBusy(false)
     setTurnstileToken('')
+    setAwaitingCheck(false)
     resetTurnstile()
     // The baseline `dirty` compares against — see close()/onBackdropClick.
     setEmailAtOpen(untrack(email))
@@ -187,6 +193,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     setShowPassword(false)
     setError('')
     setTurnstileToken('')
+    setAwaitingCheck(false)
     resetTurnstile()
   }
 
@@ -215,6 +222,8 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   function switchPane(next: Pane): void {
     setPane(next)
     setError('')
+    // A held tap belonged to the pane it was made on.
+    setAwaitingCheck(false)
     setShowPassword(false)
     if (next !== 'twofa') {
       setCeremony('')
@@ -449,12 +458,56 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   const pwdInvalid = (): boolean =>
     pane() === 'register' && password() !== '' && !isPasswordValid(password())
 
+  /** The panes whose request carries the Turnstile token. */
+  const tokenPane = (): boolean =>
+    pane() === 'register' ||
+    pane() === 'login' ||
+    pane() === 'email-code' ||
+    pane() === 'forgot'
+
+  /** Still waiting on the hidden check, with a widget that can answer. */
+  const tokenPending = (): boolean =>
+    turnstileEnabled &&
+    tokenPane() &&
+    turnstileToken() === '' &&
+    !turnstileUnavailable()
+
+  /** Cloudflare's answer: a token sends a held tap; an empty one drops it,
+   *  and the widget says under the form why. */
+  function handleToken(token: string): void {
+    setTurnstileToken(token)
+    if (!awaitingCheck()) return
+    setAwaitingCheck(false)
+    if (token !== '') submitForm()
+  }
+
+  /** The submit button's words: what it is waiting on, or what it does. */
+  function submitLabel(): string {
+    if (awaitingCheck()) return 'Checking…'
+    if (busy()) {
+      if (pane() === 'register') return 'Creating account…'
+      return emailOnlyPane() ? 'Sending…' : 'Signing in…'
+    }
+    if (pane() === 'register') return 'Create account'
+    if (pane() === 'forgot') return 'Send reset link'
+    if (pane() === 'email-code') return 'Email me a code'
+    return 'Sign in'
+  }
+
   function handleSubmit(e: Event): void {
     e.preventDefault()
+    if (busy() || awaitingCheck()) return
+    if (tokenPending()) {
+      setAwaitingCheck(true)
+      return
+    }
+    submitForm()
+  }
+
+  function submitForm(): void {
     if (busy()) return
-    // Snapshot the form inside the event handler — the async closures
-    // below run outside the tracked scope (and the form could change
-    // mid-request).
+    // Snapshot the form now, synchronously — the async closures below run
+    // outside the tracked scope (and the form could change mid-request).
     const current = pane()
     const credentials = { email: email().trim(), password: password() }
     const name = displayName().trim()
@@ -1028,38 +1081,24 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
 
                 {/* One block, so a check that is not drawn leaves no gap
                     behind: Cloudflare draws it only when it needs a click.
-                    It still runs as the dialog opens, and the button still
-                    waits for its token. */}
+                    It still runs as the dialog opens, and a tap that comes
+                    before its token is held until the token arrives. */}
                 <div class={styles.submitBlock}>
                   <Turnstile
-                    onToken={setTurnstileToken}
+                    onToken={handleToken}
                     appearance="interaction-only"
                     size="flexible"
                   />
                   <button
                     class={styles.submit}
                     type="submit"
-                    disabled={
-                      busy() ||
-                      (turnstileEnabled &&
-                        turnstileToken() === '' &&
-                        !turnstileUnavailable())
-                    }
+                    // Not disabled while the check runs: a disabled button
+                    // swallowed the tap. It takes the tap and says so.
+                    disabled={busy()}
+                    aria-busy={awaitingCheck() ? true : undefined}
                     data-testid="auth-submit"
                   >
-                    {busy()
-                      ? pane() === 'register'
-                        ? 'Creating account…'
-                        : emailOnlyPane()
-                          ? 'Sending…'
-                          : 'Signing in…'
-                      : pane() === 'register'
-                        ? 'Create account'
-                        : pane() === 'forgot'
-                          ? 'Send reset link'
-                          : pane() === 'email-code'
-                            ? 'Email me a code'
-                            : 'Sign in'}
+                    {submitLabel()}
                   </button>
                 </div>
                 <Show when={pane() === 'register'}>
