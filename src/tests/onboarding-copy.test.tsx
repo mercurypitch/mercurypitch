@@ -395,6 +395,32 @@ describe('beat 5 — the twin', () => {
       ),
     ).toEqual(['24', '82', '74'])
   })
+
+  // On a phone the buttons are pinned to the bottom of the frame, and the
+  // line a share says back lands under them: it has to be scrolled to.
+  it('brings the line a share says back into view', async () => {
+    const scrolled: Element[] = []
+    const scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this)
+    })
+    Element.prototype.scrollIntoView = scrollIntoView
+    const onShare = (): Promise<string> =>
+      Promise.resolve('Card saved. Link copied.')
+    try {
+      const { container, getByRole } = render(() => (
+        <BeatTwin result={TWIN_RESULT} onShare={onShare} onContinue={noop} />
+      ))
+
+      fireEvent.click(getByRole('button', { name: 'Share now' }))
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+      expect(scrolled[0]?.textContent).toBe('Card saved. Link copied.')
+      expect(container.contains(scrolled[0] ?? null)).toBe(true)
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
 })
 
 // Since 11 Oct 2026 only the returning singer's fork says the note back:

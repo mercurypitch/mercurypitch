@@ -38,8 +38,14 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
   const twin = createMemo(() => singerForRange(props.result.range))
   const [shareNote, setShareNote] = createSignal<string | null>(null)
 
+  let noteRef: HTMLParagraphElement | undefined
+
   const share = async (): Promise<void> => {
     setShareNote((await props.onShare?.()) ?? null)
+    // On a phone the buttons are pinned to the bottom of the frame and the
+    // note lands under them, so a beat that fitted the screen now runs past
+    // it: bring the note into view. (jsdom has no scrollIntoView.)
+    noteRef?.scrollIntoView?.({ block: 'nearest' })
   }
 
   return (
@@ -58,8 +64,10 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           </>
         }
       >
-        {/* 200-320px box: `mid` (360px) lands inside 4x either way, where
-            the master was already at 4.6x on the small end. */}
+        {/* An 88-320 px box that shrinks with the screen's height: `mid`
+            (360 px) stays within 4x of the device pixels either way, since
+            a phone short enough for 88 px draws at 2x or more. The master
+            (928 px) would be 5x at 180 px on a 1x screen. */}
         <span class={styles.twinArt} aria-hidden="true">
           <LegendCaricature legend={twin() ?? ''} tier="mid" />
         </span>
@@ -108,7 +116,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         {shareNote() ?? ''}
       </span>
       <Show when={shareNote()}>
-        <p class={styles.shareNote} aria-hidden="true">
+        <p ref={noteRef} class={styles.shareNote} aria-hidden="true">
           <IconCheck size={17} />
           <span>{shareNote()}</span>
         </p>

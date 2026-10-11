@@ -1034,7 +1034,16 @@
      put "Continue" 27 px under the fold, and the portrait was the one
      thing tall enough to give the room back. A 1080 px screen still
      gets the full 320 px. */
-  width: min(clamp(180px, 34vw, 320px), 30vh);
+  /* The third term gives a short laptop window the same deal: everything
+     else on the beat takes about 540 px of height, and the portrait (4:5,
+     so 0.78 of its height is its width) gets what is left. At 1366x768
+     "Continue" sat 24 px under the fold at the full 30vh; from 900 px up
+     this term is the larger one and changes nothing. */
+  width: min(
+    clamp(180px, 34vw, 320px),
+    30vh,
+    max(120px, calc((100vh - 540px) * 0.78))
+  );
   filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
 }
 
@@ -1735,26 +1744,73 @@
   }
 
   /* The twin on a phone: "Continue" was 51 px under the fold at 375x812
-     with the stat card still on screen. Its two buttons share a row
-     (Continue on the thumb's side) and the beat's gaps tighten, which
-     brings it up without pushing the card off the top. */
-  .twinBeat {
-    gap: 14px;
+     with the stat card still on screen, and 76-104 px under it on the
+     phones people actually hold with the browser's bars showing (390x664,
+     375x635, 360x640). Its two buttons share a row, the gaps tighten, and
+     the portrait takes only the height the rest of the beat leaves: about
+     485 px goes to the rail, the words, the card and the buttons, and a
+     4:5 portrait is 0.78 of its height wide. From about 720 px tall it is
+     back to the full 180 px. */
+  .frame:has(> .twinBeat) {
+    padding-top: 16px;
+    padding-bottom: 0;
   }
 
+  .twinBeat {
+    gap: 10px;
+  }
+
+  .twinArt {
+    width: 180px;
+    width: clamp(96px, calc((100vh - 485px) * 0.78), 180px);
+    width: clamp(96px, calc((100dvh - 485px) * 0.78), 180px);
+  }
+
+  /* Pinned to the bottom of the frame: where the beat still runs taller
+     than the screen (a 320 px phone, large text), the words scroll under
+     the buttons and "Continue" never leaves the screen. Where it fits,
+     sticky does nothing and the row sits under the Map note as before.
+     The ground behind the row is the frame's own, so the words go under
+     it rather than through the outlined Share. */
   .twinBeat .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
     flex-direction: row-reverse;
     flex-wrap: nowrap;
+    margin-top: 0;
+    padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to bottom, transparent, var(--ob-ground) 8px);
   }
 
-  /* Side by side, so one height: Share was 42 px against Continue's 44,
-     under the 44 px tap target. */
+  /* Side by side, so one height. */
   .twinBeat .actions .primary,
   .twinBeat .actions .secondary {
     flex: 1 1 0;
     min-width: 0;
     min-height: 44px;
     padding-inline: 16px;
+  }
+
+  /* Below the pinned row, so it keeps the home indicator's room the frame's
+     padding gave up. */
+  .twinBeat .shareNote {
+    margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* A 320 px phone: the stat card goes to two rows and the sub to three
+     lines, so the beat cannot fit 640 px however small the portrait. The
+     pinned row keeps "Continue" on screen; this keeps the whole card above
+     it (the Map note is a short scroll away). */
+  @media (max-width: 340px) {
+    .twinBeat {
+      gap: 8px;
+    }
+
+    .twinArt {
+      width: clamp(88px, calc((100vh - 525px) * 0.78), 180px);
+      width: clamp(88px, calc((100dvh - 525px) * 0.78), 180px);
+    }
   }
 
   .mapGrid {
