@@ -1747,10 +1747,13 @@
     flex-wrap: nowrap;
   }
 
+  /* Side by side, so one height: Share was 42 px against Continue's 44,
+     under the 44 px tap target. */
   .twinBeat .actions .primary,
   .twinBeat .actions .secondary {
     flex: 1 1 0;
     min-width: 0;
+    min-height: 44px;
     padding-inline: 16px;
   }
 
