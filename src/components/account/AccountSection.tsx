@@ -563,7 +563,9 @@ export const AccountSection: Component = () => {
         </Show>
 
         {/* Product updates. Only for a real account: a device identity has no
-            address to send anything to. */}
+            address to send anything to. Worded as the sign-up sheet's box is,
+            and with no promise of how often: the consent wording history is
+            in docs/plans/newsletter-registered-users.md. */}
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
             <MercuryCheckbox
@@ -572,12 +574,11 @@ export const AccountSection: Component = () => {
               testId="newsletter-optin"
               onChange={(next) => void setWantsUpdates(next)}
             >
-              Send me product updates
+              Email me product updates
             </MercuryCheckbox>
             <p class={styles.fieldHint}>
-              Off by default. Big new features and milestones only, never more
-              than once a month, and never your practice data. Every email has
-              an unsubscribe link, and turning this off here stops them
+              Off by default, and never your practice data. Unsubscribe anytime:
+              every email has a link, and turning this off here stops them
               immediately.
             </p>
           </div>

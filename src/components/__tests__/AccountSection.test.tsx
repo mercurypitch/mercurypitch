@@ -138,6 +138,21 @@ describe('AccountSection', () => {
     expect(screen.getByTestId('account-display-name').textContent).toBe('Maff')
   })
 
+  // The words a singer agreed to are the record of their consent, so Settings
+  // says what the sign-up sheet says. The owner dropped the "never more than
+  // once a month" promise on 2026-10-11: nobody can say yet how often there
+  // will be news, so neither box promises anything about it.
+  it('offers product updates in the sign-up sheet words, with no promise of how often', async () => {
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    await screen.findByTestId('newsletter-optin')
+    const words = document.body.textContent ?? ''
+    expect(words).toContain('Email me product updates')
+    expect(words).toContain('Unsubscribe anytime')
+    expect(words).not.toMatch(/once a month|milestones only/i)
+  })
+
   // Every provider but the device identity is an account. An allow-list of
   // the two that existed filed a Sign in with Apple account under anonymous
   // and offered its owner an account they already had.

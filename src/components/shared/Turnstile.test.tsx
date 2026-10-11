@@ -126,7 +126,7 @@ describe('with a site key configured', () => {
     expect(opts.appearance).toBe('interaction-only')
   })
 
-  it("leaves every web form on Cloudflare's default appearance", async () => {
+  it("leaves a form that asks nothing on Cloudflare's defaults", async () => {
     const api = fakeTurnstile()
     const mod = await withSiteKey()
     render(() => <mod.default onToken={vi.fn()} />)
@@ -135,6 +135,19 @@ describe('with a site key configured', () => {
 
     await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1))
     expect(Object.keys(api.render.mock.calls[0][1])).not.toContain('appearance')
+    expect(Object.keys(api.render.mock.calls[0][1])).not.toContain('size')
+  })
+
+  it('passes the size it is asked for', async () => {
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    render(() => <mod.default onToken={vi.fn()} size="flexible" />)
+
+    await scriptLoads()
+
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1))
+    const opts = api.render.mock.calls[0][1] as { size?: string }
+    expect(opts.size).toBe('flexible')
   })
 
   it('injects the script once no matter how many widgets ask', async () => {
@@ -217,6 +230,166 @@ describe('with a site key configured', () => {
 
     unmount()
     expect(api.remove).toHaveBeenCalledWith('widget-1')
+  })
+})
+
+// The sign-in dialog asks for 'interaction-only'. Cloudflare then draws
+// nothing unless it needs a click, and the host must not hold the widget's
+// spacing open around nothing. Measured against Cloudflare's test keys: the
+// always-passes key drew 0px and issued a token at 1.7s, the forced
+// interactive key fired before-interactive-callback and drew 70px, and the
+// always-blocks key drew 0px and fired only error-callback.
+describe('hidden until Cloudflare needs a click', () => {
+  async function renderHidden(onToken = vi.fn()) {
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    const view = render(() => (
+      <mod.default onToken={onToken} appearance="interaction-only" />
+    ))
+    await scriptLoads()
+    await waitFor(() => expect(api.render).toHaveBeenCalledTimes(1))
+    const opts = api.render.mock.calls[0][1] as unknown as Record<
+      string,
+      (arg?: string) => void
+    >
+    return { ...view, opts, onToken }
+  }
+
+  it('takes no room until the check needs the person', async () => {
+    const { getByTestId, opts } = await renderHidden()
+    const host = getByTestId('turnstile-host')
+
+    expect(host).toHaveAttribute('data-turnstile', 'hidden')
+    expect(host.style.margin).toBe('')
+
+    opts['before-interactive-callback']()
+    expect(host).toHaveAttribute('data-turnstile', 'drawn')
+    expect(host.style.margin).toBe('4px 0px 12px')
+
+    // Ticked: Cloudflare keeps its 69px "Success" on screen, so the host
+    // keeps its spacing. Dropping it moved the widget up 4px and left no gap
+    // above the button (review of PR #979, measured on the forced-click key).
+    // Cloudflare's after-interactive callback says only that the click is
+    // done, so the widget no longer listens for it.
+    expect(opts['after-interactive-callback']).toBeUndefined()
+    opts.callback('a-fresh-token')
+    expect(host).toHaveAttribute('data-turnstile', 'drawn')
+    expect(host.style.margin).toBe('4px 0px 12px')
+  })
+
+  it('takes no room again once the page resets the check', async () => {
+    // A failed sign-in resets every widget, and the new run is hidden again
+    // unless it needs another click.
+    const { getByTestId, opts } = await renderHidden()
+    const mod = await import('./Turnstile')
+    const host = getByTestId('turnstile-host')
+
+    opts['before-interactive-callback']()
+    opts.callback('a-fresh-token')
+    mod.resetTurnstile()
+    expect(host).toHaveAttribute('data-turnstile', 'hidden')
+    expect(host.style.margin).toBe('')
+  })
+
+  it('follows the drawn height where the browser can measure it', async () => {
+    // A real browser reports the widget's own box: 69px while Cloudflare
+    // shows a checkbox or its "Success", 0px while it shows nothing.
+    let report: ((height: number) => void) | undefined
+    class FakeResizeObserver {
+      constructor(cb: ResizeObserverCallback) {
+        report = (height) => {
+          cb(
+            [{ contentRect: { height } } as unknown as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          )
+        }
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    try {
+      const { getByTestId, opts } = await renderHidden()
+      const host = getByTestId('turnstile-host')
+
+      opts['before-interactive-callback']()
+      report?.(69)
+      opts.callback('a-fresh-token')
+      expect(host).toHaveAttribute('data-turnstile', 'drawn')
+
+      report?.(0)
+      expect(host).toHaveAttribute('data-turnstile', 'hidden')
+      expect(host.style.margin).toBe('')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('leaves a failure to the widget once it has drawn itself', async () => {
+    // A failed click shows Cloudflare's own message in the drawn widget.
+    const { queryByRole, opts } = await renderHidden()
+
+    opts['before-interactive-callback']()
+    opts['error-callback']('600010')
+    expect(queryByRole('status')).toBeNull()
+  })
+
+  it('keeps an always-drawn widget spaced from the start', async () => {
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    const { getByTestId } = render(() => <mod.default onToken={vi.fn()} />)
+    await scriptLoads()
+    await waitFor(() => expect(api.render).toHaveBeenCalled())
+
+    expect(getByTestId('turnstile-host')).toHaveAttribute(
+      'data-turnstile',
+      'drawn',
+    )
+  })
+
+  it('says so when the hidden check fails, and stops once it passes', async () => {
+    // Nothing on screen would explain the disabled button otherwise.
+    const { findByRole, queryByRole, opts, onToken } = await renderHidden()
+
+    opts['error-callback']('600010')
+    const note = await findByRole('status')
+    expect(note.textContent).toBe(
+      "The security check didn't go through. Close this and try again.",
+    )
+    expect(onToken).toHaveBeenLastCalledWith('')
+
+    opts.callback('a-fresh-token')
+    await waitFor(() => expect(queryByRole('status')).toBeNull())
+    expect(onToken).toHaveBeenLastCalledWith('a-fresh-token')
+  })
+
+  it('says so when the browser cannot run the check at all', async () => {
+    const { findByRole, opts, onToken } = await renderHidden()
+
+    opts['unsupported-callback']()
+    const note = await findByRole('status')
+    expect(note.textContent).toBe(
+      "This browser can't run the security check. Try another browser.",
+    )
+    expect(onToken).toHaveBeenLastCalledWith('')
+  })
+
+  it('leaves the failure to the widget when the widget is drawn', async () => {
+    // Cloudflare draws its own failure message there; a second one under it
+    // would say the same thing twice.
+    const api = fakeTurnstile()
+    const mod = await withSiteKey()
+    const { queryByRole } = render(() => <mod.default onToken={vi.fn()} />)
+    await scriptLoads()
+    await waitFor(() => expect(api.render).toHaveBeenCalled())
+
+    const opts = api.render.mock.calls[0][1] as unknown as Record<
+      string,
+      () => void
+    >
+    opts['error-callback']()
+    expect(queryByRole('status')).toBeNull()
   })
 })
 

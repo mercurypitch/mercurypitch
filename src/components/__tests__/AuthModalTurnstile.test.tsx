@@ -34,6 +34,12 @@ vi.mock('@/db/services/auth-service', () => mocks)
 /** Set before importing the modal to simulate a widget that never loaded. */
 let turnstileBlocked = false
 
+interface FakeTurnstileProps {
+  onToken: (token: string) => void
+  appearance?: string
+  size?: string
+}
+
 beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
@@ -47,14 +53,27 @@ beforeEach(() => {
   // The widget itself is covered in Turnstile.test.tsx. Here it stands in for
   // Cloudflare, so a test can decide when a token arrives.
   vi.doMock('@/components/shared/Turnstile', () => ({
-    default: (props: { onToken: (token: string) => void }) => (
-      <button
-        type="button"
-        data-testid="fake-turnstile"
-        onClick={() => props.onToken('a-fresh-token')}
-      >
-        solve
-      </button>
+    // It wears what it was asked for, so a test can read the request back.
+    default: (props: FakeTurnstileProps) => (
+      <>
+        <button
+          type="button"
+          data-testid="fake-turnstile"
+          data-appearance={props.appearance}
+          data-size={props.size}
+          onClick={() => props.onToken('a-fresh-token')}
+        >
+          solve
+        </button>
+        {/* What the widget hands back when Cloudflare's check fails. */}
+        <button
+          type="button"
+          data-testid="fake-turnstile-fail"
+          onClick={() => props.onToken('')}
+        >
+          fail
+        </button>
+      </>
     ),
     turnstileEnabled: true,
     turnstileUnavailable: () => turnstileBlocked,
@@ -74,19 +93,84 @@ async function openLogin() {
 }
 
 describe('AuthModal with a site key configured', () => {
-  it('holds the submit button until the CAPTCHA issues a token', async () => {
-    // Without this the form would post an empty token to a gate that fails
-    // closed, and the only feedback would be a 400 the reader cannot act on.
+  it('asks Cloudflare to draw the check only when it needs a click', async () => {
+    // Left on Cloudflare's default, every visitor got "Verifying" and then
+    // "Success" in a 65px box above the button (owner, phone test 2026-10-11).
+    // The check still runs as the dialog opens; the button below still waits
+    // for its token.
+    await openLogin()
+    const widget = screen.getByTestId('fake-turnstile')
+    expect(widget).toHaveAttribute('data-appearance', 'interaction-only')
+    expect(widget).toHaveAttribute('data-size', 'flexible')
+  })
+
+  it('takes a tap before the token and sends it once the token arrives', async () => {
+    // The hidden check needs ~1.6s after the sheet opens, after a failed
+    // attempt and after an expiry. A password manager fills the form on
+    // open, so the first tap often comes sooner; a disabled button at that
+    // moment was a tap that did nothing (review of PR #979). The empty token
+    // is still never posted: the gate fails closed on it.
+    mocks.loginWithPassword.mockResolvedValue({})
     const email = await openLogin()
     fireEvent.input(email, { target: { value: 'maff@example.com' } })
     fireEvent.input(screen.getByTestId('auth-password'), {
       target: { value: 'secret123' },
     })
 
-    expect(screen.getByTestId('auth-submit')).toBeDisabled()
+    const submit = screen.getByTestId('auth-submit')
+    expect(submit).toBeEnabled()
+    fireEvent.click(submit)
+
+    expect(submit).toHaveTextContent('Checking…')
+    expect(submit).toHaveAttribute('aria-busy', 'true')
+    expect(mocks.loginWithPassword).not.toHaveBeenCalled()
+    // A second tap while it waits sends nothing twice.
+    fireEvent.click(submit)
 
     fireEvent.click(screen.getByTestId('fake-turnstile'))
-    expect(screen.getByTestId('auth-submit')).toBeEnabled()
+    expect(mocks.loginWithPassword).toHaveBeenCalledTimes(1)
+    expect(mocks.loginWithPassword).toHaveBeenCalledWith(
+      'maff@example.com',
+      'secret123',
+      'a-fresh-token',
+    )
+  })
+
+  it('drops a waiting sign-in when the check fails', async () => {
+    // The widget says why under the form; the button goes back to waiting
+    // for a tap, and a token that turns up later sends nothing on its own.
+    const email = await openLogin()
+    fireEvent.input(email, { target: { value: 'maff@example.com' } })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    const submit = screen.getByTestId('auth-submit')
+    fireEvent.click(submit)
+    expect(submit).toHaveTextContent('Checking…')
+
+    fireEvent.click(screen.getByTestId('fake-turnstile-fail'))
+    expect(submit).toHaveTextContent('Sign in')
+    expect(submit).not.toHaveAttribute('aria-busy')
+
+    fireEvent.click(screen.getByTestId('fake-turnstile'))
+    expect(mocks.loginWithPassword).not.toHaveBeenCalled()
+  })
+
+  it('forgets a waiting submit when the reader changes pane', async () => {
+    const email = await openLogin()
+    fireEvent.input(email, { target: { value: 'maff@example.com' } })
+    fireEvent.input(screen.getByTestId('auth-password'), {
+      target: { value: 'secret123' },
+    })
+    fireEvent.click(screen.getByTestId('auth-submit'))
+    fireEvent.click(screen.getByTestId('auth-switch-register'))
+
+    fireEvent.click(screen.getByTestId('fake-turnstile'))
+    expect(mocks.loginWithPassword).not.toHaveBeenCalled()
+    expect(mocks.registerWithPassword).not.toHaveBeenCalled()
+    expect(screen.getByTestId('auth-submit')).toHaveTextContent(
+      'Create account',
+    )
   })
 
   it('sends the issued token with the sign-in', async () => {

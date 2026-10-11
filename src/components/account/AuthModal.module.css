@@ -1,7 +1,7 @@
 /* AuthModal — shared sign-in / create-account / forgot-password dialog.
-   Same overlay family as ConfirmDialog; the top hairline carries the logo
-   gradient (vocal blue → purple → instrumental teal) so the auth surface
-   reads as MercuryPitch without shouting. */
+   Same overlay family as ConfirmDialog. The border itself carries the logo
+   gradient (vocal blue → purple → instrumental teal) all the way round the
+   radius, so the auth surface reads as MercuryPitch without shouting. */
 
 @keyframes authOverlayIn {
   from {
@@ -57,46 +57,55 @@
   backdrop-filter: blur(7px) saturate(0.92);
 }
 
+/* The spectrum is the dialog's border, not a strip laid over it. The old
+   2px hairline stopped 14px short of each corner, squared off against the
+   radius and scrolled away with the form. Here an opaque fill clipped to the
+   padding box sits over the gradient painted to the border box, so the 1px
+   that shows is the border, round every corner. Each layer names its own box,
+   which is the split MISTAKES.md ("Restate background-origin") says to leave
+   alone: nothing tiles into the border strip, so there is no seam. */
 .dialog {
   position: relative;
   width: 100%;
   max-width: 400px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
-  background: var(--bg-secondary, #161b22);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border: 1px solid transparent;
   border-radius: 14px;
-  padding: 20px 22px 18px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(var(--bg-secondary, #161b22), var(--bg-secondary, #161b22))
+      padding-box,
+    linear-gradient(
+        120deg,
+        rgba(88, 166, 255, 0.9),
+        rgba(188, 140, 255, 0.9) 55%,
+        rgba(45, 212, 191, 0.9)
+      )
+      border-box;
+  padding: 18px 22px 16px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 28px -10px rgba(188, 140, 255, 0.35);
   animation: authDialogIn 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* The rooms keep their own pair. Opaque fills: a translucent one would let
+   the ring gradient through the whole sheet. */
 .overlay[data-tone='guitar-night'] .dialog {
-  border-color: rgba(224, 164, 93, 0.28);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%),
-    rgba(22, 17, 14, 0.985);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%)
+      padding-box,
+    linear-gradient(#16110e, #16110e) padding-box,
+    linear-gradient(
+        120deg,
+        rgba(224, 164, 93, 0.85),
+        rgba(240, 189, 120, 0.85) 58%,
+        rgba(106, 202, 189, 0.85)
+      )
+      border-box;
   box-shadow:
     0 1.8rem 5rem rgba(0, 0, 0, 0.58),
     inset 0 1px rgba(255, 255, 255, 0.04);
-}
-
-/* Logo-palette hairline along the top edge (see displayNamePill). */
-.dialog::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 14px;
-  right: 14px;
-  height: 2px;
-  border-radius: 0 0 2px 2px;
-  background: linear-gradient(120deg, #58a6ff, #bc8cff 55%, #2dd4bf);
-  opacity: 0.85;
-}
-
-.overlay[data-tone='guitar-night'] .dialog::before {
-  background: linear-gradient(90deg, #e0a45d, #f0bd78 58%, #6acabd);
-  opacity: 0.78;
 }
 
 .head {
@@ -104,7 +113,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .title {
@@ -123,6 +132,8 @@
   letter-spacing: -0.015em;
 }
 
+/* A 44px target that takes only the title's height in the layout: the
+   negative margins hand the rest to the dialog's padding. */
 .close {
   display: inline-flex;
   flex: 0 0 44px;
@@ -132,20 +143,16 @@
   height: 44px;
   min-width: 44px;
   min-height: 44px;
+  margin: -11px -12px -11px 0;
   padding: 0;
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   cursor: pointer;
   transition:
     color 0.15s ease,
     background 0.15s ease;
-}
-
-.close:hover {
-  color: var(--text-primary, #e6edf3);
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
 }
 
 .close svg {
@@ -154,56 +161,89 @@
 }
 
 .sub {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-secondary, #8b949e);
+  line-height: 1.5;
+  color: var(--text-secondary, #a8b3bf);
 }
 
-.googleButton {
+/* Every fallback below is the app's own dark value (src/styles/app.css), so
+   a page that mounts the sheet without the app's theme tokens gets the same
+   sheet, at the same contrast, as the app does. */
+
+/* ── Ways in ─────────────────────────────────────────────────────────── */
+
+/* Google wide, the phone beside it: one row instead of two. It wraps only
+   when a third thing joins (the preview's note) or a screen is too narrow
+   for both labels. */
+.providerRow {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.providerButton {
+  display: flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  width: 100%;
-  padding: 9px 14px;
+  min-height: 44px;
+  padding: 8px 14px;
   border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-tertiary, #21262d);
   color: var(--text-primary, #e6edf3);
   font-size: 13.5px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: border-color 0.15s ease;
-  min-height: 44px;
 }
 
-.googleButton:hover {
-  border-color: var(--accent, #58a6ff);
-}
-
-/* Both providers, one silhouette: icons pinned to the Google mark's
-   16px so the two buttons come out the same height, and stacked
-   buttons get air between them instead of touching. */
-.googleButton svg {
+/* Every mark pinned to the Google mark's 16px, so the buttons come out the
+   same height whichever icon they carry. */
+.providerButton svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
 }
 
-.googleButton + .googleButton {
-  margin-top: 10px;
+.phoneButton {
+  flex: 1 0 auto;
+  gap: 7px;
+}
+
+/* Beside Google, the phone takes a thousandth of the spare width, so Google
+   stays wide and the phone snug. Wrapped onto a row of its own (a narrow
+   screen, or larger text), it fills that row rather than sitting at the left. */
+.providerRow > .providerButton:not(.phoneButton) {
+  flex-grow: 1000;
+}
+
+/* Apple on its own row above the pair, at least as prominent as Google. */
+.appleButton {
+  width: 100%;
+  margin-bottom: 8px;
 }
 
 .providerNote {
+  flex: 1 1 100%;
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--border, #30363d);
   border-radius: 8px;
-  background: var(--bg-tertiary, rgba(255, 255, 255, 0.06));
-  color: var(--text-secondary, #8b949e);
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-secondary, #a8b3bf);
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* The Terms line, in the sheet's own size. LegalLinks owns the words. */
+.legal {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* "or use email" — hairline on both sides of a quiet label */
@@ -211,8 +251,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 14px 0;
-  color: var(--text-secondary, #8b949e);
+  margin: 12px 0;
+  color: var(--text-secondary, #a8b3bf);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -223,50 +263,48 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border, rgba(255, 255, 255, 0.12));
+  background: var(--border, #30363d);
 }
+
+/* ── Fields ──────────────────────────────────────────────────────────── */
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
+/* One row per field. The label's words sit in the box like a placeholder,
+   then float to its top edge on focus or once it holds a value; the input
+   keeps room above its text for them. They follow the input in the markup
+   so these sibling selectors can reach them. */
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.fieldLabel {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--text-secondary, #8b949e);
-}
-
-.fieldOptional {
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-muted, #6e7681);
+  position: relative;
+  display: block;
 }
 
 .input {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
-  min-height: 44px;
-  padding: 9px 11px;
+  min-height: 48px;
+  padding: 18px 12px 4px;
   border-radius: 8px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  background: var(--bg-primary, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-primary, #0d1117);
   color: var(--text-primary, #e6edf3);
   font-size: 14px;
   transition: border-color 0.15s ease;
 }
 
+/* A placeholder is a hint for a field being typed in, never a second label:
+   it shows only under a focused, empty field, below the floated words. */
 .input::placeholder {
-  color: var(--text-muted, #6e7681);
+  color: transparent;
+}
+
+.input:focus::placeholder {
+  color: var(--text-muted, #868f9a);
 }
 
 .input:focus {
@@ -278,18 +316,77 @@
    state stays visible mid-typing. */
 .input[aria-invalid='true'],
 .input[aria-invalid='true']:focus {
-  border-color: color-mix(in srgb, var(--red, #e05555) 70%, transparent);
+  border-color: color-mix(in srgb, var(--red, #f85149) 70%, transparent);
 }
 
+.floatLabel {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  right: 12px;
+  overflow: hidden;
+  color: var(--text-muted, #868f9a);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transform-origin: left top;
+  transition:
+    top 0.15s ease,
+    transform 0.15s ease,
+    font-size 0.15s ease,
+    color 0.15s ease;
+}
+
+.input:focus + .floatLabel,
+.input:not(:placeholder-shown) + .floatLabel {
+  top: 7px;
+  color: var(--text-secondary, #a8b3bf);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transform: none;
+}
+
+/* Kept apart: a selector list with a pseudo-class the browser does not know
+   drops the whole rule. A browser that fills the field before anyone types
+   does not always clear :placeholder-shown for it. */
+.input:autofill + .floatLabel {
+  top: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  transform: none;
+}
+
+.input:-webkit-autofill + .floatLabel {
+  top: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  transform: none;
+}
+
+.input:focus + .floatLabel {
+  color: var(--accent, #58a6ff);
+}
+
+.fieldOptional {
+  font-weight: 400;
+  color: var(--text-muted, #868f9a);
+}
+
+/* The reveal button sits over the field's right end, outside its label. */
 .passwordField {
   position: relative;
-  display: flex;
 }
 
 .passwordField .input {
-  flex: 1;
-  min-width: 0;
   padding-right: 48px;
+}
+
+.passwordField .floatLabel {
+  right: 48px;
 }
 
 .revealButton {
@@ -304,13 +401,9 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
   cursor: pointer;
   border-radius: 8px;
-}
-
-.revealButton:hover {
-  color: var(--text-primary, #e6edf3);
 }
 
 .revealButton svg {
@@ -318,22 +411,30 @@
   height: 18px;
 }
 
-/* Two ways past a password you cannot produce, at opposite ends of one row.
-   space-between rather than flex-end: side by side they read as one control
-   with a stutter in it. */
+/* Three ways past a password you cannot produce, spread along one row:
+   a mailed code, a passkey where one can work, and the reset link. Side by
+   side at one end they read as one control with a stutter in it. */
 .forgotRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 0 8px;
   justify-content: space-between;
-  margin-top: -6px;
+  margin: -6px 0 -4px;
+  font-size: 12.5px;
 }
 
 .errorNote {
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--red, #e05555);
+  color: var(--red, #f85149);
+}
+
+/* The CAPTCHA and the button it guards, as one flex item: an undrawn
+   widget then leaves no gap of its own in the form. */
+.submitBlock {
+  display: flex;
+  flex-direction: column;
 }
 
 .submit {
@@ -350,20 +451,16 @@
   transition: opacity 0.15s ease;
 }
 
-.submit:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
 .submit:disabled {
   opacity: 0.55;
   cursor: default;
 }
 
 .switchRow {
-  margin: 14px 0 0;
+  margin: 4px 0 0;
   text-align: center;
   font-size: 12.5px;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }
 
 /* The quiet line under a code that has been asked for again. */
@@ -372,7 +469,7 @@
   text-align: center;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-secondary, #a8b3bf);
 }
 
 .linkButton {
@@ -381,15 +478,25 @@
   min-height: 44px;
   background: none;
   border: none;
-  padding: 0 0.15rem;
+  padding: 0 2px;
   color: var(--accent, #58a6ff);
   font-size: inherit;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.linkButton:hover {
-  text-decoration: underline;
+.linkButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+  text-decoration: none;
+}
+
+/* The light theme's link blue (#0969da) is 4.31:1 on the sheet's #e8eaed,
+   short of 4.5:1 for 12.5px text; its text shade (#0f57ad) is 5.83:1. The
+   rooms' tones keep their own accent. */
+:global([data-theme='light']) .overlay[data-tone='default'] .linkButton {
+  color: var(--accent-text, #0f57ad);
 }
 
 /* Forgot-sent confirmation */
@@ -416,8 +523,34 @@
   height: 30px;
 }
 
+/* Hover looks only where something can hover. On a phone the last tap
+   keeps :hover, and the close button opens under the finger that tapped
+   Sign in, so it would sit there highlighted (MISTAKES.md). */
+@media (hover: hover) {
+  .close:hover {
+    color: var(--text-primary, #e6edf3);
+    background: var(--bg-tertiary, #21262d);
+  }
+
+  .providerButton:hover {
+    border-color: var(--accent, #58a6ff);
+  }
+
+  .revealButton:hover {
+    color: var(--text-primary, #e6edf3);
+  }
+
+  .submit:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .linkButton:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+}
+
 .close:focus-visible,
-.googleButton:focus-visible,
+.providerButton:focus-visible,
 .revealButton:focus-visible,
 .submit:focus-visible,
 .linkButton:focus-visible {
@@ -429,20 +562,24 @@
   outline-offset: -2px;
 }
 
-/* The product-updates box on the register form. Aligned to the first line
-   rather than centred: the sentence wraps to three lines on a phone, and a
-   centred checkbox floats away from the words it belongs to. */
-/* Just the row's place in the form; the control brings its own layout
-   and its own brand colours (MercuryCheckbox.module.css). */
+/* The product-updates box on the register form: one sentence, in the same
+   size as the lines around it. The control brings its own layout and its
+   own brand colours (MercuryCheckbox.module.css); this sets only its words. */
 .consentRow {
   display: block;
-  margin-top: 2px;
+}
+
+.consentRow label > span:last-child {
+  font-size: 12.5px;
+  line-height: 1.4;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .dialog {
+  .dialog,
+  .floatLabel {
     animation: none;
+    transition: none;
   }
 }
 
@@ -456,30 +593,28 @@
 }
 
 /* Short viewport: a phone in portrait with the keyboard up, which is the
-   state the form is actually filled in. Measured at 390x664, the register
-   variant is 489px and fits — but the keyboard takes roughly half the
-   screen, and at that point every one of these paddings is being scrolled
-   past. Trimmed, the same form comes in around 100px shorter. */
+   state the form is actually filled in. Every padding here is being
+   scrolled past at that point, so they shrink. */
 @media (max-height: 700px) {
   .overlay {
-    padding: 10px;
+    padding: 8px;
   }
 
   .dialog {
-    padding: 14px 16px 12px;
-    max-height: calc(100dvh - 20px);
+    padding: 12px 14px 10px;
+    max-height: calc(100dvh - 16px);
   }
 
   .sub {
     margin: 0 0 10px;
   }
 
-  .form {
-    gap: 8px;
+  .divider {
+    margin: 10px 0;
   }
 
-  .field {
-    gap: 3px;
+  .form {
+    gap: 8px;
   }
 }
 
@@ -503,18 +638,20 @@
 }
 
 .overlay[data-tone='drum-night'] .dialog {
-  border-color: rgba(231, 173, 82, 0.26);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%),
-    rgba(15, 18, 22, 0.985);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.025), transparent 45%)
+      padding-box,
+    linear-gradient(#0f1216, #0f1216) padding-box,
+    linear-gradient(
+        120deg,
+        rgba(231, 173, 82, 0.85),
+        rgba(240, 187, 101, 0.85) 58%,
+        rgba(102, 213, 205, 0.85)
+      )
+      border-box;
   box-shadow:
     0 1.8rem 5rem rgba(0, 0, 0, 0.58),
     inset 0 1px rgba(255, 255, 255, 0.04);
-}
-
-.overlay[data-tone='drum-night'] .dialog::before {
-  background: linear-gradient(90deg, #e7ad52, #f0bb65 58%, #66d5cd);
-  opacity: 0.78;
 }
 
 .overlay[data-tone='drum-night'] .title {
@@ -527,46 +664,75 @@
 
 /* Phones. iOS zooms into any field set below 16px and leaves the page
    scrolled sideways, and the keyboard takes half the height; so the fields
-   are 16px, the dialog starts at the top with a compact head, and email,
-   password and the button sit close enough to share the half that is left. */
+   are 16px, the dialog starts at the top with a compact head, and the whole
+   sheet fits a 375x812 phone with Safari's toolbars showing. */
 @media (max-width: 768px) {
   .overlay {
     align-items: flex-start;
-    padding: 8px 12px;
+    padding: 8px;
   }
   .dialog {
     max-width: min(400px, 100%);
     max-height: calc(100dvh - 16px);
-    padding: 14px 16px 12px;
+    padding: 12px 14px 10px;
   }
   .head {
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   .overlay .dialog .title {
     font-size: 1.05rem;
   }
   .sub {
-    margin: 0 0 8px;
+    margin: 0 0 10px;
     font-size: 12px;
   }
-  .googleButton {
-    min-height: 42px;
+  .providerButton {
+    min-height: 44px;
     padding: 7px 12px;
   }
   .divider {
-    margin: 8px 0;
+    margin: 10px 0;
   }
   .form {
     gap: 8px;
   }
-  .field {
-    gap: 3px;
-  }
   .input {
-    min-height: 44px;
     font-size: 16px;
+  }
+  .floatLabel {
+    font-size: 15px;
   }
   .submit {
     min-height: 44px;
+  }
+}
+
+/* Any touch screen, at any width: a phone held sideways is wider than 768px,
+   and iOS zooms into a field under 16px there as well. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+  .floatLabel {
+    font-size: 15px;
+  }
+}
+
+/* Under 340px (a 320px phone). Cloudflare's checkbox is never narrower than
+   300px, and inside the usual 8px of backdrop and 14px of padding a side the
+   form is 274px, so a drawn check scrolled the sheet sideways. Here the sheet
+   meets the screen's edges and keeps 9px inside its border: 300px of form. */
+@media (max-width: 339px) {
+  .overlay {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .dialog {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+  /* Its 44px target reaches only as far as the narrower padding. */
+  .close {
+    margin-right: -9px;
   }
 }
