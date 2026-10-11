@@ -59,8 +59,20 @@ const MERC_FEET = 0.81
 /** Beside the lantern: his centre, and the ground under the lantern's foot. */
 const BESIDE_X = 230
 const GROUND_Y = 370
-/** The width the lantern and Merc beside it need, from the lantern's left. */
-const LAYOUT_W = 372
+/**
+ * How far left of the stage's middle the lantern stands, so that it and Merc
+ * beside it share the width.
+ */
+const LANTERN_SHIFT = 20
+/** The gap Merc's canvas keeps from the stage's right edge, px. */
+const EDGE_PX = 2
+/**
+ * Where Merc's canvas beside the lantern ends, right of the stage's middle.
+ * All of it stays on screen: a celebration's sparkles, a hop's landing and
+ * the drop's splash reach its edge.
+ */
+const MERC_REACH =
+  BESIDE_X + MERC_UNITS / 2 - (LANTERN_VIEW_W / 2 + LANTERN_SHIFT)
 /**
  * How far his feet sink into the liquid: he stands on its surface, the
  * bottoms of his feet 5 units under its middle line as in storyboard 2,
@@ -89,10 +101,14 @@ interface StageLayout {
 function layoutStage(width: number, height: number): StageLayout {
   const k = Math.max(
     0.2,
-    Math.min((height * 0.96) / LANTERN_VIEW_H, (width - 24) / (LAYOUT_W - 28)),
+    Math.min(
+      (height * 0.96) / LANTERN_VIEW_H,
+      (width / 2 - EDGE_PX) / MERC_REACH,
+    ),
   )
-  // The lantern is centred; Merc beside it uses the room to its right.
-  const left = width / 2 - (LANTERN_VIEW_W / 2) * k
+  // The lantern stands a little left of the middle; Merc beside it uses the
+  // room to its right.
+  const left = width / 2 - (LANTERN_VIEW_W / 2 + LANTERN_SHIFT) * k
   const top = height - LANTERN_VIEW_H * k
   return { k, left, top, width, height }
 }

@@ -453,6 +453,31 @@ describe('LongNoteRoom', () => {
     }
   })
 
+  it("keeps all of Merc's canvas on the stage beside the lantern", () => {
+    // A celebration's sparkles, a hop's landing and the drop's splash reach
+    // the canvas's edge. The stages of a 430 x 932 and a 390 x 844 phone.
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+    const height = vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+    for (const [w, h] of [
+      [430, 461],
+      [390, 373],
+    ]) {
+      width.mockReturnValue(w)
+      height.mockReturnValue(h)
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      const lantern = screen.getByTestId('long-note-lantern')
+      const canvas = screen.getByTestId('long-note-merc')
+      const x = /translate\(([-\d.]+)px/.exec(canvas.style.transform)
+      expect(x).not.toBeNull()
+      const left = parseFloat(lantern.style.left)
+      expect(left).toBeGreaterThan(0)
+      expect(
+        left + Number(x?.[1]) + parseFloat(canvas.style.width),
+      ).toBeLessThanOrEqual(w)
+      cleanup()
+    }
+  })
+
   it("turns the voice amber where the light stops filling, by the engine's centre", async () => {
     vi.useFakeTimers({ toFake: ['performance'] })
     try {
