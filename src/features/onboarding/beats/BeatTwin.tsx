@@ -43,7 +43,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
   }
 
   return (
-    <div class={styles.beat} data-beat="twin">
+    <div class={`${styles.beat} ${styles.twinBeat}`} data-beat="twin">
       <Show
         when={twin() !== null}
         fallback={

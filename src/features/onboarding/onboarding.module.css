@@ -1023,7 +1023,11 @@
   /* Bounded by HEIGHT as well as width: a landscape tablet has width to
      spare and very little height, and a width-only clamp made the
      portrait taller than the whole frame. */
-  width: min(clamp(200px, 34vw, 320px), 42vh);
+  /* 30vh, not 42vh (follow-up to PR 977): at 42vh a 1440x900 laptop
+     put "Continue" 27 px under the fold, and the portrait was the one
+     thing tall enough to give the room back. A 1080 px screen still
+     gets the full 320 px. */
+  width: min(clamp(180px, 34vw, 320px), 30vh);
   filter: drop-shadow(0 14px 40px rgba(188, 140, 255, 0.28));
 }
 
@@ -1721,6 +1725,26 @@
   .actions .secondary {
     width: 100%;
     justify-content: center;
+  }
+
+  /* The twin on a phone: "Continue" was 51 px under the fold at 375x812
+     with the stat card still on screen. Its two buttons share a row
+     (Continue on the thumb's side) and the beat's gaps tighten, which
+     brings it up without pushing the card off the top. */
+  .twinBeat {
+    gap: 14px;
+  }
+
+  .twinBeat .actions {
+    flex-direction: row-reverse;
+    flex-wrap: nowrap;
+  }
+
+  .twinBeat .actions .primary,
+  .twinBeat .actions .secondary {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 16px;
   }
 
   .mapGrid {
