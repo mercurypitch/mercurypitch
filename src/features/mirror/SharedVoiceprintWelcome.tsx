@@ -8,7 +8,7 @@
 // three seconds. This screen shows them the voiceprint first, and only
 // then offers them their own.
 
-import { createResource, Show } from 'solid-js'
+import { createResource, createSignal, onCleanup, onMount, Show, } from 'solid-js'
 import { formatSpan, sharedRangeNotes, sharedVoiceprintTitle, } from '@/lib/mirror/shared-voiceprint'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import { renderSharedVoiceprintCard } from './shared-voiceprint-card'
@@ -33,6 +33,23 @@ export function SharedVoiceprintWelcome(
     () => props.data,
     (data) => renderSharedVoiceprintCard(data),
   )
+
+  // Whether the pill row has come to rest at the end of the section. The
+  // row is pinned to the bottom of a phone over a backing that hides what
+  // scrolls under it; once the end of the section is on screen nothing
+  // does, and the backing would only dim the last step.
+  const [settled, setSettled] = createSignal(false)
+  let end: HTMLDivElement | undefined
+  onMount(() => {
+    if (end === undefined || typeof IntersectionObserver === 'undefined') {
+      return
+    }
+    const observer = new IntersectionObserver((entries) => {
+      setSettled(entries.some((entry) => entry.isIntersecting))
+    })
+    observer.observe(end)
+    onCleanup(() => observer.disconnect())
+  })
 
   return (
     <section class="shared-vp" aria-labelledby="shared-vp-title">
@@ -83,7 +100,7 @@ export function SharedVoiceprintWelcome(
       <ol class="shared-vp-steps">
         <li>
           Sing a few notes and we map your range, then name the voice yours
-          lines up with — like the one above.
+          lines up with, like the one above.
         </li>
         <li>
           Keep going for about a minute and we measure your accuracy and
@@ -91,9 +108,22 @@ export function SharedVoiceprintWelcome(
         </li>
       </ol>
 
-      <button class="mirror-cta" onClick={() => props.onStart()} type="button">
-        Meet your voice
-      </button>
+      {/* The start screen's pill. On a phone the row stays pinned to the
+          bottom of the screen while the card and the steps scroll under it,
+          so the one thing to do next is never below the fold. */}
+      <div
+        class="mirror-start-actions shared-vp-actions"
+        data-settled={settled()}
+      >
+        <button
+          class="mirror-pill"
+          onClick={() => props.onStart()}
+          type="button"
+        >
+          Meet your voice
+        </button>
+      </div>
+      <div class="shared-vp-end" ref={end} aria-hidden="true" />
     </section>
   )
 }

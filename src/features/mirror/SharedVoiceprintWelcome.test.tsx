@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 
 afterEach(cleanup)
@@ -80,6 +80,59 @@ describe('SharedVoiceprintWelcome', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Meet your voice' }))
     expect(onStart).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers one primary action, the start screen’s pill', () => {
+    // The same pill as every door's start screen, in the row that stays
+    // pinned to the bottom of a phone while the card scrolls under it.
+    const { container } = render(() => (
+      <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />
+    ))
+
+    expect(
+      Array.from(container.querySelectorAll('button'), (b) =>
+        b.textContent?.trim(),
+      ),
+    ).toEqual(['Meet your voice'])
+    expect(
+      container.querySelector('.shared-vp-actions .mirror-pill')?.textContent,
+    ).toBe('Meet your voice')
+  })
+})
+
+describe('the pinned pill row', () => {
+  it('drops its backing once it has come to rest at the end', () => {
+    // jsdom has no IntersectionObserver: this one reports on demand.
+    let report: ((entries: { isIntersecting: boolean }[]) => void) | undefined
+    let watched: Element | undefined
+    class ReportingObserver {
+      constructor(callback: typeof report) {
+        report = callback
+      }
+      observe(target: Element) {
+        watched = target
+      }
+      disconnect() {}
+    }
+    vi.stubGlobal('IntersectionObserver', ReportingObserver)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+
+    const { container } = render(() => (
+      <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />
+    ))
+    const row = container.querySelector('.shared-vp-actions')
+
+    // It watches the end of the section, not the row that moves.
+    expect(watched).toBe(container.querySelector('.shared-vp-end'))
+    expect(row?.getAttribute('data-settled')).toBe('false')
+
+    report?.([{ isIntersecting: true }])
+    expect(row?.getAttribute('data-settled')).toBe('true')
+
+    report?.([{ isIntersecting: false }])
+    expect(row?.getAttribute('data-settled')).toBe('false')
   })
 })
 

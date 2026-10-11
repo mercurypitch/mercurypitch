@@ -2156,30 +2156,39 @@ body {
   margin: 0;
 }
 
-/* ── A voiceprint that arrived by link ─────────────────────── */
+/* ── A voiceprint that arrived by link ───────────────────────
+   SharedVoiceprintWelcome.tsx, the start screen of a shared link: the
+   sender's card first, then the start screen's pill. Onboarding tokens,
+   over the plain sky (the card is the picture here). */
 
+/* One column, as wide as the card (at most 360 px): the heading, the
+   card, the steps and, on a phone, the pill. */
 .shared-vp {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 4px;
-  padding: 0 16px;
 }
 
 .shared-vp-eyebrow {
   margin: 0;
   font-size: 0.78rem;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(207, 214, 255, 0.72);
+  color: var(--ob-ink);
 }
 
 .shared-vp-title {
   margin: 2px 0 18px;
   font-size: clamp(1.5rem, 6vw, 2.1rem);
   font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   text-wrap: balance;
+  color: var(--ob-ink);
 }
 
 .shared-vp-card {
@@ -2187,11 +2196,11 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(420px, 100%);
+  width: min(360px, 100%);
   padding: 26px 22px;
-  border: 1px solid rgba(143, 163, 255, 0.28);
+  border: 1px solid var(--ob-rule);
   border-radius: 18px;
-  background: rgba(143, 163, 255, 0.08);
+  background: var(--ob-card);
 }
 
 .shared-vp-range {
@@ -2199,13 +2208,21 @@ body {
   font-size: clamp(2rem, 9vw, 2.9rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--mirror-gold);
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .shared-vp-span {
   margin: 0;
   font-size: 0.95rem;
-  color: rgba(207, 214, 255, 0.85);
+  color: var(--ob-ink-2);
 }
 
 .shared-vp-stats {
@@ -2226,20 +2243,21 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(207, 214, 255, 0.66);
+  color: var(--ob-ink-3);
 }
 
 .shared-vp-stat dd {
   margin: 0;
   font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
+  color: var(--ob-ink);
 }
 
 .shared-vp-steps {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: min(420px, 100%);
+  width: min(360px, 100%);
   margin: 20px 0 4px;
   padding: 0;
   list-style: none;
@@ -2253,7 +2271,8 @@ body {
   padding-left: 38px;
   font-size: 0.95rem;
   line-height: 1.5;
-  color: rgba(207, 214, 255, 0.88);
+  color: var(--ob-ink-2);
+  text-wrap: pretty;
 }
 
 .shared-vp-steps li::before {
@@ -2265,17 +2284,17 @@ body {
   place-items: center;
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(143, 163, 255, 0.45);
+  border: 1px solid color-mix(in srgb, var(--ob-blue) 45%, var(--ob-rule));
   border-radius: 999px;
-  background: rgba(143, 163, 255, 0.12);
-  color: var(--mirror-gold);
+  background: color-mix(in srgb, var(--ob-blue) 12%, transparent);
+  color: var(--ob-ink);
   font-size: 0.82rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .shared-vp-figure {
-  width: min(360px, 82vw);
+  width: min(360px, 100%);
   margin: 0 0 18px;
   line-height: 0;
 }
@@ -2284,7 +2303,127 @@ body {
   width: 100%;
   height: auto;
   border-radius: 18px;
-  box-shadow: 0 18px 48px rgba(6, 10, 30, 0.55);
+  box-shadow: 0 18px 48px rgba(1, 4, 9, 0.6);
+}
+
+/* On a laptop the square card is held to the window's height, so the
+   heading, the card and the pill fit a 768 px tall screen together. The
+   steps keep the card's width. */
+@media (min-width: 641px) {
+  .shared-vp-figure,
+  .shared-vp-steps {
+    width: min(360px, 42vh);
+  }
+}
+
+/* Under about 820 px of height the card is narrower than 360 px, the steps
+   narrow with it and the second one wraps to four lines. At 1366x768 the
+   page ran 33 px past the window and the legal row was cut at its foot
+   (measured 11 Oct 2026). The gaps around the card and above the legal row
+   close up, and the page fits the window again. */
+@media (min-width: 641px) and (max-height: 820px) {
+  .shared-vp-title {
+    margin-bottom: 14px;
+  }
+
+  .shared-vp-figure {
+    margin-bottom: 8px;
+  }
+
+  .shared-vp-steps {
+    margin-top: 12px;
+  }
+
+  .mirror-shell[data-screen='shared'] .mirror-legal {
+    padding-top: 12px;
+  }
+}
+
+/* The end of the section, watched by SharedVoiceprintWelcome.tsx: once it
+   is on screen the pill row has come to rest. Out of the flow, so it adds
+   no gap. */
+.shared-vp-end {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* The pill stays on screen. The card and the steps run taller than a
+   phone: the button's foot was 76-103 px under the fold at 375x667,
+   360x640 and 320x640 (measured 11 Oct 2026). A laptop window is short
+   too once the browser has drawn its own bars: at 1366x657 the foot was
+   37 px under the fold. So on a phone, and on any window 700 px tall or
+   less, the row pins to the bottom of the window while they scroll under
+   it, and settles back into place at the end of the section. Its backing runs the window's full width (html and body
+   clip it): solid behind the pill and easing out over 56 px above it, a
+   little more than two lines of the steps, so a line passing under it
+   fades rather than being cut. Once the row has settled
+   (`data-settled`), nothing is under it and the backing goes. */
+@media (max-width: 640px), (max-height: 700px) {
+  .shared-vp-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 12px;
+    padding: 12px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .shared-vp-actions .mirror-pill {
+    max-width: 360px;
+  }
+
+  .shared-vp-actions::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -56px -100vmax 0;
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--ob-ground) 55%, transparent) 22px,
+      color-mix(in srgb, var(--ob-ground) 88%, transparent) 40px,
+      var(--ob-ground) 56px
+    );
+    pointer-events: none;
+    transition: opacity 0.2s var(--ob-ease);
+  }
+
+  .shared-vp-actions[data-settled='true']::before {
+    opacity: 0;
+  }
+}
+
+/* On a wide window only the column scrolls under the pinned row, so the
+   backing covers the column (and at least the pill) and fades out over
+   80 px either side of it. Across the full width it hid the floor under
+   Merc's reflection and read as a bar. Settled, the pill sits as far from
+   the steps as the steps sit from the card. */
+@media (min-width: 641px) and (max-height: 700px) {
+  .shared-vp-actions {
+    width: min(360px, max(42vh, 240px));
+    margin-top: 4px;
+  }
+
+  .shared-vp-actions::before {
+    inset: -56px -80px 0;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 0, 0, 1) 80px,
+      rgba(0, 0, 0, 1) calc(100% - 80px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 0, 0, 1) 80px,
+      rgba(0, 0, 0, 1) calc(100% - 80px),
+      transparent
+    );
+  }
 }
 
 /* ── Motion ─────────────────────────────────────────────────── */
@@ -2295,7 +2434,8 @@ body {
   }
 
   .mirror-pill,
-  .mirror-sidedoor-link {
+  .mirror-sidedoor-link,
+  .shared-vp-actions::before {
     transition: none;
   }
 
