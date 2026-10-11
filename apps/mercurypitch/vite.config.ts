@@ -1,5 +1,5 @@
 import { assertPurchaseBuildSafe } from '@irchiinnuss/purchase-kit'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
@@ -132,6 +132,30 @@ function isLaunchOffer(id: string): boolean {
   return LAUNCH_OFFER.some((module) => path.endsWith(module))
 }
 
+/**
+ * The Long note room's pictures (src/features/long-note/*.webp, the painted
+ * lantern), which only a build with the premium exercises shows
+ * (PREMIUM_EXERCISES, src/lib/native-build.ts). The room folds away in the
+ * store build, but its pictures would not: Vite emits an image the moment
+ * Rollup loads the module that imports it, and Rollup loads a folded dynamic
+ * import's modules before it tree-shakes them. Measured 2026-10-11, the store
+ * build carried all five lantern plates (497 KB) with nothing naming them.
+ * So in a build without the premium exercises they resolve to an empty
+ * module and are never emitted. `assert-bundle.mjs` STAGE 2 checks the
+ * bundle; src/premium-images-build.test.ts checks this switch on every PR.
+ */
+const PREMIUM_IMAGES = /\/src\/features\/long-note\/[^/]+\.webp$/u
+
+/** What every premium picture is in a build without the premium exercises. */
+const FOLDED_IMAGE = '\0mercurypitch:folded-premium-image'
+
+/** Whether a relative import from `importer` names a premium picture. */
+function isPremiumImage(source: string, importer: string | undefined): boolean {
+  if (importer === undefined || !source.startsWith('.')) return false
+  const from = dirname(importer.replace(/\?.*$/u, ''))
+  return PREMIUM_IMAGES.test(resolve(from, source).replace(/\\/gu, '/'))
+}
+
 export default defineConfig(({ mode, command }) => {
   // Fail before producing a bundle, not after shipping one. The Cloud
   // subscription sells through RevenueCat wherever the build carries its
@@ -225,6 +249,19 @@ export default defineConfig(({ mode, command }) => {
         name: 'mercurypitch:sync-native-assets',
         async configResolved() {
           await syncNativeAssets()
+        },
+      },
+      {
+        // The premium exercises' pictures, out of a build that has no
+        // premium exercises (PREMIUM_IMAGES, above).
+        name: 'mercurypitch:fold-premium-images',
+        enforce: 'pre',
+        resolveId(source, importer) {
+          if (karaokeImport || !isPremiumImage(source, importer)) return null
+          return FOLDED_IMAGE
+        },
+        load(id) {
+          return id === FOLDED_IMAGE ? 'export default ""' : null
         },
       },
     ],

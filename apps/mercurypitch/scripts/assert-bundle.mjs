@@ -200,6 +200,11 @@ const KARAOKE_STAGE_2 = [
   // (PREMIUM_EXERCISES, src/lib/native-build.ts): in every build that
   // imports songs, and not in the store build until the V1 flip.
   ['long-note-room', 'the premium Long note exercise'],
+  // Found by file name, not by what a file says: nothing in a store build
+  // names the Long note lantern's plates, and they were in it anyway until
+  // the native config folded the room's pictures (vite.config.ts,
+  // PREMIUM_IMAGES).
+  [/\/lantern-[a-z-]+-[\w-]{8}\.webp$/u, "the Long note lantern's plates"],
 ]
 
 /**
@@ -491,7 +496,12 @@ function main(argv) {
         ? [...KARAOKE_STAGE_2, ...(ios ? [] : KARAOKE_STAGE_2_ANDROID)]
         : []
       const carried = [...KARAOKE_STAGE_2, ...KARAOKE_STAGE_2_ANDROID].filter(
-        ([needle]) => assets.some((file) => contains(file, needle)),
+        ([needle]) =>
+          assets.some((file) =>
+            needle instanceof RegExp
+              ? needle.test(file.replace(/\\/gu, '/'))
+              : contains(file, needle),
+          ),
       )
       const missing = expected.filter((piece) => !carried.includes(piece))
       const extra = carried.filter((piece) => !expected.includes(piece))
