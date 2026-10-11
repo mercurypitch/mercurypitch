@@ -1771,12 +1771,13 @@
      the buttons and "Continue" never leaves the screen. Where it fits,
      sticky does nothing and the row sits under the Map note as before.
      The ground behind the row is the frame's own, so the words go under
-     it rather than through the outlined Share. */
+     it rather than through the outlined Share. In DOM order, Continue
+     then Share, so Tab meets them as the eye does. */
   .twinBeat .actions {
     position: sticky;
     bottom: 0;
     z-index: 1;
-    flex-direction: row-reverse;
+    flex-direction: row;
     flex-wrap: nowrap;
     margin-top: 0;
     padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
