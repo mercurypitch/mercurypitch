@@ -34,6 +34,12 @@ import { refreshBalance } from './billing-store'
 import { showNotification } from './notifications-store'
 import { loadFeaturedPromo, offeredPromo } from './promo-store'
 
+/** "1 credit added" or "5 credits added". Account holders see the balance in
+ *  credits, so the toasts count credits, and one credit is singular. */
+function creditsAdded(credits: number): string {
+  return credits === 1 ? '1 credit added' : `${credits} credits added`
+}
+
 /** How long a claim stays news. */
 export const FRESH_CLAIM_MS = 30 * 60 * 1000
 
@@ -257,7 +263,7 @@ async function readClaims(account: GiftAccount | null): Promise<void> {
   const news = await giftNews(claims, account.verified)
   if (news?.kind === 'claimed') {
     showNotification(
-      `${news.claim.credits} credits added. Try one in Karaoke Night.`,
+      `${creditsAdded(news.claim.credits)}. Try one in Karaoke Night.`,
       'success',
     )
   } else if (news?.kind === 'run-out') {
@@ -282,7 +288,7 @@ export async function confirmedGiftMessage(): Promise<string | null> {
     setKnown({ accountId, verified: true, claims })
     const news = await giftNews(claims, true)
     if (news?.kind === 'claimed') {
-      return `Email confirmed. ${news.claim.credits} credits added.`
+      return `Email confirmed. ${creditsAdded(news.claim.credits)}.`
     }
     return news?.kind === 'run-out' ? GIFT_RUN_OUT : null
   } catch (err) {
@@ -346,7 +352,7 @@ export function claimGiftNow(): Promise<void> {
       })
       refreshBalance()
       showNotification(
-        `${claimed.creditsGranted} credits added. Try one in Karaoke Night.`,
+        `${creditsAdded(claimed.creditsGranted)}. Try one in Karaoke Night.`,
         'success',
       )
     } catch (err) {
