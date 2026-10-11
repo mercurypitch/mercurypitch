@@ -113,8 +113,10 @@ export interface BeatSkyProps {
 }
 
 export const BeatSky: Component<BeatSkyProps> = (props) => (
-  <div class={styles.beat} data-beat="sky">
-    <p class={styles.eyebrow}>Welcome to MercuryPitch</p>
+  <div class={`${styles.beat} ${styles.skyBeat}`} data-beat="sky">
+    <p class={`${styles.eyebrow} ${styles.skyEyebrow}`}>
+      Welcome to MercuryPitch
+    </p>
     <h1 class={styles.headline}>
       Your voice, <span class={styles.lit}>made visible</span>
     </h1>

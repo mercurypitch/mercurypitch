@@ -277,6 +277,19 @@
     padding-top: calc(max(32.5vw, 18.3dvh) - 30px);
   }
 
+  /* The welcome's words used to start right under Merc's legs on a phone
+     (owner testing, iPhone, 11 Oct 2026), and over them on a 360 px or
+     667 px tall one. His glow ends at 30% of the tall cut's height (no
+     painted pixel is brighter than 12 of 255 below it), so max(53.3vw,
+     30dvh) down the screen. The padding carries the words past that plus
+     28 px of clear sky, less the 62 px the rail and the frame's padding
+     already give (78 px on a phone, so a phone gets 16 px more). The
+     beat's auto margins then centre what is left in the sky below him. */
+  .skyBeat {
+    padding-top: calc(max(53.3vw, 30vh) - 34px);
+    padding-top: calc(max(53.3vw, 30dvh) - 34px);
+  }
+
   /* Merc is above the copy here, so the scrim starts below him. */
   .plateArt::after {
     background: linear-gradient(
@@ -532,6 +545,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ob-ink-3);
+}
+
+/* The welcome's eyebrow is the first line anyone reads: near-white and a
+   step bigger than the other beats' (owner testing, 11 Oct 2026). */
+.skyEyebrow {
+  font-size: 0.78rem;
+  color: var(--ob-ink);
 }
 
 .headline {
