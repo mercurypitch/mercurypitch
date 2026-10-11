@@ -119,7 +119,92 @@
 }
 
 .plate[data-plate='first-light'] {
-  background-image: url('/onboarding/merc-first-light-wide.webp');
+  background-image: url('/onboarding/merc-first-light-v2-wide.webp');
+  /* The star is pinned to its place in the picture in this box's units. */
+  container-type: size;
+}
+
+/* First light's star, split from its plate (art/tools/star-split.py in
+   the art folder) so the sky stays dark until the first note lands.
+   Pinned to where it was painted: the plate covers the frame from its
+   centre, so one source pixel is the larger of the frame's width / 1672
+   and height / 941, and the star's centre is (1370, 147) in the master.
+   The layer is 300 source pixels square, centred on it.
+
+   The blend sits on this box, not on the two layers inside it: the
+   `translate` makes it a group of its own, and a layer inside a group
+   blends only with the group. Screened from in there, the star's black
+   ground painted a dark square over the sky. */
+.plateStar {
+  --u: max(calc(100cqw / 1672), calc(100cqh / 941));
+  position: absolute;
+  left: calc(50cqw + (1370 - 836) * var(--u));
+  top: calc(50cqh + (147 - 470.5) * var(--u));
+  width: calc(300 * var(--u));
+  height: calc(300 * var(--u));
+  translate: -50% -50%;
+  mix-blend-mode: screen;
+}
+
+.plateStarGlow,
+.plateStarLight {
+  position: absolute;
+  inset: 0;
+}
+
+/* The voice's pull before the note: a violet bloom whose strength is the
+   live mic level (--voice, 0 to 1, set by FirstLight). The star's own
+   blue, held under its brightness, so the note that lights it still
+   reads as the payoff. */
+.plateStarGlow {
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(110, 120, 255, 0.6),
+    rgba(100, 80, 255, 0.22) 40%,
+    transparent 75%
+  );
+  opacity: calc(0.08 + 0.6 * var(--voice, 0));
+  scale: calc(0.55 + 0.4 * var(--voice, 0));
+  transition:
+    opacity 0.12s linear,
+    scale 0.12s linear;
+}
+
+/* The star itself, exactly as painted: the layer screens back over the
+   plate it was split from. */
+.plateStarLight {
+  background: url('/onboarding/merc-first-light-star-wide.webp') center / 100%
+    100% no-repeat;
+  opacity: 0;
+}
+
+.plateStar[data-lit='true'] .plateStarLight {
+  opacity: 1;
+  animation: starIgnite 1.2s var(--ob-ease) both;
+}
+
+.plateStar[data-lit='true'] .plateStarGlow {
+  opacity: 0;
+  transition: opacity 0.9s var(--ob-ease);
+}
+
+@keyframes starIgnite {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+    filter: brightness(2.2);
+  }
+  35% {
+    opacity: 1;
+    scale: 1.15;
+    filter: brightness(1.7);
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    filter: none;
+  }
 }
 
 /* Merc keeps watch from a floating island in the top left corner, facing
@@ -160,8 +245,21 @@
   }
 
   .plate[data-plate='first-light'] {
-    background-image: url('/onboarding/merc-first-light-tall.webp');
+    background-image: url('/onboarding/merc-first-light-v2-tall.webp');
     background-position: center top;
+  }
+
+  /* The tall cut is mirrored, so its star sits top left, clear of the
+     "Not now" pill at the top right of a phone: centre (181, 86) in a
+     941x1672 master that covers the frame from the top. */
+  .plateStar {
+    --u: max(calc(100cqw / 941), calc(100cqh / 1672));
+    left: calc(50cqw + (181 - 470.5) * var(--u));
+    top: calc(86 * var(--u));
+  }
+
+  .plateStarLight {
+    background-image: url('/onboarding/merc-first-light-star-tall.webp');
   }
 
   .plate[data-plate='map'] {
@@ -1575,6 +1673,18 @@
   /* The step track fills without easing in. */
   .stepSegment {
     transition: none;
+  }
+
+  /* First light's glow still answers the voice, by brightness alone, and
+     the star comes on without the flare. */
+  .plateStarGlow,
+  .plateStar[data-lit='true'] .plateStarGlow {
+    scale: none;
+    transition: none;
+  }
+
+  .plateStar[data-lit='true'] .plateStarLight {
+    animation: none;
   }
 }
 

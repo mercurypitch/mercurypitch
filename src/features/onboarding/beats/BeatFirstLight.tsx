@@ -100,6 +100,12 @@ export interface BeatFirstLightProps {
   onContinue: () => void
   /** The mic is unusable — route onward to the Map. */
   onDenied: () => void
+  /**
+   * The live mic level (RMS), every frame the meter runs, and 0 once it
+   * stops. FirstLight turns it into the glow where the star will light
+   * (owner decision V11): on main a small Merc here pulsed with it.
+   */
+  onLevel?: (level: number) => void
 }
 
 export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
@@ -167,10 +173,12 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     clearInterval(ticker)
     session?.close()
     session = null
+    props.onLevel?.(0)
   })
 
   const fail = (message: string, offerPicker: boolean) => {
     cancelAnimationFrame(meter)
+    props.onLevel?.(0)
     clearInterval(ticker)
     setError(message)
     setPicker(offerPicker)
@@ -204,6 +212,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
     }
 
     cancelAnimationFrame(meter)
+    props.onLevel?.(0)
     session.close()
     session = null
     setNote(heard)
@@ -242,6 +251,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
   const pump = () => {
     const value = session?.level() ?? 0
     setLevel(value)
+    props.onLevel?.(value)
     if (phase() === 'waiting') watchForVoice(value)
     meter = requestAnimationFrame(pump)
   }
@@ -314,6 +324,7 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
 
   const giveUp = () => {
     cancelAnimationFrame(meter)
+    props.onLevel?.(0)
     clearInterval(ticker)
     session?.close()
     session = null

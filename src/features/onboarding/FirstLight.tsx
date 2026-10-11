@@ -12,7 +12,7 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, on, onMount, Show, Switch } from 'solid-js'
+import { createEffect, createSignal, Match, on, onMount, Show, Switch, } from 'solid-js'
 import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
@@ -26,7 +26,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, openBeat, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
@@ -43,7 +43,7 @@ import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
 import type { Plate } from './plates'
-import { platesAhead, plateFor, plateSrc, TALL_QUERY } from './plates'
+import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
 import type { RoomTarget } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
@@ -239,6 +239,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       day: 'numeric',
     })
   }
+
+  /** The live mic level while First light listens, 0 otherwise. */
+  const [voiceLevel, setVoiceLevel] = createSignal(0)
+  /** That level as the star's glow, 0 to 1, on the meter's own scale. */
+  const voiceGlow = (): number => Math.min(1, voiceLevel() * 12)
 
   const handleHeard = (note: SettledNote) => {
     trackOnboarding('onboarding_mic_granted')
@@ -475,7 +480,26 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             }`}
             data-plate={art}
             aria-hidden="true"
-          />
+          >
+            {/* First light's star is painted apart from its picture, so
+                the sky stays dark until the first note lands (owner
+                decision V11). Before that, a glow where it will light
+                follows the voice; the note lights the star itself. It
+                stays lit behind the Fork, which shares the picture. */}
+            <Show when={art === 'first-light'}>
+              <span
+                class={styles.plateStar}
+                data-star
+                data-lit={firstNote() !== null ? 'true' : 'false'}
+                style={{
+                  '--voice': String(Math.round(voiceGlow() * 100) / 100),
+                }}
+              >
+                <span class={styles.plateStarGlow} />
+                <span class={styles.plateStarLight} />
+              </span>
+            </Show>
+          </div>
         )}
       </Show>
       {/* The arc is the same walk the hairline measures, drawn as a
@@ -509,6 +533,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               onHeard={handleHeard}
               onContinue={() => advanceBeat()}
               onDenied={handleMicDenied}
+              onLevel={setVoiceLevel}
             />
           </Match>
           <Match when={currentBeat() === 'fork'}>

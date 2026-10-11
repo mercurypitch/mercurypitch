@@ -69,7 +69,7 @@ vi.mock('@/stores/launch-gift-store', () => ({
   claimGiftNow: async () => {},
 }))
 
-import { currentBeat, flowOpen, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
+import { currentBeat, flowOpen, openBeat, recordFirstNote, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
 import { plateSrc } from './plates'
@@ -182,7 +182,10 @@ describe('the pictures fetched ahead of the Fork', () => {
 
     // Assert
     expect(requested).toEqual(
-      expect.arrayContaining([plateSrc('plain', false), plateSrc('map', false)]),
+      expect.arrayContaining([
+        plateSrc('plain', false),
+        plateSrc('map', false),
+      ]),
     )
   })
 })
@@ -271,7 +274,9 @@ describe('"Not now" lands on the Map (owner decision V9)', () => {
       expect(beat('map')).not.toBeNull()
       expect(tracked()).toContain('onboarding_skipped')
       expect(tracked()).not.toContain('onboarding_track_short')
-      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(
+        expect.arrayContaining(tracked()),
+      )
     },
   )
 
@@ -314,13 +319,51 @@ describe('"Make another voiceprint" for a returning singer (owner decision V12)'
       expect(tracked()).toContain('onboarding_another_voiceprint')
       expect(location.href).toBe('/mirror')
       expect(flowOpen()).toBe(false)
-      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+      expect(ONBOARDING_FUNNEL_EVENTS).toEqual(
+        expect.arrayContaining(tracked()),
+      )
     },
   )
 })
 
+describe("First light's star (owner decision V11)", () => {
+  const star = (): Element | null =>
+    document.querySelector('[data-plate="first-light"] [data-star]')
+
+  it('stays dark until the first note lands, then lights', async () => {
+    // Arrange
+    await at('first-light')
+    expect(star()).toHaveAttribute('data-lit', 'false')
+
+    // Act
+    recordFirstNote('A3')
+
+    // Assert
+    await waitFor(() => expect(star()).toHaveAttribute('data-lit', 'true'))
+  })
+
+  it('stays lit behind the Fork, which shares the picture', async () => {
+    // Arrange
+    await at('first-light')
+    recordFirstNote('A3')
+
+    // Act
+    openBeat('fork')
+
+    // Assert
+    await waitFor(() => expect(beat('fork')).not.toBeNull())
+    expect(star()).toHaveAttribute('data-lit', 'true')
+  })
+
+  it('starts the glow at rest, before any voice', async () => {
+    await at('first-light')
+
+    expect((star() as HTMLElement).style.getPropertyValue('--voice')).toBe('0')
+  })
+})
+
 describe('focus on a beat change', () => {
-  it('moves focus to the new beat\'s heading, out of the Tab order', async () => {
+  it("moves focus to the new beat's heading, out of the Tab order", async () => {
     // Arrange
     const fork = await at('fork')
     const start = within(fork).getByRole('button', { name: 'Find my twin' })

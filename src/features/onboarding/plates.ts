@@ -12,9 +12,13 @@
 // webp at full resolution: 1672x941 for wide screens, 941x1672 for tall
 // ones. The Map's pair (v2) puts Merc where its cards never reach: the
 // top left corner of a wide window, the top centre of a tall one, with
-// the Map's words starting under him. The stylesheet picks the file by
-// aspect ratio; this module only names it, so the flow can fetch the
-// next beat's picture before the visitor gets there.
+// the Map's words starting under him. First light's pair (v2) is the
+// same scene with its star taken out: the star ships as its own small
+// layer, which the flow lights when the first note lands (owner decision
+// V11), and the tall cut is mirrored so the star sits top left, clear of
+// "Not now". The stylesheet picks the file by aspect ratio; this module
+// only names it, so the flow can fetch the next beat's picture before the
+// visitor gets there.
 
 import type { Beat } from './flow'
 
@@ -44,8 +48,8 @@ const PLATE_FILES: Record<Plate, { wide: string; tall: string }> = {
     tall: '/onboarding/merc-sky-tall.webp',
   },
   'first-light': {
-    wide: '/onboarding/merc-first-light-wide.webp',
-    tall: '/onboarding/merc-first-light-tall.webp',
+    wide: '/onboarding/merc-first-light-v2-wide.webp',
+    tall: '/onboarding/merc-first-light-v2-tall.webp',
   },
   map: {
     wide: '/onboarding/merc-map-v2-wide.webp',
