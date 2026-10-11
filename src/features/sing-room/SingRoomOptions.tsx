@@ -17,6 +17,7 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { PrecCountButton } from '@/components/PrecCountButton'
+import { PREMIUM_EXERCISES } from '@/lib/native-build'
 import { KEY_OFFSETS } from '@/lib/scale-data'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -47,11 +48,13 @@ interface SingRoomOptionsProps {
   onSessionSkip: () => void
   onSessionEnd: () => void
   /**
-   * Push the Long note exercise (premium exercises, decision L2). Absent on
-   * a build without them, and while a run is going: the exercise needs the
-   * microphone to itself.
+   * Open the exercise picker. Absent on a build without the premium
+   * exercises, on a shell that cannot open one, and wherever the room does
+   * not offer them (`offersExercises`): over a melody run, the end card and
+   * the denied screen. In short landscape, where the room hides its
+   * exercise row, this is the way in.
    */
-  onOpenLongNote?: () => void
+  onOpenExercises?: () => void
 }
 
 const Toggle: Component<{
@@ -254,25 +257,29 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
       </OptionRow>
     </OptionSection>
 
-    <Show when={props.onOpenLongNote}>
-      {(open) => (
-        <OptionSection label="Exercises">
-          <OptionRow label="Long note">
-            <button
-              type="button"
-              class={styles.stepBtn}
-              data-testid="sing-options-long-note"
-              onClick={() => {
-                props.close()
-                open()()
-              }}
-            >
-              Open
-            </button>
-          </OptionRow>
-        </OptionSection>
-      )}
-    </Show>
+    {/* Folded, not hidden: a store build drops the section and its words.
+        `<Show when={PREMIUM_EXERCISES}>` would keep both in the bundle. */}
+    {PREMIUM_EXERCISES ? (
+      <Show when={props.onOpenExercises}>
+        {(open) => (
+          <OptionSection label="Exercises">
+            <OptionRow label="All exercises">
+              <button
+                type="button"
+                class={styles.stepBtn}
+                data-testid="sing-options-exercises"
+                onClick={() => {
+                  props.close()
+                  open()()
+                }}
+              >
+                Open
+              </button>
+            </OptionRow>
+          </OptionSection>
+        )}
+      </Show>
+    ) : null}
 
     <OptionSection label="More">
       <OptionRow label="All settings">

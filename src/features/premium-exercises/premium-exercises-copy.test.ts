@@ -60,6 +60,16 @@ describe('the decided words', () => {
     expect(picker).toContain('`${best} on ${note}`')
   })
 
+  it('names the options row', () => {
+    const options = readFileSync(
+      'src/features/sing-room/SingRoomOptions.tsx',
+      'utf8',
+    ).replace(/\s+/gu, ' ')
+
+    expect(options).toContain('<OptionSection label="Exercises">')
+    expect(options).toContain('<OptionRow label="All exercises">')
+  })
+
   it("tags a card with the demo's own first words", () => {
     expect(flat('ExercisePicker.tsx')).toContain('Merc sings it first')
     expect(DEMO_COPY.cardLine.startsWith('Merc sings it first')).toBe(true)

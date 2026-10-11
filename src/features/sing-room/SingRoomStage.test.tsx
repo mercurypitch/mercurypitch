@@ -523,53 +523,46 @@ describe('arriving through an alley door', () => {
   })
 })
 
-describe('the Long note row in the options', () => {
-  // `leave` parks a live run as paused; these cases start from no run.
+describe('a build without the premium exercises', () => {
+  // This suite runs as the store build does: PREMIUM_EXERCISES is false, so
+  // the room folds its exercise row, its picker and its options' row away.
+  // SingRoomStage.exercises.test.tsx runs the same room with them.
   beforeEach(() => {
     resetSingRoom()
   })
 
   /** The shell's gear: throws when the room registered no options control,
-   *  so the "absent" case cannot pass on a room that never opened them. */
+   *  so the absent case cannot pass on a room that never opened them. */
   const openRoomOptions = (): void => {
     const open = nativeRunControls()?.openOptions
     if (open === undefined) throw new Error('no options control registered')
     open()
   }
 
-  it('is absent where the phone app offers no Long note', async () => {
-    mountRoom()
-    openRoomOptions()
-    await Promise.resolve()
-    expect(screen.queryByTestId('sing-options-long-note')).toBeNull()
-  })
-
-  it('opens Long note when the phone app offers it', async () => {
+  it('draws no way in, even where the shell could open an exercise', async () => {
     const openExercise = vi.fn()
     const unregister = registerShellApi({
       openExercise,
     } as unknown as NativeShellApi)
     try {
       mountRoom()
+      await vi.dynamicImportSettled()
       openRoomOptions()
       await Promise.resolve()
-      fireEvent.click(screen.getByTestId('sing-options-long-note'))
-      expect(openExercise.mock.calls).toEqual([['long-note-lantern']])
-    } finally {
-      unregister()
-    }
-  })
 
-  it('stays away while a run is going', async () => {
-    const unregister = registerShellApi({
-      openExercise: vi.fn(),
-    } as unknown as NativeShellApi)
-    try {
-      const room = mountRoom()
-      startMelodyRun(room)
-      openRoomOptions()
-      await Promise.resolve()
-      expect(screen.queryByTestId('sing-options-long-note')).toBeNull()
+      const present = [
+        'sing-exercise-row',
+        'sing-exercise-pill',
+        'sing-exercise-browse',
+        'sing-exercise-door',
+        'sing-exercise-picker',
+        'sing-options-exercises',
+      ].filter((id) => screen.queryByTestId(id) !== null)
+      expect(
+        dialogs().map((dialog) => dialog.getAttribute('aria-label')),
+      ).toEqual(['Practice options'])
+      expect(present).toEqual([])
+      expect(openExercise).not.toHaveBeenCalled()
     } finally {
       unregister()
     }
