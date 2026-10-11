@@ -19,7 +19,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, onMount, Show, } from 'solid-js'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
-import { giftCount, songSeparations } from '@/lib/launch-gift-copy'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -36,6 +36,14 @@ function upperFirst(words: string): string {
 /** "1 free credit" or "5 free credits": this card is about the balance. */
 function freeCredits(credits: number): string {
   return credits === 1 ? '1 free credit' : `${credits} free credits`
+}
+
+/** What those credits buy, without "free" (the title above already says
+ *  it): "1 song separation" or "up to 5 song separations". */
+function songSeparations(credits: number): string {
+  return credits === 1
+    ? '1 song separation'
+    : `up to ${credits} song separations`
 }
 
 export interface PromoCodeCardProps {
