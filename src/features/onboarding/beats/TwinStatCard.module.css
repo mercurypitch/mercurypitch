@@ -128,7 +128,9 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 2px 8px;
+  /* 5 px, not 8: "pitch accuracy" is 85 px of type, and at 8 px a 360 px
+     phone left it 84, so it alone broke onto a second line. */
+  padding: 2px 5px;
   text-align: center;
 }
 
