@@ -11,6 +11,8 @@ import { silence } from '@/lib/glass/test-frames'
 import type { HoldEventType, HoldPreset, HoldState } from './hold-engine'
 import { createHoldState, HOLD_PRESETS, LANTERN_LEVELS, runHold, tickHold, } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
+import type { PitchPoint } from './hold-reading'
+import { liveSteadiness } from './hold-steadiness'
 import type { TakeShape } from './test-takes'
 import { realisticTake, shakeCents, takeCents } from './test-takes'
 
@@ -478,12 +480,15 @@ describe('tickHold, the lantern preset past the goal', () => {
     expect(run.state.topCharge).toBeLessThan(0.9)
   })
 
-  it('fills part of the top for a voice between the two bars, in proportion, and the rest once it is steady', () => {
+  it('fills part of the top for a voice between the two bars, in proportion, and the rest once the take since the goal is steady', () => {
     // Arrange: a preset whose top fills to the brim at 80 and not at all
     // at 40. A 5.5 Hz swing of 28.3 c either side is a spread of 20 c, a
     // score of 60: halfway between the two, so half the top. The swing
-    // starts a second in, well before the goal; then 6 s of a straight
-    // tone.
+    // starts a second in, well before the goal, and runs about 10 s past
+    // it; then a straight tone. The top is judged on everything since the
+    // goal (from 2 s before it), so the straight tone has to outweigh the
+    // swing: about 12 s of it at a spread of 20 c take 36 s at none to
+    // bring the spread to 10 c, a score of 80.
     const preset: HoldPreset = {
       ...LANTERN,
       stretch: {
@@ -494,8 +499,8 @@ describe('tickHold, the lantern preset past the goal', () => {
         partScore: 40,
       },
     }
-    const swing = vibrato(40, 5.5, 20 * Math.SQRT2)
-    const readings = [...constant(60, 0), ...swing, ...constant(14 * 60, 0)]
+    const swing = vibrato(21, 5.5, 20 * Math.SQRT2)
+    const readings = [...constant(60, 0), ...swing, ...constant(45 * 60, 0)]
 
     // Act
     let state = createHoldState()
@@ -519,6 +524,32 @@ describe('tickHold, the lantern preset past the goal', () => {
       expect(tops[i]).toBeGreaterThanOrEqual(tops[i - 1])
     }
     expect(state.brimReached).toBe(true)
+  })
+
+  it('judges the top on everything since the goal, from two seconds before it', () => {
+    // Arrange: a shake under the bar, its readings kept as the engine
+    // ticked them.
+    let state = createHoldState()
+    const ticked: PitchPoint[] = []
+    let goalAt = Number.NaN
+    for (const offCents of shakeCents(30, 20, 8, 12, 2)) {
+      state = tickHold(state, { offCents, level: 0.6, dt: DT }, LANTERN)
+      ticked.push({ t: state.clock, cents: offCents })
+      if (Number.isNaN(goalAt) && state.goalReached) goalAt = state.clock
+    }
+
+    // Act: the whole window, read at once, as of the last check.
+    const checkedAt = state.steadyCheckedAt ?? Number.NaN
+    const window = ticked.filter(
+      (point) => point.t >= goalAt - 2 - 1e-6 && point.t <= checkedAt,
+    )
+
+    // Assert: the score the top was judged on is that window's, and the
+    // top filled only as far as it reaches.
+    expect(window[window.length - 1].t - window[0].t).toBeGreaterThan(19)
+    expect(state.steadiness).toBe(liveSteadiness(window))
+    expect(state.steady).toBe(false)
+    expect(state.topCharge).toBeCloseTo(state.reach, 2)
   })
 
   it('never drains the top: off the line and silent, it waits', () => {
@@ -666,6 +697,18 @@ describe("the lantern's levels", () => {
           lanternAt('singer', shakeCents(26, spread, 8, 12, seed)).brim,
         ).toBe(false)
       }
+    }
+  })
+
+  it('never brims a fast shake at Singer, however long it is held', () => {
+    // A shake of 8 to 12 Hz with a spread of 20 cents scores about 60,
+    // under Singer's 70, so it fills part of the top. Judged on its last
+    // two seconds alone, its steadier moments added up to the brim on a
+    // long hold (the top never drains): time alone brimmed a shaky voice.
+    for (const seed of [1, 2, 3]) {
+      const long = lanternAt('singer', shakeCents(88, 20, 8, 12, seed))
+      expect(long.brim).toBe(false)
+      expect(long.top).toBeGreaterThan(0.5)
     }
   })
 

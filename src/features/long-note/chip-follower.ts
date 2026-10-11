@@ -45,8 +45,8 @@ const SETTLE_SECONDS = 1
 /** The goal's own line stands this long before the top's lines. */
 const FULL_SECONDS = 2.5
 /**
- * Back on the note past the goal, the stretch's steadiness window (the
- * last 2 s of the voice) still holds the way back: until the lock is this
+ * Back on the note past the goal, the way back is in the window the top
+ * is judged on too (everything since the goal): until the lock is this
  * long, the line only says the voice is on the note.
  */
 const TOP_AFTER_LOCK = 2

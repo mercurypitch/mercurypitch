@@ -77,22 +77,42 @@ export function takeReadings(
 }
 
 /**
- * One voiced run's readings onto `out`: the tracker's slips dropped
- * (SLIP_CENTS from the median of the run's readings within SLIP_REACH_SEC),
- * the rest held (heldCents).
+ * The reading at `index` of a voiced run as steadiness keeps it: held
+ * (heldCents), or null when it is the tracker's slip (SLIP_CENTS from the
+ * median of the run's readings within SLIP_REACH_SEC of it). Only the
+ * readings within that reach decide, so a reading the voice has passed by
+ * more than SLIP_REACH_SEC is settled for good (growSteadiness).
  */
+export function keptReading(
+  run: readonly PitchPoint[],
+  index: number,
+): PitchPoint | null {
+  const point = run[index]
+  let lo = index
+  while (lo > 0 && run[lo - 1].t >= point.t - SLIP_REACH_SEC - EPS) lo--
+  let hi = index + 1
+  while (hi < run.length && run[hi].t <= point.t + SLIP_REACH_SEC + EPS) hi++
+  const around = median(run.slice(lo, hi).map((near) => near.cents))
+  return Math.abs(point.cents - around) < SLIP_CENTS
+    ? { t: point.t, cents: heldCents(point.cents) }
+    : null
+}
+
+/** Whether `other` is out of the reach of `point`'s slip check, either side. */
+export function pastSlipReach(point: PitchPoint, other: PitchPoint): boolean {
+  return Math.abs(other.t - point.t) > SLIP_REACH_SEC + EPS
+}
+
+/** Whether the gap from `previous` to `next` starts a new voiced run. */
+export function startsRun(previous: PitchPoint, next: PitchPoint): boolean {
+  return next.t - previous.t > DEFAULT_VOICED_RUN_GAP_SEC
+}
+
+/** One voiced run's readings onto `out`, as keptReading keeps them. */
 function keepVoice(run: readonly PitchPoint[], out: PitchPoint[]): void {
-  let lo = 0
-  let hi = 0
-  for (const point of run) {
-    while (run[lo].t < point.t - SLIP_REACH_SEC - EPS) lo++
-    while (hi < run.length && run[hi].t <= point.t + SLIP_REACH_SEC + EPS) {
-      hi++
-    }
-    const around = median(run.slice(lo, hi).map((near) => near.cents))
-    if (Math.abs(point.cents - around) < SLIP_CENTS) {
-      out.push({ t: point.t, cents: heldCents(point.cents) })
-    }
+  for (let i = 0; i < run.length; i++) {
+    const kept = keptReading(run, i)
+    if (kept !== null) out.push(kept)
   }
 }
 
@@ -105,11 +125,7 @@ export function steadyReadings(points: readonly PitchPoint[]): PitchPoint[] {
   const out: PitchPoint[] = []
   let from = 0
   for (let i = 1; i <= points.length; i++) {
-    const gap =
-      i < points.length
-        ? points[i].t - points[i - 1].t
-        : Number.POSITIVE_INFINITY
-    if (gap <= DEFAULT_VOICED_RUN_GAP_SEC) continue
+    if (i < points.length && !startsRun(points[i - 1], points[i])) continue
     keepVoice(points.slice(from, i), out)
     from = i
   }

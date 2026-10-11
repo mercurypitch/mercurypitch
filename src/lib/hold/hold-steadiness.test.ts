@@ -8,9 +8,10 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { hzToCents } from '@/lib/pitch-measurements'
 import { LANTERN_LEVELS, runHold } from './hold-engine'
 import { computeHoldResult } from './hold-metrics'
-import { fitSteadiness, holdSteadiness, liveSteadiness, } from './hold-steadiness'
+import type { PitchPoint } from './hold-reading'
+import { EMPTY_GROWTH, fitSteadiness, growingScore, growSteadiness, holdSteadiness, liveSteadiness, } from './hold-steadiness'
 import type { TakeShape } from './test-takes'
-import { realisticTake } from './test-takes'
+import { realisticTake, shakeCents } from './test-takes'
 
 const TARGET = 57
 
@@ -247,5 +248,32 @@ describe('an octave slip of the tracker', () => {
       const { score } = lanternRun(slipTake(0, 1, off))
       expect(clean - score).toBeGreaterThanOrEqual(10)
     }
+  })
+})
+
+describe('a window that only grows', () => {
+  it('scores every reading in it as liveSteadiness would, one reading at a time', () => {
+    // Arrange: a shake with the tracker's octave slips, a stretch a
+    // semitone and a half sharp, and breaths, so readings settle at a
+    // run's end, beside a slip and at the window's own edges.
+    const points: PitchPoint[] = []
+    shakeCents(20, 20, 8, 12, 4).forEach((cents, i) => {
+      if (i % 420 >= 410) return
+      const slip = i % 233 < 3 ? 1200 : 0
+      const sharp = i >= 600 && i < 630 ? 150 : 0
+      points.push({ t: i / FPS, cents: cents + slip + sharp })
+    })
+
+    // Act + Assert: at every check, the score of the whole window read at
+    // once.
+    let growth = EMPTY_GROWTH
+    points.forEach((point, i) => {
+      growth = growSteadiness(growth, point)
+      if (i % 15 === 0 || i === points.length - 1) {
+        expect(growingScore(growth)).toBe(
+          liveSteadiness(points.slice(0, i + 1)),
+        )
+      }
+    })
   })
 })

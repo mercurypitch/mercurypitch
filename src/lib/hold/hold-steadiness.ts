@@ -19,7 +19,8 @@
 // The result scores the held part of the take, its onset and release
 // trimmed as the Voice Mirror trims them. The room's live check (the hold
 // engine's stretch, which fills the lantern's top) scores the last two
-// seconds of the voice with this same fit. Both read the voice the one way
+// seconds of the voice before the goal, and everything since the goal
+// after it, with this same fit. Both read the voice the one way
 // hold-reading.ts sets out: the tracker's slips dropped, each reading held
 // to a semitone.
 //
@@ -31,7 +32,7 @@ import { HOLD_TRIM_END_SEC, HOLD_TRIM_START_SEC } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { centsToMidi, estimateFrameHop, median } from '@/lib/pitch-measurements'
 import type { PitchPoint } from './hold-reading'
-import { steadyReadings, takeReadings } from './hold-reading'
+import { keptReading, pastSlipReach, startsRun, steadyReadings, takeReadings, } from './hold-reading'
 
 export type { PitchPoint } from './hold-reading'
 
@@ -126,4 +127,115 @@ export function holdSteadiness(
  */
 export function liveSteadiness(points: readonly PitchPoint[]): number | null {
   return fitSteadiness(steadyReadings(points))?.score ?? null
+}
+
+// ── A window that only grows ───────────────────────────────────
+
+/** Kept readings, summed as they come (Welford): the spread without them. */
+interface SpreadSums {
+  readonly count: number
+  readonly mean: number
+  /** The sum of squared deviations from the mean. */
+  readonly squares: number
+  readonly firstT: number | null
+  readonly lastT: number | null
+}
+
+/**
+ * liveSteadiness over a window that only grows (the lantern's top, judged
+ * on everything since the goal), one reading at a time instead of the
+ * whole window on every check. A reading is settled once the voice is past
+ * its slip check's reach (keptReading), or its voiced run has ended: from
+ * then on only its sum counts. The readings still open are checked as the
+ * window stands, which is how steadyReadings reads the same window, so the
+ * score is liveSteadiness over every reading in it.
+ */
+export interface GrowingSteadiness extends SpreadSums {
+  /** The current voiced run, from the reach before its first open reading. */
+  readonly run: readonly PitchPoint[]
+  /** Where in `run` the open readings begin. */
+  readonly open: number
+}
+
+export const EMPTY_GROWTH: GrowingSteadiness = {
+  count: 0,
+  mean: 0,
+  squares: 0,
+  firstT: null,
+  lastT: null,
+  run: [],
+  open: 0,
+}
+
+function addKept(sums: SpreadSums, point: PitchPoint): SpreadSums {
+  const count = sums.count + 1
+  const delta = point.cents - sums.mean
+  const mean = sums.mean + delta / count
+  return {
+    count,
+    mean,
+    squares: sums.squares + delta * (point.cents - mean),
+    firstT: sums.firstT ?? point.t,
+    lastT: point.t,
+  }
+}
+
+/** The kept readings among `run[from..to)` added to the sums. */
+function settle(
+  sums: SpreadSums,
+  run: readonly PitchPoint[],
+  from: number,
+  to: number,
+): SpreadSums {
+  let out = sums
+  for (let i = from; i < to; i++) {
+    const kept = keptReading(run, i)
+    if (kept !== null) out = addKept(out, kept)
+  }
+  return out
+}
+
+/** The window with one more reading (cents off the note, as ticked). */
+export function growSteadiness(
+  growth: GrowingSteadiness,
+  point: PitchPoint,
+): GrowingSteadiness {
+  let sums: SpreadSums = growth
+  let run = growth.run
+  let open = growth.open
+  const last = run.at(-1)
+  if (last !== undefined && startsRun(last, point)) {
+    // A breath: the run is over, so its open readings are settled as is.
+    sums = settle(sums, run, open, run.length)
+    run = []
+    open = 0
+  }
+  run = [...run, point]
+  let settled = open
+  while (settled < run.length - 1 && pastSlipReach(run[settled], point)) {
+    settled++
+  }
+  sums = settle(sums, run, open, settled)
+  // The open readings' own reach back is all the run still needs.
+  let drop = 0
+  while (drop < settled && pastSlipReach(run[drop], run[settled])) drop++
+  return {
+    count: sums.count,
+    mean: sums.mean,
+    squares: sums.squares,
+    firstT: sums.firstT,
+    lastT: sums.lastT,
+    run: run.slice(drop),
+    open: settled - drop,
+  }
+}
+
+/** The window's score now, as liveSteadiness would score it. */
+export function growingScore(growth: GrowingSteadiness): number | null {
+  const sums = settle(growth, growth.run, growth.open, growth.run.length)
+  if (sums.count < 5 || sums.firstT === null || sums.lastT === null) {
+    return null
+  }
+  if (sums.lastT - sums.firstT < 0.3) return null
+  return spreadScore(Math.sqrt(sums.squares / sums.count))
 }
