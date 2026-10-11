@@ -1467,6 +1467,11 @@ body {
   text-transform: uppercase;
 }
 
+/* The date moves as one piece: "UNTIL 1 / JANUARY" on a 320 px phone. */
+.mirror-keep-gift-until {
+  white-space: nowrap;
+}
+
 .mirror-keep-gift-line {
   color: var(--mirror-gold);
   font-size: 1rem;
@@ -1511,6 +1516,26 @@ body {
 
 .mirror-keep-fine.mirror-error {
   color: #ff9c9c;
+}
+
+/* Below about 340 px the card's padding wrapped "Create my free account"
+   onto two lines (a 72 px button) and the gift tag onto two. */
+@media (max-width: 340px) {
+  .mirror-keep {
+    padding: 18px 14px 16px;
+  }
+
+  .mirror-keep-gift {
+    padding: 10px 12px;
+  }
+
+  .mirror-keep-gift-tag {
+    letter-spacing: 0.08em;
+  }
+
+  .mirror-keep-button {
+    padding: 13px 14px;
+  }
 }
 
 /* ============================================================

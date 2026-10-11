@@ -113,7 +113,16 @@ const GiftLine: Component<{ promo: FeaturedPromo }> = (props) => {
     <div class="mirror-keep-gift" data-testid="mirror-account-gift">
       <p class="mirror-keep-gift-tag">
         Launch gift
-        <Show when={until()}>{(day) => <span> · until {day()}</span>}</Show>
+        {/* The space stays outside the nowrap span, so the tag can still
+            break before the date. */}
+        <Show when={until()}>
+          {(day) => (
+            <>
+              {' '}
+              <span class="mirror-keep-gift-until">· until {day()}</span>
+            </>
+          )}
+        </Show>
       </p>
       <p class="mirror-keep-gift-line">{giftTitle(props.promo.credits)}</p>
       <p class="mirror-keep-gift-body">{GIFT_BODY}</p>
