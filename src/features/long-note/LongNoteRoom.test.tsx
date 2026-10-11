@@ -341,6 +341,60 @@ describe('LongNoteRoom', () => {
     )
   })
 
+  it('says why the note tag will not play during a take, and plays it after', async () => {
+    // Review B of PR 973, minor 10: the tag refused silently mid-take.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const tag = (): HTMLButtonElement =>
+      screen.getByTestId('long-note-note') as HTMLButtonElement
+    expect(tag().disabled).toBe(false)
+    await startListening()
+    const tones = fake.tones.length
+
+    for (const take of [() => undefined, () => tone(57, 1)]) {
+      const frames = take()
+      if (frames !== undefined) {
+        fake.frames = frames
+        flushFrames()
+        await settle()
+      }
+      expect(['listen', 'hold']).toContain(phase())
+      expect(tag().disabled).toBe(true)
+      expect(tag().title).toBe('Hear A3 after the take: the mic is listening.')
+      fireEvent.click(tag())
+      expect(fake.tones).toHaveLength(tones)
+    }
+
+    // The take over, it plays again.
+    fake.frames = [...fake.frames, ...silence(0.8, 1)]
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(tag().disabled).toBe(false)
+    expect(tag().title).toBe('')
+    fireEvent.click(tag())
+    expect(fake.tones).toEqual([57, 57])
+  })
+
+  it('offers one "Hear A3" to a screen reader wherever it stands', async () => {
+    // Review B of PR 973, minor 11: the tag and the picker's Hear were two
+    // buttons of the same name in the intro.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    expect(screen.getAllByRole('button', { name: 'Hear A3' })).toHaveLength(1)
+    // The tag stays a tap target for a finger.
+    fireEvent.click(screen.getByTestId('long-note-note'))
+    expect(fake.tones).toEqual([57])
+
+    await startListening()
+    fake.frames = sequence(
+      (t) => tone(57, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(screen.getAllByRole('button', { name: 'Hear A3' })).toHaveLength(1)
+  })
+
   it('plays the note, then listens', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()

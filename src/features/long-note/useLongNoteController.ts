@@ -579,12 +579,18 @@ export function useLongNoteController(): LongNoteController {
     void capture.playTone(midi, 0.8)
   }
 
+  /** Never while the take is open (the mic would hear it), nor in the demo. */
+  const canHear = (): boolean => {
+    const { phase, targetMidi } = state()
+    const open = phase === 'listen' || phase === 'hold' || phase === 'starting'
+    return targetMidi !== null && !open && !scriptActive()
+  }
+
   const hearNote = (): void => {
-    const { phase, targetMidi } = untrack(state)
-    // Never while the take is open: the mic would hear the tone.
-    if (phase === 'listen' || phase === 'hold' || phase === 'starting') return
-    if (demoOn()) return
-    if (targetMidi !== null) void capture.playTone(targetMidi)
+    const { targetMidi } = untrack(state)
+    if (untrack(canHear) && targetMidi !== null) {
+      void capture.playTone(targetMidi)
+    }
   }
 
   // ── The screen's life ──────────────────────────────────────
@@ -746,6 +752,7 @@ export function useLongNoteController(): LongNoteController {
     again,
     changeNote,
     nudge,
+    canHear,
     hearNote,
     script,
   }

@@ -57,6 +57,8 @@ export interface LongNoteController {
   again: () => void
   changeNote: () => void
   nudge: (step: 1 | -1) => void
+  /** The note plays on a tap: not while the take listens, nor in the demo. */
+  canHear: Accessor<boolean>
   hearNote: () => void
   script: LongNoteScript
 }

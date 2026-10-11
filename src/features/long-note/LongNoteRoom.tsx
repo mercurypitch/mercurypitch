@@ -167,6 +167,15 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const lineClass = (base: string): string =>
     phase() === 'result' ? `${base} ${styles.lineAway}` : base
 
+  /** Why the note will not play now, and when it will. */
+  const hearLater = (): string =>
+    room.script.active()
+      ? `Hear ${room.noteName()} after the demo.`
+      : `Hear ${room.noteName()} after the take: the mic is listening.`
+  /** The picker's own Hear button is on screen. */
+  const pickerHears = (): boolean =>
+    phase() === 'intro' && !room.script.active()
+
   const micLabel = (): string => {
     switch (phase()) {
       case 'starting':
@@ -251,12 +260,19 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           style={{ top: `${lineY() - band()}px`, height: `${2 * band()}px` }}
         />
         <Show when={room.noteName() !== ''}>
+          {/* The line's note, which plays on a tap. While the take listens
+              it cannot, and says so. In the intro the picker's Hear is the
+              same control, so a screen reader is offered that one. */}
           <button
             type="button"
             class={styles.noteTag}
             style={{ top: `${lineY()}px` }}
             onClick={() => room.hearNote()}
+            disabled={!room.canHear()}
+            title={room.canHear() ? undefined : hearLater()}
             aria-label={`Hear ${room.noteName()}`}
+            aria-hidden={pickerHears() ? 'true' : undefined}
+            tabIndex={pickerHears() ? -1 : undefined}
             data-testid="long-note-note"
           >
             {room.noteName()}

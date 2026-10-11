@@ -140,6 +140,14 @@
   text-align: right;
 }
 
+/* While the take listens the note will not play: the tag dims to a label,
+   and its title says when it will (MISTAKES.md, a control that refuses
+   silently). */
+.noteTag:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .lantern {
   position: absolute;
 }
