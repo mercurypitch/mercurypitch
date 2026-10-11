@@ -2,28 +2,54 @@
 // Lantern geometry — one coordinate system for the glass and Merc
 // ============================================================
 //
-// The lantern is drawn in a 200 x 400 view box, as two SVG layers with Merc's
+// The lantern is drawn in a 200 x 400 view box, as two layers with Merc's
 // canvas between them (the glass and the frame in front of him, the liquid
 // behind). Everything that has to line up with the glass reads its numbers
 // from here: the room places Merc on the liquid's surface, and the target
 // line through the middle of the chimney.
+//
+// The lantern is painted (Lantern.tsx), so these numbers are measured off the
+// painting: the top of its handle sits at 4 and the bottom of its foot at 370,
+// the ground line Merc stands on beside it. The chimney is the inside of the
+// glass, where the painted light is; its outline is fitted to that region
+// (two cubics a side, within 0.4 units rms).
 
 export const LANTERN_VIEW_W = 200
 export const LANTERN_VIEW_H = 400
 
 /** The chimney's inside, top and bottom, where the liquid can be. */
-export const CHIMNEY_TOP = 92
-export const CHIMNEY_BOTTOM = 336
+export const CHIMNEY_TOP = 116
+export const CHIMNEY_BOTTOM = 312
 
-/** The chimney's outline: narrow at both ends, bulging in the middle. */
+/** The chimney's outline: a narrow neck, widest low down, a round bowl. */
 export const CHIMNEY_PATH =
-  'M62 92 C46 150 44 280 60 336 L140 336 C156 280 154 150 138 92 Z'
+  'M63.1 115.8 L136.9 115.8 C146.7 170.1 158.3 192.6 158.3 252 ' +
+  'C158.3 279.9 149.8 295 127.2 312 L72.8 312 C50.2 295 41.7 279.9 41.7 252 ' +
+  'C41.7 192.6 53.3 170.1 63.1 115.8 Z'
+
+/** The chimney's half-width every 7 units from its top, on the same fit. */
+const HALF_WIDTH_STEP = 7
+const HALF_WIDTHS = [
+  37, 38.3, 39.7, 41.1, 42.7, 44.3, 45.9, 47.5, 49.1, 50.6, 52.1, 53.4, 54.6,
+  55.6, 56.4, 57.1, 57.6, 57.9, 58.2, 58.3, 58.2, 57.8, 56.7, 55, 52.2, 48.3,
+  42.8, 35.7, 27.2,
+]
+
+/** Half the chimney's inside width at a height, in view-box units. */
+export function chimneyHalfWidth(y: number): number {
+  const at =
+    (Math.min(CHIMNEY_BOTTOM, Math.max(CHIMNEY_TOP, y)) - CHIMNEY_TOP) /
+    HALF_WIDTH_STEP
+  const i = Math.min(HALF_WIDTHS.length - 2, Math.floor(at))
+  const f = at - i
+  return HALF_WIDTHS[i] + (HALF_WIDTHS[i + 1] - HALF_WIDTHS[i]) * f
+}
 
 /**
  * How full the liquid may get while Merc floats on it. The rest of the
  * chimney is his headroom; the result tops it up once he has hopped out.
  */
-export const HOLD_FILL_MAX = 0.66
+export const HOLD_FILL_MAX = 0.62
 
 /** The middle of the chimney, where the target line crosses it. */
 export const TARGET_LINE_Y = (CHIMNEY_TOP + CHIMNEY_BOTTOM) / 2

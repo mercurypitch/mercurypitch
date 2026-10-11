@@ -7,8 +7,86 @@
   pointer-events: none;
 }
 
+/* A painted plate, placed in the view box by percentages (Lantern.tsx). */
+.plate {
+  position: absolute;
+  display: block;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* A window that slides with the surface; its inside slides back the same
+   distance, so the plate stays put. Both are transforms: no repaint. */
+.window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.windowInner {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/* The lit frame fades in over the last stretch above the surface's light:
+   72 view units of the window's 400. */
+.litWindow {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%);
+  will-change: transform, opacity;
+}
+
+/* The blue pool of light on the floor under the foot (view y 376). */
+.floor {
+  position: absolute;
+  left: -5%;
+  width: 110%;
+  top: 88.5%;
+  height: 11%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(52, 96, 225, 0.5) 0%,
+    rgba(52, 96, 225, 0.22) 50%,
+    rgba(52, 96, 225, 0) 100%
+  );
+  will-change: opacity;
+}
+
+/* The glow round the glass while it fills, and the full lantern's halo:
+   a cool blue haze, centred on the glass (view y 214 of 400). */
+.haloSoft,
+.halo {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  top: 6%;
+  height: 95%;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.haloSoft {
+  background: radial-gradient(
+    closest-side,
+    rgba(60, 110, 255, 0.16) 0%,
+    rgba(80, 100, 255, 0.07) 55%,
+    rgba(80, 100, 255, 0) 100%
+  );
+}
+
 .halo {
   opacity: 0;
+  background: radial-gradient(
+    closest-side,
+    rgba(66, 118, 255, 0.24) 0%,
+    rgba(86, 104, 255, 0.11) 55%,
+    rgba(86, 104, 255, 0) 100%
+  );
   transition: opacity 900ms ease-out;
 }
 
@@ -16,29 +94,33 @@
   opacity: 1;
 }
 
-.wave {
-  animation: lantern-wave 3.2s linear infinite;
-}
-
-@keyframes lantern-wave {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(50px);
-  }
-}
-
+/* A sparkle: a four-point star with a soft glow, centred on its place. */
 .sparkle {
-  transform-box: fill-box;
-  transform-origin: center;
+  position: absolute;
+  /* 14 view units across at full size: 7% of the lantern's width. */
+  width: calc(7% * var(--spark, 1));
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
   animation: lantern-sparkle 2.4s ease-in-out infinite;
+}
+
+.sparkle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: #f5f7ff;
+}
+
+.sparkleGlow {
+  fill: rgba(130, 156, 255, 0.3);
 }
 
 @keyframes lantern-sparkle {
   0%,
   100% {
-    opacity: 0.15;
+    opacity: 0.35;
   }
   50% {
     opacity: 1;
@@ -46,7 +128,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wave,
   .sparkle {
     animation: none;
   }

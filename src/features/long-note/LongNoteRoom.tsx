@@ -22,7 +22,7 @@ import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, 
 import { Mic, Minus, Plus, Volume2 } from '@/components/icons'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { LanternBack, LanternFront } from './Lantern'
-import { LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
+import { CHIMNEY_BOTTOM, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
 import { useLongNoteController } from './useLongNoteController'
@@ -52,10 +52,16 @@ const BESIDE_X = 230
 const GROUND_Y = 370
 /** The width the lantern and Merc beside it need, from the lantern's left. */
 const LAYOUT_W = 372
-/** How far his feet sink into the liquid. */
-const FLOAT_SINK = 5
+/**
+ * How far his feet sink into the liquid: a quarter of his height, as in the
+ * storyboard, which also keeps his crown under the cap at the fullest hold.
+ */
+const FLOAT_SINK = 19
+/** Where he stands while the liquid is too shallow to float him. */
+const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
 /** The chimney's left edge where the target line crosses it. */
-const CHIMNEY_LEFT_AT_LINE = 47
+const CHIMNEY_LEFT_AT_LINE =
+  LANTERN_VIEW_W / 2 - chimneyHalfWidth(TARGET_LINE_Y)
 
 interface StageLayout {
   /** px per view-box unit. */
@@ -111,7 +117,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     const size = MERC_UNITS * k
     const inside = room.mercPlace() === 'inside'
     const feetX = inside ? LANTERN_VIEW_W / 2 : BESIDE_X
-    const feetY = inside ? surfaceY(room.lanternLevel()) + FLOAT_SINK : GROUND_Y
+    const feetY = inside
+      ? Math.min(BOWL_FLOOR, surfaceY(room.lanternLevel()) + FLOAT_SINK)
+      : GROUND_Y
     return {
       size,
       left: feetX * k - size / 2,
@@ -209,6 +217,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           anchorX={anchorX}
           toleranceCents={room.toleranceCents}
           active={() => phase() === 'listen' || phase() === 'hold'}
+          lineGap={() => {
+            const { k, left } = layout()
+            return [left, left + LANTERN_VIEW_W * k] as const
+          }}
         />
         <Show when={room.noteName() !== ''}>
           <button

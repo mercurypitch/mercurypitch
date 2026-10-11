@@ -22,6 +22,11 @@ export interface VoiceTraceProps {
   anchorX: () => number
   /** The tolerance either side of the target, in cents. */
   toleranceCents: number
+  /**
+   * The stretch of the target line, px from the canvas left, that something
+   * in front of the canvas draws instead (the lantern draws it over itself).
+   */
+  lineGap?: () => readonly [number, number]
   /** Draw while true; a still frame otherwise. */
   active: () => boolean
   class?: string
@@ -62,8 +67,16 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
     ctx.strokeStyle = 'rgba(150, 205, 255, 0.6)'
     ctx.lineWidth = 1.5
     ctx.beginPath()
-    ctx.moveTo(0, y0)
-    ctx.lineTo(width, y0)
+    const gap = props.lineGap?.()
+    if (gap === undefined) {
+      ctx.moveTo(0, y0)
+      ctx.lineTo(width, y0)
+    } else {
+      ctx.moveTo(0, y0)
+      ctx.lineTo(gap[0], y0)
+      ctx.moveTo(gap[1], y0)
+      ctx.lineTo(width, y0)
+    }
     ctx.stroke()
 
     const anchor = props.anchorX()
