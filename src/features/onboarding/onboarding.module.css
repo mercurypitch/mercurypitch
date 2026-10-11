@@ -1183,20 +1183,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  /* The art is the point of the card; a card that shrink-wraps its two
-     lines of copy leaves it nothing to show. */
-  min-height: 148px;
   text-align: left;
-  padding: 20px;
+  padding: 0;
   border-radius: 14px;
   border: 1px solid var(--ob-rule);
-  background: var(--ob-card);
+  background: var(--ob-card-solid);
   color: inherit;
   cursor: pointer;
   text-decoration: none;
-  /* Contains the artwork, which is drawn much larger than the card and
-     scales past its edges as it settles in. */
+  /* Clips the cover to the card's corners. */
   overflow: hidden;
   isolation: isolate;
   transition:
@@ -1205,56 +1200,31 @@
     box-shadow 0.4s var(--ob-ease);
 }
 
-/* ── The reveal ───────────────────────────────────────────────────
-   The cover art, parked behind the card: pushed back, softened and
-   dim. Bringing it forward is the whole gesture — it reads as the room
-   opening up rather than a picture fading in.
-
-   The resting numbers used to be 0.16 behind a 7px blur, which was
-   below the threshold where a picture reads as a picture at all — and
-   on touch, where the hover rule below never fires, that WAS the card,
-   permanently. */
-.roomArt {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.3;
-  transform: scale(1.12);
-  filter: blur(4px) saturate(0.86);
-  transition:
-    opacity 0.75s var(--ob-ease),
-    transform 0.75s var(--ob-ease),
-    filter 0.75s var(--ob-ease);
-  pointer-events: none;
+/* The cover: Merc in the room, the whole picture at rest, on every
+   device (owner decision V5). It used to be the room's own interface,
+   blurred and dimmed until a pointer hovered it, which a phone never
+   does. A band at 12:5 rather than the master's 16:9, so two rows of
+   cards and the button under them still fit a laptop screen. */
+.roomCover {
+  display: block;
+  flex: none;
+  aspect-ratio: 12 / 5;
+  overflow: hidden;
+  background: var(--ob-ground);
 }
 
-.roomArt > * {
+.roomCoverImg {
+  display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
-/* Keeps the copy readable at every stage of the reveal. Deliberately
-   LIGHTER at full strength than it used to be: it arrives on the same
-   curve as the art, so a heavier scrim spent most of the reveal
-   cancelling it out. */
-.roomScrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, #0d1117 46%, transparent),
-    color-mix(in srgb, #0d1117 78%, transparent) 68%
-  );
-  opacity: 0;
-  transition: opacity 0.75s var(--ob-ease);
-  pointer-events: none;
-}
-
-/* The card's own content sits above both layers. */
-.roomCard > *:not(.roomArt):not(.roomScrim):not(.roomGift) {
-  position: relative;
-  z-index: 2;
+.roomBody {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px 18px 18px;
 }
 
 /* The launch gift, pinned to the Karaoke card's top right: solid amber,
@@ -1283,48 +1253,18 @@
 }
 
 /* Pointer devices only: sticky :hover on touch is a known trap
-   (PR #359). */
+   (PR #359, MISTAKES: ":hover stays on the last thing a finger
+   tapped"). Nothing a card shows depends on it. */
 @media (hover: hover) {
-  .roomCard:hover .roomArt,
-  .roomCard:focus-visible .roomArt {
-    opacity: 0.92;
-    transform: scale(1);
-    filter: blur(0) saturate(1.04);
+  .roomCard:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
   }
 
-  .roomCard:hover .roomScrim,
-  .roomCard:focus-visible .roomScrim {
-    opacity: 1;
+  .roomTour:hover {
+    color: var(--ob-teal);
   }
-}
-
-/* Touch has no hover to wait for, and a tap-to-reveal would make
-   entering a room cost two taps. So the resting state stays readable —
-   most of the way up, with the scrim already carrying the copy — and
-   scrolling a card into view (BeatMap's observer sets .roomInView) plays
-   the full reveal a pointer would have earned by hovering. */
-@media (hover: none) {
-  .roomArt {
-    opacity: 0.52;
-    transform: scale(1.04);
-    filter: blur(2px) saturate(0.95);
-  }
-
-  .roomScrim {
-    opacity: 1;
-  }
-
-  .roomCard.roomInView .roomArt {
-    opacity: 0.92;
-    transform: scale(1);
-    filter: blur(0) saturate(1.04);
-  }
-}
-
-.roomCard:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
 }
 
 .roomCard:focus-visible {
@@ -1336,24 +1276,7 @@
   border-color: color-mix(in srgb, var(--ob-blue) 54%, var(--ob-rule));
   background:
     linear-gradient(180deg, rgba(88, 166, 255, 0.08), transparent 62%),
-    var(--ob-card);
-}
-
-.roomPlate {
-  width: 38px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--ob-ink-3);
-}
-
-.roomFirst .roomPlate {
-  width: 56px;
-  background: linear-gradient(
-    90deg,
-    var(--ob-blue),
-    var(--ob-teal),
-    var(--ob-violet)
-  );
+    var(--ob-card-solid);
 }
 
 /* In flow, not absolute. Absolutely positioned it sat on top of the
@@ -1378,7 +1301,6 @@
   font-size: 1.06rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  text-shadow: 0 1px 12px rgba(6, 10, 16, 0.8);
 }
 
 .roomLine {
@@ -1394,19 +1316,25 @@
 }
 
 .roomTour {
+  position: relative;
   align-self: flex-start;
   margin-top: 4px;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--ob-ink-3);
+  /* --ob-ink-2, not -3: a control's label has to clear AA. */
+  color: var(--ob-ink-2);
   border-bottom: 1px solid currentColor;
   cursor: pointer;
   transition: color 0.2s var(--ob-ease);
 }
 
-.roomTour:hover {
-  color: var(--ob-teal);
+/* A whole thumb to tap (44 px tall), without the card growing to make
+   room for it: the hit area reaches past the words, not the layout. */
+.roomTour::before {
+  content: '';
+  position: absolute;
+  inset: -14px -12px;
 }
 
 .roomTour:focus-visible {
@@ -1563,19 +1491,6 @@
     transform: none;
   }
 
-  /* The artwork still resolves on hover — losing it entirely would cost
-     the information, not just the flourish — it simply arrives without
-     the settle. */
-  .roomArt,
-  .roomScrim {
-    transition: none;
-  }
-
-  .roomArt {
-    transform: none;
-    filter: none;
-  }
-
   .meterFill {
     transition: none;
   }
@@ -1627,6 +1542,30 @@
 
   .mapGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* A row per room on a phone: a square of the cover beside the words,
+     so six rooms are a short scroll rather than six screens of pictures.
+     The square is 100 px; ROOM_COVER_SIZES in BeatMap.tsx says so too. */
+  .roomCard {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .roomCover {
+    width: 100px;
+    aspect-ratio: 1;
+    border-radius: 10px;
+  }
+
+  .roomBody {
+    flex: 1;
+    min-width: 0;
+    gap: 5px;
+    padding: 2px 0 0;
   }
 
   /* Eight chips at desktop padding become four rows on a 360px phone.

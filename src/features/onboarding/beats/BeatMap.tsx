@@ -8,12 +8,19 @@
 //
 // This beat is also mounted on its own for replays (#/map), which is
 // why it takes its content as props and owns no flow state.
+//
+// Every card wears its room's cover, Merc in that room, at rest and in
+// full (owner decision V5, 10 Oct 2026). The cards used to show each
+// room's own interface drawn small, blurred and dimmed until a pointer
+// hovered it, and a phone has no pointer to hover with: on touch the
+// art never came forward at all. Nothing here waits on hover now. On a
+// phone the cards are rows, a square of the cover beside the words, so
+// six rooms fit in a scroll a thumb can manage.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
+import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
-import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
@@ -34,6 +41,16 @@ export interface MapGift {
   kind: 'join' | 'keep' | 'waiting'
   credits: number
 }
+
+/**
+ * The cover's rendered width, for `sizes`. It mirrors the stylesheet:
+ * a 100 px square on a phone (`.roomCover` under 640 px), half the
+ * window while the grid runs two columns, and a third of the 1000 px
+ * beat at most. Change one and change the other (BeatMap.test.tsx holds the
+ * phone's pair together).
+ */
+export const ROOM_COVER_SIZES =
+  '(max-width: 640px) 100px, (max-width: 900px) 50vw, 330px'
 
 export interface BeatMapProps {
   /** Null on the short track or when the mic was denied. */
@@ -78,35 +95,6 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
   const joinGift = (): MapGift | false =>
     props.gift?.kind === 'join' ? props.gift : false
 
-  // Touch screens never fire the hover reveal, so scrolling a card into
-  // view plays it instead: the art starts at the dimmed resting state and
-  // settles forward once the card is actually on screen. One observer for
-  // the whole grid; a revealed card unobserves (the state is one-way).
-  // Viewport-root intersection honours ancestor clipping, so this works
-  // inside the scrollable onboarding modal and on the standalone #/map.
-  const [inView, setInView] = createSignal<ReadonlySet<string>>(new Set())
-  let observer: IntersectionObserver | undefined
-  const observeCard = (el: HTMLElement): void => {
-    if (typeof window.matchMedia !== 'function') return
-    if (!window.matchMedia('(hover: none)').matches) return
-    if (typeof IntersectionObserver === 'undefined') return
-    observer ??= new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          const id = entry.target.getAttribute('data-room')
-          if (id !== null) {
-            setInView((prev) => new Set(prev).add(id))
-          }
-          observer?.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.45 },
-    )
-    observer.observe(el)
-  }
-  onCleanup(() => observer?.disconnect())
-
   return (
     <div class={`${styles.beat} ${styles.beatWide}`} data-beat="map">
       <p class={styles.eyebrow}>Your map</p>
@@ -127,25 +115,27 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           {(room) => (
             <button
               type="button"
-              ref={observeCard}
               class={`${styles.roomCard} ${isFirst(room) ? styles.roomFirst : ''}`}
-              classList={{ [styles.roomInView]: inView().has(room.id) }}
               data-room={room.id}
               onClick={() => props.onEnter(room.target, room.id)}
             >
-              {/* Cover art, revealed behind the card. On pointer devices
-                  it settles in on hover; on touch it sits at a higher
-                  resting state instead, because there is no hover to
-                  wait for and a tap-to-reveal would cost a second tap to
-                  actually enter the room. */}
-              <span class={styles.roomArt} aria-hidden="true">
-                <DestinationArtwork visual={room.visual} compact />
+              {/* The cover, in full from the first frame: no hover, no
+                  scroll trigger. Decorative, so it stays out of the
+                  accessible name, which is the room's own words. */}
+              <span class={styles.roomCover} aria-hidden="true">
+                <img
+                  class={styles.roomCoverImg}
+                  src={room.cover.small}
+                  srcset={`${room.cover.small} 560w, ${room.cover.src} 1672w`}
+                  sizes={ROOM_COVER_SIZES}
+                  width="560"
+                  height="315"
+                  alt=""
+                  decoding="async"
+                  style={{ 'object-position': room.cover.focus }}
+                />
               </span>
-              <span class={styles.roomScrim} aria-hidden="true" />
 
-              <Show when={isFirst(room)}>
-                <span class={styles.roomFlag}>Your first stop</span>
-              </Show>
               <Show when={room.id === 'karaoke' && joinGift()}>
                 {(gift) => (
                   <span class={styles.roomGift}>
@@ -156,50 +146,57 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                   </span>
                 )}
               </Show>
-              <span class={styles.roomPlate} aria-hidden="true" />
-              <span class={styles.roomTitle}>
-                {room.title}
-                <Show when={isFirst(room) && stop().detail !== null}>
-                  {' · '}
-                  {stop().detail}
+
+              {/* The words, in one column: under the cover on a wide
+                  screen, beside its square on a phone. */}
+              <span class={styles.roomBody}>
+                <Show when={isFirst(room)}>
+                  <span class={styles.roomFlag}>Your first stop</span>
+                </Show>
+                <span class={styles.roomTitle}>
+                  {room.title}
+                  <Show when={isFirst(room) && stop().detail !== null}>
+                    {' · '}
+                    {stop().detail}
+                  </Show>
+                </span>
+                {/* What the room IS, on every card including the
+                    recommended one. The reason used to REPLACE this line
+                    on the first stop, so the single card we push hardest
+                    was the only one that never said what it was — "Your
+                    tone wavers when you hold" tells you why you were
+                    sent, not where you are being sent. Now it says both. */}
+                <span class={styles.roomLine}>{room.line}</span>
+                <Show when={isFirst(room)}>
+                  <span class={styles.roomReason}>{stop().reason}</span>
+                </Show>
+
+                {/* A tour is offered only where one exists and can
+                    actually spotlight something. Nested inside the card's
+                    button, so it stops the click that would otherwise
+                    just open the room without the tour. */}
+                <Show
+                  when={room.tourTab !== undefined && hasPageTour(room.tourTab)}
+                >
+                  <span
+                    class={styles.roomTour}
+                    role="button"
+                    tabindex="0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      props.onTour(room.target, room.tourTab as ActiveTab)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      props.onTour(room.target, room.tourTab as ActiveTab)
+                    }}
+                  >
+                    Take the tour
+                  </span>
                 </Show>
               </span>
-              {/* What the room IS, on every card including the
-                  recommended one. The reason used to REPLACE this line on
-                  the first stop, so the single card we push hardest was
-                  the only one that never said what it was — "Your tone
-                  wavers when you hold" tells you why you were sent, not
-                  where you are being sent. Now it says both. */}
-              <span class={styles.roomLine}>{room.line}</span>
-              <Show when={isFirst(room)}>
-                <span class={styles.roomReason}>{stop().reason}</span>
-              </Show>
-
-              {/* A tour is offered only where one exists and can actually
-                  spotlight something. Nested inside the card's button, so
-                  it stops the click that would otherwise just open the
-                  room without the tour. */}
-              <Show
-                when={room.tourTab !== undefined && hasPageTour(room.tourTab)}
-              >
-                <span
-                  class={styles.roomTour}
-                  role="button"
-                  tabindex="0"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    props.onTour(room.target, room.tourTab as ActiveTab)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter' && e.key !== ' ') return
-                    e.preventDefault()
-                    e.stopPropagation()
-                    props.onTour(room.target, room.tourTab as ActiveTab)
-                  }}
-                >
-                  Take the tour
-                </span>
-              </Show>
             </button>
           )}
         </For>
