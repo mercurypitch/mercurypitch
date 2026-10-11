@@ -21,11 +21,9 @@ packs, refunds and disputes applied exactly once, consent that waits for a yes
 in the EEA, retention sweeps, and the legal links. It also brings the
 voiceprint-first intro (#977, polished in #981), the compact sign-in sheet
 (#979) and the Voice Mirror's account offer and start screen (#978, #983),
-so the launch traffic meets all of them. The native app is not part of it
-and keeps its version. Under `apps/mercurypitch` the changes are the bundle
-check, the Vite config that leaves the offer out (#961), the shared font
-aliases (#962) and #973's Long note room, which only native test builds
-carry.
+so the launch traffic meets all of them. The native apps keep their own
+versions and tags; what reaches them is listed under `native-mercurypitch`
+and `native-besidecue`.
 
 ### Release steps (prod)
 
@@ -503,17 +501,89 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   their em dashes. Fake-mic runs give the same funnel sequence as `main`
   on every door.
 
-### Native test builds: Long note (#973)
+### native-mercurypitch
 
-`long-note-lantern`, the first premium exercise: the hold engine
-(`src/lib/hold`), Merc's renderer (`src/lib/merc`), the room
-(`src/features/long-note`) and the Sing screen's exercise row
-(`src/features/premium-exercises`). It rides `PREMIUM_EXERCISES`, which is
-`KARAOKE_IMPORT` (`IS_NATIVE_BUILD && __KARAOKE_IMPORT__`), so only native
-test builds carry it. The web build sets `__KARAOKE_IMPORT__` to false and
-the store build folds it out (`assert-bundle` STAGE 2): nothing changes on
-the website. L3, the one free run before the paywall, lands with the V1
-flip.
+Found by building the native bundle at this release's head, as a test build
+(`KARAOKE_IMPORT` on) and as a store build, and matching each PR's changed
+lines against the source lines Rollup kept. `mp-v0.8.18` (82bb04d32, the
+merge of #973) is the first tag whose bundle carries the code changes below,
+all but #974's.
+
+**In the native code**
+
+- **Long note's shell (#973, `mp-v0.8.18`), test builds only.**
+  `LongNoteScreen` on the shell's stack, `openExercise` by id
+  (`premium-exercise-wiring.ts`), and the rail hidden while an exercise holds
+  focus (`run-shell-store.ts`). In the store build
+  `installPremiumExercises()` folds to `{}`.
+- **Build checks (#961, #973, `mp-v0.8.18`).** `vite.config.ts` drops the
+  gift and offer modules (`LAUNCH_OFFER`) and, without the premium
+  exercises, resolves the lantern plates to an empty module
+  (`PREMIUM_IMAGES`). `assert-bundle.mjs` (OFFER, STAGE 2) holds both
+  builds to it; both pass at this head.
+- #962 changed only comments under `apps/mercurypitch`.
+
+**Shared code the native app runs**
+
+- **Long note (#973, `mp-v0.8.18`), test builds only.** The room
+  (`src/features/long-note`), the hold engine (`src/lib/hold`), Merc's
+  renderer (`src/lib/merc`), and the Sing screen's exercise row, picker and
+  options entry (`src/features/premium-exercises`, `SingRoomStage`). The
+  store build keeps only inert parts: the id, its help text and difficulty,
+  and signals that stay false. Look at the row, the picker, a full run,
+  Back and Done. L3, the one free run before the paywall, lands with the V1
+  flip.
+- **The sign-in sheet's security check (#979, `mp-v0.8.18`).**
+  `SignInSheet` already passed `appearance="interaction-only"`. The shared
+  `Turnstile` now takes no height or margin until Cloudflare asks for a
+  click, and when a hidden check fails it says "The security check didn't go
+  through. Close this and try again." or "This browser can't run the
+  security check. Try another browser." Look at the sheet's spacing, and at
+  whether "Try another browser" reads right inside the app.
+- **Reference notes (#977, `mp-v0.8.18`).** `playReferenceTone` runs on
+  `startReferenceTone`: a note whose clock iOS froze is stopped at its own
+  start, not played on resume. It reaches the guided voice check and the Zen
+  stage; interrupt a voice check (a call, Siri) and resume it.
+- **Mic help (#981, `mp-v0.8.18`).** The Challenge stage's troubleshooting
+  list reads "If another MercuryPitch tab has the mic, this one offers to
+  move it here."
+- **Funnel id (#969, `mp-v0.8.18`).** The `app_open` beacon (`analytics.ts`,
+  `/api/mirror/event`) now dates its client id and renews it after 13 months
+  (undated ids from 1 August 2027), and drops a stored click id after 90
+  days.
+- **Compiled in, no visible change (#959, #961, #964, `mp-v0.8.18`).** The
+  router's `?open=costs` (#959); the header's and banner's gift stubs, and
+  `fetchBillingMe` reading `promoClaims` and `offer` (#961); the tour
+  offer's pause, which reads `showWelcome` and `flowOpen`, both always false
+  natively (#964).
+- **The web version (#974).** `APP_VERSION` (root `package.json`, in the
+  crash dialog's details) reads 0.9.17 from the first native tag after this
+  merges. The app's own version comes from `App.getInfo`.
+
+**Server changes it sees** (with this release's worker deploy, whatever the
+native build)
+
+- **LAUNCH on confirmation (#961, #966).** `claimLaunchGift` has no platform
+  check: a native sign-up that confirms its email, or a new Apple or Google
+  account with a verified address, gets the featured code's credits
+  (LAUNCH: 5) in the balance `/api/billing/me` reports. The native app shows
+  no toast. One claim per inbox (#966).
+- **Deleting an account can wait (#968).** `DELETE /api/auth/me` answers 409
+  while a credit-pack withdrawal still owes a refund or its mail (503 if the
+  check fails), and Delete account shows the worker's sentence. Only
+  accounts with web packs can hit it.
+- **Refunds and disputes take credits back (#970).** A refunded or disputed
+  web pack lowers the balance the native app reads by the refunded or
+  disputed share of that payment's credits.
+- **Retention (#969).** `mirrorEvents` rows, the `app_open` beacons
+  included, are deleted after 13 months.
+
+### native-besidecue
+
+Nothing in this release reaches Beside Cue. Its games-on build at this head
+takes only `src/components/icons.tsx` from the changed files, and none of the
+lines #973 changed there survive; no PR touched `apps/beside-cue` or
+`packages/`.
 
 ### Tests: the Jam lyric-row spec (#982)
 
