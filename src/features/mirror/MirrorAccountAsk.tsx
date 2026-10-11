@@ -17,6 +17,7 @@
 import type { Component } from 'solid-js'
 import { createSignal, createUniqueId, ErrorBoundary, lazy, onMount, Show, Suspense, } from 'solid-js'
 import type { FeaturedPromo } from '@/db/services/billing-service'
+import { GIFT_ARRIVES, GIFT_BODY, giftTitle } from '@/lib/launch-gift-copy'
 import type * as PromoStoreModule from '@/stores/promo-store'
 import { askForAccount, asksForAccount, hostDidNotLoad, hostFailed, hostWanted, signUpAsked, } from './account-ask'
 import { trackFunnel } from './funnel'
@@ -94,15 +95,14 @@ const AccountAsk: Component = () => {
         </p>
       </Show>
       <Show when={gift() !== null && !hostFailed()}>
-        <p class="mirror-keep-fine">
-          Credits arrive when your email is confirmed.
-        </p>
+        <p class="mirror-keep-fine">{GIFT_ARRIVES}</p>
       </Show>
     </section>
   )
 }
 
-/** The launch gift, in the words onboarding's Keep uses for it. */
+/** The launch gift, in the words onboarding's Keep uses for it
+ *  (src/lib/launch-gift-copy.ts). */
 const GiftLine: Component<{ promo: FeaturedPromo }> = (props) => {
   const until = () => offerEndDay(props.promo.expiresAt)
   return (
@@ -111,10 +111,8 @@ const GiftLine: Component<{ promo: FeaturedPromo }> = (props) => {
         Launch gift
         <Show when={until()}>{(day) => <span> · until {day()}</span>}</Show>
       </p>
-      <p class="mirror-keep-gift-line">
-        {props.promo.credits} free Karaoke Night credits: take the voice out of
-        up to {props.promo.credits} songs.
-      </p>
+      <p class="mirror-keep-gift-line">{giftTitle(props.promo.credits)}</p>
+      <p class="mirror-keep-gift-body">{GIFT_BODY}</p>
     </div>
   )
 }

@@ -1463,9 +1463,17 @@ body {
 
 .mirror-keep-gift-line {
   color: var(--mirror-gold);
-  font-size: 0.92rem;
-  line-height: 1.45;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
   margin-top: 4px;
+}
+
+.mirror-keep-gift .mirror-keep-gift-body {
+  color: var(--mirror-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin-top: 2px;
 }
 
 .mirror-keep-button {

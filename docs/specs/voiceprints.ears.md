@@ -277,8 +277,10 @@ the voiceprint stays saved in this browser either way, and is never hidden
 or held back to make the case.
 
 **While** the server features a launch promo (`/api/billing/promo/featured`),
-the ask shall name it, with its end day when it has one, and say that the
-credits arrive when the email is confirmed.
+the ask shall name it in onboarding's words ("Up to 5 free song
+separations", "1 free song separation" for one credit, from
+`src/lib/launch-gift-copy.ts`), with its end day when it has one, and say that
+the gift arrives when the email is confirmed.
 
 **Ubiquitous:** the Mirror's first paint shall carry the ask's words and
 none of the dialog. The promo store loads once the ask is on screen; the

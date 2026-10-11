@@ -209,7 +209,7 @@ test.describe('the Voice Mirror account ask', () => {
     await page.goto('/vocal-range-test#take-1')
 
     await expect(page.getByTestId('mirror-account-gift')).toContainText(
-      '5 free Karaoke Night credits',
+      'Up to 5 free song separations',
     )
     await page.getByRole('button', { name: 'Create my free account' }).click()
     const dialog = page.getByRole('dialog', { name: 'Create your account' })

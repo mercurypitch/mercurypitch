@@ -12,6 +12,8 @@
 // dash; and the privacy line says where the sound stays, never what is not
 // uploaded (the owner's standing rule).
 
+import { GIFT_ARRIVES, giftCount } from '@/lib/launch-gift-copy'
+
 /** First light, before the microphone: who is listening. */
 export const FIRST_LIGHT_HEADLINE = 'Merc is all ears'
 
@@ -54,28 +56,10 @@ export const FIRST_LIGHT_HEARD =
 export const TWIN_NEXT =
   'Next, the Map: a room picked for your voice, from daily practice to Karaoke Night.'
 
-/** The gift's count in words. One credit is one separation, said plainly:
- *  "up to 1 free song separations" read as a typo (review of PR 977). */
-function giftCount(credits: number): string {
-  return credits === 1
-    ? '1 free song separation'
-    : `up to ${credits} free song separations`
-}
-
-/**
- * The launch gift, named by what it buys. A credit splits one song of up to
- * 12 minutes into voice and band on the Cloud GPU; a longer song or a full
- * band split costs more (billing-core `uvrJobCost`), so the count is "up
- * to". The number is always the server's (promo-store).
- */
-export function giftTitle(credits: number): string {
-  const count = giftCount(credits)
-  return count.charAt(0).toUpperCase() + count.slice(1)
-}
-
-/** Why the gift is worth having: Karaoke Night scores every note sung. */
-export const GIFT_BODY =
-  'Sing your favorite songs at Karaoke Night and see how you score.'
+// The gift's own words are shared with the Voice Mirror's account ask, so
+// they live in src/lib/launch-gift-copy.ts; re-exported here so the beats
+// keep importing every line from this one file.
+export { GIFT_BODY, giftTitle } from '@/lib/launch-gift-copy'
 
 /** The Map, for an account whose gift is waiting to be claimed. */
 export function mapGiftWaiting(credits: number): string {
@@ -97,5 +81,4 @@ export const KARAOKE_GIFT_TAG = 'Launch gift'
 export const MAP_KEEP_GIFT_LINK = 'Save it and get the launch gift'
 
 /** Under Keep's button while the gift is on offer: when it lands. */
-export const KEEP_GIFT_CAPTION =
-  'Your gift arrives when your email is confirmed.'
+export const KEEP_GIFT_CAPTION = GIFT_ARRIVES

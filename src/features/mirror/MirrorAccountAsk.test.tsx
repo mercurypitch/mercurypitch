@@ -118,12 +118,23 @@ describe('the account ask', () => {
 
     const gift = await screen.findByTestId('mirror-account-gift')
     expect(gift).toHaveTextContent('Launch gift · until 1 January')
+    expect(gift).toHaveTextContent('Up to 5 free song separations')
     expect(gift).toHaveTextContent(
-      '5 free Karaoke Night credits: take the voice out of up to 5 songs.',
+      'Sing your favorite songs at Karaoke Night and see how you score.',
     )
     expect(screen.getByTestId(ASK)).toHaveTextContent(
-      'Credits arrive when your email is confirmed.',
+      'Your gift arrives when your email is confirmed.',
     )
+  })
+
+  it('names a one-credit gift in the singular', async () => {
+    promo.offered = { code: 'ONE', credits: 1, expiresAt: null }
+    render(() => <MirrorAccountAsk />)
+
+    const gift = await screen.findByTestId('mirror-account-gift')
+    expect(gift).toHaveTextContent('1 free song separation')
+    expect(gift).not.toHaveTextContent('separations')
+    expect(gift).not.toHaveTextContent('Up to')
   })
 
   it('says nothing of a gift when none is featured', async () => {
@@ -131,7 +142,7 @@ describe('the account ask', () => {
 
     await waitFor(() => expect(promo.loads).toBe(1))
     expect(screen.queryByTestId('mirror-account-gift')).toBeNull()
-    expect(screen.getByTestId(ASK)).not.toHaveTextContent('Credits arrive')
+    expect(screen.getByTestId(ASK)).not.toHaveTextContent('Your gift arrives')
   })
 
   it('says so when the dialog could not load', () => {
