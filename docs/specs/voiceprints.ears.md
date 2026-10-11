@@ -199,9 +199,11 @@ sign-in adopts nothing.
 
 **When** a Google sign-in started from the Voice Mirror's account ask
 (REQ-VPR-023) lands back on the Mirror, the Mirror's entry adopts on
-`gauth_new=1` the same way (amended 2026-10-11). Its six doors are one
-document, `mirror.html`, and the worker sends the return to the door that
-started it. The entry stores the session before the Mirror renders, so the
+`gauth_new=1` the same way (amended 2026-10-11). Its doors are four
+documents that load one entry (`src/features/mirror/main.tsx`): `mirror.html`
+(also served at `/free-sing`), `vocal-range-test.html`, `voice-type-test.html`
+and `which-singer-has-my-vocal-range.html`. The worker sends the return to the
+door that started it. The entry stores the session before the Mirror renders, so the
 results' `#take-N` is back in the address when the page reads it and the
 visitor lands on the results they left. The Mirror's first paint carries the
 auth and voiceprint layers already, so its entry makes the main app's own
@@ -268,9 +270,10 @@ a real account, valid or expired. `accountKnownHere`
 who, so a shared browser that met somebody's account shows the next person
 no ask; they can still make one in the app.
 
-**When** the ask is tapped, the funnel shall record `cta_account_click` (no
-view event: the ask's views are the results views of browsers without an
-account; not an Ads conversion), and the shared account dialog shall open on
+**When** the ask is tapped, the funnel shall record `cta_account_click` (not
+an Ads conversion). The ask's views are not counted separately: there is no
+view event for it, and `results_view` also fires where the ask is hidden, so
+it is not a count of them. The shared account dialog shall open on
 its sign-up pane. Creating the account adopts this browser's unclaimed takes,
 the one on screen included (REQ-VPR-014). Closing the dialog changes nothing:
 the voiceprint stays saved in this browser either way, and is never hidden

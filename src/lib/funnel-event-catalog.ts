@@ -54,8 +54,9 @@ export const MIRROR_FUNNEL_EVENTS = [
   /** "Create my free account" under the results, tapped. Counts taps, not
    *  accounts: the tap opens the form, and the app's `signup` counts what
    *  comes of it. Shown only to a browser that has never met an account
-   *  (MirrorAccountAsk), so it has no view event: those results views are
-   *  the ask's views. Not an Ads conversion. */
+   *  (MirrorAccountAsk). The ask's views are not counted separately: it has
+   *  no view event, and `results_view` also fires where the ask is hidden.
+   *  Not an Ads conversion. */
   'cta_account_click',
 ] as const
 
