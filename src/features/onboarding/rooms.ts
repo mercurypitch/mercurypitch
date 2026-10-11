@@ -132,11 +132,25 @@ export const ROOMS: readonly Room[] = [
   },
 ]
 
+/**
+ * A door's id, never one of the RoomIds above: the Map hands either kind to
+ * the flow as the room entered, and the flow finds the door by it, so a door
+ * named like a room would count every tap on that room as a door tap.
+ * `Exclude` makes that a compile error rather than a convention: a door
+ * named like a room (or a room renamed like a door) drops out of this union,
+ * and its entry in SIDE_DOORS no longer type-checks.
+ */
+export type SideDoorId = Exclude<
+  'challenges' | 'guitar' | 'piano' | 'mirror',
+  RoomId
+>
+
+/** What the Map hands the flow when a room or a door is entered. */
+export type EnteredRoomId = RoomId | SideDoorId
+
 /** A few more rooms, as one quiet strip under the grid. */
 export interface SideDoor {
-  /** Never one of the RoomIds above: the Map hands it to the flow as the
-   *  room entered, and the flow finds the door by it. */
-  id: 'challenges' | 'guitar' | 'piano' | 'mirror'
+  id: SideDoorId
   label: string
   target: RoomTarget
   /** The tap's own funnel event, sent beside `onboarding_map_room`. */
