@@ -23,9 +23,13 @@ export type LongNoteMoment =
   | 'driftFlat'
   | 'break'
   | 'full'
+  | 'topSteady'
+  | 'topShaky'
+  | 'brim'
   | 'newBest'
   | 'result'
   | 'resultFull'
+  | 'resultBrim'
   | 'missed'
   | 'again'
   | 'sleep'
@@ -83,9 +87,34 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
     ],
     // A semitone or more away, or back from a gap off the note.
     break: [{ id: 'break-off', text: 'Off the note. Find {note} again.' }],
+    // The goal: 12 seconds on the note fill the lantern halfway. Past it
+    // only steady singing fills the top (the hold engine's stretch).
     full: [
-      { id: 'full-twelve', text: '12 seconds. The lantern is full.' },
-      { id: 'full-more', text: 'Full. Keep going if you have more.' },
+      {
+        id: 'full-twelve',
+        text: '12 seconds, half full. Steady singing fills the top.',
+      },
+      {
+        id: 'full-half',
+        text: 'Halfway. Hold it steady to fill the top.',
+      },
+    ],
+    // Past the goal, on the note: whether the top is filling.
+    topSteady: [
+      { id: 'top-steady', text: 'Steady. The top is filling.' },
+      { id: 'top-rising', text: 'Nice and steady. The light is rising.' },
+    ],
+    topShaky: [
+      {
+        id: 'top-wobbly',
+        text: 'A little wobbly. Hold it still to fill the top.',
+      },
+      { id: 'top-still', text: 'On the note. Hold it stiller for the top.' },
+    ],
+    // The top is full too.
+    brim: [
+      { id: 'brim-top', text: 'Full to the top. That was steady.' },
+      { id: 'brim-go', text: 'Full to the brim. Let go when you like.' },
     ],
     newBest: [
       { id: 'best-note', text: 'New best on {note}!' },
@@ -95,13 +124,21 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
       { id: 'result-again', text: 'Nice hold. Another?' },
       {
         id: 'result-twelve',
-        text: 'Nice hold. 12 seconds on the note fills the lantern.',
+        text: 'Nice hold. 12 seconds on the note fill it halfway.',
       },
     ],
-    // The lantern reached the goal.
+    // The lantern reached the goal, halfway, and not the brim.
     resultFull: [
-      { id: 'result-full', text: 'Full. That was 12 seconds on {note}.' },
-      { id: 'result-held', text: 'You held {note} long enough to fill it.' },
+      { id: 'result-full', text: '12 seconds on {note}: half full.' },
+      {
+        id: 'result-held',
+        text: 'Halfway on {note}. The top takes steady singing.',
+      },
+    ],
+    // Steady singing filled the top as well.
+    resultBrim: [
+      { id: 'result-brim', text: 'Full to the brim: a steady {note}.' },
+      { id: 'result-top', text: 'You filled it to the top on {note}.' },
     ],
     // The take ended without ever finding the note; the mic is closed.
     missed: [

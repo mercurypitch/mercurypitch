@@ -325,8 +325,8 @@ describe('the Long note demo', () => {
     expect(log.phases).toContain('result')
     expect(log.said).toContain('Steadier holds score higher.')
     expect(log.said).toContain('Off the line, it stops filling.')
-    // Merc's joy at the full lantern.
-    expect(merc.states).toContain('lock')
+    // At the goal he steps out of the glass to cheer.
+    expect(merc.states).toContain('celebrate')
 
     // The end card marks it seen and stops the sound.
     expect(seen.value).toBe(true)

@@ -2,9 +2,15 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FPS, midiToF0, sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { HoldState } from '@/lib/hold/hold-engine'
-import { createHoldState, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import { createHoldState, HOLD_PRESETS, holdTickFromFrame, tickHold, } from '@/lib/hold/hold-engine'
+import type { TakeShape } from '@/lib/hold/test-takes'
+import { realisticTake } from '@/lib/hold/test-takes'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import lanternStyles from './Lantern.module.css'
+import { CHIMNEY_BOTTOM, CHIMNEY_TOP, fillLevel, HOLD_FILL_MAX, LANTERN_VIEW_H, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
+import type { LongNoteMoment } from './merc-lines'
+import { fillNote, MERC_LINES } from './merc-lines'
 import { recordingContext, ribbonColours } from './trace-test-context'
 import type * as CaptureModule from './useLongNoteCapture'
 
@@ -122,6 +128,7 @@ async function settle(): Promise<void> {
 }
 
 const { LongNoteRoom } = await import('./LongNoteRoom')
+const { GOAL_SHINE } = await import('./useLongNoteController')
 
 function phase(): string | null {
   return screen.getByTestId('long-note-room').getAttribute('data-phase')
@@ -146,9 +153,13 @@ function voice(
   }))
 }
 
-/** The chip after a frame, beside the engine's own state on that frame. */
+/**
+ * The chip and the lantern's level after a frame, beside the engine's own
+ * state on that frame.
+ */
 interface Heard {
   chip: string | null
+  level: number
   state: HoldState
 }
 
@@ -163,10 +174,15 @@ function hear(frames: readonly PitchFrame[]): Heard[] {
   return frames.map((frame) => {
     fake.frames.push(frame)
     flushFrames()
-    state = tickHold(state, holdTickFromFrame(frame, previous, 57))
+    state = tickHold(
+      state,
+      holdTickFromFrame(frame, previous, 57),
+      HOLD_PRESETS.lantern,
+    )
     previous = frame
     return {
       chip: screen.queryByTestId('long-note-chip')?.textContent ?? null,
+      level: shownLevel(),
       state,
     }
   })
@@ -182,6 +198,74 @@ function changes(heard: readonly Heard[]): Heard[] {
 const SHARP = /sharp/i
 const FLAT = /flat/i
 const OFF_WORDS = /sharp|flat|off the note/i
+
+/** Whether a chip or a bubble says one of a moment's lines on a note. */
+const says = (
+  moment: LongNoteMoment,
+  text: string | null,
+  note = 'A3',
+): boolean =>
+  MERC_LINES[moment].some((line) => fillNote(line.text, note) === text)
+
+/** A practised singer: a slow wander, the tracker's grain, a vibrato. */
+const PRACTISED: TakeShape = {
+  seconds: 26,
+  wanderCents: 4,
+  wanderSeconds: 0.4,
+  jitterCents: 3,
+  vibratoHz: 5.5,
+  vibratoCents: 35,
+  seed: 12,
+}
+/** On the line all along, but wobbling on it. */
+const WOBBLY: TakeShape = {
+  seconds: 26,
+  wanderCents: 15,
+  wanderSeconds: 0.2,
+  jitterCents: 4,
+  seed: 18,
+}
+
+/** The lantern's level, read off the liquid's window in its back layer. */
+function shownLevel(): number {
+  const liquid = screen
+    .getByTestId('lantern-back')
+    .querySelector<HTMLElement>(`.${lanternStyles.window}`)
+  const shift = /translateY\((-?[\d.]+)%\)/.exec(liquid?.style.transform ?? '')
+  const surface = (Number(shift?.[1]) / 100) * LANTERN_VIEW_H
+  return (CHIMNEY_BOTTOM - surface) / (CHIMNEY_BOTTOM - CHIMNEY_TOP)
+}
+
+const haloShine = (): number =>
+  Number(screen.getByTestId('lantern-halo').style.opacity)
+const sparkles = (): number =>
+  screen
+    .getByTestId('lantern-front')
+    .querySelectorAll(`.${lanternStyles.sparkle}`).length
+
+/**
+ * The longest stretch, engine seconds, where the chip calls the voice
+ * steady (or the top not filling) while the engine's own steady flag, the
+ * one that fills the top, says otherwise.
+ */
+function longestSteadyDisagreement(heard: readonly Heard[]): number {
+  let worst = 0
+  let since: number | null = null
+  for (const { chip, state } of heard) {
+    const claim =
+      says('steady', chip) || says('topSteady', chip)
+        ? true
+        : says('topShaky', chip)
+          ? false
+          : null
+    if (claim === null || claim === state.steady) since = null
+    else {
+      since ??= state.clock
+      worst = Math.max(worst, state.clock - since)
+    }
+  }
+  return worst
+}
 
 /**
  * The longest stretch, engine seconds, where the chip's words and the
@@ -757,5 +841,173 @@ describe('LongNoteRoom', () => {
     }
     // In between, the colour flickers at the edge; the words wait it out.
     expect(longestDisagreement(heard)).toBeLessThanOrEqual(0.7 + 1 / FPS)
+  })
+
+  it('steps Merc out of the glass at the goal to cheer, then sings along beside it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await startListening()
+      const mercEl = (): HTMLElement => screen.getByTestId('long-note-merc')
+      const inGlass = (): boolean =>
+        mercEl().style.transform.includes('scale(0.7)')
+      const mercState = (): string | null =>
+        mercEl().getAttribute('data-merc-state')
+
+      // Arrange: on the note, just short of the goal, in the glass.
+      fake.frames = tone(57, 11.5)
+      flushFrames()
+      await settle()
+      vi.advanceTimersByTime(1000)
+      await settle()
+      expect(inGlass()).toBe(true)
+      expect(mercState()).toBe('lock')
+
+      // Act: the goal.
+      fake.frames = [...fake.frames, ...tone(57, 1.5, { startT: 11.5 })]
+      flushFrames()
+      await settle()
+
+      // Assert: the take goes on, and he hops out of the glass.
+      expect(phase()).toBe('hold')
+      expect(mercState()).toBe('hop')
+      expect(inGlass()).toBe(false)
+      // A slip off the note mid-cheer leaves him cheering beside it.
+      fake.frames = [
+        ...fake.frames,
+        ...tone(57, 0.5, { startT: 13, detuneCents: 60 }),
+      ]
+      flushFrames()
+      await settle()
+      vi.advanceTimersByTime(650)
+      await settle()
+      expect(mercState()).toBe('celebrate')
+      // The cheer over, he sings after the voice again, still beside it.
+      vi.advanceTimersByTime(1600)
+      await settle()
+      expect(mercState()).toBe('sing')
+      fake.frames = [...fake.frames, ...tone(57, 1, { startT: 13.5 })]
+      flushFrames()
+      await settle()
+      expect(mercState()).toBe('lock')
+      expect(inGlass()).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('fills the top past the goal only with steady singing, as the engine counts it', async () => {
+    for (const [shape, brims] of [
+      [PRACTISED, true],
+      [WOBBLY, false],
+    ] as const) {
+      // Arrange
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await startListening()
+
+      // Act: 26 seconds on the line, frame by frame.
+      const heard = hear(realisticTake(57, shape))
+
+      // Assert: the light is the engine's two fills on every frame, half
+      // full at the goal, and only the steady take reaches the brim.
+      for (const h of heard) {
+        expect(h.level).toBeCloseTo(
+          fillLevel(h.state.charge, h.state.topCharge),
+          6,
+        )
+      }
+      const goal = heard.find((h) => h.state.events.includes('goal'))
+      expect(goal?.level).toBeCloseTo(HOLD_FILL_MAX, 2)
+      const last = heard[heard.length - 1]
+      if (brims) {
+        expect(last.level).toBeCloseTo(1, 6)
+      } else {
+        expect(last.level).toBeGreaterThan(HOLD_FILL_MAX + 0.04)
+        expect(last.level).toBeLessThan(0.9)
+      }
+      cleanup()
+    }
+  })
+
+  it('shows the real fill at the result: halfway at the goal, half the halo', async () => {
+    vi.useFakeTimers({ toFake: ['performance'] })
+    // A note no other test sings, so this first run on it is no new best.
+    target.pick = { midi: 55, source: 'voiceprint' }
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Two seconds past the goal, then a breath.
+    fake.frames = [
+      ...realisticTake(55, { ...PRACTISED, seconds: 14 }),
+      ...silence(0.8, 14),
+    ]
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    const atResult = shownLevel()
+    for (let i = 0; i < 90; i++) {
+      vi.advanceTimersByTime(1000 / 60)
+      flushFrames()
+    }
+
+    // Nothing tops it up: it stays where the take left it.
+    expect(shownLevel()).toBeCloseTo(atResult, 6)
+    expect(atResult).toBeGreaterThan(HOLD_FILL_MAX)
+    expect(atResult).toBeLessThan(0.7)
+    expect(haloShine()).toBe(GOAL_SHINE)
+    expect(sparkles()).toBe(0)
+    expect(
+      says(
+        'resultFull',
+        screen.getByTestId('long-note-line').textContent,
+        'G3',
+      ),
+    ).toBe(true)
+  })
+
+  it('brims, with all of the halo and the sparkles, when steady singing fills the top', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    fake.frames = [...realisticTake(57, PRACTISED), ...silence(0.8, 26)]
+    flushFrames()
+    await settle()
+
+    expect(phase()).toBe('result')
+    expect(shownLevel()).toBeCloseTo(1, 6)
+    expect(haloShine()).toBe(1)
+    expect(sparkles()).toBeGreaterThan(0)
+    expect(
+      says('resultBrim', screen.getByTestId('long-note-line').textContent),
+    ).toBe(true)
+  })
+
+  it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
+    for (const shape of [PRACTISED, WOBBLY]) {
+      render(() => <LongNoteRoom onDone={() => undefined} />)
+      await startListening()
+
+      const heard = hear(realisticTake(57, shape))
+
+      // The goal's line first, on the goal itself.
+      const said = changes(heard).filter((h) => h.state.goalReached)
+      const goal = heard.find((h) => h.state.events.includes('goal'))
+      expect(says('full', said[0].chip)).toBe(true)
+      expect(said[0].state.clock).toBe(goal?.state.clock)
+      // Then whether the top fills, never against the engine's own steady
+      // flag for longer than the line takes to settle and be read.
+      const top = said.slice(1).map((h) => h.chip)
+      if (shape === PRACTISED) {
+        expect(top.some((chip) => says('topSteady', chip))).toBe(true)
+        expect(says('brim', top[top.length - 1])).toBe(true)
+      } else {
+        expect(top.some((chip) => says('topShaky', chip))).toBe(true)
+        expect(top.some((chip) => says('brim', chip))).toBe(false)
+      }
+      expect(longestSteadyDisagreement(heard)).toBeLessThanOrEqual(
+        1 + 0.7 + 1 / FPS,
+      )
+      cleanup()
+    }
   })
 })

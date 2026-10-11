@@ -72,6 +72,25 @@ describe('merc-lines', () => {
     expect(texts('steady').every((text) => /steady/i.test(text))).toBe(true)
   })
 
+  it('calls the goal half full and keeps the brim for steady singing', () => {
+    // 12 seconds on the note fill the lantern halfway; past that only
+    // steady singing fills the top (the hold engine's stretch).
+    for (const text of texts('full')) {
+      expect(text).toMatch(/half/i)
+      expect(text).toMatch(/steady/i)
+      expect(text).toMatch(/top/i)
+    }
+    for (const text of texts('resultFull')) expect(text).toMatch(/half/i)
+    for (const text of [...texts('brim'), ...texts('resultBrim')]) {
+      expect(text).toMatch(/brim|top/i)
+    }
+    expect(texts('topSteady').every((text) => /steady/i.test(text))).toBe(true)
+    expect(texts('topShaky').every((text) => /top/i.test(text))).toBe(true)
+    for (const text of texts('result')) {
+      expect(text).not.toMatch(/fills? the lantern/i)
+    }
+  })
+
   it('keeps Merc warm without the flourish', () => {
     // Owner, 11 Oct: "That's the one" and "the light loves that" were too
     // much, and so were the glass, the pouring and the glow.

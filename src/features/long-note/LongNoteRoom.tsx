@@ -8,9 +8,11 @@
 //   intro    the empty lantern, the target line through it, Merc beside it
 //            breathing in, the note to hold and one big microphone button
 //   hold     the voice line flowing along the target, the light rising,
-//            Merc floating on it inside the glass, a big timer and one chip
-//   result   the lantern topped up, the seconds and the steadiness, Merc
-//            out of the glass again, Again and Done
+//            Merc floating on it inside the glass, a big timer and one chip;
+//            at the goal (half full) he steps out to cheer, and only steady
+//            singing fills the top
+//   result   the lantern as full as the take filled it, the seconds and the
+//            steadiness, Merc out of the glass, Again and Done
 //
 // "How it works" (demo/) plays over the same room: Merc sings two takes
 // through it while tooltips explain them. A first visit opens on it, and
@@ -271,7 +273,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           <LanternBack
             level={room.lanternLevel}
             glow={room.lanternGlow}
-            shining={room.shining}
+            shine={room.shine}
           />
           {/* In the glass the line and the voice pass behind Merc. */}
           <VoiceTrace
@@ -308,12 +310,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           <LanternFront
             level={room.lanternLevel}
             glow={room.lanternGlow}
-            shining={() =>
-              room.shining() &&
-              phase() === 'result' &&
-              // Reduced motion: the demo shows the full lantern unsparkled.
-              !(demo.still && room.script.active())
-            }
+            shine={room.shine}
+            // Reduced motion: the demo shows the full lantern unsparkled.
+            still={() => demo.still && room.script.active()}
           />
         </div>
         {/* Out of the glass they cross the lantern's frame in front. */}

@@ -47,12 +47,17 @@ export function keepRun(target: number, result: HoldResult): boolean {
   return improved
 }
 
-/** What Merc says over the result. */
+/**
+ * What Merc says over the result: the brim first (steady singing filled
+ * the top), then a new best, then the goal (half full).
+ */
 export function resultMoment(
   improved: boolean,
   full: boolean,
+  brim: boolean,
   locked: boolean,
 ): LongNoteMoment {
+  if (brim) return 'resultBrim'
   if (improved) return 'newBest'
   if (full) return 'resultFull'
   // The mic is closed by now: never a line that asks for more singing.

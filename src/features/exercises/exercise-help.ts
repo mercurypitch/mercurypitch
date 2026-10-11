@@ -39,7 +39,7 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'Hold one comfortable note while a glass lantern fills with light, with Merc riding it up.',
     body: [
       'You start on the note you held last time, or one from your saved range. With neither, sing any note that sits easy and Merc takes it as yours. Tap the note to hear it again, and nudge it up or down before you start.',
-      'The lantern fills for every second you stay on the note. Drift off and the light waits for you: it never drains, so find the note again and carry on.',
+      'Twelve seconds on the note fill the lantern halfway. Past that, only steady singing fills the top: hold the note still and the light climbs to the brim. Drift off and the light waits for you: it never drains, so find the note again and carry on.',
       'The big number is how long you held it. Steadiness, out of 100, is how little the pitch wobbled; a vibrato does not count against you.',
     ],
   },

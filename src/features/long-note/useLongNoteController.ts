@@ -37,21 +37,24 @@ import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { createChipFollower } from './chip-follower'
-import { HOLD_FILL_MAX } from './lantern-geometry'
+import { fillLevel } from './lantern-geometry'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
 import { createMercLineSelector } from './merc-lines'
+import type { MercPlace } from './merc-moves'
+import { createMercMoves } from './merc-moves'
 import { rememberedLongNote } from './remembered-note'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settleLiveNote } from './settle-note'
 import { CaptureError, useLongNoteCapture } from './useLongNoteCapture'
 import { VoiceTraceBuffer } from './voice-trace-buffer'
 
-const PRESET = HOLD_PRESETS.exercise
+// The goal fills the lantern halfway; past it, steady singing fills the top.
+const PRESET = HOLD_PRESETS.lantern
 
-export type MercPlace = 'beside' | 'inside'
+export type { MercPlace } from './merc-moves'
 
 export interface LongNoteRunSummary {
   /** The big number: seconds the light filled. */
@@ -61,8 +64,10 @@ export interface LongNoteRunSummary {
   readonly locked: boolean
   /** Beat a previous best on this note. */
   readonly improved: boolean
-  /** The lantern filled to the goal. */
+  /** The lantern filled to the goal, halfway. */
   readonly full: boolean
+  /** Steady singing past the goal filled it to the brim. */
+  readonly brim: boolean
 }
 
 export interface LongNoteController {
@@ -79,7 +84,8 @@ export interface LongNoteController {
   mercVoice: () => MercVoice
   lanternLevel: Accessor<number>
   lanternGlow: Accessor<number>
-  shining: Accessor<boolean>
+  /** The lantern's shine: 0, GOAL_SHINE from the goal, 1 at the brim. */
+  shine: Accessor<number>
   trace: VoiceTraceBuffer
   /** The trace's clock: seconds since the take started. */
   now: () => number
@@ -100,6 +106,8 @@ export interface LongNoteController {
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
 const SLEEP_AFTER_SECONDS = 25
+/** The halo at the goal, of the brim's full shine. */
+export const GOAL_SHINE = 0.5
 /** RMS to Merc's 0..1 loudness: -50 dBFS is silent, -10 dBFS is full. */
 export function levelFromRms(rms: number): number {
   if (!(rms > 0)) return 0
@@ -128,10 +136,8 @@ export function useLongNoteController(): LongNoteController {
   const [summary, setSummary] = createSignal<LongNoteRunSummary | null>(null)
   const [line, setLine] = createSignal('')
   const [chip, setChip] = createSignal<string | null>(null)
-  const [mercState, setMercStateSignal] = createSignal<MercState>('drop')
-  const [mercPlace, setMercPlace] = createSignal<MercPlace>('beside')
   const [lanternLevel, setLanternLevel] = createSignal(0)
-  const [shining, setShining] = createSignal(false)
+  const [shine, setShine] = createSignal(0)
   // The demo: on, the note it sings, and the take it is singing.
   const [scriptActive, setScriptActive] = createSignal(false)
   const [scriptNote, setScriptNote] = createSignal<number | null>(null)
@@ -188,32 +194,6 @@ export function useLongNoteController(): LongNoteController {
     steady: 0,
     midi: opening ?? picked.midi,
   }
-  // Every change of Merc's state bumps this, so a landing scheduled before
-  // it cannot overwrite what came after.
-  let mercChange = 0
-  const setMercState = (next: MercState): void => {
-    mercChange += 1
-    setMercStateSignal(next)
-  }
-  const mercFor = (next: MercState, place: MercPlace): void => {
-    batch(() => {
-      setMercState(next)
-      setMercPlace(place)
-    })
-  }
-  /** A hop from one place to the other, landing in `then`. */
-  const hopTo = (place: MercPlace, then: MercState): void => {
-    mercFor('hop', place)
-    const hop = mercChange
-    later(650, () => {
-      if (mercChange === hop) setMercState(then)
-    })
-  }
-  /** A hop, or straight there for a demo take under reduced motion. */
-  const move = (place: MercPlace, then: MercState): void => {
-    if (scripted?.still === true) mercFor(then, place)
-    else hopTo(place, then)
-  }
 
   // ── The take ───────────────────────────────────────────────
   let engine = createHoldState()
@@ -227,6 +207,15 @@ export function useLongNoteController(): LongNoteController {
   let asleep = false
   /** The singer's own note was just named: the first lock says so. */
   let foundPending = false
+  // Merc's state and place; after a cheer he sings along with the voice.
+  const merc = createMercMoves({
+    later,
+    still: () => scripted?.still === true,
+    afterCheer: () => {
+      if (!windowOpen) return null
+      return engine.phase === 'locked' ? 'lock' : 'sing'
+    },
+  })
 
   /** Where the clock stopped: the trace keeps the take it drew. */
   let closedAt = 0
@@ -251,6 +240,7 @@ export function useLongNoteController(): LongNoteController {
     lastTick = null
     asleep = false
     foundPending = false
+    merc.stopCheering()
     trace.clear()
     batch(() => {
       setHold(engine)
@@ -279,17 +269,25 @@ export function useLongNoteController(): LongNoteController {
         // as in storyboard 2); off it, he sings after the voice again.
         case 'lock':
           feel('tapLight')
-          setMercState('lock')
+          merc.mood('lock')
           break
         case 'relock':
-          setMercState('lock')
+          merc.mood('lock')
           break
         case 'break':
-          setMercState('sing')
+          merc.mood('sing')
           break
+        // Halfway: he steps out of the glass to cheer, and the top is the
+        // steady singing's to fill. Full: he cheers again.
         case 'goal':
           feel('success')
-          setShining(true)
+          setShine(GOAL_SHINE)
+          merc.cheer()
+          break
+        case 'brim':
+          feel('success')
+          setShine(1)
+          merc.cheer()
           break
         case 'end':
           break
@@ -313,10 +311,11 @@ export function useLongNoteController(): LongNoteController {
     const target = take?.targetMidi ?? untrack(state).targetMidi
     if (target === null) return
     const frames = closeWindow()
+    merc.stopCheering()
     if (take !== null && !take.toResult) {
       // The demo's first take only shows how a note ends: no result.
       clearChip()
-      move('beside', take.after)
+      merc.move('beside', take.after)
       return
     }
     const durationMs = Math.round(performance.now() - windowStartedAt)
@@ -329,7 +328,7 @@ export function useLongNoteController(): LongNoteController {
 
     if (take === null && isFalseStart(engine, result)) {
       dispatch({ type: 'false-start' })
-      hopTo('beside', 'listen')
+      merc.hopTo('beside', 'listen')
       openWindow()
       return
     }
@@ -342,6 +341,7 @@ export function useLongNoteController(): LongNoteController {
       improved = keepRun(target, result)
     }
     const full = engine.goalReached
+    const brim = engine.brimReached
     batch(() => {
       setSummary({
         inBandSeconds: result.metrics.inBandSeconds,
@@ -349,17 +349,17 @@ export function useLongNoteController(): LongNoteController {
         locked: result.locked,
         improved,
         full,
+        brim,
       })
       clearChip()
       dispatch({ type: 'end' })
+      // The light stays as high as the take filled it: halfway at the
+      // goal, the brim only when steady singing filled the top.
+      setLanternLevel(fillLevel(engine.charge, engine.topCharge))
     })
     // The demo's result keeps Merc's bubble clear for its own tooltip.
-    if (take === null) say(resultMoment(improved, full, result.locked))
-    move('beside', full || improved ? 'celebrate' : 'idle')
-    // Merc is out of the glass: the light may fill the chimney now, from
-    // where it stood while he floated on it.
-    setLanternLevel(engine.charge * HOLD_FILL_MAX)
-    easeLevel(engine.charge, 800)
+    if (take === null) say(resultMoment(improved, full, brim, result.locked))
+    merc.move('beside', full || improved ? 'celebrate' : 'idle')
   }
 
   /** The take's first voice: the hold begins, Merc steps into the glass. */
@@ -371,7 +371,7 @@ export function useLongNoteController(): LongNoteController {
       dispatch({ type: 'demo', phase: 'hold' })
     }
     setLine('')
-    move('inside', 'sing')
+    merc.move('inside', 'sing')
   }
 
   /** The take against its note: the engine, Merc, the chip, the end. */
@@ -414,7 +414,7 @@ export function useLongNoteController(): LongNoteController {
       enterHold()
     } else if (phase === 'listen' && !asleep && now() > SLEEP_AFTER_SECONDS) {
       asleep = true
-      setMercState('sleep')
+      merc.set('sleep')
       say('sleep')
     }
     onEvents(events)
@@ -446,7 +446,7 @@ export function useLongNoteController(): LongNoteController {
     if (midi === null || !offerable(midi)) {
       if (!asleep && now() > SLEEP_AFTER_SECONDS) {
         asleep = true
-        setMercState('sleep')
+        merc.set('sleep')
         say('sleepAny')
       }
       return
@@ -482,7 +482,7 @@ export function useLongNoteController(): LongNoteController {
   // ── What the singer does ───────────────────────────────────
   const beginListening = (moment: LongNoteMoment | null): void => {
     if (moment !== null) say(moment)
-    mercFor('listen', 'beside')
+    merc.put('listen', 'beside')
     openWindow()
   }
 
@@ -518,7 +518,7 @@ export function useLongNoteController(): LongNoteController {
           run,
           block: error instanceof CaptureError ? error.failure : 'unavailable',
         })
-        setMercState('idle')
+        merc.set('idle')
       },
     )
   }
@@ -537,7 +537,7 @@ export function useLongNoteController(): LongNoteController {
     capture.release()
     dispatch({ type: 'cancel' })
     sayIntro()
-    mercFor('idle', 'beside')
+    merc.put('idle', 'beside')
   }
 
   /**
@@ -556,12 +556,12 @@ export function useLongNoteController(): LongNoteController {
     dispatch({ type: 'again' })
     batch(() => {
       setSummary(null)
-      setShining(false)
+      setShine(0)
       setHold(createHoldState())
     })
     easeLevel(0, 450)
     say('again')
-    mercFor('listen', 'beside')
+    merc.put('listen', 'beside')
     openMic(null)
   }
 
@@ -570,11 +570,11 @@ export function useLongNoteController(): LongNoteController {
     dispatch({ type: 'change-note' })
     batch(() => {
       setSummary(null)
-      setShining(false)
+      setShine(0)
     })
     easeLevel(0, 450)
     sayIntro()
-    mercFor('idle', 'beside')
+    merc.put('idle', 'beside')
   }
 
   const nudge = (step: 1 | -1): void => {
@@ -597,7 +597,7 @@ export function useLongNoteController(): LongNoteController {
   onMount(() => {
     sayIntro()
     later(1100, () => {
-      if (untrack(mercState) === 'drop') setMercState('idle')
+      if (untrack(merc.state) === 'drop') merc.set('idle')
     })
   })
 
@@ -623,7 +623,7 @@ export function useLongNoteController(): LongNoteController {
   /** What the lantern shows right now, to ease on from. */
   const shownLevel = (): number =>
     untrack(state).phase === 'hold'
-      ? engine.charge * HOLD_FILL_MAX
+      ? fillLevel(engine.charge, engine.topCharge)
       : untrack(lanternLevel)
 
   /** No take, no result, an empty trace: the light where it stands. */
@@ -638,7 +638,7 @@ export function useLongNoteController(): LongNoteController {
       setLanternLevel(from)
       setHold(engine)
       setSummary(null)
-      setShining(false)
+      setShine(0)
       clearChip()
     })
   }
@@ -658,7 +658,7 @@ export function useLongNoteController(): LongNoteController {
         dispatch({ type: 'demo', phase: 'intro' })
       })
       easeLevel(0, 450)
-      mercFor('idle', 'beside')
+      merc.put('idle', 'beside')
       return true
     },
     play: (take) => {
@@ -667,10 +667,10 @@ export function useLongNoteController(): LongNoteController {
       scripted = take
       batch(() => {
         setSummary(null)
-        setShining(false)
+        setShine(0)
         dispatch({ type: 'demo', phase: 'listen' })
       })
-      mercFor('listen', 'beside')
+      merc.put('listen', 'beside')
       openWindow()
     },
     rest: () => {
@@ -680,11 +680,11 @@ export function useLongNoteController(): LongNoteController {
       easeLevel(0, 600)
     },
     mood: (next) => {
-      if (demoOn()) setMercState(next)
+      if (demoOn()) merc.set(next)
     },
     leave: () => {
       if (!demoOn()) return
-      const inside = untrack(mercPlace) === 'inside'
+      const inside = untrack(merc.place) === 'inside'
       const still = scripted?.still === true
       clearForScript()
       batch(() => {
@@ -694,8 +694,8 @@ export function useLongNoteController(): LongNoteController {
       })
       easeLevel(0, 450)
       sayIntro()
-      if (inside && !still) hopTo('beside', 'idle')
-      else mercFor('idle', 'beside')
+      if (inside && !still) merc.hopTo('beside', 'idle')
+      else merc.put('idle', 'beside')
     },
   }
 
@@ -718,18 +718,22 @@ export function useLongNoteController(): LongNoteController {
     summary,
     line,
     chip,
-    mercState,
-    mercPlace,
+    mercState: merc.state,
+    mercPlace: merc.place,
     mercVoice: () => voice,
-    // While Merc floats on it the light stops short of the cap; otherwise
-    // it is the eased level (emptying for a new run, topping up after one).
-    lanternLevel: () =>
-      state().phase === 'hold' ? hold().charge * HOLD_FILL_MAX : lanternLevel(),
+    // In the hold the engine's two fills; otherwise the level the take
+    // left, or emptying for a new one.
+    lanternLevel: () => {
+      const current = hold()
+      return state().phase === 'hold'
+        ? fillLevel(current.charge, current.topCharge)
+        : lanternLevel()
+    },
     lanternGlow: () => {
       const current = hold()
       return state().phase === 'hold' && current.inBand ? 1 : 0.25
     },
-    shining,
+    shine,
     trace,
     now,
     toleranceCents: PRESET.tolCents,

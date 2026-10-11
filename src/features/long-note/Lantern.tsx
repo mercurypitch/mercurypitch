@@ -46,8 +46,13 @@ export interface LanternProps {
   level: () => number
   /** How brightly it glows, 0 to 1: high while the note is on target. */
   glow: () => number
-  /** The full lantern's halo and sparkles. */
-  shining: () => boolean
+  /**
+   * How much it shines, 0 to 1: the halo at that strength (half of it at
+   * the goal), and at 1, the brim, the sparkles and dust as well.
+   */
+  shine: () => number
+  /** Reduced motion: the brim's sparkles and dust stay away. */
+  still?: () => boolean
 }
 
 const VIEW_BOX = `0 0 ${LANTERN_VIEW_W} ${LANTERN_VIEW_H}`
@@ -238,8 +243,8 @@ export function LanternBack(props: LanternProps): JSX.Element {
   const id = `lantern-back-${nextId++}`
   const top = (): number => surfaceY(props.level())
   const rx = (): number => chimneyHalfWidth(top())
-  /** How lit the lantern is: the glow, or all of it once it shines. */
-  const brightness = (): number => (props.shining() ? 1 : props.glow())
+  /** How lit the lantern is: the glow, or its shine when that is more. */
+  const brightness = (): number => Math.max(props.glow(), props.shine())
   return (
     <div class={styles.layer} data-testid="lantern-back">
       <div
@@ -252,7 +257,8 @@ export function LanternBack(props: LanternProps): JSX.Element {
       />
       <div
         class={styles.halo}
-        classList={{ [styles.haloOn]: props.shining() }}
+        data-testid="lantern-halo"
+        style={{ opacity: props.shine() }}
       />
       <SurfaceWindow
         edge={top}
@@ -410,8 +416,8 @@ function surfaceTilt(y: number): number {
 export function LanternFront(props: LanternProps): JSX.Element {
   const id = `lantern-front-${nextId++}`
   const top = (): number => surfaceY(props.level())
-  /** How lit the lantern is: the glow, or all of it once it shines. */
-  const brightness = (): number => (props.shining() ? 1 : props.glow())
+  /** How lit the lantern is: the glow, or its shine when that is more. */
+  const brightness = (): number => Math.max(props.glow(), props.shine())
   const rx = (): number => chimneyHalfWidth(top())
   const ry = (): number => surfaceTilt(top()) * rx()
   // The lit frame shows from LIGHT_REACH above the surface down; once the
@@ -487,7 +493,7 @@ export function LanternFront(props: LanternProps): JSX.Element {
         <PlateImage plate={FRAME_LIT} />
       </SurfaceWindow>
 
-      <Show when={props.shining()}>
+      <Show when={props.shine() >= 1 && props.still?.() !== true}>
         <For each={SPARKLES}>
           {(spark) => (
             <span

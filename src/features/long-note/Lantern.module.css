@@ -61,7 +61,8 @@
   will-change: opacity;
 }
 
-/* The glow round the glass while it fills, and the full lantern's halo:
+/* The glow round the glass while it fills, and the halo it shines with
+   (half at the goal, all of it at the brim; the opacity is the room's):
    a cool blue haze, centred on the glass (view y 214 of 400). */
 .haloSoft,
 .halo {
@@ -92,10 +93,6 @@
     rgba(86, 104, 255, 0) 100%
   );
   transition: opacity 900ms ease-out;
-}
-
-.haloOn {
-  opacity: 1;
 }
 
 /* A sparkle, as storyboard 3 paints them: a white core in a bloom that

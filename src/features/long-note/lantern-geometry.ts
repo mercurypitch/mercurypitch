@@ -67,10 +67,20 @@ export function chimneyHalfWidth(y: number): number {
 }
 
 /**
- * How full the liquid may get while Merc floats on it. The rest of the
- * chimney is his headroom; the result tops it up once he has hopped out.
+ * How full the goal fills the liquid: halfway up the chimney, as high as
+ * it rises with Merc floating on it. At the goal he steps out, and only
+ * steady singing fills the rest (the hold engine's stretch).
  */
 export const HOLD_FILL_MAX = 0.54
+
+/**
+ * The liquid's level for the hold engine's two fills: the goal's `charge`
+ * up to HOLD_FILL_MAX, then the steady stretch's `topCharge` from there to
+ * the brim. Neither drains, so neither does the light.
+ */
+export function fillLevel(charge: number, topCharge: number): number {
+  return charge * HOLD_FILL_MAX + topCharge * (1 - HOLD_FILL_MAX)
+}
 
 /** The middle of the chimney, where the target line crosses it. */
 export const TARGET_LINE_Y = (CHIMNEY_TOP + CHIMNEY_BOTTOM) / 2

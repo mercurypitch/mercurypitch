@@ -181,11 +181,10 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
       }
     }
     if (mark === 'fast') setFast(true)
+    // At the goal the room steps Merc out of the glass to cheer.
     if (mark === 'goal') {
       setFast(false)
       setTip(null)
-      // Joy at the full lantern: his glow builds and his eyes close.
-      script.mood('lock')
     }
     if (mark !== 'end') return
     if (id === 'off') later(DEMO_BEATS.afterOff, rest)

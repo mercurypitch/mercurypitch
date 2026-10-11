@@ -9,6 +9,12 @@
 // for a moment off the band the engine has not called yet, a gap, or a
 // lock only just won back; then the line on screen stays. The pacer
 // (chip-pacer.ts) keeps each line up long enough to read.
+//
+// "Steady" is the engine's own steady flag, the one that fills the top
+// past the goal (the hold engine's stretch), so the chip never calls a
+// voice steady that the lantern does not count as steady. The line follows
+// the flag once it has held SETTLE_SECONDS: a voice at the edge of steady
+// keeps one line instead of trading two.
 
 import type { HoldEventType, HoldState } from '@/lib/hold/hold-engine'
 import { createChipPacer } from './chip-pacer'
@@ -32,8 +38,18 @@ const FIND_SECONDS = 0.9
  * at the band's edge keeps its one off line instead of trading it.
  */
 const RETURN_SECONDS = 0.45
-/** Locked this long before Merc says it is steady. */
+/** Locked this long, and steady, before Merc says it is steady. */
 const STEADY_SECONDS = 3
+/** The engine's steady flag holds this long before the line follows it. */
+const SETTLE_SECONDS = 1
+/** The goal's own line stands this long before the top's lines. */
+const FULL_SECONDS = 2.5
+/**
+ * Back on the note past the goal, the stretch's steadiness window (the
+ * last 2 s of the voice) still holds the way back: until the lock is this
+ * long, the line only says the voice is on the note.
+ */
+const TOP_AFTER_LOCK = 2
 
 export interface ChipFollower {
   /**
@@ -58,8 +74,38 @@ export interface ChipFollower {
 export function createChipFollower(): ChipFollower {
   const pacer = createChipPacer(CHIP_HOLD_SECONDS)
   let outOfBandFor = 0
-  /** The chip's line while the voice is on the note, set by its events. */
-  let onLine: LongNoteMoment = 'lock'
+  /** The first lock named the singer's own note. */
+  let found = false
+  /** When the goal was reached, clock seconds. */
+  let goalAt: number | null = null
+  /** The engine's steady flag, as the line follows it. */
+  let steady = false
+  let flag = false
+  let flagFor = 0
+
+  const settle = (now: boolean, dt: number): void => {
+    if (now === flag) flagFor += dt
+    else {
+      flag = now
+      flagFor = 0
+    }
+    if (flagFor >= SETTLE_SECONDS) steady = flag
+  }
+
+  /** Past the goal: the goal's line, then whether the top is filling. */
+  const stretchLine = (state: HoldState, since: number): LongNoteMoment => {
+    if (state.brimReached) return 'brim'
+    if (state.clock - since < FULL_SECONDS) return 'full'
+    if (state.lockSeconds < TOP_AFTER_LOCK) return 'lock'
+    return steady ? 'topSteady' : 'topShaky'
+  }
+
+  /** The line while the voice is locked on the note. */
+  const onNote = (state: HoldState): LongNoteMoment => {
+    if (goalAt !== null) return stretchLine(state, goalAt)
+    if (state.lockSeconds >= STEADY_SECONDS) return steady ? 'steady' : 'lock'
+    return found ? 'found' : 'lock'
+  }
 
   const situation = (
     state: HoldState,
@@ -76,27 +122,30 @@ export function createChipFollower(): ChipFollower {
     }
     if (state.phase !== 'locked') return null
     if (state.breaks > 0 && state.lockSeconds < RETURN_SECONDS) return null
-    return onLine
+    return onNote(state)
   }
 
   return {
-    event(event, found) {
-      if (event === 'lock') onLine = found ? 'found' : 'lock'
-      else if (event === 'relock') onLine = 'lock'
-      else if (event === 'goal') onLine = 'full'
+    event(event, named) {
+      if (event === 'lock') found = named
+      else if (event === 'relock') found = false
     },
     follow(state, voiced, dt) {
       if (voiced && !state.inBand) outOfBandFor += dt
       else outOfBandFor = 0
-      const settled = onLine === 'lock' || onLine === 'found'
-      if (settled && state.lockSeconds >= STEADY_SECONDS) onLine = 'steady'
+      settle(state.steady, dt)
+      if (state.goalReached) goalAt ??= state.clock
       pacer.want(situation(state, voiced))
       return pacer.take(state.clock)
     },
     reset() {
       pacer.reset()
       outOfBandFor = 0
-      onLine = 'lock'
+      found = false
+      goalAt = null
+      steady = false
+      flag = false
+      flagFor = 0
     },
   }
 }
