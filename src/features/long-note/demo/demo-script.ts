@@ -4,7 +4,9 @@
 //
 // "How it works" for Long note: Merc sings the note twice through the
 // room's own engine. Take 1 drifts sharp and stops for a breath (not like
-// this); take 2 holds the line until the lantern is full (like this).
+// this); take 2 holds the line to the goal, where the lantern is half full
+// and Merc steps out of the glass, then holds it steady to the brim (like
+// this).
 //
 // Pure and seeded: the same note always gives the same frames, events and
 // timings. The room plays these frames through its hold engine
@@ -14,9 +16,10 @@
 //
 // Two clocks. A take's frames are dated on the ENGINE clock, the one
 // tickHold runs on (frame.t). The screen and the sound run on the WALL
-// clock. They agree except in take 2's fast-forward, where four engine
-// seconds pass in each wall second; the voice keeps sounding at its own
-// speed through it.
+// clock. They agree except in take 2's two fast-forwards (up to the goal,
+// and from just after it to the brim), where four engine seconds pass in
+// each wall second; the voice keeps sounding at its own speed through
+// them, and so do Merc's hop and cheers.
 
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import type { HoldEventType } from '@/lib/hold/hold-engine'
@@ -42,13 +45,19 @@ export interface DemoEvent {
   readonly at: number
 }
 
+/** A stretch of a take played at DEMO_FAST_RATE, engine seconds. */
+export interface FastStretch {
+  readonly from: number
+  readonly to: number
+}
+
 export interface DemoTake {
   readonly id: DemoTakeId
   readonly frames: readonly PitchFrame[]
   /** The engine's events for these frames, in order. */
   readonly events: readonly DemoEvent[]
-  /** Take 2's fast-forward, engine seconds; null for take 1. */
-  readonly fast: { readonly from: number; readonly to: number } | null
+  /** Take 2's fast-forwards, in order; none for take 1. */
+  readonly fast: readonly FastStretch[]
   /** Engine seconds at a wall time since the take started. */
   engineAt: (wall: number) => number
   /** Wall seconds since the take started at an engine time. */
@@ -68,7 +77,7 @@ export const DEMO_VIBRATO = {
   rampSec: 0.35,
 } as const
 
-/** Engine seconds per wall second in take 2's fast-forward. */
+/** Engine seconds per wall second in take 2's fast-forwards. */
 export const DEMO_FAST_RATE = 4
 
 const FRAME_SECONDS = 1 / 60
@@ -77,13 +86,19 @@ const CONF = 0.92
 const SILENT_RMS = 0.001
 /** Pitch-tracker grain on the frames, cents (not in the synth). */
 const JITTER_CENTS = 1.2
-/** Take 2 starts its fast-forward this long after the lock. */
+/** Take 2 starts its first fast-forward this long after the lock. */
 const FAST_AFTER_LOCK = 1.8
 /**
- * Take 2 lets go of the note this long after the lantern fills, so the
- * result's top-up follows the full moment straight away.
+ * Past the goal, take 2 plays this long at its own speed while Merc hops
+ * out of the glass (his hop and cheer keep the wall clock through the
+ * second fast-forward that follows).
  */
-const RELEASE_AFTER_GOAL = 0.35
+const STEP_OUT_SECONDS = 0.8
+/**
+ * Take 2 lets go of the note this long after the brim, so the result
+ * follows the full lantern straight away.
+ */
+const RELEASE_AFTER_BRIM = 0.35
 /** Frames kept past the end of the note. */
 const TAIL = 0.1
 
@@ -122,15 +137,6 @@ function onSegments(releaseAt: number): readonly Segment[] {
 }
 
 const smooth = (k: number): number => k * k * (3 - 2 * k)
-
-/** When the last run of singing ends, engine seconds. */
-function lastSung(segments: readonly Segment[]): number {
-  return segments.reduce(
-    (last, segment) =>
-      segment.kind === 'sing' ? Math.max(last, segment.until) : last,
-    0,
-  )
-}
 
 interface Sung {
   /** Off the note, cents, before wander and vibrato. */
@@ -189,72 +195,117 @@ export function rmsForLevel(level: number): number {
   return Math.pow(10, (level * 40 - 50) / 20)
 }
 
-function framesFor(
-  segments: readonly Segment[],
+/**
+ * A take's voice as the pitch tracker hears it: the frame at engine time
+ * t of the script `segments`, on the take's own seeded wander and grain.
+ * Called once a frame, in order: the grain is a sequence.
+ */
+function trackerFor(
   note: number,
   seed: number,
-  until: number,
-): PitchFrame[] {
+): (segments: readonly Segment[], t: number) => PitchFrame {
   const wander = wanderFor(seed)
   const grain = seeded(seed + 7)
-  const frames: PitchFrame[] = []
-  const count = Math.ceil(until / FRAME_SECONDS)
-  for (let i = 0; i <= count; i++) {
-    const t = i * FRAME_SECONDS
+  return (segments, t) => {
     const sung = sample(segments, t)
     if (sung.onset === null || sung.level <= 0) {
-      frames.push({ t, f0: 0, conf: 0, rms: SILENT_RMS })
-      continue
+      return { t, f0: 0, conf: 0, rms: SILENT_RMS }
     }
     const jitter = (grain() - 0.5 + (grain() - 0.5)) * JITTER_CENTS
     const cents =
       sung.cents + wander(t) + demoVibratoCents(t, sung.onset) + jitter
-    frames.push({
+    return {
       t,
       f0: midiToFrequency(note + cents / 100),
       conf: CONF,
       rms: rmsForLevel(sung.level),
-    })
+    }
   }
-  return frames
 }
 
-/** The engine's events for a take, with their engine times. */
-export function replayDemoTake(
-  frames: readonly PitchFrame[],
+/** The longest a take may run before its note must have ended. */
+const LONGEST_TAKE = 60
+
+interface SungTake {
+  /** The script as it was sung, its release included. */
+  readonly segments: readonly Segment[]
+  /** Frames to the end of the note and TAIL past it. */
+  readonly frames: readonly PitchFrame[]
+  readonly events: readonly DemoEvent[]
+}
+
+/**
+ * A take sung through the room's engine, its preset's steady stretch to
+ * the brim included, in one pass. `rewrite` may change the script when an
+ * event fires (take 2 lets go after the brim); the frames before the
+ * change are the same either way, so the engine's events stand.
+ */
+function singTake(
+  segments: readonly Segment[],
   note: number,
-): DemoEvent[] {
+  seed: number,
+  rewrite: (event: DemoEvent) => readonly Segment[] | null = () => null,
+): SungTake {
+  const frameAt = trackerFor(note, seed)
+  let script = segments
   let state = createHoldState()
   let previous: PitchFrame | null = null
+  const frames: PitchFrame[] = []
   const events: DemoEvent[] = []
-  for (const frame of frames) {
+  let end: number | null = null
+  for (let i = 0; ; i++) {
+    const t = i * FRAME_SECONDS
+    if (end !== null && t > end + TAIL + 1e-9) break
+    if (t > LONGEST_TAKE) throw new Error('Long note demo: a take never ends')
+    const frame = frameAt(script, t)
+    frames.push(frame)
+    if (end !== null) continue
     state = tickHold(
       state,
       holdTickFromFrame(frame, previous, note),
-      HOLD_PRESETS.exercise,
+      HOLD_PRESETS.lantern,
     )
-    for (const type of state.events) events.push({ type, at: state.clock })
     previous = frame
+    for (const type of state.events) {
+      const event = { type, at: state.clock }
+      events.push(event)
+      if (type === 'end') end = state.clock
+      script = rewrite(event) ?? script
+    }
   }
-  return events
+  return { segments: script, frames, events }
 }
 
-/** The wall clock against the engine's, with one fast stretch or none. */
-function clocks(fast: DemoTake['fast']): Pick<DemoTake, 'engineAt' | 'wallAt'> {
-  if (fast === null) return { engineAt: (w) => w, wallAt: (e) => e }
-  const span = (fast.to - fast.from) / DEMO_FAST_RATE
+/** The wall seconds a fast stretch saves, played through. */
+const saves = (stretch: FastStretch): number =>
+  (stretch.to - stretch.from) * (1 - 1 / DEMO_FAST_RATE)
+
+/** The wall clock against the engine's, through the fast stretches. */
+function clocks(
+  fast: readonly FastStretch[],
+): Pick<DemoTake, 'engineAt' | 'wallAt'> {
   return {
     engineAt: (w) => {
-      if (w <= fast.from) return w
-      if (w <= fast.from + span) {
-        return fast.from + (w - fast.from) * DEMO_FAST_RATE
+      let saved = 0
+      for (const stretch of fast) {
+        const starts = stretch.from - saved
+        if (w <= starts) break
+        const ends = starts + (stretch.to - stretch.from) / DEMO_FAST_RATE
+        if (w <= ends) return stretch.from + (w - starts) * DEMO_FAST_RATE
+        saved += saves(stretch)
       }
-      return fast.to + (w - fast.from - span)
+      return w + saved
     },
     wallAt: (e) => {
-      if (e <= fast.from) return e
-      if (e <= fast.to) return fast.from + (e - fast.from) / DEMO_FAST_RATE
-      return fast.from + span + (e - fast.to)
+      let saved = 0
+      for (const stretch of fast) {
+        if (e <= stretch.from) break
+        if (e < stretch.to) {
+          return stretch.from - saved + (e - stretch.from) / DEMO_FAST_RATE
+        }
+        saved += saves(stretch)
+      }
+      return e - saved
     },
   }
 }
@@ -292,26 +343,19 @@ function voiceFor(
 
 function buildTake(
   id: DemoTakeId,
-  segments: readonly Segment[],
-  note: number,
+  sung: SungTake,
   seed: number,
   fast: DemoTake['fast'],
 ): DemoTake {
-  // Past the last sung moment by more than the engine needs to end the
-  // note; trimmed to the end of the note below.
-  const draft = framesFor(segments, note, seed, lastSung(segments) + 1)
-  const draftEvents = replayDemoTake(draft, note)
-  const end = eventAt(draftEvents, 'end')
-  const frames = draft.filter((frame) => frame.t <= end + TAIL + 1e-9)
   const clock = clocks(fast)
-  const length = clock.wallAt(end)
+  const length = clock.wallAt(eventAt(sung.events, 'end'))
   return {
     id,
-    frames,
-    events: replayDemoTake(frames, note),
+    frames: sung.frames,
+    events: sung.events,
     fast,
     ...clock,
-    voice: voiceFor(segments, seed, clock, length),
+    voice: voiceFor(sung.segments, seed, clock, length),
     length,
   }
 }
@@ -321,21 +365,30 @@ const ON_SEED = 0x1a77
 
 /** Take 1: off the line, then a breath that ends the note. */
 function offTake(note: number): DemoTake {
-  return buildTake('off', OFF_SEGMENTS, note, OFF_SEED, null)
+  return buildTake('off', singTake(OFF_SEGMENTS, note, OFF_SEED), OFF_SEED, [])
 }
 
-/** Take 2: on the line until the lantern is full, the middle at 4x. */
+/**
+ * Take 2: on the line to the goal (half full), a second at its own speed
+ * while Merc steps out, then steady to the brim; both long stretches at 4x.
+ */
 function onTake(note: number): DemoTake {
-  // Where the lock and the goal fall decides the release and the fast
-  // stretch, and neither depends on the release.
-  const probe = framesFor(onSegments(30), note, ON_SEED, 16)
-  const events = replayDemoTake(probe, note)
-  const lock = eventAt(events, 'lock')
-  const goal = eventAt(events, 'goal')
-  return buildTake('on', onSegments(goal + RELEASE_AFTER_GOAL), note, ON_SEED, {
-    from: lock + FAST_AFTER_LOCK,
-    to: goal,
-  })
+  // Held until the brim, then let go: the lock, the goal and the brim fall
+  // where the engine puts them, and none depends on the release.
+  const sung = singTake(
+    onSegments(Number.POSITIVE_INFINITY),
+    note,
+    ON_SEED,
+    (event) =>
+      event.type === 'brim' ? onSegments(event.at + RELEASE_AFTER_BRIM) : null,
+  )
+  const lock = eventAt(sung.events, 'lock')
+  const goal = eventAt(sung.events, 'goal')
+  const brim = eventAt(sung.events, 'brim')
+  return buildTake('on', sung, ON_SEED, [
+    { from: lock + FAST_AFTER_LOCK, to: goal },
+    { from: goal + STEP_OUT_SECONDS, to: brim },
+  ])
 }
 
 /** One of Merc's two takes on a note. */

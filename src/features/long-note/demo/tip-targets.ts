@@ -8,7 +8,7 @@
 // (lantern-geometry.ts) says where the light is: the one part of the
 // lantern a tooltip may never cover.
 
-import { CHIMNEY_BOTTOM, CHIMNEY_TOP, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from '../lantern-geometry'
+import { CHIMNEY_BOTTOM, CHIMNEY_TOP, chimneyHalfWidth, HOLD_FILL_MAX, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from '../lantern-geometry'
 import type { DemoTarget } from './demo-cues'
 import type { Point, Rect, Side } from './tip-place'
 import { inflate } from './tip-place'
@@ -128,15 +128,29 @@ function lineTarget(scene: DemoScene): TipTarget | null {
   }
 }
 
-function lanternTarget(scene: DemoScene, brim: boolean): TipTarget | null {
+/**
+ * The height a lantern tooltip points at, view-box units: the brim near
+ * the chimney's top, the goal's half, or the light's surface as it is.
+ */
+function lanternHeight(
+  scene: DemoScene,
+  at: 'surface' | 'half' | 'brim',
+): number {
+  if (at === 'brim') return CHIMNEY_TOP + BRIM_BELOW_TOP
+  const level = at === 'half' ? HOLD_FILL_MAX : scene.level
+  return Math.min(
+    CHIMNEY_BOTTOM - 14,
+    Math.max(CHIMNEY_TOP + 24, surfaceY(level)),
+  )
+}
+
+function lanternTarget(
+  scene: DemoScene,
+  at: 'surface' | 'half' | 'brim',
+): TipTarget | null {
   if (scene.lantern === null) return null
   const light = lightRect(scene.lantern)
-  const units = brim
-    ? CHIMNEY_TOP + BRIM_BELOW_TOP
-    : Math.min(
-        CHIMNEY_BOTTOM - 14,
-        Math.max(CHIMNEY_TOP + 24, surfaceY(scene.level)),
-      )
+  const units = lanternHeight(scene, at)
   const y = scene.lantern.y + (units / LANTERN_VIEW_H) * scene.lantern.h
   return {
     anchors: {
@@ -198,8 +212,10 @@ export function tipTarget(
     case 'line':
       return lineTarget(scene)
     case 'lantern':
+      return lanternTarget(scene, 'surface')
+    case 'half':
     case 'brim':
-      return lanternTarget(scene, target === 'brim')
+      return lanternTarget(scene, target)
     case 'timer':
       return textTarget(scene, scene.timer, [scene.chip])
     case 'score':

@@ -5,8 +5,9 @@
 // A first visit opens on it, and the "?" button plays it again from the
 // start or a result. Merc sings two takes through the room itself
 // (scripted-take.ts): take 1 drifts off the line and stops for a breath,
-// take 2 holds the line until the lantern is full, its middle at 4x. Every
-// tooltip waits for the engine event it explains (demo-cues.ts).
+// take 2 holds the line to the goal (half full, Merc steps out), then
+// steady to the brim, its two long stretches at 4x. Every tooltip waits
+// for the engine event it explains (demo-cues.ts).
 //
 // The demo never opens the mic, fires a haptic or keeps a result, and its
 // sound stops on Skip, on the way out and when the app goes to the
@@ -40,7 +41,7 @@ export interface LongNoteDemo {
   /** The take on the pill; null outside the takes. */
   take: Accessor<DemoTakeId | null>
   tip: Accessor<DemoTip | null>
-  /** Take 2's fast-forward is running. */
+  /** One of take 2's fast-forwards is running. */
   fast: Accessor<boolean>
   /** The progress bar's run and length; null when there is none. */
   run: Accessor<{ readonly id: number; readonly seconds: number } | null>
@@ -83,7 +84,13 @@ function scriptedTake(
   onMark: (mark: DemoMark) => void,
 ): ScriptedTake {
   const released: PitchFrame[] = []
-  let fastMarked = false
+  // Each fast-forward's start and end, in order, marked as the clock
+  // passes them.
+  const turns = take.fast.flatMap((stretch) => [
+    { at: stretch.from, mark: 'fast' as const },
+    { at: stretch.to, mark: 'slow' as const },
+  ])
+  let turned = 0
   const clock = (): number =>
     Math.max(0, take.engineAt((performance.now() - startsAt) / 1000))
   return {
@@ -99,9 +106,9 @@ function scriptedTake(
       while (released.length < all.length && all[released.length].t <= t) {
         released.push(all[released.length])
       }
-      if (!fastMarked && take.fast !== null && t >= take.fast.from) {
-        fastMarked = true
-        onMark('fast')
+      while (turned < turns.length && t >= turns[turned].at) {
+        onMark(turns[turned].mark)
+        turned += 1
       }
       return released
     },
@@ -129,6 +136,8 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
   let request = 0
   let sound: LongNoteDemoSound | null = null
   let plan: LongNoteDemoPlan | null = null
+  /** The tooltips already cued this run: each shows once. */
+  const cued = new Set<DemoCue['id']>()
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const later = (seconds: number, fn: () => void): void => {
     const mine = generation
@@ -176,16 +185,16 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
   const onMark = (id: DemoTakeId, mark: DemoMark): void => {
     for (const cue of DEMO_CUES) {
       const trigger = cue.trigger
-      if (trigger.take === id && trigger.mark === mark) {
+      if (trigger.take === id && trigger.mark === mark && !cued.has(cue.id)) {
+        cued.add(cue.id)
         later(cue.delay, () => showCue(cue))
       }
     }
     if (mark === 'fast') setFast(true)
-    // At the goal the room steps Merc out of the glass to cheer.
-    if (mark === 'goal') {
-      setFast(false)
-      setTip(null)
-    }
+    if (mark === 'slow') setFast(false)
+    // The goal: the room steps Merc out of the glass to cheer, with no
+    // tooltip over him until the next one explains the top.
+    if (mark === 'goal') setTip(null)
     if (mark !== 'end') return
     if (id === 'off') later(DEMO_BEATS.afterOff, rest)
     else later(DEMO_BEATS.afterOn, toEnd)
@@ -225,6 +234,7 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
       return
     }
     plan = planLongNoteDemo(note)
+    cued.clear()
     sound = ctx === null ? null : createDemoSound(ctx, DEMO_BEATS.lead)
     setTake(null)
     setMicPulse(false)

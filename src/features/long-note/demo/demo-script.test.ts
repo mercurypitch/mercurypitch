@@ -9,7 +9,8 @@ import { levelFromRms } from '../useLongNoteController'
 import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planLongNoteDemo, } from './demo-cues'
 import { DEMO_FAST_RATE, demoTake, rmsForLevel } from './demo-script'
 
-const PRESET = HOLD_PRESETS.exercise
+// The room's own preset: the goal fills it halfway, steady singing the top.
+const PRESET = HOLD_PRESETS.lantern
 const A3 = 57
 
 interface Tick {
@@ -93,17 +94,28 @@ describe('Long note demo, take 2 (like this)', () => {
     events.find((event) => event.type === type)?.at ?? Number.NaN
   const final = ticks[ticks.length - 1].state
 
-  it('locks, fills the lantern and ends, without a break', () => {
-    expect(events.map((event) => event.type)).toEqual(['lock', 'goal', 'end'])
+  it('locks, fills the lantern to the brim and ends, without a break', () => {
+    expect(events.map((event) => event.type)).toEqual([
+      'lock',
+      'goal',
+      'brim',
+      'end',
+    ])
     expect(final.charge).toBe(1)
     expect(final.goalReached).toBe(true)
+    expect(final.topCharge).toBe(1)
+    expect(final.brimReached).toBe(true)
   })
 
-  it('reaches the goal on 12 seconds in the band', () => {
+  it('reaches the goal on 12 seconds in the band, the brim on 12 steady more', () => {
     const goal = ticks.find(({ state }) => state.events.includes('goal'))
     expect(goal?.state.inBandSeconds).toBeGreaterThanOrEqual(
       PRESET.goalSeconds - 1e-6,
     )
+    // Steady all the way past the goal: the brim comes as soon as it can.
+    const brim = ticks.find(({ state }) => state.events.includes('brim'))
+    expect(brim?.state.steadySeconds).toBeGreaterThanOrEqual(12 - 1e-6)
+    expect(at('brim') - at('goal')).toBeLessThan(12.3)
   })
 
   it('scores as a steady hold', () => {
@@ -117,23 +129,41 @@ describe('Long note demo, take 2 (like this)', () => {
     expect(result.score).toBeGreaterThanOrEqual(90)
   })
 
-  it('lets go of the note 0.3 to 0.4 s after the lantern fills', () => {
+  it('lets go of the note 0.3 to 0.4 s after the brim', () => {
     const lastVoiced = [...ticks].reverse().find(({ frame }) => voiced(frame))
     expect(lastVoiced).toBeDefined()
     if (lastVoiced === undefined) return
-    const release = lastVoiced.state.clock - at('goal')
+    const release = lastVoiced.state.clock - at('brim')
     expect(release).toBeGreaterThanOrEqual(0.3)
     expect(release).toBeLessThanOrEqual(0.4)
   })
 
-  it('runs the fast stretch from after the lock to the goal, at 4x', () => {
-    expect(take.fast).not.toBeNull()
-    if (take.fast === null) return
-    expect(take.fast.from).toBeGreaterThan(at('lock'))
-    expect(take.fast.to).toBeCloseTo(at('goal'), 6)
-    const wall = take.wallAt(take.fast.to) - take.wallAt(take.fast.from)
-    expect(wall * DEMO_FAST_RATE).toBeCloseTo(take.fast.to - take.fast.from, 6)
-    for (const e of [0, 1, take.fast.from + 1, at('goal'), at('end')]) {
+  it('plays to the goal and on to the brim at 4x, the step out between at 1x', () => {
+    const [toGoal, toBrim] = take.fast
+    expect(take.fast).toHaveLength(2)
+    expect(toGoal.from).toBeGreaterThan(at('lock'))
+    expect(toGoal.to).toBeCloseTo(at('goal'), 6)
+    // A moment at its own speed while Merc hops out of the glass.
+    expect(toBrim.from - toGoal.to).toBeCloseTo(0.8, 6)
+    expect(take.wallAt(toBrim.from) - take.wallAt(toGoal.to)).toBeCloseTo(
+      0.8,
+      6,
+    )
+    expect(toBrim.to).toBeCloseTo(at('brim'), 6)
+    for (const stretch of take.fast) {
+      const wall = take.wallAt(stretch.to) - take.wallAt(stretch.from)
+      expect(wall * DEMO_FAST_RATE).toBeCloseTo(stretch.to - stretch.from, 6)
+    }
+    for (const e of [
+      0,
+      1,
+      toGoal.from + 1,
+      at('goal'),
+      at('goal') + 0.5,
+      toBrim.from + 2,
+      at('brim'),
+      at('end'),
+    ]) {
       expect(take.engineAt(take.wallAt(e))).toBeCloseTo(e, 6)
     }
   })
@@ -154,7 +184,12 @@ describe('Long note demo, the script', () => {
       const off = eventTimes(replay(demoTake('off', note).frames, note))
       const on = eventTimes(replay(demoTake('on', note).frames, note))
       expect(off.map((event) => event.type)).toEqual(['lock', 'break', 'end'])
-      expect(on.map((event) => event.type)).toEqual(['lock', 'goal', 'end'])
+      expect(on.map((event) => event.type)).toEqual([
+        'lock',
+        'goal',
+        'brim',
+        'end',
+      ])
     }
   })
 
@@ -192,8 +227,11 @@ describe('Long note demo, the plan', () => {
     // "It stops filling" while the voice is still off the line.
     expect(at('stops')).toBeLessThan(offEnd)
     expect(at('breath')).toBeGreaterThan(offEnd)
-    // "12 seconds fill the lantern" before the lantern is full.
+    // "12 seconds fill it halfway" before the goal; "only steady singing
+    // fills the top" after it, while the top is still filling.
     expect(at('twelve')).toBeLessThan(plan.goal)
+    expect(at('steady')).toBeGreaterThan(plan.goal)
+    expect(at('steady')).toBeLessThan(plan.brim - 1.5)
     expect(at('score')).toBeGreaterThan(
       plan.takeStart.on + plan.takes.on.length,
     )
@@ -208,9 +246,9 @@ describe('Long note demo, the plan', () => {
     expect(plan.total - times[times.length - 1]).toBeGreaterThan(1.5)
   })
 
-  it('runs about 17 seconds, intro to end card', () => {
-    expect(plan.total).toBeGreaterThan(15.5)
-    expect(plan.total).toBeLessThan(18.5)
+  it('runs about 20 seconds, intro to end card', () => {
+    expect(plan.total).toBeGreaterThan(18.5)
+    expect(plan.total).toBeLessThanOrEqual(20.5)
     expect(plan.takeStart.off).toBeCloseTo(DEMO_BEATS.intro + DEMO_BEATS.lead)
   })
 

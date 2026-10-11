@@ -3,20 +3,30 @@
 // ============================================================
 //
 // Every tooltip waits for the engine event it explains: "it stops filling"
-// for take 1's break, "the note is over" for its end, and so on. The driver
+// for take 1's break, "the note is over" for its end, "only steady singing
+// fills the top" for take 2's goal, and so on. The driver
 // (useLongNoteDemo.ts) keys them to the events the room's engine really
-// fires; `planLongNoteDemo` lays the same table out on the script's own
-// replay, which is what the tests check and what the progress bar runs on.
+// fires, each on the first time its event or mark comes; `planLongNoteDemo`
+// lays the same table out on the script's own replay, which is what the
+// tests check and what the progress bar runs on.
 
 import type { HoldEventType } from '@/lib/hold/hold-engine'
 import type { DemoTake, DemoTakeId } from './demo-script'
 import { demoTake } from './demo-script'
 
 /**
- * What a tooltip points at: the target line, the light's surface, the top
- * of the chimney (where full is), the timer, the steadiness, the mic.
+ * What a tooltip points at: the target line, the light's surface, halfway
+ * up the chimney (where the goal fills it), the top of the chimney (where
+ * the brim is), the timer, the steadiness, the mic.
  */
-export type DemoTarget = 'line' | 'lantern' | 'brim' | 'timer' | 'score' | 'mic'
+export type DemoTarget =
+  | 'line'
+  | 'lantern'
+  | 'half'
+  | 'brim'
+  | 'timer'
+  | 'score'
+  | 'mic'
 
 export type DemoCueId =
   | 'line'
@@ -24,10 +34,14 @@ export type DemoCueId =
   | 'breath'
   | 'fills'
   | 'twelve'
+  | 'steady'
   | 'score'
 
-/** A take's engine event, or `fast`: take 2's fast-forward beginning. */
-export type DemoMark = HoldEventType | 'fast'
+/**
+ * A take's engine event, or `fast` and `slow`: one of take 2's
+ * fast-forwards beginning and ending.
+ */
+export type DemoMark = HoldEventType | 'fast' | 'slow'
 
 export type DemoTrigger =
   | { readonly take: 'intro' }
@@ -66,6 +80,13 @@ export const DEMO_CUES: readonly DemoCue[] = [
     id: 'twelve',
     trigger: { take: 'on', mark: 'fast' },
     delay: 0.2,
+    target: 'half',
+  },
+  // While Merc steps out of the glass, before the steady stretch's 4x.
+  {
+    id: 'steady',
+    trigger: { take: 'on', mark: 'goal' },
+    delay: 0.3,
     target: 'brim',
   },
   {
@@ -123,15 +144,20 @@ export function demoCueText(id: DemoCueId, note: string, own: boolean): string {
     case 'fills':
       return 'Stay on the line and it keeps filling.'
     case 'twelve':
-      return '12 seconds on the line fill the lantern.'
+      return '12 seconds on the line fill it halfway.'
+    case 'steady':
+      return 'Then only steady singing fills the top.'
     case 'score':
       return 'Steadier holds score higher.'
   }
 }
 
-/** When a take's mark happens, engine seconds; null if it never does. */
+/**
+ * When a take's mark first happens, engine seconds; null if it never does.
+ */
 export function demoMarkAt(take: DemoTake, mark: DemoMark): number | null {
-  if (mark === 'fast') return take.fast?.from ?? null
+  if (mark === 'fast') return take.fast[0]?.from ?? null
+  if (mark === 'slow') return take.fast[0]?.to ?? null
   return take.events.find((event) => event.type === mark)?.at ?? null
 }
 
@@ -148,8 +174,10 @@ export interface LongNoteDemoPlan {
   readonly takes: Readonly<Record<DemoTakeId, DemoTake>>
   /** When each take's clock reads zero, wall seconds from the start. */
   readonly takeStart: Readonly<Record<DemoTakeId, number>>
-  /** When take 2's lantern is full. */
+  /** When take 2's lantern is half full, at the goal. */
   readonly goal: number
+  /** When take 2's lantern is full to the brim. */
+  readonly brim: number
   readonly cues: readonly PlannedCue[]
   /** When the end card shows. */
   readonly total: number
@@ -180,11 +208,13 @@ export function planLongNoteDemo(note: number): LongNoteDemoPlan {
     return { id: cue.id, trigger, at: trigger + cue.delay }
   })
   const goal = demoMarkAt(on, 'goal') ?? on.length
+  const brim = demoMarkAt(on, 'brim') ?? on.length
   return {
     note,
     takes,
     takeStart,
     goal: onStart + on.wallAt(goal),
+    brim: onStart + on.wallAt(brim),
     cues,
     total: onEnd + DEMO_BEATS.afterOn,
   }

@@ -167,6 +167,9 @@ interface Moment {
   phase: string | undefined
   fast: boolean
   take: string | null
+  /** Merc's state, and the lantern's halo (half at the goal, all at the brim). */
+  merc: string | null
+  halo: number
 }
 
 /** What the screen showed along the way, each change once. */
@@ -222,6 +225,11 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
         phase: room().dataset.phase,
         fast: screen.queryByTestId('long-note-demo-fast') !== null,
         take: screen.queryByTestId('long-note-demo-take')?.textContent ?? null,
+        merc:
+          screen
+            .getByTestId('long-note-merc')
+            .getAttribute('data-merc-state') ?? null,
+        halo: Number(screen.getByTestId('lantern-halo').style.opacity),
       }
     }
     push(log.tips, tip)
@@ -293,11 +301,12 @@ describe('the Long note demo', () => {
     expect(demoMode()).toBe('playing')
     expect(sound.tones).toEqual([57])
 
-    await run(18_000, log)
+    await run(21_000, log)
     expect(demoMode()).toBe('end')
     expect(screen.getByTestId('long-note-demo-end')).toBeTruthy()
 
-    // Take 1 drifts and stops; take 2 holds to a full lantern and a result.
+    // Take 1 drifts and stops; take 2 holds to the goal, then steady to
+    // the brim and a result.
     expect(sound.sung).toEqual(['off', 'on'])
     expect(log.takes).toEqual(['Not like this', 'Like this'])
     expect(log.tips).toEqual([
@@ -306,6 +315,7 @@ describe('the Long note demo', () => {
       'breath',
       'fills',
       'twelve',
+      'steady',
       'score',
     ])
     // Each one after the event it explains.
@@ -319,14 +329,21 @@ describe('the Long note demo', () => {
     expect(log.at.fills.take).toBe('Like this')
     expect(log.at.fills.fast).toBe(false)
     expect(log.at.twelve.fast).toBe(true)
+    expect(log.at.twelve.halo).toBe(0)
+    // Past the goal, at its own speed: Merc out of the glass to cheer, half
+    // the halo on, and the top still to fill.
+    expect(log.at.steady.fast).toBe(false)
+    expect(log.at.steady.phase).toBe('hold')
+    expect(['hop', 'celebrate']).toContain(log.at.steady.merc)
+    expect(log.at.steady.halo).toBe(0.5)
+    // The result comes on the brim: all of the halo.
     expect(log.at.score.phase).toBe('result')
+    expect(log.at.score.halo).toBe(1)
     expect(log.fast).toBe(true)
     expect(log.phases).toContain('hold')
     expect(log.phases).toContain('result')
     expect(log.said).toContain('Steadier holds score higher.')
     expect(log.said).toContain('Off the line, it stops filling.')
-    // At the goal he steps out of the glass to cheer.
-    expect(merc.states).toContain('celebrate')
 
     // The end card marks it seen and stops the sound.
     expect(seen.value).toBe(true)
@@ -343,7 +360,7 @@ describe('the Long note demo', () => {
 
   it('hands over to the singer on Try it, and the mic opens on its tap', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
-    await run(19_500)
+    await run(22_500)
     expect(demoMode()).toBe('end')
 
     fireEvent.click(screen.getByTestId('long-note-demo-try'))
@@ -384,7 +401,7 @@ describe('the Long note demo', () => {
     expect(demoMode()).toBe('playing')
 
     // Both takes still play out to the end card.
-    const log = await run(16_000)
+    const log = await run(19_000)
     expect(log.tips).toContain('breath')
     expect(log.tips).toContain('score')
     expect(demoMode()).toBe('end')
@@ -484,7 +501,7 @@ describe('the Long note demo', () => {
     expect(kept.results).toHaveLength(1)
 
     fireEvent.click(screen.getByTestId('long-note-ask'))
-    await run(19_500)
+    await run(22_500)
     expect(demoMode()).toBe('end')
     // The singer's own result is the only one kept.
     expect(kept.results).toHaveLength(1)
@@ -495,7 +512,7 @@ describe('the Long note demo', () => {
     seen.value = true
     render(() => <LongNoteRoom onDone={() => undefined} />)
     fireEvent.click(screen.getByTestId('long-note-ask'))
-    await run(19_500)
+    await run(22_500)
     fireEvent.click(screen.getByTestId('long-note-demo-try'))
     await run(50)
 
@@ -517,13 +534,14 @@ describe('the Long note demo', () => {
       removeEventListener: () => undefined,
     }))
     render(() => <LongNoteRoom onDone={() => undefined} />)
-    const log = await run(19_500)
+    const log = await run(22_500)
     expect(log.tips).toEqual([
       'line',
       'stops',
       'breath',
       'fills',
       'twelve',
+      'steady',
       'score',
     ])
     fireEvent.click(screen.getByTestId('long-note-demo-try'))
