@@ -231,7 +231,9 @@ test.describe('the Voice Mirror account ask', () => {
       twin: 'Freddie Mercury',
     })
     await expect(
-      page.getByText('Confirm your email and your 5 credits arrive.'),
+      page.getByText(
+        'Confirm your email to get up to 5 free song separations.',
+      ),
     ).toBeVisible()
     await expect(page.getByTestId(ASK)).toHaveCount(0)
   })
