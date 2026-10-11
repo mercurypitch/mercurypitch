@@ -14,9 +14,16 @@
 // is fitted one second at a time, each second at its own rate (about six
 // cycles, too short for the rate to move much), and only the sine is
 // taken out, not the second's own level, so a slow wander still counts.
-// A wobble or a shake has no one rate to fit, projects weakly onto any
-// single sine, and stays in: on the same takes their scores match the
-// Mirror's.
+//
+// Outside the vibrato band an unsteadiness scores as the Mirror scores it:
+// a slow wobble or sway has no rate to fit and stays in, and a shake faster
+// than the band is smoothed by the same median of five in both. A shake
+// inside the band is not left in. Second by second it looks like a
+// vibrato, each second's deepest sine takes most of it out, and the note
+// scores steadier than it was: a random 4.5-6.5 Hz shake of 20 cents
+// scores 92-95 here against 71-80 on the Mirror (review of PR 973, m5).
+// That is how it scores for now; whether such a shake should count is
+// still open.
 //
 // The room's live measure of steady singing (the hold engine's stretch)
 // is this same fit over the last two seconds of the voice, and both read
