@@ -1,42 +1,22 @@
 // ============================================================
-// Long note bests — one per target note, kept on this device
+// Long note bests — one per target note, on this device and the account
 // ============================================================
 //
-// A higher note must not wipe a lower note's best (design §7), so the best
-// is keyed by the target's MIDI number. The best is the big number on the
-// result card, the seconds the light filled; steadiness breaks a tie.
+// The table's shape, its ordering (`beats`) and how a settings pull merges
+// another device's copy into it are in src/lib/hold/hold-bests.ts: the
+// table syncs with the account, and a pull keeps the better best on each
+// note rather than the newest table. This module is the room's side: the
+// live table, and recording a run.
 
+import type { BestTable, LongNoteBest } from '@/lib/hold/hold-bests'
+import { beats, isBestTable, LONG_NOTE_BESTS_KEY } from '@/lib/hold/hold-bests'
 import { createPersistedSignal } from '@/lib/storage'
 
-export interface LongNoteBest {
-  readonly inBandSeconds: number
-  readonly steadiness: number
-  readonly at: number
-}
-
-type BestTable = Readonly<Record<string, LongNoteBest>>
-
-function isBest(value: unknown): value is LongNoteBest {
-  if (typeof value !== 'object' || value === null) return false
-  const row = value as Record<string, unknown>
-  return (
-    typeof row.inBandSeconds === 'number' &&
-    Number.isFinite(row.inBandSeconds) &&
-    typeof row.steadiness === 'number' &&
-    Number.isFinite(row.steadiness) &&
-    typeof row.at === 'number'
-  )
-}
-
-function isBestTable(value: unknown): value is BestTable {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  return Object.values(value).every(isBest)
-}
+export type { LongNoteBest } from '@/lib/hold/hold-bests'
+export { beats } from '@/lib/hold/hold-bests'
 
 const [bests, setBests] = createPersistedSignal<BestTable>(
-  'pitchperfect_long_note_lantern_bests',
+  LONG_NOTE_BESTS_KEY,
   {},
   { validator: isBestTable },
 )
@@ -44,18 +24,6 @@ const [bests, setBests] = createPersistedSignal<BestTable>(
 /** The best on this note, or null before the first run on it. */
 export function longNoteBest(midi: number): LongNoteBest | null {
   return bests()[String(midi)] ?? null
-}
-
-/** Whether `run` beats `previous`: longer, or as long and steadier. */
-export function beats(
-  run: LongNoteBest,
-  previous: LongNoteBest | null,
-): boolean {
-  if (previous === null) return true
-  const longer = run.inBandSeconds - previous.inBandSeconds
-  // Tenths are what the card shows, so a difference below that is a tie.
-  if (Math.abs(longer) >= 0.05) return longer > 0
-  return run.steadiness > previous.steadiness
 }
 
 export interface BestOutcome {
