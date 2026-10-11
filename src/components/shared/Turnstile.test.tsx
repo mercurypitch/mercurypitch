@@ -266,8 +266,73 @@ describe('hidden until Cloudflare needs a click', () => {
     expect(host).toHaveAttribute('data-turnstile', 'drawn')
     expect(host.style.margin).toBe('4px 0px 12px')
 
-    opts['after-interactive-callback']()
+    // Ticked: Cloudflare keeps its 69px "Success" on screen, so the host
+    // keeps its spacing. Dropping it moved the widget up 4px and left no gap
+    // above the button (review of PR #979, measured on the forced-click key).
+    // Cloudflare's after-interactive callback says only that the click is
+    // done, so the widget no longer listens for it.
+    expect(opts['after-interactive-callback']).toBeUndefined()
+    opts.callback('a-fresh-token')
+    expect(host).toHaveAttribute('data-turnstile', 'drawn')
+    expect(host.style.margin).toBe('4px 0px 12px')
+  })
+
+  it('takes no room again once the page resets the check', async () => {
+    // A failed sign-in resets every widget, and the new run is hidden again
+    // unless it needs another click.
+    const { getByTestId, opts } = await renderHidden()
+    const mod = await import('./Turnstile')
+    const host = getByTestId('turnstile-host')
+
+    opts['before-interactive-callback']()
+    opts.callback('a-fresh-token')
+    mod.resetTurnstile()
     expect(host).toHaveAttribute('data-turnstile', 'hidden')
+    expect(host.style.margin).toBe('')
+  })
+
+  it('follows the drawn height where the browser can measure it', async () => {
+    // A real browser reports the widget's own box: 69px while Cloudflare
+    // shows a checkbox or its "Success", 0px while it shows nothing.
+    let report: ((height: number) => void) | undefined
+    class FakeResizeObserver {
+      constructor(cb: ResizeObserverCallback) {
+        report = (height) => {
+          cb(
+            [{ contentRect: { height } } as unknown as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          )
+        }
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    try {
+      const { getByTestId, opts } = await renderHidden()
+      const host = getByTestId('turnstile-host')
+
+      opts['before-interactive-callback']()
+      report?.(69)
+      opts.callback('a-fresh-token')
+      expect(host).toHaveAttribute('data-turnstile', 'drawn')
+
+      report?.(0)
+      expect(host).toHaveAttribute('data-turnstile', 'hidden')
+      expect(host.style.margin).toBe('')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('leaves a failure to the widget once it has drawn itself', async () => {
+    // A failed click shows Cloudflare's own message in the drawn widget.
+    const { queryByRole, opts } = await renderHidden()
+
+    opts['before-interactive-callback']()
+    opts['error-callback']('600010')
+    expect(queryByRole('status')).toBeNull()
   })
 
   it('keeps an always-drawn widget spaced from the start', async () => {

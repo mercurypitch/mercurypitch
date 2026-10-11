@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { TURNSTILE_SITE_KEY } from '@/lib/defaults'
 
 // Cloudflare Turnstile (CAPTCHA) widget for the public auth forms. Renders ONLY when
@@ -46,6 +46,14 @@ declare global {
 const [turnstileUnavailable, setTurnstileUnavailable] = createSignal(false)
 export { turnstileUnavailable }
 
+/**
+ * Bumped by every resetTurnstile(). A reset starts each widget's check over,
+ * and one that was hidden until needed is hidden again unless the new run
+ * also needs a click, so a host that stayed spaced for a drawn widget lets
+ * the spacing go.
+ */
+const [resets, setResets] = createSignal(0)
+
 let scriptPromise: Promise<void> | null = null
 
 function loadScript(): Promise<void> {
@@ -73,6 +81,7 @@ export function resetTurnstile(): void {
   } catch {
     /* ignore */
   }
+  setResets((n) => n + 1)
 }
 
 export interface TurnstileProps {
@@ -105,16 +114,34 @@ export default function Turnstile(props: TurnstileProps) {
   // Read once: the widget is rendered once, with whatever was asked then.
   const hiddenUntilNeeded =
     untrack(() => props.appearance) === 'interaction-only'
-  // Between Cloudflare's before- and after-interactive callbacks the
-  // checkbox is on screen, and only then does its row need spacing.
-  const [interactive, setInteractive] = createSignal(false)
+  // From Cloudflare's before-interactive callback the widget is on screen:
+  // first the checkbox, then, once ticked, its "Success", which Cloudflare
+  // leaves in place at the same 69px. So the row keeps its spacing until
+  // the check is reset or the widget removed, not just until the click.
+  const [shown, setShown] = createSignal(false)
+  // Where the browser can measure it, the widget's own height is the final
+  // word: Cloudflare draws into the host, and the host is 0px tall whenever
+  // nothing is drawn (measured with all three test keys). The margin sits
+  // outside the measured box, so it cannot feed back into the reading.
+  const [drawnHeight, setDrawnHeight] = createSignal(0)
   // A hidden widget draws nothing when the check fails (measured with the
   // always-blocks test key: no pixels, only the error callback), so the form
   // has to say it, or the button just stays disabled. "Close this": the web
   // dialog and the app's sign-in sheet both drop the widget when they close,
   // and reopening starts a fresh check. An app has no page to reload.
   const [hiddenFailure, setHiddenFailure] = createSignal<HiddenFailure>(null)
-  const drawn = (): boolean => !hiddenUntilNeeded || interactive()
+  const drawn = (): boolean =>
+    !hiddenUntilNeeded || shown() || drawnHeight() > 0
+
+  createEffect(
+    on(
+      resets,
+      () => {
+        setShown(false)
+      },
+      { defer: true },
+    ),
+  )
   // A flexible widget fills its host, so the host is a block it can fill;
   // the fixed sizes sit centred in a flex row, as they always have.
   const layout =
@@ -128,6 +155,23 @@ export default function Turnstile(props: TurnstileProps) {
     // added a branch no test could ever take.
     const target = el
     if (SITE_KEY === '' || target == null) return
+    if (hiddenUntilNeeded && typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[entries.length - 1]
+        if (entry === undefined) return
+        const height = entry.contentRect.height
+        // Emptied after being drawn: whatever Cloudflare showed has gone,
+        // so a return to hidden that no reset announced is followed too.
+        // Only a fall from a drawn height counts; the first reading of the
+        // empty host can land after before-interactive and must not undo it.
+        if (height === 0 && untrack(drawnHeight) > 0) setShown(false)
+        setDrawnHeight(height)
+      })
+      observer.observe(target)
+      onCleanup(() => {
+        observer.disconnect()
+      })
+    }
     const appearance = untrack(() => props.appearance)
     const size = untrack(() => props.size)
     loadScript()
@@ -155,10 +199,7 @@ export default function Turnstile(props: TurnstileProps) {
           },
           'before-interactive-callback': () => {
             setHiddenFailure(null)
-            setInteractive(true)
-          },
-          'after-interactive-callback': () => {
-            setInteractive(false)
+            setShown(true)
           },
           'unsupported-callback': () => {
             if (hiddenUntilNeeded) setHiddenFailure('unsupported')
@@ -188,7 +229,8 @@ export default function Turnstile(props: TurnstileProps) {
         data-turnstile={drawn() ? 'drawn' : 'hidden'}
         style={drawn() ? `margin: 4px 0 12px; ${layout}` : layout}
       />
-      <Show when={hiddenFailure() !== null && !interactive()}>
+      {/* Only over an empty host: a drawn widget shows its own failure. */}
+      <Show when={hiddenFailure() !== null && !drawn()}>
         <p role="status" style={`margin: 0 0 10px; ${NOTE_STYLE}`}>
           {hiddenFailure() === 'unsupported'
             ? "This browser can't run the security check. Try another browser."
