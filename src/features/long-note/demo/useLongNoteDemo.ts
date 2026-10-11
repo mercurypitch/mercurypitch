@@ -17,13 +17,13 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
-import { rememberedLongNote } from '../remembered-note'
 import type { ScriptedTake } from '../scripted-take'
 import type { LongNoteController } from '../useLongNoteController'
+import { longNoteDemoAutoPlays } from './demo-auto-play'
 import type { DemoCue, DemoMark, DemoTarget, LongNoteDemoPlan, } from './demo-cues'
 import { DEMO_BEATS, DEMO_COPY, DEMO_CUES, demoCueText, planLongNoteDemo, } from './demo-cues'
 import type { DemoTake, DemoTakeId } from './demo-script'
-import { longNoteDemoSeen, markLongNoteDemoSeen } from './demo-seen'
+import { markLongNoteDemoSeen } from './demo-seen'
 import type { LongNoteDemoSound } from './demo-sound'
 import { createDemoSound } from './demo-sound'
 
@@ -306,7 +306,7 @@ export function useLongNoteDemo(room: LongNoteController): LongNoteDemo {
   }
 
   onMount(() => {
-    if (longNoteDemoSeen() || rememberedLongNote() !== null) return
+    if (!longNoteDemoAutoPlays()) return
     autoTimer = setTimeout(autoPlay, AUTO_PLAY_MS)
   })
 

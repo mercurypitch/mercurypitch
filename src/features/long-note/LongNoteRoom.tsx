@@ -34,6 +34,7 @@ import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
+import { formatHoldSeconds } from './long-note-entry'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
 import { BESIDE_X, createLayoutGlide, layoutStage, MERC_UNITS, } from './stage-layout'
@@ -72,10 +73,6 @@ const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
  * 2's ribbon ends, short of the note's name.
  */
 const TRACE_HEAD_X = 240
-
-function formatSeconds(seconds: number): string {
-  return `${(Math.floor(seconds * 10) / 10).toFixed(1)} s`
-}
 
 export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const room = useLongNoteController()
@@ -191,7 +188,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         <Switch>
           <Match when={phase() === 'hold'}>
             <div class={styles.timer} data-testid="long-note-timer">
-              {formatSeconds(room.hold().inBandSeconds)}
+              {formatHoldSeconds(room.hold().inBandSeconds)}
               <Show when={demo.fast()}>
                 <span
                   class={styles.fast}
@@ -216,7 +213,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             {(summary) => (
               <div class={styles.result} data-testid="long-note-result">
                 <div class={styles.timer}>
-                  {formatSeconds(summary().inBandSeconds)}
+                  {formatHoldSeconds(summary().inBandSeconds)}
                 </div>
                 <Show when={summary().steadiness}>
                   {(steadiness) => (
