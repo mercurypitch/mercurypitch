@@ -33,3 +33,14 @@ export const GIFT_BODY =
 
 /** Under the sign-up button while the gift is on offer: when it lands. */
 export const GIFT_ARRIVES = 'Your gift arrives when your email is confirmed.'
+
+/**
+ * The same count without "free", for a surface about credits already held
+ * (Settings > Credits, signed in): "1 song separation" or "up to 5 song
+ * separations". Added by the onboarding polish follow-up (PR 981).
+ */
+export function songSeparations(credits: number): string {
+  return credits === 1
+    ? '1 song separation'
+    : `up to ${credits} song separations`
+}

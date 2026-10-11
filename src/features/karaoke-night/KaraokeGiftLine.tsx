@@ -14,7 +14,7 @@
 // Its own file so KaraokeRailPanels stays under the size ratchet.
 
 import { onMount, Show } from 'solid-js'
-import { freeSongSeparations } from '@/lib/song-separations'
+import { giftCount } from '@/lib/launch-gift-copy'
 import { rememberGiftOffered } from '@/stores/launch-gift-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { trackKaraoke } from './funnel'
@@ -39,9 +39,7 @@ export function KaraokeGiftLine() {
         <div class="kn-gift" data-testid="kn-launch-gift">
           <p class="kn-card-sub">
             Splitting on this device is free. For studio quality, get{' '}
-            <span class="kn-gift-credits">
-              {freeSongSeparations(promo().credits)}
-            </span>{' '}
+            <span class="kn-gift-credits">{giftCount(promo().credits)}</span>{' '}
             with a free account.
           </p>
           <button

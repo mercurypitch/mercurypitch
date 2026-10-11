@@ -19,7 +19,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, onMount, Show, } from 'solid-js'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
-import { capitalized, freeSongSeparations, songSeparations, } from '@/lib/song-separations'
+import { giftCount, songSeparations } from '@/lib/launch-gift-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -27,6 +27,11 @@ import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { theme } from '@/stores/theme-store'
 import { openAuthModal } from '@/stores/ui-store'
 import styles from './PromoCodeCard.module.css'
+
+/** A phrase opening a line: "Up to 5 song separations". */
+function upperFirst(words: string): string {
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
 
 /** "1 free credit" or "5 free credits": this card is about the balance. */
 function freeCredits(credits: number): string {
@@ -196,7 +201,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
             <>
               {isAuthenticated()
                 ? `Claim ${freeCredits(promo().credits)} for separating songs on the Cloud GPU, or redeem a code you were given.`
-                : `Claim ${freeSongSeparations(promo().credits)} on the Cloud GPU, or redeem a code you were given.`}
+                : `Claim ${giftCount(promo().credits)} on the Cloud GPU, or redeem a code you were given.`}
             </>
           )}
         </Show>
@@ -212,7 +217,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
               fallback="Create a free account and verify your email to redeem promo codes."
             >
               {(promo) =>
-                `Create a free account and verify your email to claim ${freeSongSeparations(promo().credits)}.`
+                `Create a free account and verify your email to claim ${giftCount(promo().credits)}.`
               }
             </Show>{' '}
             <button
@@ -255,7 +260,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
                 {freeCredits(promo().credits)}
               </span>
               <span class={styles.claimSub}>
-                {capitalized(songSeparations(promo().credits))} on the Cloud GPU
+                {upperFirst(songSeparations(promo().credits))} on the Cloud GPU
               </span>
             </div>
 

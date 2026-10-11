@@ -206,7 +206,7 @@ gift". The number is always the server's. Verified by
 `onboarding-launch-gift-beats.test.tsx` and
 `onboarding-launch-gift-flow.test.tsx`.
 
-The same words, from `src/lib/song-separations.ts`, name the gift wherever
+The same words, from `src/lib/launch-gift-copy.ts`, name the gift wherever
 the reader has not met a credit yet: Karaoke Night's signed-out line ("For
 studio quality, get up to 5 free song separations with a free account.")
 and the signed-out promo card in Settings > Credits. Signed in, that card is
