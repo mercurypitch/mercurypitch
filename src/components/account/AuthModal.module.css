@@ -340,8 +340,17 @@
     color 0.15s ease;
 }
 
-.input:focus + .floatLabel,
-.input:not(:placeholder-shown) + .floatLabel {
+/* Floated: the field has focus or holds a value. Each rule reaches the words
+   as a descendant of the field, or as a later sibling of the input, and never
+   as the input's next sibling. Proton Pass puts its icon element straight
+   after the input (it steps past a next sibling only when that is a
+   <label>), and an `.input + .floatLabel` rule then stopped matching: the
+   words dropped back over a filled address as its menu opened (owner,
+   2026-10-11). `data-filled` comes from the field's value, read back on
+   input, change, focus, blur and autofill (AuthModal.tsx). */
+.field:focus-within .floatLabel,
+.field[data-filled='true'] .floatLabel,
+.input:not(:placeholder-shown) ~ .floatLabel {
   top: 7px;
   color: var(--text-secondary, #a8b3bf);
   font-size: 11px;
@@ -353,21 +362,36 @@
 /* Kept apart: a selector list with a pseudo-class the browser does not know
    drops the whole rule. A browser that fills the field before anyone types
    does not always clear :placeholder-shown for it. */
-.input:autofill + .floatLabel {
+.input:autofill ~ .floatLabel {
   top: 7px;
   font-size: 11px;
   font-weight: 600;
   transform: none;
 }
 
-.input:-webkit-autofill + .floatLabel {
+.input:-webkit-autofill ~ .floatLabel {
   top: 7px;
   font-size: 11px;
   font-weight: 600;
   transform: none;
 }
 
-.input:focus + .floatLabel {
+/* Starts an animation the moment the browser autofills, so its
+   `animationstart` can read the value back into the form. */
+@keyframes authFieldAutofill {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.input:-webkit-autofill {
+  animation: authFieldAutofill 1ms;
+}
+
+.field:focus-within .floatLabel {
   color: var(--accent, #58a6ff);
 }
 
