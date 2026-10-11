@@ -12,6 +12,10 @@
 //   result   the lantern topped up, the seconds and the steadiness, Merc
 //            out of the glass again, Again and Done
 //
+// "How it works" (demo/) plays over the same room: Merc sings two takes
+// through it while tooltips explain them. A first visit opens on it, and
+// the "?" in the stage's corner plays it again at the start or a result.
+//
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
 // liquid. Everything is placed from one measurement of the stage
@@ -19,8 +23,11 @@
 
 import type { JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
-import { Mic, Minus, Plus, Volume2 } from '@/components/icons'
+import { CheckSmall, HelpCircle, Mic, Minus, Plus, Volume2, X, } from '@/components/icons'
 import { nativeShellApi } from '@/stores/native-shell-store'
+import { DEMO_COPY } from './demo/demo-cues'
+import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
+import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
@@ -88,6 +95,9 @@ function formatSeconds(seconds: number): string {
 
 export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const room = useLongNoteController()
+  const demo = useLongNoteDemo(room)
+  /** The demo has the room: its controls are out of reach. */
+  const demoBusy = (): boolean => demo.mode() !== 'idle'
   let stageEl: HTMLDivElement | undefined
   const [layout, setLayout] = createSignal<StageLayout>({
     k: 1,
@@ -171,16 +181,34 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   }
 
   return (
-    <div class={styles.room} data-phase={phase()} data-testid="long-note-room">
-      <div class={styles.top}>
+    <div
+      class={styles.room}
+      data-phase={phase()}
+      data-demo={demo.mode()}
+      data-testid="long-note-room"
+    >
+      <div class={styles.top} inert={demoBusy()}>
         <Switch>
           <Match when={phase() === 'hold'}>
             <div class={styles.timer} data-testid="long-note-timer">
               {formatSeconds(room.hold().inBandSeconds)}
+              <Show when={demo.fast()}>
+                <span
+                  class={styles.fast}
+                  aria-hidden="true"
+                  data-testid="long-note-demo-fast"
+                >
+                  {DEMO_COPY.fast}
+                </span>
+              </Show>
             </div>
             <div class={styles.chipRow} aria-live="polite">
               <Show when={room.chip()}>
-                {(text) => <span class={styles.chip}>{text()}</span>}
+                {(text) => (
+                  <span class={styles.chip} data-testid="long-note-chip">
+                    {text()}
+                  </span>
+                )}
               </Show>
             </div>
           </Match>
@@ -192,7 +220,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 </div>
                 <Show when={summary().steadiness}>
                   {(steadiness) => (
-                    <div class={styles.steadiness}>
+                    <div
+                      class={styles.steadiness}
+                      data-testid="long-note-steadiness"
+                    >
                       Steadiness {Math.round(steadiness())}
                     </div>
                   )}
@@ -208,7 +239,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         </Show>
       </div>
 
-      <div ref={stageEl} class={styles.stage}>
+      <div ref={stageEl} class={styles.stage} data-testid="long-note-stage">
         <VoiceTrace
           class={styles.trace}
           trace={room.trace}
@@ -236,6 +267,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
         </Show>
         <div
           class={styles.lantern}
+          data-testid="long-note-lantern"
           style={{
             left: `${layout().left}px`,
             top: `${layout().top}px`,
@@ -262,14 +294,46 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           <LanternFront
             level={room.lanternLevel}
             glow={room.lanternGlow}
-            shining={() => room.shining() && phase() === 'result'}
+            shining={() =>
+              room.shining() &&
+              phase() === 'result' &&
+              // Reduced motion: the demo shows the full lantern unsparkled.
+              !(demo.still && room.script.active())
+            }
           />
         </div>
+        <Show when={demo.canAsk()}>
+          <button
+            type="button"
+            class={styles.ask}
+            onClick={() => demo.ask()}
+            aria-label={DEMO_COPY.ask}
+            data-testid="long-note-ask"
+          >
+            <HelpCircle size={22} />
+          </button>
+        </Show>
+        <Show when={demo.mode() === 'playing'}>
+          <button
+            type="button"
+            class={styles.skip}
+            onClick={() => demo.skip()}
+            data-testid="long-note-demo-skip"
+          >
+            {DEMO_COPY.skip}
+          </button>
+        </Show>
       </div>
 
-      <div class={styles.bottom}>
+      <div
+        class={styles.bottom}
+        classList={{
+          [styles.bottomAway]: demo.mode() === 'card' || demo.mode() === 'end',
+        }}
+        inert={demoBusy()}
+      >
         <Switch>
-          <Match when={phase() === 'result'}>
+          <Match when={phase() === 'result' && !room.script.active()}>
             <div class={styles.actions}>
               <button
                 type="button"
@@ -328,14 +392,35 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
               </button>
             </div>
           </Match>
-          <Match when={phase() !== 'result'}>
+          <Match when={phase() !== 'result' || room.script.active()}>
             {/* The picker keeps its place once the take starts, so the mic
-                button stays under the finger that pressed it. */}
+                button stays under the finger that pressed it. The demo's
+                take pill stands in it while the demo sings. */}
+            <Show when={room.script.active()}>
+              <div class={styles.takeSlot}>
+                <Show when={demo.take()}>
+                  {(take) => (
+                    <span
+                      class={styles.take}
+                      data-take={take()}
+                      data-testid="long-note-demo-take"
+                    >
+                      {take() === 'off' ? <X /> : <CheckSmall size={16} />}
+                      {take() === 'off' ? DEMO_COPY.off : DEMO_COPY.on}
+                    </span>
+                  )}
+                </Show>
+              </div>
+            </Show>
             <div
               class={styles.picker}
-              classList={{ [styles.pickerAway]: phase() !== 'intro' }}
+              classList={{
+                [styles.pickerAway]: phase() !== 'intro',
+                [styles.pickerOut]: room.script.active(),
+              }}
               aria-label="The note to hold"
               aria-hidden={phase() !== 'intro'}
+              data-testid="long-note-picker"
             >
               <button
                 type="button"
@@ -382,7 +467,10 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
               class={styles.mic}
               classList={{
                 [styles.micListening]:
-                  phase() === 'listen' || phase() === 'hold',
+                  (phase() === 'listen' || phase() === 'hold') &&
+                  !room.script.active(),
+                [styles.micDemo]: room.script.active(),
+                [styles.micPulse]: demo.micPulse(),
               }}
               disabled={phase() === 'starting'}
               aria-label={micLabel()}
@@ -397,6 +485,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           </Match>
         </Switch>
       </div>
+      <LongNoteDemoLayer demo={demo} room={room} />
     </div>
   )
 }

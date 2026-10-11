@@ -27,11 +27,28 @@
 }
 
 .timer {
+  position: relative;
   font: 700 56px/1 var(--font-body, sans-serif);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: #f4efff;
   text-shadow: 0 0 24px rgba(160, 120, 255, 0.45);
+}
+
+/* The demo's fast-forward, beside the timer it speeds up. */
+.fast {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 196, 92, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 186, 73, 0.16);
+  color: #ffd58a;
+  font: 700 15px/1 var(--font-body, sans-serif);
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  transform: translate(10px, -50%);
 }
 
 .chipRow {
@@ -109,6 +126,37 @@
   position: absolute;
 }
 
+/* "?" and the demo's Skip share the stage's top corner, clear of the timer
+   and the chip above it and the note tag on the line below. */
+.ask,
+.skip {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 6;
+  height: 44px;
+}
+
+.ask {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.skip {
+  min-width: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font: 600 15px/1 var(--font-body, sans-serif);
+}
+
 .merc {
   position: absolute;
   left: 0;
@@ -143,6 +191,50 @@
 }
 
 .pickerAway {
+  visibility: hidden;
+}
+
+/* The demo's take pill stands in the picker's place, at its height. */
+.pickerOut {
+  display: none;
+}
+
+.takeSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+}
+
+.take {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  font: 700 15px/1 var(--font-body, sans-serif);
+}
+
+.take svg {
+  width: 16px;
+  height: 16px;
+}
+
+.take[data-take='off'] {
+  border: 1px solid rgba(255, 184, 77, 0.55);
+  background: rgba(255, 168, 51, 0.14);
+  color: #ffcf85;
+}
+
+.take[data-take='on'] {
+  border: 1px solid rgba(4, 236, 216, 0.55);
+  background: rgba(4, 236, 216, 0.12);
+  color: #8ff7ec;
+}
+
+/* A card covers the controls: they keep their place, out of sight. */
+.bottomAway > * {
   visibility: hidden;
 }
 
@@ -217,6 +309,36 @@
   opacity: 0.6;
 }
 
+/* While the demo sings, the mic is not listening and looks it. */
+.micDemo {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.micDemo::after {
+  animation: none;
+  opacity: 0;
+}
+
+/* After Try it: one nudge to say "this one". */
+.micPulse {
+  animation: long-note-nudge 900ms ease-out 1;
+}
+
+@keyframes long-note-nudge {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 28px rgba(123, 76, 245, 0.45);
+  }
+  40% {
+    transform: scale(1.1);
+    box-shadow:
+      0 8px 28px rgba(123, 76, 245, 0.45),
+      0 0 0 10px rgba(160, 130, 255, 0.28);
+  }
+}
+
 @keyframes long-note-pulse {
   from {
     transform: scale(1);
@@ -279,5 +401,9 @@
 
   .mercHop {
     transition: none;
+  }
+
+  .micPulse {
+    animation: none;
   }
 }

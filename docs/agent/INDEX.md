@@ -92,6 +92,7 @@ These are the rules that break things when ignored.
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
 | `glass` | [GlassApp.tsx](../../src/features/glass/GlassApp.tsx) | 4.7k | Glass — the shattering voice mirror (P2: self-voice loop). |
+| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.5k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `guitar-tab-3d` | [GuitarTab3DView.tsx](../../src/features/guitar-tab-3d/GuitarTab3DView.tsx) | 4.4k | GuitarTab3DView — 3D-style falling-notes guitar tab playback A drop-in alternate renderer for the same falling-notes data the 2D "hero" v... |
 | `karaoke-room` | [karaoke-room-store.ts](../../src/features/karaoke-room/karaoke-room-store.ts) | 4.4k | The Karaoke room's memory: what it keeps across an unmount The room is a tab, and a tab unmounts every time the singer leaves it. |
 | `sing-room` | [sing-room-store.ts](../../src/features/sing-room/sing-room-store.ts) | 3.8k | The Sing room's state, held where the room is not AT MODULE SCOPE, and that is the whole point. |
@@ -99,7 +100,6 @@ These are the rules that break things when ignored.
 | `lab` | [LabSurface.tsx](../../src/features/lab/LabSurface.tsx) | 3.5k | Lab — hidden audio-research surface Not in TAB_GROUPS, so it never appears in the tab bar. |
 | `piano-project` | [piano-project.ts](../../src/features/piano-project/piano-project.ts) | 3.1k | PianoProject — lossless-enough, tick-native Standard MIDI authority Source-track order and absolute ticks stay authoritative. |
 | `guitar-practice` | [useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 2.9k | useGuitarPracticeController — Guitar Hero-style game logic |
-| `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 2.4k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `analysis` | [AnalysisDashboard.tsx](../../src/features/analysis/AnalysisDashboard.tsx) | 2.0k | Analysis dashboard — one responsive page for every take Replaces VocalAnalysis.tsx (3,102 lines) and AnalysisMobileOverview.tsx. |
 | `routines` | [use-daily-routine.ts](../../src/features/routines/use-daily-routine.ts) | 2.0k | Runs banked against the segment now in progress, cleared when it ticks off. |
 | `path` | [path-content.ts](../../src/features/path/path-content.ts) | 1.7k | The Ascent — guided-path content (data, not code) One path = an ordered list of themed weeks (the celestial orbs). |

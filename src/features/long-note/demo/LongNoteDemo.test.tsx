@@ -1,0 +1,506 @@
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { sequence, silence, tone } from '@/lib/glass/test-frames'
+import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import type * as BestModule from '../long-note-best'
+import type * as CaptureModule from '../useLongNoteCapture'
+import type { DemoTake } from './demo-script'
+
+// The room with its demo, on a fake clock: timers, performance.now() and
+// animation frames all advance together, so the demo's two takes play
+// through the room's own engine exactly as they do on a phone.
+
+// ── A capture the test controls ─────────────────────────────────
+
+const fake = vi.hoisted(() => ({
+  frames: [] as PitchFrame[],
+  acquired: 0,
+  released: 0,
+  windows: 0,
+  tones: [] as number[],
+  /** What asking for the audio clock answers: running, no, or never. */
+  audio: 'running' as 'running' | 'none' | 'never',
+}))
+
+vi.mock('../useLongNoteCapture', async () => {
+  const actual = await vi.importActual<typeof CaptureModule>(
+    '../useLongNoteCapture',
+  )
+  return {
+    ...actual,
+    useLongNoteCapture: () => ({
+      acquire: () => {
+        fake.acquired += 1
+        return Promise.resolve()
+      },
+      release: () => {
+        fake.released += 1
+      },
+      held: () => true,
+      startWindow: () => {
+        fake.windows += 1
+        fake.frames = []
+      },
+      peekFrames: () => fake.frames.slice(),
+      takeFrames: () => {
+        const taken = fake.frames
+        fake.frames = []
+        return taken
+      },
+      playTone: (midi: number) => {
+        fake.tones.push(midi)
+        return Promise.resolve()
+      },
+      audio: () => {
+        if (fake.audio === 'never') return new Promise<never>(() => undefined)
+        return Promise.resolve(
+          fake.audio === 'running' ? ({} as AudioContext) : null,
+        )
+      },
+    }),
+  }
+})
+
+// ── The demo's sound, recorded rather than played ──────────────
+
+const sound = vi.hoisted(() => ({
+  made: 0,
+  tones: [] as number[],
+  sung: [] as string[],
+  stops: 0,
+}))
+vi.mock('./demo-sound', () => ({
+  createDemoSound: () => {
+    sound.made += 1
+    let stopped = false
+    return {
+      lead: 0.12,
+      tone: (midi: number) => sound.tones.push(midi),
+      sing: (take: DemoTake) => sound.sung.push(take.id),
+      stop: () => {
+        if (!stopped) sound.stops += 1
+        stopped = true
+      },
+    }
+  },
+}))
+
+const seen = vi.hoisted(() => ({ value: false }))
+vi.mock('./demo-seen', () => ({
+  longNoteDemoSeen: () => seen.value,
+  markLongNoteDemoSeen: () => {
+    seen.value = true
+  },
+}))
+
+// ── What a run keeps, and what a phone feels ────────────────────
+
+const kept = vi.hoisted(() => ({
+  results: [] as unknown[],
+  bests: 0,
+  haptics: 0,
+  note: null as number | null,
+}))
+vi.mock('@/stores/exercise-history-store', () => ({
+  recordExerciseResult: (entry: unknown) => kept.results.push(entry),
+}))
+vi.mock('../long-note-best', async () => {
+  const actual = await vi.importActual<typeof BestModule>('../long-note-best')
+  return {
+    ...actual,
+    recordLongNoteBest: (
+      ...args: Parameters<typeof actual.recordLongNoteBest>
+    ) => {
+      kept.bests += 1
+      return actual.recordLongNoteBest(...args)
+    },
+  }
+})
+vi.mock('@/lib/haptics', () => ({
+  haptics: {
+    tapLight: () => {
+      kept.haptics += 1
+    },
+    success: () => {
+      kept.haptics += 1
+    },
+  },
+}))
+vi.mock('../remembered-note', () => ({
+  rememberedLongNote: () => kept.note,
+  rememberLongNote: (midi: number) => {
+    kept.note = midi
+  },
+}))
+
+const merc = vi.hoisted(() => ({ states: [] as string[] }))
+vi.mock('@/lib/merc/stage', () => ({
+  mountMercStage: () => ({
+    ok: true,
+    setState: (name: string) => merc.states.push(name),
+    setVoice: () => undefined,
+    setPaused: () => undefined,
+    destroy: () => undefined,
+  }),
+}))
+
+vi.mock('@/lib/hold/load-hold-target', () => ({
+  loadHoldTarget: () => ({ midi: 57, source: 'voiceprint' }),
+}))
+
+const { LongNoteRoom } = await import('../LongNoteRoom')
+
+// ── The clock ──────────────────────────────────────────────────
+
+let rafQueue: FrameRequestCallback[] = []
+
+function flushFrames(): void {
+  const due = rafQueue
+  rafQueue = []
+  for (const callback of due) callback(performance.now())
+}
+
+/** The room around a tooltip the moment it showed. */
+interface Moment {
+  chip: string | null
+  phase: string | undefined
+  fast: boolean
+  take: string | null
+}
+
+/** What the screen showed along the way, each change once. */
+interface Seen {
+  tips: string[]
+  takes: string[]
+  phases: string[]
+  said: string[]
+  fast: boolean
+  /** Each tooltip's first moment. */
+  at: Record<string, Moment>
+}
+
+function watched(): Seen {
+  return { tips: [], takes: [], phases: [], said: [], fast: false, at: {} }
+}
+
+const push = (list: string[], value: string | null | undefined): void => {
+  if (value === null || value === undefined || value === '') return
+  if (list[list.length - 1] !== value) list.push(value)
+}
+
+/** Advance the fake clock a frame at a time, noting what showed. */
+async function run(ms: number, log: Seen = watched()): Promise<Seen> {
+  const step = 16
+  for (let t = 0; t < ms; t += step) {
+    await vi.advanceTimersByTimeAsync(step)
+    flushFrames()
+    const tip = screen.queryByTestId('long-note-demo-tip')?.dataset.tip
+    if (tip !== undefined && !(tip in log.at)) {
+      log.at[tip] = {
+        chip: screen.queryByTestId('long-note-chip')?.textContent ?? null,
+        phase: room().dataset.phase,
+        fast: screen.queryByTestId('long-note-demo-fast') !== null,
+        take: screen.queryByTestId('long-note-demo-take')?.textContent ?? null,
+      }
+    }
+    push(log.tips, tip)
+    push(log.takes, screen.queryByTestId('long-note-demo-take')?.textContent)
+    push(log.phases, room().dataset.phase)
+    push(log.said, screen.getByTestId('long-note-demo-said').textContent)
+    if (screen.queryByTestId('long-note-demo-fast') !== null) log.fast = true
+  }
+  return log
+}
+
+const room = (): HTMLElement => screen.getByTestId('long-note-room')
+const demoMode = (): string | undefined => room().dataset.demo
+
+/** A singer's own take: three seconds on A3, then a breath. */
+async function liveTake(): Promise<void> {
+  fireEvent.click(screen.getByTestId('long-note-mic'))
+  await run(50)
+  fake.frames = sequence(
+    (t) => tone(57, 3, { startT: t }),
+    (t) => silence(0.8, t),
+  )
+  await run(50)
+}
+
+describe('the Long note demo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'Date', 'performance'],
+    })
+    rafQueue = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafQueue.push(cb)
+      return rafQueue.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    Object.assign(fake, {
+      frames: [],
+      acquired: 0,
+      released: 0,
+      windows: 0,
+      tones: [],
+      audio: 'running',
+    })
+    Object.assign(sound, { made: 0, tones: [], sung: [], stops: 0 })
+    Object.assign(kept, { results: [], bests: 0, haptics: 0, note: null })
+    seen.value = false
+    merc.states = []
+    localStorage.clear()
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('plays by itself on a first visit, every tooltip on its event, and keeps nothing', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    expect(demoMode()).toBe('idle')
+
+    const log = await run(1300)
+    expect(demoMode()).toBe('playing')
+    expect(sound.tones).toEqual([57])
+
+    await run(18_000, log)
+    expect(demoMode()).toBe('end')
+    expect(screen.getByTestId('long-note-demo-end')).toBeTruthy()
+
+    // Take 1 drifts and stops; take 2 holds to a full lantern and a result.
+    expect(sound.sung).toEqual(['off', 'on'])
+    expect(log.takes).toEqual(['Not like this', 'Like this'])
+    expect(log.tips).toEqual([
+      'line',
+      'stops',
+      'breath',
+      'fills',
+      'twelve',
+      'score',
+    ])
+    // Each one after the event it explains.
+    expect(log.at.stops.chip).toMatch(/again|slide back/i)
+    expect(log.at.stops.take).toBe('Not like this')
+    expect(log.at.breath.chip).toBeNull()
+    expect(log.at.fills.take).toBe('Like this')
+    expect(log.at.fills.fast).toBe(false)
+    expect(log.at.twelve.fast).toBe(true)
+    expect(log.at.score.phase).toBe('result')
+    expect(log.fast).toBe(true)
+    expect(log.phases).toContain('hold')
+    expect(log.phases).toContain('result')
+    expect(log.said).toContain('Steadier holds score higher.')
+    expect(log.said).toContain('Off the line, it stops filling.')
+    // Merc's joy at the full lantern.
+    expect(merc.states).toContain('lock')
+
+    // The end card marks it seen and stops the sound.
+    expect(seen.value).toBe(true)
+    expect(sound.stops).toBe(1)
+
+    // Nothing of a demo is kept, felt or listened to.
+    expect(kept.results).toEqual([])
+    expect(kept.bests).toBe(0)
+    expect(kept.note).toBeNull()
+    expect(kept.haptics).toBe(0)
+    expect(fake.acquired).toBe(0)
+    expect(fake.windows).toBe(0)
+  })
+
+  it('hands over to the singer on Try it, and the mic opens on its tap', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(19_500)
+    expect(demoMode()).toBe('end')
+
+    fireEvent.click(screen.getByTestId('long-note-demo-try'))
+    await run(50)
+    expect(demoMode()).toBe('idle')
+    expect(room().dataset.phase).toBe('intro')
+    expect(screen.getByTestId('long-note-demo-tip').textContent).toBe(
+      'Tap the mic, then hold your note.',
+    )
+    expect(screen.getByTestId('long-note-mic').className).toMatch(/micPulse/)
+    expect(screen.getByTestId('long-note-note').textContent).toBe('A3')
+
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await run(50)
+    expect(fake.acquired).toBe(1)
+    expect(room().dataset.phase).toBe('listen')
+    expect(screen.queryByTestId('long-note-demo-tip')).toBeNull()
+  })
+
+  it('neither opens the mic nor cuts a take when the mic is tapped mid-demo', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    // The intro: the room is at its start, as for a singer's first tap.
+    await run(1500)
+    expect(demoMode()).toBe('playing')
+    expect(room().dataset.phase).toBe('intro')
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await run(100)
+    expect(fake.acquired).toBe(0)
+    expect(room().dataset.phase).toBe('intro')
+
+    // Mid-take, where a singer's tap would end the note.
+    await run(2500)
+    expect(room().dataset.phase).toBe('hold')
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await run(100)
+    expect(room().dataset.phase).toBe('hold')
+    expect(fake.acquired).toBe(0)
+    expect(demoMode()).toBe('playing')
+
+    // Both takes still play out to the end card.
+    const log = await run(16_000)
+    expect(log.tips).toContain('breath')
+    expect(log.tips).toContain('score')
+    expect(demoMode()).toBe('end')
+  })
+
+  it('waits for "?" on a second visit, and Skip goes to the end card', async () => {
+    seen.value = true
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(3000)
+    expect(demoMode()).toBe('idle')
+    expect(sound.made).toBe(0)
+
+    fireEvent.click(screen.getByTestId('long-note-ask'))
+    await run(100)
+    expect(demoMode()).toBe('playing')
+    // No "?" while it plays.
+    expect(screen.queryByTestId('long-note-ask')).toBeNull()
+
+    await run(3000)
+    fireEvent.click(screen.getByTestId('long-note-demo-skip'))
+    await run(50)
+    expect(demoMode()).toBe('end')
+    expect(sound.stops).toBe(1)
+    expect(room().dataset.phase).toBe('intro')
+  })
+
+  it('stops its sound when the singer leaves mid-demo, and plays next time', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(4000)
+    expect(demoMode()).toBe('playing')
+    cleanup()
+    expect(sound.stops).toBe(1)
+    expect(seen.value).toBe(false)
+  })
+
+  it('stops where it is when the app goes to the background', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(4000)
+    expect(demoMode()).toBe('playing')
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await run(50)
+    expect(sound.stops).toBe(1)
+    expect(demoMode()).toBe('card')
+    expect(seen.value).toBe(false)
+    expect(room().dataset.phase).toBe('intro')
+  })
+
+  it('offers its play card when the audio cannot start without a tap', async () => {
+    fake.audio = 'never'
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(2000)
+    expect(demoMode()).toBe('card')
+    expect(sound.made).toBe(0)
+
+    // The tap that wants it brings the sound.
+    fake.audio = 'running'
+    fireEvent.click(screen.getByTestId('long-note-demo-watch'))
+    await run(100)
+    expect(demoMode()).toBe('playing')
+    expect(sound.tones).toEqual([57])
+  })
+
+  it('takes no for an answer on its play card', async () => {
+    fake.audio = 'none'
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(2000)
+    expect(demoMode()).toBe('card')
+    fireEvent.click(screen.getByTestId('long-note-demo-not-now'))
+    await run(50)
+    expect(demoMode()).toBe('idle')
+    expect(seen.value).toBe(true)
+  })
+
+  it('plays nothing by itself for a singer who has held a note before', async () => {
+    kept.note = 57
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(3000)
+    expect(demoMode()).toBe('idle')
+    expect(sound.made).toBe(0)
+  })
+
+  it('hides "?" while the singer holds, and plays from a result', async () => {
+    seen.value = true
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    fireEvent.click(screen.getByTestId('long-note-mic'))
+    await run(50)
+    fake.frames = tone(57, 1, { startT: 0 })
+    await run(50)
+    expect(room().dataset.phase).toBe('hold')
+    expect(screen.queryByTestId('long-note-ask')).toBeNull()
+
+    fake.frames = [...fake.frames, ...silence(0.8, 1)]
+    await run(50)
+    expect(room().dataset.phase).toBe('result')
+    expect(kept.results).toHaveLength(1)
+
+    fireEvent.click(screen.getByTestId('long-note-ask'))
+    await run(19_500)
+    expect(demoMode()).toBe('end')
+    // The singer's own result is the only one kept.
+    expect(kept.results).toHaveLength(1)
+    expect(kept.haptics).toBeGreaterThan(0)
+  })
+
+  it('keeps a live take after the demo exactly as before it', async () => {
+    seen.value = true
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    fireEvent.click(screen.getByTestId('long-note-ask'))
+    await run(19_500)
+    fireEvent.click(screen.getByTestId('long-note-demo-try'))
+    await run(50)
+
+    await liveTake()
+    expect(room().dataset.phase).toBe('result')
+    expect(kept.results).toHaveLength(1)
+    expect(kept.results[0]).toMatchObject({
+      type: 'long-note-lantern',
+      metrics: { targetMidi: 57 },
+    })
+    expect(kept.note).toBe(57)
+  })
+
+  it('drops the pulses with reduced motion, and keeps the beats', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const log = await run(19_500)
+    expect(log.tips).toEqual([
+      'line',
+      'stops',
+      'breath',
+      'fills',
+      'twelve',
+      'score',
+    ])
+    fireEvent.click(screen.getByTestId('long-note-demo-try'))
+    await run(50)
+    expect(screen.getByTestId('long-note-mic').className).not.toMatch(
+      /micPulse/,
+    )
+  })
+})
