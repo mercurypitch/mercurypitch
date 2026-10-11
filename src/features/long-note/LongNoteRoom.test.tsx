@@ -144,6 +144,93 @@ async function startListening(): Promise<void> {
   await settle()
 }
 
+interface MeasuredRoom {
+  /** Sizes the stage and tells the room, as the browser's observer would. */
+  resize: (width: number, height: number) => void
+  mercEl: HTMLElement
+}
+
+/** The room on a stage whose size the test sets, and changes, by hand. */
+function renderMeasuredRoom(width: number, height: number): MeasuredRoom {
+  const observers: ResizeObserverCallback[] = []
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: ResizeObserverCallback) {
+        observers.push(callback)
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    },
+  )
+  render(() => <LongNoteRoom onDone={() => undefined} />)
+  const stage = screen.getByTestId('long-note-stage')
+  let size = { width, height }
+  Object.defineProperty(stage, 'clientWidth', { get: () => size.width })
+  Object.defineProperty(stage, 'clientHeight', { get: () => size.height })
+  const resize = (newWidth: number, newHeight: number): void => {
+    size = { width: newWidth, height: newHeight }
+    for (const callback of observers) callback([], {} as ResizeObserver)
+  }
+  resize(width, height)
+  return { resize, mercEl: screen.getByTestId('long-note-merc') }
+}
+
+/**
+ * A take on A3 on a 360 x 253 stage, to the note's end: he hops out of the
+ * glass, and the result's taller top makes the stage 222 tall on the hop's
+ * first frame. The timers and the clock are fake; the caller restores them.
+ */
+async function hopOutOfTheGlass(): Promise<
+  MeasuredRoom & {
+    /** The box's width as the hop began, px. */
+    held: number
+    boxWidth: () => number
+    hopping: () => boolean
+    /** Advances this many ms, a 60 Hz frame at a time. */
+    frames: (ms: number) => void
+    /** What shows: his size on screen, then where his feet are. */
+    shown: () => number[]
+  }
+> {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+  const room = renderMeasuredRoom(360, 253)
+  const boxWidth = (): number => parseFloat(room.mercEl.style.width)
+  const hopping = (): boolean => room.mercEl.className.includes(styles.mercHop)
+  const frames = (ms: number): void => {
+    for (let t = 0; t < ms; t += 1000 / 60) {
+      vi.advanceTimersByTime(1000 / 60)
+      flushFrames()
+    }
+  }
+  const shown = (): number[] => {
+    const [, left, top, scale] =
+      /translate\(([-\d.]+)px, ([-\d.]+)px\) scale\(([\d.]+)\)/
+        .exec(room.mercEl.style.transform)
+        ?.map(Number) ?? []
+    const box = boxWidth()
+    return [box * scale, left + box / 2, top + box * 0.81]
+  }
+  await startListening()
+
+  // A take on A3: he hops into the glass and settles there.
+  fake.frames = tone(57, 3)
+  flushFrames()
+  frames(1000)
+  expect(phase()).toBe('hold')
+  expect(hopping()).toBe(false)
+
+  // The note ends. He hops out, and the stage gets shorter at once.
+  fake.frames = [...fake.frames, ...silence(0.8, 3)]
+  flushFrames()
+  expect(phase()).toBe('result')
+  expect(hopping()).toBe(true)
+  const held = boxWidth()
+  room.resize(360, 222)
+  return { ...room, held, boxWidth, hopping, frames, shown }
+}
+
 /** A voiced take on A3 whose offset follows `cents(t)`, from `startT`. */
 function voice(
   seconds: number,
@@ -1417,31 +1504,9 @@ describe('LongNoteRoom', () => {
     // Review B of PR 973, minor 3: the canvas followed the gliding scale,
     // so the renderer resized it, and rebuilt its render targets, on every
     // frame of a glide.
-    const observers: ResizeObserverCallback[] = []
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        constructor(callback: ResizeObserverCallback) {
-          observers.push(callback)
-        }
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-      },
-    )
     let wall = 0
     vi.spyOn(performance, 'now').mockImplementation(() => wall)
-    render(() => <LongNoteRoom onDone={() => undefined} />)
-    const stage = screen.getByTestId('long-note-stage')
-    let size = { width: 430, height: 461 }
-    Object.defineProperty(stage, 'clientWidth', { get: () => size.width })
-    Object.defineProperty(stage, 'clientHeight', { get: () => size.height })
-    const resize = (width: number, height: number): void => {
-      size = { width, height }
-      for (const callback of observers) callback([], {} as ResizeObserver)
-    }
-    resize(430, 461)
-    const mercEl = screen.getByTestId('long-note-merc')
+    const { resize, mercEl } = renderMeasuredRoom(430, 461)
     const scaleOf = (): number =>
       Number(/scale\(([\d.]+)\)/.exec(mercEl.style.transform)?.[1])
     const before = parseFloat(mercEl.style.width) * scaleOf()
@@ -1468,6 +1533,94 @@ describe('LongNoteRoom', () => {
     expect(shown[shown.length - 1]).toBeCloseTo(after, 6)
     for (let i = 1; i < shown.length; i++) {
       expect(shown[i]).toBeLessThanOrEqual(shown[i - 1] + 1e-9)
+    }
+  })
+
+  it("holds Merc's canvas size and his aim through a hop, and takes the new size after it", async () => {
+    // Review B2 of PR 973, N1: at a result the hop out of the glass and a
+    // shorter stage (the result's taller top) land together. The hop eases
+    // the transform in CSS, but width and height land at once, so on the
+    // hop's first frame the old transform sat on a new, smaller box: Merc
+    // shrank and his feet jumped against the hop.
+    try {
+      // Arrange, act: he hops out of the glass onto a shorter stage.
+      const { mercEl, held, boxWidth, hopping, shown } =
+        await hopOutOfTheGlass()
+      const lantern = screen.getByTestId('long-note-lantern')
+
+      // Assert: the box keeps its size while he hops...
+      const during: number[] = []
+      const aims = new Set<string>()
+      const lanternWidths = new Set<string>()
+      for (let t = 0; t < 600; t += 1000 / 60) {
+        vi.advanceTimersByTime(1000 / 60)
+        flushFrames()
+        if (!hopping()) continue
+        during.push(boxWidth())
+        aims.add(mercEl.style.transform)
+        lanternWidths.add(lantern.style.width)
+      }
+      expect(during.length).toBeGreaterThan(30)
+      expect(new Set(during)).toEqual(new Set([held]))
+      // ...and his transform keeps one aim, where the glide ends, while the
+      // lantern glides under it. The hop's CSS ease starts again from where
+      // it is at each new value, so an aim that moved with the glide left
+      // the ease trailing it, and the new size cut the rest short in one
+      // frame as the hop ended.
+      expect(lanternWidths.size).toBeGreaterThan(10)
+      expect(aims.size).toBe(1)
+
+      // ...and takes the shorter stage's size once the hop is over, with
+      // what shows unmoved: the same size, his feet on the same spot.
+      let last = shown()
+      while (hopping()) {
+        last = shown()
+        vi.advanceTimersByTime(1000 / 60)
+        flushFrames()
+      }
+      expect(boxWidth()).toBeLessThan(held)
+      expect(boxWidth()).toBeCloseTo(held * (222 / 253), 6)
+      shown().forEach((value, i) => expect(value).toBeCloseTo(last[i], 6))
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('runs his hop again from a stage that moves mid-hop, so he lands before his new size', async () => {
+    // A stage that moves after the hop began gives him a new end to aim at.
+    // His ease starts again from where it is, and so does the glide, and
+    // each needs its full 650 ms from there. Had the hop still ended 700 ms
+    // after it began, the new size and the gliding lantern would have cut
+    // both short in one frame.
+    try {
+      // Arrange: he is 300 ms into his hop out of the glass.
+      const { mercEl, resize, held, boxWidth, hopping, frames, shown } =
+        await hopOutOfTheGlass()
+      frames(300)
+      expect(hopping()).toBe(true)
+
+      // Act: the stage gets shorter again.
+      resize(360, 200)
+      const aim = mercEl.style.transform
+
+      // Assert: 600 ms on, past where the first hop would have ended, he is
+      // still hopping, to the one new aim, on the box he began with...
+      frames(600)
+      expect(hopping()).toBe(true)
+      expect(mercEl.style.transform).toBe(aim)
+      expect(boxWidth()).toBe(held)
+
+      // ...and the box takes the new size once he lands, with what shows
+      // unmoved.
+      let last = shown()
+      while (hopping()) {
+        last = shown()
+        frames(1000 / 60)
+      }
+      expect(boxWidth()).toBeCloseTo(held * (200 / 253), 6)
+      shown().forEach((value, i) => expect(value).toBeCloseTo(last[i], 6))
+    } finally {
+      vi.useRealTimers()
     }
   })
 

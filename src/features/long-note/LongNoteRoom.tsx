@@ -26,7 +26,7 @@
 // (`layoutStage`), in the lantern's own view-box units.
 
 import type { JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import { createEffect, createMemo, createSignal, Match, on, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckSmall, HelpCircle, Mic, Minus, Plus, Volume2, X, } from '@/components/icons'
 import { nativeShellApi } from '@/stores/native-shell-store'
 import { DEMO_COPY } from './demo/demo-cues'
@@ -113,14 +113,54 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
 
   const phase = (): string => room.state().phase
 
-  // Merc's canvas: one size, moved and scaled. The transform's origin is his
-  // feet, so the same point lands on the ground or on the liquid. The size
-  // is the one a glide ends at and the glide itself is in the scale, so the
-  // renderer sizes its canvas, and rebuilds its render targets, once a
-  // move rather than on each of its frames.
-  const mercBox = createMemo(() => {
-    const { k } = layout()
+  // A change of place eases across for the length of his hop; the rest of
+  // the time his canvas follows the liquid frame by frame, with no easing to
+  // lag behind it.
+  const [hopping, setHopping] = createSignal(false)
+  let hopTimer: ReturnType<typeof setTimeout> | undefined
+  const hop = (): void => {
+    setHopping(true)
+    clearTimeout(hopTimer)
+    hopTimer = setTimeout(() => setHopping(false), 700)
+  }
+  createEffect(on(room.mercPlace, hop, { defer: true }))
+  // A stage that moves mid-hop gives him a new end to aim at: the hop runs
+  // its full length again from there, so his ease and the glide both land
+  // before he takes the new size.
+  createEffect(
+    on(
+      settled,
+      () => {
+        if (untrack(hopping)) hop()
+      },
+      { defer: true },
+    ),
+  )
+  onCleanup(() => clearTimeout(hopTimer))
+
+  // The canvas's size, in px per view unit: where a glide ends, but held
+  // while he hops. The hop eases his transform in CSS (.mercHop) and a new
+  // width and height would land at once: on the hop's first frame the old
+  // transform sat on the new box, and he shrank and jumped against the hop
+  // (review B2 of PR 973, N1). The hop outlasts the glide, so the size
+  // still changes once a move, as the hop ends.
+  const [boxK, setBoxK] = createSignal(untrack(() => settled().k))
+  createEffect(() => {
     const end = settled().k
+    if (!hopping()) setBoxK(end)
+  })
+
+  // Merc's canvas: one size, moved and scaled. The transform's origin is his
+  // feet, so the same point lands on the ground or on the liquid. The glide
+  // itself is in the scale, so the renderer sizes its canvas, and rebuilds
+  // its render targets, once a move rather than on each of its frames.
+  // While he hops he aims straight at where the glide ends. The hop's CSS
+  // ease starts again from where it is at each new transform, so an aim
+  // that moved with every glide frame left the ease trailing the glide, and
+  // the new size cut the rest short in one frame as the hop ended.
+  const mercBox = createMemo(() => {
+    const { k } = hopping() ? settled() : layout()
+    const end = boxK()
     const size = MERC_UNITS * end
     const inside = room.mercPlace() === 'inside'
     const feetX = inside ? LANTERN_VIEW_W / 2 : BESIDE_X
@@ -134,24 +174,6 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       scale: (inside ? MERC_INSIDE_SCALE : 1) * (k / end),
     }
   })
-
-  // A change of place eases across for the length of his hop; the rest of
-  // the time his canvas follows the liquid frame by frame, with no easing to
-  // lag behind it.
-  const [hopping, setHopping] = createSignal(false)
-  let hopTimer: ReturnType<typeof setTimeout> | undefined
-  createEffect(
-    on(
-      room.mercPlace,
-      () => {
-        setHopping(true)
-        clearTimeout(hopTimer)
-        hopTimer = setTimeout(() => setHopping(false), 700)
-      },
-      { defer: true },
-    ),
-  )
-  onCleanup(() => clearTimeout(hopTimer))
 
   const lineY = (): number => {
     const { k, top } = layout()
