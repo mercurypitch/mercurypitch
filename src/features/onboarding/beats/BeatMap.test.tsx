@@ -14,7 +14,7 @@ import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ROOMS } from '../rooms'
+import { ROOMS, SIDE_DOORS } from '../rooms'
 import { BeatMap, ROOM_COVER_SIZES } from './BeatMap'
 
 const CSS = readFileSync(
@@ -256,5 +256,52 @@ describe('the Map stylesheet', () => {
     )
     expect(query).toBe('(max-width: 640px)')
     expect(phoneCover?.body).toMatch(new RegExp(`width:\\s*${width}px`))
+  })
+})
+
+// Owner testing, 11 Oct 2026: eight doors wrapped to three rows on a phone.
+describe("the Map's side doors", () => {
+  afterEach(cleanup)
+
+  it('offers four doors, the Voice Mirror among them, each opening its room', () => {
+    // Arrange
+    const onEnter = vi.fn()
+    const { container } = render(() => (
+      <BeatMap
+        voiceprint={null}
+        onEnter={onEnter}
+        onTour={() => {}}
+        onDone={() => {}}
+      />
+    ))
+    const doors = [
+      ...container.querySelectorAll<HTMLButtonElement>(
+        '[data-side-doors] button',
+      ),
+    ]
+
+    // Act
+    for (const door of doors) fireEvent.click(door)
+
+    // Assert
+    expect(doors.map((door) => door.textContent)).toEqual([
+      'Challenges',
+      'Guitar',
+      'Piano',
+      'Voice Mirror',
+    ])
+    expect(onEnter.mock.calls).toEqual(
+      SIDE_DOORS.map((door) => [door.target, door.label]),
+    )
+  })
+
+  it('gives every door a 44 px tap target on a phone', () => {
+    const phoneDoor = RULES.find(
+      (rule) =>
+        rule.selector === '.sideDoor' &&
+        rule.at.includes('@media (max-width: 640px)'),
+    )
+
+    expect(phoneDoor?.body).toMatch(/min-height:\s*44px/)
   })
 })

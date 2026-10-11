@@ -211,7 +211,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
 
       {/* The label leads the row of doors instead of taking a line above
           them; on a phone it still takes its own line. */}
-      <div class={styles.sideDoors}>
+      <div class={styles.sideDoors} data-side-doors>
         <span class={styles.sideDoorsLabel}>And also</span>
         <For each={SIDE_DOORS}>
           {(door: SideDoor) => (

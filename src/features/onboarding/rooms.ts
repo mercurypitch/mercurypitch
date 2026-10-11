@@ -131,21 +131,26 @@ export const ROOMS: readonly Room[] = [
   },
 ]
 
-/** Everything else, as one quiet strip under the grid. */
+/** A few more rooms, as one quiet strip under the grid. */
 export interface SideDoor {
   label: string
   target: RoomTarget
 }
 
+/**
+ * Four doors, one row on a phone (owner testing, 11 Oct 2026: eight
+ * wrapped to three rows). The Voice Mirror stays by the owner's call. The
+ * other three are the rooms the welcome mail names under "Also waiting
+ * for you" (Community Challenges, Piano, Guitar; Drums has no door here).
+ * No tap on a door is counted per door (`onboarding_map_room` carries no
+ * room), so there was no usage to rank them by. Leaderboard, Community,
+ * Compose and Glass stay in the app's own navigation.
+ */
 export const SIDE_DOORS: readonly SideDoor[] = [
   { label: 'Challenges', target: { kind: 'tab', tab: 'challenges' } },
-  { label: 'Leaderboard', target: { kind: 'tab', tab: 'leaderboard' } },
-  { label: 'Community', target: { kind: 'tab', tab: 'community' } },
-  { label: 'Compose', target: { kind: 'tab', tab: 'compose' } },
   { label: 'Guitar', target: { kind: 'tab', tab: 'guitar' } },
   { label: 'Piano', target: { kind: 'tab', tab: 'piano' } },
   { label: 'Voice Mirror', target: { kind: 'page', href: '/mirror' } },
-  { label: 'Glass', target: { kind: 'page', href: '/glass' } },
 ]
 
 export function roomById(id: RoomId): Room {

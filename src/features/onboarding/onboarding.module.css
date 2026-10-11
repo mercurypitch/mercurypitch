@@ -1476,7 +1476,7 @@
   color: var(--ob-ink-3);
 }
 
-/* The Map carries the most: six cards, eight doors, the button and the
+/* The Map carries the most: six cards, four doors, the button and the
    gift line. A tighter step between them is what lets the gift line
    clear the bottom of a 1440x900 window. */
 .mapBeat {
@@ -1490,7 +1490,7 @@
 
 /* A row of controls, not a row of outlines. At 6px/0.78rem on
    transparent these read as disabled text next to the room cards, and
-   they are eight real destinations. */
+   they are real destinations. */
 .sideDoor {
   border: 1px solid var(--ob-rule);
   border-radius: 999px;
@@ -1723,10 +1723,19 @@
     text-align: center;
   }
 
-  /* Eight chips at desktop padding become four rows on a 360px phone.
-     Trim the horizontal padding, keep the tap target. */
+  /* The four doors in one row from a 360 px phone up (measured: 306 px
+     of chips in a 316 px row), under the label's own line. A 44 px tap
+     target (owner rule), so the height comes from min-height and the
+     sides do the trimming. */
+  .sideDoors {
+    gap: 6px;
+  }
+
   .sideDoor {
-    padding: 9px 13px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
     font-size: 0.8rem;
   }
 
