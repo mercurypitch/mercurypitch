@@ -75,17 +75,15 @@ describe('VoiceTrace', () => {
   })
 
   it('crosses from one colour to the other in a few px around each change', () => {
-    const marks = [
-      { at: 0.2, filling: true },
-      { at: 0.3, filling: true },
-      { at: 0.4, filling: false },
-      { at: 0.5, filling: false },
-      { at: 0.6, filling: true },
+    const runs = [
+      { first: 0.2, last: 0.3, filling: true },
+      { first: 0.4, last: 0.5, filling: false },
+      { first: 0.6, last: 0.6, filling: true },
     ]
     const rounded = (tints: ReturnType<typeof ribbonTint>) =>
       tints.map((tint) => ({ at: Number(tint.at.toFixed(4)), off: tint.off }))
     // Changes half way between 0.3 and 0.4, and between 0.5 and 0.6.
-    expect(rounded(ribbonTint(marks, 0.02))).toEqual([
+    expect(rounded(ribbonTint(runs, 0.02))).toEqual([
       { at: 0.02, off: 0 },
       { at: 0.33, off: 0 },
       { at: 0.37, off: 1 },
@@ -98,9 +96,9 @@ describe('VoiceTrace', () => {
       rounded(
         ribbonTint(
           [
-            { at: 0.5, filling: true },
-            { at: 0.51, filling: false },
-            { at: 0.52, filling: true },
+            { first: 0.5, last: 0.5, filling: true },
+            { first: 0.51, last: 0.51, filling: false },
+            { first: 0.52, last: 0.52, filling: true },
           ],
           0.02,
         ),

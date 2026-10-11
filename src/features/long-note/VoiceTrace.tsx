@@ -90,9 +90,13 @@ const RIBBON: readonly RibbonLayer[] = [
 /** How far the colour takes to cross over at a change of band state, px. */
 const CROSSING_PX = 5
 
-/** One drawn sample: its place along the ribbon, 0 to 1, and its state. */
-export interface TraceMark {
-  readonly at: number
+/**
+ * A stretch of the ribbon in one band state: the places along it, 0 to 1,
+ * of its first and last drawn samples.
+ */
+export interface TraceRun {
+  readonly first: number
+  readonly last: number
   readonly filling: boolean
 }
 
@@ -109,21 +113,19 @@ export interface RibbonTint {
  * side of it. The ends of the ribbon keep their runs' colours.
  */
 export function ribbonTint(
-  marks: readonly TraceMark[],
+  runs: readonly TraceRun[],
   crossing: number,
 ): RibbonTint[] {
-  const tints: RibbonTint[] = []
-  let start = 0
-  for (let i = 1; i <= marks.length; i++) {
-    if (i < marks.length && marks[i].filling === marks[start].filling) continue
-    const from = start === 0 ? 0 : (marks[start - 1].at + marks[start].at) / 2
-    const to = i === marks.length ? 1 : (marks[i - 1].at + marks[i].at) / 2
+  return runs.flatMap((run, i) => {
+    const from = i === 0 ? 0 : (runs[i - 1].last + run.first) / 2
+    const to = i === runs.length - 1 ? 1 : (run.last + runs[i + 1].first) / 2
     const inset = Math.min(crossing, (to - from) / 2)
-    const off = marks[start].filling ? 0 : 1
-    tints.push({ at: from + inset, off }, { at: to - inset, off })
-    start = i
-  }
-  return tints
+    const off = run.filling ? 0 : 1
+    return [
+      { at: from + inset, off },
+      { at: to - inset, off },
+    ]
+  })
 }
 
 /** The tint at a place, between the tints either side of it. */
@@ -148,11 +150,21 @@ function ribbonStops(tints: readonly RibbonTint[]): number[] {
   )
 }
 
+/** A colour as CSS, its alpha scaled by `fade`. */
+function css(colour: Rgba, fade: number): string {
+  const [r, g, b, a] = colour
+  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${(a * fade).toFixed(3)})`
+}
+
+/** Each layer in cyan and in amber at full strength: most stops are these. */
+const SOLID = RIBBON.map((layer) => [css(layer.on, 1), css(layer.off, 1)])
+
 /** One layer's colour at a tint, as a CSS colour faded by `fade`. */
-function layerColour(layer: RibbonLayer, off: number, fade: number): string {
-  const mix = (i: number): number =>
-    layer.on[i] + (layer.off[i] - layer.on[i]) * off
-  return `rgba(${Math.round(mix(0))}, ${Math.round(mix(1))}, ${Math.round(mix(2))}, ${(mix(3) * fade).toFixed(3)})`
+function layerColour(index: number, off: number, fade: number): string {
+  if (fade === 1 && (off === 0 || off === 1)) return SOLID[index][off]
+  const { on, off: amber } = RIBBON[index]
+  const mix = (i: number): number => on[i] + (amber[i] - on[i]) * off
+  return css([mix(0), mix(1), mix(2), mix(3)], fade)
 }
 
 /** The ribbon's scale on this lantern, kept readable on a small one. */
@@ -175,19 +187,30 @@ function clipToRegion(
   ctx.clip(region === 'outside' ? 'evenodd' : 'nonzero')
 }
 
+/** A drawn sample joins the last run, or starts one at a change of state. */
+function extendRuns(
+  runs: { first: number; last: number; readonly filling: boolean }[],
+  at: number,
+  filling: boolean,
+): void {
+  const run = runs.at(-1)
+  if (run?.filling === filling) run.last = at
+  else runs.push({ first: at, last: at, filling })
+}
+
 /**
- * The voice's path, newest point at the anchor, and each drawn sample's
- * place along it (0 at the canvas's left, 1 at the anchor) and band state.
- * No marks when nothing shows.
+ * The voice's path, newest point at the anchor, and its runs of one band
+ * state, placed along it from 0 at the canvas's left to 1 at the anchor.
+ * No runs when nothing shows.
  */
 function tracePath(
   ctx: CanvasRenderingContext2D,
   props: VoiceTraceProps,
   y0: number,
   anchor: number,
-): TraceMark[] {
+): TraceRun[] {
   const now = props.now()
-  const marks: TraceMark[] = []
+  const runs: { first: number; last: number; readonly filling: boolean }[] = []
   let pen = false
   ctx.beginPath()
   for (const sample of props.trace.all()) {
@@ -203,9 +226,9 @@ function tracePath(
     if (pen) ctx.lineTo(at * anchor, y)
     else ctx.moveTo(at * anchor, y)
     pen = true
-    marks.push({ at, filling: sample.filling })
+    extendRuns(runs, at, sample.filling)
   }
-  return marks
+  return runs
 }
 
 /**
@@ -217,25 +240,26 @@ function strokeRibbon(
   ctx: CanvasRenderingContext2D,
   anchor: number,
   scale: number,
-  marks: readonly TraceMark[],
+  runs: readonly TraceRun[],
 ): void {
-  const tints = ribbonTint(marks, CROSSING_PX / anchor)
-  const stops = ribbonStops(tints).map((at) => ({
+  const tints = ribbonTint(runs, CROSSING_PX / anchor)
+  // The first and last tints stand where the colour holds still already.
+  const stops = ribbonStops(tints.slice(1, -1)).map((at) => ({
     at,
     off: tintAt(tints, at),
     fade: Math.min(1, at / TAIL_FADE),
   }))
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  for (const layer of RIBBON) {
+  RIBBON.forEach((layer, index) => {
     const gradient = ctx.createLinearGradient(0, 0, anchor, 0)
     for (const stop of stops) {
-      gradient.addColorStop(stop.at, layerColour(layer, stop.off, stop.fade))
+      gradient.addColorStop(stop.at, layerColour(index, stop.off, stop.fade))
     }
     ctx.strokeStyle = gradient
     ctx.lineWidth = layer.width * scale
     ctx.stroke()
-  }
+  })
 }
 
 export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
@@ -269,9 +293,9 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
     ctx.lineTo(size.width, y0)
     ctx.stroke()
     const anchor = props.anchorX()
-    const marks = anchor > 0 ? tracePath(ctx, props, y0, anchor) : []
-    if (marks.length > 0) {
-      strokeRibbon(ctx, anchor, ribbonScale(lantern.k), marks)
+    const runs = anchor > 0 ? tracePath(ctx, props, y0, anchor) : []
+    if (runs.length > 0) {
+      strokeRibbon(ctx, anchor, ribbonScale(lantern.k), runs)
     }
     ctx.restore()
   }
