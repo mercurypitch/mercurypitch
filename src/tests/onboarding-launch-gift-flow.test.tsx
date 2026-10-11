@@ -170,11 +170,16 @@ describe('First Light and the launch gift', () => {
   })
 
   it('"Not now" sits in the rail, moves on to the Map and quiets the ask', async () => {
-    await atKeep()
+    const keep = await atKeep()
     const notNow = screen.getByRole('button', { name: 'Not now' })
-    // In the rail at the top, in place of Skip: never two exits.
-    expect(notNow.closest('[data-beat="keep"]')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+    // In the rail at the top, and the only way out: every button outside
+    // the beat is this one, and the beat itself offers none.
+    const flow = document.querySelector('[data-onboarding-flow]')
+    const outsideBeat = [...(flow?.querySelectorAll('button') ?? [])].filter(
+      (button) => button.closest('[data-beat]') === null,
+    )
+    expect(outsideBeat).toEqual([notNow])
+    expect(keep).not.toHaveTextContent(/Not now|Skip/)
 
     fireEvent.click(notNow)
 

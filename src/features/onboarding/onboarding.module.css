@@ -98,9 +98,10 @@
 }
 
 /* Behind the word beats and the voiceprint the plain plate steps well
-   back, so its lines stop running through the copy. Two classes, so it
-   outranks the plain plate's own opacity above. */
-.plate.plateRecede {
+   back, so its lines stop running through the copy. The plain plate's own
+   selector plus the class: it outranks the 0.7 above on specificity, not
+   on which rule comes later. */
+.plate[data-plate='plain'].plateRecede {
   opacity: 0.28;
 }
 
