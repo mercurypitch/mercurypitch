@@ -34,6 +34,12 @@ vi.mock('@/db/services/auth-service', () => mocks)
 /** Set before importing the modal to simulate a widget that never loaded. */
 let turnstileBlocked = false
 
+interface FakeTurnstileProps {
+  onToken: (token: string) => void
+  appearance?: string
+  size?: string
+}
+
 beforeEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
@@ -47,10 +53,13 @@ beforeEach(() => {
   // The widget itself is covered in Turnstile.test.tsx. Here it stands in for
   // Cloudflare, so a test can decide when a token arrives.
   vi.doMock('@/components/shared/Turnstile', () => ({
-    default: (props: { onToken: (token: string) => void }) => (
+    // It wears what it was asked for, so a test can read the request back.
+    default: (props: FakeTurnstileProps) => (
       <button
         type="button"
         data-testid="fake-turnstile"
+        data-appearance={props.appearance}
+        data-size={props.size}
         onClick={() => props.onToken('a-fresh-token')}
       >
         solve
@@ -74,6 +83,17 @@ async function openLogin() {
 }
 
 describe('AuthModal with a site key configured', () => {
+  it('asks Cloudflare to draw the check only when it needs a click', async () => {
+    // Left on Cloudflare's default, every visitor got "Verifying" and then
+    // "Success" in a 65px box above the button (owner, phone test 2026-10-11).
+    // The check still runs as the dialog opens; the button below still waits
+    // for its token.
+    await openLogin()
+    const widget = screen.getByTestId('fake-turnstile')
+    expect(widget).toHaveAttribute('data-appearance', 'interaction-only')
+    expect(widget).toHaveAttribute('data-size', 'flexible')
+  })
+
   it('holds the submit button until the CAPTCHA issues a token', async () => {
     // Without this the form would post an empty token to a gate that fails
     // closed, and the only feedback would be a 400 the reader cannot act on.

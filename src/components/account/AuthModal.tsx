@@ -11,7 +11,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
-import { CheckCircle, Eye, EyeOff, Key, Smartphone, X, } from '@/components/icons'
+import { CheckCircle, Eye, EyeOff, Smartphone, X } from '@/components/icons'
 import { SignUpLegalLine } from '@/components/LegalLinks'
 import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
@@ -661,7 +661,6 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   </p>
                 </Show>
                 <label class={styles.field}>
-                  <span class={styles.fieldLabel}>Code</span>
                   <input
                     class={styles.input}
                     type="text"
@@ -675,6 +674,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     data-testid="auth-email-code-input"
                     placeholder="123456"
                   />
+                  <span class={styles.floatLabel}>Code</span>
                 </label>
                 <button
                   type="submit"
@@ -726,7 +726,6 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   </p>
                 </Show>
                 <label class={styles.field}>
-                  <span class={styles.fieldLabel}>Code</span>
                   <input
                     class={styles.input}
                     type="text"
@@ -743,6 +742,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     data-testid="auth-twofa-code"
                     placeholder="123456"
                   />
+                  <span class={styles.floatLabel}>Code</span>
                 </label>
                 <button
                   type="submit"
@@ -772,17 +772,19 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   ? "Enter your account email and we'll send you a link to choose a new password."
                   : pane() === 'email-code'
                     ? "Enter your account email and we'll send you a six-digit code. No password needed."
-                    : 'Your progress, scores and credits follow your account across devices.'}
+                    : 'Keep your progress and credits on every device.'}
               </p>
 
               <Show when={!emailOnlyPane()}>
                 {/* Apple first on iOS: guideline 4.8 wants the privacy-
                     preserving option offered at least as prominently as the
-                    third-party one it sits beside. */}
+                    third-party one it sits beside. Native builds only: the
+                    web has no Apple sign-in, and openAuthModal hands the iOS
+                    app to the shell's own sheet. */}
                 <Show when={appleSignInOffered()}>
                   <button
                     type="button"
-                    class={styles.googleButton}
+                    class={`${styles.providerButton} ${styles.appleButton}`}
                     onClick={() => void onNativeSignIn('apple')}
                     disabled={busy()}
                     data-testid="auth-apple-native"
@@ -791,85 +793,83 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     Continue with Apple
                   </button>
                 </Show>
-                <Show when={nativeGoogleSignInOffered()}>
-                  <button
-                    type="button"
-                    class={styles.googleButton}
-                    onClick={() => void onNativeSignIn('google')}
-                    disabled={busy()}
-                    data-testid="auth-google-native"
-                  >
-                    <GoogleMark />
-                    Continue with Google
-                  </button>
-                </Show>
-                <Show when={webGoogleSignInOffered()}>
-                  <Show
-                    when={googleSignInUnavailableReason === null}
-                    fallback={
-                      <p
-                        class={styles.providerNote}
-                        data-testid="auth-google-unavailable"
-                      >
-                        {googleSignInUnavailableReason}
-                      </p>
-                    }
-                  >
+                {/* Two ways in, one row: Google wide and the phone beside it.
+                    Google keeps its whole label, because its branding rules
+                    forbid a button that says only "Google". A passkey has no
+                    row: the email field offers it through autofill, and the
+                    link row under the password offers it by name. */}
+                <div class={styles.providerRow}>
+                  <Show when={nativeGoogleSignInOffered()}>
                     <button
                       type="button"
-                      class={styles.googleButton}
-                      onClick={() => void onGoogleSignIn()}
-                      data-testid="auth-google"
-                      disabled={googleSignInPending()}
+                      class={styles.providerButton}
+                      onClick={() => void onNativeSignIn('google')}
+                      disabled={busy()}
+                      data-testid="auth-google-native"
                     >
                       <GoogleMark />
-                      {googleSignInPending()
-                        ? 'Opening Google\u2026'
-                        : 'Continue with Google'}
+                      Continue with Google
                     </button>
                   </Show>
-                </Show>
-                <Show when={pane() === 'login' && passkeyReady()}>
-                  <button
-                    type="button"
-                    class={styles.googleButton}
-                    onClick={() => void onPasskeySignIn()}
-                    disabled={busy()}
-                    data-testid="auth-passkey"
-                  >
-                    <Key />
-                    Sign in with a passkey
-                  </button>
-                </Show>
-                <Show when={pane() === 'login'}>
-                  <button
-                    type="button"
-                    class={styles.googleButton}
-                    onClick={() => switchPane('phone')}
-                    data-testid="auth-phone"
-                  >
-                    <Smartphone />
-                    Sign in with your phone
-                  </button>
-                </Show>
+                  <Show when={webGoogleSignInOffered()}>
+                    <Show
+                      when={googleSignInUnavailableReason === null}
+                      fallback={
+                        <p
+                          class={styles.providerNote}
+                          data-testid="auth-google-unavailable"
+                        >
+                          {googleSignInUnavailableReason}
+                        </p>
+                      }
+                    >
+                      <button
+                        type="button"
+                        class={styles.providerButton}
+                        onClick={() => void onGoogleSignIn()}
+                        data-testid="auth-google"
+                        disabled={googleSignInPending()}
+                      >
+                        <GoogleMark />
+                        {googleSignInPending()
+                          ? 'Opening Google\u2026'
+                          : 'Continue with Google'}
+                      </button>
+                    </Show>
+                  </Show>
+                  <Show when={pane() === 'login'}>
+                    <button
+                      type="button"
+                      class={`${styles.providerButton} ${styles.phoneButton}`}
+                      onClick={() => switchPane('phone')}
+                      aria-label="Sign in with your phone"
+                      title="Sign in with your phone"
+                      data-testid="auth-phone"
+                    >
+                      <Smartphone />
+                      Phone
+                    </button>
+                  </Show>
+                </div>
                 {/* Google and Apple create an account on first use, so the
                     sign-in pane says what continuing means. The register pane
                     has its own line under Create account. */}
                 <Show when={pane() === 'login' && socialSignInShown()}>
-                  <SignUpLegalLine variant="continue" />
+                  <SignUpLegalLine variant="continue" class={styles.legal} />
                 </Show>
                 <div class={styles.divider} role="presentation">
                   <span>or use email</span>
                 </div>
               </Show>
 
+              {/* Every field is one row: its label sits inside the box and
+                  floats to the top edge once the field has focus or a value
+                  (AuthModal.module.css). The label element still names the
+                  field; the words follow the input only so the stylesheet can
+                  float them. */}
               <form class={styles.form} onSubmit={handleSubmit}>
                 <Show when={pane() === 'register'}>
                   <label class={styles.field}>
-                    <span class={styles.fieldLabel}>
-                      Display name{' '}
-                      <span class={styles.fieldOptional}>(optional)</span>
-                    </span>
                     <input
                       class={styles.input}
                       type="text"
@@ -880,11 +880,14 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                       onInput={(e) => setDisplayName(e.currentTarget.value)}
                       data-testid="auth-display-name"
                     />
+                    <span class={styles.floatLabel}>
+                      Display name{' '}
+                      <span class={styles.fieldOptional}>(optional)</span>
+                    </span>
                   </label>
                 </Show>
 
                 <label class={styles.field}>
-                  <span class={styles.fieldLabel}>Email</span>
                   <input
                     class={styles.input}
                     type="email"
@@ -902,12 +905,15 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     aria-describedby={error() !== '' ? 'auth-error' : undefined}
                     data-testid="auth-email"
                   />
+                  <span class={styles.floatLabel}>Email</span>
                 </label>
 
                 <Show when={!emailOnlyPane()}>
-                  <label class={styles.field}>
-                    <span class={styles.fieldLabel}>Password</span>
-                    <div class={styles.passwordField}>
+                  {/* The reveal button sits beside the label, not inside it:
+                      inside, "Show password" became part of the field's
+                      name. */}
+                  <div class={styles.passwordField}>
+                    <label class={styles.field}>
                       <input
                         ref={passwordRef}
                         class={styles.input}
@@ -916,7 +922,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                         placeholder={
                           pane() === 'register'
                             ? '8+ characters, a letter and a number'
-                            : 'Your password'
+                            : ' '
                         }
                         autocomplete={
                           pane() === 'register'
@@ -934,25 +940,24 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                         }
                         data-testid="auth-password"
                       />
-                      <button
-                        class={styles.revealButton}
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={
-                          showPassword() ? 'Hide password' : 'Show password'
-                        }
-                        aria-pressed={showPassword()}
-                        title={
-                          showPassword() ? 'Hide password' : 'Show password'
-                        }
-                        data-testid="auth-password-toggle"
-                      >
-                        <Show when={showPassword()} fallback={<Eye />}>
-                          <EyeOff />
-                        </Show>
-                      </button>
-                    </div>
-                  </label>
+                      <span class={styles.floatLabel}>Password</span>
+                    </label>
+                    <button
+                      class={styles.revealButton}
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={
+                        showPassword() ? 'Hide password' : 'Show password'
+                      }
+                      aria-pressed={showPassword()}
+                      title={showPassword() ? 'Hide password' : 'Show password'}
+                      data-testid="auth-password-toggle"
+                    >
+                      <Show when={showPassword()} fallback={<Eye />}>
+                        <EyeOff />
+                      </Show>
+                    </button>
+                  </div>
                 </Show>
 
                 <Show when={pane() === 'login'}>
@@ -965,6 +970,17 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     >
                       Email me a code
                     </button>
+                    <Show when={passkeyReady()}>
+                      <button
+                        type="button"
+                        class={styles.linkButton}
+                        onClick={() => void onPasskeySignIn()}
+                        disabled={busy()}
+                        data-testid="auth-passkey"
+                      >
+                        Use a passkey
+                      </button>
+                    </Show>
                     <button
                       type="button"
                       class={styles.linkButton}
@@ -983,7 +999,10 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   />
                   {/* Asked here rather than after the account exists, so the
                       answer arrives with the account and there is no second
-                      request to fail on its own. */}
+                      request to fail on its own. Its own box, unticked, and
+                      apart from the Terms line: mail is never a condition of
+                      the account. "Product updates" is the scope Settings and
+                      every newsletter footer state, so the three agree. */}
                   <div class={styles.consentRow}>
                     <MercuryCheckbox
                       checked={wantsUpdates()}
@@ -991,9 +1010,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                       align="start"
                       testId="register-newsletter-optin"
                     >
-                      Send me product updates. Big new features and milestones
-                      only, never more than once a month, and you can stop any
-                      time.
+                      Email me product updates. Unsubscribe anytime.
                     </MercuryCheckbox>
                   </div>
                 </Show>
@@ -1009,35 +1026,44 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   </p>
                 </Show>
 
-                <Turnstile onToken={setTurnstileToken} />
-
-                <button
-                  class={styles.submit}
-                  type="submit"
-                  disabled={
-                    busy() ||
-                    (turnstileEnabled &&
-                      turnstileToken() === '' &&
-                      !turnstileUnavailable())
-                  }
-                  data-testid="auth-submit"
-                >
-                  {busy()
-                    ? pane() === 'register'
-                      ? 'Creating account…'
-                      : emailOnlyPane()
-                        ? 'Sending…'
-                        : 'Signing in…'
-                    : pane() === 'register'
-                      ? 'Create account'
-                      : pane() === 'forgot'
-                        ? 'Send reset link'
-                        : pane() === 'email-code'
-                          ? 'Email me a code'
-                          : 'Sign in'}
-                </button>
+                {/* One block, so a check that is not drawn leaves no gap
+                    behind: Cloudflare draws it only when it needs a click.
+                    It still runs as the dialog opens, and the button still
+                    waits for its token. */}
+                <div class={styles.submitBlock}>
+                  <Turnstile
+                    onToken={setTurnstileToken}
+                    appearance="interaction-only"
+                    size="flexible"
+                  />
+                  <button
+                    class={styles.submit}
+                    type="submit"
+                    disabled={
+                      busy() ||
+                      (turnstileEnabled &&
+                        turnstileToken() === '' &&
+                        !turnstileUnavailable())
+                    }
+                    data-testid="auth-submit"
+                  >
+                    {busy()
+                      ? pane() === 'register'
+                        ? 'Creating account…'
+                        : emailOnlyPane()
+                          ? 'Sending…'
+                          : 'Signing in…'
+                      : pane() === 'register'
+                        ? 'Create account'
+                        : pane() === 'forgot'
+                          ? 'Send reset link'
+                          : pane() === 'email-code'
+                            ? 'Email me a code'
+                            : 'Sign in'}
+                  </button>
+                </div>
                 <Show when={pane() === 'register'}>
-                  <SignUpLegalLine />
+                  <SignUpLegalLine class={styles.legal} />
                 </Show>
               </form>
 
