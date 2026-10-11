@@ -124,6 +124,17 @@ describe('a Google return landing here', () => {
     expect(syncPromoClaims).not.toHaveBeenCalled()
   })
 
+  it('says a sign-in canceled at Google in plain words, not its code', () => {
+    harness.result = { ok: false, error: 'access_denied' }
+    takeGoogleLanding()
+    render(() => <MirrorAccountHost />)
+
+    expect(showNotification).toHaveBeenCalledWith(
+      'Google sign-in was canceled.',
+      'error',
+    )
+  })
+
   it('opens the code pane when a second factor is still owed', async () => {
     harness.twofa = true
     takeGoogleLanding()

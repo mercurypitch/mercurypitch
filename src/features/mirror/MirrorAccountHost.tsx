@@ -22,6 +22,13 @@ import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
 import { answerAccountAsk, signUpAsked, takeLanding } from './account-ask'
 
+/** What a failed Google return says. Cancel at Google comes back as the
+ *  bare code `access_denied`, which reads as a fault; it was a choice. */
+function googleFailure(error: string): string {
+  if (error === 'access_denied') return 'Google sign-in was canceled.'
+  return `Google sign-in failed: ${error}`
+}
+
 export default function MirrorAccountHost() {
   onMount(() => {
     const landing = takeLanding()
@@ -33,10 +40,7 @@ export default function MirrorAccountHost() {
       return
     }
     if (!landing.result.ok) {
-      showNotification(
-        `Google sign-in failed: ${landing.result.error}`,
-        'error',
-      )
+      showNotification(googleFailure(landing.result.error), 'error')
       return
     }
     showNotification('Signed in with Google', 'info')
