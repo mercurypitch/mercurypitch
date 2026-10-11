@@ -171,9 +171,10 @@ is outside this beat's copy and is left out of the check. Verified by the two
 ### REQ-FVC-014 — The twin says what comes next in one true line
 
 **Ubiquitous:** The twin shall say "Next, the Map: a room picked for your
-voice, from daily practice to Karaoke Night." "A room", not "rooms": the Map
-picks one first stop from the voiceprint (`first-stop.ts`). No em dash on the
-screen. Verified by `FVC-14`.
+voice." "A room", not "rooms": the Map picks one first stop from the
+voiceprint (`first-stop.ts`). The line takes at most two lines on a 320 px
+phone; the longer one it replaced ("…, from daily practice to Karaoke
+Night.") took three. No em dash on the screen. Verified by `FVC-14`.
 
 ### REQ-FVC-015 — The twin's numbers are one card, drawn from the take
 
