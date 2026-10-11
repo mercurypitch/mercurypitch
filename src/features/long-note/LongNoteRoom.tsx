@@ -329,6 +329,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             anchorX={anchorX}
             lantern={layout}
             active={tracing}
+            muted={() => phase() === 'result'}
           />
           <MercView
             class={hopping() ? `${styles.merc} ${styles.mercHop}` : styles.merc}
@@ -362,6 +363,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           anchorX={anchorX}
           lantern={layout}
           active={tracing}
+          muted={() => phase() === 'result'}
         />
         <Show when={demo.canAsk()}>
           <button

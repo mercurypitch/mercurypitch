@@ -9,15 +9,27 @@
 // not filling, the hold engine's own band state on that frame, the same
 // ribbon is a soft amber, so a stretch off the line looks off.
 //
-// The room draws it twice, on two canvases with the same geometry (px from
-// the stage's top left), each clipped to its side of the chimney's outline:
+// Each ribbon is two canvases with the same geometry (px from the stage's
+// top left): the line itself, a core and its bright middle, over its glow,
+// which is drawn small and soft on a canvas of its own and blurred by the
+// compositor (one Gaussian, so the glow falls off smoothly instead of in
+// rings, and costs the main thread two strokes). Amber and cyan share every
+// width, and the amber's glow is set to the cyan's brightness, so the off
+// stretch is never the loudest thing on screen. The colour crosses over in
+// about 10 px, by the share of frames around each point that were off the
+// band, so a voice flickering at the band's edge reads as a blend.
+//
+// The room draws the ribbon twice, each clipped to its side of the
+// chimney's outline:
 //
 //   outside  over the lantern's frame and the room, as the storyboard has it
 //            crossing the frame in front
 //   inside   between the liquid and Merc, so in the glass the line passes
 //            behind him and never across his face
 //
-// The tolerance band is not drawn here: it lies still behind the lantern.
+// When the result dims the line, its amber eases back to the cyan first: a
+// dimmed amber reads as a brown smear. The tolerance band is not drawn
+// here: it lies still behind the lantern.
 
 import type { JSX } from 'solid-js'
 import { createEffect, onCleanup, onMount } from 'solid-js'
@@ -45,6 +57,8 @@ export interface VoiceTraceProps {
   region: 'inside' | 'outside'
   /** Draw while true; a still frame otherwise. */
   active: () => boolean
+  /** The result dims the line: its amber eases back to cyan. */
+  muted?: () => boolean
   class?: string
   style?: JSX.CSSProperties
   testId?: string
@@ -60,7 +74,7 @@ const TAIL_FADE = 0.12
 
 type Rgba = readonly [number, number, number, number]
 
-interface RibbonLayer {
+export interface RibbonLayer {
   readonly width: number
   /** Where the light fills. */
   readonly on: Rgba
@@ -69,34 +83,40 @@ interface RibbonLayer {
 }
 
 /**
- * The ribbon, widest stroke first, widths in px for a lantern drawn at one
- * px per view unit: a glow in six steps, violet outside and blue-cyan near
- * the line, then the cyan core and its bright middle. Storyboard 2's ribbon
- * is 9 units across above L 150 and 16 above L 70, and its glow falls off
- * over about 15 units a side. Off the line every layer turns a soft amber,
- * the "Not like this" pill's colour, its glow a little fainter.
+ * The glow, widths in px for a lantern drawn at one px per view unit, drawn
+ * under the core and blurred by GLOW_BLUR_PX: a wide faint violet and a
+ * blue-cyan band nearer the line. Fitted to the stepped glow it replaces,
+ * within about 7 luma from 4 to 24 px off the line (storyboard 2's ribbon
+ * glows out to about 15 units a side). The amber's alphas are set so that
+ * its brightness off the line matches the cyan's: the same visible width.
  */
-const RIBBON: readonly RibbonLayer[] = [
-  { width: 40, on: [120, 96, 255, 0.05], off: [255, 128, 64, 0.04] },
-  { width: 32, on: [120, 96, 255, 0.09], off: [255, 128, 64, 0.07] },
-  { width: 26, on: [96, 110, 255, 0.12], off: [255, 146, 72, 0.1] },
-  { width: 21, on: [96, 110, 255, 0.2], off: [255, 146, 72, 0.16] },
-  { width: 16, on: [64, 140, 255, 0.36], off: [255, 166, 84, 0.3] },
-  { width: 12, on: [40, 170, 255, 0.6], off: [255, 184, 100, 0.52] },
-  { width: 8.5, on: [90, 232, 255, 0.95], off: [255, 207, 133, 0.9] },
-  { width: 3, on: [230, 255, 255, 0.9], off: [255, 244, 222, 0.85] },
+export const GLOW: readonly RibbonLayer[] = [
+  { width: 28, on: [115, 100, 255, 0.15], off: [255, 118, 72, 0.12] },
+  { width: 14, on: [50, 160, 255, 0.95], off: [255, 150, 72, 0.78] },
 ]
 
-/** How far the colour takes to cross over at a change of band state, px. */
-const CROSSING_PX = 5
-
 /**
- * A stretch of the ribbon in one band state: the places along it, 0 to 1,
- * of its first and last drawn samples.
+ * The line itself: the cyan core and its bright middle. Off the band the
+ * core is a warm amber, the "Not like this" pill's colour, a little dimmer
+ * than the cyan rather than a near-white cream.
  */
-export interface TraceRun {
-  readonly first: number
-  readonly last: number
+export const CORE: readonly RibbonLayer[] = [
+  { width: 8.5, on: [90, 232, 255, 0.95], off: [255, 188, 108, 0.92] },
+  { width: 3, on: [230, 255, 255, 0.9], off: [255, 228, 178, 0.88] },
+]
+
+/** The glow's blur, a Gaussian's standard deviation in px at scale 1. */
+export const GLOW_BLUR_PX = 4
+/** The glow's canvas resolution, px per CSS px: it is blurred anyway. */
+const GLOW_RES = 0.5
+/** Half the width the colour takes to cross over, px. */
+const CROSSING_PX = 5
+/** How long the amber takes to ease back to cyan when the line dims, ms. */
+const MUTE_MS = 600
+
+/** A drawn sample: its place along the ribbon, 0 to 1, and its state. */
+export interface TraceMark {
+  readonly at: number
   readonly filling: boolean
 }
 
@@ -107,64 +127,112 @@ export interface RibbonTint {
 }
 
 /**
- * The ribbon's colour along its length: each run of one band state holds its
- * colour to `crossing` short of where it meets the next run, the change half
- * way between their samples, so the colour crosses over in `crossing` either
- * side of it. The ends of the ribbon keep their runs' colours.
+ * The ribbon's colour along its length: at each drawn sample, the share of
+ * the samples within `half` either side of it (in places along the ribbon)
+ * that were off the band. A single change of state crosses over in twice
+ * `half`; a stretch that flickers at the band's edge comes out as a blend
+ * rather than stripes. Only the samples where the colour bends are kept:
+ * the gradient runs straight between them.
  */
 export function ribbonTint(
-  runs: readonly TraceRun[],
-  crossing: number,
+  marks: readonly TraceMark[],
+  half: number,
 ): RibbonTint[] {
-  return runs.flatMap((run, i) => {
-    const from = i === 0 ? 0 : (runs[i - 1].last + run.first) / 2
-    const to = i === runs.length - 1 ? 1 : (run.last + runs[i + 1].first) / 2
-    const inset = Math.min(crossing, (to - from) / 2)
-    const off = run.filling ? 0 : 1
-    return [
-      { at: from + inset, off },
-      { at: to - inset, off },
-    ]
-  })
-}
-
-/** The tint at a place, between the tints either side of it. */
-function tintAt(tints: readonly RibbonTint[], at: number): number {
-  if (tints.length === 0 || at <= tints[0].at) return tints[0]?.off ?? 0
-  for (let i = 1; i < tints.length; i++) {
-    const b = tints[i]
-    if (at > b.at) continue
-    const a = tints[i - 1]
-    return b.at > a.at
-      ? a.off + ((b.off - a.off) * (at - a.at)) / (b.at - a.at)
-      : b.off
+  const offBefore = [0]
+  for (const mark of marks) {
+    offBefore.push(offBefore[offBefore.length - 1] + (mark.filling ? 0 : 1))
   }
-  return tints[tints.length - 1].off
+  const tints: RibbonTint[] = []
+  let lo = 0
+  let hi = 0
+  for (const mark of marks) {
+    while (marks[lo].at < mark.at - half) lo++
+    while (hi < marks.length && marks[hi].at <= mark.at + half) hi++
+    tints.push({
+      at: mark.at,
+      off: (offBefore[hi] - offBefore[lo]) / (hi - lo),
+    })
+  }
+  if (tints.length < 3) return tints
+  const kept = [tints[0]]
+  keepBends(tints, 0, tints.length - 1, kept)
+  kept.push(tints[tints.length - 1])
+  return kept
 }
 
-/** Every place the ribbon's colour or fade changes, in order. */
-function ribbonStops(tints: readonly RibbonTint[]): number[] {
-  const at = [0, TAIL_FADE, 1, ...tints.map((tint) => tint.at)]
-  return [...new Set(at.map((x) => Math.min(1, Math.max(0, x))))].sort(
-    (a, b) => a - b,
-  )
+/** How far the drawn colour may stray from the computed one, as a tint. */
+const TINT_SLACK = 1 / 64
+
+/**
+ * Push, in order, the tints strictly between `from` and `to` that the
+ * colour needs: the one furthest off the straight line between the two,
+ * when it is further than TINT_SLACK, and so on either side of it
+ * (Douglas-Peucker).
+ */
+function keepBends(
+  tints: readonly RibbonTint[],
+  from: number,
+  to: number,
+  kept: RibbonTint[],
+): void {
+  const a = tints[from]
+  const b = tints[to]
+  const span = b.at - a.at
+  let worst = -1
+  let worstGap = TINT_SLACK
+  for (let i = from + 1; i < to; i++) {
+    const t = span > 0 ? (tints[i].at - a.at) / span : 0
+    const gap = Math.abs(tints[i].off - (a.off + (b.off - a.off) * t))
+    if (gap > worstGap) {
+      worst = i
+      worstGap = gap
+    }
+  }
+  if (worst < 0) return
+  keepBends(tints, from, worst, kept)
+  kept.push(tints[worst])
+  keepBends(tints, worst, to, kept)
 }
 
-/** A colour as CSS, its alpha scaled by `fade`. */
-function css(colour: Rgba, fade: number): string {
-  const [r, g, b, a] = colour
-  return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${(a * fade).toFixed(3)})`
+/** The tint at a place: tints[i - 1] and tints[i] stand either side of it. */
+function tintBetween(
+  tints: readonly RibbonTint[],
+  i: number,
+  at: number,
+): number {
+  if (i <= 0) return tints[0]?.off ?? 0
+  if (i >= tints.length) return tints[tints.length - 1].off
+  const a = tints[i - 1]
+  const b = tints[i]
+  return b.at > a.at
+    ? a.off + ((b.off - a.off) * (at - a.at)) / (b.at - a.at)
+    : b.off
 }
 
-/** Each layer in cyan and in amber at full strength: most stops are these. */
-const SOLID = RIBBON.map((layer) => [css(layer.on, 1), css(layer.off, 1)])
+/** Steps a layer's colour is mixed in: finer than the eye tells apart. */
+const MIX_STEPS = 64
 
-/** One layer's colour at a tint, as a CSS colour faded by `fade`. */
-function layerColour(index: number, off: number, fade: number): string {
-  if (fade === 1 && (off === 0 || off === 1)) return SOLID[index][off]
-  const { on, off: amber } = RIBBON[index]
-  const mix = (i: number): number => on[i] + (amber[i] - on[i]) * off
-  return css([mix(0), mix(1), mix(2), mix(3)], fade)
+/** Each layer's colours as CSS, by mix and fade step, made once each. */
+const PALETTE = new Map<RibbonLayer, Map<number, string>>()
+
+/** A layer's colour at a tint (0 cyan, 1 amber), alpha scaled by `fade`. */
+function layerColour(layer: RibbonLayer, off: number, fade: number): string {
+  const step = Math.round(off * MIX_STEPS)
+  const fadeStep = Math.round(fade * MIX_STEPS)
+  let colours = PALETTE.get(layer)
+  if (colours === undefined) {
+    colours = new Map()
+    PALETTE.set(layer, colours)
+  }
+  const key = step * (MIX_STEPS + 1) + fadeStep
+  const known = colours.get(key)
+  if (known !== undefined) return known
+  const mix = (i: number): number =>
+    layer.on[i] + ((layer.off[i] - layer.on[i]) * step) / MIX_STEPS
+  const alpha = ((mix(3) * fadeStep) / MIX_STEPS).toFixed(3)
+  const colour = `rgba(${Math.round(mix(0))}, ${Math.round(mix(1))}, ${Math.round(mix(2))}, ${alpha})`
+  colours.set(key, colour)
+  return colour
 }
 
 /** The ribbon's scale on this lantern, kept readable on a small one. */
@@ -187,30 +255,19 @@ function clipToRegion(
   ctx.clip(region === 'outside' ? 'evenodd' : 'nonzero')
 }
 
-/** A drawn sample joins the last run, or starts one at a change of state. */
-function extendRuns(
-  runs: { first: number; last: number; readonly filling: boolean }[],
-  at: number,
-  filling: boolean,
-): void {
-  const run = runs.at(-1)
-  if (run?.filling === filling) run.last = at
-  else runs.push({ first: at, last: at, filling })
-}
-
 /**
- * The voice's path, newest point at the anchor, and its runs of one band
- * state, placed along it from 0 at the canvas's left to 1 at the anchor.
- * No runs when nothing shows.
+ * The voice's path, newest point at the anchor, and the place and band
+ * state of every sample it drew, from 0 at the canvas's left to 1 at the
+ * anchor. No marks when nothing shows.
  */
 function tracePath(
   ctx: CanvasRenderingContext2D,
   props: VoiceTraceProps,
   y0: number,
   anchor: number,
-): TraceRun[] {
+): TraceMark[] {
   const now = props.now()
-  const runs: { first: number; last: number; readonly filling: boolean }[] = []
+  const marks: TraceMark[] = []
   let pen = false
   ctx.beginPath()
   for (const sample of props.trace.all()) {
@@ -226,65 +283,134 @@ function tracePath(
     if (pen) ctx.lineTo(at * anchor, y)
     else ctx.moveTo(at * anchor, y)
     pen = true
-    extendRuns(runs, at, sample.filling)
+    marks.push({ at, filling: sample.filling })
   }
-  return runs
+  return marks
+}
+
+/** Where the ribbon's colour and fade change, with both at each place. */
+interface RibbonStop {
+  readonly at: number
+  readonly off: number
+  readonly fade: number
 }
 
 /**
- * The ribbon over the path just traced, faded in at its old end, cyan where
- * the light filled and amber where it did not: one gradient per layer along
- * the ribbon, since time runs left to right across it.
+ * The places the ribbon's colour or fade changes, in order, with both at
+ * each: every tint, the ends, and where the fade-in at the old end stops.
+ * The amber is scaled by `amber` (1, easing to 0 when the line dims).
  */
-function strokeRibbon(
+function ribbonStopsFor(
+  tints: readonly RibbonTint[],
+  amber: number,
+): RibbonStop[] {
+  const stops: RibbonStop[] = []
+  let last = -1
+  let i = 0
+  const add = (place: number): void => {
+    const at = Math.min(1, Math.max(0, place))
+    if (at <= last) return
+    while (i < tints.length && tints[i].at < at) i++
+    stops.push({
+      at,
+      off: tintBetween(tints, i, at) * amber,
+      fade: Math.min(1, at / TAIL_FADE),
+    })
+    last = at
+  }
+  add(0)
+  for (const tint of tints) {
+    if (tint.at > TAIL_FADE) add(TAIL_FADE)
+    add(tint.at)
+  }
+  add(TAIL_FADE)
+  add(1)
+  return stops
+}
+
+/**
+ * Stroke the path just traced once per layer, faded in at its old end, each
+ * layer cyan where the light filled and amber where it did not: one
+ * gradient per layer along the ribbon, since time runs left to right.
+ */
+function strokeLayers(
   ctx: CanvasRenderingContext2D,
+  layers: readonly RibbonLayer[],
+  stops: readonly RibbonStop[],
   anchor: number,
   scale: number,
-  runs: readonly TraceRun[],
 ): void {
-  const tints = ribbonTint(runs, CROSSING_PX / anchor)
-  // The first and last tints stand where the colour holds still already.
-  const stops = ribbonStops(tints.slice(1, -1)).map((at) => ({
-    at,
-    off: tintAt(tints, at),
-    fade: Math.min(1, at / TAIL_FADE),
-  }))
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
-  RIBBON.forEach((layer, index) => {
+  for (const layer of layers) {
     const gradient = ctx.createLinearGradient(0, 0, anchor, 0)
     for (const stop of stops) {
-      gradient.addColorStop(stop.at, layerColour(index, stop.off, stop.fade))
+      gradient.addColorStop(stop.at, layerColour(layer, stop.off, stop.fade))
     }
     ctx.strokeStyle = gradient
     ctx.lineWidth = layer.width * scale
     ctx.stroke()
-  })
+  }
+}
+
+/** A canvas and the px it is drawn in per CSS px. */
+interface Surface {
+  canvas: HTMLCanvasElement | undefined
+  /** Backing px per CSS px. */
+  ratio: number
+}
+
+function fit(
+  surface: Surface,
+  density: number,
+): { width: number; height: number } {
+  const canvas = surface.canvas
+  if (canvas === undefined) return { width: 0, height: 0 }
+  surface.ratio = density
+  const width = canvas.clientWidth
+  const height = canvas.clientHeight
+  canvas.width = Math.max(1, Math.round(width * density))
+  canvas.height = Math.max(1, Math.round(height * density))
+  return { width, height }
+}
+
+/** A surface cleared and clipped to its region, ready to draw on; or null. */
+function begin(
+  surface: Surface,
+  props: VoiceTraceProps,
+  size: { width: number; height: number },
+): CanvasRenderingContext2D | null {
+  const ctx = surface.canvas?.getContext('2d')
+  if (ctx === null || ctx === undefined) return null
+  ctx.setTransform(surface.ratio, 0, 0, surface.ratio, 0, 0)
+  ctx.clearRect(0, 0, size.width, size.height)
+  ctx.save()
+  clipToRegion(ctx, props.region, props.lantern(), size)
+  return ctx
 }
 
 export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
-  let canvas: HTMLCanvasElement | undefined
+  const line: Surface = { canvas: undefined, ratio: 1 }
+  const glow: Surface = { canvas: undefined, ratio: GLOW_RES }
   let frame = 0
-  const size = { width: 0, height: 0 }
-  let ratio = 1
+  let size = { width: 0, height: 0 }
+  /** When the line was dimmed (performance.now), or null. */
+  let mutedAt: number | null = null
 
   const resize = (): void => {
-    if (canvas === undefined) return
-    ratio = Math.min(3, window.devicePixelRatio || 1)
-    size.width = canvas.clientWidth
-    size.height = canvas.clientHeight
-    canvas.width = Math.max(1, Math.round(size.width * ratio))
-    canvas.height = Math.max(1, Math.round(size.height * ratio))
+    size = fit(line, Math.min(3, window.devicePixelRatio || 1))
+    fit(glow, GLOW_RES)
+  }
+
+  /** How much of the amber still shows: 1, easing to 0 once dimmed. */
+  const amber = (): number => {
+    if (mutedAt === null) return 1
+    return Math.max(0, 1 - (performance.now() - mutedAt) / MUTE_MS)
   }
 
   const draw = (): void => {
-    const ctx = canvas?.getContext('2d')
-    if (ctx === null || ctx === undefined) return
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-    ctx.clearRect(0, 0, size.width, size.height)
-    const lantern = props.lantern()
-    ctx.save()
-    clipToRegion(ctx, props.region, lantern, size)
+    const ctx = begin(line, props, size)
+    if (ctx === null) return
     const y0 = props.lineY()
     ctx.strokeStyle = 'rgba(150, 205, 255, 0.6)'
     ctx.lineWidth = 1.5
@@ -293,16 +419,28 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
     ctx.lineTo(size.width, y0)
     ctx.stroke()
     const anchor = props.anchorX()
-    const runs = anchor > 0 ? tracePath(ctx, props, y0, anchor) : []
-    if (runs.length > 0) {
-      strokeRibbon(ctx, anchor, ribbonScale(lantern.k), runs)
+    const marks = anchor > 0 ? tracePath(ctx, props, y0, anchor) : []
+    const glowCtx = begin(glow, props, size)
+    if (marks.length > 0) {
+      const scale = ribbonScale(props.lantern().k)
+      const tints = ribbonTint(marks, CROSSING_PX / anchor)
+      const stops = ribbonStopsFor(tints, amber())
+      strokeLayers(ctx, CORE, stops, anchor, scale)
+      if (glowCtx !== null) {
+        tracePath(glowCtx, props, y0, anchor)
+        strokeLayers(glowCtx, GLOW, stops, anchor, scale)
+      }
     }
     ctx.restore()
+    glowCtx?.restore()
   }
+
+  /** Still easing the amber away after the line dimmed. */
+  const easing = (): boolean => mutedAt !== null && amber() > 0
 
   const loop = (): void => {
     draw()
-    frame = props.active() ? requestAnimationFrame(loop) : 0
+    frame = props.active() || easing() ? requestAnimationFrame(loop) : 0
   }
 
   onMount(() => {
@@ -311,14 +449,17 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
       resize()
       draw()
     })
-    if (canvas !== undefined) observer.observe(canvas)
+    if (line.canvas !== undefined) observer.observe(line.canvas)
     onCleanup(() => {
       observer.disconnect()
     })
   })
 
   createEffect(() => {
-    if (props.active()) {
+    const dimmed = props.muted?.() === true
+    if (dimmed && mutedAt === null) mutedAt = performance.now()
+    if (!dimmed) mutedAt = null
+    if (props.active() || easing()) {
       if (frame === 0) frame = requestAnimationFrame(loop)
     } else {
       // One last frame, so the line the singer just drew stays put.
@@ -331,13 +472,30 @@ export function VoiceTrace(props: VoiceTraceProps): JSX.Element {
     frame = 0
   })
 
+  const testId = (): string => props.testId ?? 'long-note-trace'
   return (
-    <canvas
-      ref={canvas}
-      class={props.class}
-      style={props.style}
-      aria-hidden="true"
-      data-testid={props.testId ?? 'long-note-trace'}
-    />
+    <>
+      <canvas
+        ref={(canvas) => {
+          glow.canvas = canvas
+        }}
+        class={props.class}
+        style={{
+          ...props.style,
+          filter: `blur(${(GLOW_BLUR_PX * ribbonScale(props.lantern().k)).toFixed(2)}px)`,
+        }}
+        aria-hidden="true"
+        data-testid={`${testId()}-glow`}
+      />
+      <canvas
+        ref={(canvas) => {
+          line.canvas = canvas
+        }}
+        class={props.class}
+        style={props.style}
+        aria-hidden="true"
+        data-testid={testId()}
+      />
+    </>
   )
 }
