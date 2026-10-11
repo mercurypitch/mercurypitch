@@ -395,6 +395,70 @@ describe('LongNoteRoom', () => {
     expect(screen.getAllByRole('button', { name: 'Hear A3' })).toHaveLength(1)
   })
 
+  it('names the picker as a group for a screen reader', () => {
+    // Review B of PR 973, minor 12: its label sat on a div with no role.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const picker = screen.getByRole('group', { name: 'The note to hold' })
+    expect(picker).toBe(screen.getByTestId('long-note-picker'))
+  })
+
+  it('speaks Merc, the hold and the result from one region that is there from the start', async () => {
+    // Review B of PR 973, minor 12: the chip's and the bubble's live
+    // regions arrived with their first words, which readers often skip,
+    // and the result had none.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    const said = screen.getByTestId('long-note-said')
+    expect(said.getAttribute('aria-live')).toBe('polite')
+    expect(said.textContent).toBe(
+      screen.getByTestId('long-note-line').textContent,
+    )
+    // The visible words are not regions of their own.
+    expect(screen.getByTestId('long-note-line').hasAttribute('aria-live')).toBe(
+      false,
+    )
+
+    await startListening()
+    fake.frames = tone(57, 3)
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('hold')
+    const chip = screen.getByTestId('long-note-chip')
+    expect(chip.parentElement?.hasAttribute('aria-live')).toBe(false)
+    expect(screen.getByTestId('long-note-said')).toBe(said)
+    expect(said.textContent).toBe(chip.textContent)
+
+    fake.frames = [...fake.frames, ...silence(0.8, 3)]
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(screen.getByTestId('long-note-said')).toBe(said)
+    expect(said.textContent).toMatch(/^\d+\.\d seconds\. Steadiness \d+\. /)
+    expect(said.textContent).toContain(
+      screen.getByTestId('long-note-line').textContent ?? '',
+    )
+  })
+
+  it('hands focus to the control that takes the place of the one it was on', async () => {
+    // Review B of PR 973, minor 12: focus fell to the page when the mic
+    // button went at the result.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    screen.getByTestId('long-note-mic').focus()
+    await startListening()
+    fake.frames = sequence(
+      (t) => tone(57, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(document.activeElement).toBe(screen.getByTestId('long-note-again'))
+
+    fireEvent.click(screen.getByTestId('long-note-again'))
+    await settle()
+    expect(phase()).toBe('listen')
+    expect(document.activeElement).toBe(screen.getByTestId('long-note-mic'))
+  })
+
   it('plays the note, then listens', async () => {
     render(() => <LongNoteRoom onDone={() => undefined} />)
     await startListening()

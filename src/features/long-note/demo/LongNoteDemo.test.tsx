@@ -541,6 +541,38 @@ describe('the Long note demo', () => {
     expect(sound.tones).toEqual([57])
   })
 
+  it('hands focus on from its card to the control that follows it', async () => {
+    // Review B of PR 973, minor 12: the card took focus and nothing gave
+    // it back, so it fell to the page when the card went.
+    fake.audio = 'never'
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await run(2000)
+    expect(demoMode()).toBe('card')
+    expect(document.activeElement).toBe(
+      screen.getByTestId('long-note-demo-watch'),
+    )
+
+    // Watch: the demo plays, and Skip is the way out of it.
+    fake.audio = 'running'
+    fireEvent.click(screen.getByTestId('long-note-demo-watch'))
+    await run(100)
+    expect(demoMode()).toBe('playing')
+    expect(document.activeElement).toBe(
+      screen.getByTestId('long-note-demo-skip'),
+    )
+
+    // Skip, then Try it: the singer's mic.
+    fireEvent.click(screen.getByTestId('long-note-demo-skip'))
+    await run(100)
+    expect(document.activeElement).toBe(
+      screen.getByTestId('long-note-demo-try'),
+    )
+    fireEvent.click(screen.getByTestId('long-note-demo-try'))
+    await run(100)
+    expect(demoMode()).toBe('idle')
+    expect(document.activeElement).toBe(screen.getByTestId('long-note-mic'))
+  })
+
   it('takes no for an answer on its play card', async () => {
     fake.audio = 'none'
     render(() => <LongNoteRoom onDone={() => undefined} />)

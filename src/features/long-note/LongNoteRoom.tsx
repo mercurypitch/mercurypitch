@@ -32,6 +32,7 @@ import { nativeShellApi } from '@/stores/native-shell-store'
 import { DEMO_COPY } from './demo/demo-cues'
 import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
+import { createFocusHandoff } from './focus-handoff'
 import { LanternBack, LanternFront } from './Lantern'
 import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import { formatHoldSeconds } from './long-note-entry'
@@ -176,6 +177,46 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const pickerHears = (): boolean =>
     phase() === 'intro' && !room.script.active()
 
+  /**
+   * What a screen reader hears, from one polite region that is there from
+   * the start: the chip while the voice is held, the result and Merc's line
+   * after it, his line otherwise. The demo speaks for itself (its layer's
+   * region), so the room keeps quiet while it runs.
+   */
+  const said = (): string => {
+    if (demo.mode() !== 'idle' || room.script.active()) return ''
+    if (phase() === 'hold') return room.chip() ?? ''
+    const summary = phase() === 'result' ? room.summary() : null
+    if (summary === null) return room.line()
+    const seconds = formatHoldSeconds(summary.inBandSeconds).replace(
+      ' s',
+      ' seconds',
+    )
+    const steadiness =
+      summary.steadiness === null
+        ? ''
+        : ` Steadiness ${Math.round(summary.steadiness)}.`
+    return `${seconds}.${steadiness} ${room.line()}`
+  }
+
+  // Focus on a control the room takes away goes to the one in its place.
+  let rootEl: HTMLDivElement | undefined
+  const focus = createFocusHandoff()
+  const mainControl = (): HTMLElement | null => {
+    const mode = demo.mode()
+    // The demo's cards take focus themselves.
+    if (mode === 'card' || mode === 'end') return null
+    let id = 'long-note-mic'
+    if (mode === 'playing') id = 'long-note-demo-skip'
+    else if (phase() === 'result' && !room.script.active()) {
+      id = 'long-note-again'
+    } else if (phase() === 'blocked') id = 'long-note-retry'
+    return rootEl?.querySelector<HTMLElement>(`[data-testid="${id}"]`) ?? null
+  }
+  createEffect(
+    on([phase, demo.mode], () => focus.handOff(mainControl), { defer: true }),
+  )
+
   const micLabel = (): string => {
     switch (phase()) {
       case 'starting':
@@ -193,10 +234,12 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
 
   return (
     <div
+      ref={rootEl}
       class={`${styles.room} mp-dark-stage`}
       data-phase={phase()}
       data-demo={demo.mode()}
       data-testid="long-note-room"
+      onFocusIn={(event) => focus.noteFocus(event)}
     >
       <div class={styles.top} inert={demoBusy()}>
         <Switch>
@@ -213,7 +256,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 </span>
               </Show>
             </div>
-            <div class={styles.chipRow} aria-live="polite">
+            <div class={styles.chipRow}>
               <Show when={demoTake() ? null : room.chip()}>
                 {(text) => (
                   <span class={styles.chip} data-testid="long-note-chip">
@@ -244,11 +287,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
           </Match>
         </Switch>
         <Show when={room.line() !== '' && phase() !== 'hold' && !demoTake()}>
-          <p
-            class={styles.bubble}
-            aria-live="polite"
-            data-testid="long-note-line"
-          >
+          <p class={styles.bubble} data-testid="long-note-line">
             {room.line()}
           </p>
         </Show>
@@ -430,6 +469,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 type="button"
                 class={styles.done}
                 onClick={() => room.start()}
+                data-testid="long-note-retry"
               >
                 Try again
               </button>
@@ -461,6 +501,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
                 [styles.pickerAway]: phase() !== 'intro',
                 [styles.pickerOut]: room.script.active(),
               }}
+              role="group"
               aria-label="The note to hold"
               aria-hidden={phase() !== 'intro'}
               data-testid="long-note-picker"
@@ -527,6 +568,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             </button>
           </Match>
         </Switch>
+      </div>
+      <div class={styles.said} aria-live="polite" data-testid="long-note-said">
+        {said()}
       </div>
       <LongNoteDemoLayer demo={demo} room={room} />
     </div>
