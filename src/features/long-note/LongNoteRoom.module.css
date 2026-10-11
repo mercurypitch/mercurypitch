@@ -412,6 +412,59 @@
   text-align: center;
 }
 
+/* A short phone (360 x 640, 375 x 667) keeps a third of its height for the
+   lantern: a smaller timer and mic, and tighter gaps. The ring's travel is
+   (64 + 2 x 6) x 1.35 / 2 - 32 = 19.3 px past the disc, inside the gap and
+   the bottom padding. The room fits the screen's body (495 px at 640). */
+@media (max-height: 700px) {
+  .room {
+    min-height: 440px;
+  }
+
+  .top {
+    min-height: 88px;
+    padding-top: 6px;
+  }
+
+  .timer {
+    font-size: 44px;
+  }
+
+  .chipRow {
+    min-height: 34px;
+    margin-top: 4px;
+  }
+
+  .result {
+    gap: 4px;
+  }
+
+  .bubble {
+    margin-top: 6px;
+    padding: 7px 14px;
+  }
+
+  .bottom {
+    gap: 20px;
+    min-height: 154px;
+    padding: 6px 16px 20px;
+  }
+
+  .mic {
+    width: 64px;
+    height: 64px;
+  }
+
+  .mic svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .mic::after {
+    inset: -6px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mic::after {
     animation: none;
