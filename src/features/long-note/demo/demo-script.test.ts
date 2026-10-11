@@ -175,22 +175,24 @@ describe('Long note demo, the script', () => {
     expect(demoTake('off', 50).frames).toEqual(demoTake('off', 50).frames)
   })
 
-  it('tells the same story on every note the room offers', () => {
-    for (
-      let note = HOLD_TARGET_MIN_MIDI;
-      note <= HOLD_TARGET_MAX_MIDI;
-      note++
-    ) {
-      const off = eventTimes(replay(demoTake('off', note).frames, note))
-      const on = eventTimes(replay(demoTake('on', note).frames, note))
-      expect(off.map((event) => event.type)).toEqual(['lock', 'break', 'end'])
-      expect(on.map((event) => event.type)).toEqual([
-        'lock',
-        'goal',
-        'brim',
-        'end',
-      ])
-    }
+  // One case a note. Both takes on all 45 notes cost about 2 s in one case,
+  // too close to the 5 s ceiling on a loaded CI runner; a note on its own
+  // takes about 45 ms, and a failure names its note.
+  const roomNotes = Array.from(
+    { length: HOLD_TARGET_MAX_MIDI - HOLD_TARGET_MIN_MIDI + 1 },
+    (_, i) => HOLD_TARGET_MIN_MIDI + i,
+  )
+
+  it.each(roomNotes)('tells the same story on MIDI %i', (note) => {
+    const off = eventTimes(replay(demoTake('off', note).frames, note))
+    const on = eventTimes(replay(demoTake('on', note).frames, note))
+    expect(off.map((event) => event.type)).toEqual(['lock', 'break', 'end'])
+    expect(on.map((event) => event.type)).toEqual([
+      'lock',
+      'goal',
+      'brim',
+      'end',
+    ])
   })
 
   it('sings where the frames are voiced, on the frames own line', () => {
