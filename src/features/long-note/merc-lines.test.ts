@@ -76,6 +76,11 @@ describe('merc-lines', () => {
       expect(text).toMatch(/mic is off|mic off/i)
       expect(text).toMatch(/tap it/i)
     }
+    // The singer left mid-hold and the take was dropped: say why the note
+    // stopped, and how to start again, in one line.
+    expect(texts('left')).toEqual([
+      'The note stopped when you left. Tap the mic to go again.',
+    ])
   })
 
   it('calls the goal half full and keeps the brim for steady singing', () => {

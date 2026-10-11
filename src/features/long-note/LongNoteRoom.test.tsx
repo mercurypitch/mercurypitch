@@ -897,6 +897,54 @@ describe('LongNoteRoom', () => {
     expect(fake.released).toBe(1)
   })
 
+  // Owner, 11 Oct 2026: "its a exercise which gets done or not, so we
+  // don't even have to keep it if user left". Back drops a hold (the room
+  // goes away with it); the app going to the background drops it the same.
+  it('drops a hold when the app goes to the background: nothing kept, the mic closed, the intro back', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+    // Three seconds on the note, still singing.
+    fake.frames = tone(57, 3)
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('hold')
+    expect(shownLevel()).toBeGreaterThan(0.1)
+
+    const hidden = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await settle()
+    hidden.mockRestore()
+
+    // No run, no best, no note remembered, so no practice time either.
+    expect(phase()).toBe('intro')
+    expect(recorded.calls).toHaveLength(0)
+    expect(
+      localStorage.getItem('pitchperfect_long_note_lantern_bests'),
+    ).toBeNull()
+    expect(memory.note).toBeNull()
+    expect(screen.queryByTestId('long-note-result')).toBeNull()
+    // The mic closed, the lantern empty, and one plain line.
+    expect(fake.released).toBe(1)
+    expect(shownLevel()).toBeCloseTo(0, 6)
+    expect(says('left', screen.getByTestId('long-note-line').textContent)).toBe(
+      true,
+    )
+
+    // Back in the app, a new take starts from nothing.
+    await startListening()
+    expect(phase()).toBe('listen')
+    fake.frames = sequence(
+      (t) => tone(57, 2, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(1)
+  })
+
   it('keeps the screen on while it listens and holds, and only then', async () => {
     // Review B of PR 973, M2: the mic tap is the singer's last touch, and a
     // phone that locks 30 s after it hid the page and ended the hold there.

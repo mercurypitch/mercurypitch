@@ -98,6 +98,34 @@ describe('long-note-machine', () => {
     ).toBe(state)
   })
 
+  it('drops a hold the singer left, back to the intro with no result', () => {
+    // Owner, 11 Oct 2026: the app went to the background mid-hold. The
+    // take is dropped, as Back drops it: no result, nothing kept.
+    const held = run([
+      { type: 'start' },
+      { type: 'mic-ready', run: 1 },
+      { type: 'voice' },
+    ])
+    const left = longNoteReducer(held, { type: 'leave' })
+    expect(left.phase).toBe('intro')
+    expect(longNoteReducer(left, { type: 'end' })).toBe(left)
+    expect(longNoteReducer(left, { type: 'start' }).run).toBe(2)
+    // Waiting for a note, or for the mic, it leaves the same way.
+    expect(run([{ type: 'start' }, { type: 'leave' }]).phase).toBe('intro')
+    expect(
+      run([{ type: 'start' }, { type: 'mic-ready', run: 1 }, { type: 'leave' }])
+        .phase,
+    ).toBe('intro')
+    // A result stays a result.
+    const result = run([
+      { type: 'start' },
+      { type: 'mic-ready', run: 1 },
+      { type: 'voice' },
+      { type: 'end' },
+    ])
+    expect(longNoteReducer(result, { type: 'leave' })).toBe(result)
+  })
+
   it('returns to the intro to pick another note', () => {
     const intro = run([
       { type: 'start' },

@@ -35,6 +35,7 @@ export type LongNoteMoment =
   | 'sleep'
   | 'sleepAny'
   | 'rest'
+  | 'left'
 
 export interface MercLine {
   /** Stable id, for a recorded voice line later. */
@@ -165,6 +166,13 @@ export const MERC_LINES: Readonly<Record<LongNoteMoment, readonly MercLine[]>> =
       {
         id: 'rest-again',
         text: 'Mic off after a quiet minute. Tap it to go again.',
+      },
+    ],
+    // The singer left the app mid-hold: the take was dropped, nothing kept.
+    left: [
+      {
+        id: 'left-stopped',
+        text: 'The note stopped when you left. Tap the mic to go again.',
       },
     ],
   }
