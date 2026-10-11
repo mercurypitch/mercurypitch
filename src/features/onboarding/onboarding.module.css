@@ -723,9 +723,15 @@
     color 0.2s var(--ob-ease);
 }
 
-.secondary:hover {
+.secondary:not([aria-disabled='true']):hover {
   border-color: var(--ob-ink-3);
   color: var(--ob-ink);
+}
+
+/* Unavailable for a moment ("Hear a note" while a sound plays): focusable,
+   but it neither lights on hover nor offers a pointer. */
+.secondary[aria-disabled='true'] {
+  cursor: default;
 }
 
 .secondary:focus-visible {

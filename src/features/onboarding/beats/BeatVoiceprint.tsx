@@ -612,12 +612,16 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
               once the glides have given us a range). Never during a take:
               a tone still sounding would be captured by the mic. It waits
               while any sound plays, the arrival note included. */}
+          {/* aria-disabled, not `disabled`, while a sound plays: a
+              disabled button leaves the Tab order and drops focus under a
+              keyboard user's press. It stays focusable, says it is
+              unavailable, and hearNote ignores the tap. */}
           <Show when={suggestedMidi() !== null}>
             <button
               type="button"
               class={styles.secondary}
               onClick={hearNote}
-              disabled={lane.busy()}
+              aria-disabled={lane.busy() ? 'true' : 'false'}
             >
               {lane.busy()
                 ? 'Playing…'
