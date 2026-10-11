@@ -36,13 +36,13 @@ import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import { setExerciseFocus } from '@/stores/native-shell-store'
 import { vocalRangePreset } from '@/stores/settings-store'
-import { createChipPacer } from './chip-pacer'
+import { createChipFollower } from './chip-follower'
 import { HOLD_FILL_MAX } from './lantern-geometry'
 import type { LongNoteEvent, LongNoteState } from './long-note-machine'
 import { initialLongNoteState, longNoteReducer } from './long-note-machine'
 import { isFalseStart, keepRun, resultMoment } from './long-note-run'
 import type { LongNoteMoment } from './merc-lines'
-import { createMercLineSelector, offMoment } from './merc-lines'
+import { createMercLineSelector } from './merc-lines'
 import { rememberedLongNote } from './remembered-note'
 import type { LongNoteScript, ScriptedTake } from './scripted-take'
 import { settleLiveNote } from './settle-note'
@@ -100,26 +100,6 @@ export interface LongNoteController {
 const MAX_HOLD_SECONDS = 90
 /** Merc dozes off when nobody sings for this long. */
 const SLEEP_AFTER_SECONDS = 25
-/**
- * A chip line stands at least this long before the next one (chip-pacer),
- * which is also the longest its words can trail the trace's colour.
- */
-const CHIP_HOLD_SECONDS = 0.7
-/**
- * Off the band this long before the first lock to name the side: until
- * then the singer is still finding the note. After a lock the engine's own
- * break (200 ms off the band) is the moment.
- */
-const FIND_SECONDS = 0.9
-/**
- * Back on the note after a break, the lock holds this long before the chip
- * says so (0.7 s in the band, with the lock's own 250 ms): a voice hovering
- * at the band's edge keeps its one off line instead of trading it.
- */
-const RETURN_SECONDS = 0.45
-/** Locked this long before Merc says it is steady. */
-const STEADY_SECONDS = 3
-
 /** RMS to Merc's 0..1 loudness: -50 dBFS is silent, -10 dBFS is full. */
 export function levelFromRms(rms: number): number {
   if (!(rms > 0)) return 0
@@ -243,10 +223,7 @@ export function useLongNoteController(): LongNoteController {
   let windowOpen = false
   let windowStartedAt = 0
   let loop = 0
-  const chipPacer = createChipPacer(CHIP_HOLD_SECONDS)
-  let outOfBandFor = 0
-  /** The chip's line while the voice is on the note, set by its events. */
-  let onLine: LongNoteMoment = 'lock'
+  const chips = createChipFollower()
   let asleep = false
   /** The singer's own note was just named: the first lock says so. */
   let foundPending = false
@@ -260,14 +237,8 @@ export function useLongNoteController(): LongNoteController {
       : scripted.now()
   }
 
-  /** The chip's situation on this frame, shown once the last line stood. */
-  const showChip = (moment: LongNoteMoment | null): void => {
-    chipPacer.want(moment)
-    const shown = chipPacer.take(engine.clock)
-    if (shown !== null) setChip(lines.next(shown, untrack(noteName)))
-  }
   const clearChip = (): void => {
-    chipPacer.reset()
+    chips.reset()
     setChip(null)
   }
 
@@ -278,8 +249,6 @@ export function useLongNoteController(): LongNoteController {
     processed = 0
     previous = null
     lastTick = null
-    outOfBandFor = 0
-    onLine = 'lock'
     asleep = false
     foundPending = false
     trace.clear()
@@ -311,12 +280,9 @@ export function useLongNoteController(): LongNoteController {
         case 'lock':
           feel('tapLight')
           setMercState('lock')
-          onLine = foundPending ? 'found' : 'lock'
-          foundPending = false
           break
         case 'relock':
           setMercState('lock')
-          onLine = 'lock'
           break
         case 'break':
           setMercState('sing')
@@ -324,47 +290,21 @@ export function useLongNoteController(): LongNoteController {
         case 'goal':
           feel('success')
           setShining(true)
-          onLine = 'full'
           break
         case 'end':
           break
       }
+      chips.event(event, foundPending)
+      if (event === 'lock') foundPending = false
       scripted?.onEvent(event)
     }
   }
 
-  /**
-   * What the chip says on this frame, read off the engine state the trace
-   * is coloured by, so the words and the colour agree: off the note once
-   * the engine has broken the lock (or, before any lock, after
-   * FIND_SECONDS off the band), and the on-note line while it is locked.
-   * Null while nothing is certain: a moment off the band the engine has
-   * not called yet, a gap, a lock only just won back.
-   */
-  const chipSituation = (): LongNoteMoment | null => {
-    const needle = engine.needleCents
-    if (lastTick === null || lastTick.offCents === null || needle === null) {
-      return null
-    }
-    if (!engine.inBand) {
-      const finding = engine.firstLockAt === null
-      const off = finding
-        ? outOfBandFor >= FIND_SECONDS
-        : engine.phase === 'broken'
-      return off ? offMoment(needle) : null
-    }
-    if (engine.phase !== 'locked') return null
-    if (engine.breaks > 0 && engine.lockSeconds < RETURN_SECONDS) return null
-    return onLine
-  }
-
+  /** The chip's line after this frame, once the last line has stood. */
   const followChip = (dt: number): void => {
     const voiced = lastTick !== null && lastTick.offCents !== null
-    if (voiced && !engine.inBand) outOfBandFor += dt
-    else outOfBandFor = 0
-    const settled = onLine === 'lock' || onLine === 'found'
-    if (settled && engine.lockSeconds >= STEADY_SECONDS) onLine = 'steady'
-    showChip(chipSituation())
+    const shown = chips.follow(engine, voiced, dt)
+    if (shown !== null) setChip(lines.next(shown, untrack(noteName)))
   }
 
   const finish = (): void => {
