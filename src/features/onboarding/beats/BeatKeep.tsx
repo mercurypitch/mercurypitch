@@ -26,6 +26,7 @@ import { DeviceSync, Trophy, WaveformBars } from '@/components/icons'
 import type { FeaturedPromo } from '@/db/services/billing-service'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
+import { KEEP_GIFT_CAPTION } from '../copy'
 import keep from '../keep.module.css'
 import styles from '../onboarding.module.css'
 import { KeepGiftCard } from './KeepGiftCard'
@@ -164,9 +165,7 @@ export const BeatKeep: Component<BeatKeepProps> = (props) => {
           Create my free account
         </button>
         <Show when={props.gift !== null}>
-          <p class={keep.keepCaption}>
-            Credits arrive when your email is confirmed.
-          </p>
+          <p class={keep.keepCaption}>{KEEP_GIFT_CAPTION}</p>
         </Show>
       </div>
     </div>

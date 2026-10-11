@@ -183,8 +183,9 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_account_dismissed',
   /** Keep rendered with the launch gift card, beside `onboarding_keep`. */
   'onboarding_keep_gift',
-  /** The Map's gift link ("Get my 5 credits", or "Save it and get 5 free
-   *  credits" under a voiceprint). */
+  /** The Map's gift link ("Get my gift", or "Save it and get the launch
+   *  gift" under a voiceprint). Before 11 Oct 2026 the links read "Get my
+   *  5 credits" and "Save it and get 5 free credits". */
   'onboarding_map_gift_tap',
 ] as const
 

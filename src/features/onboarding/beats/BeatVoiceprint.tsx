@@ -13,28 +13,44 @@
 // longer, and it is the right trade — someone who has never done a
 // vocal glide cannot be rushed into one. The demo is deliberately
 // audible as well as animated: an animation alone does not tell you
-// what your VOICE should do, so TaskDemo pairs the drawing with a
-// synthesized siren or held tone.
+// what your VOICE should do, so each intro pairs the drawing with a
+// synthesized siren, or for the hold, the singer's own note.
+//
+// One sound at a time (owner testing, iPhone, 11 Oct 2026). The hold
+// used to play the demo's fixed note on arrival while "Hear a note"
+// played a different one over it. Every sound in this beat now goes
+// through one lane (../sound-lane.ts): a new sound stops the one before,
+// "Hear a note" waits while anything plays, and "I'm ready" silences the
+// lane before a take can record. TaskDemo draws, and plays nothing.
 //
 // Every await is followed by an alive() check before the next side
 // effect. Without it, a visitor who backs out mid-take leaves a
 // running script that dispatches into a torn-down session — the same
 // generation-guard the Mirror's runFlow uses, and for the same reason.
+//
+// One run, one counter (owner decision V7, 11 Oct 2026). The four steps
+// are counted in one place, the step track at the top, and nowhere else:
+// the briefs between steps used to say "That was 1 of 3" under an eyebrow
+// that said "Step 1 of 4". The first screen says how long the whole run
+// takes, and the five-note match counts its notes as it goes.
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
+import { planDemoCue, playDemoCue } from '@/features/mirror/demo-cue'
 import type { LiveVizMode } from '@/features/mirror/LiveViz'
 import { LiveViz } from '@/features/mirror/LiveViz'
 import { TaskDemo } from '@/features/mirror/TaskDemo'
-import { playReferenceTone } from '@/features/mirror/tone-player'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import type { DemoKind } from '@/lib/mirror/demo-timeline'
+import { buildDemoTimeline } from '@/lib/mirror/demo-timeline'
 import type { F0Frame, MatchTake, MirrorResult } from '@/lib/mirror/metrics'
 import { computeMirrorResult, computeRange, pickMatchTargets, } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
+import { startReferenceTone } from '@/lib/reference-tone'
 import type { VoiceSession } from '@/lib/voice-session'
 import { createVoiceSession } from '@/lib/voice-session'
 import styles from '../onboarding.module.css'
+import { createSoundLane } from '../sound-lane'
 
 const GLIDE_SEC = 8
 const HOLD_SEC = 6
@@ -42,9 +58,32 @@ const HOLD_SEC = 6
 const RING_CIRCUMFERENCE = 194.8
 const MATCH_TAKE_SEC = 3
 const REFERENCE_SEC = 1.4
+/** How long a note cut short needs before its context can close: the
+ *  reference tone's 180 ms release and 60 ms of slack (reference-tone.ts),
+ *  with a margin. The demo cues' own stop is shorter. */
+const CLOSE_AFTER_RELEASE_MS = 300
 /** Hear the note, then a beat to prepare before singing it back. */
 const MATCH_PREPARE_SEC = 2
 const MATCH_COUNT = 5
+
+/**
+ * The four steps, in the order the script runs them. The step track and
+ * its counter are drawn from this list, so the count cannot drift from
+ * the script again.
+ */
+export const VOICEPRINT_STEPS = [
+  'Glide up',
+  'Glide down',
+  'Hold',
+  'Match',
+] as const
+
+/**
+ * How long the whole run takes, said on its first screen. The timed
+ * stages come to 66 seconds (37 of them singing); the four "I'm ready"
+ * gates are the singer's own pace. The Fork promises the same number.
+ */
+export const VOICEPRINT_TIME = 'about 90 seconds'
 
 type Stage =
   | { kind: 'intro'; demo: DemoKind; title: string; body: string }
@@ -67,6 +106,17 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   })
   const [remaining, setRemaining] = createSignal(0)
   const [step, setStep] = createSignal(1)
+  /**
+   * True when the glides gave no range: the five notes are pitched from
+   * it, so step 4 is skipped rather than run, and the counter says so
+   * instead of waiting on the hold while the result is read.
+   */
+  const [matchSkipped, setMatchSkipped] = createSignal(false)
+  /** Where the five-note match stands; null outside it. */
+  const [matchNote, setMatchNote] = createSignal<{
+    index: number
+    total: number
+  } | null>(null)
 
   /**
    * The countdown ring sweeps once, across the whole take, rather than
@@ -99,34 +149,82 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   const [recordTotal, setRecordTotal] = createSignal(1)
 
   /**
-   * A note from the middle of the measured range, offered during the
-   * hold task's gate. Null outside that task — the tone must never be
-   * available while a take is recording, or the mic captures it.
+   * A note from the middle of the measured range: the hold task's intro
+   * plays it on arrival, and "Hear a note" plays it again. Null outside
+   * that task. The tone must never be available while a take is
+   * recording, or the mic captures it.
    */
   const [suggestedMidi, setSuggestedMidi] = createSignal<number | null>(null)
-  const [tonePlaying, setTonePlaying] = createSignal(false)
 
-  const playSuggested = async (): Promise<void> => {
-    const midi = suggestedMidi()
-    const context = session?.context() ?? null
-    if (midi === null || context === null || tonePlaying()) return
-    setTonePlaying(true)
-    try {
-      await playReferenceTone(context, midi, 1.6)
-    } finally {
-      setTonePlaying(false)
-    }
-  }
+  /** Every sound this beat makes, one at a time. */
+  const lane = createSoundLane()
+
+  /**
+   * The hold's note lasts as long as the hold demo's sing window (3.3 s),
+   * so the note on arrival sounds while the animation holds its line.
+   * "Hear a note" replays the same note for the same time.
+   */
+  const holdNoteSec =
+    planDemoCue('hold', buildDemoTimeline('hold'))?.seconds ?? 3.3
 
   let session: VoiceSession | null = null
+
+  const audioContext = (): AudioContext | null => {
+    const context = session?.context() ?? null
+    if (context === null || context.state === 'closed') return null
+    if (context.state === 'suspended') {
+      void context.resume().catch(() => undefined)
+    }
+    return context
+  }
+
+  /** The singer's own note for the hold, through the lane. */
+  const playHoldNote = (midi: number): Promise<void> => {
+    const context = audioContext()
+    if (context === null) return Promise.resolve()
+    return lane.play(
+      () => startReferenceTone(context, midi, holdNoteSec),
+      holdNoteSec,
+    )
+  }
+
+  /**
+   * The sound that goes with a task's demo, once, as its intro opens. The
+   * hold plays the singer's own note when the glides gave one; otherwise
+   * every task plays the demo's own cue (the match has none: it plays its
+   * notes one by one).
+   */
+  const playIntroCue = (demo: DemoKind): void => {
+    const midi = suggestedMidi()
+    if (demo === 'hold' && midi !== null) {
+      void playHoldNote(midi)
+      return
+    }
+    const plan = planDemoCue(demo, buildDemoTimeline(demo))
+    const context = audioContext()
+    if (plan === null || context === null) return
+    void lane.play(() => playDemoCue(context, plan), plan.seconds)
+  }
+
+  /** "Hear a note": the hold's note again, only when nothing is playing. */
+  const hearNote = (): void => {
+    const midi = suggestedMidi()
+    if (midi === null || lane.busy()) return
+    void playHoldNote(midi)
+  }
   let cancelled = false
   let timer = 0
   let readyResolve: (() => void) | null = null
 
   const alive = (): boolean => !cancelled
 
-  /** Let go of the "I'm ready" promise so `run()` can unwind and bail. */
+  /**
+   * Let go of the "I'm ready" promise so `run()` can unwind and bail. The
+   * lane goes quiet first: a take follows, and the mic must not hear a
+   * note still ringing.
+   */
   const releaseGate = (): void => {
+    lane.stop()
     readyResolve?.()
     readyResolve = null
   }
@@ -149,10 +247,20 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     clearInterval(timer)
     cancelAnimationFrame(ringFrame)
     // Without this an unmount during an intro leaves run() parked on a
-    // promise nobody will ever resolve, holding the session with it.
+    // promise nobody will ever resolve, holding the session with it. It
+    // also silences the lane, so no note outlives the beat.
+    //
+    // A note cut short ("Not now" mid-note) fades over its release, on
+    // the session's context. Closing that context at once cut the fade
+    // off where it stood: a pop. Close it once the tail is quiet, on a
+    // timer that does not depend on this component, so it always closes.
+    const sounding = lane.busy()
     releaseGate()
-    session?.close()
+    const leaving = session
     session = null
+    if (leaving === null) return
+    if (sounding) setTimeout(() => leaving.close(), CLOSE_AFTER_RELEASE_MS)
+    else leaving.close()
   })
 
   const countdown = async (seconds: number): Promise<void> => {
@@ -177,6 +285,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
   ): Promise<void> => {
     if (!alive()) return Promise.resolve()
     setStage({ kind: 'intro', demo, title, body })
+    playIntroCue(demo)
     return new Promise<void>((resolve) => {
       readyResolve = resolve
     })
@@ -197,6 +306,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     seconds: number,
     live: { mode: LiveVizMode; target?: number } | null = null,
   ): Promise<F0Frame[]> => {
+    // Never a sound under a take. "I'm ready" already silenced the lane;
+    // this is the guarantee for every other way into a take.
+    lane.stop()
     setStage({ kind: 'record', title, body })
     if (session === null) return []
     setViz(
@@ -251,7 +363,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     await taskIntro(
       'glide-up',
       'Slide from low to high',
-      "Listen to the sweep, then do the same on an 'ooo' — from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
+      "Listen to the sweep, then do the same on an 'ooo', from as low as you comfortably sing up to as high as you comfortably sing. Never strain: we want your easy range, not your limit.",
     )
     if (!alive()) return
     await brief('Ready…', 'Take a breath.')
@@ -265,8 +377,9 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     if (!alive()) return
     // A beat of acknowledgement between tasks: without it the flow jumps
     // straight to the next instruction and singers can't tell whether the
-    // take even registered (owner testing).
-    await brief('Got it.', 'That was 1 of 3.', 1)
+    // take even registered (owner testing). It says what comes next, not
+    // a count: the step track at the top is the one counter.
+    await brief('Got it.', 'Next: the same slide, downwards.', 1)
     if (!alive()) return
 
     setStep(2)
@@ -285,7 +398,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       { mode: 'glide' },
     )
     if (!alive()) return
-    await brief('Both directions in.', 'That was 2 of 3.', 1)
+    await brief('Both directions in.', 'Next: hold one note.', 1)
     if (!alive()) return
 
     // ── Task B: hold. ──
@@ -303,10 +416,22 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         Math.round((glideRange.lowMidi + glideRange.highMidi) / 2),
       )
     }
+    // Picked now rather than at step 4, so the brief after the hold can say
+    // whether a match is coming at all. No usable range means both glides
+    // were silent: there is nothing to pitch the targets against, so the
+    // run finishes on what it has rather than firing arbitrary notes at
+    // someone we evidently cannot hear.
+    const targets =
+      glideRange === null
+        ? []
+        : pickMatchTargets(glideRange.lowMidi, glideRange.highMidi).slice(
+            0,
+            MATCH_COUNT,
+          )
     await taskIntro(
       'hold',
       'Hold one note steady',
-      "Pick any note in the middle of your range and hold it on an 'ahh'. This measures control, not volume — quiet and steady beats loud and wobbly.",
+      "Pick any note in the middle of your range and hold it on an 'ahh'. This measures control, not volume: quiet and steady beats loud and wobbly.",
     )
     if (!alive()) return
     await brief('Ready…', 'Take a breath.', 2)
@@ -315,47 +440,58 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
       mode: 'hold',
     })
     if (!alive()) return
-    await brief('Nice and steady.', 'Last one: sing a note back to us.', 1)
+    if (targets.length > 0) {
+      await brief('Nice and steady.', 'Last one: match five notes.', 1)
+    } else {
+      // The Fork promised five notes, so say why they are not coming, and
+      // long enough to read: one screen later the twin says it could not
+      // read a range either.
+      setStep(4)
+      setMatchSkipped(true)
+      await brief(
+        "We couldn't hear your slides",
+        "The five notes are pitched from your range, so we'll skip them this time.",
+      )
+    }
     if (!alive()) return
 
     // ── Task C: match five. Reference then record, never together. ──
-    setStep(4)
     setSuggestedMidi(null)
-    const range = glideRange
-    // No usable range means both glides were silent — there is nothing to
-    // pitch the targets against, so finish on what we have rather than
-    // firing arbitrary notes at someone we evidently cannot hear.
-    const targets =
-      range === null ? [] : pickMatchTargets(range.lowMidi, range.highMidi)
-
     const matches: MatchTake[] = []
 
     if (targets.length > 0) {
+      setStep(4)
       // One gate before the series, not one per note: rounds 2-5 keeping
       // their rhythm is what makes it feel like call-and-response rather
       // than five separate exercises.
       await taskIntro(
         'match',
-        'Last one — match five notes',
+        'Match five notes',
         "You'll hear a note, then sing it back. Listen first; we'll tell you when it's your turn.",
       )
       if (!alive()) return
       await brief('Ready…', 'Here comes the first note.', 2)
     }
 
-    for (let i = 0; i < Math.min(MATCH_COUNT, targets.length); i++) {
+    for (let i = 0; i < targets.length; i++) {
       if (!alive()) return
       const target = targets[i]
       const name = midiToNoteNameOctave(Math.round(target))
+      // Counted on screen through all three stages of the note: listen,
+      // your turn, sing.
+      setMatchNote({ index: i, total: targets.length })
 
       setStage({
         kind: 'listen',
-        title: `Listen — note ${i + 1} of ${targets.length}`,
+        title: 'Listen',
         body: `This is ${name}.`,
       })
-      const context = session.context()
+      const context = audioContext()
       if (context !== null) {
-        await playReferenceTone(context, target, REFERENCE_SEC)
+        await lane.play(
+          () => startReferenceTone(context, target, REFERENCE_SEC),
+          REFERENCE_SEC,
+        )
       }
       if (!alive()) return
 
@@ -364,7 +500,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
       const frames = await record(
         `Sing ${name}`,
-        `Note ${i + 1} of ${targets.length}.`,
+        'Match the note you just heard.',
         MATCH_TAKE_SEC,
         { mode: 'match', target },
       )
@@ -373,6 +509,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
     }
 
     if (!alive()) return
+    setMatchNote(null)
     session.close()
     session = null
     setStage({ kind: 'done' })
@@ -392,22 +529,75 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
 
   return (
     <div class={styles.beat} data-beat="voiceprint">
-      <p class={styles.eyebrow}>Step {step()} of 4 · mapping your voice</p>
+      {/* The one step counter: a track of four segments and the words
+          under it. The time goes on the first step only, the first
+          thing the singer reads after choosing to start. */}
+      <div class={styles.stepper}>
+        <ol class={styles.stepTrack} aria-hidden="true">
+          <For each={VOICEPRINT_STEPS}>
+            {(_name, index) => (
+              <li
+                class={styles.stepSegment}
+                data-state={
+                  index() + 1 < step()
+                    ? 'done'
+                    : index() + 1 === step()
+                      ? matchSkipped()
+                        ? 'skipped'
+                        : 'current'
+                      : 'ahead'
+                }
+              />
+            )}
+          </For>
+        </ol>
+        <p class={styles.stepCounter} data-step-counter>
+          Step {step()} of {VOICEPRINT_STEPS.length}
+          {step() === 1
+            ? ` · ${VOICEPRINT_TIME}`
+            : ` · ${VOICEPRINT_STEPS[step() - 1]}${matchSkipped() ? ' skipped' : ''}`}
+        </p>
+      </div>
 
       <Show when={current().kind !== 'done'}>
         <h1 class={styles.headlineSmall}>{titled().title}</h1>
       </Show>
 
-      {/* Animation plus its audible siren/hold cue. Mounted only during
-          the intro, so every task gets a fresh instance and the cue
-          replays for the task it belongs to. */}
+      <Show when={matchNote()}>
+        {(note) => (
+          <div class={styles.matchProgress} data-match-progress>
+            <span class={styles.matchDots} aria-hidden="true">
+              <For each={Array.from({ length: note().total })}>
+                {(_dot, index) => (
+                  <span
+                    class={styles.matchDot}
+                    data-state={
+                      index() < note().index
+                        ? 'done'
+                        : index() === note().index
+                          ? 'current'
+                          : 'ahead'
+                    }
+                  />
+                )}
+              </For>
+            </span>
+            <span class={styles.matchLabel}>
+              Note {note().index + 1} of {note().total}
+            </span>
+          </div>
+        )}
+      </Show>
+
+      {/* The animation only. Its sound comes from taskIntro, through
+          the lane, so it can never overlap another note. Mounted only
+          during the intro, so every task gets a fresh instance. */}
       <Show when={current().kind === 'intro'}>
         <div class={styles.demoStage}>
           <TaskDemo
             kind={(current() as { demo: DemoKind }).demo}
             size="stage"
             label={titled().title}
-            getAudioContext={() => session?.context() ?? null}
           />
         </div>
       </Show>
@@ -420,15 +610,16 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         <div class={styles.actions}>
           {/* Offered only where a note has been suggested (the hold task,
               once the glides have given us a range). Never during a take:
-              a tone still sounding would be captured by the mic. */}
+              a tone still sounding would be captured by the mic. It waits
+              while any sound plays, the arrival note included. */}
           <Show when={suggestedMidi() !== null}>
             <button
               type="button"
               class={styles.secondary}
-              onClick={() => void playSuggested()}
-              disabled={tonePlaying()}
+              onClick={hearNote}
+              disabled={lane.busy()}
             >
-              {tonePlaying()
+              {lane.busy()
                 ? 'Playing…'
                 : `Hear a note (${midiToNoteNameOctave(suggestedMidi() ?? 0)})`}
             </button>
@@ -480,7 +671,7 @@ export const BeatVoiceprint: Component<BeatVoiceprintProps> = (props) => {
         </div>
         <p class={styles.recordingTag}>Recording</p>
         <p class={styles.recordHint}>
-          Done before the count ends? Just stop singing — we keep what we heard.
+          Done before the count ends? Just stop singing. We keep what we heard.
         </p>
       </Show>
 

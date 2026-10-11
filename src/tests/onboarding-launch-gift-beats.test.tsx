@@ -62,7 +62,7 @@ const rowTexts = (beat: HTMLElement): string[] =>
   [...beat.querySelectorAll('li')].map((row) => row.textContent ?? '')
 
 describe('Keep with the launch gift', () => {
-  it('asks once, beside the gift, and says when the credits arrive', () => {
+  it('asks once, beside the gift, and says when the gift arrives', () => {
     const { beat, onCreateAccount } = renderKeep({ gift: LAUNCH })
 
     expect(beat.querySelector('h1')).toHaveTextContent('Keep your voiceprint')
@@ -75,9 +75,11 @@ describe('Keep with the launch gift', () => {
     ])
     const gift = screen.getByTestId('keep-gift')
     expect(gift).toHaveTextContent('Launch gift')
-    expect(gift).toHaveTextContent('5 free Karaoke Night credits')
+    // Named by what it buys, not by the coins it is paid in (owner
+    // testing, 11 Oct 2026). "Up to": a long song or a full band costs more.
+    expect(gift).toHaveTextContent('Up to 5 free song separations')
     expect(gift).toHaveTextContent(
-      'Take the voice out of up to 5 songs and sing with the band.',
+      'Sing your favorite songs at Karaoke Night and see how you score.',
     )
     // Each width shows one of these; the other is hidden by the stylesheet.
     expect(gift.querySelector('[data-copy="wide"]')).toHaveTextContent(
@@ -87,7 +89,7 @@ describe('Keep with the launch gift', () => {
       /^Until 1 January$/,
     )
     expect(beat).toHaveTextContent(
-      'Credits arrive when your email is confirmed.',
+      'Your gift arrives when your email is confirmed.',
     )
 
     // One button. Declining is the rail's "Not now", not a second button.
@@ -114,15 +116,15 @@ describe('Keep with the launch gift', () => {
     )
     expect(screen.queryByTestId('keep-range')).toBeNull()
     expect(screen.getByTestId('keep-gift')).toHaveTextContent(
-      '5 free Karaoke Night credits',
+      'Up to 5 free song separations',
     )
   })
 
-  it('names the credits the code gives', () => {
+  it('counts the separations the code gives', () => {
     renderKeep({ gift: { code: 'WINTER', credits: 8, expiresAt: null } })
     const gift = screen.getByTestId('keep-gift')
-    expect(gift).toHaveTextContent('8 free Karaoke Night credits')
-    expect(gift).toHaveTextContent('up to 8 songs')
+    expect(gift).toHaveTextContent('Up to 8 free song separations')
+    expect(gift).not.toHaveTextContent('5')
     expect(gift).toHaveTextContent('With a free account.')
   })
 })
@@ -140,8 +142,9 @@ describe('Keep with no code on offer', () => {
     expect(beat).toHaveTextContent(
       'Without an account, it stays in this browser only.',
     )
-    expect(beat).not.toHaveTextContent('Credits arrive')
+    expect(beat).not.toHaveTextContent('gift arrives')
     expect(beat).not.toHaveTextContent('credits')
+    expect(beat).not.toHaveTextContent('separations')
   })
 
   it('keeps the twin headline without a gift', () => {
@@ -197,18 +200,18 @@ describe('the Map gift lines', () => {
     const { map, onGift } = renderMap({ kind: 'join', credits: 5 })
 
     const karaoke = map.querySelector('[data-room="karaoke"]')
-    expect(karaoke).toHaveTextContent('5 free credits')
-    // Only the room that uses the credits wears them.
+    expect(karaoke).toHaveTextContent('Launch gift')
+    // Only the room the gift is for wears the tag.
     const tagged = [...map.querySelectorAll('[data-room]')].filter((card) =>
-      card.textContent?.includes('free credits'),
+      card.textContent?.includes('Launch gift'),
     )
     expect(tagged.map((card) => card.getAttribute('data-room'))).toEqual([
       'karaoke',
     ])
     expect(map).toHaveTextContent(
-      'Launch gift: 5 free Karaoke Night credits with a free account.',
+      'Launch gift: up to 5 free song separations with a free account.',
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Get my 5 credits' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Get my gift' }))
     expect(onGift).toHaveBeenCalledOnce()
   })
 
@@ -220,12 +223,12 @@ describe('the Map gift lines', () => {
       'Your voiceprint is saved in this browser only.',
     )
     fireEvent.click(
-      screen.getByRole('button', { name: 'Save it and get 5 free credits' }),
+      screen.getByRole('button', { name: 'Save it and get the launch gift' }),
     )
     expect(onGift).toHaveBeenCalledOnce()
     expect(onKeep).not.toHaveBeenCalled()
     expect(map.querySelector('[data-room="karaoke"]')).not.toHaveTextContent(
-      'free credits',
+      'Launch gift',
     )
   })
 
@@ -233,7 +236,7 @@ describe('the Map gift lines', () => {
     const { map, onGift } = renderMap({ kind: 'waiting', credits: 5 })
 
     expect(map).toHaveTextContent(
-      'Your launch gift is waiting: 5 Karaoke Night credits.',
+      'Your launch gift is waiting: up to 5 free song separations.',
     )
     fireEvent.click(screen.getByRole('button', { name: 'Claim them' }))
     expect(onGift).toHaveBeenCalledOnce()
@@ -245,6 +248,7 @@ describe('the Map gift lines', () => {
 
     expect(map).not.toHaveTextContent('Launch gift')
     expect(map).not.toHaveTextContent('free credits')
+    expect(map).not.toHaveTextContent('separations')
     fireEvent.click(
       screen.getByRole('button', { name: 'Save it to a free account' }),
     )

@@ -122,4 +122,18 @@ describe('pickFirstStop', () => {
       expect(pickFirstStop(r).reason.length).toBeGreaterThan(0)
     }
   })
+
+  it('words every reason without an em dash', () => {
+    // The owner's product voice for visible copy: a full stop or a colon.
+    const reasons = [
+      null,
+      result(),
+      result({ steadiness: steadiness(10) }),
+      result({ accuracy: accuracy(10) }),
+      result({ range: range(4) }),
+    ].map((r) => pickFirstStop(r).reason)
+
+    expect(new Set(reasons).size).toBe(5)
+    expect(reasons.filter((reason) => reason.includes('—'))).toEqual([])
+  })
 })

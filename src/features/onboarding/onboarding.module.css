@@ -18,9 +18,22 @@
   --ob-ground: #0d1117;
   --ob-ink: #e6edf3;
   --ob-ink-2: #a8b3bf;
-  --ob-ink-3: #6e7681;
+  /* 5.1:1 on the ground. It was #6e7681, 4.1:1, which failed WCAG AA
+     for the small type it carries (eyebrows, the consent line) even
+     before Merc's pictures went in behind it. */
+  --ob-ink-3: #7d8590;
   --ob-rule: #30363d;
   --ob-card: rgba(28, 33, 40, 0.72);
+  /* A card over a painted plate: opaque enough that its small type
+     clears AA over the brightest part of the picture (Merc himself). */
+  --ob-card-solid: rgba(28, 33, 40, 0.9);
+  /* Behind the rail's exits (see .railNotNow). */
+  --ob-rail-pill: color-mix(in srgb, var(--ob-ground) 78%, transparent);
+  --ob-rail-pill-hover: color-mix(
+    in srgb,
+    var(--ob-ink) 10%,
+    var(--ob-rail-pill)
+  );
   --ob-blue: #58a6ff;
   --ob-teal: #2dd4bf;
   --ob-violet: #bc8cff;
@@ -43,21 +56,36 @@
   isolation: isolate;
 }
 
-/* ── The sky plate ───────────────────────────────────────────────
-   Generated backdrop: a quicksilver ribbon across the top, star
-   clusters at the edges, empty in the middle where the copy sits.
+/* ── The plates ──────────────────────────────────────────────────
+   One picture behind each beat; plates.ts says which. Each plate
+   mounts fresh when the picture changes and fades in over the ground
+   (a `from`-only keyframe, so it settles on the plate's own opacity).
+
+   Missing files degrade to the bare ground plus the canvas field. */
+.plate {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: plateIn 0.7s var(--ob-ease) backwards;
+}
+
+@keyframes plateIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The plain sky: a quicksilver ribbon across the top, star clusters at
+   the edges, empty in the middle where the copy sits. Behind the beats
+   that bring their own pictures.
 
    `screen` is doing real work here, not decoration. The plate's dark
    areas are not the same black as --ob-ground, so painting it
    normally would leave a visible rectangle edge wherever `cover`
    didn't reach. Under screen, black contributes nothing and only the
    ribbon and stars composite through — the plate can never be darker
-   than the ground, at any aspect ratio, with no black-point matching.
-
-   Missing files degrade to the bare ground plus the canvas field. */
-.plate {
-  position: absolute;
-  inset: 0;
+   than the ground, at any aspect ratio, with no black-point matching. */
+.plate[data-plate='plain'] {
   /* Sized to WIDTH and anchored top — deliberately not `cover`. Cover has
      to fill both axes, so on a tall or square viewport it scales a 16:9
      plate enormously and the ribbon swallows the headline. At `100% auto`
@@ -67,22 +95,210 @@
   background: url('/onboarding/sky-wide.webp') top center / 100% auto no-repeat;
   mix-blend-mode: screen;
   opacity: 0.7;
-  pointer-events: none;
 }
 
-/* A genuine portrait recomposition, not a crop — the ribbon sits in
-   the top fifth and the stars run down the sides. */
-@media (max-aspect-ratio: 1/1) {
-  .plate {
-    background-image: url('/onboarding/sky-tall.webp');
+/* Behind the word beats and the voiceprint the plain plate steps well
+   back, so its lines stop running through the copy. The plain plate's own
+   selector plus the class: it outranks the 0.7 above on specificity, not
+   on which rule comes later. */
+.plate[data-plate='plain'].plateRecede {
+  opacity: 0.28;
+}
+
+/* Merc's scenes (owner decision V5): painted for this frame, dark in the
+   middle where the copy sits, Merc at the side of a wide screen and at
+   the top of a tall one. They cover the frame at full strength. */
+.plateArt {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.plate[data-plate='sky'] {
+  background-image: url('/onboarding/merc-sky-wide.webp');
+}
+
+.plate[data-plate='first-light'] {
+  background-image: url('/onboarding/merc-first-light-v2-wide.webp');
+  /* The star is pinned to its place in the picture in this box's units. */
+  container-type: size;
+}
+
+/* First light's star, split from its plate (art/tools/star-split.py in
+   the art folder) so the sky stays dark until the first note lands.
+   Pinned to where it was painted: the plate covers the frame from its
+   centre, so one source pixel is the larger of the frame's width / 1672
+   and height / 941, and the star's centre is (1370, 147) in the master.
+   The layer is 300 source pixels square, centred on it.
+
+   The blend sits on this box, not on the two layers inside it: the
+   `translate` makes it a group of its own, and a layer inside a group
+   blends only with the group. Screened from in there, the star's black
+   ground painted a dark square over the sky. */
+.plateStar {
+  --u: max(calc(100cqw / 1672), calc(100cqh / 941));
+  position: absolute;
+  left: calc(50cqw + (1370 - 836) * var(--u));
+  top: calc(50cqh + (147 - 470.5) * var(--u));
+  width: calc(300 * var(--u));
+  height: calc(300 * var(--u));
+  translate: -50% -50%;
+  mix-blend-mode: screen;
+}
+
+.plateStarGlow,
+.plateStarLight {
+  position: absolute;
+  inset: 0;
+}
+
+/* The voice's pull before the note: a violet bloom whose strength is the
+   live mic level (--voice, 0 to 1, set by FirstLight). The star's own
+   blue, held under its brightness, so the note that lights it still
+   reads as the payoff. */
+.plateStarGlow {
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(110, 120, 255, 0.6),
+    rgba(100, 80, 255, 0.22) 40%,
+    transparent 75%
+  );
+  opacity: calc(0.08 + 0.6 * var(--voice, 0));
+  scale: calc(0.55 + 0.4 * var(--voice, 0));
+  transition:
+    opacity 0.12s linear,
+    scale 0.12s linear;
+}
+
+/* The star itself, exactly as painted: the layer screens back over the
+   plate it was split from. */
+.plateStarLight {
+  background: url('/onboarding/merc-first-light-star-wide.webp') center / 100%
+    100% no-repeat;
+  opacity: 0;
+}
+
+.plateStar[data-lit='true'] .plateStarLight {
+  opacity: 1;
+  animation: starIgnite 1.2s var(--ob-ease) both;
+}
+
+.plateStar[data-lit='true'] .plateStarGlow {
+  opacity: 0;
+  transition: opacity 0.9s var(--ob-ease);
+}
+
+@keyframes starIgnite {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+    filter: brightness(2.2);
+  }
+  35% {
+    opacity: 1;
+    scale: 1.15;
+    filter: brightness(1.7);
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    filter: none;
   }
 }
 
-/* Behind the Map the plate steps well back. That beat is dense — six
-   cards, a side-door strip and a CTA — and the artwork has to stop
-   competing with the thing it is framing. */
-.plateRecede {
-  opacity: 0.28;
+/* Merc keeps watch from a floating island in the top left corner, facing
+   the viewer: beside the headline and above the cards at every desktop
+   width from 1024 px up (at 1440x900 he spans x 80-268, y 48-206, and the
+   cards start at y 225). Anchored top left so he stays put as the window
+   changes shape. The tall cut puts him top centre, over the words. */
+.plate[data-plate='map'] {
+  background-image: url('/onboarding/merc-map-v2-wide.webp');
+  background-position: left top;
+}
+
+/* The scrim. The composition keeps the copy column dark at the shapes
+   the art was painted for; this keeps it dark at every other shape,
+   so the beat's text clears WCAG AA over any part of the picture. */
+.plateArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 38% 64% at 50% 50%,
+    color-mix(in srgb, var(--ob-ground) 74%, transparent),
+    color-mix(in srgb, var(--ob-ground) 52%, transparent) 62%,
+    transparent 100%
+  );
+}
+
+/* Tall windows get a genuine portrait recomposition, not a crop: Merc
+   at the top, the copy below him. */
+@media (max-aspect-ratio: 1/1) {
+  .plate[data-plate='plain'] {
+    background-image: url('/onboarding/sky-tall.webp');
+  }
+
+  .plate[data-plate='sky'] {
+    background-image: url('/onboarding/merc-sky-tall.webp');
+    background-position: center top;
+  }
+
+  .plate[data-plate='first-light'] {
+    background-image: url('/onboarding/merc-first-light-v2-tall.webp');
+    background-position: center top;
+  }
+
+  /* The tall cut is mirrored, so its star sits top left, clear of the
+     "Not now" pill at the top right of a phone: centre (181, 86) in a
+     941x1672 master that covers the frame from the top. */
+  .plateStar {
+    --u: max(calc(100cqw / 941), calc(100cqh / 1672));
+    left: calc(50cqw + (181 - 470.5) * var(--u));
+    top: calc(86 * var(--u));
+  }
+
+  .plateStarLight {
+    background-image: url('/onboarding/merc-first-light-star-tall.webp');
+  }
+
+  .plate[data-plate='map'] {
+    background-image: url('/onboarding/merc-map-v2-tall.webp');
+    background-position: center top;
+  }
+
+  /* Merc's island ends at 18.3% of the tall cut's height. The picture
+     covers the frame from the top, so that is the larger of 32.5vw and
+     18.3vh down the screen, and the Map's words start under it. Before,
+     the cards covered him on a phone and the scrim darkened what was
+     left. 30 px: the rail and the frame's own top padding, less a gap. */
+  .mapBeat {
+    padding-top: calc(max(32.5vw, 18.3vh) - 30px);
+    padding-top: calc(max(32.5vw, 18.3dvh) - 30px);
+  }
+
+  /* The welcome's words used to start right under Merc's legs on a phone
+     (owner testing, iPhone, 11 Oct 2026), and over them on a 360 px or
+     667 px tall one. His glow ends at 30% of the tall cut's height (no
+     painted pixel is brighter than 12 of 255 below it), so max(53.3vw,
+     30dvh) down the screen. The padding carries the words past that plus
+     28 px of clear sky, less the 62 px the rail and the frame's padding
+     already give (78 px on a phone, so a phone gets 16 px more). The
+     beat's auto margins then centre what is left in the sky below him. */
+  .skyBeat {
+    padding-top: calc(max(53.3vw, 30vh) - 34px);
+    padding-top: calc(max(53.3vw, 30dvh) - 34px);
+  }
+
+  /* Merc is above the copy here, so the scrim starts below him. */
+  .plateArt::after {
+    background: linear-gradient(
+      180deg,
+      transparent 22%,
+      color-mix(in srgb, var(--ob-ground) 66%, transparent) 36%,
+      color-mix(in srgb, var(--ob-ground) 74%, transparent) 100%
+    );
+  }
 }
 
 /* The quicksilver wash — the meniscus glow the composition centres on. */
@@ -106,6 +322,18 @@
   display: block;
 }
 
+/* The star field's holder: the field fades out behind Merc's plates. */
+.field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ob-ease);
+}
+
+.fieldAway {
+  opacity: 0;
+}
+
 /* ── Rail: progress + escape ─────────────────────────────────── */
 
 .rail {
@@ -115,6 +343,9 @@
   gap: 16px;
   padding: 18px 22px 0;
   flex: 0 0 auto;
+  /* Last in the DOM, so the beat comes first in the Tab order (FirstLight);
+     first on screen. */
+  order: -1;
 }
 
 .progress {
@@ -137,25 +368,44 @@
   transition: width 0.5s var(--ob-ease);
 }
 
-.skip {
-  background: none;
+/* "Not now" on every beat but the welcome and Keep: small type, a whole
+   thumb to tap (44 px), and readable (--ob-ink-2 clears AA where Skip's
+   --ob-ink-3 did not). It is the way out, so it has to be findable
+   without competing with the beat's one button (owner decision V8).
+   The rail sits over Merc's pictures, and on a phone the first note's
+   new star lands right behind it, so the exits carry a small pill of
+   the ground: 4.5:1 or better over any picture, and next to invisible
+   over the plain sky. */
+.railNotNow {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px -8px -12px 0;
+  padding: 0 12px;
   border: 0;
-  color: var(--ob-ink-3);
-  font-size: 0.78rem;
+  border-radius: 999px;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ob-ink-2);
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 6px 4px;
-  border-radius: 6px;
-  transition: color 0.2s var(--ob-ease);
+  transition:
+    color 0.2s var(--ob-ease),
+    background-color 0.2s var(--ob-ease);
 }
 
-.skip:hover {
-  color: var(--ob-ink-2);
+@media (hover: hover) {
+  .railNotNow:hover {
+    color: var(--ob-ink);
+    background: var(--ob-rail-pill-hover);
+  }
 }
 
-.skip:focus-visible {
+.railNotNow:focus-visible {
   outline: 2px solid var(--ob-blue);
-  outline-offset: 2px;
+  outline-offset: 0;
   color: var(--ob-ink);
 }
 
@@ -171,7 +421,9 @@
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: none;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: var(--ob-ink-2);
   cursor: pointer;
   transition:
@@ -187,7 +439,7 @@
 
 .railClose:hover {
   color: var(--ob-ink);
-  background: rgba(230, 237, 243, 0.06);
+  background: var(--ob-rail-pill-hover);
 }
 
 .railClose:focus-visible {
@@ -252,6 +504,12 @@
   outline: none;
 }
 
+/* The same for each beat's heading, focused by script on every beat change
+   so a screen reader announces it. Not a control, so no ring. */
+.frame h1[tabindex='-1']:focus {
+  outline: none;
+}
+
 .beat {
   display: flex;
   flex-direction: column;
@@ -287,6 +545,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ob-ink-3);
+}
+
+/* The welcome's eyebrow is the first line anyone reads: near-white and a
+   step bigger than the other beats' (owner testing, 11 Oct 2026). */
+.skyEyebrow {
+  font-size: 0.78rem;
+  color: var(--ob-ink);
 }
 
 .headline {
@@ -381,11 +646,6 @@
 
 .consent a:hover {
   color: var(--ob-ink);
-}
-
-.mascot {
-  display: block;
-  filter: drop-shadow(0 8px 26px rgba(88, 166, 255, 0.22));
 }
 
 /* ── Actions ─────────────────────────────────────────────────── */
@@ -548,6 +808,98 @@
   max-width: 640px;
 }
 
+/* The voiceprint's one counter: four segments and the words under them.
+   The words are --ob-ink-2, not the eyebrow's --ob-ink-3: they are the
+   only place the run says how far along it is, so they must clear AA. */
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+.stepTrack {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepSegment {
+  width: 34px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ob-rule);
+  transition: background-color 0.4s var(--ob-ease);
+}
+
+.stepSegment[data-state='done'] {
+  background: var(--ob-teal);
+}
+
+.stepSegment[data-state='current'] {
+  background: linear-gradient(90deg, var(--ob-blue), var(--ob-violet));
+}
+
+/* A step the run did not take: the match, when the slides gave no range
+   to pitch its notes from. Dotted, so it reads as passed over rather
+   than done or still to come. */
+.stepSegment[data-state='skipped'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ob-ink-3) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.stepCounter {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-2);
+}
+
+/* Where the five-note match stands, through each note's three stages
+   (listen, your turn, sing): the dots fill as the notes are sung. */
+.matchProgress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.matchDots {
+  display: flex;
+  gap: 6px;
+}
+
+.matchDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ob-ink-3);
+}
+
+.matchDot[data-state='done'] {
+  border-color: var(--ob-teal);
+  background: var(--ob-teal);
+}
+
+.matchDot[data-state='current'] {
+  border-color: var(--ob-violet);
+  background: var(--ob-violet);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--ob-violet) 60%, transparent);
+}
+
+.matchLabel {
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ob-ink);
+}
+
 /* Task titles are instructions, not the flow's headline — at display
    size they shout, and they change every few seconds. */
 .headlineSmall {
@@ -676,40 +1028,8 @@
   display: block;
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.stat {
-  flex: 1 1 140px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
-  border: 1px solid var(--ob-rule);
-  border-radius: 12px;
-  background: var(--ob-card);
-}
-
-.statValue {
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.statLabel {
-  font-size: 0.72rem;
-  color: var(--ob-ink-3);
-}
-
-/* What the map screen after this one is for — quieter than .sub so the
-   stats above keep the weight. */
+/* What the map screen after this one is for: quieter than .sub so the
+   stat card above keeps the weight. */
 .mapExplainer {
   margin: 0;
   font-size: 0.85rem;
@@ -873,72 +1193,6 @@
   }
 }
 
-/* ── Fork ────────────────────────────────────────────────────── */
-
-.forkOptions {
-  display: grid;
-  gap: 12px;
-  width: 100%;
-  margin-top: 6px;
-}
-
-@media (min-width: 620px) {
-  .forkOptions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.forkCard {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  text-align: left;
-  padding: 26px 24px;
-  border-radius: 14px;
-  border: 1px solid var(--ob-rule);
-  background: var(--ob-card);
-  color: inherit;
-  cursor: pointer;
-  transition:
-    border-color 0.25s var(--ob-ease),
-    transform 0.25s var(--ob-ease);
-}
-
-.forkCard:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--ob-blue) 50%, var(--ob-rule));
-}
-
-.forkCard:focus-visible {
-  outline: 2px solid var(--ob-blue);
-  outline-offset: 2px;
-}
-
-.forkLead {
-  border-color: color-mix(in srgb, var(--ob-violet) 44%, var(--ob-rule));
-}
-
-.forkTitle {
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  font-size: 1.22rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.forkTime {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ob-ink-3);
-}
-
-.forkBody {
-  font-size: 0.86rem;
-  line-height: 1.5;
-  color: var(--ob-ink-2);
-}
-
 /* ── Beat: the voiceprint gallery ─────────────────────────────── */
 
 /* The cards are the exported share art (3:4-ish). Bounded by HEIGHT as
@@ -1054,20 +1308,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  /* The art is the point of the card; a card that shrink-wraps its two
-     lines of copy leaves it nothing to show. */
-  min-height: 148px;
   text-align: left;
-  padding: 20px;
+  padding: 0;
   border-radius: 14px;
   border: 1px solid var(--ob-rule);
-  background: var(--ob-card);
+  background: var(--ob-card-solid);
   color: inherit;
   cursor: pointer;
   text-decoration: none;
-  /* Contains the artwork, which is drawn much larger than the card and
-     scales past its edges as it settles in. */
+  /* Clips the cover to the card's corners. */
   overflow: hidden;
   isolation: isolate;
   transition:
@@ -1076,56 +1325,40 @@
     box-shadow 0.4s var(--ob-ease);
 }
 
-/* ── The reveal ───────────────────────────────────────────────────
-   The cover art, parked behind the card: pushed back, softened and
-   dim. Bringing it forward is the whole gesture — it reads as the room
-   opening up rather than a picture fading in.
-
-   The resting numbers used to be 0.16 behind a 7px blur, which was
-   below the threshold where a picture reads as a picture at all — and
-   on touch, where the hover rule below never fires, that WAS the card,
-   permanently. */
-.roomArt {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.3;
-  transform: scale(1.12);
-  filter: blur(4px) saturate(0.86);
-  transition:
-    opacity 0.75s var(--ob-ease),
-    transform 0.75s var(--ob-ease),
-    filter 0.75s var(--ob-ease);
-  pointer-events: none;
+/* The cover: Merc in the room, at rest, on every device (owner decision
+   V5). It used to be the room's own interface, blurred and dimmed until a
+   pointer hovered it, which a phone never does. A band at 3:1 rather than
+   the master's 16:9, each room's `focus` keeping Merc whole in it, so the
+   two rows of cards, the side doors, "Start singing" and the gift line
+   all fit a 1440x900 window without a scroll. */
+.roomCover {
+  display: block;
+  flex: none;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  background: var(--ob-ground);
 }
 
-.roomArt > * {
+.roomCoverImg {
+  display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
-/* Keeps the copy readable at every stage of the reveal. Deliberately
-   LIGHTER at full strength than it used to be: it arrives on the same
-   curve as the art, so a heavier scrim spent most of the reveal
-   cancelling it out. */
-.roomScrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, #0d1117 46%, transparent),
-    color-mix(in srgb, #0d1117 78%, transparent) 68%
-  );
-  opacity: 0;
-  transition: opacity 0.75s var(--ob-ease);
-  pointer-events: none;
+.roomBody {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 16px 14px;
 }
 
-/* The card's own content sits above both layers. */
-.roomCard > *:not(.roomArt):not(.roomScrim):not(.roomGift) {
-  position: relative;
-  z-index: 2;
+/* The title, with the first stop's flag beside it when it fits. */
+.roomHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
 }
 
 /* The launch gift, pinned to the Karaoke card's top right: solid amber,
@@ -1154,48 +1387,18 @@
 }
 
 /* Pointer devices only: sticky :hover on touch is a known trap
-   (PR #359). */
+   (PR #359, MISTAKES: ":hover stays on the last thing a finger
+   tapped"). Nothing a card shows depends on it. */
 @media (hover: hover) {
-  .roomCard:hover .roomArt,
-  .roomCard:focus-visible .roomArt {
-    opacity: 0.92;
-    transform: scale(1);
-    filter: blur(0) saturate(1.04);
+  .roomCard:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
   }
 
-  .roomCard:hover .roomScrim,
-  .roomCard:focus-visible .roomScrim {
-    opacity: 1;
+  .roomTour:hover {
+    color: var(--ob-teal);
   }
-}
-
-/* Touch has no hover to wait for, and a tap-to-reveal would make
-   entering a room cost two taps. So the resting state stays readable —
-   most of the way up, with the scrim already carrying the copy — and
-   scrolling a card into view (BeatMap's observer sets .roomInView) plays
-   the full reveal a pointer would have earned by hovering. */
-@media (hover: none) {
-  .roomArt {
-    opacity: 0.52;
-    transform: scale(1.04);
-    filter: blur(2px) saturate(0.95);
-  }
-
-  .roomScrim {
-    opacity: 1;
-  }
-
-  .roomCard.roomInView .roomArt {
-    opacity: 0.92;
-    transform: scale(1);
-    filter: blur(0) saturate(1.04);
-  }
-}
-
-.roomCard:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--ob-blue) 55%, var(--ob-rule));
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
 }
 
 .roomCard:focus-visible {
@@ -1207,31 +1410,14 @@
   border-color: color-mix(in srgb, var(--ob-blue) 54%, var(--ob-rule));
   background:
     linear-gradient(180deg, rgba(88, 166, 255, 0.08), transparent 62%),
-    var(--ob-card);
+    var(--ob-card-solid);
 }
 
-.roomPlate {
-  width: 38px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--ob-ink-3);
-}
-
-.roomFirst .roomPlate {
-  width: 56px;
-  background: linear-gradient(
-    90deg,
-    var(--ob-blue),
-    var(--ob-teal),
-    var(--ob-violet)
-  );
-}
-
-/* In flow, not absolute. Absolutely positioned it sat on top of the
-   title as soon as the card narrowed — the label is longer than the
-   corner it was pinned into. */
+/* In flow beside the title, not absolute. Absolutely positioned it sat
+   on top of the title as soon as the card narrowed: the label is longer
+   than the corner it was pinned into. In the title's row it wraps under
+   the title instead. */
 .roomFlag {
-  align-self: flex-start;
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--ob-blue) 45%, transparent);
@@ -1249,7 +1435,6 @@
   font-size: 1.06rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  text-shadow: 0 1px 12px rgba(6, 10, 16, 0.8);
 }
 
 .roomLine {
@@ -1265,19 +1450,25 @@
 }
 
 .roomTour {
+  position: relative;
   align-self: flex-start;
   margin-top: 4px;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--ob-ink-3);
+  /* --ob-ink-2, not -3: a control's label has to clear AA. */
+  color: var(--ob-ink-2);
   border-bottom: 1px solid currentColor;
   cursor: pointer;
   transition: color 0.2s var(--ob-ease);
 }
 
-.roomTour:hover {
-  color: var(--ob-teal);
+/* A whole thumb to tap (44 px tall), without the card growing to make
+   room for it: the hit area reaches past the words, not the layout. */
+.roomTour::before {
+  content: '';
+  position: absolute;
+  inset: -14px -12px;
 }
 
 .roomTour:focus-visible {
@@ -1289,14 +1480,37 @@
 .sideDoors {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 9px;
   margin-top: 6px;
 }
 
+/* "And also", leading the row of doors. */
+.sideDoorsLabel {
+  margin-right: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ob-ink-3);
+}
+
+/* The Map carries the most: six cards, four doors, the button and the
+   gift line. A tighter step between them is what lets the gift line
+   clear the bottom of a 1440x900 window. */
+.mapBeat {
+  gap: 14px;
+}
+
+/* Room for the Map's one sentence on two lines rather than three. */
+.mapSub {
+  max-width: 62ch;
+}
+
 /* A row of controls, not a row of outlines. At 6px/0.78rem on
    transparent these read as disabled text next to the room cards, and
-   they are eight real destinations. */
+   they are real destinations. */
 .sideDoor {
   border: 1px solid var(--ob-rule);
   border-radius: 999px;
@@ -1410,35 +1624,28 @@
     animation: none;
   }
 
+  .plate {
+    animation: none;
+  }
+
+  .field {
+    transition: none;
+  }
+
   .progressFill,
   .primary,
   .secondary,
-  .forkCard,
   .roomCard,
   .sideDoor,
-  .skip,
+  .railNotNow,
   .railClose,
   .railAction {
     transition: none;
   }
 
-  .forkCard:hover,
   .roomCard:hover,
   .primary:hover {
     transform: none;
-  }
-
-  /* The artwork still resolves on hover — losing it entirely would cost
-     the information, not just the flourish — it simply arrives without
-     the settle. */
-  .roomArt,
-  .roomScrim {
-    transition: none;
-  }
-
-  .roomArt {
-    transform: none;
-    filter: none;
   }
 
   .meterFill {
@@ -1448,6 +1655,23 @@
   /* The dot stays visible rather than pulsing — "recording" must still
      read at a glance when motion is off. */
   .recordingTag::before {
+    animation: none;
+  }
+
+  /* The step track fills without easing in. */
+  .stepSegment {
+    transition: none;
+  }
+
+  /* First light's glow still answers the voice, by brightness alone, and
+     the star comes on without the flare. */
+  .plateStarGlow,
+  .plateStar[data-lit='true'] .plateStarGlow {
+    scale: none;
+    transition: none;
+  }
+
+  .plateStar[data-lit='true'] .plateStarLight {
     animation: none;
   }
 }
@@ -1474,12 +1698,6 @@
     gap: 20px;
   }
 
-  /* Grey-on-smoke at the top of the plate, where the artwork is at its
-     busiest — the escape hatch has to be visible without a hunt. */
-  .skip {
-    color: var(--ob-ink-2);
-  }
-
   .actions {
     width: 100%;
     flex-direction: column-reverse;
@@ -1493,12 +1711,51 @@
 
   .mapGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  /* Eight chips at desktop padding become four rows on a 360px phone.
-     Trim the horizontal padding, keep the tap target. */
+  /* A row per room on a phone: a square of the cover beside the words,
+     so six rooms are a short scroll rather than six screens of pictures.
+     The square is 100 px; ROOM_COVER_SIZES in BeatMap.tsx says so too. */
+  .roomCard {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .roomCover {
+    width: 100px;
+    aspect-ratio: 1;
+    border-radius: 10px;
+  }
+
+  .roomBody {
+    flex: 1;
+    min-width: 0;
+    gap: 5px;
+    padding: 2px 0 0;
+  }
+
+  .sideDoorsLabel {
+    flex-basis: 100%;
+    margin: 0 0 2px;
+    text-align: center;
+  }
+
+  /* The four doors in one row from a 360 px phone up (measured: 306 px
+     of chips in a 316 px row), under the label's own line. A 44 px tap
+     target (owner rule), so the height comes from min-height and the
+     sides do the trimming. */
+  .sideDoors {
+    gap: 6px;
+  }
+
   .sideDoor {
-    padding: 9px 13px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
     font-size: 0.8rem;
   }
 
@@ -1507,6 +1764,43 @@
   .printRail {
     gap: 12px;
     scroll-snap-type: x mandatory;
+  }
+}
+
+/* A short phone, 320x568 (review of PR 977): the welcome's button and its
+   terms line ran 89 px below the fold, because the clear sky kept under
+   Merc's glow and the beat's spacing were sized for taller screens. Here
+   the words sit 28 px under his glow, the measure eb200eb41 set out to
+   keep (a phone's taller frame padding gave it 44), the gaps tighten, and
+   the bottom padding keeps only the home indicator's room. Taller phones
+   are untouched. */
+@media (max-aspect-ratio: 1/1) and (max-height: 600px) {
+  .frame:has(> .skyBeat) {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .skyBeat {
+    padding-top: calc(max(53.3vw, 30vh) - 50px);
+    padding-top: calc(max(53.3vw, 30dvh) - 50px);
+    gap: 12px;
+  }
+
+  .skyBeat .promises {
+    gap: 8px;
+  }
+
+  .skyBeat .promise {
+    line-height: 1.4;
+  }
+
+  .skyBeat .actions,
+  .skyBeat .consent {
+    margin-top: 0;
+  }
+
+  .skyBeat .primaryLarge {
+    min-height: 48px;
+    padding-block: 12px;
   }
 }
 

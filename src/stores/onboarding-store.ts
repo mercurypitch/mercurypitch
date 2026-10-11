@@ -57,6 +57,12 @@ const [flowOpen, setFlowOpen] = createSignal(false)
 const [currentBeat, setCurrentBeat] = createSignal<Beat>('sky')
 const [track, setTrack] = createSignal<OnboardingTrack | null>(null)
 const [voiceprint, setVoiceprint] = createSignal<MirrorResult | null>(null)
+/**
+ * The singer's glides as one line, for the twin's stat card
+ * (features/onboarding/voice-strip.ts). Recorded with its voiceprint and
+ * replaced with it, so a card never draws another run's take.
+ */
+const [voiceStrip, setVoiceStrip] = createSignal<readonly number[] | null>(null)
 const [micDenied, setMicDenied] = createSignal(false)
 /** The one note heard at beat 2, kept so beat 3 can name it back. */
 const [firstNote, setFirstNote] = createSignal<string | null>(null)
@@ -77,6 +83,7 @@ export {
   savedVoiceprints,
   track,
   voiceprint,
+  voiceStrip,
 }
 
 /**
@@ -174,8 +181,12 @@ export function chooseTrack(next: OnboardingTrack): void {
   setTrack(next)
 }
 
-export function recordVoiceprint(result: MirrorResult | null): void {
+export function recordVoiceprint(
+  result: MirrorResult | null,
+  strip: readonly number[] | null = null,
+): void {
   setVoiceprint(result)
+  setVoiceStrip(result === null ? null : strip)
 }
 
 /** Remember the single note heard at beat 2, e.g. 'G3'. */
@@ -250,6 +261,7 @@ export function resetOnboarding(): void {
   setAuthResumeBeat('')
   setTrack(null)
   setVoiceprint(null)
+  setVoiceStrip(null)
   setMicDenied(false)
   setFirstNote(null)
   setSavedVoiceprints([])

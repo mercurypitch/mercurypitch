@@ -2,19 +2,30 @@
 // Beat 3 — Fork
 // ============================================================
 //
-// Self-selected depth. Both roads reach the Map, so neither choice
-// is a trap: "Take me in" is a real option presented at the same
-// weight, not a greyed-out apology.
+// One screen, one button (owner decisions V2 and V8, 10-11 Oct 2026).
+// The voiceprint is what a new singer came for, so after the first note
+// the only button leads into it. This screen used to offer two cards of
+// equal weight, "Map my whole voice" and "Take me in", and one visitor
+// in seven took the second: a choice they made before they knew what the
+// first one gave them. Leaving is still one tap away, but it is the
+// small "Not now" at the top right of the frame (FirstLight's rail),
+// never a second button beside this one.
 //
-// The opener is what beat 2 actually heard ("That's a G3. Want the
-// whole map?").
+// The headline asks about RANGE on purpose. The legend twin is a range
+// match (`singerForRange`; legend-catalog.ts holds nothing but ranges),
+// so "sings like you" would promise a comparison of tone the app never
+// makes.
 //
-// Someone who has ALREADY mapped their voice gets a different fork.
-// Offering "map my whole voice" to a singer with four voiceprints on
-// file reads as an app that has not been paying attention, and it was
-// the lead card — so the obvious click asked them to redo ninety
-// seconds of work they had already done. They are shown what they have
-// instead, with a fresh take one deliberate click away.
+// The body's numbers are the voiceprint beat's own: four steps (glide up,
+// glide down, hold, match five), 66 seconds of timed stages (37 of them
+// singing) plus the four "I'm ready" gates. If BeatVoiceprint's script
+// changes, this sentence changes with it.
+//
+// Someone who has ALREADY mapped their voice gets a different fork: their
+// voiceprints, shown at full size, rather than a second measurement they
+// did not ask for, and under that "Make another voiceprint", which opens
+// the Voice Mirror (owner decision V12, 11 Oct 2026; V1 and V8 cover the
+// first-run path).
 
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
@@ -22,10 +33,18 @@ import { noteArticle } from '@/lib/note-utils'
 import type { OnboardingTrack } from '../flow'
 import styles from '../onboarding.module.css'
 
+/** The first-run Fork's words, exported so tests hold the copy to them. */
+export const FORK_COPY = {
+  eyebrow: 'Your first note',
+  headline: 'Which legend has a range like yours?',
+  body: 'About 90 seconds: glide up, glide down, hold a note, then match five. You get your voiceprint and your legend twin.',
+  primary: 'Find my twin',
+} as const
+
 /**
- * What beat 2 heard, in one clause. Both forks open with it, so it lives
- * in one place — and it says "an A3", never "a A3": A, E and F are read
- * out loud starting on a vowel sound.
+ * What beat 2 heard, in one clause, on the returning singer's fork. It
+ * says "an A3", never "a A3": A, E and F are read out loud starting on a
+ * vowel sound.
  */
 const SangNote: Component<{ note: string | null }> = (props) => (
   <Show when={props.note !== null}>
@@ -41,7 +60,7 @@ export interface BeatForkProps {
   /** When the newest one was taken, already formatted. Null if none. */
   savedWhen: string | null
   onChoose: (track: OnboardingTrack) => void
-  /** Leave the flow for the Voice Mirror and take a fresh voiceprint. */
+  /** A returning singer's fresh take, in the Voice Mirror. */
   onAnother: () => void
 }
 
@@ -51,13 +70,18 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
       when={props.savedCount > 0}
       fallback={
         <>
-          <p class={styles.eyebrow}>Two ways in</p>
-          <h1 class={styles.headline}>Want the whole map?</h1>
-          <p class={styles.sub}>
-            <SangNote note={props.firstNote} />A minute and a half of singing
-            tells us the rest — your range, how steady you hold a note, and how
-            close your ear lands. Or skip it; you can do this any time.
-          </p>
+          <p class={styles.eyebrow}>{FORK_COPY.eyebrow}</p>
+          <h1 class={styles.headline}>{FORK_COPY.headline}</h1>
+          <p class={styles.sub}>{FORK_COPY.body}</p>
+          <div class={styles.actions}>
+            <button
+              type="button"
+              class={`${styles.primary} ${styles.primaryLarge}`}
+              onClick={() => props.onChoose('full')}
+            >
+              {FORK_COPY.primary}
+            </button>
+          </div>
         </>
       }
     >
@@ -74,73 +98,26 @@ export const BeatFork: Component<BeatForkProps> = (props) => (
         <Show when={props.savedWhen !== null}>
           , the newest from {props.savedWhen}
         </Show>
-        . Look at {props.savedCount === 1 ? 'it' : 'them'}, take a fresh one, or
-        go straight in.
+        . Open {props.savedCount === 1 ? 'it' : 'them'} to see your twin and
+        range again.
       </p>
-    </Show>
-
-    <div class={styles.forkOptions}>
-      <Show
-        when={props.savedCount > 0}
-        fallback={
-          <button
-            type="button"
-            class={`${styles.forkCard} ${styles.forkLead}`}
-            onClick={() => props.onChoose('full')}
-          >
-            <span class={styles.forkTime}>About 90 seconds</span>
-            <span class={styles.forkTitle}>Map my whole voice</span>
-            <span class={styles.forkBody}>
-              Three short exercises. You get your range, your steadiness, and
-              the legendary singer your voice overlaps with.
-            </span>
-          </button>
-        }
-      >
+      <div class={styles.actions}>
         <button
           type="button"
-          class={`${styles.forkCard} ${styles.forkLead}`}
+          class={`${styles.primary} ${styles.primaryLarge}`}
           onClick={() => props.onChoose('gallery')}
         >
-          <span class={styles.forkTime}>Straight away</span>
-          <span class={styles.forkTitle}>
-            {props.savedCount === 1
-              ? 'See my voiceprint'
-              : 'See my voiceprints'}
-          </span>
-          <span class={styles.forkBody}>
-            Your {props.savedCount === 1 ? 'take' : 'takes'} at full size —
-            twin, range and steadiness — then on to your map.
-          </span>
+          {props.savedCount === 1 ? 'See my voiceprint' : 'See my voiceprints'}
         </button>
-
         <button
           type="button"
-          class={styles.forkCard}
+          class={styles.secondary}
           onClick={() => props.onAnother()}
         >
-          <span class={styles.forkTime}>About 90 seconds</span>
-          <span class={styles.forkTitle}>Make another voiceprint</span>
-          <span class={styles.forkBody}>
-            A voice moves. Take a fresh one in the Voice Mirror and watch the
-            two of them side by side.
-          </span>
+          Make another voiceprint
         </button>
-      </Show>
-
-      <button
-        type="button"
-        class={styles.forkCard}
-        onClick={() => props.onChoose('short')}
-      >
-        <span class={styles.forkTime}>Straight away</span>
-        <span class={styles.forkTitle}>Take me in</span>
-        <span class={styles.forkBody}>
-          Go to the app now. The full voice map stays on your home screen
-          whenever you want it.
-        </span>
-      </button>
-    </div>
+      </div>
+    </Show>
   </div>
 )
 

@@ -12,7 +12,7 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Switch } from 'solid-js'
+import { createEffect, createSignal, Match, on, onMount, Show, Switch, } from 'solid-js'
 import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
@@ -26,7 +26,7 @@ import { singerForRange } from '@/lib/mirror/singer-match'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { startPageTour } from '@/stores/app-store'
 import { claimGiftNow, giftWaiting, rememberGiftOffered, } from '@/stores/launch-gift-store'
-import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, } from '@/stores/onboarding-store'
+import { advanceBeat, chooseTrack, closeOnboarding, currentBeat, finishOnboarding, firstNote, markMicDenied, micDenied, onboardingBeads, onboardingProgress, openBeat, recordFirstNote, recordSavedVoiceprints, recordVoiceprint, savedVoiceprints, setBeatsAvailable, voiceprint, voiceStrip, } from '@/stores/onboarding-store'
 import { loadFeaturedPromo, offeredPromo } from '@/stores/promo-store'
 import { openAuthModal, setActiveTab } from '@/stores/ui-store'
 import { dismissNudge, shouldShowNudge } from './account-nudge'
@@ -42,9 +42,12 @@ import { BeatVoiceprint } from './beats/BeatVoiceprint'
 import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
+import type { Plate } from './plates'
+import { plateFor, platesAhead, plateSrc, TALL_QUERY } from './plates'
 import type { RoomTarget } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
+import { glideStrip } from './voice-strip'
 
 /**
  * The beats this build can render. Phase 3 adds 'keep'. Anything absent
@@ -152,8 +155,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       handleReopenAccount()
       return
     }
-    // The gift is Karaoke Night credits, so the welcome mail wears that
-    // room's picture.
+    // The gift is song separations for Karaoke Night, so the welcome mail
+    // wears that room's picture.
     rememberGiftOffered()
     openAuthModal('register', { signupSource: 'karaoke' })
   }
@@ -177,11 +180,22 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   }
 
   /**
-   * A fresh voiceprint for someone who already has one. This is the
-   * Voice Mirror, the same destination Settings offers — a real page,
-   * so the overlay closes first, exactly as `handleEnterRoom` does for
-   * its page targets, or Back lands inside a dead onboarding.
+   * The Fork's "Not now": the Map, with nothing measured (owner decision
+   * V3). It is the old "Take me in" card moved to the top right, so it
+   * keeps that card's event, `onboarding_track_short`, and stays countable
+   * apart from the welcome's skip (`onboarding_skipped`).
+   *
+   * Straight to the Map, never through the traversal: a replay that still
+   * holds this session's voiceprint has the account ask due, and the next
+   * beat after the Fork would be Keep (review of PR 977). The voiceprint
+   * stays where it is (V13).
    */
+  const handleForkNotNow = () => {
+    chooseTrack('short')
+    trackOnboarding(TRACK_EVENT.short)
+    openBeat('map')
+  }
+
   /** Share the voiceprint that was just made. Resolves to a line worth
    *  saying afterwards, and only for the one outcome nothing else announces:
    *  the share sheet speaks for itself and a saved file shows in the browser,
@@ -214,6 +228,8 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       : null
   }
 
+  /** A returning singer's fresh take: the Voice Mirror, where a voiceprint
+   *  is made outside the flow (owner decision V12). */
   const handleAnotherVoiceprint = () => {
     trackOnboarding('onboarding_another_voiceprint')
     leave()
@@ -234,6 +250,11 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     })
   }
 
+  /** The live mic level while First light listens, 0 otherwise. */
+  const [voiceLevel, setVoiceLevel] = createSignal(0)
+  /** That level as the star's glow, 0 to 1, on the meter's own scale. */
+  const voiceGlow = (): number => Math.min(1, voiceLevel() * 12)
+
   const handleHeard = (note: SettledNote) => {
     trackOnboarding('onboarding_mic_granted')
     recordFirstNote(note.note)
@@ -250,8 +271,9 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     advanceBeat()
   }
 
-  const handleVoiceprint = (result: MirrorResult, _glides: F0Frame[][]) => {
-    recordVoiceprint(result)
+  const handleVoiceprint = (result: MirrorResult, glides: F0Frame[][]) => {
+    // The glides travel on as one line for the twin's stat card.
+    recordVoiceprint(result, glideStrip(glides, result.range))
     const matched = singerForRange(result.range)
     setTwin(matched)
 
@@ -333,10 +355,53 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     leave()
   }
 
+  /**
+   * "Not now" on First light, the voiceprint, the twin and the prints: the
+   * Map, as the Fork's does (owner decision V9, 11 Oct 2026), rather than
+   * out of the flow onto an app the visitor has not been shown. Nothing is
+   * measured on the way: a voiceprint run in progress is dropped with its
+   * beat. The event stays `onboarding_skipped`, so the skip rate reads
+   * straight across the change; the Map then counts its own arrival.
+   */
+  const handleNotNow = () => {
+    trackOnboarding('onboarding_skipped')
+    openBeat('map')
+  }
+
   /** The beats that are mostly words: the sky recedes behind them, so its
    *  lines do not run through the copy. */
   const textHeavy = (): boolean =>
     currentBeat() === 'map' || currentBeat() === 'keep'
+
+  /** The picture behind the current beat (plates.ts). */
+  const plate = (): Plate => plateFor(currentBeat())
+
+  /** The plain sky recedes behind the word beats, and behind the
+   *  voiceprint: on a wide screen its brightest lines cross the step
+   *  counter and the instructions at the top of the frame (measured at
+   *  2.1:1 against the counter before this). The stars stay as they are;
+   *  only the picture steps back. */
+  const plateRecedes = (): boolean =>
+    textHeavy() || currentBeat() === 'voiceprint'
+
+  // Fetch the next beats' pictures while this one is being read, so the
+  // next plate fades in on its picture rather than on an empty frame.
+  const fetched = new Set<string>()
+  createEffect(() => {
+    const ahead = platesAhead(currentBeat())
+    if (ahead.length === 0 || typeof Image === 'undefined') return
+    const tall =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(TALL_QUERY).matches
+    for (const next of ahead) {
+      const src = plateSrc(next, tall)
+      if (fetched.has(src)) continue
+      fetched.add(src)
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = src
+    }
+  })
 
   const handleDone = () => {
     trackOnboarding('onboarding_done')
@@ -376,6 +441,29 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
     initialFocus: () => frameRef,
   })
 
+  // Every beat after the first opens on its heading, focused by script
+  // (tabindex -1, so never a Tab stop), and at the top of the frame. A
+  // screen reader announces where the visitor landed, and the next Tab
+  // starts inside the new beat. Without it the button that was just
+  // pressed unmounted with its beat, focus fell to the page, and the
+  // trap's fallback handed the next Tab to the first control in the
+  // overlay, which was the way out.
+  createEffect(
+    on(
+      currentBeat,
+      () => {
+        const frame = frameRef
+        if (frame === undefined) return
+        frame.scrollTop = 0
+        const heading = frame.querySelector<HTMLElement>('[data-beat] h1')
+        if (heading === null) return
+        heading.tabIndex = -1
+        heading.focus({ preventScroll: true })
+      },
+      { defer: true },
+    ),
+  )
+
   return (
     <div
       ref={overlayRef}
@@ -389,64 +477,61 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       // swallowing the clicks of every spec that dismisses overlays.
       data-onboarding-flow
     >
-      <div
-        class={`${styles.plate} ${textHeavy() ? styles.plateRecede : ''}`}
-        aria-hidden="true"
-      />
+      {/* Keyed, so a new picture mounts fresh and fades in over the
+          ground rather than snapping in under the beat's own entrance. */}
+      <Show when={plate()} keyed>
+        {(art) => (
+          <div
+            class={`${styles.plate} ${
+              art === 'plain'
+                ? plateRecedes()
+                  ? styles.plateRecede
+                  : ''
+                : styles.plateArt
+            }`}
+            data-plate={art}
+            aria-hidden="true"
+          >
+            {/* First light's star is painted apart from its picture, so
+                the sky stays dark until the first note lands (owner
+                decision V11). Before that, a glow where it will light
+                follows the voice; the note lights the star itself. It
+                stays lit behind the Fork, which shares the picture. */}
+            <Show when={art === 'first-light'}>
+              <span
+                class={styles.plateStar}
+                data-star
+                data-lit={firstNote() !== null ? 'true' : 'false'}
+                style={{
+                  '--voice': String(Math.round(voiceGlow() * 100) / 100),
+                }}
+              >
+                <span class={styles.plateStarGlow} />
+                <span class={styles.plateStarLight} />
+              </span>
+            </Show>
+          </div>
+        )}
+      </Show>
       {/* The arc is the same walk the hairline measures, drawn as a
           journey: one bead per beat, lit behind, accented under foot,
           hollow ahead. */}
-      <StarField
-        recede={textHeavy()}
-        beads={onboardingBeads().count}
-        beadIndex={onboardingBeads().index}
-      />
-
-      <div class={styles.rail}>
-        <div class={styles.progress}>
-          {/* Floored at 10%: an empty bar on the first screen reads as
-              "nothing has happened yet", and endowed progress is the
-              cheapest honest encouragement we have. */}
-          <div
-            class={styles.progressFill}
-            style={{
-              width: `${Math.max(10, Math.round(onboardingProgress() * 100))}%`,
-            }}
-          />
-        </div>
-        {/* One way out, top right, and never two. The welcome's is a
-            close button: the beat itself carries one action. On Keep it
-            is "Not now", in words, at full contrast: declining is an
-            answer to the question on screen, not an escape from the flow. */}
-        <Switch>
-          <Match when={currentBeat() === 'sky'}>
-            <button
-              type="button"
-              class={styles.railClose}
-              aria-label="Skip the intro"
-              title="Skip the intro"
-              onClick={handleSkip}
-            >
-              <span aria-hidden="true">
-                <X />
-              </span>
-            </button>
-          </Match>
-          <Match when={currentBeat() === 'keep'}>
-            <button
-              type="button"
-              class={styles.railAction}
-              onClick={handleDismissAccount}
-            >
-              Not now
-            </button>
-          </Match>
-          <Match when={currentBeat() !== 'map'}>
-            <button type="button" class={styles.skip} onClick={handleSkip}>
-              Skip
-            </button>
-          </Match>
-        </Switch>
+      {/* Merc's plates paint their own sky, and on a phone the arc's
+          beads would sit on Merc himself, so the field steps out while
+          one is up. It stays mounted, so its sweep and lit beads are
+          where they were when it comes back, and paused, so it draws
+          nothing while it is away. */}
+      <div
+        class={styles.field}
+        classList={{ [styles.fieldAway]: plate() !== 'plain' }}
+        aria-hidden="true"
+      >
+        <StarField
+          recede={textHeavy()}
+          paused={plate() !== 'plain'}
+          beads={onboardingBeads().count}
+          beadIndex={onboardingBeads().index}
+        />
       </div>
 
       <div ref={frameRef} class={styles.frame} tabIndex={-1}>
@@ -459,6 +544,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               onHeard={handleHeard}
               onContinue={() => advanceBeat()}
               onDenied={handleMicDenied}
+              onLevel={setVoiceLevel}
             />
           </Match>
           <Match when={currentBeat() === 'fork'}>
@@ -487,6 +573,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
           <Match when={currentBeat() === 'twin' && voiceprint() !== null}>
             <BeatTwin
               result={voiceprint() as MirrorResult}
+              strip={voiceStrip()}
               onContinue={() => advanceBeat()}
               onShare={handleShareVoiceprint}
             />
@@ -521,6 +608,73 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
               gift={gift()}
               onCreateAccount={handleCreateAccount}
             />
+          </Match>
+        </Switch>
+      </div>
+
+      {/* After the frame in the DOM, so Tab reaches the beat's own controls
+          before the way out; `order` keeps it at the top on screen. */}
+      <div class={styles.rail}>
+        <div class={styles.progress}>
+          {/* Floored at 10%: an empty bar on the first screen reads as
+              "nothing has happened yet", and endowed progress is the
+              cheapest honest encouragement we have. */}
+          <div
+            class={styles.progressFill}
+            style={{
+              width: `${Math.max(10, Math.round(onboardingProgress() * 100))}%`,
+            }}
+          />
+        </div>
+        {/* One way out, top right, and never two (owner decisions V1 and
+            V8). The welcome's is a close button: the beat itself carries
+            one action. Everywhere else it is "Not now", in words. On Keep
+            it declines the account and moves on to the Map, at full
+            contrast: declining is an answer to the question on screen. On
+            the Fork it is the old "Take me in" card, so it lands on the
+            Map without a voiceprint. On the other beats it lands on the
+            Map too (V9). The Map is the last beat; its rooms are the way
+            out. */}
+        <Switch>
+          <Match when={currentBeat() === 'sky'}>
+            <button
+              type="button"
+              class={styles.railClose}
+              aria-label="Skip the intro"
+              title="Skip the intro"
+              onClick={handleSkip}
+            >
+              <span aria-hidden="true">
+                <X />
+              </span>
+            </button>
+          </Match>
+          <Match when={currentBeat() === 'keep'}>
+            <button
+              type="button"
+              class={styles.railAction}
+              onClick={handleDismissAccount}
+            >
+              Not now
+            </button>
+          </Match>
+          <Match when={currentBeat() === 'fork'}>
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleForkNotNow}
+            >
+              Not now
+            </button>
+          </Match>
+          <Match when={currentBeat() !== 'map'}>
+            <button
+              type="button"
+              class={styles.railNotNow}
+              onClick={handleNotNow}
+            >
+              Not now
+            </button>
           </Match>
         </Switch>
       </div>

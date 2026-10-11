@@ -17,6 +17,11 @@
 // Rendering is per-record and lazy: each card is a canvas built from a
 // 928x1152 portrait, and a singer with a dozen takes must not pay for
 // twelve of them on mount.
+//
+// "Make another voiceprint" sits beside "See my map" (owner decision V12,
+// 11 Oct 2026): it opens the Voice Mirror for a fresh take. The one-way-
+// out rule (V1, V8) is about leaving the flow for nothing; this leaves it
+// for the thing a returning singer may have come back to do.
 
 import type { Component } from 'solid-js'
 import { createMemo, createResource, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
@@ -30,7 +35,7 @@ export interface BeatPrintsProps {
   records: readonly VoiceprintRecord[]
   /** On to the Map. */
   onContinue: () => void
-  /** Leave the flow for the Voice Mirror and take a fresh one. */
+  /** A fresh take, in the Voice Mirror. */
   onAnother: () => void
   /** Open the saved match map without leaving this returning-user beat. */
   onExplore: () => void
@@ -155,7 +160,7 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
       <p class={styles.sub}>
         <Show
           when={count() > 1}
-          fallback="This is the take we have on record. Make another whenever you like — a voice moves."
+          fallback="This is the take we have on record. With a second one beside it, you can watch your voice change."
         >
           Newest first, then every take before it. Watching them change is the
           point of keeping more than one.
@@ -186,7 +191,7 @@ export const BeatPrints: Component<BeatPrintsProps> = (props) => {
           class={styles.secondary}
           onClick={() => props.onAnother()}
         >
-          Make another
+          Make another voiceprint
         </button>
         <button
           type="button"

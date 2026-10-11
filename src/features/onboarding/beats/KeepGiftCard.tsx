@@ -4,9 +4,14 @@
 //
 // Beside the account ask while the server features a promo code
 // (promo-store): five credits, drawn as five amber tokens with Merc, and
-// what they are for in one line. On a desktop it is the right-hand column,
+// what they buy in one line. On a desktop it is the right-hand column,
 // the art across its top; on a phone it sits under the rows, the tokens in a
-// row with Merc beside them, and the copy shortens to fit.
+// row with Merc beside them, and the fine print shortens to fit.
+//
+// Named by what the credits buy (owner testing, 11 Oct 2026): a credit
+// splits one song of up to 12 minutes into voice and band, and a longer
+// song or a full band split costs more, so the title says "up to". The
+// lines live in ../copy.ts.
 //
 // It renders only while a code is on offer, and promo-store already drops a
 // code that has ended or filled, so nothing here needs a release when the
@@ -17,6 +22,7 @@ import { For, Show } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { Mascot } from '@/components/Mascot'
 import type { FeaturedPromo } from '@/db/services/billing-service'
+import { GIFT_BODY, giftTitle } from '../copy'
 import keep from '../keep.module.css'
 
 /** "1 January": the day the offer ends, in UTC, where the server ends it. */
@@ -51,13 +57,8 @@ export const KeepGiftCard: Component<{ gift: FeaturedPromo }> = (props) => {
 
       <div class={keep.giftCopy}>
         <p class={keep.giftEyebrow}>Launch gift</p>
-        <p class={keep.giftTitle}>
-          {props.gift.credits} free Karaoke Night credits
-        </p>
-        <p class={keep.giftBody}>
-          Take the voice out of up to {props.gift.credits} songs
-          <span class={keep.wideOnly}> and sing with the band</span>.
-        </p>
+        <p class={keep.giftTitle}>{giftTitle(props.gift.credits)}</p>
+        <p class={keep.giftBody}>{GIFT_BODY}</p>
         <Show
           when={until()}
           fallback={<p class={keep.giftFine}>With a free account.</p>}

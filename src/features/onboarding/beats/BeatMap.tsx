@@ -8,15 +8,23 @@
 //
 // This beat is also mounted on its own for replays (#/map), which is
 // why it takes its content as props and owns no flow state.
+//
+// Every card wears its room's cover, Merc in that room, at rest and in
+// full (owner decision V5, 10 Oct 2026). The cards used to show each
+// room's own interface drawn small, blurred and dimmed until a pointer
+// hovered it, and a phone has no pointer to hover with: on touch the
+// art never came forward at all. Nothing here waits on hover now. On a
+// phone the cards are rows, a square of the cover beside the words, so
+// six rooms fit in a scroll a thumb can manage.
 
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Match, onCleanup, Show, Switch, } from 'solid-js'
+import { createMemo, For, Match, Show, Switch } from 'solid-js'
 import { CreditCoin } from '@/components/billing/CreditCoin'
 import { GiftIcon } from '@/components/billing/GiftIcon'
-import { DestinationArtwork } from '@/features/home/DestinationGallery'
 import type { ActiveTab } from '@/features/tabs/constants'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { hasPageTour } from '@/stores/app-store'
+import { KARAOKE_GIFT_TAG, MAP_GIFT_JOIN_LINK, MAP_KEEP_GIFT_LINK, mapGiftJoin, mapGiftWaiting, } from '../copy'
 import { pickFirstStop } from '../first-stop'
 import styles from '../onboarding.module.css'
 import type { Room, RoomTarget, SideDoor } from '../rooms'
@@ -34,6 +42,17 @@ export interface MapGift {
   kind: 'join' | 'keep' | 'waiting'
   credits: number
 }
+
+/**
+ * The cover's rendered width, for `sizes`. It mirrors the stylesheet: a
+ * 100 px square on a phone (`.roomCover` under 640 px), then the grid's
+ * own columns inside the frame's 22 px padding: two up to 845 px, three
+ * (minmax 258 px, 14 px gaps) from 846 px, and 324 px once the beat
+ * reaches its 1000 px. BeatMap.test.tsx derives the same widths from the
+ * stylesheet, so change one and the test says so.
+ */
+export const ROOM_COVER_SIZES =
+  '(max-width: 640px) 100px, (max-width: 845px) calc((100vw - 58px) / 2), (max-width: 1043px) calc((100vw - 72px) / 3), 324px'
 
 export interface BeatMapProps {
   /** Null on the short track or when the mic was denied. */
@@ -78,42 +97,16 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
   const joinGift = (): MapGift | false =>
     props.gift?.kind === 'join' ? props.gift : false
 
-  // Touch screens never fire the hover reveal, so scrolling a card into
-  // view plays it instead: the art starts at the dimmed resting state and
-  // settles forward once the card is actually on screen. One observer for
-  // the whole grid; a revealed card unobserves (the state is one-way).
-  // Viewport-root intersection honours ancestor clipping, so this works
-  // inside the scrollable onboarding modal and on the standalone #/map.
-  const [inView, setInView] = createSignal<ReadonlySet<string>>(new Set())
-  let observer: IntersectionObserver | undefined
-  const observeCard = (el: HTMLElement): void => {
-    if (typeof window.matchMedia !== 'function') return
-    if (!window.matchMedia('(hover: none)').matches) return
-    if (typeof IntersectionObserver === 'undefined') return
-    observer ??= new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          const id = entry.target.getAttribute('data-room')
-          if (id !== null) {
-            setInView((prev) => new Set(prev).add(id))
-          }
-          observer?.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.45 },
-    )
-    observer.observe(el)
-  }
-  onCleanup(() => observer?.disconnect())
-
   return (
-    <div class={`${styles.beat} ${styles.beatWide}`} data-beat="map">
+    <div
+      class={`${styles.beat} ${styles.beatWide} ${styles.mapBeat}`}
+      data-beat="map"
+    >
       <p class={styles.eyebrow}>Your map</p>
       <h1 class={styles.headline}>Choose your next room</h1>
-      <p class={styles.sub}>
+      <p class={`${styles.sub} ${styles.mapSub}`}>
         Everything here is free and runs on your own device. Start where we've
-        pointed you, or go anywhere you like — nothing is locked.
+        pointed you, or go anywhere you like: nothing is locked.
       </p>
 
       {/* No `data-tour` hook here on purpose. The Map is not spotlight-
@@ -127,86 +120,99 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
           {(room) => (
             <button
               type="button"
-              ref={observeCard}
               class={`${styles.roomCard} ${isFirst(room) ? styles.roomFirst : ''}`}
-              classList={{ [styles.roomInView]: inView().has(room.id) }}
               data-room={room.id}
               onClick={() => props.onEnter(room.target, room.id)}
             >
-              {/* Cover art, revealed behind the card. On pointer devices
-                  it settles in on hover; on touch it sits at a higher
-                  resting state instead, because there is no hover to
-                  wait for and a tap-to-reveal would cost a second tap to
-                  actually enter the room. */}
-              <span class={styles.roomArt} aria-hidden="true">
-                <DestinationArtwork visual={room.visual} compact />
+              {/* The cover, in full from the first frame: no hover, no
+                  scroll trigger. Decorative, so it stays out of the
+                  accessible name, which is the room's own words. */}
+              <span class={styles.roomCover} aria-hidden="true">
+                <img
+                  class={styles.roomCoverImg}
+                  src={room.cover.small}
+                  srcset={`${room.cover.small} 560w, ${room.cover.medium} 800w, ${room.cover.src} 1672w`}
+                  sizes={ROOM_COVER_SIZES}
+                  width="560"
+                  height="315"
+                  alt=""
+                  decoding="async"
+                  style={{ 'object-position': room.cover.focus }}
+                />
               </span>
-              <span class={styles.roomScrim} aria-hidden="true" />
 
-              <Show when={isFirst(room)}>
-                <span class={styles.roomFlag}>Your first stop</span>
-              </Show>
-              <Show when={room.id === 'karaoke' && joinGift()}>
-                {(gift) => (
-                  <span class={styles.roomGift}>
-                    <span class={styles.roomGiftIcon} aria-hidden="true">
-                      <GiftIcon size={12} />
-                    </span>
-                    {gift().credits} free credits
+              <Show when={room.id === 'karaoke' && joinGift() !== false}>
+                <span class={styles.roomGift}>
+                  <span class={styles.roomGiftIcon} aria-hidden="true">
+                    <GiftIcon size={12} />
                   </span>
-                )}
-              </Show>
-              <span class={styles.roomPlate} aria-hidden="true" />
-              <span class={styles.roomTitle}>
-                {room.title}
-                <Show when={isFirst(room) && stop().detail !== null}>
-                  {' · '}
-                  {stop().detail}
-                </Show>
-              </span>
-              {/* What the room IS, on every card including the
-                  recommended one. The reason used to REPLACE this line on
-                  the first stop, so the single card we push hardest was
-                  the only one that never said what it was — "Your tone
-                  wavers when you hold" tells you why you were sent, not
-                  where you are being sent. Now it says both. */}
-              <span class={styles.roomLine}>{room.line}</span>
-              <Show when={isFirst(room)}>
-                <span class={styles.roomReason}>{stop().reason}</span>
-              </Show>
-
-              {/* A tour is offered only where one exists and can actually
-                  spotlight something. Nested inside the card's button, so
-                  it stops the click that would otherwise just open the
-                  room without the tour. */}
-              <Show
-                when={room.tourTab !== undefined && hasPageTour(room.tourTab)}
-              >
-                <span
-                  class={styles.roomTour}
-                  role="button"
-                  tabindex="0"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    props.onTour(room.target, room.tourTab as ActiveTab)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter' && e.key !== ' ') return
-                    e.preventDefault()
-                    e.stopPropagation()
-                    props.onTour(room.target, room.tourTab as ActiveTab)
-                  }}
-                >
-                  Take the tour
+                  {KARAOKE_GIFT_TAG}
                 </span>
               </Show>
+
+              {/* The words, in one column: under the cover on a wide
+                  screen, beside its square on a phone. */}
+              <span class={styles.roomBody}>
+                {/* The flag rides beside the title rather than on a row of
+                    its own: one line less on the first row of cards. */}
+                <span class={styles.roomHead}>
+                  <span class={styles.roomTitle}>
+                    {room.title}
+                    <Show when={isFirst(room) && stop().detail !== null}>
+                      {' · '}
+                      {stop().detail}
+                    </Show>
+                  </span>
+                  <Show when={isFirst(room)}>
+                    <span class={styles.roomFlag}>Your first stop</span>
+                  </Show>
+                </span>
+                {/* What the room IS, on every card including the
+                    recommended one. The reason used to REPLACE this line
+                    on the first stop, so the single card we push hardest
+                    was the only one that never said what it was — "Your
+                    tone wavers when you hold" tells you why you were
+                    sent, not where you are being sent. Now it says both. */}
+                <span class={styles.roomLine}>{room.line}</span>
+                <Show when={isFirst(room)}>
+                  <span class={styles.roomReason}>{stop().reason}</span>
+                </Show>
+
+                {/* A tour is offered only where one exists and can
+                    actually spotlight something. Nested inside the card's
+                    button, so it stops the click that would otherwise
+                    just open the room without the tour. */}
+                <Show
+                  when={room.tourTab !== undefined && hasPageTour(room.tourTab)}
+                >
+                  <span
+                    class={styles.roomTour}
+                    role="button"
+                    tabindex="0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      props.onTour(room.target, room.tourTab as ActiveTab)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      props.onTour(room.target, room.tourTab as ActiveTab)
+                    }}
+                  >
+                    Take the tour
+                  </span>
+                </Show>
+              </span>
             </button>
           )}
         </For>
       </div>
 
-      <p class={styles.sideLabel}>And also</p>
-      <div class={styles.sideDoors}>
+      {/* The label leads the row of doors instead of taking a line above
+          them; on a phone it still takes its own line. */}
+      <div class={styles.sideDoors} data-side-doors>
+        <span class={styles.sideDoorsLabel}>And also</span>
         <For each={SIDE_DOORS}>
           {(door: SideDoor) => (
             <button
@@ -236,8 +242,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <p class={styles.mapGift}>
               <CreditCoin size={30} class={styles.mapGiftCoin} />
               <span>
-                Your launch gift is waiting: {gift().credits} Karaoke Night
-                credits.{' '}
+                {mapGiftWaiting(gift().credits)}{' '}
                 <button
                   type="button"
                   class={styles.mapGiftLink}
@@ -254,14 +259,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <p class={styles.mapGift}>
               <CreditCoin size={30} class={styles.mapGiftCoin} />
               <span>
-                Launch gift: {gift().credits} free Karaoke Night credits with a
-                free account.{' '}
+                {mapGiftJoin(gift().credits)}{' '}
                 <button
                   type="button"
                   class={styles.mapGiftLink}
                   onClick={() => props.onGift?.()}
                 >
-                  Get my {gift().credits} credits
+                  {MAP_GIFT_JOIN_LINK}
                 </button>
               </span>
             </p>
@@ -282,15 +286,13 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 </button>
               }
             >
-              {(gift) => (
-                <button
-                  type="button"
-                  class={styles.mapKeepLink}
-                  onClick={() => props.onGift?.()}
-                >
-                  Save it and get {gift().credits} free credits
-                </button>
-              )}
+              <button
+                type="button"
+                class={styles.mapKeepLink}
+                onClick={() => props.onGift?.()}
+              >
+                {MAP_KEEP_GIFT_LINK}
+              </button>
             </Show>
           </p>
         </Match>
