@@ -218,7 +218,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
             <button
               type="button"
               class={styles.sideDoor}
-              onClick={() => props.onEnter(door.target, door.label)}
+              onClick={() => props.onEnter(door.target, door.id)}
             >
               {door.label}
             </button>

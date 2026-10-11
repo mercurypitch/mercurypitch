@@ -291,7 +291,7 @@ describe("the Map's side doors", () => {
       'Voice Mirror',
     ])
     expect(onEnter.mock.calls).toEqual(
-      SIDE_DOORS.map((door) => [door.target, door.label]),
+      SIDE_DOORS.map((door) => [door.target, door.id]),
     )
   })
 
