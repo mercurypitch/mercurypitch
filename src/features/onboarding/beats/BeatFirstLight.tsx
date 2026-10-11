@@ -28,11 +28,16 @@
 //
 // The denied path is a designed route, not an error screen. It offers
 // a retry, a device picker when the input is genuinely dead, and a way
-// onward that still ends somewhere useful.
+// onward that still ends somewhere useful. "Continue without the mic"
+// stays beside "Try again" although the flow otherwise keeps one way out
+// (owner decision V1): with no working microphone there is no voiceprint
+// to skip, and the Map is the one place left to go.
+//
+// Merc listens from the plate behind this beat (plates.ts), so the beat
+// no longer draws its own small mascot.
 
 import type { Component } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js'
-import { Mascot } from '@/components/Mascot'
 import { MicTroubleshooting } from '@/components/MicTroubleshooting'
 import type { MicPermissionState } from '@/lib/jam/media-errors'
 import { micPermissionState } from '@/lib/jam/media-errors'
@@ -320,9 +325,6 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
   return (
     <div class={styles.beat} data-beat="first-light">
       <Show when={phase() === 'ask'}>
-        <span class={styles.mascot} aria-hidden="true">
-          <Mascot state="listening" size={84} title="" />
-        </span>
         <p class={styles.eyebrow}>One note</p>
         <h1 class={styles.headline}>Let's hear you</h1>
         <Show
@@ -363,14 +365,6 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       </Show>
 
       <Show when={phase() === 'waiting'}>
-        <span class={styles.mascot} aria-hidden="true">
-          <Mascot
-            state="listening"
-            size={84}
-            title=""
-            energy={Math.min(100, level() * 900)}
-          />
-        </span>
         <p class={styles.eyebrow}>Your turn</p>
         <h1 class={styles.headline}>
           Sing <span class={styles.lit}>ahh</span> — whenever you're ready
@@ -462,14 +456,6 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       </Show>
 
       <Show when={phase() === 'listening'}>
-        <span class={styles.mascot} aria-hidden="true">
-          <Mascot
-            state="listening"
-            size={84}
-            title=""
-            energy={Math.min(100, level() * 900)}
-          />
-        </span>
         <p class={styles.recordingTag}>Recording</p>
         <h1 class={styles.headline}>
           Hold it — <span class={styles.lit}>{remaining()}s</span>
@@ -487,9 +473,6 @@ export const BeatFirstLight: Component<BeatFirstLightProps> = (props) => {
       </Show>
 
       <Show when={phase() === 'heard'}>
-        <span class={styles.mascot} aria-hidden="true">
-          <Mascot state="celebrate" size={84} title="" />
-        </span>
         <p class={styles.eyebrow}>We heard you</p>
         <h1 class={styles.headline}>
           {/* "an A3", not "a A3" — the note name is read out loud, and A,

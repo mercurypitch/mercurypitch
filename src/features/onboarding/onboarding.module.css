@@ -18,7 +18,10 @@
   --ob-ground: #0d1117;
   --ob-ink: #e6edf3;
   --ob-ink-2: #a8b3bf;
-  --ob-ink-3: #6e7681;
+  /* 5.1:1 on the ground. It was #6e7681, 4.1:1, which failed WCAG AA
+     for the small type it carries (eyebrows, the consent line) even
+     before Merc's pictures went in behind it. */
+  --ob-ink-3: #7d8590;
   --ob-rule: #30363d;
   --ob-card: rgba(28, 33, 40, 0.72);
   --ob-blue: #58a6ff;
@@ -43,21 +46,36 @@
   isolation: isolate;
 }
 
-/* ── The sky plate ───────────────────────────────────────────────
-   Generated backdrop: a quicksilver ribbon across the top, star
-   clusters at the edges, empty in the middle where the copy sits.
+/* ── The plates ──────────────────────────────────────────────────
+   One picture behind each beat; plates.ts says which. Each plate
+   mounts fresh when the picture changes and fades in over the ground
+   (a `from`-only keyframe, so it settles on the plate's own opacity).
+
+   Missing files degrade to the bare ground plus the canvas field. */
+.plate {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: plateIn 0.7s var(--ob-ease) backwards;
+}
+
+@keyframes plateIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The plain sky: a quicksilver ribbon across the top, star clusters at
+   the edges, empty in the middle where the copy sits. Behind the beats
+   that bring their own pictures.
 
    `screen` is doing real work here, not decoration. The plate's dark
    areas are not the same black as --ob-ground, so painting it
    normally would leave a visible rectangle edge wherever `cover`
    didn't reach. Under screen, black contributes nothing and only the
    ribbon and stars composite through — the plate can never be darker
-   than the ground, at any aspect ratio, with no black-point matching.
-
-   Missing files degrade to the bare ground plus the canvas field. */
-.plate {
-  position: absolute;
-  inset: 0;
+   than the ground, at any aspect ratio, with no black-point matching. */
+.plate[data-plate='plain'] {
   /* Sized to WIDTH and anchored top — deliberately not `cover`. Cover has
      to fill both axes, so on a tall or square viewport it scales a 16:9
      plate enormously and the ribbon swallows the headline. At `100% auto`
@@ -67,22 +85,80 @@
   background: url('/onboarding/sky-wide.webp') top center / 100% auto no-repeat;
   mix-blend-mode: screen;
   opacity: 0.7;
-  pointer-events: none;
 }
 
-/* A genuine portrait recomposition, not a crop — the ribbon sits in
-   the top fifth and the stars run down the sides. */
+/* Behind the word beats and the voiceprint the plain plate steps well
+   back, so its lines stop running through the copy. Two classes, so it
+   outranks the plain plate's own opacity above. */
+.plate.plateRecede {
+  opacity: 0.28;
+}
+
+/* Merc's scenes (owner decision V5): painted for this frame, dark in the
+   middle where the copy sits, Merc at the side of a wide screen and at
+   the top of a tall one. They cover the frame at full strength. */
+.plateArt {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.plate[data-plate='sky'] {
+  background-image: url('/onboarding/merc-sky-wide.webp');
+}
+
+.plate[data-plate='first-light'] {
+  background-image: url('/onboarding/merc-first-light-wide.webp');
+}
+
+/* Merc stands on the path at the bottom left; anchoring there keeps him
+   in the frame at every width, the phone's included. */
+.plate[data-plate='map'] {
+  background-image: url('/onboarding/merc-map-wide.webp');
+  background-position: 12% 100%;
+}
+
+/* The scrim. The composition keeps the copy column dark at the shapes
+   the art was painted for; this keeps it dark at every other shape,
+   so the beat's text clears WCAG AA over any part of the picture. */
+.plateArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 38% 64% at 50% 50%,
+    color-mix(in srgb, var(--ob-ground) 74%, transparent),
+    color-mix(in srgb, var(--ob-ground) 52%, transparent) 62%,
+    transparent 100%
+  );
+}
+
+/* Tall windows get a genuine portrait recomposition, not a crop: Merc
+   at the top, the copy below him. */
 @media (max-aspect-ratio: 1/1) {
-  .plate {
+  .plate[data-plate='plain'] {
     background-image: url('/onboarding/sky-tall.webp');
   }
-}
 
-/* Behind the Map the plate steps well back. That beat is dense — six
-   cards, a side-door strip and a CTA — and the artwork has to stop
-   competing with the thing it is framing. */
-.plateRecede {
-  opacity: 0.28;
+  .plate[data-plate='sky'] {
+    background-image: url('/onboarding/merc-sky-tall.webp');
+    background-position: center top;
+  }
+
+  .plate[data-plate='first-light'] {
+    background-image: url('/onboarding/merc-first-light-tall.webp');
+    background-position: center top;
+  }
+
+  /* Merc is above the copy here, so the scrim starts below him. */
+  .plateArt::after {
+    background: linear-gradient(
+      180deg,
+      transparent 22%,
+      color-mix(in srgb, var(--ob-ground) 66%, transparent) 36%,
+      color-mix(in srgb, var(--ob-ground) 74%, transparent) 100%
+    );
+  }
 }
 
 /* The quicksilver wash — the meniscus glow the composition centres on. */
@@ -104,6 +180,18 @@
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* The star field's holder: the field fades out behind Merc's plates. */
+.field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ob-ease);
+}
+
+.fieldAway {
+  opacity: 0;
 }
 
 /* ── Rail: progress + escape ─────────────────────────────────── */
@@ -381,11 +469,6 @@
 
 .consent a:hover {
   color: var(--ob-ink);
-}
-
-.mascot {
-  display: block;
-  filter: drop-shadow(0 8px 26px rgba(88, 166, 255, 0.22));
 }
 
 /* ── Actions ─────────────────────────────────────────────────── */
@@ -1408,6 +1491,14 @@
 @media (prefers-reduced-motion: reduce) {
   .beat {
     animation: none;
+  }
+
+  .plate {
+    animation: none;
+  }
+
+  .field {
+    transition: none;
   }
 
   .progressFill,

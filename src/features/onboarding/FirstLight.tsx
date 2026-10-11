@@ -12,7 +12,7 @@
 // See docs/plans/onboarding-first-light.md.
 
 import type { Component } from 'solid-js'
-import { createEffect, createSignal, Match, onMount, Switch } from 'solid-js'
+import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
 import { X } from '@/components/icons'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
@@ -42,6 +42,8 @@ import { BeatVoiceprint } from './beats/BeatVoiceprint'
 import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
+import type { Plate } from './plates'
+import { plateAhead, plateFor, plateSrc, TALL_QUERY } from './plates'
 import type { RoomTarget } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
@@ -338,6 +340,34 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   const textHeavy = (): boolean =>
     currentBeat() === 'map' || currentBeat() === 'keep'
 
+  /** The picture behind the current beat (plates.ts). */
+  const plate = (): Plate => plateFor(currentBeat())
+
+  /** The plain sky recedes behind the word beats, and behind the
+   *  voiceprint: on a wide screen its brightest lines cross the step
+   *  counter and the instructions at the top of the frame (measured at
+   *  2.1:1 against the counter before this). The stars stay as they are;
+   *  only the picture steps back. */
+  const plateRecedes = (): boolean =>
+    textHeavy() || currentBeat() === 'voiceprint'
+
+  // Fetch the next beat's picture while this one is being read, so its
+  // plate fades in on the picture rather than on an empty frame.
+  const fetched = new Set<string>()
+  createEffect(() => {
+    const ahead = plateAhead(currentBeat())
+    if (ahead === null || typeof Image === 'undefined') return
+    const tall =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(TALL_QUERY).matches
+    const src = plateSrc(ahead, tall)
+    if (fetched.has(src)) return
+    fetched.add(src)
+    const image = new Image()
+    image.decoding = 'async'
+    image.src = src
+  })
+
   const handleDone = () => {
     trackOnboarding('onboarding_done')
     leave()
@@ -389,18 +419,41 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       // swallowing the clicks of every spec that dismisses overlays.
       data-onboarding-flow
     >
-      <div
-        class={`${styles.plate} ${textHeavy() ? styles.plateRecede : ''}`}
-        aria-hidden="true"
-      />
+      {/* Keyed, so a new picture mounts fresh and fades in over the
+          ground rather than snapping in under the beat's own entrance. */}
+      <Show when={plate()} keyed>
+        {(art) => (
+          <div
+            class={`${styles.plate} ${
+              art === 'plain'
+                ? plateRecedes()
+                  ? styles.plateRecede
+                  : ''
+                : styles.plateArt
+            }`}
+            data-plate={art}
+            aria-hidden="true"
+          />
+        )}
+      </Show>
       {/* The arc is the same walk the hairline measures, drawn as a
           journey: one bead per beat, lit behind, accented under foot,
           hollow ahead. */}
-      <StarField
-        recede={textHeavy()}
-        beads={onboardingBeads().count}
-        beadIndex={onboardingBeads().index}
-      />
+      {/* Merc's plates paint their own sky, and on a phone the arc's
+          beads would sit on Merc himself, so the field steps out while
+          one is up. It stays mounted, so its sweep and lit beads are
+          where they were when it comes back. */}
+      <div
+        class={styles.field}
+        classList={{ [styles.fieldAway]: plate() !== 'plain' }}
+        aria-hidden="true"
+      >
+        <StarField
+          recede={textHeavy()}
+          beads={onboardingBeads().count}
+          beadIndex={onboardingBeads().index}
+        />
+      </div>
 
       <div class={styles.rail}>
         <div class={styles.progress}>
