@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-169 commits since `v0.9.16` (19 on `main`'s first-parent line, every one a PR
+172 commits since `v0.9.16` (20 on `main`'s first-parent line, every one a PR
 merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 to
-#977 and #979.
+#977, #979 and #982.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
@@ -419,6 +419,18 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   zoom on focus. Floated labels are 11 px, light-theme links use
   `--accent-text` (5.83:1), and every fallback is the app's dark value, so
   the sheet reads on a page without the theme tokens.
+
+### Tests: the Jam lyric-row spec (#982)
+
+`jam-room-keys-and-rows.spec.ts` failed in up to a third of runs under load,
+before and after this release's changes. Three races, none a user's: the
+preview room's fake peers re-render the Parts bar and push the rows 24 px
+down, so a drag measured before Ada joined pressed the bar's hint; the routed
+stems answered 200, so Chromium could not seek and reset the clock under the
+label check; and `writeToneWav` truncated the shared tone file while other
+workers read it. The spec now waits for the room to fill, answers ranges
+(206), and the helper writes a temp file and renames it into place. A joining
+peer still moves the host's rows 24 px; whether to stop that is open.
 
 ### Web: Drum Night, the cost guide and the tour offer (#957, #959, #964)
 
