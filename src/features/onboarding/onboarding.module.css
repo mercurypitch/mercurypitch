@@ -1767,6 +1767,43 @@
   }
 }
 
+/* A short phone, 320x568 (review of PR 977): the welcome's button and its
+   terms line ran 89 px below the fold, because the clear sky kept under
+   Merc's glow and the beat's spacing were sized for taller screens. Here
+   the words sit 28 px under his glow, the measure eb200eb41 set out to
+   keep (a phone's taller frame padding gave it 44), the gaps tighten, and
+   the bottom padding keeps only the home indicator's room. Taller phones
+   are untouched. */
+@media (max-aspect-ratio: 1/1) and (max-height: 600px) {
+  .frame:has(> .skyBeat) {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .skyBeat {
+    padding-top: calc(max(53.3vw, 30vh) - 50px);
+    padding-top: calc(max(53.3vw, 30dvh) - 50px);
+    gap: 12px;
+  }
+
+  .skyBeat .promises {
+    gap: 8px;
+  }
+
+  .skyBeat .promise {
+    line-height: 1.4;
+  }
+
+  .skyBeat .actions,
+  .skyBeat .consent {
+    margin-top: 0;
+  }
+
+  .skyBeat .primaryLarge {
+    min-height: 48px;
+    padding-block: 12px;
+  }
+}
+
 .recordHint {
   margin-top: 6px;
   font-size: 0.82rem;
