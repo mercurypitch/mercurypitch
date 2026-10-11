@@ -138,7 +138,6 @@ export function startReferenceTone(
   // Only an ended note is beyond stopping.
   let ended = false
   let stopped = false
-  let fallback: ReturnType<typeof setTimeout> | undefined
 
   oscillator.onended = () => {
     ended = true
@@ -181,7 +180,7 @@ export function startReferenceTone(
 
   // The fallback for a clock that never ends the note: stop it, so it
   // cannot wait armed for a resume, and report the end.
-  fallback = setTimeout(stop, (durationSec + 0.5) * 1000)
+  const fallback = setTimeout(stop, (durationSec + 0.5) * 1000)
 
   return { stop, done }
 }
