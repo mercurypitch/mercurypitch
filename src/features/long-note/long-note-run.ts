@@ -48,8 +48,10 @@ export function keepRun(target: number, result: HoldResult): boolean {
 }
 
 /**
- * What Merc says over the result: the brim first (steady singing filled
- * the top), then a new best, then the goal (half full).
+ * What Merc says over the result: a take that never locked is missed,
+ * whatever else it reached, since keepRun keeps nothing of it. Then the
+ * brim first (steady singing filled the top), a new best, the goal (half
+ * full).
  */
 export function resultMoment(
   improved: boolean,
@@ -57,9 +59,10 @@ export function resultMoment(
   brim: boolean,
   locked: boolean,
 ): LongNoteMoment {
+  // The mic is closed by now: never a line that asks for more singing.
+  if (!locked) return 'missed'
   if (brim) return 'resultBrim'
   if (improved) return 'newBest'
   if (full) return 'resultFull'
-  // The mic is closed by now: never a line that asks for more singing.
-  return locked ? 'result' : 'missed'
+  return 'result'
 }

@@ -363,6 +363,57 @@ const PRACTISED: TakeShape = {
   jitterCents: 3,
 }
 
+describe('tickHold, the light before the first lock', () => {
+  it('fills nothing until the note is found: a vibrato at the band edge never reaches the goal', () => {
+    // Review A of PR 973, M2: 28 c sharp with a +-40 c vibrato. Each half
+    // cycle the centre crosses the band's edge, no in-band run reaches the
+    // 250 ms a lock needs, and the in-band seconds used to add up to the
+    // goal anyway, about 21 s in: the room cheered "half full" for a take
+    // the result then threw away.
+    for (let seed = 1; seed <= 6; seed++) {
+      // Act
+      const run = play(
+        takeCents({
+          seconds: 25,
+          offsetCents: 28,
+          vibratoHz: 5.5,
+          vibratoCents: 40,
+          jitterCents: 3,
+          seed,
+        }),
+        createHoldState(),
+        LANTERN,
+      )
+
+      // Assert
+      expect(run.state.firstLockAt).toBeNull()
+      expect(run.events).toEqual([])
+      expect(run.state.goalReached).toBe(false)
+      expect(run.state.inBandSeconds).toBe(0)
+      expect(run.charges.every((charge) => charge === 0)).toBe(true)
+    }
+  })
+
+  it('counts the run that locked whole, and no blip before it', () => {
+    // Arrange: 0.2 s on the note (too short to lock), half a second 80 c
+    // sharp, then 3 s on the note, which locks.
+    const readings = [
+      ...constant(12, 0),
+      ...constant(30, 80),
+      ...constant(180, 0),
+    ]
+
+    // Act
+    const run = play(readings, createHoldState(), LANTERN)
+
+    // Assert: one unbroken lock to the end, and the light is its length,
+    // band entry to the last tick.
+    expect(run.events.map(([, event]) => event)).toEqual(['lock'])
+    expect(run.state.inBandSeconds).toBeCloseTo(run.state.lockSeconds, 9)
+    expect(run.state.charge).toBeCloseTo(run.state.lockSeconds / 12, 9)
+  })
+})
+
 describe('tickHold, the lantern preset past the goal', () => {
   it('leaves a preset without a stretch rule as it was', () => {
     const run = play(sung({ ...PRACTISED, seed: 11 }))

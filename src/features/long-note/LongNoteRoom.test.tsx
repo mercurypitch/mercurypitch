@@ -982,6 +982,42 @@ describe('LongNoteRoom', () => {
     ).toBe(true)
   })
 
+  it('celebrates nothing it would not keep: a vibrato at the band edge never finds the note', async () => {
+    // Review A of PR 973, M2: 28 c sharp with a +-40 c vibrato never locks,
+    // and the room used to reach the goal on it anyway: the haptic, the
+    // halo, "half full", and then a result that kept nothing.
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    await startListening()
+
+    // Act: 25 s at the band's sharp edge, frame by frame, then a breath.
+    const heard = hear(
+      realisticTake(57, {
+        seconds: 25,
+        offsetCents: 28,
+        vibratoHz: 5.5,
+        vibratoCents: 40,
+        jitterCents: 3,
+        seed: 1,
+      }),
+    )
+    fake.frames = [...fake.frames, ...silence(0.8, 25)]
+    flushFrames()
+    await settle()
+
+    // Assert: no light, no goal line and no halo, and the result says so.
+    expect(heard.some((h) => says('full', h.chip))).toBe(false)
+    for (const h of heard) expect(h.level).toBeCloseTo(0, 6)
+    expect(haloShine()).toBe(0)
+    expect(phase()).toBe('result')
+    expect(recorded.calls).toHaveLength(0)
+    expect(screen.getByTestId('long-note-result').textContent).toMatch(
+      /^0\.0 s/,
+    )
+    expect(
+      says('missed', screen.getByTestId('long-note-line').textContent),
+    ).toBe(true)
+  })
+
   it('says the goal is halfway and the top takes steady singing, then whether it fills', async () => {
     for (const shape of [PRACTISED, WOBBLY]) {
       render(() => <LongNoteRoom onDone={() => undefined} />)

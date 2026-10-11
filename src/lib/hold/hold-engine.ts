@@ -22,6 +22,12 @@
 //   may be the end of the note, and the release must not read as a break, so
 //   a silent gap counts as a break when the voice comes back (200-450 ms),
 //   while a voiced excursion out of the band breaks live at 200 ms.
+// - The fill counts from the first lock. A vibrato 28 cents sharp crosses
+//   the band's edge every half cycle, never stays 250 ms to lock, and still
+//   spent 12 s in the band about 21 s in: the room reached the goal on a
+//   take the result kept nothing of (review of PR 973, M2). Before the
+//   first lock the voice has not found the note, so nothing it does fills
+//   the lantern; the run that locks counts whole.
 //
 // A preset may carry a stretch rule (the Long note lantern's): past the
 // goal, a second fill grows only with steady singing, judged by the same
@@ -135,6 +141,10 @@ export interface HoldState {
   needleCents: number | null
   /** The lantern's fill, 0..1: inBandSeconds / goalSeconds. */
   charge: number
+  /**
+   * Seconds in the band from the first lock, the locking run whole; 0 until
+   * then. Nothing before the first lock fills the lantern.
+   */
   inBandSeconds: number
   /** The current lock, band entry to the last in-band tick; 0 unless locked. */
   lockSeconds: number
@@ -370,7 +380,10 @@ interface VoicedDraft {
   events: HoldEventType[]
 }
 
-/** An in-band tick: its time counts, and a long enough run locks. */
+/**
+ * An in-band tick: a long enough run locks, and from the first lock its
+ * time counts. The run that locked counts whole, from its band entry.
+ */
 function holdInBand(
   draft: VoicedDraft,
   state: HoldState,
@@ -379,7 +392,7 @@ function holdInBand(
   preset: HoldPreset,
 ): void {
   draft.bandRunSeconds = (state.inBand ? state.bandRunSeconds : 0) + dt
-  draft.inBandSeconds += dt
+  if (draft.firstLockAt !== null) draft.inBandSeconds += dt
   draft.lastInBandAt = clock
   if (
     draft.phase === 'locked' ||
@@ -390,6 +403,7 @@ function holdInBand(
   draft.lockStartedAt = clock - draft.bandRunSeconds
   if (draft.firstLockAt === null) {
     draft.firstLockAt = draft.lockStartedAt
+    draft.inBandSeconds += draft.bandRunSeconds
     draft.events.push('lock')
   } else {
     draft.events.push('relock')
