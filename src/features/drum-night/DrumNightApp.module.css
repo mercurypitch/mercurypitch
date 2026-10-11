@@ -50,21 +50,36 @@
   box-sizing: border-box;
 }
 
-.shell button,
-.shell input {
+/* These resets are for the room's own controls. The shared sign-in sheet
+   renders inside the shell too, and at this specificity they beat its own
+   classes: its fields fell to 14px, which iOS zooms into on focus, and its
+   link buttons lost their accent. `:not(:where())` leaves the sheet out and
+   adds no specificity, so the room's own cascade is unchanged. */
+.authSheet {
+  display: contents;
+}
+
+/* The sheet still takes the room's typeface, as it does in Guitar Night;
+   its sizes, weights and colours are its own. */
+.authSheet :where(button, input) {
+  font-family: inherit;
+}
+
+.shell button:not(:where(.authSheet *)),
+.shell input:not(:where(.authSheet *)) {
   font: inherit;
 }
 
-.shell button {
+.shell button:not(:where(.authSheet *)) {
   color: inherit;
   -webkit-tap-highlight-color: transparent;
 }
 
-.shell button:focus-visible,
-.shell a:focus-visible,
-.shell input:focus-visible,
-.shell select:focus-visible,
-.shell [tabindex]:focus-visible {
+.shell button:not(:where(.authSheet *)):focus-visible,
+.shell a:not(:where(.authSheet *)):focus-visible,
+.shell input:not(:where(.authSheet *)):focus-visible,
+.shell select:not(:where(.authSheet *)):focus-visible,
+.shell [tabindex]:not(:where(.authSheet *)):focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 3px;
 }
