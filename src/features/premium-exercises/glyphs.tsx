@@ -1,0 +1,34 @@
+// ============================================================
+// Glyphs for the Sing screen's exercise row and picker
+// ============================================================
+//
+// Stroke and fill in currentColor, so the row and the cards colour them.
+// The door to the picker reuses `ListRows` from src/components/icons.tsx.
+
+import type { Component } from 'solid-js'
+
+/** A lantern: its ring, cap, glass and foot, with a flame inside. */
+export const LanternGlyph: Component = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M10.2 4.6a1.8 1.8 0 0 1 3.6 0" />
+    <path d="M8 7.4h8l-1.4-2.2H9.4z" />
+    <rect x="7" y="7.4" width="10" height="11.4" rx="2.4" />
+    <path d="M9 21h6" />
+    <path d="M12 10.8c1.3 1.4 1.9 2.5 1.9 3.4a1.9 1.9 0 0 1-3.8 0c0-.9.6-2 1.9-3.4z" />
+  </svg>
+)
+
+/** Play, filled: the triangle on the row's accent disc. */
+export const PlayGlyph: Component = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M8 5.5v13l11-6.5z" fill="currentColor" />
+  </svg>
+)
