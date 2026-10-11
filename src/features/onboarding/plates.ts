@@ -66,16 +66,21 @@ export function plateSrc(plate: Plate, tall: boolean): string {
 }
 
 /**
- * The picture the visitor is most likely to see next. Fetched while they
- * read the current beat, so the next plate fades in on a picture rather
- * than on an empty frame that fills in a moment later.
+ * The pictures the visitor can see next, likeliest first. Fetched while
+ * they read the current beat, so the next plate fades in on a picture
+ * rather than on an empty frame that fills in a moment later.
+ *
+ * The Fork's one button leads to the voiceprint (or, for a returning
+ * singer, the prints), both on the plain sky; its "Not now" leads to the
+ * Map. First light already fetched the Map for its own way out, so the
+ * second entry costs nothing there.
  */
-const PLATE_AHEAD: Partial<Record<Beat, Plate>> = {
-  sky: 'first-light',
-  'first-light': 'map',
-  fork: 'map',
+const PLATES_AHEAD: Partial<Record<Beat, readonly Plate[]>> = {
+  sky: ['first-light'],
+  'first-light': ['map'],
+  fork: ['plain', 'map'],
 }
 
-export function plateAhead(beat: Beat): Plate | null {
-  return PLATE_AHEAD[beat] ?? null
+export function platesAhead(beat: Beat): readonly Plate[] {
+  return PLATES_AHEAD[beat] ?? []
 }

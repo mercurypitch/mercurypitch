@@ -72,6 +72,7 @@ vi.mock('@/stores/launch-gift-store', () => ({
 import { currentBeat, openBeat, recordVoiceprint, resetOnboarding, savedVoiceprints, track, voiceprint, } from '@/stores/onboarding-store'
 import { FirstLight } from './FirstLight'
 import type { Beat } from './flow'
+import { plateSrc } from './plates'
 
 const VOICEPRINT: MirrorResult = {
   range: {
@@ -159,6 +160,30 @@ describe('the Fork in the flow', () => {
     expect(tracked()).toContain('onboarding_track_short')
     expect(tracked()).not.toContain('onboarding_skipped')
     expect(ONBOARDING_FUNNEL_EVENTS).toEqual(expect.arrayContaining(tracked()))
+  })
+})
+
+describe('the pictures fetched ahead of the Fork', () => {
+  it('fetches the plain sky its button leads to, and the Map behind "Not now"', async () => {
+    // Arrange
+    const requested: string[] = []
+    vi.stubGlobal(
+      'Image',
+      class {
+        decoding = ''
+        set src(value: string) {
+          requested.push(value)
+        }
+      },
+    )
+
+    // Act
+    await at('fork')
+
+    // Assert
+    expect(requested).toEqual(
+      expect.arrayContaining([plateSrc('plain', false), plateSrc('map', false)]),
+    )
   })
 })
 

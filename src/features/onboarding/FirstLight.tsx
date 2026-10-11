@@ -43,7 +43,7 @@ import type { Beat, OnboardingTrack } from './flow'
 import { BEAT_EVENT, trackOnboarding } from './funnel'
 import styles from './onboarding.module.css'
 import type { Plate } from './plates'
-import { plateAhead, plateFor, plateSrc, TALL_QUERY } from './plates'
+import { platesAhead, plateFor, plateSrc, TALL_QUERY } from './plates'
 import type { RoomTarget } from './rooms'
 import type { SettledNote } from './settled-note'
 import { StarField } from './StarField'
@@ -347,21 +347,23 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
   const plateRecedes = (): boolean =>
     textHeavy() || currentBeat() === 'voiceprint'
 
-  // Fetch the next beat's picture while this one is being read, so its
-  // plate fades in on the picture rather than on an empty frame.
+  // Fetch the next beats' pictures while this one is being read, so the
+  // next plate fades in on its picture rather than on an empty frame.
   const fetched = new Set<string>()
   createEffect(() => {
-    const ahead = plateAhead(currentBeat())
-    if (ahead === null || typeof Image === 'undefined') return
+    const ahead = platesAhead(currentBeat())
+    if (ahead.length === 0 || typeof Image === 'undefined') return
     const tall =
       typeof window.matchMedia === 'function' &&
       window.matchMedia(TALL_QUERY).matches
-    const src = plateSrc(ahead, tall)
-    if (fetched.has(src)) return
-    fetched.add(src)
-    const image = new Image()
-    image.decoding = 'async'
-    image.src = src
+    for (const next of ahead) {
+      const src = plateSrc(next, tall)
+      if (fetched.has(src)) continue
+      fetched.add(src)
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = src
+    }
   })
 
   const handleDone = () => {
