@@ -45,6 +45,8 @@ import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconSha
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import { MirrorAccountAsk } from './MirrorAccountAsk'
+import type { MirrorScreen } from './MirrorBackdrop'
+import { MirrorBackdrop, plateFor } from './MirrorBackdrop'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
@@ -1237,8 +1239,23 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const taskNumber = (): number =>
     session().phase === 'hold' ? 2 : session().phase === 'match' ? 3 : 1
 
+  /** The screen on show, for the backdrop and the shell's layout. Idle with
+   *  nothing open is the start screen: the landing, or someone's shared card
+   *  in its place. */
+  const screen = (): MirrorScreen => {
+    if (cosmicOpen()) return 'flow'
+    if (session().phase === 'results' || freePhase() === 'results') {
+      return 'results'
+    }
+    if (session().phase !== 'idle' || freePhase() !== null || howtoOpen()) {
+      return 'flow'
+    }
+    return sharedVoiceprint() === null ? 'landing' : 'shared'
+  }
+
   return (
-    <div class="mirror-shell">
+    <div class="mirror-shell" data-screen={screen()}>
+      <MirrorBackdrop plate={plateFor(screen())} />
       <Show
         when={
           sharedVoiceprint() !== null &&
