@@ -43,14 +43,15 @@ export interface MapGift {
 }
 
 /**
- * The cover's rendered width, for `sizes`. It mirrors the stylesheet:
- * a 100 px square on a phone (`.roomCover` under 640 px), half the
- * window while the grid runs two columns, and a third of the 1000 px
- * beat at most. Change one and change the other (BeatMap.test.tsx holds the
- * phone's pair together).
+ * The cover's rendered width, for `sizes`. It mirrors the stylesheet: a
+ * 100 px square on a phone (`.roomCover` under 640 px), then the grid's
+ * own columns inside the frame's 22 px padding: two up to 845 px, three
+ * (minmax 258 px, 14 px gaps) from 846 px, and 324 px once the beat
+ * reaches its 1000 px. BeatMap.test.tsx derives the same widths from the
+ * stylesheet, so change one and the test says so.
  */
 export const ROOM_COVER_SIZES =
-  '(max-width: 640px) 100px, (max-width: 900px) 50vw, 330px'
+  '(max-width: 640px) 100px, (max-width: 845px) calc((100vw - 58px) / 2), (max-width: 1043px) calc((100vw - 72px) / 3), 324px'
 
 export interface BeatMapProps {
   /** Null on the short track or when the mic was denied. */
@@ -126,7 +127,7 @@ export const BeatMap: Component<BeatMapProps> = (props) => {
                 <img
                   class={styles.roomCoverImg}
                   src={room.cover.small}
-                  srcset={`${room.cover.small} 560w, ${room.cover.src} 1672w`}
+                  srcset={`${room.cover.small} 560w, ${room.cover.medium} 800w, ${room.cover.src} 1672w`}
                   sizes={ROOM_COVER_SIZES}
                   width="560"
                   height="315"

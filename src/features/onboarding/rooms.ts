@@ -32,12 +32,15 @@ export type RoomTarget =
 /**
  * A room's cover: Merc in that room, painted for the Map with Codex
  * imagegen on 11 Oct 2026 (owner decision V5). `src` is the full
- * 1672x941 master as webp, `small` the 560x315 cut for small boxes, and
- * `focus` is where Merc stands, as an object-position, so the phone's
- * square thumbnail and the desktop's wide band both keep him in frame.
+ * 1672x941 master as webp, `medium` the 800x450 cut a desktop card needs
+ * at twice the density (the widest card is under 400 px), `small` the
+ * 560x315 cut for small boxes, and `focus` is where Merc stands, as an
+ * object-position, so the phone's square thumbnail and the desktop's wide
+ * band both keep him in frame.
  */
 export interface RoomCover {
   src: string
+  medium: string
   small: string
   focus: string
 }
@@ -68,6 +71,7 @@ export interface Room {
 function cover(id: RoomId, focus: string): RoomCover {
   return {
     src: `/onboarding/rooms/${id}.webp`,
+    medium: `/onboarding/rooms/${id}-800.webp`,
     small: `/onboarding/rooms/${id}-560.webp`,
     focus,
   }

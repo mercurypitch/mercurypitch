@@ -186,6 +186,58 @@ describe('the Map stylesheet', () => {
     }
   })
 
+  it('sizes the desktop covers to the columns the grid actually runs', () => {
+    // Arrange: the grid's own numbers, read from the stylesheet.
+    const px = (selector: string, pattern: RegExp): number => {
+      const rule = RULES.find((r) => r.selector === selector && r.at.length === 0)
+      return Number(pattern.exec(rule?.body ?? '')?.[1])
+    }
+    const min = px('.mapGrid', /minmax\((\d+)px/)
+    const gap = px('.mapGrid', /gap:\s*(\d+)px/)
+    const beat = px('.beatWide', /max-width:\s*(\d+)px/)
+    const pad = px('.frame', /padding:\s*\d+px\s+(\d+)px/)
+    /** A card's width at this window width, as the grid lays it out. */
+    const card = (vw: number): number => {
+      const width = Math.min(beat, vw - 2 * pad)
+      const columns = Math.max(1, Math.floor((width + gap) / (min + gap)))
+      return (width - gap * (columns - 1)) / columns
+    }
+    /** The slot `sizes` names at this window width. */
+    const slot = (vw: number): number => {
+      for (const part of ROOM_COVER_SIZES.split(/,\s*(?![^(]*\))/)) {
+        const query = /^\(max-width:\s*(\d+)px\)\s+(.*)$/.exec(part)
+        if (query !== null && vw > Number(query[1])) continue
+        const value = query?.[2] ?? part
+        const calc = /calc\(\(100vw - (\d+)px\) \/ (\d+)\)/.exec(value)
+        if (calc !== null) return (vw - Number(calc[1])) / Number(calc[2])
+        const share = /^(\d+)vw$/.exec(value)
+        if (share !== null) return (vw * Number(share[1])) / 100
+        return Number(/(\d+)px/.exec(value)?.[1])
+      }
+      return Number.NaN
+    }
+
+    // Act + Assert: every desktop width, two columns and three.
+    for (let vw = 641; vw <= 1600; vw++) {
+      expect(Math.abs(slot(vw) - card(vw)), `at ${vw}px`).toBeLessThanOrEqual(2)
+    }
+  })
+
+  it('offers a 2x laptop a cover smaller than the master', () => {
+    // Arrange
+    render(() => (
+      <BeatMap voiceprint={null} onEnter={() => {}} onTour={() => {}} onDone={() => {}} />
+    ))
+
+    // Act
+    const srcset = document.querySelector('[data-room] img')?.getAttribute('srcset') ?? ''
+    const widths = [...srcset.matchAll(/\s(\d+)w/g)].map((m) => Number(m[1]))
+
+    // Assert: the widest desktop card is under 400 px, so 800 covers it
+    // at twice the density without fetching the 1672 px master.
+    expect(widths).toEqual([560, 800, 1672])
+  })
+
   it('sizes the phone cover the same in the stylesheet and in sizes', () => {
     const [query, width] =
       /^(\([^)]*\))\s+(\d+)px/.exec(ROOM_COVER_SIZES)?.slice(1) ?? []
