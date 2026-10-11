@@ -63,7 +63,16 @@ export function writeToneWav(hz: number = TONE_HZ, seconds = 5): string {
     os.tmpdir(),
     `mercurypitch-e2e-tone-${hz}-${seconds}s.wav`,
   )
-  fs.writeFileSync(file, buf)
+  // Written beside it and renamed into place, never written over. The same
+  // length is still shared: every worker that loads a spec writes this file
+  // at module load, and a plain write truncates it first, so a worker that
+  // read it back in that moment got a short file -- and a song that would not
+  // load. Measured 2026-10-11: six processes writing and reading one path at
+  // once came back short in 358 of 900 reads, and in none once renamed. A
+  // rename swaps in a whole file, and a reader keeps whichever one it opened.
+  const scratch = `${file}.${process.pid}.tmp`
+  fs.writeFileSync(scratch, buf)
+  fs.renameSync(scratch, file)
   return file
 }
 
