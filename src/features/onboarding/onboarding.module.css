@@ -1773,8 +1773,9 @@
      the buttons and "Continue" never leaves the screen. Where it fits,
      sticky does nothing and the row sits under the Map note as before.
      The ground behind the row is the frame's own, so the words go under
-     it rather than through the outlined Share. In DOM order, Continue
-     then Share, so Tab meets them as the eye does. */
+     it rather than through the outlined Share. In DOM order, Share then
+     Continue: Continue lands on the right, under the thumb, and Tab meets
+     them as the eye does. */
   .twinBeat .actions {
     position: sticky;
     bottom: 0;

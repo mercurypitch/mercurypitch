@@ -85,6 +85,18 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
 
       <p class={styles.mapExplainer}>{TWIN_NEXT}</p>
       <div class={styles.actions}>
+        {/* Share first: Continue sits on the right, under the thumb on a
+            phone (owner testing, 11 Oct 2026), and Tab meets the two in
+            the order the eye does. */}
+        <Show when={props.onShare !== undefined}>
+          <button
+            type="button"
+            class={styles.secondary}
+            onClick={() => void share()}
+          >
+            Share now
+          </button>
+        </Show>
         {/* Not "See my map": this advances to `keep`, and the Map is one
             screen further on. Promising the Map and then showing an
             account offer that repeats the portrait is what made the two
@@ -100,15 +112,6 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         >
           Continue
         </button>
-        <Show when={props.onShare !== undefined}>
-          <button
-            type="button"
-            class={styles.secondary}
-            onClick={() => void share()}
-          >
-            Share now
-          </button>
-        </Show>
       </div>
       {/* In the tree before there is anything to say, or the line is never
           announced -- and a link reaching the clipboard is silent. */}
