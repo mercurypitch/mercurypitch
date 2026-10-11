@@ -4,6 +4,7 @@ import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
 import type * as BestModule from '../long-note-best'
 import type * as CaptureModule from '../useLongNoteCapture'
+import { DEMO_COPY } from './demo-cues'
 import type { DemoTake } from './demo-script'
 
 // The room with its demo, on a fake clock: timers, performance.now() and
@@ -177,10 +178,30 @@ interface Seen {
   fast: boolean
   /** Each tooltip's first moment. */
   at: Record<string, Moment>
+  /** What Merc said while the demo played, before a take or in one. */
+  mercAlone: string[]
+  mercInTakes: string[]
 }
 
 function watched(): Seen {
-  return { tips: [], takes: [], phases: [], said: [], fast: false, at: {} }
+  return {
+    tips: [],
+    takes: [],
+    phases: [],
+    said: [],
+    fast: false,
+    at: {},
+    mercAlone: [],
+    mercInTakes: [],
+  }
+}
+
+/** Merc's words on screen now: his bubble, then his chip. */
+function mercSays(): string[] {
+  return [
+    screen.queryByTestId('long-note-line')?.textContent,
+    screen.queryByTestId('long-note-chip')?.textContent,
+  ].filter((text): text is string => text !== undefined && text !== null)
 }
 
 const push = (list: string[], value: string | null | undefined): void => {
@@ -204,7 +225,11 @@ async function run(ms: number, log: Seen = watched()): Promise<Seen> {
       }
     }
     push(log.tips, tip)
-    push(log.takes, screen.queryByTestId('long-note-demo-take')?.textContent)
+    const take = screen.queryByTestId('long-note-demo-take')?.textContent
+    for (const words of demoMode() === 'playing' ? mercSays() : []) {
+      push(take === undefined ? log.mercAlone : log.mercInTakes, words)
+    }
+    push(log.takes, take)
     push(log.phases, room().dataset.phase)
     push(log.said, screen.getByTestId('long-note-demo-said').textContent)
     if (screen.queryByTestId('long-note-demo-fast') !== null) log.fast = true
@@ -284,8 +309,12 @@ describe('the Long note demo', () => {
       'score',
     ])
     // Each one after the event it explains.
-    expect(log.at.stops.chip).toMatch(/again|slide back/i)
     expect(log.at.stops.take).toBe('Not like this')
+    // One voice at a time: Merc says "Watch me first." before the takes,
+    // and nothing in them, so the pill and the tooltip speak alone.
+    expect(log.mercAlone).toEqual([DEMO_COPY.watch])
+    expect(log.mercInTakes).toEqual([])
+    expect(log.at.stops.chip).toBeNull()
     expect(log.at.breath.chip).toBeNull()
     expect(log.at.fills.take).toBe('Like this')
     expect(log.at.fills.fast).toBe(false)

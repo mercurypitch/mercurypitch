@@ -106,6 +106,11 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   const demo = useLongNoteDemo(room)
   /** The demo has the room: its controls are out of reach. */
   const demoBusy = (): boolean => demo.mode() !== 'idle'
+  /**
+   * The demo is singing a take: Merc's bubble and chip keep quiet, so the
+   * take's pill and the tooltip speak one at a time.
+   */
+  const demoTake = (): boolean => demo.take() !== null
   let stageEl: HTMLDivElement | undefined
   const [layout, setLayout] = createSignal<StageLayout>({
     k: 1,
@@ -219,7 +224,7 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
               </Show>
             </div>
             <div class={styles.chipRow} aria-live="polite">
-              <Show when={room.chip()}>
+              <Show when={demoTake() ? null : room.chip()}>
                 {(text) => (
                   <span class={styles.chip} data-testid="long-note-chip">
                     {text()}
@@ -248,8 +253,12 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             )}
           </Match>
         </Switch>
-        <Show when={room.line() !== '' && phase() !== 'hold'}>
-          <p class={styles.bubble} aria-live="polite">
+        <Show when={room.line() !== '' && phase() !== 'hold' && !demoTake()}>
+          <p
+            class={styles.bubble}
+            aria-live="polite"
+            data-testid="long-note-line"
+          >
             {room.line()}
           </p>
         </Show>
