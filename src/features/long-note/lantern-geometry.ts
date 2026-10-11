@@ -21,11 +21,32 @@ export const LANTERN_VIEW_H = 400
 export const CHIMNEY_TOP = 116
 export const CHIMNEY_BOTTOM = 312
 
-/** The chimney's outline: a narrow neck, widest low down, a round bowl. */
-export const CHIMNEY_PATH =
-  'M63.1 115.8 L136.9 115.8 C146.7 170.1 158.3 192.6 158.3 252 ' +
-  'C158.3 279.9 149.8 295 127.2 312 L72.8 312 C50.2 295 41.7 279.9 41.7 252 ' +
-  'C41.7 192.6 53.3 170.1 63.1 115.8 Z'
+/**
+ * The chimney's outline: a narrow neck, widest low down, a round bowl. One
+ * list of points, for the SVG clip (CHIMNEY_PATH) and the canvas (traceChimney).
+ */
+const CHIMNEY_OUTLINE = [
+  ['M', 63.1, 115.8],
+  ['L', 136.9, 115.8],
+  ['C', 146.7, 170.1, 158.3, 192.6, 158.3, 252],
+  ['C', 158.3, 279.9, 149.8, 295, 127.2, 312],
+  ['L', 72.8, 312],
+  ['C', 50.2, 295, 41.7, 279.9, 41.7, 252],
+  ['C', 41.7, 192.6, 53.3, 170.1, 63.1, 115.8],
+] as const
+
+export const CHIMNEY_PATH = `${CHIMNEY_OUTLINE.map(([op, ...at]) => `${op}${at.join(' ')}`).join(' ')} Z`
+
+/** The chimney's outline on a canvas path, in view-box units. */
+export function traceChimney(path: CanvasPath): void {
+  for (const step of CHIMNEY_OUTLINE) {
+    if (step[0] === 'M') path.moveTo(step[1], step[2])
+    else if (step[0] === 'L') path.lineTo(step[1], step[2])
+    else
+      path.bezierCurveTo(step[1], step[2], step[3], step[4], step[5], step[6])
+  }
+  path.closePath()
+}
 
 /** The chimney's half-width every 7 units from its top, on the same fit. */
 const HALF_WIDTH_STEP = 7

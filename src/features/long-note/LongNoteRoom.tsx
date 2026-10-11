@@ -18,7 +18,9 @@
 //
 // Merc's canvas sits BETWEEN the lantern's two layers (Lantern.tsx), so in
 // the glass he is behind its highlights and frame, and his feet are in the
-// liquid. Everything is placed from one measurement of the stage
+// liquid. The target line and the voice are drawn on both sides of him
+// (VoiceTrace.tsx): in the glass behind him, over the frame and the room in
+// front. Everything is placed from one measurement of the stage
 // (`layoutStage`), in the lantern's own view-box units.
 
 import type { JSX } from 'solid-js'
@@ -29,11 +31,11 @@ import { DEMO_COPY } from './demo/demo-cues'
 import { LongNoteDemoLayer } from './demo/LongNoteDemoLayer'
 import { useLongNoteDemo } from './demo/useLongNoteDemo'
 import { LanternBack, LanternFront } from './Lantern'
-import { CHIMNEY_BOTTOM, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
+import { CHIMNEY_BOTTOM, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
 import styles from './LongNoteRoom.module.css'
 import { MercView } from './MercView'
 import { useLongNoteController } from './useLongNoteController'
-import { VoiceTrace } from './VoiceTrace'
+import { TRACE_PX_PER_CENT, VoiceTrace } from './VoiceTrace'
 
 export interface LongNoteRoomProps {
   /** Leave the room (Done). */
@@ -67,9 +69,11 @@ const LAYOUT_W = 372
 const FLOAT_SINK = 3
 /** Where he stands while the liquid is too shallow to float him. */
 const BOWL_FLOOR = CHIMNEY_BOTTOM - 4
-/** The chimney's left edge where the target line crosses it. */
-const CHIMNEY_LEFT_AT_LINE =
-  LANTERN_VIEW_W / 2 - chimneyHalfWidth(TARGET_LINE_Y)
+/**
+ * Where the voice's newest point lands: past the glass, where storyboard
+ * 2's ribbon ends, short of the note's name.
+ */
+const TRACE_HEAD_X = 240
 
 interface StageLayout {
   /** px per view-box unit. */
@@ -77,6 +81,9 @@ interface StageLayout {
   /** The lantern box's offset in the stage, px. */
   left: number
   top: number
+  /** The stage's size, px. */
+  width: number
+  height: number
 }
 
 function layoutStage(width: number, height: number): StageLayout {
@@ -87,7 +94,7 @@ function layoutStage(width: number, height: number): StageLayout {
   // The lantern is centred; Merc beside it uses the room to its right.
   const left = width / 2 - (LANTERN_VIEW_W / 2) * k
   const top = height - LANTERN_VIEW_H * k
-  return { k, left, top }
+  return { k, left, top, width, height }
 }
 
 function formatSeconds(seconds: number): string {
@@ -104,6 +111,8 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
     k: 1,
     left: 0,
     top: 0,
+    width: 0,
+    height: 0,
   })
 
   onMount(() => {
@@ -163,8 +172,14 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
   }
   const anchorX = (): number => {
     const { k, left } = layout()
-    return left + CHIMNEY_LEFT_AT_LINE * k
+    return left + TRACE_HEAD_X * k
   }
+  /** The tolerance band's half-height either side of the line, px. */
+  const band = (): number => room.toleranceCents * TRACE_PX_PER_CENT
+  const tracing = (): boolean => phase() === 'listen' || phase() === 'hold'
+  /** The result shows the full lantern, as storyboard 3 does: no line. */
+  const lineClass = (base: string): string =>
+    phase() === 'result' ? `${base} ${styles.lineAway}` : base
 
   const micLabel = (): string => {
     switch (phase()) {
@@ -241,18 +256,9 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
       </div>
 
       <div ref={stageEl} class={styles.stage} data-testid="long-note-stage">
-        <VoiceTrace
-          class={styles.trace}
-          trace={room.trace}
-          now={room.now}
-          lineY={lineY}
-          anchorX={anchorX}
-          toleranceCents={room.toleranceCents}
-          active={() => phase() === 'listen' || phase() === 'hold'}
-          lineGap={() => {
-            const { k, left } = layout()
-            return [left, left + LANTERN_VIEW_W * k] as const
-          }}
+        <div
+          class={lineClass(styles.band)}
+          style={{ top: `${lineY() - band()}px`, height: `${2 * band()}px` }}
         />
         <Show when={room.noteName() !== ''}>
           <button
@@ -281,6 +287,24 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             glow={room.lanternGlow}
             shining={room.shining}
           />
+          {/* In the glass the line and the voice pass behind Merc. */}
+          <VoiceTrace
+            class={lineClass(styles.trace)}
+            style={{
+              left: `${-layout().left}px`,
+              top: `${-layout().top}px`,
+              width: `${layout().width}px`,
+              height: `${layout().height}px`,
+            }}
+            testId="long-note-trace-inner"
+            region="inside"
+            trace={room.trace}
+            now={room.now}
+            lineY={lineY}
+            anchorX={anchorX}
+            lantern={layout}
+            active={tracing}
+          />
           <MercView
             class={hopping() ? `${styles.merc} ${styles.mercHop}` : styles.merc}
             state={room.mercState}
@@ -303,6 +327,17 @@ export function LongNoteRoom(props: LongNoteRoomProps): JSX.Element {
             }
           />
         </div>
+        {/* Out of the glass they cross the lantern's frame in front. */}
+        <VoiceTrace
+          class={lineClass(styles.trace)}
+          region="outside"
+          trace={room.trace}
+          now={room.now}
+          lineY={lineY}
+          anchorX={anchorX}
+          lantern={layout}
+          active={tracing}
+        />
         <Show when={demo.canAsk()}>
           <button
             type="button"

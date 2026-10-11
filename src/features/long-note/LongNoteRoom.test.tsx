@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sequence, silence, tone } from '@/lib/glass/test-frames'
 import type { PitchFrame } from '@/lib/pitch-f0-stream'
+import styles from './LongNoteRoom.module.css'
 import type * as CaptureModule from './useLongNoteCapture'
 
 // ── A capture the test feeds by hand ────────────────────────────
@@ -416,6 +417,38 @@ describe('LongNoteRoom', () => {
       expect(mercState()).toBe('lock')
     } finally {
       vi.useRealTimers()
+    }
+  })
+
+  it('runs the line behind Merc in the glass and over the frame, and dims it for the result', async () => {
+    render(() => <LongNoteRoom onDone={() => undefined} />)
+    // Back to front: the liquid, the line in the glass, Merc, the glass and
+    // frame, the line outside the glass.
+    const layers = [
+      'lantern-back',
+      'long-note-trace-inner',
+      'long-note-merc',
+      'lantern-front',
+      'long-note-trace',
+    ].map((id) => screen.getByTestId(id))
+    for (let i = 1; i < layers.length; i++) {
+      expect(
+        layers[i - 1].compareDocumentPosition(layers[i]) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    }
+
+    await startListening()
+    fake.frames = sequence(
+      (t) => tone(57, 3, { startT: t }),
+      (t) => silence(0.8, t),
+    )
+    flushFrames()
+    await settle()
+
+    expect(phase()).toBe('result')
+    for (const id of ['long-note-trace-inner', 'long-note-trace']) {
+      expect(screen.getByTestId(id).classList).toContain(styles.lineAway)
     }
   })
 

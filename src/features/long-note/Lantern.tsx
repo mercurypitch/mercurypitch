@@ -22,7 +22,10 @@
 //          violet band, and the light the liquid throws up the empty glass
 //   front  the veil over Merc's feet and the surface's front lip, the glass
 //          plate above the surface, the frame plate with the lit frame fading
-//          in over it from below, the target line, the full lantern's sparkles
+//          in over it from below, the full lantern's sparkles
+//
+// The room draws the target line and the voice (VoiceTrace.tsx): in the glass
+// behind Merc, over the frame in front.
 //
 // The plates never repaint while the light rises: each one sits in a window
 // that slides with the surface while the plate inside slides back the same
@@ -33,7 +36,7 @@ import { For, Show } from 'solid-js'
 import styles from './Lantern.module.css'
 import frameUrl from './lantern-frame.webp'
 import frameLitUrl from './lantern-frame-lit.webp'
-import { CHIMNEY_BOTTOM, CHIMNEY_PATH, CHIMNEY_TOP, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, TARGET_LINE_Y, } from './lantern-geometry'
+import { CHIMNEY_BOTTOM, CHIMNEY_PATH, CHIMNEY_TOP, chimneyHalfWidth, LANTERN_VIEW_H, LANTERN_VIEW_W, surfaceY, } from './lantern-geometry'
 import glassUrl from './lantern-glass.webp'
 import liquidUrl from './lantern-liquid.webp'
 import starsUrl from './lantern-stars.webp'
@@ -400,20 +403,6 @@ export function LanternFront(props: LanternProps): JSX.Element {
       >
         <PlateImage plate={FRAME_LIT} />
       </SurfaceWindow>
-
-      {/* The target line runs over the lantern, as it does over the room:
-          the room's trace leaves this stretch to it. */}
-      <svg class={styles.layer} viewBox={VIEW_BOX} aria-hidden="true">
-        <line
-          x1="0"
-          x2={LANTERN_VIEW_W}
-          y1={TARGET_LINE_Y}
-          y2={TARGET_LINE_Y}
-          stroke="rgba(150, 205, 255, 0.6)"
-          stroke-width="1.5"
-          vector-effect="non-scaling-stroke"
-        />
-      </svg>
 
       <Show when={props.shining()}>
         <For each={SPARKLES}>

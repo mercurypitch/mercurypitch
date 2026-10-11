@@ -100,12 +100,30 @@
   overflow: hidden;
 }
 
+/* The voice and the target line: over the stage, or (inside the lantern)
+   placed back over the stage by the room. */
 .trace {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  transition: opacity 600ms ease-out;
+}
+
+/* The tolerance either side of the line, behind the lantern. */
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(120, 200, 255, 0.07);
+  pointer-events: none;
+  transition: opacity 600ms ease-out;
+}
+
+/* The result shows the full lantern: the line all but goes. */
+.lineAway {
+  opacity: 0.2;
 }
 
 .noteTag {
