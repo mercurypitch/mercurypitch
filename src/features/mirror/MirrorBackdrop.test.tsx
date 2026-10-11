@@ -3,6 +3,7 @@
 // ============================================================
 
 import { cleanup, render } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { MirrorScreen } from './MirrorBackdrop'
 import { MirrorBackdrop, plateFor } from './MirrorBackdrop'
@@ -35,5 +36,19 @@ describe('MirrorBackdrop', () => {
         el.getAttribute('data-plate'),
       ),
     ).toEqual(['plain'])
+  })
+
+  it('marks only the first plate, the one that takes over from the loading screen', () => {
+    const [plate, setPlate] = createSignal<'sky' | 'plain'>('sky')
+    const { container } = render(() => <MirrorBackdrop plate={plate()} />)
+    const shown = (): HTMLElement | null =>
+      container.querySelector<HTMLElement>('.mirror-plate')
+
+    expect(shown()?.hasAttribute('data-first')).toBe(true)
+    setPlate('plain')
+    expect(shown()?.getAttribute('data-plate')).toBe('plain')
+    expect(shown()?.hasAttribute('data-first')).toBe(false)
+    setPlate('sky')
+    expect(shown()?.hasAttribute('data-first')).toBe(false)
   })
 })

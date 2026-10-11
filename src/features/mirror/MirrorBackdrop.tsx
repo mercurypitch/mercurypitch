@@ -46,12 +46,25 @@ export interface MirrorBackdropProps {
 }
 
 /** A fixed layer under the page. Each new plate mounts fresh, so it fades in
- *  over the ground instead of swapping in a frame. */
+ *  over the ground instead of swapping in a frame. The first one is marked
+ *  `data-first`: on a wide window it takes over from the loading screen's
+ *  copy of the same picture, so mirror.css does not fade it in. */
 export function MirrorBackdrop(props: MirrorBackdropProps): JSX.Element {
+  let painted = false
   return (
     <div class="mirror-backdrop" aria-hidden="true">
       <Show when={props.plate === 'none' ? null : props.plate} keyed>
-        {(plate) => <div class="mirror-plate" data-plate={plate} />}
+        {(plate) => {
+          const first = !painted
+          painted = true
+          return (
+            <div
+              class="mirror-plate"
+              data-plate={plate}
+              data-first={first ? '' : undefined}
+            />
+          )
+        }}
       </Show>
     </div>
   )

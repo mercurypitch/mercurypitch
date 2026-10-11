@@ -164,6 +164,26 @@ body {
   }
 }
 
+/* The first plate on a wide window takes over from the loading screen,
+   which already shows Merc's sky under the same scrim (below), so fading
+   it in from nothing would make Merc vanish and come back. Merc's sky
+   stays as it is; beside a shared card he steps back from full strength. */
+@media not all and (max-aspect-ratio: 1/1) {
+  .mirror-plate[data-first][data-plate='sky'] {
+    animation: none;
+  }
+
+  .mirror-plate[data-first][data-plate='sky-aside'] {
+    animation-name: mirror-plate-settle;
+  }
+}
+
+@keyframes mirror-plate-settle {
+  from {
+    opacity: 1;
+  }
+}
+
 /* Merc's sky, behind the start screen: dark in the middle where the words
    sit, Merc beside them on a wide screen and above them on a tall one.
    `sky-aside` (a shared card) takes it only where he stands beside them. */
@@ -279,14 +299,27 @@ body {
 }
 
 /* Only where the window is wider than tall: a rule that names a picture
-   downloads it even when it is overridden or its box never draws. */
+   downloads it even when it is overridden or its box never draws. The
+   picture wears the start screen's own scrim and nothing else, so the
+   frame is the same before and after the app mounts. */
 @media not all and (max-aspect-ratio: 1/1) {
+  #root ~ .entry-prelude {
+    background: none;
+  }
+
   #root ~ .entry-prelude::before {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -1;
-    background: url('/onboarding/merc-sky-wide.webp') center / cover no-repeat;
+    background:
+      radial-gradient(
+        ellipse 38% 64% at 50% 50%,
+        color-mix(in srgb, var(--ob-ground) 74%, transparent),
+        color-mix(in srgb, var(--ob-ground) 52%, transparent) 62%,
+        transparent 100%
+      ),
+      url('/onboarding/merc-sky-wide.webp') center / cover no-repeat;
   }
 }
 
