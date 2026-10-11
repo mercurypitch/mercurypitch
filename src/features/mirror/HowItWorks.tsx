@@ -194,9 +194,7 @@ export const HowItWorks: Component<HowItWorksProps> = (props) => {
       <button class="mirror-cta" onClick={() => props.onLetsGo()}>
         Let's go
       </button>
-      <p class="mirror-trust">
-        Your audio never leaves this device — everything runs right here.
-      </p>
+      <p class="mirror-trust">Only you can hear you.</p>
       <button class="mirror-textbtn" onClick={() => props.onBack()}>
         Back
       </button>

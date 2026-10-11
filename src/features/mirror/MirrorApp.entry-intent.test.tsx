@@ -89,8 +89,9 @@ describe('Voice Mirror search entry copy', () => {
 
     fireEvent.click(info)
     expect(info).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /never leaves this device/i,
+    expect(screen.getByRole('note')).toHaveTextContent('Only you can hear you.')
+    expect(screen.getByRole('note').textContent).not.toMatch(
+      /never leaves|upload/i,
     )
   })
 

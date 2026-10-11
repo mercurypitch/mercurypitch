@@ -336,7 +336,7 @@ body {
 }
 
 /* ── Privacy "i" ──────────────────────────────────────────────
-   The promise ("audio never leaves this device") has to stay one gesture
+   The reassurance ("Only you can hear you.") has to stay one gesture
    away without spending two lines of body copy on every screen. Opens on
    hover for fine pointers and on tap for touch — the button's aria-expanded
    drives the same popover either way, so the two paths never disagree. */

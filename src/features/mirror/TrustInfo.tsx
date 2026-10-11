@@ -17,7 +17,10 @@ import { createSignal } from 'solid-js'
  *  so this mirrors Glass's TrustInfo, with one addition: Glass opens on click
  *  only, which leaves desktop users clicking a thing that looks hoverable.
  *  Hover is handled in CSS for fine pointers; the click toggle stays for touch,
- *  where hover does not exist. */
+ *  where hover does not exist.
+ *
+ *  The reassurance is said the owner's way, "Only you can hear you.", never
+ *  as a promise about where the audio goes. */
 export function TrustInfo(): JSX.Element {
   const [open, setOpen] = createSignal(false)
   return (
@@ -45,8 +48,7 @@ export function TrustInfo(): JSX.Element {
         </svg>
       </button>
       <div class="mirror-info-pop" role="note" data-open={open()}>
-        Private by design: your audio never leaves this device. The analysis
-        runs here in your browser, and the recording stays with you.
+        Only you can hear you. The analysis runs here, in your browser.
       </div>
     </div>
   )

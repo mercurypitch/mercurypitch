@@ -120,7 +120,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.',
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
-    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then names the legendary singer whose range matches yours. Free, no account, and your audio never leaves your device.',
+    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then names the legendary singer whose range matches yours. Free, no account, and only you can hear you.',
     faq: [
       {
         q: 'What is my vocal range?',
