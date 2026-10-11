@@ -11,17 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.17] - 2026-10-11
 
-172 commits since `v0.9.16` (20 on `main`'s first-parent line, every one a PR
+211 commits since `v0.9.16` (22 on `main`'s first-parent line, every one a PR
 merge) before this release PR, #974: PRs #957 to #962, #964 to #972, #975 to
-#977, #979 and #982.
+#979, #981 and #982.
 The release is the launch gift (LAUNCH claimed at email confirmation, 30 extra
 credits on the next pack for using all five) and the legal and money
 compliance work that has to ship with it: the 14-day withdrawal for credit
 packs, refunds and disputes applied exactly once, consent that waits for a yes
 in the EEA, retention sweeps, and the legal links. It also brings the
-voiceprint-first intro (#977) and the compact sign-in sheet (#979), so the
-launch traffic meets both. The native app is not part
-of it and keeps its version: under `apps/mercurypitch` only the bundle check,
+voiceprint-first intro (#977, polished in #981), the compact sign-in sheet
+(#979) and the Voice Mirror's account offer (#978), so the launch traffic
+meets all three. The native app is not part of it and keeps its version: under `apps/mercurypitch` only the bundle check,
 the Vite config that leaves the offer out (#961) and the shared font aliases
 (#962) change.
 
@@ -53,7 +53,9 @@ The order matters. Each step names the PR that asks for it.
    the website deploy run side by side; an app that sends the Google return
    nonce before the worker echoes it refuses every Google sign-in until the
    worker lands. A worker deployed first breaks nothing: the old app sends
-   no nonce and gets the old redirects.
+   no nonce and gets the old redirects. It also lets in the new funnel
+   events, `cta_account_click` (#978) and the four `onboarding_map_door_*`
+   (#981); a site that lands first loses only those beacons (a 400 each).
 5. **Deploy the landing straight after the worker (disjoint-colliders #99
    and #100).** It brings the Terms section `#withdrawal` that the checkbox,
    the footnote and both mails link, and the privacy notice whose deletion
@@ -70,7 +72,9 @@ The order matters. Each step names the PR that asks for it.
    missed event(s)" alert each time. Re-running 0065's `UPDATE` by hand
    right after the deploy is optional (owner decision).
 7. **Push the tag `v0.9.17`.** `deploy-db-prod` runs again and finds no
-   migration left to apply.
+   migration left to apply. Once the site is live,
+   `curl -sI 'https://mirror.mercurypitch.com/?v=x'` answers 301 with
+   `location: https://mercurypitch.com/mirror?v=x` (#978).
 
 If `STRIPE_SECRET_KEY` is a restricted key, it needs read access to Charges,
 Refunds, Disputes, Events and PaymentIntents (a withdrawal finds its charge
@@ -419,6 +423,56 @@ refused. Spec: `docs/specs/google-return-binding.ears.md`.
   zoom on focus. Floated labels are 11 px, light-theme links use
   `--accent-text` (5.83:1), and every fallback is the app's dark value, so
   the sheet reads on a page without the theme tokens.
+
+### Web: the Voice Mirror's account offer (#978)
+
+- **Who sees it.** "Create my free account" and the launch gift sit under the
+  results for a browser that has never held an account: no real token, no
+  last sign-in, no `requiresLogin` flag (`account-known.ts`). An anonymous
+  token still sees it. Declining keeps it; a double tap counts once.
+- **The dialog.** The app's own `AuthModal`, loaded on the tap or on a Google
+  landing (251 KB, 77 KB gzip). It opens a microtask after its host mounts,
+  so the focus trap finds its element: focus lands on the first field, Tab
+  stays inside, and Escape and X hand focus back to the ask, which is
+  `aria-disabled` while it reads "Opening…".
+- **Google.** The return lands on the Mirror. `main.tsx` stores the session
+  before anything renders, so `#take-N` is back, and a return that created
+  the account adopts the browser's voiceprints (REQ-VPR-014). A second
+  factor opens on "Enter your code". A cancel at Google reads "Google
+  sign-in was canceled."
+- **Funnel.** `cta_account_click` counts taps, not accounts, and is not an
+  Ads conversion; `results_view` and the Ads sequence are unchanged. The
+  ask's views are not counted separately.
+- **The subdomain.** `mirror.mercurypitch.com` answers 301 to
+  `mercurypitch.com/mirror`: `/` becomes `/mirror`, other paths and the query
+  stay (`src/lib/mirror-subdomain.ts`), and the Mirror's entry makes the same
+  move for paths the asset layer serves without the worker. Its origin was
+  never in the db-worker's `ALLOWED_ORIGINS`, so sign-in and the funnel
+  beacons failed there. Voiceprints saved on it stay with that origin.
+- **Copy and weight.** The password sign-up toast reads "Confirm your email
+  to get up to N free song separations." The Mirror's first-paint JS went
+  from 385,719 to 391,225 B; Drum Night's first paint is 519,863 B of its
+  520,000.
+
+### Web: onboarding polish (#981)
+
+- **The controls are back on top.** Since #977, Merc's plates painted over
+  the welcome's X, the "Not now" pills on First light and the Fork, and the
+  progress line (dev only). The rail now stacks above the art.
+- **Short screens.** The twin's portrait follows the screen height, and on
+  phones the Share and Continue row sticks to the bottom of the frame, so
+  Continue stays on screen from 320x640 up. Continue is on the right and
+  Share comes first in the DOM, so Tab and the eye agree. The welcome fits
+  without scrolling at 320-362 px wide from 588 px tall up.
+- **Copy.** Karaoke Night's gift line, the signed-out promo card and the
+  Promo pill's title say "up to N free song separations"; account holders
+  still count credits, and one credit is singular ("Claim 1 free credit",
+  "1 credit added"). `launch-gift-copy.ts` holds the shared words for six
+  readers. The twin's eyebrow (5.48:1) and "Your first stop" (6.11:1) pass
+  contrast.
+- **Funnel.** Four `onboarding_map_door_*` events count the Map's door taps;
+  the worker must deploy first (step 4).
+- **Tap targets.** Secondary buttons are 44 px tall.
 
 ### Tests: the Jam lyric-row spec (#982)
 
