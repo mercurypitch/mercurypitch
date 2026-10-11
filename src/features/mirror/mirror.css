@@ -15,7 +15,6 @@
      light on a dark sheet (the app sets this per theme in app.css, which
      this entry does not load). */
   color-scheme: dark;
-  --mirror-bg-top: #0b1026;
   --mirror-bg-mid: #141033;
   --mirror-bg-bottom: #090714;
   --mirror-text: #f4f0ff;
