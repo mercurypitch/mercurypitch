@@ -117,6 +117,15 @@ describe('Long note demo, take 2 (like this)', () => {
     expect(result.score).toBeGreaterThanOrEqual(90)
   })
 
+  it('lets go of the note 0.3 to 0.4 s after the lantern fills', () => {
+    const lastVoiced = [...ticks].reverse().find(({ frame }) => voiced(frame))
+    expect(lastVoiced).toBeDefined()
+    if (lastVoiced === undefined) return
+    const release = lastVoiced.state.clock - at('goal')
+    expect(release).toBeGreaterThanOrEqual(0.3)
+    expect(release).toBeLessThanOrEqual(0.4)
+  })
+
   it('runs the fast stretch from after the lock to the goal, at 4x', () => {
     expect(take.fast).not.toBeNull()
     if (take.fast === null) return

@@ -79,8 +79,11 @@ const SILENT_RMS = 0.001
 const JITTER_CENTS = 1.2
 /** Take 2 starts its fast-forward this long after the lock. */
 const FAST_AFTER_LOCK = 1.8
-/** Take 2 lets go of the note this long after the lantern fills. */
-const RELEASE_AFTER_GOAL = 0.6
+/**
+ * Take 2 lets go of the note this long after the lantern fills, so the
+ * result's top-up follows the full moment straight away.
+ */
+const RELEASE_AFTER_GOAL = 0.35
 /** Frames kept past the end of the note. */
 const TAIL = 0.1
 
