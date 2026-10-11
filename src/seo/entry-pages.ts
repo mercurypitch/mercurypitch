@@ -63,7 +63,14 @@ export interface EntryPage {
   /** Emits both the visible FAQ section and FAQPage JSON-LD. */
   faq?: readonly FaqItem[]
   noscript: string
+  /** The browser chrome's color. Defaults to DEFAULT_THEME_COLOR; the Voice
+   *  Mirror's documents use the ground their start screen stands on. */
+  themeColor?: string
 }
+
+export const DEFAULT_THEME_COLOR = '#0b1026'
+/** The onboarding's ground (--ob-ground in src/features/mirror/mirror.css). */
+const MIRROR_THEME_COLOR = '#0d1117'
 
 export const SITE_ORIGIN = 'https://mercurypitch.com'
 
@@ -93,6 +100,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/mirror', '/free-sing'],
     navLabel: 'Voice Mirror',
     boot: '/src/features/mirror/main.tsx',
+    themeColor: MIRROR_THEME_COLOR,
     title: 'Voice Mirror — See Your Voice in 60 Seconds | MercuryPitch',
     description:
       'Sing for 60 seconds and get your vocal range, pitch accuracy and steadiness as a shareable voiceprint. Free, and your audio never leaves your device.',
@@ -112,7 +120,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
         'Your vocal range, accuracy and steadiness as a shareable voiceprint. Audio never leaves your device.',
     },
     h1: 'Voice Mirror — see your voice in 60 seconds',
-    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then names the legendary singer whose range matches yours. Free, no account, and your audio never leaves your device.',
+    lede: 'Sing two sirens and hold one note. Voice Mirror reads back your vocal range, your pitch accuracy in cents and how steady you held, then names the legendary singer whose range matches yours. Free, no account, and only you can hear you.',
     faq: [
       {
         q: 'What is my vocal range?',
@@ -135,6 +143,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/vocal-range-test'],
     navLabel: 'Vocal Range Test',
     boot: '/src/features/mirror/main.tsx',
+    themeColor: MIRROR_THEME_COLOR,
     title: 'Free Vocal Range Test — Lowest & Highest Note | MercuryPitch',
     description:
       'Glide from your lowest note to your highest and get both notes, your span in semitones and a voice-type guide. Free, and your audio stays on your device.',
@@ -524,6 +533,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/voice-type-test'],
     navLabel: 'Voice Type Test',
     boot: '/src/features/mirror/main.tsx',
+    themeColor: MIRROR_THEME_COLOR,
     title:
       'Voice Type Test — Am I a Soprano, Alto, Tenor or Bass? | MercuryPitch',
     description:
@@ -622,6 +632,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     paths: ['/which-singer-has-my-vocal-range'],
     navLabel: 'Singer Match',
     boot: '/src/features/mirror/main.tsx',
+    themeColor: MIRROR_THEME_COLOR,
     title: 'Which Singer Has My Vocal Range? Match Your Voice | MercuryPitch',
     description:
       'Sing one glide, get your measured range, and see which famous singer covers the same notes. Free, about ninety seconds, and your audio stays on your device.',

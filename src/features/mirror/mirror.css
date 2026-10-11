@@ -2,6 +2,10 @@
    Voice Mirror — standalone styles (deep-space theme).
    Self-contained: the mirror entry does not import the app's
    stylesheets, keeping its bundle small and fast on mobile.
+
+   The start screen wears the onboarding's welcome (owner decisions
+   1 and 2, 11 Oct 2026): its tokens, its pill and Merc's plates. The
+   screens after it keep the Mirror's own tokens until their pass.
    ============================================================ */
 
 :root {
@@ -11,7 +15,6 @@
      light on a dark sheet (the app sets this per theme in app.css, which
      this entry does not load). */
   color-scheme: dark;
-  --mirror-bg-top: #0b1026;
   --mirror-bg-mid: #141033;
   --mirror-bg-bottom: #090714;
   --mirror-text: #f4f0ff;
@@ -25,6 +28,23 @@
      wordmark in card-renderer.ts. */
   --mirror-brand-a: #58a6ff;
   --mirror-brand-b: #bc8cff;
+
+  /* The onboarding's tokens (.overlay in
+     src/features/onboarding/onboarding.module.css), copied and never
+     imported: that sheet is 1,590 lines and this page has a 40 KB CSS
+     budget (scripts/assert-first-paint-budgets.mjs). Keep them in step. */
+  --ob-ground: #0d1117;
+  --ob-ink: #e6edf3;
+  --ob-ink-2: #a8b3bf;
+  --ob-ink-3: #7d8590;
+  --ob-rule: #30363d;
+  --ob-card: rgba(28, 33, 40, 0.72);
+  --ob-card-solid: rgba(28, 33, 40, 0.9);
+  --ob-rail-pill: color-mix(in srgb, var(--ob-ground) 78%, transparent);
+  --ob-blue: #58a6ff;
+  --ob-teal: #2dd4bf;
+  --ob-violet: #bc8cff;
+  --ob-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 * {
@@ -35,19 +55,15 @@ html,
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   /* The page must never scroll sideways (reveal arrows and the results grid
      are the widest things; both are contained, this is the guarantee). */
   overflow-x: clip;
 }
 
+/* The onboarding's ground. The pictures sit on it (.mirror-backdrop). */
 body {
-  background: linear-gradient(
-    180deg,
-    var(--mirror-bg-top) 0%,
-    var(--mirror-bg-mid) 55%,
-    var(--mirror-bg-bottom) 100%
-  );
-  background-attachment: fixed;
+  background: var(--ob-ground);
   color: var(--mirror-text);
   font-family:
     'Plus Jakarta Sans',
@@ -63,8 +79,15 @@ body {
 .mirror-shell {
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  /* Clear of a notch held sideways and of the home indicator. */
+  padding: max(24px, env(safe-area-inset-top))
+    max(20px, env(safe-area-inset-right))
+    calc(64px + env(safe-area-inset-bottom, 0px))
+    max(20px, env(safe-area-inset-left));
   min-height: 100vh;
+  /* dvh follows a phone's browser bars as they come and go, so the foot of
+     a screen that fits sits on the screen, not under the toolbar. */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   /* `safe` matters on short viewports — a phone in landscape, a short laptop
@@ -78,8 +101,10 @@ body {
 /* The legal row closes the page. Auto margins above the first block and above
    the row split the spare height: the content stays centred in what is left
    and the row sits at the foot. With no spare height (a long result page) the
-   margins are zero and the row simply follows the content. */
-.mirror-shell > :first-child {
+   margins are zero and the row simply follows the content. The backdrop
+   leads the shell but is fixed, out of the flow, so the first block is the
+   one after it. */
+.mirror-shell > .mirror-backdrop + * {
   margin-top: auto;
 }
 .mirror-legal {
@@ -97,8 +122,221 @@ body {
   position: relative;
 }
 
+/* ── The pictures: the onboarding's plates ────────────────────
+   MirrorBackdrop.tsx says which plate sits behind which screen. This
+   picks the file by the window's shape with the onboarding's own test
+   (TALL_QUERY in onboarding/plates.ts), so a phone held upright only
+   ever asks for the tall cut. Fixed and the size of the window: a long
+   results page scrolls over the picture instead of stretching it. */
+.mirror-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--ob-ground);
+  /* The plain plate's screen blend stays inside this layer. */
+  isolation: isolate;
+}
+
+/* The quicksilver wash the onboarding's composition centres on. */
+.mirror-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    68% 52% at 50% 46%,
+    rgba(88, 166, 255, 0.1),
+    transparent 68%
+  );
+}
+
+/* Each plate mounts fresh and fades in over the ground. */
+.mirror-plate {
+  position: absolute;
+  inset: 0;
+  animation: mirror-plate-in 0.7s var(--ob-ease) backwards;
+}
+
+@keyframes mirror-plate-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The first plate on a wide window takes over from the loading screen,
+   which already shows Merc's sky under the same scrim (below), so fading
+   it in from nothing would make Merc vanish and come back. Merc's sky
+   stays as it is; beside a shared card he steps back from full strength. */
+@media not all and (max-aspect-ratio: 1/1) {
+  .mirror-plate[data-first][data-plate='sky'] {
+    animation: none;
+  }
+
+  .mirror-plate[data-first][data-plate='sky-aside'] {
+    animation-name: mirror-plate-settle;
+  }
+}
+
+@keyframes mirror-plate-settle {
+  from {
+    opacity: 1;
+  }
+}
+
+/* Merc's sky, behind the start screen: dark in the middle where the words
+   sit, Merc beside them on a wide screen and above them on a tall one.
+   `sky-aside` (a shared card) takes it only where he stands beside them. */
+.mirror-plate[data-plate='sky'],
+.mirror-plate[data-plate='sky-aside'] {
+  background: url('/onboarding/merc-sky-wide.webp') center / cover no-repeat;
+}
+
+/* Beside a shared card he steps back: the card's face is the one to look
+   at, and at full strength he outshone it and the pill. */
+.mirror-plate[data-plate='sky-aside'] {
+  opacity: 0.6;
+}
+
+/* The onboarding's scrim: it keeps the words' column dark at the window
+   shapes the art was not painted for. */
+.mirror-plate[data-plate='sky']::after,
+.mirror-plate[data-plate='sky-aside']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 38% 64% at 50% 50%,
+    color-mix(in srgb, var(--ob-ground) 74%, transparent),
+    color-mix(in srgb, var(--ob-ground) 52%, transparent) 62%,
+    transparent 100%
+  );
+}
+
+/* The plain sky, stepped back behind screens that bring their own
+   pictures: a ribbon across the top, stars at the edges. Sized to the
+   width and anchored to the top under `screen`, as in the onboarding, so
+   the part the picture does not reach is exactly the ground. */
+.mirror-plate[data-plate='plain'] {
+  background: url('/onboarding/sky-wide.webp') top center / 100% auto no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.28;
+  /* The onboarding centres its words below the ribbon; the Mirror's screens
+     open theirs at the top of the window, on it. Under an eyebrow's thin
+     capitals and a grey line it was the weakest contrast on those screens,
+     so the plate is held at a third down to 200 px (the ribbon ends 140 to
+     195 px down, from 320 px to 1440 px wide) and is back to full strength
+     by 320 px. */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.32) 200px,
+    rgba(0, 0, 0, 1) 320px
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.32) 200px,
+    rgba(0, 0, 0, 1) 320px
+  );
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .mirror-plate[data-plate='sky'] {
+    background-image: url('/onboarding/merc-sky-tall.webp');
+    background-position: center top;
+  }
+
+  /* Merc is above the words here, so the scrim starts below him. */
+  .mirror-plate[data-plate='sky']::after {
+    background: linear-gradient(
+      180deg,
+      transparent 22%,
+      color-mix(in srgb, var(--ob-ground) 66%, transparent) 36%,
+      color-mix(in srgb, var(--ob-ground) 74%, transparent) 100%
+    );
+  }
+
+  .mirror-plate[data-plate='plain'] {
+    background-image: url('/onboarding/sky-tall.webp');
+  }
+
+  /* A shared card fills the top of a phone, where Merc stands, so there
+     is no picture behind it: the card is the picture. No URL either, so
+     nothing is downloaded. */
+  .mirror-plate[data-plate='sky-aside'] {
+    background: none;
+  }
+
+  .mirror-plate[data-plate='sky-aside']::after {
+    content: none;
+  }
+}
+
+/* ── The loading screen on the Mirror's own documents ───────────
+   Until the app mounts, an entry document shows its crawlable prelude
+   (src/styles/entry-prelude.css) on the opening plate. Not here.
+
+   A wide window wears Merc's sky instead, as a fixed layer the size of
+   the window, exactly where the start screen's plate will be, so the
+   picture does not change when the app takes over (61 KiB where the
+   opening plate was 169).
+
+   An upright phone gets no picture until the start screen is up. A picture
+   here downloads alongside the JavaScript that draws the start screen, and
+   on Lighthouse's mobile run of /vocal-range-test (median of five, 11 Oct
+   2026) the start screen's Largest Contentful Paint was 2.9 s with the
+   opening plate here and is 2.3 s with none. Merc's plate fades in as the
+   start screen mounts, the way the onboarding's plates arrive.
+   `#root ~` outranks the prelude's own rules, which load after these. */
+#root ~ .entry-prelude {
+  background: linear-gradient(
+      180deg,
+      rgba(13, 17, 23, 0) 0%,
+      rgba(13, 17, 23, 0.45) 32%,
+      rgba(13, 17, 23, 0.88) 62%,
+      rgb(13, 17, 23) 100%
+    )
+    no-repeat;
+}
+
+/* Only where the window is wider than tall: a rule that names a picture
+   downloads it even when it is overridden or its box never draws. The
+   picture wears the start screen's own scrim and nothing else, so the
+   frame is the same before and after the app mounts. */
+@media not all and (max-aspect-ratio: 1/1) {
+  #root ~ .entry-prelude {
+    background: none;
+  }
+
+  #root ~ .entry-prelude::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(
+        ellipse 38% 64% at 50% 50%,
+        color-mix(in srgb, var(--ob-ground) 74%, transparent),
+        color-mix(in srgb, var(--ob-ground) 52%, transparent) 62%,
+        transparent 100%
+      ),
+      url('/onboarding/merc-sky-wide.webp') center / cover no-repeat;
+  }
+}
+
+/* The upright phone's loading screen: the ground and the onboarding's
+   quicksilver wash. */
+@media (max-aspect-ratio: 1/1) {
+  #root ~ .entry-prelude {
+    background: radial-gradient(
+        68% 52% at 50% 46%,
+        rgba(88, 166, 255, 0.1),
+        transparent 68%
+      )
+      no-repeat;
+  }
+}
+
 /* ── Privacy "i" ──────────────────────────────────────────────
-   The promise ("audio never leaves this device") has to stay one gesture
+   The reassurance ("Only you can hear you.") has to stay one gesture
    away without spending two lines of body copy on every screen. Opens on
    hover for fine pointers and on tap for touch — the button's aria-expanded
    drives the same popover either way, so the two paths never disagree. */
@@ -226,21 +464,6 @@ body {
   color: var(--mirror-gold);
 }
 
-.mirror-wordmark {
-  font-weight: 700;
-  font-size: 1.3rem;
-  line-height: 1.2;
-  margin: 0 0 4px;
-  background: linear-gradient(
-    135deg,
-    var(--mirror-brand-a),
-    var(--mirror-brand-b)
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 .mirror-trust {
   color: var(--mirror-dim);
   font-size: 0.92rem;
@@ -248,20 +471,298 @@ body {
   margin: 1.2em auto 0;
 }
 
-/* Cross-link to the sibling Glass experience (reciprocal of Glass's footer
-   link back to the mirror). */
-.mirror-crosslink {
-  color: var(--mirror-dim);
-  font-size: 0.86rem;
-  margin: 0.8em auto 0;
+/* ── The start screen (MirrorLanding.tsx) ──────────────────────
+   The onboarding's welcome beat in the Mirror's page shell: the words in
+   a centred column over Merc's sky, one large pill, a quiet "How it
+   works" under it, and the side door to Break Glass at the foot of the
+   page above the legal row. */
+.mirror-shell[data-screen='landing'],
+.mirror-shell[data-screen='shared'] {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
-.mirror-crosslink a {
-  color: #2dd4bf;
+
+.mirror-landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.mirror-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ob-ink);
+}
+
+/* Outranks `.mirror-panel h1`, which the later screens keep. */
+.mirror-landing .mirror-headline {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  color: var(--ob-ink);
+}
+
+/* The payoff words: the brand's blue, teal and violet. The onboarding's
+   stops (teal at 52%, violet at the end) leave the violet on the full stop
+   alone here, so it arrives sooner. */
+.mirror-lit {
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 45%,
+    var(--ob-violet) 88%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mirror-lede {
+  margin: 0;
+  max-width: 42ch;
+  font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+  line-height: 1.5;
+  color: var(--ob-ink-2);
+  text-wrap: pretty;
+}
+
+.mirror-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* The onboarding's pill (.primary, .primaryLarge): the screen's one
+   primary action, carried at a size that says so. */
+.mirror-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 54px;
+  padding: 15px 44px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #06090f;
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 60%,
+    var(--ob-violet)
+  );
+  box-shadow: 0 6px 26px rgba(88, 166, 255, 0.26);
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ob-ease),
+    box-shadow 0.25s var(--ob-ease);
+}
+
+@media (hover: hover) {
+  .mirror-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 32px rgba(88, 166, 255, 0.34);
+  }
+}
+
+.mirror-pill:focus-visible {
+  outline: 2px solid var(--ob-ink);
+  outline-offset: 3px;
+}
+
+/* "How it works": findable, a whole thumb tall, and quieter than the pill
+   in every way. */
+.mirror-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ob-ink-2);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--ob-ink-2) 45%, transparent);
+  text-underline-offset: 4px;
+  cursor: pointer;
 }
-.mirror-crosslink a:hover {
-  color: #7ff0dd;
+
+@media (hover: hover) {
+  .mirror-quiet:hover {
+    color: var(--ob-ink);
+  }
+}
+
+.mirror-quiet:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+/* The privacy "i" pinned to the window's top right, where the onboarding
+   keeps its rail: a 44 px pill of the ground, readable over the picture. */
+.mirror-landing .mirror-info {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+}
+
+.mirror-landing .mirror-info-btn {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--ob-rail-pill);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ob-ink-2);
+}
+
+.mirror-landing .mirror-info-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.mirror-landing .mirror-info-pop {
+  top: 52px;
+  border-color: var(--ob-rule);
+  background: var(--ob-card-solid);
+  color: var(--ob-ink-2);
+}
+
+/* The side door to Break Glass: a quiet link at the foot, just above the
+   legal row, quieter than "How it works" (a bordered chip read as a second
+   button on a phone). Its auto margin and the first block's share the
+   spare height, so the screen stays centred above the foot. */
+.mirror-sidedoor {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.mirror-sidedoor + .mirror-legal {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.mirror-sidedoor-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--ob-ink-3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s var(--ob-ease);
+}
+
+@media (hover: hover) {
+  .mirror-sidedoor-link:hover {
+    color: var(--ob-ink);
+  }
+}
+
+.mirror-sidedoor-link:focus-visible {
+  outline: 2px solid var(--ob-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .mirror-start-actions .mirror-pill {
+    width: 100%;
+    max-width: 420px;
+  }
+}
+
+/* Merc stands at the top of the tall cut, his glow ending 30% of the way
+   down it. The picture covers the window from the top, so that is
+   max(53.3vw, 30dvh) down the screen (the onboarding's measure for its
+   welcome, .skyBeat). The words start 28 px under it: the section's own
+   padding, less the 24 px the shell already gives. */
+@media (max-aspect-ratio: 1/1) {
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) + 4px);
+    padding-top: calc(max(53.3vw, 30dvh) + 4px);
+  }
+
+  /* The words stay under him instead of centring in the sky below: with
+     the spare height split above them and above the foot, a tall phone
+     read as three islands (the picture, the words, the foot). All of it
+     goes above the foot now. */
+  .mirror-shell > .mirror-backdrop + .mirror-landing {
+    margin-top: 0;
+  }
+}
+
+/* A short phone (700 px tall or less) runs the start screen past the
+   window: the foot was cut through the middle at 320x640 and 360x640. Here
+   the words start 8 px under Merc's glow (still clear of his figure, which
+   ends above it), the gaps and the pill tighten as the onboarding's own
+   short-phone rule does, and the shell keeps only the notch's and the
+   home indicator's room. */
+@media (max-aspect-ratio: 1/1) and (max-height: 700px) {
+  .mirror-shell[data-screen='landing'] {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) - 4px);
+    padding-top: calc(max(53.3vw, 30dvh) - 4px);
+    gap: 12px;
+  }
+
+  .mirror-lede {
+    line-height: 1.45;
+  }
+
+  .mirror-start-actions {
+    margin-top: 4px;
+    gap: 2px;
+  }
+
+  .mirror-start-actions .mirror-pill {
+    min-height: 48px;
+    padding-block: 12px;
+  }
+
+  .mirror-sidedoor {
+    padding-top: 8px;
+  }
+}
+
+/* Narrower than 375 px the longest promise (the vocal range test's) runs
+   to six lines, and the foot still ran 11 px past a 320x640 window. The
+   words start where the glow ends: the picture's last bright pixels are at
+   28% of its height (measured on merc-sky-tall.webp, 11 Oct 2026), about
+   10 px above them at 320x640. */
+@media (max-aspect-ratio: 1/1) and (max-width: 374px) and (max-height: 700px) {
+  .mirror-landing {
+    padding-top: calc(max(53.3vw, 30vh) - 12px);
+    padding-top: calc(max(53.3vw, 30dvh) - 12px);
+  }
+
+  .mirror-sidedoor {
+    padding-top: 0;
+  }
 }
 
 .mirror-dim {
@@ -346,6 +847,19 @@ body {
   font-size: 1.4rem;
   color: var(--mirror-accent);
   animation: mirror-pulse 1s ease-in-out infinite;
+}
+.mirror-prepare-line {
+  color: var(--mirror-dim);
+  font-size: 0.95rem;
+}
+
+/* The instruction to sing. It appears with the recording and never during a
+   count-in, so the moment it shows is the moment to start. */
+.mirror-sing-cue {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--mirror-accent);
 }
 
 @keyframes mirror-pulse {
@@ -1687,30 +2201,39 @@ body {
   margin: 0;
 }
 
-/* ── A voiceprint that arrived by link ─────────────────────── */
+/* ── A voiceprint that arrived by link ───────────────────────
+   SharedVoiceprintWelcome.tsx, the start screen of a shared link: the
+   sender's card first, then the start screen's pill. Onboarding tokens,
+   over the plain sky (the card is the picture here). */
 
+/* One column, as wide as the card (at most 360 px): the heading, the
+   card, the steps and, on a phone, the pill. */
 .shared-vp {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 4px;
-  padding: 0 16px;
 }
 
 .shared-vp-eyebrow {
   margin: 0;
   font-size: 0.78rem;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(207, 214, 255, 0.72);
+  color: var(--ob-ink);
 }
 
 .shared-vp-title {
   margin: 2px 0 18px;
   font-size: clamp(1.5rem, 6vw, 2.1rem);
   font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   text-wrap: balance;
+  color: var(--ob-ink);
 }
 
 .shared-vp-card {
@@ -1718,11 +2241,11 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(420px, 100%);
+  width: min(360px, 100%);
   padding: 26px 22px;
-  border: 1px solid rgba(143, 163, 255, 0.28);
+  border: 1px solid var(--ob-rule);
   border-radius: 18px;
-  background: rgba(143, 163, 255, 0.08);
+  background: var(--ob-card);
 }
 
 .shared-vp-range {
@@ -1730,13 +2253,21 @@ body {
   font-size: clamp(2rem, 9vw, 2.9rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--mirror-gold);
+  background: linear-gradient(
+    102deg,
+    var(--ob-blue),
+    var(--ob-teal) 52%,
+    var(--ob-violet)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .shared-vp-span {
   margin: 0;
   font-size: 0.95rem;
-  color: rgba(207, 214, 255, 0.85);
+  color: var(--ob-ink-2);
 }
 
 .shared-vp-stats {
@@ -1757,20 +2288,21 @@ body {
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(207, 214, 255, 0.66);
+  color: var(--ob-ink-3);
 }
 
 .shared-vp-stat dd {
   margin: 0;
   font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
+  color: var(--ob-ink);
 }
 
 .shared-vp-steps {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  width: min(420px, 100%);
+  width: min(360px, 100%);
   margin: 20px 0 4px;
   padding: 0;
   list-style: none;
@@ -1784,7 +2316,8 @@ body {
   padding-left: 38px;
   font-size: 0.95rem;
   line-height: 1.5;
-  color: rgba(207, 214, 255, 0.88);
+  color: var(--ob-ink-2);
+  text-wrap: pretty;
 }
 
 .shared-vp-steps li::before {
@@ -1796,17 +2329,17 @@ body {
   place-items: center;
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(143, 163, 255, 0.45);
+  border: 1px solid color-mix(in srgb, var(--ob-blue) 45%, var(--ob-rule));
   border-radius: 999px;
-  background: rgba(143, 163, 255, 0.12);
-  color: var(--mirror-gold);
+  background: color-mix(in srgb, var(--ob-blue) 12%, transparent);
+  color: var(--ob-ink);
   font-size: 0.82rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .shared-vp-figure {
-  width: min(360px, 82vw);
+  width: min(360px, 100%);
   margin: 0 0 18px;
   line-height: 0;
 }
@@ -1815,5 +2348,147 @@ body {
   width: 100%;
   height: auto;
   border-radius: 18px;
-  box-shadow: 0 18px 48px rgba(6, 10, 30, 0.55);
+  box-shadow: 0 18px 48px rgba(1, 4, 9, 0.6);
+}
+
+/* On a laptop the square card is held to the window's height, so the
+   heading, the card and the pill fit a 768 px tall screen together. The
+   steps keep the card's width. */
+@media (min-width: 641px) {
+  .shared-vp-figure,
+  .shared-vp-steps {
+    width: min(360px, 42vh);
+  }
+}
+
+/* Under about 820 px of height the card is narrower than 360 px, the steps
+   narrow with it and the second one wraps to four lines. At 1366x768 the
+   page ran 33 px past the window and the legal row was cut at its foot
+   (measured 11 Oct 2026). The gaps around the card and above the legal row
+   close up, and the page fits the window again. */
+@media (min-width: 641px) and (max-height: 820px) {
+  .shared-vp-title {
+    margin-bottom: 14px;
+  }
+
+  .shared-vp-figure {
+    margin-bottom: 8px;
+  }
+
+  .shared-vp-steps {
+    margin-top: 12px;
+  }
+
+  .mirror-shell[data-screen='shared'] .mirror-legal {
+    padding-top: 12px;
+  }
+}
+
+/* The end of the section, watched by SharedVoiceprintWelcome.tsx: once it
+   is on screen the pill row has come to rest. Out of the flow, so it adds
+   no gap. */
+.shared-vp-end {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* The pill stays on screen. The card and the steps run taller than a
+   phone: the button's foot was 76-103 px under the fold at 375x667,
+   360x640 and 320x640 (measured 11 Oct 2026). A laptop window is short
+   too once the browser has drawn its own bars: at 1366x657 the foot was
+   37 px under the fold. So on a phone, and on any window 700 px tall or
+   less, the row pins to the bottom of the window while they scroll under
+   it, and settles back into place at the end of the section. Its backing runs the window's full width (html and body
+   clip it): solid behind the pill and easing out over 56 px above it, a
+   little more than two lines of the steps, so a line passing under it
+   fades rather than being cut. Once the row has settled
+   (`data-settled`), nothing is under it and the backing goes. */
+@media (max-width: 640px), (max-height: 700px) {
+  /* The cookie banner sits at the window's foot on a first visit from the
+     EEA, UK or CH; ConsentBanner.tsx publishes the room it takes, and the
+     row stands on top of it rather than under it. */
+  .shared-vp-actions {
+    position: sticky;
+    bottom: var(--consent-banner-space, 0px);
+    z-index: 2;
+    margin-top: 12px;
+    padding: 12px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .shared-vp-actions .mirror-pill {
+    max-width: 360px;
+  }
+
+  /* Down to the window's foot: under the cookie banner too, when it is up. */
+  .shared-vp-actions::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -56px -100vmax calc(-1 * var(--consent-banner-space, 0px));
+    background: linear-gradient(
+      180deg,
+      transparent,
+      color-mix(in srgb, var(--ob-ground) 55%, transparent) 22px,
+      color-mix(in srgb, var(--ob-ground) 88%, transparent) 40px,
+      var(--ob-ground) 56px
+    );
+    pointer-events: none;
+    transition: opacity 0.2s var(--ob-ease);
+  }
+
+  .shared-vp-actions[data-settled='true']::before {
+    opacity: 0;
+  }
+}
+
+/* On a wide window only the column scrolls under the pinned row, so the
+   backing covers the column (and at least the pill) and fades out over
+   80 px either side of it. Across the full width it hid the floor under
+   Merc's reflection and read as a bar. Settled, the pill sits as far from
+   the steps as the steps sit from the card. */
+@media (min-width: 641px) and (max-height: 700px) {
+  .shared-vp-actions {
+    width: min(360px, max(42vh, 240px));
+    margin-top: 4px;
+  }
+
+  .shared-vp-actions::before {
+    inset: -56px -80px 0;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 0, 0, 1) 80px,
+      rgba(0, 0, 0, 1) calc(100% - 80px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(0, 0, 0, 1) 80px,
+      rgba(0, 0, 0, 1) calc(100% - 80px),
+      transparent
+    );
+  }
+}
+
+/* ── Motion ─────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-plate {
+    animation: none;
+  }
+
+  .mirror-pill,
+  .mirror-sidedoor-link,
+  .shared-vp-actions::before {
+    transition: none;
+  }
+
+  .mirror-pill:hover {
+    transform: none;
+  }
 }

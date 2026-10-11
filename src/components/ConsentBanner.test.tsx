@@ -69,4 +69,19 @@ describe('ConsentBanner', () => {
     expect(consent.isConsentBannerOpen()).toBe(false)
     expect(consent.consentStatus()).toBe('denied')
   })
+
+  it('publishes the room it takes at the foot of the window while open', async () => {
+    // The Voice Mirror pins its shared link's pill to the foot of a phone
+    // and stands it on this, so the banner never covers it.
+    const space = (): string =>
+      document.documentElement.style.getPropertyValue('--consent-banner-space')
+    const consent = await openBanner()
+    consent.openConsentSettings()
+
+    expect(space()).toMatch(/^\d+px$/)
+
+    consent.acceptConsent()
+    expect(consent.isConsentBannerOpen()).toBe(false)
+    expect(space()).toBe('')
+  })
 })

@@ -106,6 +106,27 @@ describe('entry page model', () => {
     }
   })
 
+  it("colors the browser chrome with the Voice Mirror's ground on its documents", () => {
+    const themeColor = (html: string): string | undefined =>
+      /<meta name="theme-color" content="([^"]+)" \/>/.exec(html)?.[1]
+    const colors = Object.fromEntries(
+      ENTRY_PAGES.map((page) => [page.slug, themeColor(renderEntryPage(page))]),
+    )
+    const mirror = ENTRY_PAGES.filter(
+      (page) => page.boot === '/src/features/mirror/main.tsx',
+    ).map((page) => page.slug)
+
+    expect(mirror).toEqual([
+      'mirror',
+      'vocal-range-test',
+      'voice-type-test',
+      'which-singer-has-my-vocal-range',
+    ])
+    for (const [slug, color] of Object.entries(colors)) {
+      expect(color, slug).toBe(mirror.includes(slug) ? '#0d1117' : '#0b1026')
+    }
+  })
+
   it('keeps the visible FAQ and its structured data in step', () => {
     for (const page of ENTRY_PAGES) {
       const html = renderEntryPage(page)

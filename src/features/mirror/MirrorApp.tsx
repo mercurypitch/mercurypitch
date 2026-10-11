@@ -10,7 +10,7 @@
 // component owns timers, audio and rendering.
 // ============================================================
 
-import type { Component } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { LegalLinks } from '@/components/LegalLinks'
 import { saveVoiceprint } from '@/db/services/voiceprint-service'
@@ -45,12 +45,16 @@ import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconSha
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import { MirrorAccountAsk } from './MirrorAccountAsk'
+import type { MirrorScreen } from './MirrorBackdrop'
+import { MirrorBackdrop, plateFor } from './MirrorBackdrop'
+import { MirrorLanding } from './MirrorLanding'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
 import { renderSummaryCard } from './shared-voiceprint-card'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
+import { TrustInfo } from './TrustInfo'
 import { copyVoiceprintLink } from './voiceprint-share'
 
 // 8s was long enough that people ran out of glide and stood there filling
@@ -63,6 +67,12 @@ const MATCH_TAKE_SEC = 3
 // A "get ready" count-in between hearing the note and singing it back, so the
 // match task doesn't fire notes at the singer with no time to prepare.
 const MATCH_PREPARE_SEC = 2
+// Every count-in says "Ready…" and a line like this one, never "sing": a
+// number counting down beside an instruction to sing reads as "sing now", and
+// people sang into the count-in before the take had started (owner, 11 Oct
+// 2026). The instruction to sing is each task's `cue`, shown with the take.
+const COUNT_IN_LINE = 'Take a breath.'
+const FREE_SING_CUE = 'Your turn. Sing anything.'
 /** How much of a take must exist before "I'm done" appears. Below this there
  *  is not enough voiced audio to measure, and an instant tap would hand the
  *  analyser an empty take that reads as a failed mic. */
@@ -102,6 +112,8 @@ type SubPhase =
 interface TaskCopy {
   title: string
   instruction: string
+  /** The instruction to sing, on screen only while the take is recording. */
+  cue: string
 }
 
 const TASK_COPY: Record<string, TaskCopy> = {
@@ -109,20 +121,40 @@ const TASK_COPY: Record<string, TaskCopy> = {
     title: 'Glide up',
     instruction:
       'Slide from your lowest comfy note to your highest — like a siren.',
+    cue: 'Your turn. Slide up.',
   },
   'glide-down': {
     title: 'Glide down',
     instruction: 'Now slide back down, top to bottom. Same siren, reversed.',
+    cue: 'Your turn. Slide down.',
   },
   hold: {
     title: 'Hold',
     instruction:
       'Pick any comfortable note and hold it steady. The ring tightens as you hold.',
+    cue: 'Your turn. Hold it.',
   },
   match: {
     title: 'Match',
     instruction: 'Listen to the tone, then sing it back. Any octave counts.',
+    cue: 'Your turn. Sing it back.',
   },
+}
+
+interface CountInProps {
+  line: string
+  remaining: number
+}
+
+/** The count-in before a take: get set, with the seconds left. */
+function CountIn(props: CountInProps): JSX.Element {
+  return (
+    <div class="mirror-prepare">
+      <span class="mirror-prepare-label">Ready…</span>
+      <span class="mirror-prepare-line">{props.line}</span>
+      <span class="mirror-countdown">{Math.ceil(props.remaining)}</span>
+    </div>
+  )
 }
 
 interface MirrorAppProps {
@@ -142,6 +174,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
    *  to the match phase rather than resolving a gate nobody is awaiting. */
   const [pendingResume, setPendingResume] = createSignal(false)
   const [remaining, setRemaining] = createSignal(0)
+  const [countInLine, setCountInLine] = createSignal(COUNT_IN_LINE)
+  /** True from the moment a take starts recording until it ends: the only
+   *  time the screen asks someone to sing. */
+  const [takeLive, setTakeLive] = createSignal(false)
   /** Whether the take in progress accepts an early finish (glides and the
    *  hold; a 3s match note is too short to be worth cutting). */
   const [stoppable, setStoppable] = createSignal(false)
@@ -463,13 +499,15 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setRemaining(0)
   }
 
-  async function brief(seconds: number): Promise<void> {
+  async function brief(seconds: number, line = COUNT_IN_LINE): Promise<void> {
+    setCountInLine(line)
     setSubPhase('brief')
     await countdown(seconds)
   }
 
-  /** "Your turn" count-in after the reference tone, before recording. */
-  async function prepare(seconds: number): Promise<void> {
+  /** The count-in after the reference tone, before recording. */
+  async function prepare(seconds: number, line: string): Promise<void> {
+    setCountInLine(line)
     setSubPhase('prepare')
     await countdown(seconds)
   }
@@ -484,7 +522,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     setStoppable(stoppable)
     setSubPhase('recording')
     f0.startTask()
+    setTakeLive(true)
     await countdown(seconds, stoppable)
+    setTakeLive(false)
     setStoppable(false)
     // The take is void if the run was reset/restored mid-count, and f0 may
     // have been torn down while we were awaiting (unmount mid-take).
@@ -767,7 +807,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     const alive = (): boolean => !cancelled && gen === flowGen
     await taskIntro(gen)
     if (!alive()) return
-    await brief(2)
+    await brief(2, 'Here comes the first note.')
     while (alive() && session().phase === 'match') {
       const state = session()
       const target = state.targets[state.matchIndex]
@@ -780,7 +820,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       }
       if (!alive()) return
       // Breathing room: hear the note, then a short count-in before singing.
-      await prepare(MATCH_PREPARE_SEC)
+      await prepare(MATCH_PREPARE_SEC, 'Keep that note in your head.')
       if (!alive()) return
       const take = await record(MATCH_TAKE_SEC)
       if (!alive()) return
@@ -1237,8 +1277,23 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const taskNumber = (): number =>
     session().phase === 'hold' ? 2 : session().phase === 'match' ? 3 : 1
 
+  /** The screen on show, for the backdrop and the shell's layout. Idle with
+   *  nothing open is the start screen: the landing, or someone's shared card
+   *  in its place. */
+  const screen = (): MirrorScreen => {
+    if (cosmicOpen()) return 'flow'
+    if (session().phase === 'results' || freePhase() === 'results') {
+      return 'results'
+    }
+    if (session().phase !== 'idle' || freePhase() !== null || howtoOpen()) {
+      return 'flow'
+    }
+    return sharedVoiceprint() === null ? 'landing' : 'shared'
+  }
+
   return (
-    <div class="mirror-shell">
+    <div class="mirror-shell" data-screen={screen()}>
+      <MirrorBackdrop plate={plateFor(screen())} />
       <Show
         when={
           sharedVoiceprint() !== null &&
@@ -1426,9 +1481,12 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           </p>
           <div class="mirror-stage">
             <Show when={subPhase() === 'brief'}>
-              <div class="mirror-countdown">{Math.ceil(remaining())}</div>
+              <CountIn line={countInLine()} remaining={remaining()} />
             </Show>
             <Show when={subPhase() === 'recording'}>
+              <Show when={takeLive()}>
+                <p class="mirror-sing-cue">{FREE_SING_CUE}</p>
+              </Show>
               <LiveViz
                 latest={() => f0?.latest() ?? null}
                 mode="glide"
@@ -1634,19 +1692,16 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
                 I'm ready
               </button>
             </Show>
-            <Show when={subPhase() === 'brief'}>
-              <div class="mirror-countdown">{Math.ceil(remaining())}</div>
-            </Show>
             <Show when={subPhase() === 'listening'}>
               <div class="mirror-listening">listen…</div>
             </Show>
-            <Show when={subPhase() === 'prepare'}>
-              <div class="mirror-prepare">
-                <span class="mirror-prepare-label">your turn — sing it</span>
-                <span class="mirror-countdown">{Math.ceil(remaining())}</span>
-              </div>
+            <Show when={subPhase() === 'brief' || subPhase() === 'prepare'}>
+              <CountIn line={countInLine()} remaining={remaining()} />
             </Show>
             <Show when={subPhase() === 'recording'}>
+              <Show when={takeLive()}>
+                <p class="mirror-sing-cue">{currentTask()?.cue}</p>
+              </Show>
               <LiveViz
                 latest={() => f0?.latest() ?? null}
                 mode={
@@ -1761,132 +1816,6 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           be reachable from here (E-Commerce Directive Art. 5). */}
       <LegalLinks class="mirror-legal" />
     </div>
-  )
-}
-
-/** Copy for the /free-sing entry — the open-take path, kept off the main
- *  landing so it cannot be picked by accident, but addressable for anyone
- *  (a creator brief, a link) pointed at it on purpose. */
-function FreeSingIntro() {
-  return (
-    <>
-      <h1>Just sing.</h1>
-      <p>
-        Forty seconds of anything you like — your shower song counts. No targets
-        and no score: we measure the range you actually use, the note you keep
-        coming back to, and how long your phrases run.
-      </p>
-    </>
-  )
-}
-
-/** The privacy story as an "i" affordance rather than a paragraph.
- *
- *  It used to be two sentences of body copy on both the landing and the mic
- *  screen, competing with the thing the visitor came to do. The promise still
- *  has to be one gesture away — it is the reason someone grants a microphone —
- *  so this mirrors Glass's TrustInfo, with one addition: Glass opens on click
- *  only, which leaves desktop users clicking a thing that looks hoverable.
- *  Hover is handled in CSS for fine pointers; the click toggle stays for touch,
- *  where hover does not exist. */
-function TrustInfo() {
-  const [open, setOpen] = createSignal(false)
-  return (
-    <div class="mirror-info">
-      <button
-        type="button"
-        class="mirror-info-btn"
-        aria-expanded={open()}
-        aria-label="Privacy: how your audio is handled"
-        onClick={() => setOpen((v) => !v)}
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9.5" />
-          <path d="M12 10.8v5.4" />
-          <circle cx="12" cy="7.6" r="0.6" fill="currentColor" />
-        </svg>
-      </button>
-      <div class="mirror-info-pop" role="note" data-open={open()}>
-        Private by design: your audio never leaves this device. The analysis
-        runs here in your browser, and the recording stays with you.
-      </div>
-    </div>
-  )
-}
-
-export interface MirrorLandingProps {
-  entryIntent: MirrorEntryIntent
-  onStart: (mode: 'guided' | 'free') => void
-  onHowItWorks: () => void
-}
-
-export function MirrorLanding(props: MirrorLandingProps) {
-  const isVocalRange = (): boolean => props.entryIntent === 'vocal-range'
-  const isFreeSing = (): boolean => props.entryIntent === 'free-sing'
-
-  return (
-    <section class="mirror-panel mirror-landing">
-      <TrustInfo />
-      <p class="mirror-wordmark">MercuryPitch</p>
-      <Show when={!isFreeSing()} fallback={<FreeSingIntro />}>
-        <Show
-          when={isVocalRange()}
-          fallback={
-            <>
-              <h1>Meet your voice twin.</h1>
-              <p>
-                Sing a couple of short tasks and we name the legend your range
-                lines up with — then map your voice as a voiceprint you can
-                share.
-              </p>
-            </>
-          }
-        >
-          <h1>Find your vocal range.</h1>
-          <p>
-            Glide from your lowest comfortable note to your highest. Your result
-            leads with both notes, your span in semitones and a broad voice-type
-            guide; two short follow-ups add accuracy and steadiness.
-          </p>
-        </Show>
-      </Show>
-      <div class="mirror-actions">
-        {/* One door. The secondary "Just sing" button used to sit here and
-            split the visitor's decision at the exact moment they had committed
-            to singing — two paths, no basis to choose between them. Free Sing
-            now has its own entry at /free-sing for anyone sent there
-            deliberately. */}
-        <button
-          class="mirror-cta"
-          onClick={() => props.onStart(isFreeSing() ? 'free' : 'guided')}
-        >
-          {isFreeSing()
-            ? 'Just sing · 40 s'
-            : isVocalRange()
-              ? 'Test my vocal range'
-              : 'Find my voice twin'}
-        </button>
-      </div>
-      <button class="mirror-textbtn" onClick={() => props.onHowItWorks()}>
-        {isVocalRange() ? 'How the test works' : 'How it works'}
-      </button>
-      <p class="mirror-crosslink">
-        Or{' '}
-        <a href="/glass" onClick={() => trackFunnel('cta_glass_click')}>
-          break glass with your voice
-        </a>
-        .
-      </p>
-    </section>
   )
 }
 

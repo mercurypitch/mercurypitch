@@ -44,6 +44,32 @@ const CloseIcon: Component = () => (
   </svg>
 )
 
+/** The room the open banner takes at the foot of the window, on <html>. */
+export const CONSENT_SPACE_VAR = '--consent-banner-space'
+
+/** Publish the banner's footprint (its height plus its gap to the window's
+ *  foot) while it is open, so a page that pins its own action to the bottom
+ *  (the Voice Mirror's shared link) can stand it above the banner instead of
+ *  under it. Measured without transforms, so the slide-in does not skew it. */
+function publishSpace(el: HTMLElement): void {
+  const root = document.documentElement
+  const update = (): void => {
+    const gap = Number.parseFloat(window.getComputedStyle(el).bottom)
+    const space = el.offsetHeight + (Number.isFinite(gap) ? gap : 0)
+    root.style.setProperty(CONSENT_SPACE_VAR, `${Math.ceil(space)}px`)
+  }
+  update()
+  const observer =
+    typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+  observer?.observe(el)
+  window.addEventListener('resize', update)
+  onCleanup(() => {
+    observer?.disconnect()
+    window.removeEventListener('resize', update)
+    root.style.removeProperty(CONSENT_SPACE_VAR)
+  })
+}
+
 export const ConsentBanner: Component = () => {
   // Escape closes Cookie settings, as the landing's banner does. The first
   // ask has no close: it waits for a choice.
@@ -56,6 +82,7 @@ export const ConsentBanner: Component = () => {
   return (
     <Show when={isConsentBannerOpen()}>
       <section
+        ref={publishSpace}
         class={styles.banner}
         role="dialog"
         aria-label="Cookie consent"

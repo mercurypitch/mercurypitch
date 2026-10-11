@@ -9,7 +9,7 @@
 // tools/generate-entry-pages.ts, before the alias exists.
 import { LEGAL_DOCUMENT_LINKS } from '../lib/legal-links'
 import type { EntryPage } from './entry-pages'
-import { ABOUT_URL, canonicalPath, navLinksFor, OG_IMAGE, SITE_ORIGIN, } from './entry-pages'
+import { ABOUT_URL, canonicalPath, DEFAULT_THEME_COLOR, navLinksFor, OG_IMAGE, SITE_ORIGIN, } from './entry-pages'
 
 /** Escape for an attribute value or text node. */
 function esc(value: string): string {
@@ -142,7 +142,7 @@ ${page.faq
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="theme-color" content="#0b1026" />
+    <meta name="theme-color" content="${esc(page.themeColor ?? DEFAULT_THEME_COLOR)}" />
 ${ld
   .map(
     (node) => `    <script type="application/ld+json">
