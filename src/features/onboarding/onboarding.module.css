@@ -338,6 +338,11 @@
 
 .rail {
   position: relative;
+  /* Above the plates. The rail is first on screen through `order: -1`,
+     and flex `order` also sets the paint order, so without a layer of its
+     own the plates painted after it: the plain sky's screen blend lit
+     its lines straight through the "Not now" pill (3.9:1 on a phone). */
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1028,6 +1033,13 @@
   display: block;
 }
 
+/* The twin's eyebrow sits right under the portrait's violet glow, which
+   lifts the ground behind it: the shared --ob-ink-3 measured 3.2:1 there,
+   so this one takes the second ink. */
+.twinEyebrow {
+  color: var(--ob-ink-2);
+}
+
 /* What the map screen after this one is for: quieter than .sub so the
    stat card above keeps the weight. */
 .mapExplainer {
@@ -1426,7 +1438,9 @@
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ob-blue);
+  /* The blue lifted toward the ink: the flow's own blue on its own tint
+     measured 4.35 to 4.9:1, at the AA line for type this small. */
+  color: color-mix(in srgb, var(--ob-blue) 62%, var(--ob-ink));
   white-space: nowrap;
 }
 

@@ -63,7 +63,7 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
         <span class={styles.twinArt} aria-hidden="true">
           <LegendCaricature legend={twin() ?? ''} tier="mid" />
         </span>
-        <p class={styles.eyebrow}>Your twin</p>
+        <p class={`${styles.eyebrow} ${styles.twinEyebrow}`}>Your twin</p>
         <h1 class={styles.headline}>
           Your range overlaps <span class={styles.lit}>{twin()}</span>
         </h1>
